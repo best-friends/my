@@ -2115,6 +2115,134 @@
     "defaultMessage": "[Şŭŭşƥḗḗƞḓ {domain}?]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.domain_actions.csv.confirm.confirm": {
+    "defaultMessage": "[Īḿƥǿǿřŧ ȧȧƞḓ şŭŭşƥḗḗƞḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.confirm.title": {
+    "defaultMessage": "[Şŭŭşƥḗḗƞḓ {count,plural,one{# ḓǿǿḿȧȧīƞ} other{# ḓǿǿḿȧȧīƞş}}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv": {
+    "defaultMessage": "[ƇŞṼ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv.description": {
+    "defaultMessage": "[Ȧ ḓǿǿḿȧȧīƞ ƀŀǿǿƈķ ƇŞṼ ŧħȧȧŧ Ḿȧȧşŧǿǿḓǿǿƞ ḗḗẋƥǿǿřŧḗḗḓ, ȧȧŧ ḿǿǿşŧ {max, number} řǿǿẇş. Ȧ ƒīŀḗḗ ẇīŧħǿǿŭŭŧ ŧħḗḗ #ḓǿǿḿȧȧīƞ ħḗḗȧȧḓḗḗř īş řḗḗȧȧḓ ȧȧş ȧȧ ŀīşŧ ǿǿƒ ḓǿǿḿȧȧīƞş ŧǿǿ şŭŭşƥḗḗƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv.required": {
+    "defaultMessage": "[Ƥȧȧşŧḗḗ ȧȧ ƇŞṼ, ǿǿř ƈħǿǿǿǿşḗḗ ȧȧ ƒīŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv.too_large": {
+    "defaultMessage": "[Ŧħḗḗ ƇŞṼ īş ŀȧȧřɠḗḗř ŧħȧȧƞ {max, number} ĶƁ. Şƥŀīŧ īŧ īƞŧǿǿ şḿȧȧŀŀḗḗř ƒīŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.description": {
+    "defaultMessage": "[Ḗẋƥǿǿřŧ ŧħḗḗ ȧȧƈŧīǿǿƞş īƞ ḗḗƒƒḗḗƈŧ ȧȧş ŧħḗḗ ḓǿǿḿȧȧīƞ ƀŀǿǿƈķ ƇŞṼ ŧħȧȧŧ Ḿȧȧşŧǿǿḓǿǿƞ īḿƥǿǿřŧş, ǿǿř īḿƥǿǿřŧ ȧȧ ƇŞṼ ŧħȧȧŧ Ḿȧȧşŧǿǿḓǿǿƞ ḗḗẋƥǿǿřŧḗḗḓ. Ḿȧȧşŧǿǿḓǿǿƞ'ş şīŀḗḗƞƈḗḗ īş ȧȧ ŀīḿīŧ ħḗḗřḗḗ. Ḓǿǿḿȧȧīƞş ẇīŧħ ǿǿƞŀẏ Ƒǿǿřƈḗḗ şḗḗƞşīŧīṽḗḗ ȧȧřḗḗ ƞǿǿŧ ḗḗẋƥǿǿřŧḗḗḓ, ȧȧƞḓ ƥřīṽȧȧŧḗḗ ƞǿǿŧḗḗş ȧȧƞḓ ḗḗƞḓ ḓȧȧŧḗḗş ȧȧřḗḗ ƞǿǿŧ ḗḗẋƥǿǿřŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.export": {
+    "defaultMessage": "[Ḗẋƥǿǿřŧ ƇŞṼ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.export.done": {
+    "defaultMessage": "[Şȧȧṽḗḗḓ {name}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.export.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ḗḗẋƥǿǿřŧ ŧħḗḗ ƇŞṼ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ȧȧ ƇŞṼ ƒīŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.description": {
+    "defaultMessage": "[Īŧş ŧḗḗẋŧ řḗḗƥŀȧȧƈḗḗş ŧħḗḗ ƇŞṼ ȧȧƀǿǿṽḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗȧȧḓ {name}. Ƈħǿǿǿǿşḗḗ ŧħḗḗ ƒīŀḗḗ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.read": {
+    "defaultMessage": "[Řḗḗȧȧḓ {name}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.too_large": {
+    "defaultMessage": "[{name} īş ŀȧȧřɠḗḗř ŧħȧȧƞ {max, number} ĶƁ. Şƥŀīŧ īŧ īƞŧǿǿ şḿȧȧŀŀḗḗř ƒīŀḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.import.done": {
+    "defaultMessage": "[{issued,plural,one{# ȧȧƈŧīǿǿƞ ẇȧȧş ŧȧȧķḗḗƞ.} other{# ȧȧƈŧīǿǿƞş ẇḗḗřḗḗ ŧȧȧķḗḗƞ.} =0{Ƞǿǿ ȧȧƈŧīǿǿƞ ẇȧȧş ŧȧȧķḗḗƞ.}} {skipped,plural,one{# řǿǿẇ ẇȧȧş şķīƥƥḗḗḓ.} other{# řǿǿẇş ẇḗḗřḗḗ şķīƥƥḗḗḓ.} =0{Ƞǿǿ řǿǿẇ ẇȧȧş şķīƥƥḗḗḓ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.import.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ īḿƥǿǿřŧ ŧħḗḗ řǿǿẇş: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.import.title": {
+    "defaultMessage": "[Īḿƥǿǿřŧ ȧȧ ƇŞṼ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.none_selected": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ȧȧŧ ŀḗḗȧȧşŧ ǿǿƞḗḗ řǿǿẇ ŧǿǿ īḿƥǿǿřŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview": {
+    "defaultMessage": "[Ƥřḗḗṽīḗḗẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗȧȧḓ ŧħḗḗ ƇŞṼ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview.summary": {
+    "defaultMessage": "[{importable, number} ǿǿƒ {count,plural,one{# řǿǿẇ} other{# řǿǿẇş}} ƈȧȧƞ ƀḗḗ īḿƥǿǿřŧḗḗḓ. Ƈŀḗḗȧȧř ŧħḗḗ řǿǿẇş ẏǿǿŭŭ ḓǿǿ ƞǿǿŧ ẇȧȧƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview.title": {
+    "defaultMessage": "[Řǿǿẇş ǿǿƒ ŧħḗḗ ƇŞṼ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.private_note.description": {
+    "defaultMessage": "[Ǿƞŀẏ ḿǿǿḓḗḗřȧȧŧǿǿřş şḗḗḗḗ ŧħīş. Ḗṽḗḗřẏ ȧȧƈŧīǿǿƞ ǿǿƒ ŧħḗḗ īḿƥǿǿřŧ ɠḗḗŧş ŧħīş ƞǿǿŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.row.issue": {
+    "defaultMessage": "[Ŀīƞḗḗ {line, number}. Ŧȧȧķḗḗş: {kinds}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.row.skipped": {
+    "defaultMessage": "[Ŀīƞḗḗ {line, number}. {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.already_applied": {
+    "defaultMessage": "[Ȧŀřḗḗȧȧḓẏ īƞ ḗḗƒƒḗḗƈŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.duplicate": {
+    "defaultMessage": "[Şȧȧḿḗḗ ḓǿǿḿȧȧīƞ ȧȧş ȧȧƞ ḗḗȧȧřŀīḗḗř řǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.invalid": {
+    "defaultMessage": "[Ƞǿǿŧ ȧȧ ṽȧȧŀīḓ řǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.no_action": {
+    "defaultMessage": "[Ƞǿǿ ȧȧƈŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.submit": {
+    "defaultMessage": "[Īḿƥǿǿřŧ {count,plural,one{# řǿǿẇ} other{# řǿǿẇş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.title": {
+    "defaultMessage": "[Ḿȧȧşŧǿǿḓǿǿƞ'ş ƇŞṼ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.domain_actions.domain": {
     "defaultMessage": "[Ḓǿǿḿȧȧīƞ]",
     "description": "Generated from en by tools/i18n; do not edit."

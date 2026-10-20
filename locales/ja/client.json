@@ -2027,6 +2027,134 @@
     "defaultMessage": "{max, number} 文字以内にしてください",
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
   },
+  "admin.domain_actions.csv.confirm.confirm": {
+    "defaultMessage": "インポートして凍結する",
+    "description": "Confirm button of an import of a domain block CSV that suspends domains."
+  },
+  "admin.domain_actions.csv.confirm.title": {
+    "defaultMessage": "{count, number} 件のドメインを凍結しますか？",
+    "description": "Title of the confirmation of an import of a domain block CSV that suspends domains. {count} is how many."
+  },
+  "admin.domain_actions.csv.csv": {
+    "defaultMessage": "CSV",
+    "description": "Label of the text area of a domain block CSV to import."
+  },
+  "admin.domain_actions.csv.csv.description": {
+    "defaultMessage": "Mastodon がエクスポートしたドメインブロックの CSV（{max, number} 行まで）。#domain の見出しのないファイルは、凍結するドメインの一覧として読みます。",
+    "description": "Help text under the text area of a domain block CSV. {max} is the most rows one import holds."
+  },
+  "admin.domain_actions.csv.csv.required": {
+    "defaultMessage": "CSV を貼り付けるか、ファイルを選んでください",
+    "description": "Error under the text area of a domain block CSV when it is empty."
+  },
+  "admin.domain_actions.csv.csv.too_large": {
+    "defaultMessage": "CSV が {max, number} KB を超えています。小さなファイルに分けてください",
+    "description": "Error under the text area of a domain block CSV when it has too many bytes to send. {max} is the limit in kilobytes."
+  },
+  "admin.domain_actions.csv.description": {
+    "defaultMessage": "効いている処分を Mastodon がインポートできるドメインブロックの CSV でエクスポートするか、Mastodon がエクスポートした CSV をインポートします。Mastodon のサイレンスはここでの制限です。センシティブ扱いだけのドメイン、非公開のメモ、終了の日時はエクスポートしません。",
+    "description": "Text at the top of the section that exports and imports Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.export": {
+    "defaultMessage": "CSV をエクスポート",
+    "description": "Button that saves the domain actions in effect as Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.export.done": {
+    "defaultMessage": "{name} を保存しました。",
+    "description": "Status after the domain block CSV was saved. {name} is the file name."
+  },
+  "admin.domain_actions.csv.export.failed": {
+    "defaultMessage": "CSV をエクスポートできませんでした：{reason}",
+    "description": "Error when the domain block CSV could not be exported. {reason} is why."
+  },
+  "admin.domain_actions.csv.file": {
+    "defaultMessage": "CSV ファイルを選ぶ",
+    "description": "Button that opens the file picker to read a domain block CSV."
+  },
+  "admin.domain_actions.csv.file.description": {
+    "defaultMessage": "ファイルの内容で上の CSV を置き換えます。",
+    "description": "Help text next to the button that reads a domain block CSV from a file."
+  },
+  "admin.domain_actions.csv.file.failed": {
+    "defaultMessage": "{name} を読み込めませんでした。ファイルを選び直してください。",
+    "description": "Error when the browser could not read the chosen domain block CSV. {name} is the file name."
+  },
+  "admin.domain_actions.csv.file.read": {
+    "defaultMessage": "{name} を読み込みました。",
+    "description": "Status after the chosen domain block CSV was read into the text area. {name} is the file name."
+  },
+  "admin.domain_actions.csv.file.too_large": {
+    "defaultMessage": "{name} は {max, number} KB を超えています。小さなファイルに分けてください。",
+    "description": "Error when the chosen domain block CSV is too large to send. {name} is the file name; {max} the limit in kilobytes."
+  },
+  "admin.domain_actions.csv.import.done": {
+    "defaultMessage": "処分を {issued, number} 件出しました。{skipped, plural, =0 {飛ばした行はありません。} other {# 行は飛ばしました。}}",
+    "description": "Status after an import of a domain block CSV. {issued} is the number of actions taken; {skipped} the number of rows that took none."
+  },
+  "admin.domain_actions.csv.import.failed": {
+    "defaultMessage": "行をインポートできませんでした：{reason}",
+    "description": "Error when the server refused the import of the chosen rows of a domain block CSV. {reason} is why."
+  },
+  "admin.domain_actions.csv.import.title": {
+    "defaultMessage": "CSV をインポート",
+    "description": "Heading of the form that imports Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.none_selected": {
+    "defaultMessage": "インポートする行を 1 つ以上選んでください",
+    "description": "Error when the import of a domain block CSV is sent with no row chosen."
+  },
+  "admin.domain_actions.csv.preview": {
+    "defaultMessage": "プレビュー",
+    "description": "Submit button that shows what importing each row of a domain block CSV would do, without changing anything."
+  },
+  "admin.domain_actions.csv.preview.failed": {
+    "defaultMessage": "CSV を読み込めませんでした：{reason}",
+    "description": "Error under the import form when the server refused the domain block CSV. {reason} is why."
+  },
+  "admin.domain_actions.csv.preview.summary": {
+    "defaultMessage": "{count, number} 行のうち {importable, number} 行をインポートできます。インポートしない行の選択を外してください。",
+    "description": "Text above the preview table of a domain block CSV. {count} is the number of rows; {importable} how many issue an action."
+  },
+  "admin.domain_actions.csv.preview.title": {
+    "defaultMessage": "CSV の行",
+    "description": "Heading of the preview of a domain block CSV, and the name of its table."
+  },
+  "admin.domain_actions.csv.private_note.description": {
+    "defaultMessage": "モデレーターだけが見られます。インポートするすべての処分に付きます。",
+    "description": "Help text under the private note of an import of a domain block CSV."
+  },
+  "admin.domain_actions.csv.row.issue": {
+    "defaultMessage": "{line, number} 行目。処分：{kinds}",
+    "description": "What importing a row of a domain block CSV does, under the checkbox that chooses it. {line} is its line; {kinds} the list of the kinds of action, such as Suspend and Reject reports."
+  },
+  "admin.domain_actions.csv.row.skipped": {
+    "defaultMessage": "{line, number} 行目。{reason}",
+    "description": "A row of a domain block CSV that takes no action. {line} is its line; {reason} why, such as Already in effect."
+  },
+  "admin.domain_actions.csv.status.already_applied": {
+    "defaultMessage": "適用済み",
+    "description": "Why a row of a domain block CSV takes no action: actions in effect on the domain or a parent domain cover it."
+  },
+  "admin.domain_actions.csv.status.duplicate": {
+    "defaultMessage": "前の行と同じドメイン",
+    "description": "Why a row of a domain block CSV takes no action: an earlier row has the same domain."
+  },
+  "admin.domain_actions.csv.status.invalid": {
+    "defaultMessage": "不正な行",
+    "description": "Why a row of a domain block CSV takes no action: its domain, severity or comment is not valid."
+  },
+  "admin.domain_actions.csv.status.no_action": {
+    "defaultMessage": "処分なし",
+    "description": "Why a row of a domain block CSV takes no action: a noop row without rejections."
+  },
+  "admin.domain_actions.csv.submit": {
+    "defaultMessage": "{count, number} 行をインポート",
+    "description": "Button that imports the chosen rows of a domain block CSV. {count} is how many are chosen."
+  },
+  "admin.domain_actions.csv.title": {
+    "defaultMessage": "Mastodon の CSV",
+    "description": "Heading of the section of the domain actions screen that exports and imports Mastodon's domain block CSV."
+  },
   "admin.home.none.description": {
     "defaultMessage": "あなたのロールには、サーバー管理の画面に要る権限がありません。管理者が付与できます。",
     "description": "Description on the server administration page of a user whose roles grant none of the server administration screens' permissions."
