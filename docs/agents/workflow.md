@@ -2,6 +2,12 @@
 
 The step-by-step procedure an agent follows for one issue. Policy background: [ADR-0014](../adr/0014-task-management-and-agent-workflow.md).
 
+Work runs in one of two modes:
+
+- **Single issue**: one agent takes one issue through §1–§8.
+- **Parallel batch**: an orchestrator runs several issues at once, each in its own agent and worktree.
+  Each agent still follows §1–§8, with the changes of [§9](#9-parallel-batches).
+
 ## 1. Pick
 
 ```sh
@@ -46,8 +52,8 @@ make check                # every context, when the change touches shared config
 Must pass. CI runs every affected context again and its `check` gate decides the merge.
 If a check is wrong or flaky, fix it in a separate commit and explain in the PR.
 
-Pull requests do not run the web E2E. When the change touches the web client, run `make web-e2e` locally, or run
-the workflow on the PR's branch and wait for it:
+Pull requests do not run the web E2E. In single-issue work, when the change touches the web client, run `make web-e2e`
+locally, or run the workflow on the PR's branch and wait for it (in a parallel batch, see [§9](#9-parallel-batches) instead):
 
 ```sh
 gh workflow run web-e2e.yml -R best-friends/my --ref <branch>   # add -f matrix=full for the full width × locale matrix
@@ -107,3 +113,53 @@ make check-changed
 - Comment on the issue: what you tried, what decision is needed, the options you see, and your recommendation.
 - `gh issue edit <N> --add-label agent:blocked`
 - If the decision is architectural, draft a Proposed ADR in the same branch and link it.
+
+## 9. Parallel batches
+
+When many changes land at once, running the web E2E on every pull request costs time and runners without making the
+result more accurate: the PRs of a batch keep changing the same areas, so a per-PR run checks a state that `main`
+never has. A batch therefore checks each PR with the `check` gate only, runs the slow suites once on `main` after the
+batch has merged, and fixes what they find from there. Single-issue work keeps the per-PR web E2E of §5.
+
+### Planning (orchestrator)
+
+- For each candidate issue, list the shared files it is likely to touch:
+  - the sources of generated code: `api/openapi.yaml`, `locales/`, `schema/<dialect>.sql` and the sqlc queries,
+    the web route tree (`app/web/src/routes/`), the config schema;
+  - the indexes and tables many changes edit: the ADR index in `docs/adr/README.md`, the FR table in
+    [01-functional.md](../requirements/01-functional.md), the files under `docs/architecture/`.
+- Do not run two issues that touch the same shared files at the same time: put them in different batches, or order
+  them so that the second starts after the first has merged.
+- Cap the number of agents running at once by the load of the machine (about 4–5).
+
+### Agents in a batch
+
+- The PR gate is `make check-changed` locally and the PR's `check` CI. Do not run the web E2E per PR (`make web-e2e`
+  or `web-e2e.yml`): write and update the E2E specs the change needs, but do not run the suite.
+- Before waiting on CI, check that the PR is mergeable (`gh pr view <PR> -R best-friends/my --json mergeable`).
+  CI does not start on a conflicting PR; merge `origin/main` into the branch first, as in §7.
+- Resolve conflicts in generated files by regenerating them (§7), never by hand.
+- Once the PR is open and its CI is green, report the PR number to the orchestrator and finish. Never queue or merge the PR.
+
+### Merging (orchestrator)
+
+- Enable auto-merge as soon as a PR is opened (`gh pr merge <PR> -R best-friends/my --auto --merge`); the merge queue
+  takes it when its `check` is green.
+- Watch every PR of the batch with one watcher for three events: merged, conflicting, and CI failure.
+- A conflict drops the PR from the queue and turns off its auto-merge. Have the agent that owns the PR merge `main`
+  into the branch, then enable auto-merge again.
+- Never remove a worktree that an agent still works in.
+- Work that follows a merged PR goes to a new agent, on a new branch.
+
+### Stabilization (orchestrator)
+
+- Once every PR of the batch has merged, run the web E2E once on `main`. Pushes to `main` already run the subset
+  ([ADR-0047](../adr/0047-ci-protection-layers.md)); dispatch the full matrix when the batch changed the web client
+  broadly (`gh workflow run web-e2e.yml -R best-friends/my --ref main -f matrix=full`).
+- Group the failures by cause, file one issue per cause, and fix them.
+- Start the next batch only after `main` is green again.
+
+### Recording decisions
+
+When the decider answers a question in chat, quote the answer verbatim on the PR or issue it concerns, so that the
+decision stays with the work it governs.

@@ -966,9 +966,9 @@ export interface MessageArgs {
   "client:admin.domain.ascii": { domain: string };
   /** {unicode} ({ascii}) */
   "client:admin.domain.both": { ascii: string; unicode: string };
-  /** Your roles grant none of the permissions that the admin screens need. An administrator can grant them. */
+  /** Your roles grant none of the permissions that the server administration screens need. An administrator can grant them. */
   "client:admin.home.none.description": {};
-  /** No admin screens for your roles */
+  /** No server administration screens for your roles */
   "client:admin.home.none.heading": {};
   /** Back to remote servers */
   "client:admin.instance.back": {};
@@ -1054,6 +1054,12 @@ export interface MessageArgs {
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** Your roles grant none of the permissions that the moderation screens need. An administrator can grant them. */
+  "client:admin.moderation.none.description": {};
+  /** No moderation screens for your roles */
+  "client:admin.moderation.none.heading": {};
+  /** Moderation */
+  "client:admin.moderation.title": {};
   /** {count, plural, one {# pending} other {# pending}} */
   "client:admin.pending_count": { count: number };
   /** A removed account */
@@ -2332,8 +2338,6 @@ export interface MessageArgs {
   "client:shell.menu.title": {};
   /** Administration */
   "client:shell.nav.admin": {};
-  /** Administration, {count, plural, one {# pending} other {# pending}} */
-  "client:shell.nav.admin_pending": { count: number };
   /** Bookmarks */
   "client:shell.nav.bookmarks": {};
   /** Home */
@@ -2344,8 +2348,12 @@ export interface MessageArgs {
   "client:shell.nav.local": {};
   /** Menu */
   "client:shell.nav.menu": {};
-  /** Menu, {count, plural, one {# pending in administration} other {# pending in administration}} */
+  /** Menu, {count, plural, one {# pending in moderation} other {# pending in moderation}} */
   "client:shell.nav.menu_pending": { count: number };
+  /** Moderation */
+  "client:shell.nav.moderation": {};
+  /** Moderation, {count, plural, one {# pending} other {# pending}} */
+  "client:shell.nav.moderation_pending": { count: number };
   /** Notifications */
   "client:shell.nav.notifications": {};
   /** Notifications, {count, plural, one {# unread} other {# unread}} */

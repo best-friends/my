@@ -7,6 +7,21 @@
 管理 API はロールの権限を要します。アカウントの管理と処分と異議申し立ては `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
 CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直接つなぎ、操作者の利用者を記録しません（`issued_by_user_id` などは NULL、[監査ログ](#監査ログ)の操作者は `cli`）。
 
+## Web クライアントのモデレーションとサーバー管理
+
+Web クライアントは、スタッフの画面を 2 つに分けます（[ADR-0058](../adr/0058-moderation-admin-separation.md)）。
+ナビゲーションには、ロールが各区分の権限のどれかを持つ人にだけ「モデレーション」と「管理」が出ます。どの画面も、権限のない人には理由だけを出し、サーバーも要求を断ります。
+
+| 区分 | 権限 | 画面 |
+| --- | --- | --- |
+| モデレーション（`/moderation`） | `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit` | 通報（`/moderation/reports`）・異議申し立て（`/moderation/appeals`）・アカウント（`/moderation/accounts`）・登録の審査（`/moderation/registrations`）・登録の拒否リスト（`/moderation/signup-blocks`）・ドメインへの処分（`/moderation/domain-actions`）・連合先（`/moderation/instances`）・監査ログ（`/moderation/audit-log`） |
+| サーバー管理（`/admin`） | `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs` | サーバーの設定（`/admin/settings`）・規約とポリシー（`/admin/documents`）・dead job（`/admin/dead-jobs`） |
+
+- 「モデレーション」のバッジは、未解決の通報・承認待ちの登録・審査待ちの異議申し立ての合計です（[モデレーターへの通知と未対応の件数](#モデレーターへの通知と未対応の件数)）。「管理」には件数を出しません。
+- 組み込みの `moderator` は `manage_reports`・`manage_accounts`・`view_audit` だけを持ち、「管理」は出ません。ドメインへの処分と連合先の画面（`manage_domains`）も出ないので、
+  モデレーターに任せるときは、その権限を持つロールを作って与えます（[ロールの付与と剥奪](admin-cli.md#ロールの付与と剥奪)）。
+- 管理 API の経路は区分によらず `/api/v1/admin/...` のままで、スコープも `admin:read` / `admin:write` の 1 組です。区分は API リファレンスのタグ（`admin-moderation`・`admin-server`）で分かれます。
+
 ## アカウントへの処分
 
 処分は記録したトランザクションで制限の投影（`account_restrictions`）に反映され、次の要求から効きます（[データモデル §5.2](../architecture/data-model.md#52-処分の種類と制限能力の剥奪)）。

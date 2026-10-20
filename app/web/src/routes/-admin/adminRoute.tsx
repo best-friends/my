@@ -4,7 +4,7 @@
 // whose permission the server refused after all (the viewer's roles changed since the account loaded).
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { isMissingPermission, MissingPermission, type Permission } from "../../features/admin";
+import { isMissingPermission, MissingPermission, type Permission } from "../../features/moderation";
 import { viewerQueryOptions } from "../../features/session";
 import type { RouterContext } from "../../lib/query";
 import { PageHeading } from "../-layout/PageHeading";

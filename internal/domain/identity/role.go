@@ -33,6 +33,28 @@ func AllPermissions() []Permission {
 	}
 }
 
+// PermissionCategory is the area of the staff's work that a permission belongs to (ADR-0058):
+// moderation decides on people, posts and remote servers case by case; server administration
+// changes the server itself as a whole.
+type PermissionCategory string
+
+// Permission categories.
+const (
+	CategoryModeration PermissionCategory = "moderation"
+	CategoryServer     PermissionCategory = "server"
+)
+
+// Category returns the area that p belongs to. The web client's navigation and `my admin role`
+// group the permissions by it.
+func (p Permission) Category() PermissionCategory {
+	switch p {
+	case PermManageReports, PermManageAccounts, PermManageDomains, PermManageInvites, PermViewAudit:
+		return CategoryModeration
+	default:
+		return CategoryServer
+	}
+}
+
 // Role is a named set of permissions. Position orders roles; a higher position outranks a lower one.
 type Role struct {
 	ID        string

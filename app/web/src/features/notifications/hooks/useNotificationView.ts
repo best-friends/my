@@ -3,7 +3,7 @@
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
 import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
-import { accountStatusPath, adminAppealPath, adminReportPath, followListPath, profilePath } from "../../../lib/paths";
+import { accountStatusPath, moderationAppealPath, moderationReportPath, followListPath, profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { useViewer } from "../../session";
 import { statusPath } from "../../status";
@@ -171,11 +171,11 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
     case "appeal_decided":
       return [{ href: accountStatusPath, label: "client:notifications.link.account_status" }];
     case "admin_appeal":
-      return notification.appeal_id === undefined ? [] : [{ href: adminAppealPath(notification.appeal_id), label: "client:notifications.link.appeal" }];
+      return notification.appeal_id === undefined ? [] : [{ href: moderationAppealPath(notification.appeal_id), label: "client:notifications.link.appeal" }];
     case "admin_report":
-      return notification.report_id === undefined ? [] : [{ href: adminReportPath(notification.report_id), label: "client:notifications.link.report" }];
+      return notification.report_id === undefined ? [] : [{ href: moderationReportPath(notification.report_id), label: "client:notifications.link.report" }];
     case "admin_sign_up":
-      return [{ href: "/admin/registrations", label: "client:notifications.link.registrations" }];
+      return [{ href: "/moderation/registrations", label: "client:notifications.link.registrations" }];
     case "relationships_severed":
       return ownAcct === null
         ? []
