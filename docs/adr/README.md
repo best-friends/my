@@ -67,5 +67,6 @@
 | [0056](0056-system-observability.md) | システムメトリクスの可観測性 | Accepted |
 | [0059](0059-design-tokens-and-instance-theme.md) | デザイントークンの体系とサーバー単位のテーマ | Accepted |
 | [0060](0060-instance-webhooks.md) | サーバー単位の webhook | Accepted |
+| [0061](0061-federation-relays.md) | 連合リレーへの参加と脱退 | Accepted |
 | [0062](0062-link-preview-cards.md) | 投稿中のリンクのカード | Accepted |
 <!-- adr-index:end -->
