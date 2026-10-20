@@ -146,7 +146,8 @@ describe("a profile", () => {
 
     await user.click(screen.getByRole("tab", { name: "Without boosts" }));
     expect(await screen.findByRole("feed", { name: "Without boosts" })).toBeInTheDocument();
-    expect(queries).toEqual(["exclude_replies=true", "", "exclude_replies=true&exclude_boosts=true"]);
+    // The posts tab also reads the pinned posts (FR-403); the other tabs do not.
+    expect(queries.toSorted()).toEqual(["", "exclude_replies=true", "exclude_replies=true&exclude_boosts=true", "pinned=true"]);
   });
 });
 

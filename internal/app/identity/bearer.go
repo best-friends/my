@@ -20,6 +20,9 @@ var ErrAccountUnavailable = errors.New("identity: account cannot use the app")
 // who may use the app, with the local account the user logs in as.
 type Bearer struct {
 	TokenID string
+	// FamilyID is the token family of the grant that issued the token: the ID of its first
+	// token, which refreshing the grant keeps.
+	FamilyID string
 	// ClientID is the ID of the OAuthClient (not its public client_id).
 	ClientID string
 	UserID   string
@@ -48,7 +51,7 @@ func (s *Service) AuthenticateBearer(ctx context.Context, accessToken string) (B
 		return Bearer{}, ErrAccountUnavailable
 	}
 	return Bearer{
-		TokenID: tok.ID, ClientID: tok.ClientID, UserID: tok.UserID,
+		TokenID: tok.ID, FamilyID: tok.FamilyID, ClientID: tok.ClientID, UserID: tok.UserID,
 		AccountID: access.AccountID, Scope: tok.Scope, ExpiresAt: tok.ExpiresAt,
 	}, nil
 }

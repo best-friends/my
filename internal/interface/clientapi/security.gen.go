@@ -8,6 +8,7 @@ package clientapi
 // http.ServeMux pattern that the generated code registers it with.
 var operationSecurity = map[string]operationAccess{
 	"DELETE /api/v1/admin/accounts/{id}/roles/{role}":          {Operation: "revokeAccountRole", Scopes: []string{"admin:write"}},
+	"DELETE /api/v1/push/subscription":                         {Operation: "deletePushSubscription", Scopes: []string{"push"}},
 	"DELETE /api/v1/statuses/{id}":                             {Operation: "deleteStatus", Scopes: []string{"write:statuses"}},
 	"DELETE /api/v1/statuses/{id}/bookmark":                    {Operation: "unbookmarkStatus", Scopes: []string{"write:bookmarks"}},
 	"DELETE /api/v1/statuses/{id}/boost":                       {Operation: "unboostStatus", Scopes: []string{"write:statuses"}},
@@ -55,6 +56,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/notifications":                                {Operation: "listNotifications", Scopes: []string{"read:notifications"}},
 	"GET /api/v1/notifications/marker":                         {Operation: "getNotificationMarker", Scopes: []string{"read:notifications"}},
 	"GET /api/v1/preferences":                                  {Operation: "getPreferences", Scopes: []string{"read:accounts"}},
+	"GET /api/v1/push/subscription":                            {Operation: "getPushSubscription", Scopes: []string{"push"}},
 	"GET /api/v1/reports":                                      {Operation: "listOwnReports", Scopes: []string{"read:reports"}},
 	"GET /api/v1/statuses/{id}":                                {Operation: "getStatus", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/statuses/{id}/context":                        {Operation: "getStatusContext", Anonymous: true, Scopes: []string{"read:statuses"}},
@@ -112,5 +114,6 @@ var operationSecurity = map[string]operationAccess{
 	"PUT /api/v1/admin/accounts/{id}/roles/{role}":             {Operation: "grantAccountRole", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/admin/instance_texts/{key}/{locale}":          {Operation: "setInstanceText", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/notifications/marker":                         {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
+	"PUT /api/v1/push/subscription":                            {Operation: "putPushSubscription", Scopes: []string{"push"}},
 	"PUT /api/v1/statuses/{id}":                                {Operation: "editStatus", Scopes: []string{"write:statuses"}},
 }

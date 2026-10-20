@@ -1079,8 +1079,8 @@ CREATE TABLE feed_domain_restrictions (
 );
 
 -- ---------------------------------------------------------------------------------------------
--- notification: notifications, their dismissals, read markers, and the exclusions and deleted
--- statuses that hide them (data-model §4.7, FR-205).
+-- notification: notifications, their dismissals, read markers, the exclusions and deleted
+-- statuses that hide them, and the Web Push subscriptions (data-model §4.7, FR-205, FR-206).
 -- Owned by internal/app/notification.
 -- ---------------------------------------------------------------------------------------------
 
@@ -1142,6 +1142,35 @@ CREATE TABLE notification_exclusions (
 -- read time; the erasure job deletes them and the row.
 CREATE TABLE notification_deleted_statuses (
   status_id text COLLATE "C" NOT NULL PRIMARY KEY
+);
+
+-- Current value: where the Web Push notifications of a local account go (FR-206). One per OAuth
+-- grant (the token family that registered it) and per push service endpoint; registering
+-- either again replaces the row. key_p256dh and key_auth are the browser's keys in unpadded
+-- base64url (RFC 8291 §3).
+CREATE TABLE push_subscriptions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  account_id text COLLATE "C" NOT NULL,
+  oauth_token_family_id text COLLATE "C" NOT NULL,
+  endpoint text NOT NULL,
+  key_p256dh text NOT NULL,
+  key_auth text NOT NULL,
+  created_at timestamptz NOT NULL,
+  updated_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX push_subscriptions_endpoint ON push_subscriptions (endpoint);
+CREATE UNIQUE INDEX push_subscriptions_oauth_token_family_id ON push_subscriptions (oauth_token_family_id);
+CREATE INDEX push_subscriptions_account_id ON push_subscriptions (account_id);
+
+-- Current value: the notification types pushed to a subscription.
+CREATE TABLE push_subscription_alerts (
+  subscription_id text COLLATE "C" NOT NULL,
+  notification_type text NOT NULL CHECK (notification_type IN (
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
+    'admin_appeal'
+  )),
+  PRIMARY KEY (subscription_id, notification_type)
 );
 
 -- ---------------------------------------------------------------------------------------------

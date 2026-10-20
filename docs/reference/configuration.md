@@ -76,10 +76,15 @@ An instance setting that has never been set reads as its default, which is defin
 | [`captcha`](#captcha) | `MY_CAPTCHA` | `none` | no | no |
 | [`captcha_site_key`](#captcha_site_key) | `MY_CAPTCHA_SITE_KEY` | none | when `captcha` is not `none` | no |
 | [`captcha_secret_key`](#captcha_secret_key) | `MY_CAPTCHA_SECRET_KEY` | none | when `captcha` is not `none` | yes |
+| [`vapid_private_key`](#vapid_private_key) | `MY_VAPID_PRIVATE_KEY` | none | no | yes |
 | [`profile`](#profile) | `MY_PROFILE` | `production` | no | no |
 | [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
 | [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
 | [`remote_status_max_retention`](#remote_status_max_retention) | `MY_REMOTE_STATUS_MAX_RETENTION` | none | no | no |
+| [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
+| [`metrics_listen`](#metrics_listen) | `MY_METRICS_LISTEN` | `127.0.0.1:9464` | no | no |
+| [`metrics_emf_namespace`](#metrics_emf_namespace) | `MY_METRICS_EMF_NAMESPACE` | `my` | no | no |
+| [`metrics_emf_dimensions`](#metrics_emf_dimensions) | `MY_METRICS_EMF_DIMENSIONS` | none | no | no |
 
 ## Settings
 
@@ -480,6 +485,14 @@ Secret key of the `captcha` service, which the server sends with each token to t
 - Default: none
 - Required: when `captcha` is not `none`
 
+### `vapid_private_key`
+
+VAPID private key of the server's Web Push notifications (FR-206, RFC 8292): a P-256 private key, 32 bytes in base64url. Generate one with `my config vapid-key`. Without it, the server sends no Web Push and clients do not offer it. Changing it ends every subscription, since browsers subscribe with its public key (docs/operations/key-management.md).
+
+- Environment variable: `MY_VAPID_PRIVATE_KEY` or `MY_VAPID_PRIVATE_KEY_FILE`
+- Default: none
+- Required: no
+
 ### `profile`
 
 Whether this is a production instance. Settings that weaken a security default for development, such as `http_allow_private_networks`, are refused in the `production` profile (ADR-0019).
@@ -519,5 +532,44 @@ How long a remote post is kept after its publication when nothing on this instan
 The longest a remote post is kept after its publication, even when this instance refers to it; the hourly purge then deletes it, while local accounts' replies, boosts, favourites, and bookmarks stay and show it as deleted (ADR-0034). A Go duration such as `8760h` (365 days); empty keeps referred posts without limit.
 
 - Environment variable: `MY_REMOTE_STATUS_MAX_RETENTION`
+- Default: none
+- Required: no
+
+### `metrics_exporter`
+
+Where the service metrics go (ADR-0055 §2): the request, federation, delivery, job, and stream metrics, named after the OpenTelemetry semantic conventions or with the prefix `my.`. Labels never carry a remote domain, an account, a URL, or a client IP.
+
+- Environment variable: `MY_METRICS_EXPORTER`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | No metrics; measuring costs next to nothing. On Cloud Run the platform's metrics and log-based metrics stand in for them. |
+| `prometheus` | yes | The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances. |
+| `otlp` | yes | OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds). |
+| `emf` | yes | CloudWatch Embedded Metric Format lines on standard output, one per label set at the end of each request and job, which CloudWatch Logs turns into metrics; for AWS Lambda. Requests in progress and open streams are not written. |
+
+### `metrics_listen`
+
+TCP address, as `host:port`, of the listener that serves `GET /metrics` when `metrics_exporter = prometheus`, apart from `listen`. It has no authentication: keep it on loopback or a private network, or protect it with the network or a proxy.
+
+- Environment variable: `MY_METRICS_LISTEN`
+- Default: `127.0.0.1:9464`
+- Required: no
+
+### `metrics_emf_namespace`
+
+CloudWatch namespace of the metrics of `metrics_exporter = emf`.
+
+- Environment variable: `MY_METRICS_EMF_NAMESPACE`
+- Default: `my`
+- Required: no
+
+### `metrics_emf_dimensions`
+
+Labels that become CloudWatch dimensions with `metrics_exporter = emf`, comma-separated, such as `my.surface, my.role`; the other labels stay fields of the log line. CloudWatch bills every combination of dimension values as a metric, so the deployment template chooses them. Empty makes every metric one series per namespace.
+
+- Environment variable: `MY_METRICS_EMF_DIMENSIONS`
 - Default: none
 - Required: no

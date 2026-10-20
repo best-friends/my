@@ -665,6 +665,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/push/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the Web Push subscription of the grant
+         * @description The subscription that this grant (the access token and the tokens that refreshing it
+         *     issues) registered; a 404 when it has none. A subscription ends when the push service
+         *     reports it expired or the grant ends (sign-out, revocation, expiry).
+         */
+        get: operations["getPushSubscription"];
+        /**
+         * Register the Web Push subscription of the grant
+         * @description Registers the browser's push subscription (`PushSubscription.toJSON()`, subscribed with
+         *     the instance's `push_server_key`) for the user's notifications of the `alerts` types,
+         *     replacing the grant's earlier subscription and any subscription with the same endpoint.
+         *     Sending it again with other `alerts` changes the types. The endpoint must be an
+         *     `https` URL; an invalid endpoint, key, or type is a 422 that names the property. A 404
+         *     means that the instance sends no Web Push (`Instance.push_server_key` is omitted).
+         */
+        put: operations["putPushSubscription"];
+        post?: never;
+        /**
+         * Delete the Web Push subscription of the grant
+         * @description Deleting it when there is none changes nothing.
+         */
+        delete: operations["deletePushSubscription"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookmarks": {
         parameters: {
             query?: never;
@@ -2288,6 +2323,12 @@ export interface components {
              *     the preference `email_moderator_notifications`.
              */
             sends_email: boolean;
+            /**
+             * @description The instance's VAPID public key (RFC 8292), an uncompressed P-256 point in unpadded
+             *     base64url: the `applicationServerKey` that browsers subscribe with before
+             *     `putPushSubscription`. Omitted when the instance sends no Web Push.
+             */
+            push_server_key?: string;
             /** @description The rules in effect, in order, each in the locale of the request. */
             rules: components["schemas"]["InstanceRule"][];
             /**
@@ -2809,6 +2850,37 @@ export interface components {
         /** @description A page of notifications, newest first. */
         NotificationPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["Notification"][];
+        };
+        /** @description The Web Push subscription of a grant. */
+        PushSubscription: {
+            id: components["schemas"]["Id"];
+            /**
+             * Format: uri
+             * @description The push service URL of the browser's subscription.
+             */
+            endpoint: string;
+            /** @description The notification types that are pushed, in a stable order. */
+            alerts: components["schemas"]["NotificationType"][];
+            /**
+             * @description The instance's VAPID public key now. When it differs from the key the browser
+             *     subscribed with, the subscription receives nothing; subscribe again.
+             */
+            server_key: string;
+        };
+        /** @description A browser's push subscription and the notification types to push to it. */
+        PushSubscriptionRequest: {
+            /** @description The push service URL (`PushSubscription.endpoint`), an `https` URL. */
+            endpoint: string;
+            keys: components["schemas"]["PushSubscriptionKeys"];
+            /** @description The notification types to push; empty pushes none. */
+            alerts: components["schemas"]["NotificationType"][];
+        };
+        /** @description The keys of a browser's push subscription (RFC 8291 §3), in base64url. */
+        PushSubscriptionKeys: {
+            /** @description The browser's P-256 public key, an uncompressed point. */
+            p256dh: string;
+            /** @description The 16-byte authentication secret. */
+            auth: string;
         };
         /**
          * @description The kind of a notification. `account` is the account that acted: the follower
@@ -4941,6 +5013,73 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The notification is dismissed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getPushSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    putPushSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionRequest"];
+            };
+        };
+        responses: {
+            /** @description The registered subscription. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushSubscription"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deletePushSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The grant has no subscription. */
             204: {
                 headers: {
                     [name: string]: unknown;

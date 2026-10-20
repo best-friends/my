@@ -18,6 +18,7 @@ import (
 	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
 	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
 	"github.com/best-friends/my/internal/adapter/valkey"
+	"github.com/best-friends/my/internal/adapter/webpush"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -420,6 +421,16 @@ var schema = []field{
 		set:          func(c *Config, v string) { c.CaptchaSecretKey = v },
 	},
 	{
+		key:    "vapid_private_key",
+		doc:    "VAPID private key of the server's Web Push notifications (FR-206, RFC 8292): a P-256 private key, 32 bytes in base64url. Generate one with `my config vapid-key`. Without it, the server sends no Web Push and clients do not offer it. Changing it ends every subscription, since browsers subscribe with its public key (docs/operations/key-management.md).",
+		secret: true,
+		check: func(v string) error {
+			_, err := webpush.ParsePrivateKey(v)
+			return err
+		},
+		set: func(c *Config, v string) { c.VAPIDPrivateKey = v },
+	},
+	{
 		key: "profile",
 		doc: "Whether this is a production instance. Settings that weaken a security default for development, such as `http_allow_private_networks`, are refused in the `production` profile (ADR-0019).",
 		def: "production",
@@ -451,6 +462,42 @@ var schema = []field{
 		doc:   "The longest a remote post is kept after its publication, even when this instance refers to it; the hourly purge then deletes it, while local accounts' replies, boosts, favourites, and bookmarks stay and show it as deleted (ADR-0034). A Go duration such as `8760h` (365 days); empty keeps referred posts without limit.",
 		check: checkPositiveDuration,
 		set:   func(c *Config, v string) { c.RemoteStatusMaxRetention, _ = time.ParseDuration(v) },
+	},
+	{
+		key: "metrics_exporter",
+		doc: "Where the service metrics go (ADR-0055 §2): the request, federation, delivery, job, and stream metrics, named after the OpenTelemetry semantic conventions or with the prefix `my.`. Labels never carry a remote domain, an account, a URL, or a client IP.",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "No metrics; measuring costs next to nothing. On Cloud Run the platform's metrics and log-based metrics stand in for them."},
+			{value: "prometheus", inV0: true, doc: "The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances."},
+			{value: "otlp", inV0: true, doc: "OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds)."},
+			{value: "emf", inV0: true, doc: "CloudWatch Embedded Metric Format lines on standard output, one per label set at the end of each request and job, which CloudWatch Logs turns into metrics; for AWS Lambda. Requests in progress and open streams are not written."},
+		},
+		set: func(c *Config, v string) { c.MetricsExporter = v },
+	},
+	{
+		key:   "metrics_listen",
+		doc:   "TCP address, as `host:port`, of the listener that serves `GET /metrics` when `metrics_exporter = prometheus`, apart from `listen`. It has no authentication: keep it on loopback or a private network, or protect it with the network or a proxy.",
+		def:   "127.0.0.1:9464",
+		check: checkListen,
+		set:   func(c *Config, v string) { c.MetricsListen = v },
+	},
+	{
+		key:   "metrics_emf_namespace",
+		doc:   "CloudWatch namespace of the metrics of `metrics_exporter = emf`.",
+		def:   "my",
+		check: checkNotBlank,
+		set:   func(c *Config, v string) { c.MetricsEMFNamespace = v },
+	},
+	{
+		key:   "metrics_emf_dimensions",
+		doc:   "Labels that become CloudWatch dimensions with `metrics_exporter = emf`, comma-separated, such as `my.surface, my.role`; the other labels stay fields of the log line. CloudWatch bills every combination of dimension values as a metric, so the deployment template chooses them. Empty makes every metric one series per namespace.",
+		check: checkLabelKeys,
+		set: func(c *Config, v string) {
+			for k := range strings.SplitSeq(v, ",") {
+				c.MetricsEMFDimensions = append(c.MetricsEMFDimensions, strings.TrimSpace(k))
+			}
+		},
 	},
 }
 
@@ -518,6 +565,9 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	}
 	if vals["http_allow_private_networks"] == "true" && vals["profile"] != "development" {
 		issues = append(issues, Issue{Key: "http_allow_private_networks", Message: "true is refused in the production profile; set profile = development"})
+	}
+	if vals["metrics_exporter"] == "prometheus" && vals["metrics_listen"] != "" && vals["metrics_listen"] == vals["listen"] {
+		issues = append(issues, Issue{Key: "metrics_listen", Message: "must differ from listen: the metrics are never served on the public listener"})
 	}
 	if vals["queue"] == "inline" && vals["role"] != "" && vals["role"] != string(RoleAll) {
 		issues = append(issues, Issue{Key: "queue", Message: fmt.Sprintf("inline runs jobs in the enqueuing process and requires role = all, not %s", vals["role"])})
@@ -620,6 +670,17 @@ func checkListen(v string) error {
 		return errors.New("must be host:port, for example :8080 or 127.0.0.1:8080")
 	}
 	return checkPort(p)
+}
+
+// checkLabelKeys accepts comma-separated metric label keys such as my.surface.
+func checkLabelKeys(v string) error {
+	for k := range strings.SplitSeq(v, ",") {
+		k = strings.TrimSpace(k)
+		if k == "" || strings.Trim(k, "abcdefghijklmnopqrstuvwxyz0123456789._") != "" {
+			return errors.New("must be comma-separated label keys of lower-case letters, digits, dots, and underscores, such as my.surface")
+		}
+	}
+	return nil
 }
 
 func checkPort(p string) error {

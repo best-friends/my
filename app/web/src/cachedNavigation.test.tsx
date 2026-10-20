@@ -28,6 +28,8 @@ function slowListsServer() {
     resumableSession(),
     streamingServer().handler,
     http.get(`${apiBase}/accounts/:id/statuses`, async ({ request }) => {
+      // No pinned posts: the posts tab lists the post once.
+      if (new URL(request.url).searchParams.get("pinned") === "true") return HttpResponse.json(statusPage([]));
       requests.push(`statuses?${new URL(request.url).searchParams.toString()}`);
       await delay(latency);
       return HttpResponse.json(statusPage([post]));
