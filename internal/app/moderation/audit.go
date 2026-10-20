@@ -34,28 +34,33 @@ type AuditActorKind = moderation.AuditActorKind
 
 // The audited operations and their targets that other modules emit.
 const (
-	AuditRegistrationApproved = moderation.AuditRegistrationApproved
-	AuditRegistrationRejected = moderation.AuditRegistrationRejected
-	AuditSettingChanged       = moderation.AuditSettingChanged
-	AuditTextChanged          = moderation.AuditTextChanged
-	AuditRuleAdded            = moderation.AuditRuleAdded
-	AuditRuleRevised          = moderation.AuditRuleRevised
-	AuditRuleMoved            = moderation.AuditRuleMoved
-	AuditRuleRetired          = moderation.AuditRuleRetired
-	AuditRoleGranted          = moderation.AuditRoleGranted
-	AuditRoleRevoked          = moderation.AuditRoleRevoked
-	AuditWebhookCreated       = moderation.AuditWebhookCreated
-	AuditWebhookUpdated       = moderation.AuditWebhookUpdated
-	AuditWebhookDeleted       = moderation.AuditWebhookDeleted
-	AuditWebhookEnabled       = moderation.AuditWebhookEnabled
-	AuditWebhookDisabled      = moderation.AuditWebhookDisabled
-	AuditWebhookSecretRotated = moderation.AuditWebhookSecretRotated
+	AuditRegistrationApproved  = moderation.AuditRegistrationApproved
+	AuditRegistrationRejected  = moderation.AuditRegistrationRejected
+	AuditSettingChanged        = moderation.AuditSettingChanged
+	AuditTextChanged           = moderation.AuditTextChanged
+	AuditRuleAdded             = moderation.AuditRuleAdded
+	AuditRuleRevised           = moderation.AuditRuleRevised
+	AuditRuleMoved             = moderation.AuditRuleMoved
+	AuditRuleRetired           = moderation.AuditRuleRetired
+	AuditRoleGranted           = moderation.AuditRoleGranted
+	AuditRoleRevoked           = moderation.AuditRoleRevoked
+	AuditWebhookCreated        = moderation.AuditWebhookCreated
+	AuditWebhookUpdated        = moderation.AuditWebhookUpdated
+	AuditWebhookDeleted        = moderation.AuditWebhookDeleted
+	AuditWebhookEnabled        = moderation.AuditWebhookEnabled
+	AuditWebhookDisabled       = moderation.AuditWebhookDisabled
+	AuditWebhookSecretRotated  = moderation.AuditWebhookSecretRotated
+	AuditAnnouncementCreated   = moderation.AuditAnnouncementCreated
+	AuditAnnouncementUpdated   = moderation.AuditAnnouncementUpdated
+	AuditAnnouncementPublished = moderation.AuditAnnouncementPublished
+	AuditAnnouncementWithdrawn = moderation.AuditAnnouncementWithdrawn
 
-	AuditTargetUser    = moderation.AuditTargetUser
-	AuditTargetSetting = moderation.AuditTargetSetting
-	AuditTargetRule    = moderation.AuditTargetRule
-	AuditTargetRole    = moderation.AuditTargetRole
-	AuditTargetWebhook = moderation.AuditTargetWebhook
+	AuditTargetUser         = moderation.AuditTargetUser
+	AuditTargetSetting      = moderation.AuditTargetSetting
+	AuditTargetRule         = moderation.AuditTargetRule
+	AuditTargetRole         = moderation.AuditTargetRole
+	AuditTargetWebhook      = moderation.AuditTargetWebhook
+	AuditTargetAnnouncement = moderation.AuditTargetAnnouncement
 )
 
 // AuditActorSystem is moderation.AuditActorSystem, the server itself.

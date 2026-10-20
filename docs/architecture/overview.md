@@ -55,7 +55,7 @@ Remote servers ──AP──►│                               │
 | `notification` | 通知の生成・取得・Web Push | Notification, PushSubscription |
 | `federation` | AP の受信・配送・Actor/Object 取得、署名、ドメイン状態 | RemoteObjectCache, DeliveryAttempt, InstanceHealth |
 | `moderation` | 通報・ドメインブロック・凍結・監査ログ | Report, DomainBlock, AuditLog |
-| `instance` | インスタンス設定・規約・ルール・NodeInfo | InstanceSettings |
+| `instance` | インスタンス設定・規約・ルール・テーマ・お知らせ・NodeInfo | InstanceSettings |
 | `webhook` | サーバー単位の webhook（宛先・署名・配送と再送、ADR-0060） | WebhookEndpoint, WebhookMessage, WebhookDelivery |
 | `i18n` | ロケール解決・メッセージカタログ・整形 | （横断。`internal/i18n` の 1 パッケージで、`domain` / `app` の層を持たない） |
 
@@ -166,7 +166,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
     web のストリームに届くことを、メモリの `Bus`、`stream = postgres`（PR では pgmem）、`stream = pubsub`（プロセス内の Pub/Sub サーバー pstest）で確かめる
 - プロセスをまたぐ配信は `stream.Relay` が行う。`Relay` は `Publisher` / `Subscriber` を実装し、プロセスの中の振り分け・上限・遅い購読者の切断は自分の `Hub` に任せ、
   プロセスの間はポート `stream.Bus`（すべてのプロセスへ同報し、受け取るだけ）で運ぶ
-  - 知らせは JSON `{"v":1,"o":"<process id>","k":"home_entry","e":"<entry id>"}`（通知は `"k":"notifications","a":"<account id>"`）で、1 KiB を超える符号化は失敗させる。知らない `v` の知らせは捨てる
+  - 知らせは JSON `{"v":1,"o":"<process id>","k":"home_entry","e":"<entry id>"}`（通知は `"k":"notifications","a":"<account id>"`、お知らせは `"k":"announcement","n":"<announcement id>"`）で、1 KiB を超える符号化は失敗させる。知らない `v` の知らせと、知らない種類の知らせは捨てる
   - `Publish` は自分の `Hub` にすぐ配り、有限の送信バッファ（1,024 件）に積む。送信の goroutine が `Bus.Send` を呼ぶ。あふれたときと送れなかったときは捨て、件数を `Relay.Stats` とログに出す。
     受けた知らせのうち、自分のプロセス ID のもの（発行時に配り済み）は捨てる
   - listen は遅延させる。ローカルの購読が 0 から 1 になったら `Bus.Listen` し、0 に戻って 60 秒たったら `Listener.Close` する。`Subscribe(ctx, accountID)` は listener の準備を最大 10 秒待ち、

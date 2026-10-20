@@ -87,6 +87,21 @@ type AccountRestriction struct {
 	EffectiveUntil sql.NullInt64
 }
 
+type AnnouncementHead struct {
+	AnnouncementID string
+	RevisionID     string
+	State          string
+	PublishedAt    sql.NullInt64
+}
+
+type AnnouncementStateChange struct {
+	ID              string
+	AnnouncementID  string
+	State           string
+	ChangedByUserID sql.NullString
+	ChangedAt       int64
+}
+
 type AuditLogEntry struct {
 	ID            string
 	ActorKind     string

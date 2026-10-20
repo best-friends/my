@@ -61,12 +61,15 @@ const (
 	// AuditTargetWebhook is a webhook endpoint (ADR-0060); its label is its description and the
 	// host name of its URL, never the URL, which may hold a secret.
 	AuditTargetWebhook AuditTargetKind = "webhook"
+	// AuditTargetAnnouncement is a server-wide announcement (FR-726); its label is the first
+	// line of its body.
+	AuditTargetAnnouncement AuditTargetKind = "announcement"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
-	AuditTargetCustomEmoji, AuditTargetWebhook,
+	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -165,6 +168,16 @@ const (
 	AuditWebhookDisabled AuditAction = "webhook_disabled"
 	// AuditWebhookSecretRotated: a webhook endpoint got a new secret (webhook_secrets).
 	AuditWebhookSecretRotated AuditAction = "webhook_secret_rotated"
+	// AuditAnnouncementCreated: a new announcement, as a draft or published at once
+	// (announcements).
+	AuditAnnouncementCreated AuditAction = "announcement_created"
+	// AuditAnnouncementUpdated: the body or the window of an announcement changed
+	// (announcement_revisions).
+	AuditAnnouncementUpdated AuditAction = "announcement_updated"
+	// AuditAnnouncementPublished and AuditAnnouncementWithdrawn: an announcement was published or
+	// withdrawn (announcement_state_changes).
+	AuditAnnouncementPublished AuditAction = "announcement_published"
+	AuditAnnouncementWithdrawn AuditAction = "announcement_withdrawn"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -210,6 +223,10 @@ var auditActions = []struct {
 	{AuditWebhookEnabled, AuditTargetWebhook},
 	{AuditWebhookDisabled, AuditTargetWebhook},
 	{AuditWebhookSecretRotated, AuditTargetWebhook},
+	{AuditAnnouncementCreated, AuditTargetAnnouncement},
+	{AuditAnnouncementUpdated, AuditTargetAnnouncement},
+	{AuditAnnouncementPublished, AuditTargetAnnouncement},
+	{AuditAnnouncementWithdrawn, AuditTargetAnnouncement},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

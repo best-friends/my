@@ -57,7 +57,9 @@ tags:
   - name: reports
     description: Reports of accounts and posts to the moderators.
   - name: streaming
-    description: Real-time updates of the home timeline and the notifications.
+    description: Real-time updates of the home timeline, the notifications, and the announcements.
+  - name: announcements
+    description: The server's announcements to every local user and which of them the user has read.
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
@@ -68,8 +70,8 @@ tags:
   - name: admin-server
     description: |
       The administration of the server itself: its settings and texts, its rules, the roles and
-      granting them, the custom emoji, the webhooks, and the dead jobs of the job queue
-      (ADR-0058). The
+      granting them, the custom emoji, the webhooks, the announcements, and the dead jobs of the
+      job queue (ADR-0058). The
       operations need an `admin` scope and a permission of the user's roles in the server
       category; a user without it gets a 403 `/api/v1/problems/missing-permission`.
 paths:
@@ -1799,6 +1801,56 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of reports (#332) ---
+  # --- announcements (#665) ---
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      summary: List the announcements
+      description: |
+        The server's announcements that every local user sees now (FR-726): published, and
+        within their window. The ones whose `published_at` is the latest come first, each with
+        whether the user has read it. The list is not paginated.
+      tags: [announcements]
+      security:
+        - oauth2: ["read:notifications"]
+      responses:
+        "200":
+          description: The announcements.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnnouncementList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /announcements/{id}/read:
+    post:
+      operationId: markAnnouncementRead
+      summary: Mark an announcement read
+      description: |
+        Records that the user read the announcement; marking it again changes nothing. An
+        announcement that the users do not see now (a draft, a withdrawn one, one outside its
+        window, an unknown ID) is a 404.
+      tags: [announcements]
+      security:
+        - oauth2: ["write:notifications"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          description: The announcement, read.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of announcements (#665) ---
   # --- streaming (#116) ---
   /streaming:
     get:
@@ -1806,7 +1858,7 @@ paths:
       summary: Stream real-time updates
       description: |
         A Server-Sent Events stream (`text/event-stream`) of the authenticated user's new home
-        timeline entries and notifications, from the moment it opens. Read it with `fetch` and
+        timeline entries, notifications, and announcements, from the moment it opens. Read it with `fetch` and
         send the access token in `Authorization`, like every other operation (`EventSource`
         cannot send it).
 
@@ -1815,11 +1867,16 @@ paths:
         - `update`: a new post or boost in the home timeline, as it would appear there (the
           viewer's follows, timeline languages, blocks, and mutes apply). `data` is a `Status`.
         - `notification`: a new notification. `data` is a `Notification`.
+        - `announcement`: an announcement that the users see was published or changed. `data`
+          is an `Announcement`.
+        - `announcement_removed`: an announcement no longer shows (it was withdrawn, or its
+          window changed). `data` is `{"id": "<announcement id>"}`.
 
         A comment line (`: heartbeat`) arrives every 30 seconds. The server ends the stream when
         the access token stops being valid, when the client does not keep up, and when it shuts
         down; nothing is replayed, so after reconnecting read the home timeline and the
-        notifications again for what was missed. A user may hold a limited number of streams
+        notifications again for what was missed. Announcements whose window starts later
+        arrive with no event: list the announcements again from time to time. A user may hold a limited number of streams
         open at once; past it the answer is 429 with type
         `/api/v1/problems/too-many-streams`. While the server cannot receive updates (its
         broker is not ready, or it is shutting down) the answer is 503 with `Retry-After`; try
@@ -2560,6 +2617,129 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: instance rules (#331) ---
+  # --- admin: announcements (#665) ---
+  /admin/announcements:
+    get:
+      operationId: listAdminAnnouncements
+      summary: List the announcements
+      description: |
+        Every announcement, drafts and withdrawn ones included, newest first (FR-726). The
+        list is not paginated. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The announcements.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnnouncementList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createAdminAnnouncement
+      summary: Write an announcement
+      description: |
+        Writes an announcement to every local user, a draft unless `publish` is set. The text
+        is Markdown; the users get it as sanitized HTML. A blank text or one longer than 5,000
+        characters is a 422 naming `text`, and a window that ends when or before it starts a
+        422 naming `ends_at`. Recorded in the audit log. Needs the `manage_announcements`
+        permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAnnouncementCreateRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/announcements/{id}:
+    get:
+      operationId: getAdminAnnouncement
+      summary: Get an announcement
+      description: An unknown ID is a 404. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateAdminAnnouncement
+      summary: Revise an announcement
+      description: |
+        Replaces the text and the window of a draft or a published announcement, which keeps
+        its state; an omitted `starts_at` or `ends_at` leaves that side of the window open. The
+        input is checked as for a new announcement (422). A withdrawn announcement is a 409 and
+        an unknown ID a 404. Recorded in the audit log. Needs the `manage_announcements`
+        permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAnnouncementInput"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/announcements/{id}/publish:
+    post:
+      operationId: publishAdminAnnouncement
+      summary: Publish an announcement
+      description: |
+        Publishes a draft to every local user, within its window. Publishing a published
+        announcement changes nothing. A withdrawn announcement is a 409 and an unknown ID a 404.
+        Recorded in the audit log. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/announcements/{id}/withdraw:
+    post:
+      operationId: withdrawAdminAnnouncement
+      summary: Withdraw an announcement
+      description: |
+        Withdraws an announcement for good: no user sees it again, and it can no longer change
+        or be published. Withdrawing a withdrawn announcement changes nothing. An unknown ID is
+        a 404. Recorded in the audit log. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: announcements (#665) ---
   # --- admin: instance theme (#664) ---
   /admin/theme:
     get:
@@ -3976,6 +4156,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: instance rules (#331) ---
+    # --- announcements (#665) ---
+    AnnouncementId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the announcement.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of announcements (#665) ---
     # --- admin: custom emoji (#621) ---
     CustomEmojiId:
       name: id
@@ -4209,6 +4398,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminRule"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: announcements (#665) ---
+    AdminAnnouncement:
+      description: The announcement.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminAnnouncement"
+    # --- end of admin: announcements (#665) ---
     # --- admin: custom emoji (#621) ---
     AdminCustomEmoji:
       description: The custom emoji.
@@ -6180,7 +6380,10 @@ components:
         `webhook_created`, `webhook_updated` (its URL, description, or events),
         `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
         endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-        description and the host name of its URL, never the URL.
+        description and the host name of its URL, never the URL. On an `announcement`:
+        `announcement_created`, `announcement_updated` (its text or window),
+        `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+        text.
       type: string
       enum:
         - account_action_issued
@@ -6221,6 +6424,10 @@ components:
         - webhook_enabled
         - webhook_disabled
         - webhook_secret_rotated
+        - announcement_created
+        - announcement_updated
+        - announcement_published
+        - announcement_withdrawn
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -6292,7 +6499,7 @@ components:
     AdminAuditTargetKind:
       description: The kind of what an audited operation acted on.
       type: string
-      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook]
+      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement]
     # --- end of admin: audit log (#330) ---
     # --- admin: domain actions and reports (#296) ---
     AdminDomainAction:
@@ -6730,8 +6937,9 @@ components:
         roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
         log. `manage_two_factor`: removing the two-factor authentication of a local user (only
         the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-        remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
-        operation yet.
+        remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
+        server's announcements to every local user. The others guard no client API operation
+        yet.
       type: string
       enum:
         - manage_reports
@@ -6746,6 +6954,7 @@ components:
         - manage_two_factor
         - manage_custom_emojis
         - manage_webhooks
+        - manage_announcements
     # --- end of the viewer's permissions (#267) ---
     # --- admin: instance rules (#331) ---
     AdminRule:
@@ -6843,6 +7052,135 @@ components:
           type: integer
           minimum: 1
     # --- end of admin: instance rules (#331) ---
+    # --- announcements (#665) ---
+    Announcement:
+      description: An announcement of the server to every local user (FR-726), as the user sees it.
+      type: object
+      required: [id, content, published_at, updated_at, read]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        content:
+          description: |
+            The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
+            headings from `h2`, and `http`, `https`, and `mailto` links).
+          type: string
+        published_at:
+          description: When it started to show to the users, its publication or the start of its window.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing; omitted when it shows until it is withdrawn.
+          type: string
+          format: date-time
+        updated_at:
+          description: When its text or window last changed.
+          type: string
+          format: date-time
+        read:
+          description: Whether the user has marked it read.
+          type: boolean
+    AnnouncementList:
+      description: The announcements.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+    # --- end of announcements (#665) ---
+    # --- admin: announcements (#665) ---
+    AdminAnnouncementState:
+      description: |
+        `draft`: no user sees it. `published`: every local user sees it within its window.
+        `withdrawn`: taken down for good.
+      type: string
+      enum: [draft, published, withdrawn]
+    AdminAnnouncement:
+      description: An announcement with its Markdown text and its state.
+      type: object
+      required: [id, text, content, state, created_at, updated_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        text:
+          description: The text, in Markdown.
+          type: string
+        content:
+          description: The text as the users get it, an HTML fragment (`Announcement.content`).
+          type: string
+        state:
+          $ref: "#/components/schemas/AdminAnnouncementState"
+        starts_at:
+          description: When it starts to show once published; omitted to show it from its publication.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing; omitted to show it until it is withdrawn.
+          type: string
+          format: date-time
+        published_at:
+          description: When it was last published; omitted for a draft.
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          description: When its text or window last changed.
+          type: string
+          format: date-time
+    AdminAnnouncementList:
+      description: The announcements, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAnnouncement"
+    AdminAnnouncementInput:
+      description: The text and the window of an announcement.
+      type: object
+      required: [text]
+      properties:
+        text:
+          description: The text, in Markdown.
+          type: string
+          minLength: 1
+          maxLength: 5000
+        starts_at:
+          description: When it starts to show once published; omitted to show it from its publication.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+          type: string
+          format: date-time
+    AdminAnnouncementCreateRequest:
+      description: A new announcement, with its text and its window.
+      type: object
+      required: [text]
+      properties:
+        text:
+          description: The text, in Markdown.
+          type: string
+          minLength: 1
+          maxLength: 5000
+        starts_at:
+          description: When it starts to show once published; omitted to show it from its publication.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+          type: string
+          format: date-time
+        publish:
+          description: Publish it at once instead of keeping it a draft.
+          type: boolean
+          default: false
+    # --- end of admin: announcements (#665) ---
     # --- custom emoji (#621) ---
     PickerCustomEmoji:
       description: |

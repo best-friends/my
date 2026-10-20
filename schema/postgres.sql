@@ -94,7 +94,7 @@ CREATE TABLE role_permissions (
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
-    'manage_two_factor', 'manage_custom_emojis', 'manage_webhooks'
+    'manage_two_factor', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -725,6 +725,61 @@ CREATE TABLE instance_rule_heads (
   position integer NOT NULL
 );
 CREATE INDEX instance_rule_heads_position ON instance_rule_heads (position);
+
+-- ---------------------------------------------------------------------------------------------
+-- instance: server-wide announcements (data-model §4.9, FR-726). Owned by internal/app/instance.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: an announcement to every local user.
+CREATE TABLE announcements (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  created_at timestamptz NOT NULL
+);
+
+-- Event (revision): one version of an announcement: its body in Markdown and the window in which
+-- it shows once published. A NULL starts_at shows it from its publication, a NULL ends_at until
+-- it is withdrawn. revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE announcement_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  announcement_id text COLLATE "C" NOT NULL,
+  body text NOT NULL,
+  starts_at timestamptz,
+  ends_at timestamptz,
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL,
+  CHECK (starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at)
+);
+CREATE INDEX announcement_revisions_announcement_id_id ON announcement_revisions (announcement_id, id DESC);
+
+-- Event: an announcement was published or withdrawn; a withdrawal is for good.
+-- changed_by_user_id is NULL for the CLI.
+CREATE TABLE announcement_state_changes (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  announcement_id text COLLATE "C" NOT NULL,
+  state text NOT NULL CHECK (state IN ('published', 'withdrawn')),
+  changed_by_user_id text COLLATE "C",
+  changed_at timestamptz NOT NULL
+);
+CREATE INDEX announcement_state_changes_announcement_id_id ON announcement_state_changes (announcement_id, id DESC);
+
+-- Projection: the current revision and state of each announcement. published_at is the time of
+-- its latest publication, set exactly when it has been published.
+CREATE TABLE announcement_heads (
+  announcement_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revision_id text COLLATE "C" NOT NULL,
+  state text NOT NULL CHECK (state IN ('draft', 'published', 'withdrawn')),
+  published_at timestamptz,
+  CHECK ((state = 'draft') = (published_at IS NULL))
+);
+CREATE INDEX announcement_heads_state ON announcement_heads (state);
+
+-- Current value: the announcements a user has read (ADR-0020 rule 5: the history means nothing).
+CREATE TABLE announcement_reads (
+  user_id text COLLATE "C" NOT NULL,
+  announcement_id text COLLATE "C" NOT NULL,
+  read_at timestamptz NOT NULL,
+  PRIMARY KEY (user_id, announcement_id)
+);
 
 -- ---------------------------------------------------------------------------------------------
 -- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
@@ -1943,11 +1998,12 @@ CREATE TABLE audit_log_entries (
     'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_updated',
     'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted',
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
-    'webhook_secret_rotated'
+    'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
+    'announcement_published', 'announcement_withdrawn'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook'
+    'signup_block', 'custom_emoji', 'webhook', 'announcement'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,
