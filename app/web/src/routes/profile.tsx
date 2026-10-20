@@ -10,7 +10,7 @@ import { PageHeading } from "./-layout/PageHeading";
  * redirects; without a session it offers to sign in.
  */
 export const Route = createFileRoute("/profile")({
-  staticData: { title: "client:profile.title" },
+  staticData: { title: "client:profile.title", hideHeading: true },
   loader: async ({ context: { queryClient, api, session } }) => {
     await session.restore();
     if (session.status !== "signed-in") return;

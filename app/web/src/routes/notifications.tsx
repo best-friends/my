@@ -13,7 +13,7 @@ const searchSchema = z.object({
 
 /** The signed-in user's notifications (FR-205). */
 export const Route = createFileRoute("/notifications")({
-  staticData: { title: "client:notifications.title" },
+  staticData: { title: "client:notifications.title", hideHeading: true },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { filter } }): { filter: NotificationFilter } => ({ filter: filter ?? "all" }),
   // The first page and the read marker load with the page; without a session there is nothing to load,

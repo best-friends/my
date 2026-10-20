@@ -44,6 +44,17 @@ for (const path of pages) {
       await expectNoHorizontalScroll(page);
     });
 
+    test("hides its heading from view and keeps it in the accessibility tree", async ({ page }) => {
+      // The navigation already says where the user is: the h1 is visually hidden (sr-only, a 1 px clipped box)
+      // and is still the page's named level-one heading.
+      const heading = page.getByRole("main").getByRole("heading", { level: 1 });
+      await expect(heading).toHaveClass(/\bsr-only\b/);
+      const box = await heading.boundingBox();
+      expect(box?.width).toBeLessThanOrEqual(1);
+      expect(box?.height).toBeLessThanOrEqual(1);
+      expect(((await heading.textContent()) ?? "").trim()).not.toBe("");
+    });
+
     test("is titled after its heading and marks its navigation item as current", async ({ page }) => {
       const heading = await page.getByRole("heading", { level: 1 }).textContent();
       expect(heading).toBeTruthy();
