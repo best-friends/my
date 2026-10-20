@@ -23,8 +23,8 @@ func TestAdminRoleCommands(t *testing.T) {
 		}
 	}
 	code, stdout, stderr := runCmd(t, adminRole, "list")
-	if code != 0 || !regexp.MustCompile(`admin +1000 +manage_reports,\S+ +@root,@bob|admin +1000 +manage_reports,\S+ +@bob,@root`).MatchString(stdout) ||
-		!regexp.MustCompile(`moderator +100 +manage_reports,manage_accounts,view_audit +-`).MatchString(stdout) {
+	if code != 0 || !regexp.MustCompile(`admin +1000 +manage_reports,\S+ +manage_rules,\S+ +(@root,@bob|@bob,@root)`).MatchString(stdout) ||
+		!regexp.MustCompile(`moderator +100 +manage_reports,manage_accounts,view_audit +- +-`).MatchString(stdout) {
 		t.Errorf("role list = %d %q\n%s", code, stderr, stdout)
 	}
 	if code, stdout, stderr = runCmd(t, adminRole, "grant", "@bob", "moderator"); code != 0 || !regexp.MustCompile(`^granted the role moderator to @bob \(user \S+\)\n$`).MatchString(stdout) {

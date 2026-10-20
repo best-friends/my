@@ -265,6 +265,9 @@ flowchart LR
 
 固定の `role` enum ではなく、ロールと権限を分けます。組み込みロールは起動時に冪等に作ります（`roles (key)` の一意制約で重複しない）。
 `admin`（`position` 1000）はすべての権限、`moderator`（`position` 100）は `manage_reports`・`manage_accounts`・`view_audit` を持ちます。
+権限は区分（[ADR-0058](../adr/0058-moderation-admin-separation.md)）を持ちます。モデレーションは `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`、
+サーバー管理は `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs` です。区分は列に持たず、`internal/domain/identity` の `Permission.Category` が返します
+（Web クライアントのナビゲーションの出し分けと `my admin role list` の表示が使う）。
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |

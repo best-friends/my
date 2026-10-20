@@ -91,10 +91,10 @@ async function operatorServer(page: Page) {
   return requests;
 }
 
-test.describe("page /admin/domain-actions", () => {
+test.describe("page /moderation/domain-actions", () => {
   test.beforeEach(async ({ page }) => {
     await operatorServer(page);
-    await page.goto("/admin/domain-actions");
+    await page.goto("/moderation/domain-actions");
     await expect(page.getByRole("main").getByRole("heading", { level: 3 }).first()).toBeVisible();
   });
 
@@ -110,7 +110,7 @@ test.describe("page /admin/domain-actions", () => {
 test.describe("domain actions", () => {
   test("lists an action in both forms of its domain, suspends a domain after confirming, and lifts an action", async ({ page, makeAxeBuilder }) => {
     const requests = await operatorServer(page);
-    await page.goto("/admin/domain-actions");
+    await page.goto("/moderation/domain-actions");
     const main = page.getByRole("main");
     const list = main.getByRole("tabpanel");
     await expect(list.getByRole("heading", { level: 3 })).toHaveCount(1);
