@@ -276,8 +276,9 @@ export const composeKey = declareKeyFamily<StoredCompose | null>("my:user:compos
 });
 
 /**
- * The newest posts of the home timeline as last loaded (features/timeline): when they were loaded, in epoch
- * milliseconds, the posts (the client API's Status, checked further by the feature) and the cursor after them.
+ * The newest posts of the home timeline as last loaded (features/timeline), without the followers-only and direct
+ * ones: when they were loaded, in epoch milliseconds, the posts (the client API's Status, checked further by the
+ * feature) and the cursor after them.
  */
 export type StoredHomeTimeline = { loadedAt: number; items: Record<string, unknown>[]; nextCursor: string | null };
 

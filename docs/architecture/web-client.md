@@ -65,7 +65,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | `my:instance:timelines` | localStorage | インスタンスが提供する公開タイムライン（§9） | いいえ |
 | `my:emoji:recent` | localStorage | 最近選んだカスタム絵文字の shortcode（§12、ADR-0051 §4） | いいえ |
 | `my:user:compose:<アカウント ID>` | sessionStorage | 投稿の下書きと送信中の投稿（§12） | はい |
-| `my:user:home-timeline` | localStorage | オフラインで読むホームのタイムラインの新しい投稿と、それを読み込んだ時刻（§11）。利用者が変わったときも消す | はい |
+| `my:user:home-timeline` | localStorage | オフラインで読むホームのタイムラインの新しい投稿（フォロワー限定・ダイレクトを除く）と、それを読み込んだ時刻（§11）。利用者が変わったときも消す | はい |
 | `my:oauth-pending` | sessionStorage | 進行中のサインインの verifier・`state`・戻り先（§10） | いいえ |
 | `my:preload-error-reloaded-at` | sessionStorage | チャンクの読み込みに失敗して再読み込みした時刻（§11） | いいえ |
 
@@ -447,6 +447,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   消したあともオンラインでは同じように動き、新しい版の Service Worker が事前にキャッシュし直すまでオフラインの外枠は使えない。
 - **オフラインで読むホームのタイムライン**（FR-604、`features/timeline` の `api/savedHome.ts`）: Service Worker は API に答えないので（ADR-0045）、API の応答はアプリが残す。
   サインイン中にホームを表示している間、Query のキャッシュのホームのタイムラインが読み込みか書き込みに成功するたびに、新しい投稿（40 件まで）と読み込んだ時刻を localStorage の `my:user:home-timeline`（利用者のデータ、§2）に書く。
+  フォロワー限定（`private`）とダイレクト（`direct`）の投稿と、それをブーストしたものは端末に残さない（#640 の決定）。編集で公開範囲が狭まった投稿は、キャッシュの書き換えで書き直すときに除かれる。
   - ホームの loader は、タイムラインが `NetworkError` で読めないとき、Query のキャッシュにあればそれを、なければ残した投稿を読み込んだ時刻のままキャッシュに入れて表示する。
     オフラインで開いてセッションを再開できない（`unreachable`、§10）ときも、残した投稿があれば「サインイン」の代わりにそれを表示し、オンラインに戻るとルートを読み直してセッションを再開する。
     サーバーがセッションはないと答えたら、残した投稿を消して「サインイン」を出す。

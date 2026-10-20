@@ -6,6 +6,7 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { timelineQueryOptions } from "./features/timeline";
 import { homeTimelineKey } from "./lib/storage";
 import { instanceFixture, statusPage, timelineStatusFixture } from "./test/fixtures";
 import { apiBase, resumableSession, withViewer } from "./test/msw/http";
@@ -215,6 +216,39 @@ describe("the home timeline offline (FR-604)", () => {
     await waitFor(async () => {
       await expectHomePosts("A newer post", "Hello from the local timeline!");
     });
+  });
+
+  test("never keeps followers-only or direct posts, nor boosts of them, nor a post edited into one", async () => {
+    const followers = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b2", content: "<p>For followers</p>", visibility: "private" as const };
+    const direct = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b3", content: "<p>Direct</p>", visibility: "direct" as const };
+    const boostOfFollowers = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b4", content: "", boost: followers };
+    server.use(
+      resumableSession(),
+      http.get(`${apiBase}/timelines/home`, ({ request }) =>
+        withViewer(request, () => HttpResponse.json(statusPage([newer, followers, direct, boostOfFollowers, timelineStatusFixture]))),
+      ),
+    );
+    const view = await renderApp({ path: "/home" });
+    const feed = await screen.findByRole("feed", { name: "Home" });
+    expect(within(feed).getAllByRole("article")).toHaveLength(5);
+    expect(homeTimelineKey.read()?.items.map((item) => item["id"])).toEqual([newer.id, timelineStatusFixture.id]);
+
+    // An edit narrows a post's audience: the cached post is rewritten, and the kept timeline loses it.
+    act(() => {
+      view.queryClient.setQueryData(timelineQueryOptions(view.api, { kind: "home" }).queryKey, (data) =>
+        data === undefined
+          ? data
+          : { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === newer.id ? { ...item, visibility: "private" as const } : item)) })) },
+      );
+    });
+    expect(homeTimelineKey.read()?.items.map((item) => item["id"])).toEqual([timelineStatusFixture.id]);
+    view.unmount();
+
+    // A reload offline shows what was kept.
+    offline = true;
+    server.use(noResponseOffline);
+    await renderApp({ path: "/home" });
+    await expectHomePosts("Hello from the local timeline!");
   });
 
   test("the signed-in timeline says that it shows the posts loaded last while offline", async () => {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The home timeline kept on this browser for reading offline (FR-604, web-client.md §11). The Service Worker never
 // answers the client API (ADR-0028, ADR-0045), so the app keeps the posts itself: the newest posts of the home
-// timeline, each time its query loads or changes them while a page shows it, in lib/storage's homeTimelineKey (the
+// timeline, without the followers-only and direct ones (nor boosts of them), each time its query loads or changes them while a page shows it, in lib/storage's homeTimelineKey (the
 // user's data, removed when the session ends and when another user signs in). When the home timeline cannot be
 // fetched for the network and the query cache does not hold it (the page was opened or reloaded offline), the route
 // loader puts the kept posts into the cache, dated when they were loaded, and the page says that it is offline.
@@ -23,13 +23,25 @@ function looksLikeStatus(item: Record<string, unknown>): boolean {
   return typeof item["id"] === "string" && typeof item["created_at"] === "string" && typeof account === "object" && account !== null;
 }
 
-/** Keeps the newest posts of the cached home timeline, unless it holds none. */
+/** The visibilities whose posts are never kept on the browser: only their audience may read them. */
+const unsavedVisibilities: ReadonlySet<string> = new Set(["private", "direct"]);
+
+/**
+ * Whether a post may be kept on the browser: neither it nor the post it boosts is followers-only or direct
+ * (decided on #640). A boost carries the boosted post's visibility, and an edit that narrows the visibility
+ * rewrites the cached post, which saves the timeline again without it.
+ */
+function savable(status: Status): boolean {
+  return !unsavedVisibilities.has(status.visibility) && (status.boost === undefined || !unsavedVisibilities.has(status.boost.visibility));
+}
+
+/** Keeps the newest posts of the cached home timeline that may be kept, unless it holds none. */
 function saveHomeTimeline(queryClient: QueryClient, api: Api): void {
   const state = queryClient.getQueryState<InfiniteData<TimelinePage>>(homeQueryKey(api));
   if (state?.data === undefined) return;
-  const statuses = state.data.pages.flatMap((page) => page.items);
+  const statuses = state.data.pages.flatMap((page) => page.items).filter(savable);
   const items = statuses.slice(0, maxSavedStatuses);
-  // The cursor after the kept posts: the last loaded page's, when every loaded post is kept.
+  // The cursor after the kept posts: the last loaded page's, when every loaded post that may be kept is kept.
   const lastPage = state.data.pages.at(-1);
   const nextCursor = items.length === statuses.length ? (lastPage?.next_cursor ?? null) : null;
   homeTimelineKey.write({ loadedAt: state.dataUpdatedAt, items, nextCursor });
@@ -45,7 +57,7 @@ export function restoreSavedHomeTimeline(queryClient: QueryClient, api: Api): bo
   const saved = homeTimelineKey.read();
   if (saved === null || !saved.items.every(looksLikeStatus)) return false;
   // The items are the Status objects that saveHomeTimeline wrote, of the same stored version.
-  const page: TimelinePage = { items: saved.items as Status[], ...(saved.nextCursor !== null && { next_cursor: saved.nextCursor }) };
+  const page: TimelinePage = { items: (saved.items as Status[]).filter(savable),...(saved.nextCursor !== null && { next_cursor: saved.nextCursor }) };
   queryClient.setQueryData(key, { pages: [page], pageParams: [undefined] }, { updatedAt: saved.loadedAt });
   return true;
 }
