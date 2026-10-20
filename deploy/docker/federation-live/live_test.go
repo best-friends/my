@@ -368,8 +368,13 @@ type localClient struct {
 var csrfToken = regexp.MustCompile(`name="csrf_token" value="([^"]+)"`)
 
 // signInLocal runs the web client's authorization code flow with PKCE (oauth_test.go in
-// internal/platform does the same) and returns a client with its access token.
+// internal/platform does the same) as alice and returns a client with her access token.
 func signInLocal(ctx context.Context, transport http.RoundTripper, password string) (*localClient, error) {
+	return signInLocalAs(ctx, transport, localUser, password)
+}
+
+// signInLocalAs is signInLocal as user.
+func signInLocalAs(ctx context.Context, transport http.RoundTripper, user, password string) (*localClient, error) {
 	b, err := newBrowser(transport)
 	if err != nil {
 		return nil, err
@@ -402,7 +407,7 @@ func signInLocal(ctx context.Context, transport http.RoundTripper, password stri
 		return nil, err
 	}
 	status, _, page, err = b.do(ctx, http.MethodPost, base+"/auth/sign_in", url.Values{
-		"csrf_token": {m[1]}, "email": {localUser + "@" + localHost}, "password": {password},
+		"csrf_token": {m[1]}, "email": {user + "@" + localHost}, "password": {password},
 		"return_to": {returnTo.Query().Get("return_to")},
 	})
 	if err != nil {
