@@ -64,7 +64,7 @@
 | [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Accepted |
 | [0054](0054-media-variants-video-audio.md) | メディアの派生と動画・音声の扱い | Accepted |
 | [0056](0056-system-observability.md) | システムメトリクスの可観測性 | Accepted |
-| [0057](0057-crawler-opt-out.md) | 検索エンジンと AI クローラーの拒否の表明 | Proposed |
+| [0057](0057-crawler-opt-out.md) | 検索エンジンと AI クローラーの拒否の表明 | Accepted |
 | [0060](0060-instance-webhooks.md) | サーバー単位の webhook | Accepted |
 | [0062](0062-link-preview-cards.md) | 投稿中のリンクのカード | Accepted |
 <!-- adr-index:end -->

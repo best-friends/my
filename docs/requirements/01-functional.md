@@ -74,7 +74,7 @@
 | FR-408 | Authorized Fetch（secure mode）を設定で有効化できる | S |
 | FR-409 | リモートメディアのキャッシュ方針を選べる（キャッシュしない / TTL 付きでキャッシュ） | M |
 | FR-410 | Object Integrity Proofs（FEP-8b32） | C |
-| FR-412 | 検索と AI の拒否の表明（個人）: 公開投稿とプロフィールを検索に載せるか（`indexable`、既定は載せない）と、AI の学習と利用を拒否するかを選べる。サーバーの設定より広くは許可できない（Proposed の ADR-0057、#647） | S |
+| FR-412 | 検索と AI の拒否の表明（個人）: 公開投稿とプロフィールを検索に載せるか（`indexable`。既定はサーバーの設定で決まり、未設定なら載せない）と、AI の学習と利用を拒否するかを選べる。サーバーの設定より広くは許可できない（[ADR-0057](../adr/0057-crawler-opt-out.md)） | S |
 
 ## クライアント API
 
@@ -119,7 +119,7 @@
 | FR-720 | ロールの付与と剥奪を管理 API・CLI・管理画面から行う（`manage_roles`）。自分より `position` の高いロールは付与・剥奪できない | S |
 | FR-721 | 登録の審査（承認制の承認・却下）を管理画面から行う | M |
 | FR-722 | サーバー単位の webhook: `manage_webhooks` を持つ人が、通報・登録の申請・アカウントの作成とプロフィールの変更・処分・異議・ドメインの処分・ローカルの公開投稿・カスタム絵文字の管理操作のイベントを、署名付き（Standard Webhooks）で外部の URL へ送る宛先を管理 API と管理画面から設定できる。失敗は再送し、配送の履歴を見られ、失敗が続く宛先は自動で無効になる（[ADR-0060](../adr/0060-instance-webhooks.md)） | S |
-| FR-725 | 検索と AI の拒否の表明（サーバー）: 検索エンジンの索引と AI の学習・利用の許否をインスタンス設定で選び、`/robots.txt`・ページの meta と `X-Robots-Tag`・`/.well-known/tdmrep.json` で表明する。脆弱性の連絡先を設定すると `/.well-known/security.txt` を返す（Proposed の ADR-0057、#647） | S |
+| FR-725 | 検索と AI の拒否の表明（サーバー）: 検索エンジンの索引と AI の学習・利用の許否と、新規アカウントの `indexable` の既定をインスタンス設定で選び（未設定なら拒否の側）、`/robots.txt`・ページの meta と `X-Robots-Tag`・`/.well-known/tdmrep.json` で表明する。許否とその法的な位置づけ（著作権法 30 条の 4、EU DSM 指令 4 条）をサーバーの情報ページに出す。脆弱性の連絡先を設定すると `/.well-known/security.txt` を返す（[ADR-0057](../adr/0057-crawler-opt-out.md)） | S |
 
 ## 運用
 

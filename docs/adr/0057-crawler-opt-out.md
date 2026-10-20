@@ -1,6 +1,6 @@
 # ADR-0057: 検索エンジンと AI クローラーの拒否の表明
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #647
@@ -87,26 +87,32 @@ main の現状:
 1. **D1: このサーバーが返すページとヘッダーで表明する。AP の独自の拡張は作らない**
 2. D2: Actor に独自の拡張（例: `noai`）を足して連合先にも伝える
 
+### E. 既定値の決め方
+
+1. **E1: サーバーの設定で既定を選び、設定が無いときは拒否の側にする**
+2. E2: 既定をコードで固定する（`ai_usage = deny`、`indexable = false`）
+
 ## Decision（決定）
 
-> 推奨案（Proposed）。Accepted にするのは人間の Decider のみ。
-
-**A1・B1・C1・D1 を推奨する。**
+**A1・B1・C1・D1・E1 を採用する。**
 
 ### 設定
 
 | 単位 | 設定 | 値 | 既定 |
 | --- | --- | --- | --- |
 | サーバー（インスタンス設定、`instance_setting_revisions` の新しいキー） | `search_indexing` | `allow` / `deny` | `allow` |
-| サーバー | `ai_usage` | `allow` / `deny_training`（学習を拒否）/ `deny`（学習と AI での利用を拒否） | `deny` |
+| サーバー | `ai_usage` | `allow` / `deny_training`（学習を拒否）/ `deny`（学習と AI での利用を拒否） | 未設定なら `deny` |
+| サーバー | `indexable_default` | 新規アカウントの `indexable` の既定（`true` / `false`） | 未設定なら `false` |
 | サーバー | `security_contact` | `mailto:` か `https:` の URI。空なら `security.txt` を返さない | 空 |
-| 個人（`account_profile_revisions`） | `indexable`（既存） | `true` / `false` | `false`（opt-in） |
+| 個人（`account_profile_revisions`） | `indexable`（既存） | `true` / `false` | 登録時に `indexable_default` の値 |
 | 個人 | `ai_opt_out`（新規） | `true` で学習と AI での利用を拒否 | `false`（サーバーに従う） |
 | 個人 | `discoverable`（既存） | ディレクトリとおすすめへの掲載。クローラーの表明には使わない | `false` |
 
 - あるページの実際の表明は、**サーバーの設定と、そのページの持ち主の設定のうち制限の強いほう**にする（IETF AI Preferences の「最も制限の強いものが勝つ」と同じ）。
   - 検索: `search_indexing = allow` かつ持ち主の `indexable = true` のときだけ索引を許す。
   - AI: サーバーの `ai_usage` と、持ち主の `ai_opt_out` から決める。個人はサーバーより広く許可できない。
+- 設定の無いサーバーは、AI の学習と利用を拒否し、新規アカウントを検索に載せない。運営者は管理画面で既定を許可の側に変えられる。
+  - `indexable_default` を変えても、既存のアカウントの `indexable` は変わらない（登録時の既定にだけ効く）。
 - 管理画面とクライアントは、サーバーが拒否しているときに個人の設定が効かないことを示す（設定の画面に説明を出す）。
 
 ### robots.txt
@@ -152,7 +158,7 @@ Allow: /
 - AI クローラーの一覧は `ai-robots-txt/ai.robots.txt` の `robots.json`（MIT、AGPL-3.0 と両立）から作り、**用途（学習 / AI での利用）で分類した表をリポジトリに同梱する**。
   - 実行時には取得しない。リンクプレビューの取得者（`facebookexternalhit` `Twitterbot` `Discordbot` `Slackbot` など）と、汎用の検索エンジン（`Googlebot` `Bingbot` `Applebot`）は表に入れない。
   - 更新はスクリプトで差分を作って PR にする（月に 1 度程度、取り込む元の版を記録する）。
-- 運営者が規則を書き足す手段は設けない（Open Questions）。
+- 運営者が規則を書き足す手段は設けない。robots.txt はサーバーの設定と同梱の一覧だけから作る。
 
 ### ページの meta と HTTP ヘッダー
 
@@ -180,6 +186,13 @@ Allow: /
 
 - `ai.txt` と `/.well-known/` の AI 用の独自の文書は出さない。大手のクローラーが読むという文書が無く、同名の提案が並立しているため。
 
+### サーバーの情報ページ
+
+- サーバーの情報ページ（FR-718 の情報ページ）に、検索と AI の許否の現在の設定と、その表明の意味を出す。
+  - 意味の説明は、日本の著作権法 30 条の 4 と EU DSM 指令 4 条（機械可読な TDM の留保）に対する位置づけを含む。
+    文言は ICU メッセージとして `locales/en` と `locales/ja` に置き（ADR-0009）、設定の値で出し分ける。法的な効果を保証する書き方はしない。
+- クライアント API のインスタンス情報に `search_indexing` と `ai_usage` を載せ、情報ページはそれを読んで表示する。
+
 ### 連合
 
 - Actor の `indexable` と `discoverable` は、Mastodon の定義のまま送る（現状どおり）。
@@ -189,7 +202,7 @@ Allow: /
 - 個人の `ai_opt_out` を AP の拡張で連合先に伝えることはしない（D1）。共通の語彙が無く、受け手が従う見込みも無い。
   連合先が返すページでの表明は連合先の設定に任せる。この限界を設定の画面の説明に書く。
 
-### 推奨を覆す条件
+### 見直す条件
 
 - IETF AI Preferences が RFC になり、主要な AI の事業者が `Content-Usage` に従うと表明したら、User-agent の一覧の保守をやめて `Content-Usage` を軸にする。
 - Fediverse で AI の拒否を表す共通の AP の語彙（FEP など）が広まったら、D2 に切り替える。
@@ -203,12 +216,13 @@ Allow: /
 - 悪い影響・トレードオフ
   - robots.txt も meta も従うかどうかはクローラー次第で、技術的な遮断ではない。遮断はこの ADR の対象外（WAF・レート制限）。
   - 同梱の AI クローラーの一覧は古くなる。更新の PR を定期的に作る必要がある。
-  - 既定の `ai_usage = deny` は、ChatGPT などで利用者がこのサーバーのページを読ませる操作も拒む表明になる。
-  - 既定の `indexable = false` では、サーバーが検索を許していても、利用者が選ぶまで検索エンジンに載らない。
+  - 設定の無いときの `ai_usage = deny` は、ChatGPT などで利用者がこのサーバーのページを読ませる操作も拒む表明になる。
+  - 設定の無いときの `indexable_default = false` では、サーバーが検索を許していても、利用者が選ぶまで検索エンジンに載らない。
   - 持ち主ごとの AI の拒否はメディアと連合先のページに及ばない。
   - `noai` / `noimageai`・`Content-Usage`・`Content-Signal`・TDMRep は読み手が少ないか未確認で、効果は限られる。
 - 後続で必要になる作業（Issue 化する）
-  - #656 の実装: robots.txt、ページの meta とヘッダー、`/.well-known/tdmrep.json` と `security.txt`、インスタンス設定 3 つと個人の `ai_opt_out`（スキーマ・API・管理画面・設定の画面・i18n）
+  - #656 の実装: robots.txt、ページの meta とヘッダー、`/.well-known/tdmrep.json` と `security.txt`、インスタンス設定 4 つと個人の `ai_opt_out`（スキーマ・API・管理画面・設定の画面・i18n）、
+    サーバーの情報ページの表明と法的な位置づけの説明
   - リモートの Actor の `indexable` の取り込み（boy scout で #656 に含めてよい）
   - AI クローラーの一覧の生成スクリプトと、定期更新の手順
   - [link-previews.md](../operations/link-previews.md) とデプロイ文書（CDN でメディアにヘッダーを付ける方法）の更新
@@ -238,10 +252,13 @@ Allow: /
 - **D1**: 作るものが少ない。連合先に表明が届かない。
 - D2: 連合先に届く可能性があるが、受け手の実装が無い独自の語彙で、ADR-0006 の互換拡張の範囲を広げる。
 
+### E. 既定値の決め方
+
+- **E1**: 運営者がサーバーの方針に合わせて既定を選べ、何も選ばない運営者のサーバーでは利用者の意思を待たずに公開が広がることがない。設定が 1 つ増える。
+- E2: 設定が少ないが、検索に載せたい運営者のサーバーで利用者全員が個別に許可する必要がある。
+
 ## Open Questions / 要検証
 
-- 既定値: `ai_usage` を `deny`（AI の検索・利用者の依頼も拒否）にするか `deny_training` にするか。`indexable` を opt-in（`false`）のままにするか、サーバー設定で既定を選べるようにするか。
-- 運営者が robots.txt に独自の規則を足す手段（設定ファイルの追記）を設けるか。
 - IETF AI Preferences と Content Signals に対応すると表明した大手のクローラーがあるか（要検証）。
-- 日本の著作権法 30 条の 4 と EU DSM 指令 4 条に対し、この表明をどう説明するか（利用規約・サーバーの情報ページの文言）。
+- 情報ページの法的な位置づけの説明の文言は、#656 の実装で運営者向けの文書と合わせて確かめる。
 - Tauri のアプリ（`/.well-known/assetlinks.json` と `apple-app-site-association`）と `/.well-known/change-password` は、それぞれの機能の Issue で扱う。
