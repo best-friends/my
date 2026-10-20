@@ -38,3 +38,7 @@ DELETE FROM role_permissions WHERE role_id = ?;
 
 -- name: DeleteRole :exec
 DELETE FROM roles WHERE id = ?;
+
+-- ListExistingRoleIDs returns, in ID order, the roles among ids that exist (the audit log). The ids are a JSON array.
+-- name: ListExistingRoleIDs :many
+SELECT id FROM roles WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;

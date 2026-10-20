@@ -800,6 +800,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.domain_action_issued": {};
   /** Domain action lifted */
   "client:admin.audit_log.action.domain_action_lifted": {};
+  /** Invite created */
+  "client:admin.audit_log.action.invite_created": {};
+  /** Invite revoked */
+  "client:admin.audit_log.action.invite_revoked": {};
   /** Registration approved */
   "client:admin.audit_log.action.registration_approved": {};
   /** Registration rejected */
@@ -922,6 +926,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.custom_emoji": {};
   /** Domain */
   "client:admin.audit_log.target_kind.domain": {};
+  /** Invite */
+  "client:admin.audit_log.target_kind.invite": {};
   /** Report */
   "client:admin.audit_log.target_kind.report": {};
   /** Role */

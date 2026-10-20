@@ -281,6 +281,8 @@ export const auditActions = [
   "announcement_updated",
   "announcement_published",
   "announcement_withdrawn",
+  "invite_created",
+  "invite_revoked",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -298,6 +300,7 @@ export const auditTargetKinds = [
   "custom_emoji",
   "webhook",
   "announcement",
+  "invite",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

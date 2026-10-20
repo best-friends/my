@@ -1679,6 +1679,14 @@
     "defaultMessage": "Webhook secret renewed",
     "description": "Kind of an audited operation: an administrator gave a webhook a new secret."
   },
+  "admin.audit_log.action.invite_created": {
+    "defaultMessage": "Invite created",
+    "description": "Kind of an audited operation: a moderator or an administrator created an invite code."
+  },
+  "admin.audit_log.action.invite_revoked": {
+    "defaultMessage": "Invite revoked",
+    "description": "Kind of an audited operation: a moderator or an administrator revoked an invite code."
+  },
   "admin.audit_log.action.webhook_updated": {
     "defaultMessage": "Webhook changed",
     "description": "Kind of an audited operation: an administrator changed the URL, description or events of a webhook."
@@ -1838,6 +1846,10 @@
   "admin.audit_log.target_kind.webhook": {
     "defaultMessage": "Webhook",
     "description": "Kind of target of an audited operation: a webhook, shown by its description and host name."
+  },
+  "admin.audit_log.target_kind.invite": {
+    "defaultMessage": "Invite",
+    "description": "Kind of target of an audited operation: an invite, shown by the first characters of its code."
   },
   "admin.audit_log.title": {
     "defaultMessage": "Audit log",

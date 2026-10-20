@@ -127,6 +127,31 @@ func (q *Queries) ListAllRolePermissions(ctx context.Context) ([]RolePermission,
 	return items, nil
 }
 
+const listExistingRoleIDs = `-- name: ListExistingRoleIDs :many
+SELECT id FROM roles WHERE id = ANY($1::text[]) ORDER BY id
+`
+
+// ListExistingRoleIDs returns, in ID order, the roles among ids that exist (the audit log).
+func (q *Queries) ListExistingRoleIDs(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listExistingRoleIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRoleHolderIDs = `-- name: ListRoleHolderIDs :many
 SELECT user_id FROM user_roles WHERE role_id = $1 ORDER BY user_id
 `

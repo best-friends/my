@@ -284,6 +284,8 @@ const (
 	AdminAuditActionCustomEmojiUpdated       AdminAuditAction = "custom_emoji_updated"
 	AdminAuditActionDomainActionIssued       AdminAuditAction = "domain_action_issued"
 	AdminAuditActionDomainActionLifted       AdminAuditAction = "domain_action_lifted"
+	AdminAuditActionInviteCreated            AdminAuditAction = "invite_created"
+	AdminAuditActionInviteRevoked            AdminAuditAction = "invite_revoked"
 	AdminAuditActionRegistrationApproved     AdminAuditAction = "registration_approved"
 	AdminAuditActionRegistrationRejected     AdminAuditAction = "registration_rejected"
 	AdminAuditActionReportAssigned           AdminAuditAction = "report_assigned"
@@ -350,6 +352,10 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionDomainActionIssued:
 		return true
 	case AdminAuditActionDomainActionLifted:
+		return true
+	case AdminAuditActionInviteCreated:
+		return true
+	case AdminAuditActionInviteRevoked:
 		return true
 	case AdminAuditActionRegistrationApproved:
 		return true
@@ -443,6 +449,7 @@ const (
 	AdminAuditTargetKindAppeal       AdminAuditTargetKind = "appeal"
 	AdminAuditTargetKindCustomEmoji  AdminAuditTargetKind = "custom_emoji"
 	AdminAuditTargetKindDomain       AdminAuditTargetKind = "domain"
+	AdminAuditTargetKindInvite       AdminAuditTargetKind = "invite"
 	AdminAuditTargetKindReport       AdminAuditTargetKind = "report"
 	AdminAuditTargetKindRole         AdminAuditTargetKind = "role"
 	AdminAuditTargetKindRule         AdminAuditTargetKind = "rule"
@@ -465,6 +472,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindCustomEmoji:
 		return true
 	case AdminAuditTargetKindDomain:
+		return true
+	case AdminAuditTargetKindInvite:
 		return true
 	case AdminAuditTargetKindReport:
 		return true
@@ -2325,7 +2334,8 @@ type AdminAppealPage struct {
 // description and the host name of its URL, never the URL. On an `announcement`:
 // `announcement_created`, `announcement_updated` (its text or window),
 // `announcement_published`, `announcement_withdrawn`; the label is the first line of its
-// text.
+// text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+// characters of its code, never the whole code.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -2361,7 +2371,8 @@ type AdminAuditEntry struct {
 	// description and the host name of its URL, never the URL. On an `announcement`:
 	// `announcement_created`, `announcement_updated` (its text or window),
 	// `announcement_published`, `announcement_withdrawn`; the label is the first line of its
-	// text.
+	// text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+	// characters of its code, never the whole code.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -2388,13 +2399,14 @@ type AdminAuditEntry struct {
 	SourceEventId *string `json:"source_event_id,omitempty"`
 
 	// TargetExists Whether the target is still there to look at. It is `false` for an account, a report,
-	// an appeal, or a sign-up block that is gone (erased past its retention), which only
-	// `target_label` names now. It is `true` for the other kinds of targets: a role, a
-	// custom emoji, or a webhook that was deleted is not looked up yet.
+	// an appeal, or a sign-up block that is gone (erased past its retention), and for a
+	// role, a custom emoji, or a webhook that was deleted, which only `target_label` names
+	// now. It is `true` for the other kinds of targets, which are never removed.
 	TargetExists bool `json:"target_exists"`
 
-	// TargetId The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
-	// domain of a domain action, or the key of a setting or a text.
+	// TargetId The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+	// sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+	// or the key of a setting or a text.
 	TargetId string `json:"target_id"`
 
 	// TargetKind The kind of what an audited operation acted on.

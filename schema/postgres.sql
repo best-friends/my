@@ -2094,11 +2094,11 @@ CREATE TABLE audit_log_entries (
     'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted',
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
     'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
-    'announcement_published', 'announcement_withdrawn'
+    'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook', 'announcement'
+    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,

@@ -37,7 +37,7 @@ func (a *App) setUpModeration(repo moderation.Repository) {
 		Retention: retentionSettings{a},
 		Follows:   moderationFollows{a}, Directory: a.Accounts, Outbox: outbox,
 		Emails: moderationEmails{a}, CanonicalDomain: federation.CanonicalHost,
-		Evidence: moderationEvidence{a},
+		Evidence: moderationEvidence{a}, AuditTargets: moderationAuditTargets{a},
 	})
 	a.ModerationPolicy = moderation.NewFederationPolicy(repo, a.Clock)
 	a.AccountPolicy = moderation.NewAccountPolicy(repo, a.Accounts, a.Clock)
@@ -137,6 +137,23 @@ type moderationEvidence struct{ a *App }
 
 func (m moderationEvidence) Review(ctx context.Context, statusID string) (content.ReviewedStatus, error) {
 	return m.a.Statuses.Review(ctx, statusID)
+}
+
+// moderationAuditTargets gives the moderation module the roles, custom emoji, and webhooks that
+// the audit log names, of modules that are built after it.
+type moderationAuditTargets struct{ a *App }
+
+func (m moderationAuditTargets) ExistingAuditTargets(ctx context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error) {
+	switch {
+	case kind == moderation.AuditTargetRole && m.a.Identity != nil:
+		return m.a.Identity.ExistingRoleIDs(ctx, ids)
+	case kind == moderation.AuditTargetCustomEmoji && m.a.CustomEmojis != nil:
+		return m.a.CustomEmojis.ExistingIDs(ctx, ids)
+	case kind == moderation.AuditTargetWebhook && m.a.Webhooks != nil:
+		return m.a.Webhooks.ExistingIDs(ctx, ids)
+	}
+	// A module that is not built has removed nothing.
+	return ids, nil
 }
 
 // moderationFollows gives the moderation module the graph module, which is built after it

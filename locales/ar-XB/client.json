@@ -1595,6 +1595,14 @@
     "defaultMessage": "‮ᗡoɯɐıu ɐɔʇıou ʅıɟʇǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.invite_created": {
+    "defaultMessage": "‮Iuʌıʇǝ ɔɹǝɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.invite_revoked": {
+    "defaultMessage": "‮Iuʌıʇǝ ɹǝʌoʞǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.registration_approved": {
     "defaultMessage": "‮ᴚǝƃısʇɹɐʇıou ɐddɹoʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1837,6 +1845,10 @@
   },
   "admin.audit_log.target_kind.domain": {
     "defaultMessage": "‮ᗡoɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.invite": {
+    "defaultMessage": "‮Iuʌıʇǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.target_kind.report": {

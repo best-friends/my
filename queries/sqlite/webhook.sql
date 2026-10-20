@@ -137,3 +137,9 @@ DELETE FROM webhook_deliveries WHERE message_id IN (SELECT value FROM json_each(
 
 -- name: DeleteWebhookMessages :execrows
 DELETE FROM webhook_messages WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
+
+-- ListExistingWebhookEndpointIDs returns, in ID order, the endpoints among ids that are not
+-- deleted (the audit log). The ids are a JSON array.
+-- name: ListExistingWebhookEndpointIDs :many
+SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) AND state <> 'deleted'
+ORDER BY endpoint_id;

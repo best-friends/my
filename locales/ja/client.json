@@ -1679,6 +1679,14 @@
     "defaultMessage": "webhook の秘密の作り直し",
     "description": "Kind of an audited operation: an administrator gave a webhook a new secret."
   },
+  "admin.audit_log.action.invite_created": {
+    "defaultMessage": "招待の作成",
+    "description": "Kind of an audited operation: a moderator or an administrator created an invite code."
+  },
+  "admin.audit_log.action.invite_revoked": {
+    "defaultMessage": "招待の失効",
+    "description": "Kind of an audited operation: a moderator or an administrator revoked an invite code."
+  },
   "admin.audit_log.action.webhook_updated": {
     "defaultMessage": "webhook の変更",
     "description": "Kind of an audited operation: an administrator changed the URL, description or events of a webhook."
@@ -1838,6 +1846,10 @@
   "admin.audit_log.target_kind.webhook": {
     "defaultMessage": "Webhook",
     "description": "Kind of target of an audited operation: a webhook, shown by its description and host name."
+  },
+  "admin.audit_log.target_kind.invite": {
+    "defaultMessage": "招待",
+    "description": "Kind of target of an audited operation: an invite, shown by the first characters of its code."
   },
   "admin.audit_log.title": {
     "defaultMessage": "監査ログ",

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"time"
 
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
 )
@@ -65,11 +66,37 @@ func (s *Service) CreateInvite(ctx context.Context, in CreateInviteInput) (ident
 		at := now.Add(in.ExpiresIn)
 		inv.ExpiresAt = &at
 	}
-	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Repository.InsertInvite(ctx, tx, inv) })
+	auditID := s.d.IDs.NewID()
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := s.d.Repository.InsertInvite(ctx, tx, inv); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, inviteAudit(auditID, appmoderation.AuditInviteCreated, inv, in.CreatedByUserID, now))
+	})
 	if err != nil {
 		return identity.Invite{}, err
 	}
 	return inv, nil
+}
+
+// inviteAuditCodeChars is how many characters of an invite's code its audit log label keeps.
+const inviteAuditCodeChars = 4
+
+// inviteAudit returns the audit log entry of an operation on an invite (FR-704), performed by
+// byUserID ("" for the CLI). The label is the first characters of the code followed by an
+// ellipsis: enough to tell the invite in the list of invites, while the whole code, which lets
+// anyone sign up, stays with those who manage the invites. The source is the invite, whose ID is
+// also the key of its revocation.
+func inviteAudit(id string, action appmoderation.AuditAction, inv identity.Invite, byUserID string, at time.Time) appmoderation.AuditRecorded {
+	actor, user := appmoderation.AuditActor(byUserID)
+	label := inv.Code
+	if len(label) > inviteAuditCodeChars {
+		label = label[:inviteAuditCodeChars] + "…"
+	}
+	return appmoderation.AuditRecorded{Entry: appmoderation.AuditEntry{
+		ID: id, ActorKind: actor, ActorUserID: user, Action: action, TargetKind: appmoderation.AuditTargetInvite,
+		TargetID: inv.ID, TargetLabel: label, SourceEventID: inv.ID, OccurredAt: at,
+	}}
 }
 
 // ListInvites returns invites with their usage, newest first, at most limit (1 to
@@ -124,8 +151,9 @@ func (s *Service) RevokeInviteByID(ctx context.Context, id, revokedByUserID stri
 	}
 	out := InviteStatus{Invite: inv}
 	rev := identity.InviteRevocation{InviteID: inv.ID, RevokedByUserID: revokedByUserID, RevokedAt: s.d.Clock.Now()}
+	auditID := s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.InsertInviteRevocation(ctx, tx, rev); err != nil {
+		if err := s.revokeInvite(ctx, tx, inv, rev, auditID); err != nil {
 			return err
 		}
 		out.Uses, out.Revoked, err = s.d.Repository.InviteUsage(ctx, tx, inv.ID)
@@ -138,6 +166,19 @@ func (s *Service) RevokeInviteByID(ctx context.Context, id, revokedByUserID stri
 	return out, nil
 }
 
+// revokeInvite records the revocation of inv in tx with its audit log entry, unless the invite
+// is already revoked: revoking it again changes nothing, so it is not audited again.
+func (s *Service) revokeInvite(ctx context.Context, tx uow.Tx, inv identity.Invite, rev identity.InviteRevocation, auditID string) error {
+	_, revoked, err := s.d.Repository.InviteUsage(ctx, tx, inv.ID)
+	if err != nil || revoked {
+		return err
+	}
+	if err := s.d.Repository.InsertInviteRevocation(ctx, tx, rev); err != nil {
+		return err
+	}
+	return tx.Emit(ctx, inviteAudit(auditID, appmoderation.AuditInviteRevoked, inv, rev.RevokedByUserID, rev.RevokedAt))
+}
+
 // RevokeInvite stops an invite from working. Revoking it again keeps the first revocation. It
 // fails with ErrNotFound when no invite has the code.
 func (s *Service) RevokeInvite(ctx context.Context, code, revokedByUserID string) (identity.Invite, error) {
@@ -146,7 +187,8 @@ func (s *Service) RevokeInvite(ctx context.Context, code, revokedByUserID string
 		return identity.Invite{}, err
 	}
 	rev := identity.InviteRevocation{InviteID: inv.ID, RevokedByUserID: revokedByUserID, RevokedAt: s.d.Clock.Now()}
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Repository.InsertInviteRevocation(ctx, tx, rev) })
+	auditID := s.d.IDs.NewID()
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.revokeInvite(ctx, tx, inv, rev, auditID) })
 	if err != nil {
 		return identity.Invite{}, err
 	}

@@ -64,12 +64,15 @@ const (
 	// AuditTargetAnnouncement is a server-wide announcement (FR-726); its label is the first
 	// line of its body.
 	AuditTargetAnnouncement AuditTargetKind = "announcement"
+	// AuditTargetInvite is an invite (ADR-0058); its label is the first characters of its code,
+	// never the whole code, which lets anyone sign up while the invite works.
+	AuditTargetInvite AuditTargetKind = "invite"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
-	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement,
+	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -185,6 +188,10 @@ const (
 	// withdrawn (announcement_state_changes).
 	AuditAnnouncementPublished AuditAction = "announcement_published"
 	AuditAnnouncementWithdrawn AuditAction = "announcement_withdrawn"
+	// AuditInviteCreated: an invite was created (invites).
+	AuditInviteCreated AuditAction = "invite_created"
+	// AuditInviteRevoked: an invite was revoked (invite_revocations).
+	AuditInviteRevoked AuditAction = "invite_revoked"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -237,6 +244,8 @@ var auditActions = []struct {
 	{AuditAnnouncementUpdated, AuditTargetAnnouncement},
 	{AuditAnnouncementPublished, AuditTargetAnnouncement},
 	{AuditAnnouncementWithdrawn, AuditTargetAnnouncement},
+	{AuditInviteCreated, AuditTargetInvite},
+	{AuditInviteRevoked, AuditTargetInvite},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

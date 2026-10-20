@@ -7128,7 +7128,8 @@ components:
         description and the host name of its URL, never the URL. On an `announcement`:
         `announcement_created`, `announcement_updated` (its text or window),
         `announcement_published`, `announcement_withdrawn`; the label is the first line of its
-        text.
+        text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+        characters of its code, never the whole code.
       type: string
       enum:
         - account_action_issued
@@ -7176,6 +7177,8 @@ components:
         - announcement_updated
         - announcement_published
         - announcement_withdrawn
+        - invite_created
+        - invite_revoked
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -7208,8 +7211,9 @@ components:
           $ref: "#/components/schemas/AdminAuditTargetKind"
         target_id:
           description: |
-            The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
-            domain of a domain action, or the key of a setting or a text.
+            The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+            sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+            or the key of a setting or a text.
           type: string
         target_label:
           description: |
@@ -7220,9 +7224,9 @@ components:
         target_exists:
           description: |
             Whether the target is still there to look at. It is `false` for an account, a report,
-            an appeal, or a sign-up block that is gone (erased past its retention), which only
-            `target_label` names now. It is `true` for the other kinds of targets: a role, a
-            custom emoji, or a webhook that was deleted is not looked up yet.
+            an appeal, or a sign-up block that is gone (erased past its retention), and for a
+            role, a custom emoji, or a webhook that was deleted, which only `target_label` names
+            now. It is `true` for the other kinds of targets, which are never removed.
           type: boolean
         source_event_id:
           description: |
@@ -7247,7 +7251,7 @@ components:
     AdminAuditTargetKind:
       description: The kind of what an audited operation acted on.
       type: string
-      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement]
+      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite]
     # --- end of admin: audit log (#330) ---
     # --- admin: domain actions and reports (#296) ---
     AdminDomainAction:
