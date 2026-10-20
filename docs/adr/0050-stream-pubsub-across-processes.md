@@ -205,7 +205,7 @@ type Listener interface {
 
 - LocalStack は 2026-03-23 のリリースから起動に認証トークン（アカウント）が要り、商用の CI は有料なので使わない。goaws v0.5.4 はキューの `Policy` を受け付けず `CreatedTimestamp` を返さないので使わない
 - 2 プロセスの結合テスト（`internal/platform`）: 同じ DB と同じ `Bus` を使う 2 つの App を立て、片方で投稿したものと、`role = worker` 側で Inbox を処理して作られた通知が、もう片方のストリームに届くことを確かめる（`postgres` を pgmem で、と `Relay` のメモリの `Bus` で）
-- クラウドの資源の後始末（SIGTERM、`stream.sweep`、Pub/Sub の期限切れ）は、M4 のデプロイのスモークテストで確かめる
+- クラウドの資源の後始末（SIGTERM、`stream.sweep`、Pub/Sub の期限切れ）は、M6 のデプロイのスモークテストで確かめる
 
 ## Consequences（影響）
 

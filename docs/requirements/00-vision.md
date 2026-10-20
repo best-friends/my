@@ -53,5 +53,7 @@
 | **M1: Walking Skeleton** | 1 プロセスで起動し、WebFinger / Actor を返し、SQLite に永続化。全レイヤを細く貫通 | Self-hosted で起動、Mastodon から検索・表示できる |
 | **M2: Local Microblog** | アカウント・投稿・タイムライン・フォロー（ローカルのみ）・独自クライアント API・Web クライアント（PWA） | ローカルで SNS として使える |
 | **M3: Federation** | 連合（Follow / Create / Announce / Like / Delete …）、配送キュー、リトライ | Mastodon / Misskey / GoToSocial と相互フォロー・投稿が往復 |
-| **M4: Multi-target** | GCP / AWS / microk8s のデプロイテンプレートと各アダプタ | 3 系統すべてで E2E スモークテストが通る |
+| **M3.5: Polish & Moderation** | UI のブラッシュアップと、通報・管理（モデレーション）機能の作り込み | 通報から処分・異議申し立てまでを管理画面で扱え、UI 監査の指摘が解消している |
+| **M4: Feature Completeness** | 基礎機能の拡張とサービスとしての完成度の向上。カスタム絵文字・リアクションと、未実装の機能要件（FR）の実装 | [機能要件](01-functional.md) の Must / Should がサーバーと Web クライアントで使え（モバイルとターゲットごとの手順は M5・M6）、カスタム絵文字とリアクションが Mastodon / Misskey / Pleroma(Akkoma) と往復する |
 | **M5: v0 Release** | モデレーション最小機能、i18n（en / ja + α）、ドキュメント、Tauri 2 モバイルの検証版 | v0.x として公開し実運用を開始できる |
+| **M6: Multi-target** | GCP / AWS / microk8s のデプロイテンプレートと、各系統で使うアダプタ（DB・キュー・ストレージ・KV・ストリーム） | Self-hosted（Docker / microk8s）・GCP・AWS の各系統で E2E スモークテストが通る |
