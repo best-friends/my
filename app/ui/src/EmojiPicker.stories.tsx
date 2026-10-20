@@ -115,5 +115,11 @@ export const InPopover: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Add emoji" }));
     await waitFor(() => expect(canvas.getByRole("searchbox", { name: "Search emoji" })).toHaveFocus());
+    // Esc closes it and focus returns to the trigger. The screenshot is of the closed state: an open popover with
+    // a blinking caret and its entering animation does not render the same twice (the other stories show the
+    // picker itself).
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(canvas.queryByRole("searchbox")).not.toBeInTheDocument());
+    await waitFor(() => expect(canvas.getByRole("button", { name: "Add emoji" })).toHaveFocus());
   },
 };
