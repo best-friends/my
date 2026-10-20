@@ -224,6 +224,9 @@ func TestNormalizeConvertedTypes(t *testing.T) {
 		`<p><strong>T</strong></p><p><a href="https://a.example/p/3">https://a.example/p/3</a></p>`)
 	o = object(t, `{"type":"Page","id":"ftp://a.example/p/4","name":"T","url":"data://a.example/x"}`)
 	equal(t, "no link without an http(s) URL", o.Bodies[0].HTML, `<p><strong>T</strong></p>`)
+	o = object(t, `{"type":"Page","id":"https://a.example/p/5","name":"T","url":"https://a.example/p?q=\"><script>&'"}`)
+	equal(t, "the link is escaped for the attribute", o.Bodies[0].HTML,
+		`<p><strong>T</strong></p><p><a href="https://a.example/p?q=&#34;&gt;&lt;script&gt;&amp;&#39;">https://a.example/p?q=&#34;&gt;&lt;script&gt;&amp;&#39;</a></p>`)
 }
 
 func TestNormalizeTags(t *testing.T) {

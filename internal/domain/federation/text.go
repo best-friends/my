@@ -123,11 +123,16 @@ func convertedBody(name, summary string, link IRI) string {
 		b.WriteString("<p>" + strings.ReplaceAll(html.EscapeString(summary), "\n", "<br>") + "</p>")
 	}
 	if webLink(link) {
-		l := html.EscapeString(string(link))
+		l := attributeEscaper.Replace(string(link))
 		b.WriteString(`<p><a href="` + l + `">` + l + "</a></p>")
 	}
 	return b.String()
 }
+
+// attributeEscaper escapes a value for a double-quoted attribute (and for text) exactly as
+// html.EscapeString does. It is spelled out so that the quote it escapes is visible where an
+// attribute is built, also to code scanning (CodeQL go/unsafe-quoting).
+var attributeEscaper = strings.NewReplacer(`&`, "&amp;", `'`, "&#39;", `<`, "&lt;", `>`, "&gt;", `"`, "&#34;")
 
 // webLink reports whether i is an http or https URL with a host, the only links a converted
 // body points to.
