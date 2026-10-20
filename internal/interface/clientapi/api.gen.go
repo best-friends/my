@@ -2395,6 +2395,11 @@ type Instance struct {
 	// when no locale of the request's fallback chain has it.
 	PrivacyPolicyUrl *string `json:"privacy_policy_url,omitempty"`
 
+	// PushServerKey The instance's VAPID public key (RFC 8292), an uncompressed P-256 point in unpadded
+	// base64url: the `applicationServerKey` that browsers subscribe with before
+	// `putPushSubscription`. Omitted when the instance sends no Web Push.
+	PushServerKey *string `json:"push_server_key,omitempty"`
+
 	// Registrations How people sign up on the instance.
 	Registrations InstanceRegistrations `json:"registrations"`
 
@@ -3008,6 +3013,45 @@ type ProfileField struct {
 
 	// Value The field's value as sanitized HTML.
 	Value string `json:"value"`
+}
+
+// PushSubscription The Web Push subscription of a grant.
+type PushSubscription struct {
+	// Alerts The notification types that are pushed, in a stable order.
+	Alerts []NotificationType `json:"alerts"`
+
+	// Endpoint The push service URL of the browser's subscription.
+	Endpoint string `json:"endpoint"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// ServerKey The instance's VAPID public key now. When it differs from the key the browser
+	// subscribed with, the subscription receives nothing; subscribe again.
+	ServerKey string `json:"server_key"`
+}
+
+// PushSubscriptionKeys The keys of a browser's push subscription (RFC 8291 §3), in base64url.
+type PushSubscriptionKeys struct {
+	// Auth The 16-byte authentication secret.
+	Auth string `json:"auth"`
+
+	// P256dh The browser's P-256 public key, an uncompressed point.
+	P256dh string `json:"p256dh"`
+}
+
+// PushSubscriptionRequest A browser's push subscription and the notification types to push to it.
+type PushSubscriptionRequest struct {
+	// Alerts The notification types to push; empty pushes none.
+	Alerts []NotificationType `json:"alerts"`
+
+	// Endpoint The push service URL (`PushSubscription.endpoint`), an `https` URL.
+	Endpoint string `json:"endpoint"`
+
+	// Keys The keys of a browser's push subscription (RFC 8291 §3), in base64url.
+	Keys PushSubscriptionKeys `json:"keys"`
 }
 
 // RegistrationDecisionRequest A moderator's decision on a registration.
@@ -3938,6 +3982,9 @@ type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 // UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
 type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 
+// PutPushSubscriptionJSONRequestBody defines body for PutPushSubscription for application/json ContentType.
+type PutPushSubscriptionJSONRequestBody = PushSubscriptionRequest
+
 // CreateReportJSONRequestBody defines body for CreateReport for application/json ContentType.
 type CreateReportJSONRequestBody = CreateReportRequest
 
@@ -4213,6 +4260,15 @@ type ServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(w http.ResponseWriter, r *http.Request)
+	// DeletePushSubscription Delete the Web Push subscription of the grant
+	// (DELETE /push/subscription)
+	DeletePushSubscription(w http.ResponseWriter, r *http.Request)
+	// GetPushSubscription Get the Web Push subscription of the grant
+	// (GET /push/subscription)
+	GetPushSubscription(w http.ResponseWriter, r *http.Request)
+	// PutPushSubscription Register the Web Push subscription of the grant
+	// (PUT /push/subscription)
+	PutPushSubscription(w http.ResponseWriter, r *http.Request)
 	// ListOwnReports List the reports that the authenticated user filed
 	// (GET /reports)
 	ListOwnReports(w http.ResponseWriter, r *http.Request, params ListOwnReportsParams)
@@ -7197,6 +7253,48 @@ func (siw *ServerInterfaceWrapper) UpdatePreferences(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// DeletePushSubscription operation middleware
+func (siw *ServerInterfaceWrapper) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeletePushSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPushSubscription operation middleware
+func (siw *ServerInterfaceWrapper) GetPushSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPushSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutPushSubscription operation middleware
+func (siw *ServerInterfaceWrapper) PutPushSubscription(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutPushSubscription(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListOwnReports operation middleware
 func (siw *ServerInterfaceWrapper) ListOwnReports(w http.ResponseWriter, r *http.Request) {
 
@@ -8011,6 +8109,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/notifications/marker", wrapper.GetNotificationMarker)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/notifications/marker", wrapper.UpdateNotificationMarker)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/notifications/{id}/dismiss", wrapper.DismissNotification)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/push/subscription", wrapper.DeletePushSubscription)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/push/subscription", wrapper.GetPushSubscription)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/push/subscription", wrapper.PutPushSubscription)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/bookmarks", wrapper.ListBookmarks)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses", wrapper.CreateStatus)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}", wrapper.DeleteStatus)
@@ -13340,6 +13441,174 @@ func (response UpdatePreferencesdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type DeletePushSubscriptionRequestObject struct {
+}
+
+type DeletePushSubscriptionResponseObject interface {
+	VisitDeletePushSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type DeletePushSubscription204Response struct {
+}
+
+func (response DeletePushSubscription204Response) VisitDeletePushSubscriptionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeletePushSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeletePushSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitDeletePushSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPushSubscriptionRequestObject struct {
+}
+
+type GetPushSubscriptionResponseObject interface {
+	VisitGetPushSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type GetPushSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetPushSubscription200JSONResponse struct {
+	Body    PushSubscription
+	Headers GetPushSubscription200ResponseHeaders
+}
+
+func (response GetPushSubscription200JSONResponse) VisitGetPushSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPushSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetPushSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitGetPushSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutPushSubscriptionRequestObject struct {
+	Body *PutPushSubscriptionJSONRequestBody
+}
+
+type PutPushSubscriptionResponseObject interface {
+	VisitPutPushSubscriptionResponse(w http.ResponseWriter) error
+}
+
+type PutPushSubscription200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type PutPushSubscription200JSONResponse struct {
+	Body    PushSubscription
+	Headers PutPushSubscription200ResponseHeaders
+}
+
+func (response PutPushSubscription200JSONResponse) VisitPutPushSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutPushSubscriptiondefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response PutPushSubscriptiondefaultApplicationProblemPlusJSONResponse) VisitPutPushSubscriptionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListOwnReportsRequestObject struct {
 	Params ListOwnReportsParams
 }
@@ -14811,6 +15080,15 @@ type StrictServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(ctx context.Context, request UpdatePreferencesRequestObject) (UpdatePreferencesResponseObject, error)
+	// DeletePushSubscription Delete the Web Push subscription of the grant
+	// (DELETE /push/subscription)
+	DeletePushSubscription(ctx context.Context, request DeletePushSubscriptionRequestObject) (DeletePushSubscriptionResponseObject, error)
+	// GetPushSubscription Get the Web Push subscription of the grant
+	// (GET /push/subscription)
+	GetPushSubscription(ctx context.Context, request GetPushSubscriptionRequestObject) (GetPushSubscriptionResponseObject, error)
+	// PutPushSubscription Register the Web Push subscription of the grant
+	// (PUT /push/subscription)
+	PutPushSubscription(ctx context.Context, request PutPushSubscriptionRequestObject) (PutPushSubscriptionResponseObject, error)
 	// ListOwnReports List the reports that the authenticated user filed
 	// (GET /reports)
 	ListOwnReports(ctx context.Context, request ListOwnReportsRequestObject) (ListOwnReportsResponseObject, error)
@@ -17357,6 +17635,85 @@ func (sh *strictHandler) UpdatePreferences(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePreferencesResponseObject); ok {
 		if err := validResponse.VisitUpdatePreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeletePushSubscription operation middleware
+func (sh *strictHandler) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {
+	var request DeletePushSubscriptionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeletePushSubscription(ctx, request.(DeletePushSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeletePushSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeletePushSubscriptionResponseObject); ok {
+		if err := validResponse.VisitDeletePushSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPushSubscription operation middleware
+func (sh *strictHandler) GetPushSubscription(w http.ResponseWriter, r *http.Request) {
+	var request GetPushSubscriptionRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPushSubscription(ctx, request.(GetPushSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPushSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPushSubscriptionResponseObject); ok {
+		if err := validResponse.VisitGetPushSubscriptionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutPushSubscription operation middleware
+func (sh *strictHandler) PutPushSubscription(w http.ResponseWriter, r *http.Request) {
+	var request PutPushSubscriptionRequestObject
+
+	var body PutPushSubscriptionJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutPushSubscription(ctx, request.(PutPushSubscriptionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutPushSubscription")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutPushSubscriptionResponseObject); ok {
+		if err := validResponse.VisitPutPushSubscriptionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -58,6 +58,13 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
       />
     ) : undefined;
   const body = <PostContent html={view.html} lang={view.lang} onLinkClick={view.onLinkClick} {...(variant === "focused" && { className: "text-lg" })} />;
+  // The mark of an edited post leads to its revisions (FR-109); it stays out of the header's one row (G7).
+  const edited =
+    view.historyPath === null ? null : (
+      <Link href={view.historyPath} className={timeLink}>
+        {t("client:status.edited")}
+      </Link>
+    );
   const time =
     variant === "focused" ? (
       // The relative time as everywhere else (G8); the full date is in the details.
@@ -84,9 +91,11 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
             {view.counts.favourites > 0 && (
               <span className="tabular-nums">{t("client:status.focused.favourites", { count: view.counts.favourites })}</span>
             )}
+            {edited}
           </>
         ),
       })}
+      {...(variant === "compact" && edited !== null && { details: edited })}
       {...(view.boostedBy !== null && {
         context: (
           <>

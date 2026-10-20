@@ -1,6 +1,6 @@
 # ADR-0037: 監査ログを処分のイベントとは別の追記専用の記録にする
 
-- Status: Accepted
+- Status: Accepted（`target_kind` に ADR-0051（カスタム絵文字）の `custom_emoji`、ADR-0060（webhook）の `webhook`、ADR-0061（連合リレー）の `relay` が加わる）
 - Date: 2026-10-17
 - Deciders: @rosylilly
 - Issue: #327

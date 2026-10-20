@@ -46,6 +46,8 @@ tags:
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
     description: The authenticated user's notifications, their read marker, and dismissals.
+  - name: push
+    description: The Web Push subscription of the access token's grant.
   - name: statuses
     description: Posts, their threads and edit history, and boosts, favourites, bookmarks, and pins of them.
   - name: timelines
@@ -965,6 +967,72 @@ paths:
       responses:
         "204":
           description: The notification is dismissed.
+        default:
+          $ref: "#/components/responses/Problem"
+  /push/subscription:
+    get:
+      operationId: getPushSubscription
+      summary: Get the Web Push subscription of the grant
+      description: |
+        The subscription that this grant (the access token and the tokens that refreshing it
+        issues) registered; a 404 when it has none. A subscription ends when the push service
+        reports it expired or the grant ends (sign-out, revocation, expiry).
+      tags: [push]
+      security:
+        - oauth2: [push]
+      responses:
+        "200":
+          description: The subscription.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushSubscription"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: putPushSubscription
+      summary: Register the Web Push subscription of the grant
+      description: |
+        Registers the browser's push subscription (`PushSubscription.toJSON()`, subscribed with
+        the instance's `push_server_key`) for the user's notifications of the `alerts` types,
+        replacing the grant's earlier subscription and any subscription with the same endpoint.
+        Sending it again with other `alerts` changes the types. The endpoint must be an
+        `https` URL; an invalid endpoint, key, or type is a 422 that names the property. A 404
+        means that the instance sends no Web Push (`Instance.push_server_key` is omitted).
+      tags: [push]
+      security:
+        - oauth2: [push]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PushSubscriptionRequest"
+      responses:
+        "200":
+          description: The registered subscription.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushSubscription"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deletePushSubscription
+      summary: Delete the Web Push subscription of the grant
+      description: Deleting it when there is none changes nothing.
+      tags: [push]
+      security:
+        - oauth2: [push]
+      responses:
+        "204":
+          description: The grant has no subscription.
         default:
           $ref: "#/components/responses/Problem"
   # --- end notifications ---
@@ -3389,6 +3457,12 @@ components:
             email, the moderator notifications come only in the app, so clients do not offer
             the preference `email_moderator_notifications`.
           type: boolean
+        push_server_key:
+          description: |
+            The instance's VAPID public key (RFC 8292), an uncompressed P-256 point in unpadded
+            base64url: the `applicationServerKey` that browsers subscribe with before
+            `putPushSubscription`. Omitted when the instance sends no Web Push.
+          type: string
         rules:
           description: The rules in effect, in order, each in the locale of the request.
           type: array
@@ -4131,6 +4205,57 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Notification"
+    PushSubscription:
+      description: The Web Push subscription of a grant.
+      type: object
+      required: [id, endpoint, alerts, server_key]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        endpoint:
+          description: The push service URL of the browser's subscription.
+          type: string
+          format: uri
+        alerts:
+          description: The notification types that are pushed, in a stable order.
+          type: array
+          items:
+            $ref: "#/components/schemas/NotificationType"
+        server_key:
+          description: |
+            The instance's VAPID public key now. When it differs from the key the browser
+            subscribed with, the subscription receives nothing; subscribe again.
+          type: string
+    PushSubscriptionRequest:
+      description: A browser's push subscription and the notification types to push to it.
+      type: object
+      required: [endpoint, keys, alerts]
+      properties:
+        endpoint:
+          description: The push service URL (`PushSubscription.endpoint`), an `https` URL.
+          type: string
+          maxLength: 2048
+        keys:
+          $ref: "#/components/schemas/PushSubscriptionKeys"
+        alerts:
+          description: The notification types to push; empty pushes none.
+          type: array
+          maxItems: 14
+          items:
+            $ref: "#/components/schemas/NotificationType"
+    PushSubscriptionKeys:
+      description: The keys of a browser's push subscription (RFC 8291 §3), in base64url.
+      type: object
+      required: [p256dh, auth]
+      properties:
+        p256dh:
+          description: The browser's P-256 public key, an uncompressed point.
+          type: string
+          maxLength: 128
+        auth:
+          description: The 16-byte authentication secret.
+          type: string
+          maxLength: 32
     NotificationType:
       description: |
         The kind of a notification. `account` is the account that acted: the follower

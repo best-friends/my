@@ -1368,3 +1368,101 @@ func (l *Localizer) ServerPreviewHeaderAlt(name string) string {
 func (l *Localizer) ServerPreviewTitle(handle string, name string) string {
 	return l.format("server:preview.title", map[string]any{"handle": handle, "name": name})
 }
+
+// ServerPushAdminAppeal formats "server:push.admin_appeal". Web Push notification to a moderator: a user appealed a moderation action. It never names the user. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A new appeal awaits the moderators of {instance}
+func (l *Localizer) ServerPushAdminAppeal(instance string) string {
+	return l.format("server:push.admin_appeal", map[string]any{"instance": instance})
+}
+
+// ServerPushAdminReport formats "server:push.admin_report". Web Push notification to a moderator: someone reported an account that had no open report. It never names the accounts. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A new report awaits the moderators of {instance}
+func (l *Localizer) ServerPushAdminReport(instance string) string {
+	return l.format("server:push.admin_report", map[string]any{"instance": instance})
+}
+
+// ServerPushAdminSignUp formats "server:push.admin_sign_up". Web Push notification to a moderator: a new user signed up and waits for approval. It never names the user. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A new sign-up awaits approval on {instance}
+func (l *Localizer) ServerPushAdminSignUp(instance string) string {
+	return l.format("server:push.admin_sign_up", map[string]any{"instance": instance})
+}
+
+// ServerPushAppealDecided formats "server:push.appeal_decided". Web Push notification: the moderators upheld or overturned the user's appeal. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: The moderators of {instance} decided your appeal
+func (l *Localizer) ServerPushAppealDecided(instance string) string {
+	return l.format("server:push.appeal_decided", map[string]any{"instance": instance})
+}
+
+// ServerPushBoost formats "server:push.boost". Web Push notification. {name} is the display name, or the @handle, of the account that boosted the user's post.
+//
+//	en: {name} boosted your post
+func (l *Localizer) ServerPushBoost(name string) string {
+	return l.format("server:push.boost", map[string]any{"name": name})
+}
+
+// ServerPushFavourite formats "server:push.favourite". Web Push notification. {name} is the display name, or the @handle, of the account that favourited the user's post.
+//
+//	en: {name} favourited your post
+func (l *Localizer) ServerPushFavourite(name string) string {
+	return l.format("server:push.favourite", map[string]any{"name": name})
+}
+
+// ServerPushFollow formats "server:push.follow". Web Push notification. {name} is the display name, or the @handle, of the account that followed the user.
+//
+//	en: {name} followed you
+func (l *Localizer) ServerPushFollow(name string) string {
+	return l.format("server:push.follow", map[string]any{"name": name})
+}
+
+// ServerPushFollowAccepted formats "server:push.follow_accepted". Web Push notification. {name} is the display name, or the @handle, of the account that accepted the user's follow request.
+//
+//	en: {name} accepted your follow request
+func (l *Localizer) ServerPushFollowAccepted(name string) string {
+	return l.format("server:push.follow_accepted", map[string]any{"name": name})
+}
+
+// ServerPushFollowRequest formats "server:push.follow_request". Web Push notification. {name} is the display name, or the @handle, of the account that asked to follow the user.
+//
+//	en: {name} requested to follow you
+func (l *Localizer) ServerPushFollowRequest(name string) string {
+	return l.format("server:push.follow_request", map[string]any{"name": name})
+}
+
+// ServerPushMention formats "server:push.mention". Web Push notification. {name} is the display name, or the @handle, of the account that wrote a post that mentions the user.
+//
+//	en: {name} mentioned you
+func (l *Localizer) ServerPushMention(name string) string {
+	return l.format("server:push.mention", map[string]any{"name": name})
+}
+
+// ServerPushModerationNotice formats "server:push.moderation_notice". Web Push notification: a notice to the user from the moderators. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: The moderators of {instance} sent you a notice
+func (l *Localizer) ServerPushModerationNotice(instance string) string {
+	return l.format("server:push.moderation_notice", map[string]any{"instance": instance})
+}
+
+// ServerPushOther formats "server:push.other". Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: You have a new notification on {instance}
+func (l *Localizer) ServerPushOther(instance string) string {
+	return l.format("server:push.other", map[string]any{"instance": instance})
+}
+
+// ServerPushRelationshipsSevered formats "server:push.relationships_severed". Web Push notification: the moderators suspended a server or an account, which ended follows between it and the user. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A suspension by the moderators of {instance} ended some of your follows
+func (l *Localizer) ServerPushRelationshipsSevered(instance string) string {
+	return l.format("server:push.relationships_severed", map[string]any{"instance": instance})
+}
+
+// ServerPushReportResolved formats "server:push.report_resolved". Web Push notification: the moderators resolved a report that the user filed. It never says how. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A report you filed on {instance} has been resolved
+func (l *Localizer) ServerPushReportResolved(instance string) string {
+	return l.format("server:push.report_resolved", map[string]any{"instance": instance})
+}
