@@ -71,6 +71,9 @@ type Options struct {
 	// InstanceName returns the instance's display name in its default locale, which NodeInfo
 	// reports as metadata.nodeName; nil or "" reports Host.
 	InstanceName func(ctx context.Context) string
+	// Metadata returns what NodeInfo's metadata says about the instance besides its name, in its
+	// default locale; nil says nothing more.
+	Metadata func(ctx context.Context) (NodeMetadata, error)
 	// OpenRegistrations reports whether people may sign up on their own (NodeInfo
 	// openRegistrations); nil reports false.
 	OpenRegistrations func(ctx context.Context) (bool, error)

@@ -1,4 +1,16 @@
 {
+  "about.contact.account": {
+    "defaultMessage": "アカウント",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "連絡先",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
   "about.description.title": {
     "defaultMessage": "説明",
     "description": "Heading of the section of the server's information page with the server's description."
@@ -54,6 +66,30 @@
   "about.domains.title": {
     "defaultMessage": "制限しているサーバー",
     "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server's information page that says what the server states to search engines and AI crawlers."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "{setting, select, allow {検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。} other {このサーバーは、すべてのページを検索エンジンの索引に載せないよう求めています。}}",
+    "description": "What the server states to search engines, by the server setting search_indexing (allow or deny)."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "{setting, select, allow {このサーバーは AI に対して何も留保していません。拒否したアカウントのページを除き、AI はページを学習にも利用にも使えます。} deny_training {このサーバーは、ページを AI のモデルの学習に使うことを拒否しています。拒否したアカウントのページを除き、AI の検索やアシスタントによる利用は拒否していません。} other {このサーバーは、ページを AI のモデルの学習に使うことと、AI の検索・アシスタント・エージェントで利用することを拒否しています。}}",
+    "description": "What the server states to AI crawlers, by the server setting ai_usage (allow, deny_training, or deny)."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "このサーバーは、この表明を robots.txt（既知の AI クローラーの一覧を含む）、ページの robots の meta タグと X-Robots-Tag・Content-Usage・tdm-reservation のヘッダー、/.well-known/tdmrep.json で示します。これらは要請です。主要なクローラーの多くは一部に従うとしていますが、従わないクローラーを技術的に止めるものではありません。",
+    "description": "How the server states its search and AI settings: the machine-readable means it uses."
+  },
+  "about.crawlers.accounts": {
+    "defaultMessage": "アカウントごとに、このサーバーにある自分のページについて、検索エンジンへの掲載や AI を拒否することもできます。サーバーが拒否しているものを、アカウントが許可することはできません。メディアのファイルと、ほかのサーバーにある投稿の写しには、アカウントの選択は及びません。",
+    "description": "That each account can narrow the server's statement for its own pages, but never widen it."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "この表明が法的にどう扱われるかは国によって異なります。EU では、デジタル単一市場における著作権指令 4 条 3 項にいうテキストとデータのマイニングに対する機械可読な権利の留保として示しています。日本では、著作権法 30 条の 4 が情報解析のための多くの利用を許諾なしに認めているため、この表明は法的な拒否として扱われない場合があります。それでも多くの事業者は、こうした表明に自主的に従っています。このページは法的な助言ではありません。",
+    "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
   },
   "about.rules.title": {
     "defaultMessage": "ルール",
@@ -1371,6 +1407,14 @@
     "defaultMessage": "個人データの表示",
     "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
   },
+  "admin.audit_log.action.role_created": {
+    "defaultMessage": "ロールの作成",
+    "description": "Heading of an audit log entry: an administrator created a role."
+  },
+  "admin.audit_log.action.role_deleted": {
+    "defaultMessage": "ロールの削除",
+    "description": "Heading of an audit log entry: an administrator deleted a role."
+  },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "ロールの付与",
     "description": "Heading of an audit log entry: an administrator granted a role to a user."
@@ -1378,6 +1422,10 @@
   "admin.audit_log.action.role_revoked": {
     "defaultMessage": "ロールの剥奪",
     "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
+  "admin.audit_log.action.role_updated": {
+    "defaultMessage": "ロールの変更",
+    "description": "Heading of an audit log entry: an administrator changed the position or the permissions of a role."
   },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "ルールの追加",
@@ -3003,6 +3051,210 @@
     "defaultMessage": "通報",
     "description": "Heading and title of the report queue."
   },
+  "admin.roles.builtin.admin": {
+    "defaultMessage": "すべての権限を持つ組み込みのロール。変更も削除もできません。",
+    "description": "Note on the built-in admin role in the list of roles."
+  },
+  "admin.roles.builtin.moderator": {
+    "defaultMessage": "組み込みのロール。位置と権限は変えられますが、削除はできません。",
+    "description": "Note on the built-in moderator role in the list of roles."
+  },
+  "admin.roles.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes a role's dialog without changing anything."
+  },
+  "admin.roles.category.moderation": {
+    "defaultMessage": "モデレーション",
+    "description": "Label of the group of moderation permissions, and the term of them in the list of roles."
+  },
+  "admin.roles.category.server": {
+    "defaultMessage": "サーバー管理",
+    "description": "Label of the group of server administration permissions, and the term of them in the list of roles."
+  },
+  "admin.roles.created": {
+    "defaultMessage": "ロール {role} を作成しました。監査ログに記録しました。",
+    "description": "Result after creating a role. {role} is its key (isolated)."
+  },
+  "admin.roles.delete": {
+    "defaultMessage": "削除",
+    "description": "Button that deletes a role (and the confirmation's button)."
+  },
+  "admin.roles.delete.description": {
+    "defaultMessage": "元に戻せません。誰かが持っているロールは削除できないので、先に剥奪してください。",
+    "description": "Body of the confirmation of deleting a role."
+  },
+  "admin.roles.delete.title": {
+    "defaultMessage": "ロール {role} を削除しますか？",
+    "description": "Title of the confirmation of deleting a role. {role} is its key (isolated)."
+  },
+  "admin.roles.delete_failed": {
+    "defaultMessage": "ロールを削除できませんでした：{reason}",
+    "description": "Error in the confirmation when deleting a role failed. {reason} is the server's explanation."
+  },
+  "admin.roles.delete_role": {
+    "defaultMessage": "{role} を削除",
+    "description": "Accessible name of the delete button of a role. {role} is its key (isolated)."
+  },
+  "admin.roles.deleted": {
+    "defaultMessage": "ロール {role} を削除しました。監査ログに記録しました。",
+    "description": "Result after deleting a role. {role} is its key (isolated)."
+  },
+  "admin.roles.edit": {
+    "defaultMessage": "編集",
+    "description": "Button that opens the dialog that changes a role."
+  },
+  "admin.roles.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the button that closes the dialog that changes a role."
+  },
+  "admin.roles.edit.title": {
+    "defaultMessage": "ロール {role} を編集",
+    "description": "Title of the dialog that changes a role. {role} is its key (isolated)."
+  },
+  "admin.roles.edit_role": {
+    "defaultMessage": "{role} を編集",
+    "description": "Accessible name of the edit button of a role. {role} is its key (isolated)."
+  },
+  "admin.roles.failed.outranked": {
+    "defaultMessage": "このロールはあなたのいちばん高いロールより上になったので、変えられません。",
+    "description": "Error when the server refused a change of a role above the viewer's highest role (their roles changed since the page loaded)."
+  },
+  "admin.roles.key": {
+    "defaultMessage": "キー",
+    "description": "Label of the field of a new role's key, its name."
+  },
+  "admin.roles.key.description": {
+    "defaultMessage": "{max} 文字までの英小文字・数字・アンダースコア・ハイフン。後から変えられません。",
+    "description": "Description of the key field. {max} is the length limit."
+  },
+  "admin.roles.key.invalid": {
+    "defaultMessage": "{max} 文字までの英小文字・数字・アンダースコア・ハイフンで入力してください。",
+    "description": "Error of the key field when the key is empty or has other characters. {max} is the length limit."
+  },
+  "admin.roles.list.title": {
+    "defaultMessage": "このサーバーのロール",
+    "description": "Heading of the list of roles, highest position first."
+  },
+  "admin.roles.missing_permissions": {
+    "defaultMessage": "自分のロールにない権限：{permissions}",
+    "description": "Error under the permissions of a role that the server refused. {permissions} lists the permissions (identifiers, isolated)."
+  },
+  "admin.roles.new.accounts": {
+    "defaultMessage": "アカウントを探す",
+    "description": "Link from the roles screen to the account search, where a role is granted."
+  },
+  "admin.roles.new.description": {
+    "defaultMessage": "作ったロールはまだ誰も持っていません。アカウントの管理画面から付与します。",
+    "description": "Text above the form that creates a role: how a role is granted. A link to the accounts follows."
+  },
+  "admin.roles.new.no_role": {
+    "defaultMessage": "ロールを持っていないので、ロールを作成できません。",
+    "description": "Text instead of the form when the viewer holds no role (they may create none)."
+  },
+  "admin.roles.new.title": {
+    "defaultMessage": "ロールを作成する",
+    "description": "Heading of the form that creates a role."
+  },
+  "admin.roles.outranked": {
+    "defaultMessage": "あなたのいちばん高いロール {role} より上なので、変えられません。",
+    "description": "Note on a role above the viewer's highest role. {role} is the viewer's highest role (isolated)."
+  },
+  "admin.roles.permission.manage_accounts": {
+    "defaultMessage": "アカウントと登録",
+    "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
+  },
+  "admin.roles.permission.manage_custom_emojis": {
+    "defaultMessage": "カスタム絵文字",
+    "description": "Name of the permission manage_custom_emojis: the custom emoji."
+  },
+  "admin.roles.permission.manage_domains": {
+    "defaultMessage": "ほかのサーバー",
+    "description": "Name of the permission manage_domains: the moderation actions on domains and the health of remote servers."
+  },
+  "admin.roles.permission.manage_invites": {
+    "defaultMessage": "招待",
+    "description": "Name of the permission manage_invites: the invites."
+  },
+  "admin.roles.permission.manage_jobs": {
+    "defaultMessage": "失敗したジョブ",
+    "description": "Name of the permission manage_jobs: the dead jobs of the job queue."
+  },
+  "admin.roles.permission.manage_reports": {
+    "defaultMessage": "通報",
+    "description": "Name of the permission manage_reports: handling reports."
+  },
+  "admin.roles.permission.manage_roles": {
+    "defaultMessage": "ロール",
+    "description": "Name of the permission manage_roles: the roles and granting them."
+  },
+  "admin.roles.permission.manage_rules": {
+    "defaultMessage": "サーバーのルール",
+    "description": "Name of the permission manage_rules: the instance rules."
+  },
+  "admin.roles.permission.manage_settings": {
+    "defaultMessage": "サーバーの設定",
+    "description": "Name of the permission manage_settings: the instance's settings, theme, terms, and privacy policy."
+  },
+  "admin.roles.permission.manage_two_factor": {
+    "defaultMessage": "二要素認証の解除",
+    "description": "Name of the permission manage_two_factor: removing the two-factor authentication of a user."
+  },
+  "admin.roles.permission.manage_webhooks": {
+    "defaultMessage": "Webhook",
+    "description": "Name of the permission manage_webhooks: the webhooks."
+  },
+  "admin.roles.permission.view_audit": {
+    "defaultMessage": "監査ログ",
+    "description": "Name of the permission view_audit: reading the audit log."
+  },
+  "admin.roles.permissions.description": {
+    "defaultMessage": "ロールが与える権限を選びます。付けたり外したりできるのは、自分のロールが持つ権限だけです。",
+    "description": "Text above the groups of permission checkboxes of a role."
+  },
+  "admin.roles.permissions.none": {
+    "defaultMessage": "なし",
+    "description": "Value of a permission area in the list of roles when the role has none of its permissions."
+  },
+  "admin.roles.permissions.separator": {
+    "defaultMessage": "、",
+    "description": "Separator between the names of permissions in a list of them."
+  },
+  "admin.roles.position": {
+    "defaultMessage": "位置",
+    "description": "Label of the field of a role's position (its rank), and the term of the position in the list."
+  },
+  "admin.roles.position.description": {
+    "defaultMessage": "0〜{max} の整数。位置の高いロールが上になり、自分のいちばん高いロール以下のロールだけを扱えます。",
+    "description": "Description of the position field. {max} is the highest position the viewer may give."
+  },
+  "admin.roles.position.invalid": {
+    "defaultMessage": "0〜{max} の整数を入力してください。",
+    "description": "Error of the position field when it is not a whole number in range. {max} is the highest position the viewer may give."
+  },
+  "admin.roles.save": {
+    "defaultMessage": "保存",
+    "description": "Button that saves the changes of a role in its dialog."
+  },
+  "admin.roles.save_failed": {
+    "defaultMessage": "ロールを保存できませんでした：{reason}",
+    "description": "Error of the role form or dialog. {reason} is the server's explanation."
+  },
+  "admin.roles.submit": {
+    "defaultMessage": "ロールを作成",
+    "description": "Button that creates a role."
+  },
+  "admin.roles.summary": {
+    "defaultMessage": "ロールを作り、位置と権限を決める。",
+    "description": "Description of the roles screen in the administration menu of the settings."
+  },
+  "admin.roles.title": {
+    "defaultMessage": "ロール",
+    "description": "Title of the roles screen, in the administration menu and as its heading."
+  },
+  "admin.roles.updated": {
+    "defaultMessage": "ロール {role} を変更しました。持っている人の次の操作から効きます。監査ログに記録しました。",
+    "description": "Result after changing a role. {role} is its key (isolated)."
+  },
   "admin.rules.add": {
     "defaultMessage": "ルールを追加する",
     "description": "Button that adds a new rule after the others."
@@ -3163,6 +3415,74 @@
     "defaultMessage": "{count, plural, other {# 文字超えています}}",
     "description": "Character count under a text of the server settings and the rules when the text is over its limit."
   },
+  "admin.settings.contact.account": {
+    "defaultMessage": "連絡先のアカウント",
+    "description": "Label of the field of the username of the account to contact about the server."
+  },
+  "admin.settings.contact.account.description": {
+    "defaultMessage": "このサーバーのアカウントのユーザー名（例：admin）",
+    "description": "Help under the field of the contact account: what to type in it."
+  },
+  "admin.settings.contact.description": {
+    "defaultMessage": "このサーバーを運営する人への連絡先と、サーバーを表す画像です。このサーバーについてのページ、訪れた人を迎えるページ、ほかのサーバー（NodeInfo）に表示されます。表示しない項目は空にしてください。",
+    "description": "Explanation above the fields of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.email": {
+    "defaultMessage": "連絡先のメールアドレス",
+    "description": "Label of the field of the email address to contact about the server."
+  },
+  "admin.settings.contact.email.description": {
+    "defaultMessage": "サインインしていない人も含め、誰でも見られます。",
+    "description": "Help under the field of the contact email address: who can see it."
+  },
+  "admin.settings.contact.email.invalid": {
+    "defaultMessage": "admin@example.com のようなメールアドレスを入力してください。",
+    "description": "Error under the field of the contact email address when it is not an email address."
+  },
+  "admin.settings.contact.save": {
+    "defaultMessage": "連絡先とサムネイルを保存する",
+    "description": "Button that saves the server's contact and thumbnail."
+  },
+  "admin.settings.contact.save_failed": {
+    "defaultMessage": "連絡先とサムネイルを保存できませんでした：{reason}",
+    "description": "Error when saving the server's contact and thumbnail failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.contact.saved": {
+    "defaultMessage": "連絡先とサムネイルを保存しました。変更は監査ログに記録されます。",
+    "description": "Status after the server's contact and thumbnail were saved."
+  },
+  "admin.settings.contact.thumbnail": {
+    "defaultMessage": "サムネイル",
+    "description": "Heading of the part of the form with the image that represents the server."
+  },
+  "admin.settings.contact.thumbnail.alt": {
+    "defaultMessage": "{language}での画像の説明",
+    "description": "Label of the field of the thumbnail's alt text in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.contact.thumbnail.choose": {
+    "defaultMessage": "画像を選ぶ",
+    "description": "Button that opens the file picker to choose the server's thumbnail."
+  },
+  "admin.settings.contact.thumbnail.description": {
+    "defaultMessage": "このサーバーについてのページと、訪れた人を迎えるページの上に表示される横長の画像（1600 × 900 ピクセルなど）です。",
+    "description": "Help about the server's thumbnail: where it shows and what size suits it."
+  },
+  "admin.settings.contact.thumbnail.failed": {
+    "defaultMessage": "サーバーがこの画像を処理できませんでした。別の画像を試してください。",
+    "description": "Error when the chosen thumbnail could not be processed."
+  },
+  "admin.settings.contact.thumbnail.remove": {
+    "defaultMessage": "画像を外す",
+    "description": "Button that removes the server's thumbnail when the form is saved."
+  },
+  "admin.settings.contact.title": {
+    "defaultMessage": "連絡先とサムネイル",
+    "description": "Heading of the section of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.unchanged": {
+    "defaultMessage": "連絡先とサムネイルはすでに保存されています。",
+    "description": "Status after pressing the save button of the contact and thumbnail without changing anything."
+  },
   "admin.settings.descriptions.description": {
     "defaultMessage": "短い説明は、このサーバーについてのページやほかのアプリがサーバーの名前と並べて表示する 1 段落の文です。説明は、このサーバーについてのページで詳しく伝えます。どちらも言語ごとに持ち、説明のない言語ではサーバーの既定の言語の説明が表示されます。",
     "description": "Explanation above the fields of the server's descriptions on the server settings screen."
@@ -3202,6 +3522,78 @@
   "admin.settings.domain_actions.comments.all": {
     "defaultMessage": "一覧を見られる人なら誰でもコメントを見られます。",
     "description": "Description of showing the comments of the domain actions to everyone."
+  },
+  "admin.settings.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.description": {
+    "defaultMessage": "サーバーが検索エンジンと AI のクローラーに示す表明です。設定するまでは、どちらも拒否します。サーバーはこの設定と、同梱する既知の AI クローラーの一覧から robots.txt を作り、すべてのページでも表明します。アカウントごとに自分のページについてさらに拒否できますが、許可を広げることはできません。",
+    "description": "Explanation of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.search": {
+    "defaultMessage": "検索エンジン",
+    "description": "Label of the radio group of whether search engines may index the server's pages (search_indexing)."
+  },
+  "admin.settings.crawlers.search.allow": {
+    "defaultMessage": "索引に載せることを許可する",
+    "description": "Choice that lets search engines index the pages of the accounts that allow it."
+  },
+  "admin.settings.crawlers.search.allow.description": {
+    "defaultMessage": "検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。ほかのページは載せません。",
+    "description": "Description of letting search engines index pages."
+  },
+  "admin.settings.crawlers.search.deny": {
+    "defaultMessage": "索引に載せることを拒否する",
+    "description": "Choice that asks search engines not to index any page."
+  },
+  "admin.settings.crawlers.search.deny.description": {
+    "defaultMessage": "すべてのページで、検索エンジンに索引に載せないよう求めます（noindex）。リンクのプレビューはこれまでどおり表示されます。",
+    "description": "Description of asking search engines not to index any page."
+  },
+  "admin.settings.crawlers.indexable_default": {
+    "defaultMessage": "新しいアカウントで検索への掲載を許可する",
+    "description": "Label of the checkbox of whether new accounts allow search indexing (indexable_default)."
+  },
+  "admin.settings.crawlers.indexable_default.description": {
+    "defaultMessage": "これから登録するアカウントの初めの設定です。登録済みのアカウントの設定は変わりません。",
+    "description": "Help text of the indexable default checkbox."
+  },
+  "admin.settings.crawlers.ai": {
+    "defaultMessage": "AI",
+    "description": "Label of the radio group of what the server states to AI crawlers (ai_usage)."
+  },
+  "admin.settings.crawlers.ai.allow": {
+    "defaultMessage": "許可する",
+    "description": "Choice that reserves nothing against AI."
+  },
+  "admin.settings.crawlers.ai.allow.description": {
+    "defaultMessage": "サーバーとしては AI に対して何も留保しません。アカウントは自分のページについて拒否できます。",
+    "description": "Description of reserving nothing against AI."
+  },
+  "admin.settings.crawlers.ai.deny_training": {
+    "defaultMessage": "学習を拒否する",
+    "description": "Choice that denies the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny_training.description": {
+    "defaultMessage": "AI のモデルの学習のためにデータを集めるクローラーを拒否します。人の依頼でページを読む AI の検索やアシスタントは拒否しません。",
+    "description": "Description of denying the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny": {
+    "defaultMessage": "学習と利用を拒否する",
+    "description": "Choice that denies both the training and the use by AI."
+  },
+  "admin.settings.crawlers.ai.deny.description": {
+    "defaultMessage": "人の依頼でページを読む AI の検索・アシスタント・エージェントを含め、AI のクローラーを拒否します。",
+    "description": "Description of denying both the training and the use by AI."
+  },
+  "admin.settings.crawlers.security_contact": {
+    "defaultMessage": "脆弱性の連絡先",
+    "description": "Label of the field of the address to report vulnerabilities to (security_contact)."
+  },
+  "admin.settings.crawlers.security_contact.description": {
+    "defaultMessage": "脆弱性を報告する先です。https か mailto の URI（メールアドレスなら先頭に mailto と半角のコロンを付けたもの）を入れます。設定している間だけ、サーバーは /.well-known/security.txt を返します。",
+    "description": "Help text of the security contact field."
   },
   "admin.settings.domain_actions.comments.none": {
     "defaultMessage": "コメントは表示しません。",
@@ -5476,7 +5868,7 @@
     "description": "Error in the deletion dialog when the password the user typed is not their current password."
   },
   "settings.account.export.description": {
-    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
+    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分と、フォロー・ブロック・ミュート・ブックマークの CSV を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
     "description": "Explains the archive of the user's data, above the button that asks for one."
   },
   "settings.account.export.download": {
@@ -5606,6 +5998,186 @@
   "settings.follow_requests.title": {
     "defaultMessage": "フォローリクエスト",
     "description": "Heading and document title of the settings page with the follow requests awaiting approval."
+  },
+  "settings.import_export.export.description": {
+    "defaultMessage": "Mastodon と同じ形式の CSV ファイルをダウンロードします。Mastodon や、この形式を読めるほかのサーバーでインポートできます。",
+    "description": "Explains the CSV files the user can download, above the list of them."
+  },
+  "settings.import_export.export.download": {
+    "defaultMessage": "ダウンロード",
+    "description": "Button that downloads one CSV file."
+  },
+  "settings.import_export.export.download_of": {
+    "defaultMessage": "{kind}を CSV でダウンロード",
+    "description": "Accessible name of the button that downloads one CSV file. {kind} is the name of the list, e.g. Blocked accounts."
+  },
+  "settings.import_export.export.title": {
+    "defaultMessage": "エクスポート",
+    "description": "Heading of the section of the import and export page that downloads CSV files."
+  },
+  "settings.import_export.history.empty": {
+    "defaultMessage": "インポートはありません",
+    "description": "Shown when the user has no recent import."
+  },
+  "settings.import_export.history.failed": {
+    "defaultMessage": "インポートできなかったもの",
+    "description": "Label of the number of entries of an import that could not be carried out, e.g. accounts that no longer exist."
+  },
+  "settings.import_export.history.item": {
+    "defaultMessage": "{kind}（{date}）",
+    "description": "Heading of one import in the list. {kind} is the name of the list, e.g. Follows; {date} is when the import started, a formatted date and time."
+  },
+  "settings.import_export.history.mode": {
+    "defaultMessage": "方法",
+    "description": "Label of how an import was done (merge or overwrite)."
+  },
+  "settings.import_export.history.progress": {
+    "defaultMessage": "進み具合",
+    "description": "Label of how many entries of an import are done."
+  },
+  "settings.import_export.history.progress_value": {
+    "defaultMessage": "{total, number} 件中 {processed, number} 件",
+    "description": "How many entries of an import are done. {processed} and {total} are numbers."
+  },
+  "settings.import_export.history.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the state of an import (in progress, finished)."
+  },
+  "settings.import_export.history.state.finished": {
+    "defaultMessage": "完了",
+    "description": "State of an import that the server has carried out."
+  },
+  "settings.import_export.history.state.in_progress": {
+    "defaultMessage": "処理中",
+    "description": "State of an import that the server is still carrying out."
+  },
+  "settings.import_export.history.title": {
+    "defaultMessage": "最近のインポート",
+    "description": "Heading of the list of the user's latest imports on the import and export page."
+  },
+  "settings.import_export.import.choose": {
+    "defaultMessage": "CSV ファイルを選ぶ",
+    "description": "Button that opens the file picker to choose the CSV file to import."
+  },
+  "settings.import_export.import.chosen": {
+    "defaultMessage": "選んだファイル：{name}",
+    "description": "Shows the name of the CSV file the user chose to import. {name} is the file name."
+  },
+  "settings.import_export.import.description": {
+    "defaultMessage": "Mastodon やこのサーバーからエクスポートした CSV ファイルをインポートします。ほかのサーバーのアカウントと投稿はバックグラウンドで探すので、時間がかかることがあります。",
+    "description": "Explains importing a CSV file, above the form."
+  },
+  "settings.import_export.import.file": {
+    "defaultMessage": "CSV ファイル",
+    "description": "Heading of the part of the import form where the user chooses the file."
+  },
+  "settings.import_export.import.file_too_large": {
+    "defaultMessage": "ファイルが大きすぎてインポートできません。小さなファイルに分けてください。",
+    "description": "Error in the import form when the chosen CSV file is larger than the server accepts."
+  },
+  "settings.import_export.import.file_unreadable": {
+    "defaultMessage": "ファイルを読み込めません。もう一度選んでください。",
+    "description": "Error in the import form when the browser could not read the chosen file."
+  },
+  "settings.import_export.import.kind": {
+    "defaultMessage": "インポートするもの",
+    "description": "Label of the radio group that chooses the kind of CSV file to import (follows, blocked accounts, muted accounts, bookmarks)."
+  },
+  "settings.import_export.import.mode": {
+    "defaultMessage": "インポートの方法",
+    "description": "Label of the radio group that chooses whether the import merges with or overwrites what the user has."
+  },
+  "settings.import_export.import.mode.merge": {
+    "defaultMessage": "統合",
+    "description": "Option of an import that keeps what the user has and adds what the file lists."
+  },
+  "settings.import_export.import.mode.merge.description": {
+    "defaultMessage": "今あるものを残し、ファイルにあるものを追加します。",
+    "description": "Description of the merge option of an import."
+  },
+  "settings.import_export.import.mode.overwrite": {
+    "defaultMessage": "置き換え",
+    "description": "Option of an import that makes the user's list exactly what the file lists."
+  },
+  "settings.import_export.import.mode.overwrite.description": {
+    "defaultMessage": "ファイルの内容と同じにします。ファイルにないものは削除します。",
+    "description": "Description of the overwrite option of an import."
+  },
+  "settings.import_export.import.no_file": {
+    "defaultMessage": "ファイルを選んでいません",
+    "description": "Shown in the import form before the user chooses a CSV file."
+  },
+  "settings.import_export.import.preview": {
+    "defaultMessage": "ファイルを確認する",
+    "description": "Button that asks the server what importing the chosen file would do, without importing it."
+  },
+  "settings.import_export.import.preview.entries": {
+    "defaultMessage": "ファイルの項目",
+    "description": "Label of the number of accounts or posts that the file to import lists."
+  },
+  "settings.import_export.import.preview.present": {
+    "defaultMessage": "登録済み",
+    "description": "Label of the number of entries of the file to import that the user already has."
+  },
+  "settings.import_export.import.preview.removals": {
+    "defaultMessage": "削除されるもの",
+    "description": "Label of the number of accounts or posts that an overwrite removes because the file does not list them."
+  },
+  "settings.import_export.import.preview.skip.duplicate": {
+    "defaultMessage": "前の行と重複しています",
+    "description": "Why a line of the file to import is skipped: an earlier line names the same account or post."
+  },
+  "settings.import_export.import.preview.skip.invalid": {
+    "defaultMessage": "アカウントのアドレスでも投稿の URL でもありません",
+    "description": "Why a line of the file to import is skipped: it names no account (user@domain) or post URL."
+  },
+  "settings.import_export.import.preview.skipped": {
+    "defaultMessage": "読み飛ばす行",
+    "description": "Heading of the list of lines of the file that the import skips."
+  },
+  "settings.import_export.import.preview.skipped_line": {
+    "defaultMessage": "{line, number} 行目：{value}",
+    "description": "One line of the file that the import skips. {line} is the line number, {value} the line as written."
+  },
+  "settings.import_export.import.preview.title": {
+    "defaultMessage": "インポートの内容",
+    "description": "Heading of the result of checking the file to import."
+  },
+  "settings.import_export.import.start": {
+    "defaultMessage": "インポートを始める",
+    "description": "Button that starts importing the checked file."
+  },
+  "settings.import_export.import.started": {
+    "defaultMessage": "{total, plural, other {# 件}}のインポートを始めました。進み具合は下に表示されます。",
+    "description": "Announced after the user started an import. {total} is the number of accounts or posts to add or remove."
+  },
+  "settings.import_export.import.title": {
+    "defaultMessage": "インポート",
+    "description": "Heading of the section of the import and export page that imports a CSV file."
+  },
+  "settings.import_export.kind.blocks": {
+    "defaultMessage": "ブロックしたアカウント",
+    "description": "Name of the list of accounts the user blocks, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.bookmarks": {
+    "defaultMessage": "ブックマーク",
+    "description": "Name of the list of posts the user bookmarked, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.following": {
+    "defaultMessage": "フォロー",
+    "description": "Name of the list of accounts the user follows, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.mutes": {
+    "defaultMessage": "ミュートしたアカウント",
+    "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.summary": {
+    "defaultMessage": "フォロー・ブロック・ミュート・ブックマークをほかのサーバーと移し合います",
+    "description": "Description of the import and export page in the list of settings pages."
+  },
+  "settings.import_export.title": {
+    "defaultMessage": "インポートとエクスポート",
+    "description": "Heading and document title of the settings page for exporting and importing the user's follows, blocks, mutes, and bookmarks as CSV files."
   },
   "settings.list.action": {
     "defaultMessage": "{action}：{name}",
@@ -5738,6 +6310,34 @@
   "settings.profile.bot.description": {
     "defaultMessage": "自動で投稿するアカウントであることを、ほかの人に示します。",
     "description": "Help text of the 'This is a bot' checkbox."
+  },
+  "settings.profile.crawlers": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the part of the profile form about search engines and AI."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "プロフィールと公開投稿を検索に載せる",
+    "description": "Label of the checkbox that lets the profile and public posts appear in search."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "このサーバーの検索と、サーバーが許可していれば検索エンジンが、索引に載せられます。この選択に従うほかのサーバーにも伝わります。",
+    "description": "Help text of the indexable checkbox."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "このサーバーはすべてのページを検索エンジンの索引に載せないよう求めているため、許可しても検索エンジンには載りません。",
+    "description": "Note shown when the server denies search engines, so the user's choice does not reach them."
+  },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "AI の学習と利用を拒否する",
+    "description": "Label of the checkbox that denies AI training on and use of the user's pages."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "このサーバーにあるプロフィールと投稿のページで、AI に学習や利用をしないよう求めます。メディアのファイルと、ほかのサーバーにある投稿の写しには及びません。",
+    "description": "Help text of the AI opt-out checkbox, with its limits."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "{usage, select, deny_training {このサーバーはすべてのページで AI の学習を拒否しています。この設定では、AI の検索やアシスタントによる利用も拒否します。} other {このサーバーはすべてのページで AI の学習と利用を拒否しています。}}",
+    "description": "Note shown when the server already denies AI training (deny_training) or both training and use (deny)."
   },
   "settings.profile.characters_left": {
     "defaultMessage": "{count, plural, other {残り # 文字}}",
@@ -5990,6 +6590,122 @@
   "settings.two_factor.summary": {
     "defaultMessage": "パスワードに加えて、認証アプリのコードでログインします",
     "description": "Description of the two-factor authentication item in the settings menu."
+  },
+  "settings.auto_delete.title": {
+    "defaultMessage": "古い投稿の自動削除",
+    "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
+  },
+  "settings.auto_delete.summary": {
+    "defaultMessage": "古くなった自分の投稿を、残すものを除いて自動で削除します",
+    "description": "Description of the automatic deletion item in the settings menu."
+  },
+  "settings.auto_delete.description": {
+    "defaultMessage": "選んだ日数より古くなった自分の投稿を、自分で削除したときと同じく、このサーバーと投稿が届いたサーバーから削除します。削除した投稿は元に戻せません。ブーストは削除しません。",
+    "description": "Explanation at the top of the automatic deletion settings page."
+  },
+  "settings.auto_delete.enabled": {
+    "defaultMessage": "古い投稿を自動で削除する",
+    "description": "Label of the switch that turns the automatic deletion of old posts on."
+  },
+  "settings.auto_delete.enabled.description": {
+    "defaultMessage": "サーバーが 1 時間ごとに確かめ、1 回に 100 件まで削除します。古い投稿が多いときは、消し終えるまで数時間かかります。",
+    "description": "Help of the switch of the automatic deletion of old posts."
+  },
+  "settings.auto_delete.age": {
+    "defaultMessage": "削除する投稿の古さ",
+    "description": "Label of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.description": {
+    "defaultMessage": "投稿した日時から数えます。",
+    "description": "Help of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "An age of posts in days, an option of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.keep": {
+    "defaultMessage": "残す投稿",
+    "description": "Legend of the checkboxes of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.description": {
+    "defaultMessage": "チェックした項目のどれかに当てはまる投稿は、自動では削除しません。",
+    "description": "Help of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.pinned": {
+    "defaultMessage": "プロフィールにピン留めした投稿",
+    "description": "Exception of the automatic deletion: posts pinned to the profile."
+  },
+  "settings.auto_delete.keep.bookmarked": {
+    "defaultMessage": "自分がブックマークした投稿",
+    "description": "Exception of the automatic deletion: posts the user bookmarked."
+  },
+  "settings.auto_delete.keep.favourited": {
+    "defaultMessage": "自分がお気に入りにした投稿",
+    "description": "Exception of the automatic deletion: posts the user favourited."
+  },
+  "settings.auto_delete.keep.media": {
+    "defaultMessage": "画像などのメディアが付いた投稿",
+    "description": "Exception of the automatic deletion: posts with media attachments."
+  },
+  "settings.auto_delete.keep.polls": {
+    "defaultMessage": "投票が付いた投稿",
+    "description": "Exception of the automatic deletion: posts with a poll."
+  },
+  "settings.auto_delete.visibilities": {
+    "defaultMessage": "残す公開範囲",
+    "description": "Legend of the checkboxes of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.visibilities.description": {
+    "defaultMessage": "チェックした公開範囲の投稿は、自動では削除しません。",
+    "description": "Help of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.min_boosts": {
+    "defaultMessage": "これ以上ブーストされた投稿を残す",
+    "description": "Label of the select of the number of boosts that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.min_favourites": {
+    "defaultMessage": "これ以上お気に入りにされた投稿を残す",
+    "description": "Label of the select of the number of favourites that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.threshold.off": {
+    "defaultMessage": "この条件では残さない",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion that keeps no post for it."
+  },
+  "settings.auto_delete.threshold.count": {
+    "defaultMessage": "{count, plural, other {# 回}}",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion: a number of boosts or favourites."
+  },
+  "settings.auto_delete.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves the automatic deletion settings."
+  },
+  "settings.auto_delete.saved_on": {
+    "defaultMessage": "保存しました。{days, plural, other {# 日}}より古い投稿を、残すものを除いて削除します。",
+    "description": "Status after the automatic deletion settings were saved turned on."
+  },
+  "settings.auto_delete.saved_off": {
+    "defaultMessage": "保存しました。投稿は自動では削除しません。",
+    "description": "Status after the automatic deletion settings were saved turned off."
+  },
+  "settings.auto_delete.save_failed": {
+    "defaultMessage": "設定を保存できませんでした：{reason}",
+    "description": "Error after saving the automatic deletion settings failed. {reason} is the localized reason."
+  },
+  "settings.auto_delete.unsaved.title": {
+    "defaultMessage": "保存せずに移動しますか？",
+    "description": "Title of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.description": {
+    "defaultMessage": "自動削除の設定の変更は失われます。",
+    "description": "Description of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.leave": {
+    "defaultMessage": "変更を破棄する",
+    "description": "Button that leaves the automatic deletion settings without saving."
+  },
+  "settings.auto_delete.unsaved.stay": {
+    "defaultMessage": "編集を続ける",
+    "description": "Button that stays on the automatic deletion settings."
   },
   "settings.two_factor.status.title": {
     "defaultMessage": "現在の設定",

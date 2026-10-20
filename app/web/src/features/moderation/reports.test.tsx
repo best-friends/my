@@ -207,6 +207,8 @@ describe("a report's page", () => {
           limits: { max_post_characters: 500 },
           timelines: { local: true, federated: true },
           sends_email: true,
+          search_indexing: "deny",
+          ai_usage: "deny",
           rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000f0001", text: "No spam", lang: "en" }],
         }),
       ),

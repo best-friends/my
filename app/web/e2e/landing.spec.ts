@@ -61,6 +61,8 @@ async function serveInstance(page: Page, origin: string, overrides: Partial<Inst
     limits: { max_post_characters: 500 },
     timelines: { local: true, federated: true },
     sends_email: true,
+    search_indexing: "deny",
+    ai_usage: "deny",
     rules: [
       { id: "0192f0c4-7a8e-7000-8000-0000000000e1", text: "Be kind", hint: "No insults, no harassment.", lang: "en" },
       { id: "0192f0c4-7a8e-7000-8000-0000000000e2", text: "Mark sensitive media", lang: "en" },

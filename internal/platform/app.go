@@ -126,6 +126,9 @@ type App struct {
 	AccountAdmin *identity.AccountAdmin
 	// Exports builds the archives of the users' data (FR-008).
 	Exports *identity.Exports
+	// Imports writes the CSV exports and runs the CSV imports of follows, blocks, mutes, and
+	// bookmarks (FR-008).
+	Imports *identity.Imports
 	// Instance holds the instance settings and texts, which live in the database; Config holds
 	// the deployment configuration. They never share a key (docs/reference/configuration.md).
 	Instance *instance.Service
@@ -135,6 +138,8 @@ type App struct {
 	Interactions *content.Interactions
 	// Statuses presents statuses, their threads and history, and bookmarks to a viewer.
 	Statuses *content.Reader
+	// AutoDelete holds the users' automatic deletion of their old posts and runs it (FR-118).
+	AutoDelete *content.AutoDelete
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
 	// Moderation records the actions on domains and accounts and the reports received from
@@ -333,6 +338,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks = d.WebhookRepository()
 		retention = retentionRepositories{
 			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -359,6 +365,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks = d.WebhookRepository()
 		retention = retentionRepositories{
 			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -445,6 +452,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs,
 		// The preview_image setting refers to a media file, which setMedia sets up later.
 		Media: instanceMedia{a},
+		// The contact_account setting names a local account.
+		Accounts: instanceAccounts{a},
 		// The terms of service and the privacy policy are Markdown (#489).
 		Documents: markdown.New(),
 	})
@@ -485,6 +494,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
 			mode, err := a.Instance.RegistrationMode(ctx)
 			return domainidentity.RegistrationMode(mode), err
+		},
+		// New accounts take the instance's indexable default (FR-412, ADR-0057).
+		IndexableDefault: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.IndexableDefault(), err
 		},
 		Mailer: a.Mailer,
 		// The registration page screens sign-ups against the sign-up block list (FR-719).
@@ -588,6 +602,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	a.setUpExports(identities)
+	a.setUpImports(identities)
 	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -613,6 +628,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	ap := activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		InstanceName: func(ctx context.Context) string { return a.instanceName(ctx, "") },
+		Metadata:     a.nodeMetadata,
 		// Sign-ups that wait for a moderator's approval are open, as Mastodon reports them.
 		OpenRegistrations: func(ctx context.Context) (bool, error) {
 			mode, err := a.Instance.RegistrationMode(ctx)
@@ -654,8 +670,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	api := clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
-		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Media: a.Media,
+		AccountDomain: cfg.AccountDomain, Graph: a.Graph, InstanceThumbnail: a.instanceThumbnail,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,
 		Statuses: a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses, Outboxes: a.RemoteStatuses,
@@ -671,7 +687,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
-		OwnAccount: a.Identity, Exports: a.Exports,
+		OwnAccount: a.Identity, Exports: a.Exports, Imports: a.Imports,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		// The instance settings, and the invites with the registration page they open (#624).
@@ -783,8 +799,11 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		// The instance theme (ADR-0059), read per request so that a saved theme applies at once.
 		Theme:         a.Instance.Theme,
 		ThemeRevision: a.themeRevision,
-		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:        a.Logger,
+		// What /robots.txt, the pages, and /.well-known/ state to crawlers (ADR-0057), read per request.
+		Settings: a.Instance.Settings,
+		Now:      a.Clock.Now,
+		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:   a.Logger,
 	})
 	if err != nil {
 		return err

@@ -58,6 +58,9 @@ type Deps struct {
 	// setting). SignUp calls it once per sign-up, so a change applies to the next one. Nil
 	// means identity.RegistrationClosed.
 	RegistrationMode func(ctx context.Context) (identity.RegistrationMode, error)
+	// IndexableDefault returns whether new accounts are indexable (the indexable_default
+	// setting, FR-412, ADR-0057); nil makes them not indexable.
+	IndexableDefault func(ctx context.Context) (bool, error)
 	// SignupBlocks screens the sign-ups from the registration page against the sign-up block
 	// list (FR-719); nil screens nothing.
 	SignupBlocks SignupScreen
@@ -161,15 +164,9 @@ func (s *Service) CreateAdmin(ctx context.Context, in CreateAdminInput) (Registr
 	roles := s.builtinRoles()
 	grantID := s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		var admin identity.Role
-		for _, r := range roles {
-			stored, err := s.d.Repository.EnsureRole(ctx, tx, r.role, r.perms)
-			if err != nil {
-				return err
-			}
-			if stored.Key == identity.RoleAdmin {
-				admin = stored
-			}
+		admin, err := s.ensureBuiltinRoles(ctx, tx, roles)
+		if err != nil {
+			return err
 		}
 		if err := s.writeUser(ctx, tx, p); err != nil {
 			return err
@@ -218,10 +215,17 @@ func (s *Service) prepareUser(ctx context.Context, in RegisterInput) (*preparedU
 	if err != nil {
 		return nil, err
 	}
+	indexable := false
+	if s.d.IndexableDefault != nil {
+		if indexable, err = s.d.IndexableDefault(ctx); err != nil {
+			return nil, err
+		}
+	}
 	acct, err := s.d.Accounts.PrepareLocalAccount(ctx, account.LocalAccountInput{
 		UserID:      user.ID,
 		Username:    in.Username,
 		DisplayName: in.DisplayName,
+		Indexable:   indexable,
 	})
 	if err != nil {
 		return nil, err
@@ -302,15 +306,31 @@ func (s *Service) Permissions(ctx context.Context, userID string) ([]identity.Pe
 }
 
 // EnsureBuiltinRoles creates the built-in roles (admin and moderator) with their permissions,
-// or adds the permissions they lack. It is safe to run on every start.
+// and gives admin every permission. It is safe to run on every start: it leaves the permissions
+// and the position of an existing moderator role as the administrators set them.
 func (s *Service) EnsureBuiltinRoles(ctx context.Context) error {
 	roles := s.builtinRoles()
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		for _, r := range roles {
-			if _, err := s.d.Repository.EnsureRole(ctx, tx, r.role, r.perms); err != nil {
-				return err
+		_, err := s.ensureBuiltinRoles(ctx, tx, roles)
+		return err
+	})
+}
+
+// ensureBuiltinRoles creates inside tx the built-in roles that are missing, gives admin every
+// permission (a new version may add permissions), and returns the admin role.
+func (s *Service) ensureBuiltinRoles(ctx context.Context, tx uow.Tx, roles []roleToEnsure) (identity.Role, error) {
+	var admin identity.Role
+	for _, r := range roles {
+		stored, err := s.d.Repository.EnsureRole(ctx, tx, r.role, r.perms)
+		if err != nil {
+			return identity.Role{}, err
+		}
+		if stored.Key == identity.RoleAdmin {
+			admin = stored
+			if err := s.d.Repository.SetRolePermissions(ctx, tx, stored.ID, identity.AllPermissions()); err != nil {
+				return identity.Role{}, err
 			}
 		}
-		return nil
-	})
+	}
+	return admin, nil
 }

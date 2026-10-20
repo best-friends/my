@@ -337,7 +337,7 @@ func instanceUsage(w io.Writer) {
   my instance list [-config <file>]
   my instance get [-locale <tag>] [-config <file>] <key>
   my instance set [-locale <tag>] [-config <file>] <key> <value>
-  my instance set -owner <username> [-config <file>] preview_image <image file>
+  my instance set -owner <username> [-config <file>] <preview_image|thumbnail> <image file>
   my instance history [-locale <tag>] [-limit <n>] [-config <file>] <key>
   my instance rule <list|add|edit|move|retire> ...  (my instance rule -h)
   my instance theme <get|set> ...  (my instance theme -h)
@@ -349,16 +349,20 @@ be applied with Atlas.
 
 Setting keys hold one value each; a key that has never been set reads as its
 default. Text keys (name, short_description, description, terms,
-privacy_policy) hold one text per locale: -locale selects it, defaulting to the
-default_locale setting. get follows the locale fallback chain (ja-JP, ja, the
-default locale, en). An empty value clears a text in that locale. A value of
-"-" is read from standard input.
+privacy_policy, preview_image_alt, thumbnail_alt) hold one text per locale:
+-locale selects it, defaulting to the default_locale setting. get follows the
+locale fallback chain (ja-JP, ja, the default locale, en). An empty value
+clears a text in that locale. A value of "-" is read from standard input.
 
 preview_image is the media ID of the image of link previews for profiles and
 posts without images (empty: the built-in image), and the text
-preview_image_alt is its alt text. With -owner, the value is an image file
-instead: it is uploaded as a media file of that local account and used once the
-worker has processed it.
+preview_image_alt is its alt text; thumbnail and thumbnail_alt are the image
+that represents the instance and its alt text. With -owner, the value of a
+media key is an image file instead: it is uploaded as a media file of that
+local account and used once the worker has processed it.
+
+contact_account (the username of a local account) and contact_email are how
+people reach the operators.
 
 Deployment configuration (adapters, host, secrets) is not an instance setting;
 it comes from the environment and the config file (my config check).

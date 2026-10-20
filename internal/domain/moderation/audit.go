@@ -120,6 +120,13 @@ const (
 	AuditRoleGranted AuditAction = "role_granted"
 	// AuditRoleRevoked: a role was revoked from a user (user_role_revocations).
 	AuditRoleRevoked AuditAction = "role_revoked"
+	// AuditRoleCreated: a new role (roles, role_permissions); the operation has no row of its own.
+	AuditRoleCreated AuditAction = "role_created"
+	// AuditRoleUpdated: the position or the permissions of a role changed (roles,
+	// role_permissions); the operation has no row of its own.
+	AuditRoleUpdated AuditAction = "role_updated"
+	// AuditRoleDeleted: a role that nobody held was deleted; the operation has no row of its own.
+	AuditRoleDeleted AuditAction = "role_deleted"
 	// AuditAppealUpheld: an appeal was decided and its action kept (moderation_appeal_decisions).
 	AuditAppealUpheld AuditAction = "appeal_upheld"
 	// AuditAppealOverturned: an appeal was decided and its action lifted
@@ -191,6 +198,9 @@ var auditActions = []struct {
 	{AuditRuleRetired, AuditTargetRule},
 	{AuditRoleGranted, AuditTargetRole},
 	{AuditRoleRevoked, AuditTargetRole},
+	{AuditRoleCreated, AuditTargetRole},
+	{AuditRoleUpdated, AuditTargetRole},
+	{AuditRoleDeleted, AuditTargetRole},
 	{AuditAppealUpheld, AuditTargetAppeal},
 	{AuditAppealOverturned, AuditTargetAppeal},
 	{AuditAccountDeletionCancelled, AuditTargetAccount},

@@ -25,6 +25,8 @@ export type Landing = {
   /** The paragraphs of the full description (plain text, split at blank lines); empty when there is none. */
   description: readonly string[];
   rules: Instance["rules"];
+  /** The image that represents the instance; undefined when there is none. */
+  thumbnail: Instance["thumbnail"];
   /** Who may sign up; undefined until the instance loads (or when it cannot), when the page offers only to sign in. */
   registrationMode: RegistrationMode | undefined;
   /** The address of the server's registration page. */
@@ -70,6 +72,7 @@ export function useLanding(): Landing {
     summary: instance?.short_description?.trim() ?? "",
     description: paragraphs(instance?.description),
     rules: instance?.rules ?? [],
+    thumbnail: instance?.thumbnail,
     registrationMode: instance?.registrations.mode,
     signUpHref: new URL(signUpPath, apiOrigin).href,
     recentPosts,

@@ -3,4 +3,4 @@
 // with its description, rules, the remote domains it moderates as far as its settings list them, and the links to
 // its documents. Routes and other features use it through this file only (web-client.md A3).
 export { instanceQueryOptions, publicDomainActionsQueryOptions } from "./api/about";
-export { About } from "./components/About";
+export { About, ServerThumbnail } from "./components/About";

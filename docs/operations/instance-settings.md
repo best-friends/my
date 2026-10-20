@@ -1,6 +1,6 @@
 # インスタンス設定
 
-運営者向けの手順です。要件は FR-001・FR-101・FR-202・FR-408・FR-704・FR-705・FR-718（[機能要件](../requirements/01-functional.md)）、
+運営者向けの手順です。要件は FR-001・FR-101・FR-202・FR-408・FR-704・FR-705・FR-718・FR-725（[機能要件](../requirements/01-functional.md)）、
 テーブルは [データモデル §4.9](../architecture/data-model.md#49-instance) です。
 
 ## 設定（環境変数）とインスタンス設定（DB）の分担
@@ -35,6 +35,9 @@
 | `local_timeline_enabled` | `true` / `false` | `true` | ローカルタイムラインを提供するか（FR-202） |
 | `federated_timeline_enabled` | `true` / `false` | `true` | 連合タイムラインを提供するか（FR-202） |
 | `preview_image` | メディア ID（空 = 未設定） | 空 | 画像のない投稿・プロフィールのリンクプレビュー画像（`og:image`）。未設定なら同梱の既定画像（[リンクプレビュー](link-previews.md)） |
+| `contact_account` | ローカルアカウントのユーザー名（空 = 未設定） | 空 | 運営への連絡先のアカウント。[連絡先とサムネイル](#連絡先とサムネイル) |
+| `contact_email` | メールアドレス（空 = 未設定） | 空 | 運営への連絡先のメールアドレス |
+| `thumbnail` | メディア ID（空 = 未設定） | 空 | インスタンスを表す画像（サムネイル） |
 | `remote_media_policy` | `none` / `avatars` / `all` | `none` | リモートのメディアの複製を持つか（FR-409、ADR-0005）。`none` はメディアプロキシが毎回中継し、`avatars` はアバター・ヘッダー・カスタム絵文字、`all` はすべてを `remote_media_cache_ttl` の間 Blob にキャッシュする。キャッシュの合計の上限は設定 `remote_media_cache_max_bytes`（[federation.md §9](../architecture/federation.md#9-リモートメディア)） |
 | `remote_media_cache_ttl` | 整数 60〜31536000（秒） | `86400` | 取得したリモートのメディアを持ってよい期間。メディアプロキシのレスポンスの `Cache-Control: max-age` で、CDN とブラウザがこの間キャッシュする（[federation.md §9](../architecture/federation.md#9-リモートメディア)） |
 | `authorized_fetch` | `true` / `false` | `false` | Authorized Fetch（secure mode、FR-408）。`true` にすると、検証できる HTTP 署名の無い ActivityPub の GET に、オブジェクトとコレクションは `401` で、利用者の Actor は鍵の取得のための最小の文書で答える（[federation.md §10](../architecture/federation.md#10-コレクションとオブジェクトの-get)）。インスタンス Actor は署名なしでも文書全体を返すので、署名の検証のための鍵の取得はどのサーバーからもできる |
@@ -46,10 +49,15 @@
 | `retention_reports` | 整数 180〜3650（日） | `365` | 通報を、最後の解決から何日残すか。処分が参照する通報は処分と同じだけ残る |
 | `retention_moderation_actions` | 整数 180〜3650（日） | `365` | アカウントへの処分と異議申し立てを、処分の終わり（解除・期限切れ・異議の審査の遅い方）から何日残すか |
 | `retention_audit_log` | 整数 365〜3650（日） | `730` | 監査ログの行を、記録から何日残すか |
+| `search_indexing` | `allow` / `deny` | `deny` | 検索エンジンに索引を許すか（FR-725、ADR-0057）。`allow` でも、索引されるのは `indexable` のアカウントのプロフィールと `public` の投稿だけ（[検索エンジンと AI クローラー](crawlers.md)） |
+| `ai_usage` | `allow` / `deny_training` / `deny` | `deny` | AI への表明（FR-725、ADR-0057）。`deny_training` は学習を拒否し、`deny` は学習と AI での利用（AI 検索・アシスタント・エージェント）を拒否する |
+| `indexable_default` | `true` / `false` | `false` | 新規アカウントの `indexable` の既定（FR-412）。変えても既存のアカウントの `indexable` は変わらない |
+| `security_contact` | `https:` か `mailto:` の URI（空 = 未設定） | 空 | 脆弱性の連絡先。設定すると `/.well-known/security.txt`（RFC 9116）を返す |
 
 - 値は保存前に正規形にします（`TRUE` → `true`、`0750` → `750`、`ja_jp` → `ja-JP`、メディア ID は小文字）。不正な値は何も書き込まずに拒否します。
-- `preview_image` は、存在する画像のメディア（処理中を含む）だけを受け付けます。処理が終わるまでと、処理に失敗した画像の代わりには既定画像が出ます。
+- `preview_image` と `thumbnail` は、存在する画像のメディア（処理中を含む）だけを受け付けます。`preview_image` は、処理が終わるまでと、処理に失敗した画像の代わりには既定画像が出ます。
   どの版でも一度設定したメディアは、未添付アップロードの消去（FR-803）で消えません。
+- `contact_account` は、削除されていないローカルの利用者のユーザー名だけを受け付けます（小文字にして保存）。`contact_email` は `alice@example.com` の形のアドレスだけを受け付けます。
 
 ### 文章（ロケール別）
 
@@ -61,6 +69,7 @@
 | `terms` | 100000 文字 | 利用規約（Markdown） |
 | `privacy_policy` | 100000 文字 | プライバシーポリシー（Markdown） |
 | `preview_image_alt` | 1500 文字 | `preview_image` の画像の代替テキスト（`og:image:alt`）。無ければ「〇〇のイメージ画像」 |
+| `thumbnail_alt` | 1500 文字 | `thumbnail` の画像の代替テキスト |
 
 - 文章はロケールごとに持ちます。読むときは、読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に探します
   （例: `ja-JP` → `ja` → 既定のロケール → `en`）。
@@ -87,6 +96,19 @@
   どのロケールのチェーンにも名前が無ければ、名前の代わりにドメイン（`host`）を出します。
 - 変更は再起動なしで、次の要求から反映されます。開いている Web クライアントのタブのタイトルとサイドバーは、管理画面で保存したときに更新されます。
 
+### 連絡先とサムネイル
+
+運営への連絡先（`contact_account`・`contact_email`）とインスタンスを表す画像（`thumbnail` と文章 `thumbnail_alt`）は、次の場所に出ます。
+どれも未設定なら出ません。
+
+- Web クライアントの「このサーバーについて」（`/about`）。サムネイルはサインインしていない人の最初の画面（`/`）にも出ます。
+- `GET /api/v1/instance` の `contact`（`account` と `email`）と `thumbnail`（`url`・`width`・`height`・`alt`）。代替テキストは要求のロケールで選びます。
+- NodeInfo の `metadata`（`default_locale` で選ぶ）。Misskey の慣行の `maintainer`（`name` は連絡先のアカウントの表示名、無ければユーザー名。`email` は `contact_email`）、
+  Pleroma・Akkoma の慣行の `staffAccounts`（連絡先のアカウントの Actor の ID）、`thumbnail`（`url` と `alt`）、短い説明 `short_description` の `nodeDescription`。
+
+連絡先のアカウントが凍結・削除されたときは、アカウントは出さずにメールアドレスだけを出します。
+変更は Web クライアントの管理画面（「サーバーの設定」、`/admin/settings`）か、CLI・クライアント API で行います。
+
 ## 使い方
 
 ```sh
@@ -104,10 +126,14 @@ my instance set -owner admin preview_image ./preview.png   # 画像を admin の
 my instance set preview_image 0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f   # アップロード済みのメディア ID を指定
 my instance set -locale ja preview_image_alt "青い鳥のマスコット"
 my instance set preview_image ""                      # 同梱の既定画像に戻す
+my instance set contact_account admin                 # 連絡先のアカウント
+my instance set contact_email admin@example.com
+my instance set -owner admin thumbnail ./thumbnail.png  # サムネイル
+my instance set -locale ja thumbnail_alt "海辺の町の写真"
 ```
 
 - フラグはキーと値より前に書きます。
-- `-owner <ユーザー名>` を付けると、`preview_image` の値を画像ファイルのパスとして読み、そのローカルアカウントのメディアとしてアップロードします。
+- `-owner <ユーザー名>` を付けると、`preview_image`・`thumbnail` の値を画像ファイルのパスとして読み、そのローカルアカウントのメディアとしてアップロードします。
   画像はワーカーが処理してから使われます（[メディア](../architecture/data-model.md#44-content)）。推奨は 1200×630 の横長の画像です。
 - 変更は 1 回のトランザクションで版（`instance_*_revisions`）を記録し、現在値（`instance_settings` / `instance_texts`）を更新します。
   CLI からの変更は変更者なし（履歴の `BY` が `cli`）として残ります。
@@ -129,6 +155,9 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
   | タイムライン | `local_timeline_enabled`・`federated_timeline_enabled` |
   | 連合 | `authorized_fetch`・`remote_media_policy`・`remote_media_cache_ttl`（1 時間・1 日・7 日・30 日・365 日から選ぶ） |
   | 制限・凍結したサーバー | `domain_actions_visibility`・`domain_actions_rationale_visibility` |
+  | 検索エンジンと AI | `search_indexing`・`indexable_default`・`ai_usage`・`security_contact` |
+
+  連絡先とサムネイル（`contact_account`・`contact_email`・`thumbnail` と文章 `thumbnail_alt`）は、名前と説明の下の「連絡先とサムネイル」の区画で変えます。画像は選んだときにアップロードされ、保存したときにサムネイルになります。
 
   `max_status_length`・`preview_image`・`appeal_window`・保持期間（`retention_*`）は、画面には出ず、CLI とクライアント API で変えます。
 - **クライアント API**: `GET /api/v1/admin/settings` がすべての設定値を、現在値・既定値・設定済みか・型と受け付ける値（選択肢・範囲）とともに返します。

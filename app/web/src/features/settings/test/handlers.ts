@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the settings feature (web-client.md §7): the user's own profile and
-// preferences, two-factor authentication, the lists of blocks, mutes and follow requests, the archives of the user's
-// data, and deleting the account. Unblocking and unmuting are the account
+// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes and follow requests, the archives of the user's
+// data, the CSV exports and imports, and deleting the account. Unblocking and unmuting are the account
 // actions of the profile feature's handlers.
 import { http, HttpResponse } from "msw";
 import { preferencesFixture, relationshipFixture, type Schemas, viewerFixture } from "../../../test/fixtures";
@@ -25,7 +25,27 @@ export const totpSetupFixture: Schemas["TotpSetup"] = {
 /** The recovery codes that turning two-factor authentication on, or replacing them, answers by default. */
 export const recoveryCodesFixture: Schemas["RecoveryCodes"] = { recovery_codes: ["abcd-efgh-ijkl-mnop", "qrst-uvwx-yz23-4567"] };
 
+/** The viewer's automatic deletion of old posts by default: the server's default policy, disabled. */
+export const autoDeletePolicyFixture: Schemas["AutoDeletePolicy"] = {
+  enabled: false,
+  min_age_days: 30,
+  keep_pinned: true,
+  keep_bookmarked: true,
+  keep_favourited: true,
+  keep_media: false,
+  keep_polls: false,
+  keep_visibilities: ["direct"],
+  keep_min_boosts: 0,
+  keep_min_favourites: 0,
+};
+
 export const handlers = [
+  // operationIds getAutoDeletePolicy, updateAutoDeletePolicy: the server answers the policy it saved.
+  http.get(`${apiBase}/preferences/auto_delete`, ({ request }) => withViewer(request, () => HttpResponse.json(autoDeletePolicyFixture))),
+  http.put(`${apiBase}/preferences/auto_delete`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["AutoDeletePolicy"];
+    return withViewer(request, () => HttpResponse.json(body));
+  }),
   // operationIds getTwoFactor, setUpTotp, enableTotp, regenerateRecoveryCodes, disableTotp.
   http.get(`${apiBase}/two_factor`, ({ request }) => withViewer(request, () => HttpResponse.json(twoFactorOffFixture))),
   http.post(`${apiBase}/two_factor/totp/setup`, ({ request }) => withViewer(request, () => HttpResponse.json(totpSetupFixture))),
@@ -64,7 +84,32 @@ export const handlers = [
     withViewer(request, () => new HttpResponse(new Blob(["PK"], { type: "application/zip" }), { headers: { "Content-Type": "application/zip" } })),
   ),
   http.post(`${apiBase}/accounts/delete`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationIds exportCsv, listDataImports, previewDataImport, startDataImport: one blocked account, no imports, and a file of
+  // one entry.
+  http.get(`${apiBase}/csv_exports/:kind`, ({ request }) =>
+    withViewer(request, () => new HttpResponse("bob@remote.example\n", { headers: { "Content-Type": "text/csv" } })),
+  ),
+  http.get(`${apiBase}/imports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/imports/preview`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ entries: 1, present: 0, removals: 0, skipped: [] } satisfies Schemas["DataImportPreview"])),
+  ),
+  http.post(`${apiBase}/imports`, ({ request }) => withViewer(request, () => HttpResponse.json(dataImportFixture(), { status: 202 }))),
 ];
+
+/** An import of a CSV file; following, merged, and in progress unless `change` says otherwise. */
+export function dataImportFixture(change: Partial<Schemas["DataImport"]> = {}): Schemas["DataImport"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000009a1",
+    kind: "following",
+    mode: "merge",
+    state: "in_progress",
+    created_at: "2026-10-21T09:30:00Z",
+    total: 1,
+    processed: 0,
+    failed: 0,
+    ...change,
+  };
+}
 
 /** An archive of the user's data; pending unless `change` says otherwise. */
 export function dataExportFixture(change: Partial<Schemas["DataExport"]> = {}): Schemas["DataExport"] {

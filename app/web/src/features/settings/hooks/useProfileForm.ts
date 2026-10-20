@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useToast } from "@my/ui";
-import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { cacheSavedProfile, type CredentialAccount, credentialsQueryOptions, type ProfileChange, updateProfileMutation } from "../api/me";
+import { shellQueryReader } from "../../../lib/query";
+import {
+  type AIUsage,
+  cacheSavedProfile,
+  type CredentialAccount,
+  credentialsQueryOptions,
+  instanceQueryOptions,
+  type ProfileChange,
+  type SearchIndexing,
+  updateProfileMutation,
+} from "../api/me";
 import { type ImagePurpose, type MediaAttachment, MediaProcessingError, uploadImage } from "../api/media";
 
 /** The limits of a profile (UpdateCredentialsRequest in api/openapi.yaml), counted in code points as the server does. */
@@ -37,6 +47,12 @@ export type ImageControl = {
 type ImageChange = { kind: "keep" } | { kind: "new"; media: MediaAttachment } | { kind: "remove" };
 
 /**
+ * What the server states to search engines and AI crawlers for all its pages (FR-725, ADR-0057), which the user's
+ * own choices can only narrow; undefined while GET /instance has not loaded.
+ */
+export type ServerCrawlerPolicy = { searchIndexing: SearchIndexing; aiUsage: AIUsage } | undefined;
+
+/**
  * The profile form (FR-006): its fields, and saving them in one change of the profile. The browser checks the
  * limits before submitting (React Aria's native validation), so `submit` runs only with valid values.
  * Mount it again (with a `key`) to start over from a newer saved profile.
@@ -54,6 +70,11 @@ export function useProfileForm() {
   const [nextFieldKey, setNextFieldKey] = useState(account.source.fields.length);
   const [locked, setLocked] = useState(account.locked);
   const [bot, setBot] = useState(account.bot);
+  const [indexable, setIndexable] = useState(account.indexable);
+  const [aiOptOut, setAiOptOut] = useState(account.ai_opt_out);
+  // The shell reads the instance on every page; the form shows its notes once it is there.
+  const { data: instance } = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
+  const serverPolicy: ServerCrawlerPolicy = instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage };
   const avatar = useImageControl(account.avatar, "avatar");
   const header = useImageControl(account.header, "header");
 
@@ -77,6 +98,8 @@ export function useProfileForm() {
     fields: fields.filter((field) => field.name !== "" || field.value !== "").map(({ name, value }) => ({ name, value })),
     locked,
     bot,
+    indexable,
+    ai_opt_out: aiOptOut,
     ...avatar.change("avatar_media_id"),
     ...header.change("header_media_id"),
   });
@@ -88,6 +111,8 @@ export function useProfileForm() {
     draft.note !== account.source.note ||
     draft.locked !== account.locked ||
     draft.bot !== account.bot ||
+    draft.indexable !== account.indexable ||
+    draft.ai_opt_out !== account.ai_opt_out ||
     draft.avatar_media_id !== undefined ||
     draft.header_media_id !== undefined ||
     !sameFields(draft.fields ?? [], account.source.fields);
@@ -114,6 +139,9 @@ export function useProfileForm() {
     },
     locked: { isSelected: locked, onChange: setLocked },
     bot: { isSelected: bot, onChange: setBot },
+    indexable: { isSelected: indexable, onChange: setIndexable },
+    aiOptOut: { isSelected: aiOptOut, onChange: setAiOptOut },
+    serverPolicy,
     avatar: avatar.control,
     header: header.control,
     submit: (event: SyntheticEvent<HTMLFormElement>) => {

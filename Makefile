@@ -109,6 +109,19 @@ emoji-table: ## Regenerate internal/domain/content/emoji_table.gen.go from Unico
 	go run ./scripts/emoji-table -in .tmp/emoji-test-$(EMOJI_VERSION).txt -version $(EMOJI_VERSION) \
 		-out internal/domain/content/emoji_table.gen.go
 
+# The AI crawlers that /robots.txt names (ADR-0057), from ai-robots-txt/ai.robots.txt (MIT). To
+# update the list, change both to a newer commit, run make ai-crawlers, and review the diff.
+AI_ROBOTS_COMMIT := a446ec974c221a133cb21cb96f30c4585b208998
+AI_ROBOTS_SHA256 := b9dc1b13171c3440cd41a51ab9ac3f998b00e30b5987c4bdbecad4f8a21bc99e
+
+.PHONY: ai-crawlers
+ai-crawlers: ## Regenerate internal/interface/web/ai_crawlers.gen.go from ai.robots.txt's robots.json (AI_ROBOTS_COMMIT)
+	mkdir -p .tmp
+	curl -fsSL -o .tmp/ai-robots-$(AI_ROBOTS_COMMIT).json https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/$(AI_ROBOTS_COMMIT)/robots.json
+	echo "$(AI_ROBOTS_SHA256)  .tmp/ai-robots-$(AI_ROBOTS_COMMIT).json" | sha256sum -c -
+	go run ./scripts/ai-crawlers -in .tmp/ai-robots-$(AI_ROBOTS_COMMIT).json -commit $(AI_ROBOTS_COMMIT) \
+		-out internal/interface/web/ai_crawlers.gen.go
+
 .PHONY: sqlc sqlc-check
 sqlc:## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
 	scripts/sqlc.sh

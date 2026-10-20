@@ -251,6 +251,61 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end profile and preferences ---
+  # --- the user's automatic deletion of old posts (#657) ---
+  /preferences/auto_delete:
+    get:
+      operationId: getAutoDeletePolicy
+      summary: Get the authenticated user's automatic deletion of old posts
+      description: |
+        The policy that deletes the user's own posts some days after their publication (FR-118).
+        A user who has never saved one gets the default policy, which is disabled.
+      tags: [preferences]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The policy.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoDeletePolicy"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateAutoDeletePolicy
+      summary: Replace the authenticated user's automatic deletion of old posts
+      description: |
+        Replaces the whole policy. Once it is enabled, an hourly job deletes the user's posts
+        published more than `min_age_days` days ago, unless an exception keeps them, as the user
+        would delete them: each deletion is sent to the servers the post went to. A run deletes
+        at most 100 posts of a user, so a policy that finds more spreads their deletion over the
+        following hours. Boosts are not deleted. A 422 problem names the property that is invalid
+        in `detail`.
+      tags: [preferences]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutoDeletePolicy"
+      responses:
+        "200":
+          description: The policy as saved.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoDeletePolicy"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of the user's automatic deletion of old posts (#657) ---
   # --- the user's own account: deletion and data exports (#627) ---
   /accounts/delete:
     post:
@@ -305,8 +360,10 @@ paths:
       description: |
         Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
         `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
-        activities), and `moderation.json` (the moderation actions on the account, its appeals,
-        and the reports it filed). The export is `pending` until the archive is built. While
+        activities), `moderation.json` (the moderation actions on the account, its appeals, and
+        the reports it filed), and the CSV files of `exportCsv` (`following_accounts.csv`,
+        `blocked_accounts.csv`, `muted_accounts.csv`, `bookmarks.csv`). The export is
+        `pending` until the archive is built. While
         another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
         at most 3 requests per account are accepted every day.
       tags: [accounts]
@@ -359,6 +416,137 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of the user's own account: deletion and data exports (#627) ---
+  # --- the user's own account: Mastodon CSV exports and imports (#658) ---
+  /csv_exports/{kind}:
+    get:
+      operationId: exportCsv
+      summary: Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+      description: |
+        Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
+        Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
+        (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
+        `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
+        `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
+        `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+        Addresses are `username@domain`, with the account domain for this server's accounts;
+        remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
+        are accepted every hour.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          description: What to export.
+          schema:
+            $ref: "#/components/schemas/DataImportKind"
+      responses:
+        "200":
+          description: The CSV file.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            Content-Disposition:
+              description: Names the file to save the CSV as, the name Mastodon gives it.
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+  /imports:
+    get:
+      operationId: listDataImports
+      summary: List the authenticated user's imports
+      description: |
+        Lists the user's latest 10 imports of CSV files, newest first, with their progress.
+        Imports are removed 7 days after they start.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The imports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataImportList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: startDataImport
+      summary: Import a CSV file of follows, blocks, mutes, or bookmarks
+      description: |
+        Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
+        entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
+        `overwrite` also removes what the user has of `kind` that the file does not list. The
+        server carries the import out in the background: it resolves remote accounts and posts
+        on their servers, sends the follows, and counts the entries it could not carry out
+        (an account or post that cannot be found or acted on). The import is `in_progress`
+        until every entry is done. While another import of the user is `in_progress` the
+        request is a 409 `/api/v1/problems/import-in-progress`. At most 10 imports per account
+        are accepted every day.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataImportRequest"
+      responses:
+        "202":
+          description: The import, being carried out.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataImport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /imports/preview:
+    post:
+      operationId: previewDataImport
+      summary: Preview an import of a CSV file
+      description: |
+        Reads a CSV file as `startDataImport` would and tells what importing it would do,
+        changing nothing. The header row is optional, a leading `@` of an address is dropped,
+        and blank lines are ignored; a line that names no address (or for `bookmarks`, no
+        `http(s)` URL) is skipped as `invalid`, and one that repeats an earlier entry as
+        `duplicate`. Settings left out default as in Mastodon: boosts shown, no notifications of
+        new posts, notifications of a muted account hidden. The `Languages` column of a follow
+        is ignored. A file that is not CSV or has more than 10,000 entries is a 422.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataImportRequest"
+      responses:
+        "200":
+          description: What the import would do.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataImportPreview"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of the user's own account: Mastodon CSV exports and imports (#658) ---
   # --- two-factor authentication (#628) ---
   /two_factor:
     get:
@@ -2837,7 +3025,7 @@ paths:
         where no locale of the chain has a name, the domain names it, and handles and URLs always
         use the domain. An unknown key is a 404. A locale that is not a BCP 47
         tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
-        `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
+        `name`, 500 for `short_description`, 1,500 for `preview_image_alt` and `thumbnail_alt`, 20,000 for
         `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
         or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
         permission.
@@ -3070,15 +3258,90 @@ paths:
       summary: List the roles
       description: |
         The roles of the instance, highest position first, with the permissions they grant
-        (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
-        (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
-        `manage_roles` permission.
+        (FR-720). Every instance has `admin` (position 1000, every permission, never changed)
+        and `moderator` (position 100 with `manage_reports`, `manage_accounts`, and
+        `view_audit` until an administrator changes them). Needs the `manage_roles` permission.
       tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       responses:
         "200":
           $ref: "#/components/responses/AdminRoleList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createRole
+      summary: Create a role
+      description: |
+        Creates a role with a key, a position below `admin` (0 to 999), and permissions; the
+        audit log records `role_created`. A position above every role of the viewer is a 403.
+        A key, position, or permissions that break a rule, a key that another role has
+        (`admin` and `moderator` included), or a permission that the viewer's roles do not
+        grant is a 422 `/api/v1/problems/invalid-role` whose `reason` says which. Needs the
+        `manage_roles` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRoleRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRole"
+        "422":
+          $ref: "#/components/responses/RoleProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/roles/{role}:
+    parameters:
+      - $ref: "#/components/parameters/RoleKey"
+    patch:
+      operationId: updateRole
+      summary: Change a role
+      description: |
+        Changes the position, the permissions, or both of a role; the change applies to its
+        holders from their next request, and the audit log records `role_updated`. A request
+        that changes nothing records nothing. The key never changes. `admin` is never changed
+        (a 422 `builtin`); `moderator` takes a new position and permissions like any other
+        role. A role, or a new position, above every role of the viewer is a 403. A position or
+        permissions that break a rule, or adding or removing a permission that the viewer's
+        roles do not grant, is a 422 `/api/v1/problems/invalid-role` whose `reason` says
+        which. An unknown role is a 404. Needs the `manage_roles` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRoleRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRole"
+        "422":
+          $ref: "#/components/responses/RoleProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteRole
+      summary: Delete a role
+      description: |
+        Deletes a role that nobody holds; the audit log records `role_deleted`. `admin` and
+        `moderator` are never deleted (a 422 `builtin`), and a role that users hold is a 422
+        `held`: revoke it from them first. A role above every role of the viewer is a 403. An
+        unknown role is a 404. Needs the `manage_roles` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      responses:
+        "204":
+          description: The role is deleted.
+        "422":
+          $ref: "#/components/responses/RoleProblem"
         default:
           $ref: "#/components/responses/Problem"
   /admin/accounts/{id}/roles:
@@ -4381,6 +4644,28 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AdminRoleList"
+    AdminRole:
+      description: The role.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRole"
+    RoleProblem:
+      description: The role change breaks a rule; nothing was changed.
+      headers:
+        Content-Language:
+          description: The locale of `title` and `detail`.
+          schema:
+            type: string
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/RoleProblem"
     # --- end of admin: roles (#348) ---
     # --- admin: registrations (#345) ---
     AdminRegistration:
@@ -4488,6 +4773,8 @@ components:
           built. Wait for it to end.
         - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
           it is being built, failed, or expired.
+        - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+          carried out. Wait for it to finish.
         - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
           already used, or is not a code.
         - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -4528,7 +4815,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules]
+      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -4587,6 +4874,66 @@ components:
           format: uri
         theme:
           $ref: "#/components/schemas/InstanceTheme"
+        contact:
+          $ref: "#/components/schemas/InstanceContact"
+        thumbnail:
+          $ref: "#/components/schemas/InstanceThumbnail"
+        search_indexing:
+          $ref: "#/components/schemas/SearchIndexing"
+        ai_usage:
+          $ref: "#/components/schemas/AIUsage"
+    InstanceContact:
+      description: |
+        How people reach the instance's operators (the instance settings `contact_account` and
+        `contact_email`). Omitted when the instance has neither.
+      type: object
+      properties:
+        account:
+          description: |
+            The local account to contact; omitted when there is none, or when the account
+            cannot be shown (it is suspended or deleted).
+          allOf:
+            - $ref: "#/components/schemas/Account"
+        email:
+          description: The email address to contact; omitted when there is none.
+          type: string
+    InstanceThumbnail:
+      description: |
+        The image that represents the instance (the instance setting `thumbnail`): the large still
+        variant of the media file. Omitted when there is none, or while the file is processing.
+      type: object
+      required: [url, width, height]
+      properties:
+        url:
+          type: string
+          format: uri
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        alt:
+          description: |
+            The alt text (the instance text `thumbnail_alt`) in the locale of the request;
+            omitted when no locale of the request's fallback chain has one.
+          type: string
+    SearchIndexing:
+      description: |
+        Whether the instance lets search engines index its pages (the instance setting
+        `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+        that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+        the reverse.
+      type: string
+      enum: [allow, deny]
+    AIUsage:
+      description: |
+        What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+        `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+        and no use by AI search, assistants, and agents. An account can opt out of what the
+        instance allows (`ai_opt_out`), never the reverse.
+      type: string
+      enum: [allow, deny_training, deny]
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -5233,6 +5580,118 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DataExport"
+    # --- Mastodon CSV exports and imports (#658) ---
+    DataImportKind:
+      description: |
+        What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+        accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+        posts the user bookmarked).
+      type: string
+      enum: [following, blocks, mutes, bookmarks]
+    DataImportMode:
+      description: |
+        `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+        what the user has that the file does not list.
+      type: string
+      enum: [merge, overwrite]
+    DataImportRequest:
+      description: A CSV file to import, and how.
+      type: object
+      required: [kind, mode, text]
+      properties:
+        kind:
+          $ref: "#/components/schemas/DataImportKind"
+        mode:
+          $ref: "#/components/schemas/DataImportMode"
+        text:
+          description: The content of the CSV file, in UTF-8.
+          type: string
+          maxLength: 1000000
+    DataImportPreview:
+      description: What an import of a CSV file would do.
+      type: object
+      required: [entries, present, removals, skipped]
+      properties:
+        entries:
+          description: The number of entries of the file, each of which the import adds.
+          type: integer
+          minimum: 0
+        present:
+          description: How many of the entries the user has already.
+          type: integer
+          minimum: 0
+        removals:
+          description: |
+            How many things the user has of the kind that the file does not list, which an
+            `overwrite` removes; 0 for a `merge`.
+          type: integer
+          minimum: 0
+        skipped:
+          description: The lines that are not entries, in line order.
+          type: array
+          items:
+            $ref: "#/components/schemas/DataImportSkipped"
+    DataImportSkipped:
+      description: A line of a CSV file that is not an entry.
+      type: object
+      required: [line, value, reason]
+      properties:
+        line:
+          description: The line of the file, from 1.
+          type: integer
+          minimum: 1
+        value:
+          description: The line as written.
+          type: string
+        reason:
+          description: |
+            `invalid`: the line names no account address (or for bookmarks, no post URL).
+            `duplicate`: an earlier line names the same account or post.
+          type: string
+          enum: [invalid, duplicate]
+    DataImport:
+      description: An import of a CSV file, with its progress.
+      type: object
+      required: [id, kind, mode, state, created_at, total, processed, failed]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          $ref: "#/components/schemas/DataImportKind"
+        mode:
+          $ref: "#/components/schemas/DataImportMode"
+        state:
+          description: "`in_progress` until every entry and removal is done, then `finished`."
+          type: string
+          enum: [in_progress, finished]
+        created_at:
+          description: When the import started.
+          type: string
+          format: date-time
+        total:
+          description: The number of entries to add and things to remove.
+          type: integer
+          minimum: 0
+        processed:
+          description: How many of them are done, including the failed ones.
+          type: integer
+          minimum: 0
+        failed:
+          description: |
+            How many of them could not be carried out: an account or post that cannot be found
+            or acted on, or a follow that a block stops.
+          type: integer
+          minimum: 0
+    DataImportList:
+      description: The user's latest imports, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataImport"
+    # --- end of Mastodon CSV exports and imports (#658) ---
     AppealModerationActionRequest:
       description: An appeal of an action on the user's own account.
       type: object
@@ -5925,13 +6384,22 @@ components:
       allOf:
         - $ref: "#/components/schemas/Account"
         - type: object
-          required: [discoverable, indexable, source, posting, permissions]
+          required: [discoverable, indexable, ai_opt_out, source, posting, permissions]
           properties:
             discoverable:
               description: Whether the account may be suggested to others and listed in directories.
               type: boolean
             indexable:
-              description: Whether the account's public posts may be indexed for search.
+              description: |
+                Whether the account's profile and public posts may be indexed for search: by this
+                instance's search and, when the instance's `search_indexing` is `allow`, by search
+                engines (FR-412, ADR-0057). New accounts take the instance's default.
+              type: boolean
+            ai_opt_out:
+              description: |
+                Whether the account's pages state that AI may neither train on nor use them
+                (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+                pages of this instance only; other servers and the media files do not carry it.
               type: boolean
             source:
               $ref: "#/components/schemas/AccountSource"
@@ -5980,7 +6448,10 @@ components:
           description: Whether the account may be suggested to others and listed in directories.
           type: boolean
         indexable:
-          description: Whether the account's public posts may be indexed for search.
+          description: Whether the account's profile and public posts may be indexed for search (FR-412).
+          type: boolean
+        ai_opt_out:
+          description: Whether the account's pages state that AI may neither train on nor use them (FR-412).
           type: boolean
     Preferences:
       description: The authenticated user's preferences.
@@ -6044,6 +6515,55 @@ components:
           items:
             type: string
     # --- end profile and preferences ---
+    # --- the user's automatic deletion of old posts (#657) ---
+    AutoDeletePolicy:
+      description: |
+        The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+        deleted once it was published more than `min_age_days` days ago, unless one of the
+        exceptions (the `keep_` properties) keeps it.
+      type: object
+      required: [enabled, min_age_days, keep_pinned, keep_bookmarked, keep_favourited, keep_media, keep_polls, keep_visibilities, keep_min_boosts, keep_min_favourites]
+      properties:
+        enabled:
+          description: Whether old posts are deleted.
+          type: boolean
+        min_age_days:
+          description: How many days after its publication a post is deleted.
+          type: integer
+          minimum: 1
+          maximum: 3650
+        keep_pinned:
+          description: Keep the posts pinned to the profile.
+          type: boolean
+        keep_bookmarked:
+          description: Keep the posts that the user bookmarked.
+          type: boolean
+        keep_favourited:
+          description: Keep the posts that the user favourited.
+          type: boolean
+        keep_media:
+          description: Keep the posts with media attachments.
+          type: boolean
+        keep_polls:
+          description: Keep the posts with a poll.
+          type: boolean
+        keep_visibilities:
+          description: Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility.
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/Visibility"
+        keep_min_boosts:
+          description: Keep the posts boosted at least this many times; 0 keeps none for their boosts.
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        keep_min_favourites:
+          description: Keep the posts favourited at least this many times; 0 keeps none for their favourites.
+          type: integer
+          minimum: 0
+          maximum: 1000000
+    # --- end of the user's automatic deletion of old posts (#657) ---
     # --- two-factor authentication (#628) ---
     TwoFactor:
       description: Where the authenticated user's two-factor authentication (TOTP) stands.
@@ -6274,8 +6794,10 @@ components:
         `user` (a registration):
         `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
         (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
-        user): `role_granted`, `role_revoked`. On an `appeal`:
+        `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+        `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+        `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+        an `appeal`:
         `appeal_upheld`, `appeal_overturned` (which also records the action's
         `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
         `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
@@ -6307,6 +6829,9 @@ components:
         - rule_retired
         - role_granted
         - role_revoked
+        - role_created
+        - role_updated
+        - role_deleted
         - appeal_upheld
         - appeal_overturned
         - account_deletion_cancelled
@@ -6371,8 +6896,8 @@ components:
           description: |
             Whether the target is still there to look at. It is `false` for an account, a report,
             an appeal, or a sign-up block that is gone (erased past its retention), which only
-            `target_label` names now. It is `true` for the other kinds of targets, which are
-            never erased.
+            `target_label` names now. It is `true` for the other kinds of targets: a role, a
+            custom emoji, or a webhook that was deleted is not looked up yet.
           type: boolean
         source_event_id:
           description: |
@@ -7630,7 +8155,7 @@ components:
         the terms of service and the privacy policy (Markdown), and the alternative text of the
         preview image.
       type: string
-      enum: [name, short_description, description, terms, privacy_policy, preview_image_alt]
+      enum: [name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt]
     SetInstanceTextRequest:
       description: A new revision of an instance text in one locale.
       type: object
@@ -7847,7 +8372,8 @@ components:
     AdminRole:
       description: |
         A role (FR-720): a named set of permissions. A higher position outranks a lower one;
-        a user may grant and revoke only the roles at or below their highest one.
+        a user may grant, revoke, create, change, and delete only the roles at or below their
+        highest one, and give or take only the permissions they hold.
       type: object
       required: [id, key, position, permissions]
       properties:
@@ -7874,6 +8400,61 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdminRole"
+    CreateRoleRequest:
+      description: A new role.
+      type: object
+      required: [key, position, permissions]
+      properties:
+        key:
+          description: The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`.
+          type: string
+          minLength: 1
+          maxLength: 64
+        position:
+          description: The rank of the role, from 0 to 999 (below `admin`).
+          type: integer
+        permissions:
+          description: The permissions that the role grants, each once.
+          type: array
+          items:
+            $ref: "#/components/schemas/Permission"
+    UpdateRoleRequest:
+      description: The changes to a role; what is omitted stays.
+      type: object
+      properties:
+        position:
+          description: The new rank of the role, from 0 to 999.
+          type: integer
+        permissions:
+          description: The new permissions of the role, each once; empty removes them all.
+          type: array
+          items:
+            $ref: "#/components/schemas/Permission"
+    RoleProblem:
+      description: |
+        The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
+        `reason` says which. Another 422 (a malformed request) has none.
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            reason:
+              $ref: "#/components/schemas/RoleProblemReason"
+            missing_permissions:
+              description: The permissions that the change needs and the viewer lacks, for `missing_permission`.
+              type: array
+              items:
+                $ref: "#/components/schemas/Permission"
+    RoleProblemReason:
+      description: |
+        Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+        and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+        `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+        and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+        `missing_permission`: the change adds or removes permissions that the viewer's roles
+        do not grant (`missing_permissions`).
+      type: string
+      enum: [key, key_taken, position, permissions, builtin, held, missing_permission]
     # --- end of admin: roles (#348) ---
     # --- admin: registrations (#345) ---
     AdminRegistration:
@@ -8351,6 +8932,9 @@ components:
         - local_timeline_enabled
         - federated_timeline_enabled
         - preview_image
+        - contact_account
+        - contact_email
+        - thumbnail
         - remote_media_policy
         - remote_media_cache_ttl
         - authorized_fetch
@@ -8362,13 +8946,20 @@ components:
         - retention_reports
         - retention_moderation_actions
         - retention_audit_log
+        - search_indexing
+        - ai_usage
+        - indexable_default
+        - security_contact
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
         `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-        `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+        `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+        the username of a local account, or empty for none. `email`: an email address such as
+        `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+        none.
       type: string
-      enum: [bool, int, enum, locale, media]
+      enum: [bool, int, enum, locale, media, account, email, uri]
     UpdateInstanceSettingsRequest:
       description: New values of some instance settings, saved together.
       type: object
@@ -8381,7 +8972,7 @@ components:
           maxProperties: 64
           additionalProperties:
             type: string
-            maxLength: 64
+            maxLength: 320
     # --- end of admin: instance settings (#624) ---
     # --- admin: invites (#624) ---
     AdminInvite:

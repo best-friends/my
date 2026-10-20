@@ -62,6 +62,8 @@ func TestGetInstance(t *testing.T) {
 		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
 		Timelines:     clientapi.InstanceTimelines{Local: true, Federated: true},
 		Rules:         []clientapi.InstanceRule{},
+		// Unset, the instance denies search engines and AI (ADR-0057).
+		SearchIndexing: clientapi.SearchIndexingDeny, AiUsage: clientapi.AIUsageDeny,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("instance = %+v, want %+v", got, want)
@@ -143,6 +145,53 @@ func TestGetInstanceFromSettings(t *testing.T) {
 	fake.err = errors.New("database down")
 	if res := e.get(t, "/instance", nil); res.StatusCode != http.StatusInternalServerError {
 		t.Errorf("failing settings = %d, want 500", res.StatusCode)
+	}
+}
+
+// TestGetInstanceContactAndThumbnail checks that GET /instance presents the contact settings
+// (the local account and the email address) and the thumbnail with its alt text, and leaves out
+// a contact account that does not exist.
+func TestGetInstanceContactAndThumbnail(t *testing.T) {
+	fake := &fakeInstance{settings: []instance.CurrentSetting{
+		{Key: instance.SettingContactAccount, RevisionID: "r1", Value: "alice"},
+		{Key: instance.SettingContactEmail, RevisionID: "r2", Value: "admin@social.example"},
+	}}
+	var thumbnailLocale string
+	e := newAuthEnv(t, func(o *clientapi.Options) {
+		o.Instance = fake
+		o.InstanceThumbnail = func(_ context.Context, locale string) (*clientapi.InstanceImage, error) {
+			thumbnailLocale = locale
+			return &clientapi.InstanceImage{URL: "https://social.example/media/beach.webp", Width: 1600, Height: 900, Alt: "The beach"}, nil
+		}
+	})
+	get := func(t *testing.T) clientapi.Instance {
+		t.Helper()
+		res := e.get(t, "/instance", map[string]string{"Accept-Language": "ja"})
+		if res.StatusCode != http.StatusOK {
+			t.Fatalf("status = %d, want 200", res.StatusCode)
+		}
+		var got clientapi.Instance
+		if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	got := get(t)
+	if got.Contact == nil || got.Contact.Email == nil || *got.Contact.Email != "admin@social.example" ||
+		got.Contact.Account == nil || got.Contact.Account.Id != aliceAccountID || got.Contact.Account.Username != "alice" {
+		t.Errorf("contact = %+v, want alice and admin@social.example", got.Contact)
+	}
+	alt := "The beach"
+	if want := (clientapi.InstanceThumbnail{Url: "https://social.example/media/beach.webp", Width: 1600, Height: 900, Alt: &alt}); got.Thumbnail == nil || !reflect.DeepEqual(*got.Thumbnail, want) {
+		t.Errorf("thumbnail = %+v, want %+v", got.Thumbnail, want)
+	}
+	if thumbnailLocale != "ja" {
+		t.Errorf("thumbnail read in %q, want the request's locale ja", thumbnailLocale)
+	}
+
+	fake.settings = []instance.CurrentSetting{{Key: instance.SettingContactAccount, RevisionID: "r3", Value: "nobody"}}
+	if got := get(t); got.Contact != nil {
+		t.Errorf("contact of an unknown account = %+v, want none", got.Contact)
 	}
 }
 

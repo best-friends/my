@@ -163,6 +163,7 @@ CREATE TABLE account_profile_revisions (
   bot INTEGER NOT NULL CHECK (bot IN (0, 1)),
   discoverable INTEGER NOT NULL CHECK (discoverable IN (0, 1)),
   indexable INTEGER NOT NULL CHECK (indexable IN (0, 1)),
+  ai_opt_out INTEGER NOT NULL CHECK (ai_opt_out IN (0, 1)),
   avatar_media_id TEXT,
   header_media_id TEXT,
   revised_at INTEGER NOT NULL
@@ -334,7 +335,7 @@ CREATE TABLE status_deletions (
   status_id TEXT NOT NULL PRIMARY KEY,
   uri TEXT NOT NULL,
   author_account_id TEXT NOT NULL,
-  origin TEXT NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion', 'retention')),
+  origin TEXT NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion', 'retention', 'auto_delete')),
   moderation_action_id TEXT,
   deleted_at INTEGER NOT NULL
 ) STRICT;
@@ -589,10 +590,11 @@ CREATE TABLE instance_setting_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
+    'preview_image', 'contact_account', 'contact_email', 'thumbnail', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
-    'retention_moderation_actions', 'retention_audit_log'
+    'retention_moderation_actions', 'retention_audit_log',
+    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
@@ -613,7 +615,7 @@ CREATE TABLE instance_settings (
 CREATE TABLE instance_text_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
-    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt'
+    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt'
   )),
   locale TEXT NOT NULL,
   body TEXT NOT NULL,
@@ -1108,6 +1110,33 @@ CREATE TABLE status_pins (
 ) STRICT;
 CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
+
+-- Current value: a local account's automatic deletion of its own old posts (FR-118). No row
+-- means the default policy, which is disabled. Each keep_* flag (0/1) is an exception that keeps
+-- a post; keep_min_boosts and keep_min_favourites keep a post with at least that many, 0 for
+-- none.
+CREATE TABLE status_auto_delete_policies (
+  account_id TEXT NOT NULL PRIMARY KEY,
+  enabled INTEGER NOT NULL CHECK (enabled IN (0, 1)),
+  min_age_days INTEGER NOT NULL CHECK (min_age_days BETWEEN 1 AND 3650),
+  keep_pinned INTEGER NOT NULL CHECK (keep_pinned IN (0, 1)),
+  keep_bookmarked INTEGER NOT NULL CHECK (keep_bookmarked IN (0, 1)),
+  keep_favourited INTEGER NOT NULL CHECK (keep_favourited IN (0, 1)),
+  keep_media INTEGER NOT NULL CHECK (keep_media IN (0, 1)),
+  keep_polls INTEGER NOT NULL CHECK (keep_polls IN (0, 1)),
+  keep_min_boosts INTEGER NOT NULL CHECK (keep_min_boosts BETWEEN 0 AND 1000000),
+  keep_min_favourites INTEGER NOT NULL CHECK (keep_min_favourites BETWEEN 0 AND 1000000),
+  updated_at INTEGER NOT NULL
+) STRICT;
+-- The hourly job walks the enabled policies in account order.
+CREATE INDEX status_auto_delete_policies_enabled ON status_auto_delete_policies (account_id) WHERE enabled = 1;
+
+-- Current value: the visibilities whose posts an automatic deletion policy keeps.
+CREATE TABLE status_auto_delete_kept_visibilities (
+  account_id TEXT NOT NULL,
+  visibility TEXT NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  PRIMARY KEY (account_id, visibility)
+) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
 -- timeline: feeds (data-model §4.6, §6, ADR-0013). Owned by internal/app/timeline, whose
@@ -1888,7 +1917,7 @@ CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: the exports of a user's data (data-model.md §4.1, FR-008).
+-- identity: the exports and imports of a user's data (data-model.md §4.1, FR-008).
 -- ---------------------------------------------------------------------------------------------
 
 -- Resource: a user's request for an archive of their data.
@@ -1913,6 +1942,43 @@ CREATE TABLE data_export_results (
 ) STRICT;
 CREATE INDEX data_export_results_expires_at ON data_export_results (expires_at);
 
+-- Resource: a user's import of a Mastodon CSV file of follows, blocks, mutes, or bookmarks.
+CREATE TABLE data_imports (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('following', 'blocks', 'mutes', 'bookmarks')),
+  mode TEXT NOT NULL CHECK (mode IN ('merge', 'overwrite')),
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX data_imports_user_id_id ON data_imports (user_id, id DESC);
+CREATE INDEX data_imports_created_at ON data_imports (created_at);
+
+-- Resource (child of an import): one thing the import does. An 'add' item is a line of the file,
+-- target its address or post URL as written; a 'remove' item is what an overwrite removes,
+-- target the ID of the account or status.
+CREATE TABLE data_import_items (
+  import_id TEXT NOT NULL,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  action TEXT NOT NULL CHECK (action IN ('add', 'remove')),
+  target TEXT NOT NULL,
+  show_boosts INTEGER NOT NULL CHECK (show_boosts IN (0, 1)),
+  notify INTEGER NOT NULL CHECK (notify IN (0, 1)),
+  hide_notifications INTEGER NOT NULL CHECK (hide_notifications IN (0, 1)),
+  PRIMARY KEY (import_id, position)
+) STRICT;
+
+-- Event (child of an item): how the item ended. failure says why exactly when it failed.
+CREATE TABLE data_import_item_results (
+  import_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  outcome TEXT NOT NULL CHECK (outcome IN ('done', 'failed')),
+  failure TEXT CHECK (failure IN ('unresolvable', 'unavailable', 'blocked', 'restricted', 'self')),
+  processed_at INTEGER NOT NULL,
+  PRIMARY KEY (import_id, position),
+  CHECK ((outcome = 'failed') = (failure IS NOT NULL))
+) STRICT;
+
 -- moderation: the audit log (data-model §4.3, ADR-0037). Owned by internal/app/moderation.
 -- ---------------------------------------------------------------------------------------------
 
@@ -1930,7 +1996,8 @@ CREATE TABLE audit_log_entries (
     'domain_action_lifted', 'report_assigned', 'report_unassigned', 'report_resolved',
     'report_reopened', 'report_note_added',
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
-    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
+    'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked',
+    'role_created', 'role_updated', 'role_deleted', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
     'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled',
     'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_updated',

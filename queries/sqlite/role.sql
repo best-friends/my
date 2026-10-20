@@ -27,3 +27,14 @@ INSERT INTO user_role_revocations (grant_id, revoked_by_user_id, revoked_at) VAL
 
 -- name: DeleteUserRoleByGrant :exec
 DELETE FROM user_roles WHERE grant_id = ?;
+
+-- Creating, changing, and deleting roles (FR-720).
+
+-- name: UpdateRolePosition :exec
+UPDATE roles SET position = ? WHERE id = ?;
+
+-- name: DeleteRolePermissions :exec
+DELETE FROM role_permissions WHERE role_id = ?;
+
+-- name: DeleteRole :exec
+DELETE FROM roles WHERE id = ?;

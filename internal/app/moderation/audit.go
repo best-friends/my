@@ -44,6 +44,9 @@ const (
 	AuditRuleRetired          = moderation.AuditRuleRetired
 	AuditRoleGranted          = moderation.AuditRoleGranted
 	AuditRoleRevoked          = moderation.AuditRoleRevoked
+	AuditRoleCreated          = moderation.AuditRoleCreated
+	AuditRoleUpdated          = moderation.AuditRoleUpdated
+	AuditRoleDeleted          = moderation.AuditRoleDeleted
 	AuditWebhookCreated       = moderation.AuditWebhookCreated
 	AuditWebhookUpdated       = moderation.AuditWebhookUpdated
 	AuditWebhookDeleted       = moderation.AuditWebhookDeleted
@@ -153,9 +156,9 @@ type AuditTarget struct {
 
 // GoneAuditTargets returns the targets of entries that no longer exist: accounts, reports,
 // appeals, and sign-up blocks erased (past their retention, ADR-0038). It looks up each kind of
-// target once for all the entries. The other kinds of targets are never erased (a domain, a
-// user, a role, a setting, a rule) or have no operation recorded on them (a status), so they
-// are never gone.
+// target once for all the entries. A domain, a user, a setting, and a rule are never erased, and
+// a status has no operation recorded on it; a deleted role, custom emoji, or webhook is not
+// looked up yet. None of these is reported gone.
 func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[AuditTarget]bool, error) {
 	ids := map[moderation.AuditTargetKind][]string{}
 	seen := map[AuditTarget]bool{}

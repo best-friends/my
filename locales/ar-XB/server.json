@@ -543,6 +543,14 @@
     "defaultMessage": "‮⅄on ɐɹǝ uoʇ ɐʅʅoʍǝp ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.import.in_progress": {
+    "defaultMessage": "‮∀uoʇɥǝɹ ıɯdoɹʇ ıs ıu dɹoƃɹǝss. Mɐıʇ nuʇıʅ ıʇ ɟıuısɥǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "‮⊥ɥǝ ɟıʅǝ ɔɐuuoʇ qǝ ɹǝɐp ɐs ↃSɅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "‮⊥ɥıs ɐdd ıs uoʇ ɐʅʅoʍǝp ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -649,6 +657,14 @@
   },
   "errors.request_too_large": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ʇoo ʅɐɹƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.invalid": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝ ɔɐuuoʇ qǝ sɐʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.invalid_detail": {
+    "defaultMessage": "‮{reason,select,builtin{⊥ɥǝ ɐpɯıu ɹoʅǝ ɔɐuuoʇ ɔɥɐuƃǝ, ɐup ʇɥǝ qnıʅʇ-ıu ɹoʅǝs ɔɐuuoʇ qǝ pǝʅǝʇǝp.} held{ᴚǝʌoʞǝ ʇɥǝ ɹoʅǝ ɟɹoɯ ǝʌǝɹʎouǝ ʍɥo ɥoʅps ıʇ ɟıɹsʇ.} key{⊥ɥǝ ʞǝʎ ɯnsʇ qǝ 1 ʇo 64 ʅoʍǝɹɔɐsǝ ʅǝʇʇǝɹs, pıƃıʇs, nupǝɹsɔoɹǝs, oɹ ɥʎdɥǝus.} key_taken{∀uoʇɥǝɹ ɹoʅǝ ɥɐs ʇɥıs ʞǝʎ.} missing_permission{⅄on ɔɐu ƃıʌǝ oɹ ʇɐʞǝ ouʅʎ ʇɥǝ dǝɹɯıssıous ʎon ɥoʅp.} other{⊥ɥǝ ɔɥɐuƃǝ qɹǝɐʞs ɐ ɹnʅǝ.} permissions{Ↄɥoosǝ ǝɐɔɥ dǝɹɯıssıou ɐʇ ɯosʇ ouɔǝ.} position{⊥ɥǝ dosıʇıou ɯnsʇ qǝ ɟɹoɯ 0 ʇo 999.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.self_relationship": {

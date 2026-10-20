@@ -6,8 +6,9 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
-import { instanceFixture, type Schemas } from "../../test/fixtures";
+import { instanceFixture, mediaFixture, type Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, signedInHandler } from "../../test/msw/http";
+import { nodeUploadFile } from "../../test/multipart";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { instanceSettingsFixture } from "./test/handlers";
@@ -246,6 +247,26 @@ describe("the server's policies", () => {
     expect(settings.patches).toHaveLength(1);
   });
 
+  test("sends what the server states to search engines and AI, and its security contact", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    // Unset, the server denies both.
+    expect(within(crawlers).getByRole("radio", { name: "Deny indexing" })).toBeChecked();
+    expect(within(crawlers).getByRole("radio", { name: "Deny training and use" })).toBeChecked();
+
+    await user.click(within(crawlers).getByRole("radio", { name: "Allow indexing" }));
+    await user.click(within(crawlers).getByRole("checkbox", { name: "New accounts allow search indexing" }));
+    await user.click(within(crawlers).getByRole("radio", { name: "Deny training" }));
+    await user.type(within(crawlers).getByRole("textbox", { name: "Security contact" }), "mailto:security@example.com");
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText(/^Saved the settings\./)).toBeInTheDocument();
+    expect(settings.patches).toEqual([
+      { values: { search_indexing: "allow", indexable_default: "true", ai_usage: "deny_training", security_contact: "mailto:security@example.com" } },
+    ]);
+  });
+
   test("sends the default language picked from the app's languages", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });
@@ -270,5 +291,87 @@ describe("the server's policies", () => {
 
     expect(await screen.findByText("Could not save the settings; nothing was changed: values.registration_mode is invalid")).toHaveAttribute("role", "alert");
     expect(within(registration).getByRole("radio", { name: "Nobody" })).toBeChecked();
+  });
+});
+
+describe("the server's contact and thumbnail", () => {
+  const uploadedId = "0199f0e0-0000-7000-8000-00000000c0a1";
+
+  beforeEach(() => {
+    server.use(signedInHandler, operatorHandler(["manage_settings"]));
+  });
+
+  /** Plays the settings and the alt texts; records the changes and the purposes of the uploads. */
+  function contactServer(stored: Readonly<Partial<Record<Schemas["InstanceSettingKey"], string>>>) {
+    let current = { ...stored };
+    const patches: Schemas["UpdateInstanceSettingsRequest"][] = [];
+    const alts: { locale: string; body: string }[] = [];
+    const purposes: string[] = [];
+    server.use(
+      http.get(`${apiBase}/instance`, () =>
+        HttpResponse.json({
+          ...instanceFixture,
+          ...(current.thumbnail ? { thumbnail: { url: `https://my.example/media/${current.thumbnail}/r/large.webp`, width: 1600, height: 900 } } : {}),
+        }),
+      ),
+      http.get(`${apiBase}/admin/settings`, () => HttpResponse.json(instanceSettingsFixture(current))),
+      http.patch(`${apiBase}/admin/settings`, async ({ request }) => {
+        const body = (await request.json()) as Schemas["UpdateInstanceSettingsRequest"];
+        patches.push(body);
+        current = { ...current, ...body.values };
+        return HttpResponse.json(instanceSettingsFixture(current));
+      }),
+      http.put(`${apiBase}/admin/instance_texts/thumbnail_alt/:locale`, async ({ request, params }) => {
+        const { body } = (await request.json()) as Schemas["SetInstanceTextRequest"];
+        alts.push({ locale: String(params["locale"]), body });
+        return HttpResponse.json({ key: "thumbnail_alt", locale: String(params["locale"]), body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
+      }),
+      http.post(`${apiBase}/media`, async ({ request }) => {
+        purposes.push(/name="purpose"\r\n\r\n([a-z]+)/u.exec(await request.text())?.[1] ?? "");
+        return HttpResponse.json(mediaFixture(uploadedId), { status: 202 });
+      }),
+    );
+    return { patches, alts, purposes };
+  }
+
+  test("saves the contact account, the email address and a new thumbnail with its description", async () => {
+    const contact = contactServer({ contact_email: "old@my.example" });
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const section = await screen.findByRole("region", { name: "Contact and thumbnail" });
+    const email = within(section).getByRole("textbox", { name: "Contact email address" });
+    expect(email).toHaveValue("old@my.example");
+
+    await user.type(within(section).getByRole("textbox", { name: "Contact account" }), "@Admin");
+    await user.clear(email);
+    await user.type(email, "admin@my.example");
+    // eslint-disable-next-line testing-library/no-node-access -- FileTrigger's input is hidden and has no role.
+    const input = section.querySelector<HTMLInputElement>('input[type="file"]');
+    if (input === null) throw new Error("no file input");
+    await user.upload(input, nodeUploadFile("png", "beach.png", "image/png"));
+    expect(await within(section).findByRole("button", { name: "Remove the image" })).toBeInTheDocument();
+    await user.type(within(section).getByRole("textbox", { name: "Description of the image in English" }), "A beach at dawn");
+    await user.click(within(section).getByRole("button", { name: "Save the contact and thumbnail" }));
+
+    expect(await within(section).findByText("Saved the contact and thumbnail. The audit log records the change.")).toBeInTheDocument();
+    expect(contact.purposes).toEqual(["attachment"]);
+    // The @ that people type before a username is not part of it.
+    expect(contact.patches).toEqual([{ values: { contact_account: "Admin", contact_email: "admin@my.example", thumbnail: uploadedId } }]);
+    expect(contact.alts).toEqual([{ locale: "en", body: "A beach at dawn" }]);
+
+    // Saving again without a change sends nothing.
+    await user.click(within(section).getByRole("button", { name: "Save the contact and thumbnail" }));
+    expect(await within(section).findByText("The contact and thumbnail are already saved.")).toBeInTheDocument();
+    expect(contact.patches).toHaveLength(1);
+  });
+
+  test("removes the thumbnail", async () => {
+    const contact = contactServer({ thumbnail: uploadedId });
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const section = await screen.findByRole("region", { name: "Contact and thumbnail" });
+    await user.click(await within(section).findByRole("button", { name: "Remove the image" }));
+    await user.click(within(section).getByRole("button", { name: "Save the contact and thumbnail" }));
+
+    expect(await within(section).findByText("Saved the contact and thumbnail. The audit log records the change.")).toBeInTheDocument();
+    expect(contact.patches).toEqual([{ values: { thumbnail: "" } }]);
   });
 });

@@ -26,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminThemeRouteImport } from './routes/admin.theme'
@@ -44,8 +45,10 @@ import { Route as ModerationSignupBlocksRouteImport } from './routes/moderation.
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
+import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
+import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
@@ -146,6 +149,11 @@ const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
   path: '/admin/documents',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRulesRoute = AdminRulesRouteImport.update({
   id: '/admin/rules',
   path: '/admin/rules',
@@ -236,6 +244,11 @@ const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
   path: '/settings/account-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAutoDeleteRoute = SettingsAutoDeleteRouteImport.update({
+  id: '/settings/auto-delete',
+  path: '/settings/auto-delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
   id: '/settings/blocks',
   path: '/settings/blocks',
@@ -244,6 +257,11 @@ const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
 const SettingsFollowRequestsRoute = SettingsFollowRequestsRouteImport.update({
   id: '/settings/follow-requests',
   path: '/settings/follow-requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
+  id: '/settings/import-export',
+  path: '/settings/import-export',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsMutesRoute = SettingsMutesRouteImport.update({
@@ -327,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
@@ -343,8 +362,10 @@ export interface FileRoutesByFullPath {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -378,6 +399,7 @@ export interface FileRoutesByTo {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
@@ -394,8 +416,10 @@ export interface FileRoutesByTo {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -430,6 +454,7 @@ export interface FileRoutesById {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
@@ -446,8 +471,10 @@ export interface FileRoutesById {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -483,6 +510,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
@@ -499,8 +527,10 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -534,6 +564,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
@@ -550,8 +581,10 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -585,6 +618,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
@@ -601,8 +635,10 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -637,6 +673,7 @@ export interface RootRouteChildren {
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
   AdminRulesRoute: typeof AdminRulesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminThemeRoute: typeof AdminThemeRoute
@@ -653,8 +690,10 @@ export interface RootRouteChildren {
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
+  SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
+  SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -793,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/rules': {
       id: '/admin/rules'
       path: '/admin/rules'
@@ -919,6 +965,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/auto-delete': {
+      id: '/settings/auto-delete'
+      path: '/settings/auto-delete'
+      fullPath: '/settings/auto-delete'
+      preLoaderRoute: typeof SettingsAutoDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/blocks': {
       id: '/settings/blocks'
       path: '/settings/blocks'
@@ -931,6 +984,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/follow-requests'
       fullPath: '/settings/follow-requests'
       preLoaderRoute: typeof SettingsFollowRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/import-export': {
+      id: '/settings/import-export'
+      path: '/settings/import-export'
+      fullPath: '/settings/import-export'
+      preLoaderRoute: typeof SettingsImportExportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/mutes': {
@@ -1037,6 +1097,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
+  AdminRolesRoute: AdminRolesRoute,
   AdminRulesRoute: AdminRulesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminThemeRoute: AdminThemeRoute,
@@ -1053,8 +1114,10 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
+  SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
+  SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,

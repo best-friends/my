@@ -12,9 +12,13 @@ HTML のリクエストは常に未ログインとして扱うので、プレビ
 | --- | --- |
 | ランディングページ（`/`）、インスタンスの情報ページ（`/about`） | 200。インスタンスを紹介する meta タグ付きの外枠（下の「ランディングページ」） |
 | `public` の投稿、有効なローカルアカウントのプロフィール | 200。meta タグ付きの外枠 |
-| `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex">` と `X-Robots-Tag: noindex` |
-| `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex`。本文とヘッダーは理由によらず同じ |
+| `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex, noarchive">` と `X-Robots-Tag: noindex, noarchive` |
+| `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex, noarchive`。本文とヘッダーは理由によらず同じ |
 | `/@<旧ユーザー名>/status/<投稿 ID>` | 301。現在のユーザー名の URL へ |
+
+どのページにも、検索エンジンと AI クローラーへの表明（`noindex`・`noai` などの meta タグと `X-Robots-Tag`・`Content-Usage`・`tdm-reservation`）が、
+インスタンス設定と持ち主の設定に応じて付きます（[検索エンジンと AI クローラー](crawlers.md)）。上表の `noindex` は設定によらず付くものです。
+`noindex` はリンクプレビューを止めません。
 
 ActivityPub の `Accept` で来たリクエストには外枠を返さず、ActivityPub 側が答えます（プロフィールはアクターの `id`、未ログインで見られる投稿はその `id` への 302。ADR-0018、ADR-0053）。どの応答にも `Vary: Accept` が付きます。
 
@@ -84,7 +88,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
    ```
 
    - 200 で、上表の meta タグがあること。`unlisted` は `noindex` が付くこと。
-   - `private` の投稿と存在しない ID が、同じ本文の 404 で `X-Robots-Tag: noindex` を返すこと。
+   - `private` の投稿と存在しない ID が、同じ本文の 404 で `X-Robots-Tag: noindex, noarchive`（AI を拒否する設定では `noai, noimageai` も）を返すこと。
 
      ```sh
      diff <(curl -sS https://<host>/@alice/status/<private の投稿 ID>) <(curl -sS https://<host>/@alice/status/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f)
