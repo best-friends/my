@@ -95,6 +95,26 @@
     "defaultMessage": "ルール",
     "description": "Heading of the section of the server's information page with the server's rules."
   },
+  "about.source.title": {
+    "defaultMessage": "ソースコード",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "このサーバーは、GNU Affero General Public License 第 3 版（AGPL-3.0）のもとで公開されている自由ソフトウェアで動いています。サーバーを使う人は誰でも、動いているソースコードを入手できます。",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "ソースコードを見る",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "ソースコードをメールで請求する",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "請求先のメールアドレス",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
   "about.title": {
     "defaultMessage": "{instance} について",
     "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
@@ -3858,6 +3878,14 @@
   "admin.settings.federation.authorized_fetch.description": {
     "defaultMessage": "ほかのサーバーは、検証できる署名があるときだけ投稿とコレクションを読めます。凍結したサーバーには読めなくなりますが、読めなくなるソフトウェアもあります。",
     "description": "Description of the authorized fetch checkbox."
+  },
+  "admin.settings.federation.link_cards": {
+    "defaultMessage": "投稿のリンクのカードを表示する",
+    "description": "Checkbox of the link_cards_enabled setting: whether posts show the cards (title, description, image) of the pages they link to."
+  },
+  "admin.settings.federation.link_cards.description": {
+    "defaultMessage": "サーバーが各投稿の最初のリンクのページを、投稿の公開範囲によらず取得し、題名・説明・画像を投稿の下に表示します。リンク先のサイトには、そのリンクがいつ投稿されたかが伝わりますが、誰が投稿したかは伝わりません。",
+    "description": "Description of the link cards checkbox."
   },
   "admin.settings.federation.title": {
     "defaultMessage": "連合",
@@ -7682,6 +7710,26 @@
   "timeline.media.reveal": {
     "defaultMessage": "センシティブなメディアを表示",
     "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
+  },
+  "timeline.card.author": {
+    "defaultMessage": "作者：{author}",
+    "description": "Line under the description of a link card naming the author of the linked page. {author} is the author's name as the page gives it, or the verified account (timeline.card.account)."
+  },
+  "timeline.card.author_published": {
+    "defaultMessage": "作者：{author} · {date}",
+    "description": "Line under the description of a link card naming the author of the linked page and when it was published. {author} is the author's name; {date} is the formatted date."
+  },
+  "timeline.card.published": {
+    "defaultMessage": "公開：{date}",
+    "description": "Line under the description of a link card saying when the linked page was published. {date} is the formatted date."
+  },
+  "timeline.card.account": {
+    "defaultMessage": "{name}（{handle}）",
+    "description": "The verified author of a linked page as an account: {name} is the display name, {handle} the handle such as @alice@example.com."
+  },
+  "timeline.card.failed": {
+    "defaultMessage": "このリンクのプレビューを表示できませんでした。",
+    "description": "Shown in place of the card of a link in a post when it failed to render."
   },
   "timeline.new_posts": {
     "defaultMessage": "{count, plural, other {新しい投稿 # 件}}",

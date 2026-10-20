@@ -95,6 +95,26 @@
     "defaultMessage": "Rules",
     "description": "Heading of the section of the server's information page with the server's rules."
   },
+  "about.source.title": {
+    "defaultMessage": "Source code",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "This server runs free software under the GNU Affero General Public License, version 3 (AGPL-3.0). Everyone who uses the server may get the source code that it runs.",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "View the source code",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "Request the source code by email",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "Email address for requests",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
   "about.title": {
     "defaultMessage": "About {instance}",
     "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
@@ -3858,6 +3878,14 @@
   "admin.settings.federation.authorized_fetch.description": {
     "defaultMessage": "Other servers then read posts and collections only with a verified signature, so that suspended servers cannot read them. Some software cannot read them anymore.",
     "description": "Description of the authorized fetch checkbox."
+  },
+  "admin.settings.federation.link_cards": {
+    "defaultMessage": "Show the cards of links in posts",
+    "description": "Checkbox of the link_cards_enabled setting: whether posts show the cards (title, description, image) of the pages they link to."
+  },
+  "admin.settings.federation.link_cards.description": {
+    "defaultMessage": "The server fetches the page of the first link in each post, whoever can see the post, and shows its title, description, and image under it. The linked sites learn when the link was posted, but not by whom.",
+    "description": "Description of the link cards checkbox."
   },
   "admin.settings.federation.title": {
     "defaultMessage": "Federation",
@@ -7682,6 +7710,26 @@
   "timeline.media.reveal": {
     "defaultMessage": "Show sensitive media",
     "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
+  },
+  "timeline.card.author": {
+    "defaultMessage": "By {author}",
+    "description": "Line under the description of a link card naming the author of the linked page. {author} is the author's name as the page gives it, or the verified account (timeline.card.account)."
+  },
+  "timeline.card.author_published": {
+    "defaultMessage": "By {author} · {date}",
+    "description": "Line under the description of a link card naming the author of the linked page and when it was published. {author} is the author's name; {date} is the formatted date."
+  },
+  "timeline.card.published": {
+    "defaultMessage": "Published {date}",
+    "description": "Line under the description of a link card saying when the linked page was published. {date} is the formatted date."
+  },
+  "timeline.card.account": {
+    "defaultMessage": "{name} ({handle})",
+    "description": "The verified author of a linked page as an account: {name} is the display name, {handle} the handle such as @alice@example.com."
+  },
+  "timeline.card.failed": {
+    "defaultMessage": "Could not show the preview of this link.",
+    "description": "Shown in place of the card of a link in a post when it failed to render."
   },
   "timeline.new_posts": {
     "defaultMessage": "{count, plural, one {# new post} other {# new posts}}",

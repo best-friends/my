@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4): the
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
-import { type CustomEmojiImage, type ImageSources, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
+import { type CustomEmojiImage, type ImageSources, type LinkCardImage, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
+import { useIntl } from "react-intl";
 import { useContentLinkClick } from "../../../lib/contentLinks";
 import { handleOf, isRemoteAcct } from "../../../lib/handle";
 import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
-import { type MediaAttachment, type Status, statusHistoryPath, statusPath, statusShareUrl } from "../api/status";
+import { useT } from "../../../lib/i18n";
+import { type LinkCard, type MediaAttachment, type Status, statusHistoryPath, statusPath, statusShareUrl } from "../api/status";
 import { imageSources } from "../../../lib/images";
 
 export type StatusView = {
@@ -42,11 +44,56 @@ export type StatusView = {
   contentWarning: string | null;
   /** The pictures, videos, and audio files that are ready to show. */
   media: MediaItem[];
-  /** Whether the author marked the media sensitive. */
+  /** Whether the author marked the media sensitive; it covers the image of the link card too. */
   sensitive: boolean;
+  /** The card of the first link in the post (ADR-0062), or null when it has none. */
+  card: LinkCardView | null;
   /** How many times the post was boosted and favourited. */
   counts: { boosts: number; favourites: number };
 };
+
+/** What the link card of a post shows, for @my/ui's LinkCard. */
+type LinkCardView = {
+  href: string;
+  title: string;
+  description: string;
+  siteName: string;
+  lang: string | undefined;
+  image: LinkCardImage | undefined;
+  /** Who wrote the linked page and when, in one line; null when the page says neither. */
+  byline: string | null;
+};
+
+/**
+ * What the card of a link shows: the page's texts as plain text, the image through the media proxy, and a byline
+ * of the verified author's account (or the author's name as the page gives it) and the date of publication.
+ */
+function useLinkCardView(card: LinkCard | undefined): LinkCardView | null {
+  const t = useT();
+  const intl = useIntl();
+  if (card === undefined) return null;
+  const author =
+    card.author === undefined
+      ? card.author_name
+      : t("client:timeline.card.account", { name: card.author.display_name || card.author.username, handle: handleOf(card.author.acct) });
+  const date = card.published_at === undefined ? undefined : intl.formatDate(Date.parse(card.published_at), { dateStyle: "medium" });
+  let byline: string | null = null;
+  if (author !== undefined && date !== undefined) byline = t("client:timeline.card.author_published", { author, date });
+  else if (author !== undefined) byline = t("client:timeline.card.author", { author });
+  else if (date !== undefined) byline = t("client:timeline.card.published", { date });
+  return {
+    href: card.url,
+    title: card.title,
+    description: card.description,
+    siteName: card.site_name,
+    lang: card.language,
+    image:
+      card.image === undefined
+        ? undefined
+        : { src: card.image.url, width: card.image.width, height: card.image.height, blurhash: card.image.blurhash, alt: card.image.description },
+    byline,
+  };
+}
 
 /**
  * The pictures, videos, and audio files of a status that are ready to show (api/openapi.yaml, MediaAttachment). For a
@@ -97,6 +144,7 @@ export function useStatusView(status: Status): StatusView {
   const lang = post.language === "und" ? undefined : post.language;
   const time = useTimeView(post.created_at);
   const onLinkClick = useContentLinkClick();
+  const card = useLinkCardView(post.card);
   return {
     boostedBy:
       status.boost === undefined
@@ -121,6 +169,7 @@ export function useStatusView(status: Status): StatusView {
     contentWarning: post.spoiler_text === "" ? null : post.spoiler_text,
     media: mediaItems(post.media_attachments, lang),
     sensitive: post.sensitive,
+    card,
     counts: { boosts: post.boosts_count, favourites: post.favourites_count },
   };
 }

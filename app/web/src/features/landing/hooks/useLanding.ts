@@ -32,6 +32,8 @@ export type Landing = {
   /** The address of the server's registration page. */
   signUpHref: string;
   recentPosts: RecentPosts;
+  /** Where users get the source code the server runs (AGPL-3.0 section 13); undefined until the instance loads. */
+  sourceUrl: string | undefined;
 };
 
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
@@ -76,5 +78,6 @@ export function useLanding(): Landing {
     registrationMode: instance?.registrations.mode,
     signUpHref: new URL(signUpPath, apiOrigin).href,
     recentPosts,
+    sourceUrl: instance?.source_url,
   };
 }

@@ -47,6 +47,9 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - 見せられない項目（[visibility.md §6](visibility.md#6-アカウントの表示)）を省く一覧では、最後でないページでも `limit` より少ないことがあります。
 - 投稿の一覧は `#/components/responses/StatusPage`（`items` が `#/components/schemas/Status` の配列）を返し、ハンドラは `Server.statuses` で投稿とブーストを詰め替えます（投稿は `Server.newStatus`）。
   ブーストは、ブーストした人の `Status` の `boost` に元の投稿を入れて表します。
+- 投稿のリンクのカード（`Status.card`、`LinkCard`）は、`StatusView.Card`（`content.LinkCards.View`）を `Server.newLinkCard` で詰め替えます。
+  カードは投稿の後にジョブが取得するので、投稿の直後の応答には無く、添付・投票のある投稿と `link_cards_enabled` が偽のときも省きます。
+  画像はメディアプロキシの `small` の URL だけを返します（[federation.md §9.1](federation.md#91-リンクのカード)、ADR-0062 §8）。
   アカウントの投稿の一覧（`listAccountStatuses`）だけは、`StatusPage` に `remote_fetch_started` を加えた `#/components/responses/AccountStatusPage` を返します。
   その要求がリモートのアカウントの最近の投稿の取得を始めたときだけ `true` が入り、ほかのときは省きます（[federation.md §6.3](federation.md#63-投稿)、ADR-0044）。
 
@@ -109,7 +112,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと、`Options.Posting` から読む投稿の制限 `posting` を含む）に、
    投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
    `Account` のアバター・ヘッダー（`avatar` / `header`。大きさごとの版の `MediaVariants`）と、リモートのアカウントのプロフィールページ（`url`。Actor の `url`、無ければ `uri`）は、
-   応答に含めるアカウントの分を `Server.accountParts`（投稿なら著者とメンション先を加える `Server.statusParts`）で
+   応答に含めるアカウントの分を `Server.accountParts`（投稿なら著者・メンション先・リンクのカードの作者を加える `Server.statusParts`）で
    1 回にまとめて読み、`newAccount` と `newStatus` に渡します。アカウントごとに読まない（N+1 にしない）ため、一覧は `Server.newAccounts` や `Server.presentStatuses` を使います。
    フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。
    ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。

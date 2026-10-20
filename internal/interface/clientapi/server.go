@@ -30,7 +30,7 @@ type Options struct {
 	Origin string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
-	// SourceURL is where users get the server's source code (ADR-0011).
+	// SourceURL is where users get the server's source code, an https URL or a mailto: address (ADR-0011).
 	SourceURL string
 	// Instance reads the instance settings and texts; nil reads every setting as its default
 	// and no text.

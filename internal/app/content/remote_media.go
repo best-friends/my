@@ -138,8 +138,16 @@ type ProxyDeps struct {
 	Keys [][]byte
 	// BaseURL is the origin of the proxy URLs ("https://example.com").
 	BaseURL string
+	// LinkCardMedia reads the images of link cards (ADR-0062 §3), which the proxy serves as the
+	// remote media files; nil serves none.
+	LinkCardMedia LinkCardMediaReader
 	// Logger logs unexpected errors; nil means slog.Default().
 	Logger *slog.Logger
+}
+
+// LinkCardMediaReader reads the images of link cards. LinkCardRepository implements it.
+type LinkCardMediaReader interface {
+	FindLinkCardMedia(ctx context.Context, mediaID string) (content.LinkCardMedia, error)
 }
 
 // MediaProxy relays remote media files from the instance's origin (ADR-0005,
@@ -251,7 +259,7 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if !proxyVariants[ProxyVariant(variant)] || ProxyVariant(variant) == ProxySmall && p.d.Processor == nil {
 		return nil, notFound("unknown variant")
 	}
-	m, err := p.d.Repository.FindRemoteMedia(ctx, mediaID)
+	m, err := p.find(ctx, mediaID)
 	if err != nil {
 		return nil, err
 	}
@@ -259,9 +267,11 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if err != nil || u.Hostname() == "" {
 		return nil, notFound("malformed remote URL")
 	}
-	owner, err := p.d.Accounts.AccountDomain(ctx, m.OwnerAccountID)
-	if err != nil {
-		return nil, fmt.Errorf("proxy media %s: owner: %w", mediaID, err)
+	var owner string
+	if m.OwnerAccountID != "" {
+		if owner, err = p.d.Accounts.AccountDomain(ctx, m.OwnerAccountID); err != nil {
+			return nil, fmt.Errorf("proxy media %s: owner: %w", mediaID, err)
+		}
 	}
 	switch rejected, err := p.rejects(ctx, nil, owner, u.Hostname()); {
 	case err != nil:
@@ -284,6 +294,24 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 		return p.openCached(ctx, m, settings.CacheTTL)
 	}
 	return p.relay(ctx, m, settings.CacheTTL)
+}
+
+// find returns the remote media file mediaID: a file that a remote document declared, or the
+// image of link cards, which has no owner and is served as an attachment's image.
+func (p *MediaProxy) find(ctx context.Context, mediaID string) (content.RemoteMedia, error) {
+	m, err := p.d.Repository.FindRemoteMedia(ctx, mediaID)
+	if !errors.Is(err, ErrNotFound) || p.d.LinkCardMedia == nil {
+		return m, err
+	}
+	c, err := p.d.LinkCardMedia.FindLinkCardMedia(ctx, mediaID)
+	if err != nil {
+		return content.RemoteMedia{}, err
+	}
+	return content.RemoteMedia{
+		MediaID: c.MediaID, RemoteURL: c.RemoteURL, DeclaredContentType: c.ContentType,
+		DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeAttachment,
+		Width: c.Width, Height: c.Height, Blurhash: c.Blurhash, Description: c.Description,
+	}, nil
 }
 
 // smallCacheURL is the key of the small variant of m in the remote media cache: its URL with

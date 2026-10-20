@@ -283,7 +283,7 @@ func TestLoadInvalid(t *testing.T) {
 			want: []string{
 				"host (MY_HOST): must be a domain name with an optional :port, without scheme or path",
 				"account_domain (MY_ACCOUNT_DOMAIN): must be a domain name, not an IP address",
-				"source_url (MY_SOURCE_URL): must be an absolute https URL without user info or fragment",
+				"source_url (MY_SOURCE_URL): must be an absolute https URL without user info or fragment, or a mailto: URI with an email address",
 				"web_origin (MY_WEB_ORIGIN): must be an origin: http or https, a host, and an optional port, without path or trailing slash",
 				`role (MY_ROLE): unknown value "both"; want one of all, web, worker`,
 				"listen (MY_LISTEN): must be host:port, for example :8080 or 127.0.0.1:8080",
@@ -607,6 +607,42 @@ func TestServerOrigin(t *testing.T) {
 		}
 		if got := cfg.ServerOrigin(); got != c.want {
 			t.Errorf("host %q, web origin %q: ServerOrigin() = %q, want %q", c.host, c.webOrigin, got, c.want)
+		}
+	}
+}
+
+// TestSourceURL checks that source_url takes an https URL or a mailto: address (AGPL-3.0 section 13) and that the
+// server refuses to start with anything else.
+func TestSourceURL(t *testing.T) {
+	for _, v := range []string{
+		"https://github.com/best-friends/my",
+		"https://git.example.org/fork/my/-/tree/v1.2.3",
+		"mailto:source@example.org",
+		"mailto:source@example.org?subject=Source%20code",
+	} {
+		cfg, _, err := Load(source(with(minimal(), "MY_SOURCE_URL", v), nil))
+		if err != nil {
+			t.Errorf("%q: %v", v, err)
+			continue
+		}
+		if cfg.SourceURL != v {
+			t.Errorf("%q: SourceURL = %q", v, cfg.SourceURL)
+		}
+	}
+	for _, v := range []string{
+		"http://github.com/best-friends/my",
+		"https:///no-host",
+		"https://user@git.example.org/my",
+		"https://git.example.org/my#readme",
+		"ftp://git.example.org/my",
+		"ssh://example.org/best-friends/my",
+		"mailto:",
+		"mailto:no-address",
+		"mailto://source@example.org",
+		"/relative/path",
+	} {
+		if _, _, err := Load(source(with(minimal(), "MY_SOURCE_URL", v), nil)); err == nil || !strings.Contains(err.Error(), "source_url (MY_SOURCE_URL)") {
+			t.Errorf("%q: err = %v, want a source_url error", v, err)
 		}
 	}
 }
