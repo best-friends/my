@@ -149,15 +149,15 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 				File: content.MediaFile{ID: "01890a5d-ac96-774b-bcce-b302099a9100"},
 				Result: &content.MediaProcessingResult{
 					Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Blurhash: "LEHV6nWB2yk8", Width: 640, Height: 480,
-					Variants: []content.MediaVariant{
-						{Kind: content.VariantFull, ContentType: "image/jpeg", FileSize: 2048, Width: 640, Height: 480},
-						{Kind: content.VariantThumbnail, ContentType: "image/jpeg", FileSize: 512, Width: 415, Height: 311},
-					},
 				},
 				Focus: &content.MediaFocus{X: 0.5, Y: -0.25},
 			},
 			Description: "a cat",
-			URL:         "https://social.example/media/full.webp", PreviewURL: "https://social.example/media/thumbnail.webp",
+			Image: appcontent.Image{Still: appcontent.ImageVariants{
+				Small:  appcontent.ImageVariant{URL: "https://social.example/media/r/small.webp", ContentType: "image/webp", Size: 512, Width: 415, Height: 311},
+				Medium: appcontent.ImageVariant{URL: "https://social.example/media/r/medium.webp", ContentType: "image/webp", Size: 1024, Width: 640, Height: 480},
+				Large:  appcontent.ImageVariant{URL: "https://social.example/media/r/large.jpg", ContentType: "image/jpeg", Size: 2048, Width: 640, Height: 480},
+			}},
 		}},
 		Mentions: []appaccount.Actor{alice},
 		Tags:     []content.Tag{{Name: "GoLang", NameNormalized: "golang"}},
@@ -209,8 +209,10 @@ func TestGetStatus(t *testing.T) {
 	}
 	if len(s.MediaAttachments) != 1 || s.MediaAttachments[0].Type != clientapi.MediaAttachmentTypeImage || s.MediaAttachments[0].Meta.Width == nil || *s.MediaAttachments[0].Meta.Width != 640 ||
 		*s.MediaAttachments[0].Description != "a cat" || s.MediaAttachments[0].Meta.Focus.Y != -0.25 || s.MediaAttachments[0].Variants == nil ||
-		s.MediaAttachments[0].Variants.Full.Url != "https://social.example/media/full.webp" ||
-		s.MediaAttachments[0].Variants.Thumbnail.Url != "https://social.example/media/thumbnail.webp" {
+		s.MediaAttachments[0].Variants.Large.Url != "https://social.example/media/r/large.jpg" ||
+		s.MediaAttachments[0].Variants.Small.Url != "https://social.example/media/r/small.webp" ||
+		deref(s.MediaAttachments[0].Url) != "https://social.example/media/r/large.jpg" ||
+		deref(s.MediaAttachments[0].PreviewUrl) != "https://social.example/media/r/small.webp" {
 		t.Errorf("media = %+v", s.MediaAttachments)
 	}
 	if len(s.Tags) != 1 || s.Tags[0].Url != "https://social.example/tags/golang" || len(s.Mentions) != 1 || s.Mentions[0].Acct != "alice" {

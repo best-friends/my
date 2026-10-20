@@ -20,6 +20,7 @@ import (
 	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/interface/activitypub"
 )
@@ -126,7 +127,7 @@ func localActor(t *testing.T, id, username string, profile account.ProfileRevisi
 func newAccounts(t *testing.T) *fakeAccounts {
 	t.Helper()
 	alice := localActor(t, aliceID, "alice", account.ProfileRevision{
-		DisplayName: "Alice", NoteHTML: "<p>Hello</p>", Discoverable: true,
+		DisplayName: "Alice", NoteHTML: "<p>Hello</p>", Discoverable: true, AvatarMediaID: aliceAvatarID, HeaderMediaID: aliceHeaderID,
 		Fields: []account.ProfileField{{Position: 0, Name: "Website", ValueHTML: `<a href="https://example.org" rel="me">example.org</a>`}},
 	})
 	bot := localActor(t, botID, "Botty", account.ProfileRevision{DisplayName: "Botty", Bot: true, Locked: true, Indexable: true})
@@ -148,6 +149,33 @@ func newAccounts(t *testing.T) *fakeAccounts {
 		f.actors[a.Account.ID] = a
 	}
 	return f
+}
+
+// Media files of alice's avatar, an animation, and header.
+const (
+	aliceAvatarID = "01890a5d-ac96-774b-bcce-b302099a0a01"
+	aliceHeaderID = "01890a5d-ac96-774b-bcce-b302099a0a02"
+)
+
+// profileImages serves alice's avatar and header as the media use cases would.
+func profileImages(_ context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error) {
+	variant := func(name, contentType string) appcontent.ImageVariant {
+		return appcontent.ImageVariant{URL: "https://files." + host + "/media/" + name, ContentType: contentType, Width: 400, Height: 400}
+	}
+	out := map[appcontent.ImageRef]appcontent.Image{}
+	for _, ref := range refs {
+		switch {
+		case ref.AccountID != aliceID:
+		case ref.MediaID == aliceAvatarID:
+			out[ref] = appcontent.Image{
+				Still:    appcontent.ImageVariants{Small: variant("a/small.webp", "image/webp"), Medium: variant("a/medium.webp", "image/webp"), Large: variant("a/large.png", "image/png")},
+				Animated: &appcontent.ImageVariants{Small: variant("a/small-animated.webp", "image/webp"), Medium: variant("a/medium-animated.webp", "image/webp"), Large: variant("a/large-animated.gif", "image/gif")},
+			}
+		case ref.MediaID == aliceHeaderID:
+			out[ref] = appcontent.Image{Still: appcontent.ImageVariants{Small: variant("h/small.webp", "image/webp"), Medium: variant("h/medium.webp", "image/webp"), Large: variant("h/large.jpg", "image/jpeg")}}
+		}
+	}
+	return out, nil
 }
 
 // problem is the stand-in for the platform's problem writer: one fixed body per status.
@@ -177,7 +205,7 @@ func newServer(t *testing.T, accountDomain string) *server {
 		OpenRegistrations: func(context.Context) (bool, error) { return true, nil },
 		LocalPosts:        func(context.Context) (int64, error) { return 42, nil },
 		Accounts:          s.accounts, Objects: s.objects, Graph: s.graph, Inbox: s.inbox, Problem: problem,
-		Suspensions: s.suspended,
+		Suspensions: s.suspended, Images: profileImages,
 	}).Register(s.mux)
 	return s
 }

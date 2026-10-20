@@ -28,11 +28,11 @@ type MediaFiles interface {
 	OwnMedia(ctx context.Context, accountID, id string) (appcontent.Media, error)
 	// Update changes an unattached media file of an account.
 	Update(ctx context.Context, accountID string, u appcontent.MediaUpdate) (appcontent.Media, error)
-	// URL returns the public URL of a variant.
-	URL(v content.MediaVariant) string
-	// ImageURLs returns the URLs of the images that accounts show as their own (avatars and
-	// headers), keyed by ref, leaving out files of other accounts and unprocessed files.
-	ImageURLs(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]string, error)
+	// Image returns where clients load a media file, false for a file that cannot be shown.
+	Image(m appcontent.Media) (appcontent.Image, bool)
+	// Images returns the images that accounts show as their own (avatars and headers), keyed
+	// by ref, leaving out files of other accounts and unprocessed files.
+	Images(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error)
 	// Limits returns the upload limits.
 	Limits() media.Limits
 }
@@ -59,6 +59,9 @@ const (
 	maxRequestBody = 1 << 20
 	uploadOverhead = 64 << 10
 )
+
+// maxPurposeBytes bounds the bytes of a purpose part, longer than every purpose.
+const maxPurposeBytes = 32
 
 // maxDescriptionBytes bounds the bytes of a description part: four bytes per character at
 // most in UTF-8.
@@ -134,9 +137,9 @@ func (s *Server) mediaProblemOf(ctx context.Context, err error) problem {
 var errNoMedia = errors.New("clientapi: no media files configured")
 
 // newMediaAttachment presents a media file as the MediaAttachment schema, with the
-// description that the uploader set, and the variants served at url. Statuses present their
-// attachments with it too, replacing the description with the revision's copy.
-func newMediaAttachment(m appcontent.Media, url func(content.MediaVariant) string) MediaAttachment {
+// description that the uploader set, and its variants as files serves them. Statuses present
+// their attachments with it too, replacing the description with the revision's copy.
+func newMediaAttachment(m appcontent.Media, files imageSource) MediaAttachment {
 	out := MediaAttachment{Id: m.File.ID, State: MediaAttachmentState("processing"), Type: MediaAttachmentType(content.MediaTypeUnknown)}
 	if m.Upload != nil && strings.HasPrefix(m.Upload.ContentType, "image/") {
 		out.Type = MediaAttachmentType(content.MediaTypeImage)
@@ -163,24 +166,30 @@ func newMediaAttachment(m appcontent.Media, url func(content.MediaVariant) strin
 	if r.Blurhash != "" {
 		out.Blurhash = &r.Blurhash
 	}
-	full, okFull := r.Variant(content.VariantFull)
-	thumb, okThumb := r.Variant(content.VariantThumbnail)
-	if okFull && okThumb {
-		out.Variants = &MediaVariants{Full: newMediaVariant(full, url), Thumbnail: newMediaVariant(thumb, url)}
-		out.Url, out.PreviewUrl = &out.Variants.Full.Url, &out.Variants.Thumbnail.Url
+	if img, ok := files.Image(m); ok {
+		v := newMediaVariants(img)
+		out.Variants = &v
+		large, small := img.Primary().URL, img.Still.Small.URL
+		out.Url, out.PreviewUrl = &large, &small
 	}
 	return out
 }
 
+// imageSource tells where clients load a media file; MediaFiles is one.
+type imageSource interface {
+	Image(m appcontent.Media) (appcontent.Image, bool)
+}
+
 // newRemoteAttachment presents a remote media file (appcontent.MediaView of a Media with Remote)
 // as the MediaAttachment schema: ready, with what the remote server declared and the file served
-// through the media proxy at proxyURL (federation.md §9). The instance does not process it, so it
-// has no variants.
-func newRemoteAttachment(m appcontent.Media, proxyURL string) MediaAttachment {
+// through the media proxy (federation.md §9). The instance does not process it, so it has no
+// variants.
+func newRemoteAttachment(m appcontent.Media, img appcontent.Image) MediaAttachment {
 	r := m.Remote
+	large, small := img.Primary().URL, img.Still.Small.URL
 	out := MediaAttachment{
 		Id: m.File.ID, State: MediaAttachmentState("ready"), Type: MediaAttachmentType(r.DeclaredMediaType),
-		Url: &proxyURL, PreviewUrl: &proxyURL, RemoteUrl: &r.RemoteURL,
+		Url: &large, PreviewUrl: &small, RemoteUrl: &r.RemoteURL,
 	}
 	if r.Width > 0 && r.Height > 0 {
 		out.Meta.Width, out.Meta.Height = &r.Width, &r.Height
@@ -194,8 +203,27 @@ func newRemoteAttachment(m appcontent.Media, proxyURL string) MediaAttachment {
 	return out
 }
 
-func newMediaVariant(v content.MediaVariant, url func(content.MediaVariant) string) MediaVariant {
-	return MediaVariant{Url: url(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
+// newMediaVariants presents the variants of an image as the MediaVariants schema.
+func newMediaVariants(img appcontent.Image) MediaVariants {
+	out := MediaVariants{Small: newMediaVariant(img.Still.Small), Medium: newMediaVariant(img.Still.Medium), Large: newMediaVariant(img.Still.Large)}
+	if a := img.Animated; a != nil {
+		out.Animated = &MediaAnimatedVariants{Small: newMediaVariant(a.Small), Medium: newMediaVariant(a.Medium), Large: newMediaVariant(a.Large)}
+	}
+	return out
+}
+
+func newMediaVariant(v appcontent.ImageVariant) MediaVariant {
+	out := MediaVariant{Url: v.URL}
+	if v.ContentType != "" {
+		out.ContentType = &v.ContentType
+	}
+	if v.Width > 0 && v.Height > 0 {
+		out.Width, out.Height = &v.Width, &v.Height
+	}
+	if v.Size > 0 {
+		out.Size = &v.Size
+	}
+	return out
 }
 
 // UploadMedia serves POST /api/v1/media: it reads the multipart body part by part, never more
@@ -224,11 +252,11 @@ func (s *Server) UploadMedia(ctx context.Context, req UploadMediaRequestObject) 
 		return nil, err
 	}
 	cache := cacheNoStore
-	return UploadMedia202JSONResponse{Body: newMediaAttachment(m, s.o.Media.URL), Headers: UploadMedia202ResponseHeaders{CacheControl: &cache}}, nil
+	return UploadMedia202JSONResponse{Body: newMediaAttachment(m, s.o.Media), Headers: UploadMedia202ResponseHeaders{CacheControl: &cache}}, nil
 }
 
-// readUpload reads the parts of an upload: the file and an optional description. Other parts
-// are skipped.
+// readUpload reads the parts of an upload: the file, and an optional description and purpose.
+// Other parts are skipped.
 func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, accountID string) (appcontent.UploadInput, problem, bool) {
 	l := s.Localizer(ctx)
 	maxBytes := s.o.Media.Limits().MaxBytes
@@ -273,6 +301,14 @@ func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, account
 				return in, s.mediaProblemOf(ctx, fmt.Errorf("%w: %d bytes", content.ErrDescriptionTooLong, len(data))), false
 			}
 			in.Description = string(data)
+		case "purpose":
+			data, err := io.ReadAll(io.LimitReader(part, maxPurposeBytes+1))
+			if err != nil {
+				return in, readErr(err, "purpose"), false
+			}
+			if in.Purpose = content.MediaPurpose(data); !in.Purpose.Valid() {
+				return in, badPart("purpose"), false
+			}
 		}
 	}
 	if file == nil {
@@ -299,7 +335,7 @@ func (s *Server) GetMedia(ctx context.Context, req GetMediaRequestObject) (GetMe
 		return nil, err
 	}
 	cache := cacheNoStore
-	return GetMedia200JSONResponse{Body: newMediaAttachment(m, s.o.Media.URL), Headers: GetMedia200ResponseHeaders{CacheControl: &cache}}, nil
+	return GetMedia200JSONResponse{Body: newMediaAttachment(m, s.o.Media), Headers: GetMedia200ResponseHeaders{CacheControl: &cache}}, nil
 }
 
 // UpdateMedia serves PATCH /api/v1/media/{id}: it changes the description or focal point of
@@ -324,5 +360,5 @@ func (s *Server) UpdateMedia(ctx context.Context, req UpdateMediaRequestObject) 
 		return nil, err
 	}
 	cache := cacheNoStore
-	return UpdateMedia200JSONResponse{Body: newMediaAttachment(m, s.o.Media.URL), Headers: UpdateMedia200ResponseHeaders{CacheControl: &cache}}, nil
+	return UpdateMedia200JSONResponse{Body: newMediaAttachment(m, s.o.Media), Headers: UpdateMedia200ResponseHeaders{CacheControl: &cache}}, nil
 }

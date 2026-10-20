@@ -223,7 +223,7 @@ func (p *Previews) defaultLanguage(ctx context.Context, userID string) (string, 
 	return lang, nil
 }
 
-// Image returns the full variant of a processed still image with alt text alt, nil for no
+// Image returns the large still variant of a processed image with alt text alt, nil for no
 // media, a file that is missing, not processed, or not an image. Besides the images of profiles
 // and statuses, it reads the instance's preview image.
 func (p *Previews) Image(ctx context.Context, mediaID, alt string) (*PreviewImage, error) {
@@ -240,7 +240,7 @@ func (p *Previews) Image(ctx context.Context, mediaID, alt string) (*PreviewImag
 	if !m.Ready() || m.Result.MediaType != content.MediaTypeImage {
 		return nil, nil
 	}
-	v, ok := m.Result.Variant(content.VariantFull)
+	v, ok := m.Result.Variant(content.SizeLarge, content.MotionStill)
 	if !ok {
 		return nil, nil
 	}

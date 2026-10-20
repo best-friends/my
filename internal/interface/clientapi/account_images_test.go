@@ -27,8 +27,8 @@ func imageMedia() *fakeMedia {
 }
 
 var (
-	aliceAvatarURL = "https://social.example/media/" + avatarID + "/full.png"
-	bobAvatarURL   = "https://social.example/media/" + bobAvatarID + "/full.png"
+	aliceAvatarURL = "https://social.example/media/" + avatarID + "/r/large.png"
+	bobAvatarURL   = "https://social.example/media/" + bobAvatarID + "/r/large.png"
 )
 
 // TestTimelineReadsAccountImagesTogether checks that a page of statuses presents the images of
@@ -51,14 +51,14 @@ func TestTimelineReadsAccountImagesTogether(t *testing.T) {
 		t.Fatalf("items = %+v, want the boost and the post", page.Items)
 	}
 	boost, original := page.Items[0], page.Items[1]
-	if deref(original.Account.AvatarUrl) != aliceAvatarURL || original.Account.HeaderUrl != nil {
-		t.Errorf("author images = %v %v, want the avatar only", original.Account.AvatarUrl, original.Account.HeaderUrl)
+	if largeURL(original.Account.Avatar) != aliceAvatarURL || original.Account.Header != nil {
+		t.Errorf("author images = %v %v, want the avatar only", original.Account.Avatar, original.Account.Header)
 	}
-	if deref(boost.Boost.Account.AvatarUrl) != aliceAvatarURL {
-		t.Errorf("boosted author avatar = %v", boost.Boost.Account.AvatarUrl)
+	if largeURL(boost.Boost.Account.Avatar) != aliceAvatarURL {
+		t.Errorf("boosted author avatar = %v", boost.Boost.Account.Avatar)
 	}
-	if deref(boost.Account.AvatarUrl) != bobAvatarURL || boost.Account.HeaderUrl != nil {
-		t.Errorf("booster images = %v %v, want the processed avatar only", boost.Account.AvatarUrl, boost.Account.HeaderUrl)
+	if largeURL(boost.Account.Avatar) != bobAvatarURL || boost.Account.Header != nil {
+		t.Errorf("booster images = %v %v, want the processed avatar only", boost.Account.Avatar, boost.Account.Header)
 	}
 	if m.imageCalls != 1 {
 		t.Errorf("ImageURLs calls = %d, want 1 for the page", m.imageCalls)
@@ -89,14 +89,14 @@ func TestNotificationsReadAccountImagesTogether(t *testing.T) {
 	for _, n := range page.Items {
 		if n.Account != nil {
 			sources++
-			if deref(n.Account.AvatarUrl) != bobAvatarURL {
-				t.Errorf("%s: source avatar = %v, want bob's", n.Type, n.Account.AvatarUrl)
+			if largeURL(n.Account.Avatar) != bobAvatarURL {
+				t.Errorf("%s: source avatar = %v, want bob's", n.Type, n.Account.Avatar)
 			}
 		}
 		if n.Status != nil {
 			authors++
-			if deref(n.Status.Account.AvatarUrl) != aliceAvatarURL {
-				t.Errorf("%s: author avatar = %v, want alice's", n.Type, n.Status.Account.AvatarUrl)
+			if largeURL(n.Status.Account.Avatar) != aliceAvatarURL {
+				t.Errorf("%s: author avatar = %v, want alice's", n.Type, n.Status.Account.Avatar)
 			}
 		}
 	}
@@ -122,7 +122,15 @@ func TestGetAccountHasImages(t *testing.T) {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
 	}
 	got := decode[clientapi.Account](t, res)
-	if deref(got.AvatarUrl) != bobAvatarURL || got.HeaderUrl != nil {
-		t.Errorf("images = %v %v, want the processed avatar only", got.AvatarUrl, got.HeaderUrl)
+	if largeURL(got.Avatar) != bobAvatarURL || got.Header != nil {
+		t.Errorf("images = %v %v, want the processed avatar only", got.Avatar, got.Header)
 	}
+}
+
+// largeURL returns the URL of the large still variant of an image, "" for none.
+func largeURL(v *clientapi.MediaVariants) string {
+	if v == nil {
+		return ""
+	}
+	return v.Large.Url
 }

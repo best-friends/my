@@ -43,14 +43,17 @@ func TestUploadedMediaIsServedWithoutLocation(t *testing.T) {
 			if m.Result.Width != 480 || m.Result.Height != 640 {
 				t.Errorf("size %d×%d, want the orientation applied (480×640)", m.Result.Width, m.Result.Height)
 			}
-			full, _ := m.Result.Variant(domain.VariantFull)
-			thumb, _ := m.Result.Variant(domain.VariantThumbnail)
-			if got, want := s.app.Media.URL(full), "https://example.test/media/"+m.File.ID+"/full.jpg"; got != want {
+			large, _ := m.Result.Variant(domain.SizeLarge, domain.MotionStill)
+			if got, want := s.app.Media.URL(large), "https://example.test/media/"+m.File.ID+"/"+m.Result.ID+"/large.jpg"; got != want {
 				t.Errorf("URL = %q, want %q", got, want)
 			}
-			for _, v := range []domain.MediaVariant{full, thumb} {
+			if len(m.Result.Variants) != 3 {
+				t.Errorf("variants = %+v, want 3 still ones", m.Result.Variants)
+			}
+			for _, v := range m.Result.Variants {
 				resp, body := s.do(t, http.MethodGet, "/"+v.BlobKey, nil)
-				if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "image/jpeg" {
+				if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != v.ContentType ||
+					resp.Header.Get("Cache-Control") != "public, max-age=31536000, immutable" {
 					t.Fatalf("GET %s = %d %s", v.BlobKey, resp.StatusCode, resp.Header.Get("Content-Type"))
 				}
 				for k, want := range map[string]string{

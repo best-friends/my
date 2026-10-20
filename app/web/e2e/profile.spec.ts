@@ -6,7 +6,7 @@
 // role and position.
 import type { Page } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectTabWhollyVisible, localeDir, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectTabWhollyVisible, imageVariants, localeDir, test } from "./fixtures";
 
 type Account = components["schemas"]["Account"];
 type Relationship = components["schemas"]["Relationship"];
@@ -47,8 +47,8 @@ const bob: Account = {
   locked: true,
   followers_count: 1234,
   following_count: 1,
-  avatar_url: avatar,
-  header_url: header,
+  avatar: imageVariants(avatar),
+  header: imageVariants(header),
 };
 
 /** An account with a right-to-left name, among left-to-right ones in a list. */

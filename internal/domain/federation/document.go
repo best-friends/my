@@ -158,6 +158,16 @@ func (n NoteDocument) TopLevel() TopLevelNote {
 // and audio alike as Document, and the other implementations read the kind from MediaType.
 const AttachmentType ObjectType = "Document"
 
+// ImageDocument is an image of an actor: its icon (avatar) or image (header).
+type ImageDocument struct {
+	Type      ObjectType `json:"type"`
+	MediaType string     `json:"mediaType,omitempty"`
+	URL       string     `json:"url"`
+}
+
+// ImageType is the type of an ImageDocument.
+const ImageType ObjectType = "Image"
+
 // AttachmentDocument is a media attachment of a Note. Name is the alternative text. FocalPoint is x, y from -1.0 to 1.0, left out at
 // the center; Width, Height, and Blurhash are left out when unknown.
 type AttachmentDocument struct {
@@ -217,6 +227,9 @@ type ActorDocument struct {
 	Tag                       []any              `json:"tag"`
 	Attachment                []PropertyValue    `json:"attachment"`
 	Endpoints                 map[string]IRI     `json:"endpoints"`
+	// Icon and Image are the avatar and the header, left out when the actor has none.
+	Icon  *ImageDocument `json:"icon,omitempty"`
+	Image *ImageDocument `json:"image,omitempty"`
 	// Suspended marks an actor that moderation suspended (Mastodon's toot:suspended); it is
 	// left out otherwise.
 	Suspended bool `json:"suspended,omitempty"`
@@ -236,6 +249,7 @@ func (d ActorDocument) Suspend() ActorDocument {
 	empty, no := "", false
 	d.Name, d.Summary = &empty, &empty
 	d.Tag, d.Attachment = []any{}, []PropertyValue{}
+	d.Icon, d.Image = nil, nil
 	d.ManuallyApprovesFollowers = false
 	if d.Discoverable != nil {
 		d.Discoverable = &no

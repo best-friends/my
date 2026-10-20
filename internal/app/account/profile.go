@@ -143,7 +143,7 @@ func (s *Service) profileImage(ctx context.Context, accountID string, prop accou
 	}
 	err := ErrUnusableImage
 	if s.d.CheckProfileImage != nil {
-		err = s.d.CheckProfileImage(ctx, accountID, *requested)
+		err = s.d.CheckProfileImage(ctx, accountID, *requested, prop)
 	}
 	if errors.Is(err, ErrUnusableImage) {
 		return "", &account.ProfileError{Property: prop, Problem: account.ProblemInvalid}

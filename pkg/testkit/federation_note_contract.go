@@ -90,14 +90,22 @@ func fedBuildsTheNote(t *testing.T, e *fedEnv) {
 		Media: appcontent.Media{
 			Result: &content.MediaProcessingResult{
 				Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Width: 1280, Height: 960, Blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
-				Variants: []content.MediaVariant{
-					{Kind: content.VariantFull, ContentType: "image/webp", Width: 640, Height: 480},
-					{Kind: content.VariantThumbnail, ContentType: "image/webp", Width: 320, Height: 240},
-				},
 			},
 			Focus: &content.MediaFocus{X: 0.5, Y: -0.25},
 		},
-		Description: "a cat", URL: "https://files.social.example/media/full.webp", PreviewURL: "https://files.social.example/media/thumb.webp",
+		Description: "a cat",
+		Image: appcontent.Image{
+			Still: appcontent.ImageVariants{
+				Small:  appcontent.ImageVariant{URL: "https://files.social.example/media/r/small.webp", ContentType: "image/webp", Width: 160, Height: 120},
+				Medium: appcontent.ImageVariant{URL: "https://files.social.example/media/r/medium.webp", ContentType: "image/webp", Width: 320, Height: 240},
+				Large:  appcontent.ImageVariant{URL: "https://files.social.example/media/r/large.png", ContentType: "image/png", Width: 640, Height: 480},
+			},
+			Animated: &appcontent.ImageVariants{
+				Small:  appcontent.ImageVariant{URL: "https://files.social.example/media/r/small-animated.webp", ContentType: "image/webp", Width: 160, Height: 120},
+				Medium: appcontent.ImageVariant{URL: "https://files.social.example/media/r/medium-animated.webp", ContentType: "image/webp", Width: 320, Height: 240},
+				Large:  appcontent.ImageVariant{URL: "https://files.social.example/media/r/large-animated.gif", ContentType: "image/gif", Width: 640, Height: 480},
+			},
+		},
 	}
 	s := e.postWith(t, a.author, content.VisibilityPublic, func(r *content.Revision) {
 		r.Language, r.SpoilerText = "ja", "spoiler"
@@ -120,7 +128,8 @@ func fedBuildsTheNote(t *testing.T, e *fedEnv) {
 		t.Errorf("the Note of a Create has updated %v", note["updated"])
 	}
 	wantAttachment := []any{map[string]any{
-		"type": "Document", "mediaType": "image/webp", "url": media.URL, "name": "a cat",
+		// An animation is sent as its large moving variant (ADR-0054 §5).
+		"type": "Document", "mediaType": "image/gif", "url": media.Image.Animated.Large.URL, "name": "a cat",
 		"blurhash": "LEHV6nWB2yk8pyo0adR*.7kCMdnj", "focalPoint": []any{0.5, -0.25}, "width": 640.0, "height": 480.0,
 	}}
 	if !reflect.DeepEqual(note["attachment"], wantAttachment) {

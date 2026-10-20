@@ -37,7 +37,8 @@ type MediaFactory func(t *testing.T, opts uow.Options) MediaHarness
 // MediaRepositoryContract verifies the media repository of a database adapter through the
 // use cases that drive it: uploads stored with the detected type and their processing job
 // enqueued, rejected uploads leaving nothing behind, idempotent processing that records one
-// result with its variants and deletes the file as received, failures recorded as results,
+// result with its variants for the upload's purpose under keys of the result and deletes the
+// file as received, processing again for another purpose, failures recorded as results,
 // focal points and descriptions as current values that only the uploader reads and changes
 // until a status attaches the file, the cleanup of old unattached uploads that keeps attached
 // and referenced ones, the erasure of a deleted account's uploads with their blobs that keeps
@@ -52,6 +53,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"StoresUploads", mediaStoresUploads},
 		{"RejectsUploadsWithoutWriting", mediaRejectsUploads},
 		{"ProcessesIdempotently", mediaProcessesIdempotently},
+		{"ProcessesAgainForAnotherPurpose", mediaReprocessesForAnotherPurpose},
 		{"RecordsFailedProcessing", mediaRecordsFailures},
 		{"RetriesOnTransientErrors", mediaRetriesTransient},
 		{"KeepsTheFocusAsACurrentValue", mediaKeepsFocus},
@@ -127,7 +129,12 @@ func (e *mediaEnv) upload(t *testing.T, data []byte) appcontent.Media {
 
 func (e *mediaEnv) process(t *testing.T, id string) {
 	t.Helper()
-	if res := e.service.Process(t.Context(), id); !res.IsDone() {
+	e.processFor(t, id, "")
+}
+
+func (e *mediaEnv) processFor(t *testing.T, id string, purpose content.MediaPurpose) {
+	t.Helper()
+	if res := e.service.Process(t.Context(), id, purpose); !res.IsDone() {
 		t.Fatalf("Process(%s) = %+v, want Done", id, res)
 	}
 }
@@ -224,41 +231,125 @@ func mediaProcessesIdempotently(t *testing.T, e *mediaEnv) {
 	if r.MediaType != content.MediaTypeImage || r.Width != 4 || r.Height != 3 || r.Blurhash == "" || !r.ProcessedAt.Equal(e.clock.Now()) {
 		t.Errorf("Result = %+v", r)
 	}
-	full, okFull := r.Variant(content.VariantFull)
-	thumb, okThumb := r.Variant(content.VariantThumbnail)
-	if !okFull || !okThumb || len(r.Variants) != 2 {
-		t.Fatalf("Variants = %+v", r.Variants)
+	if r.Purpose != content.PurposeAttachment || r.Animated() || len(r.Variants) != 3 {
+		t.Fatalf("Result = %+v, want 3 still variants of an attachment", r)
 	}
-	if full.BlobKey != "media/"+m.File.ID+"/full.png" || full.ContentType != "image/png" || full.Width != 4 || full.Height != 3 || full.ResultID != r.ID {
-		t.Errorf("full = %+v", full)
+	var keys []string
+	for i, size := range content.MediaSizes {
+		v, ok := r.Variant(size, content.MotionStill)
+		w, h := []int{1, 2, 4}[i], []int{1, 1, 3}[i]
+		key := "media/" + m.File.ID + "/" + r.ID + "/" + string(size) + ".png"
+		if !ok || v.BlobKey != key || v.ContentType != "image/png" || v.Width != w || v.Height != h || v.ResultID != r.ID {
+			t.Errorf("%s = %+v, want %s %d×%d", size, v, key, w, h)
+		}
+		if v.FileSize != int64(len(e.blobs.Bytes(v.BlobKey))) || v.FileSize == 0 {
+			t.Errorf("%s FileSize = %d, blob has %d bytes", size, v.FileSize, len(e.blobs.Bytes(v.BlobKey)))
+		}
+		keys = append(keys, key)
 	}
-	if thumb.BlobKey != "media/"+m.File.ID+"/thumbnail.png" || thumb.Width != 2 || thumb.Height != 1 {
-		t.Errorf("thumbnail = %+v", thumb)
-	}
-	if full.FileSize != int64(len(e.blobs.Bytes(full.BlobKey))) || full.FileSize == 0 {
-		t.Errorf("full FileSize = %d, blob has %d bytes", full.FileSize, len(e.blobs.Bytes(full.BlobKey)))
-	}
-	if want := []string{full.BlobKey, thumb.BlobKey}; !slices.Equal(e.blobs.Keys(), want) {
-		t.Errorf("blobs = %v, want only the variants %v (the received file deleted)", e.blobs.Keys(), want)
+	slices.Sort(keys)
+	if got := e.blobs.Keys(); !slices.Equal(got, keys) {
+		t.Errorf("blobs = %v, want only the variants %v (the received file deleted)", got, keys)
 	}
 	results, err := e.h.Media.ListProcessingResults(t.Context(), m.File.ID)
 	if err != nil || len(results) != 1 {
 		t.Errorf("%d results after three runs (%v), want 1", len(results), err)
 	}
-	if u := e.service.URL(full); u != e.blobs.PublicURL(full.BlobKey) {
+	large, _ := r.Variant(content.SizeLarge, content.MotionStill)
+	if u := e.service.URL(large); u != e.blobs.PublicURL(large.BlobKey) {
 		t.Errorf("URL = %q", u)
 	}
 	// A result recorded concurrently makes the insert a no-op.
 	err = e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
-		has, err := e.h.Media.HasProcessingResult(t.Context(), tx, m.File.ID)
+		has, err := e.h.Media.HasProcessingResult(t.Context(), tx, m.File.ID, content.PurposeAttachment)
 		if err == nil && !has {
-			t.Error("HasProcessingResult = false")
+			t.Error("HasProcessingResult(attachment) = false")
+		}
+		if other, err := e.h.Media.HasProcessingResult(t.Context(), tx, m.File.ID, content.PurposeAvatar); err != nil || other {
+			t.Errorf("HasProcessingResult(avatar) = %v, %v; want false", other, err)
 		}
 		return err
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+// mediaReprocessesForAnotherPurpose checks that using a file for another purpose processes its
+// large variant, the moving one of an animation, again into a new result with keys of its own,
+// once, and that the upload's purpose picks the first one.
+func mediaReprocessesForAnotherPurpose(t *testing.T, e *mediaEnv) {
+	ctx := t.Context()
+	m, err := e.service.Upload(ctx, appcontent.UploadInput{
+		OwnerAccountID: mediaOwner, Content: bytes.NewReader(FixtureGIF(4, 3, 2)), Purpose: content.PurposeHeader,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p := mediaJobPurpose(t, e.jobs.jobs[len(e.jobs.jobs)-1]); p != content.PurposeHeader {
+		t.Errorf("the upload's job processes for %q, want header", p)
+	}
+	e.processFor(t, m.File.ID, content.PurposeHeader)
+	first := e.media(t, m.File.ID).Result
+	if first.Purpose != content.PurposeHeader || !first.Animated() || len(first.Variants) != 6 {
+		t.Fatalf("first result = %+v, want 6 variants of a header", first)
+	}
+	if _, err := e.service.Upload(ctx, appcontent.UploadInput{OwnerAccountID: mediaOwner, Content: bytes.NewReader(FixturePNG(4, 3, false)), Purpose: "banner"}); !errors.Is(err, appcontent.ErrInvalidPurpose) {
+		t.Errorf("an unknown purpose = %v, want ErrInvalidPurpose", err)
+	}
+
+	jobs := len(e.jobs.jobs)
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, m.File.ID, content.PurposeHeader); err != nil || len(e.jobs.jobs) != jobs {
+		t.Errorf("the same purpose: %v, %d jobs enqueued", err, len(e.jobs.jobs)-jobs)
+	}
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, m.File.ID, content.PurposeAvatar); err != nil {
+		t.Fatal(err)
+	}
+	if len(e.jobs.jobs) != jobs+1 || mediaJobPurpose(t, e.jobs.jobs[jobs]) != content.PurposeAvatar {
+		t.Fatalf("jobs = %+v, want one for the avatar", e.jobs.jobs[jobs:])
+	}
+	e.clock.Advance(time.Second)
+	for range 2 {
+		e.processFor(t, m.File.ID, content.PurposeAvatar)
+	}
+	results, err := e.h.Media.ListProcessingResults(ctx, m.File.ID)
+	if err != nil || len(results) != 2 {
+		t.Fatalf("%d results (%v), want 2", len(results), err)
+	}
+	second := results[1]
+	if second.Purpose != content.PurposeAvatar || second.Outcome != content.MediaReady || !second.Animated() || len(second.Variants) != 6 {
+		t.Fatalf("second result = %+v, want 6 variants of an avatar", second)
+	}
+	if second.Width != first.Width || second.Height != first.Height {
+		t.Errorf("second result is %d×%d, want the original %d×%d", second.Width, second.Height, first.Width, first.Height)
+	}
+	for _, v := range second.Variants {
+		if !strings.HasPrefix(v.BlobKey, "media/"+m.File.ID+"/"+second.ID+"/") || len(e.blobs.Bytes(v.BlobKey)) == 0 {
+			t.Errorf("variant %+v is not under the new result", v)
+		}
+	}
+	if got := e.media(t, m.File.ID).Result; got.ID != second.ID {
+		t.Errorf("current result = %s, want %s", got.ID, second.ID)
+	}
+	// Back to the header: a job of its own, not deduplicated with the first one.
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, m.File.ID, content.PurposeHeader); err != nil {
+		t.Fatal(err)
+	}
+	if last := e.jobs.jobs[len(e.jobs.jobs)-1]; last.IdempotencyKey == e.jobs.jobs[jobs].IdempotencyKey || mediaJobPurpose(t, last) != content.PurposeHeader {
+		t.Errorf("job = %+v, want a new one for the header", last)
+	}
+}
+
+func mediaJobPurpose(t *testing.T, j queue.NewJob) content.MediaPurpose {
+	t.Helper()
+	var p struct {
+		MediaID string               `json:"media_id"`
+		Purpose content.MediaPurpose `json:"purpose"`
+	}
+	if j.Type != appcontent.JobProcessMedia || json.Unmarshal(j.Payload, &p) != nil || p.MediaID == "" {
+		t.Fatalf("job = %+v, want media.process", j)
+	}
+	return p.Purpose
 }
 
 func mediaRecordsFailures(t *testing.T, e *mediaEnv) {
@@ -297,7 +388,7 @@ func mediaRetriesTransient(t *testing.T, e *mediaEnv) {
 	m := e.upload(t, FixturePNG(4, 3, false))
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	if res := e.service.Process(ctx, m.File.ID); !res.IsRetry() {
+	if res := e.service.Process(ctx, m.File.ID, ""); !res.IsRetry() {
 		t.Errorf("Process with a cancelled context = %+v, want Retry", res)
 	}
 	if got := e.media(t, m.File.ID); got.Result != nil {
@@ -415,23 +506,23 @@ func mediaUpdates(t *testing.T, e *mediaEnv) {
 func mediaChecksProfileImages(t *testing.T, e *mediaEnv) {
 	ctx := t.Context()
 	pending := e.upload(t, FixturePNG(4, 3, false))
-	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID); !errors.Is(err, appaccount.ErrUnusableImage) {
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID, content.PurposeAvatar); !errors.Is(err, appaccount.ErrUnusableImage) {
 		t.Errorf("unprocessed upload = %v, want ErrUnusableImage", err)
 	}
 	e.process(t, pending.File.ID)
-	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID); err != nil {
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, pending.File.ID, content.PurposeAvatar); err != nil {
 		t.Errorf("processed upload = %v, want usable", err)
 	}
-	if err := e.service.CheckProfileImage(ctx, "someone-else", pending.File.ID); !errors.Is(err, appaccount.ErrUnusableImage) {
+	if err := e.service.CheckProfileImage(ctx, "someone-else", pending.File.ID, content.PurposeAvatar); !errors.Is(err, appaccount.ErrUnusableImage) {
 		t.Errorf("another account's upload = %v, want ErrUnusableImage", err)
 	}
-	if err := e.service.CheckProfileImage(ctx, mediaOwner, "0192f0c1-0000-7000-8000-00000000dead"); !errors.Is(err, appaccount.ErrUnusableImage) {
+	if err := e.service.CheckProfileImage(ctx, mediaOwner, "0192f0c1-0000-7000-8000-00000000dead", content.PurposeAvatar); !errors.Is(err, appaccount.ErrUnusableImage) {
 		t.Errorf("unknown file = %v, want ErrUnusableImage", err)
 	}
 }
 
-// mediaReadsImagesTogether checks ListReadyVariants and ImageURLs: the variant of each listed
-// file whose newest processing result is ready, and its URL when the file's account owns it.
+// mediaReadsImagesTogether checks ListReadyVariants and Images: the variants of each listed
+// file whose newest processing result is ready, and its image when the file's account owns it.
 func mediaReadsImagesTogether(t *testing.T, e *mediaEnv) {
 	ctx := t.Context()
 	ready := e.upload(t, FixturePNG(4, 3, false))
@@ -444,7 +535,7 @@ func mediaReadsImagesTogether(t *testing.T, e *mediaEnv) {
 	// A newer result that failed makes the file's current state a failure.
 	e.clock.Advance(time.Millisecond)
 	failed := content.MediaProcessingResult{
-		ID: e.ids.NewID(), MediaID: reprocessed.File.ID, Outcome: content.MediaFailed, MediaType: content.MediaTypeUnknown,
+		ID: e.ids.NewID(), MediaID: reprocessed.File.ID, Purpose: content.PurposeAttachment, Outcome: content.MediaFailed, MediaType: content.MediaTypeUnknown,
 		ProcessedAt: e.clock.Now(),
 	}
 	if err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.h.Media.InsertProcessingResult(ctx, tx, failed) }); err != nil {
@@ -453,28 +544,31 @@ func mediaReadsImagesTogether(t *testing.T, e *mediaEnv) {
 	unknown := "0192f0c1-0000-7000-8000-00000000dead"
 
 	ids := []string{other.File.ID, ready.File.ID, pending.File.ID, reprocessed.File.ID, unknown}
-	variants, err := e.h.Media.ListReadyVariants(ctx, ids, content.VariantThumbnail)
+	variants, err := e.h.Media.ListReadyVariants(ctx, ids)
 	if err != nil {
 		t.Fatal(err)
 	}
 	var got []string
 	for _, v := range variants {
-		if v.Variant.Kind != content.VariantThumbnail || v.File.OwnerAccountID != mediaOwner || v.Variant.BlobKey == "" {
+		if v.Variant.Motion != content.MotionStill || v.File.OwnerAccountID != mediaOwner || v.Variant.BlobKey == "" {
 			t.Errorf("variant = %+v", v)
 		}
-		got = append(got, v.File.ID)
+		got = append(got, v.File.ID+" "+string(v.Variant.Size))
 	}
-	if want := []string{ready.File.ID, other.File.ID}; !slices.Equal(got, want) {
-		t.Errorf("ListReadyVariants = %v, want %v (ordered by ID)", got, want)
+	want := []string{
+		ready.File.ID + " large", ready.File.ID + " medium", ready.File.ID + " small",
+		other.File.ID + " large", other.File.ID + " medium", other.File.ID + " small",
 	}
-	if none, err := e.h.Media.ListReadyVariants(ctx, nil, content.VariantFull); err != nil || len(none) != 0 {
+	if !slices.Equal(got, want) {
+		t.Errorf("ListReadyVariants = %v, want %v (ordered by ID, size)", got, want)
+	}
+	if none, err := e.h.Media.ListReadyVariants(ctx, nil); err != nil || len(none) != 0 {
 		t.Errorf("ListReadyVariants(nil) = %v, %v", none, err)
 	}
 
-	full, ok := e.media(t, ready.File.ID).Result.Variant(content.VariantFull)
-	if !ok {
-		t.Fatal("no full variant")
-	}
+	r := e.media(t, ready.File.ID).Result
+	large, _ := r.Variant(content.SizeLarge, content.MotionStill)
+	small, _ := r.Variant(content.SizeSmall, content.MotionStill)
 	refs := []appcontent.ImageRef{
 		{AccountID: mediaOwner, MediaID: ready.File.ID},
 		{AccountID: "someone-else", MediaID: other.File.ID},
@@ -483,12 +577,14 @@ func mediaReadsImagesTogether(t *testing.T, e *mediaEnv) {
 		{AccountID: mediaOwner, MediaID: unknown},
 		{AccountID: mediaOwner, MediaID: ""},
 	}
-	urls, err := e.service.ImageURLs(ctx, refs)
+	images, err := e.service.Images(ctx, refs)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(urls) != 1 || urls[refs[0]] != e.service.URL(full) {
-		t.Errorf("ImageURLs = %v, want only %s: %s", urls, refs[0].MediaID, e.service.URL(full))
+	img := images[refs[0]]
+	if len(images) != 1 || img.Still.Large.URL != e.service.URL(large) || img.Still.Small.URL != e.service.URL(small) ||
+		img.Still.Large.Width != large.Width || img.Still.Small.ContentType != small.ContentType || img.Animated != nil {
+		t.Errorf("Images = %+v, want only %s: %s", images, refs[0].MediaID, e.service.URL(large))
 	}
 }
 
@@ -571,7 +667,7 @@ func mediaCleansUp(t *testing.T, e *mediaEnv) {
 			t.Errorf("kept upload: Media = %v", err)
 		}
 	}
-	if got := e.media(t, attached.File.ID); !got.Ready() || len(e.blobs.Bytes("media/"+attached.File.ID+"/full.png")) == 0 {
+	if got := e.media(t, attached.File.ID); !got.Ready() || len(e.blobs.Bytes(mediaLargeKey(got))) == 0 {
 		t.Errorf("the attached upload lost its result or blobs")
 	}
 	if n, err := e.service.CleanupUnattached(t.Context()); err != nil || n != 0 {
@@ -721,8 +817,8 @@ func mediaErasesDeletedAccounts(t *testing.T, e *mediaEnv) {
 		}
 	}
 	for _, kept := range []appcontent.Media{attached, referenced} {
-		if n := blobsOf(kept.File.ID); n != 2 {
-			t.Errorf("kept upload has %d blobs, want its 2 variants", n)
+		if n := blobsOf(kept.File.ID); n != 3 {
+			t.Errorf("kept upload has %d blobs, want its 3 variants", n)
 		}
 	}
 	// A second run keeps the same files.
@@ -732,4 +828,13 @@ func mediaErasesDeletedAccounts(t *testing.T, e *mediaEnv) {
 	if _, err := e.service.Media(ctx, attached.File.ID); err != nil {
 		t.Errorf("the second run erased the attached upload: %v", err)
 	}
+}
+
+// mediaLargeKey returns the blob key of the large still variant of a processed file.
+func mediaLargeKey(m appcontent.Media) string {
+	if m.Result == nil {
+		return ""
+	}
+	v, _ := m.Result.Variant(content.SizeLarge, content.MotionStill)
+	return v.BlobKey
 }

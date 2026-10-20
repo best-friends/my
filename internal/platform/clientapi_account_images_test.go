@@ -47,23 +47,33 @@ func TestClientAPIAccountImages(t *testing.T) {
 	}
 	alice, bob := users["alice"], users["bob"]
 
-	image := func(w, h int) string {
+	image := func(w, h int, purpose domcontent.MediaPurpose) string {
 		t.Helper()
-		m, err := app.Media.Upload(ctx, appcontent.UploadInput{OwnerAccountID: alice.accountID, Content: bytes.NewReader(testkit.FixturePNG(w, h, false))})
+		m, err := app.Media.Upload(ctx, appcontent.UploadInput{
+			OwnerAccountID: alice.accountID, Content: bytes.NewReader(testkit.FixturePNG(w, h, false)), Purpose: purpose,
+		})
 		if err != nil {
 			t.Fatalf("Upload: %v", err)
 		}
-		if res := app.Media.Process(ctx, m.File.ID); !res.IsDone() {
+		if res := app.Media.Process(ctx, m.File.ID, purpose); !res.IsDone() {
 			t.Fatalf("Process = %+v", res)
 		}
 		return m.File.ID
 	}
-	avatarID, headerID := image(64, 64), image(150, 50)
+	avatarID, headerID := image(64, 64, domcontent.PurposeAvatar), image(150, 50, domcontent.PurposeHeader)
 	if _, err := app.Accounts.UpdateProfile(ctx, alice.accountID, account.ProfileUpdate{AvatarMediaID: &avatarID, HeaderMediaID: &headerID}); err != nil {
 		t.Fatalf("UpdateProfile: %v", err)
 	}
-	wantAvatar := "https://example.test/media/" + avatarID + "/full.png"
-	wantHeader := "https://example.test/media/" + headerID + "/full.png"
+	small := func(id string) string {
+		t.Helper()
+		m, err := app.Media.Media(ctx, id)
+		if err != nil || !m.Ready() {
+			t.Fatalf("Media(%s) = %+v, %v", id, m.Result, err)
+		}
+		v, _ := m.Result.Variant(domcontent.SizeSmall, domcontent.MotionStill)
+		return app.Media.URL(v)
+	}
+	wantAvatar, wantHeader := small(avatarID), small(headerID)
 
 	if _, err := app.Graph.Follow(ctx, bob.accountID, alice.accountID); err != nil {
 		t.Fatalf("Follow: %v", err)
@@ -94,17 +104,20 @@ func TestClientAPIAccountImages(t *testing.T) {
 		switch {
 		case a == nil:
 			t.Errorf("%s: no account", what)
-		case a.Id == alice.accountID && (deref(a.AvatarUrl) != wantAvatar || deref(a.HeaderUrl) != wantHeader):
-			t.Errorf("%s: alice's images = %v %v, want %s %s", what, a.AvatarUrl, a.HeaderUrl, wantAvatar, wantHeader)
-		case a.Id == bob.accountID && (a.AvatarUrl != nil || a.HeaderUrl != nil):
-			t.Errorf("%s: bob's images = %v %v, want none", what, a.AvatarUrl, a.HeaderUrl)
+		case a.Id == alice.accountID && (smallURL(a.Avatar) != wantAvatar || smallURL(a.Header) != wantHeader):
+			t.Errorf("%s: alice's images = %v %v, want %s %s", what, a.Avatar, a.Header, wantAvatar, wantHeader)
+		case a.Id == bob.accountID && (a.Avatar != nil || a.Header != nil):
+			t.Errorf("%s: bob's images = %v %v, want none", what, a.Avatar, a.Header)
 		}
 	}
 
 	var own clientapi.CredentialAccount
 	get("/accounts/verify_credentials", alice.token, &own)
-	if deref(own.AvatarUrl) != wantAvatar || deref(own.HeaderUrl) != wantHeader || deref(own.Source.AvatarMediaId) != avatarID {
-		t.Errorf("verify_credentials = %v %v %v", own.AvatarUrl, own.HeaderUrl, own.Source.AvatarMediaId)
+	if smallURL(own.Avatar) != wantAvatar || smallURL(own.Header) != wantHeader || deref(own.Source.AvatarMediaId) != avatarID {
+		t.Errorf("verify_credentials = %v %v %v", own.Avatar, own.Header, own.Source.AvatarMediaId)
+	}
+	if a := own.Avatar; a == nil || a.Large.Width == nil || *a.Large.Width != 64 || *a.Small.Width != 64 || a.Animated != nil {
+		t.Errorf("avatar variants = %+v, want 64 × 64 still ones", a)
 	}
 
 	var profile, other clientapi.Account
@@ -133,6 +146,14 @@ func TestClientAPIAccountImages(t *testing.T) {
 		t.Fatalf("notifications = %+v, want alice's follow", notifications.Items)
 	}
 	check("notification", notifications.Items[0].Account)
+}
+
+// smallURL returns the URL of the small variant of an image, "" for none.
+func smallURL(v *clientapi.MediaVariants) string {
+	if v == nil {
+		return ""
+	}
+	return v.Small.Url
 }
 
 func deref(p *string) string {

@@ -90,7 +90,7 @@ func TestInstancePreviewImage(t *testing.T) {
 	if url, _, _, _ := image(profile); url != builtIn {
 		t.Errorf("image before processing = %q, want the built-in one", url)
 	}
-	if r := app.Media.Process(ctx, m.File.ID); r.Err() != nil {
+	if r := app.Media.Process(ctx, m.File.ID, ""); r.Err() != nil {
 		t.Fatalf("Process: %v", r.Err())
 	}
 	for locale, body := range map[string]string{"en": "Our mascot", "ja": "マスコット"} {
@@ -98,7 +98,12 @@ func TestInstancePreviewImage(t *testing.T) {
 			t.Fatalf("SetText(preview_image_alt, %s): %v", locale, err)
 		}
 	}
-	want := "https://" + cfg.Host + "/media/" + m.File.ID + "/full.png"
+	processed, err := app.Media.Media(ctx, m.File.ID)
+	if err != nil || !processed.Ready() {
+		t.Fatalf("Media = %+v, %v", processed.Result, err)
+	}
+	// An opaque image's large variant is a JPEG (ADR-0054 §2).
+	want := "https://" + cfg.Host + "/media/" + m.File.ID + "/" + processed.Result.ID + "/large.jpg"
 	for path, wantAlt := range map[string]string{profile: "Our mascot", status: "マスコット"} {
 		if url, alt, w, ht := image(path); url != want || alt != wantAlt || w != "1200" || ht != "630" {
 			t.Errorf("GET %s after the setting: image %q %q %sx%s, want %q %q", path, url, alt, w, ht, want, wantAlt)

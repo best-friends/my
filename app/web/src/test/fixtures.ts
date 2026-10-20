@@ -119,12 +119,18 @@ export const preferencesFixture: Schemas["Preferences"] = {
   timeline_languages: [],
 };
 
+/** The renditions of an image whose every size is served at `url`, as a remote account's avatar is. */
+export function imageFixture(url: string): Schemas["MediaVariants"] {
+  const variant = { url };
+  return { small: variant, medium: variant, large: variant };
+}
+
 /**
  * A `MediaAttachment` with `id` in `state`; a ready one has its renditions, their URLs as `url` and
  * `preview_url`, and its blurhash, as GET /media/{id} answers once the server has processed the file.
  */
 export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["state"] = "ready", description?: string): Schemas["MediaAttachment"] {
-  const variant = (size: string) => ({ url: `https://my.example/media/${id}/${size}.jpg`, content_type: "image/jpeg", width: 640, height: 360, size: 1000 });
+  const variant = (size: string) => ({ url: `https://my.example/media/${id}/r/${size}.webp`, content_type: "image/webp", width: 640, height: 360, size: 1000 });
   return {
     id,
     type: "image",
@@ -133,9 +139,9 @@ export function mediaFixture(id: string, state: Schemas["MediaAttachment"]["stat
     ...(state === "ready"
       ? {
           blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
-          variants: { full: variant("full"), thumbnail: variant("thumbnail") },
-          url: variant("full").url,
-          preview_url: variant("thumbnail").url,
+          variants: { small: variant("small"), medium: variant("medium"), large: variant("large") },
+          url: variant("large").url,
+          preview_url: variant("small").url,
         }
       : {}),
     ...(description === undefined ? {} : { description }),

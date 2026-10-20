@@ -233,7 +233,7 @@ function AccountRow({ account }: { account: AdminAccount }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar src={account.account.avatar_url} name={accountName(account.account)} decorative />
+        <Avatar src={account.account.avatar?.small.url} name={accountName(account.account)} decorative />
         <h3 className="min-w-0 font-semibold">
           <Link href={`/admin/accounts/${encodeURIComponent(account.id)}`} variant="standalone">
             <AccountLabel account={account.account} />

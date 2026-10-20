@@ -22,8 +22,9 @@ type MediaRepository interface {
 	InsertUploadedMedia(ctx context.Context, tx uow.Tx, u content.UploadedMedia) error
 	// InsertProcessingResult inserts a processing result with its variants.
 	InsertProcessingResult(ctx context.Context, tx uow.Tx, r content.MediaProcessingResult) error
-	// HasProcessingResult reports whether a media file has a processing result.
-	HasProcessingResult(ctx context.Context, tx uow.Tx, mediaID string) (bool, error)
+	// HasProcessingResult reports whether the newest processing result of a media file is for
+	// purpose.
+	HasProcessingResult(ctx context.Context, tx uow.Tx, mediaID string, purpose content.MediaPurpose) (bool, error)
 	// UpsertFocus sets the focal point of a media file.
 	UpsertFocus(ctx context.Context, tx uow.Tx, f content.MediaFocus) error
 	// UpsertDescription sets the description of a media file.
@@ -80,11 +81,11 @@ type MediaRepository interface {
 	// ListProcessingResults returns every processing result of a media file with its
 	// variants, oldest first.
 	ListProcessingResults(ctx context.Context, mediaID string) ([]content.MediaProcessingResult, error)
-	// ListReadyVariants returns the variant of kind of the current processing result of each
-	// media file with an ID in ids, with the file, ordered by file ID. A file that is missing,
-	// still being processed, whose current result failed, or that has no such variant is left
-	// out. It reads every file in one query, for the images of a page of accounts.
-	ListReadyVariants(ctx context.Context, ids []string, kind content.MediaVariantKind) ([]FileVariant, error)
+	// ListReadyVariants returns the variants of the current processing result of each media file
+	// with an ID in ids, with the file, ordered by file ID, then by size and motion. A file that
+	// is missing, still being processed, or whose current result failed is left out. It reads
+	// every file in one query, for the images of a page of accounts.
+	ListReadyVariants(ctx context.Context, ids []string) ([]FileVariant, error)
 	FindFocus(ctx context.Context, mediaID string) (content.MediaFocus, error)
 	FindDescription(ctx context.Context, mediaID string) (content.MediaDescription, error)
 	// ListUnattachedUploads returns the IDs of up to limit uploaded media files after afterID

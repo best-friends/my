@@ -653,10 +653,12 @@ CREATE TABLE uploaded_media (
   file_size INTEGER NOT NULL CHECK (file_size >= 0)
 ) STRICT;
 
--- Event: one processing of a media file. The newest row of a file is its current state.
+-- Event: one processing of a media file for a purpose, which picks the sizes of its variants
+-- (ADR-0054). The newest row of a file is its current state.
 CREATE TABLE media_processing_results (
   id TEXT NOT NULL PRIMARY KEY,
   media_id TEXT NOT NULL,
+  purpose TEXT NOT NULL CHECK (purpose IN ('attachment', 'avatar', 'header', 'emoji')),
   outcome TEXT NOT NULL CHECK (outcome IN ('ready', 'failed')),
   media_type TEXT NOT NULL CHECK (media_type IN ('image', 'gifv', 'video', 'audio', 'unknown')),
   width INTEGER,
@@ -667,16 +669,18 @@ CREATE TABLE media_processing_results (
 ) STRICT;
 CREATE INDEX media_processing_results_media_id_id ON media_processing_results (media_id, id DESC);
 
--- Event (child of a result): a processed rendition in blob storage, under the public prefix.
+-- Event (child of a result): a processed rendition in blob storage, under the public prefix:
+-- small, medium, and large still ones, and for an animation also animated ones (ADR-0054).
 CREATE TABLE media_variants (
   result_id TEXT NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('full', 'thumbnail')),
+  size TEXT NOT NULL CHECK (size IN ('small', 'medium', 'large')),
+  motion TEXT NOT NULL CHECK (motion IN ('still', 'animated')),
   blob_key TEXT NOT NULL,
   content_type TEXT NOT NULL,
   file_size INTEGER NOT NULL CHECK (file_size >= 0),
   width INTEGER NOT NULL,
   height INTEGER NOT NULL,
-  PRIMARY KEY (result_id, kind)
+  PRIMARY KEY (result_id, size, motion)
 ) STRICT;
 
 -- Current value: the focal point of a media file. No row means the center.

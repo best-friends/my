@@ -398,6 +398,7 @@ type MediaFocu struct {
 type MediaProcessingResult struct {
 	ID          string
 	MediaID     string
+	Purpose     string
 	Outcome     string
 	MediaType   string
 	Width       sql.NullInt64
@@ -409,7 +410,8 @@ type MediaProcessingResult struct {
 
 type MediaVariant struct {
 	ResultID    string
-	Kind        string
+	Size        string
+	Motion      string
 	BlobKey     string
 	ContentType string
 	FileSize    int64

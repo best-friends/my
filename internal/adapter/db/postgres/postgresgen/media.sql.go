@@ -125,12 +125,23 @@ func (q *Queries) GetUploadedMedia(ctx context.Context, mediaID string) (Uploade
 	return i, err
 }
 
-const hasMediaProcessingResult = `-- name: HasMediaProcessingResult :one
-SELECT EXISTS (SELECT 1 FROM media_processing_results WHERE media_id = $1)
+const hasCurrentMediaProcessingResult = `-- name: HasCurrentMediaProcessingResult :one
+SELECT EXISTS (
+  SELECT 1 FROM media_processing_results r
+  WHERE r.purpose = $1 AND r.id = (
+    SELECT c.id FROM media_processing_results c WHERE c.media_id = $2 ORDER BY c.id DESC LIMIT 1)
+)
 `
 
-func (q *Queries) HasMediaProcessingResult(ctx context.Context, mediaID string) (bool, error) {
-	row := q.db.QueryRow(ctx, hasMediaProcessingResult, mediaID)
+type HasCurrentMediaProcessingResultParams struct {
+	Purpose string
+	MediaID string
+}
+
+// HasCurrentMediaProcessingResult reports whether the newest processing result of a media file
+// is for a purpose.
+func (q *Queries) HasCurrentMediaProcessingResult(ctx context.Context, arg HasCurrentMediaProcessingResultParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasCurrentMediaProcessingResult, arg.Purpose, arg.MediaID)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
@@ -161,13 +172,14 @@ func (q *Queries) InsertMediaFile(ctx context.Context, arg InsertMediaFileParams
 
 const insertMediaProcessingResult = `-- name: InsertMediaProcessingResult :exec
 INSERT INTO media_processing_results (
-  id, media_id, outcome, media_type, width, height, duration_ms, blurhash, processed_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+  id, media_id, purpose, outcome, media_type, width, height, duration_ms, blurhash, processed_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type InsertMediaProcessingResultParams struct {
 	ID          string
 	MediaID     string
+	Purpose     string
 	Outcome     string
 	MediaType   string
 	Width       *int32
@@ -181,6 +193,7 @@ func (q *Queries) InsertMediaProcessingResult(ctx context.Context, arg InsertMed
 	_, err := q.db.Exec(ctx, insertMediaProcessingResult,
 		arg.ID,
 		arg.MediaID,
+		arg.Purpose,
 		arg.Outcome,
 		arg.MediaType,
 		arg.Width,
@@ -193,13 +206,14 @@ func (q *Queries) InsertMediaProcessingResult(ctx context.Context, arg InsertMed
 }
 
 const insertMediaVariant = `-- name: InsertMediaVariant :exec
-INSERT INTO media_variants (result_id, kind, blob_key, content_type, file_size, width, height)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO media_variants (result_id, size, motion, blob_key, content_type, file_size, width, height)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type InsertMediaVariantParams struct {
 	ResultID    string
-	Kind        string
+	Size        string
+	Motion      string
 	BlobKey     string
 	ContentType string
 	FileSize    int64
@@ -210,7 +224,8 @@ type InsertMediaVariantParams struct {
 func (q *Queries) InsertMediaVariant(ctx context.Context, arg InsertMediaVariantParams) error {
 	_, err := q.db.Exec(ctx, insertMediaVariant,
 		arg.ResultID,
-		arg.Kind,
+		arg.Size,
+		arg.Motion,
 		arg.BlobKey,
 		arg.ContentType,
 		arg.FileSize,
@@ -253,7 +268,7 @@ func (q *Queries) IsMediaAttached(ctx context.Context, mediaID string) (bool, er
 }
 
 const listMediaProcessingResults = `-- name: ListMediaProcessingResults :many
-SELECT id, media_id, outcome, media_type, width, height, duration_ms, blurhash, processed_at
+SELECT id, media_id, purpose, outcome, media_type, width, height, duration_ms, blurhash, processed_at
 FROM media_processing_results WHERE media_id = $1 ORDER BY id
 `
 
@@ -269,6 +284,7 @@ func (q *Queries) ListMediaProcessingResults(ctx context.Context, mediaID string
 		if err := rows.Scan(
 			&i.ID,
 			&i.MediaID,
+			&i.Purpose,
 			&i.Outcome,
 			&i.MediaType,
 			&i.Width,
@@ -288,9 +304,9 @@ func (q *Queries) ListMediaProcessingResults(ctx context.Context, mediaID string
 }
 
 const listMediaVariantsOf = `-- name: ListMediaVariantsOf :many
-SELECT v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height
+SELECT v.result_id, v.size, v.motion, v.blob_key, v.content_type, v.file_size, v.width, v.height
 FROM media_variants v JOIN media_processing_results r ON r.id = v.result_id
-WHERE r.media_id = $1 ORDER BY v.result_id, v.kind
+WHERE r.media_id = $1 ORDER BY v.result_id, v.size, v.motion
 `
 
 func (q *Queries) ListMediaVariantsOf(ctx context.Context, mediaID string) ([]MediaVariant, error) {
@@ -304,7 +320,8 @@ func (q *Queries) ListMediaVariantsOf(ctx context.Context, mediaID string) ([]Me
 		var i MediaVariant
 		if err := rows.Scan(
 			&i.ResultID,
-			&i.Kind,
+			&i.Size,
+			&i.Motion,
 			&i.BlobKey,
 			&i.ContentType,
 			&i.FileSize,
@@ -364,20 +381,15 @@ func (q *Queries) ListOwnerUploads(ctx context.Context, arg ListOwnerUploadsPara
 
 const listReadyMediaVariants = `-- name: ListReadyMediaVariants :many
 SELECT m.id, m.owner_account_id, m.origin, m.created_at,
-  v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height
+  v.result_id, v.size, v.motion, v.blob_key, v.content_type, v.file_size, v.width, v.height
 FROM media_files m
 JOIN media_processing_results r ON r.id = (
   SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
 JOIN media_variants v ON v.result_id = r.id
 WHERE m.id = ANY($1::text[])
-  AND r.outcome = 'ready' AND v.kind = $2::text
-ORDER BY m.id
+  AND r.outcome = 'ready'
+ORDER BY m.id, v.size, v.motion
 `
-
-type ListReadyMediaVariantsParams struct {
-	Ids  []string
-	Kind string
-}
 
 type ListReadyMediaVariantsRow struct {
 	ID             string
@@ -385,7 +397,8 @@ type ListReadyMediaVariantsRow struct {
 	Origin         string
 	CreatedAt      time.Time
 	ResultID       string
-	Kind           string
+	Size           string
+	Motion         string
 	BlobKey        string
 	ContentType    string
 	FileSize       int64
@@ -393,10 +406,10 @@ type ListReadyMediaVariantsRow struct {
 	Height         int32
 }
 
-// ListReadyMediaVariants returns one variant kind of the current (newest) processing result of
-// each listed media file, with the file, for the files whose current result is ready.
-func (q *Queries) ListReadyMediaVariants(ctx context.Context, arg ListReadyMediaVariantsParams) ([]ListReadyMediaVariantsRow, error) {
-	rows, err := q.db.Query(ctx, listReadyMediaVariants, arg.Ids, arg.Kind)
+// ListReadyMediaVariants returns the variants of the current (newest) processing result of each
+// listed media file, with the file, for the files whose current result is ready.
+func (q *Queries) ListReadyMediaVariants(ctx context.Context, ids []string) ([]ListReadyMediaVariantsRow, error) {
+	rows, err := q.db.Query(ctx, listReadyMediaVariants, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -410,7 +423,8 @@ func (q *Queries) ListReadyMediaVariants(ctx context.Context, arg ListReadyMedia
 			&i.Origin,
 			&i.CreatedAt,
 			&i.ResultID,
-			&i.Kind,
+			&i.Size,
+			&i.Motion,
 			&i.BlobKey,
 			&i.ContentType,
 			&i.FileSize,

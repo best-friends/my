@@ -104,7 +104,7 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar src={account.account.avatar_url} name={accountName(account.account)} decorative />
+        <Avatar src={account.account.avatar?.small.url} name={accountName(account.account)} decorative />
         <AccountLabel account={account.account} />
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-1">

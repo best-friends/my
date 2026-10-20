@@ -856,7 +856,7 @@ func (e *postingEnv) upload(t *testing.T, owner string, outcome content.MediaOut
 		if err != nil || outcome == "" {
 			return err
 		}
-		r := content.MediaProcessingResult{ID: e.ids.NewID(), MediaID: id, Outcome: outcome, MediaType: content.MediaTypeUnknown, ProcessedAt: e.clock.Now()}
+		r := content.MediaProcessingResult{ID: e.ids.NewID(), MediaID: id, Purpose: content.PurposeAttachment, Outcome: outcome, MediaType: content.MediaTypeUnknown, ProcessedAt: e.clock.Now()}
 		if outcome == content.MediaReady {
 			r.MediaType, r.Width, r.Height = content.MediaTypeImage, 4, 3
 		}

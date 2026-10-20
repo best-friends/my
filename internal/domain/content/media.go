@@ -58,16 +58,48 @@ const (
 	MediaTypeUnknown MediaType = "unknown"
 )
 
-// MediaVariantKind names a processed rendition of a media file.
-type MediaVariantKind string
+// MediaPurpose is what a media file is processed for; it picks the sizes of its variants
+// (ADR-0054 §1).
+type MediaPurpose string
 
-// Media variant kinds.
+// Media purposes.
 const (
-	// VariantFull is the file served as the media itself: re-encoded without metadata and
-	// scaled down to the server's limit.
-	VariantFull MediaVariantKind = "full"
-	// VariantThumbnail is the preview.
-	VariantThumbnail MediaVariantKind = "thumbnail"
+	PurposeAttachment MediaPurpose = "attachment"
+	PurposeAvatar     MediaPurpose = "avatar"
+	PurposeHeader     MediaPurpose = "header"
+	PurposeEmoji      MediaPurpose = "emoji"
+)
+
+// Valid reports whether p is one of the purposes.
+func (p MediaPurpose) Valid() bool {
+	switch p {
+	case PurposeAttachment, PurposeAvatar, PurposeHeader, PurposeEmoji:
+		return true
+	}
+	return false
+}
+
+// MediaSize names the size of a processed rendition of a media file.
+type MediaSize string
+
+// Media sizes, smallest first.
+const (
+	SizeSmall  MediaSize = "small"
+	SizeMedium MediaSize = "medium"
+	SizeLarge  MediaSize = "large"
+)
+
+// MediaSizes lists the sizes, smallest first.
+var MediaSizes = [...]MediaSize{SizeSmall, SizeMedium, SizeLarge}
+
+// MediaMotion tells a still rendition from a moving one.
+type MediaMotion string
+
+// Media motions: every processed file has still renditions, and an animation also has
+// animated ones.
+const (
+	MotionStill    MediaMotion = "still"
+	MotionAnimated MediaMotion = "animated"
 )
 
 // MediaProcessingResult records one processing of a media file. The newest result of a file is
@@ -76,6 +108,7 @@ const (
 type MediaProcessingResult struct {
 	ID          string
 	MediaID     string
+	Purpose     MediaPurpose
 	Outcome     MediaOutcome
 	MediaType   MediaType
 	Width       int
@@ -83,24 +116,32 @@ type MediaProcessingResult struct {
 	DurationMS  int
 	Blurhash    string
 	ProcessedAt time.Time
-	// Variants are the renditions in blob storage, ordered by Kind; none for a failure.
+	// Variants are the renditions in blob storage, ordered by size and motion; none for a
+	// failure.
 	Variants []MediaVariant
 }
 
-// Variant returns the variant of kind k.
-func (r MediaProcessingResult) Variant(k MediaVariantKind) (MediaVariant, bool) {
+// Variant returns the variant of size and motion.
+func (r MediaProcessingResult) Variant(size MediaSize, motion MediaMotion) (MediaVariant, bool) {
 	for _, v := range r.Variants {
-		if v.Kind == k {
+		if v.Size == size && v.Motion == motion {
 			return v, true
 		}
 	}
 	return MediaVariant{}, false
 }
 
+// Animated reports whether the result has animated renditions.
+func (r MediaProcessingResult) Animated() bool {
+	_, ok := r.Variant(SizeLarge, MotionAnimated)
+	return ok
+}
+
 // MediaVariant is a processed rendition of a media file in blob storage.
 type MediaVariant struct {
 	ResultID    string
-	Kind        MediaVariantKind
+	Size        MediaSize
+	Motion      MediaMotion
 	BlobKey     string
 	ContentType string
 	FileSize    int64

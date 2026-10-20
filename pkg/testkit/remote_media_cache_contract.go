@@ -111,11 +111,11 @@ func (c *cacheEnv) record(t *testing.T, remoteURL string) content.RemoteMedia {
 // open opens a remote media file through the proxy and checks that it serves the file.
 func (c *cacheEnv) open(t *testing.T, m content.RemoteMedia) {
 	t.Helper()
-	u, err := url.Parse(c.proxy.URL(m.MediaID, content.VariantFull))
+	u, err := url.Parse(c.proxy.URL(m.MediaID, appcontent.ProxyFull))
 	if err != nil {
 		t.Fatal(err)
 	}
-	pm, err := c.proxy.Open(t.Context(), m.MediaID, string(content.VariantFull), u.Query().Get("sig"))
+	pm, err := c.proxy.Open(t.Context(), m.MediaID, string(appcontent.ProxyFull), u.Query().Get("sig"))
 	if err != nil {
 		t.Fatalf("Open(%s): %v", m.RemoteURL, err)
 	}

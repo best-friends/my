@@ -62,11 +62,15 @@ func newNoteWorld() *noteWorld {
 				Media: appcontent.Media{
 					Result: &content.MediaProcessingResult{
 						Outcome: content.MediaReady, MediaType: content.MediaTypeImage, Width: 1280, Height: 960, Blurhash: "UFHV6nWB2yk8pyo0adR*.7kCMdnjt7jtxuWB",
-						Variants: []content.MediaVariant{{Kind: content.VariantFull, ContentType: "image/webp", Width: 1280, Height: 960}},
 					},
 					Focus: &content.MediaFocus{X: 0.5, Y: -0.25},
 				},
-				Description: "A cat on a sofa", URL: "https://files." + host + "/media/full.webp",
+				Description: "A cat on a sofa",
+				Image: appcontent.Image{Still: appcontent.ImageVariants{
+					Small:  appcontent.ImageVariant{URL: "https://files." + host + "/media/r/small.webp", ContentType: "image/webp", Width: 640, Height: 480},
+					Medium: appcontent.ImageVariant{URL: "https://files." + host + "/media/r/medium.webp", ContentType: "image/webp", Width: 1280, Height: 960},
+					Large:  appcontent.ImageVariant{URL: "https://files." + host + "/media/r/large.jpg", ContentType: "image/jpeg", Width: 1280, Height: 960},
+				}},
 			}},
 		},
 	}

@@ -32,8 +32,9 @@ type Deps struct {
 	RenderProfileText func(ctx context.Context, text string) (string, error)
 	// CheckProfileImage fails with an error wrapping ErrUnusableImage unless a media file is
 	// an image that the account uploaded and that was processed successfully (the content
-	// module); nil accepts no image.
-	CheckProfileImage func(ctx context.Context, accountID, mediaID string) error
+	// module), which then makes its variants for prop (account.PropertyAvatar or
+	// account.PropertyHeader); nil accepts no image.
+	CheckProfileImage func(ctx context.Context, accountID, mediaID string, prop account.ProfileProperty) error
 	// Sanitizer cleans the HTML of remote profiles (ADR-0019 §2); remote actors cannot be
 	// stored without it.
 	Sanitizer kernel.HTMLSanitizer

@@ -257,22 +257,21 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 	return out
 }
 
+// viewImage presents the image of a MediaView, which the reader resolved already.
+type viewImage struct{ img appcontent.Image }
+
+func (v viewImage) Image(appcontent.Media) (appcontent.Image, bool) { return v.img, true }
+
 // newMediaAttachments presents the attachments of a revision as MediaAttachment (media.go),
 // with the revision's copy of each description.
 func newMediaAttachments(in []appcontent.MediaView) []MediaAttachment {
 	out := make([]MediaAttachment, 0, len(in))
 	for _, m := range in {
-		url := func(v content.MediaVariant) string {
-			if v.Kind == content.VariantThumbnail && m.PreviewURL != "" {
-				return m.PreviewURL
-			}
-			return m.URL
-		}
 		var a MediaAttachment
 		if m.Media.Remote != nil {
-			a = newRemoteAttachment(m.Media, m.URL)
+			a = newRemoteAttachment(m.Media, m.Image)
 		} else {
-			a = newMediaAttachment(m.Media, url)
+			a = newMediaAttachment(m.Media, viewImage{m.Image})
 		}
 		a.Description = nil
 		if m.Description != "" {

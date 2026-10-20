@@ -194,7 +194,7 @@ func TestStatusesThroughTheAPI(t *testing.T) {
 	}
 	process := func(id string) {
 		t.Helper()
-		c.app.Media.Process(ctx, id)
+		c.app.Media.Process(ctx, id, "")
 	}
 
 	// Media must be the poster's own processed uploads.

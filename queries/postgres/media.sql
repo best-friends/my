@@ -8,15 +8,21 @@ INSERT INTO uploaded_media (media_id, blob_key, content_type, file_size) VALUES 
 
 -- name: InsertMediaProcessingResult :exec
 INSERT INTO media_processing_results (
-  id, media_id, outcome, media_type, width, height, duration_ms, blurhash, processed_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+  id, media_id, purpose, outcome, media_type, width, height, duration_ms, blurhash, processed_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
 
 -- name: InsertMediaVariant :exec
-INSERT INTO media_variants (result_id, kind, blob_key, content_type, file_size, width, height)
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+INSERT INTO media_variants (result_id, size, motion, blob_key, content_type, file_size, width, height)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
--- name: HasMediaProcessingResult :one
-SELECT EXISTS (SELECT 1 FROM media_processing_results WHERE media_id = $1);
+-- HasCurrentMediaProcessingResult reports whether the newest processing result of a media file
+-- is for a purpose.
+-- name: HasCurrentMediaProcessingResult :one
+SELECT EXISTS (
+  SELECT 1 FROM media_processing_results r
+  WHERE r.purpose = sqlc.arg(purpose) AND r.id = (
+    SELECT c.id FROM media_processing_results c WHERE c.media_id = sqlc.arg(media_id) ORDER BY c.id DESC LIMIT 1)
+);
 
 -- name: UpsertMediaFocus :exec
 INSERT INTO media_focus (media_id, focus_x, focus_y) VALUES ($1, $2, $3)
@@ -46,13 +52,13 @@ SELECT id, owner_account_id, origin, created_at FROM media_files WHERE id = $1;
 SELECT media_id, blob_key, content_type, file_size FROM uploaded_media WHERE media_id = $1;
 
 -- name: ListMediaProcessingResults :many
-SELECT id, media_id, outcome, media_type, width, height, duration_ms, blurhash, processed_at
+SELECT id, media_id, purpose, outcome, media_type, width, height, duration_ms, blurhash, processed_at
 FROM media_processing_results WHERE media_id = $1 ORDER BY id;
 
 -- name: ListMediaVariantsOf :many
-SELECT v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height
+SELECT v.result_id, v.size, v.motion, v.blob_key, v.content_type, v.file_size, v.width, v.height
 FROM media_variants v JOIN media_processing_results r ON r.id = v.result_id
-WHERE r.media_id = $1 ORDER BY v.result_id, v.kind;
+WHERE r.media_id = $1 ORDER BY v.result_id, v.size, v.motion;
 
 -- name: GetMediaFocus :one
 SELECT media_id, focus_x, focus_y FROM media_focus WHERE media_id = $1;
@@ -87,15 +93,15 @@ SELECT media_id, description FROM media_descriptions WHERE media_id = $1;
 -- name: IsMediaAttached :one
 SELECT EXISTS (SELECT 1 FROM status_revision_attachments WHERE media_id = $1);
 
--- ListReadyMediaVariants returns one variant kind of the current (newest) processing result of
--- each listed media file, with the file, for the files whose current result is ready.
+-- ListReadyMediaVariants returns the variants of the current (newest) processing result of each
+-- listed media file, with the file, for the files whose current result is ready.
 -- name: ListReadyMediaVariants :many
 SELECT m.id, m.owner_account_id, m.origin, m.created_at,
-  v.result_id, v.kind, v.blob_key, v.content_type, v.file_size, v.width, v.height
+  v.result_id, v.size, v.motion, v.blob_key, v.content_type, v.file_size, v.width, v.height
 FROM media_files m
 JOIN media_processing_results r ON r.id = (
   SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
 JOIN media_variants v ON v.result_id = r.id
 WHERE m.id = ANY(sqlc.arg(ids)::text[])
-  AND r.outcome = 'ready' AND v.kind = sqlc.arg(kind)::text
-ORDER BY m.id;
+  AND r.outcome = 'ready'
+ORDER BY m.id, v.size, v.motion;

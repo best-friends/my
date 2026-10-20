@@ -106,7 +106,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    閲覧者は `requireViewer(ctx)`（トークン必須の操作）か `ViewerFrom(ctx)`（匿名も受け付ける操作）で取ります。スコープの検査はハンドラの前に済んでいます。
    アカウントは `Server.newAccount` で `Account` に、閲覧者自身のアカウントは `Server.newCredentialAccount` で `CredentialAccount`（プロフィールの入力ソースと、`Options.Posting` から読む投稿の制限 `posting` を含む）に、
    投稿は `appcontent.Reader` が閲覧者に見せる形にした `StatusView` を `Server.newStatus` で `Status` に詰め替えます。
-   `Account` のアバター・ヘッダーの URL（`avatar_url` / `header_url`）と、リモートのアカウントのプロフィールページ（`url`。Actor の `url`、無ければ `uri`）は、
+   `Account` のアバター・ヘッダー（`avatar` / `header`。大きさごとの版の `MediaVariants`）と、リモートのアカウントのプロフィールページ（`url`。Actor の `url`、無ければ `uri`）は、
    応答に含めるアカウントの分を `Server.accountParts`（投稿なら著者とメンション先を加える `Server.statusParts`）で
    1 回にまとめて読み、`newAccount` と `newStatus` に渡します。アカウントごとに読まない（N+1 にしない）ため、一覧は `Server.newAccounts` や `Server.presentStatuses` を使います。
    フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。

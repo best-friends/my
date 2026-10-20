@@ -11,9 +11,15 @@ import (
 	"image"
 	"image/color"
 	"image/color/palette"
+	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"time"
+
+	// The WebP package sets the frame codecs of its animation package.
+	_ "github.com/deepteams/webp"
+	"github.com/deepteams/webp/animation"
 )
 
 // MetadataMarker is the text that the media fixtures hide in their metadata (EXIF
@@ -167,11 +173,7 @@ func FixtureGIF(w, h, frames int) []byte {
 	for i := range frames {
 		p := image.NewPaletted(image.Rect(0, 0, w, h), palette.Plan9)
 		if i == 0 {
-			for y := range h {
-				for x := range w {
-					p.Set(x, y, FixtureImage(w, h).NRGBAAt(x, y))
-				}
-			}
+			draw.Draw(p, p.Rect, FixtureImage(w, h), image.Point{}, draw.Src)
 		} else {
 			for j := range p.Pix {
 				p.Pix[j] = uint8(i * 37) //nolint:gosec // any palette index
@@ -213,3 +215,28 @@ var (
 	FixtureWebPAlpha    = mustBase64("UklGRkoAAABXRUJQVlA4WAoAAAAQAAAAAAAAAAAAQUxQSAwAAAARBxAR/Q9ERP8DAABWUDggGAAAABQBAJ0BKgEAAQAAAP4AAA3AAP7mtQAAAA==")
 	FixtureWebPAnimated = mustBase64("UklGRlIAAABXRUJQVlA4WAoAAAASAAAAAAAAAAAAQU5JTQYAAAD/////AABBTk1GJgAAAAAAAAAAAAAAAAAAAGQAAABWUDhMDQAAAC8AAAAQBxAREYiI/gcA")
 )
+
+// FixtureWebPAnimation returns a w × h animated WebP with the given number of frames (the first
+// one is FixtureImage, then plain colors), played forever, with an EXIF chunk that contains
+// MetadataMarker.
+func FixtureWebPAnimation(w, h, frames int) []byte {
+	var buf bytes.Buffer
+	enc := animation.NewEncoder(&buf, w, h, &animation.EncodeOptions{Lossless: true})
+	enc.SetEXIF([]byte("Exif\x00\x00" + MetadataMarker))
+	for i := range frames {
+		img := FixtureImage(w, h)
+		if i > 0 {
+			c := color.NRGBA{R: uint8(i * 37), G: uint8(i * 91), B: 120, A: 255} //nolint:gosec // any color
+			for p := 0; p < len(img.Pix); p += 4 {
+				img.Pix[p], img.Pix[p+1], img.Pix[p+2], img.Pix[p+3] = c.R, c.G, c.B, c.A
+			}
+		}
+		if err := enc.AddFrame(img, 100*time.Millisecond); err != nil {
+			panic(err)
+		}
+	}
+	if err := enc.Close(); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
+}

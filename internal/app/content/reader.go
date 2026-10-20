@@ -90,9 +90,9 @@ type MediaView struct {
 	Media Media
 	// Description is the alt text of the attachment, "" for none.
 	Description string
-	// URL is the full variant, PreviewURL the thumbnail (the full variant without one). For a
-	// remote file both are its media proxy URL.
-	URL, PreviewURL string
+	// Image is where clients load the file: its variants, or for a remote file its media
+	// proxy URLs.
+	Image Image
 }
 
 // RevisionParts are what a revision refers to, resolved: the attached media that finished
@@ -102,12 +102,6 @@ type RevisionParts struct {
 	Attachments []MediaView
 	Mentions    []appaccount.Actor
 	Tags        []content.Tag
-}
-
-// Full returns the variant that URL serves.
-func (v MediaView) Full() content.MediaVariant {
-	full, _ := v.Media.Result.Variant(content.VariantFull)
-	return full
 }
 
 // RevisionView is one revision of a status, for its edit history.
@@ -435,25 +429,9 @@ func (r *Reader) attachments(ctx context.Context, in []content.Attachment) ([]Me
 		if err != nil {
 			return nil, err
 		}
-		if m.Remote != nil {
-			if u, ok := r.d.Media.ProxyURL(m.File.ID); ok {
-				out = append(out, MediaView{Media: m, Description: at.Description, URL: u, PreviewURL: u})
-			}
-			continue
+		if img, ok := r.d.Media.Image(m); ok {
+			out = append(out, MediaView{Media: m, Description: at.Description, Image: img})
 		}
-		if !m.Ready() {
-			continue
-		}
-		full, ok := m.Result.Variant(content.VariantFull)
-		if !ok {
-			continue
-		}
-		v := MediaView{Media: m, Description: at.Description, URL: r.d.Media.URL(full)}
-		v.PreviewURL = v.URL
-		if thumb, ok := m.Result.Variant(content.VariantThumbnail); ok {
-			v.PreviewURL = r.d.Media.URL(thumb)
-		}
-		out = append(out, v)
 	}
 	return out, nil
 }

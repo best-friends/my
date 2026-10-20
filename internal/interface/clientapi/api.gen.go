@@ -751,6 +751,30 @@ func (e MediaAttachmentType) Valid() bool {
 	}
 }
 
+// Defines values for MediaUploadPurpose.
+const (
+	MediaUploadPurposeAttachment MediaUploadPurpose = "attachment"
+	MediaUploadPurposeAvatar     MediaUploadPurpose = "avatar"
+	MediaUploadPurposeEmoji      MediaUploadPurpose = "emoji"
+	MediaUploadPurposeHeader     MediaUploadPurpose = "header"
+)
+
+// Valid indicates whether the value is a known member of the MediaUploadPurpose enum.
+func (e MediaUploadPurpose) Valid() bool {
+	switch e {
+	case MediaUploadPurposeAttachment:
+		return true
+	case MediaUploadPurposeAvatar:
+		return true
+	case MediaUploadPurposeEmoji:
+		return true
+	case MediaUploadPurposeHeader:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ModerationAppealState.
 const (
 	ModerationAppealStateOverturned ModerationAppealState = "overturned"
@@ -1017,9 +1041,10 @@ type Account struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
-	// AvatarUrl The URL of the avatar image; omitted when the account has none, or its image is not
-	// processed yet or could not be processed. Clients show a placeholder instead.
-	AvatarUrl *string `json:"avatar_url,omitempty"`
+	// Avatar The avatar image, square; omitted when the account has none, or its image is not
+	// processed yet or could not be processed. Clients show a placeholder instead. For a
+	// remote account, every size is its media proxy URL.
+	Avatar *MediaVariants `json:"avatar,omitempty"`
 
 	// Bot Whether the account is automated.
 	Bot bool `json:"bot"`
@@ -1046,8 +1071,8 @@ type Account struct {
 	// FollowingCount The number of accounts that the account actively follows; present where `followers_count` is.
 	FollowingCount *int `json:"following_count,omitempty"`
 
-	// HeaderUrl The URL of the header image; omitted when there is none, as `avatar_url` is.
-	HeaderUrl *string `json:"header_url,omitempty"`
+	// Header The header image; omitted when there is none, as `avatar` is.
+	Header *MediaVariants `json:"header,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
@@ -2181,9 +2206,10 @@ type CredentialAccount struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
-	// AvatarUrl The URL of the avatar image; omitted when the account has none, or its image is not
-	// processed yet or could not be processed. Clients show a placeholder instead.
-	AvatarUrl *string `json:"avatar_url,omitempty"`
+	// Avatar The avatar image, square; omitted when the account has none, or its image is not
+	// processed yet or could not be processed. Clients show a placeholder instead. For a
+	// remote account, every size is its media proxy URL.
+	Avatar *MediaVariants `json:"avatar,omitempty"`
 
 	// Bot Whether the account is automated.
 	Bot bool `json:"bot"`
@@ -2213,8 +2239,8 @@ type CredentialAccount struct {
 	// FollowingCount The number of accounts that the account actively follows; present where `followers_count` is.
 	FollowingCount *int `json:"following_count,omitempty"`
 
-	// HeaderUrl The URL of the header image; omitted when there is none, as `avatar_url` is.
-	HeaderUrl *string `json:"header_url,omitempty"`
+	// Header The header image; omitted when there is none, as `avatar` is.
+	Header *MediaVariants `json:"header,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
@@ -2468,6 +2494,28 @@ type LiftAccountActionRequest struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// MediaAnimatedVariants The moving renditions of an animation, absent for a still image: animated WebP for
+// `small` and `medium`, and a GIF for `large`.
+type MediaAnimatedVariants struct {
+	// Large A rendition of a media file, without metadata. Its URL never serves other content, so
+	// it may be cached for good. `content_type`, `width`, `height`, and `size` are present
+	// for an upload, and absent where unknown for a remote file served through the media
+	// proxy.
+	Large MediaVariant `json:"large"`
+
+	// Medium A rendition of a media file, without metadata. Its URL never serves other content, so
+	// it may be cached for good. `content_type`, `width`, `height`, and `size` are present
+	// for an upload, and absent where unknown for a remote file served through the media
+	// proxy.
+	Medium MediaVariant `json:"medium"`
+
+	// Small A rendition of a media file, without metadata. Its URL never serves other content, so
+	// it may be cached for good. `content_type`, `width`, `height`, and `size` are present
+	// for an upload, and absent where unknown for a remote file served through the media
+	// proxy.
+	Small MediaVariant `json:"small"`
+}
+
 // MediaAttachment A media file, as an upload of the user (the media operations) or as an attachment of
 // a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`
 // are present once the file is `ready`; statuses attach only ready files. In a status,
@@ -2475,7 +2523,7 @@ type LiftAccountActionRequest struct {
 // attachment has none.
 //
 // A file of a remote status is always `ready`: the instance does not process it, so it has
-// no `variants`; `url` and `preview_url` are its media proxy URL (federation.md §9),
+// no `variants`; `url` and `preview_url` are its media proxy URLs (federation.md §9),
 // `remote_url` its URL on the remote server, and `meta`, `blurhash`, and `type` what the
 // remote server declared.
 type MediaAttachment struct {
@@ -2493,7 +2541,7 @@ type MediaAttachment struct {
 	// Meta What the server knows about the media file.
 	Meta MediaMeta `json:"meta"`
 
-	// PreviewUrl Where its preview is served; for an upload, `variants.thumbnail.url`.
+	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still).
 	PreviewUrl *string `json:"preview_url,omitempty"`
 
 	// RemoteUrl The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
@@ -2506,10 +2554,15 @@ type MediaAttachment struct {
 	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
 	Type MediaAttachmentType `json:"type"`
 
-	// Url Where the file is served on this instance; for an upload, `variants.full.url`.
+	// Url Where the file is served on this instance; for an upload, `variants.large.url`, or
+	// `variants.animated.large.url` for an animation.
 	Url *string `json:"url,omitempty"`
 
-	// Variants The renditions of a ready media file.
+	// Variants The renditions of a ready media file within the sizes of its purpose (see
+	// `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
+	// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+	// show `animated` instead only when the user lets animations play and does not prefer
+	// reduced motion.
 	Variants *MediaVariants `json:"variants,omitempty"`
 }
 
@@ -2557,33 +2610,61 @@ type MediaUpload struct {
 
 	// File The file. Its declared type, if any, must match its content.
 	File openapi_types.File `json:"file"`
+
+	// Purpose What the file is for, which picks the sizes of its variants: an `attachment` of a
+	// post (within 640 × 360, 1920 × 1080, and 3840 × 2160 pixels of area), an `avatar`
+	// (cropped to squares of 96, 192, and 400 pixels around the focal point), a `header`
+	// (within 750 × 250, 1500 × 500, and 3000 × 1000), or a custom `emoji` (within 64,
+	// 128, and 256 pixels).
+	Purpose *MediaUploadPurpose `json:"purpose,omitempty"`
 }
 
-// MediaVariant A rendition of a media file, without metadata.
+// MediaUploadPurpose What the file is for, which picks the sizes of its variants: an `attachment` of a
+// post (within 640 × 360, 1920 × 1080, and 3840 × 2160 pixels of area), an `avatar`
+// (cropped to squares of 96, 192, and 400 pixels around the focal point), a `header`
+// (within 750 × 250, 1500 × 500, and 3000 × 1000), or a custom `emoji` (within 64,
+// 128, and 256 pixels).
+type MediaUploadPurpose string
+
+// MediaVariant A rendition of a media file, without metadata. Its URL never serves other content, so
+// it may be cached for good. `content_type`, `width`, `height`, and `size` are present
+// for an upload, and absent where unknown for a remote file served through the media
+// proxy.
 type MediaVariant struct {
 	// ContentType The media type of the rendition.
-	ContentType string `json:"content_type"`
+	ContentType *string `json:"content_type,omitempty"`
 
 	// Height The height in pixels.
-	Height int `json:"height"`
+	Height *int `json:"height,omitempty"`
 
 	// Size The size of the file in bytes.
-	Size int64 `json:"size"`
+	Size *int64 `json:"size,omitempty"`
 
 	// Url Where the rendition is served.
 	Url string `json:"url"`
 
 	// Width The width in pixels.
-	Width int `json:"width"`
+	Width *int `json:"width,omitempty"`
 }
 
-// MediaVariants The renditions of a ready media file.
+// MediaVariants The renditions of a ready media file within the sizes of its purpose (see
+// `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
+// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+// show `animated` instead only when the user lets animations play and does not prefer
+// reduced motion.
 type MediaVariants struct {
-	// Full The file itself, scaled down to at most 3840 × 2160 pixels of area.
-	Full MediaVariant `json:"full"`
+	// Animated The moving renditions of an animation, absent for a still image: animated WebP for
+	// `small` and `medium`, and a GIF for `large`.
+	Animated *MediaAnimatedVariants `json:"animated,omitempty"`
 
-	// Thumbnail The preview, at most 640 × 360 pixels of area.
-	Thumbnail MediaVariant `json:"thumbnail"`
+	// Large The largest still rendition, JPEG or PNG for an upload.
+	Large MediaVariant `json:"large"`
+
+	// Medium The still rendition for views across a screen; WebP for an upload.
+	Medium MediaVariant `json:"medium"`
+
+	// Small The still rendition for small views; WebP for an upload.
+	Small MediaVariant `json:"small"`
 }
 
 // ModerationAction A moderation action on the authenticated user's own account (FR-715, NFR-MOD-6), as the

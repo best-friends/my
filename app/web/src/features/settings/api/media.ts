@@ -18,14 +18,18 @@ export class MediaProcessingError extends Error {
   override name = "MediaProcessingError";
 }
 
-/** Uploads `file` and resolves with it once the server has processed it. */
-export async function uploadImage(api: Api, file: File, signal?: AbortSignal): Promise<MediaAttachment> {
+/** What a profile image is for, which picks the sizes the server makes of it (MediaUpload.purpose). */
+export type ImagePurpose = "avatar" | "header";
+
+/** Uploads `file` as the profile's `purpose` image and resolves with it once the server has processed it. */
+export async function uploadImage(api: Api, file: File, purpose: ImagePurpose, signal?: AbortSignal): Promise<MediaAttachment> {
   const { data: uploaded } = await api.fetch.POST("/media", {
     // The generated type of a binary property is string; the serializer sends the File itself.
-    body: { file: "" },
+    body: { file: "", purpose },
     bodySerializer: () => {
       const form = new FormData();
       form.append("file", file);
+      form.append("purpose", purpose);
       return form;
     },
     ...(signal === undefined ? {} : { signal }),

@@ -143,7 +143,7 @@ func newAccountEnvOn(h AccountHarness, projectors *uow.Projectors, register ...f
 		RenderProfileText: func(_ context.Context, text string) (string, error) {
 			return "<p>rendered " + text + "</p>", nil
 		},
-		CheckProfileImage: func(_ context.Context, _, mediaID string) error {
+		CheckProfileImage: func(_ context.Context, _, mediaID string, _ account.ProfileProperty) error {
 			if mediaID != contractProfileImage {
 				return appaccount.ErrUnusableImage
 			}

@@ -42,6 +42,8 @@ type FanOutDeps struct {
 	IDs         kernel.IDGenerator
 	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
 	Parts NoteParts
+	// Images reads the avatars and headers of the actors that Updates carry; nil sends none.
+	Images ProfileImages
 	// Blocks reads the local blocks that Block and Undo Block are about.
 	Blocks BlockFinder
 	// Follows reads the follows that Follow, Accept, Reject, and Undo Follow are about; nil

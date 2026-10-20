@@ -62,18 +62,19 @@ func cacheFor(v *Viewer) *string {
 // by Server.accountParts: the URLs of their avatars and headers, and the profile pages of the
 // remote ones. The zero value has none.
 type accountParts struct {
-	images map[appcontent.ImageRef]string
+	images map[appcontent.ImageRef]appcontent.Image
 	// profiles are the profile pages of remote accounts, by account ID.
 	profiles map[string]string
 }
 
-// url returns the URL of an account's image, or nil when it has none to show.
-func (p accountParts) url(accountID, mediaID string) *string {
+// image returns the variants of an account's image, or nil when it has none to show.
+func (p accountParts) image(accountID, mediaID string) *MediaVariants {
 	if mediaID == "" {
 		return nil
 	}
-	if u, ok := p.images[appcontent.ImageRef{AccountID: accountID, MediaID: mediaID}]; ok {
-		return &u
+	if img, ok := p.images[appcontent.ImageRef{AccountID: accountID, MediaID: mediaID}]; ok {
+		v := newMediaVariants(img)
+		return &v
 	}
 	return nil
 }
@@ -106,11 +107,11 @@ func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccou
 		}
 	}
 	if s.o.Media != nil && len(refs) > 0 {
-		urls, err := s.o.Media.ImageURLs(ctx, refs)
+		images, err := s.o.Media.Images(ctx, refs)
 		if err != nil {
 			return accountParts{}, fmt.Errorf("clientapi: the profile images: %w", err)
 		}
-		parts.images = urls
+		parts.images = images
 	}
 	if s.o.RemoteProfiles != nil && len(remote) > 0 {
 		urls, err := s.o.RemoteProfiles.RemoteProfileURLs(ctx, remote)
@@ -153,7 +154,7 @@ func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 		for _, f := range p.Fields {
 			out.Fields = append(out.Fields, ProfileField{Name: f.Name, Value: f.ValueHTML})
 		}
-		out.AvatarUrl, out.HeaderUrl = parts.url(a.Account.ID, p.AvatarMediaID), parts.url(a.Account.ID, p.HeaderMediaID)
+		out.Avatar, out.Header = parts.image(a.Account.ID, p.AvatarMediaID), parts.image(a.Account.ID, p.HeaderMediaID)
 	}
 	return out
 }

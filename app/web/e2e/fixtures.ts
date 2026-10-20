@@ -211,3 +211,8 @@ export async function expectPostHeadersInTwoLines(feed: Locator): Promise<void> 
   );
   expect(tall, "post headers taller than two lines").toEqual([]);
 }
+
+/** The renditions of an image whose every size is served at `url` (api/openapi.yaml, MediaVariants). */
+export function imageVariants(url: string): { small: { url: string }; medium: { url: string }; large: { url: string } } {
+  return { small: { url }, medium: { url }, large: { url } };
+}
