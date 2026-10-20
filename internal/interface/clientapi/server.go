@@ -129,6 +129,12 @@ type Options struct {
 	// of service and the privacy policy, for Instance.terms_url and Instance.privacy_policy_url;
 	// empty leaves the link out.
 	TermsPath, PrivacyPolicyPath string
+	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
+	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
+	Themes Themes
+	// ThemeStylesheetPath returns the path, on Origin, of a theme revision's stylesheet
+	// (web.ThemeStylesheetPath); nil leaves the stylesheet URLs and Instance.theme out.
+	ThemeStylesheetPath func(revisionID string) string
 	// Roles lists, grants, and revokes the roles of users for the admin operations
 	// (admin_roles.go).
 	Roles Roles

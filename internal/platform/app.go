@@ -538,7 +538,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			}
 			return cfg.Host
 		},
-		HumanCheck: a.HumanCheckWidget,
+		HumanCheck:      a.HumanCheckWidget,
+		ThemeStylesheet: a.themeStylesheet,
 	}).Register(a)
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -570,6 +571,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
+		// The instance theme (ADR-0059) and the URLs of its stylesheets, which the web handler serves.
+		Themes: a.Instance, ThemeStylesheetPath: web.ThemeStylesheetPath,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
 	}).Register(a)
 	return a, nil
@@ -660,8 +663,11 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		Previews: a.Previews, Messages: a.Messages,
 		// The instance's preview image is read per request, so that a change applies at once.
 		DefaultImage: a.previewImage,
-		NotFound:     func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:       a.Logger,
+		// The instance theme (ADR-0059), read per request so that a saved theme applies at once.
+		Theme:         a.Instance.Theme,
+		ThemeRevision: a.themeRevision,
+		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:        a.Logger,
 	})
 	if err != nil {
 		return err
@@ -680,6 +686,29 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		h.ServeHTTP(w, r)
 	})
 	return nil
+}
+
+// themeRevision returns a theme revision for its stylesheet, and false when there is none.
+func (a *App) themeRevision(ctx context.Context, id string) (domaininstance.ThemeRevision, bool, error) {
+	rev, err := a.Instance.ThemeRevision(ctx, id)
+	if errors.Is(err, instance.ErrNotFound) {
+		return domaininstance.ThemeRevision{}, false, nil
+	}
+	return rev, err == nil, err
+}
+
+// themeStylesheet returns the path of the current theme's stylesheet for the server-rendered
+// pages, or "" when the theme changes nothing or cannot be read (the pages then show the defaults).
+func (a *App) themeStylesheet(ctx context.Context) string {
+	rev, ok, err := a.Instance.Theme(ctx)
+	if err != nil {
+		a.Logger.WarnContext(ctx, "read the instance theme", slog.Any("error", err))
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return web.ThemeStylesheetPath(rev.ID)
 }
 
 // setMedia builds the blob store, the media processor, and the media use cases, and registers

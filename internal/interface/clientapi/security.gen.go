@@ -44,6 +44,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/admin/rules/{id}":                             {Operation: "getInstanceRule", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/signup_blocks":                          {Operation: "listSignupBlocks", Scopes: []string{"admin:read"}},
 	"GET /api/v1/admin/signup_blocks/{id}":                     {Operation: "getSignupBlock", Scopes: []string{"admin:read"}},
+	"GET /api/v1/admin/theme":                                  {Operation: "getAdminTheme", Scopes: []string{"admin:read"}},
 	"GET /api/v1/blocks":                                       {Operation: "listBlocks", Scopes: []string{"read:blocks"}},
 	"GET /api/v1/bookmarks":                                    {Operation: "listBookmarks", Scopes: []string{"read:bookmarks"}},
 	"GET /api/v1/follow_requests":                              {Operation: "listFollowRequests", Scopes: []string{"read:follows"}},
@@ -111,6 +112,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/statuses/{id}/pin":                           {Operation: "pinStatus", Scopes: []string{"write:statuses"}},
 	"PUT /api/v1/admin/accounts/{id}/roles/{role}":             {Operation: "grantAccountRole", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/admin/instance_texts/{key}/{locale}":          {Operation: "setInstanceText", Scopes: []string{"admin:write"}},
+	"PUT /api/v1/admin/theme":                                  {Operation: "setAdminTheme", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/notifications/marker":                         {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 	"PUT /api/v1/statuses/{id}":                                {Operation: "editStatus", Scopes: []string{"write:statuses"}},
 }

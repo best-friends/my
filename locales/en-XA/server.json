@@ -523,6 +523,10 @@
     "defaultMessage": "[Ŧħḗḗ ƥȧȧřȧȧḿḗḗŧḗḗř {name} ħȧȧş ȧȧƞ īƞṽȧȧŀīḓ ṽȧȧŀŭŭḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.invalid_theme": {
+    "defaultMessage": "[Ŧħḗḗ ŧħḗḗḿḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.invalid_token": {
     "defaultMessage": "[Ẏǿǿŭŭř şīɠƞ-īƞ ħȧȧş ḗḗẋƥīřḗḗḓ ǿǿř ẇȧȧş řḗḗṽǿǿķḗḗḓ. Şīɠƞ īƞ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."

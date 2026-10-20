@@ -921,6 +921,13 @@ func (l *Localizer) ServerErrorsInvalidParameter(name string) string {
 	return l.format("server:errors.invalid_parameter", map[string]any{"name": name})
 }
 
+// ServerErrorsInvalidTheme formats "server:errors.invalid_theme". API error title for HTTP 422 when an administrator saves an instance theme that breaks a rule (a token value of the wrong shape or out of range, too little contrast, or too long a custom CSS); theme_errors lists the reasons.
+//
+//	en: The theme cannot be saved.
+func (l *Localizer) ServerErrorsInvalidTheme() string {
+	return l.format("server:errors.invalid_theme", nil)
+}
+
 // ServerErrorsInvalidToken formats "server:errors.invalid_token". API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked.
 //
 //	en: Your sign-in has expired or was revoked. Sign in again.

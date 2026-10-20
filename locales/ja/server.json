@@ -523,6 +523,10 @@
     "defaultMessage": "パラメーター {name} の値が正しくありません。",
     "description": "Detail of an API error (HTTP 400) when a path, query, or header parameter cannot be parsed. {name} is the parameter name, e.g. limit (not translated)."
   },
+  "errors.invalid_theme": {
+    "defaultMessage": "テーマを保存できません。",
+    "description": "API error title for HTTP 422 when an administrator saves an instance theme that breaks a rule (a token value of the wrong shape or out of range, too little contrast, or too long a custom CSS); theme_errors lists the reasons."
+  },
   "errors.invalid_token": {
     "defaultMessage": "ログインの有効期限が切れたか、取り消されました。もう一度ログインしてください。",
     "description": "API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked."

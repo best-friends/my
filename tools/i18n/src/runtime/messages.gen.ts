@@ -2644,6 +2644,8 @@ export interface MessageArgs {
   "server:errors.internal": {};
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
+  /** The theme cannot be saved. */
+  "server:errors.invalid_theme": {};
   /** Your sign-in has expired or was revoked. Sign in again. */
   "server:errors.invalid_token": {};
   /** The value of {name} is invalid. */
