@@ -6,7 +6,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
-import { longDomainAccountFixture, longNameAccountFixture, rtlNameAccountFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
+import { imageFixture, longDomainAccountFixture, longNameAccountFixture, rtlNameAccountFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 
@@ -148,7 +148,7 @@ describe("a status card", () => {
   });
 
   test("shows the author's avatar, and the first letter of the name without one", async () => {
-    const pictured = status(1, { account: { ...timelineStatusFixture.account, avatar_url: "https://my.example/media/avatar/full.png" } });
+    const pictured = status(1, { account: { ...timelineStatusFixture.account, avatar: imageFixture("https://my.example/media/avatar/small.webp") } });
     const plain = status(2);
     server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([pictured, plain]))));
     await renderApp({ path: "/local" });
@@ -156,7 +156,7 @@ describe("a status card", () => {
     const [withAvatar, withoutAvatar] = await screen.findAllByRole("article");
     if (withAvatar === undefined || withoutAvatar === undefined) throw new Error("want two articles");
     // The avatar is decorative (alt=""), and its link is hidden: the name is next to it.
-    expect(within(withAvatar).getByRole("presentation", { hidden: true })).toHaveAttribute("src", "https://my.example/media/avatar/full.png");
+    expect(within(withAvatar).getByRole("presentation", { hidden: true })).toHaveAttribute("src", "https://my.example/media/avatar/small.webp");
     expect(within(withoutAvatar).queryByRole("presentation", { hidden: true })).not.toBeInTheDocument();
     expect(within(withoutAvatar).getByText("B")).toBeInTheDocument();
   });
@@ -201,10 +201,11 @@ describe("a status card", () => {
           state: "ready",
           meta: { focus: { x: 0, y: 0 } },
           variants: {
-            full: { url: "https://my.example/media/full.webp", content_type: "image/webp", width: 1600, height: 900, size: 1000 },
-            thumbnail: { url: "https://my.example/media/thumb.webp", content_type: "image/webp", width: 640, height: 360, size: 100 },
+            small: { url: "https://my.example/media/thumb.webp", content_type: "image/webp", width: 640, height: 360, size: 100 },
+            medium: { url: "https://my.example/media/medium.webp", content_type: "image/webp", width: 1600, height: 900, size: 500 },
+            large: { url: "https://my.example/media/full.jpg", content_type: "image/jpeg", width: 1600, height: 900, size: 1000 },
           },
-          url: "https://my.example/media/full.webp",
+          url: "https://my.example/media/full.jpg",
           preview_url: "https://my.example/media/thumb.webp",
         },
       ],

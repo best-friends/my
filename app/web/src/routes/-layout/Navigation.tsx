@@ -233,7 +233,7 @@ function ViewerLink() {
         variant="navigation"
         className="mx-2 mt-auto mb-2 hidden min-h-12 min-w-0 gap-3 rounded-lg px-3 py-2 font-normal text-fg data-hovered:bg-surface-sunken lg:flex"
       >
-        <Avatar src={account.avatar_url} name={name} size="sm" decorative />
+        <Avatar src={account.avatar?.small.url} name={name} size="sm" decorative />
         {/* The display name and the handle a line each (the sidebar is no container), as a post's author shows them. */}
         <PostCardAuthor name={name} handle={handleOf(account.acct)} />
       </Link>

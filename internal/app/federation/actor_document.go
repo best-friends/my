@@ -3,9 +3,47 @@
 package federation
 
 import (
+	"context"
+	"fmt"
+
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/domain/federation"
 )
+
+// ProfileImages returns the images that accounts show as their own, keyed by ref, leaving out
+// the files that cannot be shown; (*appcontent.MediaService).Images is one.
+type ProfileImages func(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error)
+
+// ActorImages are the avatar and header of an actor's document, nil when it has none.
+type ActorImages struct {
+	Icon, Image *federation.ImageDocument
+}
+
+// LocalActorImages reads the avatar and header of a local actor through images, as their large
+// variants: moving for an animation, which the receiving servers make still versions of
+// (ADR-0054 §5). A nil images reads none.
+func LocalActorImages(ctx context.Context, images ProfileImages, a appaccount.Actor) (ActorImages, error) {
+	p := a.Profile
+	if images == nil || p == nil || p.AvatarMediaID == "" && p.HeaderMediaID == "" {
+		return ActorImages{}, nil
+	}
+	avatar := appcontent.ImageRef{AccountID: a.Account.ID, MediaID: p.AvatarMediaID}
+	header := appcontent.ImageRef{AccountID: a.Account.ID, MediaID: p.HeaderMediaID}
+	found, err := images(ctx, []appcontent.ImageRef{avatar, header})
+	if err != nil {
+		return ActorImages{}, fmt.Errorf("federation: the images of %s: %w", a.Account.ID, err)
+	}
+	doc := func(ref appcontent.ImageRef) *federation.ImageDocument {
+		img, ok := found[ref]
+		if !ok || ref.MediaID == "" {
+			return nil
+		}
+		v := img.Primary()
+		return &federation.ImageDocument{Type: federation.ImageType, MediaType: v.ContentType, URL: v.URL}
+	}
+	return ActorImages{Icon: doc(avatar), Image: doc(header)}, nil
+}
 
 // Collections of a local actor, the last path segment under {actor}/ (ADR-0018).
 const (
@@ -26,8 +64,9 @@ func ProfileURL(host, username string) string { return "https://" + host + "/@" 
 // LocalActorDocument returns the document of a local actor served on host: the answer to a GET
 // of its id (federation.md §10) and the object of the Update its profile revisions send
 // (§7.1). The instance actor's document is the minimal one that signs the instance's requests;
-// its preferredUsername is instanceUsername.
-func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string) federation.ActorDocument {
+// its preferredUsername is instanceUsername. images are the actor's avatar and header
+// (LocalActorImages).
+func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string, images ActorImages) federation.ActorDocument {
 	id := federation.IRI(a.Account.URI)
 	doc := federation.ActorDocument{
 		Context:    federation.LDContext(),
@@ -61,6 +100,7 @@ func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string
 		doc.Name, doc.Summary = &p.DisplayName, &p.NoteHTML
 		doc.ManuallyApprovesFollowers = p.Locked
 		doc.Discoverable, doc.Indexable = &p.Discoverable, &p.Indexable
+		doc.Icon, doc.Image = images.Icon, images.Image
 		for _, f := range p.Fields {
 			doc.Attachment = append(doc.Attachment, federation.PropertyValue{Type: "PropertyValue", Name: f.Name, Value: f.ValueHTML})
 		}

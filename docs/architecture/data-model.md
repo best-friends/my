@@ -770,17 +770,22 @@ flowchart LR
 | `media_files` | リソース | `id`, `owner_account_id`, `origin`（`enum(upload, remote)`）, `created_at` | インデックス `(owner_account_id, id)` |
 | `uploaded_media` | リソース（部分型） | `media_id`（PK）, `blob_key`, `content_type`, `file_size`（`bigint`） | |
 | `remote_media` | リソース（部分型） | `media_id`（PK）, `owner_account_id`（`media_files` の値を写す）, `remote_url`, `declared_content_type`（NULL 可。AP の `mediaType`）, `declared_media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height`（NULL 可）, `blurhash`（NULL 可）, `focus_x` / `focus_y`（`real`、-1.0〜1.0、NULL 可。範囲外の宣言は取り込み時に丸める）, `description`（`text`、NULL 可） | 一意 `(owner_account_id, remote_url)`。受信した文書が宣言した値で、ファイルは取得しない（[federation.md §9](federation.md#9-リモートメディア)） |
-| `media_processing_results` | イベント | `id`, `media_id`, `outcome`（`enum(ready, failed)`）, `media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height` / `duration_ms`（NULL 可）, `blurhash`（NULL 可）, `processed_at` | インデックス `(media_id, id DESC)`。最新行が現在の処理結果 |
-| `media_variants` | イベント（結果の子） | `result_id`, `kind`（`enum(full, thumbnail)`）, `blob_key`, `content_type`, `file_size`（`bigint`）, `width` / `height`（`int`） | PK `(result_id, kind)` |
+| `media_processing_results` | イベント | `id`, `media_id`, `purpose`（`enum(attachment, avatar, header, emoji)`）, `outcome`（`enum(ready, failed)`）, `media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height` / `duration_ms`（NULL 可）, `blurhash`（NULL 可）, `processed_at` | インデックス `(media_id, id DESC)`。最新行が現在の処理結果 |
+| `media_variants` | イベント（結果の子） | `result_id`, `size`（`enum(small, medium, large)`）, `motion`（`enum(still, animated)`）, `blob_key`, `content_type`, `file_size`（`bigint`）, `width` / `height`（`int`） | PK `(result_id, size, motion)`（[ADR-0054](../adr/0054-media-variants-video-audio.md)） |
 | `media_focus` | 現在値 | `media_id`（PK）, `focus_x` / `focus_y`（`real`、-1.0〜1.0） | 行がなければ中央 |
 | `media_descriptions` | 現在値 | `media_id`（PK）, `description`（`text`、空でない、1,500 文字まで） | 行がなければ説明なし。投稿が添付するときに `status_revision_attachments.description` へ写す |
 | `remote_media_cache` | 現在値（キャッシュ） | `url`（PK）, `blob_key`（`remote/{url の SHA-256}`）, `content_type`（中身で判定した形式）, `file_size`（`bigint`）, `fetched_at`, `expires_at`, `last_accessed_at`（1 時間単位で更新） | FR-409, NFR-COST-4。インデックス `(expires_at)`, `(last_accessed_at)`。メディアプロキシが書き、`media.cleanup_remote` が期限切れと容量超過の分を消す（federation.md §9） |
 
 - アップロードは同期で受け付けます。形式は中身から判定し（申告された `Content-Type` とファイル名は信用しない）、サイズと寸法の上限は全体をデコードする前にヘッダで検査します（ADR-0019 §8）。
   `uploaded_media.content_type` は判定した形式で、`blob_key`（`uploads/<id>`）は受け取ったままの非公開のファイルです。
-- 処理はジョブ `media.process` が非同期に行います。再エンコードでメタデータ（EXIF の位置情報など）を落とした `media_variants` を公開のキー（`media/<id>/full.<ext>`, `media/<id>/thumbnail.<ext>`）に書き、結果を記録してから受け取ったままのファイルを Blob から削除します（位置情報を残さない）。
-  ジョブは冪等です。結果のあるファイルは受け取ったままのファイルの削除だけを繰り返し、消去済みのファイルは何もしません。処理できない中身は `outcome = failed`（版なし）の結果として記録します。
-- `width` / `height` は EXIF の向きを適用した元画像の寸法です。`media_variants` の寸法は各版の実寸です。
+- 処理はジョブ `media.process` が非同期に行います。アップロードの用途（`purpose`。API の `MediaUpload.purpose`、既定 `attachment`）の大きさで、再エンコードでメタデータ（EXIF の位置情報など）を落とした `media_variants` を作り（[ADR-0054](../adr/0054-media-variants-video-audio.md) §1〜§3）、
+  処理結果ごとの公開のキー（`media/<id>/<result_id>/<size>.<ext>`、アニメーションの動く版は `media/<id>/<result_id>/<size>-animated.<ext>`）に書き、結果を記録してから受け取ったままのファイルを Blob から削除します（位置情報を残さない）。
+  キーは処理結果を含むので同じキーが別の中身を指すことはなく、`Cache-Control: public, max-age=31536000, immutable` で配ります。
+  - 静止版は `small` / `medium` / `large` の 3 つです。`large` は不透明なら JPEG、透過があれば PNG で、`small` / `medium` は WebP です。アニメーション（GIF、アニメーション WebP）は、最初のフレームの静止版と、動く版（`large` は GIF、`small` / `medium` はアニメーション WebP）の 6 つです。
+  - 用途ごとの大きさ: 投稿の画像は面積 640×360 / 1920×1080 / 3840×2160 まで、アイコンは焦点（`media_focus`、なければ中央）に合わせて正方形に切り抜いた 96 / 192 / 400 px、ヘッダーは 750×250 / 1500×500 / 3000×1000 の箱、カスタム絵文字は 64 / 128 / 256 px の箱に収めます。元より大きくはしません。
+  - 別の用途で使う（投稿の画像をアバターにするなど）と、`content.MediaService.CheckProfileImage` が新しい用途の `media.process` を投入し、現在の結果の `large`（アニメーションなら動く版）から処理し直して新しい結果を記録します。それまでは前の結果の版を表示します。古い結果の Blob は残ります。
+  ジョブは冪等です。最新の結果が同じ用途のファイルは受け取ったままのファイルの削除だけを繰り返し、消去済みのファイルは何もしません。初めての処理で処理できない中身は `outcome = failed`（版なし）の結果として記録します。処理し直しが失敗したときは記録せず、前の結果が残ります。
+- `width` / `height` は EXIF の向きを適用した元画像の寸法です（処理し直しても元の寸法を写す）。`media_variants` の寸法は各版の実寸です。
 - 未添付のアップロードを読めるのも、説明（`media_descriptions`）と焦点（`media_focus`）を変えられるのも、アップロードした本人だけです。
   版が添付したあとは説明を版の `status_revision_attachments.description` で持つので、ファイル単体の説明・焦点は変えられません（投稿を編集して直す）。
 - 未添付のアップロード（どの版からも参照されず、`account_profile_revisions` のアバター・ヘッダーにも使われていない `media_files`）は、

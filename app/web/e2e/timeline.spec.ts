@@ -4,7 +4,7 @@
 // timeline operations itself with pages shaped like api/openapi.yaml's StatusPage.
 import type { Page } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, imageVariants, test } from "./fixtures";
 
 type Status = components["schemas"]["Status"];
 type StatusPage = components["schemas"]["StatusPage"];
@@ -64,7 +64,7 @@ function firstPage(): StatusPage {
       status(2, { account: { ...account, username: "carol", acct: "carol", display_name: "Carol" }, content: "", boost: status(20) }),
       status(3, { spoiler_text: "Food", sensitive: true, media_attachments: [media("m1", "A cake")] }),
       status(4, { media_attachments: [media("m2", "A blue square"), media("m3", undefined)] }),
-      status(5, { account: { ...account, avatar_url: avatar } }),
+      status(5, { account: { ...account, avatar: imageVariants(avatar) } }),
     ],
     next_cursor: "page-2",
   };
@@ -77,7 +77,7 @@ function media(id: string, description: string | undefined): Status["media_attac
     type: "image",
     state: "ready",
     meta: { focus: { x: 0, y: 0 } },
-    variants: { full: variant, thumbnail: variant },
+    variants: { small: variant, medium: variant, large: variant },
     url: picture,
     preview_url: picture,
     ...(description === undefined ? {} : { description }),

@@ -161,11 +161,20 @@ func NewMediaProxy(d ProxyDeps) (*MediaProxy, error) {
 	return &MediaProxy{d: d}, nil
 }
 
-// proxyVariants are the variants the proxy serves: the remote file itself.
-var proxyVariants = map[content.MediaVariantKind]bool{content.VariantFull: true}
+// ProxyVariant names what the media proxy serves of a remote media file.
+type ProxyVariant string
+
+// Proxy variants.
+const (
+	// ProxyFull is the remote file itself.
+	ProxyFull ProxyVariant = "full"
+)
+
+// proxyVariants are the variants the proxy serves.
+var proxyVariants = map[ProxyVariant]bool{ProxyFull: true}
 
 // URL returns the signed proxy URL of a remote media file's variant.
-func (p *MediaProxy) URL(mediaID string, variant content.MediaVariantKind) string {
+func (p *MediaProxy) URL(mediaID string, variant ProxyVariant) string {
 	return p.d.BaseURL + ProxyPathPrefix + url.PathEscape(mediaID) + "/" + url.PathEscape(string(variant)) +
 		"?sig=" + p.sign(p.d.Keys[0], mediaID, string(variant))
 }
@@ -214,7 +223,7 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if !p.verify(mediaID, variant, sig) {
 		return nil, notFound("bad signature")
 	}
-	if !proxyVariants[content.MediaVariantKind(variant)] {
+	if !proxyVariants[ProxyVariant(variant)] {
 		return nil, notFound("unknown variant")
 	}
 	m, err := p.d.Repository.FindRemoteMedia(ctx, mediaID)

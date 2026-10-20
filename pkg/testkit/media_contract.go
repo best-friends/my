@@ -14,14 +14,20 @@ import (
 	"strings"
 	"testing"
 
+	dwebp "github.com/deepteams/webp"
+	"github.com/deepteams/webp/animation"
+	xwebp "golang.org/x/image/webp"
+
 	"github.com/best-friends/my/internal/app/media"
 )
 
-// MediaProcessorContract verifies an adapter of the MediaProcessor port (ADR-0019 §8): format
-// detection from content alone, rejection of unsupported, spoofed, oversized, and
-// decompression-bomb files, removal of metadata (EXIF and GPS, PNG text, GIF comments), the
-// EXIF orientation, resizing within the variant sizes, the output formats, a valid blurhash,
-// repeatable output, and cancellation.
+// MediaProcessorContract verifies an adapter of the MediaProcessor port (ADR-0019 §8,
+// ADR-0054): format detection from content alone, rejection of unsupported, spoofed, oversized,
+// and decompression-bomb files, removal of metadata (EXIF and GPS, PNG text, GIF comments,
+// WebP EXIF), the EXIF orientation, the small, medium, and large variants within the boxes of
+// each purpose (the avatars cropped to squares around the focal point), the still and moving
+// variants of animations, the output formats, a valid blurhash, repeatable output, and
+// cancellation.
 func MediaProcessorContract(t *testing.T, p media.Processor) {
 	t.Helper()
 	cases := []struct {
@@ -35,8 +41,10 @@ func MediaProcessorContract(t *testing.T, p media.Processor) {
 		{"RejectsTooManyFrames", mediaRejectsTooManyFrames},
 		{"StripsMetadata", mediaStripsMetadata},
 		{"AppliesTheEXIFOrientation", mediaAppliesOrientation},
-		{"ResizesWithinTheSizes", mediaResizes},
+		{"ResizesWithinTheBoxesOfThePurpose", mediaResizes},
+		{"CropsAvatarsAroundTheFocus", mediaCropsAvatars},
 		{"WritesTheDocumentedFormats", mediaWritesFormats},
+		{"MakesStillAndMovingVariantsOfAnimations", mediaAnimates},
 		{"ComputesABlurhash", mediaComputesBlurhash},
 		{"GivesTheSameOutputForTheSameInput", mediaIsDeterministic},
 		{"StopsOnCancelledContext", mediaStopsOnCancel},
@@ -48,11 +56,28 @@ func MediaProcessorContract(t *testing.T, p media.Processor) {
 
 func mediaProcess(t *testing.T, p media.Processor, data []byte) media.Output {
 	t.Helper()
-	out, err := p.Process(t.Context(), data, media.Limits{}, media.Sizes{})
+	return mediaProcessFor(t, p, data, media.Sizes{}, media.Request{})
+}
+
+func mediaProcessFor(t *testing.T, p media.Processor, data []byte, sizes media.Sizes, req media.Request) media.Output {
+	t.Helper()
+	out, err := p.Process(t.Context(), data, media.Limits{}, sizes, req)
 	if err != nil {
 		t.Fatalf("Process: %v", err)
 	}
 	return out
+}
+
+// mediaVariants returns every variant of out by name ("still small", "animated large").
+func mediaVariants(out media.Output) map[string]media.Variant {
+	all := map[string]media.Variant{}
+	for _, size := range media.AllSizes {
+		all["still "+string(size)] = out.Still.Variant(size)
+		if out.Animated != nil {
+			all["animated "+string(size)] = out.Animated.Variant(size)
+		}
+	}
+	return all
 }
 
 func mediaDetectsFormats(t *testing.T, p media.Processor) {
@@ -69,6 +94,8 @@ func mediaDetectsFormats(t *testing.T, p media.Processor) {
 		{"webp lossy", FixtureWebPLossy, media.FormatWebP, 1, 1, 1},
 		{"webp lossless", FixtureWebPLossless, media.FormatWebP, 1, 1, 1},
 		{"webp alpha", FixtureWebPAlpha, media.FormatWebP, 1, 1, 1},
+		{"webp animated with one frame", FixtureWebPAnimated, media.FormatWebP, 1, 1, 1},
+		{"webp animation", FixtureWebPAnimation(16, 8, 3), media.FormatWebP, 16, 8, 3},
 	} {
 		probe, err := p.Inspect(t.Context(), tc.data, media.Limits{})
 		if err != nil {
@@ -84,26 +111,27 @@ func mediaDetectsFormats(t *testing.T, p media.Processor) {
 
 func mediaRejectsUnsupported(t *testing.T, p media.Processor) {
 	for name, data := range map[string][]byte{
-		"empty":         nil,
-		"svg":           []byte(`<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>`),
-		"svg with xml":  []byte(`<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>`),
-		"html":          []byte("<!DOCTYPE html><script>alert(1)</script>"),
-		"pdf":           []byte("%PDF-1.7\n"),
-		"riff wave":     []byte("RIFF\x24\x00\x00\x00WAVEfmt "),
-		"text":          []byte("just text"),
-		"animated webp": FixtureWebPAnimated,
+		"empty":        nil,
+		"svg":          []byte(`<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>`),
+		"svg with xml": []byte(`<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>`),
+		"html":         []byte("<!DOCTYPE html><script>alert(1)</script>"),
+		"pdf":          []byte("%PDF-1.7\n"),
+		"riff wave":    []byte("RIFF\x24\x00\x00\x00WAVEfmt "),
+		"text":         []byte("just text"),
 		// HTML after a JPEG signature: detected as JPEG, but it does not decode.
-		"spoofed jpeg": []byte("\xFF\xD8\xFF<html><script>alert(1)</script></html>"),
-		"spoofed png":  []byte("\x89PNG\r\n\x1A\n<script>alert(1)</script>"),
-		"spoofed gif":  []byte("GIF89a<script>alert(1)</script>"),
-		"truncated":    FixtureJPEG(40, 20, 1)[:200],
+		"spoofed jpeg":       []byte("\xFF\xD8\xFF<html><script>alert(1)</script></html>"),
+		"spoofed png":        []byte("\x89PNG\r\n\x1A\n<script>alert(1)</script>"),
+		"spoofed gif":        []byte("GIF89a<script>alert(1)</script>"),
+		"truncated":          FixtureJPEG(40, 20, 1)[:200],
+		"truncated webp":     FixtureWebPAnimation(16, 8, 3)[:60],
+		"webp without frame": FixtureWebPAnimated[:len(FixtureWebPAnimated)-46],
 	} {
 		if _, err := p.Inspect(t.Context(), data, media.Limits{}); !media.Rejected(err) {
-			if _, err := p.Process(t.Context(), data, media.Limits{}, media.Sizes{}); !media.Rejected(err) {
+			if _, err := p.Process(t.Context(), data, media.Limits{}, media.Sizes{}, media.Request{}); !media.Rejected(err) {
 				t.Errorf("%s: Inspect and Process accepted it (Process: %v)", name, err)
 			}
 		}
-		if _, err := p.Process(t.Context(), data, media.Limits{}, media.Sizes{}); !media.Rejected(err) {
+		if _, err := p.Process(t.Context(), data, media.Limits{}, media.Sizes{}, media.Request{}); !media.Rejected(err) {
 			t.Errorf("%s: Process = %v, want a rejection", name, err)
 		}
 	}
@@ -118,7 +146,7 @@ func mediaRejectsOversized(t *testing.T, p media.Processor) {
 	if _, err := p.Inspect(t.Context(), data, limits); !errors.Is(err, media.ErrTooLarge) {
 		t.Errorf("Inspect = %v, want ErrTooLarge", err)
 	}
-	if _, err := p.Process(t.Context(), data, limits, media.Sizes{}); !errors.Is(err, media.ErrTooLarge) {
+	if _, err := p.Process(t.Context(), data, limits, media.Sizes{}, media.Request{}); !errors.Is(err, media.ErrTooLarge) {
 		t.Errorf("Process = %v, want ErrTooLarge", err)
 	}
 	if _, err := p.Inspect(t.Context(), data, media.Limits{MaxBytes: int64(len(data))}); err != nil {
@@ -132,7 +160,7 @@ func mediaRejectsDimensions(t *testing.T, p media.Processor) {
 	if _, err := p.Inspect(t.Context(), bomb, media.Limits{}); !errors.Is(err, media.ErrDimensions) {
 		t.Errorf("bomb: Inspect = %v, want ErrDimensions", err)
 	}
-	if _, err := p.Process(t.Context(), bomb, media.Limits{}, media.Sizes{}); !errors.Is(err, media.ErrDimensions) {
+	if _, err := p.Process(t.Context(), bomb, media.Limits{}, media.Sizes{}, media.Request{}); !errors.Is(err, media.ErrDimensions) {
 		t.Errorf("bomb: Process = %v, want ErrDimensions", err)
 	}
 	// Within the default side limit but over the default pixel limit (8000 × 8000 = 64 MP).
@@ -154,37 +182,41 @@ func mediaRejectsDimensions(t *testing.T, p media.Processor) {
 }
 
 func mediaRejectsTooManyFrames(t *testing.T, p media.Processor) {
-	data := FixtureGIF(16, 8, 3)
-	if _, err := p.Inspect(t.Context(), data, media.Limits{MaxFrames: 2}); !errors.Is(err, media.ErrDimensions) {
-		t.Errorf("frames: Inspect = %v, want ErrDimensions", err)
-	}
-	// The pixel limit covers all frames together: 3 × 128 pixels.
-	if _, err := p.Inspect(t.Context(), data, media.Limits{MaxPixels: 3*128 - 1}); !errors.Is(err, media.ErrDimensions) {
-		t.Errorf("frame pixels: Inspect = %v, want ErrDimensions", err)
-	}
-	if _, err := p.Inspect(t.Context(), data, media.Limits{MaxFrames: 3, MaxPixels: 3 * 128}); err != nil {
-		t.Errorf("at the limits: Inspect = %v", err)
+	for name, data := range map[string][]byte{"gif": FixtureGIF(16, 8, 3), "webp": FixtureWebPAnimation(16, 8, 3)} {
+		if _, err := p.Inspect(t.Context(), data, media.Limits{MaxFrames: 2}); !errors.Is(err, media.ErrDimensions) {
+			t.Errorf("%s frames: Inspect = %v, want ErrDimensions", name, err)
+		}
+		// The pixel limit covers all frames together: 3 × 128 pixels.
+		if _, err := p.Inspect(t.Context(), data, media.Limits{MaxPixels: 3*128 - 1}); !errors.Is(err, media.ErrDimensions) {
+			t.Errorf("%s frame pixels: Inspect = %v, want ErrDimensions", name, err)
+		}
+		if _, err := p.Inspect(t.Context(), data, media.Limits{MaxFrames: 3, MaxPixels: 3 * 128}); err != nil {
+			t.Errorf("%s at the limits: Inspect = %v", name, err)
+		}
 	}
 }
 
 func mediaStripsMetadata(t *testing.T, p media.Processor) {
 	for name, data := range map[string][]byte{
-		"jpeg": FixtureJPEG(64, 48, 1),
-		"png":  FixturePNG(64, 48, false),
-		"gif":  FixtureGIF(64, 48, 2),
+		"jpeg":           FixtureJPEG(64, 48, 1),
+		"png":            FixturePNG(64, 48, false),
+		"gif":            FixtureGIF(64, 48, 2),
+		"webp animation": FixtureWebPAnimation(64, 48, 2),
 	} {
 		if !bytes.Contains(data, []byte(MetadataMarker)) {
 			t.Fatalf("%s: the fixture has no metadata", name)
 		}
-		out := mediaProcess(t, p, data)
-		for vname, v := range map[string]media.Variant{"full": out.Full, "thumbnail": out.Thumbnail} {
-			for _, needle := range []string{MetadataMarker, "Exif\x00", "tEXt", "zTXt", "iTXt", "eXIf", "GPS", "http://ns.adobe.com/xap/"} {
-				if bytes.Contains(v.Data, []byte(needle)) {
-					t.Errorf("%s %s: contains %q", name, vname, needle)
+		for _, purpose := range []media.Purpose{media.PurposeAttachment, media.PurposeAvatar} {
+			out := mediaProcessFor(t, p, data, media.Sizes{}, media.Request{Purpose: purpose})
+			for vname, v := range mediaVariants(out) {
+				for _, needle := range []string{MetadataMarker, "Exif\x00", "tEXt", "zTXt", "iTXt", "eXIf", "EXIF", "XMP ", "ICCP", "GPS", "http://ns.adobe.com/xap/"} {
+					if bytes.Contains(v.Data, []byte(needle)) {
+						t.Errorf("%s %s %s: contains %q", name, purpose, vname, needle)
+					}
 				}
-			}
-			if v.ContentType == "image/jpeg" && hasJPEGSegment(v.Data, 0xE1) {
-				t.Errorf("%s %s: has an APP1 segment", name, vname)
+				if v.ContentType == "image/jpeg" && hasJPEGSegment(v.Data, 0xE1) {
+					t.Errorf("%s %s %s: has an APP1 segment", name, purpose, vname)
+				}
 			}
 		}
 	}
@@ -205,19 +237,30 @@ func hasJPEGSegment(data []byte, marker byte) bool {
 	return false
 }
 
+// webpAnimationFlag reports whether a WebP file is an extended file with the animation flag.
+func webpAnimationFlag(data []byte) bool {
+	return len(data) > 20 && string(data[12:16]) == "VP8X" && data[20]&0x02 != 0
+}
+
+// decodeVariant decodes a variant, the first frame of a moving one, with a decoder other than
+// the encoder's where there is one, and checks its size.
 func decodeVariant(t *testing.T, v media.Variant) image.Image {
 	t.Helper()
 	var (
 		img image.Image
 		err error
 	)
-	switch v.ContentType {
-	case "image/jpeg":
+	switch {
+	case v.ContentType == "image/jpeg":
 		img, err = jpeg.Decode(bytes.NewReader(v.Data))
-	case "image/png":
+	case v.ContentType == "image/png":
 		img, err = png.Decode(bytes.NewReader(v.Data))
-	case "image/gif":
+	case v.ContentType == "image/gif":
 		img, err = gif.Decode(bytes.NewReader(v.Data))
+	case v.ContentType == "image/webp" && webpAnimationFlag(v.Data):
+		img, err = dwebp.Decode(bytes.NewReader(v.Data))
+	case v.ContentType == "image/webp":
+		img, err = xwebp.Decode(bytes.NewReader(v.Data))
 	default:
 		t.Fatalf("unexpected content type %q", v.ContentType)
 	}
@@ -256,73 +299,206 @@ func mediaAppliesOrientation(t *testing.T, p media.Processor) {
 			t.Errorf("orientation %d: %d×%d, want %d×%d", tc.orientation, out.Width, out.Height, tc.w, tc.h)
 			continue
 		}
-		img := decodeVariant(t, out.Full)
-		if !near(img.At(tc.firstAt.X, tc.firstAt.Y), tc.first) || !near(img.At(tc.secAt.X, tc.secAt.Y), tc.second) {
-			t.Errorf("orientation %d: colors at %v and %v are %v and %v", tc.orientation, tc.firstAt, tc.secAt,
-				img.At(tc.firstAt.X, tc.firstAt.Y), img.At(tc.secAt.X, tc.secAt.Y))
+		for _, size := range media.AllSizes {
+			img := decodeVariant(t, out.Still.Variant(size))
+			if !near(img.At(tc.firstAt.X, tc.firstAt.Y), tc.first) || !near(img.At(tc.secAt.X, tc.secAt.Y), tc.second) {
+				t.Errorf("orientation %d %s: colors at %v and %v are %v and %v", tc.orientation, size, tc.firstAt, tc.secAt,
+					img.At(tc.firstAt.X, tc.firstAt.Y), img.At(tc.secAt.X, tc.secAt.Y))
+			}
 		}
 	}
 }
 
 func mediaResizes(t *testing.T, p media.Processor) {
-	sizes := media.Sizes{FullMaxPixels: 100 * 75, ThumbnailMaxPixels: 40 * 30}
-	out, err := p.Process(t.Context(), FixturePNG(400, 300, false), media.Limits{}, sizes)
-	if err != nil {
-		t.Fatalf("Process: %v", err)
+	sizes := media.Sizes{
+		Attachment: media.Boxes{Small: media.Box{MaxPixels: 40 * 30}, Medium: media.Box{MaxPixels: 80 * 60}, Large: media.Box{MaxPixels: 100 * 75}},
+		Header:     media.Boxes{Small: media.Box{Width: 30, Height: 10}, Medium: media.Box{Width: 60, Height: 20}, Large: media.Box{Width: 120, Height: 40}},
 	}
-	if out.Width != 400 || out.Height != 300 {
-		t.Errorf("source size %d×%d, want 400×300", out.Width, out.Height)
-	}
-	check := func(name string, v media.Variant, maxPixels int64) {
+	check := func(name string, v media.Variant, w, h int) {
+		t.Helper()
 		decodeVariant(t, v)
-		if int64(v.Width)*int64(v.Height) > maxPixels {
-			t.Errorf("%s: %d×%d exceeds %d pixels", name, v.Width, v.Height, maxPixels)
-		}
-		if ratio := float64(v.Width) / float64(v.Height); ratio < 1.25 || ratio > 1.42 {
-			t.Errorf("%s: %d×%d does not keep the 4:3 aspect ratio", name, v.Width, v.Height)
-		}
-		if int64(v.Width)*int64(v.Height) < maxPixels*8/10 {
-			t.Errorf("%s: %d×%d is much smaller than %d pixels", name, v.Width, v.Height, maxPixels)
+		if v.Width != w || v.Height != h {
+			t.Errorf("%s: %d×%d, want %d×%d", name, v.Width, v.Height, w, h)
 		}
 	}
-	check("full", out.Full, sizes.FullMaxPixels)
-	check("thumbnail", out.Thumbnail, sizes.ThumbnailMaxPixels)
+	for _, src := range []struct {
+		name string
+		data []byte
+	}{{"png", FixturePNG(400, 300, false)}, {"gif", FixtureGIF(400, 300, 2)}, {"webp animation", FixtureWebPAnimation(400, 300, 2)}} {
+		out := mediaProcessFor(t, p, src.data, sizes, media.Request{Purpose: media.PurposeAttachment})
+		if out.Width != 400 || out.Height != 300 {
+			t.Errorf("%s: source size %d×%d, want 400×300", src.name, out.Width, out.Height)
+		}
+		// Within an area, the aspect ratio is kept and the pixels stay under the bound.
+		check(src.name+" attachment small", out.Still.Small, 40, 30)
+		check(src.name+" attachment medium", out.Still.Medium, 80, 60)
+		check(src.name+" attachment large", out.Still.Large, 100, 75)
+		if out.Animated != nil {
+			check(src.name+" attachment animated small", out.Animated.Small, 40, 30)
+			check(src.name+" attachment animated medium", out.Animated.Medium, 80, 60)
+			check(src.name+" attachment animated large", out.Animated.Large, 100, 75)
+		}
+		// Within a box, the aspect ratio is kept and nothing is cropped.
+		out = mediaProcessFor(t, p, src.data, sizes, media.Request{Purpose: media.PurposeHeader})
+		check(src.name+" header small", out.Still.Small, 13, 10)
+		check(src.name+" header medium", out.Still.Medium, 27, 20)
+		check(src.name+" header large", out.Still.Large, 53, 40)
+	}
 
-	small := mediaProcess(t, p, FixturePNG(30, 10, false))
-	if small.Full.Width != 30 || small.Full.Height != 10 || small.Thumbnail.Width != 30 || small.Thumbnail.Height != 10 {
-		t.Errorf("a small image was resized: full %d×%d, thumbnail %d×%d", small.Full.Width, small.Full.Height, small.Thumbnail.Width, small.Thumbnail.Height)
+	// The default boxes of ADR-0054 §1.
+	out := mediaProcessFor(t, p, FixturePNG(1000, 500, false), media.Sizes{}, media.Request{Purpose: media.PurposeAvatar})
+	check("default avatar small", out.Still.Small, 96, 96)
+	check("default avatar medium", out.Still.Medium, 192, 192)
+	check("default avatar large", out.Still.Large, 400, 400)
+	out = mediaProcessFor(t, p, FixturePNG(1000, 500, false), media.Sizes{}, media.Request{Purpose: media.PurposeEmoji})
+	check("default emoji small", out.Still.Small, 64, 32)
+	check("default emoji large", out.Still.Large, 256, 128)
+	out = mediaProcessFor(t, p, FixturePNG(4000, 1000, false), media.Sizes{}, media.Request{Purpose: media.PurposeHeader})
+	check("default header small", out.Still.Small, 750, 188)
+	check("default header large", out.Still.Large, 3000, 750)
+
+	// A source smaller than the boxes is not enlarged; an avatar is still cropped square.
+	small := mediaProcessFor(t, p, FixturePNG(30, 10, false), sizes, media.Request{})
+	for name, v := range mediaVariants(small) {
+		check("small source "+name, v, 30, 10)
+	}
+	small = mediaProcessFor(t, p, FixturePNG(30, 10, false), media.Sizes{}, media.Request{Purpose: media.PurposeAvatar})
+	for name, v := range mediaVariants(small) {
+		check("small avatar "+name, v, 10, 10)
+	}
+}
+
+func mediaCropsAvatars(t *testing.T, p media.Processor) {
+	// The source is 200 × 50: left half FixtureLeft, right half FixtureRight. A square of 50
+	// around the left edge shows only the left half, one around the right edge only the right.
+	for _, tc := range []struct {
+		name   string
+		focusX float64
+		want   color.NRGBA
+	}{{"left", -1, FixtureLeft}, {"right", 1, FixtureRight}, {"left quarter", -0.5, FixtureLeft}} {
+		for name, data := range map[string][]byte{"png": FixturePNG(200, 50, false), "gif": FixtureGIF(200, 50, 2)} {
+			out := mediaProcessFor(t, p, data, media.Sizes{}, media.Request{Purpose: media.PurposeAvatar, FocusX: tc.focusX})
+			for vname, v := range mediaVariants(out) {
+				if strings.HasPrefix(vname, "animated") {
+					continue // the later frames are plain colors
+				}
+				img := decodeVariant(t, v)
+				if v.Width != 50 || v.Height != 50 {
+					t.Errorf("%s %s %s: %d×%d, want 50×50", tc.name, name, vname, v.Width, v.Height)
+				}
+				for _, pt := range []image.Point{{2, 2}, {25, 25}, {47, 47}} {
+					if c := img.At(pt.X, pt.Y); !near(c, tc.want) {
+						t.Errorf("%s %s %s: %v at %v, want %v", tc.name, name, vname, c, pt, tc.want)
+					}
+				}
+			}
+		}
+	}
+	// With the focus in the center, the square shows both halves.
+	img := decodeVariant(t, mediaProcessFor(t, p, FixturePNG(200, 50, false), media.Sizes{}, media.Request{Purpose: media.PurposeAvatar}).Still.Large)
+	if !near(img.At(5, 25), FixtureLeft) || !near(img.At(45, 25), FixtureRight) {
+		t.Errorf("centered: %v and %v at the edges", img.At(5, 25), img.At(45, 25))
 	}
 }
 
 func mediaWritesFormats(t *testing.T, p media.Processor) {
+	ext := map[string]string{"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp"}
 	for _, tc := range []struct {
-		name      string
-		data      []byte
-		full      string
-		thumbnail string
+		name     string
+		data     []byte
+		large    string
+		animated bool
 	}{
-		{"jpeg", FixtureJPEG(40, 20, 1), "image/jpeg", "image/jpeg"},
-		{"png", FixturePNG(40, 20, false), "image/png", "image/jpeg"},
-		{"png with alpha", FixturePNG(40, 20, true), "image/png", "image/png"},
-		{"webp lossy", FixtureWebPLossy, "image/jpeg", "image/jpeg"},
-		{"webp alpha", FixtureWebPAlpha, "image/png", "image/png"},
-		{"gif", FixtureGIF(16, 8, 3), "image/gif", "image/jpeg"},
+		{"jpeg", FixtureJPEG(40, 20, 1), "image/jpeg", false},
+		{"png", FixturePNG(40, 20, false), "image/jpeg", false},
+		{"png with alpha", FixturePNG(40, 20, true), "image/png", false},
+		{"webp lossy", FixtureWebPLossy, "image/jpeg", false},
+		{"webp lossless, transparent", FixtureWebPLossless, "image/png", false},
+		{"webp alpha", FixtureWebPAlpha, "image/png", false},
+		{"webp animated with one transparent frame", FixtureWebPAnimated, "image/png", false},
+		{"gif with one frame", FixtureGIF(16, 8, 1), "image/jpeg", false},
+		{"gif", FixtureGIF(16, 8, 3), "image/jpeg", true},
+		{"webp animation", FixtureWebPAnimation(16, 8, 3), "image/jpeg", true},
 	} {
 		out := mediaProcess(t, p, tc.data)
-		if out.Full.ContentType != tc.full || out.Thumbnail.ContentType != tc.thumbnail {
-			t.Errorf("%s: full %s, thumbnail %s; want %s, %s", tc.name, out.Full.ContentType, out.Thumbnail.ContentType, tc.full, tc.thumbnail)
+		want := map[media.Size]string{media.SizeSmall: "image/webp", media.SizeMedium: "image/webp", media.SizeLarge: tc.large}
+		for _, size := range media.AllSizes {
+			v := out.Still.Variant(size)
+			if v.ContentType != want[size] || v.Extension != ext[v.ContentType] {
+				t.Errorf("%s: still %s is %s (.%s), want %s", tc.name, size, v.ContentType, v.Extension, want[size])
+				continue
+			}
+			if v.ContentType == "image/webp" && webpAnimationFlag(v.Data) {
+				t.Errorf("%s: still %s is an animated WebP", tc.name, size)
+			}
+			decodeVariant(t, v)
+		}
+		if (out.Animated != nil) != tc.animated {
+			t.Errorf("%s: moving variants %v, want %v", tc.name, out.Animated != nil, tc.animated)
+		}
+	}
+	// Transparency gives the small and medium variants an alpha channel.
+	out := mediaProcess(t, p, FixturePNG(40, 20, true))
+	for _, v := range []media.Variant{out.Still.Small, out.Still.Medium} {
+		if _, _, _, a := decodeVariant(t, v).At(v.Width-1, 0).RGBA(); a == 0xFFFF || a == 0 {
+			t.Errorf("%d×%d WebP: alpha %d in the half transparent corner", v.Width, v.Height, a)
+		}
+	}
+}
+
+func mediaAnimates(t *testing.T, p media.Processor) {
+	for name, data := range map[string][]byte{"gif": FixtureGIF(16, 8, 3), "webp": FixtureWebPAnimation(16, 8, 3)} {
+		out := mediaProcess(t, p, data)
+		if out.Animated == nil {
+			t.Errorf("%s: no moving variants", name)
 			continue
 		}
-		ext := map[string]string{"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif"}
-		if out.Full.Extension != ext[tc.full] || out.Thumbnail.Extension != ext[tc.thumbnail] {
-			t.Errorf("%s: extensions %q, %q", tc.name, out.Full.Extension, out.Thumbnail.Extension)
+		// The still variants show the first frame.
+		img := decodeVariant(t, out.Still.Large)
+		if !near(img.At(2, 4), FixtureLeft) || !near(img.At(13, 4), FixtureRight) {
+			t.Errorf("%s: the still variant is not the first frame: %v, %v", name, img.At(2, 4), img.At(13, 4))
 		}
-		decodeVariant(t, out.Full)
-		decodeVariant(t, out.Thumbnail)
+		for _, size := range []media.Size{media.SizeSmall, media.SizeMedium} {
+			v := out.Animated.Variant(size)
+			if v.ContentType != "image/webp" || v.Extension != "webp" || !webpAnimationFlag(v.Data) {
+				t.Errorf("%s: moving %s is %s, not an animated WebP", name, size, v.ContentType)
+				continue
+			}
+			decodeVariant(t, v)
+			anim, err := animation.DecodeBytes(v.Data)
+			if err != nil || len(anim.Frames) == 0 {
+				t.Errorf("%s: moving %s: %v", name, size, err)
+				continue
+			}
+			if err := anim.DecodeFrames(); err != nil {
+				t.Errorf("%s: moving %s: %v", name, size, err)
+			}
+			dec, err := animation.NewAnimDecoder(anim)
+			if err != nil {
+				t.Fatalf("%s: moving %s: %v", name, size, err)
+			}
+			frames := 0
+			for dec.HasNext() {
+				if _, _, err := dec.NextFrame(); err != nil {
+					t.Fatalf("%s: moving %s frame %d: %v", name, size, frames, err)
+				}
+				frames++
+			}
+			if frames != 3 || anim.LoopCount != 0 {
+				t.Errorf("%s: moving %s has %d frames looping %d times, want 3 forever", name, size, frames, anim.LoopCount)
+			}
+		}
+		large := out.Animated.Large
+		g, err := gif.DecodeAll(bytes.NewReader(large.Data))
+		if large.ContentType != "image/gif" || large.Extension != "gif" || err != nil || len(g.Image) != 3 || g.LoopCount != 0 {
+			t.Errorf("%s: moving large is %s with %d frames (%v), want a GIF of 3 frames looping forever", name, large.ContentType, len(g.Image), err)
+		}
 	}
-	g, err := gif.DecodeAll(bytes.NewReader(mediaProcess(t, p, FixtureGIF(16, 8, 3)).Full.Data))
-	if err != nil || len(g.Image) != 3 {
-		t.Errorf("gif: the full variant has %v frames (%v), want 3", len(g.Image), err)
+	// A resized GIF keeps its frames, delays, and loop count.
+	out := mediaProcessFor(t, p, FixtureGIF(64, 32, 3), media.Sizes{}, media.Request{Purpose: media.PurposeAvatar})
+	g, err := gif.DecodeAll(bytes.NewReader(out.Animated.Large.Data))
+	if err != nil || len(g.Image) != 3 || g.Delay[1] != 10 || g.Config.Width != 32 || g.Config.Height != 32 {
+		t.Errorf("resized gif: %v frames, %v, %v", len(g.Image), g, err)
 	}
 }
 
@@ -345,9 +521,19 @@ func mediaComputesBlurhash(t *testing.T, p media.Processor) {
 }
 
 func mediaIsDeterministic(t *testing.T, p media.Processor) {
-	for name, data := range map[string][]byte{"jpeg": FixtureJPEG(64, 48, 6), "png": FixturePNG(64, 48, true), "gif": FixtureGIF(16, 8, 2)} {
-		a, b := mediaProcess(t, p, data), mediaProcess(t, p, data)
-		if !bytes.Equal(a.Full.Data, b.Full.Data) || !bytes.Equal(a.Thumbnail.Data, b.Thumbnail.Data) || a.Blurhash != b.Blurhash {
+	for name, data := range map[string][]byte{
+		"jpeg": FixtureJPEG(64, 48, 6), "png": FixturePNG(64, 48, true), "gif": FixtureGIF(16, 8, 2),
+		"webp animation": FixtureWebPAnimation(16, 8, 2),
+	} {
+		req := media.Request{Purpose: media.PurposeAvatar, FocusX: 0.3}
+		a, b := mediaProcessFor(t, p, data, media.Sizes{}, req), mediaProcessFor(t, p, data, media.Sizes{}, req)
+		va, vb := mediaVariants(a), mediaVariants(b)
+		for k, v := range va {
+			if !bytes.Equal(v.Data, vb[k].Data) {
+				t.Errorf("%s: two runs gave different %s variants", name, k)
+			}
+		}
+		if len(va) != len(vb) || a.Blurhash != b.Blurhash {
 			t.Errorf("%s: two runs gave different output", name)
 		}
 	}
@@ -356,7 +542,7 @@ func mediaIsDeterministic(t *testing.T, p media.Processor) {
 func mediaStopsOnCancel(t *testing.T, p media.Processor) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	_, err := p.Process(ctx, FixtureJPEG(40, 20, 1), media.Limits{}, media.Sizes{})
+	_, err := p.Process(ctx, FixtureJPEG(40, 20, 1), media.Limits{}, media.Sizes{}, media.Request{})
 	if err == nil || media.Rejected(err) {
 		t.Errorf("Process with a cancelled context = %v, want the context's error", err)
 	}

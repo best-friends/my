@@ -59,6 +59,16 @@
   ],
   "endpoints": {
     "sharedInbox": "https://social.example.org/ap/inbox"
+  },
+  "icon": {
+    "type": "Image",
+    "mediaType": "image/gif",
+    "url": "https://files.social.example.org/media/a/large-animated.gif"
+  },
+  "image": {
+    "type": "Image",
+    "mediaType": "image/jpeg",
+    "url": "https://files.social.example.org/media/h/large.jpg"
   }
 }
 

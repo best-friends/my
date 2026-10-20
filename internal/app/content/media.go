@@ -88,8 +88,12 @@ type MediaDeps struct {
 // An upload is checked and stored synchronously: the content must be an accepted format
 // detected from its bytes, within the size and dimension limits. The file as received stays in
 // blob storage under a private key (uploads/<id>) until the media.process job has re-encoded
-// it without metadata into public variants (media/<id>/full.<ext> and
-// media/<id>/thumbnail.<ext>); then the job deletes it, so that no location data is kept.
+// it without metadata into public variants for its purpose (ADR-0054): small, medium, and
+// large still ones, and for an animation also moving ones, under keys that name the
+// processing result (media/<id>/<result>/<size>.<ext> and
+// media/<id>/<result>/<size>-animated.<ext>), so that they never change and can be cached for
+// good. Then the job deletes the file as received, so that no location data is kept. Using a
+// file for another purpose processes its large variant again for that purpose.
 type MediaService struct {
 	d MediaDeps
 }
@@ -126,7 +130,13 @@ type UploadInput struct {
 	DeclaredContentType string
 	// Description is the alternative text, or "" for none.
 	Description string
+	// Purpose is what the file is for, which picks the sizes of its variants; "" is
+	// content.PurposeAttachment.
+	Purpose content.MediaPurpose
 }
+
+// ErrInvalidPurpose reports an upload for an unknown purpose.
+var ErrInvalidPurpose = errors.New("content: unknown media purpose")
 
 // Upload checks and stores an upload and enqueues its processing. It fails with an error
 // wrapping media.ErrUnsupportedFormat, media.ErrTooLarge, media.ErrDimensions,
@@ -136,6 +146,12 @@ type UploadInput struct {
 func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error) {
 	if err := content.ValidateMediaDescription(in.Description); err != nil {
 		return Media{}, err
+	}
+	if in.Purpose == "" {
+		in.Purpose = content.PurposeAttachment
+	}
+	if !in.Purpose.Valid() {
+		return Media{}, fmt.Errorf("%w: %q", ErrInvalidPurpose, in.Purpose)
 	}
 	data, err := io.ReadAll(io.LimitReader(in.Content, s.d.Limits.MaxBytes+1))
 	if err != nil {
@@ -155,7 +171,7 @@ func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error
 	if _, err := s.d.Blobs.Put(ctx, up.BlobKey, bytes.NewReader(data), blob.PutOptions{ContentType: up.ContentType}); err != nil {
 		return Media{}, err
 	}
-	job := processJob(file.ID)
+	job := processJob(file.ID, in.Purpose, "")
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.d.Repository.InsertMediaFile(ctx, tx, file); err != nil {
 			return err
@@ -207,17 +223,31 @@ func checkDeclaredType(declared string, detected media.Format) error {
 
 func uploadKey(mediaID string) string { return "uploads/" + mediaID }
 
-func variantKey(mediaID string, kind content.MediaVariantKind, ext string) string {
-	return blob.PublicPrefix + mediaID + "/" + string(kind) + "." + ext
+// variantKey returns the blob key of a variant of a processing result. The result is part of
+// the key, so that a key never names other content.
+func variantKey(mediaID, resultID string, size content.MediaSize, motion content.MediaMotion, ext string) string {
+	name := string(size)
+	if motion == content.MotionAnimated {
+		name += "-animated"
+	}
+	return blob.PublicPrefix + mediaID + "/" + resultID + "/" + name + "." + ext
 }
 
 type processPayload struct {
-	MediaID string `json:"media_id"`
+	MediaID string               `json:"media_id"`
+	Purpose content.MediaPurpose `json:"purpose,omitempty"`
 }
 
-func processJob(mediaID string) queue.NewJob {
-	payload, _ := json.Marshal(processPayload{MediaID: mediaID})
-	return queue.NewJob{Type: JobProcessMedia, Payload: payload, IdempotencyKey: JobProcessMedia + ":" + mediaID}
+// processJob returns the job that processes a media file for a purpose. after is the current
+// processing result that the job replaces, "" for the first processing, so that each change of
+// purpose is a job of its own.
+func processJob(mediaID string, purpose content.MediaPurpose, after string) queue.NewJob {
+	payload, _ := json.Marshal(processPayload{MediaID: mediaID, Purpose: purpose})
+	key := JobProcessMedia + ":" + mediaID
+	if after != "" {
+		key += ":" + after + ":" + string(purpose)
+	}
+	return queue.NewJob{Type: JobProcessMedia, Payload: payload, IdempotencyKey: key}
 }
 
 // Media is a media file with its current state.
@@ -377,15 +407,6 @@ func (s *MediaService) CheckImage(ctx context.Context, id string) error {
 // URL returns the public URL of a variant.
 func (s *MediaService) URL(v content.MediaVariant) string { return s.d.Blobs.PublicURL(v.BlobKey) }
 
-// ProxyURL returns the media proxy URL of a remote media file (federation.md §9), and false when
-// no proxy is configured.
-func (s *MediaService) ProxyURL(mediaID string) (string, bool) {
-	if s.d.Proxy == nil {
-		return "", false
-	}
-	return s.d.Proxy.URL(mediaID, content.VariantFull), true
-}
-
 // ImageRef names a media file that an account shows as an image of its own, such as the
 // avatar or header of its profile.
 type ImageRef struct {
@@ -393,13 +414,13 @@ type ImageRef struct {
 	MediaID   string
 }
 
-// ImageURLs returns the URL of each ref's media file, keyed by ref, for the files that the ref's
-// account owns: the full variant of an upload whose processing succeeded, or the media proxy URL
-// of a remote file (ProxyURL); the other refs are absent. It reads the uploads in one repository
-// call and the remote files in another, so that presenting a page of accounts reads their images
-// together instead of one by one.
-func (s *MediaService) ImageURLs(ctx context.Context, refs []ImageRef) (map[ImageRef]string, error) {
-	out := map[ImageRef]string{}
+// Images returns the image of each ref's media file, keyed by ref, for the files that the ref's
+// account owns: the variants of an upload whose processing succeeded, or the media proxy URLs
+// of a remote file (RemoteImage); the other refs are absent. It reads the uploads in one
+// repository call and the remote files in another, so that presenting a page of accounts reads
+// their images together instead of one by one.
+func (s *MediaService) Images(ctx context.Context, refs []ImageRef) (map[ImageRef]Image, error) {
+	out := map[ImageRef]Image{}
 	ids := make([]string, 0, len(refs))
 	for _, ref := range refs {
 		if ref.MediaID != "" && !slices.Contains(ids, ref.MediaID) {
@@ -409,19 +430,21 @@ func (s *MediaService) ImageURLs(ctx context.Context, refs []ImageRef) (map[Imag
 	if len(ids) == 0 {
 		return out, nil
 	}
-	variants, err := s.d.Repository.ListReadyVariants(ctx, ids, content.VariantFull)
+	variants, err := s.d.Repository.ListReadyVariants(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("content: the images %v: %w", ids, err)
 	}
-	byID := make(map[string]FileVariant, len(variants))
+	files := map[string]content.MediaFile{}
+	byID := map[string][]content.MediaVariant{}
 	for _, v := range variants {
-		byID[v.File.ID] = v
+		files[v.File.ID] = v.File
+		byID[v.File.ID] = append(byID[v.File.ID], v.Variant)
 	}
 	var rest []string
 	for _, ref := range refs {
-		if v, ok := byID[ref.MediaID]; ok {
-			if v.File.OwnerAccountID == ref.AccountID {
-				out[ref] = s.URL(v.Variant)
+		if f, ok := files[ref.MediaID]; ok {
+			if img, ok := s.image(byID[ref.MediaID]); ok && f.OwnerAccountID == ref.AccountID {
+				out[ref] = img
 			}
 		} else if !slices.Contains(rest, ref.MediaID) {
 			rest = append(rest, ref.MediaID)
@@ -434,25 +457,84 @@ func (s *MediaService) ImageURLs(ctx context.Context, refs []ImageRef) (map[Imag
 	if err != nil {
 		return nil, fmt.Errorf("content: the remote images %v: %w", rest, err)
 	}
-	owners := make(map[string]string, len(remote))
+	byRemote := make(map[string]content.RemoteMedia, len(remote))
 	for _, m := range remote {
-		owners[m.MediaID] = m.OwnerAccountID
+		byRemote[m.MediaID] = m
 	}
 	for _, ref := range refs {
-		if owner, ok := owners[ref.MediaID]; ok && owner == ref.AccountID {
-			out[ref], _ = s.ProxyURL(ref.MediaID)
+		if m, ok := byRemote[ref.MediaID]; ok && m.OwnerAccountID == ref.AccountID {
+			out[ref], _ = s.RemoteImage(m)
 		}
 	}
 	return out, nil
 }
 
+// Image returns the image of a media file as clients load it: the variants of an upload whose
+// processing succeeded, or the media proxy URLs of a remote file; false for a file that has
+// neither.
+func (s *MediaService) Image(m Media) (Image, bool) {
+	if m.Remote != nil {
+		return s.RemoteImage(*m.Remote)
+	}
+	if !m.Ready() {
+		return Image{}, false
+	}
+	return s.image(m.Result.Variants)
+}
+
+// image presents the variants of a processing result; false without the still ones.
+func (s *MediaService) image(variants []content.MediaVariant) (Image, bool) {
+	var (
+		img             Image
+		still, animated int
+		moving          ImageVariants
+	)
+	for _, v := range variants {
+		iv := ImageVariant{URL: s.URL(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
+		set := &img.Still
+		if v.Motion == content.MotionAnimated {
+			set, animated = &moving, animated+1
+		} else {
+			still++
+		}
+		switch v.Size {
+		case content.SizeSmall:
+			set.Small = iv
+		case content.SizeMedium:
+			set.Medium = iv
+		case content.SizeLarge:
+			set.Large = iv
+		}
+	}
+	if still != len(content.MediaSizes) {
+		return Image{}, false
+	}
+	if animated == len(content.MediaSizes) {
+		img.Animated = &moving
+	}
+	return img, true
+}
+
+// RemoteImage returns the image of a remote media file: its media proxy URL in every size, with
+// the declared dimensions on the large and medium ones (federation.md §9); false when no proxy
+// is configured.
+func (s *MediaService) RemoteImage(m content.RemoteMedia) (Image, bool) {
+	if s.d.Proxy == nil {
+		return Image{}, false
+	}
+	full := ImageVariant{URL: s.d.Proxy.URL(m.MediaID, ProxyFull), Width: m.Width, Height: m.Height}
+	return Image{Still: ImageVariants{Small: full, Medium: full, Large: full}}, true
+}
+
 // ErrNotOwner reports a change to a media file of another account.
 var ErrNotOwner = errors.New("content: the media file belongs to another account")
 
-// CheckProfileImage reports whether accountID may use a media file as its avatar or header:
-// the account uploaded it and its processing succeeded. It implements the account module's
-// CheckProfileImage and fails with an error wrapping appaccount.ErrUnusableImage otherwise.
-func (s *MediaService) CheckProfileImage(ctx context.Context, accountID, mediaID string) error {
+// CheckProfileImage reports whether accountID may use a media file as its avatar or header
+// (purpose): the account uploaded it and its processing succeeded. A file processed for
+// another purpose is processed again for this one in the background, and shows its current
+// variants until then. It implements the account module's CheckProfileImage and fails with an
+// error wrapping appaccount.ErrUnusableImage otherwise.
+func (s *MediaService) CheckProfileImage(ctx context.Context, accountID, mediaID string, purpose content.MediaPurpose) error {
 	m, err := s.Media(ctx, mediaID)
 	if errors.Is(err, ErrNotFound) {
 		return fmt.Errorf("media %s: %w", mediaID, appaccount.ErrUnusableImage)
@@ -462,6 +544,18 @@ func (s *MediaService) CheckProfileImage(ctx context.Context, accountID, mediaID
 	}
 	if m.Upload == nil || m.File.OwnerAccountID != accountID || !m.Ready() {
 		return fmt.Errorf("media %s: %w", mediaID, appaccount.ErrUnusableImage)
+	}
+	return s.RequirePurpose(ctx, m, purpose)
+}
+
+// RequirePurpose enqueues the processing of a ready media file for purpose unless its current
+// result is for that purpose already.
+func (s *MediaService) RequirePurpose(ctx context.Context, m Media, purpose content.MediaPurpose) error {
+	if !m.Ready() || m.Result.Purpose == purpose {
+		return nil
+	}
+	if err := s.d.Jobs.Enqueue(ctx, processJob(m.File.ID, purpose, m.Result.ID)); err != nil {
+		return fmt.Errorf("content: process media %s for %s: %w", m.File.ID, purpose, err)
 	}
 	return nil
 }
@@ -488,47 +582,77 @@ func (s *MediaService) handleProcess(ctx context.Context, j queue.Job) queue.Res
 	if err := json.Unmarshal(j.Payload, &p); err != nil || p.MediaID == "" {
 		return queue.Fail(fmt.Errorf("media.process: bad payload %s", j.Payload))
 	}
-	return s.Process(ctx, p.MediaID)
+	return s.Process(ctx, p.MediaID, p.Purpose)
 }
 
-// Process processes an upload: it re-encodes the file into its variants, records the result,
-// and deletes the file as received. It is idempotent: a file that has a result only has its
-// received file deleted again, and a file that is gone (cleaned up) is done. Content the
-// processor rejects records a failed result.
-func (s *MediaService) Process(ctx context.Context, mediaID string) queue.Result {
-	up, err := s.d.Repository.FindUploadedMedia(ctx, mediaID)
-	if errors.Is(err, ErrNotFound) {
-		return queue.Done()
+// Process processes a media file for purpose ("" is content.PurposeAttachment). An upload is
+// re-encoded from the file as received into its variants, the result is recorded, and the file
+// as received is deleted. A file whose current result is for another purpose is processed
+// again from its large variant. It is idempotent: a file whose current result is for purpose
+// only has its received file deleted again, and a file that is gone (cleaned up) is done.
+// Content the processor rejects records a failed result when the file is processed for the
+// first time.
+func (s *MediaService) Process(ctx context.Context, mediaID string, purpose content.MediaPurpose) queue.Result {
+	if purpose == "" {
+		purpose = content.PurposeAttachment
 	}
-	if err != nil {
+	if !purpose.Valid() {
+		return queue.Fail(fmt.Errorf("media.process: %w: %q", ErrInvalidPurpose, purpose))
+	}
+	var up *content.UploadedMedia
+	switch u, err := s.d.Repository.FindUploadedMedia(ctx, mediaID); {
+	case err == nil:
+		up = &u
+	case !errors.Is(err, ErrNotFound):
 		return queue.Retry(0, err)
 	}
-	if _, err := s.d.Repository.FindLatestProcessingResult(ctx, mediaID); err == nil {
+	var current *content.MediaProcessingResult
+	switch r, err := s.d.Repository.FindLatestProcessingResult(ctx, mediaID); {
+	case err == nil:
+		current = &r
+	case !errors.Is(err, ErrNotFound):
+		return queue.Retry(0, err)
+	}
+	switch {
+	case current != nil && current.Purpose == purpose:
 		return s.deleteReceived(ctx, up)
-	} else if !errors.Is(err, ErrNotFound) {
-		return queue.Retry(0, err)
+	case current == nil && up == nil:
+		return queue.Done() // cleaned up
+	case current != nil && current.Outcome != content.MediaReady:
+		return s.deleteReceived(ctx, up) // a failed file stays failed
 	}
 
-	result := content.MediaProcessingResult{ID: s.d.IDs.NewID(), MediaID: mediaID, MediaType: content.MediaTypeImage, ProcessedAt: s.d.Clock.Now()}
-	out, err := s.processReceived(ctx, up)
+	req := media.Request{Purpose: media.Purpose(purpose)}
+	switch f, err := s.d.Repository.FindFocus(ctx, mediaID); {
+	case err == nil:
+		req.FocusX, req.FocusY = f.X, f.Y
+	case !errors.Is(err, ErrNotFound):
+		return queue.Retry(0, err)
+	}
+	result := content.MediaProcessingResult{
+		ID: s.d.IDs.NewID(), MediaID: mediaID, Purpose: purpose, MediaType: content.MediaTypeImage, ProcessedAt: s.d.Clock.Now(),
+	}
+	key := ""
+	if current == nil {
+		key = up.BlobKey
+	} else {
+		key = sourceVariant(*current).BlobKey
+	}
+	out, err := s.processBlob(ctx, key, req)
 	switch {
 	case err == nil:
 		result.Outcome = content.MediaReady
 		result.Width, result.Height, result.Blurhash = out.Width, out.Height, out.Blurhash
-		for _, v := range []struct {
-			kind content.MediaVariantKind
-			v    media.Variant
-		}{{content.VariantFull, out.Full}, {content.VariantThumbnail, out.Thumbnail}} {
-			key := variantKey(mediaID, v.kind, v.v.Extension)
-			info, err := s.d.Blobs.Put(ctx, key, bytes.NewReader(v.v.Data), blob.PutOptions{ContentType: v.v.ContentType})
-			if err != nil {
-				return queue.Retry(0, err)
-			}
-			result.Variants = append(result.Variants, content.MediaVariant{
-				ResultID: result.ID, Kind: v.kind, BlobKey: key, ContentType: v.v.ContentType, FileSize: info.Size,
-				Width: v.v.Width, Height: v.v.Height,
-			})
+		if current != nil && current.Width > 0 {
+			// The source is a variant: keep the size of the original.
+			result.Width, result.Height = current.Width, current.Height
 		}
+		if err := s.storeVariants(ctx, &result, out); err != nil {
+			return queue.Retry(0, err)
+		}
+	case current != nil && (media.Rejected(err) || errors.Is(err, blob.ErrNotFound)):
+		s.d.Logger.WarnContext(ctx, "media reprocessing failed", slog.String("media_id", mediaID), slog.String("purpose", string(purpose)), slog.Any("error", err))
+		return s.deleteReceived(ctx, up)
 	case media.Rejected(err) || errors.Is(err, blob.ErrNotFound):
 		s.d.Logger.WarnContext(ctx, "media processing failed", slog.String("media_id", mediaID), slog.Any("error", err))
 		result.Outcome, result.MediaType = content.MediaFailed, content.MediaTypeUnknown
@@ -537,7 +661,7 @@ func (s *MediaService) Process(ctx context.Context, mediaID string) queue.Result
 	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		// A concurrent run of the same job may have recorded its result first.
-		if done, err := s.d.Repository.HasProcessingResult(ctx, tx, mediaID); err != nil || done {
+		if done, err := s.d.Repository.HasProcessingResult(ctx, tx, mediaID, purpose); err != nil || done {
 			return err
 		}
 		return s.d.Repository.InsertProcessingResult(ctx, tx, result)
@@ -548,22 +672,62 @@ func (s *MediaService) Process(ctx context.Context, mediaID string) queue.Result
 	return s.deleteReceived(ctx, up)
 }
 
-func (s *MediaService) processReceived(ctx context.Context, up content.UploadedMedia) (media.Output, error) {
-	r, _, err := s.d.Blobs.Get(ctx, up.BlobKey)
+// sourceVariant returns the variant that processing a file again starts from: the large moving
+// variant of an animation, the large still one otherwise.
+func sourceVariant(r content.MediaProcessingResult) content.MediaVariant {
+	if v, ok := r.Variant(content.SizeLarge, content.MotionAnimated); ok {
+		return v
+	}
+	v, _ := r.Variant(content.SizeLarge, content.MotionStill)
+	return v
+}
+
+// storeVariants puts the variants of out in blob storage under keys of result and adds them to
+// result.
+func (s *MediaService) storeVariants(ctx context.Context, result *content.MediaProcessingResult, out media.Output) error {
+	sets := []struct {
+		motion content.MediaMotion
+		v      *media.Variants
+	}{{content.MotionStill, &out.Still}, {content.MotionAnimated, out.Animated}}
+	for _, set := range sets {
+		if set.v == nil {
+			continue
+		}
+		for i, size := range content.MediaSizes {
+			v := set.v.Variant(media.AllSizes[i])
+			key := variantKey(result.MediaID, result.ID, size, set.motion, v.Extension)
+			info, err := s.d.Blobs.Put(ctx, key, bytes.NewReader(v.Data), blob.PutOptions{ContentType: v.ContentType})
+			if err != nil {
+				return err
+			}
+			result.Variants = append(result.Variants, content.MediaVariant{
+				ResultID: result.ID, Size: size, Motion: set.motion, BlobKey: key, ContentType: v.ContentType,
+				FileSize: info.Size, Width: v.Width, Height: v.Height,
+			})
+		}
+	}
+	return nil
+}
+
+func (s *MediaService) processBlob(ctx context.Context, key string, req media.Request) (media.Output, error) {
+	r, _, err := s.d.Blobs.Get(ctx, key)
 	if err != nil {
 		return media.Output{}, err
 	}
 	defer func() { _ = r.Close() }()
 	data, err := io.ReadAll(io.LimitReader(r, s.d.Limits.MaxBytes+1))
 	if err != nil {
-		return media.Output{}, fmt.Errorf("content: read %s: %w", up.BlobKey, err)
+		return media.Output{}, fmt.Errorf("content: read %s: %w", key, err)
 	}
-	return s.d.Processor.Process(ctx, data, s.d.Limits, s.d.Sizes)
+	return s.d.Processor.Process(ctx, data, s.d.Limits, s.d.Sizes, req)
 }
 
 // deleteReceived deletes the file as received once it has a result; a failed deletion is
 // retried with the job.
-func (s *MediaService) deleteReceived(ctx context.Context, up content.UploadedMedia) queue.Result {
+func (s *MediaService) deleteReceived(ctx context.Context, up *content.UploadedMedia) queue.Result {
+	if up == nil {
+		return queue.Done()
+	}
 	if err := s.d.Blobs.Delete(ctx, up.BlobKey); err != nil {
 		return queue.Retry(0, err)
 	}

@@ -110,7 +110,7 @@ var actorRequired = map[string][]string{
 		"followers", "following", "featured", "featuredTags", "endpoints.sharedInbox",
 		"manuallyApprovesFollowers", "discoverable", "indexable", "published", "attachment",
 		"attachment[].type", "attachment[].name", "attachment[].value", "tag",
-		"publicKey.id", "publicKey.owner", "publicKey.publicKeyPem",
+		"publicKey.id", "publicKey.owner", "publicKey.publicKeyPem", "icon.url", "image.url",
 	},
 	"gotosocial": {
 		"@context", "id", "type", "preferredUsername", "name", "summary", "url", "inbox", "outbox",

@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.1
 	github.com/aws/smithy-go v1.28.1
 	github.com/dadrus/httpsig v0.9.0
+	github.com/deepteams/webp v1.2.8
 	github.com/dunglas/httpsfv v1.1.2
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/jackc/pgx/v5 v5.11.0

@@ -107,7 +107,7 @@ const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey
 };
 
 function actorOf(account: NotificationAccount): NotificationActor {
-  return { name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: account.avatar_url };
+  return { name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: account.avatar?.small.url };
 }
 
 /**

@@ -6,7 +6,7 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { cacheSavedProfile, type CredentialAccount, credentialsQueryOptions, type ProfileChange, updateProfileMutation } from "../api/me";
-import { type MediaAttachment, MediaProcessingError, uploadImage } from "../api/media";
+import { type ImagePurpose, type MediaAttachment, MediaProcessingError, uploadImage } from "../api/media";
 
 /** The limits of a profile (UpdateCredentialsRequest in api/openapi.yaml), counted in code points as the server does. */
 export const profileLimits = { displayName: 30, note: 500, fields: 4, fieldName: 255, fieldValue: 255 } as const;
@@ -54,8 +54,8 @@ export function useProfileForm() {
   const [nextFieldKey, setNextFieldKey] = useState(account.source.fields.length);
   const [locked, setLocked] = useState(account.locked);
   const [bot, setBot] = useState(account.bot);
-  const avatar = useImageControl(account.avatar_url, "thumbnail");
-  const header = useImageControl(account.header_url, "full");
+  const avatar = useImageControl(account.avatar, "avatar");
+  const header = useImageControl(account.header, "header");
 
   const save = useMutation({
     ...updateProfileMutation(api),
@@ -134,17 +134,18 @@ function sameFields(a: readonly Field[], b: readonly Field[]): boolean {
 }
 
 /** The state of one image of the profile, and its upload. */
-function useImageControl(savedUrl: CredentialAccount["avatar_url"], rendition: "thumbnail" | "full") {
+function useImageControl(saved: CredentialAccount["avatar"], purpose: ImagePurpose) {
   const api = useApi();
   const t = useT();
   const [image, setImage] = useState<ImageChange>({ kind: "keep" });
   const upload = useMutation({
-    mutationFn: (file: File) => uploadImage(api, file),
+    mutationFn: (file: File) => uploadImage(api, file, purpose),
     onSuccess: (media) => {
       setImage({ kind: "new", media });
     },
   });
-  const url = image.kind === "new" ? image.media.variants?.[rendition].url : image.kind === "keep" ? savedUrl : undefined;
+  // The medium rendition fills the form's preview at twice its CSS size.
+  const url = image.kind === "new" ? image.media.variants?.medium.url : image.kind === "keep" ? saved?.medium.url : undefined;
   const uploadError = upload.error instanceof MediaProcessingError ? t("client:settings.profile.image.failed") : errorMessage(upload.error);
   const control: ImageControl = {
     url,

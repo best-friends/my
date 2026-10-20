@@ -89,8 +89,11 @@ func TestClientAPIMedia(t *testing.T) {
 	if got.State != "ready" || got.Variants == nil || got.Blurhash == nil || got.Meta.Width == nil || *got.Meta.Width != 480 || *got.Meta.Height != 640 {
 		t.Fatalf("processed = %+v", got)
 	}
-	if want := "https://example.test/media/" + up.Id + "/full.jpg"; got.Variants.Full.Url != want {
-		t.Errorf("full URL = %q, want %q", got.Variants.Full.Url, want)
+	prefix := "https://example.test/media/" + up.Id + "/"
+	v := got.Variants
+	if !strings.HasPrefix(v.Large.Url, prefix) || !strings.HasSuffix(v.Large.Url, "/large.jpg") || !strings.HasSuffix(v.Small.Url, "/small.webp") ||
+		deref(v.Small.ContentType) != "image/webp" || v.Animated != nil || deref(got.Url) != v.Large.Url || deref(got.PreviewUrl) != v.Small.Url {
+		t.Errorf("variants = %+v, want a large JPEG and a small WebP under %s", v, prefix)
 	}
 
 	res, got = send(http.MethodPatch, path, users["alice"], "application/json", []byte(`{"description": "A garden", "focus": {"x": -0.5, "y": 0.25}}`))

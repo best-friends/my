@@ -3,6 +3,7 @@
 package activitypub
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -19,8 +20,12 @@ import (
 func (h *Handler) instanceActorUsername() string { return h.o.AccountDomain }
 
 // actorDocument builds the document of a visible local actor.
-func (h *Handler) actorDocument(a appaccount.Actor) federation.ActorDocument {
-	return appfederation.LocalActorDocument(h.o.Host, a, h.instanceActorUsername())
+func (h *Handler) actorDocument(ctx context.Context, a appaccount.Actor) (federation.ActorDocument, error) {
+	images, err := appfederation.LocalActorImages(ctx, h.o.Images, a)
+	if err != nil {
+		return federation.ActorDocument{}, err
+	}
+	return appfederation.LocalActorDocument(h.o.Host, a, h.instanceActorUsername(), images), nil
 }
 
 // keyDocument is the minimal actor document that authorized fetch serves to a request without
@@ -62,7 +67,11 @@ func (h *Handler) actor(w http.ResponseWriter, r *http.Request) {
 		h.fail(w, r, err)
 		return
 	}
-	doc := h.actorDocument(a)
+	doc, err := h.actorDocument(r.Context(), a)
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
 	if suspended {
 		doc = doc.Suspend()
 	}

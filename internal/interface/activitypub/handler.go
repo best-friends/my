@@ -82,6 +82,8 @@ type Options struct {
 	Graph    Graph
 	// Suspensions tells the suspended local actors; nil suspends none.
 	Suspensions Suspensions
+	// Images reads the avatars and headers of local actors; nil serves none.
+	Images appfederation.ProfileImages
 	// Inbox receives the activities POSTed to the inboxes; nil serves no inbox.
 	Inbox Inbox
 	// HTML serves the web client's page for profile pages (/@alice) and other single-segment

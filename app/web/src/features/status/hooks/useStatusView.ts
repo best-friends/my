@@ -83,7 +83,7 @@ export function useStatusView(status: Status): StatusView {
       emojis: post.account.emojis,
       handle: handleOf(post.account.acct),
       href: profilePath(post.account.acct),
-      avatar: post.account.avatar_url,
+      avatar: post.account.avatar?.small.url,
     },
     time,
     path: statusPath(post),

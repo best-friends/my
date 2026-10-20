@@ -126,12 +126,13 @@ func statusNote(st appcontent.Status, rev appcontent.Revision, author appaccount
 }
 
 // attachmentOf returns the attachment document of a processed media file: the URL, type, and
-// size of its full variant, its alternative text, blurhash, and focal point.
+// size of its large variant, moving for an animation (ADR-0054 §5), its alternative text,
+// blurhash, and focal point.
 func attachmentOf(m appcontent.MediaView) federation.AttachmentDocument {
-	full := m.Full()
+	large := m.Image.Primary()
 	a := federation.AttachmentDocument{
-		Type: federation.AttachmentType, MediaType: full.ContentType, URL: m.URL, Name: m.Description,
-		Width: full.Width, Height: full.Height,
+		Type: federation.AttachmentType, MediaType: large.ContentType, URL: large.URL, Name: m.Description,
+		Width: large.Width, Height: large.Height,
 	}
 	if r := m.Media.Result; r != nil {
 		a.Blurhash = r.Blurhash
@@ -175,7 +176,11 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		return f.followDocument(ctx, s)
 	}
 	if act.ObjectKind == federation.OutboundAccount {
-		return accountDocument(f.d.Host, act, s.actor, s.suspended)
+		images, err := LocalActorImages(ctx, f.d.Images, s.actor)
+		if err != nil {
+			return nil, err
+		}
+		return accountDocument(f.d.Host, act, s.actor, images, s.suspended)
 	}
 	if act.ObjectKind == federation.OutboundFavourite || (act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete) {
 		return nil, nil
@@ -221,12 +226,12 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 // starts, the same document a GET of the actor returns; a later revision sends an Update of its
 // own. The document of a suspended actor is emptied and marked suspended (federation.md §11.1).
 // The Delete names the actor by its id.
-func accountDocument(host string, act federation.OutboundActivity, a appaccount.Actor, suspended bool) ([]byte, error) {
+func accountDocument(host string, act federation.OutboundActivity, a appaccount.Actor, images ActorImages, suspended bool) ([]byte, error) {
 	actor := federation.IRI(a.Account.URI)
 	aud := federation.Audience{To: []federation.IRI{federation.PublicIRI}}
 	var object any = actor
 	if act.Type == federation.ActivityUpdate {
-		doc := LocalActorDocument(host, a, "")
+		doc := LocalActorDocument(host, a, "", images)
 		if suspended {
 			doc = doc.Suspend()
 		}

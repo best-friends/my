@@ -71,13 +71,13 @@ func TestRemoteStatusRepresentation(t *testing.T) {
 					Description: "the remote copy",
 				},
 			},
-			Description: "a cat", URL: proxyURL, PreviewURL: proxyURL,
+			Description: "a cat", Image: proxied(proxyURL),
 		}, {
 			Media: appcontent.Media{
 				File:   content.MediaFile{ID: postID, OwnerAccountID: carolAccountID, Origin: content.MediaOriginRemote},
 				Remote: &content.RemoteMedia{MediaID: postID, OwnerAccountID: carolAccountID, RemoteURL: "https://remote.example/files/x", DeclaredMediaType: content.MediaTypeUnknown},
 			},
-			URL: proxyURL, PreviewURL: proxyURL,
+			Image: proxied(proxyURL),
 		}},
 	}
 	profiles := &fakeRemoteProfiles{urls: map[string]string{carolAccountID: "https://remote.example/@carol"}}
@@ -126,4 +126,10 @@ func TestRemoteStatusRepresentation(t *testing.T) {
 	if m := st.MediaAttachments[1]; m.Type != "unknown" || m.Description != nil || m.Blurhash != nil || m.Meta.Width != nil {
 		t.Errorf("bare remote attachment = %+v", m)
 	}
+}
+
+// proxied returns the image of a remote file served at its proxy URL in every size.
+func proxied(u string) appcontent.Image {
+	v := appcontent.ImageVariant{URL: u}
+	return appcontent.Image{Still: appcontent.ImageVariants{Small: v, Medium: v, Large: v}}
 }

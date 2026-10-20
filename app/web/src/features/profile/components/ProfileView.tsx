@@ -47,9 +47,9 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
     <div className="flex flex-col gap-4">
       {/* The size container of the header and the tabs (web-client.md D2). */}
       <header className="@container flex flex-col">
-        <HeaderImage src={account.header_url} />
+        <HeaderImage src={account.header?.medium.url} />
         <div className="flex flex-wrap items-end justify-between gap-3 px-4">
-          <Avatar src={account.avatar_url} name={profile.name} decorative size="xl" className="-mt-10 ring-4 ring-surface" />
+          <Avatar src={account.avatar?.medium.url} name={profile.name} decorative size="xl" className="-mt-10 ring-4 ring-surface" />
           <RelationshipActions account={account} name={profile.name} state={relationship} />
         </div>
         <div className="mt-3 flex flex-col gap-3 px-4">

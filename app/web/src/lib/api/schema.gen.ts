@@ -677,12 +677,15 @@ export interface paths {
         put?: never;
         /**
          * Upload a media file
-         * @description Uploads an image to attach to a post. The server checks the format from the content
-         *     (JPEG, PNG, GIF, or WebP; the declared type must match it) and the size and dimension
-         *     limits before it accepts the file, then processes it in the background: it removes the
-         *     metadata (such as the location) by re-encoding the image, and makes a thumbnail and a
-         *     blurhash. The answer is 202 with the file in its current `state`, usually `processing`;
-         *     poll `getMedia` until it is `ready` or `failed`.
+         * @description Uploads an image to attach to a post or to use as an avatar, a header, or a custom
+         *     emoji (`purpose`). The server checks the format from the content (JPEG, PNG, GIF, or
+         *     WebP, the last two animated or not; the declared type must match it) and the size and
+         *     dimension limits before it accepts the file, then processes it in the background: it
+         *     removes the metadata (such as the location) by re-encoding the image into small,
+         *     medium, and large variants for its purpose, still and, for an animation, moving ones,
+         *     and makes a blurhash. The answer is 202 with the file in its current `state`, usually
+         *     `processing`; poll `getMedia` until it is `ready` or `failed`. A file used for another
+         *     purpose later is processed again for it.
          *
          *     A body larger than the size limit is refused with a 413 before it is read. Uploads
          *     count against a limit per account besides the API-wide one. Only the uploader can
@@ -2748,16 +2751,13 @@ export interface components {
              */
             emojis: components["schemas"]["CustomEmoji"][];
             /**
-             * Format: uri
-             * @description The URL of the avatar image; omitted when the account has none, or its image is not
-             *     processed yet or could not be processed. Clients show a placeholder instead.
+             * @description The avatar image, square; omitted when the account has none, or its image is not
+             *     processed yet or could not be processed. Clients show a placeholder instead. For a
+             *     remote account, every size is its media proxy URL.
              */
-            avatar_url?: string;
-            /**
-             * Format: uri
-             * @description The URL of the header image; omitted when there is none, as `avatar_url` is.
-             */
-            header_url?: string;
+            avatar?: components["schemas"]["MediaVariants"];
+            /** @description The header image; omitted when there is none, as `avatar` is. */
+            header?: components["schemas"]["MediaVariants"];
             /**
              * @description The number of accounts that actively follow the account, as far as the instance
              *     knows. Present on the account's own endpoints (`getAccount`, `lookupAccount`,
@@ -2867,7 +2867,7 @@ export interface components {
          *     attachment has none.
          *
          *     A file of a remote status is always `ready`: the instance does not process it, so it has
-         *     no `variants`; `url` and `preview_url` are its media proxy URL (federation.md §9),
+         *     no `variants`; `url` and `preview_url` are its media proxy URLs (federation.md §9),
          *     `remote_url` its URL on the remote server, and `meta`, `blurhash`, and `type` what the
          *     remote server declared.
          */
@@ -2892,12 +2892,13 @@ export interface components {
             variants?: components["schemas"]["MediaVariants"];
             /**
              * Format: uri
-             * @description Where the file is served on this instance; for an upload, `variants.full.url`.
+             * @description Where the file is served on this instance; for an upload, `variants.large.url`, or
+             *     `variants.animated.large.url` for an animation.
              */
             url?: string;
             /**
              * Format: uri
-             * @description Where its preview is served; for an upload, `variants.thumbnail.url`.
+             * @description Where its preview is served; for an upload, `variants.small.url` (still).
              */
             preview_url?: string;
             /**
@@ -2939,8 +2940,23 @@ export interface components {
             file: string;
             /** @description The alternative text. Text that is not UTF-8 or has U+0000 is a 422. */
             description?: string;
+            /**
+             * @description What the file is for, which picks the sizes of its variants: an `attachment` of a
+             *     post (within 640 × 360, 1920 × 1080, and 3840 × 2160 pixels of area), an `avatar`
+             *     (cropped to squares of 96, 192, and 400 pixels around the focal point), a `header`
+             *     (within 750 × 250, 1500 × 500, and 3000 × 1000), or a custom `emoji` (within 64,
+             *     128, and 256 pixels).
+             * @default attachment
+             * @enum {string}
+             */
+            purpose: "attachment" | "avatar" | "header" | "emoji";
         };
-        /** @description A rendition of a media file, without metadata. */
+        /**
+         * @description A rendition of a media file, without metadata. Its URL never serves other content, so
+         *     it may be cached for good. `content_type`, `width`, `height`, and `size` are present
+         *     for an upload, and absent where unknown for a remote file served through the media
+         *     proxy.
+         */
         MediaVariant: {
             /**
              * Format: uri
@@ -2948,23 +2964,41 @@ export interface components {
              */
             url: string;
             /** @description The media type of the rendition. */
-            content_type: string;
+            content_type?: string;
             /** @description The width in pixels. */
-            width: number;
+            width?: number;
             /** @description The height in pixels. */
-            height: number;
+            height?: number;
             /**
              * Format: int64
              * @description The size of the file in bytes.
              */
-            size: number;
+            size?: number;
         };
-        /** @description The renditions of a ready media file. */
+        /**
+         * @description The renditions of a ready media file within the sizes of its purpose (see
+         *     `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
+         *     still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+         *     show `animated` instead only when the user lets animations play and does not prefer
+         *     reduced motion.
+         */
         MediaVariants: {
-            /** @description The file itself, scaled down to at most 3840 × 2160 pixels of area. */
-            full: components["schemas"]["MediaVariant"];
-            /** @description The preview, at most 640 × 360 pixels of area. */
-            thumbnail: components["schemas"]["MediaVariant"];
+            /** @description The still rendition for small views; WebP for an upload. */
+            small: components["schemas"]["MediaVariant"];
+            /** @description The still rendition for views across a screen; WebP for an upload. */
+            medium: components["schemas"]["MediaVariant"];
+            /** @description The largest still rendition, JPEG or PNG for an upload. */
+            large: components["schemas"]["MediaVariant"];
+            animated?: components["schemas"]["MediaAnimatedVariants"];
+        };
+        /**
+         * @description The moving renditions of an animation, absent for a still image: animated WebP for
+         *     `small` and `medium`, and a GIF for `large`.
+         */
+        MediaAnimatedVariants: {
+            small: components["schemas"]["MediaVariant"];
+            medium: components["schemas"]["MediaVariant"];
+            large: components["schemas"]["MediaVariant"];
         };
         /**
          * @description A moderation action on the authenticated user's own account (FR-715, NFR-MOD-6), as the

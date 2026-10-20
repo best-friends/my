@@ -102,7 +102,7 @@ func TestClientAPIPresentsRemoteStatuses(t *testing.T) {
 	proxy := "https://" + e.app.Config.Host + "/media/proxy/"
 	a := st.Account
 	if a.Acct != "carol@remote.example" || a.Domain != "remote.example" || a.Uri != actor || a.Url != "https://remote.example/@carol" ||
-		a.AvatarUrl == nil || !strings.HasPrefix(*a.AvatarUrl, proxy) {
+		a.Avatar == nil || !strings.HasPrefix(a.Avatar.Large.Url, proxy) || !strings.HasPrefix(a.Avatar.Small.Url, proxy) {
 		t.Errorf("account = %+v, want carol's handle, profile page, and proxied avatar", a)
 	}
 	if len(st.MediaAttachments) != 1 {

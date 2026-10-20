@@ -61,7 +61,7 @@ func recordRemote(t *testing.T, app *platform.App, remoteURL string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u, err := url.Parse(app.MediaProxy.URL(m.MediaID, domain.VariantFull))
+	u, err := url.Parse(app.MediaProxy.URL(m.MediaID, content.ProxyFull))
 	if err != nil {
 		t.Fatal(err)
 	}

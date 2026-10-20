@@ -84,7 +84,7 @@ function ReportPage({ id }: { id: string }) {
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <Avatar src={target.avatar_url} name={target.display_name === "" ? target.username : target.display_name} decorative />
+              <Avatar src={target.avatar?.small.url} name={target.display_name === "" ? target.username : target.display_name} decorative />
               <AccountLabel account={target} />
             </div>
             <ul className="flex flex-wrap gap-x-4 gap-y-1">

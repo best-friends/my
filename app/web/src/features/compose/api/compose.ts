@@ -55,14 +55,18 @@ export function cacheUploadedMedia(api: Api, queryClient: QueryClient, media: Me
   queryClient.setQueryData(mediaQueryOptions(api, media.id).queryKey, media);
 }
 
-/** Uploads one image (POST /media, 202) and returns the file in its current state, usually `processing`. */
+/**
+ * Uploads one image to attach to a post (POST /media, 202) and returns the file in its current state, usually
+ * `processing`.
+ */
 export async function uploadMedia(api: Api, file: File): Promise<MediaAttachment> {
   const { data } = await api.fetch.POST("/media", {
     // The body is serialized by hand: openapi-typescript types a binary part as a string.
-    body: { file: file.name },
+    body: { file: file.name, purpose: "attachment" },
     bodySerializer() {
       const form = new FormData();
       form.append("file", file, file.name);
+      form.append("purpose", "attachment");
       return form;
     },
   });

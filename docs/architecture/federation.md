@@ -389,12 +389,13 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 - `Create` の `id` は `{object}/activity`、それ以外は `/ap/activities/{uuid}`（ADR-0018）。
 - 宛先: `public` は `to: [Public]`・`cc: [followers, メンション先]`、`unlisted` は `to: [followers]`・`cc: [Public, メンション先]`、`private` と `local` は `to: [followers]`（`private` は加えて `cc: [メンション先]`）、`direct` は `to: [メンション先]`。
+- ローカルの Actor の文書は、アバターを `icon`、ヘッダーを `image`（どちらも `Image` で `mediaType` と `url`）に載せます。URL は `large` の版で、アニメーションなら動く版（GIF）です。静止版は受け取ったサーバーが作ります（[ADR-0054](../adr/0054-media-variants-video-audio.md) §5）。凍結中の文書には載せません。
 - Actor の `Update` は `to: [Public]` で、`object` に `GET` と同じ Actor の文書（`federation.LocalActorDocument`、`@context` なし）を埋め込みます。文書は展開の始めの時点の Actor から組み立てます（後の版はそれぞれの `Update` を送る）。その時点で凍結中なら、GET と同じ凍結中の文書です（§11.1）。
   有効でなくなったアカウントの `Update` は送りません。ただし削除済みでない凍結中のアカウント（BAN で削除を予約したものを含む）の `Update` は送ります。
 - Actor の `Delete` は `to: [Public]` で、`object` は Actor の `id` です。
 - `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。言語が `und` の本文は `contentMap` に入れません。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
   - `sensitive` は CW があれば真です（Mastodon と同じ）。`summary` と `contentMap` は空なら省き、`sensitive`・`content`・`tag`・`attachment` は常に付けます。
-  - `attachment` は処理の終わったメディアだけで、種類を問わず `type` は `Document`（Mastodon と同じ。種類は `mediaType` で伝える）、URL・`mediaType`・寸法は `full` の変種のものです。焦点が中央なら `focalPoint` を省きます。
+  - `attachment` は処理の終わったメディアだけで、種類を問わず `type` は `Document`（Mastodon と同じ。種類は `mediaType` で伝える）、URL・`mediaType`・寸法は `large` の版のもので、アニメーションなら動く版（GIF）です（[ADR-0054](../adr/0054-media-variants-video-audio.md) §5）。焦点が中央なら `focalPoint` を省きます。
   - `Mention` は `href` が Actor の IRI、`name` が `@user@domain`（ローカルのアカウントは設定 `account_domain`）、`Hashtag` は `href` が `https://{host}/tags/{name}`（ADR-0018）、`name` が `#name` です。
 - Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグは `content.Reader.Parts` で引きます。
 - `@context` は AS2・security・Mastodon 拡張（`toot:`）の既存の Actor の文脈と同じものです。

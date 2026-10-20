@@ -3,7 +3,7 @@
 // what a navigation does to focus and the document title (web-client.md Y5). Names change with the
 // locale, so elements are found by role and position, and texts are compared with each other.
 import type { Page } from "@playwright/test";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, imageVariants, test } from "./fixtures";
 
 /** Every page of the shell, in the order of the navigation. */
 const pages = ["/home", "/local", "/notifications", "/search", "/profile", "/settings"] as const;
@@ -162,7 +162,7 @@ test.describe("the sidebar of desktops", () => {
           locked: false,
           bot: false,
           created_at: "2026-10-01T00:00:00Z",
-          avatar_url: avatar,
+          avatar: imageVariants(avatar),
         }),
       ),
     );

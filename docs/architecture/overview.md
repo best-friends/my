@@ -103,7 +103,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `JobRunner` | ジョブ実行（pull ループ or push 受信） | db（pull） | [0004](../adr/0004-job-queue-abstraction.md) |
 | `Scheduler` | 定期実行のトリガー | in-process cron | [0004](../adr/0004-job-queue-abstraction.md) |
 | `BlobStore` | メディアの保存・署名付き URL | fs | [0005](../adr/0005-blob-storage-and-media.md) |
-| `MediaProcessor` | サムネイル・リサイズ・EXIF 除去 | native | [0005](../adr/0005-blob-storage-and-media.md) |
+| `MediaProcessor` | 用途ごとの S / M / L の版・アニメーションの静止版と動く版・EXIF 除去 | native | [0005](../adr/0005-blob-storage-and-media.md), [0054](../adr/0054-media-variants-video-audio.md) |
 | `KeyValueStore` | キャッシュ・レート制限・連合ライブラリ用 KV。任意の `valkey` は Valkey か Redis 互換のサーバーに置き、ADR-0003 と ADR-0019 の「Redis」の枠をこのアダプタで満たす | db | [0003](../adr/0003-database-abstraction.md), [0019](../adr/0019-security-baseline.md) |
 | `HTTPClient` | 外部 HTTP（SSRF ガード・用途別の本文上限とタイムアウト・UA 付与） | httpclient（`net/http` + SSRF ガード） | [0006](../adr/0006-federation-protocol-scope.md), [0019](../adr/0019-security-baseline.md) |
 | `Mailer` | メール送信 | none（ログ出力） | [0010](../adr/0010-configuration-and-packaging.md) |

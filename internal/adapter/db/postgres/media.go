@@ -70,7 +70,7 @@ func (r *MediaRepository) InsertProcessingResult(ctx context.Context, tx uow.Tx,
 		return err
 	}
 	p := postgresgen.InsertMediaProcessingResultParams{
-		ID: res.ID, MediaID: res.MediaID, Outcome: string(res.Outcome), MediaType: string(res.MediaType),
+		ID: res.ID, MediaID: res.MediaID, Purpose: string(res.Purpose), Outcome: string(res.Outcome), MediaType: string(res.MediaType),
 		Blurhash: toNullString(res.Blurhash), ProcessedAt: res.ProcessedAt,
 	}
 	if p.Width, err = toNullInt32(res.Width, "width"); err != nil {
@@ -96,7 +96,7 @@ func (r *MediaRepository) InsertProcessingResult(ctx context.Context, tx uow.Tx,
 			return err
 		}
 		err = q.InsertMediaVariant(ctx, postgresgen.InsertMediaVariantParams{
-			ResultID: res.ID, Kind: string(v.Kind), BlobKey: v.BlobKey, ContentType: v.ContentType, FileSize: v.FileSize,
+			ResultID: res.ID, Size: string(v.Size), Motion: string(v.Motion), BlobKey: v.BlobKey, ContentType: v.ContentType, FileSize: v.FileSize,
 			Width: w, Height: h,
 		})
 		if err != nil {
@@ -107,12 +107,12 @@ func (r *MediaRepository) InsertProcessingResult(ctx context.Context, tx uow.Tx,
 }
 
 // HasProcessingResult implements content.MediaRepository.
-func (r *MediaRepository) HasProcessingResult(ctx context.Context, tx uow.Tx, mediaID string) (bool, error) {
+func (r *MediaRepository) HasProcessingResult(ctx context.Context, tx uow.Tx, mediaID string, purpose content.MediaPurpose) (bool, error) {
 	q, err := queries(tx)
 	if err != nil {
 		return false, err
 	}
-	ok, err := q.HasMediaProcessingResult(ctx, mediaID)
+	ok, err := q.HasCurrentMediaProcessingResult(ctx, postgresgen.HasCurrentMediaProcessingResultParams{Purpose: string(purpose), MediaID: mediaID})
 	return ok, wrap(err, "look up media processing result")
 }
 
@@ -190,14 +190,14 @@ func (r *MediaRepository) ListProcessingResults(ctx context.Context, mediaID str
 	results := make([]content.MediaProcessingResult, 0, len(rows))
 	for _, row := range rows {
 		res := content.MediaProcessingResult{
-			ID: row.ID, MediaID: row.MediaID, Outcome: content.MediaOutcome(row.Outcome), MediaType: content.MediaType(row.MediaType),
+			ID: row.ID, MediaID: row.MediaID, Purpose: content.MediaPurpose(row.Purpose), Outcome: content.MediaOutcome(row.Outcome), MediaType: content.MediaType(row.MediaType),
 			Width: fromNullInt32(row.Width), Height: fromNullInt32(row.Height), DurationMS: fromNullInt32(row.DurationMs),
 			Blurhash: fromNullString(row.Blurhash), ProcessedAt: utc(row.ProcessedAt),
 		}
 		for _, v := range variants {
 			if v.ResultID == row.ID {
 				res.Variants = append(res.Variants, content.MediaVariant{
-					ResultID: v.ResultID, Kind: content.MediaVariantKind(v.Kind), BlobKey: v.BlobKey, ContentType: v.ContentType,
+					ResultID: v.ResultID, Size: content.MediaSize(v.Size), Motion: content.MediaMotion(v.Motion), BlobKey: v.BlobKey, ContentType: v.ContentType,
 					FileSize: v.FileSize, Width: int(v.Width), Height: int(v.Height),
 				})
 			}
@@ -208,11 +208,11 @@ func (r *MediaRepository) ListProcessingResults(ctx context.Context, mediaID str
 }
 
 // ListReadyVariants implements content.MediaRepository.
-func (r *MediaRepository) ListReadyVariants(ctx context.Context, ids []string, kind content.MediaVariantKind) ([]appcontent.FileVariant, error) {
+func (r *MediaRepository) ListReadyVariants(ctx context.Context, ids []string) ([]appcontent.FileVariant, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	rows, err := r.db.reader().ListReadyMediaVariants(ctx, postgresgen.ListReadyMediaVariantsParams{Ids: ids, Kind: string(kind)})
+	rows, err := r.db.reader().ListReadyMediaVariants(ctx, ids)
 	if err != nil {
 		return nil, wrap(err, "list ready media variants")
 	}
@@ -223,7 +223,7 @@ func (r *MediaRepository) ListReadyVariants(ctx context.Context, ids []string, k
 				ID: row.ID, OwnerAccountID: row.OwnerAccountID, Origin: content.MediaOrigin(row.Origin), CreatedAt: utc(row.CreatedAt),
 			},
 			Variant: content.MediaVariant{
-				ResultID: row.ResultID, Kind: content.MediaVariantKind(row.Kind), BlobKey: row.BlobKey, ContentType: row.ContentType,
+				ResultID: row.ResultID, Size: content.MediaSize(row.Size), Motion: content.MediaMotion(row.Motion), BlobKey: row.BlobKey, ContentType: row.ContentType,
 				FileSize: row.FileSize, Width: int(row.Width), Height: int(row.Height),
 			},
 		})

@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
-import { otherAccountFixture, relationshipFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
+import { imageFixture, otherAccountFixture, relationshipFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Relationship } from "./api/accounts";
@@ -91,7 +91,7 @@ describe("a profile", () => {
   test("shows the account's header image and avatar, decorative, with the band in place of an image that fails", async () => {
     const header = "https://my.example/media/header/full.png";
     const avatar = "https://my.example/media/avatar/full.png";
-    bobServer({}, { header_url: header, avatar_url: avatar });
+    bobServer({}, { header: imageFixture(header), avatar: imageFixture(avatar) });
     await renderApp({ path: "/@bob" });
     await screen.findByRole("heading", { level: 1, name: "Bob" });
 

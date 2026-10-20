@@ -90,7 +90,7 @@ func (e *erasureEnv) upload(t *testing.T, accountID string) string {
 	if err != nil {
 		t.Fatalf("Upload = %v", err)
 	}
-	if res := e.media.Process(t.Context(), m.File.ID); !res.IsDone() {
+	if res := e.media.Process(t.Context(), m.File.ID, ""); !res.IsDone() {
 		t.Fatalf("Process = %+v, want Done", res)
 	}
 	return m.File.ID
@@ -319,8 +319,8 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		t.Errorf("alice's upload kept %d blobs", n)
 	}
 	e.rows(t, "media_files", "owner_account_id", bob, 1)
-	if n := e.blobsOf(bobUpload); n != 2 {
-		t.Errorf("bob's upload has %d blobs, want its 2 variants", n)
+	if n := e.blobsOf(bobUpload); n != 3 {
+		t.Errorf("bob's upload has %d blobs, want its 3 variants", n)
 	}
 
 	// The statuses are deletions; the reported one keeps its rows for now.

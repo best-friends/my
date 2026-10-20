@@ -146,7 +146,7 @@ func (e *proxyEnv) add(id, remoteURL string, kind domain.MediaType, resp fakeRes
 // open opens the proxy URL that the proxy signs for id.
 func (e *proxyEnv) open(t *testing.T, id string) (*content.ProxiedMedia, []byte, error) {
 	t.Helper()
-	u, err := url.Parse(e.proxy.URL(id, domain.VariantFull))
+	u, err := url.Parse(e.proxy.URL(id, content.ProxyFull))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestMediaProxyRelaysWithTheDetectedType(t *testing.T) {
 	e.add(pngID, "https://cdn.remote.example/a.svg", domain.MediaTypeImage, fakeResponse{
 		header: http.Header{"Content-Type": {"image/svg+xml"}, "Content-Length": {strconv.Itoa(len(pngData))}}, body: pngData,
 	})
-	got := e.proxy.URL(pngID, domain.VariantFull)
+	got := e.proxy.URL(pngID, content.ProxyFull)
 	if !strings.HasPrefix(got, "https://social.example/media/proxy/"+pngID+"/full?sig=") {
 		t.Errorf("URL = %s", got)
 	}
@@ -184,10 +184,10 @@ func TestMediaProxyRelaysWithTheDetectedType(t *testing.T) {
 func TestMediaProxyRefusesBadSignatures(t *testing.T) {
 	e := newProxyEnv(t)
 	e.add(pngID, "https://remote.example/a.png", domain.MediaTypeImage, fakeResponse{body: pngData})
-	u, _ := url.Parse(e.proxy.URL(pngID, domain.VariantFull))
+	u, _ := url.Parse(e.proxy.URL(pngID, content.ProxyFull))
 	sig := u.Query().Get("sig")
 	other := newProxyEnv(t, bytes.Repeat([]byte("o"), 32))
-	ou, _ := url.Parse(other.proxy.URL(pngID, domain.VariantFull))
+	ou, _ := url.Parse(other.proxy.URL(pngID, content.ProxyFull))
 	tampered := []byte(sig)
 	tampered[0] ^= 1
 
@@ -212,14 +212,14 @@ func TestMediaProxyRefusesBadSignatures(t *testing.T) {
 func TestMediaProxyVerifiesWithPreviousKeys(t *testing.T) {
 	old := bytes.Repeat([]byte("o"), 32)
 	before := newProxyEnv(t, old)
-	u, _ := url.Parse(before.proxy.URL(pngID, domain.VariantFull))
+	u, _ := url.Parse(before.proxy.URL(pngID, content.ProxyFull))
 
 	e := newProxyEnv(t, bytes.Repeat([]byte("n"), 32), old)
 	e.add(pngID, "https://remote.example/a.png", domain.MediaTypeImage, fakeResponse{body: pngData})
 	if _, err := e.proxy.Open(t.Context(), pngID, "full", u.Query().Get("sig")); err != nil {
 		t.Errorf("Open with a URL signed under the previous key = %v", err)
 	}
-	if e.proxy.URL(pngID, domain.VariantFull) == before.proxy.URL(pngID, domain.VariantFull) {
+	if e.proxy.URL(pngID, content.ProxyFull) == before.proxy.URL(pngID, content.ProxyFull) {
 		t.Error("the previous key still signs")
 	}
 }
@@ -306,7 +306,7 @@ func TestMediaProxyRefusesUnknownFiles(t *testing.T) {
 	if _, _, err := e.open(t, pngID); !errors.Is(err, content.ErrNotFound) {
 		t.Errorf("Open(unknown) = %v, want ErrNotFound", err)
 	}
-	u, _ := url.Parse(e.proxy.URL(pngID, domain.VariantThumbnail))
+	u, _ := url.Parse(e.proxy.URL(pngID, content.ProxyVariant("thumbnail")))
 	e.add(pngID, "https://remote.example/a.png", domain.MediaTypeImage, fakeResponse{body: pngData})
 	if _, err := e.proxy.Open(t.Context(), pngID, "thumbnail", u.Query().Get("sig")); !errors.Is(err, content.ErrNotFound) {
 		t.Errorf("Open(thumbnail) = %v, want ErrNotFound", err)

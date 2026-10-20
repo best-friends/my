@@ -33,9 +33,6 @@ func inspect(data []byte, limits media.Limits) (media.Probe, error) {
 	case media.FormatGIF:
 		decodeConfig = func(r *bytes.Reader) (image.Config, error) { return gif.DecodeConfig(r) }
 	case media.FormatWebP:
-		if webpAnimated(data) {
-			return media.Probe{}, fmt.Errorf("%w: animated WebP", media.ErrUnsupportedFormat)
-		}
 		decodeConfig = func(r *bytes.Reader) (image.Config, error) { return webp.DecodeConfig(r) }
 	default:
 		return media.Probe{}, media.ErrUnsupportedFormat
@@ -48,13 +45,24 @@ func inspect(data []byte, limits media.Limits) (media.Probe, error) {
 	if err := checkDimensions(probe.Width, probe.Height, limits); err != nil {
 		return media.Probe{}, err
 	}
-	if format == media.FormatGIF {
-		frames, pixels, err := gifFrames(data, limits.MaxFrames)
+	var countFrames func([]byte, int) (int, int64, error)
+	switch {
+	case format == media.FormatGIF:
+		countFrames = gifFrames
+	case format == media.FormatWebP && webpAnimated(data):
+		countFrames = webpFrames
+	}
+	if countFrames != nil {
+		frames, pixels, err := countFrames(data, limits.MaxFrames)
 		if err != nil {
 			return media.Probe{}, err
 		}
 		if pixels > limits.MaxPixels {
 			return media.Probe{}, fmt.Errorf("%w: %d pixels in all frames, at most %d", media.ErrDimensions, pixels, limits.MaxPixels)
+		}
+		// Every frame is composited on the whole canvas and scaled from it.
+		if composited := int64(frames) * int64(probe.Width) * int64(probe.Height); composited > media.CompositedPixelsFactor*limits.MaxPixels {
+			return media.Probe{}, fmt.Errorf("%w: %d frames of %d×%d", media.ErrDimensions, frames, probe.Width, probe.Height)
 		}
 		probe.Frames = frames
 	}
@@ -78,6 +86,45 @@ func checkDimensions(w, h int, limits media.Limits) error {
 func webpAnimated(data []byte) bool {
 	const vp8xFlags = 12 + 8 // RIFF header, then the VP8X chunk header
 	return len(data) > vp8xFlags && string(data[12:16]) == "VP8X" && data[vp8xFlags]&0x02 != 0
+}
+
+// webpFrames counts the ANMF chunks of an animated WebP and the pixels they cover, failing as
+// soon as there are more than maxFrames frames or a frame leaves the canvas.
+func webpFrames(data []byte, maxFrames int) (frames int, pixels int64, err error) {
+	corrupt := fmt.Errorf("%w: truncated or malformed WebP", media.ErrCorrupt)
+	if len(data) < 30 {
+		return 0, 0, corrupt
+	}
+	u24 := func(b []byte) int { return int(b[0]) | int(b[1])<<8 | int(b[2])<<16 }
+	canvasW, canvasH := u24(data[24:])+1, u24(data[27:])+1
+	end := min(len(data), 8+int(binary.LittleEndian.Uint32(data[4:])))
+	for p := 12; p+8 <= end; {
+		size := int(binary.LittleEndian.Uint32(data[p+4:]))
+		body := p + 8
+		if size < 0 || body+size > end {
+			return 0, 0, corrupt
+		}
+		if string(data[p:p+4]) == "ANMF" {
+			if size < 16 {
+				return 0, 0, corrupt
+			}
+			x, y := 2*u24(data[body:]), 2*u24(data[body+3:])
+			w, h := u24(data[body+6:])+1, u24(data[body+9:])+1
+			if x+w > canvasW || y+h > canvasH {
+				return 0, 0, fmt.Errorf("%w: a WebP frame outside the canvas", media.ErrCorrupt)
+			}
+			frames++
+			pixels += int64(w) * int64(h)
+			if frames > maxFrames {
+				return 0, 0, fmt.Errorf("%w: more than %d frames", media.ErrDimensions, maxFrames)
+			}
+		}
+		p = body + size + size&1
+	}
+	if frames == 0 {
+		return 0, 0, corrupt
+	}
+	return frames, pixels, nil
 }
 
 // gifFrames counts the image descriptors of a GIF and the pixels they cover, failing as soon

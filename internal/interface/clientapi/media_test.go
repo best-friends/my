@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -34,12 +35,14 @@ type fakeMedia struct {
 	files    map[string]appcontent.Media
 	attached map[string]bool
 	next     int
-	// imageCalls counts the calls of ImageURLs.
+	// imageCalls counts the calls of Images.
 	imageCalls int
+	// purposes are the purposes of the uploads.
+	purposes map[string]content.MediaPurpose
 }
 
 func newFakeMedia() *fakeMedia {
-	return &fakeMedia{files: map[string]appcontent.Media{}, attached: map[string]bool{}}
+	return &fakeMedia{files: map[string]appcontent.Media{}, attached: map[string]bool{}, purposes: map[string]content.MediaPurpose{}}
 }
 
 func (f *fakeMedia) Upload(_ context.Context, in appcontent.UploadInput) (appcontent.Media, error) {
@@ -73,6 +76,7 @@ func (f *fakeMedia) Upload(_ context.Context, in appcontent.UploadInput) (appcon
 		Description: in.Description,
 	}
 	f.files[id] = m
+	f.purposes[id] = in.Purpose
 	return m, nil
 }
 
@@ -84,9 +88,11 @@ func (f *fakeMedia) process(id string, outcome content.MediaOutcome) {
 	r := content.MediaProcessingResult{ID: "result-" + id, MediaID: id, Outcome: outcome, MediaType: content.MediaTypeUnknown}
 	if outcome == content.MediaReady {
 		r.MediaType, r.Width, r.Height, r.Blurhash = content.MediaTypeImage, 640, 480, "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+		r.Purpose = content.PurposeAttachment
 		r.Variants = []content.MediaVariant{
-			{ResultID: r.ID, Kind: content.VariantFull, BlobKey: "media/" + id + "/full.png", ContentType: "image/png", FileSize: 1234, Width: 640, Height: 480},
-			{ResultID: r.ID, Kind: content.VariantThumbnail, BlobKey: "media/" + id + "/thumbnail.jpg", ContentType: "image/jpeg", FileSize: 99, Width: 415, Height: 311},
+			{ResultID: r.ID, Size: content.SizeLarge, Motion: content.MotionStill, BlobKey: "media/" + id + "/r/large.png", ContentType: "image/png", FileSize: 1234, Width: 640, Height: 480},
+			{ResultID: r.ID, Size: content.SizeMedium, Motion: content.MotionStill, BlobKey: "media/" + id + "/r/medium.webp", ContentType: "image/webp", FileSize: 456, Width: 640, Height: 480},
+			{ResultID: r.ID, Size: content.SizeSmall, Motion: content.MotionStill, BlobKey: "media/" + id + "/r/small.webp", ContentType: "image/webp", FileSize: 99, Width: 415, Height: 311},
 		}
 	}
 	m.Result = &r
@@ -133,27 +139,67 @@ func (f *fakeMedia) Update(ctx context.Context, accountID string, u appcontent.M
 	return m, nil
 }
 
-func (f *fakeMedia) URL(v content.MediaVariant) string { return "https://social.example/" + v.BlobKey }
+// processedVariants returns the variants of a file that fakeMedia.process made ready.
+func processedVariants(id string) clientapi.MediaVariants {
+	variant := func(name, contentType string, w, h int, size int64) clientapi.MediaVariant {
+		return clientapi.MediaVariant{Url: "https://social.example/media/" + id + "/r/" + name, ContentType: &contentType, Width: &w, Height: &h, Size: &size}
+	}
+	return clientapi.MediaVariants{
+		Small:  variant("small.webp", "image/webp", 415, 311, 99),
+		Medium: variant("medium.webp", "image/webp", 640, 480, 456),
+		Large:  variant("large.png", "image/png", 640, 480, 1234),
+	}
+}
 
-// ImageURLs answers as the real service does and counts its calls in imageCalls.
+func (f *fakeMedia) url(v content.MediaVariant) string { return "https://social.example/" + v.BlobKey }
+
 // CustomEmojis knows no custom emoji: the platform tests present them through the real media
 // service.
 func (f *fakeMedia) CustomEmojis(context.Context, []string) (map[string]appcontent.CustomEmojiView, error) {
 	return map[string]appcontent.CustomEmojiView{}, nil
 }
 
-func (f *fakeMedia) ImageURLs(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]string, error) {
+// Image presents the variants of a processed file as the real service does.
+func (f *fakeMedia) Image(m appcontent.Media) (appcontent.Image, bool) {
+	if !m.Ready() {
+		return appcontent.Image{}, false
+	}
+	set := func(motion content.MediaMotion) (appcontent.ImageVariants, bool) {
+		var out appcontent.ImageVariants
+		for i, size := range content.MediaSizes {
+			v, ok := m.Result.Variant(size, motion)
+			if !ok {
+				return out, false
+			}
+			iv := appcontent.ImageVariant{URL: f.url(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
+			*[]*appcontent.ImageVariant{&out.Small, &out.Medium, &out.Large}[i] = iv
+		}
+		return out, true
+	}
+	still, ok := set(content.MotionStill)
+	if !ok {
+		return appcontent.Image{}, false
+	}
+	img := appcontent.Image{Still: still}
+	if moving, ok := set(content.MotionAnimated); ok {
+		img.Animated = &moving
+	}
+	return img, true
+}
+
+// Images answers as the real service does and counts its calls in imageCalls.
+func (f *fakeMedia) Images(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error) {
 	f.mu.Lock()
 	f.imageCalls++
 	f.mu.Unlock()
-	out := map[appcontent.ImageRef]string{}
+	out := map[appcontent.ImageRef]appcontent.Image{}
 	for _, ref := range refs {
 		m, err := f.OwnMedia(ctx, ref.AccountID, ref.MediaID)
-		if err != nil || !m.Ready() {
+		if err != nil {
 			continue
 		}
-		if v, ok := m.Result.Variant(content.VariantFull); ok {
-			out[ref] = f.URL(v)
+		if img, ok := f.Image(m); ok {
+			out[ref] = img
 		}
 	}
 	return out, nil
@@ -267,6 +313,14 @@ func TestUploadMedia(t *testing.T) {
 		t.Errorf("stored %d bytes, want %d", m.Upload.FileSize, len(png().data))
 	}
 
+	if p := e.media.purposes[got.Id]; p != "" {
+		t.Errorf("purpose = %q, want none (the service's default)", p)
+	}
+	avatar := decode[clientapi.MediaAttachment](t, e.upload(t, "bob-write", png(), part{name: "purpose", data: []byte("avatar")}))
+	if p := e.media.purposes[avatar.Id]; p != content.PurposeAvatar {
+		t.Errorf("purpose = %q, want avatar", p)
+	}
+
 	// The fine-grained scope is enough; a declared octet-stream tells nothing.
 	file := png()
 	file.contentType = "application/octet-stream"
@@ -300,6 +354,7 @@ func TestUploadMediaRejects(t *testing.T) {
 			http.StatusUnprocessableEntity, clientapi.ProblemTypeBlank},
 		{"description part too long", []part{png(), {name: "description", data: make([]byte, 4*content.MaxMediaDescriptionLength+1)}},
 			http.StatusUnprocessableEntity, clientapi.ProblemTypeBlank},
+		{"unknown purpose", []part{png(), {name: "purpose", data: []byte("banner")}}, http.StatusBadRequest, clientapi.ProblemTypeBlank},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -397,11 +452,9 @@ func TestGetMedia(t *testing.T) {
 
 	e.media.process(up.Id, content.MediaReady)
 	got := decode[clientapi.MediaAttachment](t, e.send(t, http.MethodGet, path, "bob-write", "", nil))
-	want := clientapi.MediaVariants{
-		Full:      clientapi.MediaVariant{Url: "https://social.example/media/" + up.Id + "/full.png", ContentType: "image/png", Width: 640, Height: 480, Size: 1234},
-		Thumbnail: clientapi.MediaVariant{Url: "https://social.example/media/" + up.Id + "/thumbnail.jpg", ContentType: "image/jpeg", Width: 415, Height: 311, Size: 99},
-	}
-	if got.State != "ready" || got.Type != "image" || got.Variants == nil || *got.Variants != want ||
+	want := processedVariants(up.Id)
+	if got.State != "ready" || got.Type != "image" || got.Variants == nil || !reflect.DeepEqual(*got.Variants, want) ||
+		deref(got.Url) != want.Large.Url || deref(got.PreviewUrl) != want.Small.Url ||
 		got.Blurhash == nil || *got.Blurhash == "" || got.Meta.Width == nil || *got.Meta.Width != 640 || *got.Meta.Height != 480 {
 		t.Errorf("ready = %+v (variants %+v)", got, got.Variants)
 	}

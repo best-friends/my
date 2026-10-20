@@ -50,6 +50,8 @@ import (
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
+	domainaccount "github.com/best-friends/my/internal/domain/account"
+	domaincontent "github.com/best-friends/my/internal/domain/content"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
 	domaininstance "github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
@@ -386,8 +388,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RenderProfileText: func(ctx context.Context, text string) (string, error) {
 			return a.Content.RenderProfileText(ctx, text)
 		},
-		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
-			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
+		CheckProfileImage: func(ctx context.Context, accountID, mediaID string, prop domainaccount.ProfileProperty) error {
+			purpose := domaincontent.PurposeAvatar
+			if prop == domainaccount.PropertyHeader {
+				purpose = domaincontent.PurposeHeader
+			}
+			return a.Media.CheckProfileImage(ctx, accountID, mediaID, purpose)
 		},
 		Sanitizer:          newHTMLSanitizer(),
 		RecordRemoteImage:  a.recordRemoteImage,
@@ -562,6 +568,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
 		LocalPosts:  a.Content.LocalPostCount,
+		Images:      a.Media.Images,
 	})
 	ap.Register(surfaceRouter{a, surfaceActivityPub})
 	// The web client's pages answer the requests that ask for ActivityPub: a post page redirects
@@ -650,7 +657,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 	a.FanOut = federation.NewFanOut(federation.FanOutDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
-		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph,
+		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph, Images: a.Media.Images,
 		Blocks:  a.Graph,
 		Reports: a.Moderation,
 		Domains: a.ModerationPolicy,
@@ -665,7 +672,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 // the keys that RemoteActors resolves, so setUpRemoteActors runs first.
 func (a *App) newObjects(cfg *config.Config) *federation.Objects {
 	return federation.NewObjects(federation.ObjectsDeps{
-		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses,
+		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses, Images: a.Media.Images,
 		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
 		Domains:    a.ModerationPolicy,
 		// Authorized fetch (FR-408) is the instance setting, read per request.

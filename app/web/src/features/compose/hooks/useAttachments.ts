@@ -80,7 +80,7 @@ export function useAttachments(store: DraftStore, attachments: readonly Attachme
   const items: AttachmentView[] = attachments.map((attachment, index) => {
     const result = attachment.mediaId === null ? undefined : byId.get(attachment.mediaId);
     const status = attachmentStatus(attachment, result?.data, result?.error ?? null, t("client:compose.media.failed_processing"));
-    return { ...attachment, ...status, position: index + 1, src: attachment.previewUrl ?? result?.data?.variants?.thumbnail.url ?? null };
+    return { ...attachment, ...status, position: index + 1, src: attachment.previewUrl ?? result?.data?.variants?.small.url ?? null };
   });
 
   const start = (file: File) => {
