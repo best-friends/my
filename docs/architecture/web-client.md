@@ -276,6 +276,9 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - **未保存の変更**: プロフィールの編集のように、まとめて保存するフォームは、保存していない変更があるまま別の画面へ移るとき（検索条件とハッシュだけの変化は除く）に、TanStack Router の `useBlocker`（`withResolver`）で遷移を止め、
   `ConfirmDialog`（`alertdialog`）で確かめる。フォーカスは「編集を続ける」から始まり、Esc もそれと同じく画面に残る。再読み込みとタブを閉じるときは、ブラウザ自身の確認（`beforeunload`）になる。
   変更は保存済みの値と比べて求めるので、手で元に戻した変更や保存した後は確かめない。設定を変えたとたんに保存する画面（表示と投稿）は対象にしない。
+- **古い投稿の自動削除**（`/settings/auto-delete`、設定のメニューの「古い投稿の自動削除」、FR-118、`features/settings` の `AutoDeleteSettings`）: `GET /preferences/auto_delete` の設定を、有効にするスイッチ、削除する投稿の古さ（`Select`。7 日〜2 年と、保存されている値が選択肢になければそれも）、
+  残す投稿の例外（ピン留め・自分のブックマーク・自分のお気に入り・メディア付き・投票付きの `Checkbox` と、残す公開範囲の `Checkbox` をそれぞれ `fieldset` にまとめる）、ブーストとお気に入りの数の閾値（`Select`。「この条件では残さない」と 1〜100 回）で編集する。
+  まとめて保存するフォームで、「保存する」が設定全体を `PUT /preferences/auto_delete` で送り、応答でキャッシュを置き換えて、保存した内容を `StatusMessage` に出す。保存していない変更は上の「未保存の変更」の確かめの対象にする。削除はサーバーの 1 時間ごとのジョブが行うので、保存しても投稿の一覧は取り直さない。
 - **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、表示のロケール、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
 - **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。
