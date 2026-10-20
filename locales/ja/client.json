@@ -1,4 +1,92 @@
 {
+  "about.description.title": {
+    "defaultMessage": "説明",
+    "description": "Heading of the section of the server's information page with the server's description."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "制限しているサーバーはありません",
+    "description": "Shown in place of the list of moderated servers when there are none."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "制限しているサーバーを読み込めませんでした",
+    "description": "Heading shown in place of the list of moderated servers when it could not be loaded."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "このサーバーは、次のサーバーとの連合を制限または停止しています。",
+    "description": "Explanation under the heading of the list of moderated servers on the server's information page."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "制限：投稿を公開のタイムラインに出さない",
+    "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "停止：一切連合しない",
+    "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "制限しているサーバーを読み込んでいます",
+    "description": "Accessible name of the progress indicator while the list of moderated servers loads."
+  },
+  "about.domains.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under the list of moderated servers that loads more of them."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "続きを読み込めませんでした",
+    "description": "Shown under the list of moderated servers when its next page could not be loaded."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "一部のサーバーの名前は * で伏せています。",
+    "description": "Note above the list of moderated servers when the moderators hid part of some servers' names."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the list of moderated servers after a failure."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link after the note that only signed-in users can see the list of moderated servers; it opens the sign-in screen."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "この一覧は、ログインした利用者だけが見られます。",
+    "description": "Shown in place of the list of moderated servers to a visitor who is not signed in, when the server shows it to signed-in users only."
+  },
+  "about.domains.title": {
+    "defaultMessage": "制限しているサーバー",
+    "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server's information page that says what the server states to search engines and AI crawlers."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "{setting, select, allow {検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。} other {このサーバーは、すべてのページを検索エンジンの索引に載せないよう求めています。}}",
+    "description": "What the server states to search engines, by the server setting search_indexing (allow or deny)."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "{setting, select, allow {このサーバーは AI に対して何も留保していません。拒否したアカウントのページを除き、AI はページを学習にも利用にも使えます。} deny_training {このサーバーは、ページを AI のモデルの学習に使うことを拒否しています。拒否したアカウントのページを除き、AI の検索やアシスタントによる利用は拒否していません。} other {このサーバーは、ページを AI のモデルの学習に使うことと、AI の検索・アシスタント・エージェントで利用することを拒否しています。}}",
+    "description": "What the server states to AI crawlers, by the server setting ai_usage (allow, deny_training, or deny)."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "このサーバーは、この表明を robots.txt（既知の AI クローラーの一覧を含む）、ページの robots の meta タグと X-Robots-Tag・Content-Usage・tdm-reservation のヘッダー、/.well-known/tdmrep.json で示します。これらは要請です。主要なクローラーの多くは一部に従うとしていますが、従わないクローラーを技術的に止めるものではありません。",
+    "description": "How the server states its search and AI settings: the machine-readable means it uses."
+  },
+  "about.crawlers.accounts": {
+    "defaultMessage": "アカウントごとに、このサーバーにある自分のページについて、検索エンジンへの掲載や AI を拒否することもできます。サーバーが拒否しているものを、アカウントが許可することはできません。メディアのファイルと、ほかのサーバーにある投稿の写しには、アカウントの選択は及びません。",
+    "description": "That each account can narrow the server's statement for its own pages, but never widen it."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "この表明が法的にどう扱われるかは国によって異なります。EU では、デジタル単一市場における著作権指令 4 条 3 項にいうテキストとデータのマイニングに対する機械可読な権利の留保として示しています。日本では、著作権法 30 条の 4 が情報解析のための多くの利用を許諾なしに認めているため、この表明は法的な拒否として扱われない場合があります。それでも多くの事業者は、こうした表明に自主的に従っています。このページは法的な助言ではありません。",
+    "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
+  },
+  "about.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Heading of the section of the server's information page with the server's rules."
+  },
+  "about.title": {
+    "defaultMessage": "{instance} について",
+    "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
+  },
   "account_status.active.empty": {
     "defaultMessage": "アカウントに効いている処分はありません",
     "description": "Shown when no moderation action is in effect on the user's account."
@@ -3227,6 +3315,78 @@
     "defaultMessage": "一覧を見られる人なら誰でもコメントを見られます。",
     "description": "Description of showing the comments of the domain actions to everyone."
   },
+  "admin.settings.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.description": {
+    "defaultMessage": "サーバーが検索エンジンと AI のクローラーに示す表明です。設定するまでは、どちらも拒否します。サーバーはこの設定と、同梱する既知の AI クローラーの一覧から robots.txt を作り、すべてのページでも表明します。アカウントごとに自分のページについてさらに拒否できますが、許可を広げることはできません。",
+    "description": "Explanation of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.search": {
+    "defaultMessage": "検索エンジン",
+    "description": "Label of the radio group of whether search engines may index the server's pages (search_indexing)."
+  },
+  "admin.settings.crawlers.search.allow": {
+    "defaultMessage": "索引に載せることを許可する",
+    "description": "Choice that lets search engines index the pages of the accounts that allow it."
+  },
+  "admin.settings.crawlers.search.allow.description": {
+    "defaultMessage": "検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。ほかのページは載せません。",
+    "description": "Description of letting search engines index pages."
+  },
+  "admin.settings.crawlers.search.deny": {
+    "defaultMessage": "索引に載せることを拒否する",
+    "description": "Choice that asks search engines not to index any page."
+  },
+  "admin.settings.crawlers.search.deny.description": {
+    "defaultMessage": "すべてのページで、検索エンジンに索引に載せないよう求めます（noindex）。リンクのプレビューはこれまでどおり表示されます。",
+    "description": "Description of asking search engines not to index any page."
+  },
+  "admin.settings.crawlers.indexable_default": {
+    "defaultMessage": "新しいアカウントで検索への掲載を許可する",
+    "description": "Label of the checkbox of whether new accounts allow search indexing (indexable_default)."
+  },
+  "admin.settings.crawlers.indexable_default.description": {
+    "defaultMessage": "これから登録するアカウントの初めの設定です。登録済みのアカウントの設定は変わりません。",
+    "description": "Help text of the indexable default checkbox."
+  },
+  "admin.settings.crawlers.ai": {
+    "defaultMessage": "AI",
+    "description": "Label of the radio group of what the server states to AI crawlers (ai_usage)."
+  },
+  "admin.settings.crawlers.ai.allow": {
+    "defaultMessage": "許可する",
+    "description": "Choice that reserves nothing against AI."
+  },
+  "admin.settings.crawlers.ai.allow.description": {
+    "defaultMessage": "サーバーとしては AI に対して何も留保しません。アカウントは自分のページについて拒否できます。",
+    "description": "Description of reserving nothing against AI."
+  },
+  "admin.settings.crawlers.ai.deny_training": {
+    "defaultMessage": "学習を拒否する",
+    "description": "Choice that denies the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny_training.description": {
+    "defaultMessage": "AI のモデルの学習のためにデータを集めるクローラーを拒否します。人の依頼でページを読む AI の検索やアシスタントは拒否しません。",
+    "description": "Description of denying the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny": {
+    "defaultMessage": "学習と利用を拒否する",
+    "description": "Choice that denies both the training and the use by AI."
+  },
+  "admin.settings.crawlers.ai.deny.description": {
+    "defaultMessage": "人の依頼でページを読む AI の検索・アシスタント・エージェントを含め、AI のクローラーを拒否します。",
+    "description": "Description of denying both the training and the use by AI."
+  },
+  "admin.settings.crawlers.security_contact": {
+    "defaultMessage": "脆弱性の連絡先",
+    "description": "Label of the field of the address to report vulnerabilities to (security_contact)."
+  },
+  "admin.settings.crawlers.security_contact.description": {
+    "defaultMessage": "脆弱性を報告する先です。https か mailto の URI（メールアドレスなら先頭に mailto と半角のコロンを付けたもの）を入れます。設定している間だけ、サーバーは /.well-known/security.txt を返します。",
+    "description": "Help text of the security contact field."
+  },
   "admin.settings.domain_actions.comments.none": {
     "defaultMessage": "コメントは表示しません。",
     "description": "Description of not showing the comments of the domain actions."
@@ -5763,6 +5923,34 @@
     "defaultMessage": "自動で投稿するアカウントであることを、ほかの人に示します。",
     "description": "Help text of the 'This is a bot' checkbox."
   },
+  "settings.profile.crawlers": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the part of the profile form about search engines and AI."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "プロフィールと公開投稿を検索に載せる",
+    "description": "Label of the checkbox that lets the profile and public posts appear in search."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "このサーバーの検索と、サーバーが許可していれば検索エンジンが、索引に載せられます。この選択に従うほかのサーバーにも伝わります。",
+    "description": "Help text of the indexable checkbox."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "このサーバーはすべてのページを検索エンジンの索引に載せないよう求めているため、許可しても検索エンジンには載りません。",
+    "description": "Note shown when the server denies search engines, so the user's choice does not reach them."
+  },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "AI の学習と利用を拒否する",
+    "description": "Label of the checkbox that denies AI training on and use of the user's pages."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "このサーバーにあるプロフィールと投稿のページで、AI に学習や利用をしないよう求めます。メディアのファイルと、ほかのサーバーにある投稿の写しには及びません。",
+    "description": "Help text of the AI opt-out checkbox, with its limits."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "{usage, select, deny_training {このサーバーはすべてのページで AI の学習を拒否しています。この設定では、AI の検索やアシスタントによる利用も拒否します。} other {このサーバーはすべてのページで AI の学習と利用を拒否しています。}}",
+    "description": "Note shown when the server already denies AI training (deny_training) or both training and use (deny)."
+  },
   "settings.profile.characters_left": {
     "defaultMessage": "{count, plural, other {残り # 文字}}",
     "description": "Character count under the bio field while the text is within the limit."
@@ -6194,6 +6382,10 @@
   "shell.about.domain": {
     "defaultMessage": "このサーバーのアカウントは @{domain} で終わります。",
     "description": "In the side column about this server: the domain of the handles of local accounts, for example 'Accounts here end with @example.com.'."
+  },
+  "shell.about.more": {
+    "defaultMessage": "このサーバーについて詳しく",
+    "description": "Link to the server's information page: in the side column about this server, in the menu sheet, and on the landing page."
   },
   "shell.about.title": {
     "defaultMessage": "このサーバーについて",

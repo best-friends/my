@@ -368,6 +368,8 @@ func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
 			return d.Choices[rng.IntN(len(d.Choices))]
 		case instance.KindMedia:
 			return fmt.Sprintf("0199f0e0-0000-7000-8000-%012x", rng.IntN(3))
+		case instance.KindURI:
+			return fmt.Sprintf("mailto:security%d@social.example", rng.IntN(3))
 		default:
 			return locales[rng.IntN(len(locales))]
 		}

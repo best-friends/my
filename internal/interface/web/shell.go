@@ -30,7 +30,9 @@ type runtimeConfig struct {
 type shellData struct {
 	Lang, Dir, Title string
 	// Theme gives the theme colors and the theme's stylesheet (ADR-0059).
-	Theme                      themeState
+	Theme themeState
+	// Crawlers state the page's crawler policy in its meta tags (ADR-0057).
+	Crawlers                   crawlerDirectives
 	HasIcon, HasAppleTouchIcon bool
 	// HasThemeScript reports whether the build has theme.js, which applies the stored color theme.
 	HasThemeScript bool
@@ -57,10 +59,13 @@ const shellSource = `<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{.Title}}</title>
-{{- with .Preview}}
-{{- if .NoIndex}}
-<meta name="robots" content="noindex">
+{{- with .Crawlers.Robots}}
+<meta name="robots" content="{{.}}">
 {{- end}}
+{{- if .Crawlers.TDMReservation}}
+<meta name="tdm-reservation" content="1">
+{{- end}}
+{{- with .Preview}}
 <meta property="og:type" content="{{.Type}}">
 <meta property="og:site_name" content="{{.SiteName}}">
 <meta property="og:title" content="{{.Title}}">

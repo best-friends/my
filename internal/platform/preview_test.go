@@ -13,8 +13,10 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/identity"
+	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/account"
 	domcontent "github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/platform"
 )
 
@@ -34,6 +36,14 @@ func TestLinkPreviews(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = app.Close() })
 	ctx := t.Context()
+	// The instance lets search engines index the accounts that allow it, which new accounts do
+	// (ADR-0057), so that only unlisted and hidden pages are noindex.
+	if _, err := app.Instance.SetSettings(ctx, []appinstance.SetSettingInput{
+		{Key: instance.SettingSearchIndexing, Value: "allow"}, {Key: instance.SettingAIUsage, Value: "allow"},
+		{Key: instance.SettingIndexableDefault, Value: "true"},
+	}); err != nil {
+		t.Fatal(err)
+	}
 	accounts := map[string]string{}
 	for _, name := range []string{"alice", "bob"} {
 		reg, err := app.Identity.RegisterLocalUser(ctx, identity.RegisterInput{
@@ -87,7 +97,7 @@ func TestLinkPreviews(t *testing.T) {
 			!strings.Contains(body, `<html lang="ja" dir="ltr">`) || !strings.Contains(body, `<meta name="fediverse:creator" content="@alice@`) {
 			t.Errorf("%s post = %d:\n%s", vis, rec.Code, body)
 		}
-		if noindex := rec.Header().Get("X-Robots-Tag") == "noindex"; noindex != (vis == "unlisted") {
+		if noindex := rec.Header().Get("X-Robots-Tag") == "noindex, noarchive"; noindex != (vis == "unlisted") {
 			t.Errorf("%s post: X-Robots-Tag = %q", vis, rec.Header().Get("X-Robots-Tag"))
 		}
 		// A remote server resolving the page's URL (FR-305) is redirected to the post's id (ADR-0053).
@@ -107,7 +117,7 @@ func TestLinkPreviews(t *testing.T) {
 		"/@alice/status/" + ids["missing"], "/@bob/status/" + ids["inactive author"], "/@bob", "/@nobody",
 	} {
 		rec := get(path)
-		if rec.Code != http.StatusNotFound || rec.Header().Get("X-Robots-Tag") != "noindex" || rec.Body.String() != generic.Body.String() {
+		if rec.Code != http.StatusNotFound || rec.Header().Get("X-Robots-Tag") != "noindex, noarchive" || rec.Body.String() != generic.Body.String() {
 			t.Errorf("GET %s = %d %v, want the generic shell with 404 and noindex:\n%s", path, rec.Code, rec.Header(), rec.Body)
 		}
 		hidden = append(hidden, rec)

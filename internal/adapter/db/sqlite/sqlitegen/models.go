@@ -75,6 +75,7 @@ type AccountProfileRevision struct {
 	Bot           int64
 	Discoverable  int64
 	Indexable     int64
+	AiOptOut      int64
 	AvatarMediaID sql.NullString
 	HeaderMediaID sql.NullString
 	RevisedAt     int64

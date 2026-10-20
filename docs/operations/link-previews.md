@@ -5,16 +5,20 @@
 
 ## サーバーが返すもの
 
-ランディングページ（`https://<host>/`）、プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
+ランディングページ（`https://<host>/`）とインスタンスの情報ページ（`https://<host>/about`）、プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
 HTML のリクエストは常に未ログインとして扱うので、プレビューに出るのは未ログインでも見られるものだけです。
 
 | ページ | 応答 |
 | --- | --- |
-| ランディングページ（`/`） | 200。インスタンスを紹介する meta タグ付きの外枠（下の「ランディングページ」） |
+| ランディングページ（`/`）、インスタンスの情報ページ（`/about`） | 200。インスタンスを紹介する meta タグ付きの外枠（下の「ランディングページ」） |
 | `public` の投稿、有効なローカルアカウントのプロフィール | 200。meta タグ付きの外枠 |
-| `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex">` と `X-Robots-Tag: noindex` |
-| `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex`。本文とヘッダーは理由によらず同じ |
+| `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex, noarchive">` と `X-Robots-Tag: noindex, noarchive` |
+| `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex, noarchive`。本文とヘッダーは理由によらず同じ |
 | `/@<旧ユーザー名>/status/<投稿 ID>` | 301。現在のユーザー名の URL へ |
+
+どのページにも、検索エンジンと AI クローラーへの表明（`noindex`・`noai` などの meta タグと `X-Robots-Tag`・`Content-Usage`・`tdm-reservation`）が、
+インスタンス設定と持ち主の設定に応じて付きます（[検索エンジンと AI クローラー](crawlers.md)）。上表の `noindex` は設定によらず付くものです。
+`noindex` はリンクプレビューを止めません。
 
 ActivityPub の `Accept` で来たリクエストには外枠を返さず、ActivityPub 側が答えます（プロフィールはアクターの `id`、未ログインで見られる投稿はその `id` への 302。ADR-0018、ADR-0053）。どの応答にも `Vary: Accept` が付きます。
 
@@ -42,6 +46,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 - 言語（`og:locale`、`<html lang dir>`）・名前・説明は、インスタンスの `default_locale` で選びます。
 - `og:image` は下の 3（インスタンスのプレビュー画像）、なければ 4 です。
 - アカウントのものではないので、`fediverse:creator` と ActivityPub の `alternate` は出しません。
+- インスタンスの情報ページ（`/about`）も同じ meta タグで、`og:title` と `<title>` は「{インスタンスの名前} について」（`server:preview.about_title`）、`og:url` と `<link rel="canonical">` は `https://<host>/about` です。
 
 `og:image` は次の順で選びます。
 
@@ -60,7 +65,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 ### キャッシュ
 
 - `Cache-Control: public, max-age=60, stale-while-revalidate=300` を返します。削除や公開範囲の変更は、最長でこの時間だけ共有キャッシュに残ります。
-- ETag はテンプレート・アセット・インスタンスの設定の版、言語、投稿の版（リビジョン）、実効公開範囲、プロフィールの版、選んだ画像（ランディングページは、インスタンスの説明と選んだ画像）から作ります。`If-None-Match` には `304` を返します。
+- ETag はテンプレート・アセット・インスタンスの設定の版、言語、投稿の版（リビジョン）、実効公開範囲、プロフィールの版、選んだ画像（ランディングページと情報ページは、ページのアドレス・タイトル・インスタンスの説明と選んだ画像）から作ります。`If-None-Match` には `304` を返します。
 - CDN を前に置く場合は、`Accept` をキャッシュキーに含めてください（AP の JSON と HTML を取り違えないため）。
 
 ## 手動確認の手順
@@ -83,7 +88,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
    ```
 
    - 200 で、上表の meta タグがあること。`unlisted` は `noindex` が付くこと。
-   - `private` の投稿と存在しない ID が、同じ本文の 404 で `X-Robots-Tag: noindex` を返すこと。
+   - `private` の投稿と存在しない ID が、同じ本文の 404 で `X-Robots-Tag: noindex, noarchive`（AI を拒否する設定では `noai, noimageai` も）を返すこと。
 
      ```sh
      diff <(curl -sS https://<host>/@alice/status/<private の投稿 ID>) <(curl -sS https://<host>/@alice/status/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f)

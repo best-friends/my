@@ -58,6 +58,9 @@ type Deps struct {
 	// setting). SignUp calls it once per sign-up, so a change applies to the next one. Nil
 	// means identity.RegistrationClosed.
 	RegistrationMode func(ctx context.Context) (identity.RegistrationMode, error)
+	// IndexableDefault returns whether new accounts are indexable (the indexable_default
+	// setting, FR-412, ADR-0057); nil makes them not indexable.
+	IndexableDefault func(ctx context.Context) (bool, error)
 	// SignupBlocks screens the sign-ups from the registration page against the sign-up block
 	// list (FR-719); nil screens nothing.
 	SignupBlocks SignupScreen
@@ -212,10 +215,17 @@ func (s *Service) prepareUser(ctx context.Context, in RegisterInput) (*preparedU
 	if err != nil {
 		return nil, err
 	}
+	indexable := false
+	if s.d.IndexableDefault != nil {
+		if indexable, err = s.d.IndexableDefault(ctx); err != nil {
+			return nil, err
+		}
+	}
 	acct, err := s.d.Accounts.PrepareLocalAccount(ctx, account.LocalAccountInput{
 		UserID:      user.ID,
 		Username:    in.Username,
 		DisplayName: in.DisplayName,
+		Indexable:   indexable,
 	})
 	if err != nil {
 		return nil, err

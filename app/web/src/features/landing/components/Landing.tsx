@@ -2,6 +2,7 @@
 import { Button, EmptyState, Feed, Link, PostSkeleton, RegionError, VisuallyHidden } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
+import { aboutPath } from "../../../lib/paths";
 import { DocumentLinks } from "../../documents";
 import { useSignIn } from "../../session";
 import { StatusCard } from "../../status";
@@ -10,10 +11,11 @@ import { type Landing as LandingData, type RecentPosts, type RegistrationMode, u
 
 /**
  * The body of the landing page for people who are not signed in (`/`), under the page's heading: what the server
- * is, how to sign in or create an account, its rules, a few recent posts, and the links to its terms of service and
- * privacy policy.
+ * is, how to sign in or create an account, its rules, a few recent posts, and the links to its information page
+ * (`/about`) and to its terms of service and privacy policy.
  */
 export function Landing() {
+  const t = useT();
   const landing = useLanding();
   return (
     <div className="flex flex-col gap-8">
@@ -29,6 +31,11 @@ export function Landing() {
       {landing.description.length > 0 && <About paragraphs={landing.description} />}
       {landing.rules.length > 0 && <Rules rules={landing.rules} />}
       {landing.recentPosts.status !== "off" && <RecentPostsSection posts={landing.recentPosts} />}
+      <p>
+        <Link href={aboutPath} variant="standalone">
+          {t("client:shell.about.more")}
+        </Link>
+      </p>
       <DocumentLinks />
     </div>
   );
