@@ -21,15 +21,20 @@ import (
 )
 
 // runAdminDomain implements `my admin domain <subcommand>`: the moderation actions on domains
-// (FR-702). The CLI acts as no user: the actions it issues and lifts record no moderator.
-func runAdminDomain(args []string, stdout, stderr io.Writer) int {
+// (FR-702) and their list in Mastodon's CSV (FR-706, domain_block.go). The CLI acts as no user:
+// the actions it issues and lifts record no moderator. stdin supplies the CSV of an import given
+// as "-".
+func runAdminDomain(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		adminDomainUsage(stderr)
 		return 2
 	}
-	sub, code := dispatch("admin domain", args, []string{"list", "issue", "lift"}, stderr, adminDomainUsage)
+	sub, code := dispatch("admin domain", args, []string{"list", "issue", "lift", "export", "import"}, stderr, adminDomainUsage)
 	if code >= 0 {
 		return code
+	}
+	if sub == "export" || sub == "import" {
+		return runAdminDomainCSV(sub, args[1:], stdin, stdout, stderr)
 	}
 	var (
 		domain, kind, comment, note, before string
@@ -148,6 +153,9 @@ func adminDomainUsage(w io.Writer) {
   my admin domain issue -kind <kind> [-public-comment <text>] [-private-note <text>]
                         [-obfuscate] [-duration <d>] [-config <file>] <domain>
   my admin domain lift [-config <file>] <action id>
+  my admin domain export [-config <file>]
+  my admin domain import [-apply] [-only <domains>] [-private-note <text>]
+                         [-config <file>] <file | ->
 
 Moderation actions on remote domains and their subdomains (FR-702), in effect at
 once for federation and the timelines:
@@ -164,6 +172,20 @@ The domain may be given in U-labels (例え.jp); it is stored in IDNA A-labels.
 list shows the actions newest first, lifted and expired ones included unless
 -active is given. lift ends one action; the other actions on the domain stay.
 Lifting a lifted action changes nothing.
+
+export writes the actions in effect to stdout as Mastodon's domain block CSV
+(#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate),
+one row per domain: severity suspend for a suspend, silence for a limit, noop
+otherwise. Domains with only force_sensitive, which Mastodon cannot hold, are
+left out.
+
+import reads a CSV that Mastodon exported ("-" reads stdin; a file without the
+#domain header is a list of domains to suspend; at most 5000 rows) and prints
+what each row would issue: suspend for suspend, limit for silence, nothing for
+noop, plus reject_media and reject_reports. Rows whose actions are already in
+effect on the domain or a parent domain, duplicates, and invalid rows issue
+nothing. Nothing changes without -apply; -only keeps the rows of the listed
+domains. Imported actions last until lifted and are audited like any other.
 `)
 }
 

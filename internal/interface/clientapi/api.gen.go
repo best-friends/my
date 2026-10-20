@@ -850,6 +850,54 @@ func (e DataExportState) Valid() bool {
 	}
 }
 
+// Defines values for DomainBlockImportStatus.
+const (
+	DomainBlockImportStatusAlreadyApplied DomainBlockImportStatus = "already_applied"
+	DomainBlockImportStatusDuplicate      DomainBlockImportStatus = "duplicate"
+	DomainBlockImportStatusImportable     DomainBlockImportStatus = "importable"
+	DomainBlockImportStatusInvalid        DomainBlockImportStatus = "invalid"
+	DomainBlockImportStatusNoAction       DomainBlockImportStatus = "no_action"
+)
+
+// Valid indicates whether the value is a known member of the DomainBlockImportStatus enum.
+func (e DomainBlockImportStatus) Valid() bool {
+	switch e {
+	case DomainBlockImportStatusAlreadyApplied:
+		return true
+	case DomainBlockImportStatusDuplicate:
+		return true
+	case DomainBlockImportStatusImportable:
+		return true
+	case DomainBlockImportStatusInvalid:
+		return true
+	case DomainBlockImportStatusNoAction:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DomainBlockSeverity.
+const (
+	DomainBlockSeverityNoop    DomainBlockSeverity = "noop"
+	DomainBlockSeveritySilence DomainBlockSeverity = "silence"
+	DomainBlockSeveritySuspend DomainBlockSeverity = "suspend"
+)
+
+// Valid indicates whether the value is a known member of the DomainBlockSeverity enum.
+func (e DomainBlockSeverity) Valid() bool {
+	switch e {
+	case DomainBlockSeverityNoop:
+		return true
+	case DomainBlockSeveritySilence:
+		return true
+	case DomainBlockSeveritySuspend:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -3257,6 +3305,77 @@ type DeleteOwnAccountRequest struct {
 	Password string `json:"password"`
 }
 
+// DomainBlock A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
+// such as `例え.jp` is accepted) and the public comment (at most 5,000 characters).
+type DomainBlock struct {
+	Domain        string  `json:"domain"`
+	Obfuscate     bool    `json:"obfuscate"`
+	PublicComment *string `json:"public_comment,omitempty"`
+	RejectMedia   bool    `json:"reject_media"`
+	RejectReports bool    `json:"reject_reports"`
+
+	// Severity The `#severity` of Mastodon's domain block CSV. `suspend`: the action `suspend`.
+	// `silence`: Mastodon's name of the action `limit`. `noop`: no action but the rejections.
+	Severity DomainBlockSeverity `json:"severity"`
+}
+
+// DomainBlockImportPreview What importing each row of a domain block CSV would do, in row order.
+type DomainBlockImportPreview struct {
+	Rows []DomainBlockImportRow `json:"rows"`
+}
+
+// DomainBlockImportResult What an import of domain blocks did.
+type DomainBlockImportResult struct {
+	// Issued The actions issued, in the order of the blocks.
+	Issued []AdminDomainAction `json:"issued"`
+
+	// Skipped The blocks that issued nothing, in their order.
+	Skipped []DomainBlockImportSkipped `json:"skipped"`
+}
+
+// DomainBlockImportRow A row of a domain block CSV and what importing it would do.
+type DomainBlockImportRow struct {
+	// Block The row, with its domain normalized (IDNA A-labels in lower case); absent when
+	// the row is `invalid`. The import takes it as it is.
+	Block *DomainBlock `json:"block,omitempty"`
+
+	// Issue The kinds of the actions the import would issue; empty unless `importable`.
+	Issue []AdminDomainActionKind `json:"issue"`
+
+	// Line The line of the file the row starts on, from 1.
+	Line int `json:"line"`
+
+	// Status What importing a row would do. `importable`: it issues the actions of `issue`.
+	// `already_applied`: an action in effect of each of the row's kinds covers the domain
+	// already, on it or on a parent domain. `no_action`: the row stands for no action (a
+	// `noop` without rejections). `duplicate`: an earlier row has the same domain once
+	// normalized. `invalid`: the domain, the severity, or the public comment is not valid.
+	Status DomainBlockImportStatus `json:"status"`
+
+	// WrittenDomain The domain as written in the row.
+	WrittenDomain string `json:"written_domain"`
+}
+
+// DomainBlockImportSkipped A block of an import that issued nothing.
+type DomainBlockImportSkipped struct {
+	// Domain The domain as sent.
+	Domain string `json:"domain"`
+
+	// Reason Why it issued nothing; never `importable`.
+	Reason DomainBlockImportStatus `json:"reason"`
+}
+
+// DomainBlockImportStatus What importing a row would do. `importable`: it issues the actions of `issue`.
+// `already_applied`: an action in effect of each of the row's kinds covers the domain
+// already, on it or on a parent domain. `no_action`: the row stands for no action (a
+// `noop` without rejections). `duplicate`: an earlier row has the same domain once
+// normalized. `invalid`: the domain, the severity, or the public comment is not valid.
+type DomainBlockImportStatus string
+
+// DomainBlockSeverity The `#severity` of Mastodon's domain block CSV. `suspend`: the action `suspend`.
+// `silence`: Mastodon's name of the action `limit`. `noop`: no action but the rejections.
+type DomainBlockSeverity string
+
 // EditStatusRequest The new content of a status.
 type EditStatusRequest struct {
 	// Language A BCP 47 language tag; omitted means the user's default post language.
@@ -3297,6 +3416,14 @@ type FollowAccountRequest struct {
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type Id = string
+
+// ImportDomainBlocksRequest The rows of a domain block CSV to import.
+type ImportDomainBlocksRequest struct {
+	Blocks []DomainBlock `json:"blocks"`
+
+	// PrivateNote The private note of every action issued.
+	PrivateNote *string `json:"private_note,omitempty"`
+}
 
 // ImportSignupBlocksRequest A list of values to block sign-ups by, all with the same settings.
 type ImportSignupBlocksRequest struct {
@@ -4000,6 +4127,12 @@ type Preferences struct {
 
 	// TimelineLanguages The languages that timelines show, sorted; empty shows every language.
 	TimelineLanguages []string `json:"timeline_languages"`
+}
+
+// PreviewDomainBlockImportRequest A domain block CSV to preview.
+type PreviewDomainBlockImportRequest struct {
+	// Csv The file's text, with a header or as a list of domains; at most 5,000 rows.
+	Csv string `json:"csv"`
 }
 
 // Problem An RFC 9457 problem document. Besides `about:blank`, `type` is one of
@@ -5470,6 +5603,12 @@ type ReplaceCustomEmojiImageJSONRequestBody = ReplaceCustomEmojiImageRequest
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
+// ImportDomainBlocksJSONRequestBody defines body for ImportDomainBlocks for application/json ContentType.
+type ImportDomainBlocksJSONRequestBody = ImportDomainBlocksRequest
+
+// PreviewDomainBlockImportJSONRequestBody defines body for PreviewDomainBlockImport for application/json ContentType.
+type PreviewDomainBlockImportJSONRequestBody = PreviewDomainBlockImportRequest
+
 // SetInstanceTextJSONRequestBody defines body for SetInstanceText for application/json ContentType.
 type SetInstanceTextJSONRequestBody = SetInstanceTextRequest
 
@@ -5685,6 +5824,15 @@ type ServerInterface interface {
 	// CreateDomainAction Take a moderation action on a domain
 	// (POST /admin/domain_actions)
 	CreateDomainAction(w http.ResponseWriter, r *http.Request)
+	// ExportDomainBlocks Export the domain actions as Mastodon's domain block CSV
+	// (GET /admin/domain_actions/export)
+	ExportDomainBlocks(w http.ResponseWriter, r *http.Request)
+	// ImportDomainBlocks Import the chosen rows of a Mastodon domain block CSV
+	// (POST /admin/domain_actions/import)
+	ImportDomainBlocks(w http.ResponseWriter, r *http.Request)
+	// PreviewDomainBlockImport Preview the import of a Mastodon domain block CSV
+	// (POST /admin/domain_actions/import/preview)
+	PreviewDomainBlockImport(w http.ResponseWriter, r *http.Request)
 	// GetDomainAction Get a moderation action on a domain
 	// (GET /admin/domain_actions/{id})
 	GetDomainAction(w http.ResponseWriter, r *http.Request, id DomainActionId)
@@ -7596,6 +7744,48 @@ func (siw *ServerInterfaceWrapper) CreateDomainAction(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateDomainAction(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportDomainBlocks operation middleware
+func (siw *ServerInterfaceWrapper) ExportDomainBlocks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportDomainBlocks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportDomainBlocks operation middleware
+func (siw *ServerInterfaceWrapper) ImportDomainBlocks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportDomainBlocks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewDomainBlockImport operation middleware
+func (siw *ServerInterfaceWrapper) PreviewDomainBlockImport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewDomainBlockImport(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10740,6 +10930,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/signup_blocks/{id}", wrapper.GetSignupBlock)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/{id}/lift", wrapper.LiftSignupBlock)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/import", wrapper.ImportSignupBlocks)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions/export", wrapper.ExportDomainBlocks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions/import/preview", wrapper.PreviewDomainBlockImport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions/import", wrapper.ImportDomainBlocks)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/settings", wrapper.ListInstanceSettings)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/settings", wrapper.UpdateInstanceSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/invites", wrapper.ListInvites)
@@ -13478,6 +13671,199 @@ type CreateDomainActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateDomainActiondefaultApplicationProblemPlusJSONResponse) VisitCreateDomainActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportDomainBlocksRequestObject struct {
+}
+
+type ExportDomainBlocksResponseObject interface {
+	VisitExportDomainBlocksResponse(w http.ResponseWriter) error
+}
+
+type ExportDomainBlocks200ResponseHeaders struct {
+	CacheControl       *string
+	ContentDisposition *string
+}
+
+type ExportDomainBlocks200TextcsvResponse struct {
+	Body          io.Reader
+	Headers       ExportDomainBlocks200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportDomainBlocks200TextcsvResponse) VisitExportDomainBlocksResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportDomainBlocksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ExportDomainBlocksdefaultApplicationProblemPlusJSONResponse) VisitExportDomainBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportDomainBlocksRequestObject struct {
+	Body *ImportDomainBlocksJSONRequestBody
+}
+
+type ImportDomainBlocksResponseObject interface {
+	VisitImportDomainBlocksResponse(w http.ResponseWriter) error
+}
+
+type ImportDomainBlocks200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ImportDomainBlocks200JSONResponse struct {
+	Body    DomainBlockImportResult
+	Headers ImportDomainBlocks200ResponseHeaders
+}
+
+func (response ImportDomainBlocks200JSONResponse) VisitImportDomainBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportDomainBlocksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ImportDomainBlocksdefaultApplicationProblemPlusJSONResponse) VisitImportDomainBlocksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewDomainBlockImportRequestObject struct {
+	Body *PreviewDomainBlockImportJSONRequestBody
+}
+
+type PreviewDomainBlockImportResponseObject interface {
+	VisitPreviewDomainBlockImportResponse(w http.ResponseWriter) error
+}
+
+type PreviewDomainBlockImport200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type PreviewDomainBlockImport200JSONResponse struct {
+	Body    DomainBlockImportPreview
+	Headers PreviewDomainBlockImport200ResponseHeaders
+}
+
+func (response PreviewDomainBlockImport200JSONResponse) VisitPreviewDomainBlockImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewDomainBlockImportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response PreviewDomainBlockImportdefaultApplicationProblemPlusJSONResponse) VisitPreviewDomainBlockImportResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -19689,6 +20075,15 @@ type StrictServerInterface interface {
 	// CreateDomainAction Take a moderation action on a domain
 	// (POST /admin/domain_actions)
 	CreateDomainAction(ctx context.Context, request CreateDomainActionRequestObject) (CreateDomainActionResponseObject, error)
+	// ExportDomainBlocks Export the domain actions as Mastodon's domain block CSV
+	// (GET /admin/domain_actions/export)
+	ExportDomainBlocks(ctx context.Context, request ExportDomainBlocksRequestObject) (ExportDomainBlocksResponseObject, error)
+	// ImportDomainBlocks Import the chosen rows of a Mastodon domain block CSV
+	// (POST /admin/domain_actions/import)
+	ImportDomainBlocks(ctx context.Context, request ImportDomainBlocksRequestObject) (ImportDomainBlocksResponseObject, error)
+	// PreviewDomainBlockImport Preview the import of a Mastodon domain block CSV
+	// (POST /admin/domain_actions/import/preview)
+	PreviewDomainBlockImport(ctx context.Context, request PreviewDomainBlockImportRequestObject) (PreviewDomainBlockImportResponseObject, error)
 	// GetDomainAction Get a moderation action on a domain
 	// (GET /admin/domain_actions/{id})
 	GetDomainAction(ctx context.Context, request GetDomainActionRequestObject) (GetDomainActionResponseObject, error)
@@ -21243,6 +21638,92 @@ func (sh *strictHandler) CreateDomainAction(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateDomainActionResponseObject); ok {
 		if err := validResponse.VisitCreateDomainActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportDomainBlocks operation middleware
+func (sh *strictHandler) ExportDomainBlocks(w http.ResponseWriter, r *http.Request) {
+	var request ExportDomainBlocksRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportDomainBlocks(ctx, request.(ExportDomainBlocksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportDomainBlocks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportDomainBlocksResponseObject); ok {
+		if err := validResponse.VisitExportDomainBlocksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportDomainBlocks operation middleware
+func (sh *strictHandler) ImportDomainBlocks(w http.ResponseWriter, r *http.Request) {
+	var request ImportDomainBlocksRequestObject
+
+	var body ImportDomainBlocksJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportDomainBlocks(ctx, request.(ImportDomainBlocksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportDomainBlocks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportDomainBlocksResponseObject); ok {
+		if err := validResponse.VisitImportDomainBlocksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewDomainBlockImport operation middleware
+func (sh *strictHandler) PreviewDomainBlockImport(w http.ResponseWriter, r *http.Request) {
+	var request PreviewDomainBlockImportRequestObject
+
+	var body PreviewDomainBlockImportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewDomainBlockImport(ctx, request.(PreviewDomainBlockImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewDomainBlockImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewDomainBlockImportResponseObject); ok {
+		if err := validResponse.VisitPreviewDomainBlockImportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
