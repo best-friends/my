@@ -128,8 +128,8 @@ type ImportDeps struct {
 	// lower case), to compare a file's domains with the muted ones; nil compares them in lower
 	// case.
 	CanonicalDomain func(domain string) (string, error)
-	Clock               kernel.Clock
-	IDs                 kernel.IDGenerator
+	Clock           kernel.Clock
+	IDs             kernel.IDGenerator
 	// Logger logs the items recorded as failed after errors; nil means slog.Default().
 	Logger *slog.Logger
 }

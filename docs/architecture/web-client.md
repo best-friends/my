@@ -279,6 +279,10 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - **古い投稿の自動削除**（`/settings/auto-delete`、設定のメニューの「古い投稿の自動削除」、FR-118、`features/settings` の `AutoDeleteSettings`）: `GET /preferences/auto_delete` の設定を、有効にするスイッチ、削除する投稿の古さ（`Select`。7 日〜2 年と、保存されている値が選択肢になければそれも）、
   残す投稿の例外（ピン留め・自分のブックマーク・自分のお気に入り・メディア付き・投票付きの `Checkbox` と、残す公開範囲の `Checkbox` をそれぞれ `fieldset` にまとめる）、ブーストとお気に入りの数の閾値（`Select`。「この条件では残さない」と 1〜100 回）で編集する。
   まとめて保存するフォームで、「保存する」が設定全体を `PUT /preferences/auto_delete` で送り、応答でキャッシュを置き換えて、保存した内容を `StatusMessage` に出す。保存していない変更は上の「未保存の変更」の確かめの対象にする。削除はサーバーの 1 時間ごとのジョブが行うので、保存しても投稿の一覧は取り直さない。
+- **ミュートしたドメイン**（`/settings/domain-mutes`、設定のメニューの「ミュートしたドメイン」、FR-304、`features/settings` の `DomainMutes`）: ミュートが何を隠すか（ホーム以外のタイムラインの投稿・ホームのブースト・通知。フォローしているアカウントはホームに残る）の説明、
+  ドメインをミュートするフォーム（`TextField` とブラウザの制約検証）、ミュートしているドメインの一覧（ドメインの順、「さらに表示」）の 3 つ。`POST /domain_mutes` が正規化したドメインを `StatusMessage` に出し、断られたらサーバーの `detail` を `role="alert"` で出して入力を残す。
+  各行はドメインを U ラベルで（A ラベルと違えば A ラベルも、どちらも `dir="ltr"`）出し、「ミュートを解除」（アクセシブルネームにドメインを含める）で `DELETE /domain_mutes/{domain}` を送る。解除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。
+  ミュートと解除は投稿の一覧と通知（未読数を含む）を古くする（S1）。ミュートは一覧も取り直す（ドメインの順に入る）。
 - **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、表示のロケール、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
 - **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。

@@ -6351,6 +6351,66 @@
     "defaultMessage": "‮Mɥo sǝǝs ʎonɹ dosʇs qʎ pǝɟɐnʅʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.domain_mutes.description": {
+    "defaultMessage": "‮Wnʇıuƃ ɐ poɯɐıu ɥıpǝs ʇɥǝ dosʇs oɟ ıʇs ɐɔɔonuʇs, ɐup oɟ ıʇs snqpoɯɐıus' ɐɔɔonuʇs, ɟɹoɯ ʎonɹ ʇıɯǝʅıuǝs oʇɥǝɹ ʇɥɐu ɥoɯǝ, ʇɥǝıɹ qoosʇs ɟɹoɯ ʎonɹ ɥoɯǝ ʇıɯǝʅıuǝ, ɐup ʇɥǝıɹ uoʇıɟıɔɐʇıous. ⊥ɥǝ ɐɔɔonuʇs ʎon ɟoʅʅoʍ sʇɐʎ ou ʎonɹ ɥoɯǝ ʇıɯǝʅıuǝ. Ouʅʎ ʎon ɐɹǝ ɐɟɟǝɔʇǝp, ɐup ʇɥǝ sǝɹʌǝɹ ıs uoʇ ʇoʅp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.domain": {
+    "defaultMessage": "‮ᗡoɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.domain.description": {
+    "defaultMessage": "‮⊥ɥǝ poɯɐıu oɟ ʇɥǝ sǝɹʌǝɹ, snɔɥ ɐs ɯɐsʇopou.ǝxɐɯdʅǝ. Iʇs snqpoɯɐıus ɐɹǝ ɯnʇǝp ʇoo.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.domain.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ poɯɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.empty": {
+    "defaultMessage": "‮⅄on po uoʇ ɯnʇǝ ɐuʎ poɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.list.title": {
+    "defaultMessage": "‮ᗡoɯɐıus ʎon ɯnʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.mute": {
+    "defaultMessage": "‮Wnʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.mute_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɯnʇǝ ʇɥǝ poɯɐıu: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.muted": {
+    "defaultMessage": "‮⅄on ɯnʇǝp {domain}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.new.title": {
+    "defaultMessage": "‮Wnʇǝ ɐ poɯɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.since": {
+    "defaultMessage": "‮Wnʇǝp ou {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.summary": {
+    "defaultMessage": "‮Sǝɹʌǝɹs ʍɥosǝ dosʇs ɐup uoʇıɟıɔɐʇıous ʎon po uoʇ sǝǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.title": {
+    "defaultMessage": "‮Wnʇǝp poɯɐıus‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.unmute": {
+    "defaultMessage": "‮∩uɯnʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.domain_mutes.unmuted": {
+    "defaultMessage": "‮⅄on nuɯnʇǝp {domain}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.follow_requests.accept": {
     "defaultMessage": "‮∀ɔɔǝdʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6541,6 +6601,10 @@
   },
   "settings.import_export.kind.bookmarks": {
     "defaultMessage": "‮Ԑooʞɯɐɹʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.kind.domain_mutes": {
+    "defaultMessage": "‮Wnʇǝp poɯɐıus‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.import_export.kind.following": {

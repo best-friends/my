@@ -3178,6 +3178,36 @@ export interface MessageArgs {
   "client:settings.default_visibility.description": {};
   /** Who sees your posts by default */
   "client:settings.default_visibility.label": {};
+  /** Muting a domain hides the posts of its accounts, and of its subdomains' accounts, from your timelines other than home, their boosts from your home timeline, and their notifications. The accounts you follow stay on your home timeline. Only you are affected, and the server is not told. */
+  "client:settings.domain_mutes.description": {};
+  /** Domain */
+  "client:settings.domain_mutes.domain": {};
+  /** The domain of the server, such as mastodon.example. Its subdomains are muted too. */
+  "client:settings.domain_mutes.domain.description": {};
+  /** Enter a domain. */
+  "client:settings.domain_mutes.domain.required": {};
+  /** You do not mute any domain */
+  "client:settings.domain_mutes.empty": {};
+  /** Domains you mute */
+  "client:settings.domain_mutes.list.title": {};
+  /** Mute */
+  "client:settings.domain_mutes.mute": {};
+  /** Could not mute the domain: {reason} */
+  "client:settings.domain_mutes.mute_failed": { reason: string };
+  /** You muted {domain}. */
+  "client:settings.domain_mutes.muted": { domain: string };
+  /** Mute a domain */
+  "client:settings.domain_mutes.new.title": {};
+  /** Muted on {date} */
+  "client:settings.domain_mutes.since": { date: string };
+  /** Servers whose posts and notifications you do not see */
+  "client:settings.domain_mutes.summary": {};
+  /** Muted domains */
+  "client:settings.domain_mutes.title": {};
+  /** Unmute */
+  "client:settings.domain_mutes.unmute": {};
+  /** You unmuted {domain}. */
+  "client:settings.domain_mutes.unmuted": { domain: string };
   /** Accept */
   "client:settings.follow_requests.accept": {};
   /** {name} now follows you. */
@@ -3274,6 +3304,8 @@ export interface MessageArgs {
   "client:settings.import_export.kind.blocks": {};
   /** Bookmarks */
   "client:settings.import_export.kind.bookmarks": {};
+  /** Muted domains */
+  "client:settings.import_export.kind.domain_mutes": {};
   /** Follows */
   "client:settings.import_export.kind.following": {};
   /** Muted accounts */

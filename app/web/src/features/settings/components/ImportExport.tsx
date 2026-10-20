@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The import and export page below its heading (FR-008): the CSV files of the follows, blocked and muted accounts, and
-// bookmarks to download; a form that imports such a file after checking what it would do; and the latest imports with
+// The import and export page below its heading (FR-008): the CSV files of the follows, blocked and muted accounts, muted
+// domains, and bookmarks to download; a form that imports such a file after checking what it would do; and the latest imports with
 // their progress. Dates are in the user's locale and time zone, numbers in the user's locale.
 import {
   Button,
@@ -30,6 +30,7 @@ const kindLabels: Readonly<Record<DataImportKind, ClientMessageKey>> = {
   following: "client:settings.import_export.kind.following",
   blocks: "client:settings.import_export.kind.blocks",
   mutes: "client:settings.import_export.kind.mutes",
+  domain_mutes: "client:settings.import_export.kind.domain_mutes",
   bookmarks: "client:settings.import_export.kind.bookmarks",
 };
 

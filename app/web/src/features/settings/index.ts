@@ -8,6 +8,9 @@ export { dataImportsQueryOptions } from "./api/importExport";
 export { credentialsQueryOptions, preferencesQueryOptions } from "./api/me";
 export { blocksQueryOptions, followRequestsQueryOptions, mutesQueryOptions } from "./api/relationships";
 export { BlockedAccounts, FollowRequests, MutedAccounts } from "./components/AccountLists";
+// The domains the user mutes (FR-304).
+export { domainMutesQueryOptions } from "./api/domainMutes";
+export { DomainMutes } from "./components/DomainMutes";
 export { ImportExport } from "./components/ImportExport";
 export { OwnAccount } from "./components/OwnAccount";
 export { PreferencesForm } from "./components/PreferencesForm";

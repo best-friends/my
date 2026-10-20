@@ -746,6 +746,7 @@ describe("signed out", () => {
       "/settings/follow-requests",
       "/settings/blocks",
       "/settings/mutes",
+      "/settings/domain-mutes",
       "/settings/import-export",
       "/settings/account-status",
       "/settings/account",
