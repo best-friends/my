@@ -436,10 +436,14 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   読み込み中に開くとダイアログ自身にフォーカスが移り、React Aria がその 500 ms 後に（iOS の VoiceOver への対策として）フォーカスが body にあればダイアログへ戻すので、
   閉じた直後でトリガーへフォーカスを戻す途中のポップオーバーからフォーカスを奪う。
   ほかの機能の返信ボタンは `useReply()` の関数に投稿を渡す。フォームが返信先を示し、返信先の作者とメンション（閲覧者を除く）を本文の先頭に入れ、シートを開くか本文にフォーカスを移す。サインインしていない間はどちらも出さない（`useReply()` は `null`）。
-- **道具**（`components/ComposeTools.tsx`）: 本文の下の 1 行に、画像・CW・公開範囲・言語のボタンを同じ高さで並べ、同じ行の終わりに送信のボタンを置く（320 px のシートでも送信が最初の画面に入る）。
-  アイコンだけのボタン（画像・CW）は `aria-label` と同じ文言のツールチップを持ち（G12）、CW はトグル（`aria-pressed`）にする。どのボタンも今の値を伝える。
+- **道具**（`components/ComposeTools.tsx`）: 本文の下の 1 行に、画像・CW・カスタム絵文字・公開範囲・言語のボタンを同じ高さで並べ、同じ行の終わりに送信のボタンを置く（320 px のシートでも送信が最初の画面に入る）。
+  アイコンだけのボタン（画像・CW・カスタム絵文字）は `aria-label` と同じ文言のツールチップを持ち（G12）、CW はトグル（`aria-pressed`）にする。どのボタンも今の値を伝える。
   画像は添付した枚数と上限・形式を説明（`aria-describedby`）にし、公開範囲は短い名前を見せて「公開範囲: <名前>」を名前、その範囲を見られる人を説明にし、言語は `Select` の `toolbar` の形で選んだ言語を見せる（名前は言語とラベル）。
   CW の入力欄は本文の上に、画像の上限と形式の文は添付した画像の下に出す。
+- **カスタム絵文字のピッカー**（`features/emoji`、ADR-0051 §4）: `GET /custom_emojis` がピッカーに出す絵文字を返すときだけ、道具の行に絵文字のボタンを出す（投稿の編集のダイアログと、プロフィールの編集の表示名・自己紹介も同じ `EmojiPickerButton`）。
+  ボタンはポップオーバー（APG の dialog）に `@my/ui` の `EmojiPicker` を開き、検索欄にフォーカスを移す。`EmojiPicker` は検索欄と、カテゴリごとの見出しで分けた絵文字のグリッド（React Aria の `GridList` の grid の配置。APG の grid のとおり、Tab で検索欄から入り、矢印キーで書字方向に沿って動き、Enter・Space・押下で選ぶ）で、
+  検索は shortcode と別名の部分一致、各絵文字の名前は `:shortcode:` にする。選ぶと、対象の入力欄のカーソルの位置（選択していればその範囲）に `:shortcode:` を入れ（サーバーが前後に英数字とコロンのない shortcode だけを読むので、必要なら前後に空白を足す）、ポップオーバーを閉じて入力欄にフォーカスを戻す。
+  最近使った絵文字は端末ごとに localStorage（`my:emoji:recent`、shortcode の配列）に 16 個まで持ち、検索していないときに「最近使った絵文字」として先頭に出す。動く絵文字は利用者の設定と `prefers-reduced-motion` に従って止める（`CustomEmoji` と同じ）。リアクション（ADR-0052）も同じ `EmojiPicker` を使う。
 - **下書き**（`hooks/draftStore.ts`）: フォームの外のストア（`useSyncExternalStore`）に置き、パネル・シート・返信ボタンが同じ下書きを共有する。
   リロードやタブの異常終了で失わないように、アカウントごとのキー（`my:user:compose:<アカウント ID>`）で sessionStorage に保存する。このタブだけのもので、タブを閉じるかセッションが終わると消える（§10）。
   アップロードの途中のファイルは保存しない（再開できない）。アップロード済みの画像は ID と説明を保存し、リロード後はサーバーのサムネイルを表示する。
@@ -523,12 +527,12 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 - **モデレーション**（`/moderation/*`、`features/moderation`）: 通報・異議申し立ての審査・アカウント・登録の審査・登録の拒否リスト・ドメインへの処分・連合先のサーバーの状態（[federation.md §7.3](federation.md)）・監査ログ。
   `features/moderation` は、利用者が自分への処分を確かめる画面（§18）も受け持ち、サーバー管理の画面が使う共通の部品（下の「共通の部品」）と権限の型・一覧のページングも `index.ts` から出す。
-- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・テーマ・規約とポリシー・dead job。これから足すサーバー管理の画面（お知らせ・カスタム絵文字・webhook・リレー）は、
+- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・テーマ・規約とポリシー・カスタム絵文字・dead job。これから足すサーバー管理の画面（お知らせ・webhook・リレー）は、
   `routes/admin.<画面>.tsx` のルートと、`features/admin/components/AdminMenu.tsx` の一覧の 1 行を足してここに置く。
 
 API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の管理の操作、タグ `admin-moderation` / `admin-server`）、Web の経路とは一致しない。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面、`manage_custom_emojis` がカスタム絵文字の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -565,6 +569,14 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     サーバーの失敗はフォームの下（`role="alert"`）に出して入力を残す。成功したら種類・効果・期間を残して一覧とメモを空にし、拒否の一覧と監査ログを取り直してから、追加した件数と追加しなかった行の数をフォームの `StatusMessage` に出す。
     追加しなかった行は、見出し（`h3`「追加しなかった行」）・理由ごとの行数の説明リスト・その見出しが名前を与える表（行番号・一覧に書かれたままの値（`dir="auto"`）・理由（`invalid`・`duplicate`・`already_blocked` を文言にしたもの））で、行の順に出す。
     表は最初の 100 行だけを出し、残りは「すべて表示する」で出す。ボタンは消えるので、フォーカスを表の見出しに移す。次の追加では表を最初の 100 行に戻す（`key`、R10）。
+- **カスタム絵文字**（`/admin/custom-emojis`、`manage_custom_emojis`、FR-111、[ADR-0051](../adr/0051-custom-emoji.md)）: 「カスタム絵文字を登録する」と「登録されたカスタム絵文字」の 2 つの区画（`h2` の `section`）。
+  - **登録**: 画像（React Aria の `FileTrigger`、PNG・GIF・WebP）・shortcode（必須、`[A-Za-z0-9_]{2,30}` をブラウザの制約検証で確かめる）・カテゴリ（64 文字まで）・別名（空白かカンマで区切り、10 個まで）・ピッカーに出すか（`Checkbox`、既定は出す）のフォーム。
+    100 KB を超える画像には、GoToSocial などが表示しないことがある旨を出す（ADR-0051 §2。登録は止めない）。送ると、画像を `POST /media`（`purpose=emoji`）で送って処理が終わるまで `GET /media/{id}` をポーリングし、`POST /admin/custom_emojis` で登録する。
+    サーバーの拒否（422 `invalid-custom-emoji`、`reason` に理由）は `detail` をフォームの下（`role="alert"`）に出して入力を残す。成功したら入力を空にし、一覧・ピッカーの絵文字（`GET /custom_emojis`）・監査ログに無効化の印を付けてから、結果をフォームの `StatusMessage` に出す。
+  - **一覧**: 「このサーバー」と「ほかのサーバー」のタブ（`?origin=remote`、URL に置く。S3）と、shortcode（ほかのサーバーはドメインも）の検索（`?shortcode=`・`?domain=`、送ると URL を変える）で、新しい順。各絵文字は画像と見出し（`:shortcode:`、`dir="ltr"`）と、ドメイン・状態・ピッカー・カテゴリ・別名・画像を設定した日時の説明リストにする。
+    このサーバーの絵文字は「編集する」（カテゴリ・別名・ピッカーに出すか・有効にするかのダイアログ。保存したら閉じ、失敗はダイアログの中に出す）・「画像を差し替える」（`FileTrigger` で選ぶとすぐに送る）・「削除する」（元に戻せないので `ConfirmDialog` で確かめる）、ほかのサーバーの絵文字は「無効にする」「有効にする」を持つ。
+    ボタンのアクセシブルネームは絵文字（`:shortcode:`、ほかのサーバーは `@domain` を付け、U+2066 / U+2069 で囲む）を含める。変えた絵文字は応答で行を置き換え、消した絵文字は一覧から除いてフォーカスを次の行のボタンに移す（`lib/useFocusAfterRemoval.ts`）。
+    結果は一覧の上の `StatusMessage` に出し、失敗は同じ場所（`role="alert"`）に出す。どの変更も、ピッカーの絵文字と監査ログに無効化の印を付ける。
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
@@ -577,7 +589,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     ルートの loader は TanStack Query の `infiniteQuery` の `pages` で、そのページ数を新しい方から順に読む。キャッシュに読み込み済みのページはそのまま使う。絞り込みを変えると 1 ページ目からになる。
     次のページの失敗は、一覧の下に `RegionError` で理由を出し、読み込み済みの行を残す。もう一度「さらに表示」を押すと読み直す。
   - **操作者**: アカウントの表示名（`dir="auto"`）とハンドル。アカウントが消えた利用者は「削除されたアカウント」、CLI・サーバー自身・ほかのサーバーはそれぞれの名前にする。
-  - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/moderation/accounts/{id}`、通報は `/moderation/reports/{id}`、ドメインは `/moderation/domain-actions?filter=all&domain=…`、登録の拒否は `/moderation/signup-blocks?filter=all`、ドメインは `DomainName` で 2 つの形を出す）。
+  - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/moderation/accounts/{id}`、通報は `/moderation/reports/{id}`、ドメインは `/moderation/domain-actions?filter=all&domain=…`、登録の拒否は `/moderation/signup-blocks?filter=all`、カスタム絵文字は `target_label`（`:shortcode:` か `:shortcode:@domain`）の shortcode とドメインで検索した `/admin/custom-emojis`、ドメインは `DomainName` で 2 つの形を出す）。
     設定・ルール・登録など画面のない種類と、消えた対象（API の `target_exists` が `false`）は、リンクにせず `target_label` だけを出す。
 - **登録の審査**（`/moderation/registrations`、FR-721）: 承認を待つ登録の、待っている長い順の一覧。各登録は見出し（`@username`。アカウントがなければその旨）と、登録日時・メールアドレス・メールの確認・招待の説明リスト、登録の理由にする。
   理由は申請者が書いた文なので `dir="auto"` で表示する（Y10）。「承認する」「却下する」はアクセシブルネームに `@username` を含める。

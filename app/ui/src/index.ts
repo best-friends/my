@@ -68,6 +68,7 @@ export {
   BookmarkIcon,
   BoostIcon,
   CloseIcon,
+  EmojiIcon,
   ExternalLinkIcon,
   EyeIcon,
   FederatedIcon,
@@ -94,6 +95,7 @@ export {
 // Timeline.
 export { ContentWarning, type ContentWarningProps } from "./ContentWarning";
 export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, type EmojiTextProps } from "./CustomEmoji";
+export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type PickerEmoji } from "./EmojiPicker";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";

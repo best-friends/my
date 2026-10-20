@@ -14,14 +14,16 @@ import {
 } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
+import { EmojiPickerButton } from "../../emoji";
 import { acceptedImageTypes, maxAttachments } from "../hooks/policy";
+import { composeTextId } from "../hooks/useCompose";
 import type { ReadyComposeForm } from "../hooks/useComposeForm";
 import { VisibilityPicker } from "./VisibilityPicker";
 
 export type ComposeToolsProps = { form: ReadyComposeForm };
 
 /**
- * The tools of the form, in one row under the text: images, content warning, visibility and language
+ * The tools of the form, in one row under the text: images, content warning, custom emoji, visibility and language
  * (web-client.md §12). Every control is a button of the same height, so the row stays level at every width.
  * The icon-only buttons are named by aria-label and show the same words as a tooltip (G12); each control
  * also says its current value: the images attached (description), the warning (aria-pressed), the
@@ -71,6 +73,13 @@ export function ComposeTools({ form }: ComposeToolsProps) {
         </ToggleButton>
         <Tooltip>{warningLabel}</Tooltip>
       </TooltipTrigger>
+      <EmojiPickerButton
+        fieldId={composeTextId}
+        value={draft.text}
+        onChange={(text) => {
+          form.edit({ text });
+        }}
+      />
       <VisibilityPicker
         value={form.visibility}
         limits={form.limits}

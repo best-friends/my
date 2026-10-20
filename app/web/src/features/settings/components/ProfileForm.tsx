@@ -2,6 +2,7 @@
 import { Avatar, Button, Checkbox, ConfirmDialog, FileTrigger, TextArea, TextField } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
+import { EmojiPickerButton } from "../../emoji";
 import { acceptedImageTypes } from "../api/media";
 import { characterCount, type FieldDraft, type ImageControl, profileLimits, useProfileForm } from "../hooks/useProfileForm";
 import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
@@ -16,6 +17,8 @@ import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
 export function ProfileForm() {
   const t = useT();
   const form = useProfileForm();
+  const displayNameId = useId();
+  const noteId = useId();
   // Only an invalid text sets isInvalid: React Aria ignores `validate` once isInvalid is given at all.
   const lengthCheck: LengthCheck = (value, max) =>
     characterCount(value) > max ? { isInvalid: true, errorMessage: t("client:settings.profile.too_long", { max: String(max) }) } : {};
@@ -36,25 +39,42 @@ export function ProfileForm() {
             )
           }
         />
-        <TextField
-          label={t("client:settings.profile.display_name")}
-          description={t("client:settings.profile.display_name.description", { max: String(profileLimits.displayName) })}
-          value={form.displayName.value}
-          onChange={form.displayName.onChange}
-          {...lengthCheck(form.displayName.value, profileLimits.displayName)}
-          autoComplete="nickname"
-        />
-        <TextArea
-          label={t("client:settings.profile.note")}
-          value={form.note.value}
-          onChange={form.note.onChange}
-          characterLimit={profileLimits.note}
-          formatRemaining={(remaining) =>
-            remaining < 0 ? t("client:settings.profile.characters_over", { count: -remaining }) : t("client:settings.profile.characters_left", { count: remaining })
-          }
-          errorMessage={t("client:settings.profile.too_long", { max: String(profileLimits.note) })}
-          rows={4}
-        />
+        <div className="flex flex-col gap-1">
+          <TextField
+            id={displayNameId}
+            label={t("client:settings.profile.display_name")}
+            description={t("client:settings.profile.display_name.description", { max: String(profileLimits.displayName) })}
+            value={form.displayName.value}
+            onChange={form.displayName.onChange}
+            {...lengthCheck(form.displayName.value, profileLimits.displayName)}
+            autoComplete="nickname"
+          />
+          <div>
+            <EmojiPickerButton
+              fieldId={displayNameId}
+              value={form.displayName.value}
+              onChange={form.displayName.onChange}
+              label={t("client:settings.profile.display_name.emoji")}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-1">
+          <TextArea
+            id={noteId}
+            label={t("client:settings.profile.note")}
+            value={form.note.value}
+            onChange={form.note.onChange}
+            characterLimit={profileLimits.note}
+            formatRemaining={(remaining) =>
+              remaining < 0 ? t("client:settings.profile.characters_over", { count: -remaining }) : t("client:settings.profile.characters_left", { count: remaining })
+            }
+            errorMessage={t("client:settings.profile.too_long", { max: String(profileLimits.note) })}
+            rows={4}
+          />
+          <div>
+            <EmojiPickerButton fieldId={noteId} value={form.note.value} onChange={form.note.onChange} label={t("client:settings.profile.note.emoji")} />
+          </div>
+        </div>
         <ProfileFields fields={form.fields} lengthCheck={lengthCheck} />
         <div className="flex flex-col gap-2">
           <Checkbox {...form.locked} description={t("client:settings.profile.locked.description")}>

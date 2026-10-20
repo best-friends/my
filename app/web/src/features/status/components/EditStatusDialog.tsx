@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The dialog that edits the viewer's own post (FR-109), opened from the post's "More actions" menu. It is a
 // modal dialog (WAI-ARIA APG, dialog pattern) holding the compose form's fields for what an edit may change:
-// the content warning, the text with its counter, the images' descriptions, the sensitivity of the media,
-// and the language. The visibility and the reply target stay as they were.
+// the content warning, the text with its counter and the custom emoji picker, the images' descriptions, the
+// sensitivity of the media, and the language. The visibility and the reply target stay as they were.
 import { Button, Checkbox, Dialog, LanguageIcon, Select, SelectItem, Spinner, TextArea, TextField, ToggleButton, Tooltip, TooltipTrigger, WarningIcon } from "@my/ui";
 import { type SubmitEvent, useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { AttachmentList, useFormatRemaining } from "../../compose";
+import { EmojiPickerButton } from "../../emoji";
 import type { Status, StatusSource } from "../api/status";
 import { useEditSource, useEditStatusForm } from "../hooks/useEditStatus";
 
@@ -60,6 +61,7 @@ function EditStatusForm({ status, source, maxCharacters, close }: EditStatusForm
   const t = useT();
   const formatRemaining = useFormatRemaining();
   const errorId = useId();
+  const textId = useId();
   const form = useEditStatusForm(status, source, maxCharacters);
   const warningLabel = t("client:compose.warning.toggle");
   const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
@@ -79,6 +81,7 @@ function EditStatusForm({ status, source, maxCharacters, close }: EditStatusForm
         />
       )}
       <TextArea
+        id={textId}
         label={t("client:compose.text.label")}
         value={form.text}
         onChange={(text) => {
@@ -121,6 +124,13 @@ function EditStatusForm({ status, source, maxCharacters, close }: EditStatusForm
             </ToggleButton>
             <Tooltip>{warningLabel}</Tooltip>
           </TooltipTrigger>
+          <EmojiPickerButton
+            fieldId={textId}
+            value={form.text}
+            onChange={(text) => {
+              form.edit({ text });
+            }}
+          />
           <Select
             variant="toolbar"
             aria-label={t("client:compose.language.label")}

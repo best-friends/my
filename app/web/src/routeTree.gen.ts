@@ -22,6 +22,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -118,6 +119,11 @@ const AtChar123acctChar125FollowingRoute =
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCustomEmojisRoute = AdminCustomEmojisRouteImport.update({
+  id: '/admin/custom-emojis',
+  path: '/admin/custom-emojis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminDeadJobsRoute = AdminDeadJobsRouteImport.update({
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
@@ -515,6 +526,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
+    | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
@@ -561,6 +573,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
+  AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -685,6 +698,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/custom-emojis': {
+      id: '/admin/custom-emojis'
+      path: '/admin/custom-emojis'
+      fullPath: '/admin/custom-emojis'
+      preLoaderRoute: typeof AdminCustomEmojisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/dead-jobs': {
@@ -913,6 +933,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
+  AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
   AdminSettingsRoute: AdminSettingsRoute,

@@ -36,6 +36,12 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   account_deletion_cancelled: "client:admin.audit_log.action.account_deletion_cancelled",
   signup_block_added: "client:admin.audit_log.action.signup_block_added",
   signup_block_lifted: "client:admin.audit_log.action.signup_block_lifted",
+  custom_emoji_created: "client:admin.audit_log.action.custom_emoji_created",
+  custom_emoji_image_replaced: "client:admin.audit_log.action.custom_emoji_image_replaced",
+  custom_emoji_updated: "client:admin.audit_log.action.custom_emoji_updated",
+  custom_emoji_enabled: "client:admin.audit_log.action.custom_emoji_enabled",
+  custom_emoji_disabled: "client:admin.audit_log.action.custom_emoji_disabled",
+  custom_emoji_deleted: "client:admin.audit_log.action.custom_emoji_deleted",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -49,6 +55,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   setting: "client:admin.audit_log.target_kind.setting",
   rule: "client:admin.audit_log.target_kind.rule",
   signup_block: "client:admin.audit_log.target_kind.signup_block",
+  custom_emoji: "client:admin.audit_log.target_kind.custom_emoji",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -60,11 +67,12 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 };
 
 /**
- * The admin screen of an operation's target, where it has one; an account, a report, a domain or a sign-up block.
+ * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block or a
+ * custom emoji.
  * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
  * gone (erased past its retention) has nothing left to show, so their entries show the label only.
  */
-export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_id" | "target_exists">): string | undefined {
+export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_id" | "target_label" | "target_exists">): string | undefined {
   if (!entry.target_exists) return undefined;
   const id = encodeURIComponent(entry.target_id);
   switch (entry.target_kind) {
@@ -78,9 +86,21 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "signup_block":
       // The screen lists every block, lifted and ended ones too; a block has no screen of its own.
       return "/moderation/signup-blocks?filter=all";
+    case "custom_emoji":
+      // An emoji has no screen of its own: the list searched by its shortcode, of this server or of its domain.
+      return customEmojiHref(entry.target_label);
     default:
       return undefined;
   }
+}
+
+/** The custom emoji screen searched by the emoji of a label, `:shortcode:` or `:shortcode:@domain`; undefined for another label. */
+function customEmojiHref(label: string): string | undefined {
+  const match = /^:([A-Za-z0-9_]+):(?:@(.+))?$/u.exec(label);
+  if (match === null) return undefined;
+  const [, shortcode = "", domain] = match;
+  const search = new URLSearchParams(domain === undefined ? { shortcode } : { origin: "remote", shortcode, domain });
+  return `/admin/custom-emojis?${search.toString()}`;
 }
 
 export type AuditLog = PagedList<AuditEntry> & {
