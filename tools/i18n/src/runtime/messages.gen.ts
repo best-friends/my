@@ -98,6 +98,10 @@ export interface MessageArgs {
   "client:account_status.summary": {};
   /** Account status */
   "client:account_status.title": {};
+  /** Block sign-ups with this email address */
+  "client:admin.account_actions.block_email": {};
+  /** New sign-ups with the email address of the account's user are rejected too. The block shows in the list of sign-up blocks, where it can be lifted. */
+  "client:admin.account_actions.block_email.description": {};
   /** Reason */
   "client:admin.account_actions.category": {};
   /** The kind of reason the account is told, with the public reason. */

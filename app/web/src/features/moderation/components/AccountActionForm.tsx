@@ -2,7 +2,7 @@
 // The form of a moderation action on an account (FR-703): the kind (React Aria RadioGroup, each with what it
 // does), the category of the reason (Select, the WAI-ARIA APG select-only combobox), how long it lasts
 // (DurationSelect), the public reason and the private note (ReasonField), whether the account is told
-// (Checkbox), and the posts of an action on posts (a group of checkboxes). It follows the browser's constraint
+// (Checkbox), whether a ban also blocks sign-ups with the user's email address (Checkbox, FR-719), and the posts of an action on posts (a group of checkboxes). It follows the browser's constraint
 // validation (React Aria's native validation). An action that cannot be undone asks first in an alert dialog
 // (ConfirmDialog, NFR-MOD-7), whose failure stays in it; a failure of another kind is shown under the form and
 // keeps what was filled in.
@@ -12,7 +12,7 @@ import { useIntl } from "react-intl";
 import { type ClientMessageKey, type Translate, useT } from "../../../lib/i18n";
 import type { Status } from "../../status";
 import { type AccountAction, type AccountActionKind, accountActionTextLimit, reportCategories } from "../api/reports";
-import { type ActionTarget, type AccountActionForm as Form, isPostKind, takesDuration, useAccountActionForm } from "../hooks/useAccountActionForm";
+import { type ActionTarget, type AccountActionForm as Form, isPostKind, takesDuration, takesEmailBlock, useAccountActionForm } from "../hooks/useAccountActionForm";
 import { accountActionKindLabels, isolate, reportCategoryLabels } from "../hooks/useReports";
 
 const kindDescriptions: Readonly<Record<AccountActionKind, ClientMessageKey>> = {
@@ -147,6 +147,18 @@ export function AccountActionForm({ target, handle, posts, onIssued }: AccountAc
             description={t("client:admin.account_actions.notify.description")}
           >
             {t("client:admin.account_actions.notify")}
+          </Checkbox>
+        )}
+        {takesEmailBlock(draft.kind, target) && (
+          <Checkbox
+            name="block_email"
+            isSelected={draft.blockEmail}
+            onChange={(blockEmail) => {
+              form.change({ blockEmail });
+            }}
+            description={t("client:admin.account_actions.block_email.description")}
+          >
+            {t("client:admin.account_actions.block_email")}
           </Checkbox>
         )}
         {form.confirmation === null && form.error !== undefined && (

@@ -571,6 +571,14 @@
     "defaultMessage": "Could not remove two-factor authentication: {reason}",
     "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
   },
+  "admin.account_actions.block_email": {
+    "defaultMessage": "Block sign-ups with this email address",
+    "description": "Checkbox of a ban of a local account: whether it also rejects sign-ups with the email address of the account's user."
+  },
+  "admin.account_actions.block_email.description": {
+    "defaultMessage": "New sign-ups with the email address of the account's user are rejected too. The block shows in the list of sign-up blocks, where it can be lifted.",
+    "description": "Help of the checkbox of blocking the email address of a banned account."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "Reason",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
