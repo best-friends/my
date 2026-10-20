@@ -187,7 +187,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
@@ -363,10 +363,34 @@ flowchart LR
 | `data_export_results` | イベント | `export_id`（PK）, `outcome`（`enum(ready, failed)`）, `blob_key`（NULL 可。`ready` のときだけ値を持つ）, `file_size`（NULL 可。同じ）, `expires_at`, `completed_at`。インデックス `(expires_at)` |
 
 - 本人のデータのアーカイブ（FR-008）です。要求（`POST /api/v1/exports`）が `data_exports` の行とジョブ `identity.build_export` を同じトランザクションで積みます。作成中（結果のない行）の要求があるあいだは、次の要求を受け付けません（`409`）。
-- ジョブは ZIP のアーカイブを Blob の非公開のキー `exports/{user_id}/{export_id}.zip` に書き、`ready` の結果を記録します。中身は `actor.json`（Actor）、`outbox.json`（本人の削除されていない投稿すべてを、公開範囲に関わらず `Create` の `OrderedCollection` にしたもの。ブーストは含めない）、`moderation.json`（本人への処分と異議申し立て、本人が出した通報。非公開のメモと通報者は含めない。ADR-0038）です。
+- ジョブは ZIP のアーカイブを Blob の非公開のキー `exports/{user_id}/{export_id}.zip` に書き、`ready` の結果を記録します。中身は `actor.json`（Actor）、`outbox.json`（本人の削除されていない投稿すべてを、公開範囲に関わらず `Create` の `OrderedCollection` にしたもの。ブーストは含めない）、`moderation.json`（本人への処分と異議申し立て、本人が出した通報。非公開のメモと通報者は含めない。ADR-0038）と、下の「CSV のエクスポートとインポート」の 4 つの CSV です。
   結果のある行は作り直さないので、再実行してよい。5 回失敗すると `failed` を記録します。
 - 状態は結果から求めます: 結果がなければ作成中、`expires_at` を過ぎていれば期限切れ、それ以外は `outcome` のとおり。`expires_at` は結果の記録から 7 日です（`identity.ExportTTL`）。
 - 1 時間ごとのジョブ `identity.expire_exports` が、期限を過ぎたアーカイブ（`ready` は Blob を先に消す）と行を消します。アカウントの消去（§8）も、本人の要求と Blob をすべて消します。
+
+#### CSV のエクスポートとインポート
+
+| テーブル | 分類 | カラム |
+| --- | --- | --- |
+| `data_imports` | リソース | `id`, `user_id`, `account_id`, `kind`（`enum(following, blocks, mutes, bookmarks)`）, `mode`（`enum(merge, overwrite)`）, `created_at`。インデックス `(user_id, id DESC)`、`(created_at)` |
+| `data_import_items` | リソース（インポートの子） | `import_id`, `position`（PK は `(import_id, position)`）, `action`（`enum(add, remove)`）, `target`, `show_boosts`, `notify`, `hide_notifications` |
+| `data_import_item_results` | イベント（項目の子） | `import_id`, `position`（PK）, `outcome`（`enum(done, failed)`）, `failure`（NULL 可。`failed` のときだけ `enum(unresolvable, unavailable, blocked, restricted, self)`）, `processed_at` |
+
+- 本人のフォロー・ブロック・ミュート・ブックマークを、Mastodon の「インポートとエクスポート」と同じ CSV で読み書きします（FR-008）。Mastodon が書き出した CSV をこちらで、こちらが書き出した CSV を Mastodon で読み込めます。
+  - フォローは `following_accounts.csv`（`Account address,Show boosts,Notify on new posts,Languages`。承認済みのフォローだけ）、ブロックは `blocked_accounts.csv`（1 行に 1 アドレス、見出しなし）、ミュートは `muted_accounts.csv`（`Account address,Hide notifications`。期限の過ぎていないもの）、ブックマークは `bookmarks.csv`（1 行に投稿の URI 1 つ、見出しなし。今も見られる投稿だけ）です。
+  - アドレスは `username@domain` で、このサーバーのアカウントはアカウントドメインを付けます。handle を確かめていないリモートのアカウントは書き出しません。
+  - エクスポートは要求のたびにその時点の内容から作り（`GET /api/v1/csv_exports/{kind}`）、テーブルを持ちません。データのアーカイブにも同じ 4 つのファイルを入れます。
+- 読み込みは Mastodon の読み方に合わせます（`identity.ParseImportCSV`）。見出しの行は任意で、最初の欄が既知の見出し（`Account address` など）なら見出し、そうでなければ種類の既定の列とします。アドレスの先頭の `@` は落とし、空行は無視し、省いた設定は Mastodon と同じ既定（ブーストを表示する・新しい投稿を通知しない・ミュートした相手の通知を隠す）にします。フォローの `Languages` は使いません。
+  アドレス（ブックマークは `http(s)` の URL）でない行は `invalid`、前の行と同じ相手（ユーザー名とドメインの大文字小文字を区別しない）は `duplicate` として飛ばします。1 ファイルは 10,000 件まで（`identity.MaxImportEntries`）です。
+- 開始（`POST /api/v1/imports`）は、ファイルの各項目を `add` の項目に、`overwrite` では今あるもののうちファイルにないもの（アドレスを同じ規則で比べる）を `remove` の項目にし、`data_imports` の行・項目・最初のジョブ `identity.process_import` を 1 つのトランザクションで書きます。
+  `remove` の項目の `target` は相手のアカウントか投稿の ID、`add` の項目の `target` はファイルに書かれたアドレスか URL です。プレビュー（`POST /api/v1/imports/preview`）は同じ比較をして件数を返し、何も書きません。
+  結果のない項目が残るインポートがあるあいだは、次のインポートを受け付けません（`409`）。
+- ジョブは結果のない項目を 20 件ずつ順に行い、項目ごとに結果を記録してから次の 20 件のジョブを積みます（冪等キーは次の位置を含み、順序キーでインポートごとに 1 本ずつ流す）。
+  リモートのアカウントは WebFinger と Actor の取得で解決し（検索と同じ `federation.RemoteActors.ResolveHandle`）、投稿は URL で解決して（`federation.Resolver`）、フォロー・ブロック・ミュート・ブックマークの各ユースケースを呼びます。リモートへの `Follow` の配送は、フォローのイベントから連合のモジュールが積むジョブが行います。
+  同じ項目をもう一度行っても変わらない操作なので、ジョブの再実行は安全です。見つからない・処分された・ブロックで妨げられた・自分自身などの項目は `failed` を記録して先へ進み、それ以外のエラーはジョブの再試行に任せます。5 回目の実行でも失敗する項目は `failed`（`unavailable`）にして、インポートが止まらないようにします。
+- 状態は件数から求めます: 項目の数とすべての結果の数が等しければ `finished`、そうでなければ `in_progress`。
+- 1 時間ごとのジョブ `identity.expire_imports` が、作成から 7 日（`identity.ImportTTL`）を過ぎたインポートを項目と結果ごと消します。アカウントの消去（§8）も、本人のインポートをすべて消します。
+- 利用者ごとのドメインの非表示（Mastodon の `blocked_domains.csv`）は、その機能（#638）がまだないので扱いません。
 
 ### 4.2 account
 
@@ -1444,7 +1468,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-005 TOTP | S | `totp_enrollments`, `totp_recovery_codes`, `totp_recovery_code_uses` |
 | FR-006 プロフィール | M | `account_profile_revisions`, `account_profile_fields`, `account_profile_heads` |
 | FR-007 言語・タイムゾーン | M | `user_preferences`, `user_time_zones` |
-| FR-008 アカウント削除・エクスポート | S | `account_lifecycle_events`, `data_exports`, `data_export_results` |
+| FR-008 アカウント削除・エクスポート・インポート | S | `account_lifecycle_events`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` |
 | FR-101〜104 投稿・公開範囲・メンション・タグ・CW | M | `statuses`, `status_revisions` と子テーブル, `status_mention_index`, `feed_tag_entries` |
 | FR-105 画像添付・代替テキスト | M | `media_files`, `uploaded_media`, `media_processing_results`, `media_variants`, `media_focus`, `media_descriptions`, `status_revision_attachments` |
 | FR-106 返信・スレッド | M | `statuses.in_reply_to_uri` / `conversation_uri`, `status_reply_links` |

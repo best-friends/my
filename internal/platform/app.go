@@ -126,6 +126,9 @@ type App struct {
 	AccountAdmin *identity.AccountAdmin
 	// Exports builds the archives of the users' data (FR-008).
 	Exports *identity.Exports
+	// Imports writes the CSV exports and runs the CSV imports of follows, blocks, mutes, and
+	// bookmarks (FR-008).
+	Imports *identity.Imports
 	// Instance holds the instance settings and texts, which live in the database; Config holds
 	// the deployment configuration. They never share a key (docs/reference/configuration.md).
 	Instance *instance.Service
@@ -599,6 +602,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	a.setUpExports(identities)
+	a.setUpImports(identities)
 	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -683,7 +687,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
-		OwnAccount: a.Identity, Exports: a.Exports,
+		OwnAccount: a.Identity, Exports: a.Exports, Imports: a.Imports,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		// The instance settings, and the invites with the registration page they open (#624).

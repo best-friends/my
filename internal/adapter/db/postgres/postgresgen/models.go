@@ -170,6 +170,16 @@ type CustomEmojiSetting struct {
 	Category        *string
 }
 
+type DataImportItem struct {
+	ImportID          string
+	Position          int32
+	Action            string
+	Target            string
+	ShowBoosts        bool
+	Notify            bool
+	HideNotifications bool
+}
+
 type Delivery struct {
 	ID                 string
 	OutboundActivityID string

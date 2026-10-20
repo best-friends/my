@@ -3068,7 +3068,7 @@ export interface MessageArgs {
   "client:settings.account.delete.title": {};
   /** The password is wrong. */
   "client:settings.account.delete.wrong_password": {};
-  /** Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days. */
+  /** Get a ZIP archive of your posts in ActivityStreams format, your profile, the moderation actions on your account, and your follows, blocks, mutes, and bookmarks as CSV files. It takes a while to prepare, and you can download it for 7 days. */
   "client:settings.account.export.description": {};
   /** Download */
   "client:settings.account.export.download": {};
@@ -3192,6 +3192,96 @@ export interface MessageArgs {
   "client:settings.follow_requests.summary": {};
   /** Follow requests */
   "client:settings.follow_requests.title": {};
+  /** Download CSV files in the format Mastodon uses. Mastodon and other servers that read this format can import them. */
+  "client:settings.import_export.export.description": {};
+  /** Download */
+  "client:settings.import_export.export.download": {};
+  /** Download {kind} as CSV */
+  "client:settings.import_export.export.download_of": { kind: string };
+  /** Export */
+  "client:settings.import_export.export.title": {};
+  /** You have no imports */
+  "client:settings.import_export.history.empty": {};
+  /** Could not be imported */
+  "client:settings.import_export.history.failed": {};
+  /** {kind}, {date} */
+  "client:settings.import_export.history.item": { date: string; kind: string };
+  /** Method */
+  "client:settings.import_export.history.mode": {};
+  /** Progress */
+  "client:settings.import_export.history.progress": {};
+  /** {processed, number} of {total, number} */
+  "client:settings.import_export.history.progress_value": { processed: number; total: number };
+  /** State */
+  "client:settings.import_export.history.state": {};
+  /** Finished */
+  "client:settings.import_export.history.state.finished": {};
+  /** In progress */
+  "client:settings.import_export.history.state.in_progress": {};
+  /** Recent imports */
+  "client:settings.import_export.history.title": {};
+  /** Choose a CSV file */
+  "client:settings.import_export.import.choose": {};
+  /** Chosen file: {name} */
+  "client:settings.import_export.import.chosen": { name: string };
+  /** Import a CSV file exported from Mastodon or from this server. Accounts and posts on other servers are looked up in the background, which can take a while. */
+  "client:settings.import_export.import.description": {};
+  /** CSV file */
+  "client:settings.import_export.import.file": {};
+  /** The file is too large to import. Split it into smaller files. */
+  "client:settings.import_export.import.file_too_large": {};
+  /** The file cannot be read. Choose it again. */
+  "client:settings.import_export.import.file_unreadable": {};
+  /** What to import */
+  "client:settings.import_export.import.kind": {};
+  /** How to import */
+  "client:settings.import_export.import.mode": {};
+  /** Merge */
+  "client:settings.import_export.import.mode.merge": {};
+  /** Keep what you have and add what the file lists. */
+  "client:settings.import_export.import.mode.merge.description": {};
+  /** Overwrite */
+  "client:settings.import_export.import.mode.overwrite": {};
+  /** Make it exactly what the file lists. Anything the file does not list is removed. */
+  "client:settings.import_export.import.mode.overwrite.description": {};
+  /** No file chosen */
+  "client:settings.import_export.import.no_file": {};
+  /** Check the file */
+  "client:settings.import_export.import.preview": {};
+  /** Entries in the file */
+  "client:settings.import_export.import.preview.entries": {};
+  /** Already on your list */
+  "client:settings.import_export.import.preview.present": {};
+  /** To be removed */
+  "client:settings.import_export.import.preview.removals": {};
+  /** Repeats an earlier line */
+  "client:settings.import_export.import.preview.skip.duplicate": {};
+  /** Not an account address or a post URL */
+  "client:settings.import_export.import.preview.skip.invalid": {};
+  /** Skipped lines */
+  "client:settings.import_export.import.preview.skipped": {};
+  /** Line {line, number}: {value} */
+  "client:settings.import_export.import.preview.skipped_line": { line: number; value: string };
+  /** What the import does */
+  "client:settings.import_export.import.preview.title": {};
+  /** Start the import */
+  "client:settings.import_export.import.start": {};
+  /** The import has started with {total, plural, one {# entry} other {# entries}}. Its progress appears below. */
+  "client:settings.import_export.import.started": { total: number };
+  /** Import */
+  "client:settings.import_export.import.title": {};
+  /** Blocked accounts */
+  "client:settings.import_export.kind.blocks": {};
+  /** Bookmarks */
+  "client:settings.import_export.kind.bookmarks": {};
+  /** Follows */
+  "client:settings.import_export.kind.following": {};
+  /** Muted accounts */
+  "client:settings.import_export.kind.mutes": {};
+  /** Move your follows, blocks, mutes, and bookmarks to or from another server */
+  "client:settings.import_export.summary": {};
+  /** Import and export */
+  "client:settings.import_export.title": {};
   /** {action}: {name} */
   "client:settings.list.action": { action: string; name: string };
   /** Show more */
@@ -4036,6 +4126,10 @@ export interface MessageArgs {
   "server:errors.export.not_ready": {};
   /** You are not allowed to do this. */
   "server:errors.forbidden": {};
+  /** Another import is in progress. Wait until it finishes. */
+  "server:errors.import.in_progress": {};
+  /** The file cannot be read as CSV. */
+  "server:errors.import.invalid_csv": {};
   /** This app is not allowed to do this. */
   "server:errors.insufficient_scope": {};
   /** The access token needs the scope {scope}. */

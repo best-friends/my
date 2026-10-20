@@ -1923,7 +1923,7 @@ CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: the exports of a user's data (data-model.md §4.1, FR-008).
+-- identity: the exports and imports of a user's data (data-model.md §4.1, FR-008).
 -- ---------------------------------------------------------------------------------------------
 
 -- Resource: a user's request for an archive of their data.
@@ -1947,6 +1947,43 @@ CREATE TABLE data_export_results (
   CHECK ((outcome = 'ready') = (file_size IS NOT NULL))
 );
 CREATE INDEX data_export_results_expires_at ON data_export_results (expires_at);
+
+-- Resource: a user's import of a Mastodon CSV file of follows, blocks, mutes, or bookmarks.
+CREATE TABLE data_imports (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  account_id text COLLATE "C" NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('following', 'blocks', 'mutes', 'bookmarks')),
+  mode text NOT NULL CHECK (mode IN ('merge', 'overwrite')),
+  created_at timestamptz NOT NULL
+);
+CREATE INDEX data_imports_user_id_id ON data_imports (user_id, id DESC);
+CREATE INDEX data_imports_created_at ON data_imports (created_at);
+
+-- Resource (child of an import): one thing the import does. An 'add' item is a line of the file,
+-- target its address or post URL as written; a 'remove' item is what an overwrite removes,
+-- target the ID of the account or status.
+CREATE TABLE data_import_items (
+  import_id text COLLATE "C" NOT NULL,
+  position integer NOT NULL CHECK (position >= 0),
+  action text NOT NULL CHECK (action IN ('add', 'remove')),
+  target text NOT NULL,
+  show_boosts boolean NOT NULL,
+  notify boolean NOT NULL,
+  hide_notifications boolean NOT NULL,
+  PRIMARY KEY (import_id, position)
+);
+
+-- Event (child of an item): how the item ended. failure says why exactly when it failed.
+CREATE TABLE data_import_item_results (
+  import_id text COLLATE "C" NOT NULL,
+  position integer NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('done', 'failed')),
+  failure text CHECK (failure IN ('unresolvable', 'unavailable', 'blocked', 'restricted', 'self')),
+  processed_at timestamptz NOT NULL,
+  PRIMARY KEY (import_id, position),
+  CHECK ((outcome = 'failed') = (failure IS NOT NULL))
+);
 
 -- moderation: the audit log (data-model §4.3, ADR-0037). Owned by internal/app/moderation.
 -- ---------------------------------------------------------------------------------------------

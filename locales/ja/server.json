@@ -543,6 +543,14 @@
     "defaultMessage": "この操作は許可されていません。",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
   },
+  "errors.import.in_progress": {
+    "defaultMessage": "別のインポートを処理中です。終わるまでお待ちください。",
+    "description": "API error title for HTTP 409 when the user starts an import of a CSV file of follows, blocks, mutes, or bookmarks while another import is still being carried out."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "ファイルを CSV として読み込めません。",
+    "description": "Detail of an API error (HTTP 422) when the file the user imports is not a valid CSV file, e.g. it has an unterminated quoted field."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "このアプリにはこの操作が許可されていません。",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."

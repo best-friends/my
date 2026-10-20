@@ -48,6 +48,7 @@ import { Route as SettingsAccountStatusRouteImport } from './routes/settings.acc
 import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
+import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
@@ -258,6 +259,11 @@ const SettingsFollowRequestsRoute = SettingsFollowRequestsRouteImport.update({
   path: '/settings/follow-requests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
+  id: '/settings/import-export',
+  path: '/settings/import-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsMutesRoute = SettingsMutesRouteImport.update({
   id: '/settings/mutes',
   path: '/settings/mutes',
@@ -359,6 +365,7 @@ export interface FileRoutesByFullPath {
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -412,6 +419,7 @@ export interface FileRoutesByTo {
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -466,6 +474,7 @@ export interface FileRoutesById {
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -521,6 +530,7 @@ export interface FileRouteTypes {
     | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -574,6 +584,7 @@ export interface FileRouteTypes {
     | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -627,6 +638,7 @@ export interface FileRouteTypes {
     | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -681,6 +693,7 @@ export interface RootRouteChildren {
   SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
+  SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -973,6 +986,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsFollowRequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/import-export': {
+      id: '/settings/import-export'
+      path: '/settings/import-export'
+      fullPath: '/settings/import-export'
+      preLoaderRoute: typeof SettingsImportExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/mutes': {
       id: '/settings/mutes'
       path: '/settings/mutes'
@@ -1097,6 +1117,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
+  SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
