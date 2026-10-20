@@ -1169,9 +1169,10 @@ CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
 -- The retention purge keeps a bookmarked remote status (ADR-0034).
 CREATE INDEX bookmarks_status_id ON bookmarks (status_id);
 
--- Current value: a status its author pinned to the profile (the Featured collection). Each pin
--- holds one of the account's slots 1..5 (content.MaxPins), so the unique slot index caps the pins
--- of an account even under concurrent inserts.
+-- Current value: a status its author pinned to the profile (the Featured collection): a local
+-- account's own pins, or a remote account's pins mirrored from its featured collection
+-- (ADR-0044). Each pin holds one of the account's slots 1..5 (content.MaxPins), so the unique
+-- slot index caps the pins of an account even under concurrent inserts.
 CREATE TABLE status_pins (
   account_id text COLLATE "C" NOT NULL,
   status_id text COLLATE "C" NOT NULL,
