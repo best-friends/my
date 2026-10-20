@@ -925,6 +925,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/statuses/{id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the emoji reactions to a status
+         * @description The emoji reactions to a status that the viewer may see, newest first, each with the
+         *     account that reacted, only those with one emoji when `emoji` is given. Accounts that
+         *     block the viewer, are deactivated, or are deleted are left out, so a page may hold fewer
+         *     than `limit` reactions before the last. A status that the viewer may not see is a 404,
+         *     the same as a missing one.
+         */
+        get: operations["listStatusReactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/statuses/{id}/source": {
         parameters: {
             query?: never;
@@ -2808,6 +2835,8 @@ export interface components {
             /** @description The appeal that an `admin_appeal` is about. */
             appeal_id?: components["schemas"]["Id"];
             relationship_severance?: components["schemas"]["RelationshipSeverance"];
+            /** @description The emoji of a `reaction`; omitted for the other types. */
+            reaction?: components["schemas"]["ReactionEmoji"];
         };
         /**
          * @description The follows that a `relationships_severed` tells of: the user lost them when the
@@ -2878,9 +2907,10 @@ export interface components {
         /**
          * @description The kind of a notification. `account` is the account that acted: the follower
          *     (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-         *     (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-         *     `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-         *     about. `moderation_notice` comes from the instance and has no `account`; its
+         *     (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+         *     account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+         *     with another emoji is another notification). `status` is the post that `mention`,
+         *     `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
          *     `moderation_action` is the action on the user's account, with its kind, reason, and end.
          *     `report_resolved` also comes from the instance: its `report` is the user's report that
          *     the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -2898,7 +2928,7 @@ export interface components {
          *     `manage_accounts`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -2928,9 +2958,9 @@ export interface components {
          *
          *     In a timeline, a boost is a status of the booster with `boost` set to the boosted
          *     status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-         *     `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
-         *     `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-         *     are zero.
+         *     `visibility` and `language` are those of the boosted status, its `content`,
+         *     `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+         *     empty, and its counts are zero.
          */
         Status: {
             id: components["schemas"]["Id"];
@@ -2989,6 +3019,12 @@ export interface components {
             boosts_count: number;
             /** @description The number of favourites. */
             favourites_count: number;
+            /**
+             * @description The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+             *     reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+             *     are counted apart, in `favourites_count`.
+             */
+            reactions: components["schemas"]["StatusReaction"][];
             /** @description Whether the authenticated user favourited the status. */
             favourited?: boolean;
             /** @description Whether the authenticated user boosts the status. */
@@ -2997,6 +3033,51 @@ export interface components {
             bookmarked?: boolean;
             /** @description Whether the status is pinned to the author's profile; given only to the author. */
             pinned?: boolean;
+        };
+        /**
+         * @description The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+         *     emoji of another server is shown as it is and cannot be used to react from here.
+         */
+        ReactionEmoji: {
+            /**
+             * @description The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+             *     custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+             *     server.
+             */
+            name: string;
+            /** @description The shortcode of a custom emoji, without colons; omitted for a Unicode emoji. */
+            shortcode?: string;
+            /** @description The server of a custom emoji of another server; omitted otherwise. */
+            domain?: string;
+            /**
+             * @description The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+             *     be shown (as `CustomEmoji` leaves such an emoji out).
+             */
+            emoji?: components["schemas"]["CustomEmoji"];
+        };
+        /** @description The reactions to a status with one emoji. */
+        StatusReaction: components["schemas"]["ReactionEmoji"] & {
+            /** @description The number of the reactions with the emoji. */
+            count: number;
+            /**
+             * @description Whether the authenticated user reacted with the emoji; omitted for anonymous
+             *     requests.
+             */
+            me?: boolean;
+        };
+        /** @description One emoji reaction to a status, with the account that reacted. */
+        StatusReactor: {
+            account: components["schemas"]["Account"];
+            emoji: components["schemas"]["ReactionEmoji"];
+            /**
+             * Format: date-time
+             * @description When the account reacted.
+             */
+            created_at: string;
+        };
+        /** @description A page of the emoji reactions to a status, newest first. */
+        StatusReactionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["StatusReactor"][];
         };
         /** @description The thread around a status. */
         StatusContext: {
@@ -5404,6 +5485,41 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["StatusAfterAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listStatusReactions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+                 *     reaction has gives an empty page.
+                 */
+                emoji?: string;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the reactions. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusReactionPage"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

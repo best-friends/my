@@ -786,6 +786,7 @@ const (
 	NotificationTypeMention              NotificationType = "mention"
 	NotificationTypeModerationNotice     NotificationType = "moderation_notice"
 	NotificationTypePollClosed           NotificationType = "poll_closed"
+	NotificationTypeReaction             NotificationType = "reaction"
 	NotificationTypeRelationshipsSevered NotificationType = "relationships_severed"
 	NotificationTypeReportResolved       NotificationType = "report_resolved"
 )
@@ -816,6 +817,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeModerationNotice:
 		return true
 	case NotificationTypePollClosed:
+		return true
+	case NotificationTypeReaction:
 		return true
 	case NotificationTypeRelationshipsSevered:
 		return true
@@ -1892,9 +1895,9 @@ type AdminReportStatus struct {
 	//
 	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
-	// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-	// are zero.
+	// `visibility` and `language` are those of the boosted status, its `content`,
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, and its counts are zero.
 	Status Status `json:"status"`
 }
 
@@ -2763,6 +2766,9 @@ type Notification struct {
 	// appeal an `appeal_decided` tells of, with the appeal.
 	ModerationAction *ModerationAction `json:"moderation_action,omitempty"`
 
+	// Reaction The emoji of a `reaction`; omitted for the other types.
+	Reaction *ReactionEmoji `json:"reaction,omitempty"`
+
 	// RelationshipSeverance The follows that a `relationships_severed` tells of: the user lost them when the
 	// moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
 	// account (`account_suspension`, the notification's `account` is the account). Both
@@ -2782,9 +2788,10 @@ type Notification struct {
 
 	// Type The kind of a notification. `account` is the account that acted: the follower
 	// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-	// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-	// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-	// about. `moderation_notice` comes from the instance and has no `account`; its
+	// (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+	// account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+	// with another emoji is another notification). `status` is the post that `mention`,
+	// `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
 	// `moderation_action` is the action on the user's account, with its kind, reason, and end.
 	// `report_resolved` also comes from the instance: its `report` is the user's report that
 	// the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -2832,9 +2839,10 @@ type NotificationPage struct {
 
 // NotificationType The kind of a notification. `account` is the account that acted: the follower
 // (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-// about. `moderation_notice` comes from the instance and has no `account`; its
+// (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+// account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+// with another emoji is another notification). `status` is the post that `mention`,
+// `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
 // `moderation_action` is the action on the user's account, with its kind, reason, and end.
 // `report_resolved` also comes from the instance: its `report` is the user's report that
 // the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -3014,6 +3022,25 @@ type PushSubscriptionRequest struct {
 	Keys PushSubscriptionKeys `json:"keys"`
 }
 
+// ReactionEmoji The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+// emoji of another server is shown as it is and cannot be used to react from here.
+type ReactionEmoji struct {
+	// Domain The server of a custom emoji of another server; omitted otherwise.
+	Domain *string `json:"domain,omitempty"`
+
+	// Emoji The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+	// be shown (as `CustomEmoji` leaves such an emoji out).
+	Emoji *CustomEmoji `json:"emoji,omitempty"`
+
+	// Name The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+	// custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+	// server.
+	Name string `json:"name"`
+
+	// Shortcode The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+	Shortcode *string `json:"shortcode,omitempty"`
+}
+
 // RegistrationDecisionRequest A moderator's decision on a registration.
 type RegistrationDecisionRequest struct {
 	// Note A note for the moderators, as plain text; omitted or empty for none.
@@ -3175,9 +3202,9 @@ type SpoilerText = string
 //
 // In a timeline, a boost is a status of the booster with `boost` set to the boosted
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
-// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-// are zero.
+// `visibility` and `language` are those of the boosted status, its `content`,
+// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+// empty, and its counts are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
@@ -3191,9 +3218,9 @@ type Status struct {
 	//
 	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
-	// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-	// are zero.
+	// `visibility` and `language` are those of the boosted status, its `content`,
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, and its counts are zero.
 	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
@@ -3249,6 +3276,11 @@ type Status struct {
 
 	// Pinned Whether the status is pinned to the author's profile; given only to the author.
 	Pinned *bool `json:"pinned,omitempty"`
+
+	// Reactions The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+	// reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+	// are counted apart, in `favourites_count`.
+	Reactions []StatusReaction `json:"reactions"`
 
 	// RepliesCount The number of replies.
 	RepliesCount int `json:"replies_count"`
@@ -3361,6 +3393,52 @@ type StatusPage struct {
 
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// StatusReaction The reactions to a status with one emoji.
+type StatusReaction struct {
+	// Count The number of the reactions with the emoji.
+	Count int `json:"count"`
+
+	// Domain The server of a custom emoji of another server; omitted otherwise.
+	Domain *string `json:"domain,omitempty"`
+
+	// Emoji The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+	// be shown (as `CustomEmoji` leaves such an emoji out).
+	Emoji *CustomEmoji `json:"emoji,omitempty"`
+
+	// Me Whether the authenticated user reacted with the emoji; omitted for anonymous
+	// requests.
+	Me *bool `json:"me,omitempty"`
+
+	// Name The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+	// custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+	// server.
+	Name string `json:"name"`
+
+	// Shortcode The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+	Shortcode *string `json:"shortcode,omitempty"`
+}
+
+// StatusReactionPage A page of the emoji reactions to a status, newest first.
+type StatusReactionPage struct {
+	Items []StatusReactor `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// StatusReactor One emoji reaction to a status, with the account that reacted.
+type StatusReactor struct {
+	// Account An account, as clients show it (FR-006).
+	Account Account `json:"account"`
+
+	// CreatedAt When the account reacted.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Emoji The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+	// emoji of another server is shown as it is and cannot be used to react from here.
+	Emoji ReactionEmoji `json:"emoji"`
 }
 
 // StatusSource What the author typed, for editing a status.
@@ -3531,9 +3609,9 @@ type AccountProfile = Account
 //
 // In a timeline, a boost is a status of the booster with `boost` set to the boosted
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
-// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-// are zero.
+// `visibility` and `language` are those of the boosted status, its `content`,
+// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+// empty, and its counts are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.
@@ -3840,6 +3918,19 @@ type CreateStatusParams struct {
 	// posted with it instead of posting again. A key longer than 256 characters, or one
 	// that is not UTF-8 without U+0000, is a 422.
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// ListStatusReactionsParams defines parameters for ListStatusReactions.
+type ListStatusReactionsParams struct {
+	// Emoji The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+	// reaction has gives an empty page.
+	Emoji *string `form:"emoji,omitempty" json:"emoji,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // GetHomeTimelineParams defines parameters for GetHomeTimeline.
@@ -4270,6 +4361,9 @@ type ServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// ListStatusReactions List the emoji reactions to a status
+	// (GET /statuses/{id}/reactions)
+	ListStatusReactions(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusReactionsParams)
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId)
@@ -7619,6 +7713,74 @@ func (siw *ServerInterfaceWrapper) PinStatus(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// ListStatusReactions operation middleware
+func (siw *ServerInterfaceWrapper) ListStatusReactions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStatusReactionsParams
+
+	// ------------- Optional query parameter "emoji" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "emoji", r.URL.Query(), &params.Emoji, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "emoji"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "emoji", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStatusReactions(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetStatusSource operation middleware
 func (siw *ServerInterfaceWrapper) GetStatusSource(w http.ResponseWriter, r *http.Request) {
 
@@ -8008,6 +8170,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/history", wrapper.GetStatusHistory)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.UnpinStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.PinStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/reactions", wrapper.ListStatusReactions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
@@ -14174,6 +14337,69 @@ func (response PinStatusdefaultApplicationProblemPlusJSONResponse) VisitPinStatu
 	return err
 }
 
+type ListStatusReactionsRequestObject struct {
+	Id     StatusId `json:"id"`
+	Params ListStatusReactionsParams
+}
+
+type ListStatusReactionsResponseObject interface {
+	VisitListStatusReactionsResponse(w http.ResponseWriter) error
+}
+
+type ListStatusReactions200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListStatusReactions200JSONResponse struct {
+	Body    StatusReactionPage
+	Headers ListStatusReactions200ResponseHeaders
+}
+
+func (response ListStatusReactions200JSONResponse) VisitListStatusReactionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListStatusReactionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListStatusReactionsdefaultApplicationProblemPlusJSONResponse) VisitListStatusReactionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetStatusSourceRequestObject struct {
 	Id StatusId `json:"id"`
 }
@@ -14768,6 +14994,9 @@ type StrictServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(ctx context.Context, request PinStatusRequestObject) (PinStatusResponseObject, error)
+	// ListStatusReactions List the emoji reactions to a status
+	// (GET /statuses/{id}/reactions)
+	ListStatusReactions(ctx context.Context, request ListStatusReactionsRequestObject) (ListStatusReactionsResponseObject, error)
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(ctx context.Context, request GetStatusSourceRequestObject) (GetStatusSourceResponseObject, error)
@@ -17675,6 +17904,33 @@ func (sh *strictHandler) PinStatus(w http.ResponseWriter, r *http.Request, id St
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PinStatusResponseObject); ok {
 		if err := validResponse.VisitPinStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStatusReactions operation middleware
+func (sh *strictHandler) ListStatusReactions(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusReactionsParams) {
+	var request ListStatusReactionsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStatusReactions(ctx, request.(ListStatusReactionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStatusReactions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStatusReactionsResponseObject); ok {
+		if err := validResponse.VisitListStatusReactionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

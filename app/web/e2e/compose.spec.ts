@@ -129,6 +129,7 @@ async function serveApi(page: Page): Promise<Posted[]> {
         replies_count: 0,
         boosts_count: 0,
         favourites_count: 0,
+        reactions: [],
       });
     }
     // Carol is found only by resolving her handle, as the server resolves the mentions of a post.
@@ -290,6 +291,7 @@ async function serveHomeTimeline(page: Page): Promise<void> {
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   });
   // Registered after serveApi's route, so Playwright asks this one first.
   await page.route("**/api/v1/timelines/home*", (route) => route.fulfill({ json: { items: Array.from({ length: 6 }, (_, i) => post(i + 1)) } }));

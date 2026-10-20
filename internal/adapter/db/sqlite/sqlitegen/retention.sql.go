@@ -83,6 +83,7 @@ WHERE s.id > CAST(?1 AS TEXT) AND s.id < CAST(?2 AS TEXT)
       SELECT 1 FROM boosts b WHERE b.status_id = s.id AND b.is_local = 1
         AND NOT EXISTS (SELECT 1 FROM boost_retractions br WHERE br.boost_id = b.id))
     AND NOT EXISTS (SELECT 1 FROM favourites f WHERE f.status_id = s.id)
+    AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.status_id = s.id)
     AND NOT EXISTS (SELECT 1 FROM bookmarks k WHERE k.status_id = s.id)
     AND NOT EXISTS (SELECT 1 FROM status_pins p WHERE p.status_id = s.id)))
 ORDER BY s.id
@@ -104,7 +105,8 @@ type ListRemoteStatusesToPurgeParams struct {
 // ListRemoteStatusesToPurge returns, in ID order after the cursor @after and below @id_before,
 // the remote statuses that are not deleted and were published before @any_before, or before
 // @unreferenced_before while nothing local refers to them: a live local reply, a live local
-// status in their thread, a local boost that is not retracted, a favourite, a bookmark, or a pin.
+// status in their thread, a local boost that is not retracted, a favourite, a reaction, a
+// bookmark, or a pin.
 func (q *Queries) ListRemoteStatusesToPurge(ctx context.Context, arg ListRemoteStatusesToPurgeParams) ([]Status, error) {
 	rows, err := q.db.QueryContext(ctx, listRemoteStatusesToPurge,
 		arg.After,

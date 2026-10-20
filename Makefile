@@ -96,8 +96,21 @@ build: web-build ## Build bin/my, with the web client embedded, and the version 
 config-docs: ## Regenerate docs/reference/configuration.md from the config schema (go-test fails when it is stale)
 	go test ./internal/platform/config -run '^TestReferenceUpToDate$$' -update
 
+# The Unicode emoji that emoji reactions accept and normalize (ADR-0052 §1). To move to a new
+# Unicode version, change both and run make emoji-table.
+EMOJI_VERSION := 18.0.0
+EMOJI_TEST_SHA256 := 8f3735cda1f92a779d78af67cf86066bb1f07143dc22f2ac29394d9bc57ab21a
+
+.PHONY: emoji-table
+emoji-table: ## Regenerate internal/domain/content/emoji_table.gen.go from Unicode's emoji-test.txt (EMOJI_VERSION)
+	mkdir -p .tmp
+	curl -fsSL -o .tmp/emoji-test-$(EMOJI_VERSION).txt https://www.unicode.org/Public/$(EMOJI_VERSION)/emoji/emoji-test.txt
+	echo "$(EMOJI_TEST_SHA256)  .tmp/emoji-test-$(EMOJI_VERSION).txt" | sha256sum -c -
+	go run ./scripts/emoji-table -in .tmp/emoji-test-$(EMOJI_VERSION).txt -version $(EMOJI_VERSION) \
+		-out internal/domain/content/emoji_table.gen.go
+
 .PHONY: sqlc sqlc-check
-sqlc: ## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
+sqlc:## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
 	scripts/sqlc.sh
 
 sqlc-check: ## Fail if the committed sqlc-generated code is stale

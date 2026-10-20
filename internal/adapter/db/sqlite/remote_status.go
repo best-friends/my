@@ -204,6 +204,15 @@ func (r *StatusRepository) FindCustomEmoji(ctx context.Context, id string) (cont
 	return customEmojiFrom(row), nil
 }
 
+// FindCustomEmojiByShortcode implements content.Repository.
+func (r *StatusRepository) FindCustomEmojiByShortcode(ctx context.Context, shortcode, domain string) (content.CustomEmoji, error) {
+	row, err := r.db.reader().GetCustomEmojiByShortcode(ctx, sqlitegen.GetCustomEmojiByShortcodeParams{Shortcode: shortcode, Domain: domain})
+	if err != nil {
+		return content.CustomEmoji{}, notFound(err, appcontent.ErrNotFound, "custom emoji "+shortcode+"@"+domain)
+	}
+	return customEmojiFrom(row), nil
+}
+
 // FindCustomEmojiImage implements content.Repository.
 func (r *StatusRepository) FindCustomEmojiImage(ctx context.Context, emojiID string) (content.CustomEmojiImage, error) {
 	row, err := r.db.reader().GetLatestCustomEmojiImage(ctx, emojiID)

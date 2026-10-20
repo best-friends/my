@@ -46,6 +46,7 @@ function status(n: number, text: string): Status {
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   };
 }
 

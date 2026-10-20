@@ -42,6 +42,8 @@ type StatusReader interface {
 	History(ctx context.Context, viewer appcontent.Viewer, statusID string) ([]appcontent.RevisionView, error)
 	Source(ctx context.Context, accountID, statusID string) (content.Revision, error)
 	Bookmarks(ctx context.Context, accountID, before string, limit int) (appcontent.BookmarkPage, error)
+	Reactions(ctx context.Context, viewer appcontent.Viewer, statusID, emoji, before string, limit int) (appcontent.ReactedPage, error)
+	ReactionEmoji(ctx context.Context, e appcontent.ReactionEmoji) (appcontent.EmojiView, error)
 }
 
 // Interactions runs boosts, favourites, bookmarks, and pins. *appcontent.Interactions
@@ -222,6 +224,7 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		Emojis:           parts.customEmojis(rev.EmojiIDs),
 		RepliesCount:     int(v.Counters.RepliesCount), BoostsCount: int(v.Counters.BoostsCount),
 		FavouritesCount: int(v.Counters.FavouritesCount),
+		Reactions:       newStatusReactions(v.Reactions, v.Relation != nil),
 	}
 	if st.URL != "" {
 		// A local status's stored url is under https://Host, like its ActivityPub id.

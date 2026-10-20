@@ -121,7 +121,7 @@ func (r *StatusRepository) EraseStatuses(ctx context.Context, tx uow.Tx, statusI
 	if err := runSteps(ctx, ids, "erase statuses",
 		q.EraseLocalStatusesOfStatuses, q.EraseCountersOfStatuses, q.EraseBoostEdgesOfStatuses,
 		q.EraseBoostRetractionsOfStatuses, q.EraseBoostsOfStatuses, q.EraseFavouritesOfStatuses,
-		q.EraseBookmarksOfStatuses, q.ErasePinsOfStatuses); err != nil {
+		q.EraseReactionsOfStatuses, q.EraseReactionCountsOfStatuses, q.EraseBookmarksOfStatuses, q.ErasePinsOfStatuses); err != nil {
 		return err
 	}
 	return r.PurgeStatuses(ctx, tx, statusIDs)
@@ -145,6 +145,15 @@ func (r *StatusRepository) EraseInteractionsBy(ctx context.Context, tx uow.Tx, a
 		},
 		func() error {
 			return keep(q.EraseFavouritesBy(ctx, postgresgen.EraseFavouritesByParams{AccountID: accountID, Lim: lim}))
+		},
+		func() error {
+			return q.DeleteSingleReactionCountsBy(ctx, postgresgen.DeleteSingleReactionCountsByParams{AccountID: accountID, Lim: lim})
+		},
+		func() error {
+			return q.UncountReactionsBy(ctx, postgresgen.UncountReactionsByParams{AccountID: accountID, Lim: lim})
+		},
+		func() error {
+			return keep(q.EraseReactionsBy(ctx, postgresgen.EraseReactionsByParams{AccountID: accountID, Lim: lim}))
 		},
 		func() error {
 			return keep(q.EraseBookmarksBy(ctx, postgresgen.EraseBookmarksByParams{AccountID: accountID, Lim: lim}))

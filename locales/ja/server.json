@@ -787,6 +787,10 @@
     "defaultMessage": "{instance} で新しい通知があります",
     "description": "Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none."
   },
+  "push.reaction": {
+    "defaultMessage": "{name}さんがあなたの投稿にリアクションしました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that reacted to the user's post with an emoji."
+  },
   "push.relationships_severed": {
     "defaultMessage": "{instance} のモデレーターによる凍結で、いくつかのフォロー関係が解除されました",
     "description": "Web Push notification: the moderators suspended a server or an account, which ended follows between it and the user. {instance} is the server's display name, or its domain name when it has none."

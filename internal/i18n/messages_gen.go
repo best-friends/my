@@ -1432,6 +1432,13 @@ func (l *Localizer) ServerPushOther(instance string) string {
 	return l.format("server:push.other", map[string]any{"instance": instance})
 }
 
+// ServerPushReaction formats "server:push.reaction". Web Push notification. {name} is the display name, or the @handle, of the account that reacted to the user's post with an emoji.
+//
+//	en: {name} reacted to your post
+func (l *Localizer) ServerPushReaction(name string) string {
+	return l.format("server:push.reaction", map[string]any{"name": name})
+}
+
 // ServerPushRelationshipsSevered formats "server:push.relationships_severed". Web Push notification: the moderators suspended a server or an account, which ended follows between it and the user. {instance} is the server's display name, or its domain name when it has none.
 //
 //	en: A suspension by the moderators of {instance} ended some of your follows

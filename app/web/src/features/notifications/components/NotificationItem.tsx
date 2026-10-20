@@ -91,6 +91,8 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
                   domain: view.severance === null || view.severance.domain === null ? null : <bdi key="domain">{view.severance.domain}</bdi>,
                   followers: view.severance?.followers ?? 0,
                   following: view.severance?.following ?? 0,
+                  // The emoji is the reacting user's choice, isolated from the sentence around it (Y10).
+                  emoji: view.reaction === null ? null : <bdi key="emoji">{view.reaction}</bdi>,
                 },
               )}
             </span>

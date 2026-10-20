@@ -59,6 +59,7 @@ function status(id: string, account: Status["account"], content: string, overrid
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
     favourited: false,
     boosted: false,
     bookmarked: false,

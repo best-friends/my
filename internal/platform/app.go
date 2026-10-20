@@ -476,7 +476,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Interactions = content.NewInteractions(content.InteractionDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: a.AccountPolicy.Content(),
-		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+		RecordRemoteEmojis: a.Content.RecordRemoteEmojis,
+		Clock:              a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 	// After the content and graph projectors, which reject the commands that must not reach
 	// the timelines (data-model §4.6).

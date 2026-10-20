@@ -1738,6 +1738,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** {name} reacted to your post with {emoji} */
+  "client:notifications.type.reaction": { emoji: string; name: string };
   /** A suspension by the moderators ended some of your follows */
   "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */
@@ -2160,6 +2162,8 @@ export interface MessageArgs {
   "client:settings.push.type.mention": {};
   /** Notices from the moderators */
   "client:settings.push.type.moderation": {};
+  /** Emoji reactions */
+  "client:settings.push.type.reaction": {};
   /** Choose what this device notifies you of. */
   "client:settings.push.types.description": {};
   /** Notify me of */
@@ -2898,6 +2902,8 @@ export interface MessageArgs {
   "server:push.moderation_notice": { instance: string };
   /** You have a new notification on {instance} */
   "server:push.other": { instance: string };
+  /** {name} reacted to your post */
+  "server:push.reaction": { name: string };
   /** A suspension by the moderators of {instance} ended some of your follows */
   "server:push.relationships_severed": { instance: string };
   /** A report you filed on {instance} has been resolved */
