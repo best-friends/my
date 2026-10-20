@@ -140,7 +140,8 @@ func setup() (*env, error) {
 	}
 	misskey := func(user, token string) *peerClient {
 		return &peerClient{name: "misskey", host: misskeyHost, user: user,
-			peerAPI: &misskeyAPI{host: misskeyHost, token: token, http: e.http}, noEdits: misskeyNoEdits}
+			peerAPI: &misskeyAPI{host: misskeyHost, token: token, http: e.http}, noEdits: misskeyNoEdits,
+			favouriteReaction: misskeyReaction}
 	}
 	m := mastodon(mastodonUser, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN"))
 	m.stranger = mastodon(mastodonStranger, os.Getenv("FEDERATION_LIVE_MASTODON_TOKEN_DAVE"))
@@ -469,6 +470,25 @@ type status struct {
 	BoostsCount     int    `json:"boosts_count"`
 	ReblogsCount    int    `json:"reblogs_count"`
 	FavouritesCount int    `json:"favourites_count"`
+	// Reactions are the emoji reactions, counted per emoji (this server's client API only).
+	Reactions []statusReaction `json:"reactions"`
+}
+
+// statusReaction is the number of the reactions to a status with one emoji (this server's
+// client API).
+type statusReaction struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// reactionCount returns the number of the reactions to s with the emoji.
+func (s status) reactionCount(emoji string) int {
+	for _, r := range s.Reactions {
+		if r.Name == emoji {
+			return r.Count
+		}
+	}
+	return 0
 }
 
 // thread is a status context (both APIs).
@@ -482,6 +502,10 @@ type notification struct {
 	Type    string  `json:"type"`
 	Account account `json:"account"`
 	Status  *status `json:"status"`
+	// Reaction is the emoji of a notification of type "reaction" (this server's client API only).
+	Reaction *struct {
+		Name string `json:"name"`
+	} `json:"reaction"`
 }
 
 // isNotFound reports whether err is a 404 response.
@@ -625,6 +649,10 @@ type peerClient struct {
 	// noEdits, when set, says why the peer neither edits its posts nor applies the edits it
 	// receives (TestEdit).
 	noEdits string
+	// favouriteReaction, when set, is the emoji of the peer's favourite: the peer sends it as a
+	// Like with the emoji (_misskey_reaction), which this server records as an emoji reaction,
+	// not as a favourite (ADR-0052, TestFavourite).
+	favouriteReaction string
 }
 
 // handle is the peer user's handle.

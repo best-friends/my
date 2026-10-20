@@ -426,7 +426,9 @@ func TestBoost(t *testing.T) {
 }
 
 // TestFavourite: favourites and their undo in both directions (Like, Undo Like) change the count
-// on the author's side.
+// on the author's side. A Misskey favourite is a reaction (a Like with _misskey_reaction): this
+// server counts it among the reactions with its emoji, not among the favourites, and notifies it
+// as a reaction (ADR-0052).
 func TestFavourite(t *testing.T) {
 	interactionScenario(t, "favourite", func(s status) int { return s.FavouritesCount })
 }
@@ -448,15 +450,37 @@ func interactionScenario(t *testing.T, action string, count func(status) int) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				// A peer whose favourite is an emoji reaction (Misskey) makes a reaction on this
+				// server, and no favourite (ADR-0052).
+				what, got := action, count
+				emoji := ""
+				if action == "favourite" && p.favouriteReaction != "" {
+					emoji = p.favouriteReaction
+					what = emoji + " reaction"
+					got = func(s status) int { return s.reactionCount(emoji) }
+				}
 				for _, undo := range []bool{false, true} {
 					if err := p.interact(ctx, onPeer.ID, action, undo); err != nil {
 						t.Fatal(err)
 					}
 					want := map[bool]int{false: 1, true: 0}[undo]
-					eventually(t, deliveryTimeout, fmt.Sprintf("the %s count of %s on %s is %d", action, original.URI, localHost, want), func() (bool, string) {
+					eventually(t, deliveryTimeout, fmt.Sprintf("the %s count of %s on %s is %d", what, original.URI, localHost, want), func() (bool, string) {
 						s, err := e.local.status(ctx, original.ID)
-						return err == nil && count(s) == want, fmt.Sprintf("%d %v", count(s), err)
+						ok := err == nil && got(s) == want && (emoji == "" || s.FavouritesCount == 0)
+						return ok, fmt.Sprintf("%d (favourites %d, reactions %+v) %v", got(s), s.FavouritesCount, s.Reactions, err)
 					})
+					if emoji != "" && !undo {
+						eventually(t, deliveryTimeout, "the "+what+" notification of "+original.URI, func() (bool, string) {
+							ns, err := e.local.notifications(ctx)
+							for _, n := range ns {
+								if n.Type == "reaction" && n.Status != nil && n.Status.URI == original.URI &&
+									n.Reaction != nil && n.Reaction.Name == emoji {
+									return true, ""
+								}
+							}
+							return false, fmt.Sprintf("%d notifications %v", len(ns), err)
+						})
+					}
 				}
 			})
 
