@@ -26,6 +26,8 @@ export type StatusCardProps = {
   withActions?: boolean;
   /** The card's article, for the page that scrolls it into view. */
   ref?: Ref<HTMLElement>;
+  /** Whether the card is one of the pinned posts at the top of a profile, which a line above it says (FR-403). */
+  pinned?: boolean;
 };
 
 /** A link to a profile on a name: in the color of the text, underlined on hover, since it is no running text. */
@@ -43,7 +45,7 @@ const timeLink =
  * One status: the hook's view of it placed into the slots of PostCard, with the action bar. Its names link
  * to the profiles and its time to the post's page (FR-113).
  */
-export function StatusCard({ status, variant = "compact", thread, onDeleted, withActions = true, ref }: StatusCardProps) {
+export function StatusCard({ status, variant = "compact", thread, onDeleted, withActions = true, ref, pinned = false }: StatusCardProps) {
   const t = useT();
   const intl = useIntl();
   const view = useStatusView(status);
@@ -87,7 +89,11 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
           </>
         ),
       })}
-      {...(view.boostedBy !== null && {
+      {...(pinned && {
+        // Part of the article's name, so that a reader of the feed hears it before the author.
+        context: <span>{t("client:status.pin.label")}</span>,
+      })}
+      {...(!pinned && view.boostedBy !== null && {
         context: (
           <>
             <BoostIcon />

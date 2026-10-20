@@ -89,6 +89,37 @@ export function cacheRelationAnswer(queryClient: QueryClient, id: string, relati
   }
 }
 
+/**
+ * The posts that account `accountId` pinned to its profile, newest pin first, in a single page
+ * (GET /accounts/{id}/statuses?pinned=true, FR-403). For a remote account, those this server knows of.
+ */
+export function pinnedStatusesQueryOptions(api: Api, accountId: string) {
+  return api.query.queryOptions("get", "/accounts/{id}/statuses", { params: { path: { id: accountId }, query: { pinned: true } } });
+}
+
+/**
+ * Pins the viewer's post `id` to their profile, or unpins it; returns the post after it. The server treats
+ * both as setters, so a retry after a lost answer is safe; a pin beyond the limit is a 422 whose detail says so.
+ */
+export async function setPin(api: Api, id: string, on: boolean): Promise<Status> {
+  const init = { params: { path: { id } } };
+  const { data, error } = await (on ? api.fetch.POST("/statuses/{id}/pin", init) : api.fetch.DELETE("/statuses/{id}/pin", init));
+  // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
+  if (data === undefined) throw new ApiError(error);
+  return data;
+}
+
+/**
+ * Puts the server's answer to a pin or unpin of the viewer `viewerId`'s post `id` into the cache (web-client.md
+ * S1): every copy of the post takes its `pinned`, and the viewer's pinned posts, a list that changes, are read
+ * again. Resolves once the list on screen has been read again, so that the success shows with it.
+ */
+export async function cachePinAnswer(api: Api, queryClient: QueryClient, id: string, answer: Status, viewerId: string): Promise<void> {
+  const pinned = answer.pinned === true;
+  updateCachedStatuses(queryClient, forPost(id, (status) => (status.pinned === pinned ? status : { ...status, pinned })));
+  await queryClient.invalidateQueries({ queryKey: pinnedStatusesQueryOptions(api, viewerId).queryKey });
+}
+
 /** Deletes the viewer's post `id` (DELETE /statuses/{id}). */
 export async function deleteStatus(api: Api, id: string): Promise<void> {
   // The client's middleware throws for every error status; a 204 has no body to read.

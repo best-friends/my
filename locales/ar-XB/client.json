@@ -4619,6 +4619,22 @@
     "defaultMessage": "‮Odǝu ʇɥǝ oɹıƃıuɐʅ dosʇ ou {host}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.pin.action": {
+    "defaultMessage": "‮Ԁıu ʇo dɹoɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.pin.done": {
+    "defaultMessage": "‮Ԁosʇ dıuuǝp ʇo ʎonɹ dɹoɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.pin.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ dıu ʇɥǝ dosʇ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.pin.label": {
+    "defaultMessage": "‮Ԁıuuǝp dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.thread.ancestors": {
     "defaultMessage": "‮Ǝɐɹʅıǝɹ ıu ʇɥǝ ʇɥɹǝɐp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4645,6 +4661,18 @@
   },
   "status.title": {
     "defaultMessage": "‮Ԁosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.unpin.action": {
+    "defaultMessage": "‮∩udıu ɟɹoɯ dɹoɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.unpin.done": {
+    "defaultMessage": "‮Ԁosʇ nudıuuǝp ɟɹoɯ ʎonɹ dɹoɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.unpin.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ nudıu ʇɥǝ dosʇ: {reason}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "tag.title": {

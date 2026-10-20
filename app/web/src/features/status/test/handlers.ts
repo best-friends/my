@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the status feature (web-client.md §7, §13): any post (GET /statuses/{id}), as
 // Bob's post `statusFixture`; the thread around it (GET /statuses/{id}/context): no ancestors and no
-// replies; and the actions on it (boost, favourite, bookmark and their removal; delete). An action answers
-// the post with the viewer's relation set as asked.
+// replies; and the actions on it (boost, favourite, bookmark, pin and their removal; delete). An action
+// answers the post with the viewer's relation set as asked.
 import { http, HttpResponse } from "msw";
 import { type Schemas, statusFixture } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
@@ -25,5 +25,10 @@ export const handlers = [
   ...relation("boost", "boosted"),
   ...relation("favourite", "favourited"),
   ...relation("bookmark", "bookmarked"),
+  ...[true, false].map((on) =>
+    (on ? http.post : http.delete)(`${apiBase}/statuses/:id/pin`, ({ params, request }) =>
+      withViewer(request, () => HttpResponse.json({ ...statusFixture(String(params["id"])), pinned: on })),
+    ),
+  ),
   http.delete(`${apiBase}/statuses/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
 ];

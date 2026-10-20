@@ -28,7 +28,7 @@ export type StatusActionsProps = {
 
 /**
  * The action bar of a post: reply, boost, favourite, bookmark, and a menu with the link, the report of
- * another account's post (features/report) and, for the viewer's own posts, delete behind a confirmation
+ * another account's post (features/report) and, for the viewer's own posts, pin or unpin and delete behind a confirmation
  * (WAI-ARIA APG, alert dialog pattern). Nothing while
  * nobody is signed in. The toggles keep their names in both states and expose the state with
  * `aria-pressed` (APG, button pattern); a count is the toggle's description.
@@ -65,6 +65,9 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
         </Button>
         <Menu aria-label={t("client:status.action.more")} placement="bottom end">
           <MenuItem onAction={actions.copyLink}>{t("client:status.action.copy_link")}</MenuItem>
+          {actions.pin !== null && (
+            <MenuItem onAction={actions.pin.toggle}>{actions.pin.isPinned ? t("client:status.unpin.action") : t("client:status.pin.action")}</MenuItem>
+          )}
           {actions.canReport && (
             <MenuItem
               onAction={() => {

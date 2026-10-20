@@ -4619,6 +4619,34 @@
     "defaultMessage": "Open the original post on {host}",
     "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
   },
+  "status.pin.action": {
+    "defaultMessage": "Pin to profile",
+    "description": "Menu item, on the user's own post, that pins it to the top of their profile."
+  },
+  "status.pin.done": {
+    "defaultMessage": "Post pinned to your profile",
+    "description": "Toast after the user pinned their post to their profile."
+  },
+  "status.pin.failed": {
+    "defaultMessage": "Could not pin the post: {reason}",
+    "description": "Toast when pinning the user's post failed, for example because they already pinned as many posts as allowed. {reason} is the error message, a full sentence."
+  },
+  "status.pin.label": {
+    "defaultMessage": "Pinned post",
+    "description": "Line above a post at the top of a profile that the account pinned there."
+  },
+  "status.unpin.action": {
+    "defaultMessage": "Unpin from profile",
+    "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."
+  },
+  "status.unpin.done": {
+    "defaultMessage": "Post unpinned from your profile",
+    "description": "Toast after the user unpinned their post from their profile."
+  },
+  "status.unpin.failed": {
+    "defaultMessage": "Could not unpin the post: {reason}",
+    "description": "Toast when unpinning the user's post failed. {reason} is the error message, a full sentence."
+  },
   "status.thread.ancestors": {
     "defaultMessage": "Earlier in the thread",
     "description": "Heading above the posts that the post of the page replies to, oldest first."

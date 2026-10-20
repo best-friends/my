@@ -2312,6 +2312,14 @@ export interface MessageArgs {
   "client:status.not_found.title": {};
   /** Open the original post on {host} */
   "client:status.original": { host: string };
+  /** Pin to profile */
+  "client:status.pin.action": {};
+  /** Post pinned to your profile */
+  "client:status.pin.done": {};
+  /** Could not pin the post: {reason} */
+  "client:status.pin.failed": { reason: string };
+  /** Pinned post */
+  "client:status.pin.label": {};
   /** Earlier in the thread */
   "client:status.thread.ancestors": {};
   /** Could not load the replies: {reason} */
@@ -2326,6 +2334,12 @@ export interface MessageArgs {
   "client:status.thread.retry": {};
   /** Post */
   "client:status.title": {};
+  /** Unpin from profile */
+  "client:status.unpin.action": {};
+  /** Post unpinned from your profile */
+  "client:status.unpin.done": {};
+  /** Could not unpin the post: {reason} */
+  "client:status.unpin.failed": { reason: string };
   /** #{tag} */
   "client:tag.title": { tag: string };
   /** {name} boosted */
