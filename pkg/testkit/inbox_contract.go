@@ -176,7 +176,17 @@ func (e *inboxEnv) request(p inboxPost) appfederation.InboxRequest {
 
 func (e *inboxEnv) receive(t *testing.T, in *appfederation.Inbox, p inboxPost) (appfederation.Received, error) {
 	t.Helper()
-	return in.Receive(t.Context(), e.request(p))
+	got, err := in.Receive(t.Context(), e.request(p))
+	if err != nil {
+		return got, err
+	}
+	if got.Rejection != nil {
+		if got != (appfederation.Received{Rejection: got.Rejection}) {
+			t.Errorf("Receive = %+v, want only the rejection", got)
+		}
+		return appfederation.Received{}, got.Rejection
+	}
+	return got, nil
 }
 
 func inboxActivity(t *testing.T, fields map[string]any) []byte {

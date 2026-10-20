@@ -150,22 +150,23 @@ func (o *Objects) Authenticate(ctx context.Context, r *SignedRequest) (Requester
 	if o.d.Signatures == nil {
 		return Requester{}, nil
 	}
-	sig, err := o.d.Signatures.Parse(r)
-	if err == nil {
-		err = o.d.Signatures.Check(r, sig)
-	}
-	var v *VerifiedSignature
-	if err == nil {
-		v, err = o.d.Signatures.Verify(ctx, r, sig)
-	}
-	switch {
-	case errors.Is(err, ErrSignatureRejected):
-		if !errors.Is(err, ErrNoSignature) {
-			o.d.Logger.DebugContext(ctx, "GET signature not accepted", slog.String("path", r.URL.Path), slog.Any("reason", err))
-		}
+	// Parse and Check fail only with a *SignatureError: a refusal, never an unexpected error.
+	sig, perr := o.d.Signatures.Parse(r)
+	if perr != nil {
+		o.notAccepted(ctx, r, perr)
 		return Requester{}, nil
-	case err != nil:
+	}
+	if cerr := o.d.Signatures.Check(r, sig); cerr != nil {
+		o.notAccepted(ctx, r, cerr)
+		return Requester{}, nil
+	}
+	v, rejected, err := o.d.Signatures.Verify(ctx, r, sig)
+	if err != nil {
 		return Requester{}, err
+	}
+	if rejected != nil {
+		o.notAccepted(ctx, r, rejected)
+		return Requester{}, nil
 	}
 	owner, ok := signer(v)
 	domain := owner.Host()
@@ -187,6 +188,20 @@ func (o *Objects) Authenticate(ctx context.Context, r *SignedRequest) (Requester
 		return Requester{}, err
 	}
 	return req, nil
+}
+
+// notAccepted logs a GET signature that is not accepted, unless there is none; the requester
+// is anonymous. The log has the reason, not err, whose message quotes the request's signature
+// headers.
+func (o *Objects) notAccepted(ctx context.Context, r *SignedRequest, err error) {
+	var se *SignatureError
+	reason := ReasonSignaturePolicy
+	if errors.As(err, &se) {
+		reason = se.Reason()
+	}
+	if reason != ReasonNoSignature {
+		o.d.Logger.DebugContext(ctx, "GET signature not accepted", slog.String("path", r.URL.Path), slog.String("reason", reason))
+	}
 }
 
 // signer returns the canonical IRI of the key's owner, false unless it is an https IRI on the

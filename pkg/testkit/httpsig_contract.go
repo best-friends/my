@@ -132,7 +132,7 @@ func testRFC9421Vectors(t *testing.T, verifier federation.Verifier) {
 			// Without a declared algorithm the policy tries every one the key type allows.
 			keys := &staticKeys{keys: map[string]federation.PublicKey{sig.KeyID: {KeyID: sig.KeyID, Owner: "https://example.com/actor", Key: pub}}}
 			sv := federation.NewSignatureVerifier(verifier, keys, NewKeyValueStore(NewClock(vectorTime)), NewClock(vectorTime))
-			if _, err := sv.Verify(context.Background(), r, sig); err != nil {
+			if _, err := verifyPolicy(sv, r, sig); err != nil {
 				t.Fatalf("SignatureVerifier.Verify: %v", err)
 			}
 
@@ -658,7 +658,7 @@ func testDoubleKnocking(t *testing.T, signer federation.Signer, verifier federat
 			if err := sv.Check(r, sig); err != nil {
 				return http.StatusUnauthorized, nil
 			}
-			if _, err := sv.Verify(context.Background(), r, sig); err != nil {
+			if _, err := verifyPolicy(sv, r, sig); err != nil {
 				return http.StatusUnauthorized, nil
 			}
 			return http.StatusAccepted, nil
@@ -794,7 +794,7 @@ func testAcceptSignature(t *testing.T, signer federation.Signer, verifier federa
 		sig, err := sv.Parse(r)
 		if err == nil && sig.Scheme == federation.SchemeRFC9421 && sig.Covers("content-type") && sig.Label == "want" {
 			if err := sv.Check(r, sig); err == nil {
-				if _, err := sv.Verify(context.Background(), r, sig); err == nil {
+				if _, err := verifyPolicy(sv, r, sig); err == nil {
 					return http.StatusAccepted, nil
 				}
 			}
@@ -830,7 +830,16 @@ func acceptSig(sv *federation.SignatureVerifier, r *federation.SignedRequest) (*
 	if err := sv.Check(r, sig); err != nil {
 		return nil, err
 	}
-	return sv.Verify(context.Background(), r, sig)
+	return verifyPolicy(sv, r, sig)
+}
+
+// verifyPolicy runs sv.Verify and returns its refusal as the error.
+func verifyPolicy(sv *federation.SignatureVerifier, r *federation.SignedRequest, sig *federation.Signature) (*federation.VerifiedSignature, error) {
+	v, rejected, err := sv.Verify(context.Background(), r, sig)
+	if rejected != nil {
+		return nil, rejected
+	}
+	return v, err
 }
 
 func mustAccept(t *testing.T, sv *federation.SignatureVerifier, r *federation.SignedRequest) *federation.VerifiedSignature {

@@ -162,6 +162,32 @@ func (e *InboxRejection) Error() string {
 	return fmt.Sprintf("inbox rejected the request (%d): %v", e.Status, e.Err)
 }
 
+// The reasons of an InboxRejection that is not about the signature (InboxRejection.Reason).
+const (
+	ReasonRateLimited     = "rate limited"
+	ReasonDomainSuspended = "domain suspended"
+	ReasonInvalidActivity = "invalid activity"
+)
+
+// Reason names why the request was refused, from a fixed vocabulary: the SignatureError
+// reasons and the ones above. Logs record it instead of the error itself, whose message quotes
+// values of the request's headers (ADR-0019).
+func (e *InboxRejection) Reason() string {
+	var se *SignatureError
+	if errors.As(e.Err, &se) {
+		return se.Reason()
+	}
+	switch e.Status {
+	case http.StatusTooManyRequests:
+		return ReasonRateLimited
+	case http.StatusForbidden:
+		return ReasonDomainSuspended
+	case http.StatusBadRequest:
+		return ReasonInvalidActivity
+	}
+	return ReasonSignaturePolicy
+}
+
 // Unwrap returns the cause.
 func (e *InboxRejection) Unwrap() error { return e.Err }
 
@@ -174,26 +200,31 @@ type Received struct {
 	Recorded bool
 	// Dropped reports an unknown actor's Delete or Update of itself, dropped unverified.
 	Dropped bool
+	// Rejection is set, and nothing else, when the inbox refuses the request.
+	Rejection *InboxRejection
 }
 
-// Receive runs steps 3 to 14 of federation.md §3.1 on in. A refused request fails with an
-// *InboxRejection before anything is written; any other error is unexpected (500).
+// Receive runs steps 3 to 14 of federation.md §3.1 on in. A refused request comes back with
+// Received.Rejection set before anything is written; the error is only for unexpected
+// failures (500). They are separate results so that the caller can log an unexpected failure
+// without the header values that a refusal quotes.
 func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) {
 	r := in.Request
 	// 3. The client IP's rate limit.
 	if in.ClientIP != "" {
-		if err := i.take(ctx, i.d.IPLimit, kernel.ClientKey(in.ClientIP)); err != nil {
-			return Received{}, err
+		if rej := i.take(ctx, i.d.IPLimit, kernel.ClientKey(in.ClientIP)); rej != nil {
+			return Received{Rejection: rej}, nil
 		}
 	}
-	// 4. The signature header, and the host of its keyId.
-	sig, err := i.d.Signatures.Parse(r)
-	if err != nil {
-		return Received{}, rejection(err)
+	// 4. The signature header, and the host of its keyId. Parse and Check fail only with a
+	// *SignatureError: a refusal, never an unexpected error.
+	sig, perr := i.d.Signatures.Parse(r)
+	if perr != nil {
+		return Received{Rejection: rejection(perr)}, nil
 	}
 	keyHost := sig.KeyHost()
 	if keyHost == "" {
-		return Received{}, rejection(i.d.Signatures.unauthorized(r, fmt.Errorf("keyId %q has no valid host", sig.KeyID)))
+		return Received{Rejection: rejection(i.d.Signatures.unauthorized(r, fmt.Errorf("keyId %q has no valid host", sig.KeyID)))}, nil
 	}
 	// 5. Domain blocks of the signing server.
 	suspended, err := i.d.Domains.FederationSuspended(ctx, keyHost)
@@ -201,20 +232,20 @@ func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) 
 		return Received{}, err
 	}
 	if suspended {
-		return Received{}, &InboxRejection{Status: http.StatusForbidden, Err: fmt.Errorf("%s is suspended", keyHost)}
+		return Received{Rejection: &InboxRejection{Status: http.StatusForbidden, Err: fmt.Errorf("%s is suspended", keyHost)}}, nil
 	}
 	// 6. The signing server's rate limit.
-	if err := i.take(ctx, i.d.DomainLimit, keyHost); err != nil {
-		return Received{}, err
+	if rej := i.take(ctx, i.d.DomainLimit, keyHost); rej != nil {
+		return Received{Rejection: rej}, nil
 	}
 	// 7. The body digest, with the other checks that need no key (components, time window).
-	if err := i.d.Signatures.Check(r, sig); err != nil {
-		return Received{}, rejection(err)
+	if cerr := i.d.Signatures.Check(r, sig); cerr != nil {
+		return Received{Rejection: rejection(cerr)}, nil
 	}
 	// 8. id, type, actor, and object.
 	env, err := federation.ReadEnvelope(r.Body, CanonicalHost)
 	if err != nil {
-		return Received{}, &InboxRejection{Status: http.StatusBadRequest, Err: err}
+		return Received{Rejection: &InboxRejection{Status: http.StatusBadRequest, Err: err}}, nil
 	}
 	// 9. An unknown actor's Delete or Update of itself.
 	if env.SelfRemoval() {
@@ -226,9 +257,12 @@ func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) 
 		}
 	}
 	// 10, 11. The key, fetched when unknown or stale, and the signature.
-	v, err := i.d.Signatures.Verify(ctx, r, sig)
+	v, rejected, err := i.d.Signatures.Verify(ctx, r, sig)
 	if err != nil {
-		return Received{}, rejection(err)
+		return Received{}, err
+	}
+	if rejected != nil {
+		return Received{Rejection: rejection(rejected)}, nil
 	}
 	// 12. The signer against the actor.
 	owner, ok := signer(v)
@@ -278,7 +312,7 @@ func (i *Inbox) record(ctx context.Context, a federation.ReceivedActivity, body 
 // take takes one event of key from lim. Over the limit it returns the 429 rejection. A store
 // failure lets the request through: rate limits protect against abuse, and the inbox must not
 // refuse every server when the store is down.
-func (i *Inbox) take(ctx context.Context, lim kernel.Limit, key string) error {
+func (i *Inbox) take(ctx context.Context, lim kernel.Limit, key string) *InboxRejection {
 	if i.d.RateLimiter == nil {
 		return nil
 	}
@@ -296,11 +330,12 @@ func (i *Inbox) take(ctx context.Context, lim kernel.Limit, key string) error {
 	}
 }
 
-// rejection turns a SignatureError into the InboxRejection with its status; other errors stay.
-func rejection(err error) error {
+// rejection turns the refusal of a signature into the InboxRejection with its status. An
+// error that is not a *SignatureError, which Parse and Check never return, is a 401.
+func rejection(err error) *InboxRejection {
 	var se *SignatureError
 	if !errors.As(err, &se) {
-		return err
+		return &InboxRejection{Status: http.StatusUnauthorized, Err: err}
 	}
 	return &InboxRejection{Status: se.Status, AcceptSignature: se.AcceptSignature, Err: err}
 }

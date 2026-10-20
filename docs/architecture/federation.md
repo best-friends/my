@@ -107,7 +107,7 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 - `id` の無いアクティビティは、`actor`・改行・受け取った本文をつないだ SHA-256 の 16 進表記から `urn:my:digest:<hex>` を合成して重複排除のキーにします（[data-model §2.2](data-model.md#22-冪等キーと一意制約)）。
 - `id` のホストが `actor` のホストと異なるアクティビティと、鍵の持ち主（`owner`）が `keyId` のホストに無いアクティビティは、`trust = refetch` にします。
 - 鍵の取得はトランザクションの外で行います（ADR-0003）。取得した Actor の書き込みは、受信の記録とは別の短いトランザクションです。
-- 手順 1・2 と、個人の inbox の宛先の確認（404）は `internal/interface/activitypub` が、手順 3〜14 は `federation.Inbox.Receive` が行います。拒否は `InboxRejection`（`Status`、`429` の `Retry-After`、`401` の `Accept-Signature`）で返します。レート制限のストアが使えないときは、制限を掛けずに通します。
+- 手順 1・2 と、個人の inbox の宛先の確認（404）は `internal/interface/activitypub` が、手順 3〜14 は `federation.Inbox.Receive` が行います。拒否は `Received.Rejection` の `InboxRejection`（`Status`、`429` の `Retry-After`、`401` の `Accept-Signature`）で、想定外の失敗（500）とは別の戻り値で返します。拒否のログには、ヘッダーの値を引用するエラーではなく、決まった語彙の理由（`InboxRejection.Reason`）だけを出します（ADR-0019）。レート制限のストアが使えないときは、制限を掛けずに通します。
 - 受信の記録は `InboxRepository`（`received_activities` と `received_activity_documents`）に書きます。コントラクトテストは `testkit.InboxContract` です。
 - 個人の inbox と shared inbox は同じ記録をします。誰宛てかはアクティビティの宛先が決めます。
 
