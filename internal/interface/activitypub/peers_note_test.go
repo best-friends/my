@@ -48,7 +48,7 @@ func newNoteWorld() *noteWorld {
 	return &noteWorld{
 		actors: map[string]appaccount.Actor{aliceID: alice, bobID: bob},
 		status: appcontent.Status{
-			ID: noteStatusID, URI: appcontent.StatusURI(host, noteStatusID), URL: "https://" + host + "/@alice/" + noteStatusID,
+			ID: noteStatusID, URI: appcontent.StatusURI(host, noteStatusID),
 			AuthorAccountID: aliceID, IsLocal: true, Visibility: appcontent.VisibilityPublic, PublishedAt: published,
 		},
 		rev: appcontent.Revision{

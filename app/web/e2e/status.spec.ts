@@ -43,7 +43,7 @@ function status(id: string, account: Status["account"], content: string, overrid
   return {
     id,
     uri: `https://my.example/ap/statuses/${id}`,
-    url: `https://my.example/@${account.acct}/${id}`,
+    url: `https://my.example/@${account.acct}/status/${id}`,
     account,
     content,
     spoiler_text: "",

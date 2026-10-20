@@ -191,7 +191,7 @@ func TestPostPreview(t *testing.T) {
 	p := &fakePreviews{statuses: map[string]appcontent.StatusPreview{statusID: s, unlisted.Post.Status.ID: unlisted}}
 	mux := previewHandler(t, p, web.Options{})
 
-	rec := get(mux, "/@alice/"+statusID, nil)
+	rec := get(mux, "/@alice/status/"+statusID, nil)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("post page = %d", rec.Code)
 	}
@@ -199,7 +199,7 @@ func TestPostPreview(t *testing.T) {
 	for k, v := range map[string]string{
 		"og:type":                "article",
 		"og:title":               "Alice (@alice@example.org)",
-		"og:url":                 "https://social.example/@alice/" + statusID,
+		"og:url":                 "https://social.example/@alice/status/" + statusID,
 		"og:locale":              "en",
 		"og:image":               "https://social.example/media/im/full.jpg",
 		"og:image:width":         "1200",
@@ -209,7 +209,7 @@ func TestPostPreview(t *testing.T) {
 		"article:author":         "https://social.example/@alice",
 		"twitter:card":           "summary_large_image",
 		"fediverse:creator":      "@alice@example.org",
-		"link:canonical":         "https://social.example/@alice/" + statusID,
+		"link:canonical":         "https://social.example/@alice/status/" + statusID,
 		"link:alternate":         "https://social.example/ap/objects/" + statusID,
 		"profile:username":       "",
 		"robots":                 "",
@@ -226,7 +226,7 @@ func TestPostPreview(t *testing.T) {
 	}
 
 	// An unlisted post has a preview but is kept out of search engines.
-	rec = get(mux, "/@alice/"+unlisted.Post.Status.ID, nil)
+	rec = get(mux, "/@alice/status/"+unlisted.Post.Status.ID, nil)
 	body := rec.Body.String()
 	got = metas(t, body)
 	if rec.Code != http.StatusOK || got["robots"] != "noindex" || rec.Header().Get("X-Robots-Tag") != "noindex" {
@@ -275,7 +275,7 @@ func TestPreviewImageOrder(t *testing.T) {
 					return tt.def, nil
 				},
 			})
-			got := metas(t, get(mux, "/@alice/"+statusID, nil).Body.String())
+			got := metas(t, get(mux, "/@alice/status/"+statusID, nil).Body.String())
 			if got["og:image"] != tt.want || got["og:image:alt"] != tt.alt || got["twitter:card"] != tt.card {
 				t.Errorf("image %q alt %q card %q, want %q %q %q", got["og:image"], got["og:image:alt"], got["twitter:card"], tt.want, tt.alt, tt.card)
 			}
@@ -300,8 +300,8 @@ func TestPostsAndProfilesWithoutImagesGetTheBuiltInImage(t *testing.T) {
 		statuses: map[string]appcontent.StatusPreview{statusID: s},
 	}, web.Options{})
 	for path, alt := range map[string]string{
-		"/@alice":             "青いグラデーションの上に、点が 3 つ並んだ吹き出し",
-		"/@alice/" + statusID: "A speech bubble with three dots on a blue gradient",
+		"/@alice":                    "青いグラデーションの上に、点が 3 つ並んだ吹き出し",
+		"/@alice/status/" + statusID: "A speech bubble with three dots on a blue gradient",
 	} {
 		got := metas(t, get(mux, path, nil).Body.String())
 		if got["og:image"] != "https://social.example"+web.PathDefaultImage || got["og:image:alt"] != alt ||
@@ -379,8 +379,10 @@ func TestHiddenPagesAreTheGenericShell(t *testing.T) {
 		"/@nobody",
 		"/@not-a-username",
 		"/@" + strings.Repeat("a", 100),
-		"/@alice/" + statusID, // no such status
-		"/@nobody/" + statusID,
+		"/@alice/status/" + statusID, // no such status
+		"/@nobody/status/" + statusID,
+		"/@alice/status/0192F3A4-7B1C-7D2E-9F00-1A2B3C4D5E6F", // not the canonical form
+		"/@alice/status/not-an-id",
 	} {
 		rec := get(mux, path, nil)
 		if rec.Code != http.StatusNotFound || rec.Body.String() != generic.Body.String() {
@@ -396,9 +398,13 @@ func TestHiddenPagesAreTheGenericShell(t *testing.T) {
 			t.Errorf("GET %s headers %v differ from %v", path, h, *first)
 		}
 	}
-	// Other pages of the web client under a profile, and remote profiles, are the generic
-	// shell.
-	for _, path := range []string{"/@alice/followers", "/@alice/0192F3A4-7B1C-7D2E-9F00-1A2B3C4D5E6F", "/@bob@remote.example", "/@/x", "/@"} {
+	// Other pages of the web client under a profile (the reserved words of ADR-0053 but status,
+	// pages under a post, and the form without status, which is no page), and remote profiles,
+	// are the generic shell.
+	for _, path := range []string{
+		"/@alice/followers", "/@alice/" + statusID, "/@alice/status/" + statusID + "/boosts",
+		"/@bob@remote.example", "/@/x", "/@",
+	} {
 		rec := get(mux, path, nil)
 		if rec.Code != http.StatusOK || rec.Body.String() != generic.Body.String() || rec.Header().Get("X-Robots-Tag") != "" {
 			t.Errorf("GET %s = %d, want the generic shell", path, rec.Code)
@@ -406,13 +412,13 @@ func TestHiddenPagesAreTheGenericShell(t *testing.T) {
 	}
 }
 
-// TestPostPageRedirectsToTheCurrentUsername checks ADR-0018: a post page is found by the status
-// ID, and a URL with another username redirects to the canonical one.
+// TestPostPageRedirectsToTheCurrentUsername checks ADR-0053: a post page is found by the status
+// ID, and a URL with another username redirects to the canonical one with 301.
 func TestPostPageRedirectsToTheCurrentUsername(t *testing.T) {
 	s := status(alice("Alice", ""), content.VisibilityPublic, "<p>hi</p>")
 	mux := previewHandler(t, &fakePreviews{statuses: map[string]appcontent.StatusPreview{statusID: s}}, web.Options{})
-	rec := get(mux, "/@old_name/"+statusID, nil)
-	if rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != "https://social.example/@alice/"+statusID {
+	rec := get(mux, "/@old_name/status/"+statusID, nil)
+	if rec.Code != http.StatusMovedPermanently || rec.Header().Get("Location") != "https://social.example/@alice/status/"+statusID {
 		t.Errorf("GET under an old username = %d %q", rec.Code, rec.Header().Get("Location"))
 	}
 }
@@ -423,7 +429,7 @@ func TestPreviewETag(t *testing.T) {
 	s := status(alice("Alice", ""), content.VisibilityPublic, "<p>hi</p>")
 	p := &fakePreviews{statuses: map[string]appcontent.StatusPreview{statusID: s}}
 	mux := previewHandler(t, p, web.Options{})
-	path := "/@alice/" + statusID
+	path := "/@alice/status/" + statusID
 	tag := get(mux, path, nil).Header().Get("ETag")
 	if rec := get(mux, path, map[string]string{"If-None-Match": tag}); rec.Code != http.StatusNotModified {
 		t.Errorf("conditional post page = %d, want 304", rec.Code)
@@ -464,7 +470,7 @@ func TestPreviewEscaping(t *testing.T) {
 	}
 	mux := previewHandler(t, p, web.Options{InstanceName: named(attack)})
 
-	for _, path := range []string{"/@alice", "/@alice/" + statusID, "/@alice/" + cw.Post.Status.ID} {
+	for _, path := range []string{"/@alice", "/@alice/status/" + statusID, "/@alice/status/" + cw.Post.Status.ID} {
 		body := get(mux, path, nil).Body.String()
 		if strings.Contains(body, "<script>alert") || strings.Contains(body, "pwned\">") || strings.Contains(body, "<!--") ||
 			strings.Count(body, "<script") != 3 || strings.Count(body, "</title>") != 1 || strings.Count(body, `property="og:title"`) != 1 {
@@ -480,7 +486,7 @@ func TestPreviewEscaping(t *testing.T) {
 		case "/@alice":
 			checks["og:description"] = attack
 			checks["og:image:alt"] = attack + " のアバター"
-		case "/@alice/" + statusID:
+		case "/@alice/status/" + statusID:
 			checks["og:description"] = attack
 			checks["og:image:alt"] = attack
 		default:

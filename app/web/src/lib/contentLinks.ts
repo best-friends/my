@@ -8,7 +8,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useConfig } from "./config";
 
 /** The paths of the app's pages that the server links to from rendered HTML: a profile, a post, a hashtag. */
-const contentPagePath = /^\/(?:@[^/]+(?:\/[^/]+)?|tags\/[^/]+)$/;
+const contentPagePath = /^\/(?:@[^/]+(?:\/status\/[^/]+)?|tags\/[^/]+)$/;
 
 /**
  * The app's address of `href` when it is a link to a profile, a post or a hashtag page on this instance

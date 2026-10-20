@@ -110,12 +110,12 @@ export function cacheDeletedStatus(api: Api, queryClient: QueryClient, post: Sta
 }
 
 /**
- * The web client's address of a post: `/@{acct}/{id}`, where acct is the author's username for a local
- * account and `username@domain` for a remote one. The name only makes the address readable; the ID finds
- * the post (the server answers the same path with the post's link preview, ADR-0028).
+ * The web client's address of a post: `/@{acct}/status/{id}` (ADR-0053), where acct is the author's username
+ * for a local account and `username@domain` for a remote one. The name only makes the address readable; the ID
+ * finds the post (the server answers the same path with the post's link preview, ADR-0028).
  */
 export function statusPath(status: Pick<Status, "id" | "account">): string {
-  return `/@${status.account.acct}/${status.id}`;
+  return `/@${status.account.acct}/status/${status.id}`;
 }
 
 /** The address to share for a post: its HTML page, or its ActivityPub ID when it has none. */

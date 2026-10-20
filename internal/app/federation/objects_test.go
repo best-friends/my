@@ -11,6 +11,7 @@ import (
 	"maps"
 	"net/http"
 	"net/url"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -57,8 +58,14 @@ func newObjWorld() *objWorld {
 		statuses: map[string]appcontent.Status{}, revs: map[string]appcontent.Revision{}, deleted: map[string]bool{},
 		actors: map[string]appaccount.Actor{}, blocks: map[[2]string]bool{}, suspended: map[string]bool{},
 	}
+	author := actorOn(authorID, "https://"+objHost+"/ap/actors/"+authorID, "")
+	// The author is a local account named "author". The account module's domain types are not
+	// this module's to import, so the local account is made by reflection.
+	local := reflect.New(reflect.TypeOf(author.Local).Elem())
+	local.Elem().FieldByName("Username").SetString("author")
+	reflect.ValueOf(&author).Elem().FieldByName("Local").Set(local)
 	for _, a := range []appaccount.Actor{
-		actorOn(authorID, "https://"+objHost+"/ap/actors/"+authorID, ""),
+		author,
 		actorOn(followerID, "https://follower.example/users/f", "follower.example"),
 		actorOn(mentionedID, "https://mentioned.example/users/m", "mentioned.example"),
 		actorOn(blockedID, "https://follower.example/users/blocked", "follower.example"),
@@ -74,7 +81,7 @@ func newObjWorld() *objWorld {
 // post adds a status of the author in v that mentions mentionedID.
 func (w *objWorld) post(id string, v appcontent.Visibility) appcontent.Status {
 	st := appcontent.Status{
-		ID: id, URI: appcontent.StatusURI(objHost, id), URL: "https://" + objHost + "/@author/" + id,
+		ID: id, URI: appcontent.StatusURI(objHost, id),
 		AuthorAccountID: authorID, IsLocal: true, Visibility: v, PublishedAt: objNow.Add(-time.Hour),
 	}
 	w.statuses[id] = st
@@ -287,6 +294,31 @@ func TestObjectsCanView(t *testing.T) {
 	})
 }
 
+// TestObjectsPageStatusURI checks the redirect of a post page that asks for ActivityPub
+// (ADR-0053): only a live local status that an anonymous visitor may see has an id to go to.
+func TestObjectsPageStatusURI(t *testing.T) {
+	w := newObjWorld()
+	public := w.post("0192f3b0-0000-7000-8000-000000000a01", appcontent.VisibilityPublic)
+	unlisted := w.post("0192f3b0-0000-7000-8000-000000000a02", appcontent.VisibilityUnlisted)
+	private := w.post("0192f3b0-0000-7000-8000-000000000a03", appcontent.VisibilityPrivate)
+	deleted := w.post("0192f3b0-0000-7000-8000-000000000a04", appcontent.VisibilityPublic)
+	w.deleted[deleted.ID] = true
+	remote := w.post("0192f3b0-0000-7000-8000-000000000a05", appcontent.VisibilityPublic)
+	remote.IsLocal, remote.AuthorAccountID = false, remoteAuthor
+	w.statuses[remote.ID] = remote
+	o := newObjects(w, nil)
+	for _, st := range []appcontent.Status{public, unlisted} {
+		if got, err := o.PageStatusURI(t.Context(), st.ID); err != nil || got != st.URI {
+			t.Errorf("PageStatusURI(%s) = %q, %v, want %q", st.Visibility, got, err, st.URI)
+		}
+	}
+	for _, id := range []string{private.ID, deleted.ID, remote.ID, "0192f3b0-0000-7000-8000-000000000aff"} {
+		if got, err := o.PageStatusURI(t.Context(), id); !errors.Is(err, appfederation.ErrNotFound) {
+			t.Errorf("PageStatusURI(%s) = %q, %v, want ErrNotFound", id, got, err)
+		}
+	}
+}
+
 func decodeDoc(t *testing.T, b []byte) map[string]any {
 	t.Helper()
 	var doc map[string]any
@@ -312,6 +344,8 @@ func TestObjectsDocuments(t *testing.T) {
 	w.revs[st.ID] = rev
 	o := newObjects(w, nil)
 	actor := "https://" + objHost + "/ap/actors/" + authorID
+	// The url is the page under the author's current username, derived on read (ADR-0053).
+	pageURL := "https://" + objHost + "/@author/status/" + st.ID
 
 	obj, err := o.Status(t.Context(), appfederation.Requester{}, st.ID)
 	if err != nil {
@@ -319,14 +353,14 @@ func TestObjectsDocuments(t *testing.T) {
 	}
 	note := decodeDoc(t, obj.Document)
 	if note["@context"] == nil || note["id"] != st.URI || note["type"] != "Note" || note["attributedTo"] != actor ||
-		note["url"] != st.URL || note["updated"] != "2026-10-17T12:00:00Z" {
+		note["url"] != pageURL || note["updated"] != "2026-10-17T12:00:00Z" {
 		t.Errorf("Note = %v", note)
 	}
 	if !slices.Equal(strs(note["to"]), []string{"https://www.w3.org/ns/activitystreams#Public"}) ||
 		!slices.Equal(strs(note["cc"]), []string{actor + "/followers", "https://mentioned.example/users/m"}) {
 		t.Errorf("Note addressing = to %v cc %v", note["to"], note["cc"])
 	}
-	if obj.URL != st.URL || !obj.Public || obj.Gone {
+	if obj.URL != pageURL || !obj.Public || obj.Gone {
 		t.Errorf("Object = %+v", obj)
 	}
 

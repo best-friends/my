@@ -199,7 +199,7 @@ export function statusFixture(id: string): Schemas["Status"] {
 /** A local post of another account, for the timelines. */
 export const timelineStatusFixture: Schemas["Status"] = postFixture(otherAccountFixture, "0192f0c4-7a8e-7000-8000-0000000000a1", {
   uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
-  url: "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000a1",
+  url: "https://my.example/@bob/status/0192f0c4-7a8e-7000-8000-0000000000a1",
   content: "<p>Hello from the local timeline!</p>",
 });
 

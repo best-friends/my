@@ -12,7 +12,6 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"slices"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -514,7 +513,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
-	activitypub.New(activitypub.Options{
+	ap := activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		InstanceName: func(ctx context.Context) string { return a.instanceName(ctx, "") },
 		// Sign-ups that wait for a moderator's approval are open, as Mastodon reports them.
@@ -526,7 +525,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
 		LocalPosts:  a.Content.LocalPostCount,
-	}).Register(a)
+	})
+	ap.Register(a)
+	// The web client's pages answer the requests that ask for ActivityPub: a post page redirects
+	// to the post's id, and the others are 404 (ADR-0053).
+	a.page = ap.Pages()
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
@@ -644,7 +647,7 @@ func (a *App) timelineLanguages(ctx context.Context, userID string) ([]string, e
 }
 
 // setUpWeb builds the web client's handler (ADR-0028), registers its assets and manifest, and
-// sets a.page, which serves its HTML to the requests that do not ask for ActivityPub.
+// sets a.page to its HTML handler.
 func (a *App) setUpWeb(opts AppOptions) error {
 	if opts.WebBuild == nil {
 		opts.WebBuild = web.Embedded()
@@ -668,17 +671,8 @@ func (a *App) setUpWeb(opts AppOptions) error {
 	}
 	h.Register(a)
 	a.webStylesheet = h.Stylesheet()
-	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// The same URL may be an ActivityPub document, so every answer depends on Accept.
-		if !slices.Contains(w.Header().Values("Vary"), "Accept") {
-			w.Header().Add("Vary", "Accept")
-		}
-		if activitypub.AsksForActivityPub(r) {
-			a.writeStatusProblem(w, r, http.StatusNotFound)
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
+	// The ActivityPub handler wraps it for the requests that ask for ActivityPub (activitypub.Handler.Pages).
+	a.page = h
 	return nil
 }
 

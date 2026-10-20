@@ -9,13 +9,13 @@ import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
 
 /**
- * `/@{acct}/{id}`: the author's handle only makes the address readable; the ID finds the post. The `_`
- * keeps the page out of a profile page's layout at `/@{acct}`.
+ * `/@{acct}/status/{id}` (ADR-0053): the author's handle only makes the address readable; the ID finds the
+ * post. The `_` keeps the page out of a profile page's layout at `/@{acct}`.
  */
 const paramsSchema = z.object({ acct: z.string().min(1), id: z.string().min(1) });
 
 /** A post and the thread around it (FR-113). */
-export const Route = createFileRoute("/@{$acct}_/$id")({
+export const Route = createFileRoute("/@{$acct}_/status/$id")({
   staticData: { title: "client:status.title" },
   params: { parse: (params) => paramsSchema.parse(params) },
   loader: async ({ context: { queryClient, api }, params: { id } }) => {

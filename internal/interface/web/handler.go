@@ -60,7 +60,7 @@ type Options struct {
 	ThemeColor, BackgroundColor string
 
 	// Previews reads the profiles and statuses that the shells of profile pages (/@alice) and
-	// post pages (/@alice/{id}) describe in their link preview meta tags; nil serves the
+	// post pages (/@alice/status/{id}) describe in their link preview meta tags; nil serves the
 	// generic shell there.
 	Previews Previews
 	// Messages formats the texts of link previews; nil loads the embedded catalogs.

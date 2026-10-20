@@ -67,7 +67,7 @@ func TestInstancePreviewImage(t *testing.T) {
 		}
 		return meta["og:image"], meta["og:image:alt"], meta["og:image:width"], meta["og:image:height"]
 	}
-	profile, status := "/@alice", "/@alice/"+post.Status.ID
+	profile, status := "/@alice", "/@alice/status/"+post.Status.ID
 	builtIn := "https://" + cfg.Host + web.PathDefaultImage
 	for path, wantAlt := range map[string]string{
 		profile: "A speech bubble with three dots on a blue gradient",

@@ -18,7 +18,6 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PublicRouteImport } from './routes/public'
 import { Route as SearchRouteImport } from './routes/search'
-import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -42,6 +41,7 @@ import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
+import { Route as AtChar123acctChar125StatusIdRouteImport } from './routes/@{$acct}_.status.$id'
 import { Route as AdminAccountsIdRouteImport } from './routes/admin.accounts_.$id'
 import { Route as AdminAppealsIdRouteImport } from './routes/admin.appeals_.$id'
 import { Route as AdminInstancesDomainRouteImport } from './routes/admin.instances_.$domain'
@@ -90,11 +90,6 @@ const PublicRoute = PublicRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AtChar123acctChar125IdRoute = AtChar123acctChar125IdRouteImport.update({
-  id: '/@{$acct}_/$id',
-  path: '/@{$acct}/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AtChar123acctChar125FollowersRoute =
@@ -214,6 +209,12 @@ const TagsTagRoute = TagsTagRouteImport.update({
   path: '/tags/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125StatusIdRoute =
+  AtChar123acctChar125StatusIdRouteImport.update({
+    id: '/@{$acct}_/status/$id',
+    path: '/@{$acct}/status/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminAccountsIdRoute = AdminAccountsIdRouteImport.update({
   id: '/admin/accounts_/$id',
   path: '/admin/accounts/$id',
@@ -245,7 +246,6 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
-  '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/accounts': typeof AdminAccountsRoute
@@ -269,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}/status/$id': typeof AtChar123acctChar125StatusIdRoute
   '/admin/accounts/$id': typeof AdminAccountsIdRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -284,7 +285,6 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
-  '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/accounts': typeof AdminAccountsRoute
@@ -308,6 +308,7 @@ export interface FileRoutesByTo {
   '/tags/$tag': typeof TagsTagRoute
   '/admin': typeof AdminIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/@{$acct}/status/$id': typeof AtChar123acctChar125StatusIdRoute
   '/admin/accounts/$id': typeof AdminAccountsIdRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -324,7 +325,6 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
-  '/@{$acct}_/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/accounts': typeof AdminAccountsRoute
@@ -348,6 +348,7 @@ export interface FileRoutesById {
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}_/status/$id': typeof AtChar123acctChar125StatusIdRoute
   '/admin/accounts_/$id': typeof AdminAccountsIdRoute
   '/admin/appeals_/$id': typeof AdminAppealsIdRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
@@ -365,7 +366,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
-    | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/admin/accounts'
@@ -389,6 +389,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin/'
     | '/settings/'
+    | '/@{$acct}/status/$id'
     | '/admin/accounts/$id'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -404,7 +405,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
-    | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/admin/accounts'
@@ -428,6 +428,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin'
     | '/settings'
+    | '/@{$acct}/status/$id'
     | '/admin/accounts/$id'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -443,7 +444,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
-    | '/@{$acct}_/$id'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
     | '/admin/accounts'
@@ -467,6 +467,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin/'
     | '/settings/'
+    | '/@{$acct}_/status/$id'
     | '/admin/accounts_/$id'
     | '/admin/appeals_/$id'
     | '/admin/instances_/$domain'
@@ -483,7 +484,6 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   PublicRoute: typeof PublicRoute
   SearchRoute: typeof SearchRoute
-  AtChar123acctChar125IdRoute: typeof AtChar123acctChar125IdRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   AdminAccountsRoute: typeof AdminAccountsRoute
@@ -507,6 +507,7 @@ export interface RootRouteChildren {
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  AtChar123acctChar125StatusIdRoute: typeof AtChar123acctChar125StatusIdRoute
   AdminAccountsIdRoute: typeof AdminAccountsIdRoute
   AdminAppealsIdRoute: typeof AdminAppealsIdRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
@@ -576,13 +577,6 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/@{$acct}_/$id': {
-      id: '/@{$acct}_/$id'
-      path: '/@{$acct}/$id'
-      fullPath: '/@{$acct}/$id'
-      preLoaderRoute: typeof AtChar123acctChar125IdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/@{$acct}_/followers': {
@@ -746,6 +740,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/status/$id': {
+      id: '/@{$acct}_/status/$id'
+      path: '/@{$acct}/status/$id'
+      fullPath: '/@{$acct}/status/$id'
+      preLoaderRoute: typeof AtChar123acctChar125StatusIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/accounts_/$id': {
       id: '/admin/accounts_/$id'
       path: '/admin/accounts/$id'
@@ -787,7 +788,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   PublicRoute: PublicRoute,
   SearchRoute: SearchRoute,
-  AtChar123acctChar125IdRoute: AtChar123acctChar125IdRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   AdminAccountsRoute: AdminAccountsRoute,
@@ -811,6 +811,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  AtChar123acctChar125StatusIdRoute: AtChar123acctChar125StatusIdRoute,
   AdminAccountsIdRoute: AdminAccountsIdRoute,
   AdminAppealsIdRoute: AdminAppealsIdRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
