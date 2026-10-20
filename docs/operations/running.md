@@ -11,7 +11,7 @@ my serve          # 設定の role に従って起動する（-config <file> で
 ```
 
 `my serve` は設定を検証してから DB・ジョブキュー・鍵管理のアダプタを組み立て、`listen` で HTTP を受け付ける。
-スキーマは適用しない。起動前に Atlas で適用する（`make db-apply`、[ADR-0023](../adr/0023-declarative-schema-management.md)）。
+スキーマは適用しない。起動前に Atlas で適用する（[DB の初期化と作り直し](database.md)、[ADR-0023](../adr/0023-declarative-schema-management.md)）。
 Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../../README.md#クイックスタートdocker-compose)）では、一回限りの `schema` サービスが適用してからサーバーが起動する。
 スキーマが未適用でもプロセスは起動し、readiness が 503 を返す。
 
@@ -120,6 +120,22 @@ SIGTERM または SIGINT で graceful shutdown する。
 2. 処理中のリクエストと実行中のジョブの終了を最大 25 秒待つ（Kubernetes・ECS の既定の猶予 30 秒に収まる）。
 3. 25 秒を過ぎたら、残ったリクエストとジョブのコンテキストを取り消して接続を閉じ、終了コード 1 で終わる。
    取り消されたジョブは再試行され、途中で強制終了されたジョブもリースが切れると別のワーカーが拾い直す（[ADR-0004](../adr/0004-job-queue-abstraction.md)）。
+
+## 失敗したジョブ（dead job）
+
+ハンドラが失敗を確定したジョブと、再試行の回数を使い切ったジョブは、DB キュー（`queue = db`）の dead job になる（ADR-0004）。
+`my job` で一覧・再実行・削除ができる（FR-801）。管理画面（`/admin/dead-jobs`）と管理 API（`GET /api/v1/admin/dead_jobs`、`POST /api/v1/admin/dead_jobs/{id}/retry`、権限 `manage_jobs`）でも一覧と再実行ができる。
+
+```sh
+my job list                 # 新しく失敗した順に ID・型・実行回数・失敗した時刻・最後のエラー（-limit で件数、既定 50）
+my job retry <id> [<id>...]  # 試行回数を数え直して、すぐに実行するようにキューへ戻す
+my job delete <id> [<id>...] # 実行せずに消す
+```
+
+- 再実行は、同じ冪等キーのジョブが待っていれば、そのジョブが代わりになる。ジョブのハンドラは冪等なので、同じジョブを何度戻してもよい。
+- 存在しない ID があると、その ID を表示して終了コード 1 で終わる。ほかの ID は処理する。終了コード 2 は引数の誤り。
+- 誰も再実行しない dead job は、失敗から `dead_job_retention`（既定 30 日）が過ぎると毎時の掃除で消える（FR-803、[設定](../reference/configuration.md#dead_job_retention)）。
+- `queue = inline` の dead job はサーバーのプロセスのメモリにあるので、`my job` からは扱えない（終了コード 1）。
 
 ## ヘルスチェック（FR-802）
 

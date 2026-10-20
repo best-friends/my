@@ -59,7 +59,7 @@ func FixedRandom(v float64) func() float64 { return func() float64 { return v } 
 // contract, driven by queue.PullRunner: due jobs run in RunAt order and delayed jobs not
 // before RunAt; idempotency keys deduplicate pending jobs; failed runs are retried with
 // exponential backoff with jitter or after the requested delay; jobs that fail for good or
-// use up their attempts become dead jobs, which are listed in pages, can be requeued, and are
+// use up their attempts become dead jobs, which are listed in pages, can be requeued or deleted one by one, and are
 // deleted, the oldest first in bounded batches, once they failed before a given time; a job whose worker stopped
 // is claimed again once its lease expires (at-least-once), and the stale worker's result is
 // dropped; concurrent workers run each job once; jobs of one ordering key run one at a time,
@@ -81,6 +81,7 @@ func QueueContract(t *testing.T, newHarness QueueFactory) {
 		{"MovesExhaustedJobsToDeadJobs", queueMovesExhaustedJobsToDead},
 		{"RetriesJobsWithoutAHandler", queueRetriesUnknownTypes},
 		{"RequeuesDeadJobs", queueRequeuesDeadJobs},
+		{"DeletesDeadJobs", queueDeletesDeadJobs},
 		{"PagesDeadJobsInFailureOrder", queuePagesDeadJobs},
 		{"DeletesDeadJobsPastTheirRetention", queueDeletesOldDeadJobs},
 		{"ReclaimsJobsOfAStoppedWorker", queueReclaimsAfterLeaseExpiry},
@@ -442,6 +443,30 @@ func queueRequeuesDeadJobs(t *testing.T, newHarness QueueFactory) {
 	}
 	if err := f.h.DeadJobs.RequeueDeadJob(t.Context(), dead[0].ID); !errors.Is(err, queue.ErrDeadJobNotFound) {
 		t.Errorf("RequeueDeadJob of a requeued job = %v, want ErrDeadJobNotFound", err)
+	}
+}
+
+func queueDeletesDeadJobs(t *testing.T, newHarness QueueFactory) {
+	f := newQueueFixture(t, newHarness, queue.Fail(errors.New("bug")), queue.Fail(errors.New("bug")))
+	f.enqueue(probe(`{"N":"x"}`), probe(`{"N":"y"}`))
+	f.drain()
+	dead := f.dead()
+	if len(dead) != 2 {
+		t.Fatalf("dead jobs = %v, want 2", dead)
+	}
+	if err := f.h.DeadJobs.DeleteDeadJob(t.Context(), dead[0].ID); err != nil {
+		t.Fatalf("DeleteDeadJob: %v", err)
+	}
+	if d := f.dead(); len(d) != 1 || d[0].ID != dead[1].ID {
+		t.Fatalf("dead jobs after delete = %+v, want only %s", d, dead[1].ID)
+	}
+	f.drain()
+	f.wantRuns(2)
+	if err := f.h.DeadJobs.DeleteDeadJob(t.Context(), dead[0].ID); !errors.Is(err, queue.ErrDeadJobNotFound) {
+		t.Errorf("DeleteDeadJob of a deleted job = %v, want ErrDeadJobNotFound", err)
+	}
+	if err := f.h.DeadJobs.RequeueDeadJob(t.Context(), dead[0].ID); !errors.Is(err, queue.ErrDeadJobNotFound) {
+		t.Errorf("RequeueDeadJob of a deleted job = %v, want ErrDeadJobNotFound", err)
 	}
 }
 

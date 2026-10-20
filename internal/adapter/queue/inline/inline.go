@@ -311,6 +311,18 @@ func (q *Queue) ListDeadJobs(_ context.Context, after queue.DeadJobPosition, lim
 	return out, nil
 }
 
+// DeleteDeadJob implements queue.DeadJobs.
+func (q *Queue) DeleteDeadJob(_ context.Context, id string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	i := slices.IndexFunc(q.dead, func(d queue.DeadJob) bool { return d.ID == id })
+	if i < 0 {
+		return queue.ErrDeadJobNotFound
+	}
+	q.dead = slices.Delete(q.dead, i, i+1)
+	return nil
+}
+
 // DeleteDeadJobsBefore implements queue.DeadJobs.
 func (q *Queue) DeleteDeadJobsBefore(_ context.Context, before time.Time, limit int) (int64, error) {
 	if limit <= 0 {
