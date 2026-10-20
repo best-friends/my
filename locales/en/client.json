@@ -6383,6 +6383,10 @@
     "defaultMessage": "Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
     "description": "Description of the dialog that deletes the user's account."
   },
+  "settings.account.delete.confirm.description_passkey": {
+    "defaultMessage": "Your browser asks for one of your passkeys to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
+    "description": "Description of the dialog that deletes the account of a user who has no password: pressing the delete button opens the browser's passkey prompt, which confirms the deletion."
+  },
   "settings.account.delete.confirm.title": {
     "defaultMessage": "Delete your account?",
     "description": "Title of the dialog that asks the user to confirm deleting their account."
@@ -7396,7 +7400,7 @@
     "description": "Description of the passkeys page in the settings menu."
   },
   "settings.passkeys.description": {
-    "defaultMessage": "A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Your password keeps working.",
+    "defaultMessage": "A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Once you have a passkey, you can remove your password on the password page.",
     "description": "Explanation at the top of the passkeys settings page."
   },
   "settings.passkeys.add.title": {
@@ -7406,6 +7410,10 @@
   "settings.passkeys.add.description": {
     "defaultMessage": "Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey.",
     "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.add.description_passkey": {
+    "defaultMessage": "Name the passkey so that you can tell it apart. Your browser asks for one of your passkeys to confirm, then where to save the new one.",
+    "description": "Explanation of the form that adds a passkey for a user who has no password: an existing passkey confirms adding the new one."
   },
   "settings.passkeys.name": {
     "defaultMessage": "Name",
@@ -7520,12 +7528,16 @@
     "description": "Title of the settings page that changes the password, and its entry in the settings menu."
   },
   "settings.password.summary": {
-    "defaultMessage": "Change the password you sign in with",
+    "defaultMessage": "Change, set, or remove the password you sign in with",
     "description": "Description of the password page in the settings menu."
   },
   "settings.password.description": {
     "defaultMessage": "Changing the password signs you out of every other browser and app. Your passkeys and two-factor authentication stay as they are.",
     "description": "Text at the top of the settings page that changes the password."
+  },
+  "settings.password.change.title": {
+    "defaultMessage": "Change the password",
+    "description": "Heading of the form that changes the password with the current one, on the password settings page."
   },
   "settings.password.current": {
     "defaultMessage": "Current password",
@@ -7566,6 +7578,82 @@
   "settings.password.failed": {
     "defaultMessage": "Could not change the password: {reason}",
     "description": "Alert when changing the password failed for another reason. {reason} is the error's message."
+  },
+  "settings.password.remove.title": {
+    "defaultMessage": "Remove the password",
+    "description": "Heading of the section that removes the password, so that only passkeys sign in, on the password settings page."
+  },
+  "settings.password.remove.description": {
+    "defaultMessage": "Sign in with your passkeys only. One of your passkeys confirms the removal, and you are signed out of every other browser and app. You can set a password again on this page or with a password reset link.",
+    "description": "Explanation of the section that removes the password."
+  },
+  "settings.password.remove.no_passkey": {
+    "defaultMessage": "Add a passkey before you remove the password, so that you can still sign in.",
+    "description": "Note instead of the button that removes the password, for a user who has no passkey."
+  },
+  "settings.password.remove.open": {
+    "defaultMessage": "Remove password…",
+    "description": "Button that opens the dialog that removes the password."
+  },
+  "settings.password.remove.confirm.title": {
+    "defaultMessage": "Remove your password?",
+    "description": "Title of the dialog that confirms removing the password."
+  },
+  "settings.password.remove.confirm.description": {
+    "defaultMessage": "From now on you sign in with your passkeys only. Your browser asks for one of them to confirm.",
+    "description": "Description of the dialog that removes the password: the confirm button opens the browser's passkey prompt."
+  },
+  "settings.password.remove.confirm": {
+    "defaultMessage": "Remove password",
+    "description": "Button in the dialog that removes the password after the browser's passkey prompt."
+  },
+  "settings.password.remove.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the dialog without removing the password."
+  },
+  "settings.password.removed": {
+    "defaultMessage": "Your password is removed. Sign in with your passkeys from now on. Other browsers and apps are signed out.",
+    "description": "Status after the password was removed."
+  },
+  "settings.password.remove.failed": {
+    "defaultMessage": "Could not remove the password: {reason}",
+    "description": "Alert in the dialog when removing the password failed. {reason} is the error's message."
+  },
+  "settings.password.set.title": {
+    "defaultMessage": "Set a password",
+    "description": "Heading of the form that sets a password for a user who removed theirs and signs in with passkeys only."
+  },
+  "settings.password.set.description": {
+    "defaultMessage": "You sign in with your passkeys. Set a password to sign in with your email address and password too. Your browser asks for one of your passkeys to confirm, and you are signed out of every other browser and app.",
+    "description": "Explanation of the form that sets a password for a user who has none."
+  },
+  "settings.password.set.submit": {
+    "defaultMessage": "Set password",
+    "description": "Button that sets a password after the browser's passkey prompt, for a user who has none."
+  },
+  "settings.password.set.done": {
+    "defaultMessage": "Your password is set. Other browsers and apps are signed out.",
+    "description": "Status after a user who had no password set one."
+  },
+  "settings.password.passkeys_unsupported": {
+    "defaultMessage": "This browser cannot use passkeys, which confirm this. Open this page in a browser that supports them.",
+    "description": "Note instead of a form or button of the password page that a passkey confirms (removing or setting the password), in a browser without passkey support."
+  },
+  "settings.passkey_confirmation.cancelled": {
+    "defaultMessage": "Your passkey was not used: the browser's prompt was closed or timed out. Try again.",
+    "description": "Alert when the user dismissed the browser's passkey prompt that confirms an operation (deleting the account, setting or removing the password, adding a passkey), or it timed out."
+  },
+  "settings.passkey_confirmation.unavailable": {
+    "defaultMessage": "The browser could not use a passkey for this site.",
+    "description": "Alert when the browser refused the passkey prompt that confirms an operation for another reason (unsupported, or the site's address)."
+  },
+  "settings.passkey_confirmation.invalid": {
+    "defaultMessage": "The passkey could not be verified. Use a passkey of this account.",
+    "description": "Alert when the server did not accept the passkey that confirms an operation (another account's passkey, a removed one, or one that does not verify)."
+  },
+  "settings.passkey_confirmation.expired": {
+    "defaultMessage": "Confirming with the passkey took too long. Try again.",
+    "description": "Alert when the passkey that confirms an operation was given after the confirmation expired (5 minutes)."
   },
   "settings.visibility.direct": {
     "defaultMessage": "Mentioned people",

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The account page below its heading (FR-008): the archives of the user's data, each with its state, when it was
-// asked for, until when it can be downloaded and its size, and deleting the account, which asks for the password
-// in an alert dialog (ConfirmDialog: the deletion cannot be undone). Dates are in the user's locale and time zone.
+// asked for, until when it can be downloaded and its size, and deleting the account, which asks for the password,
+// or for a passkey when the user has no password, in an alert dialog (ConfirmDialog: the deletion cannot be undone). Dates are in the user's locale and time zone.
 import { Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, StatusMessage, TextField } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { useIntl } from "react-intl";
@@ -120,6 +120,18 @@ function ExportRow({ item, exports }: { item: DataExport; exports: DataExports }
 
 function DeletionView({ deletion }: { deletion: AccountDeletion }) {
   const t = useT();
+  // Without a password, the dialog has no field (a passkey confirms the deletion), so its children are undefined.
+  const passwordField = deletion.hasPassword ? (
+    <TextField
+      label={t("client:settings.account.delete.password")}
+      type="password"
+      autoComplete="current-password"
+      value={deletion.password}
+      onChange={deletion.changePassword}
+      isRequired
+      errorMessage={t("client:settings.account.delete.password.required")}
+    />
+  ) : undefined;
   return (
     <div className="flex flex-col items-start gap-4">
       <p>{t("client:settings.account.delete.description")}</p>
@@ -132,7 +144,9 @@ function DeletionView({ deletion }: { deletion: AccountDeletion }) {
           if (!isOpen) deletion.cancel();
         }}
         title={t("client:settings.account.delete.confirm.title")}
-        description={t("client:settings.account.delete.confirm.description")}
+        description={t(
+          deletion.hasPassword ? "client:settings.account.delete.confirm.description" : "client:settings.account.delete.confirm.description_passkey",
+        )}
         confirmLabel={t("client:settings.account.delete.confirm")}
         cancelLabel={t("client:settings.account.delete.cancel")}
         tone="danger"
@@ -142,15 +156,7 @@ function DeletionView({ deletion }: { deletion: AccountDeletion }) {
         isPending={deletion.isPending}
         {...(deletion.error === undefined ? {} : { errorMessage: deletion.error })}
       >
-        <TextField
-          label={t("client:settings.account.delete.password")}
-          type="password"
-          autoComplete="current-password"
-          value={deletion.password}
-          onChange={deletion.changePassword}
-          isRequired
-          errorMessage={t("client:settings.account.delete.password.required")}
-        />
+        {passwordField}
       </ConfirmDialog>
     </div>
   );

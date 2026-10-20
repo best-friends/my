@@ -5,6 +5,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
 	appidentity "github.com/best-friends/my/internal/app/identity"
@@ -86,12 +87,50 @@ func (r *IdentityRepository) FindUser(ctx context.Context, id string) (identity.
 
 // FindCurrentPasswordCredential implements identity.Repository.
 func (r *IdentityRepository) FindCurrentPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, error) {
+	c, removedAt, err := r.newestPasswordCredential(ctx, userID)
+	if err == nil && removedAt != nil {
+		return identity.PasswordCredential{}, fmt.Errorf("password of %s: removed: %w", userID, appidentity.ErrNotFound)
+	}
+	return c, err
+}
+
+// LastPasswordChange implements identity.Repository.
+func (r *IdentityRepository) LastPasswordChange(ctx context.Context, userID string) (time.Time, error) {
+	c, removedAt, err := r.newestPasswordCredential(ctx, userID)
+	switch {
+	case err != nil:
+		return time.Time{}, err
+	case removedAt != nil:
+		return *removedAt, nil
+	}
+	return c.SetAt, nil
+}
+
+// newestPasswordCredential returns the newest password credential of a user and when it was
+// removed, nil when it was not.
+func (r *IdentityRepository) newestPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, *time.Time, error) {
 	row, err := r.db.reader().GetCurrentPasswordCredential(ctx, userID)
 	if err != nil {
-		return identity.PasswordCredential{}, notFound(err, appidentity.ErrNotFound, "password of "+userID)
+		return identity.PasswordCredential{}, nil, notFound(err, appidentity.ErrNotFound, "password of "+userID)
 	}
-	return identity.PasswordCredential{ID: row.ID, UserID: row.UserID, Hash: row.PasswordHash, SetAt: fromMillis(row.SetAt)}, nil
+	return identity.PasswordCredential{ID: row.ID, UserID: row.UserID, Hash: row.PasswordHash, SetAt: fromMillis(row.SetAt)}, fromNullMillis(row.RemovedAt), nil
 }
+
+// InsertPasswordCredentialRemoval implements identity.Repository.
+func (r *IdentityRepository) InsertPasswordCredentialRemoval(ctx context.Context, tx uow.Tx, rem identity.PasswordCredentialRemoval) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertPasswordCredentialRemoval(ctx, sqlitegen.InsertPasswordCredentialRemovalParams{
+		PasswordCredentialID: rem.PasswordCredentialID, RemovedAt: toMillis(rem.RemovedAt),
+	})
+	return wrap(err, "insert password credential removal")
+}
+
+// LockSignInMethods implements identity.Repository. SQLite runs one write transaction at a time,
+// so there is nothing to lock.
+func (r *IdentityRepository) LockSignInMethods(context.Context, uow.Tx, string) error { return nil }
 
 // FindRole implements identity.Repository.
 func (r *IdentityRepository) FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error) {

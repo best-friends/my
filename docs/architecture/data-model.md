@@ -188,7 +188,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
@@ -227,7 +227,8 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `password_credentials` | イベント（版） | `id`, `user_id`, `password_hash`（Argon2id の PHC 文字列）, `set_at` | インデックス `(user_id, id DESC)`。最新行が現在のパスワード。過去のハッシュは再利用防止に使え、保持期間後に消去する |
+| `password_credentials` | イベント（版） | `id`, `user_id`, `password_hash`（Argon2id の PHC 文字列）, `set_at` | インデックス `(user_id, id DESC)`。削除イベントの無い最新行が現在のパスワード。過去のハッシュは再利用防止に使え、保持期間後に消去する |
+| `password_credential_removals` | イベント | `password_credential_id`（PK）, `removed_at` | 最新行に削除イベントがあれば、その利用者はパスワードを持たない。2 回目の記録は何もしない |
 | `totp_enrollments` | イベント | `id`, `user_id`, `secret_enc`（`bytes`）, `enrolled_at` | インデックス `(user_id, id DESC)` |
 | `totp_enrollment_revocations` | イベント | `enrollment_id`（PK）, `revoked_at` | 有効な登録 = 失効イベントの無い最新の登録 |
 | `totp_recovery_codes` | リソース | `enrollment_id`, `code_hash` | PK `(enrollment_id, code_hash)` |
@@ -237,6 +238,9 @@ flowchart LR
 - `code_hash` は、正規化したリカバリーコード（80 ビットの乱数）の SHA-256 です。
 - リカバリーコードを作り直すときは、同じ秘密を新しい登録に移し、古い登録に失効のイベントを記録します。管理者が二要素認証を外すときも失効のイベントを記録し、監査ログに `two_factor_disabled` を残します。
 - パスワードのリセットと変更（FR-002）は、`password_credentials` に新しい行を足し、その利用者のセッションに `session_revocations`（`password_changed`）、トークンに `oauth_token_revocations`（`password_changed`）を同じトランザクションで記録します。設定の画面からの変更は、変更を要求したトークンの系列だけを残します。TOTP の登録とパスキーには何も記録しないので、どちらもそのまま使えます。
+- パスキーを持つ利用者は、パスワードを削除できます（FR-004、`POST /api/v1/accounts/password/remove`）。最新の `password_credentials` の行に `password_credential_removals` を記録し、変更と同じくセッションとトークンを `password_changed` で失効させ（要求したトークンの系列は残す）、メールを送るサーバーではメールで知らせます。
+  それからはパスキーだけでログインします。リセットのリンクか、パスキーで確かめた変更（`POST /api/v1/accounts/password`）が新しい行を足すと、パスワードはまた使えます。
+- 利用者がログインの手段を失わないように、パスワードはパスキーが 1 つ以上あるときだけ削除でき、最後のパスキーはパスワードがあるときだけ削除できます。どちらの削除も、確かめてから書き終えるまで同じトランザクションで利用者のログインの手段をロックします（PostgreSQL はトランザクションの間のアドバイザリーロック、SQLite は書き込みのトランザクションが 1 つずつ走る）。同時に 2 つの削除が走っても両方は消えません。
 - 使った TOTP のコードの時間ステップと、パスワードの後で 2 段目を待つサインインのチャレンジ（5 分）は、DB ではなく `KeyValueStore` の名前空間 `two_factor` に置きます。
 
 | テーブル | 分類 | カラム | 制約 |
@@ -246,9 +250,11 @@ flowchart LR
 
 - パスキー（FR-004）は WebAuthn の発見可能な資格情報（discoverable credential）で、パスワードの代わりにログインに使います。ユーザーハンドルは利用者の `id` です。登録とログインはどちらも利用者の検証（端末の PIN や生体認証）を求め、アテステーションは求めません。
 - パスキーはパスワードの代わりになるだけで、二要素認証の 2 段目は省きません。TOTP を有効にした利用者は、パスキーでのログインの後にも認証コードを入力します。
-- 登録には現在のパスワードの確認が要ります（失敗は利用者ごとに 1 時間 5 回まで、`passkey.password`）。1 人の利用者が持てるパスキーは 20 個までです。削除したパスキーの行は残すので、同じ資格情報 ID を登録し直すことはできません。
+- 登録には現在のパスワードか、その利用者のパスキーでの確認が要ります（失敗は利用者ごとに 1 時間 5 回まで、`passkey.password`）。1 人の利用者が持てるパスキーは 20 個までです。削除したパスキーの行は残すので、同じ資格情報 ID を登録し直すことはできません。
+- 本人を確かめる操作（パスキーの登録、パスワードの変更と削除、アカウントの削除）は、現在のパスワードの代わりにその利用者のパスキーで確かめられます。パスワードの削除だけはパスキーでしか確かめません。残るパスキーが使えることを、削除の前に確かめるためです。
+  確認は `POST /api/v1/passkeys/confirmation` が始め、その状態は利用者に結び付けて `kernel.Sealer` で封をし、ログインと同じく 1 回だけ使えます。ほかの利用者のパスキーや削除したパスキーでは確かめられず、失敗は操作ごとの上限（パスワードの間違いと同じ）に数えます。
 - 署名カウンターは保存しません。同期されるパスキーは常に 0 を返すので、複製の検出に使えないからです。
-- 登録とログインの途中の状態（チャレンジ、5 分）は、`kernel.Sealer` で封をしてブラウザに持たせ、DB にも KV にも置きません。ログインのチャレンジは 1 回だけ使えるように、使ったことを `KeyValueStore` の名前空間 `passkey` に有効期限まで記録します。ログインの失敗は、パスワードの失敗と同じクライアントのログイン失敗の上限（`login.ip`）に数えます。
+- 登録・ログイン・確認の途中の状態（チャレンジ、5 分）は、`kernel.Sealer` で封をしてブラウザに持たせ、DB にも KV にも置きません。ログインと確認のチャレンジは 1 回だけ使えるように、使ったことを `KeyValueStore` の名前空間 `passkey` に有効期限まで記録します。ログインの失敗は、パスワードの失敗と同じクライアントのログイン失敗の上限（`login.ip`）に数えます。
 
 #### 登録審査
 
@@ -281,8 +287,8 @@ flowchart LR
 | `user_tokens` | リソース | `id`, `user_id`, `purpose`（`enum(email_verification, password_reset)`）, `email_address_id`（NULL 可）, `token_hash`（`bytes`。トークンの SHA-256）, `expires_at`, `issued_at` | 一意 `(token_hash)`。メール確認のトークンは接頭辞 `my_evt_`、有効期限 24 時間。パスワードリセットのトークンは接頭辞 `my_prt_`、有効期限 1 時間 |
 | `user_token_redemptions` | イベント | `token_id`（PK）, `redeemed_at` | 挿入の成否で 1 回性を保証する |
 
-- パスワードリセットのトークン（FR-002）は、期限内で使われておらず、発行が現在のパスワード（`password_credentials` の最新行）の `set_at` より前でないときだけ使えます。
-  リセット・変更・管理者の発行など、どの経路でもパスワードが新しくなれば、それより前に発行したリンクは使えなくなります。状態の列は持たず、この 2 つのイベントから求めます。
+- パスワードリセットのトークン（FR-002）は、期限内で使われておらず、発行がパスワードの最後の変化（`password_credentials` の最新行の `set_at`、削除されていればその `removed_at`）より前でないときだけ使えます。
+  リセット・変更・管理者の発行など、どの経路でもパスワードが新しくなるか削除されれば、それより前に発行したリンクは使えなくなります。状態の列は持たず、これらのイベントから求めます。パスワードを削除した利用者も、リセットのリンクで新しいパスワードを設定できます。
 - リセットのリンクは、メールを送るサーバー（`mail` が `none` でない）ではログインの画面から本人がメールで受け取り、どのサーバーでも管理者が CLI（`my admin account password-reset-link`）で発行できます。
   管理者の発行は監査ログに `password_reset_link_issued` を残し、その `source_event_id` はトークンの `id` です。
 
@@ -483,7 +489,7 @@ flowchart LR
   - BAN のように処分が削除を伴う場合は、処分が `deletion_scheduled` イベントを `initiated_by = moderator` で発生させます（`moderation_action_id` で根拠を辿れる）。BAN への異議申し立てを覆すと、`deletion_cancelled`（`initiated_by = moderator`、同じ `moderation_action_id`）で取り消します（`account.Service.CancelDeletionByModeration`）。
     期日は処分から 30 日後（`moderation.BanDeletionDelay`）で、処分と同じトランザクションで記録します（`account.Service.ScheduleDeletionByModeration`）。
     削除済みのアカウントと、それより早い期日の削除がすでに予定されているアカウントには記録しません。
-- 本人による削除（FR-008、`POST /api/v1/accounts/delete`）は、現在のパスワードを確かめてから、猶予を置かずに `deleted`（`initiated_by = self`）を記録します（`account.Service.DeleteBySelf`）。
+- 本人による削除（FR-008、`POST /api/v1/accounts/delete`）は、現在のパスワードかその利用者のパスキーで確かめてから、猶予を置かずに `deleted`（`initiated_by = self`）を記録します（`account.Service.DeleteBySelf`）。
   本人による削除の予約はログインできない（§4.1）ので、予約しても本人には取り消せないためです。データの消去は、ほかの削除と同じく `deleted` から 7 日後です（下記）。削除済みのアカウントには記録しません。
 - 期日を過ぎた `deletion_scheduled` は、1 時間ごとのジョブ `account.execute_deletions` が `deleted`（`initiated_by = system`）にします（`account.Service.ExecuteDueDeletions`）。
   1 回で 100 件まで、アカウントごとに短いトランザクションで、状態を読み直してから記録するので、再実行しても二重に削除しません。
@@ -1558,7 +1564,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-001 登録モード | M | `instance_settings`（`registration_mode`）, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions` |
 | FR-002 メール + パスワード | M | `user_email_addresses`, `user_email_verifications`, `user_primary_emails`, `password_credentials`, `user_tokens` |
 | FR-003 OAuth 2.0 + PKCE | M | `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_access_tokens`, `sessions` |
-| FR-004 パスキー | C | `passkey_credentials`, `passkey_credential_revocations` |
+| FR-004 パスキー | C | `passkey_credentials`, `passkey_credential_revocations`, `password_credential_removals` |
 | FR-005 TOTP | S | `totp_enrollments`, `totp_recovery_codes`, `totp_recovery_code_uses` |
 | FR-006 プロフィール | M | `account_profile_revisions`, `account_profile_fields`, `account_profile_heads` |
 | FR-007 言語・タイムゾーン | M | `user_preferences`, `user_time_zones` |

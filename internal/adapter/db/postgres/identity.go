@@ -5,6 +5,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
 	appidentity "github.com/best-friends/my/internal/app/identity"
@@ -90,11 +91,55 @@ func (r *IdentityRepository) FindUser(ctx context.Context, id string) (identity.
 
 // FindCurrentPasswordCredential implements identity.Repository.
 func (r *IdentityRepository) FindCurrentPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, error) {
+	c, removedAt, err := r.newestPasswordCredential(ctx, userID)
+	if err == nil && removedAt != nil {
+		return identity.PasswordCredential{}, fmt.Errorf("password of %s: removed: %w", userID, appidentity.ErrNotFound)
+	}
+	return c, err
+}
+
+// LastPasswordChange implements identity.Repository.
+func (r *IdentityRepository) LastPasswordChange(ctx context.Context, userID string) (time.Time, error) {
+	c, removedAt, err := r.newestPasswordCredential(ctx, userID)
+	switch {
+	case err != nil:
+		return time.Time{}, err
+	case removedAt != nil:
+		return *removedAt, nil
+	}
+	return c.SetAt, nil
+}
+
+// newestPasswordCredential returns the newest password credential of a user and when it was
+// removed, nil when it was not.
+func (r *IdentityRepository) newestPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, *time.Time, error) {
 	row, err := r.db.reader().GetCurrentPasswordCredential(ctx, userID)
 	if err != nil {
-		return identity.PasswordCredential{}, notFound(err, appidentity.ErrNotFound, "password of "+userID)
+		return identity.PasswordCredential{}, nil, notFound(err, appidentity.ErrNotFound, "password of "+userID)
 	}
-	return identity.PasswordCredential{ID: row.ID, UserID: row.UserID, Hash: row.PasswordHash, SetAt: utc(row.SetAt)}, nil
+	return identity.PasswordCredential{ID: row.ID, UserID: row.UserID, Hash: row.PasswordHash, SetAt: utc(row.SetAt)}, utcPtr(row.RemovedAt), nil
+}
+
+// InsertPasswordCredentialRemoval implements identity.Repository.
+func (r *IdentityRepository) InsertPasswordCredentialRemoval(ctx context.Context, tx uow.Tx, rem identity.PasswordCredentialRemoval) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertPasswordCredentialRemoval(ctx, postgresgen.InsertPasswordCredentialRemovalParams{
+		PasswordCredentialID: rem.PasswordCredentialID, RemovedAt: rem.RemovedAt,
+	})
+	return wrap(err, "insert password credential removal")
+}
+
+// LockSignInMethods implements identity.Repository with a transaction-scoped advisory lock on
+// the user, so that removals of the password and of passkeys serialize under READ COMMITTED.
+func (r *IdentityRepository) LockSignInMethods(ctx context.Context, tx uow.Tx, userID string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.LockUserSignInMethods(ctx, "identity:sign_in_methods:"+userID), "lock the sign-in methods")
 }
 
 // FindRole implements identity.Repository.

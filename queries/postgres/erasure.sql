@@ -69,6 +69,10 @@ DELETE FROM user_primary_emails WHERE user_id = sqlc.arg(user_id);
 -- name: EraseEmailAddresses :exec
 DELETE FROM user_email_addresses WHERE user_id = sqlc.arg(user_id);
 
+-- name: ErasePasswordCredentialRemovals :exec
+DELETE FROM password_credential_removals WHERE password_credential_id IN (
+  SELECT c.id FROM password_credentials c WHERE c.user_id = sqlc.arg(user_id));
+
 -- name: ErasePasswordCredentials :exec
 DELETE FROM password_credentials WHERE user_id = sqlc.arg(user_id);
 

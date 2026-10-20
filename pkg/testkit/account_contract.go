@@ -49,7 +49,10 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // sign-in step that takes a code once or a recovery code once, rate-limited wrong codes,
 // regenerating recovery codes, and disabling), passkeys (registering after the password with the
 // earlier ones excluded, listing, removing, a sign-in challenge that works once, the code of TOTP
-// after a passkey, rate-limited failures, and the limits on registrations), resetting a
+// after a passkey, rate-limited failures, and the limits on registrations), signing in without a
+// password (confirming operations with a passkey once, removing the password while a passkey
+// stays, keeping the last passkey while there is no password, and a reset link that sets one
+// again), resetting a
 // forgotten password with an emailed one-time link and changing it with the current one (the
 // answer that does not tell whether an address has an account, links that expire, work once,
 // and stop working when the password changes, limited requests, and the end of the other
@@ -104,6 +107,8 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"SignsInWithAPasskey", passkeySignsIn},
 		{"RejectsRemovedPasskeysAndInactiveAccounts", passkeyRejectsRemovedAndInactive},
 		{"RateLimitsFailedPasskeySignIns", passkeyRateLimitsFailedSignIns},
+		{"ConfirmsOperationsWithAPasskey", passwordlessConfirmsWithAPasskey},
+		{"RemovesThePasswordOfPasskeyUsers", passwordlessRemovesThePassword},
 		{"ResetsPasswordsWithOneTimeLinks", passwordResetWorksOnce},
 		{"LimitsPasswordResetRequests", passwordResetLimitsRequests},
 		{"ChangesPasswordsKeepingTheCurrentGrant", passwordChangeKeepsTheCurrentGrant},

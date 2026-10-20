@@ -141,20 +141,27 @@ func (p FakePasskey) SignIn(options []byte) []byte {
 	return b
 }
 
-// registerPasskey registers a new FakePasskey called name for the user.
+// registerPasskey registers a new FakePasskey called name for the user, confirmed with
+// sessionPassword.
 func (e *accountEnv) registerPasskey(t *testing.T, userID, name string) (FakePasskey, identity.PasskeyCredential) {
 	t.Helper()
+	return e.registerPasskeyWith(t, userID, name, appidentity.Confirmation{Password: sessionPassword})
+}
+
+// registerPasskeyWith registers a new FakePasskey called name for the user, confirmed with c.
+func (e *accountEnv) registerPasskeyWith(t *testing.T, userID, name string, c appidentity.Confirmation) (FakePasskey, identity.PasskeyCredential) {
+	t.Helper()
 	ctx := t.Context()
-	reg, err := e.identity.BeginPasskeyRegistration(ctx, userID, name, sessionPassword)
+	reg, err := e.identity.BeginPasskeyRegistration(ctx, userID, name, c)
 	if err != nil {
 		t.Fatalf("BeginPasskeyRegistration = %v", err)
 	}
 	p := NewFakePasskey(userID)
-	c, err := e.identity.FinishPasskeyRegistration(ctx, userID, reg.Token, p.Register(reg.Options))
+	cred, err := e.identity.FinishPasskeyRegistration(ctx, userID, reg.Token, p.Register(reg.Options))
 	if err != nil {
 		t.Fatalf("FinishPasskeyRegistration = %v", err)
 	}
-	return p, c
+	return p, cred
 }
 
 // signInWithPasskey runs a sign-in with p.
@@ -177,14 +184,14 @@ func passkeyRegistersListsAndRemoves(t *testing.T, e *accountEnv) {
 	if !e.identity.PasskeysEnabled() {
 		t.Fatal("PasskeysEnabled = false with FakePasskeys")
 	}
-	if _, err := e.identity.BeginPasskeyRegistration(ctx, userID, "phone", "wrong password"); !errors.Is(err, appidentity.ErrWrongPassword) {
+	if _, err := e.identity.BeginPasskeyRegistration(ctx, userID, "phone", appidentity.Confirmation{Password: "wrong password"}); !errors.Is(err, appidentity.ErrWrongPassword) {
 		t.Errorf("BeginPasskeyRegistration(wrong password) = %v, want ErrWrongPassword", err)
 	}
-	if _, err := e.identity.BeginPasskeyRegistration(ctx, userID, " \t", sessionPassword); !errors.Is(err, identity.ErrInvalidPasskeyName) {
+	if _, err := e.identity.BeginPasskeyRegistration(ctx, userID, " \t", appidentity.Confirmation{Password: sessionPassword}); !errors.Is(err, identity.ErrInvalidPasskeyName) {
 		t.Errorf("BeginPasskeyRegistration(blank name) = %v, want ErrInvalidPasskeyName", err)
 	}
 
-	begun, err := e.identity.BeginPasskeyRegistration(ctx, userID, "  phone ", sessionPassword)
+	begun, err := e.identity.BeginPasskeyRegistration(ctx, userID, "  phone ", appidentity.Confirmation{Password: sessionPassword})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +220,7 @@ func passkeyRegistersListsAndRemoves(t *testing.T, e *accountEnv) {
 	}
 
 	// The second registration excludes the first credential, and the same credential is refused.
-	again, err := e.identity.BeginPasskeyRegistration(ctx, userID, "laptop", sessionPassword)
+	again, err := e.identity.BeginPasskeyRegistration(ctx, userID, "laptop", appidentity.Confirmation{Password: sessionPassword})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,18 +272,18 @@ func passkeyLimitsRegistrations(t *testing.T, e *accountEnv) {
 	for i := range identity.MaxPasskeysPerUser {
 		e.registerPasskey(t, userID, fmt.Sprintf("key %d", i))
 	}
-	if _, err := e.identity.BeginPasskeyRegistration(ctx, userID, "one more", sessionPassword); !errors.Is(err, appidentity.ErrTooManyPasskeys) {
+	if _, err := e.identity.BeginPasskeyRegistration(ctx, userID, "one more", appidentity.Confirmation{Password: sessionPassword}); !errors.Is(err, appidentity.ErrTooManyPasskeys) {
 		t.Errorf("BeginPasskeyRegistration over the limit = %v, want ErrTooManyPasskeys", err)
 	}
 	// Wrong passwords count against the user: the next attempt waits even with the right one.
 	other := e.register(t, "bob")
 	for range appidentity.PasskeyPasswordLimit.Max {
-		if _, err := e.identity.BeginPasskeyRegistration(ctx, other.User.ID, "key", "wrong password"); !errors.Is(err, appidentity.ErrWrongPassword) {
+		if _, err := e.identity.BeginPasskeyRegistration(ctx, other.User.ID, "key", appidentity.Confirmation{Password: "wrong password"}); !errors.Is(err, appidentity.ErrWrongPassword) {
 			t.Fatalf("BeginPasskeyRegistration(wrong password) = %v, want ErrWrongPassword", err)
 		}
 	}
 	var limited *kernel.RateLimitedError
-	if _, err := e.identity.BeginPasskeyRegistration(ctx, other.User.ID, "key", "correct horse battery staple"); !errors.As(err, &limited) {
+	if _, err := e.identity.BeginPasskeyRegistration(ctx, other.User.ID, "key", appidentity.Confirmation{Password: "correct horse battery staple"}); !errors.As(err, &limited) {
 		t.Errorf("BeginPasskeyRegistration after %d wrong passwords = %v, want a *kernel.RateLimitedError", appidentity.PasskeyPasswordLimit.Max, err)
 	}
 }

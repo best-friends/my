@@ -19,7 +19,8 @@ import (
 // Resetting a forgotten password and changing the password (FR-002). A reset link carries a
 // one-time token (user_tokens, purpose password_reset) that works for PasswordResetTTL, once,
 // and only while the password it replaces is the current one: a newer password, set by any
-// means, makes every earlier link stop working. The sign-in page sends the link by email when
+// means, or the removal of the password makes every earlier link stop working. A link sets a
+// password for a user who removed theirs too. The sign-in page sends the link by email when
 // the Mailer delivers email; an administrator can always issue one (IssuePasswordResetLink).
 //
 // A new password, from a reset or a change, ends the user's other sessions and grants
@@ -216,7 +217,7 @@ func (s *Service) IssuePasswordResetLink(ctx context.Context, accountID, byUserI
 }
 
 // resetToken returns the reset token of secret while it works: issued as a reset token, not
-// expired, not used, and not older than the user's current password. It fails with
+// expired, not used, and not older than the last change of the user's password. It fails with
 // ErrInvalidToken otherwise.
 func (s *Service) resetToken(ctx context.Context, secret string) (identity.UserToken, error) {
 	if !strings.HasPrefix(secret, PasswordResetTokenPrefix) {
@@ -238,9 +239,9 @@ func (s *Service) resetToken(ctx context.Context, secret string) (identity.UserT
 	case used:
 		return identity.UserToken{}, ErrInvalidToken
 	}
-	switch cred, err := s.d.Repository.FindCurrentPasswordCredential(ctx, t.UserID); {
+	switch changed, err := s.d.Repository.LastPasswordChange(ctx, t.UserID); {
 	case err == nil:
-		if t.IssuedAt.Before(cred.SetAt) {
+		if t.IssuedAt.Before(changed) {
 			return identity.UserToken{}, ErrInvalidToken
 		}
 	case !errors.Is(err, ErrNotFound):
@@ -285,24 +286,28 @@ func (s *Service) ResetPassword(ctx context.Context, secret, password string) (u
 	if err != nil {
 		return "", err
 	}
-	s.notifyPasswordChanged(ctx, t.UserID)
+	s.notifyPassword(ctx, t.UserID, passwordChanged)
 	return t.UserID, nil
 }
 
 // ChangePasswordInput is a signed-in user's change of their password.
 type ChangePasswordInput struct {
-	UserID          string
-	CurrentPassword string
-	NewPassword     string
+	UserID string
+	// Confirmation is the current password, or a passkey of the user; a user without a password
+	// confirms with a passkey and sets a password.
+	Confirmation Confirmation
+	NewPassword  string
 	// KeepFamilyID is the token family of the client that makes the change, which keeps
 	// working; "" ends every grant.
 	KeepFamilyID string
 }
 
-// ChangePassword replaces a user's password once the current one confirms it. It ends every
-// session of the user and every grant but in.KeepFamilyID (password_changed); the passkeys and
-// the two-factor authentication stay. It fails with ErrWrongPassword for a wrong current password,
-// a *kernel.RateLimitedError after too many of them (PasswordChangeLimit), and an error wrapping
+// ChangePassword replaces a user's password once the current one or a passkey of the user
+// confirms it; a user without a password sets one. It ends every session of the user and every
+// grant but in.KeepFamilyID (password_changed); the passkeys and the two-factor authentication
+// stay. It fails with ErrWrongPassword for a wrong current password (also for a user without
+// one), the errors of a confirmation with a passkey (Service.confirm), a *kernel.RateLimitedError
+// after too many wrong confirmations (PasswordChangeLimit), and an error wrapping
 // identity.ErrInvalidPassword for an invalid new password.
 func (s *Service) ChangePassword(ctx context.Context, in ChangePasswordInput) error {
 	if s.d.RateLimiter == nil {
@@ -311,7 +316,7 @@ func (s *Service) ChangePassword(ctx context.Context, in ChangePasswordInput) er
 	if err := identity.ValidatePassword(in.NewPassword); err != nil {
 		return err
 	}
-	if err := s.confirmPasswordWith(ctx, PasswordChangeLimit, in.UserID, in.CurrentPassword); err != nil {
+	if err := s.confirm(ctx, PasswordChangeLimit, in.UserID, in.Confirmation); err != nil {
 		return err
 	}
 	hash, err := s.d.Passwords.Hash(ctx, in.NewPassword)
@@ -322,7 +327,7 @@ func (s *Service) ChangePassword(ctx context.Context, in ChangePasswordInput) er
 	if err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.writePassword(ctx, tx, cred, in.KeepFamilyID) }); err != nil {
 		return err
 	}
-	s.notifyPasswordChanged(ctx, in.UserID)
+	s.notifyPassword(ctx, in.UserID, passwordChanged)
 	return nil
 }
 
@@ -333,29 +338,44 @@ func (s *Service) writePassword(ctx context.Context, tx uow.Tx, cred identity.Pa
 	if err := repo.InsertPasswordCredential(ctx, tx, cred); err != nil {
 		return err
 	}
-	if err := repo.RevokeSessionsOfUser(ctx, tx, cred.UserID, identity.RevokedPasswordChanged, cred.SetAt); err != nil {
+	return s.endOtherSessions(ctx, tx, cred.UserID, keepFamilyID, cred.SetAt)
+}
+
+// endOtherSessions ends, for a change of the password at at, the user's sessions and grants but
+// the grant keepFamilyID ("" for none).
+func (s *Service) endOtherSessions(ctx context.Context, tx uow.Tx, userID, keepFamilyID string, at time.Time) error {
+	repo := s.d.Repository
+	if err := repo.RevokeSessionsOfUser(ctx, tx, userID, identity.RevokedPasswordChanged, at); err != nil {
 		return err
 	}
 	if keepFamilyID == "" {
-		return repo.RevokeTokensOfUser(ctx, tx, cred.UserID, identity.TokenRevokedPasswordChanged, cred.SetAt)
+		return repo.RevokeTokensOfUser(ctx, tx, userID, identity.TokenRevokedPasswordChanged, at)
 	}
-	return repo.RevokeOtherTokensOfUser(ctx, tx, cred.UserID, keepFamilyID, identity.TokenRevokedPasswordChanged, cred.SetAt)
+	return repo.RevokeOtherTokensOfUser(ctx, tx, userID, keepFamilyID, identity.TokenRevokedPasswordChanged, at)
 }
 
-// notifyPasswordChanged tells a user by email that their password changed, with the link that
-// asks for a reset in case they did not change it. Without email delivery or a primary address
+// passwordNotice is what happened to a user's password, for the email that tells them.
+type passwordNotice int
+
+const (
+	passwordChanged passwordNotice = iota
+	passwordRemoved
+)
+
+// notifyPassword tells a user by email that their password changed or was removed, with the link
+// that asks for a reset in case they did not do it. Without email delivery or a primary address
 // it sends nothing; a failure is logged, since the password has changed either way.
-func (s *Service) notifyPasswordChanged(ctx context.Context, userID string) {
+func (s *Service) notifyPassword(ctx context.Context, userID string, notice passwordNotice) {
 	if !s.PasswordResetByEmail() {
 		return
 	}
-	err := s.sendPasswordChanged(ctx, userID)
+	err := s.sendPasswordNotice(ctx, userID, notice)
 	if err != nil && !errors.Is(err, ErrNotFound) {
 		s.logger().ErrorContext(ctx, "send the password change email", slog.String("user", userID), slog.Any("error", err))
 	}
 }
 
-func (s *Service) sendPasswordChanged(ctx context.Context, userID string) error {
+func (s *Service) sendPasswordNotice(ctx context.Context, userID string, notice passwordNotice) error {
 	email, _, err := s.d.Repository.FindPrimaryEmail(ctx, userID)
 	if err != nil {
 		return err
@@ -368,9 +388,14 @@ func (s *Service) sendPasswordChanged(ctx context.Context, userID string) error 
 	if err != nil {
 		return err
 	}
-	return s.d.Mailer.Send(ctx, kernel.MailMessage{
+	msg := kernel.MailMessage{
 		To:      email.Address,
 		Subject: m.l.ServerMailPasswordChangedSubject(m.name),
 		Text:    m.l.ServerMailPasswordChangedBody(m.host, m.name, s.link(PathForgotPassword, "")),
-	})
+	}
+	if notice == passwordRemoved {
+		msg.Subject = m.l.ServerMailPasswordRemovedSubject(m.name)
+		msg.Text = m.l.ServerMailPasswordRemovedBody(m.host, m.name, s.link(PathForgotPassword, ""))
+	}
+	return s.d.Mailer.Send(ctx, msg)
 }

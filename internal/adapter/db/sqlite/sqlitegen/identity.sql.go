@@ -13,18 +13,31 @@ import (
 )
 
 const getCurrentPasswordCredential = `-- name: GetCurrentPasswordCredential :one
-SELECT id, user_id, password_hash, set_at FROM password_credentials
-WHERE user_id = ? ORDER BY id DESC LIMIT 1
+SELECT c.id, c.user_id, c.password_hash, c.set_at, r.removed_at
+FROM password_credentials c
+LEFT JOIN password_credential_removals r ON r.password_credential_id = c.id
+WHERE c.user_id = ? ORDER BY c.id DESC LIMIT 1
 `
 
-func (q *Queries) GetCurrentPasswordCredential(ctx context.Context, userID string) (PasswordCredential, error) {
+type GetCurrentPasswordCredentialRow struct {
+	ID           string
+	UserID       string
+	PasswordHash string
+	SetAt        int64
+	RemovedAt    sql.NullInt64
+}
+
+// GetCurrentPasswordCredential returns the newest password credential of a user and when it
+// was removed, if it was.
+func (q *Queries) GetCurrentPasswordCredential(ctx context.Context, userID string) (GetCurrentPasswordCredentialRow, error) {
 	row := q.db.QueryRowContext(ctx, getCurrentPasswordCredential, userID)
-	var i PasswordCredential
+	var i GetCurrentPasswordCredentialRow
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
 		&i.PasswordHash,
 		&i.SetAt,
+		&i.RemovedAt,
 	)
 	return i, err
 }
@@ -108,6 +121,21 @@ func (q *Queries) InsertPasswordCredential(ctx context.Context, arg InsertPasswo
 		arg.PasswordHash,
 		arg.SetAt,
 	)
+	return err
+}
+
+const insertPasswordCredentialRemoval = `-- name: InsertPasswordCredentialRemoval :exec
+INSERT INTO password_credential_removals (password_credential_id, removed_at) VALUES (?, ?)
+ON CONFLICT (password_credential_id) DO NOTHING
+`
+
+type InsertPasswordCredentialRemovalParams struct {
+	PasswordCredentialID string
+	RemovedAt            int64
+}
+
+func (q *Queries) InsertPasswordCredentialRemoval(ctx context.Context, arg InsertPasswordCredentialRemovalParams) error {
+	_, err := q.db.ExecContext(ctx, insertPasswordCredentialRemoval, arg.PasswordCredentialID, arg.RemovedAt)
 	return err
 }
 

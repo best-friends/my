@@ -1292,11 +1292,25 @@ func (l *Localizer) ServerErrorsNotFound() string {
 	return l.format("server:errors.not_found", nil)
 }
 
+// ServerErrorsPasskeyConfirmationExpired formats "server:errors.passkey.confirmation_expired". Title of the HTTP 422 API error when the user confirms an operation on their own account (such as deleting it or removing the password) with a passkey after the confirmation expired (5 minutes) or was already used.
+//
+//	en: The confirmation with the passkey expired. Try again.
+func (l *Localizer) ServerErrorsPasskeyConfirmationExpired() string {
+	return l.format("server:errors.passkey.confirmation_expired", nil)
+}
+
 // ServerErrorsPasskeyInvalid formats "server:errors.passkey.invalid". Title of the HTTP 422 API error when the browser's answer to a passkey registration does not verify (another site, no screen lock or biometrics, or a passkey that is registered already).
 //
 //	en: The passkey could not be verified.
 func (l *Localizer) ServerErrorsPasskeyInvalid() string {
 	return l.format("server:errors.passkey.invalid", nil)
+}
+
+// ServerErrorsPasskeyLastSignInMethod formats "server:errors.passkey.last_sign_in_method". Title of the HTTP 409 API error when the user removes their password without a passkey, or their last passkey without a password, which would leave them no way to sign in.
+//
+//	en: This is your last way to sign in. Add a passkey or set a password first.
+func (l *Localizer) ServerErrorsPasskeyLastSignInMethod() string {
+	return l.format("server:errors.passkey.last_sign_in_method", nil)
 }
 
 // ServerErrorsPasskeyRegistrationExpired formats "server:errors.passkey.registration_expired". Title of the HTTP 422 API error when the user finishes a passkey registration after it expired (5 minutes) or with an unknown registration.
@@ -1752,6 +1766,20 @@ func (l *Localizer) ServerMailPasswordChangedBody(host string, instance string, 
 //	en: Your password for {instance} was changed
 func (l *Localizer) ServerMailPasswordChangedSubject(instance string) string {
 	return l.format("server:mail.password_changed.subject", map[string]any{"instance": instance})
+}
+
+// ServerMailPasswordRemovedBody formats "server:mail.password_removed.body". Plain-text body of the email that tells a user their password was removed, so that only their passkeys sign in. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the page that asks for a password reset link, which sets a new password (keep it on its own line).
+//
+//	en: The password of your account on {instance} was removed, and your other sessions and apps were signed out. From now on you sign in with your passkeys.  If you did not remove it, someone else may be signed in to your account. Set a new password at once:  {url}  This email was sent by {host}.
+func (l *Localizer) ServerMailPasswordRemovedBody(host string, instance string, url string) string {
+	return l.format("server:mail.password_removed.body", map[string]any{"host": host, "instance": instance, "url": url})
+}
+
+// ServerMailPasswordRemovedSubject formats "server:mail.password_removed.subject". Subject of the email that tells a user their password was removed, so that only their passkeys sign in. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Your password for {instance} was removed
+func (l *Localizer) ServerMailPasswordRemovedSubject(instance string) string {
+	return l.format("server:mail.password_removed.subject", map[string]any{"instance": instance})
 }
 
 // ServerMailPasswordResetBody formats "server:mail.password_reset.body". Plain-text body of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the reset link (keep it on its own line), {minutes} how long the link works.

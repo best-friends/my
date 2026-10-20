@@ -33,7 +33,9 @@ function passkeyServer(initial: Schemas["Passkey"][]) {
     http.post(`${apiBase}/passkeys/registration`, async ({ request }) => {
       const body = (await request.json()) as Schemas["PasskeyRegistrationRequest"];
       registrations.push(body);
-      if (body.password !== "correct horse") return problem(422, "/api/v1/problems/wrong-password", "The password is wrong.");
+      if (body.passkey === undefined && body.password !== "correct horse") {
+        return problem(422, "/api/v1/problems/wrong-password", "The password is wrong.");
+      }
       return HttpResponse.json({
         options: {
           rp: { name: "social.example", id: "social.example" },
@@ -156,5 +158,24 @@ describe("passkeys", () => {
     await waitFor(() => {
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     });
+  });
+
+  test("adds a passkey with another passkey for a user without a password", async () => {
+    const credentials = installPasskeys();
+    const api = passkeyServer([phone]);
+    server.use(http.get(`${apiBase}/accounts/password`, () => HttpResponse.json({ has_password: false })));
+    const { user } = await renderApp({ path: "/settings/passkeys" });
+
+    const form = await screen.findByRole("region", { name: "Add a passkey" });
+    expect(within(form).getByText(/^Name the passkey so that you can tell it apart. Your browser asks for one of your passkeys/)).toBeInTheDocument();
+    expect(within(form).queryByLabelText(/^Current password/)).not.toBeInTheDocument();
+    await user.type(within(form).getByRole("textbox", { name: "Name" }), "Laptop");
+    await user.click(within(form).getByRole("button", { name: "Add passkey" }));
+
+    expect(await screen.findByText("The passkey “Laptop” was added.")).toBeInTheDocument();
+    expect(credentials.get).toHaveBeenCalledTimes(1);
+    expect(credentials.create).toHaveBeenCalledTimes(1);
+    expect(api.registrations[0]?.password).toBeUndefined();
+    expect(api.registrations[0]?.passkey?.confirmation_token).toBe("conf-1");
   });
 });

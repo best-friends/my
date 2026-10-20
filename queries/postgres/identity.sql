@@ -9,9 +9,22 @@ SELECT id, created_at FROM users WHERE id = $1;
 -- name: InsertPasswordCredential :exec
 INSERT INTO password_credentials (id, user_id, password_hash, set_at) VALUES ($1, $2, $3, $4);
 
+-- GetCurrentPasswordCredential returns the newest password credential of a user and when it
+-- was removed, if it was.
 -- name: GetCurrentPasswordCredential :one
-SELECT id, user_id, password_hash, set_at FROM password_credentials
-WHERE user_id = $1 ORDER BY id DESC LIMIT 1;
+SELECT c.id, c.user_id, c.password_hash, c.set_at, r.removed_at
+FROM password_credentials c
+LEFT JOIN password_credential_removals r ON r.password_credential_id = c.id
+WHERE c.user_id = $1 ORDER BY c.id DESC LIMIT 1;
+
+-- name: InsertPasswordCredentialRemoval :exec
+INSERT INTO password_credential_removals (password_credential_id, removed_at) VALUES ($1, $2)
+ON CONFLICT (password_credential_id) DO NOTHING;
+
+-- LockUserSignInMethods takes a transaction-scoped advisory lock on a user's ways to sign in, so
+-- that removing the password and removing a passkey serialize under READ COMMITTED.
+-- name: LockUserSignInMethods :exec
+SELECT pg_advisory_xact_lock(hashtextextended(sqlc.arg(lock_key)::text, 0));
 
 -- name: InsertRoleIfAbsent :exec
 INSERT INTO roles (id, key, position, created_at) VALUES ($1, $2, $3, $4)

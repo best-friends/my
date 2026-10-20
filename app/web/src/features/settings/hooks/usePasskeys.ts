@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The user's passkeys (FR-004): the list, the form that registers one (its name and the password that confirms it,
-// then the browser's prompt), and removing one from its row. A wrong password is the password field's error; any
-// other failure an alert next to the form (web-client.md E2, G16).
+// The user's passkeys (FR-004): the list, the form that registers one (its name and the password that confirms it, or
+// for a user without a password another passkey, then the browser's prompt), and removing one from its row. A wrong
+// password is the password field's error; any other failure an alert next to the form (web-client.md E2, G16).
 import { useAnnouncer } from "@my/ui";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
@@ -18,6 +18,7 @@ import {
   registerPasskeyMutation,
   removePasskeyMutation,
 } from "../api/passkeys";
+import { useHasPassword } from "./usePasswordChange";
 
 /** The user's passkeys, oldest first, which the route has loaded. */
 export function usePasskeyList(): readonly Passkey[] {
@@ -29,6 +30,8 @@ export function usePasskeyList(): readonly Passkey[] {
 export type PasskeyForm = {
   /** Whether the browser can create passkeys; the form is left out when it cannot. */
   isSupported: boolean;
+  /** Whether the user has a password, which confirms the registration; without one, another passkey confirms it. */
+  hasPassword: boolean;
   name: string;
   changeName: (name: string) => void;
   password: string;
@@ -73,6 +76,7 @@ export function usePasskeyForm(): PasskeyForm {
   const api = useApi();
   const t = useT();
   const queryClient = useQueryClient();
+  const hasPassword = useHasPassword();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | undefined>(undefined);
@@ -92,6 +96,7 @@ export function usePasskeyForm(): PasskeyForm {
   const failure = register.isError ? passkeyFailure(register.error) : undefined;
   return {
     isSupported: supportsPasskeys(),
+    hasPassword,
     name,
     changeName: (next) => {
       setName(next);
@@ -106,10 +111,10 @@ export function usePasskeyForm(): PasskeyForm {
     submit: (event) => {
       event.preventDefault();
       const trimmed = name.trim();
-      if (register.isPending || trimmed === "" || password === "") return;
+      if (register.isPending || trimmed === "" || (hasPassword && password === "")) return;
       register.reset();
       setStatus(undefined);
-      register.mutate({ name: trimmed, password });
+      register.mutate({ name: trimmed, password: hasPassword ? password : undefined });
     },
     isPending: register.isPending,
     passwordError: failure === "wrong-password" ? t("client:settings.passkeys.add.wrong_password") : undefined,

@@ -3424,6 +3424,8 @@ export interface MessageArgs {
   "client:settings.account.delete.confirm": {};
   /** Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone. */
   "client:settings.account.delete.confirm.description": {};
+  /** Your browser asks for one of your passkeys to confirm. Your account is deleted at once, and you are signed out. This cannot be undone. */
+  "client:settings.account.delete.confirm.description_passkey": {};
   /** Delete your account? */
   "client:settings.account.delete.confirm.title": {};
   /** Your account, posts and profile disappear at once, and other servers are asked to delete their copies. You cannot undo this, and your username cannot be used again. Download your data first if you want to keep it. */
@@ -3738,10 +3740,20 @@ export interface MessageArgs {
   "client:settings.navigation.title": {};
   /** Not offered by this server */
   "client:settings.navigation.unavailable": {};
+  /** Your passkey was not used: the browser's prompt was closed or timed out. Try again. */
+  "client:settings.passkey_confirmation.cancelled": {};
+  /** Confirming with the passkey took too long. Try again. */
+  "client:settings.passkey_confirmation.expired": {};
+  /** The passkey could not be verified. Use a passkey of this account. */
+  "client:settings.passkey_confirmation.invalid": {};
+  /** The browser could not use a passkey for this site. */
+  "client:settings.passkey_confirmation.unavailable": {};
   /** No passkey was added: the browser's prompt was closed or timed out. Try again. */
   "client:settings.passkeys.add.cancelled": {};
   /** Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey. */
   "client:settings.passkeys.add.description": {};
+  /** Name the passkey so that you can tell it apart. Your browser asks for one of your passkeys to confirm, then where to save the new one. */
+  "client:settings.passkeys.add.description_passkey": {};
   /** This device or password manager already has a passkey for your account. */
   "client:settings.passkeys.add.exists": {};
   /** Adding the passkey took too long. Try again. */
@@ -3766,7 +3778,7 @@ export interface MessageArgs {
   "client:settings.passkeys.added": { name: string };
   /** Added {date} */
   "client:settings.passkeys.added_at": { date: string };
-  /** A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Your password keeps working. */
+  /** A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Once you have a passkey, you can remove your password on the password page. */
   "client:settings.passkeys.description": {};
   /** No passkeys yet */
   "client:settings.passkeys.empty": {};
@@ -3802,6 +3814,8 @@ export interface MessageArgs {
   "client:settings.passkeys.title": {};
   /** This browser cannot create passkeys. Open this page in a browser that supports them to add one. */
   "client:settings.passkeys.unsupported": {};
+  /** Change the password */
+  "client:settings.password.change.title": {};
   /** Your password is changed. Other browsers and apps are signed out. */
   "client:settings.password.changed": {};
   /** Current password */
@@ -3818,11 +3832,41 @@ export interface MessageArgs {
   "client:settings.password.new.description": { max: number; min: number };
   /** Use {min, number} to {max, number} characters. */
   "client:settings.password.new.invalid": { max: number; min: number };
+  /** This browser cannot use passkeys, which confirm this. Open this page in a browser that supports them. */
+  "client:settings.password.passkeys_unsupported": {};
   /** Too many incorrect passwords: {reason} */
   "client:settings.password.rate_limited": { reason: string };
+  /** Cancel */
+  "client:settings.password.remove.cancel": {};
+  /** Remove password */
+  "client:settings.password.remove.confirm": {};
+  /** From now on you sign in with your passkeys only. Your browser asks for one of them to confirm. */
+  "client:settings.password.remove.confirm.description": {};
+  /** Remove your password? */
+  "client:settings.password.remove.confirm.title": {};
+  /** Sign in with your passkeys only. One of your passkeys confirms the removal, and you are signed out of every other browser and app. You can set a password again on this page or with a password reset link. */
+  "client:settings.password.remove.description": {};
+  /** Could not remove the password: {reason} */
+  "client:settings.password.remove.failed": { reason: string };
+  /** Add a passkey before you remove the password, so that you can still sign in. */
+  "client:settings.password.remove.no_passkey": {};
+  /** Remove password… */
+  "client:settings.password.remove.open": {};
+  /** Remove the password */
+  "client:settings.password.remove.title": {};
+  /** Your password is removed. Sign in with your passkeys from now on. Other browsers and apps are signed out. */
+  "client:settings.password.removed": {};
+  /** You sign in with your passkeys. Set a password to sign in with your email address and password too. Your browser asks for one of your passkeys to confirm, and you are signed out of every other browser and app. */
+  "client:settings.password.set.description": {};
+  /** Your password is set. Other browsers and apps are signed out. */
+  "client:settings.password.set.done": {};
+  /** Set password */
+  "client:settings.password.set.submit": {};
+  /** Set a password */
+  "client:settings.password.set.title": {};
   /** Change password */
   "client:settings.password.submit": {};
-  /** Change the password you sign in with */
+  /** Change, set, or remove the password you sign in with */
   "client:settings.password.summary": {};
   /** Password */
   "client:settings.password.title": {};
@@ -4774,8 +4818,12 @@ export interface MessageArgs {
   "server:errors.missing_permission_detail": { permission: string };
   /** The requested resource was not found. */
   "server:errors.not_found": {};
+  /** The confirmation with the passkey expired. Try again. */
+  "server:errors.passkey.confirmation_expired": {};
   /** The passkey could not be verified. */
   "server:errors.passkey.invalid": {};
+  /** This is your last way to sign in. Add a passkey or set a password first. */
+  "server:errors.passkey.last_sign_in_method": {};
   /** The registration of the passkey expired. Start again. */
   "server:errors.passkey.registration_expired": {};
   /** You have as many passkeys as allowed. Remove one first. */
@@ -4906,6 +4954,10 @@ export interface MessageArgs {
   "server:mail.password_changed.body": { host: string; instance: string; url: string };
   /** Your password for {instance} was changed */
   "server:mail.password_changed.subject": { instance: string };
+  /** The password of your account on {instance} was removed, and your other sessions and apps were signed out. From now on you sign in with your passkeys.  If you did not remove it, someone else may be signed in to your account. Set a new password at once:  {url}  This email was sent by {host}. */
+  "server:mail.password_removed.body": { host: string; instance: string; url: string };
+  /** Your password for {instance} was removed */
+  "server:mail.password_removed.subject": { instance: string };
   /** Someone asked to reset the password of your account on {instance}.  Open this link to set a new password:  {url}  {minutes, plural, one {The link works for # minute, once.} other {The link works for # minutes, once.}} If you did not ask for it at {host}, ignore this email; your password stays as it is. */
   "server:mail.password_reset.body": { host: string; instance: string; minutes: number; url: string };
   /** Reset your password for {instance} */

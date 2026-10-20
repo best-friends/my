@@ -735,8 +735,16 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇǝp ɹǝsonɹɔǝ ʍɐs uoʇ ɟonup.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.passkey.confirmation_expired": {
+    "defaultMessage": "‮⊥ɥǝ ɔouɟıɹɯɐʇıou ʍıʇɥ ʇɥǝ dɐssʞǝʎ ǝxdıɹǝp. ⊥ɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.passkey.invalid": {
     "defaultMessage": "‮⊥ɥǝ dɐssʞǝʎ ɔonʅp uoʇ qǝ ʌǝɹıɟıǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.last_sign_in_method": {
+    "defaultMessage": "‮⊥ɥıs ıs ʎonɹ ʅɐsʇ ʍɐʎ ʇo sıƃu ıu. ∀pp ɐ dɐssʞǝʎ oɹ sǝʇ ɐ dɐssʍoɹp ɟıɹsʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.passkey.registration_expired": {
@@ -997,6 +1005,14 @@
   },
   "mail.password_changed.subject": {
     "defaultMessage": "‮⅄onɹ dɐssʍoɹp ɟoɹ {instance} ʍɐs ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_removed.body": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp oɟ ʎonɹ ɐɔɔonuʇ ou {instance} ʍɐs ɹǝɯoʌǝp, ɐup ʎonɹ oʇɥǝɹ sǝssıous ɐup ɐdds ʍǝɹǝ sıƃuǝp onʇ. Ⅎɹoɯ uoʍ ou ʎon sıƃu ıu ʍıʇɥ ʎonɹ dɐssʞǝʎs.\n\nIɟ ʎon pıp uoʇ ɹǝɯoʌǝ ıʇ, soɯǝouǝ ǝʅsǝ ɯɐʎ qǝ sıƃuǝp ıu ʇo ʎonɹ ɐɔɔonuʇ. Sǝʇ ɐ uǝʍ dɐssʍoɹp ɐʇ ouɔǝ:\n\n{url}\n\n⊥ɥıs ǝɯɐıʅ ʍɐs sǝuʇ qʎ {host}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_removed.subject": {
+    "defaultMessage": "‮⅄onɹ dɐssʍoɹp ɟoɹ {instance} ʍɐs ɹǝɯoʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.password_reset.body": {
