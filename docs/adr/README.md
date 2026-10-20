@@ -63,6 +63,7 @@
 | [0049](0049-client-lint-oxlint.md) | クライアントの lint を ESLint から Oxlint に移す | Accepted |
 | [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Accepted |
 | [0051](0051-custom-emoji.md) | カスタム絵文字 | Accepted |
+| [0052](0052-emoji-reactions.md) | 絵文字リアクション（Misskey / Pleroma / Akkoma 互換） | Accepted |
 | [0053](0053-status-page-url.md) | 投稿の表示用 URL を `/@{username}/status/{id}` にし、プロフィールの下を予約語の名前空間にする | Accepted |
 | [0054](0054-media-variants-video-audio.md) | メディアの派生と動画・音声の扱い | Accepted |
 | [0055](0055-service-observability.md) | サービスメトリクスの可観測性 | Accepted |
