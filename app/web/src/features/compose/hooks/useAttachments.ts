@@ -6,8 +6,8 @@ import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { cacheUploadedMedia, type MediaAttachment, mediaQueryOptions, uploadMedia } from "../api/compose";
 import type { AttachmentDraft, DraftStore } from "./draftStore";
-import { acceptedImageTypes, maxAttachments } from "./policy";
-import { prepareImage } from "./prepareImage";
+import { maxAttachments, mediaKind } from "./policy";
+import { type PreparedMedia, prepareMedia } from "./prepareMedia";
 
 /** Where an attachment is on its way to a post. */
 type AttachmentStatus =
@@ -21,7 +21,7 @@ type AttachmentStatus =
 export type AttachmentView = AttachmentDraft & {
   /** Its number in the post, from 1. */
   position: number;
-  /** The preview to show: the local file, else the server's thumbnail once it has one. */
+  /** The preview to show: the local image or the poster of a video, else the server's thumbnail once it has one. */
   src: string | null;
 } & AttachmentStatus;
 
@@ -34,7 +34,7 @@ export type Attachments = {
   items: AttachmentView[];
   /** Whether more files can be added. */
   canAdd: boolean;
-  /** Prepares and uploads the picked files, up to the limit. */
+  /** Prepares and uploads the picked images, videos, and audio files, up to the limit. */
   add: (files: readonly File[]) => void;
   remove: (key: string) => void;
   describe: (key: string, description: string) => void;
@@ -58,8 +58,8 @@ function attachmentStatus(attachment: AttachmentDraft, media: MediaAttachment | 
 }
 
 /**
- * The images of the draft: picking prepares each file in the browser (prepareImage), uploads it, and polls
- * it until the server has processed it (the media query). The draft keeps the uploaded file's ID and the
+ * The attachments of the draft: picking prepares each file in the browser (an image is drawn again without its
+ * metadata; a video gets a poster; an audio file is sent as it is and the server removes its tags, prepareMedia), uploads it, and polls it until the server has processed it (the media query). The draft keeps the uploaded file's ID and the
  * description; the state of the file is the server's, read from the query.
  */
 export function useAttachments(store: DraftStore, attachments: readonly AttachmentDraft[]): Attachments {
@@ -68,7 +68,7 @@ export function useAttachments(store: DraftStore, attachments: readonly Attachme
   const t = useT();
   const announce = useAnnouncer();
   const upload = useMutation({
-    mutationFn: (file: File) => uploadMedia(api, file),
+    mutationFn: ({ file, poster }: PreparedMedia) => uploadMedia(api, file, poster),
     onSuccess: (media) => {
       cacheUploadedMedia(api, queryClient, media);
     },
@@ -88,8 +88,8 @@ export function useAttachments(store: DraftStore, attachments: readonly Attachme
     store.edit({ attachments: [...store.getSnapshot().draft.attachments, { key, mediaId: null, description: "", previewUrl: null, error: null }] });
     void (async () => {
       try {
-        const prepared = await prepareImage(file);
-        store.editAttachment(key, { previewUrl: URL.createObjectURL(prepared) });
+        const prepared = await prepareMedia(file);
+        if (prepared.preview !== null) store.editAttachment(key, { previewUrl: URL.createObjectURL(prepared.preview) });
         const uploaded = await upload.mutateAsync(prepared);
         store.editAttachment(key, { mediaId: uploaded.id });
       } catch (error) {
@@ -102,14 +102,14 @@ export function useAttachments(store: DraftStore, attachments: readonly Attachme
     items,
     canAdd: attachments.length < maxAttachments,
     add(files) {
-      const images = files.filter((file) => {
-        if (acceptedImageTypes.includes(file.type)) return true;
+      const accepted = files.filter((file) => {
+        if (mediaKind(file.type) !== null) return true;
         announce(t("client:compose.media.unsupported", { name: file.name }), "assertive");
         return false;
       });
       const room = maxAttachments - store.getSnapshot().draft.attachments.length;
-      if (images.length > room) announce(t("client:compose.media.too_many", { max: maxAttachments }), "assertive");
-      for (const file of images.slice(0, Math.max(0, room))) start(file);
+      if (accepted.length > room) announce(t("client:compose.media.too_many", { max: maxAttachments }), "assertive");
+      for (const file of accepted.slice(0, Math.max(0, room))) start(file);
     },
     remove(key) {
       const attachment = store.getSnapshot().draft.attachments.find((a) => a.key === key);

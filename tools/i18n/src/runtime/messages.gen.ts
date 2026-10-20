@@ -2476,31 +2476,31 @@ export interface MessageArgs {
   "client:compose.language.label": {};
   /** Not specified */
   "client:compose.language.und": {};
-  /** Add images */
+  /** Add images, video, or audio */
   "client:compose.media.add": {};
-  /** {count, plural, one {# image attached} other {# images attached}} */
+  /** {count, plural, one {# file attached} other {# files attached}} */
   "client:compose.media.count": { count: number };
-  /** Describe the image for people who cannot see it. */
+  /** Describe it for people who cannot see or hear it. */
   "client:compose.media.description.hint": {};
-  /** Description of image {position} */
+  /** Description of attachment {position} */
   "client:compose.media.description.label": { position: string };
-  /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
+  /** Describe it for people who cannot see or hear it. Your settings ask for a description of every attachment. */
   "client:compose.media.description.required": {};
-  /** Could not attach the image: {reason} */
+  /** Could not attach the file: {reason} */
   "client:compose.media.failed": { reason: string };
-  /** The server could not process this image. */
+  /** The server could not process this file. */
   "client:compose.media.failed_processing": {};
-  /** Up to {max, plural, other {# images}}: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload. */
+  /** Up to {max, plural, other {# files}}: JPEG, PNG, GIF, or WebP images, MP4 or WebM video, or MP3, Ogg, or M4A audio. Location and other metadata are removed. */
   "client:compose.media.hint": { max: number };
-  /** Attached images */
+  /** Attached media */
   "client:compose.media.list": {};
   /** Processing… */
   "client:compose.media.processing": {};
-  /** Remove image {position} */
+  /** Remove attachment {position} */
   "client:compose.media.remove": { position: string };
-  /** A post can have at most {max, plural, other {# images}}. The rest were not added. */
+  /** A post can have at most {max, plural, other {# files}}. The rest were not added. */
   "client:compose.media.too_many": { max: number };
-  /** {name} is not a JPEG, PNG, GIF or WebP image. */
+  /** {name} is not a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file. */
   "client:compose.media.unsupported": { name: string };
   /** Uploading… */
   "client:compose.media.uploading": {};
