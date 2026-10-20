@@ -4,7 +4,7 @@
 // a suspension asks first in an alert dialog (ConfirmDialog, NFR-MOD-7), the other kinds take effect at once.
 // What an action or a lift did stays on the page in a StatusMessage (role="status") next to what caused it.
 // The tabs follow the WAI-ARIA APG tabs pattern with automatic activation (React Aria Tabs), kept in the URL by
-// the route (web-client.md S3); only the selected panel is mounted.
+// the route (web-client.md S3); only the selected panel is mounted. Last, the list in Mastodon's CSV (DomainBlockCsv).
 import {
   Button,
   Checkbox,
@@ -45,6 +45,7 @@ import {
   useDomainActions,
   useLiftDomainAction,
 } from "../hooks/useDomainActions";
+import { DomainBlockCsv } from "./DomainBlockCsv";
 import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
 
 const kindDescriptions: Readonly<Record<DomainActionKind, ClientMessageKey>> = {
@@ -96,6 +97,9 @@ export function DomainActions(props: DomainActionsProps) {
         </DetailSection>
         <DetailSection title={t("client:admin.domain_actions.list.title")}>
           <DomainActionTabs {...props} />
+        </DetailSection>
+        <DetailSection title={t("client:admin.domain_actions.csv.title")}>
+          <DomainBlockCsv />
         </DetailSection>
       </div>
     </RequirePermission>

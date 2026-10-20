@@ -155,6 +155,33 @@ my admin domain lift <action id>
 - 解除はその処分の制限だけを消します。同じドメインへの別の処分は残ります。解除済みの処分をもう一度解除しても何も変わりません。
 - 一覧は新しい順で、`-active`（`active=true`）を付けると効いているものだけを出します。
 
+### Mastodon の CSV でのインポートとエクスポート
+
+ドメインへの処分の一覧を、Mastodon のドメインブロックの CSV（`#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`）で受け渡しできます（FR-706）。
+Mastodon がエクスポートした CSV をインポートでき、このサーバーがエクスポートした CSV は Mastodon でインポートできます。
+
+```sh
+my admin domain export > domain_blocks.csv
+my admin domain import domain_blocks.csv                       # 何をするかを表示するだけ
+my admin domain import -apply -only spam.example,bad.example domain_blocks.csv
+```
+
+管理 API では `GET /api/v1/admin/domain_actions/export`（`text/csv`）、`POST .../import/preview`（本文は `csv`）、`POST .../import`（本文は選んだ行の `blocks` と `private_note`）です。
+Web クライアントでは、ドメインへの処分の画面（`/moderation/domain-actions`）の「CSV のインポート」と「CSV のエクスポート」で行います。
+
+| CSV の行 | このサーバーの処分 |
+| --- | --- |
+| `#severity` が `suspend`（空のときも） | `suspend` |
+| `#severity` が `silence` | `limit` |
+| `#severity` が `noop` | なし |
+| `#reject_media` / `#reject_reports` が真 | それぞれ `reject_media` / `reject_reports` を足す |
+
+- インポートは 2 段階です。まずプレビューで行ごとに出す処分を確かめ、残す行を選んでからインポートします（CLI は `-apply` を付けるまで何も変えず、`-only` で行のドメインを選びます）。
+- そのドメインか親ドメインに同じ種類の有効な処分がある行は、その種類を出しません（すべてあれば「適用済み」）。同じドメインの 2 行目・不正な行・何も出さない行（`noop` だけ）も飛ばします。同じ CSV をもう一度インポートしても処分は増えません。
+- `#domain` の見出しのない CSV は、1 行に 1 つのドメインの一覧として、すべて `suspend` にします（Mastodon と同じ）。1 回に 5,000 行までです。
+- インポートした処分は「解除するまで」で、行の公開コメントと伏せ字、指定した非公開のメモを持ちます。1 件ずつ出した処分と同じく監査ログに載ります（操作者は API ならその人、CLI なら `cli`）。
+- エクスポートは効いている処分を、ドメインごとに 1 行にします。`suspend` があれば `suspend`、`limit` があれば `silence`、どちらもなければ `noop` です。Mastodon のドメインブロックにない `force_sensitive` だけのドメインは出しません。非公開のメモと期限は出しません。
+
 ### 切れたフォロー
 
 ドメインの `suspend` とリモートのアカウントの `suspend` は、ローカルの利用者と凍結したアカウントのフォローを両方向とも切ります（FR-717）。

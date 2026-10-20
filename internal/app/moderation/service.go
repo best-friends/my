@@ -249,35 +249,42 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 	if err := a.Validate(); err != nil {
 		return moderation.DomainAction{}, err
 	}
-	repo := s.d.Repository
 	auditID := s.d.IDs.NewID()
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := repo.InsertDomainAction(ctx, tx, a); err != nil {
-			return err
-		}
-		for _, r := range a.Rows() {
-			if err := repo.InsertDomainRestriction(ctx, tx, r); err != nil {
-				return err
-			}
-		}
-		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
-			return err
-		}
-		if err := s.enqueueDomainSeverance(ctx, tx, a); err != nil {
-			return err
-		}
-		if err := tx.Emit(ctx, DomainActionIssued{Action: a}); err != nil {
-			return err
-		}
-		return s.emitAudit(ctx, tx, moderation.AuditEntry{
-			ID: auditID, Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain,
-			TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: now,
-		}, in.IssuedByUserID)
+		return s.insertDomainAction(ctx, tx, a, auditID)
 	})
 	if err != nil {
 		return moderation.DomainAction{}, err
 	}
 	return a, nil
+}
+
+// insertDomainAction writes a valid domain action inside tx with what IssueDomainAction
+// describes: its restrictions, the events, the severance of a suspension, and its audit log
+// entry auditID.
+func (s *Service) insertDomainAction(ctx context.Context, tx uow.Tx, a moderation.DomainAction, auditID string) error {
+	repo := s.d.Repository
+	if err := repo.InsertDomainAction(ctx, tx, a); err != nil {
+		return err
+	}
+	for _, r := range a.Rows() {
+		if err := repo.InsertDomainRestriction(ctx, tx, r); err != nil {
+			return err
+		}
+	}
+	if err := s.emitDomain(ctx, tx, a.Domain, a.IssuedAt); err != nil {
+		return err
+	}
+	if err := s.enqueueDomainSeverance(ctx, tx, a); err != nil {
+		return err
+	}
+	if err := tx.Emit(ctx, DomainActionIssued{Action: a}); err != nil {
+		return err
+	}
+	return s.emitAudit(ctx, tx, moderation.AuditEntry{
+		ID: auditID, Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain,
+		TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: a.IssuedAt,
+	}, a.IssuedByUserID)
 }
 
 // LiftDomainAction lifts an action on a domain: its restrictions end, while those of other
