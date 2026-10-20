@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, Button, EmptyState, Link, RegionError, Spinner } from "@my/ui";
+import { Avatar, Button, EmptyState, ExternalLinkIcon, Link, RegionError, Spinner } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { handleOf } from "../../../lib/handle";
@@ -13,8 +13,8 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
 /**
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
  * description, the rules, how to reach the operators, the remote domains it moderates as far as the instance lists
- * them, what it states to search engines and AI crawlers, and its terms of service and privacy policy. Everyone may
- * read it, signed in or not.
+ * them, what it states to search engines and AI crawlers, where to get its source code, and its terms of service and
+ * privacy policy. Everyone may read it, signed in or not.
  */
 export function About() {
   const about = useAbout();
@@ -32,6 +32,7 @@ export function About() {
       {about.contact !== undefined && <Contact contact={about.contact} />}
       <ModeratedDomainsSection />
       {about.crawlers !== undefined && <Crawlers searchIndexing={about.crawlers.searchIndexing} aiUsage={about.crawlers.aiUsage} />}
+      {about.sourceUrl !== undefined && <SourceCode url={about.sourceUrl} />}
       <DocumentsSection />
     </div>
   );
@@ -157,6 +158,61 @@ function Crawlers({ searchIndexing, aiUsage }: { searchIndexing: Instance["searc
       <p className="text-sm text-fg-muted">{t("client:about.crawlers.how")}</p>
       <p className="text-sm text-fg-muted">{t("client:about.crawlers.accounts")}</p>
       <p className="text-sm text-fg-muted">{t("client:about.crawlers.legal")}</p>
+    </Section>
+  );
+}
+
+/** The address of a mailto: URI (without its query), or undefined when the URI is not one. */
+function mailtoAddress(url: string): string | undefined {
+  if (!url.startsWith("mailto:")) return undefined;
+  const address = url.slice("mailto:".length).split("?")[0] ?? "";
+  try {
+    return decodeURIComponent(address);
+  } catch {
+    return address;
+  }
+}
+
+/**
+ * The link to the source code the server runs (AGPL-3.0 section 13, ADR-0011): to the page that publishes it, which
+ * leaves the app, or, for a mailto: URI, to an email that requests it.
+ */
+export function SourceCodeLink({ url }: { url: string }) {
+  const t = useT();
+  if (mailtoAddress(url) !== undefined) {
+    return (
+      <Link href={url} variant="standalone">
+        {t("client:about.source.request")}
+      </Link>
+    );
+  }
+  return (
+    <Link href={url} rel="noreferrer" variant="standalone" className="gap-1">
+      {t("client:about.source.view")}
+      <ExternalLinkIcon />
+    </Link>
+  );
+}
+
+/** Where users get the source code the server runs, and why they may (AGPL-3.0 section 13). */
+function SourceCode({ url }: { url: string }) {
+  const t = useT();
+  const address = mailtoAddress(url);
+  return (
+    <Section title={t("client:about.source.title")}>
+      <p>{t("client:about.source.license")}</p>
+      <p>
+        <SourceCodeLink url={url} />
+      </p>
+      {address !== undefined && (
+        <dl className="flex flex-col gap-1">
+          <dt className="text-sm text-fg-muted">{t("client:about.source.address")}</dt>
+          {/* An address reads left to right in every locale. */}
+          <dd dir="ltr" className="text-start wrap-anywhere">
+            {address}
+          </dd>
+        </dl>
+      )}
     </Section>
   );
 }

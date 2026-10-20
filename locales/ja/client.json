@@ -95,6 +95,26 @@
     "defaultMessage": "ルール",
     "description": "Heading of the section of the server's information page with the server's rules."
   },
+  "about.source.title": {
+    "defaultMessage": "ソースコード",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "このサーバーは、GNU Affero General Public License 第 3 版（AGPL-3.0）のもとで公開されている自由ソフトウェアで動いています。サーバーを使う人は誰でも、動いているソースコードを入手できます。",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "ソースコードを見る",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "ソースコードをメールで請求する",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "請求先のメールアドレス",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
   "about.title": {
     "defaultMessage": "{instance} について",
     "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."

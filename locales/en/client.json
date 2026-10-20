@@ -95,6 +95,26 @@
     "defaultMessage": "Rules",
     "description": "Heading of the section of the server's information page with the server's rules."
   },
+  "about.source.title": {
+    "defaultMessage": "Source code",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "This server runs free software under the GNU Affero General Public License, version 3 (AGPL-3.0). Everyone who uses the server may get the source code that it runs.",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "View the source code",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "Request the source code by email",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "Email address for requests",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
   "about.title": {
     "defaultMessage": "About {instance}",
     "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
