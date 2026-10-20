@@ -192,7 +192,7 @@ describe("a post's edit history", () => {
     signedIn();
     serveOwnPost(edited);
     server.use(http.get(`${apiBase}/statuses/:id/history`, () => HttpResponse.json({ items: revisions })));
-    const { user, router } = await renderApp({ path: `/@alice/${ownId}` });
+    const { user, router } = await renderApp({ path: `/@alice/status/${ownId}` });
 
     await user.click(await screen.findByRole("link", { name: "Edited" }));
 
