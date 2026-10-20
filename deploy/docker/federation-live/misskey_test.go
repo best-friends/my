@@ -106,8 +106,9 @@ func (m *misskeyAPI) toStatus(n mkNote) status {
 	if n.ReplyID != nil {
 		s.InReplyToID = *n.ReplyID
 	}
-	for _, c := range n.Reactions {
+	for emoji, c := range n.Reactions {
 		s.FavouritesCount += c
+		s.Reactions = append(s.Reactions, statusReaction{Name: emoji, Count: c})
 	}
 	return s
 }

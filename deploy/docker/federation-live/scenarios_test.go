@@ -505,6 +505,39 @@ func interactionScenario(t *testing.T, action string, count func(status) int) {
 	}
 }
 
+// TestReaction: an emoji reaction from this server (a Like with content and _misskey_reaction,
+// ADR-0052 §3) is a reaction with the emoji on a peer whose favourite is a reaction (Misskey), and
+// a favourite on the others (Mastodon, GoToSocial); its Undo takes it back. Changing the emoji
+// sends the Undo of the first one before the new Like, so the peer keeps one.
+func TestReaction(t *testing.T) {
+	e := stack(t)
+	for _, p := range e.peers {
+		t.Run(p.name, func(t *testing.T) {
+			ctx := t.Context()
+			mutual(t, e, p)
+			original, err := p.post(ctx, unique("react to me, "+localHost), "public")
+			if err != nil {
+				t.Fatal(err)
+			}
+			onLocal := localSees(t, e, original.URI)
+			for _, emoji := range []string{"👍", "🎉", ""} {
+				if err := e.local.react(ctx, onLocal.ID, emoji); err != nil {
+					t.Fatal(err)
+				}
+				want := map[bool]int{true: 0, false: 1}[emoji == ""]
+				eventually(t, deliveryTimeout, fmt.Sprintf("the %q reaction to %s on %s", emoji, original.URI, p.host), func() (bool, string) {
+					s, err := p.status(ctx, original.ID)
+					ok := err == nil && s.FavouritesCount == want
+					if p.favouriteReaction != "" && emoji != "" {
+						ok = ok && s.reactionCount(emoji) == 1
+					}
+					return ok, fmt.Sprintf("favourites %d, reactions %+v, %v", s.FavouritesCount, s.Reactions, err)
+				})
+			}
+		})
+	}
+}
+
 // TestEdit: an edited post (Update) shows the new text on the other side. A peer that does not
 // edit (noEdits) gets the Update and keeps the text.
 func TestEdit(t *testing.T) {

@@ -470,7 +470,8 @@ type status struct {
 	BoostsCount     int    `json:"boosts_count"`
 	ReblogsCount    int    `json:"reblogs_count"`
 	FavouritesCount int    `json:"favourites_count"`
-	// Reactions are the emoji reactions, counted per emoji (this server's client API only).
+	// Reactions are the emoji reactions, counted per emoji (this server's client API and
+	// Misskey's).
 	Reactions []statusReaction `json:"reactions"`
 }
 
@@ -618,6 +619,15 @@ func (l *localClient) interact(ctx context.Context, id, action string, undo bool
 		method = http.MethodDelete
 	}
 	return l.call(ctx, method, "/statuses/"+url.PathEscape(id)+"/"+action, nil, nil)
+}
+
+// react sets the user's emoji reaction to a status, or takes it back when emoji is "".
+func (l *localClient) react(ctx context.Context, id, emoji string) error {
+	path := "/statuses/" + url.PathEscape(id) + "/reaction"
+	if emoji == "" {
+		return l.call(ctx, http.MethodDelete, path, nil, nil)
+	}
+	return l.call(ctx, http.MethodPut, path, map[string]any{"emoji": emoji}, nil)
 }
 
 func (l *localClient) home(ctx context.Context) ([]status, error) {
