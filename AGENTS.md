@@ -52,7 +52,8 @@ Follow [docs/agents/workflow.md](docs/agents/workflow.md). Summary:
    client, run `make web-e2e` or `gh workflow run web-e2e.yml --ref <branch>`.
    Do not merge or queue the PR yourself: the orchestrator or the decider queues it with `gh pr merge --auto`, and the merge queue
    runs `check` again on top of the latest `main` before merging. Merge `main` into the branch only when the PR conflicts or the
-   queue drops it. Pushes to `main` and the nightly run the slower suites; the table of what runs where is in the workflow.
+   queue drops it. Pushes to `main` and the nightly run the slower suites, and CodeQL code scanning (`codeql.yml`) runs on
+   pushes to `main` and weekly, never on PRs; the table of what runs where is in the workflow.
 5. If you need a decision that no Accepted ADR covers: small → state the assumption in the PR; large → draft a *Proposed* ADR
    (`make adr-new TITLE=... SLUG=...`), comment on the issue, add `agent:blocked`, and stop.
 
