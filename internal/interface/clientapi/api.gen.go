@@ -927,6 +927,8 @@ const (
 	InstanceSettingKeyAiUsage                          InstanceSettingKey = "ai_usage"
 	InstanceSettingKeyAppealWindow                     InstanceSettingKey = "appeal_window"
 	InstanceSettingKeyAuthorizedFetch                  InstanceSettingKey = "authorized_fetch"
+	InstanceSettingKeyContactAccount                   InstanceSettingKey = "contact_account"
+	InstanceSettingKeyContactEmail                     InstanceSettingKey = "contact_email"
 	InstanceSettingKeyDefaultLocale                    InstanceSettingKey = "default_locale"
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
@@ -945,6 +947,7 @@ const (
 	InstanceSettingKeyRetentionSessionOrigins          InstanceSettingKey = "retention_session_origins"
 	InstanceSettingKeySearchIndexing                   InstanceSettingKey = "search_indexing"
 	InstanceSettingKeySecurityContact                  InstanceSettingKey = "security_contact"
+	InstanceSettingKeyThumbnail                        InstanceSettingKey = "thumbnail"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKey enum.
@@ -955,6 +958,10 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyAppealWindow:
 		return true
 	case InstanceSettingKeyAuthorizedFetch:
+		return true
+	case InstanceSettingKeyContactAccount:
+		return true
+	case InstanceSettingKeyContactEmail:
 		return true
 	case InstanceSettingKeyDefaultLocale:
 		return true
@@ -992,6 +999,8 @@ func (e InstanceSettingKey) Valid() bool {
 		return true
 	case InstanceSettingKeySecurityContact:
 		return true
+	case InstanceSettingKeyThumbnail:
+		return true
 	default:
 		return false
 	}
@@ -999,18 +1008,24 @@ func (e InstanceSettingKey) Valid() bool {
 
 // Defines values for InstanceSettingKind.
 const (
-	InstanceSettingKindBool   InstanceSettingKind = "bool"
-	InstanceSettingKindEnum   InstanceSettingKind = "enum"
-	InstanceSettingKindInt    InstanceSettingKind = "int"
-	InstanceSettingKindLocale InstanceSettingKind = "locale"
-	InstanceSettingKindMedia  InstanceSettingKind = "media"
-	InstanceSettingKindUri    InstanceSettingKind = "uri"
+	InstanceSettingKindAccount InstanceSettingKind = "account"
+	InstanceSettingKindBool    InstanceSettingKind = "bool"
+	InstanceSettingKindEmail   InstanceSettingKind = "email"
+	InstanceSettingKindEnum    InstanceSettingKind = "enum"
+	InstanceSettingKindInt     InstanceSettingKind = "int"
+	InstanceSettingKindLocale  InstanceSettingKind = "locale"
+	InstanceSettingKindMedia   InstanceSettingKind = "media"
+	InstanceSettingKindUri     InstanceSettingKind = "uri"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKind enum.
 func (e InstanceSettingKind) Valid() bool {
 	switch e {
+	case InstanceSettingKindAccount:
+		return true
 	case InstanceSettingKindBool:
+		return true
+	case InstanceSettingKindEmail:
 		return true
 	case InstanceSettingKindEnum:
 		return true
@@ -1035,6 +1050,7 @@ const (
 	InstanceTextKeyPrivacyPolicy    InstanceTextKey = "privacy_policy"
 	InstanceTextKeyShortDescription InstanceTextKey = "short_description"
 	InstanceTextKeyTerms            InstanceTextKey = "terms"
+	InstanceTextKeyThumbnailAlt     InstanceTextKey = "thumbnail_alt"
 )
 
 // Valid indicates whether the value is a known member of the InstanceTextKey enum.
@@ -1051,6 +1067,8 @@ func (e InstanceTextKey) Valid() bool {
 	case InstanceTextKeyShortDescription:
 		return true
 	case InstanceTextKeyTerms:
+		return true
+	case InstanceTextKeyThumbnailAlt:
 		return true
 	default:
 		return false
@@ -2755,8 +2773,10 @@ type AdminSetting struct {
 
 	// Kind The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
 	// `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-	// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
-	// `https:` or `mailto:` URI, or empty for none.
+	// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+	// the username of a local account, or empty for none. `email`: an email address such as
+	// `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+	// none.
 	Kind InstanceSettingKind `json:"kind"`
 
 	// Maximum The greatest value of an `int` setting; omitted for other kinds.
@@ -3490,6 +3510,10 @@ type Instance struct {
 	// instance allows (`ai_opt_out`), never the reverse.
 	AiUsage AIUsage `json:"ai_usage"`
 
+	// Contact How people reach the instance's operators (the instance settings `contact_account` and
+	// `contact_email`). Omitted when the instance has neither.
+	Contact *InstanceContact `json:"contact,omitempty"`
+
 	// Description The full description of the instance, as plain text; omitted when there is none.
 	Description *string `json:"description,omitempty"`
 
@@ -3544,12 +3568,27 @@ type Instance struct {
 	// instance has no theme.
 	Theme *InstanceTheme `json:"theme,omitempty"`
 
+	// Thumbnail The image that represents the instance (the instance setting `thumbnail`): the large still
+	// variant of the media file. Omitted when there is none, or while the file is processing.
+	Thumbnail *InstanceThumbnail `json:"thumbnail,omitempty"`
+
 	// Timelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 	// clients do not offer it.
 	Timelines InstanceTimelines `json:"timelines"`
 
 	// Version The server version.
 	Version string `json:"version"`
+}
+
+// InstanceContact How people reach the instance's operators (the instance settings `contact_account` and
+// `contact_email`). Omitted when the instance has neither.
+type InstanceContact struct {
+	// Account The local account to contact; omitted when there is none, or when the account
+	// cannot be shown (it is suspended or deleted).
+	Account *Account `json:"account,omitempty"`
+
+	// Email The email address to contact; omitted when there is none.
+	Email *string `json:"email,omitempty"`
 }
 
 // InstanceDomainAction A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718).
@@ -3641,8 +3680,10 @@ type InstanceSettingKey string
 
 // InstanceSettingKind The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
 // `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
-// `https:` or `mailto:` URI, or empty for none.
+// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+// the username of a local account, or empty for none. `email`: an email address such as
+// `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+// none.
 type InstanceSettingKind string
 
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
@@ -3657,6 +3698,17 @@ type InstanceTheme struct {
 	Revision      string            `json:"revision"`
 	StylesheetUrl string            `json:"stylesheet_url"`
 	Tokens        []ThemeTokenValue `json:"tokens"`
+}
+
+// InstanceThumbnail The image that represents the instance (the instance setting `thumbnail`): the large still
+// variant of the media file. Omitted when there is none, or while the file is processing.
+type InstanceThumbnail struct {
+	// Alt The alt text (the instance text `thumbnail_alt`) in the locale of the request;
+	// omitted when no locale of the request's fallback chain has one.
+	Alt    *string `json:"alt,omitempty"`
+	Height int     `json:"height"`
+	Url    string  `json:"url"`
+	Width  int     `json:"width"`
 }
 
 // InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so

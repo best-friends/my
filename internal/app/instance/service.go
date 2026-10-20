@@ -25,6 +25,9 @@ type Deps struct {
 	// Media checks the media files that media settings (preview_image) refer to; nil checks
 	// only the shape of their IDs.
 	Media MediaFiles
+	// Accounts checks the local account that the contact_account setting names; nil checks
+	// only the shape of its username.
+	Accounts LocalAccounts
 	// Documents renders the document texts (the terms of service and the privacy policy) to
 	// HTML; nil publishes no documents.
 	Documents DocumentRenderer
@@ -45,6 +48,13 @@ type MediaFiles interface {
 	// CheckImage fails when mediaID names no media file that is, or is being processed into,
 	// a still image.
 	CheckImage(ctx context.Context, mediaID string) error
+}
+
+// LocalAccounts checks the local accounts that account settings (contact_account) name. The
+// account module implements it.
+type LocalAccounts interface {
+	// CheckLocalAccount fails when username names no local account.
+	CheckLocalAccount(ctx context.Context, username string) error
 }
 
 // Service runs the instance module's use cases for settings and texts.
@@ -195,6 +205,11 @@ func (s *Service) parseSetting(ctx context.Context, in SetSettingInput) (string,
 			return "", fmt.Errorf("setting %s: media %s: %w: %w", in.Key, value, instance.ErrInvalidValue, err)
 		}
 	}
+	if def.Kind == instance.KindAccount && value != "" && s.d.Accounts != nil {
+		if err := s.d.Accounts.CheckLocalAccount(ctx, value); err != nil {
+			return "", fmt.Errorf("setting %s: account %s: %w: %w", in.Key, value, instance.ErrInvalidValue, err)
+		}
+	}
 	return value, nil
 }
 
@@ -341,27 +356,39 @@ func (s *Service) HasDocument(ctx context.Context, key instance.TextKey, locale 
 	return ok, err
 }
 
-// PreviewImage is the instance's link preview image (ADR-0028).
-type PreviewImage struct {
-	// MediaID is the preview_image setting, "" when unset.
+// Image is one of the instance's images, a media setting with its localized alt text.
+type Image struct {
+	// MediaID is the value of the setting, "" when unset.
 	MediaID string
-	// Alt is the preview_image_alt text, "" when no locale of the chain has it.
+	// Alt is the alt text, "" when no locale of the chain has it.
 	Alt string
 }
 
-// PreviewImage returns the preview_image setting with its alt text for a reader of locale.
-func (s *Service) PreviewImage(ctx context.Context, locale string) (PreviewImage, error) {
+// PreviewImage returns the instance's link preview image (ADR-0028): the preview_image setting
+// with its alt text, the preview_image_alt text, for a reader of locale.
+func (s *Service) PreviewImage(ctx context.Context, locale string) (Image, error) {
+	return s.image(ctx, instance.SettingPreviewImage, instance.TextPreviewImageAlt, locale)
+}
+
+// Thumbnail returns the image that represents the instance: the thumbnail setting with its alt
+// text, the thumbnail_alt text, for a reader of locale.
+func (s *Service) Thumbnail(ctx context.Context, locale string) (Image, error) {
+	return s.image(ctx, instance.SettingThumbnail, instance.TextThumbnailAlt, locale)
+}
+
+func (s *Service) image(ctx context.Context, key instance.SettingKey, alt instance.TextKey, locale string) (Image, error) {
 	settings, err := s.Settings(ctx)
 	if err != nil {
-		return PreviewImage{}, err
+		return Image{}, err
 	}
-	out := PreviewImage{MediaID: settings.PreviewImageMediaID()}
+	out := Image{}
+	out.MediaID, _ = settings.Value(key)
 	if out.MediaID == "" {
 		return out, nil
 	}
-	t, ok, err := s.Text(ctx, instance.TextPreviewImageAlt, locale)
+	t, ok, err := s.Text(ctx, alt, locale)
 	if err != nil {
-		return PreviewImage{}, err
+		return Image{}, err
 	}
 	if ok {
 		out.Alt = t.Body

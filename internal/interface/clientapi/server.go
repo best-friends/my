@@ -35,6 +35,9 @@ type Options struct {
 	// Instance reads the instance settings and texts; nil reads every setting as its default
 	// and no text.
 	Instance InstanceInfo
+	// InstanceThumbnail returns the image that represents the instance (the thumbnail setting)
+	// for a reader of locale, for Instance.thumbnail; nil, or a nil image, leaves it out.
+	InstanceThumbnail func(ctx context.Context, locale string) (*InstanceImage, error)
 	// SendsEmail tells whether the instance sends email (the setting mail is not none), for
 	// Instance.sends_email.
 	SendsEmail bool

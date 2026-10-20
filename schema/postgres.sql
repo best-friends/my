@@ -597,7 +597,7 @@ CREATE TABLE instance_setting_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
+    'preview_image', 'contact_account', 'contact_email', 'thumbnail', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
     'retention_moderation_actions', 'retention_audit_log',
@@ -622,7 +622,7 @@ CREATE TABLE instance_settings (
 CREATE TABLE instance_text_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
-    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt'
+    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt'
   )),
   locale text COLLATE "C" NOT NULL,
   body text NOT NULL,

@@ -2204,7 +2204,7 @@ export interface paths {
          *     where no locale of the chain has a name, the domain names it, and handles and URLs always
          *     use the domain. An unknown key is a 404. A locale that is not a BCP 47
          *     tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
-         *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
+         *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt` and `thumbnail_alt`, 20,000 for
          *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
          *     or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
          *     permission.
@@ -3163,8 +3163,38 @@ export interface components {
              */
             privacy_policy_url?: string;
             theme?: components["schemas"]["InstanceTheme"];
+            contact?: components["schemas"]["InstanceContact"];
+            thumbnail?: components["schemas"]["InstanceThumbnail"];
             search_indexing: components["schemas"]["SearchIndexing"];
             ai_usage: components["schemas"]["AIUsage"];
+        };
+        /**
+         * @description How people reach the instance's operators (the instance settings `contact_account` and
+         *     `contact_email`). Omitted when the instance has neither.
+         */
+        InstanceContact: {
+            /**
+             * @description The local account to contact; omitted when there is none, or when the account
+             *     cannot be shown (it is suspended or deleted).
+             */
+            account?: components["schemas"]["Account"];
+            /** @description The email address to contact; omitted when there is none. */
+            email?: string;
+        };
+        /**
+         * @description The image that represents the instance (the instance setting `thumbnail`): the large still
+         *     variant of the media file. Omitted when there is none, or while the file is processing.
+         */
+        InstanceThumbnail: {
+            /** Format: uri */
+            url: string;
+            width: number;
+            height: number;
+            /**
+             * @description The alt text (the instance text `thumbnail_alt`) in the locale of the request;
+             *     omitted when no locale of the request's fallback chain has one.
+             */
+            alt?: string;
         };
         /**
          * @description Whether the instance lets search engines index its pages (the instance setting
@@ -5239,7 +5269,7 @@ export interface components {
          *     preview image.
          * @enum {string}
          */
-        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt";
+        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt";
         /** @description A new revision of an instance text in one locale. */
         SetInstanceTextRequest: {
             /** @description The text; empty clears it in the locale. */
@@ -5659,15 +5689,17 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
-         *     `https:` or `mailto:` URI, or empty for none.
+         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+         *     the username of a local account, or empty for none. `email`: an email address such as
+         *     `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+         *     none.
          * @enum {string}
          */
-        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "uri";
+        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "account" | "email" | "uri";
         /** @description New values of some instance settings, saved together. */
         UpdateInstanceSettingsRequest: {
             /** @description The new value of each setting to change, by key, as a string. */
