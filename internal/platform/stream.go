@@ -16,6 +16,7 @@ import (
 	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
 	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
 	valkeystream "github.com/best-friends/my/internal/adapter/stream/valkey"
+	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -52,6 +53,7 @@ func (a *App) setUpStreams(ctx context.Context, cfg *config.Config, bus stream.B
 
 	processID := stream.NewProcessID()
 	var closeBus func() error
+	measured := bus == nil
 	if bus == nil {
 		var err error
 		if bus, closeBus, err = a.newStreamBus(ctx, cfg, processID); err != nil {
@@ -60,6 +62,10 @@ func (a *App) setUpStreams(ctx context.Context, cfg *config.Config, bus stream.B
 	}
 	o := stream.RelayOptions{ProcessID: processID, Logger: a.Logger.With(slog.String("component", "stream"))}
 	sweeper, sweeps := bus.(stream.Sweeper)
+	if measured {
+		// The adapter operations and the listener's connection of ADR-0056 §1.
+		bus = sysmetrics.Bus(bus, a.Meter, "stream."+cfg.Stream)
+	}
 	if sweeps {
 		// The sweep keeps the resources of the processes whose marker is in the shared KV.
 		o.Liveness = a.KV

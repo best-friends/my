@@ -16,6 +16,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/platform/config"
@@ -73,6 +74,7 @@ func (a *App) readiness(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	if err := a.Ready(ctx); err != nil {
 		a.Logger.WarnContext(r.Context(), "not ready", slog.Any("error", err))
+		a.readinessFailures.Add(context.WithoutCancel(r.Context()), 1, kernel.Labels{})
 		// The default locale lives in the database that just failed, so it is not consulted.
 		l := (&i18n.Resolver{Bundle: a.Messages}).RequestLocalizer(r)
 		a.writeProblem(w, r, l, http.StatusServiceUnavailable, l.ServerHealthUnavailable())

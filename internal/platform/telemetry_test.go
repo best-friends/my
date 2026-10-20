@@ -85,6 +85,15 @@ func TestPrometheusMetrics(t *testing.T) {
 		`my_media_stored_bytes{my_media_origin="remote_cache"`,
 		`my_metrics_snapshot_age_seconds{my_metrics_snapshot_part="queue"`,
 		`target_info{`,
+		// The system metrics of ADR-0056 §1.
+		"\ngo_goroutine_count ",
+		`go_schedule_duration_seconds_bucket{`,
+		`go_memory_gc_pause_duration_seconds_bucket{`,
+		"\ngo_memory_gc_cycles_total ",
+		"\nprocess_uptime_seconds ",
+		`db_client_connection_count{db_client_connection_pool_name="sqlite",db_client_connection_state="used"}`,
+		`my_adapter_operation_duration_seconds_count{my_adapter="queue.db",my_operation="enqueue",my_outcome="success"}`,
+		`my_adapter_operation_duration_seconds_count{my_adapter="kv.db",`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("scrape lacks %s\n%s", want, out)

@@ -33,6 +33,7 @@ import (
 	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
+	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
 	"github.com/best-friends/my/internal/adapter/valkey"
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
@@ -205,6 +206,8 @@ type App struct {
 	routes       []route
 	// http records the HTTP server metrics; nil when Meter records nothing.
 	http *httpMetrics
+	// readinessFailures counts the failed readiness checks (ADR-0056 §3).
+	readinessFailures kernel.Counter
 	// metricsHandler serves the Prometheus scrape on metrics_listen; nil unless
 	// metrics_exporter = prometheus. closeMeter flushes and stops the exporter.
 	metricsHandler http.Handler
@@ -312,6 +315,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			return nil, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
+		d.RegisterMetrics(a.Meter)
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		emojis = d.CustomEmojiRepository()
@@ -334,6 +338,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
 		a.postgresPool = d.Pool()
+		d.RegisterMetrics(a.Meter)
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		emojis = d.CustomEmojiRepository()
@@ -367,7 +372,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, fmt.Errorf("queue %q is not implemented yet", cfg.Queue)
 	}
 	if a.Runner == nil {
-		a.Runner = queue.NewPullRunner(a.source, a.Handlers, runnerOpts)
+		// The adapter operations of ADR-0056 §1; the inline queue runs the jobs in Enqueue.
+		a.Jobs = sysmetrics.Jobs(a.Jobs, a.Meter, "queue."+cfg.Queue)
+		a.Runner = queue.NewPullRunner(sysmetrics.Source(a.source, a.Meter, "queue."+cfg.Queue), a.Handlers, runnerOpts)
 	}
 	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	switch cfg.KV {
@@ -386,6 +393,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
 	}
+	a.KV = sysmetrics.KV(a.KV, a.Meter, "kv."+cfg.KV)
 	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
 	a.registerKVCleanup()
 
@@ -426,7 +434,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	a.HTTPClient = opts.HTTPClient
 	if a.HTTPClient == nil {
-		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger)
+		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger, a.Meter)
 	}
 	// The identity module's sign-in and registration check the CAPTCHA through it (ADR-0042 §3).
 	if a.HumanVerifier, a.HumanCheckWidget, err = newHumanVerifier(cfg, a.HTTPClient, a.Logger); err != nil {
@@ -818,7 +826,7 @@ func (a *App) setBlobs(cfg *config.Config) error {
 		if err != nil {
 			return err
 		}
-		a.Blobs, a.closeBlobs = store, store.Close
+		a.Blobs, a.closeBlobs = sysmetrics.Blobs(store, a.Meter, "blob."+cfg.Blob), store.Close
 	default:
 		return fmt.Errorf("blob %q is not implemented yet", cfg.Blob)
 	}
@@ -922,8 +930,8 @@ func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
 
 // newHTTPClient returns the SSRF-guarded HTTPClient. http_allow_private_networks, which the
 // configuration accepts only in the development profile, turns the guard off with a warning.
-func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger) kernel.HTTPClient {
-	opts := httpclient.Options{UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host)}
+func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger, meter kernel.Meter) kernel.HTTPClient {
+	opts := httpclient.Options{UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host), Meter: meter}
 	if cfg.HTTPAllowPrivateNetworks {
 		logger.Warn("http_allow_private_networks is on: outbound HTTP can reach loopback and private networks; never use it in production")
 		opts.AllowPrivateNetworks, opts.AllowHTTP, opts.AnyPort = true, true, true
@@ -983,7 +991,7 @@ func (a *App) Ready(ctx context.Context) error {
 // valkeyClient returns the client of valkey_url, connecting it on the first call; Close closes it.
 func (a *App) valkeyClient(ctx context.Context) (valkey.Client, error) {
 	if a.valkey == nil {
-		c, err := valkey.Open(ctx, valkey.Options{URL: a.Config.ValkeyURL, TLSCAFile: a.Config.ValkeyTLSCAFile})
+		c, err := valkey.Open(ctx, valkey.Options{URL: a.Config.ValkeyURL, TLSCAFile: a.Config.ValkeyTLSCAFile, Meter: a.Meter})
 		if err != nil {
 			return nil, err
 		}

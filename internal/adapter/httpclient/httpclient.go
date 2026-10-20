@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
 	"github.com/best-friends/my/internal/app/kernel"
 )
 
@@ -66,6 +67,8 @@ type Options struct {
 	// ExemptAddrPorts are treated as public addresses. Tests set it to reach their servers on
 	// loopback with every other check on; the server never sets it.
 	ExemptAddrPorts []netip.AddrPort
+	// Meter records the outbound HTTP metrics of ADR-0056 §1; nil records nothing.
+	Meter kernel.Meter
 }
 
 // Client is the kernel.HTTPClient adapter.
@@ -73,6 +76,10 @@ type Client struct {
 	opts   Options
 	dialer *net.Dialer
 	http   *http.Client
+
+	// duration is nil when opts.Meter records nothing; conns is then nil too.
+	duration kernel.Histogram
+	conns    *sysmetrics.ConnCounter
 }
 
 var _ kernel.HTTPClient = (*Client)(nil)
@@ -91,6 +98,10 @@ func New(opts Options) *Client {
 		}
 	}
 	c := &Client{opts: opts}
+	if !kernel.IsNop(opts.Meter) {
+		c.duration = opts.Meter.Histogram(sysmetrics.HTTPClientRequestDuration)
+		c.conns = sysmetrics.NewOpenConnCounter(opts.Meter, sysmetrics.HTTPClientOpenConnections)
+	}
 	c.dialer = &net.Dialer{Timeout: connectTimeout, Control: c.control}
 	c.http = &http.Client{
 		Transport: &http.Transport{
@@ -114,6 +125,16 @@ func New(opts Options) *Client {
 
 // Do implements kernel.HTTPClient.
 func (c *Client) Do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPResponse, error) {
+	if c.duration == nil {
+		return c.do(ctx, r)
+	}
+	start := time.Now()
+	resp, err := c.do(ctx, r)
+	c.record(ctx, r, resp, err, time.Since(start))
+	return resp, err
+}
+
+func (c *Client) do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPResponse, error) {
 	limits, ok := c.limits(r.Purpose)
 	if !ok {
 		return nil, fmt.Errorf("%w: unknown purpose %d", kernel.ErrInvalidHTTPRequest, r.Purpose)
@@ -263,7 +284,7 @@ func (c *Client) dial(ctx context.Context, network, address string) (net.Conn, e
 	for _, a := range addrs {
 		conn, err := c.dialer.DialContext(ctx, network, netip.AddrPortFrom(a, uint16(port)).String())
 		if err == nil {
-			return conn, nil
+			return c.conns.Track(ctx, conn), nil
 		}
 		errs = append(errs, err)
 	}

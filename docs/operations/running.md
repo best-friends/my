@@ -60,7 +60,46 @@ Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../
 
 ヘルスチェック（`/healthz`・`/readyz`）は計測しない。ラベルに連合先のドメイン・アカウント・URL・クライアント IP は入らない。
 `my.queue.*`・`my.instance.*`・`my.media.stored_bytes` はインスタンス全体の値で、KV に置く 1 つのスナップショットから全プロセスが同じ値を出す（ADR-0055 §4）。
-プロセス・ランタイムの指標は、この一覧にない。
+
+### システムの指標
+
+プロセス・Go のランタイム・資源への接続の指標（[ADR-0056](../adr/0056-system-observability.md)）も、同じ `metrics_exporter` で出す。
+コンテナの CPU・メモリ・台数・入口のリクエストは基盤の指標に任せ、ここにあるのは基盤から見えないプロセスの中の飽和である。
+スケールの契機には使わず、警報と台数の上限の見積もりに使う。
+
+| 指標 | 種類 | ラベル |
+| --- | --- | --- |
+| `go.memory.used`・`go.memory.limit`・`go.memory.gc.goal` | Gauge・バイト | `go.memory.used` だけ `go.memory.type`（`stack` / `other`）。`go.memory.limit` は `GOMEMLIMIT` があるときだけ |
+| `go.memory.allocated`・`go.memory.allocations` | Counter | なし |
+| `go.goroutine.count`・`go.processor.limit`・`go.config.gogc` | Gauge | なし |
+| `go.schedule.duration`・`go.memory.gc.pause.duration` | Histogram・秒 | なし（実行可能になってから動き出すまでの待ち、GC の停止） |
+| `go.memory.gc.cycles` | Counter | なし |
+| `process.cpu.time` | Gauge・秒（起動からの合計） | `cpu.mode`（`user` / `system`） |
+| `process.memory.usage` | Gauge・バイト | なし（常駐メモリ、RSS） |
+| `process.unix.file_descriptor.count`・`my.process.file_descriptor.limit` | Gauge | なし（開いたファイル記述子の数と上限） |
+| `process.uptime` | Gauge・秒 | なし |
+| `db.client.connection.count` | Gauge | `db.client.connection.pool.name`（`postgres` / `sqlite`）、`db.client.connection.state`（`idle` / `used`） |
+| `db.client.connection.max` | Gauge | `db.client.connection.pool.name` |
+| `db.client.connection.wait_time`・`my.db.client.connection.waits`・`db.client.connection.timeouts` | Gauge（起動からの合計。秒・回） | `db.client.connection.pool.name`。`timeouts` は PostgreSQL だけ |
+| `my.adapter.operation.duration` | Histogram・秒 | `my.adapter`（`queue.db` / `kv.db` / `kv.memory` / `kv.valkey` / `stream.<stream>` / `blob.fs`）、`my.operation`、`my.outcome`（`success` / `error`） |
+| `my.adapter.connections` | UpDownCounter | `my.adapter`（`valkey` の接続、`stream.<stream>` の受信） |
+| `my.adapter.reconnects` | Counter | `my.adapter` |
+| `http.client.request.duration` | Histogram・秒 | `my.http.purpose`（`json` / `html` / `image` / `video` / `human_check` / `web_push`）、`http.request.method`、`my.http.status_class`（`2xx` など）、`error.type`（`forbidden_destination` は SSRF ガードの拒否） |
+| `http.client.open_connections` | UpDownCounter | なし |
+| `my.readiness.failures` | Counter | なし |
+
+- Go のランタイムの指標（`go.*`）は `prometheus` と `otlp` だけが出す。プロセスと接続のプールの Gauge は、`emf` ではスナップショットの定期ジョブが書く
+- プールの待ちと CPU 時間は、プールとランタイムが持つ起動からの合計なので Gauge で出す。PromQL の `rate()` で増え方を見る
+- キューの取得（`claim`）は、ジョブを取れたときと失敗したときだけ計測する。待機中のワーカーのポーリングは何も記録しない
+- `db.client.connection.pending_requests` は出さない。pgx と `database/sql` の統計に待っている数がないので、待ちの回数と時間で代える
+- 警報の目安: `go.memory.used` の合計と `go.memory.limit` の比、`db.client.connection.wait_time` の増え方（プールの上限に当たっている）
+
+### メモリの上限（`GOMEMLIMIT`）
+
+`GOMEMLIMIT` は運営者が設定する Go のランタイムの環境変数で、アプリは自動では決めない。
+設定がなければ Go の既定（上限なし）で動き、ヒープはコンテナのメモリの上限に近づいても GC を急がない。
+コンテナのメモリの上限がある構成（Cloud Run・Lambda・ECS・Kubernetes）では、その約 90% を目安に設定する（例: 512 MiB のコンテナで `GOMEMLIMIT=460MiB`）。
+`GOMAXPROCS` は設定しない。Go の既定がコンテナの CPU の上限に従う。
 
 ## 停止する
 
