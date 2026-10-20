@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Color math for the token checks: parses the color syntaxes theme.css uses (oklch() and hex),
-// and computes WCAG 2.2 relative luminance and contrast ratios.
+// Color math for the token checks and the server theme editor: parses the color syntaxes theme.css
+// uses (oklch() and hex), and computes WCAG 2.2 relative luminance and contrast ratios. The Go
+// domain (internal/domain/instance/theme.go) computes contrast with the same formulas.
 // Formulas: https://www.w3.org/TR/WCAG22/#dfn-relative-luminance and
 // https://bottosson.github.io/posts/oklab/ (OKLab to linear sRGB).
 
@@ -87,4 +88,11 @@ export function contrast(fg: LinearRgba, bg: LinearRgba): number {
   const a = luminance(composite(fg, bg));
   const b = luminance(bg);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
+/** The `#rrggbb` (or `#rrggbbaa` when translucent) form of a color in the sRGB gamut. */
+export function toHex(color: LinearRgba): string {
+  const byte = (c: number) => Math.round(Math.min(1, Math.max(0, c)) * 255).toString(16).padStart(2, "0");
+  const rgb = [color.r, color.g, color.b].map((c) => byte(toGamma(Math.min(1, Math.max(0, c))))).join("");
+  return `#${rgb}${color.alpha < 1 ? byte(color.alpha) : ""}`;
 }
