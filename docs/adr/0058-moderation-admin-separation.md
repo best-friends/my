@@ -1,6 +1,6 @@
 # ADR-0058: モデレーションとサーバー管理の分離
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #648
@@ -22,7 +22,7 @@
 - Go: モデレーションは `internal/app/moderation`（通報・処分・異議・ドメインへの処分・登録の拒否・監査ログ）、設定・規約・ルールは `internal/app/instance`、ロール・招待・登録は `internal/app/identity`、連合先の状態は `internal/app/federation`、dead job は `internal/app/queue` にある。
   `internal/interface/admin` は `doc.go` だけの空のパッケージで、どこからも使われない。
 
-M4 では、サーバー管理の機能がいくつも足される: インスタンス設定・ルール・招待（#624）、サーバー単位のテーマ（ADR-0059、#649）、お知らせ（#665）、webhook（ADR-0060、#650）、リレー（ADR-0061、#651）、カスタム絵文字の管理（ADR-0051、#618）。
+M4 では、運用者の機能がいくつも足される: インスタンス設定・ルール・招待（#624）、サーバー単位のテーマ（ADR-0059、#649）、お知らせ（#665）、webhook（ADR-0060、#650）、リレー（ADR-0061、#651）、カスタム絵文字の管理（ADR-0051、#618）。
 このまま 1 つの `/admin` に足すと、モデレーターの毎日の仕事（通報を開いて処分する）と、管理者がたまに触る設定が 1 つのリストに混ざり、モデレーターには使えない項目が増える。置き場所を先に決めないと、#624 などの実装がそれぞれ別の場所を選ぶ。
 
 決めること:
@@ -73,9 +73,7 @@ M4 では、サーバー管理の機能がいくつも足される: インスタ
 
 ## Decision（決定）
 
-> 推奨案。Accepted にするのは人間の Decider のみ。
-
-**W1 + A1 + G1** を推奨する。
+**W1 + A1 + G1** を採る。
 
 ### 1. 境界
 
@@ -90,25 +88,26 @@ M4 では、サーバー管理の機能がいくつも足される: インスタ
 | モデレーション | 登録の審査（`/moderation/registrations`） | `manage_accounts` |
 | モデレーション | 登録の拒否リスト（`/moderation/signup-blocks`、#626 の BAN からの作成を含む） | `manage_accounts` |
 | モデレーション | ドメインへの処分（`/moderation/domain-actions`、#641 のインポートとエクスポートを含む） | `manage_domains` |
+| モデレーション | 連合先（`/moderation/instances`。サーバーごとの配送の状態と再開、そのドメインへの処分への入口） | `manage_domains` |
+| モデレーション | 招待（`/moderation/invites`、#624） | `manage_invites` |
 | モデレーション | 監査ログ（`/moderation/audit-log`） | `view_audit` |
 | サーバー管理 | サーバーの設定（`/admin/settings`。名前・説明・登録モード・既定の言語・タイムライン・連合の設定・処分したドメインの公開、#624） | `manage_settings` |
 | サーバー管理 | 規約とポリシー（`/admin/documents`） | `manage_settings` |
 | サーバー管理 | ルール（`/admin/rules`、#624） | `manage_rules` |
-| サーバー管理 | 招待（`/admin/invites`、#624） | `manage_invites` |
 | サーバー管理 | ロール（`/admin/roles`。ロールと権限の一覧） | `manage_roles` |
 | サーバー管理 | テーマ（`/admin/theme`、ADR-0059） | `manage_settings` |
 | サーバー管理 | お知らせ（`/admin/announcements`、#665） | `manage_announcements`（新設） |
 | サーバー管理 | カスタム絵文字（`/admin/custom-emojis`、ADR-0051） | `manage_custom_emojis`（新設） |
-| サーバー管理 | webhook（`/admin/webhooks`、ADR-0060） | `manage_webhooks`（新設） |
-| サーバー管理 | リレー（`/admin/relays`、ADR-0061） | `manage_federation`（新設） |
-| サーバー管理 | 連合先の状態（`/admin/instances`。配送の失敗と再開） | `manage_federation`（`manage_domains` から移す） |
+| サーバー管理 | webhook（`/admin/webhooks`、[ADR-0060](0060-instance-webhooks.md)） | `manage_webhooks`（新設） |
+| サーバー管理 | リレー（`/admin/relays`、ADR-0061） | `manage_settings` |
 | サーバー管理 | dead job（`/admin/dead-jobs`） | `manage_jobs` |
 
 どちらにも関わるものの置き場所:
 
 - **監査ログ**はモデレーションに置く。処分の記録が大半で、`view_audit` は既定でモデレーターも持つ。設定とロールの変更も同じログに載り（FR-704）、サーバー管理の画面は自分の変更の行へ絞り込んだ監査ログにリンクする。経路は 1 つにする。
-- **ドメインへの処分**はモデレーションに置く（FR-702 の処分であり、通報からも出す）。既定のモデレーターに `manage_domains` を足すかは Open Questions に置く。
-- **連合先の状態**（federation.md §7.3 の配送の健康状態）はサーバー管理に置く。配送の再開は運用の操作であり、処分ではない。連合先の詳細の「モデレーション」の区画は、権限があるときだけドメインへの処分（`/moderation/domain-actions?domain=…`）にリンクする。
+- **ドメインへの処分**はモデレーションに置く（FR-702 の処分であり、通報からも出す）。サーバーの全員に効くので、既定のモデレーターは `manage_domains` を持たない（4.）。
+- **連合先**（federation.md §7.3 の配送の状態）はモデレーションに置き、いまと同じ `manage_domains` で出す。ドメインへの処分を決める人がそのサーバーの様子を見る画面で、詳細の「モデレーション」の区画からそのドメインへの処分（`/moderation/domain-actions?domain=…`）にリンクする。Mastodon も連合先をモデレーションに置き、配送の再開をそこに持つ。
+- **招待**はモデレーションに置く。誰がサーバーに参加できるかを個別に決める点で、登録の審査と登録の拒否リストと同じ仕事である。登録モード（承認制・招待制）の切り替えはサーバーの設定に残る。
 - **アカウントのロールの付与と剥奪**（FR-720）は、いまと同じくアカウントの管理画面（`/moderation/accounts/{id}`）の「ロール」の区画に置き、`manage_roles` を持つ閲覧者にだけ出す。ロールそのものの一覧（`/admin/roles`）はサーバー管理に置く。
 
 ### 2. Web の情報設計（W1）
@@ -124,38 +123,42 @@ M4 では、サーバー管理の機能がいくつも足される: インスタ
 
 - 経路は `/admin/*` のまま変えない。`/admin` はスタッフの操作の名前空間で、利用者本人の `/moderation/actions` と区別する。スコープも `admin:read` / `admin:write` のままにする。
 - OpenAPI のタグを `admin-moderation`（上の表のモデレーションの操作と `/admin/counts`）と `admin-server`（サーバー管理の操作）に分け、[client-api.md](../architecture/client-api.md) のリファレンスと生成コードのまとまりを区分に合わせる。
-- 新しいサーバー管理の操作は `/admin/<資源>`（`/admin/announcements`・`/admin/webhooks`・`/admin/relays`・`/admin/custom_emojis`・`/admin/invites`・`/admin/settings` など）、新しいモデレーションの操作も `/admin/<資源>` に置き、タグで区分を示す。
+- 新しいサーバー管理の操作は `/admin/<資源>`（`/admin/announcements`・`/admin/webhooks`・`/admin/relays`・`/admin/custom_emojis`・`/admin/settings` など）、新しいモデレーションの操作（`/admin/invites` など）も `/admin/<資源>` に置き、タグで区分を示す。
 - 認可はいまのとおり、スコープの後に操作ごとの権限で決める（判断基準 2）。
 
 ### 4. 権限とロールの既定
 
 - 権限に区分（`moderation` / `server`）を持たせ、`internal/domain/identity` に区分を返す関数を置く。ナビゲーションの出し分けと、`my admin role` などの CLI の表示がこれを使う。
-  - モデレーション: `manage_reports`・`manage_accounts`・`manage_domains`・`view_audit`
-  - サーバー管理: `manage_settings`・`manage_rules`・`manage_roles`・`manage_invites`・`manage_jobs`・`manage_federation`・`manage_announcements`・`manage_custom_emojis`・`manage_webhooks`
-- 新しい権限は、その機能の Issue が足す（`manage_announcements` は #665、`manage_custom_emojis` は ADR-0051、`manage_webhooks` は ADR-0060、`manage_federation` は ADR-0061 か #659 のうち先に入るほう）。
+  - モデレーション: `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`
+  - サーバー管理: `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs`・`manage_announcements`・`manage_custom_emojis`・`manage_webhooks`
+- 新しい権限は、その機能の Issue が足す（`manage_announcements` は #665、`manage_custom_emojis` は ADR-0051、`manage_webhooks` は ADR-0060）。テーマとリレーは設定の一部として `manage_settings` を使い、権限を分けない（ADR-0061 の決定に合わせる）。
 - 組み込みのロールの既定: `admin` はすべての権限、`moderator` は `manage_reports`・`manage_accounts`・`view_audit`（いまと同じ）。モデレーターには「管理」が出ない。
+  モデレーターはドメインへの処分（`manage_domains`）と招待（`manage_invites`）を既定では持たない。ドメインへの処分はサーバーの全員に効くので、管理者が決めるか、管理者がそれを持つロールを作って与える（Mastodon の既定の Moderator も連合と拒否を持たない）。
+- 異議申し立ての審査は、処分と同じ人が審査するので `manage_accounts` のままにし、独立した権限（Mastodon の `manage_appeals`）は作らない。
 - アカウントの検索と管理画面の権限（`manage_accounts`）は、メールアドレスと IP の開示（ADR-0038、FR-714）を含むので分けない。
 
 ### 5. コードの置き場所（G1）
 
-- **Go**: サーバー管理の機能は、そのデータを持つモジュールに置く。設定・規約・ルール・テーマ・お知らせは `instance`、ロールと招待は `identity`、リレーと連合先の状態は `federation`、dead job は `queue`、カスタム絵文字と webhook はそれぞれの ADR（ADR-0051・ADR-0060）が決めるモジュールに置く。`internal/app/moderation` はモデレーションだけを持つ。
+- **Go**: サーバー管理の機能は、そのデータを持つモジュールに置く。設定・規約・ルール・テーマ・お知らせは `instance`、ロールと招待は `identity`、リレーと連合先の配送の状態は `federation`、dead job は `queue`、カスタム絵文字と webhook はそれぞれの ADR（ADR-0051・ADR-0060）が決めるモジュールに置く。`internal/app/moderation` はモデレーションだけを持つ。
   `internal/app/admin` は作らない。空の `internal/interface/admin` は消し、[overview §6](../architecture/overview.md#6-リポジトリ構成) からも消す。管理の HTTP の入口は `internal/interface/clientapi` だけにする。
   `clientapi` のハンドラのファイルは、いまの `admin_*.go` のまま区分ごとにまとめる。
 - **Web**: `features/admin` を、モデレーションの `features/moderation` とサーバー管理の `features/admin` に分ける。両方が使う部品（`RequirePermission`・`RecordList`・`DetailSection`・`useFocusAfterChange`・権限の読み出し）は片方の `index.ts` から出す（web-client.md の規則 A3）。
   ルートは `routes/moderation.*.tsx` と `routes/admin.*.tsx`、権限の検査（`loadWithPermission`・`AdminError`）は両方の木が使う。
 
-この推奨を覆すもの: 第三者のモデレーション用ツールに、サーバー管理を触れないトークンを渡す必要が出たとき（スコープを分ける A2 が要る）。モデレーターと管理者を分けて運用するサーバーがほとんどないと分かったとき（W2 で足りる）。
+この決定を見直すきっかけ: 第三者のモデレーション用ツールに、サーバー管理を触れないトークンを渡す必要が出たとき（スコープを分ける A2 が要る）。モデレーターと管理者を分けて運用するサーバーがほとんどないと分かったとき（W2 で足りる）。
 
 ## Consequences（影響）
 
 - 良い: モデレーターのナビゲーションには使える画面だけが並び、件数のバッジが仕事の入口と一致する。
 - 良い: これから足す機能（#624・#665・ADR-0051・ADR-0059・ADR-0060・ADR-0061）の置き場所と権限が表から決まる。
+- 良い: 新しい権限は、権限の分け方が運用で意味を持つもの（お知らせ・カスタム絵文字・webhook）にとどめ、設定の一部は `manage_settings` にまとめる。
 - 良い: API の経路と生成コードの型名が変わらないので、変更は Web の経路・ナビゲーション・タグと権限の追加に収まる。
 - 悪い: Web の経路が変わり、いまの `/admin/reports` などのリンク（通知のリンク、ブックマーク）は 404 になる。v0 なので転送は置かない（ADR-0012）。Web クライアントの中のリンク（モデレーターへの通知・監査ログの対象・連合先の詳細）は同時に直す。
+- 悪い: 既定のモデレーターは連合先・ドメインへの処分・招待の画面を使えない。モデレーターに任せるサーバーは、`manage_domains` や `manage_invites` を持つロールを作って与える。
 - 悪い: ナビゲーションの項目が、モデレーターと管理者を兼ねる人には 1 つ増える。
 - 悪い: スコープを分けないので、`admin:*` のトークンはロールの権限の範囲で両方の区分を操作できる。第三者のツールを区分で縛れない。
 - 悪い: Web の経路（`/moderation/*`）と API の経路（`/admin/*`）が一致しない。
-- 後続: #659 がこの決定どおりに Web の経路・ナビゲーション・一覧・設定の画面の区画、OpenAPI のタグ、連合先の状態の権限（`manage_federation`）、権限の区分、空の `internal/interface/admin` の削除、[web-client.md](../architecture/web-client.md) §9・§14 と [client-api.md](../architecture/client-api.md) と [data-model §4.1](../architecture/data-model.md) の更新を行う。
+- 後続: #659 がこの決定どおりに Web の経路・ナビゲーション・一覧・設定の画面の区画、OpenAPI のタグ、権限の区分、空の `internal/interface/admin` の削除、[web-client.md](../architecture/web-client.md) §9・§14 と [client-api.md](../architecture/client-api.md) と [data-model §4.1](../architecture/data-model.md) の更新を行う。
 - 後続: #624・#626・#641・#665 と ADR-0051・ADR-0059・ADR-0060・ADR-0061 の実装は、上の表の経路と権限に置く。#659 より先に入るものは、いまの `/admin` に置いて #659 で移すか、#659 の後に入れるかを順番で決める。
 
 ## Pros and Cons of the Options（詳細比較・任意）
@@ -202,7 +205,4 @@ M4 では、サーバー管理の機能がいくつも足される: インスタ
 
 ## Open Questions / 要検証
 
-- 既定の `moderator` に `manage_domains`（ドメインへの処分）を足すか。Mastodon の既定の Moderator は連合と拒否を持たず、GoToSocial はモデレーターがドメインの制限を扱う。推奨はいまのまま足さない（影響がサーバーの全員に及ぶため）。
-- 招待（`manage_invites`）をサーバー管理に置くか。Mastodon はモデレーションに置く。推奨は、登録モードと同じくサーバーの設定に近いのでサーバー管理に置く。
-- 異議申し立ての審査を `manage_accounts` から独立した権限（Mastodon の `manage_appeals`）にするか。推奨は、処分と同じ人が審査するのでいまのまま `manage_accounts`。
-- カスタム絵文字のうち、リモートの絵文字を無効にする操作をモデレーションに置くか（ADR-0051 の決定に合わせる）。
+- リモートのカスタム絵文字を無効にする操作の置き場所は、ADR-0051 の決定に合わせる。この ADR はカスタム絵文字の管理をサーバー管理（`manage_custom_emojis`）に置く。
