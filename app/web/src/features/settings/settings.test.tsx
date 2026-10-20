@@ -610,10 +610,12 @@ describe("signed out", () => {
     expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/settings/profile",
       "/settings/preferences",
+      "/settings/two-factor",
       "/settings/follow-requests",
       "/settings/blocks",
       "/settings/mutes",
       "/settings/account-status",
+      "/settings/account",
     ]);
     expect(within(menu).getByRole("link", { name: "Blocked accounts" })).toHaveAccessibleDescription("Accounts that cannot follow you or see your posts");
   });

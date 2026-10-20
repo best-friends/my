@@ -32,7 +32,7 @@ type InstanceFactory func(t *testing.T, opts uow.Options) InstanceHarness
 // canonical values, rejection of invalid input without writing, localized texts with their
 // history, lookups through the locale fallback chain, the media files that media settings
 // refer to, the property that the synchronous projections equal a rebuild from the
-// revisions, and the instance rules (instanceRuleCases).
+// revisions, the instance rules (instanceRuleCases), and the theme (instanceThemeCases).
 func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 	t.Helper()
 	cases := []struct {
@@ -50,6 +50,7 @@ func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 		{"ReferencesMediaFromSettings", instanceReferencesMedia},
 	}
 	cases = append(cases, instanceRuleCases...)
+	cases = append(cases, instanceThemeCases...)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newInstanceEnv(t, newHarness)) })
 	}

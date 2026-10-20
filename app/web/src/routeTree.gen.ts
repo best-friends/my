@@ -25,6 +25,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminThemeRouteImport } from './routes/admin.theme'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as ModerationIndexRouteImport } from './routes/moderation.index'
 import { Route as ModerationAccountsRouteImport } from './routes/moderation.accounts'
@@ -36,12 +37,14 @@ import { Route as ModerationRegistrationsRouteImport } from './routes/moderation
 import { Route as ModerationReportsRouteImport } from './routes/moderation.reports'
 import { Route as ModerationSignupBlocksRouteImport } from './routes/moderation.signup-blocks'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
+import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as AtChar123acctChar125StatusIdRouteImport } from './routes/@{$acct}_.status.$id'
 import { Route as ModerationAccountsIdRouteImport } from './routes/moderation.accounts_.$id'
@@ -132,6 +135,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/admin/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminThemeRoute = AdminThemeRouteImport.update({
+  id: '/admin/theme',
+  path: '/admin/theme',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
   id: '/login_/callback',
   path: '/login/callback',
@@ -187,6 +195,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAccountRoute = SettingsAccountRouteImport.update({
+  id: '/settings/account',
+  path: '/settings/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
   id: '/settings/account-status',
   path: '/settings/account-status',
@@ -215,6 +228,11 @@ const SettingsPreferencesRoute = SettingsPreferencesRouteImport.update({
 const SettingsProfileRoute = SettingsProfileRouteImport.update({
   id: '/settings/profile',
   path: '/settings/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsTwoFactorRoute = SettingsTwoFactorRouteImport.update({
+  id: '/settings/two-factor',
+  path: '/settings/two-factor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TagsTagRoute = TagsTagRouteImport.update({
@@ -272,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/theme': typeof AdminThemeRoute
   '/login/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -281,12 +300,14 @@ export interface FileRoutesByFullPath {
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
@@ -314,6 +335,7 @@ export interface FileRoutesByTo {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/theme': typeof AdminThemeRoute
   '/login/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -323,12 +345,14 @@ export interface FileRoutesByTo {
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin': typeof AdminIndexRoute
   '/moderation': typeof ModerationIndexRoute
@@ -357,6 +381,7 @@ export interface FileRoutesById {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/theme': typeof AdminThemeRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -366,12 +391,14 @@ export interface FileRoutesById {
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
@@ -401,6 +428,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
+    | '/admin/theme'
     | '/login/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -410,12 +438,14 @@ export interface FileRouteTypes {
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin/'
     | '/moderation/'
@@ -443,6 +473,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
+    | '/admin/theme'
     | '/login/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -452,12 +483,14 @@ export interface FileRouteTypes {
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin'
     | '/moderation'
@@ -485,6 +518,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
+    | '/admin/theme'
     | '/login_/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -494,12 +528,14 @@ export interface FileRouteTypes {
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin/'
     | '/moderation/'
@@ -528,6 +564,7 @@ export interface RootRouteChildren {
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminThemeRoute: typeof AdminThemeRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   ModerationAccountsRoute: typeof ModerationAccountsRoute
   ModerationAppealsRoute: typeof ModerationAppealsRoute
@@ -537,12 +574,14 @@ export interface RootRouteChildren {
   ModerationRegistrationsRoute: typeof ModerationRegistrationsRoute
   ModerationReportsRoute: typeof ModerationReportsRoute
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
+  SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsTwoFactorRoute: typeof SettingsTwoFactorRoute
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
@@ -669,6 +708,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/theme': {
+      id: '/admin/theme'
+      path: '/admin/theme'
+      fullPath: '/admin/theme'
+      preLoaderRoute: typeof AdminThemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login_/callback': {
       id: '/login_/callback'
       path: '/login/callback'
@@ -746,6 +792,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/account': {
+      id: '/settings/account'
+      path: '/settings/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof SettingsAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/account-status': {
       id: '/settings/account-status'
       path: '/settings/account-status'
@@ -786,6 +839,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/profile'
       fullPath: '/settings/profile'
       preLoaderRoute: typeof SettingsProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/two-factor': {
+      id: '/settings/two-factor'
+      path: '/settings/two-factor'
+      fullPath: '/settings/two-factor'
+      preLoaderRoute: typeof SettingsTwoFactorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tags/$tag': {
@@ -856,6 +916,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminThemeRoute: AdminThemeRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   ModerationAccountsRoute: ModerationAccountsRoute,
   ModerationAppealsRoute: ModerationAppealsRoute,
@@ -865,12 +926,14 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationRegistrationsRoute: ModerationRegistrationsRoute,
   ModerationReportsRoute: ModerationReportsRoute,
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,
+  SettingsAccountRoute: SettingsAccountRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsTwoFactorRoute: SettingsTwoFactorRoute,
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,

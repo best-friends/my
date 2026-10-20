@@ -20,6 +20,7 @@ const bob: Status["account"] = {
   display_name: "Bob",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@bob",
   locked: false,
   bot: false,
@@ -41,9 +42,11 @@ function status(n: number, text: string): Status {
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   };
 }
 

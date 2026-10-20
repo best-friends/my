@@ -31,6 +31,7 @@ const alice: Status["account"] = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -40,13 +41,14 @@ const alice: Status["account"] = {
 const postId = "0192f0c4-7a8e-7000-8000-0000000000e1";
 const hourAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60_000).toISOString();
 
-const original: StatusEdit = { content: "<p>The walk starts at nine.</p>", spoiler_text: "", sensitive: false, created_at: hourAgo(3), media_attachments: [] };
+const original: StatusEdit = { content: "<p>The walk starts at nine.</p>", spoiler_text: "", sensitive: false, created_at: hourAgo(3), media_attachments: [], emojis: [] };
 const latest: StatusEdit = {
   content: "<p>The walk starts at ten, at the bridge: https://example.com/a/very/long/path/that/must/wrap/somewhere/before/it/scrolls/the/page/sideways</p>",
   spoiler_text: "Plans",
   sensitive: false,
   created_at: hourAgo(2),
   media_attachments: [],
+  emojis: [],
 };
 const revisions: StatusEdit[] = [original, latest];
 
@@ -66,9 +68,11 @@ const post: Status = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
   favourited: false,
   boosted: false,
   bookmarked: false,

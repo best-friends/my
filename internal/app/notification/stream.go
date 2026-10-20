@@ -43,4 +43,7 @@ func RegisterCommitHooks(r *uow.Projectors, pub stream.Publisher) {
 	r.OnCommit(appcontent.EventFavourited, func(_ context.Context, e uow.Event) {
 		signal(e.(appcontent.Favourited).Status.AuthorAccountID)
 	})
+	r.OnCommit(appcontent.EventReacted, func(_ context.Context, e uow.Event) {
+		signal(e.(appcontent.Reacted).Status.AuthorAccountID)
+	})
 }

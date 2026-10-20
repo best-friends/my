@@ -21,4 +21,10 @@ export const handlers = [
     const body = (await request.clone().json()) as Schemas["SetInstanceTextRequest"];
     return withViewer(request, () => HttpResponse.json(instanceTextFixture(String(params["key"]) as Schemas["InstanceTextKey"], String(params["locale"]), body.body)));
   }),
+  // operationIds getAdminTheme, setAdminTheme: no theme; a saved theme is answered as sent, at a new revision.
+  http.get(`${apiBase}/admin/theme`, ({ request }) => withViewer(request, () => HttpResponse.json({ tokens: [], custom_css: "" } satisfies Schemas["AdminTheme"]))),
+  http.put(`${apiBase}/admin/theme`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["SetThemeRequest"];
+    return withViewer(request, () => HttpResponse.json({ ...body, revision: "0199f0e0-0000-7000-8000-00000000a001", revised_at: "2026-10-20T00:00:00Z" } satisfies Schemas["AdminTheme"]));
+  }),
 ];

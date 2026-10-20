@@ -349,6 +349,13 @@ type InstanceTextRevision struct {
 	RevisedAt       time.Time
 }
 
+type InstanceThemeRevision struct {
+	ID              string
+	CustomCss       string
+	RevisedByUserID *string
+	RevisedAt       time.Time
+}
+
 type Invite struct {
 	ID              string
 	Code            string
@@ -446,18 +453,20 @@ type Mute struct {
 }
 
 type Notification struct {
-	ID                 string
-	RecipientAccountID string
-	Type               string
-	SourceAccountID    *string
-	StatusID           *string
-	ModerationActionID *string
-	ReportID           *string
-	SubjectUserID      *string
-	SeveranceID        *string
-	AppealID           *string
-	DedupeKey          string
-	CreatedAt          time.Time
+	ID                    string
+	RecipientAccountID    string
+	Type                  string
+	SourceAccountID       *string
+	StatusID              *string
+	ModerationActionID    *string
+	ReportID              *string
+	SubjectUserID         *string
+	SeveranceID           *string
+	AppealID              *string
+	ReactionEmoji         *string
+	ReactionCustomEmojiID *string
+	DedupeKey             string
+	CreatedAt             time.Time
 }
 
 type NotificationReadMarker struct {
@@ -554,6 +563,16 @@ type PushSubscription struct {
 	KeyAuth            string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+}
+
+type Reaction struct {
+	ID            string
+	AccountID     string
+	StatusID      string
+	EmojiKey      string
+	CustomEmojiID *string
+	Uri           string
+	CreatedAt     time.Time
 }
 
 type ReceivedActivity struct {
@@ -780,6 +799,13 @@ type StatusPin struct {
 	Slot      int32
 	CreatedAt time.Time
 	ID        string
+}
+
+type StatusReactionCount struct {
+	StatusID      string
+	EmojiKey      string
+	CustomEmojiID *string
+	Count         int64
 }
 
 type StatusReplyLink struct {

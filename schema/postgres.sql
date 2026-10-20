@@ -30,6 +30,37 @@ CREATE TABLE password_credentials (
 );
 CREATE INDEX password_credentials_user_id_id ON password_credentials (user_id, id DESC);
 
+-- Event: a TOTP authenticator a user enrolled (FR-005). The secret is sealed with kernel.Sealer
+-- (ADR-0019 §6). The active enrollment is the newest one without a revocation.
+CREATE TABLE totp_enrollments (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  secret_enc bytea NOT NULL,
+  enrolled_at timestamptz NOT NULL
+);
+CREATE INDEX totp_enrollments_user_id_id ON totp_enrollments (user_id, id DESC);
+
+-- Event: a TOTP enrollment ended (disabled by its user, replaced, or removed by an administrator).
+CREATE TABLE totp_enrollment_revocations (
+  enrollment_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revoked_at timestamptz NOT NULL
+);
+
+-- Resource: a recovery code of a TOTP enrollment, stored as the SHA-256 digest of its normalized form.
+CREATE TABLE totp_recovery_codes (
+  enrollment_id text COLLATE "C" NOT NULL,
+  code_hash bytea NOT NULL,
+  PRIMARY KEY (enrollment_id, code_hash)
+);
+
+-- Event: a recovery code was used. The primary key makes each code work once.
+CREATE TABLE totp_recovery_code_uses (
+  enrollment_id text COLLATE "C" NOT NULL,
+  code_hash bytea NOT NULL,
+  used_at timestamptz NOT NULL,
+  PRIMARY KEY (enrollment_id, code_hash)
+);
+
 -- Resource: an email address a user added.
 CREATE TABLE user_email_addresses (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
@@ -62,7 +93,8 @@ CREATE TABLE role_permissions (
   role_id text COLLATE "C" NOT NULL,
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
+    'manage_two_factor'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -149,6 +181,14 @@ CREATE TABLE account_profile_fields (
   name text NOT NULL,
   value_html text NOT NULL,
   PRIMARY KEY (revision_id, position)
+);
+
+-- Event (child of a revision): a custom emoji of the profile's display name, note, or fields
+-- (ADR-0051). emoji_id is a custom_emojis row of the content module.
+CREATE TABLE account_profile_revision_emojis (
+  revision_id text COLLATE "C" NOT NULL,
+  emoji_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (revision_id, emoji_id)
 );
 
 -- Projection: the current profile revision of each account.
@@ -594,6 +634,49 @@ CREATE TABLE instance_texts (
 );
 
 -- ---------------------------------------------------------------------------------------------
+-- instance: theme (data-model §4.9, ADR-0059, FR-605). Owned by internal/app/instance.
+-- ---------------------------------------------------------------------------------------------
+
+-- Event (revision): one version of the instance theme: the administrator's custom CSS, with its
+-- token overrides in instance_theme_tokens. A revision without tokens and CSS resets the theme.
+-- revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE instance_theme_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  custom_css text NOT NULL,
+  revised_by_user_id text COLLATE "C",
+  revised_at timestamptz NOT NULL
+);
+
+-- Event (child of a revision): the value of one overridden design token in one color scheme
+-- (light and dark for a color token, all for the others). The token list is generated from the
+-- web client's theme.css (internal/domain/instance/theme_tokens.gen.go).
+CREATE TABLE instance_theme_tokens (
+  theme_revision_id text COLLATE "C" NOT NULL,
+  token text COLLATE "C" NOT NULL CHECK (token IN (
+    'color-surface', 'color-surface-raised', 'color-surface-sunken', 'color-fg', 'color-fg-muted',
+    'color-accent', 'color-accent-hover', 'color-accent-fg', 'color-danger', 'color-danger-fg',
+    'color-success', 'color-success-fg', 'color-warning', 'color-warning-fg', 'color-border',
+    'color-border-strong', 'color-focus', 'color-overlay', 'font-sans', 'font-mono', 'text-xs',
+    'text-xs--line-height', 'text-sm', 'text-sm--line-height', 'text-base',
+    'text-base--line-height', 'text-lg', 'text-lg--line-height', 'text-xl', 'text-xl--line-height',
+    'text-2xl', 'text-2xl--line-height', 'text-3xl', 'text-3xl--line-height', 'spacing',
+    'radius-sm', 'radius-md', 'radius-lg', 'radius-xl', 'elevation-sm', 'elevation-md',
+    'elevation-lg', 'ease-standard', 'ease-enter', 'ease-exit', 'transition-duration-fast',
+    'transition-duration-normal', 'transition-duration-slow', 'default-transition-duration',
+    'default-transition-timing-function'
+  )),
+  scheme text COLLATE "C" NOT NULL CHECK (scheme IN ('light', 'dark', 'all')),
+  value text NOT NULL,
+  PRIMARY KEY (theme_revision_id, token, scheme)
+);
+
+-- Projection: the current theme revision, one row once a theme has been saved.
+CREATE TABLE instance_theme (
+  id integer NOT NULL PRIMARY KEY CHECK (id = 1),
+  revision_id text COLLATE "C" NOT NULL
+);
+
+-- ---------------------------------------------------------------------------------------------
 -- instance: rules (data-model §4.9, FR-705). Owned by internal/app/instance.
 -- A rule keeps its ID across revisions, so reports cite it by rule_id; retired rules stay.
 -- ---------------------------------------------------------------------------------------------
@@ -966,6 +1049,37 @@ CREATE UNIQUE INDEX favourites_uri ON favourites (uri);
 CREATE INDEX favourites_account_id_id ON favourites (account_id, id);
 CREATE INDEX favourites_status_id_id ON favourites (status_id, id);
 
+-- Resource: an account's emoji reaction to a status (FR-116, ADR-0052), deleted when it is taken
+-- back (content.unreacted). emoji_key is the Unicode emoji, fully qualified, or the
+-- custom_emojis.id of custom_emoji_id, NULL for a Unicode emoji. uri is the IRI of the Like or
+-- EmojiReact.
+CREATE TABLE reactions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  account_id text COLLATE "C" NOT NULL,
+  status_id text COLLATE "C" NOT NULL,
+  emoji_key text COLLATE "C" NOT NULL,
+  custom_emoji_id text COLLATE "C",
+  uri text NOT NULL,
+  created_at timestamptz NOT NULL,
+  CONSTRAINT reactions_custom_emoji_check CHECK (custom_emoji_id IS NULL OR custom_emoji_id = emoji_key)
+);
+CREATE UNIQUE INDEX reactions_account_id_status_id_emoji_key ON reactions (account_id, status_id, emoji_key);
+CREATE UNIQUE INDEX reactions_uri ON reactions (uri);
+CREATE INDEX reactions_status_id_emoji_key_id ON reactions (status_id, emoji_key, id);
+CREATE INDEX reactions_status_id_id ON reactions (status_id, id);
+
+-- Projection: the reactions to each status that is not deleted, per emoji (ADR-0052 §1). A row
+-- goes when its count reaches zero.
+CREATE TABLE status_reaction_counts (
+  status_id text COLLATE "C" NOT NULL,
+  emoji_key text COLLATE "C" NOT NULL,
+  custom_emoji_id text COLLATE "C",
+  count bigint NOT NULL CHECK (count > 0),
+  PRIMARY KEY (status_id, emoji_key),
+  CONSTRAINT status_reaction_counts_custom_emoji_check CHECK (custom_emoji_id IS NULL OR custom_emoji_id = emoji_key)
+);
+CREATE INDEX status_reaction_counts_status_id_count ON status_reaction_counts (status_id, count DESC, emoji_key);
+
 -- Current value: an account's private bookmark of a status.
 CREATE TABLE bookmarks (
   account_id text COLLATE "C" NOT NULL,
@@ -1087,7 +1201,8 @@ CREATE TABLE notifications (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   recipient_account_id text COLLATE "C" NOT NULL,
   type text NOT NULL CHECK (type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'poll_closed',
+    'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
     'admin_appeal'
   )),
@@ -1102,6 +1217,9 @@ CREATE TABLE notifications (
   severance_id text COLLATE "C",
   -- appeal_decided, admin_appeal: the appeal.
   appeal_id text COLLATE "C",
+  -- reaction: the emoji, a Unicode emoji or the custom emoji (custom_emojis.id).
+  reaction_emoji text,
+  reaction_custom_emoji_id text COLLATE "C",
   dedupe_key text NOT NULL,
   created_at timestamptz NOT NULL,
   -- nobody is notified of their own actions.
@@ -1163,7 +1281,8 @@ CREATE INDEX push_subscriptions_account_id ON push_subscriptions (account_id);
 CREATE TABLE push_subscription_alerts (
   subscription_id text COLLATE "C" NOT NULL,
   notification_type text NOT NULL CHECK (notification_type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'poll_closed',
+    'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
     'admin_appeal'
   )),
@@ -1746,6 +1865,32 @@ CREATE TABLE registration_origins (
 CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
 
+-- ---------------------------------------------------------------------------------------------
+-- identity: the exports of a user's data (data-model.md §4.1, FR-008).
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a user's request for an archive of their data.
+CREATE TABLE data_exports (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  requested_at timestamptz NOT NULL
+);
+CREATE INDEX data_exports_user_id_id ON data_exports (user_id, id DESC);
+
+-- Event (child of an export): the end of its build. A ready archive is the private blob under
+-- blob_key; both outcomes are removed at expires_at.
+CREATE TABLE data_export_results (
+  export_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  outcome text NOT NULL CHECK (outcome IN ('ready', 'failed')),
+  blob_key text,
+  file_size bigint CHECK (file_size >= 0),
+  expires_at timestamptz NOT NULL,
+  completed_at timestamptz NOT NULL,
+  CHECK ((outcome = 'ready') = (blob_key IS NOT NULL)),
+  CHECK ((outcome = 'ready') = (file_size IS NOT NULL))
+);
+CREATE INDEX data_export_results_expires_at ON data_export_results (expires_at);
+
 -- moderation: the audit log (data-model §4.3, ADR-0037). Owned by internal/app/moderation.
 -- ---------------------------------------------------------------------------------------------
 
@@ -1765,7 +1910,7 @@ CREATE TABLE audit_log_entries (
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
-    'revealed_private_data', 'signup_block_added', 'signup_block_lifted'
+    'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',

@@ -3,9 +3,11 @@
 package schema_test
 
 import (
+	"regexp"
 	"slices"
 	"testing"
 
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/schema"
 )
 
@@ -25,5 +27,28 @@ func TestTablesMatchAcrossDialects(t *testing.T) {
 	}
 	if !slices.Equal(sqlite, postgres) {
 		t.Errorf("tables differ:\n sqlite:   %v\n postgres: %v", sqlite, postgres)
+	}
+}
+
+// The CHECK constraint of instance_theme_tokens.token lists exactly the tokens a theme may override,
+// which are generated from the web client's theme.css (ADR-0059).
+func TestThemeTokenCheckMatchesTheTokenList(t *testing.T) {
+	var want []string
+	for _, tok := range instance.ThemeTokens() {
+		want = append(want, tok.Name)
+	}
+	check := regexp.MustCompile(`(?s)CREATE TABLE instance_theme_tokens \(.*?token [^\n]*CHECK \(token IN \((.*?)\)\)`)
+	for name, sql := range map[string]string{"sqlite": schema.SQLite, "postgres": schema.Postgres} {
+		m := check.FindStringSubmatch(sql)
+		if m == nil {
+			t.Fatalf("%s: no CHECK on instance_theme_tokens.token", name)
+		}
+		var got []string
+		for _, q := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(m[1], -1) {
+			got = append(got, q[1])
+		}
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: CHECK lists %v, want %v", name, got, want)
+		}
 	}
 }

@@ -38,7 +38,8 @@ type AdminAccountFactory func(t *testing.T, opts uow.Options) AdminAccountHarnes
 // and IP address of a registration or a sign-in; the details tell the registration, the email's
 // verification, and the roles; and the reveal shows the email address, the registration and
 // sign-in addresses, and the other accounts of the same addresses only to a local user's
-// account, recording each reveal in the audit log.
+// account, recording each reveal in the audit log; and an administrator removes the two-factor
+// authentication of a local user, recorded in the audit log.
 func AdminAccountContract(t *testing.T, newHarness AdminAccountFactory) {
 	t.Helper()
 	cases := []struct {
@@ -48,6 +49,7 @@ func AdminAccountContract(t *testing.T, newHarness AdminAccountFactory) {
 		{"SearchesAccounts", adminAccountSearches},
 		{"ShowsTheDetails", adminAccountDetails},
 		{"RevealsAndAudits", adminAccountReveals},
+		{"DisablesTwoFactorAndAudits", adminAccountDisablesTwoFactor},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newAdminAccountEnv(t, newHarness)) })
@@ -363,5 +365,34 @@ func adminAccountReveals(t *testing.T, e *adminAccountEnv) {
 	}
 	if entries := audit(); len(entries) != 2 {
 		t.Errorf("audit log after refused reveals = %+v", entries)
+	}
+}
+
+func adminAccountDisablesTwoFactor(t *testing.T, e *adminAccountEnv) {
+	ctx := t.Context()
+	if err := e.admin.DisableTwoFactor(ctx, e.alice, "mod-user"); !errors.Is(err, appidentity.ErrTwoFactorNotEnabled) {
+		t.Errorf("DisableTwoFactor(without TOTP) = %v, want ErrTwoFactorNotEnabled", err)
+	}
+	if err := e.admin.DisableTwoFactor(ctx, e.alfred, "mod-user"); !errors.Is(err, appidentity.ErrNotLocalAccount) {
+		t.Errorf("DisableTwoFactor(remote) = %v, want ErrNotLocalAccount", err)
+	}
+	if err := e.admin.DisableTwoFactor(ctx, e.ids.NewID(), "mod-user"); !errors.Is(err, appaccount.ErrNotFound) {
+		t.Errorf("DisableTwoFactor(unknown) = %v, want ErrNotFound", err)
+	}
+	e.enableTOTP(t, appidentity.Registration{User: identity.User{ID: e.aliceUser}, AccountID: e.alice})
+	e.clock.Advance(time.Second)
+	if err := e.admin.DisableTwoFactor(ctx, e.alice, "mod-user"); err != nil {
+		t.Fatalf("DisableTwoFactor = %v", err)
+	}
+	if st, err := e.identity.TwoFactorStatus(ctx, e.aliceUser); err != nil || st.Enabled {
+		t.Errorf("TwoFactorStatus = %+v, %v; want disabled", st, err)
+	}
+	got, err := e.mod.AuditLog(ctx, appmoderation.AuditQuery{Action: moderation.AuditTwoFactorDisabled}, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || got[0].ActorUserID != "mod-user" || got[0].TargetKind != moderation.AuditTargetAccount ||
+		got[0].TargetID != e.alice || got[0].TargetLabel != "@alice" || !got[0].OccurredAt.Equal(e.clock.Now()) {
+		t.Errorf("audit log = %+v, want one two_factor_disabled entry on @alice", got)
 	}
 }

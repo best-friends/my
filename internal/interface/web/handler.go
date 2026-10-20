@@ -20,13 +20,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
-)
-
-// Defaults of the Web App Manifest until the instance settings hold them.
-const (
-	DefaultThemeColor      = "#ffffff"
-	DefaultBackgroundColor = "#ffffff"
 )
 
 // Options configure a Handler.
@@ -56,8 +51,14 @@ type Options struct {
 	// that a change of the setting applies without a restart. The HTML never depends on
 	// Accept-Language, so that shared caches keep one copy (ADR-0028).
 	DefaultLocale func(ctx context.Context) string
-	// ThemeColor and BackgroundColor go into the manifest; empty means the defaults.
-	ThemeColor, BackgroundColor string
+	// Theme returns the current instance theme (ADR-0059), and false when it changes nothing. The
+	// shell and the manifest take their theme colors from its surface token, and the shell loads its
+	// stylesheet. It is called per request, so that a saved theme applies without a restart; nil
+	// means the default theme.
+	Theme func(ctx context.Context) (instance.ThemeRevision, bool, error)
+	// ThemeRevision returns a theme revision, current or not, for its stylesheet at
+	// ThemeStylesheetPath, and false when there is none; nil serves no theme stylesheets.
+	ThemeRevision func(ctx context.Context, id string) (instance.ThemeRevision, bool, error)
 
 	// Previews reads the profiles and statuses that the shells of profile pages (/@alice) and
 	// post pages (/@alice/status/{id}) describe in their link preview meta tags; nil serves the
@@ -92,7 +93,7 @@ const (
 // reservedPrefixes are the paths of the server's other endpoints. The SPA has no routes under
 // them, so a request there that no endpoint serves is the server's 404, never the shell.
 // /uploads is the blob prefix of media as received, which is never served (it may carry EXIF).
-var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads"}
+var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads", "/theme"}
 
 // Cache-Control values (ADR-0028).
 const (
@@ -130,9 +131,10 @@ type Handler struct {
 }
 
 // localizedDocuments are the documents that depend on the default locale, and the instance
-// name they show.
+// name and the theme they show.
 type localizedDocuments struct {
 	name            string
+	theme           themeState
 	shell, manifest document
 }
 
@@ -156,12 +158,6 @@ func New(o Options) (*Handler, error) {
 	}
 	if o.DefaultLocale == nil {
 		o.DefaultLocale = func(context.Context) string { return i18n.SourceLocale }
-	}
-	if o.ThemeColor == "" {
-		o.ThemeColor = DefaultThemeColor
-	}
-	if o.BackgroundColor == "" {
-		o.BackgroundColor = DefaultBackgroundColor
 	}
 	if o.NotFound == nil {
 		o.NotFound = func(w http.ResponseWriter, _ *http.Request) {
@@ -226,13 +222,13 @@ func New(o Options) (*Handler, error) {
 
 	h.tags, h.apiOrigin = tags, apiOrigin
 	version := []string{
-		shellSource, h.o.DevViteOrigin, h.apiOrigin, h.o.Host, h.o.AccountDomain, h.o.ThemeColor,
+		shellSource, h.o.DevViteOrigin, h.apiOrigin, h.o.Host, h.o.AccountDomain,
 		strconv.FormatBool(h.hasIcon), strconv.FormatBool(h.hasAppleTouchIcon), tags.Script,
 	}
 	version = append(append(version, tags.Stylesheet...), tags.Preload...)
 	h.previewVersion = etag([]byte(strings.Join(version, "\x00")))
 	// Render once now, so that a template or encoding error fails the start.
-	if _, err := h.render(i18n.SourceLocale, o.Host); err != nil {
+	if _, err := h.render(i18n.SourceLocale, o.Host, defaultTheme()); err != nil {
 		return nil, err
 	}
 	return h, nil
@@ -273,33 +269,37 @@ func (h *Handler) instanceName(ctx context.Context, locale string) string {
 	return h.o.Host
 }
 
-// documents returns the shell and the manifest for the current default locale and the
-// instance's name in it.
+// documents returns the shell and the manifest for the current default locale, the instance's
+// name in it, and the current theme.
 func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 	locale := h.instanceLocale(ctx)
 	name := h.instanceName(ctx, locale)
-	if d, ok := h.localized.Load(locale); ok && d.(*localizedDocuments).name == name {
+	theme, err := h.currentTheme(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if d, ok := h.localized.Load(locale); ok && d.(*localizedDocuments).name == name && d.(*localizedDocuments).theme == theme {
 		return d.(*localizedDocuments), nil
 	}
-	return h.render(locale, name)
+	return h.render(locale, name, theme)
 }
 
-// render renders the documents of a default locale that show the instance name, and caches
-// them in place of those of an earlier name.
-func (h *Handler) render(locale, name string) (*localizedDocuments, error) {
+// render renders the documents of a default locale that show the instance name and the theme,
+// and caches them in place of those of an earlier name or theme.
+func (h *Handler) render(locale, name string, theme themeState) (*localizedDocuments, error) {
 	shell, err := renderShell(shellData{
-		Lang: locale, Dir: i18n.Direction(locale), Title: name, ThemeColor: h.o.ThemeColor,
+		Lang: locale, Dir: i18n.Direction(locale), Title: name, Theme: theme,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, HasThemeScript: h.hasThemeScript, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config: h.runtimeConfig(locale, name),
 	})
 	if err != nil {
 		return nil, err
 	}
-	manifest, err := renderWebManifest(&h.o, locale, name, h.icons)
+	manifest, err := renderWebManifest(locale, name, theme, h.icons)
 	if err != nil {
 		return nil, err
 	}
-	d := &localizedDocuments{name: name, shell: shell, manifest: manifest}
+	d := &localizedDocuments{name: name, theme: theme, shell: shell, manifest: manifest}
 	h.localized.Store(locale, d)
 	return d, nil
 }
@@ -372,6 +372,7 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathAssets+"{path...}", http.HandlerFunc(h.asset))
 	r.Handle("GET "+PathWebManifest, http.HandlerFunc(h.webManifest))
 	r.Handle("GET "+PathDefaultImage, http.HandlerFunc(h.serveDefaultImage))
+	r.Handle("GET "+PathTheme+"{file}", http.HandlerFunc(h.serveThemeStylesheet))
 }
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one

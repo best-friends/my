@@ -12,18 +12,20 @@ import (
 type Type string
 
 // Notification types. The notification module generates follow, follow_request,
-// follow_accepted, mention, boost, and favourite from the graph and content events, and
+// follow_accepted, mention, boost, favourite, and reaction from the graph and content events, and
 // moderation_notice, appeal_decided, report_resolved, and relationships_severed from the
 // moderation events; poll_closed belongs to the module that closes polls. admin_report,
 // admin_sign_up, and admin_appeal go to the moderators whose roles grant the permission they
 // need (ModeratorPermission).
 const (
-	TypeFollow           Type = "follow"
-	TypeFollowRequest    Type = "follow_request"
-	TypeFollowAccepted   Type = "follow_accepted"
-	TypeMention          Type = "mention"
-	TypeBoost            Type = "boost"
-	TypeFavourite        Type = "favourite"
+	TypeFollow         Type = "follow"
+	TypeFollowRequest  Type = "follow_request"
+	TypeFollowAccepted Type = "follow_accepted"
+	TypeMention        Type = "mention"
+	TypeBoost          Type = "boost"
+	TypeFavourite      Type = "favourite"
+	// TypeReaction is an emoji reaction to a status of the recipient (FR-116, ADR-0052 §5).
+	TypeReaction         Type = "reaction"
 	TypePollClosed       Type = "poll_closed"
 	TypeModerationNotice Type = "moderation_notice"
 	TypeReportResolved   Type = "report_resolved"
@@ -39,7 +41,7 @@ const (
 // Types are every notification type, in a stable order.
 var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-	TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
+	TypeReaction, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 	TypeRelationshipsSevered,
 	TypeAppealDecided, TypeAdminAppeal,
 }
@@ -48,7 +50,7 @@ var Types = []Type{
 func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-		TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
+		TypeReaction, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal:
 		return true
 	}
@@ -71,8 +73,12 @@ type Notification struct {
 	SubjectUserID      string // "" unless the notification is an admin_sign_up: the user who signed up
 	SeveranceID        string // "" unless the notification is a relationships_severed
 	AppealID           string // "" unless the notification is an appeal_decided or an admin_appeal
-	DedupeKey          string
-	CreatedAt          time.Time
+	// ReactionEmoji and ReactionCustomEmojiID are the emoji of a reaction: a Unicode emoji or a
+	// custom emoji (custom_emojis.id), exactly one of them; both "" for the other types.
+	ReactionEmoji         string
+	ReactionCustomEmojiID string
+	DedupeKey             string
+	CreatedAt             time.Time
 }
 
 var (
@@ -106,6 +112,10 @@ func (n Notification) Validate() error {
 	if (n.Type == TypeAppealDecided || n.Type == TypeAdminAppeal) != (n.AppealID != "") {
 		return errors.New("notification: an appeal_decided or an admin_appeal, and only they, name an appeal")
 	}
+	if hasEmoji := n.ReactionEmoji != "" || n.ReactionCustomEmojiID != ""; (n.Type == TypeReaction) != hasEmoji ||
+		(n.ReactionEmoji != "" && n.ReactionCustomEmojiID != "") {
+		return errors.New("notification: a reaction, and only it, names one emoji")
+	}
 	switch {
 	case n.Type == TypeAdminReport && (n.ReportID == "" || n.SourceAccountID != ""),
 		n.Type == TypeAdminAppeal && n.SourceAccountID != "",
@@ -127,6 +137,13 @@ func MentionKey(statusID string) string { return string(TypeMention) + ":" + sta
 // source account, so that undoing and repeating the interaction does not notify again.
 func InteractionKey(t Type, statusID, sourceAccountID string) string {
 	return string(t) + ":" + statusID + ":" + sourceAccountID
+}
+
+// ReactionKey is the dedupe key of a reaction notification: one per status, source account, and
+// emoji (the key of the reaction's emoji), so that reacting again with the same emoji does not
+// notify again, and reacting with another one does (ADR-0052 §5).
+func ReactionKey(statusID, sourceAccountID, emojiKey string) string {
+	return string(TypeReaction) + ":" + statusID + ":" + sourceAccountID + ":" + emojiKey
 }
 
 // ReportResolvedKey is the dedupe key of a report_resolved notification: one per report, so

@@ -128,6 +128,7 @@ These come from Accepted ADRs and are binding.
 | `make build [VERSION=...]` | Build `bin/my` with the web client embedded (`make web-build` first) and the version stamped in (`git describe` by default) |
 | `make sqlc` / `sqlc-check` | Regenerate the sqlc code from `sqlc.yaml` / fail when the committed code is stale (`sqlc-check` is part of `make check`) |
 | `make generate` / `generate-check` / `api-lint` | Regenerate the client API code from `api/openapi.yaml` / fail when it is stale / lint the spec with Redocly CLI (`api/redocly.yaml`); `make api-check` runs the last two and is part of `make check`. Follow [docs/architecture/client-api.md](docs/architecture/client-api.md) to add an endpoint |
+| `make emoji-table` | Regenerate `internal/domain/content/emoji_table.gen.go`, the Unicode emoji that emoji reactions accept and normalize, from the `emoji-test.txt` of `EMOJI_VERSION` (downloaded and checked against `EMOJI_TEST_SHA256` in the `Makefile`; ADR-0052) |
 | `make config-docs` | Regenerate [docs/reference/configuration.md](docs/reference/configuration.md) from the config schema (`go-test` fails when it is stale) |
 | `make go-licenses` | Fail on Go dependency licenses incompatible with AGPL-3.0 (allowlist in `Makefile`) |
 | `make lint-shell` | shellcheck on `scripts/*.sh` |

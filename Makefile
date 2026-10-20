@@ -96,8 +96,21 @@ build: web-build ## Build bin/my, with the web client embedded, and the version 
 config-docs: ## Regenerate docs/reference/configuration.md from the config schema (go-test fails when it is stale)
 	go test ./internal/platform/config -run '^TestReferenceUpToDate$$' -update
 
+# The Unicode emoji that emoji reactions accept and normalize (ADR-0052 §1). To move to a new
+# Unicode version, change both and run make emoji-table.
+EMOJI_VERSION := 18.0.0
+EMOJI_TEST_SHA256 := 8f3735cda1f92a779d78af67cf86066bb1f07143dc22f2ac29394d9bc57ab21a
+
+.PHONY: emoji-table
+emoji-table: ## Regenerate internal/domain/content/emoji_table.gen.go from Unicode's emoji-test.txt (EMOJI_VERSION)
+	mkdir -p .tmp
+	curl -fsSL -o .tmp/emoji-test-$(EMOJI_VERSION).txt https://www.unicode.org/Public/$(EMOJI_VERSION)/emoji/emoji-test.txt
+	echo "$(EMOJI_TEST_SHA256)  .tmp/emoji-test-$(EMOJI_VERSION).txt" | sha256sum -c -
+	go run ./scripts/emoji-table -in .tmp/emoji-test-$(EMOJI_VERSION).txt -version $(EMOJI_VERSION) \
+		-out internal/domain/content/emoji_table.gen.go
+
 .PHONY: sqlc sqlc-check
-sqlc: ## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
+sqlc:## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
 	scripts/sqlc.sh
 
 sqlc-check: ## Fail if the committed sqlc-generated code is stale
@@ -256,7 +269,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-dist web-build web-licenses web-lint web-lint-code web-lint-css web-tokens web-test web-e2e web-e2e-install web-routes-check web-check
+.PHONY: web-install web-typecheck web-dist web-build web-licenses web-lint web-lint-code web-lint-css web-tokens web-tokens-gen web-test web-e2e web-e2e-install web-routes-check web-check
 .PHONY: ui-typecheck ui-unit-test
 
 # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
@@ -296,8 +309,11 @@ web-lint-css: ## Fail when CSS uses 100vh (docs/architecture/web-client.md D5)
 	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
 		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
 
-web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
+web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors or token values, motion only under motion-safe, the generated token list up to date
 	cd app/ui && bun run check-tokens
+
+web-tokens-gen: web-install ## Regenerate the list of the tokens a server theme may override (ADR-0059) from app/ui/src/theme.css and tokens.ts
+	cd app/ui && bun run scripts/theme-tokens.ts
 
 web-test: web-install ## Run the app/web component tests with Vitest (jsdom + MSW)
 	cd app/web && bun run test

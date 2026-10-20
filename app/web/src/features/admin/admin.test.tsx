@@ -85,7 +85,7 @@ describe("the staff's menus on the settings page", () => {
       "/moderation/instances",
       "/moderation/audit-log",
     ]);
-    expect(within(admin).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/settings", "/admin/documents", "/admin/dead-jobs"]);
+    expect(within(admin).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/settings", "/admin/theme", "/admin/documents", "/admin/dead-jobs"]);
   });
 });
 

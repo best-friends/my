@@ -535,6 +535,42 @@
     "defaultMessage": "Account",
     "description": "Title of an account's admin page."
   },
+  "admin.account.two_factor.title": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Heading of the region of a local account's admin page about its two-factor authentication."
+  },
+  "admin.account.two_factor.on": {
+    "defaultMessage": "On: signing in asks for a code from an authenticator app.",
+    "description": "Text while the account's user has two-factor authentication."
+  },
+  "admin.account.two_factor.off": {
+    "defaultMessage": "Off.",
+    "description": "Text while the account's user has no two-factor authentication."
+  },
+  "admin.account.two_factor.remove": {
+    "defaultMessage": "Remove two-factor authentication",
+    "description": "Button (and the confirmation's button) that removes the two-factor authentication of the account."
+  },
+  "admin.account.two_factor.remove.description": {
+    "defaultMessage": "For a user who lost their authenticator app and recovery codes. Make sure the request comes from the account's owner first. The removal is recorded in the audit log.",
+    "description": "Explanation above the button that removes the two-factor authentication of an account."
+  },
+  "admin.account.two_factor.confirm.title": {
+    "defaultMessage": "Remove the two-factor authentication of {handle}?",
+    "description": "Title of the confirmation of removing the two-factor authentication. {handle} is the account's handle."
+  },
+  "admin.account.two_factor.confirm.description": {
+    "defaultMessage": "They will sign in with their password alone until they set it up again. This cannot be undone.",
+    "description": "Body of the confirmation of removing the two-factor authentication."
+  },
+  "admin.account.two_factor.removed": {
+    "defaultMessage": "Removed the two-factor authentication of {handle}.",
+    "description": "Status message after removing the two-factor authentication of the account {handle}."
+  },
+  "admin.account.two_factor.failed": {
+    "defaultMessage": "Could not remove two-factor authentication: {reason}",
+    "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "Reason",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
@@ -1298,6 +1334,10 @@
   "admin.audit_log.action.signup_block_lifted": {
     "defaultMessage": "Sign-up block lifted",
     "description": "Heading of an audit log entry: a moderator lifted a block on sign-ups."
+  },
+  "admin.audit_log.action.two_factor_disabled": {
+    "defaultMessage": "Two-factor authentication removed",
+    "description": "Heading of an audit log entry: an administrator removed the two-factor authentication of a local account."
   },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "Text changed",
@@ -2975,6 +3015,170 @@
     "defaultMessage": "Enter an IP address or range",
     "description": "Error under the IP range field of a new sign-up block when it is empty."
   },
+  "admin.theme.bounds.default": {
+    "defaultMessage": "Default: {value}",
+    "description": "Description of a token field without bounds (font family, shadow, easing). {value} is the default (not translated)."
+  },
+  "admin.theme.bounds.duration": {
+    "defaultMessage": "Default: {value}. ms or s, from {min}ms to {max}ms.",
+    "description": "Description of a duration token field."
+  },
+  "admin.theme.bounds.length": {
+    "defaultMessage": "Default: {value}. 0 or rem / px, from {min}rem to {max}rem.",
+    "description": "Description of a length token field. {value} is the default, {min} and {max} numbers (not translated)."
+  },
+  "admin.theme.bounds.number": {
+    "defaultMessage": "Default: {value}. A number from {min} to {max}.",
+    "description": "Description of a number token field (line height)."
+  },
+  "admin.theme.color.dark": {
+    "defaultMessage": "{token}, dark theme",
+    "description": "Label of the field of a color token's value in the dark theme. {token} is the token name (not translated)."
+  },
+  "admin.theme.color.default": {
+    "defaultMessage": "{format}. Default: {value}",
+    "description": "Description of a color field. {format} is #rrggbb or #rrggbbaa, {value} the default color (not translated)."
+  },
+  "admin.theme.color.light": {
+    "defaultMessage": "{token}, light theme",
+    "description": "Label of the field of a color token's value in the light theme. {token} is the token name, e.g. color-accent (not translated)."
+  },
+  "admin.theme.colors.description": {
+    "defaultMessage": "Each color has a value for the light and the dark theme, as #rrggbb. Text and controls must keep enough contrast with the backgrounds they sit on (WCAG 2.2 AA), so changing one color can require changing another.",
+    "description": "Description of the colors section of the theme screen."
+  },
+  "admin.theme.colors.title": {
+    "defaultMessage": "Colors",
+    "description": "Heading of the section of the color tokens on the theme screen."
+  },
+  "admin.theme.contrast.failing_dark": {
+    "defaultMessage": "{fg} on {bg} has a contrast of {ratio}:1 in the dark theme; it needs {minimum}:1.",
+    "description": "A color pair below its minimum contrast in the dark theme. {fg} and {bg} are token names, {ratio} and {minimum} numbers (not translated)."
+  },
+  "admin.theme.contrast.failing_light": {
+    "defaultMessage": "{fg} on {bg} has a contrast of {ratio}:1 in the light theme; it needs {minimum}:1.",
+    "description": "A color pair below its minimum contrast in the light theme. {fg} and {bg} are token names, {ratio} and {minimum} numbers (not translated)."
+  },
+  "admin.theme.contrast.ok": {
+    "defaultMessage": "Every text and control color has enough contrast with its backgrounds in both themes (WCAG 2.2 AA).",
+    "description": "Shown when every contrast pair of the theme meets its minimum."
+  },
+  "admin.theme.contrast.title": {
+    "defaultMessage": "Contrast",
+    "description": "Heading of the section that lists the color pairs below their minimum contrast on the theme screen."
+  },
+  "admin.theme.css.description": {
+    "defaultMessage": "The CSS is added after the tokens and applies to every page. It runs under the app's Content Security Policy, so it can only use images and fonts of this server. The server does not check its result: contrast, layout, focus indicators, and right-to-left languages are your responsibility, and class names and page structure can change with any update. Prefer the tokens above, which stay stable.",
+    "description": "Description of the custom CSS field: what the server does not guarantee."
+  },
+  "admin.theme.css.label": {
+    "defaultMessage": "Custom CSS",
+    "description": "Label of the custom CSS text area."
+  },
+  "admin.theme.css.title": {
+    "defaultMessage": "Custom CSS",
+    "description": "Heading of the custom CSS section of the theme screen."
+  },
+  "admin.theme.description": {
+    "defaultMessage": "The theme applies to every visitor's web app and to the sign-in and other server pages, in the light and the dark theme. Pages already open keep their look until they are loaded again, and a saved theme can take a few minutes to reach everyone. Leave a field empty to keep its default.",
+    "description": "Introduction of the theme screen."
+  },
+  "admin.theme.error.css_invalid": {
+    "defaultMessage": "The custom CSS is not valid text.",
+    "description": "Reason a theme is refused: the custom CSS is not UTF-8 or contains NUL."
+  },
+  "admin.theme.error.css_too_long": {
+    "defaultMessage": "The custom CSS can be at most {max} bytes.",
+    "description": "Reason a theme is refused: the custom CSS is too long. {max} is a number of bytes."
+  },
+  "admin.theme.error.duplicate_token": {
+    "defaultMessage": "{token} is given twice.",
+    "description": "Reason a theme is refused: the token appears twice."
+  },
+  "admin.theme.error.invalid_dark": {
+    "defaultMessage": "{token} in the dark theme is not a valid color.",
+    "description": "Reason a theme is refused: the dark value of a color token is not #rrggbb."
+  },
+  "admin.theme.error.invalid_light": {
+    "defaultMessage": "{token} in the light theme is not a valid color.",
+    "description": "Reason a theme is refused: the light value of a color token is not #rrggbb."
+  },
+  "admin.theme.error.invalid_value": {
+    "defaultMessage": "{token} does not have a valid value.",
+    "description": "Reason a theme is refused: a non-color token's value has the wrong form."
+  },
+  "admin.theme.error.out_of_range": {
+    "defaultMessage": "{token} must be from {min} to {max}.",
+    "description": "Reason a theme is refused: a value is outside its bounds. {min} and {max} are numbers, rem for lengths and ms for durations (not translated)."
+  },
+  "admin.theme.error.unknown_token": {
+    "defaultMessage": "{token} cannot be changed.",
+    "description": "Reason a theme is refused: the token is not overridable. {token} is a token name (not translated)."
+  },
+  "admin.theme.preview.button": {
+    "defaultMessage": "Primary button",
+    "description": "Sample primary button text in the theme preview."
+  },
+  "admin.theme.preview.danger": {
+    "defaultMessage": "An error message",
+    "description": "Sample error text in the theme preview."
+  },
+  "admin.theme.preview.description": {
+    "defaultMessage": "The tokens as typed, in the theme this page is shown in. The custom CSS is not previewed.",
+    "description": "Description of the theme preview."
+  },
+  "admin.theme.preview.heading": {
+    "defaultMessage": "A post on the timeline",
+    "description": "Sample heading in the theme preview."
+  },
+  "admin.theme.preview.link": {
+    "defaultMessage": "A link",
+    "description": "Sample link text in the theme preview."
+  },
+  "admin.theme.preview.muted": {
+    "defaultMessage": "Secondary text: times, handles, and hints",
+    "description": "Sample secondary text in the theme preview."
+  },
+  "admin.theme.preview.text": {
+    "defaultMessage": "Body text reads like this.",
+    "description": "Sample body text in the theme preview."
+  },
+  "admin.theme.preview.title": {
+    "defaultMessage": "Preview",
+    "description": "Heading of the preview of the theme being edited."
+  },
+  "admin.theme.save": {
+    "defaultMessage": "Save theme",
+    "description": "Button that saves the theme."
+  },
+  "admin.theme.save_failed": {
+    "defaultMessage": "The theme could not be saved: {reason}",
+    "description": "Error when saving the theme failed for another reason. {reason} is the localized cause."
+  },
+  "admin.theme.save_refused": {
+    "defaultMessage": "The theme was not saved:",
+    "description": "Lead-in of the list of reasons the server refused the theme."
+  },
+  "admin.theme.saved": {
+    "defaultMessage": "Theme saved. Visitors get it when they next load a page, within a few minutes.",
+    "description": "Status after the theme was saved."
+  },
+  "admin.theme.summary": {
+    "defaultMessage": "Colors, type, spacing, and custom CSS of the web app for everyone",
+    "description": "Description of the theme screen's link in the admin menu."
+  },
+  "admin.theme.title": {
+    "defaultMessage": "Theme",
+    "description": "Title of the admin screen that sets the instance theme (design token overrides and custom CSS), and its link in the admin menu."
+  },
+  "admin.theme.tokens.description": {
+    "defaultMessage": "Fonts, text sizes and line heights, the spacing step, corner radii, shadows (elevation), and the duration and easing of motion. Values outside a token's bounds are not saved; the server does not check how the app looks with them.",
+    "description": "Description of the section of the non-color tokens on the theme screen."
+  },
+  "admin.theme.tokens.title": {
+    "defaultMessage": "Type, spacing, and motion",
+    "description": "Heading of the section of the tokens other than colors on the theme screen."
+  },
   "api.error.network": {
     "defaultMessage": "Could not reach the server. Check your connection and try again.",
     "description": "Error message when a request to the server got no answer (offline, or the server is down)."
@@ -3470,6 +3674,10 @@
   "notifications.type.poll_closed": {
     "defaultMessage": "A poll you took part in has ended",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
+  },
+  "notifications.type.reaction": {
+    "defaultMessage": "{name} reacted to your post with {emoji}",
+    "description": "Notification sentence. {name} is the display name of the account that reacted to the user's post with an emoji; {emoji} is the emoji, or the :shortcode: of a custom emoji."
   },
   "notifications.type.relationships_severed": {
     "defaultMessage": "A suspension by the moderators ended some of your follows",
@@ -3999,6 +4207,110 @@
     "defaultMessage": "You are not signed in.",
     "description": "Text in the account section of the settings page when nobody is signed in."
   },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button in the dialog that closes it without deleting the account."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "Delete account",
+    "description": "Button in the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
+    "description": "Description of the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "Delete your account?",
+    "description": "Title of the dialog that asks the user to confirm deleting their account."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "Your account, posts and profile disappear at once, and other servers are asked to delete their copies. You cannot undo this, and your username cannot be used again. Download your data first if you want to keep it.",
+    "description": "Explains what deleting the account does, above the button that starts it."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "Delete account…",
+    "description": "Button that opens the dialog that deletes the user's account."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "Password",
+    "description": "Label of the field in which the user types their password to confirm deleting the account."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "Enter your password.",
+    "description": "Error under the password field when the user confirms the deletion without typing the password."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "Delete your account",
+    "description": "Heading of the section of the account page about deleting the account."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error in the deletion dialog when the password the user typed is not their current password."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days.",
+    "description": "Explains the archive of the user's data, above the button that asks for one."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "Download",
+    "description": "Button that downloads an archive of the user's data."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "Download the archive of {date}",
+    "description": "Accessible name of the button that downloads one archive. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "You have no archives",
+    "description": "Shown when the user has no archive of their data."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "Available until",
+    "description": "Label of the date until which an archive of the user's data can be downloaded."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "Archive of {date}",
+    "description": "Heading of one archive of the user's data. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "Prepare an archive",
+    "description": "Button that asks the server to prepare an archive of the user's data."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "The archive is being prepared. It appears below when it is ready.",
+    "description": "Announced after the user asked for an archive of their data."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "Size",
+    "description": "Label of the file size of an archive of the user's data."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "State",
+    "description": "Label of the state of an archive of the user's data (being prepared, ready, failed)."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "Failed. Prepare another one.",
+    "description": "State of an archive of the user's data that the server could not prepare; the user can ask for another."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "Being prepared",
+    "description": "State of an archive of the user's data that the server is still preparing."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "Ready",
+    "description": "State of an archive of the user's data that can be downloaded."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "Download your data",
+    "description": "Heading of the section of the account page about archives of the user's data."
+  },
+  "settings.account.summary": {
+    "defaultMessage": "Download your data, or delete your account",
+    "description": "Description of the account page in the list of settings pages."
+  },
+  "settings.account.title": {
+    "defaultMessage": "Your account",
+    "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
+  },
   "settings.back": {
     "defaultMessage": "Back to settings",
     "description": "Link under the heading of a settings page that opens the list of settings pages."
@@ -4315,6 +4627,10 @@
     "defaultMessage": "Notices from the moderators",
     "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
   },
+  "settings.push.type.reaction": {
+    "defaultMessage": "Emoji reactions",
+    "description": "Checkbox of the push notification kinds: someone reacted to the user's post with an emoji."
+  },
   "settings.push.types.description": {
     "defaultMessage": "Choose what this device notifies you of.",
     "description": "Help text of the group of checkboxes of the push notification kinds."
@@ -4386,6 +4702,150 @@
   "settings.title": {
     "defaultMessage": "Settings",
     "description": "Heading and document title of the settings page."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
+  },
+  "settings.two_factor.summary": {
+    "defaultMessage": "Sign in with a code from an authenticator app as well as your password",
+    "description": "Description of the two-factor authentication item in the settings menu."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "Current setting",
+    "description": "Heading of the region of the two-factor authentication page that says whether it is on."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Term of the description list: whether two-factor authentication is on."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "On",
+    "description": "Value of the two-factor authentication term while it is on."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "Off. Signing in asks only for your password.",
+    "description": "Text of the two-factor authentication page while it is off."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "Turned on",
+    "description": "Term of the description list: when two-factor authentication was turned on; the value is a date and time."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "Unused recovery codes",
+    "description": "Term of the description list: how many recovery codes are left; the value is a number."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "Set up an authenticator app",
+    "description": "Heading of the region that enrolls an authenticator app while two-factor authentication is off."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "Add this account to an authenticator app on your phone. From then on, signing in also asks for the six-digit code that the app shows.",
+    "description": "Explanation above the button that starts setting up an authenticator app."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "Set up",
+    "description": "Button that generates a new secret to add to an authenticator app."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "Scan the QR code with your authenticator app, or type the key below into it.",
+    "description": "First step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "Enter the six-digit code that the app shows to turn on two-factor authentication.",
+    "description": "Second step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "QR code for your authenticator app",
+    "description": "Accessible name of the QR code image that holds the secret for the authenticator app."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "Key",
+    "description": "Label of the secret shown as text, for typing it into an authenticator app instead of scanning the QR code."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "The six-digit code that the app shows now.",
+    "description": "Help under the code field that confirms the setup of an authenticator app."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "Turn on",
+    "description": "Button that turns two-factor authentication on with the code of the app."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "The setup took too long. Start again.",
+    "description": "Error when the setup of an authenticator app expired (after 15 minutes) before its code was entered."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "Authentication code",
+    "description": "Label of the field for a code of the authenticator app or a recovery code."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "A code from your authenticator app, or one of your recovery codes.",
+    "description": "Help under the code field that confirms replacing the recovery codes or turning two-factor authentication off."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "Enter the code.",
+    "description": "Error of an empty code field."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "The code is incorrect or was already used.",
+    "description": "Error of the code field when the server refused the code."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "Two-factor authentication was changed elsewhere. The page now shows its current setting.",
+    "description": "Error when two-factor authentication was turned on or off in another tab or device meanwhile."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "Too many incorrect codes: {reason}",
+    "description": "Error after too many wrong codes. {reason} is the server's explanation of when to try again."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "Could not change two-factor authentication: {reason}",
+    "description": "Error when a change of two-factor authentication failed. {reason} is the server's explanation."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "Two-factor authentication is on.",
+    "description": "Status message after turning two-factor authentication on."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "Two-factor authentication is off.",
+    "description": "Status message after turning two-factor authentication off."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "Recovery codes",
+    "description": "Heading of the region that replaces the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "If you lose your authenticator app, sign in with a recovery code instead. Each code works once. New codes replace the old ones, which stop working.",
+    "description": "Explanation of the recovery codes above the form that replaces them."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "Replace recovery codes",
+    "description": "Button that replaces the recovery codes with new ones."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "New recovery codes are ready. The old ones no longer work.",
+    "description": "Status message after replacing the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "Save your recovery codes",
+    "description": "Heading of the list of new recovery codes, which is shown only once."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "Keep these codes somewhere safe, such as a password manager. They are shown only now. Each one signs you in once without the app.",
+    "description": "Text above the list of new recovery codes."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "Turn off two-factor authentication",
+    "description": "Heading of the region that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "Signing in will ask only for your password. Enter a code to confirm.",
+    "description": "Explanation above the form that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "Turn off",
+    "description": "Button that turns two-factor authentication off."
   },
   "settings.visibility.direct": {
     "defaultMessage": "Mentioned people",
