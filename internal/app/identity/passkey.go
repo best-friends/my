@@ -21,6 +21,8 @@ import (
 // password. A signed-in user registers one after confirming the password
 // (BeginPasskeyRegistration, FinishPasskeyRegistration), lists and removes them; the sign-in
 // page asks the browser for one (BeginPasskeySignIn) and SignInWithPasskey starts the session.
+// A user without a password (RemovePassword) confirms a registration with a passkey instead, and
+// cannot remove the last passkey.
 //
 // A passkey takes the place of the password only. A user with TOTP (FR-005) still enters a
 // code after it, so that two-factor authentication keeps its promise: no sign-in without the
@@ -29,7 +31,7 @@ import (
 // The state of a ceremony travels with the browser, sealed with kernel.Sealer and bound to its
 // purpose (and, for a registration, to its user), so that showing the sign-in page stores
 // nothing. A sign-in challenge works once: its use is recorded in the KeyValueStore until it
-// expires. Failed sign-ins count against LoginIPLimit, and wrong passwords of a registration
+// expires. Failed sign-ins count against LoginIPLimit, and wrong confirmations of a registration
 // against PasskeyPasswordLimit.
 
 var (
@@ -54,8 +56,9 @@ const (
 	PasskeyNamespace = "passkey"
 )
 
-// PasskeyPasswordLimit limits the wrong passwords that confirm a registration of a passkey,
-// per user (ADR-0019 §5): adding a credential needs the password, like deleting the account.
+// PasskeyPasswordLimit limits the wrong passwords and passkeys that confirm a registration of a
+// passkey, per user (ADR-0019 §5): adding a credential needs a confirmation, like deleting the
+// account.
 var PasskeyPasswordLimit = kernel.Limit{Name: "passkey.password", Max: 5, Window: time.Hour}
 
 // PasskeyUser is the account that a registration ceremony makes a passkey for.
@@ -169,12 +172,12 @@ func (s *Service) openCeremony(ctx context.Context, token string, aad []byte) (c
 }
 
 // BeginPasskeyRegistration starts the registration of a passkey called name for a user who
-// confirms it with the current password. It fails with an error wrapping
-// identity.ErrInvalidPasskeyName for a bad name, ErrWrongPassword for a wrong password,
-// a *kernel.RateLimitedError after too many wrong passwords (PasskeyPasswordLimit),
-// ErrTooManyPasskeys when the user has as many passkeys as allowed, and ErrNotFound when the
-// user has no local account.
-func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID, name, password string) (PasskeyRegistration, error) {
+// confirms it with the current password or a passkey. It fails with an error wrapping
+// identity.ErrInvalidPasskeyName for a bad name, ErrWrongPassword for a wrong password, the
+// errors of a confirmation with a passkey (Service.confirm), a *kernel.RateLimitedError after too
+// many wrong confirmations (PasskeyPasswordLimit), ErrTooManyPasskeys when the user has as many
+// passkeys as allowed, and ErrNotFound when the user has no local account.
+func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID, name string, c Confirmation) (PasskeyRegistration, error) {
 	if err := s.needPasskeyDeps(); err != nil {
 		return PasskeyRegistration{}, err
 	}
@@ -182,7 +185,7 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID, name, pa
 	if err != nil {
 		return PasskeyRegistration{}, err
 	}
-	if err := s.confirmPassword(ctx, userID, password); err != nil {
+	if err := s.confirm(ctx, PasskeyPasswordLimit, userID, c); err != nil {
 		return PasskeyRegistration{}, err
 	}
 	existing, err := s.d.Repository.ListActivePasskeyCredentials(ctx, userID)
@@ -210,12 +213,6 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID, name, pa
 		return PasskeyRegistration{}, err
 	}
 	return PasskeyRegistration{Options: options, Token: token, ExpiresAt: now.Add(PasskeyCeremonyTTL)}, nil
-}
-
-// confirmPassword checks the current password of a user who confirms an operation with it,
-// counting wrong ones against PasskeyPasswordLimit.
-func (s *Service) confirmPassword(ctx context.Context, userID, password string) error {
-	return s.confirmPasswordWith(ctx, PasskeyPasswordLimit, userID, password)
 }
 
 // confirmPasswordWith checks the current password of a user who confirms an operation with it,
@@ -308,20 +305,36 @@ func (s *Service) FinishPasskeyRegistration(ctx context.Context, userID, token s
 }
 
 // RemovePasskey ends a passkey of a user, which then no longer signs in. It fails with
-// ErrNotFound when the user has no such passkey.
+// ErrNotFound when the user has no such passkey, and with ErrLastSignInMethod for the last passkey
+// of a user without a password.
 func (s *Service) RemovePasskey(ctx context.Context, userID, passkeyID string) error {
-	existing, err := s.d.Repository.ListActivePasskeyCredentials(ctx, userID)
-	if err != nil {
-		return err
-	}
-	for _, c := range existing {
-		if c.ID != passkeyID {
-			continue
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		repo := s.d.Repository
+		if err := repo.LockSignInMethods(ctx, tx, userID); err != nil {
+			return err
 		}
-		rev := identity.PasskeyCredentialRevocation{PasskeyID: c.ID, RevokedAt: s.d.Clock.Now()}
-		return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return s.d.Repository.InsertPasskeyCredentialRevocation(ctx, tx, rev) })
-	}
-	return ErrNotFound
+		existing, err := repo.ListActivePasskeyCredentialsTx(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, c := range existing {
+			found = found || c.ID == passkeyID
+		}
+		if !found {
+			return ErrNotFound
+		}
+		if len(existing) == 1 {
+			switch _, err := repo.FindCurrentPasswordCredentialTx(ctx, tx, userID); {
+			case errors.Is(err, ErrNotFound):
+				return ErrLastSignInMethod
+			case err != nil:
+				return err
+			}
+		}
+		rev := identity.PasskeyCredentialRevocation{PasskeyID: passkeyID, RevokedAt: s.d.Clock.Now()}
+		return repo.InsertPasskeyCredentialRevocation(ctx, tx, rev)
+	})
 }
 
 // PasskeySignIn is the start of a sign-in with a passkey: the options for the browser and the

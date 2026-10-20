@@ -24,6 +24,14 @@ type PasswordCredential struct {
 	SetAt  time.Time
 }
 
+// PasswordCredentialRemoval ends a password credential: its user removed the password, which then
+// no longer signs in (FR-004). A user removes only the newest credential, and only while a passkey
+// signs in instead; a newer credential sets a password again.
+type PasswordCredentialRemoval struct {
+	PasswordCredentialID string
+	RemovedAt            time.Time
+}
+
 // Password length limits in characters (ADR-0019 §3, after the OWASP Authentication Cheat Sheet).
 const (
 	MinPasswordLength = 8

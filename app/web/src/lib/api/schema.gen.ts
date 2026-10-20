@@ -176,11 +176,14 @@ export interface paths {
         /**
          * Delete the authenticated user's account
          * @description Deletes the user's own account at once, after checking the user's current `password`
-         *     (FR-008). The account and its posts disappear, every session and token of the user ends,
-         *     and the other servers get a `Delete` of the actor; the data is erased 7 days later. It
-         *     cannot be undone, and the username is never reused. A wrong password is a 422
-         *     `/api/v1/problems/wrong-password`; at most 5 attempts per account are accepted every
-         *     hour.
+         *     or a `passkey` of the user (FR-008); a user without a password confirms with a passkey.
+         *     The account and its posts disappear, every session and token of the user ends, and the
+         *     other servers get a `Delete` of the actor; the data is erased 7 days later. It cannot be
+         *     undone, and the username is never reused. A wrong password is a 422
+         *     `/api/v1/problems/wrong-password`, a passkey that does not verify a 422
+         *     `/api/v1/problems/invalid-passkey`, and an expired confirmation a 422
+         *     `/api/v1/problems/passkey-confirmation-expired`; at most 5 attempts per account are
+         *     accepted every hour.
          */
         post: operations["deleteOwnAccount"];
         delete?: never;
@@ -196,20 +199,57 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /**
+         * Get whether the authenticated user has a password
+         * @description Whether the user signs in with a password, or with passkeys only after removing it
+         *     (FR-004).
+         */
+        get: operations["getPasswordStatus"];
+        put?: never;
+        /**
+         * Change or set the authenticated user's password
+         * @description Replaces the user's password with `new_password` after checking `current_password` or
+         *     a `passkey` of the user (FR-002); a user without a password sets one with a passkey.
+         *     Every other session and grant of the user ends: the user is signed out of the server's
+         *     sign-in pages and of every app but the one that makes the request, whose tokens keep
+         *     working. Passkeys and two-factor authentication stay as they are, and the user is told
+         *     by email when the server sends email. A wrong current password is a 422
+         *     `/api/v1/problems/wrong-password`, a passkey that does not verify a 422
+         *     `/api/v1/problems/invalid-passkey`, and an expired confirmation a 422
+         *     `/api/v1/problems/passkey-confirmation-expired`; at most 5 wrong ones per user are
+         *     accepted every hour. A new password that is not 8 to 128 characters is a 400 that
+         *     names `new_password`.
+         */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/accounts/password/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
         get?: never;
         put?: never;
         /**
-         * Change the authenticated user's password
-         * @description Replaces the user's password with `new_password` after checking `current_password`
-         *     (FR-002). Every other session and grant of the user ends: the user is signed out of
-         *     the server's sign-in pages and of every app but the one that makes the request, whose
-         *     tokens keep working. Passkeys and two-factor authentication stay as they are, and the
-         *     user is told by email when the server sends email. A wrong current password is a 422
-         *     `/api/v1/problems/wrong-password`, and at most 5 wrong ones per user are accepted every
-         *     hour. A new password that is not 8 to 128 characters is a 400 that names
-         *     `new_password`.
+         * Remove the authenticated user's password
+         * @description Removes the password of a user who has a passkey, after checking a `passkey` of the
+         *     user (FR-004): from then on only the passkeys sign in, and a user with two-factor
+         *     authentication still enters a code after one. A password reset link or
+         *     `POST /accounts/password` with a passkey sets a password again. Every other session and
+         *     grant of the user ends, as a change of the password does, and the user is told by email
+         *     when the server sends email. A user without a password gets a 204 and nothing changes.
+         *     A user without a passkey gets a 409 `/api/v1/problems/last-sign-in-method`; a passkey
+         *     that does not verify is a 422 `/api/v1/problems/invalid-passkey`, an expired
+         *     confirmation a 422 `/api/v1/problems/passkey-confirmation-expired`, and at most 5 wrong
+         *     ones per user are accepted every hour.
          */
-        post: operations["changePassword"];
+        post: operations["removePassword"];
         delete?: never;
         options?: never;
         head?: never;
@@ -510,15 +550,42 @@ export interface paths {
         put?: never;
         /**
          * Start the registration of a passkey
-         * @description Checks the user's current `password` and returns the options of a WebAuthn
-         *     registration (a discoverable credential with user verification, no attestation) for the
-         *     browser's `navigator.credentials.create()`, with a `registration_token` that carries
-         *     them and `name` to `POST /passkeys` for 5 minutes. Nothing is stored until then. A
-         *     wrong password is a 422 `/api/v1/problems/wrong-password`, and at most 5 wrong
-         *     passwords per user are accepted every hour; a user with 20 passkeys gets a 409
+         * @description Checks the user's current `password` or a `passkey` of the user (a user without a
+         *     password confirms with a passkey) and returns the options of a WebAuthn registration (a
+         *     discoverable credential with user verification, no attestation) for the browser's
+         *     `navigator.credentials.create()`, with a `registration_token` that carries them and
+         *     `name` to `POST /passkeys` for 5 minutes. Nothing is stored until then. A wrong
+         *     password is a 422 `/api/v1/problems/wrong-password`, a passkey that does not verify a
+         *     422 `/api/v1/problems/invalid-passkey`, and an expired confirmation a 422
+         *     `/api/v1/problems/passkey-confirmation-expired`; at most 5 wrong ones per user are
+         *     accepted every hour. A user with 20 passkeys gets a 409
          *     `/api/v1/problems/too-many-passkeys`.
          */
         post: operations["beginPasskeyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/passkeys/confirmation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a confirmation with a passkey
+         * @description Returns the options of a WebAuthn authentication (with user verification) for the
+         *     browser's `navigator.credentials.get()`, with a `confirmation_token` that carries them
+         *     for 5 minutes, once, in the `passkey` of an operation that a passkey of the user confirms
+         *     in place of the current password: deleting the account, changing or removing the
+         *     password, and registering a passkey. Nothing is stored.
+         */
+        post: operations["beginPasskeyConfirmation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -537,7 +604,8 @@ export interface paths {
         post?: never;
         /**
          * Remove a passkey
-         * @description The passkey no longer signs in. An unknown or removed passkey is a 404.
+         * @description The passkey no longer signs in. An unknown or removed passkey is a 404, and the last
+         *     passkey of a user without a password a 409 `/api/v1/problems/last-sign-in-method`.
          */
         delete: operations["deletePasskey"];
         options?: never;
@@ -3749,11 +3817,16 @@ export interface components {
          *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
          *       operation, has no two-factor authentication.
          *     - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
-         *       registration does not verify, or the passkey is registered already.
+         *       registration or confirmation does not verify, the passkey is registered already, or
+         *       the passkey that confirms an operation is not one of the user's.
          *     - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
          *       unknown or expired. Start a new one.
+         *     - `/api/v1/problems/passkey-confirmation-expired` (422): the confirmation with a passkey
+         *       is unknown, expired, or used. Start a new one.
          *     - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
          *       allowed. Remove one first.
+         *     - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
+         *       way to sign in: the password without a passkey, or the last passkey without a password.
          *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
          *       says which.
          *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -4355,15 +4428,29 @@ export interface components {
         AdminAppealPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["AdminAppeal"][];
         };
-        /** @description The confirmation of the deletion of the user's own account. */
+        /** @description The confirmation of the deletion of the user's own account: `password` or `passkey`. */
         DeleteOwnAccountRequest: {
             /** @description The user's current password. */
-            password: string;
+            password?: string;
+            passkey?: components["schemas"]["PasskeyAssertion"];
         };
-        /** @description A change of the user's password. */
+        /** @description Whether the authenticated user has a password. */
+        PasswordStatus: {
+            /**
+             * @description Whether the password signs in; false after the user removed it, when only the
+             *     passkeys sign in.
+             */
+            has_password: boolean;
+        };
+        /** @description The passkey that confirms the removal of the user's password. */
+        RemovePasswordRequest: {
+            passkey: components["schemas"]["PasskeyAssertion"];
+        };
+        /** @description A change of the user's password, confirmed with `current_password` or `passkey`. */
         ChangePasswordRequest: {
             /** @description The user's current password, which confirms the change. */
-            current_password: string;
+            current_password?: string;
+            passkey?: components["schemas"]["PasskeyAssertion"];
             /** @description The new password, 8 to 128 characters. */
             new_password: string;
         };
@@ -5230,12 +5317,16 @@ export interface components {
         PasskeyList: {
             items: components["schemas"]["Passkey"][];
         };
-        /** @description The name of a new passkey and the user's password that confirms it. */
+        /**
+         * @description The name of a new passkey and what confirms it: the user's `password` or a `passkey` of
+         *     the user.
+         */
         PasskeyRegistrationRequest: {
             /** @description What the user calls the passkey; spaces around it are dropped. */
             name: string;
             /** @description The user's current password. */
-            password: string;
+            password?: string;
+            passkey?: components["schemas"]["PasskeyAssertion"];
         };
         /** @description The start of a passkey registration. */
         PasskeyRegistration: {
@@ -5253,6 +5344,35 @@ export interface components {
              * @description When `registration_token` stops working.
              */
             expires_at: string;
+        };
+        /** @description The start of a confirmation with a passkey. */
+        PasskeyConfirmation: {
+            /**
+             * @description The `PublicKeyCredentialRequestOptionsJSON` of WebAuthn Level 3 (§5.1.9): binary
+             *     values in base64url, for `PublicKeyCredential.parseRequestOptionsFromJSON()`.
+             */
+            options: {
+                [key: string]: unknown;
+            };
+            /** @description An opaque token that carries the confirmation to the operation it confirms. */
+            confirmation_token: string;
+            /**
+             * Format: date-time
+             * @description When `confirmation_token` stops working.
+             */
+            expires_at: string;
+        };
+        /** @description The browser's answer to a confirmation with a passkey, which confirms an operation. */
+        PasskeyAssertion: {
+            /** @description The `confirmation_token` of `POST /passkeys/confirmation`. */
+            confirmation_token: string;
+            /**
+             * @description The `AuthenticationResponseJSON` of WebAuthn Level 3 (§5.1): what
+             *     `PublicKeyCredential.toJSON()` returns for the passkey.
+             */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** @description The browser's answer to a passkey registration. */
         CreatePasskeyRequest: {
@@ -7607,6 +7727,28 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    getPasswordStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether the user has a password. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordStatus"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     changePassword: {
         parameters: {
             query?: never;
@@ -7621,6 +7763,29 @@ export interface operations {
         };
         responses: {
             /** @description The password is changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    removePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemovePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description The user has no password. */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -7992,6 +8157,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PasskeyRegistration"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    beginPasskeyConfirmation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The options of the confirmation. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyConfirmation"];
                 };
             };
             default: components["responses"]["Problem"];

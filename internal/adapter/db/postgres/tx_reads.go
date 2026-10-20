@@ -214,3 +214,21 @@ func (r *IdentityRepository) FindPrimaryEmailTx(ctx context.Context, tx uow.Tx, 
 	}
 	return (&IdentityRepository{db: db}).FindPrimaryEmail(ctx, userID)
 }
+
+// FindCurrentPasswordCredentialTx implements the reads in a transaction.
+func (r *IdentityRepository) FindCurrentPasswordCredentialTx(ctx context.Context, tx uow.Tx, userID string) (identity.PasswordCredential, error) {
+	db, err := r.db.in(tx)
+	if err != nil {
+		return identity.PasswordCredential{}, err
+	}
+	return (&IdentityRepository{db: db}).FindCurrentPasswordCredential(ctx, userID)
+}
+
+// ListActivePasskeyCredentialsTx implements the reads in a transaction.
+func (r *IdentityRepository) ListActivePasskeyCredentialsTx(ctx context.Context, tx uow.Tx, userID string) ([]identity.PasskeyCredential, error) {
+	db, err := r.db.in(tx)
+	if err != nil {
+		return nil, err
+	}
+	return (&IdentityRepository{db: db}).ListActivePasskeyCredentials(ctx, userID)
+}

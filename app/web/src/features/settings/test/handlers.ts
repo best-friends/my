@@ -39,6 +39,13 @@ export const autoDeletePolicyFixture: Schemas["AutoDeletePolicy"] = {
   keep_min_favourites: 0,
 };
 
+/** The options of a confirmation with a passkey, which test/webauthn's browser answers. */
+const passkeyConfirmationFixture = {
+  options: { challenge: "Y29uZmlybQ", rpId: "social.example", userVerification: "required" },
+  confirmation_token: "conf-1",
+  expires_at: "2026-10-20T00:05:00Z",
+};
+
 export const handlers = [
   // operationIds getAutoDeletePolicy, updateAutoDeletePolicy: the server answers the policy it saved.
   http.get(`${apiBase}/preferences/auto_delete`, ({ request }) => withViewer(request, () => HttpResponse.json(autoDeletePolicyFixture))),
@@ -48,6 +55,10 @@ export const handlers = [
   }),
   // operationId listPasskeys: no passkeys; the tests that add or remove one play the server themselves.
   http.get(`${apiBase}/passkeys`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  // operationId beginPasskeyConfirmation: the options of a confirmation with a passkey.
+  http.post(`${apiBase}/passkeys/confirmation`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json(passkeyConfirmationFixture satisfies Schemas["PasskeyConfirmation"])),
+  ),
   // operationIds getTwoFactor, setUpTotp, enableTotp, regenerateRecoveryCodes, disableTotp.
   http.get(`${apiBase}/two_factor`, ({ request }) => withViewer(request, () => HttpResponse.json(twoFactorOffFixture))),
   http.post(`${apiBase}/two_factor/totp/setup`, ({ request }) => withViewer(request, () => HttpResponse.json(totpSetupFixture))),
@@ -95,8 +106,12 @@ export const handlers = [
     withViewer(request, () => new HttpResponse(new Blob(["PK"], { type: "application/zip" }), { headers: { "Content-Type": "application/zip" } })),
   ),
   http.post(`${apiBase}/accounts/delete`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
-  // operationId changePassword: the password is changed.
+  // operationIds getPasswordStatus, changePassword, removePassword: the user has a password, which changes and goes.
+  http.get(`${apiBase}/accounts/password`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ has_password: true } satisfies Schemas["PasswordStatus"])),
+  ),
   http.post(`${apiBase}/accounts/password`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.post(`${apiBase}/accounts/password/remove`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds exportCsv, listDataImports, previewDataImport, startDataImport: one blocked account, no imports, and a file of
   // one entry.
   http.get(`${apiBase}/csv_exports/:kind`, ({ request }) =>

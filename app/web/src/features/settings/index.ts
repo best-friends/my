@@ -31,7 +31,8 @@ export { AutoDeleteSettings } from "./components/AutoDeleteSettings";
 // Two-factor authentication with an authenticator app (FR-005).
 export { twoFactorQueryOptions } from "./api/twoFactor";
 export { TwoFactorSettings } from "./components/TwoFactorSettings";
-// Changing the password (FR-002).
+// Changing the password (FR-002), and removing it or setting it again for a user with passkeys (FR-004).
+export { passwordStatusQueryOptions } from "./api/password";
 export { PasswordSettings } from "./components/PasswordSettings";
 // Passkeys, which sign in instead of the password (FR-004).
 export { passkeysQueryOptions } from "./api/passkeys";

@@ -39,13 +39,13 @@ func accountDeletesAtTheOwnersRequest(t *testing.T, e *accountEnv) {
 		}
 		return a.Lifecycle
 	}
-	if err := e.identity.DeleteOwnAccount(ctx, alice.User.ID, "wrong password"); !errors.Is(err, appidentity.ErrWrongPassword) {
+	if err := e.identity.DeleteOwnAccount(ctx, alice.User.ID, appidentity.Confirmation{Password: "wrong password"}); !errors.Is(err, appidentity.ErrWrongPassword) {
 		t.Fatalf("DeleteOwnAccount(wrong password) = %v, want ErrWrongPassword", err)
 	}
 	if s := state(alice.AccountID); s.State != account.StateActive {
 		t.Fatalf("state after a wrong password = %+v, want active", s)
 	}
-	if err := e.identity.DeleteOwnAccount(ctx, alice.User.ID, "correct horse battery staple"); err != nil {
+	if err := e.identity.DeleteOwnAccount(ctx, alice.User.ID, appidentity.Confirmation{Password: "correct horse battery staple"}); err != nil {
 		t.Fatalf("DeleteOwnAccount = %v", err)
 	}
 	if s := state(alice.AccountID); s.State != account.StateDeleted || !s.Since.Equal(e.clock.Now()) {
@@ -54,7 +54,7 @@ func accountDeletesAtTheOwnersRequest(t *testing.T, e *accountEnv) {
 	if s := state(bob.AccountID); s.State != account.StateActive {
 		t.Errorf("another account's state = %+v, want active", s)
 	}
-	if err := e.identity.DeleteOwnAccount(ctx, alice.User.ID, "correct horse battery staple"); !errors.Is(err, appaccount.ErrAlreadyDeleted) {
+	if err := e.identity.DeleteOwnAccount(ctx, alice.User.ID, appidentity.Confirmation{Password: "correct horse battery staple"}); !errors.Is(err, appaccount.ErrAlreadyDeleted) {
 		t.Errorf("second DeleteOwnAccount = %v, want ErrAlreadyDeleted", err)
 	}
 	instance, err := e.accounts.EnsureInstanceActor(ctx)

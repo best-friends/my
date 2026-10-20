@@ -287,15 +287,22 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   ドメインをミュートするフォーム（`TextField` とブラウザの制約検証）、ミュートしているドメインの一覧（ドメインの順、「さらに表示」）の 3 つ。`POST /domain_mutes` が正規化したドメインを `StatusMessage` に出し、断られたらサーバーの `detail` を `role="alert"` で出して入力を残す。
   各行はドメインを U ラベルで（A ラベルと違えば A ラベルも、どちらも `dir="ltr"`）出し、「ミュートを解除」（アクセシブルネームにドメインを含める）で `DELETE /domain_mutes/{domain}` を送る。解除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。
   ミュートと解除は投稿の一覧と通知（未読数を含む）を古くする（S1）。ミュートは一覧も取り直す（ドメインの順に入る）。
-- **パスワード**（`/settings/password`、設定のメニューの「パスワード」、FR-002、`features/settings` の `PasswordSettings`）: 変更が何をするか（ほかのブラウザーとアプリからログアウトし、パスキーと二要素認証は残る）の説明と、
+- **パスワード**（`/settings/password`、設定のメニューの「パスワード」、FR-002・FR-004、`features/settings` の `PasswordSettings`）: loader が、パスワードがあるか（`GET /accounts/password`）とパスキーの一覧を読む。
+  パスワードがある利用者には 2 つの区画（`h2` の `section`）を出す。「パスワードを変更」は、変更が何をするか（ほかのブラウザーとアプリからログアウトし、パスキーと二要素認証は残る）の説明と、
   現在のパスワードと新しいパスワード（`autocomplete` は `current-password` / `new-password`、長さはブラウザーの制約検証）の `TextField` のフォーム。`POST /accounts/password` を送り、
-  間違った現在のパスワードはその欄のエラー、ほかの失敗は `role="alert"` で出し、成功したらフォームを空にして `StatusMessage` に出す。サーバーは変更を要求したトークンの系列を残すので、この画面のセッションは続き、キャッシュは変わらない。
-  パスワードを忘れたときのリセットはサーバーのログインの画面が行う（§8）。
-- **パスキー**（`/settings/passkeys`、設定のメニューの「パスキー」、FR-004、`features/settings` の `PasskeySettings`）: パスキーが何をするか（パスワードの代わりになり、二要素認証のコードは引き続き求められる）の説明、
-  パスキーを追加するフォーム（名前と現在のパスワードの `TextField`）、登録済みのパスキーの一覧（古い順）の 3 つ。追加は `POST /passkeys/registration` がパスワードを確かめてから、ブラウザの `navigator.credentials.create()` を開き、
+  間違った現在のパスワードはその欄のエラー、ほかの失敗は `role="alert"` で出す。「パスワードを削除」は、パスキーだけでログインするようになることの説明と、`ConfirmDialog`（`danger`）で確かめるボタン。
+  確かめるとパスキーでの確認（下記）のあとに `POST /accounts/password/remove` を送り、失敗はダイアログに出す。パスキーのない利用者にはボタンの代わりに先にパスキーを追加するよう出し、パスキーに対応していないブラウザではその旨を出す。
+  パスワードのない利用者には「パスワードを設定」の区画だけを出し、新しいパスワードの欄をパスキーでの確認のあとに `POST /accounts/password` で送る。
+  変更・削除・設定の結果は、画面の先頭の 1 つの `StatusMessage` に出す（削除や設定で区画が入れ替わっても、同じ場所の `StatusMessage` が読み上げられる）。成功したらフォームを空にし、パスワードがあるかを取り直してから結果を出す。
+  サーバーは要求したトークンの系列を残すので、この画面のセッションは続く。パスワードを忘れたときのリセットはサーバーのログインの画面が行う（§8）。
+- **パスキーでの確認**（`features/settings/api/passkeys` の `confirmWithPasskey`）: 本人を確かめる操作（パスキーの追加、パスワードの変更・設定・削除、アカウントの削除）を、パスワードの代わりにパスキーで確かめる。
+  `POST /passkeys/confirmation` の options でブラウザの `navigator.credentials.get()` を開き、その答えと `confirmation_token` を操作の要求の `passkey` に入れる。パスワードのない利用者の操作と、パスワードの削除がこれを使う。
+  閉じられた確認・使えなかったブラウザ・検証できなかったパスキー・期限切れは、それぞれの文言（`settings.passkey_confirmation.*`）で操作の失敗として出す（E2）。
+- **パスキー**（`/settings/passkeys`、設定のメニューの「パスキー」、FR-004、`features/settings` の `PasskeySettings`）: パスキーが何をするか（パスワードの代わりになり、二要素認証のコードは引き続き求められ、パスキーがあればパスワードを削除できる）の説明、
+  パスキーを追加するフォーム（名前と現在のパスワードの `TextField`。パスワードのない利用者には名前だけで、登録済みのパスキーで確かめる）、登録済みのパスキーの一覧（古い順）の 3 つ。追加は `POST /passkeys/registration` がパスワードかパスキーを確かめてから、ブラウザの `navigator.credentials.create()` を開き、
   その答えを `POST /passkeys` へ送る（`lib/webauthn` が JSON とブラウザのオブジェクトを変換する）。間違ったパスワードはその欄のエラー、閉じられた確認や検証できなかったパスキーなどは `role="alert"` で出す。
   パスキーに対応していないブラウザではフォームの代わりにその旨を出す。各行は名前（`dir="auto"`）と追加した日時を出し、「削除」（アクセシブルネームに名前を含める）を `ConfirmDialog`（`danger`）で確かめてから `DELETE /passkeys/{id}` を送る。
-  削除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。パスキーでのログインはサーバーのログインの画面が行う（§8）。
+  削除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。パスワードのない利用者の最後のパスキーはサーバーが断り（409 `last-sign-in-method`）、その理由をダイアログに出す。パスキーでのログインはサーバーのログインの画面が行う（§8）。
 - **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、表示のロケール、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
 - **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。

@@ -600,13 +600,6 @@ type PasskeyCredential struct {
 	CreatedAt      int64
 }
 
-type PasswordCredential struct {
-	ID           string
-	UserID       string
-	PasswordHash string
-	SetAt        int64
-}
-
 type Poll struct {
 	ID         string
 	RevisionID string

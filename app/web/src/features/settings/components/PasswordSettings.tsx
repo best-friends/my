@@ -1,21 +1,65 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The password page below its heading (FR-002): what a change does (the other browsers and apps are signed out, the
-// passkeys and two-factor authentication stay) and the form that changes the password with the current one. What the
-// change did stays on the page in a StatusMessage (role="status"). A wrong current password is that field's error and
-// any other failure an alert next to the form (web-client.md E2, G16).
-import { Button, StatusMessage, TextField } from "@my/ui";
+// The password page below its heading (FR-002, FR-004). A user with a password gets the form that changes it with the
+// current one (what a change does: the other browsers and apps are signed out, the passkeys and two-factor
+// authentication stay) and the section that removes it after a passkey confirms it in an alert dialog (ConfirmDialog),
+// which a user without a passkey is told to add first. A user who removed the password gets the form that sets one
+// after a passkey confirms it. What a change, a setting or a removal did stays on the page in one StatusMessage
+// (role="status") at its top, which stays in place when the page turns from one kind into the other. A wrong current password is that field's error and any other failure an alert next to the form or
+// in the dialog (web-client.md E2, G16).
+import { Button, ConfirmDialog, StatusMessage, TextField } from "@my/ui";
+import { type ReactNode, useId, useState } from "react";
 import { useT } from "../../../lib/i18n";
 import { passwordMaxLength, passwordMinLength } from "../api/password";
-import { usePasswordChangeForm } from "../hooks/usePasswordChange";
+import { type PasswordChangeForm, type PasswordRemoval, usePasswordChangeForm, usePasswordRemoval } from "../hooks/usePasswordChange";
 
 export function PasswordSettings() {
   const t = useT();
-  const form = usePasswordChangeForm();
-  const lengths = { min: passwordMinLength, max: passwordMaxLength };
+  const [status, setStatus] = useState<string | undefined>(undefined);
+  const form = usePasswordChangeForm(setStatus);
+  const removal = usePasswordRemoval(setStatus);
   return (
     <div className="@container flex flex-col gap-8">
-      <p>{t("client:settings.password.description")}</p>
-      <form onSubmit={form.submit} className="flex flex-col items-start gap-4">
+      <StatusMessage>{status}</StatusMessage>
+      {form.hasPassword ? (
+        <>
+          <Section title={t("client:settings.password.change.title")}>
+            <p>{t("client:settings.password.description")}</p>
+            <ChangeForm form={form} />
+          </Section>
+          <Section title={t("client:settings.password.remove.title")}>
+            <RemovePassword removal={removal} />
+          </Section>
+        </>
+      ) : (
+        <Section title={t("client:settings.password.set.title")}>
+          <p>{t("client:settings.password.set.description")}</p>
+          {form.isPasskeySupported ? <ChangeForm form={form} /> : <p>{t("client:settings.password.passkeys_unsupported")}</p>}
+        </Section>
+      )}
+    </div>
+  );
+}
+
+/** A titled region of the page below its `h1`: an `h2` that names a `<section>`. */
+function Section({ title, children }: { title: ReactNode; children: ReactNode }) {
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <h2 id={headingId} className="text-lg font-semibold">
+        {title}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+/** The form that changes the password after the current one, or sets one after a passkey for a user without one. */
+function ChangeForm({ form }: { form: PasswordChangeForm }) {
+  const t = useT();
+  const lengths = { min: passwordMinLength, max: passwordMaxLength };
+  return (
+    <form onSubmit={form.submit} className="flex flex-col items-start gap-4">
+      {form.hasPassword && (
         <TextField
           className="w-full max-w-sm"
           label={t("client:settings.password.current")}
@@ -27,29 +71,59 @@ export function PasswordSettings() {
           isInvalid={form.currentPasswordError !== undefined}
           errorMessage={form.currentPasswordError ?? t("client:settings.password.current.required")}
         />
-        <TextField
-          className="w-full max-w-sm"
-          label={t("client:settings.password.new")}
-          description={t("client:settings.password.new.description", lengths)}
-          type="password"
-          autoComplete="new-password"
-          value={form.newPassword}
-          onChange={form.changeNewPassword}
-          isRequired
-          minLength={passwordMinLength}
-          maxLength={passwordMaxLength}
-          errorMessage={t("client:settings.password.new.invalid", lengths)}
-        />
-        {form.error !== undefined && (
-          <p role="alert" className="text-danger">
-            {form.error}
-          </p>
-        )}
-        <Button type="submit" variant="primary" isPending={form.isPending}>
-          {t("client:settings.password.submit")}
-        </Button>
-        <StatusMessage>{form.status}</StatusMessage>
-      </form>
+      )}
+      <TextField
+        className="w-full max-w-sm"
+        label={t("client:settings.password.new")}
+        description={t("client:settings.password.new.description", lengths)}
+        type="password"
+        autoComplete="new-password"
+        value={form.newPassword}
+        onChange={form.changeNewPassword}
+        isRequired
+        minLength={passwordMinLength}
+        maxLength={passwordMaxLength}
+        errorMessage={t("client:settings.password.new.invalid", lengths)}
+      />
+      {form.error !== undefined && (
+        <p role="alert" className="text-danger">
+          {form.error}
+        </p>
+      )}
+      <Button type="submit" variant="primary" isPending={form.isPending}>
+        {t(form.hasPassword ? "client:settings.password.submit" : "client:settings.password.set.submit")}
+      </Button>
+    </form>
+  );
+}
+
+/** Removing the password: what it does, and its button and dialog; or why it cannot be removed here. */
+function RemovePassword({ removal }: { removal: PasswordRemoval }) {
+  const t = useT();
+  if (!removal.hasPasskey) return <p>{t("client:settings.password.remove.no_passkey")}</p>;
+  if (!removal.isSupported) return <p>{t("client:settings.password.passkeys_unsupported")}</p>;
+  return (
+    <div className="flex flex-col items-start gap-4">
+      <p>{t("client:settings.password.remove.description")}</p>
+      <Button variant="danger" onPress={removal.open}>
+        {t("client:settings.password.remove.open")}
+      </Button>
+      <ConfirmDialog
+        isOpen={removal.isOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) removal.cancel();
+        }}
+        title={t("client:settings.password.remove.confirm.title")}
+        description={t("client:settings.password.remove.confirm.description")}
+        confirmLabel={t("client:settings.password.remove.confirm")}
+        cancelLabel={t("client:settings.password.remove.cancel")}
+        tone="danger"
+        onConfirm={() => {
+          removal.confirm();
+        }}
+        isPending={removal.isPending}
+        {...(removal.error === undefined ? {} : { errorMessage: removal.error })}
+      />
     </div>
   );
 }

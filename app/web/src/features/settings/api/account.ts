@@ -4,14 +4,12 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
+import { confirmWithPasskey } from "./passkeys";
 
 type Schemas = components["schemas"];
 
 export type DataExport = Schemas["DataExport"];
 export type DataExportState = DataExport["state"];
-
-/** The problem type of a password that is not the user's current one. */
-const wrongPasswordType = "/api/v1/problems/wrong-password";
 
 /** The user's latest data exports, newest first (GET /exports). */
 export function dataExportsQueryOptions(api: Api) {
@@ -46,17 +44,16 @@ export async function fetchExportArchive(api: Api, id: string): Promise<Blob> {
   return data;
 }
 
-/** Deletes the user's own account after checking the password (POST /accounts/delete), as the options of useMutation. */
+/**
+ * Deletes the user's own account after checking the password, or a passkey when `password` is undefined (a user
+ * without a password), (POST /accounts/delete), as the options of useMutation.
+ */
 export function deleteOwnAccountMutation(api: Api) {
   return {
     mutationKey: ["post", "/accounts/delete"] as const,
-    mutationFn: async (password: string): Promise<void> => {
-      await api.fetch.POST("/accounts/delete", { body: { password } });
+    mutationFn: async (password: string | undefined): Promise<void> => {
+      const body = password === undefined ? { passkey: await confirmWithPasskey(api) } : { password };
+      await api.fetch.POST("/accounts/delete", { body });
     },
   };
-}
-
-/** Whether a deletion failed because the password was wrong. */
-export function isWrongPasswordError(error: unknown): boolean {
-  return error instanceof ApiError && error.type === wrongPasswordType;
 }

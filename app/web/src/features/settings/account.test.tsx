@@ -8,6 +8,7 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, oauthPaths, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { installPasskeys, removePasskeys } from "../../test/webauthn";
 import { dataExportFixture } from "./test/handlers";
 
 beforeEach(() => {
@@ -18,6 +19,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  removePasskeys();
 });
 
 type DataExport = Schemas["DataExport"];
@@ -99,7 +101,7 @@ describe("deleting the account", () => {
     server.use(
       http.post(`${apiBase}/accounts/delete`, async ({ request }) => {
         const body = (await request.json()) as Schemas["DeleteOwnAccountRequest"];
-        passwords.push(body.password);
+        passwords.push(body.password ?? "");
         return body.password === "secret" ? new HttpResponse(null, { status: 204 }) : problem(422, "/api/v1/problems/wrong-password", "The password is wrong.");
       }),
       http.post(oauthPaths.revoke, () => {
@@ -128,5 +130,38 @@ describe("deleting the account", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
     expect(passwords).toEqual(["wrong", "secret"]);
     expect(revoked).toBe(1);
+  });
+
+  test("asks a user without a password for a passkey", async () => {
+    const credentials = installPasskeys();
+    const bodies: Schemas["DeleteOwnAccountRequest"][] = [];
+    server.use(
+      http.get(`${apiBase}/accounts/password`, () => HttpResponse.json({ has_password: false })),
+      http.post(`${apiBase}/accounts/delete`, async ({ request }) => {
+        bodies.push((await request.json()) as Schemas["DeleteOwnAccountRequest"]);
+        return bodies.length === 1
+          ? problem(422, "/api/v1/problems/invalid-passkey", "The passkey could not be verified.")
+          : new HttpResponse(null, { status: 204 });
+      }),
+      http.post(oauthPaths.revoke, () => new HttpResponse(null, { status: 200 })),
+    );
+    const { user } = await renderApp({ path: "/settings/account" });
+    const section = await screen.findByRole("region", { name: "Delete your account" });
+
+    await user.click(within(section).getByRole("button", { name: "Delete account…" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Delete your account?" });
+    expect(dialog).toHaveAccessibleDescription(
+      "Your browser asks for one of your passkeys to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
+    );
+    expect(within(dialog).queryByLabelText(/Password/)).not.toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Delete account" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("The passkey could not be verified. Use a passkey of this account.");
+    await user.click(within(dialog).getByRole("button", { name: "Delete account" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+    expect(credentials.get).toHaveBeenCalledTimes(2);
+    expect(bodies[1]?.passkey?.confirmation_token).toBe("conf-1");
+    expect(bodies[1]?.password).toBeUndefined();
   });
 });

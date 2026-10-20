@@ -46,8 +46,19 @@ type Repository interface {
 	FindUserIDByEmail(ctx context.Context, normalized string) (string, error)
 	// ListUserRoles returns the roles a user holds, highest position first.
 	ListUserRoles(ctx context.Context, userID string) ([]identity.Role, error)
-	// FindCurrentPasswordCredential returns the newest password credential of a user.
+	// FindCurrentPasswordCredential returns the newest password credential of a user unless it
+	// has a removal; ErrNotFound when the user has no password.
 	FindCurrentPasswordCredential(ctx context.Context, userID string) (identity.PasswordCredential, error)
+	// LastPasswordChange returns when the password of a user last changed: when the newest
+	// password credential was set, or removed when it has a removal. ErrNotFound when the user
+	// never had a password.
+	LastPasswordChange(ctx context.Context, userID string) (time.Time, error)
+	// InsertPasswordCredentialRemoval ends a password credential; it does nothing for one that
+	// ended.
+	InsertPasswordCredentialRemoval(ctx context.Context, tx uow.Tx, r identity.PasswordCredentialRemoval) error
+	// LockSignInMethods holds the ways to sign in of a user (the password and the passkeys) in tx
+	// until it ends, so that the transactions that remove one of them serialize.
+	LockSignInMethods(ctx context.Context, tx uow.Tx, userID string) error
 	// FindRole returns a role by key with its permissions, sorted.
 	FindRole(ctx context.Context, key string) (identity.Role, []identity.Permission, error)
 	// ListUserIDsWithPermission returns inside tx the users whose current roles grant p, by ID.
@@ -116,8 +127,11 @@ type PasskeyRepository interface {
 
 // TxReads are the reads of Repository that run in a transaction tx, with what tx has written, for the
 // use cases that present what an event's transaction wrote (the data of the webhook messages,
-// ADR-0060). Each one reads as the method of the same name without Tx does.
+// ADR-0060) and for the checks that a transaction makes under a lock (LockSignInMethods). Each one
+// reads as the method of the same name without Tx does.
 type TxReads interface {
+	FindCurrentPasswordCredentialTx(ctx context.Context, tx uow.Tx, userID string) (identity.PasswordCredential, error)
+	ListActivePasskeyCredentialsTx(ctx context.Context, tx uow.Tx, userID string) ([]identity.PasskeyCredential, error)
 	FindRegistrationApplicationTx(ctx context.Context, tx uow.Tx, userID string) (identity.RegistrationApplication, error)
 	FindRegistrationStateTx(ctx context.Context, tx uow.Tx, userID string) (identity.UserRegistrationState, error)
 	FindPrimaryEmailTx(ctx context.Context, tx uow.Tx, userID string) (identity.EmailAddress, bool, error)

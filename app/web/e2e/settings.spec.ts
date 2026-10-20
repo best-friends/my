@@ -145,6 +145,8 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
         return json(route, autoDeletePolicy);
       case "GET /two_factor":
         return json(route, { enabled: false });
+      case "GET /accounts/password":
+        return json(route, { has_password: true });
       case "GET /passkeys":
         return json(route, {
           items: [{ id: "0192f0c4-7a8e-7000-8000-000000000ab1", name: "A password manager with a long name on a narrow phone", created_at: "2026-10-16T09:30:00Z" }],
