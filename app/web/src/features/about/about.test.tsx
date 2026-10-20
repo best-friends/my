@@ -73,6 +73,29 @@ describe("the information page", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
+  test("says where to get the source code the server runs, and why everyone may", async () => {
+    serveInstance({ source_url: "https://git.example.org/fork/my" });
+    await renderApp({ path: "/about" });
+    const source = await screen.findByRole("region", { name: "Source code" });
+    expect(within(source).getByText(/GNU Affero General Public License/u)).toBeInTheDocument();
+    const link = within(source).getByRole("link", { name: "View the source code" });
+    expect(link).toHaveAttribute("href", "https://git.example.org/fork/my");
+    expect(link).toHaveAttribute("rel", "noreferrer");
+    expect(within(source).queryByRole("term")).not.toBeInTheDocument();
+  });
+
+  test("offers to request the source code by email when the server takes requests at an address", async () => {
+    serveInstance({ source_url: "mailto:source%2Bmy@my.example?subject=Source" });
+    await renderApp({ path: "/about" });
+    const source = await screen.findByRole("region", { name: "Source code" });
+    expect(within(source).getByRole("link", { name: "Request the source code by email" })).toHaveAttribute(
+      "href",
+      "mailto:source%2Bmy@my.example?subject=Source",
+    );
+    expect(within(source).getByRole("definition")).toHaveTextContent("source+my@my.example");
+    expect(within(source).getByRole("definition")).toHaveAttribute("dir", "ltr");
+  });
+
   test("says what the server states to search engines and AI, and what such a statement means", async () => {
     serveInstance({ search_indexing: "allow", ai_usage: "deny_training" });
     await renderApp({ path: "/about" });

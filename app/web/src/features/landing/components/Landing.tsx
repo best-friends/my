@@ -3,7 +3,7 @@ import { Button, EmptyState, Feed, Link, PostSkeleton, RegionError, VisuallyHidd
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { aboutPath } from "../../../lib/paths";
-import { ServerThumbnail } from "../../about";
+import { ServerThumbnail, SourceCodeLink } from "../../about";
 import { DocumentLinks } from "../../documents";
 import { useSignIn } from "../../session";
 import { StatusCard } from "../../status";
@@ -13,7 +13,7 @@ import { type Landing as LandingData, type RecentPosts, type RegistrationMode, u
 /**
  * The body of the landing page for people who are not signed in (`/`), under the page's heading: the image and the
  * summary of the server, how to sign in or create an account, its rules, a few recent posts, and the links to its
- * information page (`/about`) and to its terms of service and privacy policy.
+ * information page (`/about`), to its source code (AGPL-3.0 section 13), and to its terms of service and privacy policy.
  */
 export function Landing() {
   const t = useT();
@@ -38,6 +38,11 @@ export function Landing() {
           {t("client:shell.about.more")}
         </Link>
       </p>
+      {landing.sourceUrl !== undefined && (
+        <p>
+          <SourceCodeLink url={landing.sourceUrl} />
+        </p>
+      )}
       <DocumentLinks />
     </div>
   );

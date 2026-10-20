@@ -95,6 +95,26 @@
     "defaultMessage": "‮ᴚnʅǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "about.source.address": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss ɟoɹ ɹǝbnǝsʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.source.license": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ɹnus ɟɹǝǝ soɟʇʍɐɹǝ nupǝɹ ʇɥǝ ⅁N∩ ∀ɟɟǝɹo ⅁ǝuǝɹɐʅ Ԁnqʅıɔ ⅂ıɔǝusǝ, ʌǝɹsıou 3 (∀⅁Ԁ⅂-3.0). Ǝʌǝɹʎouǝ ʍɥo nsǝs ʇɥǝ sǝɹʌǝɹ ɯɐʎ ƃǝʇ ʇɥǝ sonɹɔǝ ɔopǝ ʇɥɐʇ ıʇ ɹnus.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.source.request": {
+    "defaultMessage": "‮ᴚǝbnǝsʇ ʇɥǝ sonɹɔǝ ɔopǝ qʎ ǝɯɐıʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.source.title": {
+    "defaultMessage": "‮Sonɹɔǝ ɔopǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.source.view": {
+    "defaultMessage": "‮Ʌıǝʍ ʇɥǝ sonɹɔǝ ɔopǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "about.title": {
     "defaultMessage": "‮∀qonʇ {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."

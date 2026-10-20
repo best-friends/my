@@ -50,6 +50,16 @@ export interface MessageArgs {
   "client:about.domains.title": {};
   /** Rules */
   "client:about.rules.title": {};
+  /** Email address for requests */
+  "client:about.source.address": {};
+  /** This server runs free software under the GNU Affero General Public License, version 3 (AGPL-3.0). Everyone who uses the server may get the source code that it runs. */
+  "client:about.source.license": {};
+  /** Request the source code by email */
+  "client:about.source.request": {};
+  /** Source code */
+  "client:about.source.title": {};
+  /** View the source code */
+  "client:about.source.view": {};
   /** About {instance} */
   "client:about.title": { instance: string };
   /** No actions are in effect on your account */

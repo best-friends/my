@@ -66,7 +66,8 @@ type Options struct {
 	AccountDomain string
 	// SoftwareVersion is the server version that NodeInfo reports.
 	SoftwareVersion string
-	// SourceURL is where users get the server's source code (NodeInfo software.repository).
+	// SourceURL is where users get the server's source code, an https URL or a mailto: address (NodeInfo
+	// metadata.sourceCode, and software.repository when it is an https URL).
 	SourceURL string
 	// InstanceName returns the instance's display name in its default locale, which NodeInfo
 	// reports as metadata.nodeName; nil or "" reports Host.
