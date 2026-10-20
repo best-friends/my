@@ -42,6 +42,24 @@ func (q *Queries) GetInviteByCode(ctx context.Context, code string) (Invite, err
 	return i, err
 }
 
+const getInviteByID = `-- name: GetInviteByID :one
+SELECT id, code, created_by_user_id, max_uses, expires_at, created_at FROM invites WHERE id = ?
+`
+
+func (q *Queries) GetInviteByID(ctx context.Context, id string) (Invite, error) {
+	row := q.db.QueryRowContext(ctx, getInviteByID, id)
+	var i Invite
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.CreatedByUserID,
+		&i.MaxUses,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getInviteUsage = `-- name: GetInviteUsage :one
 SELECT
   (SELECT COUNT(*) FROM invite_redemptions r WHERE r.invite_id = ?1) AS uses,
@@ -315,9 +333,15 @@ SELECT i.id, i.code, i.created_by_user_id, i.max_uses, i.expires_at, i.created_a
   (SELECT COUNT(*) FROM invite_redemptions r WHERE r.invite_id = i.id) AS uses,
   EXISTS (SELECT 1 FROM invite_revocations v WHERE v.invite_id = i.id) AS revoked
 FROM invites i
+WHERE CAST(?1 AS TEXT) = '' OR i.id < ?1
 ORDER BY i.id DESC
-LIMIT ?1
+LIMIT ?2
 `
+
+type ListInvitesParams struct {
+	Before    string
+	PageLimit int64
+}
 
 type ListInvitesRow struct {
 	ID              string
@@ -330,8 +354,8 @@ type ListInvitesRow struct {
 	Revoked         bool
 }
 
-func (q *Queries) ListInvites(ctx context.Context, pageLimit int64) ([]ListInvitesRow, error) {
-	rows, err := q.db.QueryContext(ctx, listInvites, pageLimit)
+func (q *Queries) ListInvites(ctx context.Context, arg ListInvitesParams) ([]ListInvitesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listInvites, arg.Before, arg.PageLimit)
 	if err != nil {
 		return nil, err
 	}

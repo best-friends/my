@@ -2075,6 +2075,150 @@
     "defaultMessage": "連合先のサーバー",
     "description": "Heading of the screen of the remote servers that deliveries failed to reach, and its link in the administration menu."
   },
+  "admin.invites.copied": {
+    "defaultMessage": "招待 {code} のリンクをコピーしました。",
+    "description": "Toast after an invite's link was copied. {code} is its code."
+  },
+  "admin.invites.copy": {
+    "defaultMessage": "リンクをコピー",
+    "description": "Button that copies an invite's sign-up link."
+  },
+  "admin.invites.copy_failed": {
+    "defaultMessage": "リンクをコピーできませんでした。",
+    "description": "Toast when copying an invite's link failed."
+  },
+  "admin.invites.copy_invite": {
+    "defaultMessage": "招待 {code} のリンクをコピー",
+    "description": "Accessible name of the copy button of an invite. {code} is its code."
+  },
+  "admin.invites.create": {
+    "defaultMessage": "招待を作成する",
+    "description": "Button that creates an invite."
+  },
+  "admin.invites.create_failed": {
+    "defaultMessage": "招待を作成できませんでした：{reason}",
+    "description": "Error when creating an invite failed. {reason} is why."
+  },
+  "admin.invites.created": {
+    "defaultMessage": "招待 {code} を作成しました。",
+    "description": "Status after an invite was created. {code} is its code."
+  },
+  "admin.invites.created_at": {
+    "defaultMessage": "作成日時",
+    "description": "Term of when an invite was created."
+  },
+  "admin.invites.duration.minutes": {
+    "defaultMessage": "{count, plural, other {# 分}}",
+    "description": "An option of how long an invite works, in minutes."
+  },
+  "admin.invites.empty": {
+    "defaultMessage": "招待はまだありません",
+    "description": "Heading of the empty list of invites."
+  },
+  "admin.invites.empty.description": {
+    "defaultMessage": "上のフォームから作成してください。",
+    "description": "Description of the empty list of invites."
+  },
+  "admin.invites.expires_at": {
+    "defaultMessage": "期限",
+    "description": "Term of when an invite expires."
+  },
+  "admin.invites.expires_in": {
+    "defaultMessage": "有効期間",
+    "description": "Label of the select of how long an invite works."
+  },
+  "admin.invites.link": {
+    "defaultMessage": "招待する人に次のリンクを送ってください：",
+    "description": "Text before the sign-up link of a new invite."
+  },
+  "admin.invites.list.title": {
+    "defaultMessage": "招待の一覧",
+    "description": "Heading of the list of invites."
+  },
+  "admin.invites.max_uses": {
+    "defaultMessage": "登録できる人数",
+    "description": "Label of the select of how many sign-ups an invite allows."
+  },
+  "admin.invites.max_uses.description": {
+    "defaultMessage": "このコードで登録できる人数です。",
+    "description": "Help of the number of sign-ups of an invite."
+  },
+  "admin.invites.mode_notice": {
+    "defaultMessage": "いまサーバーは招待制ではないので、招待では誰も登録できません。登録できる人は、管理者がサーバーの設定で変えます。",
+    "description": "Notice on the invites screen when the registration mode is not invite."
+  },
+  "admin.invites.never": {
+    "defaultMessage": "無期限",
+    "description": "An invite that never expires: an option and a value."
+  },
+  "admin.invites.new.title": {
+    "defaultMessage": "招待を作成する",
+    "description": "Heading of the form of a new invite."
+  },
+  "admin.invites.revoke": {
+    "defaultMessage": "失効",
+    "description": "Button that revokes an invite."
+  },
+  "admin.invites.revoke_failed": {
+    "defaultMessage": "招待を失効させられませんでした：{reason}",
+    "description": "Toast when revoking an invite failed. {reason} is why."
+  },
+  "admin.invites.revoke_invite": {
+    "defaultMessage": "失効：招待 {code}（{date} に作成）",
+    "description": "Accessible name of the revoke button of an invite. {code} is its code; {date} when it was created, formatted."
+  },
+  "admin.invites.revoked": {
+    "defaultMessage": "招待 {code} を失効させました。このコードではもう登録できません。",
+    "description": "Status after an invite was revoked. {code} is its code."
+  },
+  "admin.invites.state": {
+    "defaultMessage": "状態",
+    "description": "Term of an invite's state."
+  },
+  "admin.invites.state.exhausted": {
+    "defaultMessage": "使い切り",
+    "description": "State of an invite used as many times as it allows."
+  },
+  "admin.invites.state.expired": {
+    "defaultMessage": "期限切れ",
+    "description": "State of an expired invite."
+  },
+  "admin.invites.state.revoked": {
+    "defaultMessage": "失効",
+    "description": "State of a revoked invite."
+  },
+  "admin.invites.state.usable": {
+    "defaultMessage": "使える",
+    "description": "State of an invite that people may sign up with."
+  },
+  "admin.invites.summary": {
+    "defaultMessage": "招待制のときに登録できるようにするコード。",
+    "description": "Description of the invites screen in the moderation menu."
+  },
+  "admin.invites.title": {
+    "defaultMessage": "招待",
+    "description": "Title of the invites screen, in the moderation menu and as its heading."
+  },
+  "admin.invites.unlimited": {
+    "defaultMessage": "制限なし",
+    "description": "Option of an invite that any number of people may use."
+  },
+  "admin.invites.used": {
+    "defaultMessage": "登録した人数",
+    "description": "Term of how many people signed up with an invite."
+  },
+  "admin.invites.used.limited": {
+    "defaultMessage": "{max, number} 人中 {uses, number} 人",
+    "description": "How many people signed up with an invite, and how many it allows."
+  },
+  "admin.invites.used.unlimited": {
+    "defaultMessage": "{uses, number} 人（制限なし）",
+    "description": "How many people signed up with an invite without a limit. {uses} is the number."
+  },
+  "admin.invites.uses": {
+    "defaultMessage": "{count, plural, other {# 人}}",
+    "description": "An option of the number of sign-ups of an invite."
+  },
   "admin.list.more": {
     "defaultMessage": "さらに表示",
     "description": "Button under a list of an admin screen that loads more of it."
@@ -2631,6 +2775,274 @@
     "defaultMessage": "通報",
     "description": "Heading and title of the report queue."
   },
+  "admin.rules.add": {
+    "defaultMessage": "ルールを追加する",
+    "description": "Button that adds a new rule after the others."
+  },
+  "admin.rules.add_failed": {
+    "defaultMessage": "ルールを追加できませんでした：{reason}",
+    "description": "Error when adding a rule failed. {reason} is why."
+  },
+  "admin.rules.added": {
+    "defaultMessage": "ルールを最後に追加しました。変更は監査ログに記録されます。",
+    "description": "Status after a rule was added."
+  },
+  "admin.rules.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes a dialog of the rules without changing anything."
+  },
+  "admin.rules.change_failed": {
+    "defaultMessage": "ルールを変更できませんでした：{reason}",
+    "description": "Error when changing, moving or retiring a rule failed. {reason} is why."
+  },
+  "admin.rules.description": {
+    "defaultMessage": "このサーバーについてのページと通報のフォームは、読む人の言語でルールを表示します。ルールは言語ごとに 1 行の文と任意の補足を持ちます。廃止したルールは一覧から消え、そのルールを引用する通報には残ります。",
+    "description": "Explanation at the top of the rules screen."
+  },
+  "admin.rules.edit": {
+    "defaultMessage": "編集",
+    "description": "Button that opens the dialog of a rule's texts."
+  },
+  "admin.rules.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of the dialog of a rule's texts."
+  },
+  "admin.rules.edit.title": {
+    "defaultMessage": "ルールを編集",
+    "description": "Title of the dialog of a rule's texts."
+  },
+  "admin.rules.edit_rule": {
+    "defaultMessage": "編集：{rule}",
+    "description": "Accessible name of the edit button of a rule. {rule} is its text."
+  },
+  "admin.rules.empty": {
+    "defaultMessage": "ルールはまだありません",
+    "description": "Heading of the empty list of rules."
+  },
+  "admin.rules.empty.description": {
+    "defaultMessage": "利用者が守るルールを、上のフォームから追加してください。",
+    "description": "Description of the empty list of rules."
+  },
+  "admin.rules.heading": {
+    "defaultMessage": "ルール {place}：{rule}",
+    "description": "Heading of a rule in the list. {place} is its place, from 1; {rule} its text in the reader's language."
+  },
+  "admin.rules.hint": {
+    "defaultMessage": "{language}での補足",
+    "description": "Label of the optional hint of a rule in one language. {language} is the language's name."
+  },
+  "admin.rules.list.title": {
+    "defaultMessage": "有効なルール",
+    "description": "Heading of the list of the rules in effect."
+  },
+  "admin.rules.move_down": {
+    "defaultMessage": "下へ",
+    "description": "Button that moves a rule one place down."
+  },
+  "admin.rules.move_down_rule": {
+    "defaultMessage": "下へ：{rule}",
+    "description": "Accessible name of the button that moves a rule down. {rule} is its text."
+  },
+  "admin.rules.move_up": {
+    "defaultMessage": "上へ",
+    "description": "Button that moves a rule one place up."
+  },
+  "admin.rules.move_up_rule": {
+    "defaultMessage": "上へ：{rule}",
+    "description": "Accessible name of the button that moves a rule up. {rule} is its text."
+  },
+  "admin.rules.moved": {
+    "defaultMessage": "「{rule}」を {position} 番目に移しました。",
+    "description": "Status after a rule was moved. {rule} is its text; {position} its new place, from 1."
+  },
+  "admin.rules.new.title": {
+    "defaultMessage": "ルールを追加する",
+    "description": "Heading of the form of a new rule."
+  },
+  "admin.rules.no_text": {
+    "defaultMessage": "少なくとも 1 つの言語でルールを入れてください。",
+    "description": "Error when a rule has no text in any language."
+  },
+  "admin.rules.retire": {
+    "defaultMessage": "廃止",
+    "description": "Button that retires a rule, and the confirm button of its dialog."
+  },
+  "admin.rules.retire.description": {
+    "defaultMessage": "ルールは一覧から消え、元に戻せません。このルールを引用する通報には残ります。",
+    "description": "Description of the dialog that confirms retiring a rule."
+  },
+  "admin.rules.retire.title": {
+    "defaultMessage": "「{rule}」を廃止しますか？",
+    "description": "Question of the dialog that confirms retiring a rule. {rule} is its text."
+  },
+  "admin.rules.retire_rule": {
+    "defaultMessage": "廃止：{rule}",
+    "description": "Accessible name of the retire button of a rule. {rule} is its text."
+  },
+  "admin.rules.retired": {
+    "defaultMessage": "「{rule}」を廃止しました。",
+    "description": "Status after a rule was retired. {rule} is its text."
+  },
+  "admin.rules.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves a rule's texts in its dialog."
+  },
+  "admin.rules.summary": {
+    "defaultMessage": "利用者が守り、通報が引用するルール。",
+    "description": "Description of the rules screen in the administration menu."
+  },
+  "admin.rules.text": {
+    "defaultMessage": "{language}でのルール",
+    "description": "Label of the text of a rule in one language. {language} is the language's name."
+  },
+  "admin.rules.text.description": {
+    "defaultMessage": "{max} 文字以内の 1 行。",
+    "description": "Help of the text of a rule. {max} is the limit."
+  },
+  "admin.rules.text_required": {
+    "defaultMessage": "ルールを入れるか、補足も空にしてください。",
+    "description": "Error of a rule's text left empty or blank while its hint is filled in."
+  },
+  "admin.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Title of the rules screen, in the administration menu and as its heading."
+  },
+  "admin.rules.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of a text or hint of a rule longer than its limit. {max} is the limit."
+  },
+  "admin.rules.updated": {
+    "defaultMessage": "「{rule}」を保存しました。変更は監査ログに記録されます。",
+    "description": "Status after a rule's texts were saved. {rule} is its text."
+  },
+  "admin.settings.audience.all": {
+    "defaultMessage": "誰にでも",
+    "description": "Choice of who may read something: everyone, visitors included."
+  },
+  "admin.settings.audience.none": {
+    "defaultMessage": "誰にも見せない",
+    "description": "Choice of who may read something: nobody."
+  },
+  "admin.settings.audience.users": {
+    "defaultMessage": "ログインした利用者",
+    "description": "Choice of who may read something: the server's signed-in users."
+  },
+  "admin.settings.characters_left": {
+    "defaultMessage": "{count, plural, other {残り # 文字}}",
+    "description": "Character count under a text of the server settings and the rules while the text is within its limit."
+  },
+  "admin.settings.characters_over": {
+    "defaultMessage": "{count, plural, other {# 文字超えています}}",
+    "description": "Character count under a text of the server settings and the rules when the text is over its limit."
+  },
+  "admin.settings.descriptions.description": {
+    "defaultMessage": "短い説明は、このサーバーについてのページやほかのアプリがサーバーの名前と並べて表示する 1 段落の文です。説明は、このサーバーについてのページで詳しく伝えます。どちらも言語ごとに持ち、説明のない言語ではサーバーの既定の言語の説明が表示されます。",
+    "description": "Explanation above the fields of the server's descriptions on the server settings screen."
+  },
+  "admin.settings.descriptions.full": {
+    "defaultMessage": "{language}での説明",
+    "description": "Label of the field of the server's full description in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.descriptions.save": {
+    "defaultMessage": "説明を保存する",
+    "description": "Button that saves the server's descriptions."
+  },
+  "admin.settings.descriptions.save_failed": {
+    "defaultMessage": "説明を保存できませんでした：{reason}",
+    "description": "Error when saving the server's descriptions failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.descriptions.saved": {
+    "defaultMessage": "説明を保存しました。変更は監査ログに記録されます。",
+    "description": "Status after the server's descriptions were saved."
+  },
+  "admin.settings.descriptions.short": {
+    "defaultMessage": "{language}での短い説明",
+    "description": "Label of the field of the server's short description in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.descriptions.title": {
+    "defaultMessage": "説明",
+    "description": "Heading of the section of the server's descriptions on the server settings screen."
+  },
+  "admin.settings.descriptions.unchanged": {
+    "defaultMessage": "説明はすでに保存されています。",
+    "description": "Status after pressing the save button of the descriptions without changing one."
+  },
+  "admin.settings.domain_actions.comments": {
+    "defaultMessage": "公開コメントを見られる人",
+    "description": "Label of the radio buttons of who may read the public comments of the domain actions."
+  },
+  "admin.settings.domain_actions.comments.all": {
+    "defaultMessage": "一覧を見られる人なら誰でもコメントを見られます。",
+    "description": "Description of showing the comments of the domain actions to everyone."
+  },
+  "admin.settings.domain_actions.comments.none": {
+    "defaultMessage": "コメントは表示しません。",
+    "description": "Description of not showing the comments of the domain actions."
+  },
+  "admin.settings.domain_actions.comments.users": {
+    "defaultMessage": "一覧を見られるログインした利用者がコメントを見られます。",
+    "description": "Description of showing the comments of the domain actions to signed-in users."
+  },
+  "admin.settings.domain_actions.description": {
+    "defaultMessage": "このサーバーについてのページと API で、制限・凍結しているサーバーの一覧と処分の公開コメントを公開できます。",
+    "description": "Explanation of the publication of the domain actions."
+  },
+  "admin.settings.domain_actions.list": {
+    "defaultMessage": "一覧を見られる人",
+    "description": "Label of the radio buttons of who may read the list of domain actions."
+  },
+  "admin.settings.domain_actions.list.all": {
+    "defaultMessage": "ログインしていない人も含め、誰でも一覧を見られます。",
+    "description": "Description of publishing the list of domain actions to everyone."
+  },
+  "admin.settings.domain_actions.list.none": {
+    "defaultMessage": "一覧を公開しません。",
+    "description": "Description of not publishing the list of domain actions."
+  },
+  "admin.settings.domain_actions.list.users": {
+    "defaultMessage": "このサーバーにログインした利用者だけが一覧を見られます。",
+    "description": "Description of publishing the list of domain actions to signed-in users."
+  },
+  "admin.settings.domain_actions.title": {
+    "defaultMessage": "制限・凍結したサーバー",
+    "description": "Heading of the section of the publication of the domain actions."
+  },
+  "admin.settings.duration.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "A length of time in days."
+  },
+  "admin.settings.duration.hours": {
+    "defaultMessage": "{count, plural, other {# 時間}}",
+    "description": "A length of time in hours."
+  },
+  "admin.settings.duration.seconds": {
+    "defaultMessage": "{count, plural, other {# 秒}}",
+    "description": "A length of time in seconds."
+  },
+  "admin.settings.federation.authorized_fetch": {
+    "defaultMessage": "署名のある要求だけに答える（Authorized Fetch）",
+    "description": "Checkbox of the authorized fetch setting."
+  },
+  "admin.settings.federation.authorized_fetch.description": {
+    "defaultMessage": "ほかのサーバーは、検証できる署名があるときだけ投稿とコレクションを読めます。凍結したサーバーには読めなくなりますが、読めなくなるソフトウェアもあります。",
+    "description": "Description of the authorized fetch checkbox."
+  },
+  "admin.settings.federation.title": {
+    "defaultMessage": "連合",
+    "description": "Heading of the section of the federation settings."
+  },
+  "admin.settings.language.default": {
+    "defaultMessage": "既定の言語",
+    "description": "Label of the select of the server's default language."
+  },
+  "admin.settings.language.description": {
+    "defaultMessage": "新しいアカウントの言語、アプリにない言語を使う訪問者の言語、ある言語にないサーバーの文章の代わりに使う言語です。",
+    "description": "Help of the server's default language."
+  },
+  "admin.settings.language.title": {
+    "defaultMessage": "言語",
+    "description": "Heading of the section of the server's default language."
+  },
   "admin.settings.name.blank": {
     "defaultMessage": "空白以外の文字を入れるか、空のままにしてください。",
     "description": "Error of a field of the server's name that holds only spaces."
@@ -2667,9 +3079,125 @@
     "defaultMessage": "名前はすでに保存されています。",
     "description": "Status after pressing Save on the server settings screen without changing a name."
   },
+  "admin.settings.policies.save": {
+    "defaultMessage": "設定を保存する",
+    "description": "Button that saves the registration, language, timeline, federation and domain action settings together."
+  },
+  "admin.settings.policies.save_failed": {
+    "defaultMessage": "設定を保存できませんでした。何も変わっていません：{reason}",
+    "description": "Error when saving the server's settings failed. {reason} is the server's localized reason, which names the setting at fault."
+  },
+  "admin.settings.policies.saved": {
+    "defaultMessage": "設定を保存しました。すぐに反映され、変更は 1 つずつ監査ログに記録されます。",
+    "description": "Status after the server's settings were saved."
+  },
+  "admin.settings.policies.unchanged": {
+    "defaultMessage": "設定はすでに保存されています。",
+    "description": "Status after pressing the save button of the settings without changing one."
+  },
+  "admin.settings.registration.approval": {
+    "defaultMessage": "承認制",
+    "description": "Registration mode approval."
+  },
+  "admin.settings.registration.approval.description": {
+    "defaultMessage": "誰でも理由を添えて登録でき、モデレーターが承認するとアカウントを使えます。",
+    "description": "Description of the registration mode approval."
+  },
+  "admin.settings.registration.closed": {
+    "defaultMessage": "停止",
+    "description": "Registration mode closed."
+  },
+  "admin.settings.registration.closed.description": {
+    "defaultMessage": "誰も登録できません。アカウントは管理者がコマンドラインで作ります。",
+    "description": "Description of the registration mode closed."
+  },
+  "admin.settings.registration.description": {
+    "defaultMessage": "承認を待つ登録の審査と招待の作成は、モデレーションの画面で行います。",
+    "description": "Help of the registration mode: where the sign-ups and the invites are handled."
+  },
+  "admin.settings.registration.invite": {
+    "defaultMessage": "招待制",
+    "description": "Registration mode invite."
+  },
+  "admin.settings.registration.invite.description": {
+    "defaultMessage": "招待コードを持つ人だけが登録できます。",
+    "description": "Description of the registration mode invite."
+  },
+  "admin.settings.registration.mode": {
+    "defaultMessage": "登録できる人",
+    "description": "Label of the radio buttons of the registration mode."
+  },
+  "admin.settings.registration.open": {
+    "defaultMessage": "誰でも",
+    "description": "Registration mode open."
+  },
+  "admin.settings.registration.open.description": {
+    "defaultMessage": "誰でも登録でき、すぐにアカウントを使えます。",
+    "description": "Description of the registration mode open."
+  },
+  "admin.settings.registration.title": {
+    "defaultMessage": "登録",
+    "description": "Heading of the section of who may sign up on the server settings screen."
+  },
+  "admin.settings.remote_media.all": {
+    "defaultMessage": "すべて",
+    "description": "Remote media policy all."
+  },
+  "admin.settings.remote_media.all.description": {
+    "defaultMessage": "すべてのファイルの複製を、下の期間だけ持ちます。",
+    "description": "Description of the remote media policy all."
+  },
+  "admin.settings.remote_media.avatars": {
+    "defaultMessage": "アバターとヘッダー",
+    "description": "Remote media policy avatars."
+  },
+  "admin.settings.remote_media.avatars.description": {
+    "defaultMessage": "アバター・ヘッダー・カスタム絵文字の複製を、下の期間だけ持ちます。",
+    "description": "Description of the remote media policy avatars."
+  },
+  "admin.settings.remote_media.none": {
+    "defaultMessage": "持たない",
+    "description": "Remote media policy none."
+  },
+  "admin.settings.remote_media.none.description": {
+    "defaultMessage": "メディアプロキシが毎回元のサーバーから中継します。",
+    "description": "Description of the remote media policy none."
+  },
+  "admin.settings.remote_media.policy": {
+    "defaultMessage": "ほかのサーバーのメディアの複製",
+    "description": "Label of the radio buttons of the remote media policy."
+  },
+  "admin.settings.remote_media.ttl": {
+    "defaultMessage": "ほかのサーバーのメディアを持つ期間",
+    "description": "Label of the select of the remote media cache time."
+  },
+  "admin.settings.remote_media.ttl.description": {
+    "defaultMessage": "ブラウザと CDN も、この期間ファイルを持ちます。",
+    "description": "Help of the remote media cache time."
+  },
   "admin.settings.summary": {
-    "defaultMessage": "サーバーの名前。ドメインの代わりに表示されます。",
+    "defaultMessage": "サーバーの名前と説明、登録できる人、既定の言語、タイムライン、連合。",
     "description": "Description of the server settings screen in the administration menu."
+  },
+  "admin.settings.timelines.federated": {
+    "defaultMessage": "連合タイムラインを提供する",
+    "description": "Checkbox that turns the federated timeline on."
+  },
+  "admin.settings.timelines.federated.description": {
+    "defaultMessage": "ほかのサーバーのものを含め、このサーバーに届いた公開の投稿です。",
+    "description": "Description of the federated timeline checkbox."
+  },
+  "admin.settings.timelines.local": {
+    "defaultMessage": "ローカルタイムラインを提供する",
+    "description": "Checkbox that turns the local timeline on."
+  },
+  "admin.settings.timelines.local.description": {
+    "defaultMessage": "このサーバーのアカウントの公開の投稿です。",
+    "description": "Description of the local timeline checkbox."
+  },
+  "admin.settings.timelines.title": {
+    "defaultMessage": "タイムライン",
+    "description": "Heading of the section of the public timelines on the server settings screen."
   },
   "admin.settings.title": {
     "defaultMessage": "サーバーの設定",

@@ -33,7 +33,7 @@ const moderator = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_jobs", "manage_settings", "manage_custom_emojis"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis"],
 };
 
 /** The reported account: a long display name, local. */
@@ -197,6 +197,44 @@ const customEmoji: Schemas["AdminCustomEmoji"] = {
 
 const instance = { domain: longDomain, state: "unavailable", since: "2026-10-10T08:00:00Z", failure_days: 7, last_failure_day: "2026-10-10" };
 
+/** A rule in English with a long hint and in Arabic, which reads right to left, as GET /admin/rules lists it. */
+const rule: Schemas["AdminRule"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000f2",
+  position: 1,
+  texts: [
+    { locale: "ar", text: "كن لطيفا" },
+    { locale: "en", text: "Be kind to the people of every server", hint: "No harassment, no slurs, and no piling on someone who is having a bad day." },
+  ],
+  created_at: "2026-10-16T00:00:00Z",
+  revised_at: "2026-10-16T00:00:00Z",
+};
+
+/** A usable invite without a limit, as GET /admin/invites lists it. */
+const invite: Schemas["AdminInvite"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000f3",
+  code: "ABCDEFGHJKLMNPQR",
+  url: "https://my.example/auth/sign_up?invite=ABCDEFGHJKLMNPQR",
+  uses: 2,
+  state: "usable",
+  expires_at: "2026-10-23T00:00:00Z",
+  created_at: "2026-10-16T00:00:00Z",
+};
+
+/** The instance settings, as GET /admin/settings lists them: every one at its default. */
+const instanceSettings: Schemas["AdminSettingList"] = {
+  items: [
+    { key: "registration_mode", kind: "enum", value: "approval", default: "approval", stored: false, choices: ["open", "approval", "invite", "closed"] },
+    { key: "default_locale", kind: "locale", value: "en", default: "en", stored: false },
+    { key: "local_timeline_enabled", kind: "bool", value: "true", default: "true", stored: false },
+    { key: "federated_timeline_enabled", kind: "bool", value: "true", default: "true", stored: false },
+    { key: "remote_media_policy", kind: "enum", value: "none", default: "none", stored: false, choices: ["none", "avatars", "all"] },
+    { key: "remote_media_cache_ttl", kind: "int", value: "86400", default: "86400", stored: false, minimum: 60, maximum: 31536000 },
+    { key: "authorized_fetch", kind: "bool", value: "false", default: "false", stored: false },
+    { key: "domain_actions_visibility", kind: "enum", value: "none", default: "none", stored: false, choices: ["none", "users", "all"] },
+    { key: "domain_actions_rationale_visibility", kind: "enum", value: "none", default: "none", stored: false, choices: ["none", "users", "all"] },
+  ],
+};
+
 const deadJob = {
   id: "0192f0c4-7a8e-7000-8000-0000000000d1",
   type: "federation.deliver",
@@ -306,6 +344,9 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
     if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, ...instanceNames] });
     if (key === "GET /admin/theme") return json(route, adminTheme);
+    if (key === "GET /admin/settings") return json(route, instanceSettings);
+    if (key === "GET /admin/rules") return json(route, { items: [rule] });
+    if (key === "GET /admin/invites") return json(route, { items: [invite] });
     if (key === "GET /admin/custom_emojis") return json(route, { items: url.searchParams.get("local") === "false" ? [] : [customEmoji] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
@@ -357,6 +398,8 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },
+  "admin.rules": { path: "/admin/rules", ready: rule.texts[1]?.hint ?? "" },
+  "moderation.invites": { path: "/moderation/invites", ready: invite.code },
 };
 
 test("the suite lists every moderation and admin route", () => {

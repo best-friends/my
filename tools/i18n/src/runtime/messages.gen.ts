@@ -1194,6 +1194,78 @@ export interface MessageArgs {
   "client:admin.instances.summary": {};
   /** Remote servers */
   "client:admin.instances.title": {};
+  /** Copied the link of the invite {code}. */
+  "client:admin.invites.copied": { code: string };
+  /** Copy link */
+  "client:admin.invites.copy": {};
+  /** Could not copy the link. */
+  "client:admin.invites.copy_failed": {};
+  /** Copy the link of the invite {code} */
+  "client:admin.invites.copy_invite": { code: string };
+  /** Create the invite */
+  "client:admin.invites.create": {};
+  /** Could not create the invite: {reason} */
+  "client:admin.invites.create_failed": { reason: string };
+  /** Created the invite {code}. */
+  "client:admin.invites.created": { code: string };
+  /** Created */
+  "client:admin.invites.created_at": {};
+  /** {count, plural, one {# minute} other {# minutes}} */
+  "client:admin.invites.duration.minutes": { count: number };
+  /** No invites yet */
+  "client:admin.invites.empty": {};
+  /** Create one with the form above. */
+  "client:admin.invites.empty.description": {};
+  /** Expires */
+  "client:admin.invites.expires_at": {};
+  /** Expires after */
+  "client:admin.invites.expires_in": {};
+  /** Send this link to the people you invite: */
+  "client:admin.invites.link": {};
+  /** Invites */
+  "client:admin.invites.list.title": {};
+  /** Number of sign-ups */
+  "client:admin.invites.max_uses": {};
+  /** How many people may sign up with the code. */
+  "client:admin.invites.max_uses.description": {};
+  /** The server does not take sign-ups with an invite now, so invites let nobody sign up. An administrator changes who may sign up in the server settings. */
+  "client:admin.invites.mode_notice": {};
+  /** Never */
+  "client:admin.invites.never": {};
+  /** Create an invite */
+  "client:admin.invites.new.title": {};
+  /** Revoke */
+  "client:admin.invites.revoke": {};
+  /** Could not revoke the invite: {reason} */
+  "client:admin.invites.revoke_failed": { reason: string };
+  /** Revoke the invite {code}, created {date} */
+  "client:admin.invites.revoke_invite": { code: string; date: string };
+  /** Revoked the invite {code}. Nobody can sign up with it anymore. */
+  "client:admin.invites.revoked": { code: string };
+  /** State */
+  "client:admin.invites.state": {};
+  /** Used up */
+  "client:admin.invites.state.exhausted": {};
+  /** Expired */
+  "client:admin.invites.state.expired": {};
+  /** Revoked */
+  "client:admin.invites.state.revoked": {};
+  /** Usable */
+  "client:admin.invites.state.usable": {};
+  /** Codes that let people sign up when the server takes invites. */
+  "client:admin.invites.summary": {};
+  /** Invites */
+  "client:admin.invites.title": {};
+  /** No limit */
+  "client:admin.invites.unlimited": {};
+  /** Sign-ups */
+  "client:admin.invites.used": {};
+  /** {uses, number} of {max, number} */
+  "client:admin.invites.used.limited": { max: number; uses: number };
+  /** {uses, number} (no limit) */
+  "client:admin.invites.used.unlimited": { uses: number };
+  /** {count, plural, one {# person} other {# people}} */
+  "client:admin.invites.uses": { count: number };
   /** Show more */
   "client:admin.list.more": {};
   /** {count, plural, one {# open report} other {# open reports}} */
@@ -1472,6 +1544,140 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
+  /** Add the rule */
+  "client:admin.rules.add": {};
+  /** Could not add the rule: {reason} */
+  "client:admin.rules.add_failed": { reason: string };
+  /** Added the rule after the others. The audit log records the change. */
+  "client:admin.rules.added": {};
+  /** Cancel */
+  "client:admin.rules.cancel": {};
+  /** Could not change the rule: {reason} */
+  "client:admin.rules.change_failed": { reason: string };
+  /** The about page and the report form show each rule in the reader's language. Each rule has a text of one line and an optional hint in each language. A retired rule leaves the list, and the reports that cite it keep it. */
+  "client:admin.rules.description": {};
+  /** Edit */
+  "client:admin.rules.edit": {};
+  /** Edit: {rule} */
+  "client:admin.rules.edit_rule": { rule: string };
+  /** Close */
+  "client:admin.rules.edit.close": {};
+  /** Edit the rule */
+  "client:admin.rules.edit.title": {};
+  /** No rules yet */
+  "client:admin.rules.empty": {};
+  /** Add the rules people agree to with the form above. */
+  "client:admin.rules.empty.description": {};
+  /** Rule {place}: {rule} */
+  "client:admin.rules.heading": { place: string; rule: string };
+  /** Hint in {language} */
+  "client:admin.rules.hint": { language: string };
+  /** Rules in effect */
+  "client:admin.rules.list.title": {};
+  /** Move down */
+  "client:admin.rules.move_down": {};
+  /** Move down: {rule} */
+  "client:admin.rules.move_down_rule": { rule: string };
+  /** Move up */
+  "client:admin.rules.move_up": {};
+  /** Move up: {rule} */
+  "client:admin.rules.move_up_rule": { rule: string };
+  /** Moved “{rule}” to place {position}. */
+  "client:admin.rules.moved": { position: string; rule: string };
+  /** Add a rule */
+  "client:admin.rules.new.title": {};
+  /** Enter the rule in at least one language. */
+  "client:admin.rules.no_text": {};
+  /** Retire */
+  "client:admin.rules.retire": {};
+  /** Retire: {rule} */
+  "client:admin.rules.retire_rule": { rule: string };
+  /** The rule leaves the list of rules for good. Reports that cite it keep it. */
+  "client:admin.rules.retire.description": {};
+  /** Retire “{rule}”? */
+  "client:admin.rules.retire.title": { rule: string };
+  /** Retired “{rule}”. */
+  "client:admin.rules.retired": { rule: string };
+  /** Save */
+  "client:admin.rules.save": {};
+  /** The rules people agree to and reports cite. */
+  "client:admin.rules.summary": {};
+  /** Rule in {language} */
+  "client:admin.rules.text": { language: string };
+  /** Enter the rule, or empty its hint too. */
+  "client:admin.rules.text_required": {};
+  /** One line of at most {max} characters. */
+  "client:admin.rules.text.description": { max: string };
+  /** Rules */
+  "client:admin.rules.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.rules.too_long": { max: string };
+  /** Saved “{rule}”. The audit log records the change. */
+  "client:admin.rules.updated": { rule: string };
+  /** Everyone */
+  "client:admin.settings.audience.all": {};
+  /** Nobody */
+  "client:admin.settings.audience.none": {};
+  /** Signed-in users */
+  "client:admin.settings.audience.users": {};
+  /** {count, plural, one {# character left} other {# characters left}} */
+  "client:admin.settings.characters_left": { count: number };
+  /** {count, plural, one {# character too many} other {# characters too many}} */
+  "client:admin.settings.characters_over": { count: number };
+  /** The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language. */
+  "client:admin.settings.descriptions.description": {};
+  /** Description in {language} */
+  "client:admin.settings.descriptions.full": { language: string };
+  /** Save the descriptions */
+  "client:admin.settings.descriptions.save": {};
+  /** Could not save the descriptions: {reason} */
+  "client:admin.settings.descriptions.save_failed": { reason: string };
+  /** Saved the descriptions. The audit log records the change. */
+  "client:admin.settings.descriptions.saved": {};
+  /** Short description in {language} */
+  "client:admin.settings.descriptions.short": { language: string };
+  /** Descriptions */
+  "client:admin.settings.descriptions.title": {};
+  /** The descriptions are already saved. */
+  "client:admin.settings.descriptions.unchanged": {};
+  /** Who may read the public comments */
+  "client:admin.settings.domain_actions.comments": {};
+  /** Everyone who may read the list sees the comments. */
+  "client:admin.settings.domain_actions.comments.all": {};
+  /** The comments are not shown. */
+  "client:admin.settings.domain_actions.comments.none": {};
+  /** Signed-in users who may read the list see the comments. */
+  "client:admin.settings.domain_actions.comments.users": {};
+  /** The about page and the API can list the servers this server limits or suspends, with the public comments of the actions. */
+  "client:admin.settings.domain_actions.description": {};
+  /** Who may read the list */
+  "client:admin.settings.domain_actions.list": {};
+  /** Anyone sees the list, without signing in. */
+  "client:admin.settings.domain_actions.list.all": {};
+  /** The list is not published. */
+  "client:admin.settings.domain_actions.list.none": {};
+  /** Only the users signed in to this server see the list. */
+  "client:admin.settings.domain_actions.list.users": {};
+  /** Limited and suspended servers */
+  "client:admin.settings.domain_actions.title": {};
+  /** {count, plural, one {# day} other {# days}} */
+  "client:admin.settings.duration.days": { count: number };
+  /** {count, plural, one {# hour} other {# hours}} */
+  "client:admin.settings.duration.hours": { count: number };
+  /** {count, plural, one {# second} other {# seconds}} */
+  "client:admin.settings.duration.seconds": { count: number };
+  /** Require signed requests (authorized fetch) */
+  "client:admin.settings.federation.authorized_fetch": {};
+  /** Other servers then read posts and collections only with a verified signature, so that suspended servers cannot read them. Some software cannot read them anymore. */
+  "client:admin.settings.federation.authorized_fetch.description": {};
+  /** Federation */
+  "client:admin.settings.federation.title": {};
+  /** Default language */
+  "client:admin.settings.language.default": {};
+  /** The language of new accounts, of visitors whose language the app does not have, and of the server's texts missing in a language. */
+  "client:admin.settings.language.description": {};
+  /** Language */
+  "client:admin.settings.language.title": {};
   /** Enter a name with letters, or leave the field empty. */
   "client:admin.settings.name.blank": {};
   /** People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain. */
@@ -1490,8 +1696,66 @@ export interface MessageArgs {
   "client:admin.settings.name.too_long": { max: string };
   /** The names are already saved. */
   "client:admin.settings.name.unchanged": {};
-  /** The server's name, which people see in place of its domain. */
+  /** Save the settings */
+  "client:admin.settings.policies.save": {};
+  /** Could not save the settings; nothing was changed: {reason} */
+  "client:admin.settings.policies.save_failed": { reason: string };
+  /** Saved the settings. They take effect at once, and the audit log records each change. */
+  "client:admin.settings.policies.saved": {};
+  /** The settings are already saved. */
+  "client:admin.settings.policies.unchanged": {};
+  /** With approval */
+  "client:admin.settings.registration.approval": {};
+  /** Anyone may sign up with a reason; the account works once a moderator approves it. */
+  "client:admin.settings.registration.approval.description": {};
+  /** Nobody */
+  "client:admin.settings.registration.closed": {};
+  /** Nobody may sign up; administrators create accounts from the command line. */
+  "client:admin.settings.registration.closed.description": {};
+  /** Moderators review the sign-ups that wait for approval, and create the invites, on the moderation screens. */
+  "client:admin.settings.registration.description": {};
+  /** With an invite */
+  "client:admin.settings.registration.invite": {};
+  /** Only people with an invite code may sign up. */
+  "client:admin.settings.registration.invite.description": {};
+  /** Who may sign up */
+  "client:admin.settings.registration.mode": {};
+  /** Anyone */
+  "client:admin.settings.registration.open": {};
+  /** Anyone may sign up and use the account at once. */
+  "client:admin.settings.registration.open.description": {};
+  /** Registration */
+  "client:admin.settings.registration.title": {};
+  /** Everything */
+  "client:admin.settings.remote_media.all": {};
+  /** Keep copies of every file for the time below. */
+  "client:admin.settings.remote_media.all.description": {};
+  /** Avatars and headers */
+  "client:admin.settings.remote_media.avatars": {};
+  /** Keep copies of avatars, headers and custom emoji for the time below. */
+  "client:admin.settings.remote_media.avatars.description": {};
+  /** Keep none */
+  "client:admin.settings.remote_media.none": {};
+  /** The media proxy relays every file from its server each time. */
+  "client:admin.settings.remote_media.none.description": {};
+  /** Copies of media from other servers */
+  "client:admin.settings.remote_media.policy": {};
+  /** How long to keep media from other servers */
+  "client:admin.settings.remote_media.ttl": {};
+  /** Browsers and the CDN keep the files this long too. */
+  "client:admin.settings.remote_media.ttl.description": {};
+  /** The server's name and descriptions, who may sign up, its default language, timelines and federation. */
   "client:admin.settings.summary": {};
+  /** Offer the federated timeline */
+  "client:admin.settings.timelines.federated": {};
+  /** The public posts that reach this server, from other servers too. */
+  "client:admin.settings.timelines.federated.description": {};
+  /** Offer the local timeline */
+  "client:admin.settings.timelines.local": {};
+  /** The public posts of this server's accounts. */
+  "client:admin.settings.timelines.local.description": {};
+  /** Timelines */
+  "client:admin.settings.timelines.title": {};
   /** Server settings */
   "client:admin.settings.title": {};
   /** Could not add the block: {reason} */

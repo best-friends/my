@@ -40,6 +40,7 @@ type RegistrationRepository interface {
 	// InsertInvite fails with an error wrapping ErrInviteCodeTaken when another invite has the code.
 	InsertInvite(ctx context.Context, tx uow.Tx, i identity.Invite) error
 	FindInviteByCode(ctx context.Context, code string) (identity.Invite, error)
+	FindInviteByID(ctx context.Context, id string) (identity.Invite, error)
 	// InviteUsage returns how many times an invite was redeemed and whether it is revoked, as
 	// the transaction sees it.
 	InviteUsage(ctx context.Context, tx uow.Tx, inviteID string) (uses int, revoked bool, err error)
@@ -49,8 +50,9 @@ type RegistrationRepository interface {
 	InsertInviteRedemption(ctx context.Context, tx uow.Tx, r identity.InviteRedemption) error
 	// InsertInviteRevocation does nothing when the invite already has a revocation.
 	InsertInviteRevocation(ctx context.Context, tx uow.Tx, r identity.InviteRevocation) error
-	// ListInvites returns invites with their usage, newest first, at most limit of them.
-	ListInvites(ctx context.Context, limit int) ([]InviteStatus, error)
+	// ListInvites returns invites with their usage, newest first, at most limit of them; a
+	// before other than "" keeps the invites whose ID sorts before it.
+	ListInvites(ctx context.Context, before string, limit int) ([]InviteStatus, error)
 
 	InsertUserToken(ctx context.Context, tx uow.Tx, t identity.UserToken) error
 	FindUserTokenByHash(ctx context.Context, hash []byte) (identity.UserToken, error)

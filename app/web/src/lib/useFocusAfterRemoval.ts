@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Shared by the lists whose actions take a row off them (the settings lists, the admin dead jobs) or take the
-// pressed button off a row that stays (lifting a moderation action).
+// Shared by the lists whose actions take a row off them (the settings lists, the admin dead jobs), move a row to
+// another place (the rules) or take the pressed button off a row that stays (lifting a moderation action).
 import { type RefObject, useEffect, useRef } from "react";
 
 /**
@@ -27,6 +27,25 @@ export function useFocusAfterRemoval(list: RefObject<HTMLElement | null>, ids: r
 
   return (id) => {
     pendingRef.current = { id, index: ids.indexOf(id) };
+  };
+}
+
+/**
+ * Keeps focus on a row that moved to another place in the list (reordering the rules): after the next render,
+ * focus moves to the row's heading (`h3`), so that it is where the row is now. Returns `moved(id)`, to call once
+ * the list has the new order.
+ */
+export function useFocusHeadingAfterMove(list: RefObject<HTMLElement | null>): (id: string) => void {
+  const pendingRef = useRef<string | null>(null);
+  // Runs after every render: focus is moved in the DOM, outside React, once the list has rendered the new order.
+  useEffect(() => {
+    const id = pendingRef.current;
+    if (id === null) return;
+    pendingRef.current = null;
+    list.current?.querySelector<HTMLElement>(`[data-row-id="${id}"] h3`)?.focus();
+  });
+  return (id) => {
+    pendingRef.current = id;
   };
 }
 

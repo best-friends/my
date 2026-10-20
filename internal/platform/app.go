@@ -663,6 +663,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		OwnAccount: a.Identity, Exports: a.Exports,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
+		// The instance settings, and the invites with the registration page they open (#624).
+		Settings: a.Instance, Invites: a.Identity, SignUpPath: authpages.PathSignUp,
 		// The instance theme (ADR-0059) and the URLs of its stylesheets, which the web handler serves.
 		Themes: a.Instance, ThemeStylesheetPath: web.ThemeStylesheetPath,
 		// The custom emoji of the picker and their administration (ADR-0051).

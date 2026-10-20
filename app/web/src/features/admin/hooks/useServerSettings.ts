@@ -7,27 +7,10 @@ import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-q
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
-import { supportedLocales, useLocale, useT } from "../../../lib/i18n";
+import { useLocale, useT } from "../../../lib/i18n";
 import { instanceQueryOptions, instanceTextsQueryOptions } from "../api/documents";
-import { cacheSavedName, type InstanceNameChange, instanceNameLimit, setInstanceNamesMutation } from "../api/settings";
-
-/** Pseudo-locales are for testing; nobody reads the instance's name in them. */
-const pseudoLocales: ReadonlySet<string> = new Set(["en-XA", "ar-XB"]);
-
-/** The number of characters of `text` as the server counts them: Unicode code points. */
-function characterCount(text: string): number {
-  return Array.from(text).length;
-}
-
-/** `tag`'s name in `inLocale`, or the tag itself when the browser does not know it. */
-function languageName(tag: string, inLocale: string): string {
-  try {
-    return new Intl.DisplayNames([inLocale], { type: "language", fallback: "code" }).of(tag) ?? tag;
-  } catch {
-    // Not a valid tag for Intl; the tag is its own name.
-    return tag;
-  }
-}
+import { cacheSavedTexts, type InstanceTextChange, instanceNameLimit, setInstanceTextsMutation } from "../api/settings";
+import { characterCount, editedLocales, languageName } from "./languages";
 
 /** The name in one language: what is saved, what the field holds, and why that cannot be saved. */
 type NameField = {
@@ -49,12 +32,14 @@ export function useServerSettings() {
   const { data: instance } = useSuspenseQuery(instanceQueryOptions(api));
   const saved = new Map(data.items.filter((text) => text.key === "name").map((text) => [text.locale, text.body]));
   // The languages of the app, and any other language a name was saved in (from the CLI).
-  const locales = [...new Set([...supportedLocales.filter((locale) => !pseudoLocales.has(locale)), ...saved.keys()])].toSorted();
+  const locales = editedLocales(saved.keys());
   const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
   const [status, setStatus] = useState<string | undefined>(undefined);
 
   const valueOf = (locale: string) => drafts[locale] ?? saved.get(locale) ?? "";
-  const changes: InstanceNameChange[] = locales.filter((locale) => valueOf(locale) !== (saved.get(locale) ?? "")).map((locale) => ({ locale, body: valueOf(locale) }));
+  const changes: InstanceTextChange[] = locales
+    .filter((locale) => valueOf(locale) !== (saved.get(locale) ?? ""))
+    .map((locale) => ({ key: "name", locale, body: valueOf(locale) }));
   const errorOf = (value: string): string | undefined => {
     if (characterCount(value) > instanceNameLimit) return t("client:admin.settings.name.too_long", { max: String(instanceNameLimit) });
     if (value !== "" && value.trim() === "") return t("client:admin.settings.name.blank");
@@ -62,20 +47,20 @@ export function useServerSettings() {
   };
 
   const save = useMutation({
-    ...setInstanceNamesMutation(api),
+    ...setInstanceTextsMutation(api),
     onMutate: () => {
       setStatus(undefined);
     },
     onSuccess: async () => {
       // The navigation and the tab title show the new name once GET /instance is fetched again (the button
-      // stays pending until then); the audit log has the change when it is opened next (cacheSavedName).
-      await cacheSavedName(queryClient);
+      // stays pending until then); the audit log has the change when it is opened next (cacheSavedTexts).
+      await cacheSavedTexts(queryClient);
       setDrafts({});
       setStatus(t("client:admin.settings.name.saved"));
     },
     // Some languages may have been saved before one failed: the form compares with what is saved now, and keeps
     // the rest of the drafts to send again (web-client.md E2).
-    onError: () => cacheSavedName(queryClient),
+    onError: () => cacheSavedTexts(queryClient),
   });
 
   const fields: NameField[] = locales.map((locale) => {

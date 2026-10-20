@@ -511,6 +511,30 @@ func (e AdminInstanceState) Valid() bool {
 	}
 }
 
+// Defines values for AdminInviteState.
+const (
+	AdminInviteStateExhausted AdminInviteState = "exhausted"
+	AdminInviteStateExpired   AdminInviteState = "expired"
+	AdminInviteStateRevoked   AdminInviteState = "revoked"
+	AdminInviteStateUsable    AdminInviteState = "usable"
+)
+
+// Valid indicates whether the value is a known member of the AdminInviteState enum.
+func (e AdminInviteState) Valid() bool {
+	switch e {
+	case AdminInviteStateExhausted:
+		return true
+	case AdminInviteStateExpired:
+		return true
+	case AdminInviteStateRevoked:
+		return true
+	case AdminInviteStateUsable:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminReportCategory.
 const (
 	AdminReportCategoryLegal     AdminReportCategory = "legal"
@@ -754,6 +778,96 @@ func (e InstanceRegistrationsMode) Valid() bool {
 	case InstanceRegistrationsModeInvite:
 		return true
 	case InstanceRegistrationsModeOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstanceSettingKey.
+const (
+	InstanceSettingKeyAppealWindow                     InstanceSettingKey = "appeal_window"
+	InstanceSettingKeyAuthorizedFetch                  InstanceSettingKey = "authorized_fetch"
+	InstanceSettingKeyDefaultLocale                    InstanceSettingKey = "default_locale"
+	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
+	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
+	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
+	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
+	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
+	InstanceSettingKeyRegistrationMode                 InstanceSettingKey = "registration_mode"
+	InstanceSettingKeyRemoteMediaCacheTtl              InstanceSettingKey = "remote_media_cache_ttl"
+	InstanceSettingKeyRemoteMediaPolicy                InstanceSettingKey = "remote_media_policy"
+	InstanceSettingKeyRetentionAuditLog                InstanceSettingKey = "retention_audit_log"
+	InstanceSettingKeyRetentionModerationActions       InstanceSettingKey = "retention_moderation_actions"
+	InstanceSettingKeyRetentionRegistrationOrigins     InstanceSettingKey = "retention_registration_origins"
+	InstanceSettingKeyRetentionReports                 InstanceSettingKey = "retention_reports"
+	InstanceSettingKeyRetentionSessionOrigins          InstanceSettingKey = "retention_session_origins"
+)
+
+// Valid indicates whether the value is a known member of the InstanceSettingKey enum.
+func (e InstanceSettingKey) Valid() bool {
+	switch e {
+	case InstanceSettingKeyAppealWindow:
+		return true
+	case InstanceSettingKeyAuthorizedFetch:
+		return true
+	case InstanceSettingKeyDefaultLocale:
+		return true
+	case InstanceSettingKeyDomainActionsRationaleVisibility:
+		return true
+	case InstanceSettingKeyDomainActionsVisibility:
+		return true
+	case InstanceSettingKeyFederatedTimelineEnabled:
+		return true
+	case InstanceSettingKeyLocalTimelineEnabled:
+		return true
+	case InstanceSettingKeyMaxStatusLength:
+		return true
+	case InstanceSettingKeyPreviewImage:
+		return true
+	case InstanceSettingKeyRegistrationMode:
+		return true
+	case InstanceSettingKeyRemoteMediaCacheTtl:
+		return true
+	case InstanceSettingKeyRemoteMediaPolicy:
+		return true
+	case InstanceSettingKeyRetentionAuditLog:
+		return true
+	case InstanceSettingKeyRetentionModerationActions:
+		return true
+	case InstanceSettingKeyRetentionRegistrationOrigins:
+		return true
+	case InstanceSettingKeyRetentionReports:
+		return true
+	case InstanceSettingKeyRetentionSessionOrigins:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InstanceSettingKind.
+const (
+	InstanceSettingKindBool   InstanceSettingKind = "bool"
+	InstanceSettingKindEnum   InstanceSettingKind = "enum"
+	InstanceSettingKindInt    InstanceSettingKind = "int"
+	InstanceSettingKindLocale InstanceSettingKind = "locale"
+	InstanceSettingKindMedia  InstanceSettingKind = "media"
+)
+
+// Valid indicates whether the value is a known member of the InstanceSettingKind enum.
+func (e InstanceSettingKind) Valid() bool {
+	switch e {
+	case InstanceSettingKindBool:
+		return true
+	case InstanceSettingKindEnum:
+		return true
+	case InstanceSettingKindInt:
+		return true
+	case InstanceSettingKindLocale:
+		return true
+	case InstanceSettingKindMedia:
 		return true
 	default:
 		return false
@@ -1913,6 +2027,48 @@ type AdminInstanceTextList struct {
 	Items []AdminInstanceText `json:"items"`
 }
 
+// AdminInvite An invite that lets people sign up while the registration mode is `invite`.
+type AdminInvite struct {
+	// Code The code people enter on the registration page, 16 characters.
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// ExpiresAt When the invite stops working; omitted when it never does.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// MaxUses How many sign-ups the invite allows; omitted when there is no limit.
+	MaxUses *int `json:"max_uses,omitempty"`
+
+	// State What the invite allows now. `usable`: people may sign up with it. `revoked`: a staff
+	// member revoked it. `expired`: it passed `expires_at`. `exhausted`: it was used
+	// `max_uses` times.
+	State AdminInviteState `json:"state"`
+
+	// Url The registration page with the code filled in, to send to people.
+	Url string `json:"url"`
+
+	// Uses How many people have signed up with the invite.
+	Uses int `json:"uses"`
+}
+
+// AdminInvitePage A page of invites, newest first.
+type AdminInvitePage struct {
+	Items []AdminInvite `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminInviteState What the invite allows now. `usable`: people may sign up with it. `revoked`: a staff
+// member revoked it. `expired`: it passed `expires_at`. `exhausted`: it was used
+// `max_uses` times.
+type AdminInviteState string
+
 // AdminRegistration A user's registration as the moderators review it (FR-721).
 type AdminRegistration struct {
 	// AccountId The user's local account; omitted when it is gone.
@@ -2214,6 +2370,42 @@ type AdminSameIpAccounts struct {
 	Ip       string         `json:"ip"`
 }
 
+// AdminSetting An instance setting: its value and what it accepts. Every value is a string in its
+// canonical form, whatever its kind.
+type AdminSetting struct {
+	// Choices The values an `enum` setting accepts, in order; omitted for other kinds.
+	Choices *[]string `json:"choices,omitempty"`
+
+	// Default The value of the setting while it has never been set.
+	Default string `json:"default"`
+
+	// Key The key of an instance setting (docs/operations/instance-settings.md). New keys may be
+	// added; clients show the ones they know.
+	Key InstanceSettingKey `json:"key"`
+
+	// Kind The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
+	// `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
+	// `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+	Kind InstanceSettingKind `json:"kind"`
+
+	// Maximum The greatest value of an `int` setting; omitted for other kinds.
+	Maximum *int `json:"maximum,omitempty"`
+
+	// Minimum The least value of an `int` setting; omitted for other kinds.
+	Minimum *int `json:"minimum,omitempty"`
+
+	// Stored Whether the setting has been set; false means its default applies.
+	Stored bool `json:"stored"`
+
+	// Value The current value, which is `default` when `stored` is false.
+	Value string `json:"value"`
+}
+
+// AdminSettingList Every instance setting, in a fixed order.
+type AdminSettingList struct {
+	Items []AdminSetting `json:"items"`
+}
+
 // AdminSignupBlock A block on sign-ups from the registration page (FR-719).
 type AdminSignupBlock struct {
 	// Comment The moderators' comment; omitted when there is none.
@@ -2374,6 +2566,15 @@ type CreateDomainActionRequest struct {
 	Obfuscate     *bool                 `json:"obfuscate,omitempty"`
 	PrivateNote   *string               `json:"private_note,omitempty"`
 	PublicComment *string               `json:"public_comment,omitempty"`
+}
+
+// CreateInviteRequest A new invite.
+type CreateInviteRequest struct {
+	// ExpiresIn How many seconds the invite works; omitted for an invite that never expires.
+	ExpiresIn *int `json:"expires_in,omitempty"`
+
+	// MaxUses How many sign-ups the invite allows; omitted for no limit.
+	MaxUses *int `json:"max_uses,omitempty"`
 }
 
 // CreateReportNoteRequest A note to add to a report.
@@ -2850,6 +3051,15 @@ type InstanceRuleTextInput struct {
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
 }
+
+// InstanceSettingKey The key of an instance setting (docs/operations/instance-settings.md). New keys may be
+// added; clients show the ones they know.
+type InstanceSettingKey string
+
+// InstanceSettingKind The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
+// `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
+// `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+type InstanceSettingKind string
 
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
 // the terms of service and the privacy policy (Markdown), and the alternative text of the
@@ -4120,6 +4330,12 @@ type UpdateCustomEmojiRequest struct {
 	VisibleInPicker *bool `json:"visible_in_picker,omitempty"`
 }
 
+// UpdateInstanceSettingsRequest New values of some instance settings, saved together.
+type UpdateInstanceSettingsRequest struct {
+	// Values The new value of each setting to change, by key, as a string.
+	Values map[string]string `json:"values"`
+}
+
 // UpdatePreferencesRequest A change of the preferences; properties left out keep their current values.
 type UpdatePreferencesRequest struct {
 	// DefaultPostLanguage The language of new posts that name none; `und` for undetermined.
@@ -4191,6 +4407,11 @@ type InstanceDomain = string
 
 // InstanceTextLocale defines model for InstanceTextLocale.
 type InstanceTextLocale = string
+
+// InviteId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type InviteId = Id
 
 // Limit defines model for Limit.
 type Limit = int
@@ -4433,6 +4654,15 @@ type ListInstanceAvailabilityEventsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListInvitesParams defines parameters for ListInvites.
+type ListInvitesParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListPendingRegistrationsParams defines parameters for ListPendingRegistrations.
 type ListPendingRegistrationsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -4649,6 +4879,9 @@ type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 // SetInstanceTextJSONRequestBody defines body for SetInstanceText for application/json ContentType.
 type SetInstanceTextJSONRequestBody = SetInstanceTextRequest
 
+// CreateInviteJSONRequestBody defines body for CreateInvite for application/json ContentType.
+type CreateInviteJSONRequestBody = CreateInviteRequest
+
 // ApproveRegistrationJSONRequestBody defines body for ApproveRegistration for application/json ContentType.
 type ApproveRegistrationJSONRequestBody = RegistrationDecisionRequest
 
@@ -4669,6 +4902,9 @@ type UpdateInstanceRuleJSONRequestBody = InstanceRuleInput
 
 // MoveInstanceRuleJSONRequestBody defines body for MoveInstanceRule for application/json ContentType.
 type MoveInstanceRuleJSONRequestBody = MoveInstanceRuleRequest
+
+// UpdateInstanceSettingsJSONRequestBody defines body for UpdateInstanceSettings for application/json ContentType.
+type UpdateInstanceSettingsJSONRequestBody = UpdateInstanceSettingsRequest
 
 // CreateSignupBlockJSONRequestBody defines body for CreateSignupBlock for application/json ContentType.
 type CreateSignupBlockJSONRequestBody = CreateSignupBlockRequest
@@ -4873,6 +5109,15 @@ type ServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
+	// ListInvites List the invites
+	// (GET /admin/invites)
+	ListInvites(w http.ResponseWriter, r *http.Request, params ListInvitesParams)
+	// CreateInvite Create an invite
+	// (POST /admin/invites)
+	CreateInvite(w http.ResponseWriter, r *http.Request)
+	// RevokeInvite Revoke an invite
+	// (POST /admin/invites/{id}/revoke)
+	RevokeInvite(w http.ResponseWriter, r *http.Request, id InviteId)
 	// ListPendingRegistrations List the registrations that await approval
 	// (GET /admin/registrations)
 	ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams)
@@ -4924,6 +5169,12 @@ type ServerInterface interface {
 	// RetireInstanceRule Retire an instance rule
 	// (POST /admin/rules/{id}/retire)
 	RetireInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
+	// ListInstanceSettings List the instance settings
+	// (GET /admin/settings)
+	ListInstanceSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateInstanceSettings Change instance settings
+	// (PATCH /admin/settings)
+	UpdateInstanceSettings(w http.ResponseWriter, r *http.Request)
 	// ListSignupBlocks List the sign-up blocks
 	// (GET /admin/signup_blocks)
 	ListSignupBlocks(w http.ResponseWriter, r *http.Request, params ListSignupBlocksParams)
@@ -6988,6 +7239,92 @@ func (siw *ServerInterfaceWrapper) MarkInstanceAvailable(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListInvites operation middleware
+func (siw *ServerInterfaceWrapper) ListInvites(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListInvitesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInvites(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateInvite operation middleware
+func (siw *ServerInterfaceWrapper) CreateInvite(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateInvite(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeInvite operation middleware
+func (siw *ServerInterfaceWrapper) RevokeInvite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id InviteId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeInvite(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPendingRegistrations operation middleware
 func (siw *ServerInterfaceWrapper) ListPendingRegistrations(w http.ResponseWriter, r *http.Request) {
 
@@ -7457,6 +7794,34 @@ func (siw *ServerInterfaceWrapper) RetireInstanceRule(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RetireInstanceRule(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListInstanceSettings operation middleware
+func (siw *ServerInterfaceWrapper) ListInstanceSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListInstanceSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateInstanceSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateInstanceSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateInstanceSettings(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9442,6 +9807,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/signup_blocks/{id}", wrapper.GetSignupBlock)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/{id}/lift", wrapper.LiftSignupBlock)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/signup_blocks/import", wrapper.ImportSignupBlocks)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/settings", wrapper.ListInstanceSettings)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/settings", wrapper.UpdateInstanceSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/invites", wrapper.ListInvites)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/invites", wrapper.CreateInvite)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/invites/{id}/revoke", wrapper.RevokeInvite)
 
 	return m
 }
@@ -9518,6 +9888,15 @@ type AdminInstanceHealthJSONResponse struct {
 	Headers AdminInstanceHealthResponseHeaders
 }
 
+type AdminInviteResponseHeaders struct {
+	CacheControl *string
+}
+type AdminInviteJSONResponse struct {
+	Body AdminInvite
+
+	Headers AdminInviteResponseHeaders
+}
+
 type AdminRegistrationResponseHeaders struct {
 	CacheControl *string
 }
@@ -9552,6 +9931,15 @@ type AdminRuleJSONResponse struct {
 	Body AdminRule
 
 	Headers AdminRuleResponseHeaders
+}
+
+type AdminSettingListResponseHeaders struct {
+	CacheControl *string
+}
+type AdminSettingListJSONResponse struct {
+	Body AdminSettingList
+
+	Headers AdminSettingListResponseHeaders
 }
 
 type AdminSignupBlockResponseHeaders struct {
@@ -12615,6 +13003,178 @@ func (response MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type ListInvitesRequestObject struct {
+	Params ListInvitesParams
+}
+
+type ListInvitesResponseObject interface {
+	VisitListInvitesResponse(w http.ResponseWriter) error
+}
+
+type ListInvites200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListInvites200JSONResponse struct {
+	Body    AdminInvitePage
+	Headers ListInvites200ResponseHeaders
+}
+
+func (response ListInvites200JSONResponse) VisitListInvitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInvitesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInvitesdefaultApplicationProblemPlusJSONResponse) VisitListInvitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInviteRequestObject struct {
+	Body *CreateInviteJSONRequestBody
+}
+
+type CreateInviteResponseObject interface {
+	VisitCreateInviteResponse(w http.ResponseWriter) error
+}
+
+type CreateInvite200JSONResponse struct{ AdminInviteJSONResponse }
+
+func (response CreateInvite200JSONResponse) VisitCreateInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateInvitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateInvitedefaultApplicationProblemPlusJSONResponse) VisitCreateInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeInviteRequestObject struct {
+	Id InviteId `json:"id"`
+}
+
+type RevokeInviteResponseObject interface {
+	VisitRevokeInviteResponse(w http.ResponseWriter) error
+}
+
+type RevokeInvite200JSONResponse struct{ AdminInviteJSONResponse }
+
+func (response RevokeInvite200JSONResponse) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeInvitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RevokeInvitedefaultApplicationProblemPlusJSONResponse) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPendingRegistrationsRequestObject struct {
 	Params ListPendingRegistrationsParams
 }
@@ -13553,6 +14113,115 @@ type RetireInstanceRuledefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response RetireInstanceRuledefaultApplicationProblemPlusJSONResponse) VisitRetireInstanceRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceSettingsRequestObject struct {
+}
+
+type ListInstanceSettingsResponseObject interface {
+	VisitListInstanceSettingsResponse(w http.ResponseWriter) error
+}
+
+type ListInstanceSettings200JSONResponse struct{ AdminSettingListJSONResponse }
+
+func (response ListInstanceSettings200JSONResponse) VisitListInstanceSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListInstanceSettingsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListInstanceSettingsdefaultApplicationProblemPlusJSONResponse) VisitListInstanceSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateInstanceSettingsRequestObject struct {
+	Body *UpdateInstanceSettingsJSONRequestBody
+}
+
+type UpdateInstanceSettingsResponseObject interface {
+	VisitUpdateInstanceSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateInstanceSettings200JSONResponse struct{ AdminSettingListJSONResponse }
+
+func (response UpdateInstanceSettings200JSONResponse) VisitUpdateInstanceSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateInstanceSettingsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateInstanceSettingsdefaultApplicationProblemPlusJSONResponse) VisitUpdateInstanceSettingsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -17398,6 +18067,15 @@ type StrictServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(ctx context.Context, request MarkInstanceAvailableRequestObject) (MarkInstanceAvailableResponseObject, error)
+	// ListInvites List the invites
+	// (GET /admin/invites)
+	ListInvites(ctx context.Context, request ListInvitesRequestObject) (ListInvitesResponseObject, error)
+	// CreateInvite Create an invite
+	// (POST /admin/invites)
+	CreateInvite(ctx context.Context, request CreateInviteRequestObject) (CreateInviteResponseObject, error)
+	// RevokeInvite Revoke an invite
+	// (POST /admin/invites/{id}/revoke)
+	RevokeInvite(ctx context.Context, request RevokeInviteRequestObject) (RevokeInviteResponseObject, error)
 	// ListPendingRegistrations List the registrations that await approval
 	// (GET /admin/registrations)
 	ListPendingRegistrations(ctx context.Context, request ListPendingRegistrationsRequestObject) (ListPendingRegistrationsResponseObject, error)
@@ -17449,6 +18127,12 @@ type StrictServerInterface interface {
 	// RetireInstanceRule Retire an instance rule
 	// (POST /admin/rules/{id}/retire)
 	RetireInstanceRule(ctx context.Context, request RetireInstanceRuleRequestObject) (RetireInstanceRuleResponseObject, error)
+	// ListInstanceSettings List the instance settings
+	// (GET /admin/settings)
+	ListInstanceSettings(ctx context.Context, request ListInstanceSettingsRequestObject) (ListInstanceSettingsResponseObject, error)
+	// UpdateInstanceSettings Change instance settings
+	// (PATCH /admin/settings)
+	UpdateInstanceSettings(ctx context.Context, request UpdateInstanceSettingsRequestObject) (UpdateInstanceSettingsResponseObject, error)
 	// ListSignupBlocks List the sign-up blocks
 	// (GET /admin/signup_blocks)
 	ListSignupBlocks(ctx context.Context, request ListSignupBlocksRequestObject) (ListSignupBlocksResponseObject, error)
@@ -19102,6 +19786,89 @@ func (sh *strictHandler) MarkInstanceAvailable(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// ListInvites operation middleware
+func (sh *strictHandler) ListInvites(w http.ResponseWriter, r *http.Request, params ListInvitesParams) {
+	var request ListInvitesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInvites(ctx, request.(ListInvitesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInvites")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInvitesResponseObject); ok {
+		if err := validResponse.VisitListInvitesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateInvite operation middleware
+func (sh *strictHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
+	var request CreateInviteRequestObject
+
+	var body CreateInviteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateInvite(ctx, request.(CreateInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateInviteResponseObject); ok {
+		if err := validResponse.VisitCreateInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeInvite operation middleware
+func (sh *strictHandler) RevokeInvite(w http.ResponseWriter, r *http.Request, id InviteId) {
+	var request RevokeInviteRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeInvite(ctx, request.(RevokeInviteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeInvite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeInviteResponseObject); ok {
+		if err := validResponse.VisitRevokeInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPendingRegistrations operation middleware
 func (sh *strictHandler) ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams) {
 	var request ListPendingRegistrationsRequestObject
@@ -19588,6 +20355,61 @@ func (sh *strictHandler) RetireInstanceRule(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RetireInstanceRuleResponseObject); ok {
 		if err := validResponse.VisitRetireInstanceRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListInstanceSettings operation middleware
+func (sh *strictHandler) ListInstanceSettings(w http.ResponseWriter, r *http.Request) {
+	var request ListInstanceSettingsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListInstanceSettings(ctx, request.(ListInstanceSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListInstanceSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListInstanceSettingsResponseObject); ok {
+		if err := validResponse.VisitListInstanceSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateInstanceSettings operation middleware
+func (sh *strictHandler) UpdateInstanceSettings(w http.ResponseWriter, r *http.Request) {
+	var request UpdateInstanceSettingsRequestObject
+
+	var body UpdateInstanceSettingsJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateInstanceSettings(ctx, request.(UpdateInstanceSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateInstanceSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateInstanceSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateInstanceSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

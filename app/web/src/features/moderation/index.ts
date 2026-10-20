@@ -51,6 +51,10 @@ export { registrationsQueryOptions } from "./api/registrations";
 export { RegistrationList } from "./components/RegistrationList";
 export { type SignupBlockFilter, signupBlockFilters, signupBlocksQueryOptions } from "./api/signupBlocks";
 export { SignupBlocks } from "./components/SignupBlocks";
+// The invites that let people sign up in the invite registration mode (FR-001), for manage_invites.
+export { invitesQueryOptions } from "./api/invites";
+export { instanceInfoQueryOptions as moderationInstanceQueryOptions } from "./api/reports";
+export { Invites } from "./components/Invites";
 // The report queue and a report's page (FR-701, FR-710, NFR-MOD-4), for manage_reports.
 export { type ReportFilter, reportQueryOptions, reportsQueryOptions } from "./api/reports";
 export { ReportDetailView } from "./components/ReportDetail";

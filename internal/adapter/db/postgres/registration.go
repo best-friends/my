@@ -153,6 +153,15 @@ func (r *IdentityRepository) FindInviteByCode(ctx context.Context, code string) 
 	return inviteFrom(row.ID, row.Code, row.CreatedByUserID, row.MaxUses, row.ExpiresAt, row.CreatedAt), nil
 }
 
+// FindInviteByID implements identity.Repository.
+func (r *IdentityRepository) FindInviteByID(ctx context.Context, id string) (identity.Invite, error) {
+	row, err := r.db.reader().GetInviteByID(ctx, id)
+	if err != nil {
+		return identity.Invite{}, notFound(err, appidentity.ErrNotFound, "invite")
+	}
+	return inviteFrom(row.ID, row.Code, row.CreatedByUserID, row.MaxUses, row.ExpiresAt, row.CreatedAt), nil
+}
+
 // InviteUsage implements identity.Repository.
 func (r *IdentityRepository) InviteUsage(ctx context.Context, tx uow.Tx, inviteID string) (int, bool, error) {
 	q, err := queries(tx)
@@ -198,12 +207,12 @@ func (r *IdentityRepository) InsertInviteRevocation(ctx context.Context, tx uow.
 }
 
 // ListInvites implements identity.Repository.
-func (r *IdentityRepository) ListInvites(ctx context.Context, limit int) ([]appidentity.InviteStatus, error) {
+func (r *IdentityRepository) ListInvites(ctx context.Context, before string, limit int) ([]appidentity.InviteStatus, error) {
 	n, err := toInt32(limit, "limit")
 	if err != nil {
 		return nil, err
 	}
-	rows, err := r.db.reader().ListInvites(ctx, n)
+	rows, err := r.db.reader().ListInvites(ctx, postgresgen.ListInvitesParams{Before: before, PageLimit: n})
 	if err != nil {
 		return nil, wrap(err, "list invites")
 	}

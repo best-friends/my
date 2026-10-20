@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server settings screen in every width × locale project (ADR-0027): an administrator names the server in
-// a language, and the tab title and the sidebar call the server by that name instead of its domain at once,
-// each step passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
+// a language, and the tab title and the sidebar call the server by that name instead of its domain at once, and
+// changes the registration mode with the keyboard, each step passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
 // a signed-in administrator with page.route; names change with the locale, so the structure is checked by role
 // and by what the server sends.
 import type { Page, Route } from "@playwright/test";
@@ -34,10 +34,30 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
 
-/** Plays the API of a signed-in administrator; GET /instance names the server by its English name. Returns the changes. */
+/** The instance settings of the form, at their defaults, as GET /admin/settings lists them; `stored` replaces values. */
+function instanceSettings(stored: Readonly<Record<string, string>>) {
+  const items = [
+    { key: "registration_mode", kind: "enum", default: "approval", choices: ["open", "approval", "invite", "closed"] },
+    { key: "default_locale", kind: "locale", default: "en" },
+    { key: "local_timeline_enabled", kind: "bool", default: "true" },
+    { key: "federated_timeline_enabled", kind: "bool", default: "true" },
+    { key: "remote_media_policy", kind: "enum", default: "none", choices: ["none", "avatars", "all"] },
+    { key: "remote_media_cache_ttl", kind: "int", default: "86400", minimum: 60, maximum: 31536000 },
+    { key: "authorized_fetch", kind: "bool", default: "false" },
+    { key: "domain_actions_visibility", kind: "enum", default: "none", choices: ["none", "users", "all"] },
+    { key: "domain_actions_rationale_visibility", kind: "enum", default: "none", choices: ["none", "users", "all"] },
+  ];
+  return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
+}
+
+/**
+ * Plays the API of a signed-in administrator; GET /instance names the server by its English name. Returns the
+ * changes of the names (`<locale> <name>`) and of the settings (`<key>=<value>`).
+ */
 async function administratorServer(page: Page) {
   const locale = test.info().project.use.locale ?? "en";
   const names = new Map<string, string>([["en", "my example"]]);
+  const settings: Record<string, string> = {};
   const changes: string[] = [];
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
   await page.route("**/api/v1/**", async (route) => {
@@ -64,6 +84,15 @@ async function administratorServer(page: Page) {
     }
     if (key === "GET /admin/instance_texts") {
       return json(route, { items: [...names].map(([textLocale, body]) => ({ key: "name", locale: textLocale, body, revised_at: "2026-10-16T00:00:00Z" })) });
+    }
+    if (key === "GET /admin/settings") return json(route, instanceSettings(settings));
+    if (key === "PATCH /admin/settings") {
+      const { values } = (request.postDataJSON() ?? {}) as { values: Record<string, string> };
+      for (const [setting, value] of Object.entries(values)) {
+        changes.push(`${setting}=${value}`);
+        settings[setting] = value;
+      }
+      return json(route, instanceSettings(settings));
     }
     const set = /^PUT \/admin\/instance_texts\/name\/([^/]+)$/.exec(key);
     if (set) {
@@ -103,7 +132,8 @@ test.describe("server settings", () => {
     const english = main.getByRole("textbox").first();
     await expect(english).toHaveValue("my example");
     await expect(page).toHaveTitle(/my example/);
-    await expect(main.getByRole("region")).toMatchAriaSnapshot(`
+    const name = main.getByRole("region").first();
+    await expect(name).toMatchAriaSnapshot(`
       - region:
         - heading [level=2]
         - paragraph: /my\\.example/
@@ -116,14 +146,35 @@ test.describe("server settings", () => {
     `);
 
     await english.fill(longName);
-    await main.getByRole("button").last().click();
-    await expect(main.getByRole("status")).not.toBeEmpty();
+    await name.getByRole("button").click();
+    await expect(name.getByRole("status")).not.toBeEmpty();
     expect(changes).toEqual([`en ${longName}`]);
     await expect(page).toHaveTitle(new RegExp(longName));
     if ((page.viewportSize()?.width ?? 0) >= 1024) {
       // The sidebar shows the server's name above the list from lg on.
       await expect(page.getByRole("navigation").getByText(longName)).toBeVisible();
     }
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("server policies", () => {
+  test("takes invites only, with the keyboard", async ({ page, makeAxeBuilder }) => {
+    const changes = await administratorServer(page);
+    await page.goto("/admin/settings");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("textbox").first()).toHaveValue("my example");
+    const registration = main.getByRole("radiogroup").first();
+    // The radio group holds the saved mode (approval); Down Arrow selects the next one, invite, in every direction.
+    await registration.getByRole("radio", { checked: true }).focus();
+    await page.keyboard.press("ArrowDown");
+    await expect(registration.getByRole("radio").nth(2)).toBeChecked();
+    const save = main.getByRole("button").last();
+    await save.focus();
+    await page.keyboard.press("Enter");
+    await expect(main.getByRole("status").last()).not.toBeEmpty();
+    expect(changes).toEqual(["registration_mode=invite"]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

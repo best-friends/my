@@ -81,11 +81,18 @@ describe("the staff's menus on the settings page", () => {
       "/moderation/accounts",
       "/moderation/registrations",
       "/moderation/signup-blocks",
+      "/moderation/invites",
       "/moderation/domain-actions",
       "/moderation/instances",
       "/moderation/audit-log",
     ]);
-    expect(within(admin).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/settings", "/admin/theme", "/admin/documents", "/admin/dead-jobs"]);
+    expect(within(admin).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/admin/settings",
+      "/admin/rules",
+      "/admin/theme",
+      "/admin/documents",
+      "/admin/dead-jobs",
+    ]);
   });
 });
 
