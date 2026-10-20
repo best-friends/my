@@ -390,6 +390,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - `Create` の `id` は `{object}/activity`、それ以外は `/ap/activities/{uuid}`（ADR-0018）。
 - 宛先: `public` は `to: [Public]`・`cc: [followers, メンション先]`、`unlisted` は `to: [followers]`・`cc: [Public, メンション先]`、`private` と `local` は `to: [followers]`（`private` は加えて `cc: [メンション先]`）、`direct` は `to: [メンション先]`。
 - ローカルの Actor の文書は、アバターを `icon`、ヘッダーを `image`（どちらも `Image` で `mediaType` と `url`）に載せます。URL は `large` の版で、アニメーションなら動く版（GIF）です。静止版は受け取ったサーバーが作ります（[ADR-0054](../adr/0054-media-variants-video-audio.md) §5）。凍結中の文書には載せません。
+  `tag` には、現在のプロフィールの版の表示名・自己紹介・補足情報で使った有効なカスタム絵文字の `Emoji` を載せます（下の Note と同じ形）。
 - Actor の `Update` は `to: [Public]` で、`object` に `GET` と同じ Actor の文書（`federation.LocalActorDocument`、`@context` なし）を埋め込みます。文書は展開の始めの時点の Actor から組み立てます（後の版はそれぞれの `Update` を送る）。その時点で凍結中なら、GET と同じ凍結中の文書です（§11.1）。
   有効でなくなったアカウントの `Update` は送りません。ただし削除済みでない凍結中のアカウント（BAN で削除を予約したものを含む）の `Update` は送ります。
 - Actor の `Delete` は `to: [Public]` で、`object` は Actor の `id` です。
@@ -397,8 +398,10 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - `sensitive` は CW があれば真です（Mastodon と同じ）。`summary` と `contentMap` は空なら省き、`sensitive`・`content`・`tag`・`attachment` は常に付けます。
   - `attachment` は処理の終わったメディアだけで、種類を問わず `type` は `Document`（Mastodon と同じ。種類は `mediaType` で伝える）、URL・`mediaType`・寸法は `large` の版のもので、アニメーションなら動く版（GIF）です（[ADR-0054](../adr/0054-media-variants-video-audio.md) §5）。焦点が中央なら `focalPoint` を省きます。
   - `Mention` は `href` が Actor の IRI、`name` が `@user@domain`（ローカルのアカウントは設定 `account_domain`）、`Hashtag` は `href` が `https://{host}/tags/{name}`（ADR-0018）、`name` が `#name` です。
-- Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグは `content.Reader.Parts` で引きます。
-- `@context` は AS2・security・Mastodon 拡張（`toot:`）の既存の Actor の文脈と同じものです。
+  - `Emoji`（[ADR-0051](../adr/0051-custom-emoji.md) §3）は、版の本文と CW で使った有効なカスタム絵文字です。`id` はローカルなら `https://{host}/ap/emojis/{uuid}`（リモートなら記録した `uri`、無ければ省く）、`name` は `:shortcode:`、`updated` は現在の画像を設定した時刻、`icon` は `Image` で、`url` と `mediaType` は `large` の版（アニメーションなら動く版の GIF、静止画は常に PNG）です。
+    ローカルの投稿とプロフィールの絵文字は、保存のときに原文の `:shortcode:` から有効なローカルの絵文字だけを版に記録したものです（data-model §4.4）。リアクション（ADR-0052）も同じ形を使います（`federation.EmojiTag`）。
+- Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグ・カスタム絵文字は `content.Reader.Parts` で引きます。
+- `@context` は AS2・security・Mastodon 拡張（`toot:`。`Emoji` は `toot:Emoji`）の既存の Actor の文脈と同じものです。
 
 ## 8. 公開範囲 `local` と連合
 
@@ -460,6 +463,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - 投稿の表示用 URL `/@{username}/status/{uuid}`（[ADR-0053](../adr/0053-status-page-url.md)）に ActivityPub の `Accept` で来たリクエストは、未ログインで閲覧できる削除されていないローカルの投稿だけ、その `id` へ `302` でリダイレクトし、それ以外は 404 です（`federation.Objects.PageStatusURI`）。
   URL を貼った検索（FR-305）で、ほかのサーバーが投稿を引けるようにするためです。`id` の GET は上の規則で改めて判定します。
   ローカルの投稿の `url`（`Note` とクライアント API）は保存せず、読むときに作者の現在のユーザー名と投稿 ID から作ります。
+- `GET /ap/emojis/{uuid}` は、有効なローカルのカスタム絵文字の `Emoji` を `@context` 付きで返します（Mastodon は `id` を引いて絵文字を解決する。ADR-0051 §3）。存在しない・削除した・無効の絵文字と、HTML を求めるリクエストは同じ 404 です。絵文字と画像は公開のものなので、Authorized Fetch は当てず、`public, max-age=60` です。
 - コレクションはだれにも同じ内容を返します。outbox・followers・following は `totalItems` と最初のページ（`?page=true`）へのリンクを持つ `OrderedCollection` で、ページ（`OrderedCollectionPage`）は `partOf` と次のページ（`?max_id={カーソル}&page=true`）を持ちます（Mastodon と同じ形）。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。

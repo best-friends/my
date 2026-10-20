@@ -438,6 +438,16 @@ func mediaWritesFormats(t *testing.T, p media.Processor) {
 			t.Errorf("%s: moving variants %v, want %v", tc.name, out.Animated != nil, tc.animated)
 		}
 	}
+	// The large still variant of a custom emoji is PNG even when opaque, still or animated: no
+	// server takes JPEG as an emoji (ADR-0051 §2).
+	for name, data := range map[string][]byte{"opaque png": FixturePNG(40, 20, false), "jpeg": FixtureJPEG(40, 20, 1), "gif": FixtureGIF(16, 8, 3)} {
+		out := mediaProcessFor(t, p, data, media.Sizes{}, media.Request{Purpose: media.PurposeEmoji})
+		if v := out.Still.Large; v.ContentType != "image/png" || v.Extension != "png" {
+			t.Errorf("emoji of %s: still large is %s (.%s), want image/png", name, v.ContentType, v.Extension)
+		} else {
+			decodeVariant(t, v)
+		}
+	}
 	// Transparency gives the small and medium variants an alpha channel.
 	out := mediaProcess(t, p, FixturePNG(40, 20, true))
 	for _, v := range []media.Variant{out.Still.Small, out.Still.Medium} {

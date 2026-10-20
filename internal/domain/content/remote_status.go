@@ -57,10 +57,31 @@ type CustomEmojiImage struct {
 	RevisedAt time.Time
 }
 
-// CurrentCustomEmoji is a custom emoji with its current image.
+// CurrentCustomEmoji is a custom emoji with its current image and its settings (the defaults
+// when it has none).
 type CurrentCustomEmoji struct {
-	Emoji CustomEmoji
-	Image CustomEmojiImage
+	Emoji    CustomEmoji
+	Image    CustomEmojiImage
+	Settings CustomEmojiSettings
+}
+
+// CustomEmojiRecord is a custom emoji as the administrators manage it: with its current image,
+// its settings, and its aliases, sorted.
+type CustomEmojiRecord struct {
+	CurrentCustomEmoji
+	Aliases []string
+}
+
+// Local reports whether the emoji is of this instance.
+func (e CustomEmoji) Local() bool { return e.Domain == "" }
+
+// Label returns how the audit log names the emoji (ADR-0051 §5): :shortcode:, followed by
+// @domain for a remote emoji.
+func (e CustomEmoji) Label() string {
+	if e.Domain == "" {
+		return ":" + e.Shortcode + ":"
+	}
+	return ":" + e.Shortcode + ":@" + e.Domain
 }
 
 // MaxPollOptions bounds the choices of a remote poll that are kept.

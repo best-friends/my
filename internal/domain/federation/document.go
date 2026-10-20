@@ -32,6 +32,7 @@ func LDContext() []any {
 			"value":                     "schema:value",
 			"sensitive":                 "as:sensitive",
 			"Hashtag":                   "as:Hashtag",
+			"Emoji":                     "toot:Emoji",
 			"blurhash":                  "toot:blurhash",
 			"focalPoint":                map[string]string{"@container": "@list", "@id": "toot:focalPoint"},
 		},
@@ -188,14 +189,47 @@ type TagType string
 const (
 	TagMention TagType = "Mention"
 	TagHashtag TagType = "Hashtag"
+	TagEmoji   TagType = "Emoji"
 )
 
-// TagDocument is an entry of a Note's tag: a Mention, whose Href is the actor and Name the
-// handle "@user@domain", or a Hashtag, whose Href is the tag's page and Name "#name".
+// TagDocument is an entry of the tag of a Note or an actor: a Mention, whose Href is the actor
+// and Name the handle "@user@domain"; a Hashtag, whose Href is the tag's page and Name "#name";
+// or an Emoji (EmojiTag), a custom emoji with its id, its Name ":shortcode:", when its image
+// was Updated, and the image as its Icon.
 type TagDocument struct {
-	Type TagType `json:"type"`
-	Href string  `json:"href"`
-	Name string  `json:"name"`
+	ID      IRI            `json:"id,omitempty"`
+	Type    TagType        `json:"type"`
+	Href    string         `json:"href,omitempty"`
+	Name    string         `json:"name"`
+	Updated string         `json:"updated,omitempty"`
+	Icon    *ImageDocument `json:"icon,omitempty"`
+}
+
+// EmojiTag returns the Emoji tag of a custom emoji in the shape that Mastodon publishes and
+// Misskey, GoToSocial, and Akkoma read (ADR-0051 §3): its id ("" leaves it out, for a remote
+// emoji without one), its name :shortcode:, when its current image was set, and the image at
+// url, of mediaType ("" leaves it out). Notes, actors, and reactions share it.
+func EmojiTag(id IRI, shortcode string, updated time.Time, mediaType, url string) TagDocument {
+	t := TagDocument{
+		ID: id, Type: TagEmoji, Name: ":" + shortcode + ":",
+		Icon: &ImageDocument{Type: ImageType, MediaType: mediaType, URL: url},
+	}
+	if !updated.IsZero() {
+		t.Updated = FormatTime(updated)
+	}
+	return t
+}
+
+// TopLevelEmoji is the Emoji of a local custom emoji served on its own, with its context: the
+// answer to a GET of its id (ADR-0051 §3).
+type TopLevelEmoji struct {
+	Context []any `json:"@context"`
+	TagDocument
+}
+
+// TopLevelEmojiOf returns t, an Emoji tag, as a top-level document.
+func TopLevelEmojiOf(t TagDocument) TopLevelEmoji {
+	return TopLevelEmoji{Context: LDContext(), TagDocument: t}
 }
 
 // TombstoneOf returns the object of the Delete of id.

@@ -6,16 +6,17 @@ import "testing"
 
 func TestPermissionCategory(t *testing.T) {
 	want := map[Permission]PermissionCategory{
-		PermManageReports:   CategoryModeration,
-		PermManageAccounts:  CategoryModeration,
-		PermManageDomains:   CategoryModeration,
-		PermManageInvites:   CategoryModeration,
-		PermViewAudit:       CategoryModeration,
-		PermManageSettings:  CategoryServer,
-		PermManageRules:     CategoryServer,
-		PermManageRoles:     CategoryServer,
-		PermManageJobs:      CategoryServer,
-		PermManageTwoFactor: CategoryServer,
+		PermManageReports:      CategoryModeration,
+		PermManageAccounts:     CategoryModeration,
+		PermManageDomains:      CategoryModeration,
+		PermManageInvites:      CategoryModeration,
+		PermViewAudit:          CategoryModeration,
+		PermManageSettings:     CategoryServer,
+		PermManageRules:        CategoryServer,
+		PermManageRoles:        CategoryServer,
+		PermManageJobs:         CategoryServer,
+		PermManageTwoFactor:    CategoryServer,
+		PermManageCustomEmojis: CategoryServer,
 	}
 	for _, p := range AllPermissions() {
 		w, ok := want[p]

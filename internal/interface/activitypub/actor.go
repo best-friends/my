@@ -25,6 +25,9 @@ func (h *Handler) actorDocument(ctx context.Context, a appaccount.Actor) (federa
 	if err != nil {
 		return federation.ActorDocument{}, err
 	}
+	if images.Emojis, err = appfederation.LocalActorEmojis(ctx, h.o.EmojiTags, h.o.Host, a); err != nil {
+		return federation.ActorDocument{}, err
+	}
 	return appfederation.LocalActorDocument(h.o.Host, a, h.instanceActorUsername(), images), nil
 }
 

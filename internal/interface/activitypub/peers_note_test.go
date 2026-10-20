@@ -123,6 +123,10 @@ func (w *noteWorld) Pinned(context.Context, appcontent.Viewer, string) ([]appcon
 	return nil, nil
 }
 
+func (w *noteWorld) EmojiTags(context.Context, []string) ([]appcontent.EmojiTag, error) {
+	return nil, nil
+}
+
 func (w *noteWorld) Parts(context.Context, appcontent.Revision) (appcontent.RevisionParts, error) {
 	return w.parts, nil
 }

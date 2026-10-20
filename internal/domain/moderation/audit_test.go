@@ -64,8 +64,8 @@ func TestAuditActionsHaveTargets(t *testing.T) {
 	if _, ok := moderation.AuditAction("nothing").Target(); ok {
 		t.Error("an unknown action has a target")
 	}
-	if len(moderation.AuditTargetKinds()) != 10 {
-		t.Errorf("target kinds = %v, want the 10 of data-model §4.3", moderation.AuditTargetKinds())
+	if len(moderation.AuditTargetKinds()) != 11 {
+		t.Errorf("target kinds = %v, want the 11 of data-model §4.3", moderation.AuditTargetKinds())
 	}
 }
 

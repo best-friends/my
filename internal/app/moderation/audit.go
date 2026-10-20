@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/moderation"
 )
@@ -90,8 +91,9 @@ type AuditQuery struct {
 }
 
 // RegisterAuditProjector registers the projector that writes the audit log entry of every
-// AuditRecorded into the transaction that emits it. An invalid entry fails the operation: an
-// operation that cannot be audited does not happen.
+// AuditRecorded, and of every appcontent.CustomEmojiAdministered, into the transaction that
+// emits it. An invalid entry fails the operation: an operation that cannot be audited does not
+// happen.
 func RegisterAuditProjector(r *uow.Projectors, repo AuditRepository) {
 	r.Register(EventAuditRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		entry := e.(AuditRecorded).Entry
@@ -101,6 +103,22 @@ func RegisterAuditProjector(r *uow.Projectors, repo AuditRepository) {
 		}
 		return repo.InsertAuditEntry(ctx, tx, entry)
 	})
+	// The content module cannot emit AuditRecorded (this module depends on it), so the operations
+	// on custom emoji (ADR-0051 §5) are audited from its own event.
+	r.Register(appcontent.EventCustomEmojiAdministered, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		return r.Project(ctx, tx, AuditRecorded{Entry: customEmojiAuditEntry(e.(appcontent.CustomEmojiAdministered))})
+	})
+}
+
+// customEmojiAuditEntry returns the audit log entry of an operation on a custom emoji: its
+// label is :shortcode:, or :shortcode:@domain for a remote emoji.
+func customEmojiAuditEntry(e appcontent.CustomEmojiAdministered) AuditEntry {
+	entry := AuditEntry{
+		ID: e.AuditID, Action: moderation.AuditAction(e.Action), TargetKind: moderation.AuditTargetCustomEmoji,
+		TargetID: e.Emoji.ID, TargetLabel: e.Emoji.Label(), SourceEventID: e.SourceEventID, OccurredAt: e.At,
+	}
+	entry.ActorKind, entry.ActorUserID = moderation.AuditActor(e.ByUserID)
+	return entry
 }
 
 // AuditLog lists up to limit entries of the audit log, newest first. It fails with

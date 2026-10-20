@@ -230,6 +230,12 @@ const (
 	AdminAuditActionAccountDeletionCancelled AdminAuditAction = "account_deletion_cancelled"
 	AdminAuditActionAppealOverturned         AdminAuditAction = "appeal_overturned"
 	AdminAuditActionAppealUpheld             AdminAuditAction = "appeal_upheld"
+	AdminAuditActionCustomEmojiCreated       AdminAuditAction = "custom_emoji_created"
+	AdminAuditActionCustomEmojiDeleted       AdminAuditAction = "custom_emoji_deleted"
+	AdminAuditActionCustomEmojiDisabled      AdminAuditAction = "custom_emoji_disabled"
+	AdminAuditActionCustomEmojiEnabled       AdminAuditAction = "custom_emoji_enabled"
+	AdminAuditActionCustomEmojiImageReplaced AdminAuditAction = "custom_emoji_image_replaced"
+	AdminAuditActionCustomEmojiUpdated       AdminAuditAction = "custom_emoji_updated"
 	AdminAuditActionDomainActionIssued       AdminAuditAction = "domain_action_issued"
 	AdminAuditActionDomainActionLifted       AdminAuditAction = "domain_action_lifted"
 	AdminAuditActionRegistrationApproved     AdminAuditAction = "registration_approved"
@@ -265,6 +271,18 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAppealOverturned:
 		return true
 	case AdminAuditActionAppealUpheld:
+		return true
+	case AdminAuditActionCustomEmojiCreated:
+		return true
+	case AdminAuditActionCustomEmojiDeleted:
+		return true
+	case AdminAuditActionCustomEmojiDisabled:
+		return true
+	case AdminAuditActionCustomEmojiEnabled:
+		return true
+	case AdminAuditActionCustomEmojiImageReplaced:
+		return true
+	case AdminAuditActionCustomEmojiUpdated:
 		return true
 	case AdminAuditActionDomainActionIssued:
 		return true
@@ -341,6 +359,7 @@ func (e AdminAuditActorKind) Valid() bool {
 const (
 	AdminAuditTargetKindAccount     AdminAuditTargetKind = "account"
 	AdminAuditTargetKindAppeal      AdminAuditTargetKind = "appeal"
+	AdminAuditTargetKindCustomEmoji AdminAuditTargetKind = "custom_emoji"
 	AdminAuditTargetKindDomain      AdminAuditTargetKind = "domain"
 	AdminAuditTargetKindReport      AdminAuditTargetKind = "report"
 	AdminAuditTargetKindRole        AdminAuditTargetKind = "role"
@@ -357,6 +376,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindAccount:
 		return true
 	case AdminAuditTargetKindAppeal:
+		return true
+	case AdminAuditTargetKindCustomEmoji:
 		return true
 	case AdminAuditTargetKindDomain:
 		return true
@@ -634,6 +655,48 @@ func (e AdminSignupBlockState) Valid() bool {
 	}
 }
 
+// Defines values for CustomEmojiProblemReason.
+const (
+	CustomEmojiProblemReasonInvalidAlias      CustomEmojiProblemReason = "invalid_alias"
+	CustomEmojiProblemReasonInvalidCategory   CustomEmojiProblemReason = "invalid_category"
+	CustomEmojiProblemReasonInvalidShortcode  CustomEmojiProblemReason = "invalid_shortcode"
+	CustomEmojiProblemReasonMediaNotFound     CustomEmojiProblemReason = "media_not_found"
+	CustomEmojiProblemReasonMediaNotReady     CustomEmojiProblemReason = "media_not_ready"
+	CustomEmojiProblemReasonRemoteEmoji       CustomEmojiProblemReason = "remote_emoji"
+	CustomEmojiProblemReasonShortcodeTaken    CustomEmojiProblemReason = "shortcode_taken"
+	CustomEmojiProblemReasonTooBig            CustomEmojiProblemReason = "too_big"
+	CustomEmojiProblemReasonTooLarge          CustomEmojiProblemReason = "too_large"
+	CustomEmojiProblemReasonUnsupportedFormat CustomEmojiProblemReason = "unsupported_format"
+)
+
+// Valid indicates whether the value is a known member of the CustomEmojiProblemReason enum.
+func (e CustomEmojiProblemReason) Valid() bool {
+	switch e {
+	case CustomEmojiProblemReasonInvalidAlias:
+		return true
+	case CustomEmojiProblemReasonInvalidCategory:
+		return true
+	case CustomEmojiProblemReasonInvalidShortcode:
+		return true
+	case CustomEmojiProblemReasonMediaNotFound:
+		return true
+	case CustomEmojiProblemReasonMediaNotReady:
+		return true
+	case CustomEmojiProblemReasonRemoteEmoji:
+		return true
+	case CustomEmojiProblemReasonShortcodeTaken:
+		return true
+	case CustomEmojiProblemReasonTooBig:
+		return true
+	case CustomEmojiProblemReasonTooLarge:
+		return true
+	case CustomEmojiProblemReasonUnsupportedFormat:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DataExportState.
 const (
 	DataExportStateFailed  DataExportState = "failed"
@@ -879,22 +942,25 @@ func (e NotificationType) Valid() bool {
 
 // Defines values for Permission.
 const (
-	PermissionManageAccounts  Permission = "manage_accounts"
-	PermissionManageDomains   Permission = "manage_domains"
-	PermissionManageInvites   Permission = "manage_invites"
-	PermissionManageJobs      Permission = "manage_jobs"
-	PermissionManageReports   Permission = "manage_reports"
-	PermissionManageRoles     Permission = "manage_roles"
-	PermissionManageRules     Permission = "manage_rules"
-	PermissionManageSettings  Permission = "manage_settings"
-	PermissionManageTwoFactor Permission = "manage_two_factor"
-	PermissionViewAudit       Permission = "view_audit"
+	PermissionManageAccounts     Permission = "manage_accounts"
+	PermissionManageCustomEmojis Permission = "manage_custom_emojis"
+	PermissionManageDomains      Permission = "manage_domains"
+	PermissionManageInvites      Permission = "manage_invites"
+	PermissionManageJobs         Permission = "manage_jobs"
+	PermissionManageReports      Permission = "manage_reports"
+	PermissionManageRoles        Permission = "manage_roles"
+	PermissionManageRules        Permission = "manage_rules"
+	PermissionManageSettings     Permission = "manage_settings"
+	PermissionManageTwoFactor    Permission = "manage_two_factor"
+	PermissionViewAudit          Permission = "view_audit"
 )
 
 // Valid indicates whether the value is a known member of the Permission enum.
 func (e Permission) Valid() bool {
 	switch e {
 	case PermissionManageAccounts:
+		return true
+	case PermissionManageCustomEmojis:
 		return true
 	case PermissionManageDomains:
 		return true
@@ -1523,7 +1589,10 @@ type AdminAppealPage struct {
 // user): `role_granted`, `role_revoked`. On an `appeal`:
 // `appeal_upheld`, `appeal_overturned` (which also records the action's
 // `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
-// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
+// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
+// `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+// `custom_emoji_updated` (its category, aliases, or place in the picker),
+// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -1547,7 +1616,10 @@ type AdminAuditEntry struct {
 	// user): `role_granted`, `role_revoked`. On an `appeal`:
 	// `appeal_upheld`, `appeal_overturned` (which also records the action's
 	// `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
-	// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
+	// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
+	// `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+	// `custom_emoji_updated` (its category, aliases, or place in the picker),
+	// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -1644,6 +1716,61 @@ type AdminCounts struct {
 
 	// PendingRegistrations The registrations that await approval. Needs `manage_accounts`.
 	PendingRegistrations *int64 `json:"pending_registrations,omitempty"`
+}
+
+// AdminCustomEmoji A custom emoji as the administrators manage it (ADR-0051 §4): a local one, or a remote
+// one recorded from the posts and profiles of another server.
+type AdminCustomEmoji struct {
+	// Aliases The other names of a local emoji that the picker finds it by.
+	Aliases []string `json:"aliases"`
+
+	// Category The category of a local emoji in the picker; absent for none.
+	Category *string `json:"category,omitempty"`
+
+	// CreatedAt When the emoji was registered or first seen.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Domain The domain of a remote emoji; absent for a local one.
+	Domain *string `json:"domain,omitempty"`
+
+	// Enabled Whether the emoji is shown; a disabled one stays `:shortcode:` text.
+	Enabled bool `json:"enabled"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Local Whether the emoji is of this instance.
+	Local bool `json:"local"`
+
+	// Shortcode The shortcode, without the colons around it.
+	Shortcode string `json:"shortcode"`
+
+	// StaticUrl The URL of a still image of the emoji; absent with `url`.
+	StaticUrl *string `json:"static_url,omitempty"`
+
+	// UpdatedAt When its current image was set, its ActivityPub `updated`.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Uri The ActivityPub `id` of the emoji: `https://{host}/ap/emojis/{id}` for a local one,
+	// and the recorded one for a remote one; absent when a remote emoji has none.
+	Uri *string `json:"uri,omitempty"`
+
+	// Url The URL of the image, animated when the emoji is; absent when the image cannot be
+	// shown (such as a remote one from a domain whose media the instance rejects).
+	Url *string `json:"url,omitempty"`
+
+	// VisibleInPicker Whether the picker offers the local emoji; always `true` for a remote one.
+	VisibleInPicker bool `json:"visible_in_picker"`
+}
+
+// AdminCustomEmojiPage A page of custom emoji.
+type AdminCustomEmojiPage struct {
+	Items []AdminCustomEmoji `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
 // AdminDeadJob A job that failed for good.
@@ -2210,6 +2337,26 @@ type CreateAccountActionRequest struct {
 	StatusIds *[]Id `json:"status_ids,omitempty"`
 }
 
+// CreateCustomEmojiRequest A new local custom emoji.
+type CreateCustomEmojiRequest struct {
+	// Aliases Other names, each following the rules of a shortcode; at most 10.
+	Aliases *[]string `json:"aliases,omitempty"`
+
+	// Category The category in the picker, up to 64 characters; empty for none.
+	Category *string `json:"category,omitempty"`
+
+	// MediaId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	MediaId Id `json:"media_id"`
+
+	// Shortcode 2 to 30 letters (A to Z, a to z), digits, and underscores; case matters.
+	Shortcode string `json:"shortcode"`
+
+	// VisibleInPicker Whether the picker offers the emoji.
+	VisibleInPicker *bool `json:"visible_in_picker,omitempty"`
+}
+
 // CreateDomainActionRequest A moderation action to take on a domain.
 type CreateDomainActionRequest struct {
 	// Domain The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
@@ -2413,6 +2560,47 @@ type CustomEmoji struct {
 	// Url The URL of the image, animated when the emoji is.
 	Url string `json:"url"`
 }
+
+// CustomEmojiProblem The problem of a custom emoji that breaks a rule (422,
+// `/api/v1/problems/invalid-custom-emoji`); `reason` says which. Another 422 (a malformed
+// request) has none.
+type CustomEmojiProblem struct {
+	// Detail An explanation of this occurrence, localized from `Accept-Language`.
+	Detail *string `json:"detail,omitempty"`
+
+	// Reason Why a custom emoji is refused. `invalid_shortcode`: not 2 to 30 letters, digits, and
+	// underscores. `shortcode_taken`: a local emoji has the shortcode. `invalid_alias`: an
+	// alias breaks the rules of a shortcode, or there are more than 10. `invalid_category`:
+	// the category is longer than 64 characters or not text. `media_not_found`: the media
+	// file is not an upload of the user. `media_not_ready`: it has not finished processing.
+	// `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
+	// than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
+	// `remote_emoji`: the operation is for local emoji only.
+	Reason *CustomEmojiProblemReason `json:"reason,omitempty"`
+
+	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Status The HTTP status code.
+	Status int `json:"status"`
+
+	// Title A short summary of the problem type, localized from `Accept-Language`.
+	Title string `json:"title"`
+
+	// Type A URI that identifies the problem type, stable for clients to branch on.
+	// It is `about:blank` when the problem means no more than its HTTP status.
+	Type string `json:"type"`
+}
+
+// CustomEmojiProblemReason Why a custom emoji is refused. `invalid_shortcode`: not 2 to 30 letters, digits, and
+// underscores. `shortcode_taken`: a local emoji has the shortcode. `invalid_alias`: an
+// alias breaks the rules of a shortcode, or there are more than 10. `invalid_category`:
+// the category is longer than 64 characters or not text. `media_not_found`: the media
+// file is not an upload of the user. `media_not_ready`: it has not finished processing.
+// `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
+// than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
+// `remote_emoji`: the operation is for local emoji only.
+type CustomEmojiProblemReason string
 
 // DataExport A request for an archive of the user's data.
 type DataExport struct {
@@ -3117,8 +3305,33 @@ type PageInfo struct {
 // `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
 // log. `manage_two_factor`: removing the two-factor authentication of a local user (only
-// the built-in admin role by default). The others guard no client API operation yet.
+// the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
+// remote. The others guard no client API operation yet.
 type Permission string
+
+// PickerCustomEmoji A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
+// `:shortcode:` into the text.
+type PickerCustomEmoji struct {
+	// Aliases Other names that a search of the picker finds the emoji by.
+	Aliases []string `json:"aliases"`
+
+	// Category The category that the picker groups the emoji in; absent for none.
+	Category *string `json:"category,omitempty"`
+
+	// Shortcode The shortcode, without the colons around it.
+	Shortcode string `json:"shortcode"`
+
+	// StaticUrl The URL of a still image of the emoji.
+	StaticUrl string `json:"static_url"`
+
+	// Url The URL of the image, animated when the emoji is.
+	Url string `json:"url"`
+}
+
+// PickerCustomEmojiList The custom emoji of the picker.
+type PickerCustomEmojiList struct {
+	Items []PickerCustomEmoji `json:"items"`
+}
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
 // server applies the same policy when it posts: a status asked for with a visibility that is
@@ -3216,6 +3429,8 @@ type Preferences struct {
 //     authentication.
 //   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
 //     operation, has no two-factor authentication.
+//   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
+//     says which.
 //   - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
 //     reason in `theme_errors` (`PUT /admin/theme`).
 type Problem struct {
@@ -3384,6 +3599,14 @@ type RelationshipSeverance struct {
 
 // RelationshipSeveranceKind defines model for RelationshipSeverance.Kind.
 type RelationshipSeveranceKind string
+
+// ReplaceCustomEmojiImageRequest The new image of a local custom emoji.
+type ReplaceCustomEmojiImageRequest struct {
+	// MediaId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	MediaId Id `json:"media_id"`
+}
 
 // Report A report that the user filed. It never names the reporter, and tells only whether the
 // moderators resolved it, never how.
@@ -3875,6 +4098,21 @@ type UpdateCredentialsRequest struct {
 	Note *string `json:"note,omitempty"`
 }
 
+// UpdateCustomEmojiRequest The settings of a custom emoji to change; absent ones stay.
+type UpdateCustomEmojiRequest struct {
+	// Aliases The new aliases, each following the rules of a shortcode; at most 10.
+	Aliases *[]string `json:"aliases,omitempty"`
+
+	// Category The category in the picker, up to 64 characters; empty removes it.
+	Category *string `json:"category,omitempty"`
+
+	// Enabled Whether the emoji is shown.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// VisibleInPicker Whether the picker offers the local emoji.
+	VisibleInPicker *bool `json:"visible_in_picker,omitempty"`
+}
+
 // UpdatePreferencesRequest A change of the preferences; properties left out keep their current values.
 type UpdatePreferencesRequest struct {
 	// DefaultPostLanguage The language of new posts that name none; `und` for undetermined.
@@ -3927,6 +4165,11 @@ type AdminAccountId = Id
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AppealId = Id
+
+// CustomEmojiId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type CustomEmojiId = Id
 
 // DomainActionId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -4111,6 +4354,24 @@ type ListAuditLogParams struct {
 
 	// TargetId Keep only the operations on this target, of the kind `target_kind`.
 	TargetId *string `form:"target_id,omitempty" json:"target_id,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAdminCustomEmojisParams defines parameters for ListAdminCustomEmojis.
+type ListAdminCustomEmojisParams struct {
+	// Local Keep the local emoji (`true`) or the remote ones (`false`).
+	Local *bool `form:"local,omitempty" json:"local,omitempty"`
+
+	// Domain Keep the emoji of this remote domain.
+	Domain *string `form:"domain,omitempty" json:"domain,omitempty"`
+
+	// Shortcode Keep the emoji whose shortcode contains this text, ignoring case.
+	Shortcode *string `form:"shortcode,omitempty" json:"shortcode,omitempty"`
 
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -4366,6 +4627,15 @@ type OverturnAppealJSONRequestBody = DecideAppealRequest
 // UpholdAppealJSONRequestBody defines body for UpholdAppeal for application/json ContentType.
 type UpholdAppealJSONRequestBody = DecideAppealRequest
 
+// CreateCustomEmojiJSONRequestBody defines body for CreateCustomEmoji for application/json ContentType.
+type CreateCustomEmojiJSONRequestBody = CreateCustomEmojiRequest
+
+// UpdateCustomEmojiJSONRequestBody defines body for UpdateCustomEmoji for application/json ContentType.
+type UpdateCustomEmojiJSONRequestBody = UpdateCustomEmojiRequest
+
+// ReplaceCustomEmojiImageJSONRequestBody defines body for ReplaceCustomEmojiImage for application/json ContentType.
+type ReplaceCustomEmojiImageJSONRequestBody = ReplaceCustomEmojiImageRequest
+
 // CreateDomainActionJSONRequestBody defines body for CreateDomainAction for application/json ContentType.
 type CreateDomainActionJSONRequestBody = CreateDomainActionRequest
 
@@ -4539,6 +4809,24 @@ type ServerInterface interface {
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(w http.ResponseWriter, r *http.Request)
+	// ListAdminCustomEmojis List the custom emoji
+	// (GET /admin/custom_emojis)
+	ListAdminCustomEmojis(w http.ResponseWriter, r *http.Request, params ListAdminCustomEmojisParams)
+	// CreateCustomEmoji Register a local custom emoji
+	// (POST /admin/custom_emojis)
+	CreateCustomEmoji(w http.ResponseWriter, r *http.Request)
+	// DeleteCustomEmoji Delete a local custom emoji
+	// (DELETE /admin/custom_emojis/{id})
+	DeleteCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
+	// GetAdminCustomEmoji Get a custom emoji
+	// (GET /admin/custom_emojis/{id})
+	GetAdminCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
+	// UpdateCustomEmoji Change the settings of a custom emoji
+	// (PATCH /admin/custom_emojis/{id})
+	UpdateCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
+	// ReplaceCustomEmojiImage Replace the image of a local custom emoji
+	// (PUT /admin/custom_emojis/{id}/image)
+	ReplaceCustomEmojiImage(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
 	// ListDeadJobs List the dead jobs
 	// (GET /admin/dead_jobs)
 	ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams)
@@ -4653,6 +4941,9 @@ type ServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams)
+	// ListCustomEmojis List the custom emoji of the picker
+	// (GET /custom_emojis)
+	ListCustomEmojis(w http.ResponseWriter, r *http.Request)
 	// ListDataExports List the authenticated user's data exports
 	// (GET /exports)
 	ListDataExports(w http.ResponseWriter, r *http.Request)
@@ -6053,6 +6344,209 @@ func (siw *ServerInterfaceWrapper) GetAdminCounts(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// ListAdminCustomEmojis operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminCustomEmojis(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAdminCustomEmojisParams
+
+	// ------------- Optional query parameter "local" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "local", r.URL.Query(), &params.Local, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "local"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "local", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "domain" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "domain", r.URL.Query(), &params.Domain, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "domain"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "shortcode" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "shortcode", r.URL.Query(), &params.Shortcode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "shortcode"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "shortcode", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminCustomEmojis(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCustomEmoji operation middleware
+func (siw *ServerInterfaceWrapper) CreateCustomEmoji(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCustomEmoji(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCustomEmoji operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCustomEmoji(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CustomEmojiId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCustomEmoji(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminCustomEmoji operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminCustomEmoji(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CustomEmojiId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminCustomEmoji(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCustomEmoji operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCustomEmoji(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CustomEmojiId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCustomEmoji(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceCustomEmojiImage operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceCustomEmojiImage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CustomEmojiId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceCustomEmojiImage(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListDeadJobs operation middleware
 func (siw *ServerInterfaceWrapper) ListDeadJobs(w http.ResponseWriter, r *http.Request) {
 
@@ -7219,6 +7713,20 @@ func (siw *ServerInterfaceWrapper) ListBookmarks(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListBookmarks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomEmojis operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomEmojis(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomEmojis(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8737,6 +9245,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	}
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance", wrapper.GetInstance)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/custom_emojis", wrapper.ListCustomEmojis)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
@@ -8834,6 +9343,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/theme", wrapper.GetAdminTheme)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/theme", wrapper.SetAdminTheme)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/custom_emojis", wrapper.ListAdminCustomEmojis)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/custom_emojis", wrapper.CreateCustomEmoji)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/custom_emojis/{id}", wrapper.DeleteCustomEmoji)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/custom_emojis/{id}", wrapper.GetAdminCustomEmoji)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/custom_emojis/{id}", wrapper.UpdateCustomEmoji)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/custom_emojis/{id}/image", wrapper.ReplaceCustomEmojiImage)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance_texts", wrapper.ListInstanceTexts)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}/{locale}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
@@ -8906,6 +9421,15 @@ type AdminAppealJSONResponse struct {
 	Headers AdminAppealResponseHeaders
 }
 
+type AdminCustomEmojiResponseHeaders struct {
+	CacheControl *string
+}
+type AdminCustomEmojiJSONResponse struct {
+	Body AdminCustomEmoji
+
+	Headers AdminCustomEmojiResponseHeaders
+}
+
 type AdminDomainActionResponseHeaders struct {
 	CacheControl *string
 }
@@ -8976,6 +9500,16 @@ type AdminThemeJSONResponse struct {
 	Body AdminTheme
 
 	Headers AdminThemeResponseHeaders
+}
+
+type CustomEmojiProblemResponseHeaders struct {
+	CacheControl    *string
+	ContentLanguage *string
+}
+type CustomEmojiProblemApplicationProblemPlusJSONResponse struct {
+	Body CustomEmojiProblem
+
+	Headers CustomEmojiProblemResponseHeaders
 }
 
 type ProblemResponseHeaders struct {
@@ -10871,6 +11405,424 @@ type GetAdminCountsdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetAdminCountsdefaultApplicationProblemPlusJSONResponse) VisitGetAdminCountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminCustomEmojisRequestObject struct {
+	Params ListAdminCustomEmojisParams
+}
+
+type ListAdminCustomEmojisResponseObject interface {
+	VisitListAdminCustomEmojisResponse(w http.ResponseWriter) error
+}
+
+type ListAdminCustomEmojis200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminCustomEmojis200JSONResponse struct {
+	Body    AdminCustomEmojiPage
+	Headers ListAdminCustomEmojis200ResponseHeaders
+}
+
+func (response ListAdminCustomEmojis200JSONResponse) VisitListAdminCustomEmojisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminCustomEmojisdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminCustomEmojisdefaultApplicationProblemPlusJSONResponse) VisitListAdminCustomEmojisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomEmojiRequestObject struct {
+	Body *CreateCustomEmojiJSONRequestBody
+}
+
+type CreateCustomEmojiResponseObject interface {
+	VisitCreateCustomEmojiResponse(w http.ResponseWriter) error
+}
+
+type CreateCustomEmoji200JSONResponse struct{ AdminCustomEmojiJSONResponse }
+
+func (response CreateCustomEmoji200JSONResponse) VisitCreateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomEmoji422ApplicationProblemPlusJSONResponse struct {
+	CustomEmojiProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateCustomEmoji422ApplicationProblemPlusJSONResponse) VisitCreateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCustomEmojidefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateCustomEmojidefaultApplicationProblemPlusJSONResponse) VisitCreateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCustomEmojiRequestObject struct {
+	Id CustomEmojiId `json:"id"`
+}
+
+type DeleteCustomEmojiResponseObject interface {
+	VisitDeleteCustomEmojiResponse(w http.ResponseWriter) error
+}
+
+type DeleteCustomEmoji204Response struct {
+}
+
+func (response DeleteCustomEmoji204Response) VisitDeleteCustomEmojiResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCustomEmoji422ApplicationProblemPlusJSONResponse struct {
+	CustomEmojiProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteCustomEmoji422ApplicationProblemPlusJSONResponse) VisitDeleteCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCustomEmojidefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteCustomEmojidefaultApplicationProblemPlusJSONResponse) VisitDeleteCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminCustomEmojiRequestObject struct {
+	Id CustomEmojiId `json:"id"`
+}
+
+type GetAdminCustomEmojiResponseObject interface {
+	VisitGetAdminCustomEmojiResponse(w http.ResponseWriter) error
+}
+
+type GetAdminCustomEmoji200JSONResponse struct{ AdminCustomEmojiJSONResponse }
+
+func (response GetAdminCustomEmoji200JSONResponse) VisitGetAdminCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminCustomEmojidefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminCustomEmojidefaultApplicationProblemPlusJSONResponse) VisitGetAdminCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomEmojiRequestObject struct {
+	Id   CustomEmojiId `json:"id"`
+	Body *UpdateCustomEmojiJSONRequestBody
+}
+
+type UpdateCustomEmojiResponseObject interface {
+	VisitUpdateCustomEmojiResponse(w http.ResponseWriter) error
+}
+
+type UpdateCustomEmoji200JSONResponse struct{ AdminCustomEmojiJSONResponse }
+
+func (response UpdateCustomEmoji200JSONResponse) VisitUpdateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomEmoji422ApplicationProblemPlusJSONResponse struct {
+	CustomEmojiProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateCustomEmoji422ApplicationProblemPlusJSONResponse) VisitUpdateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomEmojidefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateCustomEmojidefaultApplicationProblemPlusJSONResponse) VisitUpdateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceCustomEmojiImageRequestObject struct {
+	Id   CustomEmojiId `json:"id"`
+	Body *ReplaceCustomEmojiImageJSONRequestBody
+}
+
+type ReplaceCustomEmojiImageResponseObject interface {
+	VisitReplaceCustomEmojiImageResponse(w http.ResponseWriter) error
+}
+
+type ReplaceCustomEmojiImage200JSONResponse struct{ AdminCustomEmojiJSONResponse }
+
+func (response ReplaceCustomEmojiImage200JSONResponse) VisitReplaceCustomEmojiImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceCustomEmojiImage422ApplicationProblemPlusJSONResponse struct {
+	CustomEmojiProblemApplicationProblemPlusJSONResponse
+}
+
+func (response ReplaceCustomEmojiImage422ApplicationProblemPlusJSONResponse) VisitReplaceCustomEmojiImageResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplaceCustomEmojiImagedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ReplaceCustomEmojiImagedefaultApplicationProblemPlusJSONResponse) VisitReplaceCustomEmojiImageResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13074,6 +14026,67 @@ type ListBookmarksdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListBookmarksdefaultApplicationProblemPlusJSONResponse) VisitListBookmarksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCustomEmojisRequestObject struct {
+}
+
+type ListCustomEmojisResponseObject interface {
+	VisitListCustomEmojisResponse(w http.ResponseWriter) error
+}
+
+type ListCustomEmojis200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListCustomEmojis200JSONResponse struct {
+	Body    PickerCustomEmojiList
+	Headers ListCustomEmojis200ResponseHeaders
+}
+
+func (response ListCustomEmojis200JSONResponse) VisitListCustomEmojisResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCustomEmojisdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListCustomEmojisdefaultApplicationProblemPlusJSONResponse) VisitListCustomEmojisResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -16150,6 +17163,24 @@ type StrictServerInterface interface {
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(ctx context.Context, request GetAdminCountsRequestObject) (GetAdminCountsResponseObject, error)
+	// ListAdminCustomEmojis List the custom emoji
+	// (GET /admin/custom_emojis)
+	ListAdminCustomEmojis(ctx context.Context, request ListAdminCustomEmojisRequestObject) (ListAdminCustomEmojisResponseObject, error)
+	// CreateCustomEmoji Register a local custom emoji
+	// (POST /admin/custom_emojis)
+	CreateCustomEmoji(ctx context.Context, request CreateCustomEmojiRequestObject) (CreateCustomEmojiResponseObject, error)
+	// DeleteCustomEmoji Delete a local custom emoji
+	// (DELETE /admin/custom_emojis/{id})
+	DeleteCustomEmoji(ctx context.Context, request DeleteCustomEmojiRequestObject) (DeleteCustomEmojiResponseObject, error)
+	// GetAdminCustomEmoji Get a custom emoji
+	// (GET /admin/custom_emojis/{id})
+	GetAdminCustomEmoji(ctx context.Context, request GetAdminCustomEmojiRequestObject) (GetAdminCustomEmojiResponseObject, error)
+	// UpdateCustomEmoji Change the settings of a custom emoji
+	// (PATCH /admin/custom_emojis/{id})
+	UpdateCustomEmoji(ctx context.Context, request UpdateCustomEmojiRequestObject) (UpdateCustomEmojiResponseObject, error)
+	// ReplaceCustomEmojiImage Replace the image of a local custom emoji
+	// (PUT /admin/custom_emojis/{id}/image)
+	ReplaceCustomEmojiImage(ctx context.Context, request ReplaceCustomEmojiImageRequestObject) (ReplaceCustomEmojiImageResponseObject, error)
 	// ListDeadJobs List the dead jobs
 	// (GET /admin/dead_jobs)
 	ListDeadJobs(ctx context.Context, request ListDeadJobsRequestObject) (ListDeadJobsResponseObject, error)
@@ -16264,6 +17295,9 @@ type StrictServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(ctx context.Context, request ListBookmarksRequestObject) (ListBookmarksResponseObject, error)
+	// ListCustomEmojis List the custom emoji of the picker
+	// (GET /custom_emojis)
+	ListCustomEmojis(ctx context.Context, request ListCustomEmojisRequestObject) (ListCustomEmojisResponseObject, error)
 	// ListDataExports List the authenticated user's data exports
 	// (GET /exports)
 	ListDataExports(ctx context.Context, request ListDataExportsRequestObject) (ListDataExportsResponseObject, error)
@@ -17382,6 +18416,181 @@ func (sh *strictHandler) GetAdminCounts(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ListAdminCustomEmojis operation middleware
+func (sh *strictHandler) ListAdminCustomEmojis(w http.ResponseWriter, r *http.Request, params ListAdminCustomEmojisParams) {
+	var request ListAdminCustomEmojisRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminCustomEmojis(ctx, request.(ListAdminCustomEmojisRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminCustomEmojis")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminCustomEmojisResponseObject); ok {
+		if err := validResponse.VisitListAdminCustomEmojisResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCustomEmoji operation middleware
+func (sh *strictHandler) CreateCustomEmoji(w http.ResponseWriter, r *http.Request) {
+	var request CreateCustomEmojiRequestObject
+
+	var body CreateCustomEmojiJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCustomEmoji(ctx, request.(CreateCustomEmojiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCustomEmoji")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCustomEmojiResponseObject); ok {
+		if err := validResponse.VisitCreateCustomEmojiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCustomEmoji operation middleware
+func (sh *strictHandler) DeleteCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId) {
+	var request DeleteCustomEmojiRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCustomEmoji(ctx, request.(DeleteCustomEmojiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCustomEmoji")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCustomEmojiResponseObject); ok {
+		if err := validResponse.VisitDeleteCustomEmojiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminCustomEmoji operation middleware
+func (sh *strictHandler) GetAdminCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId) {
+	var request GetAdminCustomEmojiRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminCustomEmoji(ctx, request.(GetAdminCustomEmojiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminCustomEmoji")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminCustomEmojiResponseObject); ok {
+		if err := validResponse.VisitGetAdminCustomEmojiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCustomEmoji operation middleware
+func (sh *strictHandler) UpdateCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId) {
+	var request UpdateCustomEmojiRequestObject
+
+	request.Id = id
+
+	var body UpdateCustomEmojiJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCustomEmoji(ctx, request.(UpdateCustomEmojiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCustomEmoji")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCustomEmojiResponseObject); ok {
+		if err := validResponse.VisitUpdateCustomEmojiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplaceCustomEmojiImage operation middleware
+func (sh *strictHandler) ReplaceCustomEmojiImage(w http.ResponseWriter, r *http.Request, id CustomEmojiId) {
+	var request ReplaceCustomEmojiImageRequestObject
+
+	request.Id = id
+
+	var body ReplaceCustomEmojiImageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplaceCustomEmojiImage(ctx, request.(ReplaceCustomEmojiImageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplaceCustomEmojiImage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplaceCustomEmojiImageResponseObject); ok {
+		if err := validResponse.VisitReplaceCustomEmojiImageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListDeadJobs operation middleware
 func (sh *strictHandler) ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams) {
 	var request ListDeadJobsRequestObject
@@ -18439,6 +19648,30 @@ func (sh *strictHandler) ListBookmarks(w http.ResponseWriter, r *http.Request, p
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListBookmarksResponseObject); ok {
 		if err := validResponse.VisitListBookmarksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomEmojis operation middleware
+func (sh *strictHandler) ListCustomEmojis(w http.ResponseWriter, r *http.Request) {
+	var request ListCustomEmojisRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomEmojis(ctx, request.(ListCustomEmojisRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomEmojis")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomEmojisResponseObject); ok {
+		if err := validResponse.VisitListCustomEmojisResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

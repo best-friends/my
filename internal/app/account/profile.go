@@ -95,6 +95,9 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, in Profil
 			next.Source.FieldValues = append(next.Source.FieldValues, f.Value)
 		}
 	}
+	if next.EmojiIDs, err = s.profileEmojis(ctx, text); err != nil {
+		return Actor{}, err
+	}
 	if next.AvatarMediaID, err = s.profileImage(ctx, accountID, account.PropertyAvatar, cur.AvatarMediaID, in.AvatarMediaID); err != nil {
 		return Actor{}, err
 	}
@@ -116,6 +119,24 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, in Profil
 	}
 	a.Profile = &rev
 	return a, nil
+}
+
+// profileEmojis returns the local custom emoji that the display name, the note, and the names
+// and values of the fields of a local profile use (ADR-0051 §3). They are read again on every
+// change, so that a revision records the emoji that are enabled when it is made.
+func (s *Service) profileEmojis(ctx context.Context, text account.ProfileText) ([]string, error) {
+	if s.d.LocalEmojis == nil {
+		return nil, nil
+	}
+	texts := []string{text.DisplayName, text.Note}
+	for _, f := range text.Fields {
+		texts = append(texts, f.Name, f.Value)
+	}
+	ids, err := s.d.LocalEmojis(ctx, texts...)
+	if err != nil {
+		return nil, fmt.Errorf("account: the custom emoji of the profile: %w", err)
+	}
+	return ids, nil
 }
 
 func (s *Service) renderProfileText(ctx context.Context, text string) (string, error) {

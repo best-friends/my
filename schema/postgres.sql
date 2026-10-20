@@ -94,7 +94,7 @@ CREATE TABLE role_permissions (
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
-    'manage_two_factor'
+    'manage_two_factor', 'manage_custom_emojis'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -1578,6 +1578,23 @@ CREATE INDEX custom_emoji_images_emoji_id_id ON custom_emoji_images (emoji_id, i
 -- The remote media cache looks up whether a media file is a custom emoji image (avatars policy).
 CREATE INDEX custom_emoji_images_media_id ON custom_emoji_images (media_id);
 
+-- Current value: the settings of a custom emoji (ADR-0051 §1). No row means enabled, shown in the
+-- picker, and without a category. A remote emoji uses enabled only.
+CREATE TABLE custom_emoji_settings (
+  emoji_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  enabled boolean NOT NULL,
+  visible_in_picker boolean NOT NULL,
+  category text CHECK (category IS NULL OR length(category) BETWEEN 1 AND 64)
+);
+
+-- Current value: the other names of a local custom emoji that the picker finds it by (ADR-0051
+-- §1), of the characters of a shortcode.
+CREATE TABLE custom_emoji_aliases (
+  emoji_id text COLLATE "C" NOT NULL,
+  alias text NOT NULL,
+  PRIMARY KEY (emoji_id, alias)
+);
+
 -- Event (child of a revision): the poll of a status revision (FR-112). closes_at is NULL for a
 -- poll without an end.
 CREATE TABLE polls (
@@ -1916,11 +1933,13 @@ CREATE TABLE audit_log_entries (
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
-    'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled'
+    'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled',
+    'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_updated',
+    'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block'
+    'signup_block', 'custom_emoji'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,

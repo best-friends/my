@@ -170,3 +170,24 @@ echo '{"tokens":[],"custom_css":""}' | my instance theme set   # 既定に戻す
   "custom_css": ".brand { letter-spacing: 0.02em; }"
 }
 ```
+
+## カスタム絵文字
+
+ローカルのカスタム絵文字（FR-111、[ADR-0051](../adr/0051-custom-emoji.md)）は、投稿の本文・CW とプロフィールの表示名・自己紹介・補足情報で `:shortcode:` と書くと画像で表示され、
+送る Note と Actor の `Emoji` タグで Mastodon・Misskey・GoToSocial・Akkoma にも届きます。
+
+- shortcode は 2〜30 文字の英字・数字・`_` で、大文字と小文字を区別し、登録した後は変えられません。別名（10 個まで）とカテゴリ（64 文字まで）は絵文字ピッカーの検索と分類に使います。
+- 画像は PNG・GIF・WebP で、設定 `custom_emoji_max_bytes`（既定 256 KiB）以下、縦横 1,024 px 以下です。64 / 128 / 256 px の箱に収めた派生を作り、元の画像は残しません。
+  APNG は最初のフレームだけの静止画になります。GoToSocial は既定で 100 KiB を超える絵文字を取得しないので、小さい画像を勧めます。
+- 無効にした絵文字は、投稿・プロフィール・連合・ピッカーのどこにも出ず、`:shortcode:` の文字に戻ります。ピッカーに出さない設定にした絵文字は、ピッカーに出ないだけで、書けば使えます。
+  ほかのサーバーから届いた絵文字は、無効にすることだけができます。
+- 削除は取り消せません。過去の投稿の絵文字も文字に戻り、同じ shortcode で登録し直しても別の絵文字です。連合先が複製した画像は消せません。
+- 管理画面（「カスタム絵文字」、`/admin/custom-emojis`）とクライアント API（`/api/v1/admin/custom_emojis`）と CLI で管理できます。
+  管理画面とクライアント API はロールの権限 `manage_custom_emojis`（組み込みの `admin` だけが持つ）が要り、登録・画像の差し替え・設定と別名の変更・有効化と無効化・削除が監査ログ（対象 `custom_emoji`）に残ります。
+
+```sh
+my admin emoji create -shortcode blobcat -category Cats -alias neko blobcat.png   # 登録する
+my admin emoji list -local                                                        # ローカルの絵文字を新しい順に出す
+my admin emoji disable <emoji id>                                                 # 無効にする（enable で戻す）
+my admin emoji delete <emoji id>                                                  # 削除する
+```

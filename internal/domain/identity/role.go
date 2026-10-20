@@ -22,6 +22,9 @@ const (
 	// PermManageTwoFactor: remove the two-factor authentication of a local user (FR-005). It is
 	// server administration (ADR-0058 §4): only the built-in admin role has it by default.
 	PermManageTwoFactor Permission = "manage_two_factor"
+	// PermManageCustomEmojis: register, change, disable, and delete the custom emoji, local and
+	// remote (ADR-0051 §5). It is server administration (ADR-0058 §4).
+	PermManageCustomEmojis Permission = "manage_custom_emojis"
 )
 
 // AllPermissions lists every permission.
@@ -29,7 +32,7 @@ func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
-		PermManageTwoFactor,
+		PermManageTwoFactor, PermManageCustomEmojis,
 	}
 }
 

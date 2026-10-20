@@ -121,6 +121,9 @@ func (r *MediaRepository) ListCurrentCustomEmojis(ctx context.Context, ids []str
 				ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: fromNullString(row.Uri), CreatedAt: utc(row.CreatedAt),
 			},
 			Image: content.CustomEmojiImage{ID: row.ImageID, EmojiID: row.ID, MediaID: row.ImageMediaID, RevisedAt: utc(row.ImageRevisedAt)},
+			Settings: content.CustomEmojiSettings{
+				EmojiID: row.ID, Enabled: row.Enabled, VisibleInPicker: row.VisibleInPicker, Category: row.Category,
+			},
 		})
 	}
 	return out, nil

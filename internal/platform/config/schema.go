@@ -229,6 +229,13 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.MediaUnattachedTTL, _ = time.ParseDuration(v) },
 	},
 	{
+		key:   "custom_emoji_max_bytes",
+		doc:   "Largest image in bytes that a local custom emoji may be registered with (ADR-0051 §2); the image must also be a PNG, a GIF, or a WebP of at most 1,024 pixels on a side. The default is Mastodon's limit. GoToSocial does not fetch remote emoji larger than 100 KiB by default.",
+		def:   strconv.Itoa(256 << 10),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.CustomEmojiMaxBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
 		key:   "remote_media_cache_max_bytes",
 		doc:   "Size limit in bytes of the copies of remote media that the media proxy keeps when the instance setting `remote_media_policy` is `avatars` or `all` (FR-409). The hourly cleanup deletes the expired copies, then the least recently accessed ones over this limit (FR-803).",
 		def:   strconv.Itoa(1 << 30),

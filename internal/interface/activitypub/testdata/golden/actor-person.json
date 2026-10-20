@@ -3,6 +3,7 @@
     "https://www.w3.org/ns/activitystreams",
     "https://w3id.org/security/v1",
     {
+      "Emoji": "toot:Emoji",
       "Hashtag": "as:Hashtag",
       "PropertyValue": "schema:PropertyValue",
       "blurhash": "toot:blurhash",

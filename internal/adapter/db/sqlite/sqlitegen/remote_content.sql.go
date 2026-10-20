@@ -462,27 +462,35 @@ func (q *Queries) IsCustomEmojiImage(ctx context.Context, mediaID string) (bool,
 
 const listCurrentCustomEmojiImages = `-- name: ListCurrentCustomEmojiImages :many
 SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
-  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at
+  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
+  CAST(COALESCE(s.enabled, 1) AS INTEGER) AS enabled,
+  CAST(COALESCE(s.visible_in_picker, 1) AS INTEGER) AS visible_in_picker,
+  CAST(COALESCE(s.category, '') AS TEXT) AS category
 FROM custom_emojis e
 JOIN custom_emoji_images i ON i.emoji_id = e.id
+LEFT JOIN custom_emoji_settings s ON s.emoji_id = e.id
 WHERE e.id IN (SELECT value FROM json_each(CAST(?1 AS TEXT)))
   AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
 ORDER BY e.id
 `
 
 type ListCurrentCustomEmojiImagesRow struct {
-	ID             string
-	Shortcode      string
-	Domain         string
-	Uri            sql.NullString
-	CreatedAt      int64
-	ImageID        string
-	ImageMediaID   string
-	ImageRevisedAt int64
+	ID              string
+	Shortcode       string
+	Domain          string
+	Uri             sql.NullString
+	CreatedAt       int64
+	ImageID         string
+	ImageMediaID    string
+	ImageRevisedAt  int64
+	Enabled         int64
+	VisibleInPicker int64
+	Category        string
 }
 
 // ListCurrentCustomEmojiImages returns the custom emoji with an ID in @emoji_ids that have an
-// image, each with its current (newest) image, for the emoji of a page of statuses and accounts.
+// image, each with its current (newest) image and its settings, for the emoji of a page of
+// statuses and accounts.
 func (q *Queries) ListCurrentCustomEmojiImages(ctx context.Context, emojiIds string) ([]ListCurrentCustomEmojiImagesRow, error) {
 	rows, err := q.db.QueryContext(ctx, listCurrentCustomEmojiImages, emojiIds)
 	if err != nil {
@@ -501,6 +509,9 @@ func (q *Queries) ListCurrentCustomEmojiImages(ctx context.Context, emojiIds str
 			&i.ImageID,
 			&i.ImageMediaID,
 			&i.ImageRevisedAt,
+			&i.Enabled,
+			&i.VisibleInPicker,
+			&i.Category,
 		); err != nil {
 			return nil, err
 		}

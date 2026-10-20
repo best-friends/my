@@ -35,8 +35,9 @@ type MediaRepository interface {
 	// IsAttached reports whether a status revision attaches a media file.
 	IsAttached(ctx context.Context, tx uow.Tx, mediaID string) (bool, error)
 	// DeleteUnattachedMedia deletes a media file with its upload, processing results,
-	// variants, focus, and description, unless a status revision attaches it. It reports whether it deleted
-	// the file; a missing file is not deleted and not an error.
+	// variants, focus, and description, unless a status revision attaches it or a custom emoji
+	// uses it as its image. It reports whether it deleted the file; a missing file is not
+	// deleted and not an error.
 	DeleteUnattachedMedia(ctx context.Context, tx uow.Tx, mediaID string) (bool, error)
 
 	// InsertRemoteMedia inserts the remote subtype of a media file. It reports false, and
@@ -67,8 +68,8 @@ type MediaRepository interface {
 	// its image.
 	IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error)
 	// ListCurrentCustomEmojis returns each custom emoji with an ID in ids with its current
-	// image, ordered by ID; emoji without an image and unknown IDs are left out. It reads every
-	// emoji in one query, for the emoji of a page of statuses and accounts.
+	// image and its settings, ordered by ID; emoji without an image and unknown IDs are left
+	// out. It reads every emoji in one query, for the emoji of a page of statuses and accounts.
 	ListCurrentCustomEmojis(ctx context.Context, ids []string) ([]content.CurrentCustomEmoji, error)
 
 	FindMediaFile(ctx context.Context, id string) (content.MediaFile, error)
@@ -94,14 +95,17 @@ type MediaRepository interface {
 	FindDescription(ctx context.Context, mediaID string) (content.MediaDescription, error)
 	// ListUnattachedUploads returns the IDs of up to limit uploaded media files after afterID
 	// ("" for the first page) that were created before createdBefore and that no status
-	// revision attaches, ordered by ID.
+	// revision attaches and no custom emoji uses as its image, ordered by ID.
 	ListUnattachedUploads(ctx context.Context, afterID string, createdBefore time.Time, limit int) ([]string, error)
 	// ListOwnerUploads returns up to limit uploaded media files of an owner after afterID (""
-	// for the first page), ordered by ID, with whether a status revision attaches each.
+	// for the first page), ordered by ID, with whether a status revision attaches each or a
+	// custom emoji uses it as its image (Attached): an emoji of the instance outlives the
+	// administrator who uploaded its image.
 	ListOwnerUploads(ctx context.Context, ownerAccountID, afterID string, limit int) ([]OwnedUpload, error)
 }
 
-// OwnedUpload is an uploaded media file of an owner, with whether a status revision attaches it.
+// OwnedUpload is an uploaded media file of an owner, with whether a status revision attaches it
+// or a custom emoji uses it.
 type OwnedUpload struct {
 	MediaID  string
 	Attached bool

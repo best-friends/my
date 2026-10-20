@@ -150,11 +150,23 @@ type CustomEmoji struct {
 	CreatedAt int64
 }
 
+type CustomEmojiAlias struct {
+	EmojiID string
+	Alias   string
+}
+
 type CustomEmojiImage struct {
 	ID        string
 	EmojiID   string
 	MediaID   string
 	RevisedAt int64
+}
+
+type CustomEmojiSetting struct {
+	EmojiID         string
+	Enabled         int64
+	VisibleInPicker int64
+	Category        sql.NullString
 }
 
 type Delivery struct {
