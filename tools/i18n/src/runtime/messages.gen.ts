@@ -3916,6 +3916,8 @@ export interface MessageArgs {
   "server:moderation.action.category": { category: "legal" | "spam" | "violation" | (string & {}) };
   /** {kind, select, warn {Warning} mark_statuses_sensitive {Posts marked as sensitive} delete_statuses {Posts deleted} force_sensitive {Media always marked as sensitive} limit {Limited: posts shown to followers only and kept off the public timelines} restrict_posting {No posting, replying, boosting, or editing} restrict_interaction {No following, favouriting, boosting, or replying} disable_login {Login disabled} suspend {Suspended: no use of the app, and the profile and posts are hidden} ban {Banned: the account is deleted} other {Moderation action}} */
   "server:moderation.action.kind": { kind: "ban" | "delete_statuses" | "disable_login" | "force_sensitive" | "limit" | "mark_statuses_sensitive" | "restrict_interaction" | "restrict_posting" | "suspend" | "warn" | (string & {}) };
+  /** About {instance} */
+  "server:preview.about_title": { instance: string };
   /** Avatar of {name} */
   "server:preview.avatar_alt": { name: string };
   /** A speech bubble with three dots on a blue gradient */

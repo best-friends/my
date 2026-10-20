@@ -8,14 +8,22 @@ import (
 	"strings"
 )
 
-// This file serves the shell of the landing page (/) with the meta tags of a link preview of the
-// instance itself (ADR-0028): its name, its one-paragraph summary, and its preview image. The page
-// is the same for every visitor; the web client shows the landing page to visitors without a
-// session and the home timeline to signed-in users.
+// This file serves the shells of the pages about the instance itself, the landing page (/) and
+// the information page (/about), with the meta tags of a link preview of the instance (ADR-0028):
+// its name, its one-paragraph summary, and its preview image. The pages are the same for every
+// visitor; the web client shows the landing page to visitors without a session and the home
+// timeline to signed-in users, and the information page to everyone.
 
-// serveLanding serves the shell of the landing page.
-func (h *Handler) serveLanding(w http.ResponseWriter, r *http.Request) {
-	doc, err := h.renderLanding(r.Context())
+// Paths of the pages about the instance.
+const (
+	pathLanding = "/"
+	pathAbout   = "/about"
+)
+
+// serveInstancePage serves the shell of the page about the instance at path, pathLanding or
+// pathAbout.
+func (h *Handler) serveInstancePage(w http.ResponseWriter, r *http.Request, path string) {
+	doc, err := h.renderInstancePage(r.Context(), path)
 	if err != nil {
 		h.fail(w, r, err)
 		return
@@ -24,10 +32,16 @@ func (h *Handler) serveLanding(w http.ResponseWriter, r *http.Request) {
 	doc.serve(w, r)
 }
 
-// renderLanding renders the shell of the landing page in the instance's default locale.
-func (h *Handler) renderLanding(ctx context.Context) (document, error) {
+// renderInstancePage renders the shell of the page about the instance at path in the instance's
+// default locale. The landing page is titled with the instance's name, the information page
+// "About {name}".
+func (h *Handler) renderInstancePage(ctx context.Context, path string) (document, error) {
 	lang := h.instanceLocale(ctx)
 	name := h.instanceName(ctx, lang)
+	title := name
+	if path == pathAbout {
+		title = h.o.Messages.Localizer(lang).ServerPreviewAboutTitle(name)
+	}
 	summary := ""
 	if h.o.InstanceDescription != nil {
 		summary = description(strings.TrimSpace(h.o.InstanceDescription(ctx, lang)))
@@ -37,8 +51,8 @@ func (h *Handler) renderLanding(ctx context.Context) (document, error) {
 		return document{}, err
 	}
 	meta := previewMeta{
-		Type: ogTypeWebsite, SiteName: name, Title: name, URL: "https://" + h.o.Host + "/",
+		Type: ogTypeWebsite, SiteName: name, Title: title, URL: "https://" + h.o.Host + path,
 		Description: summary, Locale: ogLocale(lang), Image: img, Card: card(img),
 	}
-	return h.renderPreview(ctx, lang, meta, []string{"landing", summary, imageVersion(img)})
+	return h.renderPreview(ctx, lang, meta, []string{"instance", path, title, summary, imageVersion(img)})
 }

@@ -1474,6 +1474,13 @@ func (l *Localizer) ServerModerationActionKind(kind string) string {
 	return l.format("server:moderation.action.kind", map[string]any{"kind": kind})
 }
 
+// ServerPreviewAboutTitle formats "server:preview.about_title". Title of the link preview (og:title and the page title) of the instance's information page (/about). {instance} is the instance name.
+//
+//	en: About {instance}
+func (l *Localizer) ServerPreviewAboutTitle(instance string) string {
+	return l.format("server:preview.about_title", map[string]any{"instance": instance})
+}
+
 // ServerPreviewAvatarAlt formats "server:preview.avatar_alt". Alt text of a profile's avatar in a link preview (og:image:alt) when the avatar is the preview image. {name} is the display name, or the username when there is none.
 //
 //	en: Avatar of {name}

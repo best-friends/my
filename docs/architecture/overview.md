@@ -212,7 +212,7 @@ internal/
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     media/           # 公開メディア（Blob のキー media/...）の配信 /media/
     authpages/       # ログイン・ログアウト・登録・メール確認の画面と、利用規約・プライバシーポリシーの公開ページ（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042）
-    web/             # Web クライアントの HTML の外枠（ランディングページ・プロフィール・投稿のリンクプレビューを含む）・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
+    web/             # Web クライアントの HTML の外枠（ランディングページ・インスタンスの情報ページ・プロフィール・投稿のリンクプレビューを含む）・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
     db/{sqlite,libsql,postgres}/
     queue/{db,inline,sqs,cloudtasks}/

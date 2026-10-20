@@ -53,6 +53,7 @@ describe("the landing page", () => {
     expect(limits).toEqual(["4"]);
     expect(within(posts).getByRole("link", { name: "See the local timeline" })).toHaveAttribute("href", "/local");
 
+    expect(screen.getByRole("link", { name: "More about this server" })).toHaveAttribute("href", "/about");
     const documents = screen.getByRole("navigation", { name: "Terms and policies" });
     expect(within(documents).getAllByRole("link").map((link) => link.textContent)).toEqual(["Terms of service", "Privacy policy"]);
   });

@@ -6045,7 +6045,7 @@
   },
   "shell.about.more": {
     "defaultMessage": "More about this server",
-    "description": "Link in the side column about this server to the server's information page."
+    "description": "Link to the server's information page: in the side column about this server, in the menu sheet, and on the landing page."
   },
   "shell.about.title": {
     "defaultMessage": "About this server",

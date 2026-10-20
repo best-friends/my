@@ -381,8 +381,8 @@ func (h *Handler) Register(r Router) {
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one
 // has the requested name, the server's 404 under the paths of other endpoints, the shell with
-// link preview meta tags at the landing page (/) and at profile and post pages, and the generic
-// shell otherwise.
+// link preview meta tags at the pages about the instance (/ and /about) and at profile and post
+// pages, and the generic shell otherwise.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if (r.Method != http.MethodGet && r.Method != http.MethodHead) || reserved(p) {
@@ -400,8 +400,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if p == "/" {
-		h.serveLanding(w, r)
+	if p == pathLanding || p == pathAbout {
+		h.serveInstancePage(w, r, p)
 		return
 	}
 	if h.o.Previews != nil {
