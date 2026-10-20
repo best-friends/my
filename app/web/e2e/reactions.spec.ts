@@ -2,7 +2,8 @@
 // The emoji reactions of a post in every width × locale project (FR-116, ADR-0052 §5, ADR-0027): the row of
 // reactions under the post, the picker of reactions, reacting in place of the favourite, and the dialog of the
 // accounts that reacted, each axe-clean and without horizontal scrolling. `vite preview` has no API, so the spec
-// answers the token refresh and the client API with `page.route`. Names come from the project's catalog.
+// answers the token refresh and the client API with `page.route`. Names come from the project's catalog and match exactly:
+// "React" is a substring of every "React with {emoji}" toggle.
 import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
@@ -111,17 +112,22 @@ async function serveApi(page: Page): Promise<void> {
   });
 }
 
+/** The article of the post, which holds its reactions and actions. */
+function article(page: Page) {
+  return page.getByRole("main").getByRole("article").filter({ hasText: "The trail along the river is open again." });
+}
+
 test.describe("the reactions of a post", () => {
   test.beforeEach(async ({ page }) => {
     await serveApi(page);
     await page.goto(`/@bob/status/${postId}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     // Signed in: the reactions are toggles.
-    await expect(page.getByRole("main").getByRole("button", { name: message("reaction.toggle", "👍") })).toBeVisible();
+    await expect(article(page).getByRole("button", { name: message("reaction.toggle", "👍"), exact: true })).toBeVisible();
   });
 
   test("are a row of toggles and counts, axe-clean and without horizontal scrolling", async ({ page, makeAxeBuilder }) => {
-    const reactions = page.getByRole("main").getByRole("group", { name: message("reaction.list.label") });
+    const reactions = article(page).getByRole("group", { name: message("reaction.list.label"), exact: true });
     await expect(reactions).toMatchAriaSnapshot(`
       - group:
         - button [pressed=false]
@@ -134,8 +140,8 @@ test.describe("the reactions of a post", () => {
   });
 
   test("take an emoji picked in the picker in place of the favourite", async ({ page, makeAxeBuilder }) => {
-    const main = page.getByRole("main");
-    await main.getByRole("button", { name: message("reaction.picker.button") }).click();
+    const post = article(page);
+    await post.getByRole("button", { name: message("reaction.picker.button"), exact: true }).click();
     const picker = page.getByRole("dialog", { name: message("reaction.picker.title") });
     await expect(picker.getByRole("searchbox")).toBeFocused();
     await expectNoAxeViolations(makeAxeBuilder);
@@ -143,12 +149,12 @@ test.describe("the reactions of a post", () => {
 
     await picker.getByRole("row", { name: "🎉" }).click();
     await expect(picker).toBeHidden();
-    await expect(main.getByRole("button", { name: message("reaction.toggle", "🎉") })).toHaveAttribute("aria-pressed", "true");
-    await expect(main.getByRole("button", { name: message("status.action.favourite") })).toHaveAttribute("aria-pressed", "false");
+    await expect(post.getByRole("button", { name: message("reaction.toggle", "🎉"), exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(post.getByRole("button", { name: message("status.action.favourite"), exact: true })).toHaveAttribute("aria-pressed", "false");
   });
 
   test("list the accounts that reacted in a dialog", async ({ page, makeAxeBuilder }) => {
-    await page.getByRole("main").getByRole("button", { name: message("reaction.list.open") }).click();
+    await article(page).getByRole("button", { name: message("reaction.list.open"), exact: true }).click();
     const dialog = page.getByRole("dialog", { name: message("reaction.list.title") });
     await expect(dialog.getByRole("link", { name: /Bob/ })).toBeVisible();
     await expect(dialog.getByRole("link", { name: /Alice/ })).toBeVisible();
