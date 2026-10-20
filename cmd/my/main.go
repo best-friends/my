@@ -84,7 +84,8 @@ Commands:
   admin     Create an administrator, moderate domains, handle reports,
             manage roles, and block sign-ups
             (my admin create|account|domain|report|audit|role|signup-block)
-  config    Check the configuration (my config check)
+  config    Check the configuration and generate the Web Push key
+            (my config check|vapid-key)
   instance  Read and change the instance settings and rules
             (my instance list|get|set|history|rule)
   invite    Manage invite codes (my invite create|list|revoke)

@@ -421,6 +421,16 @@ func oauthRevokesTokens(t *testing.T, e *accountEnv) {
 		t.Fatal(err)
 	}
 	other, _ := e.webTokensFor(t, userID)
+	wantFamily := func(familyID string, want bool, what string) {
+		t.Helper()
+		if got, err := e.identity.TokenFamilyActive(ctx, familyID); err != nil || got != want {
+			t.Errorf("TokenFamilyActive(%s) = %v, %v; want %v", what, got, err, want)
+		}
+	}
+	wantFamily(rotated.Token.FamilyID, true, "a rotated family")
+	if rotated.Token.FamilyID != got.Token.FamilyID {
+		t.Errorf("the rotated token's family %s, want %s", rotated.Token.FamilyID, got.Token.FamilyID)
+	}
 
 	// Unknown tokens and tokens of other clients are ignored.
 	if err := e.identity.RevokeToken(ctx, appidentity.RevokeRequest{ClientCredentials: webCreds, Token: "unknown"}); err != nil {
@@ -446,6 +456,15 @@ func oauthRevokesTokens(t *testing.T, e *accountEnv) {
 		t.Fatalf("RevokeToken(refresh) = %v", err)
 	}
 	e.wantAccess(t, other.AccessToken, false, "the access token of a family revoked by its refresh token")
+	wantFamily(rotated.Token.FamilyID, false, "a revoked family")
+	wantFamily(other.Token.FamilyID, false, "a family revoked by its refresh token")
+	wantFamily("unknown", false, "an unknown family")
+
+	// A family whose refresh token expired has ended too.
+	last, _ := e.webTokensFor(t, userID)
+	wantFamily(last.Token.FamilyID, true, "a new family")
+	e.clock.Advance(appidentity.RefreshTokenTTL + time.Second)
+	wantFamily(last.Token.FamilyID, false, "an expired family")
 }
 
 func oauthWebSignOutEndsTheBrowserSession(t *testing.T, e *accountEnv) {

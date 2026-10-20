@@ -19,6 +19,7 @@ import { useT } from "../../../lib/i18n";
 import { ReportDialog } from "../../report";
 import type { Status } from "../api/status";
 import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
+import { EditStatusDialog } from "./EditStatusDialog";
 
 export type StatusActionsProps = {
   status: Status;
@@ -28,8 +29,8 @@ export type StatusActionsProps = {
 
 /**
  * The action bar of a post: reply, boost, favourite, bookmark, and a menu with the link, the report of
- * another account's post (features/report) and, for the viewer's own posts, delete behind a confirmation
- * (WAI-ARIA APG, alert dialog pattern). Nothing while
+ * another account's post (features/report) and, for the viewer's own posts, edit (EditStatusDialog), pin or
+ * unpin, and delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
  * nobody is signed in. The toggles keep their names in both states and expose the state with
  * `aria-pressed` (APG, button pattern); a count is the toggle's description.
  */
@@ -39,6 +40,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
   const actions = useStatusActions(status);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   if (actions === null) return null;
   const post = status.boost ?? status;
   const remove = actions.delete;
@@ -74,6 +76,18 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
               {t("client:report.open")}
             </MenuItem>
           )}
+          {actions.canEdit && (
+            <MenuItem
+              onAction={() => {
+                setIsEditing(true);
+              }}
+            >
+              {t("client:status.action.edit")}
+            </MenuItem>
+          )}
+          {actions.pin !== null && (
+            <MenuItem onAction={actions.pin.toggle}>{actions.pin.isPinned ? t("client:status.unpin.action") : t("client:status.pin.action")}</MenuItem>
+          )}
           {remove !== null && (
             <MenuItem
               intent="danger"
@@ -87,6 +101,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
         </Menu>
       </MenuTrigger>
       {actions.canReport && <ReportDialog account={post.account} status={post} isOpen={isReporting} onOpenChange={setIsReporting} />}
+      {actions.canEdit && <EditStatusDialog status={post} isOpen={isEditing} onOpenChange={setIsEditing} />}
       {remove !== null && (
         <Dialog
           role="alertdialog"
