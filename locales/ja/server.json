@@ -227,6 +227,38 @@
     "defaultMessage": "ログイン",
     "description": "Title and heading of the sign-in page."
   },
+  "auth.two_factor.code_label": {
+    "defaultMessage": "認証コード",
+    "description": "Label of the code field on the second step of signing in, which takes a six-digit code of an authenticator app or a recovery code."
+  },
+  "auth.two_factor.expired": {
+    "defaultMessage": "ログインに時間がかかりすぎました。もう一度ログインしてください。",
+    "description": "Error on the sign-in form when the second step (the authentication code) was not completed within five minutes or was already used."
+  },
+  "auth.two_factor.invalid": {
+    "defaultMessage": "コードが正しくないか、すでに使われています。",
+    "description": "Error on the second step of signing in when the authentication code or recovery code is wrong or was used before."
+  },
+  "auth.two_factor.missing": {
+    "defaultMessage": "コードを入力してください。",
+    "description": "Error when the authentication code form was submitted empty."
+  },
+  "auth.two_factor.prompt": {
+    "defaultMessage": "認証アプリに表示されている 6 桁のコードを入力してください。アプリを使えないときは、リカバリーコードを 1 つ入力してください。",
+    "description": "Text above the code field on the second step of signing in, for users who turned on two-factor authentication."
+  },
+  "auth.two_factor.restart_link": {
+    "defaultMessage": "最初からログインし直す",
+    "description": "Link from the second step of signing in back to the sign-in form, to start over."
+  },
+  "auth.two_factor.submit": {
+    "defaultMessage": "確認",
+    "description": "Button that submits the authentication code on the second step of signing in."
+  },
+  "auth.two_factor.title": {
+    "defaultMessage": "二要素認証",
+    "description": "Title and heading of the second step of signing in, which asks for an authentication code."
+  },
   "auth.sign_out.submit": {
     "defaultMessage": "ログアウト",
     "description": "Button that ends the current browser session."
@@ -695,6 +727,22 @@
     "defaultMessage": "{max, plural, other {{name} は # 個までにしてください。}}",
     "description": "Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit."
   },
+  "errors.two_factor.code_invalid": {
+    "defaultMessage": "コードが正しくないか、すでに使われています。",
+    "description": "Title of the HTTP 422 API error when a two-factor authentication code (six digits from an authenticator app, or a recovery code) is wrong, was used before, or is not a code."
+  },
+  "errors.two_factor.enabled": {
+    "defaultMessage": "二要素認証はすでに有効です。",
+    "description": "Title of the HTTP 409 API error when the user starts setting up two-factor authentication while it is already on."
+  },
+  "errors.two_factor.not_enabled": {
+    "defaultMessage": "二要素認証は有効になっていません。",
+    "description": "Title of the HTTP 409 API error when an operation needs two-factor authentication on an account that does not have it."
+  },
+  "errors.two_factor.setup_expired": {
+    "defaultMessage": "認証アプリの設定の有効期限が切れました。最初からやり直してください。",
+    "description": "Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
@@ -798,6 +846,10 @@
   "push.other": {
     "defaultMessage": "{instance} で新しい通知があります",
     "description": "Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.reaction": {
+    "defaultMessage": "{name}さんがあなたの投稿にリアクションしました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that reacted to the user's post with an emoji."
   },
   "push.relationships_severed": {
     "defaultMessage": "{instance} のモデレーターによる凍結で、いくつかのフォロー関係が解除されました",

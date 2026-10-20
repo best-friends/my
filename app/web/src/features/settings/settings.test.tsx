@@ -610,6 +610,7 @@ describe("signed out", () => {
     expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/settings/profile",
       "/settings/preferences",
+      "/settings/two-factor",
       "/settings/follow-requests",
       "/settings/blocks",
       "/settings/mutes",

@@ -52,6 +52,7 @@ export { Badge, type BadgeProps } from "./Badge";
 export { DescriptionItem, DescriptionList, type DescriptionItemProps, type DescriptionListProps } from "./DescriptionList";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
 export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
+export { QrCode, type QrCodeProps } from "./QrCode";
 export { RegionError, type RegionErrorProps } from "./RegionError";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { AccountRowSkeleton, NotificationRowSkeleton, PostSkeleton, type SkeletonRowProps } from "./SkeletonRows";
@@ -91,6 +92,7 @@ export {
 
 // Timeline.
 export { ContentWarning, type ContentWarningProps } from "./ContentWarning";
+export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, type EmojiTextProps } from "./CustomEmoji";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";

@@ -390,8 +390,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
 			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
 		},
-		Sanitizer:         newHTMLSanitizer(),
-		RecordRemoteImage: a.recordRemoteImage,
+		Sanitizer:          newHTMLSanitizer(),
+		RecordRemoteImage:  a.recordRemoteImage,
+		RecordRemoteEmojis: a.recordRemoteEmojis,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -424,6 +425,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		Logins: a.AccountPolicy, RateLimiter: a.RateLimiter,
+		// TOTP secrets are sealed like actor keys (ADR-0019 §6); sign-in challenges live in the KV store.
+		Sealer: a.Sealer, KV: a.KV,
 		// nil for captcha = none; sign-in and sign-up check the CAPTCHA token otherwise (ADR-0042).
 		HumanVerifier: a.HumanVerifier, Logger: a.Logger,
 		// The default locale and the registration mode are instance settings in the database,
@@ -477,7 +480,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Interactions = content.NewInteractions(content.InteractionDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: a.AccountPolicy.Content(),
-		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+		RecordRemoteEmojis: a.Content.RecordRemoteEmojis,
+		Clock:              a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 	// After the content and graph projectors, which reject the commands that must not reach
 	// the timelines (data-model §4.6).
@@ -584,7 +588,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,

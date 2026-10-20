@@ -42,6 +42,8 @@ tags:
     description: Media files that the user uploads to attach to posts.
   - name: preferences
     description: The authenticated user's preferences.
+  - name: two_factor
+    description: The authenticated user's two-factor authentication.
   - name: moderation
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
@@ -329,6 +331,142 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of the user's own account: deletion and data exports (#627) ---
+  # --- two-factor authentication (#628) ---
+  /two_factor:
+    get:
+      operationId: getTwoFactor
+      summary: Get where the authenticated user's two-factor authentication stands
+      tags: [two_factor]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The two-factor authentication of the user.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFactor"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/totp/setup:
+    post:
+      operationId: setUpTotp
+      summary: Generate a TOTP secret for the authenticated user to add to an authenticator app
+      description: |
+        A new secret (RFC 6238: HMAC-SHA-1, six digits, 30-second steps) as text, as an
+        `otpauth://` URI, and as a QR code of the URI, with a `setup_token` that carries the
+        secret to `POST /two_factor/totp` for 15 minutes. Nothing is stored until then. A user
+        who has two-factor authentication enabled gets a 409
+        `/api/v1/problems/two-factor-enabled`.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      responses:
+        "200":
+          description: The new secret.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TotpSetup"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/totp:
+    post:
+      operationId: enableTotp
+      summary: Enable two-factor authentication with the secret of a setup
+      description: |
+        Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns
+        the recovery codes, which are shown only this once. From then on, signing in asks for
+        a code after the password. A wrong code is a 422
+        `/api/v1/problems/invalid-two-factor-code`, an expired or unknown setup a 422
+        `/api/v1/problems/totp-setup-expired`, and too many wrong codes a 429.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnableTotpRequest"
+      responses:
+        "200":
+          description: The recovery codes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodes"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/totp/disable:
+    post:
+      operationId: disableTotp
+      summary: Disable two-factor authentication
+      description: |
+        Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms
+        it. A wrong code is a 422 `/api/v1/problems/invalid-two-factor-code`, too many wrong
+        codes a 429, and a user without two-factor authentication a 409
+        `/api/v1/problems/two-factor-not-enabled`.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwoFactorCodeRequest"
+      responses:
+        "200":
+          description: The two-factor authentication of the user, disabled.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFactor"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/recovery_codes:
+    post:
+      operationId: regenerateRecoveryCodes
+      summary: Replace the recovery codes
+      description: |
+        Returns new recovery codes, shown only this once, once `code` confirms it; the previous
+        ones stop working and the app keeps working. The problems are those of
+        `POST /two_factor/totp/disable`.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwoFactorCodeRequest"
+      responses:
+        "200":
+          description: The new recovery codes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodes"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of two-factor authentication (#628) ---
   # --- Accounts and relationships (#108): accounts, follows, follow requests, blocks, mutes ---
   /accounts/lookup:
     get:
@@ -1324,6 +1462,44 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/reactions:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: listStatusReactions
+      summary: List the emoji reactions to a status
+      description: |
+        The emoji reactions to a status that the viewer may see, newest first, each with the
+        account that reacted, only those with one emoji when `emoji` is given. Accounts that
+        block the viewer, are deactivated, or are deleted are left out, so a page may hold fewer
+        than `limit` reactions before the last. A status that the viewer may not see is a 404,
+        the same as a missing one.
+      tags: [statuses]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: emoji
+          in: query
+          description: |
+            The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+            reaction has gives an empty page.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the reactions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusReactionPage"
         default:
           $ref: "#/components/responses/Problem"
   /statuses/{id}/source:
@@ -2559,6 +2735,27 @@ paths:
                 $ref: "#/components/schemas/AdminAccountPrivateData"
         default:
           $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/two_factor/disable:
+    post:
+      operationId: disableAdminAccountTwoFactor
+      summary: Remove the two-factor authentication of a local account
+      description: |
+        Ends the TOTP enrollment of a local account's user, who lost their authenticator app
+        and recovery codes, so that they sign in with the password alone (FR-005). It is
+        recorded in the audit log as `two_factor_disabled`. A remote account or the instance
+        actor is a 422 naming `id`, an account without two-factor authentication a 409
+        `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
+        `manage_two_factor` permission, which only the built-in admin role has by default.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      responses:
+        "204":
+          description: The two-factor authentication is removed.
+        default:
+          $ref: "#/components/responses/Problem"
   # --- end of admin: accounts (#344) ---
   # --- admin: roles (#348) ---
   /admin/roles:
@@ -3407,6 +3604,14 @@ components:
           built. Wait for it to end.
         - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
           it is being built, failed, or expired.
+        - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+          already used, or is not a code.
+        - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+          Start a new one.
+        - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+          authentication.
+        - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+          operation, has no two-factor authentication.
       type: object
       required: [type, title, status]
       properties:
@@ -3582,7 +3787,7 @@ components:
     Account:
       description: An account, as clients show it (FR-006).
       type: object
-      required: [id, username, acct, domain, uri, display_name, note, fields, url, locked, bot, created_at]
+      required: [id, username, acct, domain, uri, display_name, note, fields, emojis, url, locked, bot, created_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3629,6 +3834,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProfileField"
+        emojis:
+          description: |
+            The custom emoji of the display name, the note, and the fields' names and values
+            (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+            image, and the rest as text.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
         avatar_url:
           description: |
             The URL of the avatar image; omitted when the account has none, or its image is not
@@ -3721,6 +3934,27 @@ components:
         value:
           description: The field's value as sanitized HTML.
           type: string
+    CustomEmoji:
+      description: |
+        A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+        An emoji that is disabled or deleted, or whose images come from a domain whose media the
+        instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+        `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+        otherwise.
+      type: object
+      required: [shortcode, url, static_url]
+      properties:
+        shortcode:
+          description: The shortcode, without the colons around it.
+          type: string
+        url:
+          description: The URL of the image, animated when the emoji is.
+          type: string
+          format: uri
+        static_url:
+          description: The URL of a still image of the emoji; the same as `url` when no still version is served.
+          type: string
+          format: uri
     Relationship:
       description: |
         The viewer's relationship with an account. It never says whether the account blocks
@@ -4157,6 +4391,9 @@ components:
             - $ref: "#/components/schemas/Id"
         relationship_severance:
           $ref: "#/components/schemas/RelationshipSeverance"
+        reaction:
+          description: The emoji of a `reaction`; omitted for the other types.
+          $ref: "#/components/schemas/ReactionEmoji"
     RelationshipSeverance:
       description: |
         The follows that a `relationships_severed` tells of: the user lost them when the
@@ -4269,9 +4506,10 @@ components:
       description: |
         The kind of a notification. `account` is the account that acted: the follower
         (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-        (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-        `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-        about. `moderation_notice` comes from the instance and has no `account`; its
+        (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+        account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+        with another emoji is another notification). `status` is the post that `mention`,
+        `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
         `moderation_action` is the action on the user's account, with its kind, reason, and end.
         `report_resolved` also comes from the instance: its `report` is the user's report that
         the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -4295,6 +4533,7 @@ components:
         - mention
         - boost
         - favourite
+        - reaction
         - poll_closed
         - moderation_notice
         - report_resolved
@@ -4353,8 +4592,8 @@ components:
         In a timeline, a boost is a status of the booster with `boost` set to the boosted
         status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
         `visibility` and `language` are those of the boosted status, its `content`,
-        `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-        are zero.
+        `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+        empty, and its counts are zero.
       type: object
       required:
         - id
@@ -4369,9 +4608,11 @@ components:
         - media_attachments
         - mentions
         - tags
+        - emojis
         - replies_count
         - boosts_count
         - favourites_count
+        - reactions
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -4432,6 +4673,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StatusTag"
+        emojis:
+          description: |
+            The custom emoji of the text, the content warning, and the poll's choices
+            (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+            image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
         replies_count:
           description: The number of replies.
           type: integer
@@ -4444,6 +4693,14 @@ components:
           description: The number of favourites.
           type: integer
           minimum: 0
+        reactions:
+          description: |
+            The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+            reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+            are counted apart, in `favourites_count`.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusReaction"
         favourited:
           description: Whether the authenticated user favourited the status.
           type: boolean
@@ -4456,6 +4713,70 @@ components:
         pinned:
           description: Whether the status is pinned to the author's profile; given only to the author.
           type: boolean
+    ReactionEmoji:
+      description: |
+        The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+        emoji of another server is shown as it is and cannot be used to react from here.
+      type: object
+      required: [name]
+      properties:
+        name:
+          description: |
+            The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+            custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+            server.
+          type: string
+        shortcode:
+          description: The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+          type: string
+        domain:
+          description: The server of a custom emoji of another server; omitted otherwise.
+          type: string
+        emoji:
+          description: |
+            The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+            be shown (as `CustomEmoji` leaves such an emoji out).
+          $ref: "#/components/schemas/CustomEmoji"
+    StatusReaction:
+      description: The reactions to a status with one emoji.
+      allOf:
+        - $ref: "#/components/schemas/ReactionEmoji"
+        - type: object
+          required: [count]
+          properties:
+            count:
+              description: The number of the reactions with the emoji.
+              type: integer
+              minimum: 1
+            me:
+              description: |
+                Whether the authenticated user reacted with the emoji; omitted for anonymous
+                requests.
+              type: boolean
+    StatusReactor:
+      description: One emoji reaction to a status, with the account that reacted.
+      type: object
+      required: [account, emoji, created_at]
+      properties:
+        account:
+          $ref: "#/components/schemas/Account"
+        emoji:
+          $ref: "#/components/schemas/ReactionEmoji"
+        created_at:
+          description: When the account reacted.
+          type: string
+          format: date-time
+    StatusReactionPage:
+      description: A page of the emoji reactions to a status, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/StatusReactor"
     StatusContext:
       description: The thread around a status.
       type: object
@@ -4474,7 +4795,7 @@ components:
     StatusEdit:
       description: One revision of a status.
       type: object
-      required: [content, spoiler_text, sensitive, created_at, media_attachments]
+      required: [content, spoiler_text, sensitive, created_at, media_attachments, emojis]
       properties:
         content:
           description: The text of the revision as sanitized HTML.
@@ -4494,6 +4815,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MediaAttachment"
+        emojis:
+          description: The custom emoji of the revision's text and content warning, as `Status.emojis`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
     StatusHistory:
       description: The revisions of a status.
       type: object
@@ -4774,6 +5100,91 @@ components:
           items:
             type: string
     # --- end profile and preferences ---
+    # --- two-factor authentication (#628) ---
+    TwoFactor:
+      description: Where the authenticated user's two-factor authentication (TOTP) stands.
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          description: Whether signing in asks for a code after the password.
+          type: boolean
+        enrolled_at:
+          description: When the authenticator app was enrolled; omitted when not enabled.
+          type: string
+          format: date-time
+        recovery_codes_remaining:
+          description: How many recovery codes are unused; omitted when not enabled.
+          type: integer
+          minimum: 0
+    TotpSetup:
+      description: A new TOTP secret to add to an authenticator app.
+      type: object
+      required: [secret, uri, qr_code, setup_token, expires_at]
+      properties:
+        secret:
+          description: The secret in base32, for typing it into the app.
+          type: string
+        uri:
+          description: The `otpauth://totp/...` URI of the secret.
+          type: string
+        qr_code:
+          $ref: "#/components/schemas/QrCode"
+        setup_token:
+          description: An opaque token that carries the secret to `POST /two_factor/totp`.
+          type: string
+        expires_at:
+          description: When `setup_token` stops working.
+          type: string
+          format: date-time
+    QrCode:
+      description: |
+        A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+        zone of four modules included) on a light background.
+      type: object
+      required: [size, path]
+      properties:
+        size:
+          description: The width and height of the view box, in modules.
+          type: integer
+          minimum: 1
+        path:
+          description: The path data (`d`) of the dark modules, one unit per module.
+          type: string
+    EnableTotpRequest:
+      description: The setup to enroll and a code of the app that shows it has the secret.
+      type: object
+      required: [setup_token, code]
+      properties:
+        setup_token:
+          description: The `setup_token` of `POST /two_factor/totp/setup`.
+          type: string
+          maxLength: 1024
+        code:
+          description: The six-digit code that the app shows now.
+          type: string
+          maxLength: 64
+    TwoFactorCodeRequest:
+      description: A code that confirms an operation on two-factor authentication.
+      type: object
+      required: [code]
+      properties:
+        code:
+          description: A six-digit code of the app or an unused recovery code.
+          type: string
+          maxLength: 64
+    RecoveryCodes:
+      description: |
+        Recovery codes, each of which signs in once in place of a code of the app. They are
+        shown only once.
+      type: object
+      required: [recovery_codes]
+      properties:
+        recovery_codes:
+          type: array
+          items:
+            type: string
+    # --- end of two-factor authentication (#628) ---
     # --- The viewer's posting limits (#207) ---
     PostingLimits:
       description: |
@@ -4912,7 +5323,8 @@ components:
         The kind of an audited operation, each on one kind of target. On an `account`:
         `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
         `revealed_private_data` (a moderator was shown the account's email address and IP
-        addresses). On a `domain`:
+        addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+        authentication). On a `domain`:
         `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
         `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
         `user` (a registration):
@@ -4950,6 +5362,7 @@ components:
         - revealed_private_data
         - signup_block_added
         - signup_block_lifted
+        - two_factor_disabled
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -5457,7 +5870,8 @@ components:
         `manage_domains`: the health of remote servers and the moderation actions on domains.
         `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
         roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-        log. The others guard no client API operation yet.
+        log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+        the built-in admin role by default). The others guard no client API operation yet.
       type: string
       enum:
         - manage_reports
@@ -5469,6 +5883,7 @@ components:
         - manage_invites
         - view_audit
         - manage_jobs
+        - manage_two_factor
     # --- end of the viewer's permissions (#267) ---
     # --- admin: instance rules (#331) ---
     AdminRule:
@@ -5671,6 +6086,11 @@ components:
               description: |
                 Whether the primary email address of a local account is verified; omitted when
                 it has none.
+              type: boolean
+            two_factor_enabled:
+              description: |
+                Whether the user of a local account signs in with two-factor authentication;
+                omitted for a remote account.
               type: boolean
             roles:
               description: The keys of the user's roles, highest position first; empty for a remote account.

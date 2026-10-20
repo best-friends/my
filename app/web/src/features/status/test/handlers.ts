@@ -23,8 +23,8 @@ const context: Schemas["StatusContext"] = { ancestors: [], descendants: [] };
 
 /** The one revision of a post never edited. */
 function historyOf(status: Schemas["Status"]): Schemas["StatusHistory"] {
-  const { content, spoiler_text, sensitive, created_at, media_attachments } = status;
-  return { items: [{ content, spoiler_text, sensitive, created_at, media_attachments }] };
+  const { content, spoiler_text, sensitive, created_at, media_attachments, emojis } = status;
+  return { items: [{ content, spoiler_text, sensitive, created_at, media_attachments, emojis }] };
 }
 
 export const handlers = [

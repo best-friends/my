@@ -17,6 +17,8 @@ var (
 	ErrBoostRetracted = errors.New("content: the boost is already retracted")
 	// ErrFavouriteURIUsed reports a favourite whose URI another favourite already has.
 	ErrFavouriteURIUsed = errors.New("content: a favourite with this URI exists")
+	// ErrReactionURIUsed reports a reaction whose URI another reaction already has.
+	ErrReactionURIUsed = errors.New("content: a reaction with this URI exists")
 )
 
 // InteractionRepository is the persistence port of the interactions of accounts with statuses
@@ -99,6 +101,42 @@ type InteractionRepository interface {
 	CountPins(ctx context.Context, tx uow.Tx, accountID string) (int64, error)
 
 	// Lookups.
+
+	// Emoji reactions (ADR-0052): a resource deleted when it is taken back, and the counts per
+	// emoji of each status that is not deleted (status_reaction_counts), written only by this
+	// module's projectors and rebuild.
+
+	// InsertReaction inserts r and reports whether it did; false means the account already
+	// reacts to the status with the emoji. A URI that another reaction has fails with
+	// ErrReactionURIUsed.
+	InsertReaction(ctx context.Context, tx uow.Tx, r content.Reaction) (bool, error)
+	// DeleteReaction removes the reaction id and returns it, reporting whether there was one.
+	DeleteReaction(ctx context.Context, tx uow.Tx, id string) (content.Reaction, bool, error)
+	// AddReactions adds delta (1 or -1) to the count of the reactions to a status with an emoji.
+	// A status that is deleted gains no count; a count that reaches zero goes away.
+	AddReactions(ctx context.Context, tx uow.Tx, statusID string, emoji content.ReactionEmoji, delta int64) error
+	// DeleteStatusReactionCounts removes the counts of a status.
+	DeleteStatusReactionCounts(ctx context.Context, tx uow.Tx, statusID string) error
+	// RebuildReactionCounts empties status_reaction_counts and derives it again from the
+	// reactions to statuses that are not deleted (data-model §9).
+	RebuildReactionCounts(ctx context.Context, tx uow.Tx) error
+	// FindReaction returns the reaction of an account to a status with the emoji whose key
+	// (content.ReactionEmoji.Key) is emojiKey.
+	FindReaction(ctx context.Context, accountID, statusID, emojiKey string) (content.Reaction, error)
+	// FindReactionByURI returns the reaction whose Like or EmojiReact is uri.
+	FindReactionByURI(ctx context.Context, uri string) (content.Reaction, error)
+	// ListAccountStatusReactions returns the reactions of an account to a status, oldest first.
+	ListAccountStatusReactions(ctx context.Context, accountID, statusID string) ([]content.Reaction, error)
+	// ListStatusReactions returns the reactions to a status newest first, only those with the
+	// emoji whose key is emojiKey unless it is "": those with an ID below before ("" starts at
+	// the newest), at most limit of them.
+	ListStatusReactions(ctx context.Context, statusID, emojiKey, before string, limit int) ([]content.Reaction, error)
+	// ListReactionCounts returns the counts of the reactions to a status, the largest first
+	// (ties by key), at most limit of them.
+	ListReactionCounts(ctx context.Context, statusID string, limit int) ([]content.ReactionCount, error)
+	// ListAllReactionCounts returns status_reaction_counts ordered by status and key, for
+	// verifying it.
+	ListAllReactionCounts(ctx context.Context) ([]content.ReactionCount, error)
 
 	FindBoost(ctx context.Context, id string) (content.Boost, error)
 	FindBoostByURI(ctx context.Context, uri string) (content.Boost, error)

@@ -1,0 +1,36 @@
+{
+  "Object": {
+    "AttributedTo": "https://akkoma.example/users/alice",
+    "Audience": {
+      "Cc": [
+        "https://akkoma.example/users/alice/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "Bodies": [
+      {
+        "HTML": ":joker_disapprove: <br><br>just grabbing a test fixture, nevermind me",
+        "Language": "und"
+      }
+    ],
+    "Emojis": [
+      {
+        "ID": "https://akkoma.example/emoji/custom/joker_disapprove.png",
+        "IconURL": "https://akkoma.example/emoji/custom/joker_disapprove.png",
+        "Shortcode": "joker_disapprove"
+      },
+      {
+        "ID": "https://akkoma.example/emoji/custom/joker_smile.png",
+        "IconURL": "https://akkoma.example/emoji/custom/joker_smile.png",
+        "Shortcode": "joker_smile"
+      }
+    ],
+    "ID": "https://akkoma.example/objects/a399c28e-c821-4820-bc3e-4afeb044c16f",
+    "Published": "2021-03-22T16:54:46.461939Z",
+    "RawType": "Note",
+    "SpoilerText": ":joker_smile:",
+    "Type": "Note"
+  }
+}

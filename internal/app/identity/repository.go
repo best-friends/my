@@ -50,6 +50,7 @@ type Repository interface {
 	// ListUserIDsWithPermission returns inside tx the users whose current roles grant p, by ID.
 	ListUserIDsWithPermission(ctx context.Context, tx uow.Tx, p identity.Permission) ([]string, error)
 
+	TOTPRepository
 	PreferencesRepository
 	OAuthRepository
 	RegistrationRepository
@@ -71,4 +72,21 @@ type Repository interface {
 	// a revocation, with its activity (a zero LastSeenAt when it has none). Expiry is the
 	// caller's to check.
 	FindUnrevokedSession(ctx context.Context, tokenHash []byte) (identity.Session, identity.SessionActivity, error)
+}
+
+// TOTPRepository is the part of Repository that keeps TOTP enrollments and their recovery codes
+// (data-model §4.1). The database adapters pass testkit.AccountRepositoryContract.
+type TOTPRepository interface {
+	// InsertTOTPEnrollment records an enrollment with the digests of its recovery codes.
+	InsertTOTPEnrollment(ctx context.Context, tx uow.Tx, e identity.TOTPEnrollment, recoveryCodeHashes [][]byte) error
+	// FindActiveTOTPEnrollment returns the newest enrollment of a user, unless it has a
+	// revocation; ErrNotFound otherwise.
+	FindActiveTOTPEnrollment(ctx context.Context, userID string) (identity.TOTPEnrollment, error)
+	// InsertTOTPEnrollmentRevocation ends an enrollment; it does nothing for one that ended.
+	InsertTOTPEnrollmentRevocation(ctx context.Context, tx uow.Tx, r identity.TOTPEnrollmentRevocation) error
+	// UseTOTPRecoveryCode records the use of a recovery code and reports whether the enrollment
+	// has the code and it was not used before; it records nothing otherwise.
+	UseTOTPRecoveryCode(ctx context.Context, tx uow.Tx, u identity.TOTPRecoveryCodeUse) (bool, error)
+	// CountUnusedTOTPRecoveryCodes returns how many recovery codes of an enrollment are unused.
+	CountUnusedTOTPRecoveryCodes(ctx context.Context, enrollmentID string) (int, error)
 }

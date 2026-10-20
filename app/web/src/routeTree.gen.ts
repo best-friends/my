@@ -44,6 +44,7 @@ import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.fo
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
+import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as AtChar123acctChar125IdHistoryRouteImport } from './routes/@{$acct}_.$id_.history'
 import { Route as ModerationAccountsIdRouteImport } from './routes/moderation.accounts_.$id'
@@ -228,6 +229,11 @@ const SettingsProfileRoute = SettingsProfileRouteImport.update({
   path: '/settings/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsTwoFactorRoute = SettingsTwoFactorRouteImport.update({
+  id: '/settings/two-factor',
+  path: '/settings/two-factor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TagsTagRoute = TagsTagRouteImport.update({
   id: '/tags/$tag',
   path: '/tags/$tag',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
@@ -337,6 +344,7 @@ export interface FileRoutesByTo {
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin': typeof AdminIndexRoute
   '/moderation': typeof ModerationIndexRoute
@@ -381,6 +389,7 @@ export interface FileRoutesById {
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
+  '/settings/two-factor': typeof SettingsTwoFactorRoute
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
@@ -426,6 +435,7 @@ export interface FileRouteTypes {
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin/'
     | '/moderation/'
@@ -469,6 +479,7 @@ export interface FileRouteTypes {
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin'
     | '/moderation'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
+    | '/settings/two-factor'
     | '/tags/$tag'
     | '/admin/'
     | '/moderation/'
@@ -556,6 +568,7 @@ export interface RootRouteChildren {
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  SettingsTwoFactorRoute: typeof SettingsTwoFactorRoute
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
@@ -814,6 +827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/two-factor': {
+      id: '/settings/two-factor'
+      path: '/settings/two-factor'
+      fullPath: '/settings/two-factor'
+      preLoaderRoute: typeof SettingsTwoFactorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tags/$tag': {
       id: '/tags/$tag'
       path: '/tags/$tag'
@@ -892,6 +912,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  SettingsTwoFactorRoute: SettingsTwoFactorRoute,
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,

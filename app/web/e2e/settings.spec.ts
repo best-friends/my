@@ -14,6 +14,7 @@ const viewer = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -92,6 +93,10 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
             },
           ],
         });
+      case "GET /two_factor":
+        return json(route, { enabled: false });
+      case "POST /two_factor/totp/setup":
+        return json(route, totpSetup);
       default:
         return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
     }
@@ -107,7 +112,35 @@ function projectLocale(): string {
   return test.info().project.use.locale ?? "en";
 }
 
-const pages = ["/settings", "/settings/profile", "/settings/preferences", "/settings/follow-requests", "/settings/blocks", "/settings/mutes", "/settings/account"] as const;
+const pages = [
+  "/settings",
+  "/settings/profile",
+  "/settings/preferences",
+  "/settings/follow-requests",
+  "/settings/blocks",
+  "/settings/mutes",
+  "/settings/two-factor",
+  "/settings/account",
+] as const;
+
+/** A TOTP setup whose QR code is the three finder patterns of a 21-module code with its quiet zone. */
+const totpSetup = {
+  secret: "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+  uri: "otpauth://totp/my.example:alice@my.example?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
+  qr_code: { size: 29, path: "M4 4h7v7h-7zM18 4h7v7h-7zM4 18h7v7h-7z" },
+  setup_token: "e2e-setup",
+  expires_at: "2026-10-20T00:15:00Z",
+};
+
+test("two-factor setup shows the QR code and the key without axe violations or horizontal scroll", async ({ page, makeAxeBuilder }) => {
+  await signedInServer(page, projectLocale());
+  await page.goto("/settings/two-factor");
+  await page.getByRole("main").getByRole("button").first().click();
+  await expect(page.getByRole("main").getByRole("img")).toBeVisible();
+  await expect(page.getByRole("main").getByRole("textbox")).toBeVisible();
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+});
 
 for (const path of pages) {
   test.describe(`page ${path}`, () => {

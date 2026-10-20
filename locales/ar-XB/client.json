@@ -535,6 +535,42 @@
     "defaultMessage": "‮∀ɔɔonuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.account.two_factor.confirm.description": {
+    "defaultMessage": "‮⊥ɥǝʎ ʍıʅʅ sıƃu ıu ʍıʇɥ ʇɥǝıɹ dɐssʍoɹp ɐʅouǝ nuʇıʅ ʇɥǝʎ sǝʇ ıʇ nd ɐƃɐıu. ⊥ɥıs ɔɐuuoʇ qǝ nupouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.confirm.title": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ ʇɥǝ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou oɟ {handle}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɯoʌǝ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.off": {
+    "defaultMessage": "‮Oɟɟ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.on": {
+    "defaultMessage": "‮Ou: sıƃuıuƃ ıu ɐsʞs ɟoɹ ɐ ɔopǝ ɟɹoɯ ɐu ɐnʇɥǝuʇıɔɐʇoɹ ɐdd.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.remove": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.remove.description": {
+    "defaultMessage": "‮Ⅎoɹ ɐ nsǝɹ ʍɥo ʅosʇ ʇɥǝıɹ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd ɐup ɹǝɔoʌǝɹʎ ɔopǝs. Wɐʞǝ snɹǝ ʇɥǝ ɹǝbnǝsʇ ɔoɯǝs ɟɹoɯ ʇɥǝ ɐɔɔonuʇ's oʍuǝɹ ɟıɹsʇ. ⊥ɥǝ ɹǝɯoʌɐʅ ıs ɹǝɔoɹpǝp ıu ʇɥǝ ɐnpıʇ ʅoƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.removed": {
+    "defaultMessage": "‮ᴚǝɯoʌǝp ʇɥǝ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou oɟ {handle}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.title": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "‮ᴚǝɐsou‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1301,6 +1337,10 @@
   },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "‮⊥ǝxʇ ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.two_factor_disabled": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ɹǝɯoʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.actor": {
@@ -3471,6 +3511,10 @@
     "defaultMessage": "‮∀ doʅʅ ʎon ʇooʞ dɐɹʇ ıu ɥɐs ǝupǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.reaction": {
+    "defaultMessage": "‮{name} ɹǝɐɔʇǝp ʇo ʎonɹ dosʇ ʍıʇɥ {emoji}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.relationships_severed": {
     "defaultMessage": "‮∀ snsdǝusıou qʎ ʇɥǝ ɯopǝɹɐʇoɹs ǝupǝp soɯǝ oɟ ʎonɹ ɟoʅʅoʍs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4419,6 +4463,10 @@
     "defaultMessage": "‮Noʇıɔǝs ɟɹoɯ ʇɥǝ ɯopǝɹɐʇoɹs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.push.type.reaction": {
+    "defaultMessage": "‮Ǝɯoɾı ɹǝɐɔʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.push.types.description": {
     "defaultMessage": "‮Ↄɥoosǝ ʍɥɐʇ ʇɥıs pǝʌıɔǝ uoʇıɟıǝs ʎon oɟ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4489,6 +4537,150 @@
   },
   "settings.title": {
     "defaultMessage": "‮Sǝʇʇıuƃs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "‮∀nʇɥǝuʇıɔɐʇıou ɔopǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "‮∀ ɔopǝ ɟɹoɯ ʎonɹ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd, oɹ ouǝ oɟ ʎonɹ ɹǝɔoʌǝɹʎ ɔopǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "‮⊥ɥǝ ɔopǝ ıs ıuɔoɹɹǝɔʇ oɹ ʍɐs ɐʅɹǝɐpʎ nsǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʇɥǝ ɔopǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "‮Sıƃuıuƃ ıu ʍıʅʅ ɐsʞ ouʅʎ ɟoɹ ʎonɹ dɐssʍoɹp. Ǝuʇǝɹ ɐ ɔopǝ ʇo ɔouɟıɹɯ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "‮⊥nɹu oɟɟ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "‮⊥nɹu oɟɟ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ıs oɟɟ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ıs ou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "‮⊥nɹuǝp ou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "‮⊥oo ɯɐuʎ ıuɔoɹɹǝɔʇ ɔopǝs: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "‮Iɟ ʎon ʅosǝ ʎonɹ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd, sıƃu ıu ʍıʇɥ ɐ ɹǝɔoʌǝɹʎ ɔopǝ ıusʇǝɐp. Ǝɐɔɥ ɔopǝ ʍoɹʞs ouɔǝ. Nǝʍ ɔopǝs ɹǝdʅɐɔǝ ʇɥǝ oʅp ouǝs, ʍɥıɔɥ sʇod ʍoɹʞıuƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "‮Ӽǝǝd ʇɥǝsǝ ɔopǝs soɯǝʍɥǝɹǝ sɐɟǝ, snɔɥ ɐs ɐ dɐssʍoɹp ɯɐuɐƃǝɹ. ⊥ɥǝʎ ɐɹǝ sɥoʍu ouʅʎ uoʍ. Ǝɐɔɥ ouǝ sıƃus ʎon ıu ouɔǝ ʍıʇɥonʇ ʇɥǝ ɐdd.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "‮Sɐʌǝ ʎonɹ ɹǝɔoʌǝɹʎ ɔopǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "‮∩unsǝp ɹǝɔoʌǝɹʎ ɔopǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "‮ᴚǝdʅɐɔǝ ɹǝɔoʌǝɹʎ ɔopǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "‮Nǝʍ ɹǝɔoʌǝɹʎ ɔopǝs ɐɹǝ ɹǝɐpʎ. ⊥ɥǝ oʅp ouǝs uo ʅouƃǝɹ ʍoɹʞ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "‮ᴚǝɔoʌǝɹʎ ɔopǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "‮⊥ɥǝ sıx-pıƃıʇ ɔopǝ ʇɥɐʇ ʇɥǝ ɐdd sɥoʍs uoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "‮∀pp ʇɥıs ɐɔɔonuʇ ʇo ɐu ɐnʇɥǝuʇıɔɐʇoɹ ɐdd ou ʎonɹ dɥouǝ. Ⅎɹoɯ ʇɥǝu ou, sıƃuıuƃ ıu ɐʅso ɐsʞs ɟoɹ ʇɥǝ sıx-pıƃıʇ ɔopǝ ʇɥɐʇ ʇɥǝ ɐdd sɥoʍs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "‮⊥ɥǝ sǝʇnd ʇooʞ ʇoo ʅouƃ. Sʇɐɹʇ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "‮Òᴚ ɔopǝ ɟoɹ ʎonɹ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "‮Ӽǝʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "‮Sǝʇ nd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʇɥǝ sıx-pıƃıʇ ɔopǝ ʇɥɐʇ ʇɥǝ ɐdd sɥoʍs ʇo ʇnɹu ou ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "‮Sɔɐu ʇɥǝ Òᴚ ɔopǝ ʍıʇɥ ʎonɹ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd, oɹ ʇʎdǝ ʇɥǝ ʞǝʎ qǝʅoʍ ıuʇo ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "‮⊥nɹu ou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "‮Sǝʇ nd ɐu ɐnʇɥǝuʇıɔɐʇoɹ ɐdd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ʍɐs ɔɥɐuƃǝp ǝʅsǝʍɥǝɹǝ. ⊥ɥǝ dɐƃǝ uoʍ sɥoʍs ıʇs ɔnɹɹǝuʇ sǝʇʇıuƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "‮Oɟɟ. Sıƃuıuƃ ıu ɐsʞs ouʅʎ ɟoɹ ʎonɹ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "‮Ou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "‮Ↄnɹɹǝuʇ sǝʇʇıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.summary": {
+    "defaultMessage": "‮Sıƃu ıu ʍıʇɥ ɐ ɔopǝ ɟɹoɯ ɐu ɐnʇɥǝuʇıɔɐʇoɹ ɐdd ɐs ʍǝʅʅ ɐs ʎonɹ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.visibility.direct": {

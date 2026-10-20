@@ -201,7 +201,7 @@ func TestGrantAndRevokeRoles(t *testing.T) {
 	want := clientapi.AdminRoleList{Items: []clientapi.AdminRole{
 		{Id: fakeRoleIDs["admin"], Key: "admin", Position: 1000, Permissions: []clientapi.Permission{
 			"manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles",
-			"manage_invites", "view_audit", "manage_jobs",
+			"manage_invites", "view_audit", "manage_jobs", "manage_two_factor",
 		}},
 		{Id: fakeRoleIDs["moderator"], Key: "moderator", Position: 100, Permissions: []clientapi.Permission{"manage_reports", "manage_accounts", "view_audit"}},
 	}}

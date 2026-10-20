@@ -446,18 +446,20 @@ type Mute struct {
 }
 
 type Notification struct {
-	ID                 string
-	RecipientAccountID string
-	Type               string
-	SourceAccountID    sql.NullString
-	StatusID           sql.NullString
-	ModerationActionID sql.NullString
-	ReportID           sql.NullString
-	SubjectUserID      sql.NullString
-	SeveranceID        sql.NullString
-	AppealID           sql.NullString
-	DedupeKey          string
-	CreatedAt          int64
+	ID                    string
+	RecipientAccountID    string
+	Type                  string
+	SourceAccountID       sql.NullString
+	StatusID              sql.NullString
+	ModerationActionID    sql.NullString
+	ReportID              sql.NullString
+	SubjectUserID         sql.NullString
+	SeveranceID           sql.NullString
+	AppealID              sql.NullString
+	ReactionEmoji         sql.NullString
+	ReactionCustomEmojiID sql.NullString
+	DedupeKey             string
+	CreatedAt             int64
 }
 
 type NotificationReadMarker struct {
@@ -554,6 +556,16 @@ type PushSubscription struct {
 	KeyAuth            string
 	CreatedAt          int64
 	UpdatedAt          int64
+}
+
+type Reaction struct {
+	ID            string
+	AccountID     string
+	StatusID      string
+	EmojiKey      string
+	CustomEmojiID sql.NullString
+	Uri           string
+	CreatedAt     int64
 }
 
 type ReceivedActivity struct {
@@ -780,6 +792,13 @@ type StatusPin struct {
 	Slot      int64
 	CreatedAt int64
 	ID        string
+}
+
+type StatusReactionCount struct {
+	StatusID      string
+	EmojiKey      string
+	CustomEmojiID sql.NullString
+	Count         int64
 }
 
 type StatusReplyLink struct {

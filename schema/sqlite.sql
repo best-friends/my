@@ -25,6 +25,37 @@ CREATE TABLE password_credentials (
 ) STRICT;
 CREATE INDEX password_credentials_user_id_id ON password_credentials (user_id, id DESC);
 
+-- Event: a TOTP authenticator a user enrolled (FR-005). The secret is sealed with kernel.Sealer
+-- (ADR-0019 §6). The active enrollment is the newest one without a revocation.
+CREATE TABLE totp_enrollments (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  secret_enc BLOB NOT NULL,
+  enrolled_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX totp_enrollments_user_id_id ON totp_enrollments (user_id, id DESC);
+
+-- Event: a TOTP enrollment ended (disabled by its user, replaced, or removed by an administrator).
+CREATE TABLE totp_enrollment_revocations (
+  enrollment_id TEXT NOT NULL PRIMARY KEY,
+  revoked_at INTEGER NOT NULL
+) STRICT;
+
+-- Resource: a recovery code of a TOTP enrollment, stored as the SHA-256 digest of its normalized form.
+CREATE TABLE totp_recovery_codes (
+  enrollment_id TEXT NOT NULL,
+  code_hash BLOB NOT NULL,
+  PRIMARY KEY (enrollment_id, code_hash)
+) STRICT;
+
+-- Event: a recovery code was used. The primary key makes each code work once.
+CREATE TABLE totp_recovery_code_uses (
+  enrollment_id TEXT NOT NULL,
+  code_hash BLOB NOT NULL,
+  used_at INTEGER NOT NULL,
+  PRIMARY KEY (enrollment_id, code_hash)
+) STRICT;
+
 -- Resource: an email address a user added.
 CREATE TABLE user_email_addresses (
   id TEXT NOT NULL PRIMARY KEY,
@@ -57,7 +88,8 @@ CREATE TABLE role_permissions (
   role_id TEXT NOT NULL,
   permission TEXT NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
+    'manage_two_factor'
   )),
   PRIMARY KEY (role_id, permission)
 ) STRICT;
@@ -144,6 +176,14 @@ CREATE TABLE account_profile_fields (
   name TEXT NOT NULL,
   value_html TEXT NOT NULL,
   PRIMARY KEY (revision_id, position)
+) STRICT;
+
+-- Event (child of a revision): a custom emoji of the profile's display name, note, or fields
+-- (ADR-0051). emoji_id is a custom_emojis row of the content module.
+CREATE TABLE account_profile_revision_emojis (
+  revision_id TEXT NOT NULL,
+  emoji_id TEXT NOT NULL,
+  PRIMARY KEY (revision_id, emoji_id)
 ) STRICT;
 
 -- Projection: the current profile revision of each account.
@@ -958,6 +998,37 @@ CREATE UNIQUE INDEX favourites_uri ON favourites (uri);
 CREATE INDEX favourites_account_id_id ON favourites (account_id, id);
 CREATE INDEX favourites_status_id_id ON favourites (status_id, id);
 
+-- Resource: an account's emoji reaction to a status (FR-116, ADR-0052), deleted when it is taken
+-- back (content.unreacted). emoji_key is the Unicode emoji, fully qualified, or the
+-- custom_emojis.id of custom_emoji_id, NULL for a Unicode emoji. uri is the IRI of the Like or
+-- EmojiReact.
+CREATE TABLE reactions (
+  id TEXT NOT NULL PRIMARY KEY,
+  account_id TEXT NOT NULL,
+  status_id TEXT NOT NULL,
+  emoji_key TEXT NOT NULL,
+  custom_emoji_id TEXT,
+  uri TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  CHECK (custom_emoji_id IS NULL OR custom_emoji_id = emoji_key)
+) STRICT;
+CREATE UNIQUE INDEX reactions_account_id_status_id_emoji_key ON reactions (account_id, status_id, emoji_key);
+CREATE UNIQUE INDEX reactions_uri ON reactions (uri);
+CREATE INDEX reactions_status_id_emoji_key_id ON reactions (status_id, emoji_key, id);
+CREATE INDEX reactions_status_id_id ON reactions (status_id, id);
+
+-- Projection: the reactions to each status that is not deleted, per emoji (ADR-0052 §1). A row
+-- goes when its count reaches zero.
+CREATE TABLE status_reaction_counts (
+  status_id TEXT NOT NULL,
+  emoji_key TEXT NOT NULL,
+  custom_emoji_id TEXT,
+  count INTEGER NOT NULL CHECK (count > 0),
+  PRIMARY KEY (status_id, emoji_key),
+  CHECK (custom_emoji_id IS NULL OR custom_emoji_id = emoji_key)
+) STRICT;
+CREATE INDEX status_reaction_counts_status_id_count ON status_reaction_counts (status_id, count DESC, emoji_key);
+
 -- Current value: an account's private bookmark of a status.
 CREATE TABLE bookmarks (
   account_id TEXT NOT NULL,
@@ -1079,7 +1150,8 @@ CREATE TABLE notifications (
   id TEXT NOT NULL PRIMARY KEY,
   recipient_account_id TEXT NOT NULL,
   type TEXT NOT NULL CHECK (type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'poll_closed',
+    'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
     'admin_appeal'
   )),
@@ -1094,6 +1166,9 @@ CREATE TABLE notifications (
   severance_id TEXT,
   -- appeal_decided, admin_appeal: the appeal.
   appeal_id TEXT,
+  -- reaction: the emoji, a Unicode emoji or the custom emoji (custom_emojis.id).
+  reaction_emoji TEXT,
+  reaction_custom_emoji_id TEXT,
   dedupe_key TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   -- nobody is notified of their own actions.
@@ -1155,7 +1230,8 @@ CREATE INDEX push_subscriptions_account_id ON push_subscriptions (account_id);
 CREATE TABLE push_subscription_alerts (
   subscription_id TEXT NOT NULL,
   notification_type TEXT NOT NULL CHECK (notification_type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'poll_closed', 'moderation_notice',
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'poll_closed',
+    'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
     'admin_appeal'
   )),
@@ -1783,7 +1859,7 @@ CREATE TABLE audit_log_entries (
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
-    'revealed_private_data', 'signup_block_added', 'signup_block_lifted'
+    'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',

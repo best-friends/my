@@ -392,6 +392,24 @@ export interface MessageArgs {
   "client:admin.account.summary.title": {};
   /** Account */
   "client:admin.account.title": {};
+  /** They will sign in with their password alone until they set it up again. This cannot be undone. */
+  "client:admin.account.two_factor.confirm.description": {};
+  /** Remove the two-factor authentication of {handle}? */
+  "client:admin.account.two_factor.confirm.title": { handle: string };
+  /** Could not remove two-factor authentication: {reason} */
+  "client:admin.account.two_factor.failed": { reason: string };
+  /** Off. */
+  "client:admin.account.two_factor.off": {};
+  /** On: signing in asks for a code from an authenticator app. */
+  "client:admin.account.two_factor.on": {};
+  /** Remove two-factor authentication */
+  "client:admin.account.two_factor.remove": {};
+  /** For a user who lost their authenticator app and recovery codes. Make sure the request comes from the account's owner first. The removal is recorded in the audit log. */
+  "client:admin.account.two_factor.remove.description": {};
+  /** Removed the two-factor authentication of {handle}. */
+  "client:admin.account.two_factor.removed": { handle: string };
+  /** Two-factor authentication */
+  "client:admin.account.two_factor.title": {};
   /** Joined */
   "client:admin.accounts.created_at": {};
   /** No accounts yet */
@@ -654,6 +672,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.signup_block_lifted": {};
   /** Text changed */
   "client:admin.audit_log.action.text_changed": {};
+  /** Two-factor authentication removed */
+  "client:admin.audit_log.action.two_factor_disabled": {};
   /** By */
   "client:admin.audit_log.actor": {};
   /** Command line */
@@ -1738,6 +1758,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** {name} reacted to your post with {emoji} */
+  "client:notifications.type.reaction": { emoji: string; name: string };
   /** A suspension by the moderators ended some of your follows */
   "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */
@@ -2212,6 +2234,8 @@ export interface MessageArgs {
   "client:settings.push.type.mention": {};
   /** Notices from the moderators */
   "client:settings.push.type.moderation": {};
+  /** Emoji reactions */
+  "client:settings.push.type.reaction": {};
   /** Choose what this device notifies you of. */
   "client:settings.push.types.description": {};
   /** Notify me of */
@@ -2248,6 +2272,78 @@ export interface MessageArgs {
   "client:settings.timeline_languages.label": {};
   /** Settings */
   "client:settings.title": {};
+  /** Authentication code */
+  "client:settings.two_factor.code": {};
+  /** A code from your authenticator app, or one of your recovery codes. */
+  "client:settings.two_factor.code.description": {};
+  /** The code is incorrect or was already used. */
+  "client:settings.two_factor.code.invalid": {};
+  /** Enter the code. */
+  "client:settings.two_factor.code.required": {};
+  /** Signing in will ask only for your password. Enter a code to confirm. */
+  "client:settings.two_factor.disable.description": {};
+  /** Turn off */
+  "client:settings.two_factor.disable.submit": {};
+  /** Turn off two-factor authentication */
+  "client:settings.two_factor.disable.title": {};
+  /** Two-factor authentication is off. */
+  "client:settings.two_factor.disabled": {};
+  /** Two-factor authentication is on. */
+  "client:settings.two_factor.enabled": {};
+  /** Turned on */
+  "client:settings.two_factor.enrolled_at": {};
+  /** Could not change two-factor authentication: {reason} */
+  "client:settings.two_factor.failed": { reason: string };
+  /** Too many incorrect codes: {reason} */
+  "client:settings.two_factor.rate_limited": { reason: string };
+  /** If you lose your authenticator app, sign in with a recovery code instead. Each code works once. New codes replace the old ones, which stop working. */
+  "client:settings.two_factor.recovery_codes.description": {};
+  /** Keep these codes somewhere safe, such as a password manager. They are shown only now. Each one signs you in once without the app. */
+  "client:settings.two_factor.recovery_codes.new.description": {};
+  /** Save your recovery codes */
+  "client:settings.two_factor.recovery_codes.new.title": {};
+  /** Unused recovery codes */
+  "client:settings.two_factor.recovery_codes.remaining": {};
+  /** Replace recovery codes */
+  "client:settings.two_factor.recovery_codes.replace": {};
+  /** New recovery codes are ready. The old ones no longer work. */
+  "client:settings.two_factor.recovery_codes.replaced": {};
+  /** Recovery codes */
+  "client:settings.two_factor.recovery_codes.title": {};
+  /** The six-digit code that the app shows now. */
+  "client:settings.two_factor.setup.code.description": {};
+  /** Add this account to an authenticator app on your phone. From then on, signing in also asks for the six-digit code that the app shows. */
+  "client:settings.two_factor.setup.description": {};
+  /** The setup took too long. Start again. */
+  "client:settings.two_factor.setup.expired": {};
+  /** QR code for your authenticator app */
+  "client:settings.two_factor.setup.qr_code": {};
+  /** Key */
+  "client:settings.two_factor.setup.secret": {};
+  /** Set up */
+  "client:settings.two_factor.setup.start": {};
+  /** Enter the six-digit code that the app shows to turn on two-factor authentication. */
+  "client:settings.two_factor.setup.step.confirm": {};
+  /** Scan the QR code with your authenticator app, or type the key below into it. */
+  "client:settings.two_factor.setup.step.scan": {};
+  /** Turn on */
+  "client:settings.two_factor.setup.submit": {};
+  /** Set up an authenticator app */
+  "client:settings.two_factor.setup.title": {};
+  /** Two-factor authentication was changed elsewhere. The page now shows its current setting. */
+  "client:settings.two_factor.state_changed": {};
+  /** Two-factor authentication */
+  "client:settings.two_factor.status": {};
+  /** Off. Signing in asks only for your password. */
+  "client:settings.two_factor.status.off": {};
+  /** On */
+  "client:settings.two_factor.status.on": {};
+  /** Current setting */
+  "client:settings.two_factor.status.title": {};
+  /** Sign in with a code from an authenticator app as well as your password */
+  "client:settings.two_factor.summary": {};
+  /** Two-factor authentication */
+  "client:settings.two_factor.title": {};
   /** Mentioned people */
   "client:settings.visibility.direct": {};
   /** Only the people you mention */
@@ -2756,6 +2852,22 @@ export interface MessageArgs {
   "server:auth.status.title": {};
   /** Confirm your email address: open the link we sent to {email}. */
   "server:auth.status.verify_email": { email: string };
+  /** Authentication code */
+  "server:auth.two_factor.code_label": {};
+  /** The sign-in took too long. Sign in again. */
+  "server:auth.two_factor.expired": {};
+  /** The code is incorrect or was already used. */
+  "server:auth.two_factor.invalid": {};
+  /** Enter the code. */
+  "server:auth.two_factor.missing": {};
+  /** Enter the six-digit code that your authenticator app shows. If you cannot use the app, enter one of your recovery codes instead. */
+  "server:auth.two_factor.prompt": {};
+  /** Sign in again */
+  "server:auth.two_factor.restart_link": {};
+  /** Verify */
+  "server:auth.two_factor.submit": {};
+  /** Two-factor authentication */
+  "server:auth.two_factor.title": {};
   /** Thank you. Your email address is confirmed. */
   "server:auth.verify_email.done": {};
   /** Email address confirmed */
@@ -2890,6 +3002,14 @@ export interface MessageArgs {
   "server:errors.too_long": { max: number; name: string };
   /** {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}} */
   "server:errors.too_many": { max: number; name: string };
+  /** The code is incorrect or was already used. */
+  "server:errors.two_factor.code_invalid": {};
+  /** Two-factor authentication is already enabled. */
+  "server:errors.two_factor.enabled": {};
+  /** Two-factor authentication is not enabled. */
+  "server:errors.two_factor.not_enabled": {};
+  /** The setup of the authenticator app expired. Start again. */
+  "server:errors.two_factor.setup_expired": {};
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
   /** The request cannot be processed. */
@@ -2956,6 +3076,8 @@ export interface MessageArgs {
   "server:push.moderation_notice": { instance: string };
   /** You have a new notification on {instance} */
   "server:push.other": { instance: string };
+  /** {name} reacted to your post */
+  "server:push.reaction": { name: string };
   /** A suspension by the moderators of {instance} ended some of your follows */
   "server:push.relationships_severed": { instance: string };
   /** A report you filed on {instance} has been resolved */
