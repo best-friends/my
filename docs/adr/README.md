@@ -65,6 +65,7 @@
 | [0053](0053-status-page-url.md) | 投稿の表示用 URL を `/@{username}/status/{id}` にし、プロフィールの下を予約語の名前空間にする | Accepted |
 | [0054](0054-media-variants-video-audio.md) | メディアの派生と動画・音声の扱い | Accepted |
 | [0056](0056-system-observability.md) | システムメトリクスの可観測性 | Accepted |
+| [0059](0059-design-tokens-and-instance-theme.md) | デザイントークンの体系とサーバー単位のテーマ | Accepted |
 | [0060](0060-instance-webhooks.md) | サーバー単位の webhook | Accepted |
 | [0062](0062-link-preview-cards.md) | 投稿中のリンクのカード | Accepted |
 <!-- adr-index:end -->
