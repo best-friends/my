@@ -1,8 +1,10 @@
-name: Pub/Sub emulator
+name: Stream contract
 
-# The stream.Bus contract of internal/adapter/stream/pubsub on the Pub/Sub emulator (a google-cloud-cli emulators
-# container) instead of pstest (ADR-0050 §5). Called by main.yml on the pushes to main that touch a path it depends on
-# and by nightly.yml; pull requests and merge groups run the same contract on pstest in ctx-go.yml's go-test job.
+# The stream.Bus contracts of internal/adapter/stream on broker containers (the valkey/valkey container of
+# pkg/testkit/valkeytest, the Pub/Sub emulator) instead of the in-process fakes (miniredis, pstest) that pull requests
+# and merge groups run in
+# ctx-go.yml's go-test job (ADR-0050 §5). Called by main.yml on the pushes to main that touch a path they depend on
+# and by nightly.yml.
 
 on:
   workflow_call:
@@ -15,7 +17,7 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  pubsub-emulator:
+  stream-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -34,7 +36,7 @@ jobs:
           restore-keys: |
             go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
             go-test-${{ runner.os }}-
-      # testcontainers-go starts the emulator on the runner's Docker; TEST_PUBSUB_REQUIRED makes a missing Docker fail
-      # the job instead of skipping the test.
-      - name: make go-test-pubsub-emulator
-        run: make go-test-pubsub-emulator
+      # testcontainers-go starts the brokers on the runner's Docker; the target makes a missing Docker fail the job
+      # instead of skipping the tests.
+      - name: make go-test-stream
+        run: make go-test-stream

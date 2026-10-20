@@ -5,6 +5,7 @@ go 1.27.2
 require (
 	cloud.google.com/go/pubsub/v2 v2.7.0
 	code.superseriousbusiness.org/httpsig v1.5.0
+	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/dadrus/httpsig v0.9.0
 	github.com/dunglas/httpsfv v1.1.2
 	github.com/getkin/kin-openapi v0.149.0
@@ -99,6 +100,7 @@ require (
 	github.com/stretchr/testify v1.11.1 // indirect
 	github.com/tklauser/go-sysconf v0.4.0 // indirect
 	github.com/tklauser/numcpus v0.12.0 // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
