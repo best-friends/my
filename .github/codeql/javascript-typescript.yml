@@ -2,7 +2,9 @@
 #
 # CodeQL configuration of the javascript-typescript analysis (codeql.yml). The analysis reads the sources without
 # building them, so it is limited to the client workspace and the i18n tool; the generated route tree, API schema,
-# and message accessors, the intentional lint violations, and build output are left out.
+# and message accessors, the intentional lint violations, and build output are left out. Tests (*.test.ts(x),
+# app/web/e2e) stay in: they can hold real mistakes, and an alert about a deliberate test input is dismissed as
+# "used in tests".
 paths:
   - app
   - tools/i18n

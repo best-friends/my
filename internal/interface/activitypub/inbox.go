@@ -67,23 +67,24 @@ func (h *Handler) receive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	origin := &url.URL{Scheme: "https", Host: h.o.Host}
-	_, err = h.o.Inbox.Receive(r.Context(), appfederation.InboxRequest{
+	got, err := h.o.Inbox.Receive(r.Context(), appfederation.InboxRequest{
 		Request: appfederation.NewSignedRequest(origin, r, body), ClientIP: kernel.RequestClientIP(r),
 	})
-	var rej *appfederation.InboxRejection
-	switch {
-	case errors.As(err, &rej):
+	switch rej := got.Rejection; {
+	case err != nil:
+		h.o.Logger.ErrorContext(r.Context(), "inbox failed", slog.Any("error", err))
+		h.o.Problem(w, r, http.StatusInternalServerError)
+	case rej != nil:
 		if rej.RetryAfter > 0 {
 			w.Header().Set("Retry-After", strconv.Itoa(int((rej.RetryAfter+time.Second-1)/time.Second)))
 		}
 		if rej.AcceptSignature != "" {
 			w.Header().Set("Accept-Signature", rej.AcceptSignature)
 		}
-		h.o.Logger.DebugContext(r.Context(), "inbox refused a request", slog.String("path", r.URL.Path), slog.Any("reason", err))
+		// The reason, not the error, which quotes the request's signature headers (ADR-0019).
+		h.o.Logger.DebugContext(r.Context(), "inbox refused a request", slog.String("path", r.URL.Path),
+			slog.Int("status", rej.Status), slog.String("reason", rej.Reason()))
 		h.o.Problem(w, r, rej.Status)
-	case err != nil:
-		h.o.Logger.ErrorContext(r.Context(), "inbox failed", slog.Any("error", err))
-		h.o.Problem(w, r, http.StatusInternalServerError)
 	default:
 		w.WriteHeader(http.StatusAccepted)
 	}

@@ -15,7 +15,8 @@ import (
 	appfederation "github.com/best-friends/my/internal/app/federation"
 )
 
-// fakeInbox records the requests it receives and answers with err.
+// fakeInbox records the requests it receives and answers with err: an *InboxRejection as the
+// refusal, any other error as an unexpected failure.
 type fakeInbox struct {
 	mu       sync.Mutex
 	requests []appfederation.InboxRequest
@@ -26,6 +27,10 @@ func (f *fakeInbox) Receive(_ context.Context, in appfederation.InboxRequest) (a
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.requests = append(f.requests, in)
+	var rej *appfederation.InboxRejection
+	if errors.As(f.err, &rej) {
+		return appfederation.Received{Rejection: rej}, nil
+	}
 	if f.err != nil {
 		return appfederation.Received{}, f.err
 	}

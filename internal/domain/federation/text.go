@@ -4,6 +4,7 @@ package federation
 
 import (
 	"html"
+	"net/url"
 	"strings"
 )
 
@@ -109,7 +110,10 @@ func tagName(body string) string {
 }
 
 // convertedBody builds the body of a converted type the way Mastodon does: the name as a bold
-// paragraph, the summary as a paragraph, and a link to the URL. Every part is escaped.
+// paragraph, the summary as a paragraph, and a link to the URL. Every part is escaped, and the
+// link is written only when it is an http or https URL (webLink), so that a remote document
+// cannot put a javascript: or data: URL in the href; the HTML sanitizer checks the scheme
+// again when the body is stored.
 func convertedBody(name, summary string, link IRI) string {
 	var b strings.Builder
 	if name != "" {
@@ -118,9 +122,21 @@ func convertedBody(name, summary string, link IRI) string {
 	if summary != "" {
 		b.WriteString("<p>" + strings.ReplaceAll(html.EscapeString(summary), "\n", "<br>") + "</p>")
 	}
-	if link != "" {
-		l := html.EscapeString(string(link))
+	if webLink(link) {
+		l := attributeEscaper.Replace(string(link))
 		b.WriteString(`<p><a href="` + l + `">` + l + "</a></p>")
 	}
 	return b.String()
+}
+
+// attributeEscaper escapes a value for a double-quoted attribute (and for text) exactly as
+// html.EscapeString does. It is spelled out so that the quote it escapes is visible where an
+// attribute is built, also to code scanning (CodeQL go/unsafe-quoting).
+var attributeEscaper = strings.NewReplacer(`&`, "&amp;", `'`, "&#39;", `<`, "&lt;", `>`, "&gt;", `"`, "&#34;")
+
+// webLink reports whether i is an http or https URL with a host, the only links a converted
+// body points to.
+func webLink(i IRI) bool {
+	u, err := url.Parse(string(i))
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }

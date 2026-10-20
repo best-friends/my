@@ -67,6 +67,35 @@ func (e *SignatureError) Unwrap() error { return e.Err }
 // Is makes errors.Is(err, ErrSignatureRejected) hold.
 func (e *SignatureError) Is(target error) bool { return target == ErrSignatureRejected }
 
+// The reasons of a refused signature (SignatureError.Reason), a fixed vocabulary for logs.
+const (
+	ReasonNoSignature          = "no signature"
+	ReasonMalformedSignature   = "malformed signature"
+	ReasonSignaturePolicy      = "signature does not meet the policy"
+	ReasonPublicKeyNotFound    = "public key not found"
+	ReasonPublicKeyUnavailable = "public key unavailable"
+	ReasonSignatureMismatch    = "signature does not verify"
+)
+
+// Reason names why the signature was refused, from the fixed vocabulary above. Logs record it
+// instead of the error itself: Err quotes values of the request's signature headers (keyId,
+// algorithms, digests, Date), which logs must not hold verbatim (ADR-0019).
+func (e *SignatureError) Reason() string {
+	switch {
+	case errors.Is(e.Err, ErrNoSignature):
+		return ReasonNoSignature
+	case errors.Is(e.Err, ErrMalformedSignature), e.Status == http.StatusBadRequest:
+		return ReasonMalformedSignature
+	case errors.Is(e.Err, ErrPublicKeyUnavailable):
+		return ReasonPublicKeyUnavailable
+	case errors.Is(e.Err, ErrPublicKeyNotFound):
+		return ReasonPublicKeyNotFound
+	case errors.Is(e.Err, ErrSignatureMismatch):
+		return ReasonSignatureMismatch
+	}
+	return ReasonSignaturePolicy
+}
+
 // PublicKey is a resolved remote key.
 type PublicKey struct {
 	KeyID string
@@ -165,44 +194,48 @@ func (v *SignatureVerifier) Check(r *SignedRequest, sig *Signature) error {
 
 // Verify resolves the key of sig and verifies it, as Check passed it. When the stored key does
 // not verify, it fetches the key again (at most once per key ID per KeyRefreshInterval) and
-// verifies once more. A refused request fails with Status 401, or 503 when the key's origin is
-// not reachable now.
-func (v *SignatureVerifier) Verify(ctx context.Context, r *SignedRequest, sig *Signature) (*VerifiedSignature, error) {
-	key, err := v.resolve(ctx, r, sig.KeyID, false)
-	if err != nil {
-		return nil, err
+// verifies once more. A refused request comes back as the *SignatureError, with Status 401, or
+// 503 when the key's origin is not reachable now; the error is only for unexpected failures.
+// They are separate results so that a caller can log an unexpected failure without the
+// signature header values that a refusal quotes.
+func (v *SignatureVerifier) Verify(ctx context.Context, r *SignedRequest, sig *Signature) (*VerifiedSignature, *SignatureError, error) {
+	key, rejected, err := v.resolve(ctx, r, sig.KeyID, false)
+	if rejected != nil || err != nil {
+		return nil, rejected, err
 	}
 	verr := v.verifyWith(r, sig, key)
 	if verr != nil && errors.Is(verr, ErrSignatureMismatch) {
 		n, err := v.kv.IncrBy(ctx, KeyRefreshNamespace, sig.KeyID, 1, KeyRefreshInterval)
 		if err != nil {
-			return nil, fmt.Errorf("throttle key refresh: %w", err)
+			return nil, nil, fmt.Errorf("throttle key refresh: %w", err)
 		}
 		if n == 1 {
-			fresh, err := v.resolve(ctx, r, sig.KeyID, true)
-			if err != nil {
-				return nil, err
+			fresh, rejected, err := v.resolve(ctx, r, sig.KeyID, true)
+			if rejected != nil || err != nil {
+				return nil, rejected, err
 			}
 			key, verr = fresh, v.verifyWith(r, sig, fresh)
 		}
 	}
 	if verr != nil {
-		return nil, v.unauthorized(r, verr)
+		return nil, v.unauthorized(r, verr), nil
 	}
-	return &VerifiedSignature{Scheme: sig.Scheme, KeyID: sig.KeyID, Owner: key.Owner}, nil
+	return &VerifiedSignature{Scheme: sig.Scheme, KeyID: sig.KeyID, Owner: key.Owner}, nil, nil
 }
 
-func (v *SignatureVerifier) resolve(ctx context.Context, r *SignedRequest, keyID string, refresh bool) (PublicKey, error) {
+// resolve returns the key of keyID, the *SignatureError of a key that cannot be obtained, or
+// an unexpected error.
+func (v *SignatureVerifier) resolve(ctx context.Context, r *SignedRequest, keyID string, refresh bool) (PublicKey, *SignatureError, error) {
 	key, err := v.keys.ResolvePublicKey(ctx, keyID, refresh)
 	switch {
 	case errors.Is(err, ErrPublicKeyUnavailable):
-		return PublicKey{}, &SignatureError{Status: http.StatusServiceUnavailable, Err: err}
+		return PublicKey{}, &SignatureError{Status: http.StatusServiceUnavailable, Err: err}, nil
 	case errors.Is(err, ErrPublicKeyNotFound):
-		return PublicKey{}, v.unauthorized(r, err)
+		return PublicKey{}, v.unauthorized(r, err), nil
 	case err != nil:
-		return PublicKey{}, fmt.Errorf("resolve public key %s: %w", keyID, err)
+		return PublicKey{}, nil, fmt.Errorf("resolve public key: %w", err)
 	}
-	return key, nil
+	return key, nil, nil
 }
 
 // verifyWith verifies sig with key, trying every algorithm the policy allows for it and, for

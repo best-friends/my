@@ -188,7 +188,9 @@ type AuthorizationRequest struct {
 
 // Authorization is a validated authorization request, waiting for the user's consent.
 type Authorization struct {
-	Client        identity.OAuthClient
+	Client identity.OAuthClient
+	// RedirectURI is the client's registered redirect URI that the request named, taken from
+	// the registration, so that a redirect never carries the request's own value.
 	RedirectURI   string
 	Scope         identity.Scope
 	State         string
@@ -215,10 +217,12 @@ func (s *Service) ValidateAuthorization(ctx context.Context, req AuthorizationRe
 	if err != nil {
 		return Authorization{}, err
 	}
-	if req.RedirectURI == "" || !slices.Contains(uris, req.RedirectURI) {
+	registered := slices.Index(uris, req.RedirectURI)
+	if req.RedirectURI == "" || registered < 0 {
 		return Authorization{}, ErrInvalidRedirectURI
 	}
-	a := Authorization{Client: client, RedirectURI: req.RedirectURI, State: req.State, CodeChallenge: req.CodeChallenge}
+	// The redirect goes to the registered URI, not to the request's copy of it.
+	a := Authorization{Client: client, RedirectURI: uris[registered], State: req.State, CodeChallenge: req.CodeChallenge}
 	switch {
 	case req.ResponseType != "code":
 		return a, oauthError(OAuthUnsupportedResponseType, "response_type must be code")

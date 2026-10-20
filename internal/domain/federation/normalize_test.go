@@ -219,6 +219,14 @@ func TestNormalizeConvertedTypes(t *testing.T) {
 	o := object(t, `{"type":"Page","id":"https://a.example/p/2","name":"T"}`)
 	equal(t, "link falls back to id", o.Bodies[0].HTML, `<p><strong>T</strong></p><p><a href="https://a.example/p/2">https://a.example/p/2</a></p>`)
 	equal(t, "Note is not converted", object(t, `{"type":"Note","id":"https://a.example/n/1"}`).Converted, false)
+	o = object(t, `{"type":"Page","id":"https://a.example/p/3","name":"T","url":"javascript://a.example/%0Aalert(1)"}`)
+	equal(t, "a url that is not http(s) falls back to id", o.Bodies[0].HTML,
+		`<p><strong>T</strong></p><p><a href="https://a.example/p/3">https://a.example/p/3</a></p>`)
+	o = object(t, `{"type":"Page","id":"ftp://a.example/p/4","name":"T","url":"data://a.example/x"}`)
+	equal(t, "no link without an http(s) URL", o.Bodies[0].HTML, `<p><strong>T</strong></p>`)
+	o = object(t, `{"type":"Page","id":"https://a.example/p/5","name":"T","url":"https://a.example/p?q=\"><script>&'"}`)
+	equal(t, "the link is escaped for the attribute", o.Bodies[0].HTML,
+		`<p><strong>T</strong></p><p><a href="https://a.example/p?q=&#34;&gt;&lt;script&gt;&amp;&#39;">https://a.example/p?q=&#34;&gt;&lt;script&gt;&amp;&#39;</a></p>`)
 }
 
 func TestNormalizeTags(t *testing.T) {
