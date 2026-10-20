@@ -183,9 +183,9 @@ describe("editing a post", () => {
 describe("a post's edit history", () => {
   const edited: Status = { ...own, content: "<p>Third</p>", spoiler_text: "Dogs", edited_at: "2026-10-16T11:00:00Z" };
   const revisions: StatusEdit[] = [
-    { content: "<p>First</p>", spoiler_text: "", sensitive: false, created_at: "2026-10-16T09:00:00Z", media_attachments: [] },
-    { content: "<p>Second</p>", spoiler_text: "", sensitive: false, created_at: "2026-10-16T10:00:00Z", media_attachments: [] },
-    { content: "<p>Third</p>", spoiler_text: "Dogs", sensitive: false, created_at: "2026-10-16T11:00:00Z", media_attachments: [] },
+    { content: "<p>First</p>", spoiler_text: "", sensitive: false, created_at: "2026-10-16T09:00:00Z", media_attachments: [], emojis: [] },
+    { content: "<p>Second</p>", spoiler_text: "", sensitive: false, created_at: "2026-10-16T10:00:00Z", media_attachments: [], emojis: [] },
+    { content: "<p>Third</p>", spoiler_text: "Dogs", sensitive: false, created_at: "2026-10-16T11:00:00Z", media_attachments: [], emojis: [] },
   ];
 
   test("is where the mark of an edited post leads, and lists the revisions newest first", async () => {

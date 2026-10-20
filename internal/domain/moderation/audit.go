@@ -128,6 +128,9 @@ const (
 	AuditSignupBlockAdded AuditAction = "signup_block_added"
 	// AuditSignupBlockLifted: a sign-up block was lifted (signup_block_lifts).
 	AuditSignupBlockLifted AuditAction = "signup_block_lifted"
+	// AuditTwoFactorDisabled: an administrator removed the two-factor authentication of a local
+	// account (totp_enrollment_revocations).
+	AuditTwoFactorDisabled AuditAction = "two_factor_disabled"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -160,6 +163,7 @@ var auditActions = []struct {
 	{AuditRevealedPrivateData, AuditTargetAccount},
 	{AuditSignupBlockAdded, AuditTargetSignupBlock},
 	{AuditSignupBlockLifted, AuditTargetSignupBlock},
+	{AuditTwoFactorDisabled, AuditTargetAccount},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

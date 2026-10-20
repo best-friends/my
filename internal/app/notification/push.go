@@ -386,7 +386,7 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 			return nil, err
 		}
 	}
-	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite {
+	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite || job.Type == notification.TypeReaction {
 		if recipient, err = s.d.Audience.Account(ctx, job.AccountID); err != nil {
 			return nil, err
 		}
@@ -415,16 +415,18 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 		p.Title, p.Path = l.ServerPushBoost(name), "/@"+recipient.Acct+"/"+job.StatusID
 	case notification.TypeFavourite:
 		p.Title, p.Path = l.ServerPushFavourite(name), "/@"+recipient.Acct+"/"+job.StatusID
+	case notification.TypeReaction:
+		p.Title, p.Path = l.ServerPushReaction(name), "/@"+recipient.Acct+"/"+job.StatusID
 	case notification.TypeModerationNotice:
 		p.Title, p.Path = l.ServerPushModerationNotice(instance), "/settings/account-status"
 	case notification.TypeAppealDecided:
 		p.Title, p.Path = l.ServerPushAppealDecided(instance), "/settings/account-status"
 	case notification.TypeAdminReport:
-		p.Title, p.Path = l.ServerPushAdminReport(instance), "/admin/reports/"+job.ReportID
+		p.Title, p.Path = l.ServerPushAdminReport(instance), "/moderation/reports/"+job.ReportID
 	case notification.TypeAdminSignUp:
-		p.Title, p.Path = l.ServerPushAdminSignUp(instance), "/admin/registrations"
+		p.Title, p.Path = l.ServerPushAdminSignUp(instance), "/moderation/registrations"
 	case notification.TypeAdminAppeal:
-		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/admin/appeals/"+job.AppealID
+		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/moderation/appeals/"+job.AppealID
 	case notification.TypeReportResolved:
 		p.Title = l.ServerPushReportResolved(instance)
 	case notification.TypeRelationshipsSevered:

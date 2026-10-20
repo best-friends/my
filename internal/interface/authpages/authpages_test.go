@@ -28,6 +28,9 @@ type fakeIdentity struct {
 	n       int
 	limited bool
 	last    appidentity.SignInInput
+	// second records the inputs of CompleteSignIn; challengeUsed makes bob's challenge expired.
+	second        []appidentity.SecondFactorInput
+	challengeUsed bool
 
 	mode      identity.RegistrationMode
 	owner     map[string]string // token -> user ID
@@ -58,6 +61,9 @@ func (f *fakeIdentity) SignIn(_ context.Context, in appidentity.SignInInput) (ap
 	f.last = in
 	if f.limited {
 		return appidentity.SignedIn{}, &kernel.RateLimitedError{RetryAfter: 61 * time.Second}
+	}
+	if in.Email == "bob@example.com" && in.Password == "correct horse" {
+		return appidentity.SignedIn{}, &appidentity.SecondFactorRequiredError{Challenge: bobChallenge}
 	}
 	if in.Email != "alice@example.com" || in.Password != "correct horse" {
 		return appidentity.SignedIn{}, appidentity.ErrInvalidCredentials

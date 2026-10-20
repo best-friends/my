@@ -2,7 +2,7 @@
 // The pieces every MSW handler shares: the API base path, problem responses, the access token the default
 // handlers accept, and the OAuth responses (web-client.md §10).
 import { http, HttpResponse } from "msw";
-import { instanceFixture, type Schemas } from "../fixtures";
+import { instanceFixture, type Schemas, viewerFixture } from "../fixtures";
 
 /** The client API base path, `servers[0].url` in api/openapi.yaml. */
 export const apiBase = "/api/v1";
@@ -31,6 +31,14 @@ export function unauthenticated(request: Request) {
 /** Answers with `respond()` when the request carries the access token the default handlers accept. */
 export function withViewer(request: Request, respond: () => Response): Response {
   return authorized(request) ? respond() : unauthenticated(request);
+}
+
+/**
+ * The viewer's account with the permissions `permissions`, for GET /accounts/verify_credentials: the staff
+ * screens' tests start with it, as the default viewer has no permissions.
+ */
+export function operatorHandler(permissions: Schemas["Permission"][]) {
+  return http.get(`${apiBase}/accounts/verify_credentials`, ({ request }) => withViewer(request, () => HttpResponse.json({ ...viewerFixture, permissions })));
 }
 
 /** The OAuth endpoints (internal/interface/oauth). */

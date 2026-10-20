@@ -250,6 +250,7 @@ const (
 	AdminAuditActionSignupBlockAdded         AdminAuditAction = "signup_block_added"
 	AdminAuditActionSignupBlockLifted        AdminAuditAction = "signup_block_lifted"
 	AdminAuditActionTextChanged              AdminAuditAction = "text_changed"
+	AdminAuditActionTwoFactorDisabled        AdminAuditAction = "two_factor_disabled"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditAction enum.
@@ -304,6 +305,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionSignupBlockLifted:
 		return true
 	case AdminAuditActionTextChanged:
+		return true
+	case AdminAuditActionTwoFactorDisabled:
 		return true
 	default:
 		return false
@@ -631,6 +634,27 @@ func (e AdminSignupBlockState) Valid() bool {
 	}
 }
 
+// Defines values for DataExportState.
+const (
+	DataExportStateFailed  DataExportState = "failed"
+	DataExportStatePending DataExportState = "pending"
+	DataExportStateReady   DataExportState = "ready"
+)
+
+// Valid indicates whether the value is a known member of the DataExportState enum.
+func (e DataExportState) Valid() bool {
+	switch e {
+	case DataExportStateFailed:
+		return true
+	case DataExportStatePending:
+		return true
+	case DataExportStateReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -786,6 +810,7 @@ const (
 	NotificationTypeMention              NotificationType = "mention"
 	NotificationTypeModerationNotice     NotificationType = "moderation_notice"
 	NotificationTypePollClosed           NotificationType = "poll_closed"
+	NotificationTypeReaction             NotificationType = "reaction"
 	NotificationTypeRelationshipsSevered NotificationType = "relationships_severed"
 	NotificationTypeReportResolved       NotificationType = "report_resolved"
 )
@@ -817,6 +842,8 @@ func (e NotificationType) Valid() bool {
 		return true
 	case NotificationTypePollClosed:
 		return true
+	case NotificationTypeReaction:
+		return true
 	case NotificationTypeRelationshipsSevered:
 		return true
 	case NotificationTypeReportResolved:
@@ -828,15 +855,16 @@ func (e NotificationType) Valid() bool {
 
 // Defines values for Permission.
 const (
-	PermissionManageAccounts Permission = "manage_accounts"
-	PermissionManageDomains  Permission = "manage_domains"
-	PermissionManageInvites  Permission = "manage_invites"
-	PermissionManageJobs     Permission = "manage_jobs"
-	PermissionManageReports  Permission = "manage_reports"
-	PermissionManageRoles    Permission = "manage_roles"
-	PermissionManageRules    Permission = "manage_rules"
-	PermissionManageSettings Permission = "manage_settings"
-	PermissionViewAudit      Permission = "view_audit"
+	PermissionManageAccounts  Permission = "manage_accounts"
+	PermissionManageDomains   Permission = "manage_domains"
+	PermissionManageInvites   Permission = "manage_invites"
+	PermissionManageJobs      Permission = "manage_jobs"
+	PermissionManageReports   Permission = "manage_reports"
+	PermissionManageRoles     Permission = "manage_roles"
+	PermissionManageRules     Permission = "manage_rules"
+	PermissionManageSettings  Permission = "manage_settings"
+	PermissionManageTwoFactor Permission = "manage_two_factor"
+	PermissionViewAudit       Permission = "view_audit"
 )
 
 // Valid indicates whether the value is a known member of the Permission enum.
@@ -857,6 +885,8 @@ func (e Permission) Valid() bool {
 	case PermissionManageRules:
 		return true
 	case PermissionManageSettings:
+		return true
+	case PermissionManageTwoFactor:
 		return true
 	case PermissionViewAudit:
 		return true
@@ -1085,6 +1115,11 @@ type Account struct {
 	// instance's account domain, or the host of its `uri` when a remote account has no
 	// confirmed handle.
 	Domain string `json:"domain"`
+
+	// Emojis The custom emoji of the display name, the note, and the fields' names and values
+	// (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+	// image, and the rest as text.
+	Emojis []CustomEmoji `json:"emojis"`
 
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
@@ -1326,6 +1361,10 @@ type AdminAccountDetail struct {
 	// and `pending` (the registration of a local account), `limited` (a `limit`), and
 	// `active`.
 	State AdminAccountState `json:"state"`
+
+	// TwoFactorEnabled Whether the user of a local account signs in with two-factor authentication;
+	// omitted for a remote account.
+	TwoFactorEnabled *bool `json:"two_factor_enabled,omitempty"`
 }
 
 // AdminAccountPage A page of accounts, newest first.
@@ -1448,7 +1487,8 @@ type AdminAppealPage struct {
 // AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
 // `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
 // `revealed_private_data` (a moderator was shown the account's email address and IP
-// addresses). On a `domain`:
+// addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+// authentication). On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 // `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 // `user` (a registration):
@@ -1471,7 +1511,8 @@ type AdminAuditEntry struct {
 	// Action The kind of an audited operation, each on one kind of target. On an `account`:
 	// `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
 	// `revealed_private_data` (a moderator was shown the account's email address and IP
-	// addresses). On a `domain`:
+	// addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+	// authentication). On a `domain`:
 	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 	// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 	// `user` (a registration):
@@ -1939,8 +1980,8 @@ type AdminReportStatus struct {
 	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
-	// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-	// are zero.
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, and its counts are zero.
 	Status Status `json:"status"`
 }
 
@@ -2271,6 +2312,11 @@ type CredentialAccount struct {
 	// confirmed handle.
 	Domain string `json:"domain"`
 
+	// Emojis The custom emoji of the display name, the note, and the fields' names and values
+	// (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+	// image, and the rest as text.
+	Emojis []CustomEmoji `json:"emojis"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -2326,10 +2372,65 @@ type CredentialAccount struct {
 // Cursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 type Cursor = string
 
+// CustomEmoji A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+// An emoji that is disabled or deleted, or whose images come from a domain whose media the
+// instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+// `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+// otherwise.
+type CustomEmoji struct {
+	// Shortcode The shortcode, without the colons around it.
+	Shortcode string `json:"shortcode"`
+
+	// StaticUrl The URL of a still image of the emoji; the same as `url` when no still version is served.
+	StaticUrl string `json:"static_url"`
+
+	// Url The URL of the image, animated when the emoji is.
+	Url string `json:"url"`
+}
+
+// DataExport A request for an archive of the user's data.
+type DataExport struct {
+	// CompletedAt When the build ended; omitted while `pending`.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// ExpiresAt When the export and its archive are removed; omitted while `pending`.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// FileSize The size of the archive in bytes; only for `ready`.
+	FileSize *int64 `json:"file_size,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// RequestedAt When the user asked for the export.
+	RequestedAt time.Time `json:"requested_at"`
+
+	// State `pending` while the archive is being built, `ready` while it can be downloaded,
+	// `failed` when it could not be built (request another one).
+	State DataExportState `json:"state"`
+}
+
+// DataExportState `pending` while the archive is being built, `ready` while it can be downloaded,
+// `failed` when it could not be built (request another one).
+type DataExportState string
+
+// DataExportList The user's latest data exports, newest first.
+type DataExportList struct {
+	Items []DataExport `json:"items"`
+}
+
 // DecideAppealRequest The moderators' explanation of a decision on an appeal.
 type DecideAppealRequest struct {
 	// PublicReason Shown to the user who appealed, as plain text.
 	PublicReason *string `json:"public_reason,omitempty"`
+}
+
+// DeleteOwnAccountRequest The confirmation of the deletion of the user's own account.
+type DeleteOwnAccountRequest struct {
+	// Password The user's current password.
+	Password string `json:"password"`
 }
 
 // EditStatusRequest The new content of a status.
@@ -2348,6 +2449,15 @@ type EditStatusRequest struct {
 
 	// Text The plain text; the server links mentions, hashtags, and URLs.
 	Text StatusText `json:"text"`
+}
+
+// EnableTotpRequest The setup to enroll and a code of the app that shows it has the secret.
+type EnableTotpRequest struct {
+	// Code The six-digit code that the app shows now.
+	Code string `json:"code"`
+
+	// SetupToken The `setup_token` of `POST /two_factor/totp/setup`.
+	SetupToken string `json:"setup_token"`
 }
 
 // FollowAccountRequest The viewer's preferences of the follow; a preference left out keeps its value.
@@ -2820,6 +2930,9 @@ type Notification struct {
 	// appeal an `appeal_decided` tells of, with the appeal.
 	ModerationAction *ModerationAction `json:"moderation_action,omitempty"`
 
+	// Reaction The emoji of a `reaction`; omitted for the other types.
+	Reaction *ReactionEmoji `json:"reaction,omitempty"`
+
 	// RelationshipSeverance The follows that a `relationships_severed` tells of: the user lost them when the
 	// moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
 	// account (`account_suspension`, the notification's `account` is the account). Both
@@ -2839,9 +2952,10 @@ type Notification struct {
 
 	// Type The kind of a notification. `account` is the account that acted: the follower
 	// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-	// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-	// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-	// about. `moderation_notice` comes from the instance and has no `account`; its
+	// (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+	// account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+	// with another emoji is another notification). `status` is the post that `mention`,
+	// `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
 	// `moderation_action` is the action on the user's account, with its kind, reason, and end.
 	// `report_resolved` also comes from the instance: its `report` is the user's report that
 	// the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -2889,9 +3003,10 @@ type NotificationPage struct {
 
 // NotificationType The kind of a notification. `account` is the account that acted: the follower
 // (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-// (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-// `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-// about. `moderation_notice` comes from the instance and has no `account`; its
+// (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+// account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+// with another emoji is another notification). `status` is the post that `mention`,
+// `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
 // `moderation_action` is the action on the user's account, with its kind, reason, and end.
 // `report_resolved` also comes from the instance: its `report` is the user's report that
 // the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -2920,7 +3035,8 @@ type PageInfo struct {
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
 // `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-// log. The others guard no client API operation yet.
+// log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+// the built-in admin role by default). The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -3005,6 +3121,20 @@ type Preferences struct {
 //   - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
 //     account is deleted, so it can no longer be appealed or overturned.
 //   - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+//   - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+//     not the user's current password.
+//   - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+//     built. Wait for it to end.
+//   - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+//     it is being built, failed, or expired.
+//   - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+//     already used, or is not a code.
+//   - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+//     Start a new one.
+//   - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+//     authentication.
+//   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+//     operation, has no two-factor authentication.
 //   - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
 //     reason in `theme_errors` (`PUT /admin/theme`).
 type Problem struct {
@@ -3071,6 +3201,41 @@ type PushSubscriptionRequest struct {
 
 	// Keys The keys of a browser's push subscription (RFC 8291 §3), in base64url.
 	Keys PushSubscriptionKeys `json:"keys"`
+}
+
+// QrCode A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+// zone of four modules included) on a light background.
+type QrCode struct {
+	// Path The path data (`d`) of the dark modules, one unit per module.
+	Path string `json:"path"`
+
+	// Size The width and height of the view box, in modules.
+	Size int `json:"size"`
+}
+
+// ReactionEmoji The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+// emoji of another server is shown as it is and cannot be used to react from here.
+type ReactionEmoji struct {
+	// Domain The server of a custom emoji of another server; omitted otherwise.
+	Domain *string `json:"domain,omitempty"`
+
+	// Emoji The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+	// be shown (as `CustomEmoji` leaves such an emoji out).
+	Emoji *CustomEmoji `json:"emoji,omitempty"`
+
+	// Name The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+	// custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+	// server.
+	Name string `json:"name"`
+
+	// Shortcode The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+	Shortcode *string `json:"shortcode,omitempty"`
+}
+
+// RecoveryCodes Recovery codes, each of which signs in once in place of a code of the app. They are
+// shown only once.
+type RecoveryCodes struct {
+	RecoveryCodes []string `json:"recovery_codes"`
 }
 
 // RegistrationDecisionRequest A moderator's decision on a registration.
@@ -3241,8 +3406,8 @@ type SpoilerText = string
 // In a timeline, a boost is a status of the booster with `boost` set to the boosted
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
-// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-// are zero.
+// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+// empty, and its counts are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
@@ -3257,8 +3422,8 @@ type Status struct {
 	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
-	// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-	// are zero.
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, and its counts are zero.
 	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
@@ -3276,6 +3441,11 @@ type Status struct {
 
 	// EditedAt When the status was last edited; omitted when it never was.
 	EditedAt *time.Time `json:"edited_at,omitempty"`
+
+	// Emojis The custom emoji of the text, the content warning, and the poll's choices
+	// (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+	// image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+	Emojis []CustomEmoji `json:"emojis"`
 
 	// Favourited Whether the authenticated user favourited the status.
 	Favourited *bool `json:"favourited,omitempty"`
@@ -3309,6 +3479,11 @@ type Status struct {
 
 	// Pinned Whether the status is pinned to the author's profile; given only to the author.
 	Pinned *bool `json:"pinned,omitempty"`
+
+	// Reactions The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+	// reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+	// are counted apart, in `favourites_count`.
+	Reactions []StatusReaction `json:"reactions"`
 
 	// RepliesCount The number of replies.
 	RepliesCount int `json:"replies_count"`
@@ -3352,6 +3527,9 @@ type StatusEdit struct {
 
 	// CreatedAt When the revision was made; the first one is when the status was posted.
 	CreatedAt time.Time `json:"created_at"`
+
+	// Emojis The custom emoji of the revision's text and content warning, as `Status.emojis`.
+	Emojis []CustomEmoji `json:"emojis"`
 
 	// MediaAttachments The media the revision attaches, in order.
 	MediaAttachments []MediaAttachment `json:"media_attachments"`
@@ -3418,6 +3596,52 @@ type StatusPage struct {
 
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// StatusReaction The reactions to a status with one emoji.
+type StatusReaction struct {
+	// Count The number of the reactions with the emoji.
+	Count int `json:"count"`
+
+	// Domain The server of a custom emoji of another server; omitted otherwise.
+	Domain *string `json:"domain,omitempty"`
+
+	// Emoji The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+	// be shown (as `CustomEmoji` leaves such an emoji out).
+	Emoji *CustomEmoji `json:"emoji,omitempty"`
+
+	// Me Whether the authenticated user reacted with the emoji; omitted for anonymous
+	// requests.
+	Me *bool `json:"me,omitempty"`
+
+	// Name The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+	// custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+	// server.
+	Name string `json:"name"`
+
+	// Shortcode The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+	Shortcode *string `json:"shortcode,omitempty"`
+}
+
+// StatusReactionPage A page of the emoji reactions to a status, newest first.
+type StatusReactionPage struct {
+	Items []StatusReactor `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// StatusReactor One emoji reaction to a status, with the account that reacted.
+type StatusReactor struct {
+	// Account An account, as clients show it (FR-006).
+	Account Account `json:"account"`
+
+	// CreatedAt When the account reacted.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Emoji The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+	// emoji of another server is shown as it is and cannot be used to react from here.
+	Emoji ReactionEmoji `json:"emoji"`
 }
 
 // StatusSource What the author typed, for editing a status.
@@ -3499,6 +3723,43 @@ type ThemeTokenValue struct {
 	Light *string `json:"light,omitempty"`
 	Token string  `json:"token"`
 	Value *string `json:"value,omitempty"`
+}
+
+// TotpSetup A new TOTP secret to add to an authenticator app.
+type TotpSetup struct {
+	// ExpiresAt When `setup_token` stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// QrCode A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+	// zone of four modules included) on a light background.
+	QrCode QrCode `json:"qr_code"`
+
+	// Secret The secret in base32, for typing it into the app.
+	Secret string `json:"secret"`
+
+	// SetupToken An opaque token that carries the secret to `POST /two_factor/totp`.
+	SetupToken string `json:"setup_token"`
+
+	// Uri The `otpauth://totp/...` URI of the secret.
+	Uri string `json:"uri"`
+}
+
+// TwoFactor Where the authenticated user's two-factor authentication (TOTP) stands.
+type TwoFactor struct {
+	// Enabled Whether signing in asks for a code after the password.
+	Enabled bool `json:"enabled"`
+
+	// EnrolledAt When the authenticator app was enrolled; omitted when not enabled.
+	EnrolledAt *time.Time `json:"enrolled_at,omitempty"`
+
+	// RecoveryCodesRemaining How many recovery codes are unused; omitted when not enabled.
+	RecoveryCodesRemaining *int `json:"recovery_codes_remaining,omitempty"`
+}
+
+// TwoFactorCodeRequest A code that confirms an operation on two-factor authentication.
+type TwoFactorCodeRequest struct {
+	// Code A six-digit code of the app or an unused recovery code.
+	Code string `json:"code"`
 }
 
 // UpdateCredentialsRequest A change of the profile; properties left out keep their current values.
@@ -3641,8 +3902,8 @@ type AccountProfile = Account
 // In a timeline, a boost is a status of the booster with `boost` set to the boosted
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
-// `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-// are zero.
+// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+// empty, and its counts are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.
@@ -3951,6 +4212,19 @@ type CreateStatusParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// ListStatusReactionsParams defines parameters for ListStatusReactions.
+type ListStatusReactionsParams struct {
+	// Emoji The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+	// reaction has gives an empty page.
+	Emoji *string `form:"emoji,omitempty" json:"emoji,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // GetHomeTimelineParams defines parameters for GetHomeTimeline.
 type GetHomeTimelineParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -3986,6 +4260,9 @@ type GetHashtagTimelineParams struct {
 	// Limit The maximum number of items in the page.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// DeleteOwnAccountJSONRequestBody defines body for DeleteOwnAccount for application/json ContentType.
+type DeleteOwnAccountJSONRequestBody = DeleteOwnAccountRequest
 
 // UpdateAccountCredentialsJSONRequestBody defines body for UpdateAccountCredentials for application/json ContentType.
 type UpdateAccountCredentialsJSONRequestBody = UpdateCredentialsRequest
@@ -4071,8 +4348,20 @@ type CreateStatusJSONRequestBody = CreateStatusRequest
 // EditStatusJSONRequestBody defines body for EditStatus for application/json ContentType.
 type EditStatusJSONRequestBody = EditStatusRequest
 
+// RegenerateRecoveryCodesJSONRequestBody defines body for RegenerateRecoveryCodes for application/json ContentType.
+type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
+
+// EnableTotpJSONRequestBody defines body for EnableTotp for application/json ContentType.
+type EnableTotpJSONRequestBody = EnableTotpRequest
+
+// DisableTotpJSONRequestBody defines body for DisableTotp for application/json ContentType.
+type DisableTotpJSONRequestBody = TwoFactorCodeRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// DeleteOwnAccount Delete the authenticated user's account
+	// (POST /accounts/delete)
+	DeleteOwnAccount(w http.ResponseWriter, r *http.Request)
 	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(w http.ResponseWriter, r *http.Request, params LookupAccountParams)
@@ -4148,6 +4437,9 @@ type ServerInterface interface {
 	// GrantAccountRole Grant a role to a local account
 	// (PUT /admin/accounts/{id}/roles/{role})
 	GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
+	// DisableAdminAccountTwoFactor Remove the two-factor authentication of a local account
+	// (POST /admin/accounts/{id}/two_factor/disable)
+	DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request, id AdminAccountId)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(w http.ResponseWriter, r *http.Request, params ListAppealsParams)
@@ -4280,6 +4572,15 @@ type ServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams)
+	// ListDataExports List the authenticated user's data exports
+	// (GET /exports)
+	ListDataExports(w http.ResponseWriter, r *http.Request)
+	// RequestDataExport Request an archive of the authenticated user's data
+	// (POST /exports)
+	RequestDataExport(w http.ResponseWriter, r *http.Request)
+	// DownloadDataExport Download the archive of a data export
+	// (GET /exports/{id}/archive)
+	DownloadDataExport(w http.ResponseWriter, r *http.Request, id Id)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(w http.ResponseWriter, r *http.Request, params ListFollowRequestsParams)
@@ -4388,6 +4689,9 @@ type ServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// ListStatusReactions List the emoji reactions to a status
+	// (GET /statuses/{id}/reactions)
+	ListStatusReactions(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusReactionsParams)
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId)
@@ -4403,6 +4707,21 @@ type ServerInterface interface {
 	// GetHashtagTimeline Get the timeline of a hashtag
 	// (GET /timelines/tag/{hashtag})
 	GetHashtagTimeline(w http.ResponseWriter, r *http.Request, hashtag string, params GetHashtagTimelineParams)
+	// GetTwoFactor Get where the authenticated user's two-factor authentication stands
+	// (GET /two_factor)
+	GetTwoFactor(w http.ResponseWriter, r *http.Request)
+	// RegenerateRecoveryCodes Replace the recovery codes
+	// (POST /two_factor/recovery_codes)
+	RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request)
+	// EnableTotp Enable two-factor authentication with the secret of a setup
+	// (POST /two_factor/totp)
+	EnableTotp(w http.ResponseWriter, r *http.Request)
+	// DisableTotp Disable two-factor authentication
+	// (POST /two_factor/totp/disable)
+	DisableTotp(w http.ResponseWriter, r *http.Request)
+	// SetUpTotp Generate a TOTP secret for the authenticated user to add to an authenticator app
+	// (POST /two_factor/totp/setup)
+	SetUpTotp(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -4413,6 +4732,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// DeleteOwnAccount operation middleware
+func (siw *ServerInterfaceWrapper) DeleteOwnAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteOwnAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // LookupAccount operation middleware
 func (siw *ServerInterfaceWrapper) LookupAccount(w http.ResponseWriter, r *http.Request) {
@@ -5355,6 +5688,32 @@ func (siw *ServerInterfaceWrapper) GrantAccountRole(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GrantAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableAdminAccountTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableAdminAccountTwoFactor(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6788,6 +7147,60 @@ func (siw *ServerInterfaceWrapper) ListBookmarks(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListDataExports operation middleware
+func (siw *ServerInterfaceWrapper) ListDataExports(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDataExports(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestDataExport operation middleware
+func (siw *ServerInterfaceWrapper) RequestDataExport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestDataExport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadDataExport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadDataExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadDataExport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListFollowRequests operation middleware
 func (siw *ServerInterfaceWrapper) ListFollowRequests(w http.ResponseWriter, r *http.Request) {
 
@@ -7765,6 +8178,74 @@ func (siw *ServerInterfaceWrapper) PinStatus(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// ListStatusReactions operation middleware
+func (siw *ServerInterfaceWrapper) ListStatusReactions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStatusReactionsParams
+
+	// ------------- Optional query parameter "emoji" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "emoji", r.URL.Query(), &params.Emoji, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "emoji"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "emoji", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStatusReactions(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetStatusSource operation middleware
 func (siw *ServerInterfaceWrapper) GetStatusSource(w http.ResponseWriter, r *http.Request) {
 
@@ -7984,6 +8465,76 @@ func (siw *ServerInterfaceWrapper) GetHashtagTimeline(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) GetTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTwoFactor(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegenerateRecoveryCodes operation middleware
+func (siw *ServerInterfaceWrapper) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegenerateRecoveryCodes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableTotp operation middleware
+func (siw *ServerInterfaceWrapper) EnableTotp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableTotp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableTotp operation middleware
+func (siw *ServerInterfaceWrapper) DisableTotp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableTotp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUpTotp operation middleware
+func (siw *ServerInterfaceWrapper) SetUpTotp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpTotp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -8110,6 +8661,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports", wrapper.ListDataExports)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/exports", wrapper.RequestDataExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports/{id}/archive", wrapper.DownloadDataExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/two_factor", wrapper.GetTwoFactor)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/setup", wrapper.SetUpTotp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp", wrapper.EnableTotp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/disable", wrapper.DisableTotp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/recovery_codes", wrapper.RegenerateRecoveryCodes)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}", wrapper.GetAccount)
@@ -8154,6 +8714,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/history", wrapper.GetStatusHistory)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.UnpinStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.PinStatus)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/reactions", wrapper.ListStatusReactions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
@@ -8198,6 +8759,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/reveal", wrapper.RevealAdminAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/two_factor/disable", wrapper.DisableAdminAccountTwoFactor)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/roles", wrapper.ListAccountRoles)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.RevokeAccountRole)
@@ -8372,6 +8934,52 @@ type StatusPageJSONResponse struct {
 	Body StatusPage
 
 	Headers StatusPageResponseHeaders
+}
+
+type DeleteOwnAccountRequestObject struct {
+	Body *DeleteOwnAccountJSONRequestBody
+}
+
+type DeleteOwnAccountResponseObject interface {
+	VisitDeleteOwnAccountResponse(w http.ResponseWriter) error
+}
+
+type DeleteOwnAccount204Response struct {
+}
+
+func (response DeleteOwnAccount204Response) VisitDeleteOwnAccountResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse) VisitDeleteOwnAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type LookupAccountRequestObject struct {
@@ -9784,6 +10392,52 @@ type GrantAccountRoledefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GrantAccountRoledefaultApplicationProblemPlusJSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableAdminAccountTwoFactorRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type DisableAdminAccountTwoFactorResponseObject interface {
+	VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type DisableAdminAccountTwoFactor204Response struct {
+}
+
+func (response DisableAdminAccountTwoFactor204Response) VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse) VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -12362,6 +13016,198 @@ func (response ListBookmarksdefaultApplicationProblemPlusJSONResponse) VisitList
 	return err
 }
 
+type ListDataExportsRequestObject struct {
+}
+
+type ListDataExportsResponseObject interface {
+	VisitListDataExportsResponse(w http.ResponseWriter) error
+}
+
+type ListDataExports200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListDataExports200JSONResponse struct {
+	Body    DataExportList
+	Headers ListDataExports200ResponseHeaders
+}
+
+func (response ListDataExports200JSONResponse) VisitListDataExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDataExportsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListDataExportsdefaultApplicationProblemPlusJSONResponse) VisitListDataExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestDataExportRequestObject struct {
+}
+
+type RequestDataExportResponseObject interface {
+	VisitRequestDataExportResponse(w http.ResponseWriter) error
+}
+
+type RequestDataExport202ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RequestDataExport202JSONResponse struct {
+	Body    DataExport
+	Headers RequestDataExport202ResponseHeaders
+}
+
+func (response RequestDataExport202JSONResponse) VisitRequestDataExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestDataExportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RequestDataExportdefaultApplicationProblemPlusJSONResponse) VisitRequestDataExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDataExportRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DownloadDataExportResponseObject interface {
+	VisitDownloadDataExportResponse(w http.ResponseWriter) error
+}
+
+type DownloadDataExport200ResponseHeaders struct {
+	CacheControl       *string
+	ContentDisposition *string
+}
+
+type DownloadDataExport200ApplicationzipResponse struct {
+	Body          io.Reader
+	Headers       DownloadDataExport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DownloadDataExport200ApplicationzipResponse) VisitDownloadDataExportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/zip")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadDataExportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DownloadDataExportdefaultApplicationProblemPlusJSONResponse) VisitDownloadDataExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListFollowRequestsRequestObject struct {
 	Params ListFollowRequestsParams
 }
@@ -14468,6 +15314,69 @@ func (response PinStatusdefaultApplicationProblemPlusJSONResponse) VisitPinStatu
 	return err
 }
 
+type ListStatusReactionsRequestObject struct {
+	Id     StatusId `json:"id"`
+	Params ListStatusReactionsParams
+}
+
+type ListStatusReactionsResponseObject interface {
+	VisitListStatusReactionsResponse(w http.ResponseWriter) error
+}
+
+type ListStatusReactions200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListStatusReactions200JSONResponse struct {
+	Body    StatusReactionPage
+	Headers ListStatusReactions200ResponseHeaders
+}
+
+func (response ListStatusReactions200JSONResponse) VisitListStatusReactionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListStatusReactionsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListStatusReactionsdefaultApplicationProblemPlusJSONResponse) VisitListStatusReactionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetStatusSourceRequestObject struct {
 	Id StatusId `json:"id"`
 }
@@ -14751,8 +15660,319 @@ func (response GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type GetTwoFactorRequestObject struct {
+}
+
+type GetTwoFactorResponseObject interface {
+	VisitGetTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type GetTwoFactor200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetTwoFactor200JSONResponse struct {
+	Body    TwoFactor
+	Headers GetTwoFactor200ResponseHeaders
+}
+
+func (response GetTwoFactor200JSONResponse) VisitGetTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTwoFactordefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetTwoFactordefaultApplicationProblemPlusJSONResponse) VisitGetTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodesRequestObject struct {
+	Body *RegenerateRecoveryCodesJSONRequestBody
+}
+
+type RegenerateRecoveryCodesResponseObject interface {
+	VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error
+}
+
+type RegenerateRecoveryCodes200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RegenerateRecoveryCodes200JSONResponse struct {
+	Body    RecoveryCodes
+	Headers RegenerateRecoveryCodes200ResponseHeaders
+}
+
+func (response RegenerateRecoveryCodes200JSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RegenerateRecoveryCodesdefaultApplicationProblemPlusJSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableTotpRequestObject struct {
+	Body *EnableTotpJSONRequestBody
+}
+
+type EnableTotpResponseObject interface {
+	VisitEnableTotpResponse(w http.ResponseWriter) error
+}
+
+type EnableTotp200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type EnableTotp200JSONResponse struct {
+	Body    RecoveryCodes
+	Headers EnableTotp200ResponseHeaders
+}
+
+func (response EnableTotp200JSONResponse) VisitEnableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableTotpdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response EnableTotpdefaultApplicationProblemPlusJSONResponse) VisitEnableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTotpRequestObject struct {
+	Body *DisableTotpJSONRequestBody
+}
+
+type DisableTotpResponseObject interface {
+	VisitDisableTotpResponse(w http.ResponseWriter) error
+}
+
+type DisableTotp200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type DisableTotp200JSONResponse struct {
+	Body    TwoFactor
+	Headers DisableTotp200ResponseHeaders
+}
+
+func (response DisableTotp200JSONResponse) VisitDisableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTotpdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DisableTotpdefaultApplicationProblemPlusJSONResponse) VisitDisableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUpTotpRequestObject struct {
+}
+
+type SetUpTotpResponseObject interface {
+	VisitSetUpTotpResponse(w http.ResponseWriter) error
+}
+
+type SetUpTotp200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type SetUpTotp200JSONResponse struct {
+	Body    TotpSetup
+	Headers SetUpTotp200ResponseHeaders
+}
+
+func (response SetUpTotp200JSONResponse) VisitSetUpTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUpTotpdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetUpTotpdefaultApplicationProblemPlusJSONResponse) VisitSetUpTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// DeleteOwnAccount Delete the authenticated user's account
+	// (POST /accounts/delete)
+	DeleteOwnAccount(ctx context.Context, request DeleteOwnAccountRequestObject) (DeleteOwnAccountResponseObject, error)
 	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(ctx context.Context, request LookupAccountRequestObject) (LookupAccountResponseObject, error)
@@ -14828,6 +16048,9 @@ type StrictServerInterface interface {
 	// GrantAccountRole Grant a role to a local account
 	// (PUT /admin/accounts/{id}/roles/{role})
 	GrantAccountRole(ctx context.Context, request GrantAccountRoleRequestObject) (GrantAccountRoleResponseObject, error)
+	// DisableAdminAccountTwoFactor Remove the two-factor authentication of a local account
+	// (POST /admin/accounts/{id}/two_factor/disable)
+	DisableAdminAccountTwoFactor(ctx context.Context, request DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(ctx context.Context, request ListAppealsRequestObject) (ListAppealsResponseObject, error)
@@ -14960,6 +16183,15 @@ type StrictServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(ctx context.Context, request ListBookmarksRequestObject) (ListBookmarksResponseObject, error)
+	// ListDataExports List the authenticated user's data exports
+	// (GET /exports)
+	ListDataExports(ctx context.Context, request ListDataExportsRequestObject) (ListDataExportsResponseObject, error)
+	// RequestDataExport Request an archive of the authenticated user's data
+	// (POST /exports)
+	RequestDataExport(ctx context.Context, request RequestDataExportRequestObject) (RequestDataExportResponseObject, error)
+	// DownloadDataExport Download the archive of a data export
+	// (GET /exports/{id}/archive)
+	DownloadDataExport(ctx context.Context, request DownloadDataExportRequestObject) (DownloadDataExportResponseObject, error)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(ctx context.Context, request ListFollowRequestsRequestObject) (ListFollowRequestsResponseObject, error)
@@ -15068,6 +16300,9 @@ type StrictServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(ctx context.Context, request PinStatusRequestObject) (PinStatusResponseObject, error)
+	// ListStatusReactions List the emoji reactions to a status
+	// (GET /statuses/{id}/reactions)
+	ListStatusReactions(ctx context.Context, request ListStatusReactionsRequestObject) (ListStatusReactionsResponseObject, error)
 	// GetStatusSource Get the source of the authenticated user's status, for editing it
 	// (GET /statuses/{id}/source)
 	GetStatusSource(ctx context.Context, request GetStatusSourceRequestObject) (GetStatusSourceResponseObject, error)
@@ -15083,6 +16318,21 @@ type StrictServerInterface interface {
 	// GetHashtagTimeline Get the timeline of a hashtag
 	// (GET /timelines/tag/{hashtag})
 	GetHashtagTimeline(ctx context.Context, request GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error)
+	// GetTwoFactor Get where the authenticated user's two-factor authentication stands
+	// (GET /two_factor)
+	GetTwoFactor(ctx context.Context, request GetTwoFactorRequestObject) (GetTwoFactorResponseObject, error)
+	// RegenerateRecoveryCodes Replace the recovery codes
+	// (POST /two_factor/recovery_codes)
+	RegenerateRecoveryCodes(ctx context.Context, request RegenerateRecoveryCodesRequestObject) (RegenerateRecoveryCodesResponseObject, error)
+	// EnableTotp Enable two-factor authentication with the secret of a setup
+	// (POST /two_factor/totp)
+	EnableTotp(ctx context.Context, request EnableTotpRequestObject) (EnableTotpResponseObject, error)
+	// DisableTotp Disable two-factor authentication
+	// (POST /two_factor/totp/disable)
+	DisableTotp(ctx context.Context, request DisableTotpRequestObject) (DisableTotpResponseObject, error)
+	// SetUpTotp Generate a TOTP secret for the authenticated user to add to an authenticator app
+	// (POST /two_factor/totp/setup)
+	SetUpTotp(ctx context.Context, request SetUpTotpRequestObject) (SetUpTotpResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -15122,6 +16372,37 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// DeleteOwnAccount operation middleware
+func (sh *strictHandler) DeleteOwnAccount(w http.ResponseWriter, r *http.Request) {
+	var request DeleteOwnAccountRequestObject
+
+	var body DeleteOwnAccountJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteOwnAccount(ctx, request.(DeleteOwnAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteOwnAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteOwnAccountResponseObject); ok {
+		if err := validResponse.VisitDeleteOwnAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // LookupAccount operation middleware
@@ -15813,6 +17094,32 @@ func (sh *strictHandler) GrantAccountRole(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GrantAccountRoleResponseObject); ok {
 		if err := validResponse.VisitGrantAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableAdminAccountTwoFactor operation middleware
+func (sh *strictHandler) DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request DisableAdminAccountTwoFactorRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableAdminAccountTwoFactor(ctx, request.(DisableAdminAccountTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableAdminAccountTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableAdminAccountTwoFactorResponseObject); ok {
+		if err := validResponse.VisitDisableAdminAccountTwoFactorResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -17058,6 +18365,80 @@ func (sh *strictHandler) ListBookmarks(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ListDataExports operation middleware
+func (sh *strictHandler) ListDataExports(w http.ResponseWriter, r *http.Request) {
+	var request ListDataExportsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDataExports(ctx, request.(ListDataExportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDataExports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDataExportsResponseObject); ok {
+		if err := validResponse.VisitListDataExportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestDataExport operation middleware
+func (sh *strictHandler) RequestDataExport(w http.ResponseWriter, r *http.Request) {
+	var request RequestDataExportRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestDataExport(ctx, request.(RequestDataExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestDataExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestDataExportResponseObject); ok {
+		if err := validResponse.VisitRequestDataExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadDataExport operation middleware
+func (sh *strictHandler) DownloadDataExport(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DownloadDataExportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadDataExport(ctx, request.(DownloadDataExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadDataExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadDataExportResponseObject); ok {
+		if err := validResponse.VisitDownloadDataExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListFollowRequests operation middleware
 func (sh *strictHandler) ListFollowRequests(w http.ResponseWriter, r *http.Request, params ListFollowRequestsParams) {
 	var request ListFollowRequestsRequestObject
@@ -18037,6 +19418,33 @@ func (sh *strictHandler) PinStatus(w http.ResponseWriter, r *http.Request, id St
 	}
 }
 
+// ListStatusReactions operation middleware
+func (sh *strictHandler) ListStatusReactions(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusReactionsParams) {
+	var request ListStatusReactionsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStatusReactions(ctx, request.(ListStatusReactionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStatusReactions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStatusReactionsResponseObject); ok {
+		if err := validResponse.VisitListStatusReactionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetStatusSource operation middleware
 func (sh *strictHandler) GetStatusSource(w http.ResponseWriter, r *http.Request, id StatusId) {
 	var request GetStatusSourceRequestObject
@@ -18161,6 +19569,147 @@ func (sh *strictHandler) GetHashtagTimeline(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHashtagTimelineResponseObject); ok {
 		if err := validResponse.VisitGetHashtagTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTwoFactor operation middleware
+func (sh *strictHandler) GetTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var request GetTwoFactorRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTwoFactor(ctx, request.(GetTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTwoFactorResponseObject); ok {
+		if err := validResponse.VisitGetTwoFactorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegenerateRecoveryCodes operation middleware
+func (sh *strictHandler) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	var request RegenerateRecoveryCodesRequestObject
+
+	var body RegenerateRecoveryCodesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegenerateRecoveryCodes(ctx, request.(RegenerateRecoveryCodesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegenerateRecoveryCodes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegenerateRecoveryCodesResponseObject); ok {
+		if err := validResponse.VisitRegenerateRecoveryCodesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableTotp operation middleware
+func (sh *strictHandler) EnableTotp(w http.ResponseWriter, r *http.Request) {
+	var request EnableTotpRequestObject
+
+	var body EnableTotpJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableTotp(ctx, request.(EnableTotpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableTotp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableTotpResponseObject); ok {
+		if err := validResponse.VisitEnableTotpResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableTotp operation middleware
+func (sh *strictHandler) DisableTotp(w http.ResponseWriter, r *http.Request) {
+	var request DisableTotpRequestObject
+
+	var body DisableTotpJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableTotp(ctx, request.(DisableTotpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableTotp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableTotpResponseObject); ok {
+		if err := validResponse.VisitDisableTotpResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetUpTotp operation middleware
+func (sh *strictHandler) SetUpTotp(w http.ResponseWriter, r *http.Request) {
+	var request SetUpTotpRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetUpTotp(ctx, request.(SetUpTotpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetUpTotp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetUpTotpResponseObject); ok {
+		if err := validResponse.VisitSetUpTotpResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

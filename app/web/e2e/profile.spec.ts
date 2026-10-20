@@ -21,6 +21,7 @@ const alice: Account = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -75,9 +76,11 @@ function post(n: number): Status {
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   };
 }
 
@@ -110,7 +113,10 @@ async function signedInServer(page: Page) {
   });
   await page.route("**/api/v1/accounts/relationships*", (route) => route.fulfill(json([relationship])));
   await page.route(`**/api/v1/accounts/${bob.id}/statuses*`, (route) =>
-    route.fulfill(json({ items: [post(1), post(2), { ...post(3), boost: post(30), content: "" }] })),
+    // Bob pinned nothing (e2e/pins.spec.ts shows pinned posts).
+    new URL(route.request().url()).searchParams.get("pinned") === "true"
+      ? route.fulfill(json({ items: [] }))
+      : route.fulfill(json({ items: [post(1), post(2), { ...post(3), boost: post(30), content: "" }] })),
   );
   await page.route(`**/api/v1/accounts/${bob.id}/followers*`, (route) =>
     route.fulfill(json({ accounts: [alice, layla, { ...bob, id: "0192f0c4-7a8e-7000-8000-000000000003" }] })),

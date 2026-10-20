@@ -281,6 +281,38 @@ describe("the notifications page", () => {
     expect(within(within(feed).getByRole("article", { name: /A poll you took part in/ })).queryAllByRole("link")).toEqual([]);
   });
 
+  test("says which emoji an account reacted with", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000b3");
+    const reaction = (id: string, emoji: NonNullable<Notification["reaction"]>): Notification => ({
+      id,
+      type: "reaction",
+      created_at: "2026-10-16T09:00:00Z",
+      account: otherAccountFixture,
+      status: post,
+      reaction: emoji,
+    });
+    const items: Notification[] = [
+      reaction("0192f0c4-7a8e-7000-8000-0000000000e2", { name: "👍" }),
+      reaction("0192f0c4-7a8e-7000-8000-0000000000e1", {
+        name: "blobcat@misskey.example",
+        shortcode: "blobcat",
+        domain: "misskey.example",
+        emoji: { shortcode: "blobcat", url: "https://my.example/media/proxy/blobcat", static_url: "https://my.example/media/proxy/blobcat" },
+      }),
+    ];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    // Each reaction is a row of its own, not grouped like the favourites.
+    expect(within(feed).getAllByRole("article")).toHaveLength(2);
+    expect(within(feed).getByRole("article", { name: /Bob reacted to your post with 👍/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /Bob reacted to your post with :blobcat:/ })).toBeInTheDocument();
+  });
+
   test("says which suspension ended follows and how many the user lost", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
@@ -399,17 +431,17 @@ describe("the notifications page", () => {
     expect(within(resolved).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/@bob"]);
     // A moderator's notifications lead to the report and to the registrations.
     const report = within(feed).getByRole("article", { name: /A new report awaits the moderators/ });
-    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/admin/reports/${reportId}`);
+    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/moderation/reports/${reportId}`);
     // The decision on an appeal says what was decided and why, and leads to the account status.
     const decided = within(feed).getByRole("article", { name: /The moderators decided your appeal/ });
     expect(decided).toHaveAccessibleDescription(/Limit: Spam.*Your appeal was granted, and the action was lifted\..*We were wrong\./);
     expect(within(decided).getByRole("link", { name: "View your account status" })).toHaveAttribute("href", "/settings/account-status");
     const appeal = within(feed).getByRole("article", { name: /A new appeal awaits the moderators/ });
-    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/admin/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
+    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/moderation/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
     const signUp = within(feed).getByRole("article", { name: /Bob signed up and awaits approval/ });
     await user.click(within(signUp).getByRole("link", { name: "Review registrations" }));
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe("/admin/registrations");
+      expect(router.state.location.pathname).toBe("/moderation/registrations");
     });
   });
 

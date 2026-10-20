@@ -392,6 +392,24 @@ export interface MessageArgs {
   "client:admin.account.summary.title": {};
   /** Account */
   "client:admin.account.title": {};
+  /** They will sign in with their password alone until they set it up again. This cannot be undone. */
+  "client:admin.account.two_factor.confirm.description": {};
+  /** Remove the two-factor authentication of {handle}? */
+  "client:admin.account.two_factor.confirm.title": { handle: string };
+  /** Could not remove two-factor authentication: {reason} */
+  "client:admin.account.two_factor.failed": { reason: string };
+  /** Off. */
+  "client:admin.account.two_factor.off": {};
+  /** On: signing in asks for a code from an authenticator app. */
+  "client:admin.account.two_factor.on": {};
+  /** Remove two-factor authentication */
+  "client:admin.account.two_factor.remove": {};
+  /** For a user who lost their authenticator app and recovery codes. Make sure the request comes from the account's owner first. The removal is recorded in the audit log. */
+  "client:admin.account.two_factor.remove.description": {};
+  /** Removed the two-factor authentication of {handle}. */
+  "client:admin.account.two_factor.removed": { handle: string };
+  /** Two-factor authentication */
+  "client:admin.account.two_factor.title": {};
   /** Joined */
   "client:admin.accounts.created_at": {};
   /** No accounts yet */
@@ -654,6 +672,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.signup_block_lifted": {};
   /** Text changed */
   "client:admin.audit_log.action.text_changed": {};
+  /** Two-factor authentication removed */
+  "client:admin.audit_log.action.two_factor_disabled": {};
   /** By */
   "client:admin.audit_log.actor": {};
   /** Command line */
@@ -946,9 +966,9 @@ export interface MessageArgs {
   "client:admin.domain.ascii": { domain: string };
   /** {unicode} ({ascii}) */
   "client:admin.domain.both": { ascii: string; unicode: string };
-  /** Your roles grant none of the permissions that the admin screens need. An administrator can grant them. */
+  /** Your roles grant none of the permissions that the server administration screens need. An administrator can grant them. */
   "client:admin.home.none.description": {};
-  /** No admin screens for your roles */
+  /** No server administration screens for your roles */
   "client:admin.home.none.heading": {};
   /** Back to remote servers */
   "client:admin.instance.back": {};
@@ -1034,6 +1054,12 @@ export interface MessageArgs {
   "client:admin.missing_permission.description": { permission: string };
   /** You cannot use this screen */
   "client:admin.missing_permission.heading": {};
+  /** Your roles grant none of the permissions that the moderation screens need. An administrator can grant them. */
+  "client:admin.moderation.none.description": {};
+  /** No moderation screens for your roles */
+  "client:admin.moderation.none.heading": {};
+  /** Moderation */
+  "client:admin.moderation.title": {};
   /** {count, plural, one {# pending} other {# pending}} */
   "client:admin.pending_count": { count: number };
   /** A removed account */
@@ -1814,6 +1840,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** {name} reacted to your post with {emoji} */
+  "client:notifications.type.reaction": { emoji: string; name: string };
   /** A suspension by the moderators ended some of your follows */
   "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */
@@ -2078,6 +2106,58 @@ export interface MessageArgs {
   "client:session.sign_out.failed": {};
   /** You are not signed in. */
   "client:session.signed_out": {};
+  /** Cancel */
+  "client:settings.account.delete.cancel": {};
+  /** Delete account */
+  "client:settings.account.delete.confirm": {};
+  /** Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone. */
+  "client:settings.account.delete.confirm.description": {};
+  /** Delete your account? */
+  "client:settings.account.delete.confirm.title": {};
+  /** Your account, posts and profile disappear at once, and other servers are asked to delete their copies. You cannot undo this, and your username cannot be used again. Download your data first if you want to keep it. */
+  "client:settings.account.delete.description": {};
+  /** Delete account… */
+  "client:settings.account.delete.open": {};
+  /** Password */
+  "client:settings.account.delete.password": {};
+  /** Enter your password. */
+  "client:settings.account.delete.password.required": {};
+  /** Delete your account */
+  "client:settings.account.delete.title": {};
+  /** The password is wrong. */
+  "client:settings.account.delete.wrong_password": {};
+  /** Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days. */
+  "client:settings.account.export.description": {};
+  /** Download */
+  "client:settings.account.export.download": {};
+  /** Download the archive of {date} */
+  "client:settings.account.export.download_of": { date: string };
+  /** You have no archives */
+  "client:settings.account.export.empty": {};
+  /** Available until */
+  "client:settings.account.export.expires_at": {};
+  /** Archive of {date} */
+  "client:settings.account.export.item": { date: string };
+  /** Prepare an archive */
+  "client:settings.account.export.request": {};
+  /** The archive is being prepared. It appears below when it is ready. */
+  "client:settings.account.export.requested": {};
+  /** Size */
+  "client:settings.account.export.size": {};
+  /** State */
+  "client:settings.account.export.state": {};
+  /** Failed. Prepare another one. */
+  "client:settings.account.export.state.failed": {};
+  /** Being prepared */
+  "client:settings.account.export.state.pending": {};
+  /** Ready */
+  "client:settings.account.export.state.ready": {};
+  /** Download your data */
+  "client:settings.account.export.title": {};
+  /** Download your data, or delete your account */
+  "client:settings.account.summary": {};
+  /** Your account */
+  "client:settings.account.title": {};
   /** Back to settings */
   "client:settings.back": {};
   /** You have not blocked anyone */
@@ -2236,6 +2316,8 @@ export interface MessageArgs {
   "client:settings.push.type.mention": {};
   /** Notices from the moderators */
   "client:settings.push.type.moderation": {};
+  /** Emoji reactions */
+  "client:settings.push.type.reaction": {};
   /** Choose what this device notifies you of. */
   "client:settings.push.types.description": {};
   /** Notify me of */
@@ -2272,6 +2354,78 @@ export interface MessageArgs {
   "client:settings.timeline_languages.label": {};
   /** Settings */
   "client:settings.title": {};
+  /** Authentication code */
+  "client:settings.two_factor.code": {};
+  /** A code from your authenticator app, or one of your recovery codes. */
+  "client:settings.two_factor.code.description": {};
+  /** The code is incorrect or was already used. */
+  "client:settings.two_factor.code.invalid": {};
+  /** Enter the code. */
+  "client:settings.two_factor.code.required": {};
+  /** Signing in will ask only for your password. Enter a code to confirm. */
+  "client:settings.two_factor.disable.description": {};
+  /** Turn off */
+  "client:settings.two_factor.disable.submit": {};
+  /** Turn off two-factor authentication */
+  "client:settings.two_factor.disable.title": {};
+  /** Two-factor authentication is off. */
+  "client:settings.two_factor.disabled": {};
+  /** Two-factor authentication is on. */
+  "client:settings.two_factor.enabled": {};
+  /** Turned on */
+  "client:settings.two_factor.enrolled_at": {};
+  /** Could not change two-factor authentication: {reason} */
+  "client:settings.two_factor.failed": { reason: string };
+  /** Too many incorrect codes: {reason} */
+  "client:settings.two_factor.rate_limited": { reason: string };
+  /** If you lose your authenticator app, sign in with a recovery code instead. Each code works once. New codes replace the old ones, which stop working. */
+  "client:settings.two_factor.recovery_codes.description": {};
+  /** Keep these codes somewhere safe, such as a password manager. They are shown only now. Each one signs you in once without the app. */
+  "client:settings.two_factor.recovery_codes.new.description": {};
+  /** Save your recovery codes */
+  "client:settings.two_factor.recovery_codes.new.title": {};
+  /** Unused recovery codes */
+  "client:settings.two_factor.recovery_codes.remaining": {};
+  /** Replace recovery codes */
+  "client:settings.two_factor.recovery_codes.replace": {};
+  /** New recovery codes are ready. The old ones no longer work. */
+  "client:settings.two_factor.recovery_codes.replaced": {};
+  /** Recovery codes */
+  "client:settings.two_factor.recovery_codes.title": {};
+  /** The six-digit code that the app shows now. */
+  "client:settings.two_factor.setup.code.description": {};
+  /** Add this account to an authenticator app on your phone. From then on, signing in also asks for the six-digit code that the app shows. */
+  "client:settings.two_factor.setup.description": {};
+  /** The setup took too long. Start again. */
+  "client:settings.two_factor.setup.expired": {};
+  /** QR code for your authenticator app */
+  "client:settings.two_factor.setup.qr_code": {};
+  /** Key */
+  "client:settings.two_factor.setup.secret": {};
+  /** Set up */
+  "client:settings.two_factor.setup.start": {};
+  /** Enter the six-digit code that the app shows to turn on two-factor authentication. */
+  "client:settings.two_factor.setup.step.confirm": {};
+  /** Scan the QR code with your authenticator app, or type the key below into it. */
+  "client:settings.two_factor.setup.step.scan": {};
+  /** Turn on */
+  "client:settings.two_factor.setup.submit": {};
+  /** Set up an authenticator app */
+  "client:settings.two_factor.setup.title": {};
+  /** Two-factor authentication was changed elsewhere. The page now shows its current setting. */
+  "client:settings.two_factor.state_changed": {};
+  /** Two-factor authentication */
+  "client:settings.two_factor.status": {};
+  /** Off. Signing in asks only for your password. */
+  "client:settings.two_factor.status.off": {};
+  /** On */
+  "client:settings.two_factor.status.on": {};
+  /** Current setting */
+  "client:settings.two_factor.status.title": {};
+  /** Sign in with a code from an authenticator app as well as your password */
+  "client:settings.two_factor.summary": {};
+  /** Two-factor authentication */
+  "client:settings.two_factor.title": {};
   /** Mentioned people */
   "client:settings.visibility.direct": {};
   /** Only the people you mention */
@@ -2322,8 +2476,6 @@ export interface MessageArgs {
   "client:shell.menu.title": {};
   /** Administration */
   "client:shell.nav.admin": {};
-  /** Administration, {count, plural, one {# pending} other {# pending}} */
-  "client:shell.nav.admin_pending": { count: number };
   /** Bookmarks */
   "client:shell.nav.bookmarks": {};
   /** Home */
@@ -2334,8 +2486,12 @@ export interface MessageArgs {
   "client:shell.nav.local": {};
   /** Menu */
   "client:shell.nav.menu": {};
-  /** Menu, {count, plural, one {# pending in administration} other {# pending in administration}} */
+  /** Menu, {count, plural, one {# pending in moderation} other {# pending in moderation}} */
   "client:shell.nav.menu_pending": { count: number };
+  /** Moderation */
+  "client:shell.nav.moderation": {};
+  /** Moderation, {count, plural, one {# pending} other {# pending}} */
+  "client:shell.nav.moderation_pending": { count: number };
   /** Notifications */
   "client:shell.nav.notifications": {};
   /** Notifications, {count, plural, one {# unread} other {# unread}} */
@@ -2476,6 +2632,14 @@ export interface MessageArgs {
   "client:status.not_found.title": {};
   /** Open the original post on {host} */
   "client:status.original": { host: string };
+  /** Pin to profile */
+  "client:status.pin.action": {};
+  /** Post pinned to your profile */
+  "client:status.pin.done": {};
+  /** Could not pin the post: {reason} */
+  "client:status.pin.failed": { reason: string };
+  /** Pinned post */
+  "client:status.pin.label": {};
   /** Earlier in the thread */
   "client:status.thread.ancestors": {};
   /** Could not load the replies: {reason} */
@@ -2490,6 +2654,12 @@ export interface MessageArgs {
   "client:status.thread.retry": {};
   /** Post */
   "client:status.title": {};
+  /** Unpin from profile */
+  "client:status.unpin.action": {};
+  /** Post unpinned from your profile */
+  "client:status.unpin.done": {};
+  /** Could not unpin the post: {reason} */
+  "client:status.unpin.failed": { reason: string };
   /** #{tag} */
   "client:tag.title": { tag: string };
   /** {name} boosted */
@@ -2764,6 +2934,22 @@ export interface MessageArgs {
   "server:auth.status.title": {};
   /** Confirm your email address: open the link we sent to {email}. */
   "server:auth.status.verify_email": { email: string };
+  /** Authentication code */
+  "server:auth.two_factor.code_label": {};
+  /** The sign-in took too long. Sign in again. */
+  "server:auth.two_factor.expired": {};
+  /** The code is incorrect or was already used. */
+  "server:auth.two_factor.invalid": {};
+  /** Enter the code. */
+  "server:auth.two_factor.missing": {};
+  /** Enter the six-digit code that your authenticator app shows. If you cannot use the app, enter one of your recovery codes instead. */
+  "server:auth.two_factor.prompt": {};
+  /** Sign in again */
+  "server:auth.two_factor.restart_link": {};
+  /** Verify */
+  "server:auth.two_factor.submit": {};
+  /** Two-factor authentication */
+  "server:auth.two_factor.title": {};
   /** Thank you. Your email address is confirmed. */
   "server:auth.verify_email.done": {};
   /** Email address confirmed */
@@ -2800,6 +2986,10 @@ export interface MessageArgs {
   "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
+  /** An archive of your data is already being prepared. Wait until it is ready. */
+  "server:errors.export.in_progress": {};
+  /** This archive cannot be downloaded. */
+  "server:errors.export.not_ready": {};
   /** You are not allowed to do this. */
   "server:errors.forbidden": {};
   /** This app is not allowed to do this. */
@@ -2896,6 +3086,14 @@ export interface MessageArgs {
   "server:errors.too_long": { max: number; name: string };
   /** {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}} */
   "server:errors.too_many": { max: number; name: string };
+  /** The code is incorrect or was already used. */
+  "server:errors.two_factor.code_invalid": {};
+  /** Two-factor authentication is already enabled. */
+  "server:errors.two_factor.enabled": {};
+  /** Two-factor authentication is not enabled. */
+  "server:errors.two_factor.not_enabled": {};
+  /** The setup of the authenticator app expired. Start again. */
+  "server:errors.two_factor.setup_expired": {};
   /** Sign in to do this. */
   "server:errors.unauthenticated": {};
   /** The request cannot be processed. */
@@ -2904,6 +3102,8 @@ export interface MessageArgs {
   "server:errors.unsupported_media_type": {};
   /** {name} must be an image that you uploaded and that has finished processing. */
   "server:errors.unusable_image": { name: string };
+  /** The password is wrong. */
+  "server:errors.wrong_password": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** A user of {instance} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
@@ -2960,6 +3160,8 @@ export interface MessageArgs {
   "server:push.moderation_notice": { instance: string };
   /** You have a new notification on {instance} */
   "server:push.other": { instance: string };
+  /** {name} reacted to your post */
+  "server:push.reaction": { name: string };
   /** A suspension by the moderators of {instance} ended some of your follows */
   "server:push.relationships_severed": { instance: string };
   /** A report you filed on {instance} has been resolved */

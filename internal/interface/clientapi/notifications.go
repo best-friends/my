@@ -215,6 +215,9 @@ func (s *Server) newNotifications(ctx context.Context, accountID string, ns []no
 		if sv, ok := severances[n.SeveranceID]; ok {
 			item.RelationshipSeverance = newRelationshipSeverance(sv)
 		}
+		if item.Reaction, err = s.reactionEmojiOf(ctx, n); err != nil {
+			return nil, err
+		}
 		out = append(out, item)
 	}
 	return out, nil

@@ -3,7 +3,7 @@
 // Bob's post `statusFixture`; the thread around it (GET /statuses/{id}/context): no ancestors and no
 // replies; its source (GET /statuses/{id}/source): the plain text of that post; its history
 // (GET /statuses/{id}/history): the one revision of a post never edited; and the actions on it (boost,
-// favourite, bookmark and their removal; edit; delete). An action answers the post with the viewer's
+// favourite, bookmark, pin and their removal; edit; delete). An action answers the post with the viewer's
 // relation set as asked; an edit answers it with the new text as its content and `edited_at` set.
 import { http, HttpResponse } from "msw";
 import { type Schemas, statusFixture } from "../../../test/fixtures";
@@ -23,8 +23,8 @@ const context: Schemas["StatusContext"] = { ancestors: [], descendants: [] };
 
 /** The one revision of a post never edited. */
 function historyOf(status: Schemas["Status"]): Schemas["StatusHistory"] {
-  const { content, spoiler_text, sensitive, created_at, media_attachments } = status;
-  return { items: [{ content, spoiler_text, sensitive, created_at, media_attachments }] };
+  const { content, spoiler_text, sensitive, created_at, media_attachments, emojis } = status;
+  return { items: [{ content, spoiler_text, sensitive, created_at, media_attachments, emojis }] };
 }
 
 export const handlers = [
@@ -48,5 +48,10 @@ export const handlers = [
   ...relation("boost", "boosted"),
   ...relation("favourite", "favourited"),
   ...relation("bookmark", "bookmarked"),
+  ...[true, false].map((on) =>
+    (on ? http.post : http.delete)(`${apiBase}/statuses/:id/pin`, ({ params, request }) =>
+      withViewer(request, () => HttpResponse.json({ ...statusFixture(String(params["id"])), pinned: on })),
+    ),
+  ),
   http.delete(`${apiBase}/statuses/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
 ];

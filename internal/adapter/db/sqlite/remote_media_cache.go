@@ -96,3 +96,28 @@ func remoteMediaCacheEntry(row sqlitegen.RemoteMediaCache) content.RemoteMediaCa
 		FetchedAt: fromMillis(row.FetchedAt), ExpiresAt: fromMillis(row.ExpiresAt), LastAccessedAt: fromMillis(row.LastAccessedAt),
 	}
 }
+
+// ListCurrentCustomEmojis implements content.MediaRepository.
+func (r *MediaRepository) ListCurrentCustomEmojis(ctx context.Context, ids []string) ([]content.CurrentCustomEmoji, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.db.reader().ListCurrentCustomEmojiImages(ctx, list)
+	if err != nil {
+		return nil, wrap(err, "list current custom emoji")
+	}
+	out := make([]content.CurrentCustomEmoji, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, content.CurrentCustomEmoji{
+			Emoji: content.CustomEmoji{
+				ID: row.ID, Shortcode: row.Shortcode, Domain: row.Domain, URI: row.Uri.String, CreatedAt: fromMillis(row.CreatedAt),
+			},
+			Image: content.CustomEmojiImage{ID: row.ImageID, EmojiID: row.ID, MediaID: row.ImageMediaID, RevisedAt: fromMillis(row.ImageRevisedAt)},
+		})
+	}
+	return out, nil
+}

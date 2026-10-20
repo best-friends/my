@@ -111,6 +111,192 @@ export interface paths {
         patch: operations["updatePreferences"];
         trace?: never;
     };
+    "/accounts/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete the authenticated user's account
+         * @description Deletes the user's own account at once, after checking the user's current `password`
+         *     (FR-008). The account and its posts disappear, every session and token of the user ends,
+         *     and the other servers get a `Delete` of the actor; the data is erased 7 days later. It
+         *     cannot be undone, and the username is never reused. A wrong password is a 422
+         *     `/api/v1/problems/wrong-password`; at most 5 attempts per account are accepted every
+         *     hour.
+         */
+        post: operations["deleteOwnAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's data exports
+         * @description Lists the user's latest 10 data exports, newest first. An archive can be downloaded
+         *     while its export is `ready`; exports are removed 7 days after they end.
+         */
+        get: operations["listDataExports"];
+        put?: never;
+        /**
+         * Request an archive of the authenticated user's data
+         * @description Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
+         *     `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
+         *     activities), and `moderation.json` (the moderation actions on the account, its appeals,
+         *     and the reports it filed). The export is `pending` until the archive is built. While
+         *     another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
+         *     at most 3 requests per account are accepted every day.
+         */
+        post: operations["requestDataExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/exports/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the archive of a data export
+         * @description Returns the ZIP archive of one of the user's exports. An export that is not `ready` is
+         *     a 409 `/api/v1/problems/export-not-ready`; another user's export is a 404.
+         */
+        get: operations["downloadDataExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get where the authenticated user's two-factor authentication stands */
+        get: operations["getTwoFactor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/totp/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a TOTP secret for the authenticated user to add to an authenticator app
+         * @description A new secret (RFC 6238: HMAC-SHA-1, six digits, 30-second steps) as text, as an
+         *     `otpauth://` URI, and as a QR code of the URI, with a `setup_token` that carries the
+         *     secret to `POST /two_factor/totp` for 15 minutes. Nothing is stored until then. A user
+         *     who has two-factor authentication enabled gets a 409
+         *     `/api/v1/problems/two-factor-enabled`.
+         */
+        post: operations["setUpTotp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable two-factor authentication with the secret of a setup
+         * @description Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns
+         *     the recovery codes, which are shown only this once. From then on, signing in asks for
+         *     a code after the password. A wrong code is a 422
+         *     `/api/v1/problems/invalid-two-factor-code`, an expired or unknown setup a 422
+         *     `/api/v1/problems/totp-setup-expired`, and too many wrong codes a 429.
+         */
+        post: operations["enableTotp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/totp/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable two-factor authentication
+         * @description Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms
+         *     it. A wrong code is a 422 `/api/v1/problems/invalid-two-factor-code`, too many wrong
+         *     codes a 429, and a user without two-factor authentication a 409
+         *     `/api/v1/problems/two-factor-not-enabled`.
+         */
+        post: operations["disableTotp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/recovery_codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the recovery codes
+         * @description Returns new recovery codes, shown only this once, once `code` confirms it; the previous
+         *     ones stop working and the app keeps working. The problems are those of
+         *     `POST /two_factor/totp/disable`.
+         */
+        post: operations["regenerateRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/lookup": {
         parameters: {
             query?: never;
@@ -920,6 +1106,33 @@ export interface paths {
          * @description Without a pin it changes nothing.
          */
         delete: operations["unpinStatus"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statuses/{id}/reactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the emoji reactions to a status
+         * @description The emoji reactions to a status that the viewer may see, newest first, each with the
+         *     account that reacted, only those with one emoji when `emoji` is given. Accounts that
+         *     block the viewer, are deactivated, or are deleted are left out, so a page may hold fewer
+         *     than `limit` reactions before the last. A status that the viewer may not see is a 404,
+         *     the same as a missing one.
+         */
+        get: operations["listStatusReactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1923,6 +2136,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/accounts/{id}/two_factor/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove the two-factor authentication of a local account
+         * @description Ends the TOTP enrollment of a local account's user, who lost their authenticator app
+         *     and recovery codes, so that they sign in with the password alone (FR-005). It is
+         *     recorded in the audit log as `two_factor_disabled`. A remote account or the instance
+         *     actor is a 422 naming `id`, an account without two-factor authentication a 409
+         *     `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
+         *     `manage_two_factor` permission, which only the built-in admin role has by default.
+         */
+        post: operations["disableAdminAccountTwoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/roles": {
         parameters: {
             query?: never;
@@ -2322,6 +2560,20 @@ export interface components {
          *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
          *       account is deleted, so it can no longer be appealed or overturned.
          *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+         *     - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+         *       not the user's current password.
+         *     - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+         *       built. Wait for it to end.
+         *     - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+         *       it is being built, failed, or expired.
+         *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+         *       already used, or is not a code.
+         *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+         *       Start a new one.
+         *     - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+         *       authentication.
+         *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+         *       operation, has no two-factor authentication.
          *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
          *       reason in `theme_errors` (`PUT /admin/theme`).
          */
@@ -2490,6 +2742,12 @@ export interface components {
             /** @description The profile's metadata fields, in their order; empty when there are none. */
             fields: components["schemas"]["ProfileField"][];
             /**
+             * @description The custom emoji of the display name, the note, and the fields' names and values
+             *     (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+             *     image, and the rest as text.
+             */
+            emojis: components["schemas"]["CustomEmoji"][];
+            /**
              * Format: uri
              * @description The URL of the avatar image; omitted when the account has none, or its image is not
              *     processed yet or could not be processed. Clients show a placeholder instead.
@@ -2554,6 +2812,27 @@ export interface components {
             name: string;
             /** @description The field's value as sanitized HTML. */
             value: string;
+        };
+        /**
+         * @description A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+         *     An emoji that is disabled or deleted, or whose images come from a domain whose media the
+         *     instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+         *     `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+         *     otherwise.
+         */
+        CustomEmoji: {
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is.
+             */
+            url: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji; the same as `url` when no still version is served.
+             */
+            static_url: string;
         };
         /**
          * @description The viewer's relationship with an account. It never says whether the account blocks
@@ -2767,6 +3046,45 @@ export interface components {
         AdminAppealPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["AdminAppeal"][];
         };
+        /** @description The confirmation of the deletion of the user's own account. */
+        DeleteOwnAccountRequest: {
+            /** @description The user's current password. */
+            password: string;
+        };
+        /** @description A request for an archive of the user's data. */
+        DataExport: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description `pending` while the archive is being built, `ready` while it can be downloaded,
+             *     `failed` when it could not be built (request another one).
+             * @enum {string}
+             */
+            state: "pending" | "ready" | "failed";
+            /**
+             * Format: date-time
+             * @description When the user asked for the export.
+             */
+            requested_at: string;
+            /**
+             * Format: date-time
+             * @description When the build ended; omitted while `pending`.
+             */
+            completed_at?: string;
+            /**
+             * Format: date-time
+             * @description When the export and its archive are removed; omitted while `pending`.
+             */
+            expires_at?: string;
+            /**
+             * Format: int64
+             * @description The size of the archive in bytes; only for `ready`.
+             */
+            file_size?: number;
+        };
+        /** @description The user's latest data exports, newest first. */
+        DataExportList: {
+            items: components["schemas"]["DataExport"][];
+        };
         /** @description An appeal of an action on the user's own account. */
         AppealModerationActionRequest: {
             /** @description Why the moderators should reconsider the action, as plain text. */
@@ -2829,6 +3147,8 @@ export interface components {
             /** @description The appeal that an `admin_appeal` is about. */
             appeal_id?: components["schemas"]["Id"];
             relationship_severance?: components["schemas"]["RelationshipSeverance"];
+            /** @description The emoji of a `reaction`; omitted for the other types. */
+            reaction?: components["schemas"]["ReactionEmoji"];
         };
         /**
          * @description The follows that a `relationships_severed` tells of: the user lost them when the
@@ -2899,9 +3219,10 @@ export interface components {
         /**
          * @description The kind of a notification. `account` is the account that acted: the follower
          *     (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-         *     (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-         *     `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-         *     about. `moderation_notice` comes from the instance and has no `account`; its
+         *     (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+         *     account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+         *     with another emoji is another notification). `status` is the post that `mention`,
+         *     `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
          *     `moderation_action` is the action on the user's account, with its kind, reason, and end.
          *     `report_resolved` also comes from the instance: its `report` is the user's report that
          *     the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -2919,7 +3240,7 @@ export interface components {
          *     `manage_accounts`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -2950,8 +3271,8 @@ export interface components {
          *     In a timeline, a boost is a status of the booster with `boost` set to the boosted
          *     status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
          *     `visibility` and `language` are those of the boosted status, its `content`,
-         *     `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-         *     are zero.
+         *     `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+         *     empty, and its counts are zero.
          */
         Status: {
             id: components["schemas"]["Id"];
@@ -2998,12 +3319,24 @@ export interface components {
             mentions: components["schemas"]["StatusMention"][];
             /** @description The hashtags of the text. */
             tags: components["schemas"]["StatusTag"][];
+            /**
+             * @description The custom emoji of the text, the content warning, and the poll's choices
+             *     (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+             *     image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+             */
+            emojis: components["schemas"]["CustomEmoji"][];
             /** @description The number of replies. */
             replies_count: number;
             /** @description The number of boosts. */
             boosts_count: number;
             /** @description The number of favourites. */
             favourites_count: number;
+            /**
+             * @description The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+             *     reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+             *     are counted apart, in `favourites_count`.
+             */
+            reactions: components["schemas"]["StatusReaction"][];
             /** @description Whether the authenticated user favourited the status. */
             favourited?: boolean;
             /** @description Whether the authenticated user boosts the status. */
@@ -3012,6 +3345,51 @@ export interface components {
             bookmarked?: boolean;
             /** @description Whether the status is pinned to the author's profile; given only to the author. */
             pinned?: boolean;
+        };
+        /**
+         * @description The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+         *     emoji of another server is shown as it is and cannot be used to react from here.
+         */
+        ReactionEmoji: {
+            /**
+             * @description The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+             *     custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+             *     server.
+             */
+            name: string;
+            /** @description The shortcode of a custom emoji, without colons; omitted for a Unicode emoji. */
+            shortcode?: string;
+            /** @description The server of a custom emoji of another server; omitted otherwise. */
+            domain?: string;
+            /**
+             * @description The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+             *     be shown (as `CustomEmoji` leaves such an emoji out).
+             */
+            emoji?: components["schemas"]["CustomEmoji"];
+        };
+        /** @description The reactions to a status with one emoji. */
+        StatusReaction: components["schemas"]["ReactionEmoji"] & {
+            /** @description The number of the reactions with the emoji. */
+            count: number;
+            /**
+             * @description Whether the authenticated user reacted with the emoji; omitted for anonymous
+             *     requests.
+             */
+            me?: boolean;
+        };
+        /** @description One emoji reaction to a status, with the account that reacted. */
+        StatusReactor: {
+            account: components["schemas"]["Account"];
+            emoji: components["schemas"]["ReactionEmoji"];
+            /**
+             * Format: date-time
+             * @description When the account reacted.
+             */
+            created_at: string;
+        };
+        /** @description A page of the emoji reactions to a status, newest first. */
+        StatusReactionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["StatusReactor"][];
         };
         /** @description The thread around a status. */
         StatusContext: {
@@ -3035,6 +3413,8 @@ export interface components {
             created_at: string;
             /** @description The media the revision attaches, in order. */
             media_attachments: components["schemas"]["MediaAttachment"][];
+            /** @description The custom emoji of the revision's text and content warning, as `Status.emojis`. */
+            emojis: components["schemas"]["CustomEmoji"][];
         };
         /** @description The revisions of a status. */
         StatusHistory: {
@@ -3220,6 +3600,62 @@ export interface components {
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
         };
+        /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
+        TwoFactor: {
+            /** @description Whether signing in asks for a code after the password. */
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description When the authenticator app was enrolled; omitted when not enabled.
+             */
+            enrolled_at?: string;
+            /** @description How many recovery codes are unused; omitted when not enabled. */
+            recovery_codes_remaining?: number;
+        };
+        /** @description A new TOTP secret to add to an authenticator app. */
+        TotpSetup: {
+            /** @description The secret in base32, for typing it into the app. */
+            secret: string;
+            /** @description The `otpauth://totp/...` URI of the secret. */
+            uri: string;
+            qr_code: components["schemas"]["QrCode"];
+            /** @description An opaque token that carries the secret to `POST /two_factor/totp`. */
+            setup_token: string;
+            /**
+             * Format: date-time
+             * @description When `setup_token` stops working.
+             */
+            expires_at: string;
+        };
+        /**
+         * @description A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+         *     zone of four modules included) on a light background.
+         */
+        QrCode: {
+            /** @description The width and height of the view box, in modules. */
+            size: number;
+            /** @description The path data (`d`) of the dark modules, one unit per module. */
+            path: string;
+        };
+        /** @description The setup to enroll and a code of the app that shows it has the secret. */
+        EnableTotpRequest: {
+            /** @description The `setup_token` of `POST /two_factor/totp/setup`. */
+            setup_token: string;
+            /** @description The six-digit code that the app shows now. */
+            code: string;
+        };
+        /** @description A code that confirms an operation on two-factor authentication. */
+        TwoFactorCodeRequest: {
+            /** @description A six-digit code of the app or an unused recovery code. */
+            code: string;
+        };
+        /**
+         * @description Recovery codes, each of which signs in once in place of a code of the app. They are
+         *     shown only once.
+         */
+        RecoveryCodes: {
+            recovery_codes: string[];
+        };
         /**
          * @description What the account's current moderation restrictions let it post (data-model.md §5.4). The
          *     server applies the same policy when it posts: a status asked for with a visibility that is
@@ -3305,7 +3741,8 @@ export interface components {
          * @description The kind of an audited operation, each on one kind of target. On an `account`:
          *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
          *     `revealed_private_data` (a moderator was shown the account's email address and IP
-         *     addresses). On a `domain`:
+         *     addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+         *     authentication). On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
          *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
          *     `user` (a registration):
@@ -3318,7 +3755,7 @@ export interface components {
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -3670,10 +4107,11 @@ export interface components {
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
          *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-         *     log. The others guard no client API operation yet.
+         *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+         *     the built-in admin role by default). The others guard no client API operation yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor";
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
@@ -3875,6 +4313,11 @@ export interface components {
              *     it has none.
              */
             email_verified?: boolean;
+            /**
+             * @description Whether the user of a local account signs in with two-factor authentication;
+             *     omitted for a remote account.
+             */
+            two_factor_enabled?: boolean;
             /** @description The keys of the user's roles, highest position first; empty for a remote account. */
             roles: string[];
             /** @description The newest 20 actions on the account, newest first. */
@@ -4559,6 +5002,222 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteOwnAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteOwnAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description The account is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDataExports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The exports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataExportList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    requestDataExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export, being built. */
+            202: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataExport"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    downloadDataExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the export. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The archive. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    /** @description Names the file to save the archive as. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two-factor authentication of the user. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFactor"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setUpTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new secret. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpSetup"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    enableTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnableTotpRequest"];
+            };
+        };
+        responses: {
+            /** @description The recovery codes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    disableTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TwoFactorCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description The two-factor authentication of the user, disabled. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFactor"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    regenerateRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TwoFactorCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery codes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -5498,6 +6157,41 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["StatusAfterAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listStatusReactions: {
+        parameters: {
+            query?: {
+                /**
+                 * @description The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+                 *     reaction has gives an empty page.
+                 */
+                emoji?: string;
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the reactions. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusReactionPage"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };
@@ -6509,6 +7203,28 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AdminAccountPrivateData"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    disableAdminAccountTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two-factor authentication is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

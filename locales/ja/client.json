@@ -535,6 +535,42 @@
     "defaultMessage": "アカウント",
     "description": "Title of an account's admin page."
   },
+  "admin.account.two_factor.title": {
+    "defaultMessage": "二要素認証",
+    "description": "Heading of the region of a local account's admin page about its two-factor authentication."
+  },
+  "admin.account.two_factor.on": {
+    "defaultMessage": "有効：ログインには認証アプリのコードが必要です。",
+    "description": "Text while the account's user has two-factor authentication."
+  },
+  "admin.account.two_factor.off": {
+    "defaultMessage": "無効です。",
+    "description": "Text while the account's user has no two-factor authentication."
+  },
+  "admin.account.two_factor.remove": {
+    "defaultMessage": "二要素認証を解除",
+    "description": "Button (and the confirmation's button) that removes the two-factor authentication of the account."
+  },
+  "admin.account.two_factor.remove.description": {
+    "defaultMessage": "認証アプリとリカバリーコードを失った利用者のための操作です。依頼が本人からのものか、先に確かめてください。解除は監査ログに記録されます。",
+    "description": "Explanation above the button that removes the two-factor authentication of an account."
+  },
+  "admin.account.two_factor.confirm.title": {
+    "defaultMessage": "{handle} の二要素認証を解除しますか？",
+    "description": "Title of the confirmation of removing the two-factor authentication. {handle} is the account's handle."
+  },
+  "admin.account.two_factor.confirm.description": {
+    "defaultMessage": "もう一度設定するまで、パスワードだけでログインできるようになります。この操作は取り消せません。",
+    "description": "Body of the confirmation of removing the two-factor authentication."
+  },
+  "admin.account.two_factor.removed": {
+    "defaultMessage": "{handle} の二要素認証を解除しました。",
+    "description": "Status message after removing the two-factor authentication of the account {handle}."
+  },
+  "admin.account.two_factor.failed": {
+    "defaultMessage": "二要素認証を解除できませんでした：{reason}",
+    "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "理由の種類",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
@@ -1299,6 +1335,10 @@
     "defaultMessage": "登録の拒否の解除",
     "description": "Heading of an audit log entry: a moderator lifted a block on sign-ups."
   },
+  "admin.audit_log.action.two_factor_disabled": {
+    "defaultMessage": "二要素認証の解除",
+    "description": "Heading of an audit log entry: an administrator removed the two-factor authentication of a local account."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "文章の変更",
     "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."
@@ -1888,12 +1928,12 @@
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
   },
   "admin.home.none.description": {
-    "defaultMessage": "あなたのロールには、管理の画面に要る権限がありません。管理者が付与できます。",
-    "description": "Description on the administration page of a user whose roles grant none of the admin screens' permissions."
+    "defaultMessage": "あなたのロールには、サーバー管理の画面に要る権限がありません。管理者が付与できます。",
+    "description": "Description on the server administration page of a user whose roles grant none of the server administration screens' permissions."
   },
   "admin.home.none.heading": {
-    "defaultMessage": "使える管理の画面はありません",
-    "description": "Heading on the administration page of a user whose roles grant none of the admin screens' permissions."
+    "defaultMessage": "使えるサーバー管理の画面はありません",
+    "description": "Heading on the server administration page of a user whose roles grant none of the server administration screens' permissions."
   },
   "admin.instance.back": {
     "defaultMessage": "連合先のサーバーに戻る",
@@ -2053,7 +2093,19 @@
   },
   "admin.menu.title": {
     "defaultMessage": "管理",
-    "description": "Heading of the links to the admin screens on the settings page, shown only to operators."
+    "description": "Heading of the links to the server administration screens (settings, documents, failed jobs) on the settings page and title of their page, shown only to users with a server administration permission."
+  },
+  "admin.moderation.none.description": {
+    "defaultMessage": "あなたのロールには、モデレーションの画面に要る権限がありません。管理者が付与できます。",
+    "description": "Description on the moderation page of a user whose roles grant none of the moderation screens' permissions."
+  },
+  "admin.moderation.none.heading": {
+    "defaultMessage": "使えるモデレーションの画面はありません",
+    "description": "Heading on the moderation page of a user whose roles grant none of the moderation screens' permissions."
+  },
+  "admin.moderation.title": {
+    "defaultMessage": "モデレーション",
+    "description": "Heading of the links to the moderation screens (reports, appeals, accounts, registrations, sign-up blocks, domain actions, remote servers, audit log) on the settings page and title of their page, shown only to users with a moderation permission."
   },
   "admin.missing_permission.description": {
     "defaultMessage": "あなたのロールには権限 {permission} がありません。このサーバーの管理者に依頼してください。",
@@ -2065,7 +2117,7 @@
   },
   "admin.pending_count": {
     "defaultMessage": "{count, plural, other {未対応 # 件}}",
-    "description": "Badge of the navigation's administration item: how many open reports and registrations await the moderators."
+    "description": "Badge of the navigation's moderation item: how many open reports, registrations and appeals await the moderators."
   },
   "admin.registrations.account_gone": {
     "defaultMessage": "削除されたアカウント",
@@ -3623,6 +3675,10 @@
     "defaultMessage": "参加した投票が終了しました",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
   },
+  "notifications.type.reaction": {
+    "defaultMessage": "{name}さんがあなたの投稿に{emoji}でリアクションしました",
+    "description": "Notification sentence. {name} is the display name of the account that reacted to the user's post with an emoji; {emoji} is the emoji, or the :shortcode: of a custom emoji."
+  },
   "notifications.type.relationships_severed": {
     "defaultMessage": "モデレーターによる凍結で、いくつかのフォロー関係が解除されました",
     "description": "Notification sentence when the details of the suspension are no longer available: the moderators of this server suspended a server or an account, which ended follows between it and the user."
@@ -4151,6 +4207,110 @@
     "defaultMessage": "ログインしていません。",
     "description": "Text in the account section of the settings page when nobody is signed in."
   },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button in the dialog that closes it without deleting the account."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "アカウントを削除",
+    "description": "Button in the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "確認のためパスワードを入力してください。アカウントはすぐに削除され、ログアウトします。元に戻すことはできません。",
+    "description": "Description of the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "アカウントを削除しますか？",
+    "description": "Title of the dialog that asks the user to confirm deleting their account."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "アカウント・投稿・プロフィールはすぐに見えなくなり、ほかのサーバーにも削除を依頼します。元に戻すことはできず、ユーザー名は再び使えません。データを残したい場合は先にダウンロードしてください。",
+    "description": "Explains what deleting the account does, above the button that starts it."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "アカウントを削除…",
+    "description": "Button that opens the dialog that deletes the user's account."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "パスワード",
+    "description": "Label of the field in which the user types their password to confirm deleting the account."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "パスワードを入力してください。",
+    "description": "Error under the password field when the user confirms the deletion without typing the password."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "アカウントの削除",
+    "description": "Heading of the section of the account page about deleting the account."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error in the deletion dialog when the password the user typed is not their current password."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
+    "description": "Explains the archive of the user's data, above the button that asks for one."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "ダウンロード",
+    "description": "Button that downloads an archive of the user's data."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "{date} のアーカイブをダウンロード",
+    "description": "Accessible name of the button that downloads one archive. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "アーカイブはありません",
+    "description": "Shown when the user has no archive of their data."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "ダウンロード期限",
+    "description": "Label of the date until which an archive of the user's data can be downloaded."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "{date} のアーカイブ",
+    "description": "Heading of one archive of the user's data. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "アーカイブを作成",
+    "description": "Button that asks the server to prepare an archive of the user's data."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "アーカイブを作成しています。完了すると下に表示されます。",
+    "description": "Announced after the user asked for an archive of their data."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "サイズ",
+    "description": "Label of the file size of an archive of the user's data."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the state of an archive of the user's data (being prepared, ready, failed)."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "失敗しました。もう一度作成してください。",
+    "description": "State of an archive of the user's data that the server could not prepare; the user can ask for another."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "作成中",
+    "description": "State of an archive of the user's data that the server is still preparing."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "ダウンロードできます",
+    "description": "State of an archive of the user's data that can be downloaded."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "データのダウンロード",
+    "description": "Heading of the section of the account page about archives of the user's data."
+  },
+  "settings.account.summary": {
+    "defaultMessage": "データのダウンロードとアカウントの削除",
+    "description": "Description of the account page in the list of settings pages."
+  },
+  "settings.account.title": {
+    "defaultMessage": "アカウント",
+    "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
+  },
   "settings.back": {
     "defaultMessage": "設定に戻る",
     "description": "Link under the heading of a settings page that opens the list of settings pages."
@@ -4467,6 +4627,10 @@
     "defaultMessage": "モデレーターからのお知らせ",
     "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
   },
+  "settings.push.type.reaction": {
+    "defaultMessage": "絵文字リアクション",
+    "description": "Checkbox of the push notification kinds: someone reacted to the user's post with an emoji."
+  },
   "settings.push.types.description": {
     "defaultMessage": "この端末に通知する内容を選びます。",
     "description": "Help text of the group of checkboxes of the push notification kinds."
@@ -4538,6 +4702,150 @@
   "settings.title": {
     "defaultMessage": "設定",
     "description": "Heading and document title of the settings page."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "二要素認証",
+    "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
+  },
+  "settings.two_factor.summary": {
+    "defaultMessage": "パスワードに加えて、認証アプリのコードでログインします",
+    "description": "Description of the two-factor authentication item in the settings menu."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "現在の設定",
+    "description": "Heading of the region of the two-factor authentication page that says whether it is on."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "二要素認証",
+    "description": "Term of the description list: whether two-factor authentication is on."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "有効",
+    "description": "Value of the two-factor authentication term while it is on."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "無効です。ログインにはパスワードだけを使います。",
+    "description": "Text of the two-factor authentication page while it is off."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "有効にした日時",
+    "description": "Term of the description list: when two-factor authentication was turned on; the value is a date and time."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "未使用のリカバリーコード",
+    "description": "Term of the description list: how many recovery codes are left; the value is a number."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "認証アプリを設定",
+    "description": "Heading of the region that enrolls an authenticator app while two-factor authentication is off."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "スマートフォンの認証アプリにこのアカウントを追加します。以降のログインでは、アプリに表示される 6 桁のコードも求められます。",
+    "description": "Explanation above the button that starts setting up an authenticator app."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "設定を始める",
+    "description": "Button that generates a new secret to add to an authenticator app."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "認証アプリで QR コードを読み取るか、下のキーを入力してください。",
+    "description": "First step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "アプリに表示される 6 桁のコードを入力して、二要素認証を有効にしてください。",
+    "description": "Second step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "認証アプリ用の QR コード",
+    "description": "Accessible name of the QR code image that holds the secret for the authenticator app."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "キー",
+    "description": "Label of the secret shown as text, for typing it into an authenticator app instead of scanning the QR code."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "アプリにいま表示されている 6 桁のコードです。",
+    "description": "Help under the code field that confirms the setup of an authenticator app."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "有効にする",
+    "description": "Button that turns two-factor authentication on with the code of the app."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "設定に時間がかかりすぎました。もう一度始めてください。",
+    "description": "Error when the setup of an authenticator app expired (after 15 minutes) before its code was entered."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "認証コード",
+    "description": "Label of the field for a code of the authenticator app or a recovery code."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "認証アプリのコードか、リカバリーコードを 1 つ入力してください。",
+    "description": "Help under the code field that confirms replacing the recovery codes or turning two-factor authentication off."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "コードを入力してください。",
+    "description": "Error of an empty code field."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "コードが正しくないか、すでに使われています。",
+    "description": "Error of the code field when the server refused the code."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "二要素認証の設定がほかの場所で変更されました。現在の設定を表示しています。",
+    "description": "Error when two-factor authentication was turned on or off in another tab or device meanwhile."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "間違ったコードが多すぎます：{reason}",
+    "description": "Error after too many wrong codes. {reason} is the server's explanation of when to try again."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "二要素認証を変更できませんでした：{reason}",
+    "description": "Error when a change of two-factor authentication failed. {reason} is the server's explanation."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "二要素認証を有効にしました。",
+    "description": "Status message after turning two-factor authentication on."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "二要素認証を無効にしました。",
+    "description": "Status message after turning two-factor authentication off."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "リカバリーコード",
+    "description": "Heading of the region that replaces the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "認証アプリを使えなくなったときは、代わりにリカバリーコードでログインできます。それぞれのコードは 1 回だけ使えます。作り直すと、前のコードは使えなくなります。",
+    "description": "Explanation of the recovery codes above the form that replaces them."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "リカバリーコードを作り直す",
+    "description": "Button that replaces the recovery codes with new ones."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "新しいリカバリーコードを作りました。前のコードは使えなくなりました。",
+    "description": "Status message after replacing the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "リカバリーコードを保存してください",
+    "description": "Heading of the list of new recovery codes, which is shown only once."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "パスワードマネージャーなど、安全な場所に保管してください。表示されるのはこの 1 回だけです。それぞれのコードで、アプリなしで 1 回ログインできます。",
+    "description": "Text above the list of new recovery codes."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "二要素認証を無効にする",
+    "description": "Heading of the region that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "ログインにはパスワードだけを使うようになります。確認のためにコードを入力してください。",
+    "description": "Explanation above the form that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "無効にする",
+    "description": "Button that turns two-factor authentication off."
   },
   "settings.visibility.direct": {
     "defaultMessage": "メンションした相手",
@@ -4637,11 +4945,7 @@
   },
   "shell.nav.admin": {
     "defaultMessage": "管理",
-    "description": "Navigation item to the admin screens, shown only to users whose roles have an admin permission."
-  },
-  "shell.nav.admin_pending": {
-    "defaultMessage": "管理、{count, plural, other {未対応 # 件}}",
-    "description": "Accessible name of the navigation item to the admin screens while open reports or registrations awaiting approval wait for the moderators; starts with the visible label."
+    "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
   },
   "shell.nav.bookmarks": {
     "defaultMessage": "ブックマーク",
@@ -4664,8 +4968,16 @@
     "description": "Button of the bottom tab bar on phones that opens a sheet with the rest of the navigation (profile, settings). Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
   "shell.nav.menu_pending": {
-    "defaultMessage": "メニュー、{count, plural, other {管理に未対応 # 件}}",
-    "description": "Accessible name of the phone tab bar's Menu button while things await the moderators in the administration, which the menu leads to; starts with the visible label."
+    "defaultMessage": "メニュー、{count, plural, other {モデレーションに未対応 # 件}}",
+    "description": "Accessible name of the phone tab bar's Menu button while things await the moderators in the moderation, which the menu leads to; starts with the visible label."
+  },
+  "shell.nav.moderation": {
+    "defaultMessage": "モデレーション",
+    "description": "Navigation item to the moderation screens, shown only to users whose roles have a moderation permission."
+  },
+  "shell.nav.moderation_pending": {
+    "defaultMessage": "モデレーション、{count, plural, other {未対応 # 件}}",
+    "description": "Accessible name of the navigation item to the moderation screens while open reports, registrations or appeals wait for the moderators; starts with the visible label."
   },
   "shell.nav.notifications": {
     "defaultMessage": "通知",
@@ -4946,6 +5258,34 @@
   "status.original": {
     "defaultMessage": "{host} で元の投稿を開く",
     "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
+  },
+  "status.pin.action": {
+    "defaultMessage": "プロフィールに固定",
+    "description": "Menu item, on the user's own post, that pins it to the top of their profile."
+  },
+  "status.pin.done": {
+    "defaultMessage": "投稿をプロフィールに固定しました",
+    "description": "Toast after the user pinned their post to their profile."
+  },
+  "status.pin.failed": {
+    "defaultMessage": "投稿を固定できませんでした：{reason}",
+    "description": "Toast when pinning the user's post failed, for example because they already pinned as many posts as allowed. {reason} is the error message, a full sentence."
+  },
+  "status.pin.label": {
+    "defaultMessage": "固定された投稿",
+    "description": "Line above a post at the top of a profile that the account pinned there."
+  },
+  "status.unpin.action": {
+    "defaultMessage": "プロフィールへの固定を外す",
+    "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."
+  },
+  "status.unpin.done": {
+    "defaultMessage": "投稿の固定を外しました",
+    "description": "Toast after the user unpinned their post from their profile."
+  },
+  "status.unpin.failed": {
+    "defaultMessage": "投稿の固定を外せませんでした：{reason}",
+    "description": "Toast when unpinning the user's post failed. {reason} is the error message, a full sentence."
   },
   "status.thread.ancestors": {
     "defaultMessage": "スレッドの前の投稿",

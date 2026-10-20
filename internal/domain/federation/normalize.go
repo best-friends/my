@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 // Normalize reads a received AS2 document (federation.md §4). The document is read as JSON
@@ -437,6 +438,9 @@ func (n normalizer) tags(v any) (mentions []Mention, hashtags []string, emojis [
 			}
 		case slices.Contains(types, "Emoji"):
 			code := strings.Trim(name, ":")
+			if utf8.RuneCountInString(code) > MaxShortcode || slices.ContainsFunc(emojis, func(e Emoji) bool { return e.Shortcode == code }) {
+				continue
+			}
 			if icon := n.imageURL(t.get("icon")); code != "" && icon != "" {
 				emojis = append(emojis, Emoji{ID: n.iri(t.get("id")), Shortcode: code, IconURL: icon})
 			}

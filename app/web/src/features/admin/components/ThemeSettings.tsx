@@ -7,7 +7,7 @@
 import { Button, StatusMessage, TextArea, TextField } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { type ColorField, useThemeSettings, type ValueField } from "../hooks/useThemeSettings";
-import { DetailSection, RequirePermission } from "./parts";
+import { DetailSection, RequirePermission } from "../../moderation";
 
 export function ThemeSettings() {
   return (

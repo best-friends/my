@@ -6,7 +6,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
-import { refreshAuditLog } from "./admin";
+import { refreshAuditLog } from "../../moderation";
 
 type Schemas = components["schemas"];
 

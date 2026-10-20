@@ -14,10 +14,10 @@ import (
 	"github.com/best-friends/my/internal/domain/federation"
 )
 
-// Boosts and favourites across servers (federation.md §3.4, §7.1): the outbound projectors that
-// turn a local account's favourite of a remote status into Like and Undo Like, their fan-out to
-// the status's author, and the inbox handlers of the Announce, Like, EmojiReact, and their Undo
-// that remote servers send. The Announce and Undo Announce of local boosts are recorded with the
+// Boosts, favourites, and emoji reactions across servers (federation.md §3.4, §7.1): the
+// outbound projectors that turn a local account's favourite of a remote status into Like and
+// Undo Like, their fan-out to the status's author, and the inbox handlers of the Announce, Like,
+// EmojiReact, and their Undo that remote servers send. The Announce and Undo Announce of local boosts are recorded with the
 // other content activities (RegisterOutboundProjectors).
 
 // registerFavouriteProjectors records the Like and Undo Like of a favourite of a remote status
@@ -115,16 +115,19 @@ func (f *FanOut) statusAuthorTargets(ctx context.Context, s subject) ([]target, 
 	return nil, nil
 }
 
-// RemoteInteractions is the part of the content module's public API that records the boosts and
-// favourites of remote accounts (federation.md §1.1); *appcontent.Interactions implements it.
+// RemoteInteractions is the part of the content module's public API that records the boosts,
+// favourites, and emoji reactions of remote accounts (federation.md §1.1);
+// *appcontent.Interactions implements it.
 type RemoteInteractions interface {
 	RecordRemoteBoost(ctx context.Context, in appcontent.RemoteBoostInput) (appcontent.Boost, error)
 	RetractRemoteBoost(ctx context.Context, uri, boosterAccountID string) error
 	RecordRemoteFavourite(ctx context.Context, in appcontent.RemoteFavouriteInput) (appcontent.Favourite, error)
 	RemoveRemoteFavourite(ctx context.Context, uri, accountID, statusID string) error
+	RecordRemoteReaction(ctx context.Context, in appcontent.RemoteReactionInput) (appcontent.Reaction, error)
+	RemoveRemoteReaction(ctx context.Context, in appcontent.RemoteReactionUndo) error
 }
 
-// InteractionHandlersDeps are the ports of the boost and favourite inbox handlers.
+// InteractionHandlersDeps are the ports of the boost, favourite, and reaction inbox handlers.
 type InteractionHandlersDeps struct {
 	Interactions RemoteInteractions
 	// Statuses finds the posts that activities are about, and resolves and stores the remote
@@ -132,18 +135,23 @@ type InteractionHandlersDeps struct {
 	Statuses *StatusHandlers
 }
 
-// RegisterInteractionHandlers sets the inbox handlers of boosts and favourites (federation.md
-// §3.4):
+// RegisterInteractionHandlers sets the inbox handlers of boosts, favourites, and emoji reactions
+// (federation.md §3.4, ADR-0052 §1):
 //
 //   - Announce of a post: content.RecordRemoteBoost. The post is found by its id; a remote post
 //     that is not stored is taken from the Announce when it is embedded from the actor's origin,
 //     fetched from its origin otherwise, and stored only when a local account follows the
 //     booster (ADR-0034). A local post must be one the booster may see and boost.
-//   - Like and EmojiReact of a local post: content.RecordRemoteFavourite. A Misskey reaction (a
-//     Like with _misskey_reaction) and an Akkoma EmojiReact are favourites too.
-//   - Undo of an Announce, Like, or EmojiReact: content.RetractRemoteBoost and
-//     content.RemoveRemoteFavourite, found by the URI of the activity taken back; an unknown one
-//     leaves a tombstone (federation.md §3.3).
+//   - EmojiReact of a local post whose content is an emoji (reactionOf):
+//     content.RecordRemoteReaction; one with anything else is dropped.
+//   - Like of a local post: content.RecordRemoteReaction when its _misskey_reaction, or else its
+//     content, is an emoji (a Misskey reaction, FEP-c0e0), content.RecordRemoteFavourite
+//     otherwise.
+//   - Undo of an Announce: content.RetractRemoteBoost, by the URI of the Announce. Undo of a Like
+//     or EmojiReact: the reaction with the URI of the activity taken back
+//     (content.RemoveRemoteReaction), else the favourite with it (content.RemoveRemoteFavourite),
+//     else what the embedded activity was: the actor's reaction to the post with the same emoji,
+//     or its favourite of the post. An unknown one leaves a tombstone (federation.md §3.3).
 func RegisterInteractionHandlers(p *InboxProcessor, d InteractionHandlersDeps) {
 	h := interactionHandlers{d: d}
 	p.Handle(federation.ActivityAnnounce, h.announce)
@@ -162,7 +170,8 @@ type interactionHandlers struct{ d InteractionHandlersDeps }
 func interactionError(err error) error {
 	switch {
 	case errors.Is(err, appcontent.ErrNotFound), errors.Is(err, appcontent.ErrNotBoostable),
-		errors.Is(err, appcontent.ErrActorUnavailable), errors.Is(err, appcontent.ErrNotAuthor):
+		errors.Is(err, appcontent.ErrActorUnavailable), errors.Is(err, appcontent.ErrNotAuthor),
+		errors.Is(err, appcontent.ErrInvalidReaction), errors.Is(err, appcontent.ErrInteractionRestricted):
 		return fmt.Errorf("%w: %w", ErrDropActivity, err)
 	}
 	return err
@@ -197,14 +206,66 @@ func (h interactionHandlers) like(ctx context.Context, in *InboxActivity) error 
 	if id == "" || !h.d.Statuses.isLocal(id) {
 		return fmt.Errorf("%w: %s of %q, not of a local post", ErrDropActivity, in.Activity.RawType, id)
 	}
+	emoji, isReaction := reactionOf(in.Activity, in.Actor.Account.Domain)
+	if in.Activity.Type == federation.ActivityEmojiReact && !isReaction {
+		return fmt.Errorf("%w: EmojiReact of %q, not an emoji", ErrDropActivity, in.Activity.Content)
+	}
 	st, err := h.d.Statuses.d.Statuses.FindStatusByURI(ctx, string(id))
 	if err != nil {
+		return interactionError(err)
+	}
+	if isReaction {
+		_, err = h.d.Interactions.RecordRemoteReaction(ctx, appcontent.RemoteReactionInput{
+			URI: activityURI(in), AccountID: in.Actor.Account.ID, StatusID: st.ID, Emoji: emoji, CreatedAt: in.Activity.Published,
+		})
 		return interactionError(err)
 	}
 	_, err = h.d.Interactions.RecordRemoteFavourite(ctx, appcontent.RemoteFavouriteInput{
 		URI: activityURI(in), AccountID: in.Actor.Account.ID, StatusID: st.ID, CreatedAt: in.Activity.Published,
 	})
 	return interactionError(err)
+}
+
+// reactionOf returns the emoji of a Like or an EmojiReact, and whether it is an emoji reaction
+// (ADR-0052 §1): its _misskey_reaction, or else its content, is one Unicode emoji or the
+// ":shortcode:" of a custom emoji with exactly one Emoji tag of that name (with or without
+// colons). A custom emoji is of the server of its Emoji's id, or of actorDomain without one.
+func reactionOf(a *federation.Activity, actorDomain string) (appcontent.RemoteReactionEmoji, bool) {
+	text := a.Reaction
+	if text == "" {
+		text = a.Content
+	}
+	if text == "" {
+		return appcontent.RemoteReactionEmoji{}, false
+	}
+	if _, ok := appcontent.NormalizeUnicodeEmoji(text); ok {
+		return appcontent.RemoteReactionEmoji{Unicode: text}, true
+	}
+	code, ok := appcontent.ParseReactionShortcode(text)
+	if !ok {
+		return appcontent.RemoteReactionEmoji{}, false
+	}
+	var found *federation.Emoji
+	for i, e := range a.Emojis {
+		if appcontent.TrimShortcode(e.Shortcode) != code {
+			continue
+		}
+		if found != nil {
+			return appcontent.RemoteReactionEmoji{}, false
+		}
+		found = &a.Emojis[i]
+	}
+	if found == nil || found.IconURL == "" {
+		return appcontent.RemoteReactionEmoji{}, false
+	}
+	domain := actorDomain
+	if h := found.ID.Host(); h != "" {
+		domain = h
+	}
+	return appcontent.RemoteReactionEmoji{
+		Custom: &appcontent.RemoteEmojiInput{URI: string(found.ID), Shortcode: code, ImageURL: string(found.IconURL)},
+		Domain: domain,
+	}, true
 }
 
 // undone returns the id of the activity that an Undo takes back, and the activity when the Undo
@@ -235,8 +296,18 @@ func (h interactionHandlers) undoLike(ctx context.Context, in *InboxActivity) er
 	if id == "" && like == nil {
 		return ErrUnknownObject
 	}
-	// Without a favourite of the Like's URI, the embedded Like names the post the actor took
-	// its favourite back from.
+	account := in.Actor.Account.ID
+	// The reaction, then the favourite, recorded from the activity's URI.
+	err := h.d.Interactions.RemoveRemoteReaction(ctx, appcontent.RemoteReactionUndo{URI: string(id), AccountID: account})
+	if !errors.Is(err, appcontent.ErrNotFound) {
+		return interactionError(err)
+	}
+	err = h.d.Interactions.RemoveRemoteFavourite(ctx, string(id), account, "")
+	if !errors.Is(err, appcontent.ErrNotFound) {
+		return interactionError(err)
+	}
+	// Without either, the embedded activity names the post, and the emoji of a reaction, that
+	// the actor took back.
 	var statusID string
 	if like != nil && like.Actor == in.Activity.Actor {
 		if target := like.Object().ID; target != "" && h.d.Statuses.isLocal(target) {
@@ -249,9 +320,17 @@ func (h interactionHandlers) undoLike(ctx context.Context, in *InboxActivity) er
 			}
 		}
 	}
-	err := h.d.Interactions.RemoveRemoteFavourite(ctx, string(id), in.Actor.Account.ID, statusID)
+	if statusID != "" {
+		if emoji, ok := reactionOf(like, in.Actor.Account.Domain); ok {
+			err = h.d.Interactions.RemoveRemoteReaction(ctx, appcontent.RemoteReactionUndo{
+				URI: string(id), AccountID: account, StatusID: statusID, Emoji: emoji,
+			})
+		} else if like.Type == federation.ActivityLike {
+			err = h.d.Interactions.RemoveRemoteFavourite(ctx, string(id), account, statusID)
+		}
+	}
 	if errors.Is(err, appcontent.ErrNotFound) {
-		return fmt.Errorf("%w: favourite %s", ErrUnknownObject, id)
+		return fmt.Errorf("%w: favourite or reaction %s", ErrUnknownObject, id)
 	}
 	return interactionError(err)
 }

@@ -19,6 +19,7 @@ const (
 	MaxBodyBytes     = 100 << 10 // one HTML value: content, a contentMap entry, a summary
 	MaxAttachments   = 4         // attachments kept per object; the rest are dropped
 	MaxItems         = 100       // items kept per collection or collection page; the rest are dropped
+	MaxShortcode     = 128       // characters of a custom emoji's shortcode; a longer emoji is dropped (ADR-0051)
 	UndeterminedLang = "und"     // BCP 47 "undetermined"
 )
 

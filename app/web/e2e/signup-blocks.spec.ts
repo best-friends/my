@@ -16,6 +16,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -114,10 +115,10 @@ async function moderatorServer(page: Page) {
   return requests;
 }
 
-test.describe("page /admin/signup-blocks", () => {
+test.describe("page /moderation/signup-blocks", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto("/admin/signup-blocks");
+    await page.goto("/moderation/signup-blocks");
     await expect(page.getByRole("main").getByRole("heading", { level: 3 }).first()).toBeVisible();
   });
 
@@ -133,7 +134,7 @@ test.describe("page /admin/signup-blocks", () => {
 test.describe("sign-up blocks", () => {
   test("lists a block in both forms of its domain, adds a block on an email domain with the keyboard, and lifts a block", async ({ page, makeAxeBuilder }) => {
     const requests = await moderatorServer(page);
-    await page.goto("/admin/signup-blocks");
+    await page.goto("/moderation/signup-blocks");
     const main = page.getByRole("main");
     const list = main.getByRole("tabpanel");
     await expect(list.getByRole("heading", { level: 3 })).toHaveCount(2);
@@ -196,7 +197,7 @@ test.describe("sign-up blocks", () => {
 test.describe("an import of a list of sign-up blocks", () => {
   test("adds a list with the keyboard and shows the lines it skipped and why", async ({ page, makeAxeBuilder }) => {
     const requests = await moderatorServer(page);
-    await page.goto("/admin/signup-blocks");
+    await page.goto("/moderation/signup-blocks");
     const main = page.getByRole("main");
     await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3 })).toHaveCount(2);
     // The import is the second section; its kind is the email domain already.

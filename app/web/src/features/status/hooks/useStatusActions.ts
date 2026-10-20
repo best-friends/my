@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The viewer's actions on a post (FR-106 to FR-109, FR-113): boost, favourite and bookmark are turned on
 // and off optimistically in every cached copy of the post and restored when the server refuses
-// (web-client.md S8); delete waits for the server, then drops the post from every list. Each result is
+// (web-client.md S8); delete waits for the server, then drops the post from every list, and a pin (FR-403)
+// waits for it, then marks the post and reads the viewer's pinned posts again. Each result is
 // announced (Y7) and a failure is also shown as a toast, because the restored button alone tells a
 // sighted user nothing (E2).
 import { useAnnouncer, useToast } from "@my/ui";
@@ -14,11 +15,13 @@ import { useViewer } from "../../session";
 import { hasRelation, relationCount } from "../api/cache";
 import {
   cacheDeletedStatus,
+  cachePinAnswer,
   cacheRelationAnswer,
   cacheRelationPending,
   deleteStatus,
   type Relation,
   restoreRelation,
+  setPin,
   setRelation,
   type Status,
   statusShareUrl,
@@ -53,6 +56,11 @@ export type StatusActions = {
   isDeleting: boolean;
   /** Whether the viewer can report the post's author: anyone's posts but the viewer's own (FR-701). */
   canReport: boolean;
+  /**
+   * Pins the post to the viewer's profile or unpins it (FR-403), for the viewer's own posts that are not
+   * direct (the server's rule); null otherwise. The result or the failure (the limit of pins, say) is shown.
+   */
+  pin: { isPinned: boolean; toggle: () => void } | null;
 };
 
 /** What is announced when the viewer turns `relation` on or off. */
@@ -138,8 +146,24 @@ export function useStatusActions(status: Status): StatusActions | null {
     },
   });
 
+  const pin = useMutation({
+    mutationFn: ({ on }: { on: boolean }) => setPin(api, post.id, on),
+    // One request at a time per post, in the order chosen.
+    scope: { id: `status:${post.id}:pin` },
+    onSuccess: async (answer, { on }) => {
+      await cachePinAnswer(api, queryClient, post.id, answer, viewerId);
+      // The toast is announced too.
+      toast.show({ message: on ? t("client:status.pin.done") : t("client:status.unpin.done"), tone: "success" });
+    },
+    onError: (error, { on }) => {
+      const reason = errorMessage(error);
+      toast.show({ message: on ? t("client:status.pin.failed", { reason }) : t("client:status.unpin.failed", { reason }), tone: "danger" });
+    },
+  });
+
   if (viewer.status !== "signed-in" || reply === null) return null;
   const isAuthor = post.account.id === viewer.account.id;
+  const isPinned = post.pinned === true;
   return {
     reply: () => {
       reply(post);
@@ -162,5 +186,14 @@ export function useStatusActions(status: Status): StatusActions | null {
     canEdit: isAuthor,
     isDeleting: remove.isPending,
     canReport: !isAuthor,
+    pin:
+      isAuthor && post.visibility !== "direct"
+        ? {
+            isPinned,
+            toggle: () => {
+              pin.mutate({ on: !isPinned });
+            },
+          }
+        : null,
   };
 }

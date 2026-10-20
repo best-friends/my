@@ -151,13 +151,17 @@ type RemoteFavouriteInput struct {
 
 // RecordRemoteFavourite records the favourite of a remote account (a Like, federation.md §3.4)
 // and returns it. Only a local status takes remote favourites, and only one the account can see
-// (content.CanView in ContextObjectFetch); anything else fails with ErrNotFound. Recording a
+// (content.CanView in ContextObjectFetch); anything else fails with ErrNotFound. An account under
+// the interact restriction (FR-708) fails with ErrInteractionRestricted. Recording a
 // favourite that the account already has, or a Like whose URI is recorded already, changes
 // nothing and returns the existing favourite.
 //
 // Since remote accounts favourite only local statuses, the favourite of a remote status is always
 // a local account's, the one whose Like the federation module sends.
 func (s *Interactions) RecordRemoteFavourite(ctx context.Context, in RemoteFavouriteInput) (content.Favourite, error) {
+	if err := s.checkRestrictions(ctx, in.AccountID, false); err != nil {
+		return content.Favourite{}, err
+	}
 	st, err := s.remoteVisibleStatus(ctx, in.AccountID, in.StatusID)
 	if err != nil {
 		return content.Favourite{}, err

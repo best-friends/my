@@ -224,6 +224,9 @@ func (r *RemoteActors) input(ctx context.Context, a *federation.Actor, raw []byt
 	for _, f := range a.Fields {
 		in.Fields = append(in.Fields, appaccount.RemoteFieldInput{Name: f.Name, ValueHTML: f.Value})
 	}
+	for _, e := range a.Emojis {
+		in.Emojis = append(in.Emojis, appaccount.RemoteEmojiInput{URI: string(e.ID), Shortcode: e.Shortcode, ImageURL: string(e.IconURL)})
+	}
 	return in
 }
 

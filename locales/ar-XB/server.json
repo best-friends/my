@@ -427,6 +427,38 @@
     "defaultMessage": "‮Ↄouɟıɹɯ ʎonɹ ǝɯɐıʅ ɐppɹǝss: odǝu ʇɥǝ ʅıuʞ ʍǝ sǝuʇ ʇo {email}.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.two_factor.code_label": {
+    "defaultMessage": "‮∀nʇɥǝuʇıɔɐʇıou ɔopǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.expired": {
+    "defaultMessage": "‮⊥ɥǝ sıƃu-ıu ʇooʞ ʇoo ʅouƃ. Sıƃu ıu ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.invalid": {
+    "defaultMessage": "‮⊥ɥǝ ɔopǝ ıs ıuɔoɹɹǝɔʇ oɹ ʍɐs ɐʅɹǝɐpʎ nsǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.missing": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʇɥǝ ɔopǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.prompt": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʇɥǝ sıx-pıƃıʇ ɔopǝ ʇɥɐʇ ʎonɹ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd sɥoʍs. Iɟ ʎon ɔɐuuoʇ nsǝ ʇɥǝ ɐdd, ǝuʇǝɹ ouǝ oɟ ʎonɹ ɹǝɔoʌǝɹʎ ɔopǝs ıusʇǝɐp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.restart_link": {
+    "defaultMessage": "‮Sıƃu ıu ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.submit": {
+    "defaultMessage": "‮Ʌǝɹıɟʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.title": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.verify_email.done": {
     "defaultMessage": "‮⊥ɥɐuʞ ʎon. ⅄onɹ ǝɯɐıʅ ɐppɹǝss ıs ɔouɟıɹɯǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -497,6 +529,14 @@
   },
   "errors.conflict": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔouɟʅıɔʇs ʍıʇɥ ʇɥǝ ɔnɹɹǝuʇ sʇɐʇǝ oɟ ʇɥǝ ɹǝsonɹɔǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.in_progress": {
+    "defaultMessage": "‮∀u ɐɹɔɥıʌǝ oɟ ʎonɹ pɐʇɐ ıs ɐʅɹǝɐpʎ qǝıuƃ dɹǝdɐɹǝp. Mɐıʇ nuʇıʅ ıʇ ıs ɹǝɐpʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.not_ready": {
+    "defaultMessage": "‮⊥ɥıs ɐɹɔɥıʌǝ ɔɐuuoʇ qǝ poʍuʅoɐpǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.forbidden": {
@@ -691,6 +731,22 @@
     "defaultMessage": "‮{max,plural,one{{name} ɔɐu ɥɐʌǝ ɐʇ ɯosʇ # ıʇǝɯ.} other{{name} ɔɐu ɥɐʌǝ ɐʇ ɯosʇ # ıʇǝɯs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.two_factor.code_invalid": {
+    "defaultMessage": "‮⊥ɥǝ ɔopǝ ıs ıuɔoɹɹǝɔʇ oɹ ʍɐs ɐʅɹǝɐpʎ nsǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.enabled": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ıs ɐʅɹǝɐpʎ ǝuɐqʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.not_enabled": {
+    "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ıs uoʇ ǝuɐqʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.setup_expired": {
+    "defaultMessage": "‮⊥ɥǝ sǝʇnd oɟ ʇɥǝ ɐnʇɥǝuʇıɔɐʇoɹ ɐdd ǝxdıɹǝp. Sʇɐɹʇ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "‮Sıƃu ıu ʇo po ʇɥıs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -705,6 +761,10 @@
   },
   "errors.unusable_image": {
     "defaultMessage": "‮{name} ɯnsʇ qǝ ɐu ıɯɐƃǝ ʇɥɐʇ ʎon ndʅoɐpǝp ɐup ʇɥɐʇ ɥɐs ɟıuısɥǝp dɹoɔǝssıuƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.wrong_password": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp ıs ʍɹouƃ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "health.unavailable": {
@@ -817,6 +877,10 @@
   },
   "push.other": {
     "defaultMessage": "‮⅄on ɥɐʌǝ ɐ uǝʍ uoʇıɟıɔɐʇıou ou {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.reaction": {
+    "defaultMessage": "‮{name} ɹǝɐɔʇǝp ʇo ʎonɹ dosʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.relationships_severed": {

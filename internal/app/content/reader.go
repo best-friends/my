@@ -68,6 +68,9 @@ type StatusView struct {
 	Mentions []appaccount.Actor
 	Tags     []content.Tag
 	Counters content.Counters
+	// Reactions are the counts of the emoji reactions to the status, the most used
+	// content.MaxStatusReactions emoji first (ADR-0052 §5).
+	Reactions []ReactionView
 	// Relation is the viewer's relation to the status, nil for an anonymous viewer.
 	Relation *ViewerRelation
 }
@@ -336,10 +339,15 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 	case !errors.Is(err, ErrNotFound):
 		return StatusView{}, err
 	}
+	var reactor string
 	if viewer.Kind == ViewerLocal && viewer.AccountID != "" {
+		reactor = viewer.AccountID
 		if out.Relation, err = r.relation(ctx, viewer.AccountID, st); err != nil {
 			return StatusView{}, err
 		}
+	}
+	if out.Reactions, err = r.reactions(ctx, st, reactor); err != nil {
+		return StatusView{}, err
 	}
 	return out, nil
 }

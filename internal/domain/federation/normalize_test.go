@@ -236,6 +236,8 @@ func TestNormalizeTags(t *testing.T) {
 		{"type":"Hashtag","name":"#Go"},
 		{"type":"Emoji","id":"https://a.example/emoji/1","name":":blob:","icon":{"type":"Image","url":"https://a.example/e/blob.png"}},
 		{"type":"Emoji","name":":broken:"},
+		{"type":"Emoji","name":":blob:","icon":{"type":"Image","url":"https://a.example/e/blob2.png"}},
+		{"type":"Emoji","name":":`+strings.Repeat("a", federation.MaxShortcode+1)+`:","icon":{"type":"Image","url":"https://a.example/e/long.png"}},
 		{"type":"Unknown","name":"x"}, "https://a.example/not-an-object"]}`)
 	equal(t, "Mentions", o.Mentions, []federation.Mention{{Href: "https://b.example/u/bob", Name: "@bob@b.example"}})
 	equal(t, "Hashtags", o.Hashtags, []string{"Go"})

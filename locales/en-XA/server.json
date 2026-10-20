@@ -427,6 +427,38 @@
     "defaultMessage": "[Ƈǿǿƞƒīřḿ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş: ǿǿƥḗḗƞ ŧħḗḗ ŀīƞķ ẇḗḗ şḗḗƞŧ ŧǿǿ {email}.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.two_factor.code_label": {
+    "defaultMessage": "[Ȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ ƈǿǿḓḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.expired": {
+    "defaultMessage": "[Ŧħḗḗ şīɠƞ-īƞ ŧǿǿǿǿķ ŧǿǿǿǿ ŀǿǿƞɠ. Şīɠƞ īƞ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿḓḗḗ īş īƞƈǿǿřřḗḗƈŧ ǿǿř ẇȧȧş ȧȧŀřḗḗȧȧḓẏ ŭŭşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.missing": {
+    "defaultMessage": "[Ḗƞŧḗḗř ŧħḗḗ ƈǿǿḓḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.prompt": {
+    "defaultMessage": "[Ḗƞŧḗḗř ŧħḗḗ şīẋ-ḓīɠīŧ ƈǿǿḓḗḗ ŧħȧȧŧ ẏǿǿŭŭř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ şħǿǿẇş. Īƒ ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ŭŭşḗḗ ŧħḗḗ ȧȧƥƥ, ḗḗƞŧḗḗř ǿǿƞḗḗ ǿǿƒ ẏǿǿŭŭř řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş īƞşŧḗḗȧȧḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.restart_link": {
+    "defaultMessage": "[Şīɠƞ īƞ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.submit": {
+    "defaultMessage": "[Ṽḗḗřīƒẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.two_factor.title": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.verify_email.done": {
     "defaultMessage": "[Ŧħȧȧƞķ ẏǿǿŭŭ. Ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş īş ƈǿǿƞƒīřḿḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -497,6 +529,14 @@
   },
   "errors.conflict": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿƞƒŀīƈŧş ẇīŧħ ŧħḗḗ ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ ǿǿƒ ŧħḗḗ řḗḗşǿǿŭŭřƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.in_progress": {
+    "defaultMessage": "[Ȧƞ ȧȧřƈħīṽḗḗ ǿǿƒ ẏǿǿŭŭř ḓȧȧŧȧȧ īş ȧȧŀřḗḗȧȧḓẏ ƀḗḗīƞɠ ƥřḗḗƥȧȧřḗḗḓ. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ īş řḗḗȧȧḓẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.not_ready": {
+    "defaultMessage": "[Ŧħīş ȧȧřƈħīṽḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓǿǿẇƞŀǿǿȧȧḓḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.forbidden": {
@@ -691,6 +731,22 @@
     "defaultMessage": "[{max,plural,one{{name} ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # īŧḗḗḿ.} other{{name} ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ # īŧḗḗḿş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.two_factor.code_invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿḓḗḗ īş īƞƈǿǿřřḗḗƈŧ ǿǿř ẇȧȧş ȧȧŀřḗḗȧȧḓẏ ŭŭşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.enabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ȧȧŀřḗḗȧȧḓẏ ḗḗƞȧȧƀŀḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.not_enabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ƞǿǿŧ ḗḗƞȧȧƀŀḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.two_factor.setup_expired": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗŧŭŭƥ ǿǿƒ ŧħḗḗ ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ ḗḗẋƥīřḗḗḓ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ ḓǿǿ ŧħīş.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -705,6 +761,10 @@
   },
   "errors.unusable_image": {
     "defaultMessage": "[{name} ḿŭŭşŧ ƀḗḗ ȧȧƞ īḿȧȧɠḗḗ ŧħȧȧŧ ẏǿǿŭŭ ŭŭƥŀǿǿȧȧḓḗḗḓ ȧȧƞḓ ŧħȧȧŧ ħȧȧş ƒīƞīşħḗḗḓ ƥřǿǿƈḗḗşşīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.wrong_password": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşẇǿǿřḓ īş ẇřǿǿƞɠ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "health.unavailable": {
@@ -817,6 +877,10 @@
   },
   "push.other": {
     "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧ ƞḗḗẇ ƞǿǿŧīƒīƈȧȧŧīǿǿƞ ǿǿƞ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.reaction": {
+    "defaultMessage": "[{name} řḗḗȧȧƈŧḗḗḓ ŧǿǿ ẏǿǿŭŭř ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.relationships_severed": {

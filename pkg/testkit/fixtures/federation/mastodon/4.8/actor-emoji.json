@@ -1,0 +1,134 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    "https://purl.archive.org/socialweb/webfinger",
+    {
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "toot": "http://joinmastodon.org/ns#",
+      "featured": {
+        "@id": "toot:featured",
+        "@type": "@id"
+      },
+      "featuredTags": {
+        "@id": "toot:featuredTags",
+        "@type": "@id"
+      },
+      "alsoKnownAs": {
+        "@id": "as:alsoKnownAs",
+        "@type": "@id"
+      },
+      "movedTo": {
+        "@id": "as:movedTo",
+        "@type": "@id"
+      },
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "discoverable": "toot:discoverable",
+      "suspended": "toot:suspended",
+      "memorial": "toot:memorial",
+      "indexable": "toot:indexable",
+      "attributionDomains": {
+        "@id": "toot:attributionDomains",
+        "@container": "@set"
+      },
+      "showFeatured": "toot:showFeatured",
+      "showMedia": "toot:showMedia",
+      "showRepliesInMedia": "toot:showRepliesInMedia",
+      "gts": "https://gotosocial.org/ns#",
+      "interactionPolicy": {
+        "@id": "gts:interactionPolicy",
+        "@type": "@id"
+      },
+      "canFeature": {
+        "@id": "https://w3id.org/fep/7aa9#canFeature",
+        "@type": "@id"
+      },
+      "canQuote": {
+        "@id": "gts:canQuote",
+        "@type": "@id"
+      },
+      "automaticApproval": {
+        "@id": "gts:automaticApproval",
+        "@type": "@id"
+      },
+      "manualApproval": {
+        "@id": "gts:manualApproval",
+        "@type": "@id"
+      },
+      "focalPoint": {
+        "@container": "@list",
+        "@id": "toot:focalPoint"
+      },
+      "Emoji": "toot:Emoji"
+    }
+  ],
+  "id": "https://mastodon.example/users/alice",
+  "webfinger": "alice@mastodon.example",
+  "type": "Person",
+  "following": "https://mastodon.example/users/alice/following",
+  "followers": "https://mastodon.example/users/alice/followers",
+  "inbox": "https://mastodon.example/users/alice/inbox",
+  "outbox": "https://mastodon.example/users/alice/outbox",
+  "featured": "https://mastodon.example/users/alice/collections/featured",
+  "featuredTags": "https://mastodon.example/users/alice/collections/tags",
+  "preferredUsername": "alice",
+  "name": "Alice :blobcat:",
+  "summary": "<p>Hello :blobcat:</p>",
+  "url": "https://mastodon.example/@alice",
+  "manuallyApprovesFollowers": false,
+  "discoverable": true,
+  "indexable": false,
+  "published": "2024-05-09T00:00:00Z",
+  "memorial": false,
+  "showFeatured": true,
+  "showMedia": true,
+  "showRepliesInMedia": true,
+  "interactionPolicy": {
+    "canFeature": {
+      "automaticApproval": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    }
+  },
+  "featuredCollections": "https://mastodon.example/ap/users/28400/featured_collections",
+  "publicKey": {
+    "id": "https://mastodon.example/users/alice#main-key",
+    "owner": "https://mastodon.example/users/alice",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "tag": [
+    {
+      "id": "https://mastodon.example/emojis/1",
+      "type": "Emoji",
+      "name": ":blobcat:",
+      "updated": "2026-10-17T06:50:00Z",
+      "icon": {
+        "type": "Image",
+        "mediaType": "image/png",
+        "url": "https://mastodon.example/system/custom_emojis/images/000/000/001/original/blobcat.png"
+      }
+    }
+  ],
+  "attachment": [
+    {
+      "type": "PropertyValue",
+      "name": "Website",
+      "value": "<a href=\"https://example.org\" rel=\"me\">example.org</a>"
+    }
+  ],
+  "endpoints": {
+    "sharedInbox": "https://mastodon.example/inbox"
+  },
+  "icon": {
+    "type": "Image",
+    "mediaType": "image/png",
+    "url": "https://files.mastodon.example/avatar.png"
+  },
+  "image": {
+    "type": "Image",
+    "mediaType": "image/png",
+    "url": "https://files.mastodon.example/header.png"
+  }
+}

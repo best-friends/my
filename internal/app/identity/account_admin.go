@@ -142,6 +142,8 @@ type AdminAccountDetail struct {
 	EmailVerified bool
 	// Roles are the user's roles, highest position first.
 	Roles []identity.Role
+	// TwoFactorEnabled reports whether the user signs in with two-factor authentication.
+	TwoFactorEnabled bool
 }
 
 // SameIPAccounts are the other accounts that registered or signed in from one IP address.
@@ -490,6 +492,12 @@ func (s *AccountAdmin) Detail(ctx context.Context, accountID string) (AdminAccou
 		return AdminAccountDetail{}, err
 	}
 	if out.Roles, err = repo.ListUserRoles(ctx, a.UserID); err != nil {
+		return AdminAccountDetail{}, err
+	}
+	switch _, err := repo.FindActiveTOTPEnrollment(ctx, a.UserID); {
+	case err == nil:
+		out.TwoFactorEnabled = true
+	case !errors.Is(err, ErrNotFound):
 		return AdminAccountDetail{}, err
 	}
 	return out, nil

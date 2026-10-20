@@ -41,6 +41,7 @@ import {
   PiUser,
   PiWarning,
   PiWarningFill,
+  PiWrench,
   PiX,
 } from "react-icons/pi";
 
@@ -100,7 +101,8 @@ export const iconTable = {
   NotificationsIcon: { off: glyph(PiBell, "PiBell") },
   ProfileIcon: { off: glyph(PiUser, "PiUser") },
   SettingsIcon: { off: glyph(PiSlidersHorizontal, "PiSlidersHorizontal") },
-  AdminIcon: { off: glyph(PiShieldCheck, "PiShieldCheck") },
+  ModerationIcon: { off: glyph(PiShieldCheck, "PiShieldCheck") },
+  AdminIcon: { off: glyph(PiWrench, "PiWrench") },
   MenuIcon: { off: glyph(PiList, "PiList") },
 } as const satisfies Record<string, IconEntry>;
 
@@ -237,7 +239,12 @@ export function SettingsIcon() {
   return renderIcon(iconTable.SettingsIcon);
 }
 
-/** A shield with a check, for the administration. */
+/** A shield with a check, for the moderation. */
+export function ModerationIcon() {
+  return renderIcon(iconTable.ModerationIcon);
+}
+
+/** A wrench, for the server administration. */
 export function AdminIcon() {
   return renderIcon(iconTable.AdminIcon);
 }

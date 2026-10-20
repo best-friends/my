@@ -114,6 +114,8 @@ type App struct {
 	Identity *identity.Service
 	// AccountAdmin is the moderators' account management (FR-714).
 	AccountAdmin *identity.AccountAdmin
+	// Exports builds the archives of the users' data (FR-008).
+	Exports *identity.Exports
 	// Instance holds the instance settings and texts, which live in the database; Config holds
 	// the deployment configuration. They never share a key (docs/reference/configuration.md).
 	Instance *instance.Service
@@ -388,8 +390,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
 			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
 		},
-		Sanitizer:         newHTMLSanitizer(),
-		RecordRemoteImage: a.recordRemoteImage,
+		Sanitizer:          newHTMLSanitizer(),
+		RecordRemoteImage:  a.recordRemoteImage,
+		RecordRemoteEmojis: a.recordRemoteEmojis,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{
@@ -422,6 +425,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: identities, Clock: a.Clock, IDs: a.IDs,
 		Passwords: identity.NewPasswordHasher(identity.DefaultArgon2Params, 0), Accounts: a.Accounts,
 		Logins: a.AccountPolicy, RateLimiter: a.RateLimiter,
+		// TOTP secrets are sealed like actor keys (ADR-0019 §6); sign-in challenges live in the KV store.
+		Sealer: a.Sealer, KV: a.KV,
 		// nil for captcha = none; sign-in and sign-up check the CAPTCHA token otherwise (ADR-0042).
 		HumanVerifier: a.HumanVerifier, Logger: a.Logger,
 		// The default locale and the registration mode are instance settings in the database,
@@ -475,7 +480,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Interactions = content.NewInteractions(content.InteractionDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: a.AccountPolicy.Content(),
-		Clock: a.Clock, IDs: a.IDs, Host: cfg.Host,
+		RecordRemoteEmojis: a.Content.RecordRemoteEmojis,
+		Clock:              a.Clock, IDs: a.IDs, Host: cfg.Host,
 	})
 	// After the content and graph projectors, which reject the commands that must not reach
 	// the timelines (data-model §4.6).
@@ -523,6 +529,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.setUpExports(identities)
 	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -582,7 +589,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,
@@ -599,6 +606,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
+		OwnAccount: a.Identity, Exports: a.Exports,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		// The instance theme (ADR-0059) and the URLs of its stylesheets, which the web handler serves.

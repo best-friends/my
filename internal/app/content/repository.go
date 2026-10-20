@@ -168,6 +168,9 @@ type Repository interface {
 	ReplacePollTallies(ctx context.Context, tx uow.Tx, pollID string, tallies []content.PollTally) error
 
 	FindCustomEmoji(ctx context.Context, id string) (content.CustomEmoji, error)
+	// FindCustomEmojiByShortcode returns the emoji with a shortcode on a domain ("" for this
+	// instance).
+	FindCustomEmojiByShortcode(ctx context.Context, shortcode, domain string) (content.CustomEmoji, error)
 	// FindCustomEmojiImage returns the current image of an emoji.
 	FindCustomEmojiImage(ctx context.Context, emojiID string) (content.CustomEmojiImage, error)
 	// FindPollTallies returns the tallies of a poll ordered by position; a poll without an
