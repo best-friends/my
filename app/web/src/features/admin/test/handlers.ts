@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the server administration feature (web-client.md §7): the dead jobs, the settings, the rules, the
-// server's texts, the custom emoji, the webhooks and the announcements, none by default. The default viewer has no permissions, so the screens' tests start with
+// server's texts, the custom emoji, the webhooks, the announcements, and the relays, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";
@@ -54,6 +54,25 @@ export function webhookDeliveryFixture(id: string, overrides: Partial<Schemas["A
     status: "pending",
     attempts: 0,
     created_at: "2026-10-20T01:00:00Z",
+    ...overrides,
+  };
+}
+
+/** A relay as the admin API answers it, registered at 2026-10-20T00:00:00Z and joined, with `overrides`. */
+export function relayFixture(id: string, overrides: Partial<Schemas["AdminRelay"]> = {}): Schemas["AdminRelay"] {
+  return {
+    id,
+    protocol: "mastodon",
+    url: "https://relay.example/inbox",
+    inbox_url: "https://relay.example/inbox",
+    receive: true,
+    state: "accepted",
+    state_changed_at: "2026-10-20T00:05:00Z",
+    actor_uri: "https://relay.example/actor",
+    taken_last_day: 0,
+    dropped_last_day: 0,
+    domain_suspended: false,
+    created_at: "2026-10-20T00:00:00Z",
     ...overrides,
   };
 }
@@ -130,6 +149,9 @@ const createdRuleId = "0199f0e0-0000-7000-8000-0000000000f1";
 
 /** The ID the default POST /admin/webhooks handler gives a new webhook. */
 const createdWebhookId = "0199f0e0-0000-7000-8000-0000000000b1";
+
+/** The ID the default POST /admin/relays handler gives a new relay. */
+const createdRelayId = "0199f0e0-0000-7000-8000-0000000000d1";
 
 /** The ID the default POST /admin/custom_emojis handler gives a new emoji. */
 const createdCustomEmojiId = "0199f0e0-0000-7000-8000-00000000e001";
@@ -240,6 +262,29 @@ export const handlers = [
   http.post(`${apiBase}/admin/webhooks/:id/deliveries/:delivery_id/redeliver`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(webhookDeliveryFixture(String(params["delivery_id"])))),
   ),
+  // operationIds listAdminRelays, createRelay, followRelay, unfollowRelay, deleteRelay: no relays; a new relay is
+  // pending with what was sent, a relay joined again is pending and one left is left.
+  http.get(`${apiBase}/admin/relays`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminRelayList"]))),
+  http.post(`${apiBase}/admin/relays`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["CreateRelayRequest"];
+    const { actor_uri: _, ...pending } = relayFixture(createdRelayId, {
+      url: body.url,
+      inbox_url: body.url,
+      protocol: body.protocol ?? "mastodon",
+      receive: body.receive ?? true,
+      state: "pending",
+    });
+    return withViewer(request, () => HttpResponse.json(pending));
+  }),
+  http.post(`${apiBase}/admin/relays/:id/follow`, ({ request, params }) => {
+    const { actor_uri: _, ...pending } = relayFixture(String(params["id"]), { state: "pending" });
+    return withViewer(request, () => HttpResponse.json(pending));
+  }),
+  http.post(`${apiBase}/admin/relays/:id/unfollow`, ({ request, params }) => {
+    const { actor_uri: _, ...left } = relayFixture(String(params["id"]), { state: "left" });
+    return withViewer(request, () => HttpResponse.json(left));
+  }),
+  http.delete(`${apiBase}/admin/relays/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds listAdminAnnouncements, createAdminAnnouncement, getAdminAnnouncement, updateAdminAnnouncement,
   // publishAdminAnnouncement, withdrawAdminAnnouncement: no announcements; a new or changed one is answered as sent.
   http.get(`${apiBase}/admin/announcements`, ({ request }) =>

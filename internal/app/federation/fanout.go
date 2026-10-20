@@ -54,6 +54,9 @@ type FanOutDeps struct {
 	Follows FollowReader
 	// Reports reads the forwarded reports that Flags are about; nil fails those activities.
 	Reports ReportReader
+	// Relays reads the inboxes of the accepted relays, the last recipients of the Create of a
+	// public status (ADR-0061); nil sends to no relay.
+	Relays RelayInboxes
 	// Host is the serving domain of the activity and object URIs (ADR-0018).
 	Host string
 	// AccountDomain is the domain of local handles in mentions; empty means Host.
@@ -251,6 +254,10 @@ const (
 	phaseSharedInboxes phase = "shared_inboxes"
 	// phaseReported is the remote account a forwarded report is about, in one batch.
 	phaseReported phase = "reported"
+	// phaseRelay is the inbox of an activity of the relay membership, in one batch.
+	phaseRelay phase = "relay"
+	// phaseRelays are the inboxes of the accepted relays, in one batch.
+	phaseRelays phase = "relays"
 	// phaseVoters are the accounts that voted in the poll of a status, in batches.
 	phaseVoters phase = "voters"
 )
@@ -291,12 +298,15 @@ type subject struct {
 	sharedInboxes bool
 	// report is the forwarded report a Flag is about.
 	report appmoderation.Report
+	// inbox is the only recipient of an activity of the relay membership.
+	inbox federation.IRI
 }
 
 // phases returns the sources of recipients of the activity, in order (data-model §7,
 // federation.md §7.1).
 //
-//   - Create: the mentioned accounts, then the followers.
+//   - Create: the mentioned accounts, then the followers, then, for a public status, the accepted
+//     relays (ADR-0061).
 //   - Update and Delete: the inboxes of the Create, then, for a public or unlisted status, the
 //     followers at that time, and, for the Update of a status with a poll, the accounts that
 //     voted in it (FR-112).
@@ -308,8 +318,11 @@ type subject struct {
 //   - Like and Undo Like: the author of the favourited status.
 //   - Create of a vote: the author of the poll's status.
 //   - Flag: the reported account.
+//   - Follow, Undo, Accept, and Reject of the relay membership: the inbox of the payload.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
+	case federation.OutboundRelay:
+		return []phase{phaseRelay}
 	case federation.OutboundReport:
 		return []phase{phaseReported}
 	case federation.OutboundBlock:
@@ -325,6 +338,9 @@ func (s subject) phases() []phase {
 		return []phase{phaseStatusAuthor}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
+			if s.visibility == appcontent.VisibilityPublic {
+				return []phase{phaseMentions, phaseFollowers, phaseRelays}
+			}
 			return []phase{phaseMentions, phaseFollowers}
 		}
 		phases := []phase{phasePrior}
@@ -349,6 +365,9 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 	}
 	if act.ObjectKind == federation.OutboundReport {
 		return f.reportSubject(ctx, s)
+	}
+	if act.ObjectKind == federation.OutboundRelay {
+		return relaySubject(s, p)
 	}
 	if act.ObjectKind == federation.OutboundFollow {
 		s.followURI = federation.IRI(p.FollowURI)
@@ -484,6 +503,14 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		return targets, "", err
 	case phaseReported:
 		targets, err = f.reportedInbox(ctx, s)
+		return targets, "", err
+	case phaseRelay:
+		if t, ok := targetOf(s.inbox); ok {
+			targets = []target{t}
+		}
+		return targets, "", nil
+	case phaseRelays:
+		targets, err = f.relayTargets(ctx)
 		return targets, "", err
 	case phaseStatusAuthor:
 		targets, err = f.statusAuthorTargets(ctx, s)

@@ -40,9 +40,14 @@ type RetentionRepository interface {
 	// before q.UnreferencedBefore while no local status replies to them or shares their thread
 	// and no local account boosts (unretracted), favourites, bookmarks, or pins them.
 	ListRemoteStatusesToPurge(ctx context.Context, tx uow.Tx, q PurgeQuery) ([]content.Status, error)
+	// ListRelayedStatusesToPurge returns up to q.Limit statuses that only a relay brought in and
+	// that are not deleted, in ID order after q.After, published before q.Before while nothing
+	// local refers to them (as ListRemoteStatusesToPurge judges it).
+	ListRelayedStatusesToPurge(ctx context.Context, tx uow.Tx, q RelayedPurgeQuery) ([]content.Status, error)
 	// PurgeStatuses deletes the rows of deleted statuses: their revisions with every child and
-	// poll, the boosts of remote accounts, and the statuses. The deletions stay, and so do local
-	// accounts' boosts, favourites, bookmarks, and pins.
+	// poll, the boosts of remote accounts, the record of a relay that brought them in, and the
+	// statuses. The deletions stay, and so do local accounts' boosts, favourites, bookmarks, and
+	// pins.
 	PurgeStatuses(ctx context.Context, tx uow.Tx, statusIDs []string) error
 }
 

@@ -59,6 +59,12 @@ const (
 	AuditAnnouncementWithdrawn = moderation.AuditAnnouncementWithdrawn
 	AuditInviteCreated         = moderation.AuditInviteCreated
 	AuditInviteRevoked         = moderation.AuditInviteRevoked
+	AuditRelayAdded            = moderation.AuditRelayAdded
+	AuditRelayFollowed         = moderation.AuditRelayFollowed
+	AuditRelayUnfollowed       = moderation.AuditRelayUnfollowed
+	AuditRelayRemoved          = moderation.AuditRelayRemoved
+	AuditRelayAccepted         = moderation.AuditRelayAccepted
+	AuditRelayRejected         = moderation.AuditRelayRejected
 
 	AuditTargetUser         = moderation.AuditTargetUser
 	AuditTargetSetting      = moderation.AuditTargetSetting
@@ -68,10 +74,15 @@ const (
 	AuditTargetAnnouncement = moderation.AuditTargetAnnouncement
 	AuditTargetInvite       = moderation.AuditTargetInvite
 	AuditTargetCustomEmoji  = moderation.AuditTargetCustomEmoji
+	AuditTargetRelay        = moderation.AuditTargetRelay
 )
 
-// AuditActorSystem is moderation.AuditActorSystem, the server itself.
-const AuditActorSystem = moderation.AuditActorSystem
+// AuditActorSystem is moderation.AuditActorSystem, the server itself, and AuditActorRemote
+// moderation.AuditActorRemote, another server.
+const (
+	AuditActorSystem = moderation.AuditActorSystem
+	AuditActorRemote = moderation.AuditActorRemote
+)
 
 // AuditActor returns the actor of an operation given the user ID that the use cases take: the
 // user, or the CLI for "".
@@ -165,7 +176,7 @@ type AuditTarget struct {
 
 // GoneAuditTargets returns the targets of entries that no longer exist: accounts, reports,
 // appeals, and sign-up blocks erased (past their retention, ADR-0038), and roles, custom emoji,
-// and webhooks deleted (through Deps.AuditTargets). It looks up each kind of target once for all
+// webhooks, and relays deleted (through Deps.AuditTargets). It looks up each kind of target once for all
 // the entries. A domain, a user, a setting, a rule, an announcement, and an invite are never
 // removed, and a status has no operation recorded on it; none of these is reported gone.
 func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[AuditTarget]bool, error) {
@@ -180,7 +191,7 @@ func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.Aud
 		switch e.TargetKind {
 		case moderation.AuditTargetAccount, moderation.AuditTargetReport, moderation.AuditTargetAppeal, moderation.AuditTargetSignupBlock:
 			ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
-		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook:
+		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook, moderation.AuditTargetRelay:
 			if s.d.AuditTargets != nil {
 				ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
 			}
@@ -193,7 +204,7 @@ func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.Aud
 		switch kind {
 		case moderation.AuditTargetAccount:
 			existing, err = s.d.Accounts.ExistingIDs(ctx, list)
-		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook:
+		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook, moderation.AuditTargetRelay:
 			existing, err = s.d.AuditTargets.ExistingAuditTargets(ctx, kind, list)
 		default:
 			existing, err = s.d.Repository.ExistingAuditTargets(ctx, kind, list)

@@ -54,3 +54,8 @@ https://misskey.test {
 	import site
 	reverse_proxy misskey:3000
 }
+
+https://relay.test {
+	import site
+	reverse_proxy relay-server:8080
+}

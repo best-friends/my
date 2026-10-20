@@ -139,7 +139,7 @@ func (m moderationEvidence) Review(ctx context.Context, statusID string) (conten
 	return m.a.Statuses.Review(ctx, statusID)
 }
 
-// moderationAuditTargets gives the moderation module the roles, custom emoji, and webhooks that
+// moderationAuditTargets gives the moderation module the roles, custom emoji, webhooks, and relays that
 // the audit log names, of modules that are built after it.
 type moderationAuditTargets struct{ a *App }
 
@@ -151,6 +151,8 @@ func (m moderationAuditTargets) ExistingAuditTargets(ctx context.Context, kind m
 		return m.a.CustomEmojis.ExistingIDs(ctx, ids)
 	case kind == moderation.AuditTargetWebhook && m.a.Webhooks != nil:
 		return m.a.Webhooks.ExistingIDs(ctx, ids)
+	case kind == moderation.AuditTargetRelay && m.a.Relays != nil:
+		return m.a.Relays.ExistingIDs(ctx, ids)
 	}
 	// A module that is not built has removed nothing.
 	return ids, nil

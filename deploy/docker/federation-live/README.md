@@ -1,24 +1,25 @@
 # Live interoperability test
 
-This server, Mastodon, GoToSocial, and Misskey federating with each other over HTTPS, for the live test of
+This server, Mastodon, GoToSocial, and Misskey federating with each other over HTTPS, with an Activity-Relay relay
+between this server and Mastodon, for the live test of
 [federation.md §12](../../../docs/architecture/federation.md#12-テスト) ([ADR-0006](../../../docs/adr/0006-federation-protocol-scope.md),
 [ADR-0015](../../../docs/adr/0015-testing-strategy.md)). CI runs it nightly (job `federation-live` in
 `.github/workflows/nightly.yml`); it is not part of `make check`.
 
 | File | What it is |
 | --- | --- |
-| `compose.yaml` | The stack: the TLS proxy, PostgreSQL (this server, Mastodon, and Misskey), Redis, this server built from the checkout, Mastodon (web and Sidekiq), GoToSocial, and Misskey with its configuration file |
-| `Caddyfile` | The proxy: one certificate of the private CA for `my.test`, `mastodon.test`, `gts.test`, and `misskey.test`, forwarded by host name |
+| `compose.yaml` | The stack: the TLS proxy, PostgreSQL (this server, Mastodon, and Misskey), Redis, this server built from the checkout, Mastodon (web and Sidekiq), GoToSocial, Misskey with its configuration file, and Activity-Relay (server and worker) |
+| `Caddyfile` | The proxy: one certificate of the private CA for `my.test`, `mastodon.test`, `gts.test`, `misskey.test`, and `relay.test`, forwarded by host name |
 | `postgres-init.sh` | The roles and databases of this server, prepared with `schema/postgres.bootstrap.sql`, and of Misskey |
 | `*_test.go` | The scenarios (`go test -tags federationlive`), black-box clients of this server's client API, the Mastodon client API (Mastodon and GoToSocial), and the Misskey API (`misskey_test.go`) |
 | `../../../scripts/federation-live.sh` | Generates the CA and the secrets, starts the stack, creates the users, runs the scenarios, collects the logs, and removes the stack |
 
 ## How it works
 
-- **TLS**: the script creates a private CA and one certificate for the four hosts. Every server trusts only that CA
+- **TLS**: the script creates a private CA and one certificate for the five hosts. Every server trusts only that CA
   (`SSL_CERT_FILE`; Misskey's `NODE_EXTRA_CA_CERTS`).
-- **DNS**: the proxy holds the network aliases `my.test`, `mastodon.test`, `gts.test`, and `misskey.test`, so each
-  server reaches the others, and itself, through the proxy, as on the internet. The servers may reach the private
+- **DNS**: the proxy holds the network aliases `my.test`, `mastodon.test`, `gts.test`, `misskey.test`, and
+  `relay.test`, so each server reaches the others, and itself, through the proxy, as on the internet. The servers may reach the private
   addresses of the compose network only (`MY_HTTP_ALLOW_PRIVATE_NETWORKS` in the `development` profile, Mastodon's
   `ALLOWED_PRIVATE_ADDRESSES`, GoToSocial's `http-client.allow-ips`, Misskey's `allowedPrivateNetworks`).
 - **Users**: created with each server's admin CLI, and on Misskey with its API (`admin/accounts/create`: the first
@@ -34,12 +35,18 @@ This server, Mastodon, GoToSocial, and Misskey federating with each other over H
   | `dave@mastodon.test`, `erin@gts.test`, `heidi@misskey.test` | Never follow alice: the mentioned non-followers of `TestVisibilityAudiences` |
   | `eve@mastodon.test` | `TestSignatureProfile`: the proxy refuses her draft-cavage POSTs in both directions |
   | `mod@mastodon.test`, `mkadmin@misskey.test` | The administrators whose tokens read the moderators' reports in `TestReportForwarding` |
+  | `ivan@my.test`, `judy@mastodon.test` | `TestRelay`: nobody follows them, so their posts reach the other server only through the relay |
 
 - **Signatures**: to exercise RFC 9421, which Mastodon and this server only use after a 401, the proxy answers 401
   to a draft-cavage POST signed by eve (to this server) or addressed to eve's inbox (to Mastodon). The script
   recreates the proxy with eve's actor URI once Mastodon has numbered her (`FEDERATION_LIVE_SIGNER_ACTOR`,
   `FEDERATION_LIVE_SIGNER_INBOX`).
 - **Mastodon** runs in secure mode (`AUTHORIZED_FETCH`), so every fetch this server makes from it must be signed.
+- **The relay** is [Activity-Relay](https://github.com/yukimochi/Activity-Relay) (AGPL-3.0), configured by environment
+  variables (no `config.yml`) with an actor key that the script generates, accepting every subscription. The script
+  makes Mastodon join it at its inbox (`Relay.create!(...).enable!` in a Rails runner); `TestRelay` makes this server
+  join it through the admin API (ADR-0061). The relay forwards public posts as they are, so Mastodon takes this
+  server's posts only with their linked data signature.
 - **Misskey** federates with no one until its administrator sets `federation` to `all` (`admin/update-meta`), and
   its API limits how often a user may call an endpoint (`ap/show` 30 times an hour); the script sets both, the
   latter with a rate limit factor of 0 for every user (`admin/roles/update-default-policies`).

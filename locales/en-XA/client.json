@@ -1635,6 +1635,30 @@
     "defaultMessage": "[Řḗḗɠīşŧřȧȧŧīǿǿƞ řḗḗĵḗḗƈŧḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.relay_accepted": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ ȧȧƈƈḗḗƥŧḗḗḓ ŧħḗḗ şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.relay_added": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ řḗḗɠīşŧḗḗřḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.relay_followed": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ ĵǿǿīƞḗḗḓ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.relay_rejected": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ řḗḗĵḗḗƈŧḗḗḓ ŧħḗḗ şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.relay_removed": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ ḓḗḗŀḗḗŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.relay_unfollowed": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ ŀḗḗƒŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.report_assigned": {
     "defaultMessage": "[Řḗḗƥǿǿřŧ ȧȧşşīɠƞḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1873,6 +1897,10 @@
   },
   "admin.audit_log.target_kind.invite": {
     "defaultMessage": "[Īƞṽīŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.relay": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.target_kind.report": {
@@ -3249,6 +3277,214 @@
   },
   "admin.registrations.title": {
     "defaultMessage": "[Řḗḗɠīşŧřȧȧŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.activities": {
+    "defaultMessage": "[{count,plural,one{# ȧȧƈŧīṽīŧẏ} other{# ȧȧƈŧīṽīŧīḗḗş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.actor": {
+    "defaultMessage": "[Řḗḗŀȧȧẏ ȧȧƈŧǿǿř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.change_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ ŧħḗḗ řḗḗŀȧȧẏ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.create_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ĵǿǿīƞ ŧħḗḗ řḗḗŀȧȧẏ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.created": {
+    "defaultMessage": "[{name} īş řḗḗɠīşŧḗḗřḗḗḓ, ȧȧƞḓ ŧħḗḗ şḗḗřṽḗḗř ȧȧşķḗḗḓ ŧǿǿ ĵǿǿīƞ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.delete": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.delete.description": {
+    "defaultMessage": "[Īŧş řḗḗɠīşŧřȧȧŧīǿǿƞ īş ḓḗḗŀḗḗŧḗḗḓ. Ŧħḗḗ ƥǿǿşŧş ȧȧŀřḗḗȧȧḓẏ şḗḗƞŧ ŧǿǿ īŧ şŧīŀŀ ɠḗḗŧ ŧħḗḗīř ŭŭƥḓȧȧŧḗḗş ȧȧƞḓ ḓḗḗŀḗḗŧīǿǿƞş. Ŧħīş ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭƞḓǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.delete.title": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗ {name}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.delete_relay": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗ {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.deleted": {
+    "defaultMessage": "[{name} īş ḓḗḗŀḗḗŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.domain_suspended": {
+    "defaultMessage": "[Ȧ ḓǿǿḿȧȧīƞ ȧȧƈŧīǿǿƞ şŭŭşƥḗḗƞḓş ŧħḗḗ şḗḗřṽḗḗř ǿǿƒ ŧħīş řḗḗŀȧȧẏ: ƞǿǿŧħīƞɠ īş şḗḗƞŧ ŧǿǿ īŧ ǿǿř ŧȧȧķḗḗƞ ƒřǿǿḿ īŧ ẇħīŀḗḗ īŧ ḓǿǿḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.dropped": {
+    "defaultMessage": "[Ḓřǿǿƥƥḗḗḓ ǿǿṽḗḗř ŧħḗḗ ŀīḿīŧ, ŀȧȧşŧ 24 ħǿǿŭŭřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.empty": {
+    "defaultMessage": "[Ƞǿǿ řḗḗŀȧȧẏş ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.empty.description": {
+    "defaultMessage": "[Ȧ řḗḗŀȧȧẏ ƥȧȧşşḗḗş ƥŭŭƀŀīƈ ƥǿǿşŧş ƀḗḗŧẇḗḗḗḗƞ ŧħḗḗ şḗḗřṽḗḗřş ŧħȧȧŧ ĵǿǿīƞ īŧ, ẇħīƈħ ƒīŀŀş ŧħḗḗ ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ ǿǿƒ ȧȧ şḿȧȧŀŀ şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.follow": {
+    "defaultMessage": "[Ĵǿǿīƞ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.follow_relay": {
+    "defaultMessage": "[Ĵǿǿīƞ {name} ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.followed": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ȧȧşķḗḗḓ ŧǿǿ ĵǿǿīƞ {name} ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.inbox": {
+    "defaultMessage": "[Īƞƀǿǿẋ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.list.title": {
+    "defaultMessage": "[Řḗḗŀȧȧẏş ǿǿƒ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.new.description": {
+    "defaultMessage": "[Ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ŧħīş şḗḗřṽḗḗř ɠǿǿ ŧǿǿ ḗḗṽḗḗřẏ řḗḗŀȧȧẏ īŧ ĵǿǿīƞş, ẇħīƈħ ƥȧȧşşḗḗş ŧħḗḗḿ ǿǿƞ ŧǿǿ ŧħḗḗ ǿǿŧħḗḗř şḗḗřṽḗḗřş ǿǿƒ ŧħḗḗ řḗḗŀȧȧẏ. Ƥǿǿşŧş ǿǿƒ ǿǿŧħḗḗř ṽīşīƀīŀīŧīḗḗş ȧȧřḗḗ ƞḗḗṽḗḗř şḗḗƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.new.title": {
+    "defaultMessage": "[Ĵǿǿīƞ ȧȧ řḗḗŀȧȧẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.problem.domain_suspended": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ǿǿƒ ŧħḗḗ řḗḗŀȧȧẏ īş şŭŭşƥḗḗƞḓḗḗḓ ƀẏ ȧȧ ḓǿǿḿȧȧīƞ ȧȧƈŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.problem.exists": {
+    "defaultMessage": "[Ȧ řḗḗŀȧȧẏ ẇīŧħ ŧħīş ŬŘĿ īş ȧȧŀřḗḗȧȧḓẏ řḗḗɠīşŧḗḗřḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.problem.not_actor": {
+    "defaultMessage": "[Ŧħḗḗ ŬŘĿ ḓǿǿḗḗş ƞǿǿŧ şḗḗřṽḗḗ ŧħḗḗ ȧȧƈŧǿǿř ǿǿƒ ȧȧ řḗḗŀȧȧẏ ẇīŧħ ȧȧƞ īƞƀǿǿẋ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.problem.state": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗŀȧȧẏ īş ƞǿǿŧ īƞ ȧȧ şŧȧȧŧḗḗ ŧħȧȧŧ ȧȧŀŀǿǿẇş ŧħīş: ŀḗḗȧȧṽḗḗ ȧȧ řḗḗŀȧȧẏ ƀḗḗƒǿǿřḗḗ ḓḗḗŀḗḗŧīƞɠ īŧ, ȧȧƞḓ ĵǿǿīƞ ȧȧɠȧȧīƞ ǿǿƞŀẏ ǿǿƞḗḗ ŧħȧȧŧ ẇȧȧş ŀḗḗƒŧ ǿǿř řḗḗĵḗḗƈŧḗḗḓ ŧħḗḗ şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.problem.url": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧƞ ħŧŧƥş ŬŘĿ ǿǿƒ ȧȧŧ ḿǿǿşŧ 2048 ƀẏŧḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.protocol": {
+    "defaultMessage": "[Ƥřǿǿŧǿǿƈǿǿŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.protocol.auto": {
+    "defaultMessage": "[Ḓḗḗŧḗḗƈŧ ȧȧŭŭŧǿǿḿȧȧŧīƈȧȧŀŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.protocol.description": {
+    "defaultMessage": "[Ḓḗḗŧḗḗƈŧīƞɠ īŧ ȧȧŭŭŧǿǿḿȧȧŧīƈȧȧŀŀẏ ƥīƈķş ĿīŧḗḗƤŭŭƀ ẇħḗḗƞ ŧħḗḗ ŬŘĿ şḗḗřṽḗḗş ȧȧƞ ȧȧƈŧǿǿř, ȧȧƞḓ Ḿȧȧşŧǿǿḓǿǿƞ ǿǿŧħḗḗřẇīşḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.protocol.litepub": {
+    "defaultMessage": "[ĿīŧḗḗƤŭŭƀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.protocol.mastodon": {
+    "defaultMessage": "[Ḿȧȧşŧǿǿḓǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.receive": {
+    "defaultMessage": "[Řḗḗƈḗḗīṽḗḗ ƥǿǿşŧş ƒřǿǿḿ ŧħḗḗ řḗḗŀȧȧẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.receive.description": {
+    "defaultMessage": "[Ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş īŧ řḗḗŀȧȧẏş şħǿǿẇ īƞ ŧħḗḗ ƒḗḗḓḗḗřȧȧŧḗḗḓ ȧȧƞḓ ħȧȧşħŧȧȧɠ ŧīḿḗḗŀīƞḗḗş, ȧȧƞḓ ȧȧřḗḗ ķḗḗƥŧ ƒǿǿř ȧȧ şħǿǿřŧ ŧīḿḗḗ. Ẇīŧħǿǿŭŭŧ īŧ, ŧħḗḗ şḗḗřṽḗḗř ǿǿƞŀẏ şḗḗƞḓş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.receive.no": {
+    "defaultMessage": "[Şḗḗƞḓş ǿǿƞŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.receive.term": {
+    "defaultMessage": "[Řḗḗƈḗḗīṽīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.receive.yes": {
+    "defaultMessage": "[Ŧȧȧķḗḗş īƞ ŧħḗḗ ƥǿǿşŧş īŧ řḗḗŀȧȧẏş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.state": {
+    "defaultMessage": "[Şŧȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.state.accepted": {
+    "defaultMessage": "[Ĵǿǿīƞḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.state.left": {
+    "defaultMessage": "[Ŀḗḗƒŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.state.pending": {
+    "defaultMessage": "[Ȧẇȧȧīŧīƞɠ ŧħḗḗ řḗḗŀȧȧẏ'ş ȧȧƞşẇḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.state.rejected": {
+    "defaultMessage": "[Řḗḗĵḗḗƈŧḗḗḓ ƀẏ ŧħḗḗ řḗḗŀȧȧẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.state_changed_at": {
+    "defaultMessage": "[Şŧȧȧŧḗḗ ƈħȧȧƞɠḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.submit": {
+    "defaultMessage": "[Ĵǿǿīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.summary": {
+    "defaultMessage": "[Ĵǿǿīƞ ƒḗḗḓḗḗřȧȧŧīǿǿƞ řḗḗŀȧȧẏş ŧǿǿ ḗḗẋƈħȧȧƞɠḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ẇīŧħ ḿǿǿřḗḗ şḗḗřṽḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.taken": {
+    "defaultMessage": "[Ŧȧȧķḗḗƞ īƞ, ŀȧȧşŧ 24 ħǿǿŭŭřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.title": {
+    "defaultMessage": "[Řḗḗŀȧȧẏş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.unfollow": {
+    "defaultMessage": "[Ŀḗḗȧȧṽḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.unfollow_relay": {
+    "defaultMessage": "[Ŀḗḗȧȧṽḗḗ {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.unfollowed": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ŀḗḗƒŧ {name}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.url": {
+    "defaultMessage": "[ŬŘĿ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.relays.url.description": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗŀȧȧẏ'ş īƞƀǿǿẋ ƒǿǿř Ḿȧȧşŧǿǿḓǿǿƞ ǿǿř īŧş ȧȧƈŧǿǿř ƒǿǿř ĿīŧḗḗƤŭŭƀ, ȧȧƞ ħŧŧƥş ŬŘĿ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.report.account.deleted": {

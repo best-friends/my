@@ -67,3 +67,22 @@ func (p *FederationPolicy) RejectsMedia(ctx context.Context, domain string) (boo
 func (p *FederationPolicy) RejectsReports(ctx context.Context, domain string) (bool, error) {
 	return p.domainHas(ctx, domain, moderation.RestrictReportIntake)
 }
+
+// DiscoveryRestricted reports whether a relay must not bring in the posts of an author (ADR-0061):
+// the domain, or a parent, or the account (accountID, "" for an account that is not stored) has
+// the federation or the public_discovery restriction, so that neither the federated timeline nor
+// search would show them.
+func (p *FederationPolicy) DiscoveryRestricted(ctx context.Context, domain, accountID string) (bool, error) {
+	keeps := func(rs []moderation.Restriction) bool {
+		return slices.Contains(rs, moderation.RestrictFederation) || slices.Contains(rs, moderation.RestrictPublicDiscovery)
+	}
+	rs, err := p.DomainRestrictions(ctx, domain)
+	if err != nil || keeps(rs) {
+		return err == nil, err
+	}
+	if accountID == "" {
+		return false, nil
+	}
+	rs, err = p.repo.AccountRestrictionsInEffect(ctx, accountID, p.clock.Now())
+	return keeps(rs), err
+}

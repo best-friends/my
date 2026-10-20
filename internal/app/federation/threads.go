@@ -377,6 +377,19 @@ func (h *StatusHandlers) fetchStatus(ctx context.Context, target federation.IRI)
 // parent is enqueued as on receipt. It fails with ErrNotTaken or the errors of resolving the
 // author; other errors come from the stores.
 func (h *StatusHandlers) fetched(ctx context.Context, got *Fetched, parent bool) (appcontent.Status, error) {
+	return h.fetchedWith(ctx, got, storeOptions{parent: parent})
+}
+
+// storeOptions say how a post is stored: with the fetch of its parent (parent), or as one that a
+// relay brought in (relay), which is stored only when it is public, without fetching its parent
+// or the unknown actors it mentions, and is recorded in relayed_statuses (ADR-0061).
+type storeOptions struct {
+	parent bool
+	relay  *RelayMembership
+}
+
+// fetchedWith is fetched with opts.
+func (h *StatusHandlers) fetchedWith(ctx context.Context, got *Fetched, opts storeOptions) (appcontent.Status, error) {
 	obj := got.Document.Object
 	switch {
 	case obj == nil || !isPost(obj.Type):
@@ -402,7 +415,16 @@ func (h *StatusHandlers) fetched(ctx context.Context, got *Fetched, parent bool)
 	case author.Account.IsLocal() || !author.Lifecycle.Active():
 		return appcontent.Status{}, fmt.Errorf("%w: the author %s of %s is not an active remote account", ErrNotTaken, obj.AttributedTo, obj.ID)
 	}
-	return h.store(ctx, author, obj, parent)
+	if opts.relay != nil && h.d.RelayPolicy != nil {
+		restricted, err := h.d.RelayPolicy.DiscoveryRestricted(ctx, author.Account.Domain, author.Account.ID)
+		if err != nil {
+			return appcontent.Status{}, err
+		}
+		if restricted {
+			return appcontent.Status{}, fmt.Errorf("%w: the author %s of the relayed %s is restricted", ErrNotTaken, obj.AttributedTo, obj.ID)
+		}
+	}
+	return h.store(ctx, author, obj, opts)
 }
 
 // untombstoned fails with ErrNotTaken when a deletion or a tombstone keeps uri.
@@ -423,8 +445,9 @@ func (h *StatusHandlers) untombstoned(ctx context.Context, uri federation.IRI) e
 }
 
 // store ingests a fetched post of author, with its mentions, and returns the stored status.
-// With parent, the fetch of its parent is enqueued in the same transaction.
-func (h *StatusHandlers) store(ctx context.Context, author appaccount.Actor, obj *federation.Object, parent bool) (appcontent.Status, error) {
+// With opts.parent, the fetch of its parent is enqueued in the same transaction; with opts.relay,
+// it is stored only when it is public, and recorded as relayed.
+func (h *StatusHandlers) store(ctx context.Context, author appaccount.Actor, obj *federation.Object, opts storeOptions) (appcontent.Status, error) {
 	followers, err := h.followers(ctx, author)
 	if err != nil {
 		return appcontent.Status{}, err
@@ -433,10 +456,15 @@ func (h *StatusHandlers) store(ctx context.Context, author appaccount.Actor, obj
 	if err != nil {
 		return appcontent.Status{}, err
 	}
-	if err := h.resolveMentions(ctx, mentions); err != nil {
-		return appcontent.Status{}, err
+	if opts.relay == nil {
+		if err := h.resolveMentions(ctx, mentions); err != nil {
+			return appcontent.Status{}, err
+		}
 	}
 	in := h.inputOf(author, federation.Audience{}, "", obj, followers, mentions)
+	if opts.relay != nil && in.Visibility != appcontent.VisibilityPublic {
+		return appcontent.Status{}, fmt.Errorf("%w: the relayed %s is not public", ErrNotTaken, obj.ID)
+	}
 	var st appcontent.Status
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		p, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
@@ -444,7 +472,10 @@ func (h *StatusHandlers) store(ctx context.Context, author appaccount.Actor, obj
 			return err
 		}
 		st = p.Status
-		if parent {
+		switch {
+		case opts.relay != nil:
+			return h.recordRelayed(ctx, tx, st, opts.relay)
+		case opts.parent:
 			return h.fetchParentTx(ctx, tx, st)
 		}
 		return nil

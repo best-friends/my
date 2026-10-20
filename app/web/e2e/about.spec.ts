@@ -66,7 +66,7 @@ test.describe("the information page", () => {
     await expect(page.getByRole("main").locator("li", { hasText: "spam.example" })).toBeVisible();
   });
 
-  test("tells everyone about the server, its rules, the servers it moderates, its source code and its documents", async ({ page }) => {
+  test("tells everyone about the server, its rules and documents, the servers it moderates, and its source code", async ({ page }) => {
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toContainText("my example");
     await expect(main).toMatchAriaSnapshot(`
@@ -87,6 +87,14 @@ test.describe("the information page", () => {
               - paragraph: Mark sensitive media
         - region:
           - heading [level=2]
+          - navigation:
+            - list:
+              - listitem:
+                - link
+              - listitem:
+                - link
+        - region:
+          - heading [level=2]
           - paragraph
           - paragraph
           - list:
@@ -102,14 +110,6 @@ test.describe("the information page", () => {
           - paragraph
           - paragraph:
             - link
-        - region:
-          - heading [level=2]
-          - navigation:
-            - list:
-              - listitem:
-                - link
-              - listitem:
-                - link
     `);
   });
 
@@ -127,7 +127,7 @@ test("the information page of a server that lists the servers it moderates to no
   await page.goto("/about");
   const main = page.getByRole("main");
   await expect(main.getByRole("navigation")).toBeVisible();
-  // The description, the rules, the statement to crawlers, the source code, and the documents.
+  // The description, the rules, the documents, the statement to crawlers, and the source code.
   await expect(main.getByRole("region")).toHaveCount(5);
   await expect(main.locator("li", { hasText: "spam.example" })).toHaveCount(0);
   await expectNoAxeViolations(makeAxeBuilder);

@@ -109,6 +109,42 @@ DELETE FROM boosts WHERE NOT is_local AND status_id = ANY(sqlc.arg(ids)::text[])
 -- name: PurgeStatuses :exec
 DELETE FROM statuses WHERE id = ANY(sqlc.arg(ids)::text[]);
 
+-- name: PurgeRelayedStatuses :exec
+DELETE FROM relayed_statuses WHERE status_id = ANY(sqlc.arg(ids)::text[]);
+
+-- InsertRelayedStatus records a status that only a relay brought in; a status recorded already
+-- keeps its row.
+-- name: InsertRelayedStatus :exec
+INSERT INTO relayed_statuses (status_id, relay_id, received_at) VALUES (@status_id, @relay_id, @received_at)
+ON CONFLICT (status_id) DO NOTHING;
+
+-- ListRelayedStatusesToPurge returns, in ID order after the cursor @after and below @id_before,
+-- the statuses that only a relay brought in, that are not deleted, and that were published
+-- before @relayed_before while nothing local refers to them (as ListRemoteStatusesToPurge).
+-- name: ListRelayedStatusesToPurge :many
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at
+FROM relayed_statuses rs JOIN statuses s ON s.id = rs.status_id
+WHERE rs.status_id > sqlc.arg(after)::text AND rs.status_id < sqlc.arg(id_before)::text
+  AND NOT s.is_local
+  AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+  AND s.published_at < sqlc.arg(relayed_before)::timestamptz
+  AND NOT EXISTS (
+    SELECT 1 FROM statuses r WHERE r.in_reply_to_uri = s.uri AND r.is_local
+      AND NOT EXISTS (SELECT 1 FROM status_deletions rd WHERE rd.status_id = r.id))
+  AND (s.conversation_uri IS NULL OR NOT EXISTS (
+    SELECT 1 FROM statuses l WHERE l.conversation_uri = s.conversation_uri AND l.is_local
+      AND NOT EXISTS (SELECT 1 FROM status_deletions ld WHERE ld.status_id = l.id)))
+  AND NOT EXISTS (
+    SELECT 1 FROM boosts b WHERE b.status_id = s.id AND b.is_local
+      AND NOT EXISTS (SELECT 1 FROM boost_retractions br WHERE br.boost_id = b.id))
+  AND NOT EXISTS (SELECT 1 FROM favourites f WHERE f.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM bookmarks k WHERE k.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM status_pins p WHERE p.status_id = s.id)
+ORDER BY rs.status_id
+LIMIT sqlc.arg(batch_limit)::integer;
+
 -- StatusHasNotifications reports whether a notification is about the status.
 -- name: StatusHasNotifications :one
 SELECT EXISTS (SELECT 1 FROM notifications WHERE status_id = $1);

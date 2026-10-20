@@ -373,7 +373,8 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   読み込み中と失敗はその区画の中に出す。`GET /instance` が失敗しても、ページは外枠のランタイム設定の名前とサインインのボタンで開く。
   サーバーはこのアドレスに、インスタンスを紹介するリンクプレビュー（`og:type` は `website`。[リンクプレビュー](../operations/link-previews.md)）付きの外枠を返す。
 - **インスタンスの情報ページ**（`routes/about.tsx`、`features/about`、FR-718）: `/about` は、サインインしているかによらず同じ中身を、外枠の中に出す。見出し（`h1`）は「{サーバーの名前} について」にする。
-  中身は `GET /instance` からサムネイル・要約・説明・ルール（ランディングページと同じ出し方）、運営者の連絡先、処分したドメインの一覧（`GET /instance/domain_actions`）、検索エンジンと AI への表明、ソースコードの区画、利用規約とプライバシーポリシーの区画（`DocumentsSection`）を順に出す。
+  中身は `GET /instance` からサムネイル・要約・説明・ルール（ランディングページと同じ出し方）、利用規約とプライバシーポリシーの区画（`DocumentsSection`）、処分したドメインの一覧（`GET /instance/domain_actions`）、検索エンジンと AI への表明、運営者の連絡先、ソースコードの区画を順に出す。
+  利用者が従う決まり（ルール・規約・ポリシー）を続けて置き、次にサーバーが他のサーバーとクローラーにどう接するか、最後に運営者と動かしているソフトウェアを置く。
   サムネイル（`thumbnail`）はページの幅の画像で、代替テキストは管理者が書いたもの（無ければ見出しがサーバーを名指すので装飾として `alt=""`）にする。
   連絡先（`contact`）は「連絡先」の区画の説明リストで、アカウント（アバター・表示名（`dir="auto"`）・ハンドル（`dir="ltr"`）をプロフィールへの 1 つのリンクにする）とメールアドレス（`mailto:` のリンク、`dir="ltr"`）を、サーバーが返したものだけ出す。どちらも無ければ区画ごと出さない。
   ソースコードの区画は、AGPL-3.0 第 13 条（ADR-0011）により利用者がソースコードを入手できることと、公開先（`source_url`）へのリンク（`SourceCodeLink`）を出す。
@@ -385,6 +386,10 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   サーバーはこのアドレスに、ランディングページと同じインスタンスのリンクプレビュー（タイトルは「{サーバーの名前} について」）付きの外枠を返す。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。サーバーの名前が変わったときも作り直す（フォーカスは動かさない）。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
+  ナビゲーションの項目の画面で、見出しが場所を言うだけのもの（ホーム・ローカル・連合・通知・検索・ブックマーク・設定・モデレーション・サーバー管理）は、
+  どこにいるかをナビゲーションの現在の項目（`aria-current="page"`）が見せているので、`h1` を見た目から消す。ルートの `staticData.hideHeading` を真にすると、`PageHeading` が `sr-only`（Tailwind の視覚的に隠すクラス）を付け、
+  `h1` はアクセシビリティツリー・フォーカスの移動・`document.title` のためにそのまま残る。同じルートの読み込み中（pending component）と失敗（`RouteError`）の見出しも隠し、失敗の理由は `RegionError` の `h2` が見せる。
+  場所より多くを言う見出し（サーバーがタイムラインを提供していないときの 404 の「ローカルタイムラインは提供されていません」など）は `visuallyHidden={false}` で見せる。名前がパラメータで決まる画面（ハッシュタグ・プロフィール・投稿）、設定の下の画面（`SettingsHeading`。設定へ戻るリンクが見出しの後にある）、情報ページとランディングページは見出しを見せる。
 - **サーバーの名前**（`lib/instanceName.ts` の `useInstanceName`）: サイドバー・3 列目の「このサーバーについて」・タブのタイトル・ログインの画面は、サーバーを `GET /instance` の `name`（閲覧者の言語）で呼ぶ。
   読み込むまでと読めないときは、外枠のランタイム設定の `instanceName`（サーバーが既定の言語で書いた名前）にする。どちらも、名前がなければサーバーのドメインである。
   管理画面で名前を変えると、取り直した `GET /instance` で再読み込みなしに変わる。ハンドルとリンクは名前によらずドメイン（ランタイム設定の `accountDomain`）のままにする（[名前とドメイン](../operations/instance-settings.md#名前とドメイン)）。
@@ -642,12 +647,12 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 - **モデレーション**（`/moderation/*`、`features/moderation`）: 通報・異議申し立ての審査・アカウント・登録の審査・登録の拒否リスト・招待・ドメインへの処分・連合先のサーバーの状態（[federation.md §7.3](federation.md)）・監査ログ。
   `features/moderation` は、利用者が自分への処分を確かめる画面（§18）も受け持ち、サーバー管理の画面が使う共通の部品（下の「共通の部品」）と権限の型・一覧のページングも `index.ts` から出す。
-- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・ルール・テーマ・規約とポリシー・カスタム絵文字・お知らせ・webhook・ロール・dead job。これから足すサーバー管理の画面（リレー）は、
+- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・ルール・テーマ・規約とポリシー・カスタム絵文字・お知らせ・webhook・リレー・ロール・dead job。これから足すサーバー管理の画面（リレー）は、
   `routes/admin.<画面>.tsx` のルートと、`features/admin/components/AdminMenu.tsx` の一覧の 1 行を足してここに置く。
 
 API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の管理の操作、タグ `admin-moderation` / `admin-server`）、Web の経路とは一致しない。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がロールの画面とアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_announcements` がお知らせの画面、`manage_webhooks` が webhook の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がロールの画面とアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマとリレーの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_announcements` がお知らせの画面、`manage_webhooks` が webhook の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -710,6 +715,14 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     「送信履歴」（その webhook のページへのリンク）・「編集」（フォームと同じ項目のダイアログ。保存したら閉じ、拒否はダイアログの項目に出す）・「無効にする」「有効にする」・「テスト送信」（有効なときだけ）・「秘密を作り直す」（`ConfirmDialog` で確かめ、新しい秘密を一覧の上に一度だけ出す）・「削除」（元に戻せないので `ConfirmDialog` で確かめ、フォーカスを次の行に移す）を持つ。
     ボタンのアクセシブルネームは webhook の名前（説明は U+2068 / U+2069、ホスト名は U+2066 / U+2069 で囲む）を含める。結果は一覧の上の `StatusMessage` に、失敗は同じ場所（`role="alert"`）に出し、どの変更も一覧と監査ログに無効化の印を付ける。
   - **webhook のページ**（`/admin/webhooks/{id}`）: 設定の説明リストと、過去 14 日の送信履歴（新しい順、「さらに表示」）。各送信はイベントの見出しと、結果（未送信・成功・失敗中）・試行回数・作成日時・最後の試行（結果・状態コード・日時）・メッセージ ID（`dir="ltr"`）の説明リストと「もう一度送る」を持ち、送ると履歴を取り直して `StatusMessage` に知らせる。
+- **リレー**（`/admin/relays`、`manage_settings`、[ADR-0061](../adr/0061-federation-relays.md)）: 「リレーに参加する」と「このサーバーのリレー」の 2 つの区画（`h2` の `section`）。
+  - **参加**: URL（必須、https、2048 バイトまで）・方式（`Select`。既定の「自動で判定」は `protocol` を送らずサーバーに任せ、ほかに Mastodon 方式・LitePub 方式）・リレーから投稿を受け取るか（`Checkbox`、既定は受け取る）のフォーム。`POST /admin/relays` で送る。
+    サーバーの拒否（422 `invalid-relay`）は `reason`（`url`・`exists`・`domain_suspended`・`not_actor`・`state`）をクライアントの文言にし、`state` のほかは URL の欄のエラーに、`state` と理由のない失敗はフォームの下（`role="alert"`）に出して、入力を残す。
+    成功したら入力を空にし、一覧と監査ログに無効化の印を付けてから、結果をフォームの `StatusMessage` に出す。
+  - **一覧**: 登録の順。各リレーは見出し（`h3`、URL のホスト名、`dir="ltr"`）と、方式・状態（承認待ち・参加中・拒否・脱退済み）・状態の変更日時・URL・inbox（URL と違うときだけ）・リレーの Actor（参加中のときだけ）・受信の有無・直近 24 時間に取り込んだ数と上限を超えて捨てた数の説明リストにする。URL と Actor は `dir="ltr"` で表示する。
+    ドメインへの処分でホストが停止されているリレーには、何も送らず受け取らない旨の警告を出す。
+    承認待ちと参加中のリレーは「脱退する」、拒否と脱退済みのリレーは「もう一度参加する」を同じ位置のボタンで出し（状態が変わってもフォーカスが残る）、拒否と脱退済みのリレーには「削除」（元に戻せないので `ConfirmDialog` で確かめ、フォーカスを次の行に移す）も出す。
+    ボタンのアクセシブルネームはリレーのホスト名（U+2066 / U+2069 で囲む）を含める。結果は一覧の上の `StatusMessage` に、失敗は `reason` の文言で同じ場所（`role="alert"`）に出し、どの変更も一覧と監査ログに無効化の印を付ける。
 - **ロール**（`/admin/roles`、`manage_roles`、FR-720）: 「ロールを作成する」と「このサーバーのロール」の 2 つの区画（`h2` の `section`）。閲覧者のいちばん高いロールは `GET /admin/accounts/{閲覧者の ID}/roles` で読む。
   - **作成**: キー（必須、64 文字までの英小文字・数字・`_`・`-`）・位置（必須、0 から閲覧者のいちばん高いロールの位置（999 まで）の整数）・権限（区分ごとの `role="group"` の中の `Checkbox`。閲覧者のロールにない権限は選べない）のフォーム。
     キーと位置は送る前に確かめて欄のエラーにする。サーバーの拒否（422 `invalid-role`）は `reason` の項目（キー・位置・権限）に `detail` を出し、`missing_permission` では足りない権限（`missing_permissions`）も並べて、入力を残す。
@@ -730,7 +743,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     ルートの loader は TanStack Query の `infiniteQuery` の `pages` で、そのページ数を新しい方から順に読む。キャッシュに読み込み済みのページはそのまま使う。絞り込みを変えると 1 ページ目からになる。
     次のページの失敗は、一覧の下に `RegionError` で理由を出し、読み込み済みの行を残す。もう一度「さらに表示」を押すと読み直す。
   - **操作者**: アカウントの表示名（`dir="auto"`）とハンドル。アカウントが消えた利用者は「削除されたアカウント」、CLI・サーバー自身・ほかのサーバーはそれぞれの名前にする。
-  - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/moderation/accounts/{id}`、通報は `/moderation/reports/{id}`、ドメインは `/moderation/domain-actions?filter=all&domain=…`、登録の拒否は `/moderation/signup-blocks?filter=all`、カスタム絵文字は `target_label`（`:shortcode:` か `:shortcode:@domain`）の shortcode とドメインで検索した `/admin/custom-emojis`、ドメインは `DomainName` で 2 つの形を出す）。
+  - **対象**: 項目名を対象の種類にし、値は記録時の `target_label` にする。対象の種類に管理画面があるものはそこへリンクする（アカウントは `/moderation/accounts/{id}`、通報は `/moderation/reports/{id}`、ドメインは `/moderation/domain-actions?filter=all&domain=…`、登録の拒否は `/moderation/signup-blocks?filter=all`、カスタム絵文字は `target_label`（`:shortcode:` か `:shortcode:@domain`）の shortcode とドメインで検索した `/admin/custom-emojis`、webhook は `/admin/webhooks`、リレーは `/admin/relays`、ドメインは `DomainName` で 2 つの形を出す）。
     設定・ルール・登録など画面のない種類と、消えた対象（API の `target_exists` が `false`）は、リンクにせず `target_label` だけを出す。
 - **招待**（`/moderation/invites`、`manage_invites`、FR-001）: 「招待を作成する」と「招待の一覧」の区画。登録モードが `invite` でない（`GET /instance` の `registrations.mode`）ときは、招待では誰も登録できず、登録モードは管理者がサーバーの設定で変えることを、区画の前に書く。
   - **作成**: 登録できる人数（`Select`、1・5・10・25・50・100 人と制限なし。既定は 1 人）と有効期間（`DurationSelect`、30 分〜30 日と無期限。既定は 7 日）。CLI の `my invite create` と同じ既定値にする。確かめずに送り、成功したら一覧を取り直してから、
@@ -837,6 +850,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `features/admin/settings.test.tsx` は、名前の保存と外枠の名前、説明の言語ごとの保存、連絡先とサムネイル（画像のアップロードと説明）の保存とサムネイルを外すこと、設定の表示と変えた設定だけをまとめて送ることと `GET /instance` の取り直し、既定の言語の選択、保存の失敗、権限を、
   `features/admin/rules.test.tsx` は、ルールの一覧と言語ごとの文、追加と入力の検査、下へ動かしたルールの見出しへのフォーカス、ダイアログでの編集、確認を経た廃止、権限を、
   `features/admin/roles.test.tsx` は、ロールの一覧と区分ごとの権限、組み込みのロールと閲覧者より上のロールの操作の出し分け、閲覧者のロールにない権限を選べないこと、作成と入力の検査とキーの拒否、ダイアログでの変更と権限の拒否、確認を経た削除と持っている人がいるロールの拒否、権限を、
+  `features/admin/relays.test.tsx` は、リレーの一覧の状態・直近 24 時間の数・Actor・停止されたサーバーの警告、方式を自動で判定する参加と選んだ方式での参加、URL の欄に出す拒否の理由、脱退ともう一度参加すること、もう一度参加することの拒否の理由、確認を経た削除、権限を検査する。
   `features/admin/webhooks.test.tsx` は、webhook の設定と一度だけの秘密、足りない権限の拒否をイベントの項目に出すこと、サーバーが無効にした webhook の理由と失敗の回数と有効化、確認を経た秘密の作り直し、ダイアログでの編集、確認を経た削除、送信履歴の一覧ともう一度送ること、権限を検査する。
   `features/moderation/invites.test.tsx` は、招待の一覧の状態と人数、既定の値と制限なしでの作成とコードとリンク、失効と見出しへのフォーカス、登録モードが `invite` でないときの説明、権限を検査する。
   `features/admin/documents.test.tsx` は、表示言語での本文と書かれている言語、公開ページをページごと開くこと、保存と `role="status"` の結果、URL での言語の切り替えと言語ごとの下書き、削除の確認と取り消し、保存の失敗、未保存の変更の確認、権限を検査し、
@@ -846,6 +860,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
   `e2e/signup-blocks.spec.ts` は、登録の拒否リストの axe・横スクロール・ARIA スナップショット（両方の形のドメインと長いハッシュ）、キーボードでのメールのドメインの拒否の追加、キーボードでの一覧からの追加と追加しなかった行の表の ARIA スナップショット、解除とフォーカスの移動を検査する。
   `e2e/server-settings.spec.ts` は、名前の区画の ARIA スナップショットと名前の変更で外枠の名前が変わることと、キーボードで登録モードを招待制にして保存するまでを、各幅とロケールの axe・横スクロールとともに検査する。
+  `e2e/relays.spec.ts` は、リレーへの参加、一覧、脱退ともう一度参加すること、確認のダイアログを経た削除までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/webhooks.spec.ts` は、webhook の設定と一度だけの秘密の表示、一覧、無効化と有効化、確認のダイアログを経た削除までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
   `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターから文書の公開ページを開き、Markdown の見出し・箇条書き・表の ARIA スナップショット・両方のテーマの axe・横スクロールを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
@@ -908,7 +923,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| G5 | 画面の見出しは `PageHeading`（`h1`）、区画の見出しは `h2` の役割（`text-lg font-semibold`）にする。見出しの大きさを部品ごとに変えない。見た目のためだけに見出しの段を飛ばさない | レビュー、ARIA スナップショット |
+| G5 | 画面の見出しは `PageHeading`（`h1`）、区画の見出しは `h2` の役割（`text-lg font-semibold`）にする。見出しの大きさを部品ごとに変えない。見た目のためだけに見出しの段を飛ばさない。ナビゲーションの項目の画面で、見出しが場所を言うだけのもの（ルートの `staticData.hideHeading`）は `h1` を視覚的に隠し（`sr-only`）、構造には残す（§9） | レビュー、ARIA スナップショット |
 | G6 | 補足の情報（ハンドル・時刻・件数・説明）は `text-sm text-fg-muted`、バッジとラベルは `text-xs` にする。`text-fg-muted` を本文や操作の名前に使わない | レビュー |
 | G7 | 1 行に収める表示名とハンドルは `truncate`（`min-w-0` の親）で省略し、`title` ではなくアクセシブルネームで全体を読ませる。本文・プロフィール・URL のような折り返してよいものは `wrap-anywhere` にする。長いハンドル（`@user@長いドメイン`）でカードの頭が 3 行以上にならないようにする | E2E（`ar-XB` と長いドメインのフィクスチャで 320 px）、レビュー |
 | G8 | 数（件数・残りの文字数）は `tabular-nums` にし、`Intl.NumberFormat`（`react-intl`）で書く。時刻は一覧では相対（「3 分前」）、詳細の画面と通知の一覧でも同じ規則にし、絶対の日時は `<time>` の `dateTime` と説明（ツールチップか詳細の画面）で示す | レビュー |

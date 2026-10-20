@@ -14,6 +14,7 @@ import (
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
+	appfederation "github.com/best-friends/my/internal/app/federation"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	appinstance "github.com/best-friends/my/internal/app/instance"
@@ -22,6 +23,7 @@ import (
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	domcontent "github.com/best-friends/my/internal/domain/content"
+	domfederation "github.com/best-friends/my/internal/domain/federation"
 	domidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/moderation"
@@ -305,6 +307,10 @@ func fillIdentity(t *testing.T, a *platform.App, bob string) {
 			t.Fatalf("DecideRegistration = %v", err)
 		}
 	}
+	// A relay joined from the CLI (ADR-0061); its Follow waits in the queue.
+	if _, err := a.Relays.Add(ctx, appfederation.RelayInput{Protocol: domfederation.RelayMastodon, URL: "https://relay.example/inbox"}, ""); err != nil {
+		t.Fatalf("Relays.Add = %v", err)
+	}
 }
 
 // rawSQL returns functions that run SQL on the database directly, to break projections and to
@@ -379,7 +385,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 		"notification_exclusions", "notification_deleted_statuses", "poll_tallies",
 		"account_restrictions", "domain_restrictions", "report_states", "appeal_states", "status_sensitivity_overrides",
 		"feed_author_restrictions", "feed_domain_restrictions", "user_roles", "user_registration_states", "user_primary_emails",
-		"webhook_endpoint_heads", "webhook_endpoint_failures",
+		"webhook_endpoint_heads", "webhook_endpoint_failures", "relay_states",
 	} {
 		if held[table] == 0 {
 			t.Errorf("%s holds no rows", table)
@@ -406,6 +412,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("DELETE FROM user_primary_emails")
 	exec("DELETE FROM webhook_endpoint_heads")
 	exec("UPDATE webhook_endpoint_failures SET consecutive_failures = consecutive_failures + 3")
+	exec("UPDATE relay_states SET state = 'left'")
 
 	drifted := []string{}
 	for _, p := range svc.List() {
@@ -423,7 +430,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	want := []string{
 		"account_restrictions", "appeal_states", "domain_restrictions", "feed_author_restrictions", "feed_domain_restrictions",
 		"feed_tag_entries", "follow_counters", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
-		"poll_tallies", "remote_account_heads", "report_states", "status_counters", "status_sensitivity_overrides",
+		"poll_tallies", "relay_states", "remote_account_heads", "report_states", "status_counters", "status_sensitivity_overrides",
 		"user_primary_emails", "user_registration_states", "user_roles", "webhook_endpoint_failures", "webhook_endpoint_heads",
 	}
 	if !slices.Equal(drifted, want) {

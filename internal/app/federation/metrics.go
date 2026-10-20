@@ -44,6 +44,20 @@ const (
 	InboxOutcomeError = "error"
 )
 
+// The outcomes of an activity that a relay brought in (ADR-0061), the my.outcome label of
+// my.relay.activities.
+const (
+	// RelayOutcomeAdmitted is an activity taken in: its post is fetched from its origin.
+	RelayOutcomeAdmitted = "admitted"
+	// RelayOutcomeOverLimit is an activity over the relay's hourly limit, dropped.
+	RelayOutcomeOverLimit = "over_limit"
+	// RelayOutcomeRestricted is an activity whose author or server is restricted, dropped.
+	RelayOutcomeRestricted = "restricted"
+	// RelayOutcomeNotReceiving is an activity of a relay that does not bring in posts (left,
+	// rejected, removed, or registered to send only), dropped.
+	RelayOutcomeNotReceiving = "not_receiving"
+)
+
 // ActivityTypeOther is the activity.type of a request whose type is unknown or was not read.
 const ActivityTypeOther = "other"
 
@@ -60,6 +74,10 @@ var (
 	InboxActivities = kernel.Instrument{
 		Name: "my.inbox.activities", Unit: "{activity}", Description: "Activities POSTed to the inboxes, by type and outcome.",
 		LabelKeys: []string{LabelActivityType, LabelOutcome},
+	}
+	RelayActivities = kernel.Instrument{
+		Name: "my.relay.activities", Unit: "{activity}", Description: "Activities that relays brought in, by whether they were taken in (ADR-0061).",
+		LabelKeys: []string{LabelOutcome},
 	}
 )
 
