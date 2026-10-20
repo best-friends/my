@@ -6151,10 +6151,6 @@
     "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ ƒǿǿŀŀǿǿẇ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "profile.signed_out.description": {
-    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ şḗḗḗḗ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "profile.tab.no_boosts": {
     "defaultMessage": "[Ẇīŧħǿǿŭŭŧ ƀǿǿǿǿşŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7691,6 +7687,10 @@
     "defaultMessage": "[Ḿḗḗƞŭŭ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.about": {
+    "defaultMessage": "[Ȧƀǿǿŭŭŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.admin": {
     "defaultMessage": "[Ȧḓḿīƞīşŧřȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7749,6 +7749,14 @@
   },
   "shell.nav.settings": {
     "defaultMessage": "[Şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.sign_up": {
+    "defaultMessage": "[Şīɠƞ ŭŭƥ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.nav.viewer": {

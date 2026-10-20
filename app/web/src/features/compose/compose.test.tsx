@@ -53,9 +53,9 @@ beforeEach(() => {
 
 describe("the new-post form", () => {
   test("is not offered while signed out", async () => {
-    await renderApp();
+    await renderApp({ path: "/local" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Local timeline" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
   });
 

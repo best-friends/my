@@ -5,7 +5,7 @@
 // width shows.
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 import { instanceFixture, preferencesFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
@@ -20,6 +20,86 @@ function instanceWith(timelines: { local: boolean; federated: boolean }) {
 function navigation() {
   return screen.getByRole("navigation", { name: "Main" });
 }
+
+// The user's items need a session; the tests of the signed-out navigation drop it with server.resetHandlers().
+beforeEach(() => {
+  server.use(signedInHandler);
+});
+
+describe("while signed out", () => {
+  beforeEach(() => {
+    server.resetHandlers();
+  });
+
+  test("offers only the pages usable without a session, signing in and signing up", async () => {
+    const { user } = await renderApp({ path: "/local" });
+    await screen.findByRole("heading", { level: 1, name: "Local timeline" });
+    const list = within(navigation()).getByRole("list");
+    await within(list).findByRole("link", { name: "Sign up" });
+
+    // jsdom applies no styles, so Sign up, which only the rail shows, is here too.
+    expect(within(list).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+      ["Local", "/local"],
+      ["Federated", "/public"],
+      ["Search", "/search"],
+      ["About", "/about"],
+      ["Sign in", "/login?return_to=%2Flocal"],
+      ["Sign up", "http://localhost:3000/auth/sign_up"],
+    ]);
+    expect(within(list).getByRole("link", { name: "Local" })).toHaveAttribute("aria-current", "page");
+
+    // The tab bar's Menu holds Sign up, the color theme and the server's information page.
+    await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
+    const sheet = await screen.findByRole("dialog", { name: "Menu" });
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Sign up", "More about this server"]);
+    expect(within(sheet).getByRole("radiogroup", { name: "Theme" })).toBeInTheDocument();
+  });
+
+  test("signs in from the page it is on, and comes back there", async () => {
+    const { user, router } = await renderApp({ path: "/tags/cats" });
+    await screen.findByRole("heading", { level: 1, name: "#cats" });
+
+    const signIn = within(navigation()).getByRole("link", { name: "Sign in" });
+    expect(signIn).toHaveAttribute("href", "/login?return_to=%2Ftags%2Fcats");
+    await user.click(signIn);
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+    expect(router.state.location.search).toEqual({ return_to: "/tags/cats" });
+    // On the sign-in page, the item is the place, and keeps where to come back to.
+    const current = within(navigation()).getByRole("link", { name: "Sign in" });
+    expect(current).toHaveAttribute("aria-current", "page");
+    expect(current).toHaveAttribute("href", "/login?return_to=%2Ftags%2Fcats");
+  });
+
+  test("leaves out Sign up while the server takes no new accounts", async () => {
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, registrations: { mode: "closed" } })));
+    await renderApp({ path: "/about" });
+    await screen.findByRole("heading", { level: 1, name: "About my example" });
+    await within(navigation()).findByRole("link", { name: "Federated" });
+
+    expect(within(navigation()).getByRole("link", { name: "About" })).toHaveAttribute("aria-current", "page");
+    expect(within(navigation()).queryByRole("link", { name: "Sign up" })).not.toBeInTheDocument();
+  });
+
+  test("sends the pages that need a session to sign in first, and back afterwards", async () => {
+    for (const path of ["/home", "/notifications", "/profile", "/bookmarks", "/settings"]) {
+      const { router, unmount } = await renderApp({ path });
+      expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe("/login");
+      expect(router.state.location.search).toEqual({ return_to: path });
+      unmount();
+    }
+  });
+
+  test("is in Japanese in the ja locale", async () => {
+    await renderApp({ path: "/search", locale: "ja" });
+    await screen.findByRole("heading", { level: 1, name: "検索" });
+    const nav = screen.getByRole("navigation", { name: "メイン" });
+    expect(await within(nav).findByRole("link", { name: "新規登録" })).toBeInTheDocument();
+    expect(within(nav).getByRole("link", { name: "サーバー情報" })).toHaveAttribute("href", "/about");
+    expect(within(nav).getByRole("link", { name: "ログイン" })).toHaveAttribute("href", "/login?return_to=%2Fsearch");
+  });
+});
 
 describe("the timelines' items", () => {
   test("open the local and the federated timeline as two screens, each the current item on its own, with no tabs", async () => {
@@ -58,7 +138,7 @@ describe("the timelines' items", () => {
       expect(within(navigation()).queryByRole("link", { name: "Local" })).not.toBeInTheDocument();
     });
     expect(within(navigation()).queryByRole("link", { name: "Federated" })).not.toBeInTheDocument();
-    expect(within(navigation()).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+    expect(within(within(navigation()).getByRole("list")).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/home",
       "/notifications",
       "/search",
@@ -236,10 +316,11 @@ describe("the tab bar's Menu", () => {
   });
 
   test("is in Japanese in the ja locale", async () => {
-    const { user } = await renderApp({ path: "/home", locale: "ja" });
-    await screen.findByRole("heading", { level: 1, name: "ホーム" });
-    const nav = screen.getByRole("navigation", { name: "メイン" });
-    await user.click(within(nav).getByRole("button", { name: "メニュー" }));
+    // Signed out: the signed-in user's preferences would display the app in their locale.
+    server.resetHandlers();
+    const { user } = await renderApp({ path: "/local", locale: "ja" });
+    const nav = await screen.findByRole("navigation", { name: "メイン" });
+    await user.click(await within(nav).findByRole("button", { name: "メニュー" }));
     const sheet = await screen.findByRole("dialog", { name: "メニュー" });
     expect(within(sheet).getByRole("button", { name: "閉じる" })).toBeInTheDocument();
   });
@@ -279,8 +360,9 @@ describe("the sidebar's server and viewer", () => {
   });
 
   test("shows no account while signed out", async () => {
-    await renderApp({ path: "/home" });
-    await screen.findByRole("heading", { level: 1, name: "Home" });
+    server.resetHandlers();
+    await renderApp({ path: "/local" });
+    await screen.findByRole("heading", { level: 1, name: "Local timeline" });
     expect(within(navigation()).getByText("my example")).toBeInTheDocument();
     expect(within(navigation()).queryByRole("link", { name: /@alice/ })).not.toBeInTheDocument();
   });

@@ -60,6 +60,10 @@ for (const [stored, os] of [
 test.describe("the menu's sheet", () => {
   test.beforeEach(async ({ page }) => {
     test.skip((page.viewportSize()?.width ?? 0) >= 768, "the rail from md has no menu; the preferences page has the theme");
+    // A signed-in user's session, whose items (profile, bookmarks and settings) the sheet lists; vite preview has no API.
+    const json = (body: unknown) => ({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+    await page.route("**/oauth/token/refresh", (route) => route.fulfill(json({ access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 })));
+    await page.route("**/api/v1/timelines/home*", (route) => route.fulfill(json({ items: [] })));
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/home");
     await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();

@@ -30,11 +30,18 @@
 // The sidebar (lg) also says where and who the user is: the server's name above the list and, below it, the
 // signed-in account (avatar, display name and handle) as a link to its profile. Both are outside the list, so
 // the list's links stay the same and in the same order at every width, and narrower layouts hide both.
-import { AdminIcon, Avatar, Badge, Button, DialogTrigger, Link, MenuIcon, ModerationIcon, PostCardAuthor, Sheet } from "@my/ui";
+//
+// The items above need a session, so people who are not signed in get other ones (web-client.md §9, "signed-out
+// navigation"): Local, Federated, Search, About and Sign in, the tab bar's five items, and Sign up, in the rail and
+// in the menu's sheet, while the server takes new accounts. Sign in opens the sign-in page, which comes back to the
+// page it was opened from. While the session resumes, the list has no items yet, so that neither set shows to the
+// wrong person; a session that cannot be resumed because the server is not reached (offline) keeps the user's items.
+import { AboutIcon, AdminIcon, Avatar, Badge, Button, DialogTrigger, Link, MenuIcon, ModerationIcon, PostCardAuthor, Sheet, SignInIcon, SignUpIcon } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
 import { DocumentLinks } from "../../features/documents";
+import { useSignUpHref } from "../../features/landing";
 import { useModerationEntry } from "../../features/moderation";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
@@ -47,16 +54,34 @@ import {
   useNavigationEntries,
 } from "../../features/settings";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
+import { useSessionStatus, useSessionUnreachable } from "../../lib/auth/SessionProvider";
 import { handleOf } from "../../lib/handle";
 import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { aboutPath, followListPath, profilePath } from "../../lib/paths";
 import { imageSources } from "../../lib/images";
 
-type Section = "/home" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/moderation" | "/admin";
+type Section =
+  | "/home"
+  | "/local"
+  | "/public"
+  | "/search"
+  | "/notifications"
+  | "/profile"
+  | "/bookmarks"
+  | "/settings"
+  | "/moderation"
+  | "/admin"
+  | "/about"
+  | "/login";
 
 type NavigationItem = {
-  section: Section;
+  /** The item's key in the list. */
+  id: string;
+  /** Where the link goes. */
+  href: string;
+  /** The app's section the link is the place of, for its aria-current; none for a page outside the app (Sign up). */
+  section?: Section;
   label: ClientMessageKey;
   icon: ReactNode;
   /** Where the item shows: everywhere, only in the phones' tab bar, or only in the rail and sidebar from md (and the menu's sheet below md). */
@@ -81,9 +106,32 @@ const entryTargets: Record<NavigationEntryId, { section: Section; timeline?: key
 
 /** The staff's areas, after the user's items in the rail and in the menu's sheet, never in the tab bar. */
 const staffItems: readonly NavigationItem[] = [
-  { section: "/moderation", label: "client:shell.nav.moderation", icon: <ModerationIcon />, shows: "rail", staff: "moderation" },
-  { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", staff: "admin" },
+  { id: "moderation", href: "/moderation", section: "/moderation", label: "client:shell.nav.moderation", icon: <ModerationIcon />, shows: "rail", staff: "moderation" },
+  { id: "admin", href: "/admin", section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", staff: "admin" },
 ];
+
+/**
+ * The items of people who are not signed in: the pages they can use without a session, the tab bar's five, and the
+ * server's registration page (a page of the server, loaded in place of the app) while it takes new accounts.
+ */
+function signedOutItems(signInHref: string, signUpHref: string | undefined): NavigationItem[] {
+  return [
+    { id: "local", href: "/local", section: "/local", label: navigationEntryLabels.local, icon: navigationEntryIcons.local, shows: "always", timeline: "local" },
+    { id: "public", href: "/public", section: "/public", label: navigationEntryLabels.public, icon: navigationEntryIcons.public, shows: "always", timeline: "federated" },
+    { id: "search", href: "/search", section: "/search", label: navigationEntryLabels.search, icon: navigationEntryIcons.search, shows: "always" },
+    { id: "about", href: aboutPath, section: "/about", label: "client:shell.nav.about", icon: <AboutIcon />, shows: "always" },
+    { id: "sign-in", href: signInHref, section: "/login", label: "client:shell.nav.sign_in", icon: <SignInIcon />, shows: "always" },
+    ...(signUpHref === undefined
+      ? []
+      : [{ id: "sign-up", href: signUpHref, label: "client:shell.nav.sign_up", icon: <SignUpIcon />, shows: "rail" } satisfies NavigationItem]),
+  ];
+}
+
+/** The sign-in page, which returns to `location` afterwards; on the sign-in page itself, that page as it is. */
+function signInHrefOf(location: { pathname: string; href: string }): string {
+  if (location.pathname === "/login") return location.href;
+  return `/login?${new URLSearchParams({ return_to: location.href }).toString()}`;
+}
 
 /**
  * The list item's classes for where the item shows (the tab bar is below md, the rail from md). In the tab bar
@@ -137,6 +185,10 @@ export function Navigation() {
   const t = useT();
   const instanceName = useInstanceName();
   const pathname = useLocation({ select: (location) => location.pathname });
+  const signInHref = useLocation({ select: signInHrefOf });
+  const signUpHref = useSignUpHref();
+  const status = useSessionStatus();
+  const unreachable = useSessionUnreachable();
   const unread = useUnreadNotificationCount();
   const moderationEntry = useModerationEntry();
   const adminEntry = useAdminEntry();
@@ -151,13 +203,20 @@ export function Navigation() {
     .map(
       (entry, index): NavigationItem => ({
         ...entryTargets[entry.id],
+        id: entry.id,
+        href: entryTargets[entry.id].section,
         label: navigationEntryLabels[entry.id],
         icon: navigationEntryIcons[entry.id],
         shows: index < tabBarLimit ? "always" : "rail",
       }),
     );
-  const shown = [...userItems, ...staffItems].filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
-  const badgeOf = (section: Section): ItemBadge => {
+  // Offline, a session that could not be resumed is most likely still there: the user's items stay (web-client.md §11).
+  const signedOut = status === "signed-out" && !unreachable;
+  let items: readonly NavigationItem[] = [];
+  if (signedOut) items = signedOutItems(signInHref, signUpHref);
+  else if (status !== "unknown") items = [...userItems, ...staffItems];
+  const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
+  const badgeOf = (section: Section | undefined): ItemBadge => {
     if (section === "/notifications" && unread > 0) {
       return { count: unread, badgeLabel: t("client:notifications.unread_count", { count: unread }), name: t("client:shell.nav.notifications_unread", { count: unread }) };
     }
@@ -167,7 +226,7 @@ export function Navigation() {
     }
     return null;
   };
-  const current = (section: Section) => (inSection(pathname, section, ownAcct) ? "page" : undefined);
+  const current = (section: Section | undefined) => (section !== undefined && inSection(pathname, section, ownAcct) ? "page" : undefined);
   return (
     <nav
       aria-label={t("client:shell.nav.label")}
@@ -181,9 +240,9 @@ export function Navigation() {
         {shown.map((item) => {
           const badge = badgeOf(item.section);
           return (
-            <li key={item.section} className={shownAt[item.shows]}>
+            <li key={item.id} className={shownAt[item.shows]}>
               <Link
-                href={item.section}
+                href={item.href}
                 {...(badge !== null && { "aria-label": badge.name })}
                 aria-current={current(item.section)}
                 variant="navigation"
@@ -198,9 +257,11 @@ export function Navigation() {
             </li>
           );
         })}
-        <li className={shownAt["tab-bar"]}>
-          <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />
-        </li>
+        {status !== "unknown" && (
+          <li className={shownAt["tab-bar"]}>
+            <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />
+          </li>
+        )}
       </ul>
       <ViewerLink />
     </nav>
@@ -243,9 +304,9 @@ type NavigationMenuProps = {
   /** The items of the sheet that the viewer may use. */
   items: readonly NavigationItem[];
   /** The `aria-current` of a section's link. */
-  current: (section: Section) => "page" | undefined;
+  current: (section: Section | undefined) => "page" | undefined;
   /** The badge of a section's link, the same as in the rail. */
-  badgeOf: (section: Section) => ItemBadge;
+  badgeOf: (section: Section | undefined) => ItemBadge;
 };
 
 /**
@@ -282,13 +343,14 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
         <span className={labelClass}>{t("client:shell.nav.menu")}</span>
       </Button>
       <Sheet title={t("client:shell.menu.title")} closeLabel={t("client:shell.menu.close")} isDismissable>
+        {items.length > 0 && (
         <ul className="flex flex-col">
           {items.map((item) => {
             const badge = badgeOf(item.section);
             return (
-              <li key={item.section}>
+              <li key={item.id}>
                 <Link
-                  href={item.section}
+                  href={item.href}
                   {...(badge !== null && { "aria-label": badge.name })}
                   aria-current={current(item.section)}
                   variant="navigation"
@@ -302,6 +364,7 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
             );
           })}
         </ul>
+        )}
         {/* The theme is a setting of this browser, switched here too so that phones reach it in one step. */}
         <div className="mt-4 border-t border-border px-3 pt-4">
           <ThemeRadioGroup layout="sheet" />
