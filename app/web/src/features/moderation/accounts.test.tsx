@@ -462,7 +462,7 @@ describe("an account's admin page", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    const { user } = await renderApp({ path: `/admin/accounts/${bobDetail.id}` });
+    const { user } = await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
 
     const twoFactor = await screen.findByRole("region", { name: "Two-factor authentication" });
     expect(within(twoFactor).getByText("On: signing in asks for a code from an authenticator app.")).toBeInTheDocument();
@@ -481,7 +481,7 @@ describe("an account's admin page", () => {
 
   test("a moderator sees the two-factor authentication but cannot remove it", async () => {
     accountServer({ ...bobDetail, two_factor_enabled: true });
-    await renderApp({ path: `/admin/accounts/${bobDetail.id}` });
+    await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
 
     const twoFactor = await screen.findByRole("region", { name: "Two-factor authentication" });
     expect(within(twoFactor).getByText("On: signing in asks for a code from an authenticator app.")).toBeInTheDocument();
@@ -490,7 +490,7 @@ describe("an account's admin page", () => {
 
   test("a remote account has no two-factor authentication region", async () => {
     accountServer(adminAccountDetailFixture(remoteAccountFixture));
-    await renderApp({ path: `/admin/accounts/${remoteAccountFixture.id}` });
+    await renderApp({ path: `/moderation/accounts/${remoteAccountFixture.id}` });
 
     expect(await screen.findByRole("region", { name: "Actions on the account" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Two-factor authentication" })).not.toBeInTheDocument();
