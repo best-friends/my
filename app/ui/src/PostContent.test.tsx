@@ -1,9 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ariaSnapshot } from "../test/aria-snapshot";
+import { ExternalLinkContext } from "./ExternalLink";
 import { PostContent, serverSanitizedHtml } from "./PostContent";
+
+/**
+ * The name of a link followed by the hidden "(opens in a new tab)". jsdom lays nothing out, so the name it computes
+ * has no space between the two; a browser's has one, as the hidden text is a block (`sr-only` is absolute).
+ */
+function newTab(name: string): RegExp {
+  return new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} ?\\(opens in a new tab\\)$`);
+}
+
+/** The app's settings of the links: its own pages are the hashtag pages of example.com. */
+function withLinks(children: ReactNode) {
+  return (
+    <ExternalLinkContext value={{ newTabLabel: "(opens in a new tab)", isAppLink: (url) => url.host === "example.com" && url.pathname.startsWith("/tags/") }}>
+      {children}
+    </ExternalLinkContext>
+  );
+}
 
 describe("PostContent", () => {
   afterEach(() => {
@@ -21,7 +40,32 @@ describe("PostContent", () => {
     expect(screen.getByText("unchecked")).toBeInTheDocument();
   });
 
-  it("hands the links followed in the same tab to onLinkClick", async () => {
+  it("opens the links to the app's own pages in the same tab, and every other link in a new tab", () => {
+    // As the server renders a post: every link has the same rel and target.
+    const rel = 'rel="nofollow noopener noreferrer" target="_blank"';
+    const html = serverSanitizedHtml(
+      `<p><a href="https://example.com/tags/cats" class="mention hashtag" ${rel}>#<span>cats</span></a> <a href="https://news.example/a" ${rel}>news.example/a</a> <a href="https://news.example/b">b</a></p>`,
+    );
+    const { rerender } = render(<PostContent html={html} />, { wrapper: ({ children }) => withLinks(children) });
+
+    const tag = screen.getByRole("link", { name: "#cats" });
+    expect(tag).not.toHaveAttribute("target");
+    expect(tag).toHaveAttribute("rel", "nofollow noopener noreferrer");
+    const news = screen.getByRole("link", { name: newTab("news.example/a") });
+    expect(news).toHaveAttribute("target", "_blank");
+    expect(news).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    const plain = screen.getByRole("link", { name: newTab("b") });
+    expect(plain).toHaveAttribute("target", "_blank");
+    expect(plain).toHaveAttribute("rel", "noopener noreferrer");
+
+    // Rendered again, the links get the text once.
+    rerender(<PostContent html={html} className="text-sm" />);
+    expect(screen.getByRole("link", { name: newTab("news.example/a") })).toBeInTheDocument();
+    rerender(<PostContent html={serverSanitizedHtml(`<p><a href="https://news.example/c" ${rel}>c</a></p>`)} />);
+    expect(screen.getByRole("link", { name: newTab("c") })).toHaveAttribute("target", "_blank");
+  });
+
+  it("hands the links to the app's own pages followed in the same tab to onLinkClick", async () => {
     const user = userEvent.setup();
     const followed: string[] = [];
     const onLinkClick = vi.fn((event: MouseEvent, link: HTMLAnchorElement) => {
@@ -30,14 +74,14 @@ describe("PostContent", () => {
       event.preventDefault();
     });
     const html = serverSanitizedHtml(
-      '<p><a href="https://example.com/tags/cats"><span>#</span>cats</a> <a href="https://example.com/x" target="_blank">x</a> <a href="https://example.com/y" download>y</a></p>',
+      '<p><a href="https://example.com/tags/cats" target="_blank"><span>#</span>cats</a> <a href="https://example.com/x" target="_blank">x</a> <a href="https://example.com/tags/dogs" download>y</a></p>',
     );
-    render(<PostContent html={html} onLinkClick={onLinkClick} />);
+    render(<PostContent html={html} onLinkClick={onLinkClick} />, { wrapper: ({ children }) => withLinks(children) });
 
     await user.click(screen.getByText("cats"));
     await user.click(screen.getByText("#"));
     await user.keyboard("{Enter}");
-    await user.click(screen.getByRole("link", { name: "x" }));
+    await user.click(screen.getByRole("link", { name: newTab("x") }));
     await user.click(screen.getByRole("link", { name: "y" }));
     await user.keyboard("{Control>}");
     await user.click(screen.getByRole("link", { name: "#cats" }));

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, Button, EmptyState, ExternalLinkIcon, Link, RegionError, Spinner } from "@my/ui";
+import { Avatar, Button, EmptyState, ExternalLink, Link, RegionError, Spinner } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { handleOf } from "../../../lib/handle";
@@ -187,10 +187,9 @@ export function SourceCodeLink({ url }: { url: string }) {
     );
   }
   return (
-    <Link href={url} rel="noreferrer" variant="standalone" className="gap-1">
+    <ExternalLink href={url} variant="standalone">
       {t("client:about.source.view")}
-      <ExternalLinkIcon />
-    </Link>
+    </ExternalLink>
   );
 }
 

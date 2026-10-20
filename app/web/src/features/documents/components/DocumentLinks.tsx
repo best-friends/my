@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The links to the server's terms of service and privacy policy. Their pages are the server's own (rendered by
-// the server, readable without signing in and without JavaScript), so a link loads them in place of the app
-// (lib/paths.ts isServerPath).
-import { Link } from "@my/ui";
+// the server, readable without signing in and without JavaScript) and outside the app, so a link opens them in a
+// new tab (ExternalLink, web-client.md Y12).
+import { ExternalLink } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { useDocumentLinks } from "../hooks/useDocumentLinks";
@@ -32,9 +32,9 @@ export function DocumentLinks({ labelledBy, placement = "inline" }: DocumentLink
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {links.map((link) => (
           <li key={link.href}>
-            <Link href={link.href} variant="standalone">
+            <ExternalLink href={link.href} variant="standalone">
               {link.label}
-            </Link>
+            </ExternalLink>
           </li>
         ))}
       </ul>

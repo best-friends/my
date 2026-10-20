@@ -145,7 +145,7 @@ export function load(queryClient: ReturnType<typeof useQueryClient>) {
 // A7
 export const Typed: FC = () => null; // expect: typescript(no-restricted-types)
 
-// A5, A8, A9, D2, D5–D10, G10
+// A5, A8, A9, D2, D5–D10, Y12, G10
 export function Styled({ size }: { size: string }) {
   const el = document.body;
   el.setAttribute("style", "color: red"); // expect: restrict(syntax)
@@ -167,6 +167,7 @@ export function Styled({ size }: { size: string }) {
       <p className={"p-" + size} /> {/* expect: better-tailwindcss(no-concatenated-classes) */}
       <p className="flex grid" /> {/* expect: better-tailwindcss(no-conflicting-classes) better-tailwindcss(no-conflicting-classes) */}
       <svg /> {/* expect: restrict(svg) */}
+      <a href="https://remote.example/" target="_blank" rel="noreferrer">{size}</a> {/* expect: restrict(syntax) restrict(syntax) */}
     </div>
   );
 }

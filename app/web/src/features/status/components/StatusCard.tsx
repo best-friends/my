@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLinkIcon, Link, LinkCard, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLink, Link, LinkCard, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
 import type { Ref } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useIntl } from "react-intl";
@@ -206,18 +206,16 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
             {view.original !== null && (
               // The post's page on its own server, shown also while nobody is signed in. The host is what it
               // shows; the name says where it leads, and contains the host (WCAG 2.5.3, label in name).
-              <Link
+              <ExternalLink
                 href={view.original.href}
-                rel="noreferrer"
                 variant="standalone"
                 aria-label={t("client:status.original", { host: view.original.host })}
-                className="ms-auto min-w-0 gap-1 text-sm font-normal text-fg-muted data-hovered:text-fg"
+                className="ms-auto min-w-0 text-sm font-normal text-fg-muted data-hovered:text-fg"
               >
                 <span dir="ltr" className="min-w-0 truncate">
                   {view.original.host}
                 </span>
-                <ExternalLinkIcon />
-              </Link>
+              </ExternalLink>
             )}
           </>
         ),

@@ -2,7 +2,7 @@
 // A profile (FR-204): the header with the account's picture, name, handle, profile text, metadata fields,
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
 // selection the route keeps in the URL (web-client.md S3), the posts tab starting with its pinned posts.
-import { Avatar, EmojiText, ExternalLinkIcon, type ImageSources, Link, Picture, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
+import { Avatar, EmojiText, ExternalLink, type ImageSources, Link, Picture, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
 import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed, useRemoteFetch } from "../../timeline";
@@ -200,10 +200,9 @@ function AccountPosts({ accountId, filter, original, labelledBy }: AccountPostsP
           notice: t("client:profile.remote.notice"),
           link: (
             // The profile on the account's own server leaves the app.
-            <Link href={original.href} rel="noreferrer" variant="standalone" className="gap-1">
+            <ExternalLink href={original.href} variant="standalone">
               {t("client:profile.remote.original", { host: isolate(original.host) })}
-              <ExternalLinkIcon />
-            </Link>
+            </ExternalLink>
           ),
         };
   return (

@@ -2,7 +2,7 @@
 // The terms and policies screen (#489), for manage_settings: a language, and the terms of service and the
 // privacy policy in it, each a form of its own (an `h2` section) with a Markdown text area, what is saved, and
 // a link to its public page. Removing a saved text asks first (the APG alert dialog pattern, web-client.md G22).
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, ExternalLinkIcon, Link, Select, SelectItem, StatusMessage, TextArea } from "@my/ui";
+import { Button, ConfirmDialog, DescriptionItem, DescriptionList, ExternalLink, Select, SelectItem, StatusMessage, TextArea } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import { useUnsavedChangesGuard } from "../../settings";
@@ -95,10 +95,9 @@ function DocumentForm({ editor, languageName, viewLabel, confirmTitle }: Documen
       </DescriptionList>
       {editor.pageUrl !== undefined && (
         <p>
-          <Link href={editor.pageUrl} variant="standalone" className="gap-1">
+          <ExternalLink href={editor.pageUrl} variant="standalone">
             {viewLabel}
-            <ExternalLinkIcon />
-          </Link>
+          </ExternalLink>
         </p>
       )}
       <form onSubmit={editor.submit} className="flex flex-col gap-4">

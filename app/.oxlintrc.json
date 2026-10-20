@@ -431,7 +431,7 @@
     // @eslint-react, without the rules that duplicate react/* and without no-unstable-context-value (R4, R5:
     // React Compiler memoizes a context value built during render; the rule asks for the useMemo that R5
     // forbids). A7: no-restricted-types. A8: dom-no-dangerously-set-innerhtml (PostContent below). A9: formatjs.
-    // D8, D9: better-tailwindcss; D5–D7: its no-restricted-classes. A5, D5, D10, R4, R5, R13, S7, G10: restrict/syntax
+    // D8, D9: better-tailwindcss; D5–D7: its no-restricted-classes. A5, D5, D10, R4, R5, R13, S7, Y12, G10: restrict/syntax
     // and restrict/svg. S11: restrict/storage. R5, S1, G10: no-restricted-imports / -globals / -properties.
     {
       "files": [
@@ -697,6 +697,14 @@
           {
             "selector": "CallExpression > MemberExpression.callee[property.name=/^ensure(Infinite)?QueryData$/]",
             "message": "Do not use ensureQueryData; a loader reads with queryClient.query / infiniteQuery and staleTime: Infinity (web-client.md S7)."
+          },
+          {
+            "selector": "JSXOpeningElement[name.name=/^(a|Link)$/] > JSXAttribute[name.name='target']",
+            "message": "A link that opens in a new tab is the ExternalLink of @my/ui, which adds rel and the \"opens in a new tab\" text (web-client.md Y12)."
+          },
+          {
+            "selector": "JSXOpeningElement[name.name=/^(a|Link)$/] > JSXAttribute[name.name='href'] > Literal[value=/^https?:/i]",
+            "message": "A link to another site is the ExternalLink of @my/ui, which opens it in a new tab (web-client.md Y12)."
           }
         ],
         "restrict/svg": [

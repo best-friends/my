@@ -107,6 +107,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | Y9 | 画像の添付には代替テキストの入力欄を必ず出す。リモートの画像で代替テキストがないものには「説明なし」のバッジを付ける | 部品のテスト |
 | Y10 | 利用者が書いた内容（表示名・投稿・プロフィール）は `dir="auto"` で表示し、分かる場合は `lang` を付ける | 部品のテスト、ARIA スナップショット |
 | Y11 | モーダルのダイアログはクリック・タップだけで閉じられる（APG の dialog）。`@my/ui` の `Dialog` / `Sheet` は `role="dialog"` なら × ボタン（`closeLabel`）を必ず持ち、`alertdialog` は × ボタンの代わりに「キャンセル」を持つ（`closeLabel={null}`）。背景（スクリム）を押すと閉じる（`isDismissable` の既定は真）。閉じると入力を失うフォームのダイアログ（通報・投稿の編集・管理画面の編集、入力欄を持つ `ConfirmDialog`）だけは `isDismissable={false}` にして、背景を押しても閉じない。閉じても下書きが残る投稿のシートは背景で閉じる | 型（`closeLabel` が必須）、部品のテストとストーリー |
+| Y12 | アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、サーバーが描画する利用規約とプライバシーポリシーのページ、サーバーが描画した HTML（`PostContent`）の中の自インスタンスの画面以外へのリンク）は新しいタブで開く。`@my/ui` の `ExternalLink` が `target="_blank"`、`rel` の `noopener noreferrer`（呼び出し側の `nofollow` などは保つ）、外部へのリンクのアイコン、支援技術に読ませる「（新しいタブで開きます）」（`client:shell.link.new_tab`、`sr-only`。`aria-label` があればその後ろに足す）を付ける。文言と自インスタンスの画面かどうかの判定は、外枠（`App.tsx` の `ExternalLinks`）が `ExternalLinkContext` で 1 度だけ渡す。`Link` や `<a>` に `target` を書かず、`http(s):` の `href` は `ExternalLink` に渡す。`mailto:` はメールのアプリが開くので `Link` のままにする | `restrict/syntax`（`a` / `Link` の `target` と、`http(s):` の文字列の `href`）、部品のテスト（`ExternalLink`・`PostContent`） |
 
 ## 6. レスポンシブとスタイル
 
@@ -225,9 +226,11 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   タップ領域は `pointer-coarse:` で 44 px 以上、方向は論理プロパティ（`px-`・`ps-`・`pe-`）で書く（D4・D7・Y4）。
 - フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`・`one-time-code`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
 - 利用規約とプライバシーポリシーは、ランディングページ（§9）と違い、SPA のルートにしない。登録のフォームが同意を求める文書で、JavaScript なしで読めなければならず、
-  クライアント API には文書の本文がない（`GET /instance` が返すのは公開ページの URL の `terms_url` / `privacy_policy_url` だけ）ため。アドレスは `/auth/terms`・`/auth/privacy` のまま、どの画面からもページごと開く。
+  クライアント API には文書の本文がない（`GET /instance` が返すのは公開ページの URL の `terms_url` / `privacy_policy_url` だけ）ため。アドレスは `/auth/terms`・`/auth/privacy` のまま、SPA のどの画面からも新しいタブで開く（Y12）。
 - 利用規約とプライバシーポリシー（#489）: 管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズし（`internal/adapter/markdown`）、`.document` の区画に、文書のロケールの `lang` と `dir="auto"` で出す。見出しはページの `h1` の下の `h2` から始まり、幅の広い表は区画の中で横にスクロールして、ページは横にスクロールしない（D3）。
   サーバーが公開している文書は、すべての画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からリンクする。公開していない文書はリンクせず、そのページは 404 にする。
+- サーバーが描画するページのリンクは、ページの間では同じタブで開く（フッターの文書のリンクも）。入力の途中で読むリンク、つまり登録のフォームの同意の文の文書と、ボットの確認の説明の後のサービスのプライバシーポリシーと利用規約（ほかのサイト）は、
+  入力を失わないように `target="_blank" rel="noopener noreferrer"` で新しいタブで開き、末尾に `.visually-hidden` の「（新しいタブで開きます）」（`server:auth.link.new_tab`）を置く（Y12）。
 
 ## 9. アプリの外枠
 
@@ -316,8 +319,11 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   投稿の本文とプロフィール（`PostContent`）の中のリンクは、サーバーが描画した HTML のもので、自インスタンスのページも `https://{host}/...`（ADR-0018。連合でも同じ HTML を配る）を指す。
   これを同じタブで開くと（修飾キーのない左クリックか Enter）、`PostContent` の `onLinkClick` に渡した `lib/contentLinks.ts` の `useContentLinkClick()` が、
   ホストが `apiOrigin` のホストと同じ（スキームは問わない）プロフィール・投稿・ハッシュタグのリンク（`/@{acct}`・`/@{acct}/status/{id}`・`/tags/{tag}`）をルーターの遷移に変える。
-  そのため平文 HTTP のローカルの構成（`apiOrigin` が `http://localhost:8080`）でも、TLS のない `https://` に移らずに該当の画面が開く。ほかのリンクと、新しいタブやウィンドウで開くことはブラウザに任せる。
-  サーバー自身のパス（`/auth`・`/oauth`・`/api` などの予約パス、`lib/paths.ts` の `isServerPath`）へのリンクはアプリのルートではないので、外枠の `navigate`（`App.tsx`）がルーターに渡さず、`leaveApp` でページごと開く（利用規約とプライバシーポリシーの公開ページ）。
+  そのため平文 HTTP のローカルの構成（`apiOrigin` が `http://localhost:8080`）でも、TLS のない `https://` に移らずに該当の画面が開く。修飾キー付きで新しいタブやウィンドウで開くことはブラウザに任せる。
+  サーバーはどのリンクにも `target="_blank"` を書くので、`PostContent` は描画の後にリンクごとに開き方を決める（Y12）。上の 3 種類の自インスタンスの画面へのリンク（`ExternalLinkContext` の `isAppLink`、`App.tsx` の `ExternalLinks` が `contentLinkPath` で判定）は `target` を外して同じタブで開き、
+  ほかのリンクは新しいタブで開いて、サーバーの `rel`（`nofollow noopener noreferrer`）に `noopener noreferrer` を保ち、「（新しいタブで開きます）」を末尾に足す。
+  アプリの外へ出るリンク（ほかのサイト、ソースコードの公開先、利用規約とプライバシーポリシーの公開ページ）は `ExternalLink` で新しいタブで開く（Y12）。
+  それ以外のサーバー自身のパス（`/auth`・`/oauth`・`/api` などの予約パス、`lib/paths.ts` の `isServerPath`。登録の画面など）へのリンクはアプリのルートではないので、外枠の `navigate`（`App.tsx`）がルーターに渡さず、`leaveApp` でページごと開く。
 - **レイアウト**（`routes/-layout/AppLayout.tsx`）: モバイルファーストで、`md` 未満は下端のタブバー、`md` から横のレール、`lg` から文言付きのサイドバー、`xl` から投稿フォームとサーバーについての 3 列目を出す。
   `xl` 未満では、投稿フォームはタブバーの上（`md` からは画面の隅）に浮かぶボタンから開くシートになる（§12）。どちらにするかは外枠が `matchMedia` で決め（`useMediaQuery`）、ページに置くフォームは常に 1 つにする。
   浮かぶボタンは、ルートの静的なデータ（TanStack Router の `staticData`、`composeButton: true`）を持つ画面（タイムラインとプロフィール）にだけ出す（G4）。外枠は今のマッチ（`useMatches`）からそれを読む。
@@ -371,7 +377,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   サムネイル（`thumbnail`）はページの幅の画像で、代替テキストは管理者が書いたもの（無ければ見出しがサーバーを名指すので装飾として `alt=""`）にする。
   連絡先（`contact`）は「連絡先」の区画の説明リストで、アカウント（アバター・表示名（`dir="auto"`）・ハンドル（`dir="ltr"`）をプロフィールへの 1 つのリンクにする）とメールアドレス（`mailto:` のリンク、`dir="ltr"`）を、サーバーが返したものだけ出す。どちらも無ければ区画ごと出さない。
   ソースコードの区画は、AGPL-3.0 第 13 条（ADR-0011）により利用者がソースコードを入手できることと、公開先（`source_url`）へのリンク（`SourceCodeLink`）を出す。
-  `https:` の URL なら「ソースコードを見る」（外部へのリンクのアイコン付き、`rel="noreferrer"`）、`mailto:` なら「ソースコードをメールで請求する」にし、情報ページではその下に請求先のアドレス（`dir="ltr"`）を説明リストで出す。
+  `https:` の URL なら「ソースコードを見る」（`ExternalLink`。新しいタブで開く、Y12）、`mailto:` なら「ソースコードをメールで請求する」にし、情報ページではその下に請求先のアドレス（`dir="ltr"`）を説明リストで出す。
   処分したドメインの一覧は、インスタンス設定 `domain_actions_visibility` に従う。API が 404（誰にも見せない）を返すときは区画ごと出さず、401（ログインした利用者だけに見せる。サインインしていない閲覧者）を返すときは、一覧の代わりにそのことと `/login` へのリンクを出す。
   どちらも設定の答えなので再試行しない。項目はドメイン（伏せ字はサーバーが返したまま、`dir="ltr"`）・種類・公開コメント（`dir="auto"`。見せてよい相手にだけサーバーが返す）で、伏せ字のドメインがあるときは一覧の前にそのことを書く。
   一覧は 40 件ずつで、続きは「さらに表示」のボタンで読む。loader は `GET /instance` と一覧の最初のページを待つが、どちらの失敗もページの失敗にはせず、一覧の失敗はその区画の中に出す。
@@ -584,7 +590,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 - **ほかのサーバーのアカウントと投稿**（`acct` にドメインがあるもの）: 名前の横のハンドルは `@username@domain` で出す。カードの操作の列の末尾に、元のサーバーの投稿のページ（`url`、なければ `uri`）へのリンクを置く。
   リンクはホスト名だけを見せ、アクセシブルネームはそのホスト名を含む文（「{host} で元の投稿を開く」）にする。サインインしていない間も出す。
   プロフィールは各タブの投稿の一覧の上に「このサーバーが受け取った投稿だけを表示しています」と、元のサーバーのプロフィール（`Account.url`）へのリンク「{host} で見る」を置き、投稿が無いタブでは空の表示の説明と操作に同じものを出す（`TimelineFeed` の `origin`、ADR-0044）。
-  どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
+  どちらのリンクも `ExternalLink` で、外部へのリンクのアイコンを付けて新しいタブで開く（Y12）。投稿のリンクのアクセシブルネームは「{host} で元の投稿を開く（新しいタブで開きます）」になる。
   タブの最初のページが `remote_fetch_started` を返したら（client-api.md）、一覧の上に「元のサーバーから最近の投稿を取得しています」を出して `useAnnouncer` の polite の領域で 1 回知らせ（Y7。表示はページと同時に現れるので、それ自体はライブリージョンにしない）、
   4 秒後にそのアカウントの投稿の一覧に無効化の印を付けて表示中のタブを 1 回だけ取り直し、取り直しの成否にかかわらずキャッシュの最初のページから `remote_fetch_started` を外して表示を消す（`timeline/hooks/useRemoteFetch`）。失敗は知らせない。
   画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。

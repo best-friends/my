@@ -40,7 +40,7 @@
 {{template "human_check" $}}{{with $.Documents}}<div class="agreement">
 <p id="sign-up-agreement">{{$.L.ServerAuthSignUpAgreement}}</p>
 <ul class="links">
-{{range .}}<li><a href="{{.Path}}">{{.Title}}</a></li>
+{{range .}}<li><a href="{{.Path}}" target="_blank" rel="noopener noreferrer">{{.Title}}<span class="visually-hidden"> {{$.L.ServerAuthLinkNewTab}}</span></a></li>
 {{end}}</ul>
 </div>{{end}}
 <div class="actions">

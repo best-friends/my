@@ -6,7 +6,7 @@ import { render, type RenderOptions } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { onTestFinished } from "vitest";
-import { App, AppI18nProvider } from "../App";
+import { App, AppI18nProvider, ExternalLinks } from "../App";
 import { ConfigProvider, type RuntimeConfig } from "../lib/config";
 import { type I18n, loadI18n } from "../lib/i18n";
 import type { RouterContext } from "../lib/query";
@@ -21,7 +21,7 @@ const testConfig: RuntimeConfig = {
   defaultLocale: "en",
 };
 
-/** Renders a component inside the config and i18n providers, in `locale` (the source locale by default). */
+/** Renders a component inside the config, i18n and external link providers, in `locale` (the source locale by default). */
 export async function renderWithProviders(ui: ReactNode, { locale = "en", ...options }: Omit<RenderOptions, "wrapper"> & { locale?: string } = {}) {
   const i18n = await loadI18n(locale);
   const user = userEvent.setup();
@@ -29,7 +29,9 @@ export async function renderWithProviders(ui: ReactNode, { locale = "en", ...opt
     ...options,
     wrapper: ({ children }) => (
       <ConfigProvider config={testConfig}>
-        <AppI18nProvider i18n={i18n}>{children}</AppI18nProvider>
+        <AppI18nProvider i18n={i18n}>
+          <ExternalLinks>{children}</ExternalLinks>
+        </AppI18nProvider>
       </ConfigProvider>
     ),
   });

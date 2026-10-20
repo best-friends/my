@@ -9,13 +9,14 @@ import { describe, expect, test } from "vitest";
 import { apiBase, problem } from "../../test/msw/http";
 import { remoteAccountFixture, remoteStatusFixture, statusPage } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
+import { newTabName } from "../../test/links";
 import { renderApp } from "../../test/render";
 import { remoteFetchRereadDelay } from "../timeline";
 
 const notice = "Only the posts this server has received are shown.";
 const fetching = "Fetching recent posts from the original server.";
 /** The link's name: the host inside the sentence is isolated, as names are (web-client.md Y10). */
-const original = { name: "See on ⁨remote.example⁩" };
+const original = { name: newTabName("See on ⁨remote.example⁩") };
 const path = "/@carol@remote.example";
 
 /** A post of Carol that her server sent when this server fetched her recent posts. */

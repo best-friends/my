@@ -195,6 +195,10 @@
     "defaultMessage": "[Ŧħḗḗ ƈħḗḗƈķ ŧħȧȧŧ ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧ ƀǿǿŧ īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ řīɠħŧ ƞǿǿẇ. Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.link.new_tab": {
+    "defaultMessage": "[(ǿǿƥḗḗƞş īƞ ȧȧ ƞḗḗẇ ŧȧȧƀ)]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "[Ḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
     "description": "Generated from en by tools/i18n; do not edit."
