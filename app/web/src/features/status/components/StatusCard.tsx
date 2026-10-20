@@ -5,6 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
+import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
 import { useStatusView } from "../hooks/useStatusView";
 import { StatusActions } from "./StatusActions";
 import { StatusPoll } from "./StatusPoll";
@@ -52,6 +53,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
   const t = useT();
   const intl = useIntl();
   const view = useStatusView(status);
+  const viewerLabels = useMediaViewerLabels();
 
   const card =
     view.card === null ? undefined : (
@@ -79,6 +81,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         sensitive={view.sensitive}
         noDescriptionLabel={t("client:timeline.media.no_description")}
         revealLabel={t("client:timeline.media.reveal")}
+        viewerLabels={viewerLabels}
       />
     ) : (
       card

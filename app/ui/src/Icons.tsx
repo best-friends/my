@@ -20,6 +20,7 @@ import {
   PiBell,
   PiBookmarkSimple,
   PiBookmarkSimpleFill,
+  PiCaretLeft,
   PiCaretRight,
   PiDotsThreeBold,
   PiEye,
@@ -83,6 +84,9 @@ export const iconTable = {
   // Up is where the new items wait (above the feed) in any writing direction, so it does not mirror.
   NewItemsIcon: { off: glyph(PiArrowUp, "PiArrowUp") },
   HideMediaIcon: { off: glyph(PiEyeSlash, "PiEyeSlash") },
+  // The image viewer steps through a post's pictures in the order of the line, so they mirror.
+  PreviousIcon: { off: glyph(PiCaretLeft, "PiCaretLeft"), directional: true },
+  NextIcon: { off: glyph(PiCaretRight, "PiCaretRight"), directional: true },
   // A loop means a loop and not a direction, so it does not mirror; it has nothing to fill, so on is Bold.
   BoostIcon: { off: glyph(PiRepeat, "PiRepeat"), on: glyph(PiRepeatBold, "PiRepeatBold") },
   StarIcon: { off: glyph(PiStar, "PiStar"), on: glyph(PiStarFill, "PiStarFill") },
@@ -172,6 +176,16 @@ export function NewItemsIcon() {
 /** An eye struck through, for the button that conceals sensitive media again. */
 export function HideMediaIcon() {
   return renderIcon(iconTable.HideMediaIcon);
+}
+
+/** A caret to the start of the line, for the button that shows the picture before. It flips in right-to-left text. */
+export function PreviousIcon() {
+  return renderIcon(iconTable.PreviousIcon);
+}
+
+/** A caret to the end of the line, for the button that shows the next picture. It flips in right-to-left text. */
+export function NextIcon() {
+  return renderIcon(iconTable.NextIcon);
 }
 
 /** Two arrows in a loop, for boosting; bolder while on. */

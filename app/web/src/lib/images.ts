@@ -24,3 +24,27 @@ export function imageSources(variants: MediaVariants | undefined): ImageSources 
   if (animated === undefined) return { still };
   return { still, animated: [animated.small, animated.medium, animated.large].map(candidate) };
 }
+
+/** An image at its original size, as the image viewer shows it: its renditions and, when known, its size. */
+type OriginalImage = { sources: ImageSources; width?: number | undefined; height?: number | undefined };
+
+/**
+ * The original size of an image for the image viewer: the `large` rendition of an upload (still, and moving for an
+ * animation), or `url` for a file without renditions (a remote file, through the media proxy) at the size its server
+ * declared (`meta`); undefined without either.
+ */
+export function originalImage(
+  variants: MediaVariants | undefined,
+  url: string | undefined,
+  meta: { width?: number | undefined; height?: number | undefined },
+): OriginalImage | undefined {
+  if (variants !== undefined) {
+    const { large, animated } = variants;
+    return {
+      sources: animated === undefined ? { still: [{ url: large.url }] } : { still: [{ url: large.url }], animated: [{ url: animated.large.url }] },
+      width: large.width,
+      height: large.height,
+    };
+  }
+  return url === undefined ? undefined : { sources: { still: [{ url }] }, width: meta.width, height: meta.height };
+}

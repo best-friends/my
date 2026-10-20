@@ -10,7 +10,7 @@ import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { useT } from "../../../lib/i18n";
 import { type LinkCard, type MediaAttachment, type Status, statusHistoryPath, statusPath, statusShareUrl } from "../api/status";
-import { imageSources } from "../../../lib/images";
+import { imageSources, originalImage } from "../../../lib/images";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
@@ -99,6 +99,7 @@ function useLinkCardView(card: LinkCard | undefined): LinkCardView | null {
  * The pictures of a status that are ready to show: `preview_url` is the small still rendition of an upload, and
  * the media proxy's small one of a remote file; an upload also has its renditions to choose from by size, still and
  * moving (api/openapi.yaml, MediaAttachment). The blurhash stands in for a picture while it is concealed or loading.
+ * The image viewer shows the original size: the large rendition of an upload, or `url` (the proxy's) of a remote file.
  */
 export function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
   return attachments.flatMap((attachment) =>
@@ -111,6 +112,7 @@ export function mediaItems(attachments: readonly MediaAttachment[], lang: string
             alt: attachment.description ?? null,
             lang,
             blurhash: attachment.blurhash,
+            original: originalImage(attachment.variants, attachment.url, attachment.meta),
           },
         ]
       : [],

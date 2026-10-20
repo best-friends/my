@@ -4122,6 +4122,14 @@ export interface MessageArgs {
   "client:timeline.media.no_description": {};
   /** Show sensitive media */
   "client:timeline.media.reveal": {};
+  /** Close */
+  "client:timeline.media.viewer.close": {};
+  /** Next image */
+  "client:timeline.media.viewer.next": {};
+  /** Previous image */
+  "client:timeline.media.viewer.previous": {};
+  /** Image {position, number} of {count, number} */
+  "client:timeline.media.viewer.title": { count: number; position: number };
   /** {count, plural, one {# new post} other {# new posts}} */
   "client:timeline.new_posts": { count: number };
   /** Could not load the new posts: {reason} */
