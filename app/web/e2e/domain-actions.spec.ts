@@ -205,7 +205,9 @@ test.describe("Mastodon's domain block CSV", () => {
     // The CSV's text area is the last text box of the page; the preview is the submit button of the last form.
     await main.getByRole("textbox").last().fill("#domain,#severity\nspam.example,silence\n");
     await main.locator('form button[type="submit"]').last().click();
-    const rows = main.getByRole("list").last();
+    // The preview's rows are the list of checkboxes; once the import replaces the preview, the list of the domain
+    // actions above it is the last list of the page, so `.last()` would find that one.
+    const rows = main.getByRole("list").filter({ has: page.getByRole("checkbox") });
     // Each row that takes actions is a checkbox named by its domain, chosen at first; the invalid row is text.
     await expect(rows.getByRole("listitem")).toHaveCount(3);
     await expect(rows.getByRole("checkbox", { name: "spam.example" })).toBeChecked();

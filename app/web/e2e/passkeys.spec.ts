@@ -45,6 +45,29 @@ async function addAuthenticator(page: Page): Promise<{ cdp: CDPSession; authenti
   return { cdp, authenticatorId };
 }
 
+/**
+ * Into the app through the server's sign-in page, with the password. The app shows itself in the user's display
+ * language, which `my admin create` leaves at the server's: it becomes the project's locale through the client API
+ * (PATCH /api/v1/preferences with the app's access token), as the main flow does.
+ */
+async function signInToApp(page: Page, user: { email: string; password: string }): Promise<void> {
+  await page.goto("/login");
+  const authorized = page.waitForRequest(
+    (request) => new URL(request.url()).pathname.startsWith("/api/") && request.headers()["authorization"]?.startsWith("Bearer ") === true,
+  );
+  await page.getByRole("main").getByRole("button").click();
+  await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
+  await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
+  await page.locator('main button[type="submit"]').first().click();
+  const authorization = (await authorized).headers()["authorization"] ?? "";
+  await expect(page).toHaveURL(`${serverURL}/home`);
+  const locale = test.info().project.use.locale ?? "en";
+  const preferences = await page.request.patch(`${serverURL}/api/v1/preferences`, { headers: { Authorization: authorization }, data: { locale } });
+  expect(preferences.ok(), `PATCH /api/v1/preferences: ${String(preferences.status())}`).toBe(true);
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("lang", locale);
+}
+
 test.describe("passkeys", () => {
   test.skip(!ownsServer, "the test creates a user with bin/my, which needs the database of the server e2e/server.ts starts");
 
@@ -54,13 +77,7 @@ test.describe("passkeys", () => {
     runMy(["admin", "create", "-username", username, "-email", user.email], `${user.password}\n`);
     const { cdp, authenticatorId } = await addAuthenticator(page);
 
-    // Into the app through the server's sign-in page, with the password.
-    await page.goto("/login");
-    await page.getByRole("main").getByRole("button").click();
-    await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
-    await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
-    await page.locator('main button[type="submit"]').first().click();
-    await expect(page).toHaveURL(`${serverURL}/home`);
+    await signInToApp(page, user);
 
     // The settings page adds a passkey after the password.
     await page.goto("/settings/passkeys");
@@ -99,13 +116,7 @@ test.describe("passkeys", () => {
     const user = { email: `${username}@example.com`, password: `e2e-password-${username}` };
     runMy(["admin", "create", "-username", username, "-email", user.email], `${user.password}\n`);
     await addAuthenticator(page);
-
-    await page.goto("/login");
-    await page.getByRole("main").getByRole("button").click();
-    await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
-    await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
-    await page.locator('main button[type="submit"]').first().click();
-    await expect(page).toHaveURL(`${serverURL}/home`);
+    await signInToApp(page, user);
 
     await page.goto("/settings/passkeys");
     const main = page.getByRole("main");
@@ -135,13 +146,17 @@ test.describe("passkeys", () => {
     await confirm.getByRole("button", { name: message("client", "settings.passkeys.remove"), exact: true }).click();
     await expect(confirm.getByText(message("server", "errors.passkey.last_sign_in_method"), { exact: false })).toBeVisible();
 
-    // Signed out, the password no longer signs in; the passkey does.
+    // Signed out, the password no longer signs in; the passkey does. A failed sign-in counts towards the limit of
+    // the address (identity.LoginIPLimit, 5 a minute) that every project shares, which would then turn away the
+    // sign-ins of the other projects running at the same time: one project tries the password.
     await page.context().clearCookies();
     await page.goto("/auth/sign_in");
-    await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
-    await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
-    await page.locator('main button[type="submit"]').first().click();
-    await expect(page.getByText(message("server", "auth.sign_in.failed"))).toBeVisible();
+    if (test.info().project.name === "en-1440") {
+      await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
+      await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
+      await page.locator('main button[type="submit"]').first().click();
+      await expect(page.getByText(message("server", "auth.sign_in.failed"))).toBeVisible();
+    }
     await page.getByRole("main").getByRole("button", { name: message("server", "auth.sign_in.passkey"), exact: true }).click();
     await expect(page).toHaveURL(`${serverURL}/`);
   });

@@ -10,6 +10,9 @@ import { ownsServer, runMy } from "./server-cli.ts";
 import { serverURL } from "./server-origin.ts";
 
 test.use({ baseURL: serverURL });
+// One worker runs every test of the file: beforeAll and afterAll run once per worker, so with the tests spread over
+// several (fullyParallel), one worker's afterAll removed the theme while another's test still expected it.
+test.describe.configure({ mode: "serial" });
 
 const sample = {
   tokens: [

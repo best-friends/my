@@ -74,9 +74,17 @@ function Rules({ rules }: { rules: ReturnType<typeof useAbout>["rules"] }) {
     <Section title={t("client:about.rules.title")}>
       <ol className="flex list-decimal flex-col gap-2 ps-6">
         {rules.map((rule) => (
-          <li key={rule.id} lang={rule.lang} dir="auto">
-            <p className="font-medium">{rule.text}</p>
-            {rule.hint !== undefined && <p className="text-sm text-fg-muted">{rule.hint}</p>}
+          // The item follows the page's direction, so that its number stays in the list's padding; the rule's text
+          // follows its own (dir="auto").
+          <li key={rule.id} lang={rule.lang}>
+            <p dir="auto" className="font-medium">
+              {rule.text}
+            </p>
+            {rule.hint !== undefined && (
+              <p dir="auto" className="text-sm text-fg-muted">
+                {rule.hint}
+              </p>
+            )}
           </li>
         ))}
       </ol>

@@ -115,7 +115,8 @@ test.describe("announcements", () => {
     await expect(markRead).toBeVisible();
     await expect(region.getByRole("article")).toHaveCount(2);
     await expect(region.getByText(message("announcements.unread"), { exact: true })).toBeVisible();
-    await expect(region.getByText("مرحبا بكم في الخادم")).toHaveAttribute("dir", "auto");
+    // The direction follows the text of the whole body (PostContent), the paragraph's parent.
+    await expect(region.getByText("مرحبا بكم في الخادم").locator("xpath=..")).toHaveAttribute("dir", "auto");
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
