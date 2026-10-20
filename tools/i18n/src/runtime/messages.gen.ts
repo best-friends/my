@@ -2154,6 +2154,34 @@ export interface MessageArgs {
   "client:public.disabled.title": {};
   /** Federated timeline */
   "client:public.title": {};
+  /** Nobody has reacted yet. */
+  "client:reaction.list.empty": {};
+  /** The reactions could not be loaded: {reason} */
+  "client:reaction.list.failed": { reason: string };
+  /** Reactions */
+  "client:reaction.list.label": {};
+  /** Show more */
+  "client:reaction.list.load_more": {};
+  /** More reactions could not be loaded: {reason} */
+  "client:reaction.list.load_more_failed": { reason: string };
+  /** Loading the reactions */
+  "client:reaction.list.loading": {};
+  /** Who reacted */
+  "client:reaction.list.open": {};
+  /** Try again */
+  "client:reaction.list.retry": {};
+  /** Who reacted */
+  "client:reaction.list.title": {};
+  /** React */
+  "client:reaction.picker.button": {};
+  /** Emoji to react with */
+  "client:reaction.picker.grid": {};
+  /** Emoji to react with */
+  "client:reaction.picker.title": {};
+  /** Emoji */
+  "client:reaction.picker.unicode": {};
+  /** React with {emoji} */
+  "client:reaction.toggle": { emoji: string };
   /** Back */
   "client:report.back": {};
   /** Why are you reporting this account? */
@@ -2816,6 +2844,10 @@ export interface MessageArgs {
   "client:status.pin.failed": { reason: string };
   /** Pinned post */
   "client:status.pin.label": {};
+  /** Reaction removed */
+  "client:status.reaction.off": {};
+  /** Reacted with {emoji} */
+  "client:status.reaction.on": { emoji: string };
   /** Earlier in the thread */
   "client:status.thread.ancestors": {};
   /** Could not load the replies: {reason} */
@@ -2944,7 +2976,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_blocks": {};
   /** Add and remove bookmarks */
   "server:auth.authorize.scope.write_bookmarks": {};
-  /** Add and remove favourites */
+  /** Add and remove favourites and emoji reactions */
   "server:auth.authorize.scope.write_favourites": {};
   /** Follow and unfollow accounts and answer follow requests */
   "server:auth.authorize.scope.write_follows": {};
@@ -3236,6 +3268,8 @@ export interface MessageArgs {
   "server:errors.status.invalid_language": {};
   /** {max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}} */
   "server:errors.status.invalid_media_description": { max: number };
+  /** Only a Unicode emoji or an enabled custom emoji of this server can be used to react. */
+  "server:errors.status.invalid_reaction": {};
   /** The text contains characters that cannot be posted. */
   "server:errors.status.invalid_text": {};
   /** An attached file was not found among your uploads. */

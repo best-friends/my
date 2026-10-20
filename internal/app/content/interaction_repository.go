@@ -112,6 +112,9 @@ type InteractionRepository interface {
 	InsertReaction(ctx context.Context, tx uow.Tx, r content.Reaction) (bool, error)
 	// DeleteReaction removes the reaction id and returns it, reporting whether there was one.
 	DeleteReaction(ctx context.Context, tx uow.Tx, id string) (content.Reaction, bool, error)
+	// DeleteAccountStatusReactions removes the reactions of an account to a status, except the
+	// one with the emoji whose key is exceptKey ("" removes them all), and returns them.
+	DeleteAccountStatusReactions(ctx context.Context, tx uow.Tx, accountID, statusID, exceptKey string) ([]content.Reaction, error)
 	// AddReactions adds delta (1 or -1) to the count of the reactions to a status with an emoji.
 	// A status that is deleted gains no count; a count that reaches zero goes away.
 	AddReactions(ctx context.Context, tx uow.Tx, statusID string, emoji content.ReactionEmoji, delta int64) error

@@ -1419,7 +1419,9 @@ paths:
     post:
       operationId: favouriteStatus
       summary: Favourite a status
-      description: Favouriting a status that is already favourited changes nothing.
+      description: |
+        Favouriting a status that is already favourited changes nothing. A user has one
+        favourite or one emoji reaction on a status, so favouriting takes back the reaction.
       tags: [statuses]
       security:
         - oauth2: ["write:favourites"]
@@ -1489,6 +1491,44 @@ paths:
       tags: [statuses]
       security:
         - oauth2: ["write:statuses"]
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+  /statuses/{id}/reaction:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    put:
+      operationId: reactToStatus
+      summary: React to a status with an emoji
+      description: |
+        Sets the authenticated user's emoji reaction to a status: a Unicode emoji, or a custom
+        emoji of this server that is enabled. A user has one favourite or one reaction on a
+        status, so reacting takes back the favourite and the reaction with another emoji;
+        reacting again with the same emoji changes nothing. A custom emoji of another server,
+        or anything else that is not one emoji, is a 422.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:favourites"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactToStatusRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: unreactToStatus
+      summary: Take back the emoji reaction to a status
+      description: Without a reaction it changes nothing.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:favourites"]
       responses:
         "200":
           $ref: "#/components/responses/StatusAfterAction"
@@ -3457,7 +3497,7 @@ components:
             "write:accounts": Change the user's profile and preferences.
             "write:blocks": Block and unblock accounts.
             "write:bookmarks": Bookmark posts and remove bookmarks.
-            "write:favourites": Favourite posts and remove favourites.
+            "write:favourites": Favourite posts and react to them with emoji, and take both back.
             "write:follows": Follow and unfollow accounts and answer follow requests.
             "write:media": Upload media and change their descriptions.
             "write:mutes": Mute and unmute accounts.
@@ -5104,6 +5144,18 @@ components:
                 Whether the authenticated user reacted with the emoji; omitted for anonymous
                 requests.
               type: boolean
+    ReactToStatusRequest:
+      description: The emoji to react with.
+      type: object
+      required: [emoji]
+      properties:
+        emoji:
+          description: |
+            A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
+            its `ReactionEmoji`; colons around it are accepted).
+          type: string
+          minLength: 1
+          maxLength: 130
     StatusReactor:
       description: One emoji reaction to a status, with the account that reacted.
       type: object

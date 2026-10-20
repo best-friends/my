@@ -49,6 +49,19 @@ func (r *InteractionRepository) DeleteReaction(ctx context.Context, tx uow.Tx, i
 	return reactionFrom(rows[0]), true, nil
 }
 
+// DeleteAccountStatusReactions implements content.InteractionRepository.
+func (r *InteractionRepository) DeleteAccountStatusReactions(ctx context.Context, tx uow.Tx, accountID, statusID, exceptKey string) ([]content.Reaction, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.DeleteAccountStatusReactions(ctx, sqlitegen.DeleteAccountStatusReactionsParams{AccountID: accountID, StatusID: statusID, ExceptKey: exceptKey})
+	if err != nil {
+		return nil, wrap(err, "delete reactions of an account")
+	}
+	return reactionsFrom(rows), nil
+}
+
 // AddReactions implements content.InteractionRepository.
 func (r *InteractionRepository) AddReactions(ctx context.Context, tx uow.Tx, statusID string, emoji content.ReactionEmoji, delta int64) error {
 	q, err := queries(tx)

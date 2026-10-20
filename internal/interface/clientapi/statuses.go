@@ -53,6 +53,8 @@ type Interactions interface {
 	Unboost(ctx context.Context, accountID, statusID string) error
 	Favourite(ctx context.Context, accountID, statusID string) (content.Favourite, error)
 	Unfavourite(ctx context.Context, accountID, statusID string) error
+	React(ctx context.Context, accountID, statusID, emoji string) (content.Reaction, error)
+	Unreact(ctx context.Context, accountID, statusID string) error
 	Bookmark(ctx context.Context, accountID, statusID string) error
 	Unbookmark(ctx context.Context, accountID, statusID string) error
 	Pin(ctx context.Context, accountID, statusID string) error
@@ -145,6 +147,8 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return unprocessable(l.ServerErrorsStatusNotPinnable())
 	case errors.Is(err, content.ErrPinLimit):
 		return unprocessable(l.ServerErrorsStatusPinLimit(content.MaxPins))
+	case errors.Is(err, content.ErrInvalidReaction):
+		return unprocessable(l.ServerErrorsStatusInvalidReaction())
 	}
 	return problem{}, false
 }

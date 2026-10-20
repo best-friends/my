@@ -2,11 +2,11 @@
 // The queries and mutations of the status feature (web-client.md S1, FR-106 to FR-109, FR-113): one post,
 // the thread around it, its edit history, and the viewer's actions on it (editing their own post among them). Keys follow openapi-react-query's
 // `[method, path, init]`, so the post's key is the one the compose and notifications features use too.
-import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { infiniteQueryOptions, type QueryClient, type QueryKey } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import { ApiError } from "../../../lib/errors";
 import type { components } from "../../../lib/api/schema.gen";
-import { forPost, updateCachedStatuses, withRelation, withRelationFrom } from "./cache";
+import { forPost, type LikeSlot, updateCachedStatuses, withLikeSlot, withLikeSlotFrom, withRelation, withRelationFrom } from "./cache";
 
 /** A status (post or boost), as the client API returns it. */
 export type Status = components["schemas"]["Status"];
@@ -22,6 +22,9 @@ export type StatusSource = components["schemas"]["StatusSource"];
 
 /** One revision of a post (GET /statuses/{id}/history). */
 export type StatusEdit = components["schemas"]["StatusEdit"];
+
+/** The emoji of a reaction: a Unicode emoji, or a custom emoji with its image (ADR-0052). */
+export type ReactionEmoji = components["schemas"]["ReactionEmoji"];
 
 /** The actions that the viewer turns on and off on a post. */
 export type Relation = "boost" | "favourite" | "bookmark";
@@ -106,6 +109,84 @@ export async function cacheRelationPending(api: Api, queryClient: QueryClient, i
 /** Puts back the viewer's `relation` to post `id` as it was before a press to `on` that the server refused. */
 export function restoreRelation(queryClient: QueryClient, id: string, relation: Relation, on: boolean): void {
   updateCachedStatuses(queryClient, forPost(id, (status) => withRelation(status, relation, !on)));
+}
+
+/**
+ * Sets the viewer's emoji reaction to post `id` to `emoji`, the `name` of a ReactionEmoji (PUT
+ * /statuses/{id}/reaction), or takes it back with null (DELETE); returns the post after it. The viewer has one
+ * favourite or one reaction on a post (ADR-0052 §1): the server takes back the favourite or the other reaction. Both
+ * are setters, so a retry after a lost answer is safe.
+ */
+async function setReaction(api: Api, id: string, emoji: string | null): Promise<Status> {
+  const init = { params: { path: { id } } };
+  const { data, error } = await (emoji === null
+    ? api.fetch.DELETE("/statuses/{id}/reaction", init)
+    : api.fetch.PUT("/statuses/{id}/reaction", { ...init, body: { emoji } }));
+  // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
+  if (data === undefined) throw new ApiError(error);
+  return data;
+}
+
+/**
+ * Turns the viewer's Like slot of post `id` from `previous` into `slot` (ADR-0052 §1): favourites, reacts with an
+ * emoji, or takes back what is there; returns the post after it.
+ */
+export function setLikeSlot(api: Api, id: string, slot: LikeSlot, previous: LikeSlot): Promise<Status> {
+  switch (slot.kind) {
+    case "favourite":
+      return setRelation(api, "favourite", id, true);
+    case "reaction":
+      return setReaction(api, id, slot.emoji.name);
+    case "none":
+      return previous.kind === "favourite" ? setRelation(api, "favourite", id, false) : setReaction(api, id, null);
+  }
+}
+
+/**
+ * Fills the viewer's Like slot of post `id` (a favourite, a reaction, or nothing) in every cached copy of the post
+ * before the server answers (web-client.md S8), after cancelling a refetch of the post that would overwrite it.
+ */
+export async function cacheLikeSlotPending(api: Api, queryClient: QueryClient, id: string, slot: LikeSlot): Promise<void> {
+  await queryClient.cancelQueries({ queryKey: statusQueryOptions(api, id).queryKey });
+  updateCachedStatuses(queryClient, forPost(id, (status) => withLikeSlot(status, slot)));
+}
+
+/** Puts back the viewer's Like slot of post `id` as it was before a change that the server refused. */
+export function restoreLikeSlot(queryClient: QueryClient, id: string, slot: LikeSlot): void {
+  updateCachedStatuses(queryClient, forPost(id, (status) => withLikeSlot(status, slot)));
+}
+
+/**
+ * Puts the server's answer to a change of the viewer's Like slot of post `id` into the cache: the favourite, the
+ * reactions and their counts, which include others' actions, taken only from the `last` change on its way.
+ */
+export function cacheLikeSlotAnswer(queryClient: QueryClient, id: string, answer: Status, last: boolean): void {
+  if (!last) return;
+  const from = answer.boost ?? answer;
+  updateCachedStatuses(queryClient, forPost(id, (status) => withLikeSlotFrom(status, from)));
+}
+
+/** How many reactions a page of the accounts that reacted holds. */
+const reactorsPageSize = 40;
+
+/**
+ * The reactions to post `id`, newest first, each with the account that reacted (GET /statuses/{id}/reactions),
+ * page by page. The key ends in "pages" so that it never meets a plain query of the operation (web-client.md §10).
+ */
+export function reactorsQueryOptions(api: Api, id: string) {
+  return infiniteQueryOptions({
+    queryKey: ["get", "/statuses/{id}/reactions", { params: { path: { id } } }, "pages"] as const,
+    queryFn: async ({ pageParam, signal }) => {
+      const { data, error } = await api.fetch.GET("/statuses/{id}/reactions", {
+        params: { path: { id }, query: { limit: reactorsPageSize, ...(pageParam !== undefined && { cursor: pageParam }) } },
+        signal,
+      });
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.next_cursor ?? undefined,
+  });
 }
 
 /** Whether `queryKey` is a page of the posts of the account `accountId` (GET /accounts/{id}/statuses), under any filter. */

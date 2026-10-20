@@ -96,7 +96,7 @@
     "description": "Permission (OAuth scope write:bookmarks) listed on the authorization page."
   },
   "auth.authorize.scope.write_favourites": {
-    "defaultMessage": "お気に入りの追加と削除",
+    "defaultMessage": "お気に入りと絵文字リアクションの追加と削除",
     "description": "Permission (OAuth scope write:favourites) listed on the authorization page."
   },
   "auth.authorize.scope.write_follows": {
@@ -670,6 +670,10 @@
   "errors.status.invalid_media_description": {
     "defaultMessage": "{max, plural, other {画像の説明は # 文字以内にしてください。}}",
     "description": "Detail of the HTTP 422 API error when the alternative text of an attached image is too long or invalid. {max} is the maximum number of characters."
+  },
+  "errors.status.invalid_reaction": {
+    "defaultMessage": "リアクションに使えるのは、Unicode の絵文字と、このサーバーで有効なカスタム絵文字だけです。",
+    "description": "Detail of the HTTP 422 API error when a user reacts to a post with something that is not a Unicode emoji or an enabled custom emoji of this server (for example a custom emoji of another server)."
   },
   "errors.status.invalid_text": {
     "defaultMessage": "本文に投稿できない文字が含まれています。",

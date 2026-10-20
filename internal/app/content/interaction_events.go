@@ -28,9 +28,9 @@ import (
 //     federation module delivers Undo Like.
 //   - EventReacted: an emoji reaction was inserted (ADR-0052). This module increments the count
 //     of its emoji in status_reaction_counts; the notification module notifies the status's
-//     author.
+//     author, and the federation module delivers the Like with the emoji of a remote status.
 //   - EventUnreacted: an emoji reaction was deleted. This module decrements the count of its
-//     emoji.
+//     emoji; the federation module delivers Undo Like.
 //
 // Bookmarks and pins are private to their account and emit no events.
 const (
@@ -99,6 +99,9 @@ func (Unfavourited) EventType() string { return EventUnfavourited }
 type Reacted struct {
 	Reaction content.Reaction
 	Status   StatusRef
+	// Emoji is the custom emoji of a local account's reaction to a remote status, for the Like
+	// that carries it (ADR-0052 §3); nil otherwise. Its URL is "" when its image cannot be shown.
+	Emoji *EmojiTag
 }
 
 // EventType implements uow.Event.
@@ -110,6 +113,8 @@ type Unreacted struct {
 	Status   StatusRef
 	// RemovedAt is when the reaction was deleted.
 	RemovedAt time.Time
+	// Emoji is as in Reacted.
+	Emoji *EmojiTag
 }
 
 // EventType implements uow.Event.

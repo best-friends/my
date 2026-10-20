@@ -4,8 +4,10 @@ package clientapi_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,5 +77,44 @@ func TestListStatusReactions(t *testing.T) {
 	}
 	if res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/reactions?limit=0", "", ""); res.StatusCode != http.StatusBadRequest {
 		t.Errorf("limit 0 = %d, want 400", res.StatusCode)
+	}
+}
+
+// Reacting sets the viewer's reaction with the emoji of the body and answers with the status;
+// an emoji that a reaction cannot have is a 422.
+func TestReactToStatus(t *testing.T) {
+	var ops []string
+	f := &fakeStatuses{
+		interact: func(op, accountID, id string) error {
+			if accountID != aliceAccountID || id != sampleStatusID {
+				return fmt.Errorf("unexpected %s by %s of %s", op, accountID, id)
+			}
+			if op == "react:blobcat@misskey.example" || op == "react:" {
+				return fmt.Errorf("fake: %w", content.ErrInvalidReaction)
+			}
+			ops = append(ops, op)
+			return nil
+		},
+		view: func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) { return sampleView(v), nil },
+	}
+	e := newStatusEnv(t, f)
+	path := "/statuses/" + sampleStatusID + "/reaction"
+	if res := e.send(t, http.MethodPut, path, "write", `{"emoji":"👍"}`); res.StatusCode != http.StatusOK || decodeStatus(t, res).Id != sampleStatusID {
+		t.Errorf("PUT = %d", res.StatusCode)
+	}
+	if res := e.send(t, http.MethodDelete, path, "write", ""); res.StatusCode != http.StatusOK {
+		t.Errorf("DELETE = %d", res.StatusCode)
+	}
+	if want := "react:👍 unreact"; strings.Join(ops, " ") != want {
+		t.Errorf("operations = %v, want %s", ops, want)
+	}
+	if res := e.send(t, http.MethodPut, path, "write", `{"emoji":"blobcat@misskey.example"}`); res.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("PUT with a remote custom emoji = %d, want 422", res.StatusCode)
+	}
+	if res := e.send(t, http.MethodPut, path, "write", `{"emoji":""}`); res.StatusCode != http.StatusUnprocessableEntity {
+		t.Errorf("PUT without an emoji = %d, want 422", res.StatusCode)
+	}
+	if res := e.send(t, http.MethodPut, path, "", `{"emoji":"👍"}`); res.StatusCode != http.StatusUnauthorized {
+		t.Errorf("PUT anonymously = %d, want 401", res.StatusCode)
 	}
 }

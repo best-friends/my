@@ -12,6 +12,14 @@ ON CONFLICT (account_id, status_id, emoji_key) DO NOTHING;
 DELETE FROM reactions WHERE id = @id
 RETURNING id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at;
 
+-- DeleteAccountStatusReactions removes the reactions of an account to a status, except the one with
+-- the emoji except_key ('' removes them all): what the Like slot of a local account gives up
+-- (ADR-0052 section 1).
+-- name: DeleteAccountStatusReactions :many
+DELETE FROM reactions
+WHERE account_id = @account_id AND status_id = @status_id AND emoji_key <> CAST(@except_key AS TEXT)
+RETURNING id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at;
+
 -- name: GetReaction :one
 SELECT id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at FROM reactions
 WHERE account_id = @account_id AND status_id = @status_id AND emoji_key = @emoji_key;

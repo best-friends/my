@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -64,6 +65,7 @@ func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory
 		{"BoostsRemotePostsOfFollowedBoosters", remoteBoostsRemotePosts},
 		{"RefusesBoostsTheBoosterMayNotMake", remoteRefusesBoosts},
 		{"SendsLikesAndUndoLikes", remoteSendsLikes},
+		{"SendsReactionsInTheLikeSlot", remoteSendsReactions},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteInteractionEnv(t, newHarness)) })
@@ -77,6 +79,8 @@ type remoteInteractionEnv struct {
 	interactions *appcontent.Interactions
 	jobs         *fedJobs
 	handlers     *queue.JobHandlerRegistry
+	// emojiTags are the Emoji tags of the local custom emoji that reactions use, by emoji ID.
+	emojiTags map[string]appcontent.EmojiTag
 }
 
 func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) *remoteInteractionEnv {
@@ -86,11 +90,23 @@ func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) 
 		ih = newHarness(t, opts)
 		return ih.RemoteStatusHarness
 	})
-	e := &remoteInteractionEnv{remoteStatusEnv: rs, ih: ih, jobs: &fedJobs{seen: map[string]bool{}}, handlers: &queue.JobHandlerRegistry{}}
+	e := &remoteInteractionEnv{
+		remoteStatusEnv: rs, ih: ih, jobs: &fedJobs{seen: map[string]bool{}}, handlers: &queue.JobHandlerRegistry{},
+		emojiTags: map[string]appcontent.EmojiTag{},
+	}
 	appcontent.RegisterInteractionProjectors(rs.projectors, ih.Interactions)
 	e.interactions = appcontent.NewInteractions(appcontent.InteractionDeps{
 		UnitOfWork: ih.UnitOfWork, Statuses: ih.Statuses, Interactions: ih.Interactions, Accounts: rs.accounts,
 		Relationships: rs.graph, RecordRemoteEmojis: rs.content.RecordRemoteEmojis, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
+		EmojiTags: func(_ context.Context, ids []string) ([]appcontent.EmojiTag, error) {
+			var out []appcontent.EmojiTag
+			for _, id := range ids {
+				if tag, ok := e.emojiTags[id]; ok {
+					out = append(out, tag)
+				}
+			}
+			return out, nil
+		},
 	})
 	appfederation.RegisterInteractionHandlers(rs.processor, appfederation.InteractionHandlersDeps{
 		Interactions: e.interactions, Statuses: rs.statuses,
@@ -490,6 +506,94 @@ func remoteSendsLikes(t *testing.T, e *remoteInteractionEnv) {
 	}
 	if got := e.sent(t, local.ID); len(got) != 0 {
 		t.Errorf("activities of the favourite of a local post = %+v, want none", got)
+	}
+}
+
+// remoteSendsReactions checks the Like and Undo Like of a local account's emoji reactions to a
+// remote post (ADR-0052 §3): each Like carries the emoji as its content and _misskey_reaction,
+// with the Emoji tag of a custom emoji, and filling the Like slot sends the Undo of what was in it
+// before the new Like. Read back, each is the reaction it sends.
+func remoteSendsReactions(t *testing.T, e *remoteInteractionEnv) {
+	ctx := t.Context()
+	const alice = "https://remote.example/users/alice"
+	fan := e.user(t, "fan")
+	aliceID := e.actor(t, alice)
+	e.follow(t, fan, aliceID)
+	id := alice + "/notes/1"
+	e.expect(t, remoteActivity(t, "Create", id+"/activity", alice, remoteNote(id, alice, remoteNow.Add(-time.Hour), nil)), appfederation.InboxHandled)
+	st := e.post(t, id).Status
+	var blobcat content.CustomEmoji
+	err := e.ih.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		blobcat, err = e.ih.Statuses.EnsureCustomEmoji(ctx, tx, content.CustomEmoji{ID: e.ids.NewID(), Shortcode: "blobcat", CreatedAt: e.clock.Now()})
+		return err
+	})
+	if err != nil {
+		t.Fatalf("store a local custom emoji: %v", err)
+	}
+	e.emojiTags[blobcat.ID] = appcontent.EmojiTag{
+		ID: blobcat.ID, Shortcode: "blobcat", Local: true, Updated: e.clock.Now(), MediaType: "image/png",
+		URL: "https://" + contractHost + "/media/blobcat.png",
+	}
+
+	steps := []struct {
+		name string
+		run  func() error
+	}{
+		{"react", func() error { _, err := e.interactions.React(ctx, fan, st.ID, "👍"); return err }},
+		{"react with a custom emoji", func() error { _, err := e.interactions.React(ctx, fan, st.ID, ":blobcat:"); return err }},
+		{"favourite", func() error { _, err := e.interactions.Favourite(ctx, fan, st.ID); return err }},
+		{"react again", func() error { _, err := e.interactions.React(ctx, fan, st.ID, "🎉"); return err }},
+		{"unreact", func() error { return e.interactions.Unreact(ctx, fan, st.ID) }},
+	}
+	for _, s := range steps {
+		e.clock.Advance(time.Minute)
+		if err := s.run(); err != nil {
+			t.Fatalf("%s = %v", s.name, err)
+		}
+	}
+	// What each activity says: the emoji of a Like ("" for a favourite), or of the Like an Undo
+	// takes back.
+	want := []string{"Like 👍", "Undo 👍", "Like :blobcat:", "Undo :blobcat:", "Like ", "Undo ", "Like 🎉", "Undo 🎉"}
+	var got []string
+	actor := federation.IRI(e.localIRI(fan))
+	for _, s := range e.sent(t, st.ID) {
+		if !slices.Equal(s.Inboxes, []string{alice + "/inbox"}) {
+			t.Errorf("%s inboxes = %v, want the author's", s.Type, s.Inboxes)
+		}
+		doc, err := appfederation.Normalize(s.Raw, e.clock.Now())
+		if err != nil || doc.Activity == nil || doc.Activity.Actor != actor {
+			t.Fatalf("Normalize(%s) = %+v, %v; want an activity of the fan", s.Raw, doc, err)
+		}
+		like := doc.Activity
+		if s.Type == federation.ActivityUndo {
+			embedded := like.Object().Untrusted()
+			if embedded == nil || embedded.Activity == nil {
+				t.Fatalf("Undo %s does not embed the Like", s.Raw)
+			}
+			like = embedded.Activity
+		}
+		if like.Type != federation.ActivityLike || like.Object().ID != federation.IRI(st.URI) {
+			t.Errorf("Like = %+v, want one of %s", like, st.URI)
+		}
+		got = append(got, string(s.Type)+" "+like.Reaction)
+		if like.Reaction == ":blobcat:" {
+			if len(like.Emojis) != 1 || like.Emojis[0].ID != federation.IRI(appcontent.CustomEmojiURI(contractHost, blobcat.ID)) ||
+				like.Emojis[0].IconURL == "" {
+				t.Errorf("Emoji tags of %s = %+v, want blobcat with its image", s.Type, like.Emojis)
+			}
+		}
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("activities = %q, want %q", got, want)
+	}
+	// A reaction to a local post sends nothing.
+	local := e.localPost(t, e.user(t, "author"), content.VisibilityPublic)
+	if _, err := e.interactions.React(ctx, fan, local.ID, "👍"); err != nil {
+		t.Fatalf("React(local) = %v", err)
+	}
+	if got := e.sent(t, local.ID); len(got) != 0 {
+		t.Errorf("activities of the reaction to a local post = %+v, want none", got)
 	}
 }
 

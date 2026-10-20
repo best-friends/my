@@ -81,6 +81,33 @@ export const NoMatch: Story = {
   },
 };
 
+/** Unicode emoji before the custom ones, as the picker of reactions has them; picking one calls `onSelectUnicode`. */
+export const WithUnicode: Story = {
+  args: {
+    unicode: ["👍", "❤️", "🎉"],
+    onSelectUnicode: fn(),
+    labels: { ...meta.args.labels, unicode: "Emoji" },
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole("searchbox", { name: "Search emoji" }));
+    await userEvent.tab();
+    // The recent custom emoji come first, then the Unicode ones.
+    await expect(canvas.getAllByRole("row", { name: ":blobcat:" })[0]).toHaveFocus();
+    await userEvent.keyboard("{ArrowDown}");
+    await expect(canvas.getByRole("row", { name: "👍" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onSelectUnicode).toHaveBeenCalledWith("👍");
+    await expect(args.onSelect).not.toHaveBeenCalled();
+    // A search that is no Unicode emoji leaves them out.
+    await userEvent.type(canvas.getByRole("searchbox", { name: "Search emoji" }), "blob");
+    await expect(canvas.queryByRole("row", { name: "👍" })).not.toBeInTheDocument();
+    await userEvent.clear(canvas.getByRole("searchbox", { name: "Search emoji" }));
+    // Out of the search field, whose blinking caret would differ between screenshots.
+    await userEvent.tab();
+    await expect(canvas.getByRole("searchbox", { name: "Search emoji" })).not.toHaveFocus();
+  },
+};
+
 /** Animated emoji stay still when the user turns animations off. */
 export const StillOnly: Story = { args: { allowMotion: false } };
 
