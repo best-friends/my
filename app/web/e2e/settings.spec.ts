@@ -194,6 +194,7 @@ const pages = [
   "/settings/blocks",
   "/settings/mutes",
   "/settings/domain-mutes",
+  "/settings/password",
   "/settings/two-factor",
   "/settings/passkeys",
   "/settings/auto-delete",

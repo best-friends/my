@@ -215,7 +215,14 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID, name, pa
 // confirmPassword checks the current password of a user who confirms an operation with it,
 // counting wrong ones against PasskeyPasswordLimit.
 func (s *Service) confirmPassword(ctx context.Context, userID, password string) error {
-	d, err := s.d.RateLimiter.Check(ctx, PasskeyPasswordLimit, userID)
+	return s.confirmPasswordWith(ctx, PasskeyPasswordLimit, userID, password)
+}
+
+// confirmPasswordWith checks the current password of a user who confirms an operation with it,
+// counting wrong ones against limit. It fails with ErrWrongPassword for a wrong password, also
+// for a user without one, and with a *kernel.RateLimitedError after too many.
+func (s *Service) confirmPasswordWith(ctx context.Context, limit kernel.Limit, userID, password string) error {
+	d, err := s.d.RateLimiter.Check(ctx, limit, userID)
 	if err != nil {
 		return err
 	}
@@ -234,7 +241,7 @@ func (s *Service) confirmPassword(ctx context.Context, userID, password string) 
 		return err
 	}
 	if !ok {
-		if err := s.d.RateLimiter.Record(ctx, PasskeyPasswordLimit, userID); err != nil {
+		if err := s.d.RateLimiter.Record(ctx, limit, userID); err != nil {
 			return err
 		}
 		return ErrWrongPassword

@@ -218,6 +218,18 @@ func accessTokenFromRow(row sqlitegen.GetAccessTokenByAccessHashRow) identity.Ac
 	return t
 }
 
+// RevokeOtherTokensOfUser implements identity.Repository.
+func (r *IdentityRepository) RevokeOtherTokensOfUser(ctx context.Context, tx uow.Tx, userID, keepFamilyID string, reason identity.TokenRevocationReason, at time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.RevokeOtherTokensOfUser(ctx, sqlitegen.RevokeOtherTokensOfUserParams{
+		Reason: string(reason), RevokedAt: toMillis(at), UserID: userID, KeepFamilyID: keepFamilyID,
+	})
+	return wrap(err, "revoke the other tokens of a user")
+}
+
 // RevokeTokensOfUser implements identity.Repository.
 func (r *IdentityRepository) RevokeTokensOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.TokenRevocationReason, at time.Time) error {
 	q, err := queries(tx)

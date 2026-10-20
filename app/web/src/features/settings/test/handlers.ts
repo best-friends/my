@@ -95,6 +95,8 @@ export const handlers = [
     withViewer(request, () => new HttpResponse(new Blob(["PK"], { type: "application/zip" }), { headers: { "Content-Type": "application/zip" } })),
   ),
   http.post(`${apiBase}/accounts/delete`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationId changePassword: the password is changed.
+  http.post(`${apiBase}/accounts/password`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds exportCsv, listDataImports, previewDataImport, startDataImport: one blocked account, no imports, and a file of
   // one entry.
   http.get(`${apiBase}/csv_exports/:kind`, ({ request }) =>

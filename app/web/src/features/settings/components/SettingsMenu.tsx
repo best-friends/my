@@ -7,6 +7,7 @@ import { type ClientMessageKey, useT } from "../../../lib/i18n";
 const pages: readonly { href: string; label: ClientMessageKey; description: ClientMessageKey }[] = [
   { href: "/settings/profile", label: "client:settings.profile.title", description: "client:settings.profile.summary" },
   { href: "/settings/preferences", label: "client:settings.preferences.title", description: "client:settings.preferences.summary" },
+  { href: "/settings/password", label: "client:settings.password.title", description: "client:settings.password.summary" },
   { href: "/settings/two-factor", label: "client:settings.two_factor.title", description: "client:settings.two_factor.summary" },
   { href: "/settings/passkeys", label: "client:settings.passkeys.title", description: "client:settings.passkeys.summary" },
   { href: "/settings/auto-delete", label: "client:settings.auto_delete.title", description: "client:settings.auto_delete.summary" },

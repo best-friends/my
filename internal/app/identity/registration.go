@@ -56,6 +56,8 @@ type RegistrationRepository interface {
 
 	InsertUserToken(ctx context.Context, tx uow.Tx, t identity.UserToken) error
 	FindUserTokenByHash(ctx context.Context, hash []byte) (identity.UserToken, error)
+	// UserTokenRedeemed reports whether a token was used.
+	UserTokenRedeemed(ctx context.Context, tokenID string) (bool, error)
 	// InsertUserTokenRedemption fails with an error wrapping ErrInvalidToken when the token
 	// was already redeemed.
 	InsertUserTokenRedemption(ctx context.Context, tx uow.Tx, r identity.UserTokenRedemption) error
@@ -407,35 +409,60 @@ func (s *Service) prepareVerification(userID, emailID string, now time.Time) *ve
 // sendVerification sends the verification email with the link that carries secret, worded in
 // locale. The error never contains the secret.
 func (s *Service) sendVerification(ctx context.Context, to, locale, secret string) error {
-	bundle := s.d.Messages
-	if bundle == nil {
-		var err error
-		if bundle, err = i18n.Load(); err != nil {
-			return err
-		}
+	m, err := s.mailContext(ctx, locale)
+	if err != nil {
+		return err
 	}
-	users := &i18n.Resolver{Bundle: bundle, UserLocale: func(context.Context) string { return locale }}
-	l := users.Localizer(ctx, "")
-	link := strings.TrimSuffix(s.d.BaseURL, "/") + PathVerifyEmail + "?token=" + url.QueryEscape(secret)
-	host := s.d.BaseURL
-	if u, err := url.Parse(s.d.BaseURL); err == nil && u.Host != "" {
-		host = u.Host
-	}
-	name := host
-	if s.d.InstanceName != nil {
-		if n := s.d.InstanceName(ctx, l.RequestedLocale()); n != "" {
-			name = n
-		}
-	}
-	err := s.d.Mailer.Send(ctx, kernel.MailMessage{
+	link := s.link(PathVerifyEmail, secret)
+	err = s.d.Mailer.Send(ctx, kernel.MailMessage{
 		To:      to,
-		Subject: l.ServerMailVerifyEmailSubject(name),
-		Text:    l.ServerMailVerifyEmailBody(host, int(EmailVerificationTTL/time.Hour), name, link),
+		Subject: m.l.ServerMailVerifyEmailSubject(m.name),
+		Text:    m.l.ServerMailVerifyEmailBody(m.host, int(EmailVerificationTTL/time.Hour), m.name, link),
 	})
 	if err != nil {
 		return fmt.Errorf("identity: send the verification email: %w", err)
 	}
 	return nil
+}
+
+// mailContext is what an email to a user names: the localizer of the user's locale, the
+// instance's host, and its name for readers of that locale.
+type mailContext struct {
+	l          *i18n.Localizer
+	host, name string
+}
+
+// mailContext returns the mailContext of an email to a user whose locale is locale.
+func (s *Service) mailContext(ctx context.Context, locale string) (mailContext, error) {
+	bundle := s.d.Messages
+	if bundle == nil {
+		var err error
+		if bundle, err = i18n.Load(); err != nil {
+			return mailContext{}, err
+		}
+	}
+	users := &i18n.Resolver{Bundle: bundle, UserLocale: func(context.Context) string { return locale }}
+	m := mailContext{l: users.Localizer(ctx, ""), host: s.d.BaseURL}
+	if u, err := url.Parse(s.d.BaseURL); err == nil && u.Host != "" {
+		m.host = u.Host
+	}
+	m.name = m.host
+	if s.d.InstanceName != nil {
+		if n := s.d.InstanceName(ctx, m.l.RequestedLocale()); n != "" {
+			m.name = n
+		}
+	}
+	return m, nil
+}
+
+// link returns the URL of path on this server, with token in the query parameter "token" when
+// it is not "".
+func (s *Service) link(path, token string) string {
+	link := strings.TrimSuffix(s.d.BaseURL, "/") + path
+	if token != "" {
+		link += "?token=" + url.QueryEscape(token)
+	}
+	return link
 }
 
 // VerifyEmail redeems an email verification token and marks its address verified. It fails

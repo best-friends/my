@@ -1699,6 +1699,10 @@
     "defaultMessage": "Two-factor authentication removed",
     "description": "Heading of an audit log entry: an administrator removed the two-factor authentication of a local account."
   },
+  "admin.audit_log.action.password_reset_link_issued": {
+    "defaultMessage": "Password reset link issued",
+    "description": "Heading of an audit log entry: an administrator issued a password reset link for the user of a local account."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "Text changed",
     "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."
@@ -7510,6 +7514,58 @@
   "settings.passkeys.removed": {
     "defaultMessage": "The passkey “{name}” was removed.",
     "description": "Announcement after a passkey was removed. {name} is its name."
+  },
+  "settings.password.title": {
+    "defaultMessage": "Password",
+    "description": "Title of the settings page that changes the password, and its entry in the settings menu."
+  },
+  "settings.password.summary": {
+    "defaultMessage": "Change the password you sign in with",
+    "description": "Description of the password page in the settings menu."
+  },
+  "settings.password.description": {
+    "defaultMessage": "Changing the password signs you out of every other browser and app. Your passkeys and two-factor authentication stay as they are.",
+    "description": "Text at the top of the settings page that changes the password."
+  },
+  "settings.password.current": {
+    "defaultMessage": "Current password",
+    "description": "Label of the field of the current password, which confirms a password change."
+  },
+  "settings.password.current.required": {
+    "defaultMessage": "Enter your current password.",
+    "description": "Error of the empty current password field when changing the password."
+  },
+  "settings.password.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error of the current password field when the server refused it."
+  },
+  "settings.password.new": {
+    "defaultMessage": "New password",
+    "description": "Label of the field of the new password."
+  },
+  "settings.password.new.description": {
+    "defaultMessage": "{min, number} to {max, number} characters.",
+    "description": "Hint under the new password field. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.new.invalid": {
+    "defaultMessage": "Use {min, number} to {max, number} characters.",
+    "description": "Error of the new password field when it is empty, too short, or too long. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.submit": {
+    "defaultMessage": "Change password",
+    "description": "Button that changes the password."
+  },
+  "settings.password.changed": {
+    "defaultMessage": "Your password is changed. Other browsers and apps are signed out.",
+    "description": "Status after the password was changed."
+  },
+  "settings.password.rate_limited": {
+    "defaultMessage": "Too many incorrect passwords: {reason}",
+    "description": "Alert when too many wrong current passwords were entered to change the password. {reason} is the server's message, which says when to try again."
+  },
+  "settings.password.failed": {
+    "defaultMessage": "Could not change the password: {reason}",
+    "description": "Alert when changing the password failed for another reason. {reason} is the error's message."
   },
   "settings.visibility.direct": {
     "defaultMessage": "Mentioned people",

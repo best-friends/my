@@ -214,7 +214,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 ## 8. サーバーが描画する画面
 
-ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
+ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・パスワードリセット（リンクの要求 `/auth/forgot_password` と、リンクが開く新しいパスワードの設定 `/auth/reset_password`）・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログイン・登録・パスワードリセットのリンクの要求の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -287,6 +287,10 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   ドメインをミュートするフォーム（`TextField` とブラウザの制約検証）、ミュートしているドメインの一覧（ドメインの順、「さらに表示」）の 3 つ。`POST /domain_mutes` が正規化したドメインを `StatusMessage` に出し、断られたらサーバーの `detail` を `role="alert"` で出して入力を残す。
   各行はドメインを U ラベルで（A ラベルと違えば A ラベルも、どちらも `dir="ltr"`）出し、「ミュートを解除」（アクセシブルネームにドメインを含める）で `DELETE /domain_mutes/{domain}` を送る。解除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。
   ミュートと解除は投稿の一覧と通知（未読数を含む）を古くする（S1）。ミュートは一覧も取り直す（ドメインの順に入る）。
+- **パスワード**（`/settings/password`、設定のメニューの「パスワード」、FR-002、`features/settings` の `PasswordSettings`）: 変更が何をするか（ほかのブラウザーとアプリからログアウトし、パスキーと二要素認証は残る）の説明と、
+  現在のパスワードと新しいパスワード（`autocomplete` は `current-password` / `new-password`、長さはブラウザーの制約検証）の `TextField` のフォーム。`POST /accounts/password` を送り、
+  間違った現在のパスワードはその欄のエラー、ほかの失敗は `role="alert"` で出し、成功したらフォームを空にして `StatusMessage` に出す。サーバーは変更を要求したトークンの系列を残すので、この画面のセッションは続き、キャッシュは変わらない。
+  パスワードを忘れたときのリセットはサーバーのログインの画面が行う（§8）。
 - **パスキー**（`/settings/passkeys`、設定のメニューの「パスキー」、FR-004、`features/settings` の `PasskeySettings`）: パスキーが何をするか（パスワードの代わりになり、二要素認証のコードは引き続き求められる）の説明、
   パスキーを追加するフォーム（名前と現在のパスワードの `TextField`）、登録済みのパスキーの一覧（古い順）の 3 つ。追加は `POST /passkeys/registration` がパスワードを確かめてから、ブラウザの `navigator.credentials.create()` を開き、
   その答えを `POST /passkeys` へ送る（`lib/webauthn` が JSON とブラウザのオブジェクトを変換する）。間違ったパスワードはその欄のエラー、閉じられた確認や検証できなかったパスキーなどは `role="alert"` で出す。

@@ -16,7 +16,7 @@ import (
 // runs outside transactions (ADR-0003). A token is valid once, so Verify never retries.
 type HumanVerifier interface {
 	// Verify checks token for action, the operation that the widget was rendered for
-	// (HumanCheckActionSignIn, HumanCheckActionSignUp). It returns nil for a valid token, an error
+	// (HumanCheckActionSignIn, HumanCheckActionSignUp, HumanCheckActionPasswordReset). It returns nil for a valid token, an error
 	// wrapping ErrHumanCheckFailed for a token that is empty, invalid, expired, already used, or
 	// issued for another host name or another action, and an error wrapping
 	// ErrHumanCheckUnavailable when the service cannot answer: it is unreachable, times out,
@@ -24,10 +24,11 @@ type HumanVerifier interface {
 	Verify(ctx context.Context, token, action string) error
 }
 
-// The actions that the sign-in and registration forms verify (ADR-0042 §3).
+// The actions that the sign-in, registration, and password reset forms verify (ADR-0042 §3).
 const (
-	HumanCheckActionSignIn = "sign_in"
-	HumanCheckActionSignUp = "sign_up"
+	HumanCheckActionSignIn        = "sign_in"
+	HumanCheckActionSignUp        = "sign_up"
+	HumanCheckActionPasswordReset = "password_reset"
 )
 
 var (

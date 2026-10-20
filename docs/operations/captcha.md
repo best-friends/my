@@ -2,9 +2,9 @@
 
 運営者向けの手順です。決定は [ADR-0042](../adr/0042-captcha-human-verifier.md)、設定のキーは [設定リファレンス](../reference/configuration.md#captcha) です。
 
-CAPTCHA は既定では使いません（`captcha = none`）。そのときサインインと登録の画面は JavaScript なしで動き、第三者には何も送りません。
-設定で CAPTCHA のサービスを選ぶと、サインイン（`/auth/sign_in`）と登録（`/auth/sign_up`）の 2 つのフォームにサービスのウィジェットを出し、
-送られてきたトークンをサーバーがサービスの siteverify API で検証します。片方のフォームだけにかける設定はありません。
+CAPTCHA は既定では使いません（`captcha = none`）。そのときサインイン・登録・パスワードリセットの画面は JavaScript なしで動き、第三者には何も送りません。
+設定で CAPTCHA のサービスを選ぶと、サインイン（`/auth/sign_in`）・登録（`/auth/sign_up`）・パスワードリセットのリンクの要求（`/auth/forgot_password`、メールを送るサーバーだけ）の 3 つのフォームにサービスのウィジェットを出し、
+送られてきたトークンをサーバーがサービスの siteverify API で検証します。一部のフォームだけにかける設定はありません。
 
 ## サービスを選ぶ
 
@@ -45,11 +45,11 @@ MY_CAPTCHA_SECRET_KEY_FILE=/run/secrets/my_captcha_secret_key
 
 ## 検証の流れ
 
-- 順序はレート制限 → CAPTCHA の検証 → パスワードの照合・登録の処理です。レート制限を超えた要求はサービスに送りません。
+- 順序はレート制限 → CAPTCHA の検証 → パスワードの照合・登録の処理・リセットのメールの送信です。レート制限を超えた要求はサービスに送りません。
 - 有効な招待コードでの登録でも検証します。
 - 検証に失敗したサインインは、接続元の IP アドレスのログイン失敗として数えます（アカウントの失敗としては数えないので、他人のアカウントを締め出せません）。
-  検証に失敗した登録は、登録の試行として数えます（[利用者登録](registration.md)のレート制限）。
-- Turnstile ではウィジェットに操作の名前（`sign_in` / `sign_up`）を付け、応答の操作と一致することも確かめます。あるフォームで得たトークンを別のフォームでは使えません。
+  検証に失敗した登録は、登録の試行として数えます（[利用者登録](registration.md)のレート制限）。リセットのリンクの要求も同じく、要求の試行として数えます。
+- Turnstile ではウィジェットに操作の名前（`sign_in` / `sign_up` / `password_reset`）を付け、応答の操作と一致することも確かめます。あるフォームで得たトークンを別のフォームでは使えません。
 - サーバーは利用者の IP アドレス（`remoteip`）をサービスに送りません。トークンは 1 回限りなので再試行もしません。タイムアウトは 10 秒です。
 
 ### サービスに届かないとき
@@ -58,7 +58,7 @@ MY_CAPTCHA_SECRET_KEY_FILE=/run/secrets/my_captcha_secret_key
 
 | 画面 | 扱い |
 | --- | --- |
-| 登録 | 拒否し（`503`）、「しばらくしてからやり直してください」と表示します |
+| 登録・パスワードリセットのリンクの要求 | 拒否し（`503`）、「しばらくしてからやり直してください」と表示します（どちらもボットに使われるとメールや登録が増えるため） |
 | サインイン | CAPTCHA なしで通し、WARN のログ「the CAPTCHA service could not check a sign-in; letting it through」を出します。レート制限とパスワードの照合はそのまま行います |
 
 サインインを通すのは、サービスの障害や鍵の誤りで管理者を含む全員が締め出されないためです。WARN が続くときはサービスの状態と鍵を確かめてください。
@@ -76,7 +76,7 @@ reCAPTCHA は月 10,000 評価の無料枠を超えると、siteverify が **常
   reCAPTCHA では Google が求める「This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.」の文を兼ねます。
 - JavaScript が動かないブラウザーには、確認に JavaScript が要ることを `<noscript>` で知らせます。CAPTCHA を解けない利用者は登録もサインインもできません。
   その人には運営者が別の手段で対応する（`my admin create` で作る、一時的に `captcha = none` にするなど）ほかありません。
-- CSP（`Content-Security-Policy`）が広がるのは、CAPTCHA を有効にしたときのサインインと登録のページだけです。`'unsafe-inline'` と `'unsafe-eval'` は足しません。
+- CSP（`Content-Security-Policy`）が広がるのは、CAPTCHA を有効にしたときのサインイン・登録・パスワードリセットのリンクの要求のページだけです。`'unsafe-inline'` と `'unsafe-eval'` は足しません。
   Web クライアント・クライアント API・同意画面・メール確認などのページの CSP は変わりません。
 
 | `captcha` | 足すソース |
@@ -85,14 +85,14 @@ reCAPTCHA は月 10,000 評価の無料枠を超えると、siteverify が **常
 | `hcaptcha` | `script-src`・`frame-src`・`style-src`・`connect-src`: `https://hcaptcha.com`, `https://*.hcaptcha.com` |
 | `recaptcha` | `script-src`: `https://www.google.com/recaptcha/`, `https://www.gstatic.com/recaptcha/`／`frame-src`: `https://www.google.com/recaptcha/`, `https://recaptcha.google.com/recaptcha/`／`connect-src`: `https://www.google.com/recaptcha/` |
 
-サーバーの前段のリバースプロキシや CDN で CSP を上書きしている場合は、この 2 つのページに同じソースを足してください。
+サーバーの前段のリバースプロキシや CDN で CSP を上書きしている場合は、この 3 つのページに同じソースを足してください。
 
 ## プライバシーポリシーに書くこと
 
-CAPTCHA を有効にすると、サインインと登録のページを開いた人のブラウザーがサービスに直接つながり、サービスは IP アドレス・ブラウザーの情報・Cookie を受け取ります。
+CAPTCHA を有効にすると、サインイン・登録・パスワードリセットのリンクの要求のページを開いた人のブラウザーがサービスに直接つながり、サービスは IP アドレス・ブラウザーの情報・Cookie を受け取ります。
 インスタンスのプライバシーポリシー（`my instance set privacy_policy`、[インスタンス設定](instance-settings.md)）は運営者が書くもので、サーバーは自動では書き足しません。少なくとも次を書いてください。
 
-- どのサービス（事業者の名前）を使っているか、その目的（自動化されたサインインと登録の防止）
-- サービスに渡る情報（IP アドレス、ブラウザーと端末の情報、Cookie、ウィジェットの操作）と、それを受け取るのがサインインと登録のページだけであること
+- どのサービス（事業者の名前）を使っているか、その目的（自動化されたサインイン・登録・パスワードリセットの要求の防止）
+- サービスに渡る情報（IP アドレス、ブラウザーと端末の情報、Cookie、ウィジェットの操作）と、それを受け取るのがサインイン・登録・パスワードリセットのリンクの要求のページだけであること
 - サービスのプライバシーポリシーへのリンク（Turnstile: <https://www.cloudflare.com/privacypolicy/>、hCaptcha: <https://www.hcaptcha.com/privacy>、reCAPTCHA: <https://policies.google.com/privacy>）
 - reCAPTCHA では、Google のプライバシーポリシーと利用規約（<https://policies.google.com/terms>）が適用されること

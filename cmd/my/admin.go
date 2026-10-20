@@ -186,6 +186,7 @@ func adminUsage(w io.Writer) {
        my admin account action list|issue|lift ...   (my admin account action -help)
        my admin account export-moderation <account>   (my admin account export-moderation -help)
        my admin account disable-two-factor <account>   (my admin account disable-two-factor -help)
+       my admin account password-reset-link <account>   (my admin account password-reset-link -help)
        my admin appeal list|uphold|overturn ...   (my admin appeal -help)
        my admin domain list|issue|lift ...   (my admin domain -help)
        my admin emoji create|list|enable|disable|delete ...   (my admin emoji -help)
@@ -203,6 +204,8 @@ my admin retention holds an account's records past their retention, and my admin
 account export-moderation writes them all for a request of access.
 my admin account disable-two-factor removes the two-factor authentication of a
 user who lost their authenticator app and recovery codes.
+my admin account password-reset-link prints a link that sets a new password for
+a user who forgot theirs.
 my admin role grants and revokes the roles of local users.
 my admin emoji registers and manages the custom emoji.
 my admin relay joins and leaves the relays that pass public posts between servers.

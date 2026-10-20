@@ -816,6 +816,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.invite_created": {};
   /** Invite revoked */
   "client:admin.audit_log.action.invite_revoked": {};
+  /** Password reset link issued */
+  "client:admin.audit_log.action.password_reset_link_issued": {};
   /** Registration approved */
   "client:admin.audit_log.action.registration_approved": {};
   /** Registration rejected */
@@ -3800,6 +3802,32 @@ export interface MessageArgs {
   "client:settings.passkeys.title": {};
   /** This browser cannot create passkeys. Open this page in a browser that supports them to add one. */
   "client:settings.passkeys.unsupported": {};
+  /** Your password is changed. Other browsers and apps are signed out. */
+  "client:settings.password.changed": {};
+  /** Current password */
+  "client:settings.password.current": {};
+  /** Enter your current password. */
+  "client:settings.password.current.required": {};
+  /** Changing the password signs you out of every other browser and app. Your passkeys and two-factor authentication stay as they are. */
+  "client:settings.password.description": {};
+  /** Could not change the password: {reason} */
+  "client:settings.password.failed": { reason: string };
+  /** New password */
+  "client:settings.password.new": {};
+  /** {min, number} to {max, number} characters. */
+  "client:settings.password.new.description": { max: number; min: number };
+  /** Use {min, number} to {max, number} characters. */
+  "client:settings.password.new.invalid": { max: number; min: number };
+  /** Too many incorrect passwords: {reason} */
+  "client:settings.password.rate_limited": { reason: string };
+  /** Change password */
+  "client:settings.password.submit": {};
+  /** Change the password you sign in with */
+  "client:settings.password.summary": {};
+  /** Password */
+  "client:settings.password.title": {};
+  /** The password is wrong. */
+  "client:settings.password.wrong_password": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
   /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
@@ -4456,6 +4484,22 @@ export interface MessageArgs {
   "server:auth.document.updated": { date: string };
   /** Something went wrong */
   "server:auth.error.title": {};
+  /** Email address */
+  "server:auth.forgot_password.email_label": {};
+  /** Enter an email address. */
+  "server:auth.forgot_password.invalid_email": {};
+  /** Enter the email address of your account. We send it a link to set a new password. */
+  "server:auth.forgot_password.prompt": {};
+  /** {minutes, plural, one {Too many requests from your network. Try again in # minute.} other {Too many requests from your network. Try again in # minutes.}} */
+  "server:auth.forgot_password.rate_limited": { minutes: number };
+  /** If an account uses {email}, a link to set a new password is on its way. {minutes, plural, one {The link works for # minute.} other {The link works for # minutes.}} If no email arrives, check the spam folder and the address. */
+  "server:auth.forgot_password.sent": { email: string; minutes: number };
+  /** Send the link */
+  "server:auth.forgot_password.submit": {};
+  /** Forgot your password */
+  "server:auth.forgot_password.title": {};
+  /** This server does not send email, so it cannot send you a link. Ask the server's administrators for a link that sets a new password. */
+  "server:auth.forgot_password.unavailable": {};
   /** This form has expired. Please try again. */
   "server:auth.form_expired": {};
   /** Complete the check that you are not a bot, then try again. */
@@ -4474,10 +4518,26 @@ export interface MessageArgs {
   "server:auth.human_check.unavailable": {};
   /** (opens in a new tab) */
   "server:auth.link.new_tab": {};
+  /** Your password is changed, and every session that used the old one is signed out. Sign in with the new password. */
+  "server:auth.reset_password.done": {};
+  /** Password changed */
+  "server:auth.reset_password.done_title": {};
+  /** This link is not valid. It may have expired, been used already, or been replaced by a newer password. Ask for a new link. */
+  "server:auth.reset_password.invalid": {};
+  /** New password */
+  "server:auth.reset_password.password_label": {};
+  /** Choose a new password. Setting it signs you out everywhere. Your passkeys and two-factor authentication stay as they are. */
+  "server:auth.reset_password.prompt": {};
+  /** Set the password */
+  "server:auth.reset_password.submit": {};
+  /** Set a new password */
+  "server:auth.reset_password.title": {};
   /** Email address */
   "server:auth.sign_in.email_label": {};
   /** The email address or password is incorrect. */
   "server:auth.sign_in.failed": {};
+  /** Forgot your password? */
+  "server:auth.sign_in.forgot_password_link": {};
   /** Enter your email address and password. */
   "server:auth.sign_in.missing": {};
   /** Sign in with a passkey */
@@ -4838,6 +4898,14 @@ export interface MessageArgs {
   "server:mail.admin_webhook_disabled.body": { instance: string; url: string };
   /** A webhook of {instance} was turned off */
   "server:mail.admin_webhook_disabled.subject": { instance: string };
+  /** The password of your account on {instance} was changed, and your other sessions and apps were signed out.  If you did not change it, someone else may know your password. Set a new one at once:  {url}  This email was sent by {host}. */
+  "server:mail.password_changed.body": { host: string; instance: string; url: string };
+  /** Your password for {instance} was changed */
+  "server:mail.password_changed.subject": { instance: string };
+  /** Someone asked to reset the password of your account on {instance}.  Open this link to set a new password:  {url}  {minutes, plural, one {The link works for # minute, once.} other {The link works for # minutes, once.}} If you did not ask for it at {host}, ignore this email; your password stays as it is. */
+  "server:mail.password_reset.body": { host: string; instance: string; minutes: number; url: string };
+  /** Reset your password for {instance} */
+  "server:mail.password_reset.subject": { instance: string };
   /** Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
   "server:mail.verify_email.body": { host: string; hours: number; instance: string; url: string };
   /** Confirm your email address for {instance} */

@@ -25,9 +25,10 @@ const (
 
 // The audited operations of the account management and their target.
 const (
-	AuditRevealedPrivateData = moderation.AuditRevealedPrivateData
-	AuditTwoFactorDisabled   = moderation.AuditTwoFactorDisabled
-	AuditTargetAccount       = moderation.AuditTargetAccount
+	AuditRevealedPrivateData     = moderation.AuditRevealedPrivateData
+	AuditTwoFactorDisabled       = moderation.AuditTwoFactorDisabled
+	AuditPasswordResetLinkIssued = moderation.AuditPasswordResetLinkIssued
+	AuditTargetAccount           = moderation.AuditTargetAccount
 )
 
 // AccountAdminRepository is the part of Repository that the account management reads.

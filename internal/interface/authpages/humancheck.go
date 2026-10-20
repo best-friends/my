@@ -10,8 +10,8 @@ import (
 	"github.com/best-friends/my/internal/i18n"
 )
 
-// The CAPTCHA widget of the sign-in and registration forms (ADR-0042 §5). With
-// Options.HumanCheck set, those two pages, and no other, load the service's script, show its
+// The CAPTCHA widget of the sign-in, registration, and password reset forms (ADR-0042 §5). With
+// Options.HumanCheck set, those three pages, and no other, load the service's script, show its
 // widget with a notice about the data the service receives and links to its documents, and
 // widen their Content-Security-Policy by the service's origins. The form posts the token in
 // the service's response field, and the identity module checks it.

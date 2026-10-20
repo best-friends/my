@@ -82,6 +82,15 @@ WHERE t.user_id = sqlc.arg(user_id)
   AND (t.expires_at > sqlc.arg(revoked_at)::timestamptz OR t.refresh_expires_at > sqlc.arg(revoked_at)::timestamptz)
 ON CONFLICT (token_id) DO NOTHING;
 
+-- RevokeOtherTokensOfUser revokes every token of a user outside the family keep_family_id whose
+-- access or refresh token has not expired at revoked_at and that has no revocation yet.
+-- name: RevokeOtherTokensOfUser :exec
+INSERT INTO oauth_token_revocations (token_id, reason, revoked_at)
+SELECT t.id, sqlc.arg(reason)::text, sqlc.arg(revoked_at)::timestamptz FROM oauth_access_tokens t
+WHERE t.user_id = sqlc.arg(user_id) AND t.family_id <> sqlc.arg(keep_family_id)
+  AND (t.expires_at > sqlc.arg(revoked_at)::timestamptz OR t.refresh_expires_at > sqlc.arg(revoked_at)::timestamptz)
+ON CONFLICT (token_id) DO NOTHING;
+
 -- TokenFamilyActive reports whether a token of the family has no revocation and an access or
 -- refresh token that has not expired at now: whether the grant can still be used or refreshed.
 -- name: TokenFamilyActive :one

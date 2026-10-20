@@ -115,6 +115,9 @@ type OAuthRepository interface {
 	// RevokeTokensOfUser revokes every token of a user whose access or refresh token has not
 	// expired at at and that has no revocation yet.
 	RevokeTokensOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.TokenRevocationReason, at time.Time) error
+	// RevokeOtherTokensOfUser is RevokeTokensOfUser for the tokens outside the family
+	// keepFamilyID, which keeps working.
+	RevokeOtherTokensOfUser(ctx context.Context, tx uow.Tx, userID, keepFamilyID string, reason identity.TokenRevocationReason, at time.Time) error
 	// TokenFamilyActive reports whether a token of the family has no revocation and an access
 	// or refresh token that has not expired at now.
 	TokenFamilyActive(ctx context.Context, familyID string, now time.Time) (bool, error)

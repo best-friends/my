@@ -163,6 +163,38 @@
     "defaultMessage": "Something went wrong",
     "description": "Title and heading of the sign-in screens' error pages."
   },
+  "auth.forgot_password.email_label": {
+    "defaultMessage": "Email address",
+    "description": "Label of the email address field of the form that asks for a password reset link."
+  },
+  "auth.forgot_password.invalid_email": {
+    "defaultMessage": "Enter an email address.",
+    "description": "Error of the form that asks for a password reset link when the email address field is empty or not an email address."
+  },
+  "auth.forgot_password.prompt": {
+    "defaultMessage": "Enter the email address of your account. We send it a link to set a new password.",
+    "description": "Text above the form that asks for a password reset link."
+  },
+  "auth.forgot_password.rate_limited": {
+    "defaultMessage": "{minutes, plural, one {Too many requests from your network. Try again in # minute.} other {Too many requests from your network. Try again in # minutes.}}",
+    "description": "Error (HTTP 429) after too many requests for a password reset link from the same network. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.forgot_password.sent": {
+    "defaultMessage": "If an account uses {email}, a link to set a new password is on its way. {minutes, plural, one {The link works for # minute.} other {The link works for # minutes.}} If no email arrives, check the spam folder and the address.",
+    "description": "Notice after a password reset link was asked for. It must read the same whether or not an account uses the address. {email} is the address the user entered; {minutes} how long the link works."
+  },
+  "auth.forgot_password.submit": {
+    "defaultMessage": "Send the link",
+    "description": "Button that asks for a password reset link by email."
+  },
+  "auth.forgot_password.title": {
+    "defaultMessage": "Forgot your password",
+    "description": "Title and heading of the page that asks for a password reset link."
+  },
+  "auth.forgot_password.unavailable": {
+    "defaultMessage": "This server does not send email, so it cannot send you a link. Ask the server's administrators for a link that sets a new password.",
+    "description": "Text of the page that asks for a password reset link on a server that sends no email; an administrator can issue the link."
+  },
   "auth.form_expired": {
     "defaultMessage": "This form has expired. Please try again.",
     "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
@@ -195,6 +227,34 @@
     "defaultMessage": "The check that you are not a bot is not available right now. Try again later.",
     "description": "Error (HTTP 503) on the registration form when the CAPTCHA service cannot be reached; the account is not created."
   },
+  "auth.reset_password.done": {
+    "defaultMessage": "Your password is changed, and every session that used the old one is signed out. Sign in with the new password.",
+    "description": "Body of the page after a new password was set from a reset link."
+  },
+  "auth.reset_password.done_title": {
+    "defaultMessage": "Password changed",
+    "description": "Title and heading of the page after a new password was set from a reset link."
+  },
+  "auth.reset_password.invalid": {
+    "defaultMessage": "This link is not valid. It may have expired, been used already, or been replaced by a newer password. Ask for a new link.",
+    "description": "Error when a password reset link is unknown, expired, used, or older than the current password. Must not say which."
+  },
+  "auth.reset_password.password_label": {
+    "defaultMessage": "New password",
+    "description": "Label of the new password field of the page that a password reset link opens."
+  },
+  "auth.reset_password.prompt": {
+    "defaultMessage": "Choose a new password. Setting it signs you out everywhere. Your passkeys and two-factor authentication stay as they are.",
+    "description": "Text above the form that sets a new password from a reset link."
+  },
+  "auth.reset_password.submit": {
+    "defaultMessage": "Set the password",
+    "description": "Button that sets the new password from a reset link."
+  },
+  "auth.reset_password.title": {
+    "defaultMessage": "Set a new password",
+    "description": "Title and heading of the page that a password reset link opens."
+  },
   "auth.link.new_tab": {
     "defaultMessage": "(opens in a new tab)",
     "description": "Text that only assistive technology reads, after the name of a link on the sign-in and registration pages that opens in a new browser tab (the CAPTCHA service's privacy policy and terms, the server's terms on the registration form). Keep the brackets so that it reads apart from the link's name."
@@ -206,6 +266,10 @@
   "auth.sign_in.failed": {
     "defaultMessage": "The email address or password is incorrect.",
     "description": "Error after a failed sign-in. Must not say which of the two was wrong, so that it does not reveal whether an account exists."
+  },
+  "auth.sign_in.forgot_password_link": {
+    "defaultMessage": "Forgot your password?",
+    "description": "Link from the sign-in form to the page that asks for a password reset link."
   },
   "auth.sign_in.missing": {
     "defaultMessage": "Enter your email address and password.",
@@ -914,6 +978,22 @@
   "mail.admin_webhook_disabled.subject": {
     "defaultMessage": "A webhook of {instance} was turned off",
     "description": "Subject of the email to an administrator who chose to get moderator notifications by email: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.password_changed.body": {
+    "defaultMessage": "The password of your account on {instance} was changed, and your other sessions and apps were signed out.\n\nIf you did not change it, someone else may know your password. Set a new one at once:\n\n{url}\n\nThis email was sent by {host}.",
+    "description": "Plain-text body of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the page that asks for a password reset link (keep it on its own line)."
+  },
+  "mail.password_changed.subject": {
+    "defaultMessage": "Your password for {instance} was changed",
+    "description": "Subject of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.password_reset.body": {
+    "defaultMessage": "Someone asked to reset the password of your account on {instance}.\n\nOpen this link to set a new password:\n\n{url}\n\n{minutes, plural, one {The link works for # minute, once.} other {The link works for # minutes, once.}} If you did not ask for it at {host}, ignore this email; your password stays as it is.",
+    "description": "Plain-text body of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the reset link (keep it on its own line), {minutes} how long the link works."
+  },
+  "mail.password_reset.subject": {
+    "defaultMessage": "Reset your password for {instance}",
+    "description": "Subject of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.verify_email.body": {
     "defaultMessage": "Welcome to {instance}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",

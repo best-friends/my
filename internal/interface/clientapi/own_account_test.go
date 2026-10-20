@@ -13,12 +13,28 @@ import (
 
 	"github.com/best-friends/my/internal/app/blob"
 	appidentity "github.com/best-friends/my/internal/app/identity"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
-// fakeOwnAccount deletes accounts whose password is "secret".
-type fakeOwnAccount struct{ deleted []string }
+// fakeOwnAccount deletes accounts and changes passwords whose password is "secret"; the
+// current password "limited" is rate-limited.
+type fakeOwnAccount struct {
+	deleted []string
+	changed []appidentity.ChangePasswordInput
+}
+
+func (f *fakeOwnAccount) ChangePassword(_ context.Context, in appidentity.ChangePasswordInput) error {
+	switch in.CurrentPassword {
+	case "limited":
+		return &kernel.RateLimitedError{RetryAfter: 90 * time.Second}
+	case "secret":
+		f.changed = append(f.changed, in)
+		return nil
+	}
+	return appidentity.ErrWrongPassword
+}
 
 func (f *fakeOwnAccount) DeleteOwnAccount(_ context.Context, userID, password string) error {
 	if password != "secret" {
@@ -95,6 +111,38 @@ func TestDeleteOwnAccount(t *testing.T) {
 	}
 	if res := e.sendJSON(t, http.MethodPost, "/accounts/delete", "write", `{"password":"secret"}`); res.StatusCode != http.StatusTooManyRequests {
 		t.Errorf("past the limit = %d, want 429", res.StatusCode)
+	}
+}
+
+func TestChangePassword(t *testing.T) {
+	own := &fakeOwnAccount{}
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.OwnAccount = own })
+	alice := "user-" + aliceAccountID
+
+	res := e.sendJSON(t, http.MethodPost, "/accounts/password", "write", `{"current_password":"wrong","new_password":"new password"}`)
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Type != clientapi.ProblemTypeWrongPassword {
+		t.Errorf("wrong password = %d %+v, want 422 wrong-password", res.StatusCode, p)
+	}
+	res = e.sendJSON(t, http.MethodPost, "/accounts/password", "write", `{"current_password":"secret","new_password":"short"}`)
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusBadRequest || p.Detail == nil || !strings.Contains(*p.Detail, "new_password") {
+		t.Errorf("short new password = %d %+v, want 400 on new_password", res.StatusCode, p)
+	}
+	res = e.sendJSON(t, http.MethodPost, "/accounts/password", "write", `{"current_password":"limited","new_password":"new password"}`)
+	if res.StatusCode != http.StatusTooManyRequests || res.Header.Get("Retry-After") != "90" {
+		t.Errorf("rate-limited = %d Retry-After %q, want 429 after 90", res.StatusCode, res.Header.Get("Retry-After"))
+	}
+	if res := e.sendJSON(t, http.MethodPost, "/accounts/password", "read", `{"current_password":"secret","new_password":"new password"}`); res.StatusCode != http.StatusForbidden {
+		t.Errorf("without write:accounts = %d, want 403", res.StatusCode)
+	}
+	if len(own.changed) != 0 {
+		t.Fatalf("changed = %+v, want none yet", own.changed)
+	}
+	res = e.sendJSON(t, http.MethodPost, "/accounts/password", "write", `{"current_password":"secret","new_password":"new password"}`)
+	if res.StatusCode != http.StatusNoContent || len(own.changed) != 1 {
+		t.Fatalf("change = %d, changed %+v; want 204 and one change", res.StatusCode, own.changed)
+	}
+	if got := own.changed[0]; got.UserID != alice || got.NewPassword != "new password" || got.KeepFamilyID != "fam-write" {
+		t.Errorf("change = %+v, want alice's new password keeping the request's grant", got)
 	}
 }
 

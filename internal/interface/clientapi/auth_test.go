@@ -105,7 +105,7 @@ type authEnv struct {
 var createdAt = time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 
 func bearer(scope identity.Scope, accountID string) appidentity.Bearer {
-	return appidentity.Bearer{TokenID: "tok-" + string(scope), ClientID: "client-1", UserID: "user-" + accountID, AccountID: accountID, Scope: scope}
+	return appidentity.Bearer{TokenID: "tok-" + string(scope), FamilyID: "fam-" + string(scope), ClientID: "client-1", UserID: "user-" + accountID, AccountID: accountID, Scope: scope}
 }
 
 func newAuthEnv(t *testing.T, tweak func(*clientapi.Options)) *authEnv {

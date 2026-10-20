@@ -117,12 +117,13 @@ reCAPTCHA v3 は課題を出さずにスコア（0.0〜1.0）だけを返し、E
 
 ### 5. 画面と CSP
 
-- ウィジェットはサインインと登録のフォームにだけ出す。サーバーが描画するページはいまは JavaScript なしで動くが、CAPTCHA を有効にしたときだけ、この 2 つのページはサービスのスクリプトを読む。
+- ウィジェットはサインインと登録のフォーム、およびパスワードリセットのリンクを要求するフォーム（`/auth/forgot_password`。メールを送るサーバーでだけ表示する、FR-002）にだけ出す。サーバーが描画するページはいまは JavaScript なしで動くが、CAPTCHA を有効にしたときだけ、この 3 つのページはサービスのスクリプトを読む。
+  リセットのリンクの要求は `identity` の `RequestPasswordReset` で、レート制限の後、メールを送る前に検証する。メールを送る操作なので、サービスに届かないときは登録と同じく拒否する（fail closed）。Turnstile の `data-action` は `password_reset`。
   `<noscript>` で「この確認には JavaScript が要る」ことを知らせる。
 - ウィジェットの言語はページのロケールに合わせ（Turnstile は `data-language`、hCaptcha と reCAPTCHA はスクリプトの `hl`）、テーマはページに合わせる（`data-theme`）。
 - ウィジェットの近くに「このページは <サービス名> でボットかどうかを確認します。<サービス名> のプライバシーポリシー」の文と、サービスのプライバシーポリシーへのリンクを出す（en / ja のメッセージ、ADR-0009）。
   reCAPTCHA では、バッジの代わりに「This site is protected by reCAPTCHA」と Google のプライバシーポリシー・利用規約を示す表示（reCAPTCHA FAQ）を兼ねる。
-- CSP は、CAPTCHA を有効にしたときのサインインと登録のページだけ、`contentSecurityPolicy` に §Context の表のオリジンを足す（`script-src`・`frame-src`、hCaptcha では `style-src`・`connect-src`、reCAPTCHA では `connect-src` も）。
+- CSP は、CAPTCHA を有効にしたときのサインイン・登録・パスワードリセットのリンクの要求のページだけ、`contentSecurityPolicy` に §Context の表のオリジンを足す（`script-src`・`frame-src`、hCaptcha では `style-src`・`connect-src`、reCAPTCHA では `connect-src` も）。
   `'unsafe-inline'`・`'unsafe-eval'` は足さない。Web クライアント・API・同意画面など他のレスポンスの CSP は変えない。
 - `Permissions-Policy`・`Cross-Origin-Opener-Policy: same-origin`・`frame-ancestors 'none'` はそのまま（ウィジェットは iframe の中で動き、こちらのページを埋め込まない）。
 

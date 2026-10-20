@@ -742,6 +742,7 @@ describe("the settings page", () => {
     expect(within(menu).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/settings/profile",
       "/settings/preferences",
+      "/settings/password",
       "/settings/two-factor",
       "/settings/passkeys",
       "/settings/auto-delete",

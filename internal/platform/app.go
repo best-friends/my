@@ -521,9 +521,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		SignupBlocks: a.Moderation,
 		// mail = none delivers nothing, so a moderator's approval stands in for verification (FR-002).
 		RequireEmailVerification: cfg.Mail != "none",
-		Messages:                 a.Messages,
-		BaseURL:                  cfg.ServerOrigin(),
-		InstanceName:             a.instanceName,
+		// Users ask for password reset links by email only when the mailer delivers it (FR-002).
+		EmailDelivery: sendsEmail(cfg),
+		Messages:      a.Messages,
+		BaseURL:       cfg.ServerOrigin(),
+		InstanceName:  a.instanceName,
 	})
 	a.AccountAdmin = identity.NewAccountAdmin(identity.AccountAdminDeps{
 		UnitOfWork: a.UnitOfWork, Repository: identities, Accounts: a.Accounts, Restrictions: a.AccountPolicy,
@@ -684,6 +686,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		ThemeStylesheet: a.themeStylesheet,
 		// A passkey signs in instead of the password where the browser has one (FR-004).
 		Passkeys: a.Identity, PasskeyScript: a.webPasskeyScript,
+		// A forgotten password is reset with a link, by email or from an administrator (FR-002).
+		PasswordReset: a.Identity,
 	}).Register(surfaceRouter{a, surfaceOAuth})
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {

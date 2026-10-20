@@ -54,6 +54,7 @@ import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.fo
 import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPasskeysRouteImport } from './routes/settings.passkeys'
+import { Route as SettingsPasswordRouteImport } from './routes/settings.password'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
@@ -293,6 +294,11 @@ const SettingsPasskeysRoute = SettingsPasskeysRouteImport.update({
   path: '/settings/passkeys',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsPasswordRoute = SettingsPasswordRouteImport.update({
+  id: '/settings/password',
+  path: '/settings/password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsPreferencesRoute = SettingsPreferencesRouteImport.update({
   id: '/settings/preferences',
   path: '/settings/preferences',
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/passkeys': typeof SettingsPasskeysRoute
+  '/settings/password': typeof SettingsPasswordRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/two-factor': typeof SettingsTwoFactorRoute
@@ -453,6 +460,7 @@ export interface FileRoutesByTo {
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/passkeys': typeof SettingsPasskeysRoute
+  '/settings/password': typeof SettingsPasswordRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/two-factor': typeof SettingsTwoFactorRoute
@@ -512,6 +520,7 @@ export interface FileRoutesById {
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/passkeys': typeof SettingsPasskeysRoute
+  '/settings/password': typeof SettingsPasswordRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/settings/two-factor': typeof SettingsTwoFactorRoute
@@ -572,6 +581,7 @@ export interface FileRouteTypes {
     | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/passkeys'
+    | '/settings/password'
     | '/settings/preferences'
     | '/settings/profile'
     | '/settings/two-factor'
@@ -630,6 +640,7 @@ export interface FileRouteTypes {
     | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/passkeys'
+    | '/settings/password'
     | '/settings/preferences'
     | '/settings/profile'
     | '/settings/two-factor'
@@ -688,6 +699,7 @@ export interface FileRouteTypes {
     | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/passkeys'
+    | '/settings/password'
     | '/settings/preferences'
     | '/settings/profile'
     | '/settings/two-factor'
@@ -747,6 +759,7 @@ export interface RootRouteChildren {
   SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPasskeysRoute: typeof SettingsPasskeysRoute
+  SettingsPasswordRoute: typeof SettingsPasswordRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   SettingsTwoFactorRoute: typeof SettingsTwoFactorRoute
@@ -1080,6 +1093,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsPasskeysRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/password': {
+      id: '/settings/password'
+      path: '/settings/password'
+      fullPath: '/settings/password'
+      preLoaderRoute: typeof SettingsPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/preferences': {
       id: '/settings/preferences'
       path: '/settings/preferences'
@@ -1203,6 +1223,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPasskeysRoute: SettingsPasskeysRoute,
+  SettingsPasswordRoute: SettingsPasswordRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   SettingsTwoFactorRoute: SettingsTwoFactorRoute,

@@ -1699,6 +1699,10 @@
     "defaultMessage": "二要素認証の解除",
     "description": "Heading of an audit log entry: an administrator removed the two-factor authentication of a local account."
   },
+  "admin.audit_log.action.password_reset_link_issued": {
+    "defaultMessage": "パスワード再設定リンクの発行",
+    "description": "Heading of an audit log entry: an administrator issued a password reset link for the user of a local account."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "文章の変更",
     "description": "Heading of an audit log entry: an administrator changed an instance text (such as the terms) in one language."
@@ -7510,6 +7514,58 @@
   "settings.passkeys.removed": {
     "defaultMessage": "パスキー「{name}」を削除しました。",
     "description": "Announcement after a passkey was removed. {name} is its name."
+  },
+  "settings.password.title": {
+    "defaultMessage": "パスワード",
+    "description": "Title of the settings page that changes the password, and its entry in the settings menu."
+  },
+  "settings.password.summary": {
+    "defaultMessage": "ログインに使うパスワードを変える",
+    "description": "Description of the password page in the settings menu."
+  },
+  "settings.password.description": {
+    "defaultMessage": "パスワードを変えると、ほかのすべてのブラウザーとアプリからログアウトします。パスキーと二要素認証はそのまま残ります。",
+    "description": "Text at the top of the settings page that changes the password."
+  },
+  "settings.password.current": {
+    "defaultMessage": "現在のパスワード",
+    "description": "Label of the field of the current password, which confirms a password change."
+  },
+  "settings.password.current.required": {
+    "defaultMessage": "現在のパスワードを入力してください。",
+    "description": "Error of the empty current password field when changing the password."
+  },
+  "settings.password.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error of the current password field when the server refused it."
+  },
+  "settings.password.new": {
+    "defaultMessage": "新しいパスワード",
+    "description": "Label of the field of the new password."
+  },
+  "settings.password.new.description": {
+    "defaultMessage": "{min, number}〜{max, number} 文字。",
+    "description": "Hint under the new password field. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.new.invalid": {
+    "defaultMessage": "{min, number}〜{max, number} 文字にしてください。",
+    "description": "Error of the new password field when it is empty, too short, or too long. {min} and {max} are the allowed lengths in characters."
+  },
+  "settings.password.submit": {
+    "defaultMessage": "パスワードを変更",
+    "description": "Button that changes the password."
+  },
+  "settings.password.changed": {
+    "defaultMessage": "パスワードを変更しました。ほかのブラウザーとアプリはログアウトしました。",
+    "description": "Status after the password was changed."
+  },
+  "settings.password.rate_limited": {
+    "defaultMessage": "間違ったパスワードが多すぎます：{reason}",
+    "description": "Alert when too many wrong current passwords were entered to change the password. {reason} is the server's message, which says when to try again."
+  },
+  "settings.password.failed": {
+    "defaultMessage": "パスワードを変更できませんでした：{reason}",
+    "description": "Alert when changing the password failed for another reason. {reason} is the error's message."
   },
   "settings.visibility.direct": {
     "defaultMessage": "メンションした相手",

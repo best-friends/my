@@ -84,6 +84,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?);
 -- name: GetUserTokenByHash :one
 SELECT id, user_id, purpose, email_address_id, token_hash, expires_at, issued_at FROM user_tokens WHERE token_hash = ?;
 
+-- UserTokenRedeemed reports whether a user token was used.
+-- name: UserTokenRedeemed :one
+SELECT EXISTS (SELECT 1 FROM user_token_redemptions WHERE token_id = ?);
+
 -- name: InsertUserTokenRedemption :exec
 INSERT INTO user_token_redemptions (token_id, redeemed_at) VALUES (?, ?);
 

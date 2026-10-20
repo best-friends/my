@@ -67,13 +67,18 @@ type Deps struct {
 	// SignupBlocks screens the sign-ups from the registration page against the sign-up block
 	// list (FR-719); nil screens nothing.
 	SignupBlocks SignupScreen
-	// Mailer sends verification emails; nil sends none and issues no verification tokens.
+	// Mailer sends verification emails, password reset emails, and the notices of password
+	// changes; nil sends none and issues no verification tokens.
 	Mailer kernel.Mailer
 	// RequireEmailVerification keeps users whose primary address is unverified from using
 	// the app (Access.Allowed). It is false when the mailer delivers no email (mail = none);
 	// then a moderator's approval stands in for verification and open mode waits for one
 	// (FR-002).
 	RequireEmailVerification bool
+	// EmailDelivery reports that the Mailer delivers email (mail is not none). Without it, a
+	// user cannot ask for a password reset link by email, and only an administrator issues one
+	// (IssuePasswordResetLink); no password change is notified by email.
+	EmailDelivery bool
 	// Messages words the emails; nil means the embedded catalogs (i18n.Load).
 	Messages *i18n.Bundle
 	// BaseURL is the origin that links in emails point to, such as https://social.example.
