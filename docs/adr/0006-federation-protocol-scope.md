@@ -1,6 +1,6 @@
 # ADR-0006: 連合プロトコルの対応範囲
 
-- Status: Accepted（一部を ADR-0032（送信の署名の順序） が置き換える）
+- Status: Accepted（一部を ADR-0032（送信の署名の順序） が置き換える。非対応のリレーと LD 署名の生成を ADR-0061（連合リレー） が置き換える。互換拡張に ADR-0052（絵文字リアクション）の `EmojiReact` と `_misskey_reaction` が加わる）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #8
