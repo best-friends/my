@@ -94,7 +94,11 @@ func (s *Service) AddReportNote(ctx context.Context, reportID, body, byUserID st
 // the CLI.
 func (s *Service) ReopenReport(ctx context.Context, reportID, byUserID string) (moderation.ReportRecord, error) {
 	now := kernel.Normalize(s.d.Clock.Now())
-	label, err := s.reportLabel(ctx, reportID)
+	report, err := s.d.Repository.FindReport(ctx, reportID)
+	if err != nil {
+		return moderation.ReportRecord{}, err
+	}
+	label, err := s.accountLabel(ctx, report.TargetAccountID)
 	if err != nil {
 		return moderation.ReportRecord{}, err
 	}
@@ -108,14 +112,15 @@ func (s *Service) ReopenReport(ctx context.Context, reportID, byUserID string) (
 		if st.State != moderation.ReportResolved {
 			return fmt.Errorf("%w: %s", ErrReportNotResolved, reportID)
 		}
-		err = repo.InsertReportReopening(ctx, tx, moderation.ReportReopening{
-			ID: reopeningID, ReportID: reportID, ReopenedByUserID: byUserID, ReopenedAt: now,
-		})
-		if err != nil {
+		reopening := moderation.ReportReopening{ID: reopeningID, ReportID: reportID, ReopenedByUserID: byUserID, ReopenedAt: now}
+		if err := repo.InsertReportReopening(ctx, tx, reopening); err != nil {
 			return err
 		}
 		st.State, st.Outcome, st.Since = moderation.ReportOpen, "", now
 		if err := repo.UpsertReportStatus(ctx, tx, st); err != nil {
+			return err
+		}
+		if err := tx.Emit(ctx, ReportReopened{Report: report, Reopening: reopening}); err != nil {
 			return err
 		}
 		return s.emitAudit(ctx, tx, moderation.AuditEntry{

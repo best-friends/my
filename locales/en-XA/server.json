@@ -775,6 +775,14 @@
     "defaultMessage": "[{name} ḿŭŭşŧ ƀḗḗ ȧȧƞ īḿȧȧɠḗḗ ŧħȧȧŧ ẏǿǿŭŭ ŭŭƥŀǿǿȧȧḓḗḗḓ ȧȧƞḓ ŧħȧȧŧ ħȧȧş ƒīƞīşħḗḗḓ ƥřǿǿƈḗḗşşīƞɠ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.webhook.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ẇḗḗƀħǿǿǿǿķ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.webhook.invalid_detail": {
+    "defaultMessage": "[{reason,select,description{Ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ȧȧŧ ḿǿǿşŧ 200 ƈħȧȧřȧȧƈŧḗḗřş, ẇīŧħǿǿŭŭŧ ƈǿǿƞŧřǿǿŀ ƈħȧȧřȧȧƈŧḗḗřş.} events{Ƈħǿǿǿǿşḗḗ ȧȧŧ ŀḗḗȧȧşŧ ǿǿƞḗḗ ḗḗṽḗḗƞŧ, ḗḗȧȧƈħ ǿǿƞƈḗḗ.} missing_permission{Ẏǿǿŭŭ ƞḗḗḗḗḓ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ǿǿƒ ḗḗṽḗḗřẏ ḗḗṽḗḗƞŧ ẏǿǿŭŭ ƈħǿǿǿǿşḗḗ.} other{Ŧħḗḗ şḗḗŧŧīƞɠş ƀřḗḗȧȧķ ȧȧ řŭŭŀḗḗ.} url{Ŧħḗḗ ŬŘĿ ḿŭŭşŧ ƀḗḗ ȧȧƞ ȧȧƀşǿǿŀŭŭŧḗḗ ħŧŧƥ ǿǿř ħŧŧƥş ŬŘĿ ǿǿƒ ȧȧŧ ḿǿǿşŧ 2048 ƀẏŧḗḗş, ẇīŧħǿǿŭŭŧ ŭŭşḗḗř īƞƒǿǿ ǿǿř ȧȧ ƒřȧȧɠḿḗḗƞŧ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.wrong_password": {
     "defaultMessage": "[Ŧħḗḗ ƥȧȧşşẇǿǿřḓ īş ẇřǿǿƞɠ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -805,6 +813,14 @@
   },
   "mail.admin_sign_up.subject": {
     "defaultMessage": "[Ȧ ƞḗḗẇ şīɠƞ-ŭŭƥ ȧȧẇȧȧīŧş ȧȧƥƥřǿǿṽȧȧŀ ǿǿƞ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_webhook_disabled.body": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř {instance} ŧŭŭřƞḗḗḓ ǿǿƒƒ ǿǿƞḗḗ ǿǿƒ īŧş ẇḗḗƀħǿǿǿǿķş: īŧş ḗḗƞḓƥǿǿīƞŧ ķḗḗƥŧ ƒȧȧīŀīƞɠ, ǿǿř ȧȧƞşẇḗḗřḗḗḓ ŧħȧȧŧ īŧ īş ɠǿǿƞḗḗ.\n\nǾƥḗḗƞ ẏǿǿŭŭř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ŧǿǿ şḗḗḗḗ ẇħīƈħ ǿǿƞḗḗ, ȧȧƞḓ ŧŭŭřƞ īŧ ǿǿƞ ȧȧɠȧȧīƞ ǿǿƞƈḗḗ ŧħḗḗ ḗḗƞḓƥǿǿīƞŧ ẇǿǿřķş:\n\n{url}\n\nẎǿǿŭŭ ɠḗḗŧ ŧħīş ḗḗḿȧȧīŀ ƀḗḗƈȧȧŭŭşḗḗ ẏǿǿŭŭ ƈħǿǿşḗḗ ŧǿǿ ɠḗḗŧ ḿǿǿḓḗḗřȧȧŧǿǿř ƞǿǿŧīƒīƈȧȧŧīǿǿƞş ƀẏ ḗḗḿȧȧīŀ. Ẏǿǿŭŭ ƈȧȧƞ ŧŭŭřƞ īŧ ǿǿƒƒ īƞ ẏǿǿŭŭř ƥřḗḗƒḗḗřḗḗƞƈḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_webhook_disabled.subject": {
+    "defaultMessage": "[Ȧ ẇḗḗƀħǿǿǿǿķ ǿǿƒ {instance} ẇȧȧş ŧŭŭřƞḗḗḓ ǿǿƒƒ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.body": {
@@ -853,6 +869,10 @@
   },
   "push.admin_sign_up": {
     "defaultMessage": "[Ȧ ƞḗḗẇ şīɠƞ-ŭŭƥ ȧȧẇȧȧīŧş ȧȧƥƥřǿǿṽȧȧŀ ǿǿƞ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.admin_webhook_disabled": {
+    "defaultMessage": "[Ȧ ẇḗḗƀħǿǿǿǿķ ǿǿƒ {instance} ẇȧȧş ŧŭŭřƞḗḗḓ ǿǿƒƒ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.appeal_decided": {

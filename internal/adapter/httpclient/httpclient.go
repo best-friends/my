@@ -69,6 +69,44 @@ type Options struct {
 	ExemptAddrPorts []netip.AddrPort
 	// Meter records the outbound HTTP metrics of ADR-0056 §1; nil records nothing.
 	Meter kernel.Meter
+	// Webhook lists the destinations that the requests of kernel.HTTPPurposeWebhook may reach
+	// although the guard refuses them (webhook_allowed_destinations, ADR-0060).
+	Webhook WebhookDestinations
+}
+
+// WebhookDestinations are the destinations exempt from the guard for kernel.HTTPPurposeWebhook
+// alone: a URL whose host is one of Hosts, or an IP address in one of Prefixes, may use http and
+// any port, and the connection may go to any address (for Hosts) or to the addresses in Prefixes.
+// The requests of that purpose use connections of their own, so that no other purpose reuses
+// a connection to an exempt destination.
+type WebhookDestinations struct {
+	// Hosts are lower-case host names without a trailing dot.
+	Hosts []string
+	// Prefixes are address ranges; an address is a /32 or /128 range.
+	Prefixes []netip.Prefix
+}
+
+// host reports whether a URL host is exempt: one of Hosts, or an IP address in Prefixes.
+func (w WebhookDestinations) host(host string) bool {
+	name := strings.TrimSuffix(strings.ToLower(host), ".")
+	if slices.Contains(w.Hosts, name) {
+		return true
+	}
+	if a, _, ok := parseHostAddr(host); ok {
+		return w.addr(a)
+	}
+	return false
+}
+
+// addr reports whether an address is in Prefixes.
+func (w WebhookDestinations) addr(a netip.Addr) bool {
+	a = a.Unmap()
+	for _, p := range w.Prefixes {
+		if p.Contains(a) {
+			return true
+		}
+	}
+	return false
 }
 
 // Client is the kernel.HTTPClient adapter.
@@ -76,6 +114,10 @@ type Client struct {
 	opts   Options
 	dialer *net.Dialer
 	http   *http.Client
+	// webhook sends the requests of kernel.HTTPPurposeWebhook: it never follows a redirect, and
+	// its connections may reach the exempt destinations (Options.Webhook) through open.
+	webhook *http.Client
+	open    *net.Dialer
 
 	// duration is nil when opts.Meter records nothing; conns is then nil too.
 	duration kernel.Histogram
@@ -103,24 +145,31 @@ func New(opts Options) *Client {
 		c.conns = sysmetrics.NewOpenConnCounter(opts.Meter, sysmetrics.HTTPClientOpenConnections)
 	}
 	c.dialer = &net.Dialer{Timeout: connectTimeout, Control: c.control}
-	c.http = &http.Client{
-		Transport: &http.Transport{
-			// Proxy is nil: proxy environment variables are ignored (ADR-0019 §1).
-			Proxy:                  nil,
-			DialContext:            c.dial,
-			ForceAttemptHTTP2:      true,
-			TLSClientConfig:        &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: opts.RootCAs},
-			TLSHandshakeTimeout:    tlsHandshakeTimeout,
-			ResponseHeaderTimeout:  responseHeaderTimeout,
-			ExpectContinueTimeout:  time.Second,
-			IdleConnTimeout:        idleConnTimeout,
-			MaxIdleConns:           100,
-			MaxConnsPerHost:        maxConnsPerHost,
-			MaxResponseHeaderBytes: maxResponseHeaderSize,
-		},
-		CheckRedirect: c.checkRedirect,
+	c.open = &net.Dialer{Timeout: connectTimeout}
+	c.http = &http.Client{Transport: c.transport(c.dial), CheckRedirect: c.checkRedirect}
+	c.webhook = &http.Client{
+		Transport: c.transport(c.dialWebhook),
+		// Standard Webhooks: a redirect is a failure, never followed (ADR-0060).
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 	}
 	return c
+}
+
+func (c *Client) transport(dial func(ctx context.Context, network, address string) (net.Conn, error)) *http.Transport {
+	return &http.Transport{
+		// Proxy is nil: proxy environment variables are ignored (ADR-0019 §1).
+		Proxy:                  nil,
+		DialContext:            dial,
+		ForceAttemptHTTP2:      true,
+		TLSClientConfig:        &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: c.opts.RootCAs},
+		TLSHandshakeTimeout:    tlsHandshakeTimeout,
+		ResponseHeaderTimeout:  responseHeaderTimeout,
+		ExpectContinueTimeout:  time.Second,
+		IdleConnTimeout:        idleConnTimeout,
+		MaxIdleConns:           100,
+		MaxConnsPerHost:        maxConnsPerHost,
+		MaxResponseHeaderBytes: maxResponseHeaderSize,
+	}
 }
 
 // Do implements kernel.HTTPClient.
@@ -143,7 +192,15 @@ func (c *Client) do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPRes
 	if err != nil || !u.IsAbs() {
 		return nil, fmt.Errorf("%w: the URL must be absolute", kernel.ErrInvalidHTTPRequest)
 	}
-	if err := c.checkURL(u); err != nil {
+	client := c.http
+	if r.Purpose == kernel.HTTPPurposeWebhook {
+		client = c.webhook
+	}
+	if r.Purpose == kernel.HTTPPurposeWebhook && c.opts.Webhook.host(u.Hostname()) {
+		if err := checkExemptURL(u); err != nil {
+			return nil, err
+		}
+	} else if err := c.checkURL(u); err != nil {
 		return nil, err
 	}
 	method := r.Method
@@ -167,7 +224,7 @@ func (c *Client) do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPRes
 	// Accept-Encoding, and the body limit must apply to the decompressed size.
 	req.Header.Del("Accept-Encoding")
 	req.Header.Set("User-Agent", c.opts.UserAgent)
-	resp, err := c.http.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		cancel()
 		return nil, err
@@ -256,6 +313,68 @@ func (c *Client) checkURL(u *url.URL) error {
 		return fmt.Errorf("%w: host %q", kernel.ErrForbiddenDestination, host)
 	}
 	return nil
+}
+
+// checkExemptURL checks a URL of an exempt webhook destination: http or https, without user
+// info, on any port.
+func checkExemptURL(u *url.URL) error {
+	switch {
+	case u.Scheme != "https" && u.Scheme != "http":
+		return fmt.Errorf("%w: scheme %q", kernel.ErrForbiddenDestination, u.Scheme)
+	case u.User != nil:
+		return fmt.Errorf("%w: the URL must not contain user info", kernel.ErrInvalidHTTPRequest)
+	case u.Hostname() == "":
+		return fmt.Errorf("%w: the URL has no host", kernel.ErrInvalidHTTPRequest)
+	}
+	if p := u.Port(); p != "" {
+		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
+			return fmt.Errorf("%w: port %q", kernel.ErrInvalidHTTPRequest, p)
+		}
+	}
+	return nil
+}
+
+// dialWebhook dials for kernel.HTTPPurposeWebhook: an exempt host name connects to whatever it
+// resolves to, an address in the exempt ranges connects without the guard, and every other
+// address goes through dial's checks.
+func (c *Client) dialWebhook(ctx context.Context, network, address string) (net.Conn, error) {
+	w := c.opts.Webhook
+	if len(w.Hosts) == 0 && len(w.Prefixes) == 0 {
+		return c.dial(ctx, network, address)
+	}
+	host, portStr, err := net.SplitHostPort(address)
+	if err != nil {
+		return nil, err
+	}
+	port, err := strconv.ParseUint(portStr, 10, 16)
+	if err != nil {
+		return nil, fmt.Errorf("%w: port %q", kernel.ErrInvalidHTTPRequest, portStr)
+	}
+	exemptName := slices.Contains(w.Hosts, strings.TrimSuffix(strings.ToLower(host), "."))
+	var addrs []netip.Addr
+	if a, numeric, ok := parseHostAddr(host); ok {
+		addrs = []netip.Addr{a}
+	} else if numeric {
+		return nil, fmt.Errorf("%w: malformed IP address %q", kernel.ErrInvalidHTTPRequest, host)
+	} else if addrs, err = c.opts.LookupNetIP(ctx, host); err != nil {
+		return nil, err
+	}
+	if len(addrs) == 0 {
+		return nil, fmt.Errorf("no address for %s", host)
+	}
+	var errs []error
+	for _, a := range addrs {
+		d := c.dialer
+		if exemptName || w.addr(a) {
+			d = c.open
+		}
+		conn, err := d.DialContext(ctx, network, netip.AddrPortFrom(a, uint16(port)).String())
+		if err == nil {
+			return c.conns.Track(ctx, conn), nil
+		}
+		errs = append(errs, err)
+	}
+	return nil, errors.Join(errs...)
 }
 
 // dial resolves the host of address and connects to its addresses in turn; control checks

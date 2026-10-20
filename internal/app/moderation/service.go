@@ -37,6 +37,12 @@ var (
 // Report is moderation.Report, a report as other modules file it.
 type Report = moderation.Report
 
+// Action is moderation.Action, an action on an account as the events carry it.
+type Action = moderation.Action
+
+// DomainAction is moderation.DomainAction, an action on a domain as the events carry it.
+type DomainAction = moderation.DomainAction
+
 // Effect is moderation.Effect, a restriction in effect as the events carry it.
 type Effect = moderation.Effect
 
@@ -60,7 +66,48 @@ const (
 	// EventReportResolved follows every resolution of a report, the first one and those after
 	// a reopening.
 	EventReportResolved = "moderation.report_resolved"
+	// EventReportReopened follows the reopening of a resolved report.
+	EventReportReopened = "moderation.report_reopened"
+	// EventDomainActionIssued follows a new action on a domain, and EventDomainActionLifted its
+	// lift.
+	EventDomainActionIssued = "moderation.domain_action_issued"
+	EventDomainActionLifted = "moderation.domain_action_lifted"
+	// EventAccountActionLifted follows the lift of an action on an account.
+	EventAccountActionLifted = "moderation.account_action_lifted"
 )
+
+// ReportReopened carries a reopened report and its reopening.
+type ReportReopened struct {
+	Report    moderation.Report
+	Reopening moderation.ReportReopening
+}
+
+// EventType implements uow.Event.
+func (ReportReopened) EventType() string { return EventReportReopened }
+
+// DomainActionIssued carries a new action on a domain.
+type DomainActionIssued struct{ Action moderation.DomainAction }
+
+// EventType implements uow.Event.
+func (DomainActionIssued) EventType() string { return EventDomainActionIssued }
+
+// DomainActionLifted carries an action on a domain and its lift.
+type DomainActionLifted struct {
+	Action moderation.DomainAction
+	Lift   moderation.DomainLift
+}
+
+// EventType implements uow.Event.
+func (DomainActionLifted) EventType() string { return EventDomainActionLifted }
+
+// AccountActionLifted carries an action on an account and its lift.
+type AccountActionLifted struct {
+	Action moderation.Action
+	Lift   moderation.Lift
+}
+
+// EventType implements uow.Event.
+func (AccountActionLifted) EventType() string { return EventAccountActionLifted }
 
 // DomainRestrictionsChanged carries the restrictions in effect on one domain (not its parents)
 // after an action or a lift: subscribers replace what they keep of the domain with Effects.
@@ -219,6 +266,9 @@ func (s *Service) IssueDomainAction(ctx context.Context, in DomainActionInput) (
 		if err := s.enqueueDomainSeverance(ctx, tx, a); err != nil {
 			return err
 		}
+		if err := tx.Emit(ctx, DomainActionIssued{Action: a}); err != nil {
+			return err
+		}
 		return s.emitAudit(ctx, tx, moderation.AuditEntry{
 			ID: auditID, Action: moderation.AuditDomainActionIssued, TargetKind: moderation.AuditTargetDomain,
 			TargetID: a.Domain, TargetLabel: a.Domain, SourceEventID: a.ID, OccurredAt: now,
@@ -242,7 +292,8 @@ func (s *Service) LiftDomainAction(ctx context.Context, actionID, liftedByUserID
 		if err != nil {
 			return err
 		}
-		err = repo.InsertDomainActionLift(ctx, tx, moderation.DomainLift{ActionID: a.ID, LiftedByUserID: liftedByUserID, LiftedAt: now})
+		lift := moderation.DomainLift{ActionID: a.ID, LiftedByUserID: liftedByUserID, LiftedAt: now}
+		err = repo.InsertDomainActionLift(ctx, tx, lift)
 		if errors.Is(err, ErrAlreadyRecorded) {
 			return nil
 		}
@@ -253,6 +304,9 @@ func (s *Service) LiftDomainAction(ctx context.Context, actionID, liftedByUserID
 			return err
 		}
 		if err := s.emitDomain(ctx, tx, a.Domain, now); err != nil {
+			return err
+		}
+		if err := tx.Emit(ctx, DomainActionLifted{Action: a, Lift: lift}); err != nil {
 			return err
 		}
 		// The lift's row is keyed by the action's ID.
@@ -558,6 +612,9 @@ func (s *Service) liftAction(ctx context.Context, tx uow.Tx, a moderation.Action
 		return err
 	}
 	if _, err := s.emitSuspension(ctx, tx, a.TargetAccountID, "", before, lift.LiftedAt); err != nil {
+		return err
+	}
+	if err := tx.Emit(ctx, AccountActionLifted{Action: a, Lift: lift}); err != nil {
 		return err
 	}
 	// The lift's row is keyed by the action's ID.

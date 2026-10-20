@@ -81,6 +81,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`vapid_private_key`](#vapid_private_key) | `MY_VAPID_PRIVATE_KEY` | none | no | yes |
 | [`profile`](#profile) | `MY_PROFILE` | `production` | no | no |
 | [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
+| [`webhook_allowed_destinations`](#webhook_allowed_destinations) | `MY_WEBHOOK_ALLOWED_DESTINATIONS` | none | no | no |
 | [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
 | [`remote_status_max_retention`](#remote_status_max_retention) | `MY_REMOTE_STATUS_MAX_RETENTION` | none | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
@@ -537,6 +538,14 @@ Lets outbound HTTP (federation, media, link previews) reach loopback, private, a
 | --- | --- | --- |
 | `false` | yes | Only public `https` destinations on ports 443 and 80. |
 | `true` | yes | Every destination; requires `profile = development`. |
+
+### `webhook_allowed_destinations`
+
+Destinations on loopback or a private network that the instance's webhooks may reach (ADR-0060), such as an automation tool on the same host or in the same VPC: comma-separated host names, IP addresses, and CIDRs such as `n8n.internal, 10.0.0.0/8`. The SSRF guard of outbound HTTP refuses them otherwise; for these destinations alone, and for the webhooks alone, it also allows plain `http` and any port. A host name is allowed whatever it resolves to; an address range allows the URLs that name an address in it and the host names that resolve into it only when they are listed too. Only the operator can change it: the administrators of the web client cannot reach an internal network on their own. Empty allows none.
+
+- Environment variable: `MY_WEBHOOK_ALLOWED_DESTINATIONS`
+- Default: none
+- Required: no
 
 ### `remote_status_retention`
 

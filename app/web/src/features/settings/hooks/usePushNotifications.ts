@@ -18,8 +18,11 @@ import {
 /** A choice of the kinds of notifications to push: one checkbox, which stands for one or more types. */
 type PushAlertGroup = { id: string; label: ClientMessageKey; types: readonly NotificationType[] };
 
-/** The permissions whose holders get moderator notifications (admin_report, admin_sign_up, admin_appeal). */
-const moderatorPermissions: readonly Permission[] = ["manage_reports", "manage_accounts"];
+/**
+ * The permissions whose holders get moderator notifications (admin_report, admin_sign_up, admin_appeal, and
+ * admin_webhook_disabled for manage_webhooks).
+ */
+const moderatorPermissions: readonly Permission[] = ["manage_reports", "manage_accounts", "manage_webhooks"];
 
 /** The kinds that every user chooses from, in the order of the notifications' filter. */
 const userGroups: readonly PushAlertGroup[] = [
@@ -41,7 +44,7 @@ const userGroups: readonly PushAlertGroup[] = [
 const moderatorGroup: PushAlertGroup = {
   id: "admin",
   label: "client:settings.push.type.admin",
-  types: ["admin_report", "admin_sign_up", "admin_appeal"],
+  types: ["admin_report", "admin_sign_up", "admin_appeal", "admin_webhook_disabled"],
 };
 
 /** What the preferences show of Web Push on this device. */

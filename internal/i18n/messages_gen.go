@@ -1362,6 +1362,20 @@ func (l *Localizer) ServerErrorsUnusableImage(name string) string {
 	return l.format("server:errors.unusable_image", map[string]any{"name": name})
 }
 
+// ServerErrorsWebhookInvalid formats "server:errors.webhook.invalid". API error title for HTTP 422 when the settings of a webhook endpoint break a rule; the detail says which.
+//
+//	en: The webhook cannot be saved.
+func (l *Localizer) ServerErrorsWebhookInvalid() string {
+	return l.format("server:errors.webhook.invalid", nil)
+}
+
+// ServerErrorsWebhookInvalidDetail formats "server:errors.webhook.invalid_detail". API error detail for HTTP 422 when the settings of a webhook endpoint break a rule. {reason} is url, description, events, or missing_permission.
+//
+//	en: {reason, select, url {The URL must be an absolute http or https URL of at most 2048 bytes, without user info or a fragment.} description {The description must be at most 200 characters, without control characters.} events {Choose at least one event, each once.} missing_permission {You need the permissions of every event you choose.} other {The settings break a rule.}}
+func (l *Localizer) ServerErrorsWebhookInvalidDetail(reason string) string {
+	return l.format("server:errors.webhook.invalid_detail", map[string]any{"reason": reason})
+}
+
 // ServerErrorsWrongPassword formats "server:errors.wrong_password". API error title for HTTP 422 when the password the user typed to confirm an operation on their own account (such as deleting it) is not their current password.
 //
 //	en: The password is wrong.
@@ -1416,6 +1430,20 @@ func (l *Localizer) ServerMailAdminSignUpBody(instance string, url string) strin
 //	en: A new sign-up awaits approval on {instance}
 func (l *Localizer) ServerMailAdminSignUpSubject(instance string) string {
 	return l.format("server:mail.admin_sign_up.subject", map[string]any{"instance": instance})
+}
+
+// ServerMailAdminWebhookDisabledBody formats "server:mail.admin_webhook_disabled.body". Plain-text body of the email to an administrator about a webhook endpoint that the server turned off. It never names the endpoint or its URL. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line).
+//
+//	en: The server {instance} turned off one of its webhooks: its endpoint kept failing, or answered that it is gone.  Open your notifications to see which one, and turn it on again once the endpoint works:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.
+func (l *Localizer) ServerMailAdminWebhookDisabledBody(instance string, url string) string {
+	return l.format("server:mail.admin_webhook_disabled.body", map[string]any{"instance": instance, "url": url})
+}
+
+// ServerMailAdminWebhookDisabledSubject formats "server:mail.admin_webhook_disabled.subject". Subject of the email to an administrator who chose to get moderator notifications by email: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A webhook of {instance} was turned off
+func (l *Localizer) ServerMailAdminWebhookDisabledSubject(instance string) string {
+	return l.format("server:mail.admin_webhook_disabled.subject", map[string]any{"instance": instance})
 }
 
 // ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.
@@ -1500,6 +1528,13 @@ func (l *Localizer) ServerPushAdminReport(instance string) string {
 //	en: A new sign-up awaits approval on {instance}
 func (l *Localizer) ServerPushAdminSignUp(instance string) string {
 	return l.format("server:push.admin_sign_up", map[string]any{"instance": instance})
+}
+
+// ServerPushAdminWebhookDisabled formats "server:push.admin_webhook_disabled". Web Push notification to an administrator: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: A webhook of {instance} was turned off
+func (l *Localizer) ServerPushAdminWebhookDisabled(instance string) string {
+	return l.format("server:push.admin_webhook_disabled", map[string]any{"instance": instance})
 }
 
 // ServerPushAppealDecided formats "server:push.appeal_decided". Web Push notification: the moderators upheld or overturned the user's appeal. {instance} is the server's display name, or its domain name when it has none.

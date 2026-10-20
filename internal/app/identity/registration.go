@@ -317,9 +317,15 @@ func (s *Service) SignUp(ctx context.Context, in SignUpInput) (SignedUp, error) 
 			return err
 		}
 		if state.State == identity.RegistrationPending {
-			if err := tx.Emit(ctx, RegistrationPending{UserID: p.user.ID, AccountID: p.acct.Account.ID, SubmittedAt: now}); err != nil {
+			if err := tx.Emit(ctx, RegistrationPending{
+				UserID: p.user.ID, AccountID: p.acct.Account.ID, Username: p.acct.Local.Username, SubmittedAt: now,
+			}); err != nil {
 				return err
 			}
+		} else if err := tx.Emit(ctx, RegistrationApproved{
+			UserID: p.user.ID, AccountID: p.acct.Account.ID, Username: p.acct.Local.Username, ApprovedAt: now,
+		}); err != nil {
+			return err
 		}
 		if verification != nil {
 			if err := repo.InsertUserToken(ctx, tx, verification.token); err != nil {
@@ -682,6 +688,14 @@ func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (ident
 	if err != nil {
 		return identity.RegistrationDecision{}, err
 	}
+	var approved *RegistrationApproved
+	if in.Decision == identity.DecisionApproved {
+		la, err := s.d.Accounts.LocalAccountOfUser(ctx, in.UserID)
+		if err != nil {
+			return identity.RegistrationDecision{}, err
+		}
+		approved = &RegistrationApproved{UserID: in.UserID, AccountID: la.AccountID, Username: la.Username, ApprovedAt: now}
+	}
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		moved, err := s.d.Repository.TransitionPendingRegistrationState(ctx, tx, identity.UserRegistrationState{
 			UserID: in.UserID, State: in.Decision.State(), Since: now,
@@ -694,6 +708,11 @@ func (s *Service) DecideRegistration(ctx context.Context, in DecideInput) (ident
 		}
 		if err := s.d.Repository.InsertRegistrationDecision(ctx, tx, d); err != nil {
 			return err
+		}
+		if approved != nil {
+			if err := tx.Emit(ctx, *approved); err != nil {
+				return err
+			}
 		}
 		return tx.Emit(ctx, audit)
 	})

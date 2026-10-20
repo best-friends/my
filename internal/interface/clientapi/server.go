@@ -141,6 +141,9 @@ type Options struct {
 	// CustomEmojis runs the custom emoji of the picker and the admin operations
 	// (admin_custom_emojis.go); nil answers an empty picker and 404 to the admin operations.
 	CustomEmojis CustomEmojis
+	// Webhooks runs the admin operations on the instance's webhooks (admin_webhooks.go); nil
+	// answers 404 to them.
+	Webhooks Webhooks
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

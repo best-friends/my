@@ -427,6 +427,8 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 		p.Title, p.Path = l.ServerPushAdminSignUp(instance), "/moderation/registrations"
 	case notification.TypeAdminAppeal:
 		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/moderation/appeals/"+job.AppealID
+	case notification.TypeAdminWebhookDisabled:
+		p.Title, p.Path = l.ServerPushAdminWebhookDisabled(instance), "/admin/webhooks"
 	case notification.TypeReportResolved:
 		p.Title = l.ServerPushReportResolved(instance)
 	case notification.TypeRelationshipsSevered:

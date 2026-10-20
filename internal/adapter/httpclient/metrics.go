@@ -41,6 +41,8 @@ func purposeLabel(p kernel.HTTPPurpose) string {
 		return "human_check"
 	case kernel.HTTPPurposeWebPush:
 		return "web_push"
+	case kernel.HTTPPurposeWebhook:
+		return "webhook"
 	}
 	return "_OTHER"
 }

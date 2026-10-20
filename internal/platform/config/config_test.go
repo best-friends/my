@@ -174,6 +174,19 @@ listen = "127.0.0.1:9000"
 			},
 		},
 		{
+			name: "webhook destinations",
+			env:  with(minimal(), "MY_WEBHOOK_ALLOWED_DESTINATIONS", "n8n.internal, 10.0.0.0/8,192.0.2.10, chat.corp.example"),
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleAll, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:", Stream: "hub",
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, DeadJobRetention: 30 * 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
+				WebhookAllowedHosts:    []string{"n8n.internal", "chat.corp.example"},
+				WebhookAllowedPrefixes: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8"), netip.MustParsePrefix("192.0.2.10/32")},
+				MetricsExporter:        "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+			},
+		},
+		{
 			name: "stream on SNS",
 			env: with(minimal(), "MY_ROLE", "web", "MY_STREAM", "sns",
 				"MY_STREAM_SNS_TOPIC_ARN", "arn:aws:sns:us-east-1:123456789012:my-stream", "MY_STREAM_SQS_QUEUE_PREFIX", "my-stream"),
@@ -382,6 +395,11 @@ func TestLoadInvalid(t *testing.T) {
 				`trusted_proxies (MY_TRUSTED_PROXIES): entry #2 "10.0.0.0/33" must be a CIDR such as 10.0.0.0/8 or an IP address`,
 				`trusted_proxy_header (MY_TRUSTED_PROXY_HEADER): unknown value "x-real-ip"; want one of x-forwarded-for, forwarded`,
 			},
+		},
+		{
+			name: "malformed webhook destinations",
+			env:  with(minimal(), "MY_WEBHOOK_ALLOWED_DESTINATIONS", "n8n.internal, http://n8n.internal:5678"),
+			want: []string{`webhook_allowed_destinations (MY_WEBHOOK_ALLOWED_DESTINATIONS): entry #2 "http://n8n.internal:5678" must be a lower-case host name, an IP address, or a CIDR such as 10.0.0.0/8`},
 		},
 		{
 			name: "trusted proxy with a zone",

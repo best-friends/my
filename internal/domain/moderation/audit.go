@@ -58,12 +58,15 @@ const (
 	// AuditTargetCustomEmoji is a custom emoji (ADR-0051 §5); its label is :shortcode:, or
 	// :shortcode:@domain for a remote one.
 	AuditTargetCustomEmoji AuditTargetKind = "custom_emoji"
+	// AuditTargetWebhook is a webhook endpoint (ADR-0060); its label is its description and the
+	// host name of its URL, never the URL, which may hold a secret.
+	AuditTargetWebhook AuditTargetKind = "webhook"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
-	AuditTargetCustomEmoji,
+	AuditTargetCustomEmoji, AuditTargetWebhook,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -149,6 +152,19 @@ const (
 	// AuditCustomEmojiDeleted: a local custom emoji was deleted with its images; the operation
 	// has no row of its own.
 	AuditCustomEmojiDeleted AuditAction = "custom_emoji_deleted"
+	// AuditWebhookCreated: a webhook endpoint was set up (webhook_endpoints).
+	AuditWebhookCreated AuditAction = "webhook_created"
+	// AuditWebhookUpdated: the URL, description, or events of a webhook endpoint changed
+	// (webhook_endpoint_revisions).
+	AuditWebhookUpdated AuditAction = "webhook_updated"
+	// AuditWebhookDeleted, AuditWebhookEnabled, and AuditWebhookDisabled: a webhook endpoint
+	// changed state (webhook_endpoint_state_changes); the server disables one that answers 410
+	// Gone or keeps failing, as the system actor.
+	AuditWebhookDeleted  AuditAction = "webhook_deleted"
+	AuditWebhookEnabled  AuditAction = "webhook_enabled"
+	AuditWebhookDisabled AuditAction = "webhook_disabled"
+	// AuditWebhookSecretRotated: a webhook endpoint got a new secret (webhook_secrets).
+	AuditWebhookSecretRotated AuditAction = "webhook_secret_rotated"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -188,6 +204,12 @@ var auditActions = []struct {
 	{AuditCustomEmojiEnabled, AuditTargetCustomEmoji},
 	{AuditCustomEmojiDisabled, AuditTargetCustomEmoji},
 	{AuditCustomEmojiDeleted, AuditTargetCustomEmoji},
+	{AuditWebhookCreated, AuditTargetWebhook},
+	{AuditWebhookUpdated, AuditTargetWebhook},
+	{AuditWebhookDeleted, AuditTargetWebhook},
+	{AuditWebhookEnabled, AuditTargetWebhook},
+	{AuditWebhookDisabled, AuditTargetWebhook},
+	{AuditWebhookSecretRotated, AuditTargetWebhook},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

@@ -96,6 +96,10 @@ type Config struct {
 	Profile string
 	// HTTPAllowPrivateNetworks lets the HTTPClient reach non-public destinations (development only).
 	HTTPAllowPrivateNetworks bool
+	// WebhookAllowedHosts and WebhookAllowedPrefixes are the destinations that the webhooks may
+	// reach although the SSRF guard refuses them (webhook_allowed_destinations, ADR-0060).
+	WebhookAllowedHosts    []string
+	WebhookAllowedPrefixes []netip.Prefix
 	// RemoteStatusRetention is how long an unreferenced remote post is kept after its publication;
 	// RemoteStatusMaxRetention bounds how long any remote post is kept, zero for no bound (ADR-0034).
 	RemoteStatusRetention    time.Duration
@@ -176,6 +180,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("vapid_private_key", redact(c.VAPIDPrivateKey != "")),
 		slog.String("profile", c.Profile),
 		slog.Bool("http_allow_private_networks", c.HTTPAllowPrivateNetworks),
+		slog.Any("webhook_allowed_destinations", append(slices.Clone(c.WebhookAllowedHosts), prefixStrings(c.WebhookAllowedPrefixes)...)),
 		slog.Duration("remote_status_retention", c.RemoteStatusRetention),
 		slog.Duration("remote_status_max_retention", c.RemoteStatusMaxRetention),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
@@ -412,4 +417,13 @@ func unknownKeys(file map[string]any) []string {
 	}
 	slices.Sort(unknown)
 	return unknown
+}
+
+// prefixStrings returns the text of prefixes.
+func prefixStrings(prefixes []netip.Prefix) []string {
+	out := make([]string, len(prefixes))
+	for i, p := range prefixes {
+		out[i] = p.String()
+	}
+	return out
 }

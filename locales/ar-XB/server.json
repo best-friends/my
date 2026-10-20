@@ -775,6 +775,14 @@
     "defaultMessage": "‮{name} ɯnsʇ qǝ ɐu ıɯɐƃǝ ʇɥɐʇ ʎon ndʅoɐpǝp ɐup ʇɥɐʇ ɥɐs ɟıuısɥǝp dɹoɔǝssıuƃ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.webhook.invalid": {
+    "defaultMessage": "‮⊥ɥǝ ʍǝqɥooʞ ɔɐuuoʇ qǝ sɐʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.webhook.invalid_detail": {
+    "defaultMessage": "‮{reason,select,description{⊥ɥǝ pǝsɔɹıdʇıou ɯnsʇ qǝ ɐʇ ɯosʇ 200 ɔɥɐɹɐɔʇǝɹs, ʍıʇɥonʇ ɔouʇɹoʅ ɔɥɐɹɐɔʇǝɹs.} events{Ↄɥoosǝ ɐʇ ʅǝɐsʇ ouǝ ǝʌǝuʇ, ǝɐɔɥ ouɔǝ.} missing_permission{⅄on uǝǝp ʇɥǝ dǝɹɯıssıous oɟ ǝʌǝɹʎ ǝʌǝuʇ ʎon ɔɥoosǝ.} other{⊥ɥǝ sǝʇʇıuƃs qɹǝɐʞ ɐ ɹnʅǝ.} url{⊥ɥǝ ∩ᴚ⅂ ɯnsʇ qǝ ɐu ɐqsoʅnʇǝ ɥʇʇd oɹ ɥʇʇds ∩ᴚ⅂ oɟ ɐʇ ɯosʇ 2048 qʎʇǝs, ʍıʇɥonʇ nsǝɹ ıuɟo oɹ ɐ ɟɹɐƃɯǝuʇ.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.wrong_password": {
     "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp ıs ʍɹouƃ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -805,6 +813,14 @@
   },
   "mail.admin_sign_up.subject": {
     "defaultMessage": "‮∀ uǝʍ sıƃu-nd ɐʍɐıʇs ɐddɹoʌɐʅ ou {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_webhook_disabled.body": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ {instance} ʇnɹuǝp oɟɟ ouǝ oɟ ıʇs ʍǝqɥooʞs: ıʇs ǝupdoıuʇ ʞǝdʇ ɟɐıʅıuƃ, oɹ ɐusʍǝɹǝp ʇɥɐʇ ıʇ ıs ƃouǝ.\n\nOdǝu ʎonɹ uoʇıɟıɔɐʇıous ʇo sǝǝ ʍɥıɔɥ ouǝ, ɐup ʇnɹu ıʇ ou ɐƃɐıu ouɔǝ ʇɥǝ ǝupdoıuʇ ʍoɹʞs:\n\n{url}\n\n⅄on ƃǝʇ ʇɥıs ǝɯɐıʅ qǝɔɐnsǝ ʎon ɔɥosǝ ʇo ƃǝʇ ɯopǝɹɐʇoɹ uoʇıɟıɔɐʇıous qʎ ǝɯɐıʅ. ⅄on ɔɐu ʇnɹu ıʇ oɟɟ ıu ʎonɹ dɹǝɟǝɹǝuɔǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.admin_webhook_disabled.subject": {
+    "defaultMessage": "‮∀ ʍǝqɥooʞ oɟ {instance} ʍɐs ʇnɹuǝp oɟɟ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.body": {
@@ -853,6 +869,10 @@
   },
   "push.admin_sign_up": {
     "defaultMessage": "‮∀ uǝʍ sıƃu-nd ɐʍɐıʇs ɐddɹoʌɐʅ ou {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.admin_webhook_disabled": {
+    "defaultMessage": "‮∀ ʍǝqɥooʞ oɟ {instance} ʍɐs ʇnɹuǝp oɟɟ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.appeal_decided": {

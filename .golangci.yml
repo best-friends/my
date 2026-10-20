@@ -193,6 +193,22 @@ linters:
             - github.com/best-friends/my/internal/domain/instance
             - github.com/best-friends/my/internal/app
             - github.com/best-friends/my/internal/i18n
+        domain-webhook:
+          list-mode: strict
+          files:
+            - "**/internal/domain/webhook/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/webhook
+        app-webhook:
+          list-mode: strict
+          files:
+            - "**/internal/app/webhook/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/webhook
+            - github.com/best-friends/my/internal/app
+            - github.com/best-friends/my/internal/i18n
         # app/kernel holds the ports and helpers shared by every module (Clock, IDGenerator, KeyManager);
         # it depends on nothing in the repository so that any module can import it.
         app-kernel:

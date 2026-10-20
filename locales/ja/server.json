@@ -767,6 +767,14 @@
     "defaultMessage": "{name} には、自分でアップロードして処理が終わった画像を指定してください。",
     "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
   },
+  "errors.webhook.invalid": {
+    "defaultMessage": "webhook を保存できません。",
+    "description": "API error title for HTTP 422 when the settings of a webhook endpoint break a rule; the detail says which."
+  },
+  "errors.webhook.invalid_detail": {
+    "defaultMessage": "{reason, select, url {URL は、ユーザー情報とフラグメントを含まない 2048 バイト以内の http か https の絶対 URL にしてください。} description {説明は制御文字を含まない 200 文字以内にしてください。} events {イベントを 1 つ以上、重複なく選んでください。} missing_permission {選んだすべてのイベントの権限が必要です。} other {設定が規則に反しています。}}",
+    "description": "API error detail for HTTP 422 when the settings of a webhook endpoint break a rule. {reason} is url, description, events, or missing_permission."
+  },
   "errors.wrong_password": {
     "defaultMessage": "パスワードが違います。",
     "description": "API error title for HTTP 422 when the password the user typed to confirm an operation on their own account (such as deleting it) is not their current password."
@@ -799,6 +807,14 @@
     "defaultMessage": "{instance} に承認待ちの登録があります",
     "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {instance} is the server's display name, or its domain name when it has none."
   },
+  "mail.admin_webhook_disabled.body": {
+    "defaultMessage": "{instance} の webhook のひとつを、サーバーが無効にしました。宛先への送信が失敗し続けたか、宛先がなくなったと答えました。\n\nどの webhook かは通知で確認できます。宛先が直ったら、もう一度有効にしてください：\n\n{url}\n\nこのメールは、モデレーターへの通知をメールでも受け取る設定にしているため送られています。設定から止められます。",
+    "description": "Plain-text body of the email to an administrator about a webhook endpoint that the server turned off. It never names the endpoint or its URL. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_webhook_disabled.subject": {
+    "defaultMessage": "{instance} の webhook が無効になりました",
+    "description": "Subject of the email to an administrator who chose to get moderator notifications by email: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none."
+  },
   "mail.verify_email.body": {
     "defaultMessage": "{instance} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",
     "description": "Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
@@ -818,6 +834,10 @@
   "push.admin_sign_up": {
     "defaultMessage": "{instance} で新しい登録が承認を待っています",
     "description": "Web Push notification to a moderator: a new user signed up and waits for approval. It never names the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.admin_webhook_disabled": {
+    "defaultMessage": "{instance} の webhook が無効になりました",
+    "description": "Web Push notification to an administrator: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none."
   },
   "push.appeal_decided": {
     "defaultMessage": "{instance} のモデレーターがあなたの異議申し立てを審査しました",

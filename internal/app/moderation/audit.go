@@ -44,12 +44,22 @@ const (
 	AuditRuleRetired          = moderation.AuditRuleRetired
 	AuditRoleGranted          = moderation.AuditRoleGranted
 	AuditRoleRevoked          = moderation.AuditRoleRevoked
+	AuditWebhookCreated       = moderation.AuditWebhookCreated
+	AuditWebhookUpdated       = moderation.AuditWebhookUpdated
+	AuditWebhookDeleted       = moderation.AuditWebhookDeleted
+	AuditWebhookEnabled       = moderation.AuditWebhookEnabled
+	AuditWebhookDisabled      = moderation.AuditWebhookDisabled
+	AuditWebhookSecretRotated = moderation.AuditWebhookSecretRotated
 
 	AuditTargetUser    = moderation.AuditTargetUser
 	AuditTargetSetting = moderation.AuditTargetSetting
 	AuditTargetRule    = moderation.AuditTargetRule
 	AuditTargetRole    = moderation.AuditTargetRole
+	AuditTargetWebhook = moderation.AuditTargetWebhook
 )
+
+// AuditActorSystem is moderation.AuditActorSystem, the server itself.
+const AuditActorSystem = moderation.AuditActorSystem
 
 // AuditActor returns the actor of an operation given the user ID that the use cases take: the
 // user, or the CLI for "".

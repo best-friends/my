@@ -17,6 +17,7 @@ func TestPermissionCategory(t *testing.T) {
 		PermManageJobs:         CategoryServer,
 		PermManageTwoFactor:    CategoryServer,
 		PermManageCustomEmojis: CategoryServer,
+		PermManageWebhooks:     CategoryServer,
 	}
 	for _, p := range AllPermissions() {
 		w, ok := want[p]

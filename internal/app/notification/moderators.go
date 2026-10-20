@@ -15,6 +15,7 @@ import (
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
+	appwebhook "github.com/best-friends/my/internal/app/webhook"
 	"github.com/best-friends/my/internal/domain/notification"
 	"github.com/best-friends/my/internal/i18n"
 )
@@ -84,8 +85,11 @@ type ModeratorDeps struct {
 //   - identity.registration_pending: admin_sign_up, to the holders of manage_accounts.
 //   - moderation.appeal_filed: admin_appeal, to the holders of manage_accounts other than the
 //     account that appealed.
+//   - webhook.endpoint_disabled: admin_webhook_disabled, to the holders of manage_webhooks
+//     (ADR-0060).
 //
-// The dedupe keys (notification.AdminReportKey, AdminSignUpKey, AdminAppealKey) make projecting an event again
+// The dedupe keys (notification.AdminReportKey, AdminSignUpKey, AdminAppealKey,
+// AdminWebhookDisabledKey) make projecting an event again
 // create nothing more. For each recipient who wants them by email and whose notification is
 // new, the projector enqueues JobModeratorEmail through d.Outbox.
 func RegisterModeratorProjectors(r *uow.Projectors, d ModeratorDeps) {
@@ -111,6 +115,12 @@ func RegisterModeratorProjectors(r *uow.Projectors, d ModeratorDeps) {
 		return p.notify(ctx, tx, notification.Notification{
 			Type: notification.TypeAdminAppeal, AppealID: a.ID, DedupeKey: notification.AdminAppealKey(a.ID), CreatedAt: a.SubmittedAt,
 		}, a.AccountID)
+	})
+	r.Register(appwebhook.EventEndpointDisabled, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appwebhook.EndpointDisabled)
+		return p.notify(ctx, tx, notification.Notification{
+			Type: notification.TypeAdminWebhookDisabled, DedupeKey: notification.AdminWebhookDisabledKey(ev.StateChangeID), CreatedAt: ev.At,
+		})
 	})
 }
 
@@ -235,6 +245,8 @@ func sendModeratorEmail(ctx context.Context, d MailDeps, job moderatorEmail) err
 		m.Subject, m.Text = l.ServerMailAdminSignUpSubject(name), l.ServerMailAdminSignUpBody(name, link)
 	case notification.TypeAdminAppeal:
 		m.Subject, m.Text = l.ServerMailAdminAppealSubject(name), l.ServerMailAdminAppealBody(name, link)
+	case notification.TypeAdminWebhookDisabled:
+		m.Subject, m.Text = l.ServerMailAdminWebhookDisabledSubject(name), l.ServerMailAdminWebhookDisabledBody(name, link)
 	default:
 		return nil
 	}

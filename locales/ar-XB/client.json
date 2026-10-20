@@ -1367,6 +1367,30 @@
     "defaultMessage": "‮⊥ʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ɹǝɯoʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.webhook_created": {
+    "defaultMessage": "‮Mǝqɥooʞ sǝʇ nd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.webhook_deleted": {
+    "defaultMessage": "‮Mǝqɥooʞ pǝʅǝʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.webhook_disabled": {
+    "defaultMessage": "‮Mǝqɥooʞ pısɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.webhook_enabled": {
+    "defaultMessage": "‮Mǝqɥooʞ ǝuɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.webhook_secret_rotated": {
+    "defaultMessage": "‮Mǝqɥooʞ sǝɔɹǝʇ ɹǝuǝʍǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.webhook_updated": {
+    "defaultMessage": "‮Mǝqɥooʞ ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.actor": {
     "defaultMessage": "‮Ԑʎ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1521,6 +1545,10 @@
   },
   "admin.audit_log.target_kind.user": {
     "defaultMessage": "‮ᴚǝƃısʇɹɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.webhook": {
+    "defaultMessage": "‮Mǝqɥooʞ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.title": {
@@ -4015,6 +4043,414 @@
     "defaultMessage": "‮⊥ʎdǝ, sdɐɔıuƃ, ɐup ɯoʇıou‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.webhook.back": {
+    "defaultMessage": "‮Ԑɐɔʞ ʇo ʇɥǝ ʍǝqɥooʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhook.title": {
+    "defaultMessage": "‮Mǝqɥooʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.cancel": {
+    "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.change_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʇɥǝ ʍǝqɥooʞ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.created": {
+    "defaultMessage": "‮{name} ıs sǝʇ nd.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.delete": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.delete.description": {
+    "defaultMessage": "‮Iʇ ɹǝɔǝıʌǝs uoʇɥıuƃ ɯoɹǝ ɐup ıʇs pǝʅıʌǝɹıǝs ɐɹǝ uo ʅouƃǝɹ ʅısʇǝp. ⊥ɥıs ɔɐuuoʇ qǝ nupouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.delete.title": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ {name}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.delete_webhook": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deleted": {
+    "defaultMessage": "‮{name} ıs pǝʅǝʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries": {
+    "defaultMessage": "‮ᗡǝʅıʌǝɹıǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.attempts": {
+    "defaultMessage": "‮∀ʇʇǝɯdʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.attempts.count": {
+    "defaultMessage": "‮{count,plural,one{# ʇıɯǝ} other{# ʇıɯǝs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.created_at": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.description": {
+    "defaultMessage": "‮⊥ɥǝ ɯǝssɐƃǝs oɟ ʇɥǝ ʅɐsʇ 14 pɐʎs, uǝʍǝsʇ ɟıɹsʇ. ∀ ɟɐıʅǝp ouǝ ıs ɹǝʇɹıǝp 8 ʇıɯǝs oʌǝɹ ɐqonʇ 27 ɥonɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.empty": {
+    "defaultMessage": "‮No pǝʅıʌǝɹıǝs ıu ʇɥǝ ʅɐsʇ 14 pɐʎs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.last_attempt": {
+    "defaultMessage": "‮⅂ɐsʇ ɐʇʇǝɯdʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.message_id": {
+    "defaultMessage": "‮Wǝssɐƃǝ Iᗡ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.outcome.connection_error": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔouuǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.outcome.forbidden_destination": {
+    "defaultMessage": "‮ᗡǝsʇıuɐʇıou uoʇ ɐʅʅoʍǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.outcome.http_error": {
+    "defaultMessage": "‮Ǝɹɹoɹ ɐusʍǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.outcome.succeeded": {
+    "defaultMessage": "‮Snɔɔǝǝpǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.outcome.timeout": {
+    "defaultMessage": "‮No ɐusʍǝɹ ıu ʇıɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.redeliver": {
+    "defaultMessage": "‮Sǝup ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.redeliver_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sǝup ʇɥǝ pǝʅıʌǝɹʎ ɐƃɐıu: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.redeliver_of": {
+    "defaultMessage": "‮Sǝup {event} {id} ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.redelivered": {
+    "defaultMessage": "‮⊥ɥǝ pǝʅıʌǝɹʎ ıs ou ıʇs ʍɐʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.status": {
+    "defaultMessage": "‮ᴚǝsnʅʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.status.failing": {
+    "defaultMessage": "‮Ⅎɐıʅıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.status.pending": {
+    "defaultMessage": "‮Noʇ sǝuʇ ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.status.succeeded": {
+    "defaultMessage": "‮Snɔɔǝǝpǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.status_code": {
+    "defaultMessage": "‮H⊥⊥Ԁ {code}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries.title": {
+    "defaultMessage": "‮ᗡǝʅıʌǝɹıǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.deliveries_of": {
+    "defaultMessage": "‮ᗡǝʅıʌǝɹıǝs oɟ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.description": {
+    "defaultMessage": "‮ᗡǝsɔɹıdʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.description.description": {
+    "defaultMessage": "‮Mɥɐʇ ʇɥǝ ʍǝqɥooʞ ıs ɟoɹ, nd ʇo {max} ɔɥɐɹɐɔʇǝɹs. ⅂ısʇs ɐup ʇɥǝ ɐnpıʇ ʅoƃ uɐɯǝ ıʇ qʎ ʇɥıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.details.title": {
+    "defaultMessage": "‮Sǝʇʇıuƃs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.disable": {
+    "defaultMessage": "‮ᗡısɐqʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.disable_webhook": {
+    "defaultMessage": "‮ᗡısɐqʅǝ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.disabled_status": {
+    "defaultMessage": "‮{name} ıs pısɐqʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.edit": {
+    "defaultMessage": "‮Ǝpıʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.edit.close": {
+    "defaultMessage": "‮Ↄʅosǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.edit.title": {
+    "defaultMessage": "‮Ǝpıʇ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.edit_webhook": {
+    "defaultMessage": "‮Ǝpıʇ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.empty": {
+    "defaultMessage": "‮No ʍǝqɥooʞs ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.empty.description": {
+    "defaultMessage": "‮∀ ʍǝqɥooʞ sǝups ʇɥǝ ǝʌǝuʇs ʎon ɔɥoosǝ ʇo ɐ ∩ᴚ⅂, snɔɥ ɐs ɐ ɔɥɐʇ oɹ ɐu ɐnʇoɯɐʇıou ʇooʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.enable": {
+    "defaultMessage": "‮Ǝuɐqʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.enable_webhook": {
+    "defaultMessage": "‮Ǝuɐqʅǝ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.enabled_status": {
+    "defaultMessage": "‮{name} ıs ǝuɐqʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.account_created": {
+    "defaultMessage": "‮∀u ɐɔɔonuʇ ıs ɔɹǝɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.account_updated": {
+    "defaultMessage": "‮∀ dɹoɟıʅǝ ıs ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.appeal_created": {
+    "defaultMessage": "‮∀u ɐɔʇıou ıs ɐddǝɐʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.custom_emoji_created": {
+    "defaultMessage": "‮∀ ɔnsʇoɯ ǝɯoɾı ıs ɐppǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.custom_emoji_deleted": {
+    "defaultMessage": "‮∀ ɔnsʇoɯ ǝɯoɾı ıs pǝʅǝʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.custom_emoji_updated": {
+    "defaultMessage": "‮∀ ɔnsʇoɯ ǝɯoɾı ıs ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.domain_moderation_action_created": {
+    "defaultMessage": "‮∀ poɯɐıu ɐɔʇıou ıs ʇɐʞǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.domain_moderation_action_lifted": {
+    "defaultMessage": "‮∀ poɯɐıu ɐɔʇıou ıs ʅıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.moderation_action_created": {
+    "defaultMessage": "‮∀u ɐɔɔonuʇ ɐɔʇıou ıs ʇɐʞǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.moderation_action_lifted": {
+    "defaultMessage": "‮∀u ɐɔɔonuʇ ɐɔʇıou ıs ʅıɟʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.registration_pending": {
+    "defaultMessage": "‮∀ ɹǝƃısʇɹɐʇıou ɐʍɐıʇs ɐddɹoʌɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.report_created": {
+    "defaultMessage": "‮∀ ɹǝdoɹʇ ıs ɟıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.report_reopened": {
+    "defaultMessage": "‮∀ ɹǝdoɹʇ ıs ɹǝodǝuǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.report_resolved": {
+    "defaultMessage": "‮∀ ɹǝdoɹʇ ıs ɹǝsoʅʌǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.status_created": {
+    "defaultMessage": "‮∀ dnqʅıɔ dosʇ ıs dnqʅısɥǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.event.webhook_test": {
+    "defaultMessage": "‮⊥ǝsʇ ɯǝssɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.events": {
+    "defaultMessage": "‮Ǝʌǝuʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.events.description": {
+    "defaultMessage": "‮Ↄɥoosǝ ɐʇ ʅǝɐsʇ ouǝ. Ǝɐɔɥ ǝʌǝuʇ uǝǝps ʇɥǝ dǝɹɯıssıou oɟ ıʇs ʞıup qǝsıpǝs ɯɐuɐƃıuƃ ʍǝqɥooʞs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.events.separator": {
+    "defaultMessage": "‮, ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.failure": {
+    "defaultMessage": "‮Ⅎɐıʅnɹǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.failure.count": {
+    "defaultMessage": "‮{count,plural,one{# ɟɐıʅǝp ɐʇʇǝɯdʇ} other{# ɟɐıʅǝp ɐʇʇǝɯdʇs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.failure.since": {
+    "defaultMessage": "‮sıuɔǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.list.title": {
+    "defaultMessage": "‮Mǝqɥooʞs oɟ ʇɥıs sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.missing_permissions": {
+    "defaultMessage": "‮Wıssıuƃ dǝɹɯıssıous: {permissions}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.new.title": {
+    "defaultMessage": "‮Sǝʇ nd ɐ ʍǝqɥooʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.reason.admin": {
+    "defaultMessage": "‮qʎ ɐ sʇɐɟɟ ɯǝɯqǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.reason.failing": {
+    "defaultMessage": "‮(ʇɥǝ pǝʅıʌǝɹıǝs ʞǝdʇ ɟɐıʅıuƃ)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.reason.gone": {
+    "defaultMessage": "‮(ʇɥǝ ǝupdoıuʇ ɐusʍǝɹǝp ʇɥɐʇ ıʇ ıs ƃouǝ)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.rotate": {
+    "defaultMessage": "‮Nǝʍ sǝɔɹǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.rotate.description": {
+    "defaultMessage": "‮⊥ɥǝ uǝʍ sǝɔɹǝʇ sıƃus ǝʌǝɹʎ ɯǝssɐƃǝ ɟɹoɯ uoʍ ou. Ⅎoɹ 24 ɥonɹs ʇɥǝ oʅp sǝɔɹǝʇ sıƃus ʇɥǝɯ ʇoo, so ʇɥɐʇ ʇɥǝ ɹǝɔǝıʌǝɹ ɔɐu sʍıʇɔɥ ʇo ʇɥǝ uǝʍ ouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.rotate.title": {
+    "defaultMessage": "‮Wɐʞǝ ɐ uǝʍ sǝɔɹǝʇ ɟoɹ {name}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.rotate_webhook": {
+    "defaultMessage": "‮Nǝʍ sǝɔɹǝʇ ɟoɹ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.rotated": {
+    "defaultMessage": "‮{name} ɥɐs ɐ uǝʍ sǝɔɹǝʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.save": {
+    "defaultMessage": "‮Sɐʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.save_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sɐʌǝ ʇɥǝ ʍǝqɥooʞ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.secret.copied": {
+    "defaultMessage": "‮⊥ɥǝ sǝɔɹǝʇ ıs ɔodıǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.secret.copy": {
+    "defaultMessage": "‮Ↄodʎ ʇɥǝ sǝɔɹǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.secret.copy_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔodʎ ʇɥǝ sǝɔɹǝʇ. Sǝʅǝɔʇ ıʇ ɐup ɔodʎ ıʇ ʎonɹsǝʅɟ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.secret.notice": {
+    "defaultMessage": "‮Ↄodʎ ıʇ ıuʇo ʇɥǝ ɹǝɔǝıʌǝɹ uoʍ: ıʇ ıs uoʇ sɥoʍu ɐƃɐıu. ⊥ɥǝ ɹǝɔǝıʌǝɹ ɔɥǝɔʞs ʇɥǝ sıƃuɐʇnɹǝ oɟ ǝɐɔɥ ɯǝssɐƃǝ ʍıʇɥ ıʇ (Sʇɐupɐɹp Mǝqɥooʞs).‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.secret.title": {
+    "defaultMessage": "‮Sǝɔɹǝʇ oɟ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.state.disabled": {
+    "defaultMessage": "‮ᗡısɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.state.enabled": {
+    "defaultMessage": "‮Ǝuɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.submit": {
+    "defaultMessage": "‮Sǝʇ nd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.summary": {
+    "defaultMessage": "‮Sǝup ʍɥɐʇ ɥɐddǝus ou ʇɥıs sǝɹʌǝɹ ʇo oʇɥǝɹ sǝɹʌıɔǝs, sıƃuǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.test": {
+    "defaultMessage": "‮Sǝup ɐ ʇǝsʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.test_webhook": {
+    "defaultMessage": "‮Sǝup ɐ ʇǝsʇ ʇo {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.tested": {
+    "defaultMessage": "‮∀ ʇǝsʇ ɯǝssɐƃǝ ʇo {name} ıs ou ıʇs ʍɐʎ. Iʇs pǝʅıʌǝɹıǝs sɥoʍ ɥoʍ ıʇ ʍǝuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.title": {
+    "defaultMessage": "‮Mǝqɥooʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.updated": {
+    "defaultMessage": "‮{name} ıs sɐʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.updated_at": {
+    "defaultMessage": "‮Ↄɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.url": {
+    "defaultMessage": "‮∩ᴚ⅂‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.webhooks.url.description": {
+    "defaultMessage": "‮Mɥǝɹǝ ʇɥǝ ɯǝssɐƃǝs ɐɹǝ dosʇǝp, ɐu ɥʇʇds ∩ᴚ⅂. ∀ pǝsʇıuɐʇıou ou ʇɥıs sǝɹʌǝɹ's oʍu uǝʇʍoɹʞ ʍoɹʞs ouʅʎ ʍɥǝu ʇɥǝ odǝɹɐʇoɹ ɐʅʅoʍs ıʇ ıu ʇɥǝ ɔouɟıƃnɹɐʇıou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "api.error.network": {
     "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐɔɥ ʇɥǝ sǝɹʌǝɹ. Ↄɥǝɔʞ ʎonɹ ɔouuǝɔʇıou ɐup ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4439,6 +4875,10 @@
     "defaultMessage": "‮Odǝu ʇɥǝ ɹǝdoɹʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.link.webhooks": {
+    "defaultMessage": "‮Odǝu ʇɥǝ ʍǝqɥooʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.load_more": {
     "defaultMessage": "‮⅂oɐp ɯoɹǝ uoʇıɟıɔɐʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4501,6 +4941,10 @@
   },
   "notifications.type.admin_sign_up": {
     "defaultMessage": "‮{name} sıƃuǝp nd ɐup ɐʍɐıʇs ɐddɹoʌɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "notifications.type.admin_webhook_disabled": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ pısɐqʅǝp ɐ ʍǝqɥooʞ ʇɥɐʇ ʞǝdʇ ɟɐıʅıuƃ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "notifications.type.appeal_decided": {

@@ -465,6 +465,14 @@ var schema = []field{
 		set: func(c *Config, v string) { c.HTTPAllowPrivateNetworks = v == "true" },
 	},
 	{
+		key:   "webhook_allowed_destinations",
+		doc:   "Destinations on loopback or a private network that the instance's webhooks may reach (ADR-0060), such as an automation tool on the same host or in the same VPC: comma-separated host names, IP addresses, and CIDRs such as `n8n.internal, 10.0.0.0/8`. The SSRF guard of outbound HTTP refuses them otherwise; for these destinations alone, and for the webhooks alone, it also allows plain `http` and any port. A host name is allowed whatever it resolves to; an address range allows the URLs that name an address in it and the host names that resolve into it only when they are listed too. Only the operator can change it: the administrators of the web client cannot reach an internal network on their own. Empty allows none.",
+		check: checkWebhookDestinations,
+		set: func(c *Config, v string) {
+			c.WebhookAllowedHosts, c.WebhookAllowedPrefixes = parseWebhookDestinations(v)
+		},
+	},
+	{
 		key:   "remote_status_retention",
 		doc:   "How long a remote post is kept after its publication when nothing on this instance refers to it (a local reply, boost, favourite, bookmark, notification, or a thread with a local post); the hourly purge then deletes it (ADR-0034, FR-803). A Go duration such as `2160h` (90 days).",
 		def:   "2160h",
@@ -805,4 +813,32 @@ func parseTrustedProxies(v string) []netip.Prefix {
 		ps = append(ps, pfx)
 	}
 	return ps
+}
+
+// checkWebhookDestinations accepts comma-separated host names, IP addresses, and CIDRs.
+func checkWebhookDestinations(v string) error {
+	for i, d := range strings.Split(v, ",") {
+		d = strings.TrimSpace(d)
+		if _, err := parseProxy(d); err == nil {
+			continue
+		}
+		if d == "" || checkHostName(d) != nil {
+			return fmt.Errorf("entry #%d %q must be a lower-case host name, an IP address, or a CIDR such as 10.0.0.0/8", i+1, d)
+		}
+	}
+	return nil
+}
+
+// parseWebhookDestinations splits a value that checkWebhookDestinations accepted into host names
+// and address ranges.
+func parseWebhookDestinations(v string) (hosts []string, prefixes []netip.Prefix) {
+	for d := range strings.SplitSeq(v, ",") {
+		d = strings.TrimSpace(d)
+		if p, err := parseProxy(d); err == nil {
+			prefixes = append(prefixes, p)
+			continue
+		}
+		hosts = append(hosts, strings.TrimSuffix(d, "."))
+	}
+	return hosts, prefixes
 }

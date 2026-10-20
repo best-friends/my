@@ -24,13 +24,31 @@ const EventRegistrationPending = "identity.registration_pending"
 // (FR-002). It is emitted in the sign-up's transaction.
 type RegistrationPending struct {
 	UserID string
-	// AccountID is the user's local account.
+	// AccountID is the user's local account, and Username its username.
 	AccountID   string
+	Username    string
 	SubmittedAt time.Time
 }
 
 // EventType implements uow.Event.
 func (RegistrationPending) EventType() string { return EventRegistrationPending }
+
+// EventRegistrationApproved follows the approval of a registration: at the sign-up, when the
+// registration needs no moderator, or by a moderator's decision.
+const EventRegistrationApproved = "identity.registration_approved"
+
+// RegistrationApproved carries a user whose registration was approved, which makes the local
+// account usable. It is emitted in the transaction of the approval.
+type RegistrationApproved struct {
+	UserID string
+	// AccountID is the user's local account, and Username its username.
+	AccountID  string
+	Username   string
+	ApprovedAt time.Time
+}
+
+// EventType implements uow.Event.
+func (RegistrationApproved) EventType() string { return EventRegistrationApproved }
 
 // PermissionHolder is a user whose current roles grant a permission.
 type PermissionHolder struct {

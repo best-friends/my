@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the server administration feature (web-client.md §7): the dead jobs, the settings, the rules, the
-// server's texts and the custom emoji, none by default. The default viewer has no permissions, so the screens' tests start with
+// server's texts, the custom emoji and the webhooks, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";
@@ -28,6 +28,38 @@ export function adminCustomEmojiFixture(id: string, shortcode: string, overrides
     ...overrides,
   };
 }
+
+/** A webhook as the admin API answers it, set up at 2026-10-20T00:00:00Z and enabled, with `overrides`. */
+export function webhookFixture(id: string, overrides: Partial<Schemas["AdminWebhook"]> = {}): Schemas["AdminWebhook"] {
+  return {
+    id,
+    url: "https://hooks.example/in",
+    description: "Chat",
+    events: ["report.created"],
+    state: "enabled",
+    state_reason: "admin",
+    state_changed_at: "2026-10-20T00:00:00Z",
+    created_at: "2026-10-20T00:00:00Z",
+    updated_at: "2026-10-20T00:00:00Z",
+    ...overrides,
+  };
+}
+
+/** A delivery of a webhook as the admin API answers it, made at 2026-10-20T01:00:00Z, with `overrides`. */
+export function webhookDeliveryFixture(id: string, overrides: Partial<Schemas["AdminWebhookDelivery"]> = {}): Schemas["AdminWebhookDelivery"] {
+  return {
+    id,
+    message_id: `0199f0e0-0000-7000-8000-${id.padStart(12, "0")}`,
+    event_type: "report.created",
+    status: "pending",
+    attempts: 0,
+    created_at: "2026-10-20T01:00:00Z",
+    ...overrides,
+  };
+}
+
+/** The secret the default handlers give a new webhook and a rotation. */
+export const webhookSecret = "whsec_c2VjcmV0c2VjcmV0c2VjcmV0c2VjcmV0c2VjcmU=";
 
 /** The instance settings of the form of the server settings screen, at their defaults (internal/domain/instance, setting.go). */
 const settingDefaults: readonly Omit<Schemas["AdminSetting"], "value" | "stored">[] = [
@@ -70,6 +102,9 @@ export function ruleFixture(id: string, position: number, overrides: Partial<Sch
 
 /** The ID the default POST /admin/rules handler gives a new rule. */
 const createdRuleId = "0199f0e0-0000-7000-8000-0000000000f1";
+
+/** The ID the default POST /admin/webhooks handler gives a new webhook. */
+const createdWebhookId = "0199f0e0-0000-7000-8000-0000000000b1";
 
 /** The ID the default POST /admin/custom_emojis handler gives a new emoji. */
 const createdCustomEmojiId = "0199f0e0-0000-7000-8000-00000000e001";
@@ -131,5 +166,33 @@ export const handlers = [
   http.delete(`${apiBase}/admin/custom_emojis/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   http.put(`${apiBase}/admin/custom_emojis/:id/image`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(adminCustomEmojiFixture(String(params["id"]), "blobcat", { updated_at: "2026-10-21T00:00:00Z" }))),
+  ),
+  // operationIds listAdminWebhooks, createWebhook, getAdminWebhook, updateWebhook, deleteWebhook, enableWebhook,
+  // disableWebhook, rotateWebhookSecret, testWebhook, listWebhookDeliveries, redeliverWebhookDelivery: no webhooks
+  // and no deliveries; a new or changed webhook is answered as sent.
+  http.get(`${apiBase}/admin/webhooks`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminWebhookList"]))),
+  http.post(`${apiBase}/admin/webhooks`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["CreateWebhookRequest"];
+    return withViewer(request, () => HttpResponse.json({ webhook: webhookFixture(createdWebhookId, body), secret: webhookSecret } satisfies Schemas["AdminWebhookCreated"]));
+  }),
+  http.get(`${apiBase}/admin/webhooks/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(webhookFixture(String(params["id"]))))),
+  http.patch(`${apiBase}/admin/webhooks/:id`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["UpdateWebhookRequest"];
+    return withViewer(request, () => HttpResponse.json(webhookFixture(String(params["id"]), body)));
+  }),
+  http.delete(`${apiBase}/admin/webhooks/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.post(`${apiBase}/admin/webhooks/:id/enable`, ({ request, params }) => withViewer(request, () => HttpResponse.json(webhookFixture(String(params["id"]))))),
+  http.post(`${apiBase}/admin/webhooks/:id/disable`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(webhookFixture(String(params["id"]), { state: "disabled" }))),
+  ),
+  http.post(`${apiBase}/admin/webhooks/:id/rotate_secret`, ({ request }) => withViewer(request, () => HttpResponse.json({ secret: webhookSecret } satisfies Schemas["AdminWebhookSecret"]))),
+  http.post(`${apiBase}/admin/webhooks/:id/test`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json(webhookDeliveryFixture("1", { event_type: "webhook.test" }))),
+  ),
+  http.get(`${apiBase}/admin/webhooks/:id/deliveries`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminWebhookDeliveryPage"])),
+  ),
+  http.post(`${apiBase}/admin/webhooks/:id/deliveries/:delivery_id/redeliver`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(webhookDeliveryFixture(String(params["delivery_id"])))),
   ),
 ];
