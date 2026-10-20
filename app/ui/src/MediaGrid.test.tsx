@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ariaSnapshot } from "../test/aria-snapshot";
@@ -42,5 +42,25 @@ describe("MediaGrid", () => {
     await user.keyboard(" ");
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(onRevealedChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it("covers sensitive media with their blur until the picture has loaded", async () => {
+    const user = userEvent.setup();
+    const blurred: readonly MediaItem[] = [
+      { id: "a", src: "/a.png", alt: "A cat on a sofa", blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj" },
+      { id: "b", src: "/b.png", alt: "A dog", blurhash: "not a blurhash" },
+      { id: "c", src: "/c.png", alt: "A bird" },
+    ];
+    const { container } = render(<MediaGrid items={blurred} sensitive noDescriptionLabel="No description" revealLabel="Show sensitive media" />);
+    // Only a valid blurhash draws a blur; the other cells keep their plain surface. The blur is decorative.
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- a decorative canvas has no role.
+    const blurs = () => container.querySelectorAll("canvas");
+    expect(blurs()).toHaveLength(1);
+    expect(blurs()[0]).toHaveAttribute("aria-hidden", "true");
+
+    await user.click(screen.getByRole("button", { name: "Show sensitive media" }));
+    expect(blurs()).toHaveLength(1);
+    fireEvent.load(screen.getByRole("img", { name: "A cat on a sofa" }));
+    expect(blurs()).toHaveLength(0);
   });
 });

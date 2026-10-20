@@ -492,6 +492,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。
   アップロードの画像・アバター・ヘッダーは `variants` を `@my/ui` の `Picture`（`lib/images` の `imageSources`）に渡し、表示する大きさに合う版をブラウザーが `srcset` / `sizes` で選ぶ。
   アニメーションの動く版は `<source media="(prefers-reduced-motion: no-preference)">` にだけ置き、設定「アニメーションを自動で再生する」（このブラウザーの localStorage `my:display:autoplay`、`lib/autoplay`、既定はオン）がオフなら、ポインタを重ねるか触れている間だけ動く版にする（ADR-0054 §3）。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
+  センシティブな画像を隠している間と、画像の読み込み中は、添付の `blurhash` のぼかし（`@my/ui` の `Blurhash`。自前の復号器が 32 × 32 ピクセルに復号して `<canvas>` に描き、飾りとして `aria-hidden`）をそのマスに出し、読み込み終えたら外す。`blurhash` のない添付と復号できないものは、マスの地の面（`bg-surface-sunken`）が代わりになる。
 - **楽観的更新**（S8）: 同じ投稿がタイムラインのページ・ブースト・スレッド・投稿の query に同時にあるので、`api/cache.ts` がキャッシュの答えを形（`Status`・`items`・`pages`・`ancestors` / `descendants`）で見分け、すべての写しを書き換える。
   トグルは押した時点で状態と数を変え、失敗したらその 1 回分だけ戻してトーストで理由を知らせる。同じ投稿の同じ操作は TanStack Query の mutation の `scope` で 1 つずつ順に送り、最後に押したものが残る。
   成功の応答の数（他の人の操作を含む）は、その操作の最後の要求の応答からだけ取り込む。結果は `useAnnouncer` で知らせる。

@@ -52,6 +52,7 @@ export { Badge, type BadgeProps } from "./Badge";
 export { DescriptionItem, DescriptionList, type DescriptionItemProps, type DescriptionListProps } from "./DescriptionList";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
 export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
+export { Blurhash, type BlurhashProps } from "./Blurhash";
 export { AutoplayContext, type ImageCandidate, type ImageSources, Picture, type PictureProps } from "./Picture";
 export { QrCode, type QrCodeProps } from "./QrCode";
 export { RegionError, type RegionErrorProps } from "./RegionError";
