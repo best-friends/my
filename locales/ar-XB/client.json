@@ -3543,6 +3543,10 @@
     "defaultMessage": "‮∀ɔɔonuʇs ɐup ɹǝƃısʇɹɐʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "‮∀uuonuɔǝɯǝuʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "‮Ↄnsʇoɯ ǝɯoɾı‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -3231,6 +3231,10 @@
     "defaultMessage": "アカウントと登録",
     "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
   },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "お知らせ",
+    "description": "Name of the permission manage_announcements: the server's announcements to every local user."
+  },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "カスタム絵文字",
     "description": "Name of the permission manage_custom_emojis: the custom emoji."

@@ -6,6 +6,7 @@ import { useMutation, useMutationState, useQuery, useQueryClient } from "@tansta
 import { useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
+import { shellQueryRetry } from "../../../lib/query";
 import { type Announcement, announcementsQueryOptions, cacheAnnouncement, markAnnouncementReadMutation } from "../api/announcements";
 
 export type Announcements = {
@@ -25,7 +26,8 @@ export function useAnnouncements(): Announcements {
   const api = useApi();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | undefined>(undefined);
-  const { data } = useQuery(announcementsQueryOptions(api));
+  // Like the shell's queries: a 4xx is not tried again, anything else once, so a failure does not linger.
+  const { data } = useQuery({ ...announcementsQueryOptions(api), retry: shellQueryRetry });
   const options = markAnnouncementReadMutation(api);
   const mark = useMutation({
     ...options,

@@ -1774,6 +1774,8 @@ export interface MessageArgs {
   "client:admin.roles.outranked": { role: string };
   /** Accounts and registrations */
   "client:admin.roles.permission.manage_accounts": {};
+  /** Announcements */
+  "client:admin.roles.permission.manage_announcements": {};
   /** Custom emoji */
   "client:admin.roles.permission.manage_custom_emojis": {};
   /** Other servers */

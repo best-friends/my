@@ -3231,6 +3231,10 @@
     "defaultMessage": "Accounts and registrations",
     "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
   },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "Announcements",
+    "description": "Name of the permission manage_announcements: the server's announcements to every local user."
+  },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "Custom emoji",
     "description": "Name of the permission manage_custom_emojis: the custom emoji."

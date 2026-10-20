@@ -300,11 +300,11 @@ func (s *Service) setAnnouncementState(ctx context.Context, id, byUserID string,
 		if err != nil {
 			return err
 		}
-		switch {
-		case cur.State == state:
+		switch cur.State {
+		case state:
 			out = cur
 			return nil // nothing changes
-		case cur.State == instance.AnnouncementWithdrawn:
+		case instance.AnnouncementWithdrawn:
 			return fmt.Errorf("change announcement %s: %w", id, instance.ErrAnnouncementWithdrawn)
 		}
 		if err := s.changeState(ctx, tx, change, withLabel(audit, instance.AnnouncementLabel(cur.Revision.Body))); err != nil {
