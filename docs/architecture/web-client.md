@@ -541,10 +541,13 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   解決できないハンドル（404）はサーバーもテキストのままにするので示さない。解決の上限に達した（429）ときも示さない。
   言語の選択肢の名前は `Intl.DisplayNames` で表示中のロケールにする（カタログに言語名を持たない）。
 - **文字数**: `GET /instance` の `limits.max_post_characters` から CW の文字数を引いたものを本文の上限にし、`TextArea` の文字数カウンタで示す。数え方はサーバーと同じコードポイント。上限を超えると送信できない。
-- **画像**: 1 投稿 4 枚まで、JPEG・PNG・GIF・WebP。選んだファイルは `prepareImage` が `createImageBitmap`（EXIF の向きを適用）と `OffscreenCanvas` で 3840 × 2160 ピクセルの面積以内に縮め、描き直して EXIF などのメタデータを捨ててから送る。
-  GIF はアニメーションを保つためそのまま送る（GIF に EXIF はなく、残りはサーバーが除く）。`POST /media`（202）の後は、`GET /media/{id}` の query が `processing` の間だけポーリングする。
-  どの画像にも代替テキストの入力欄を必ず出し（Y9）、本文と一緒に `POST /statuses` の `media[].description` で送る。サーバーが代替テキストを必須にしている（`GET /instance` の `limits.require_media_description`）ときは、説明の入力欄を必須にし、空か空白だけの欄があればブラウザの制約検証で送らずにその欄へフォーカスを移す（サーバーも 422 で拒む）。
-  そうでなく、利用者の設定 `require_media_description` が真で説明のない画像があるときは、送る前に `alertdialog` で確かめる。
+- **画像・動画・音声**: 1 投稿 4 件まで。画像は JPEG・PNG・GIF・WebP、動画は MP4・QuickTime・WebM、音声は MP3・Ogg・M4A・WebM（申告された型で選び、ほかは知らせて外す）。選んだファイルは `prepareMedia` が用意する。
+  画像は `prepareImage` が `createImageBitmap`（EXIF の向きを適用）と `OffscreenCanvas` で 3840 × 2160 ピクセルの面積以内に縮め、描き直して EXIF などのメタデータを捨ててから送る。
+  GIF はアニメーションを保つためそのまま送る（GIF に EXIF はなく、残りはサーバーが除く）。
+  動画と音声はそのまま送り、メタデータはサーバーが除く（ADR-0054 §6）。動画は文書に入れない `<video>` で 0.5 秒（短ければ半分）の位置のフレームを `OffscreenCanvas` に描き、1920 × 1080 ピクセルの面積以内の JPEG をポスター（`thumbnail`）として一緒に送る。ブラウザーが復号できない動画はポスターなしで送る。
+  `POST /media`（202）の後は、`GET /media/{id}` の query が `processing` の間だけポーリングする。
+  どの添付にも代替テキストの入力欄を必ず出し（Y9）、本文と一緒に `POST /statuses` の `media[].description` で送る。サーバーが代替テキストを必須にしている（`GET /instance` の `limits.require_media_description`）ときは、説明の入力欄を必須にし、空か空白だけの欄があればブラウザの制約検証で送らずにその欄へフォーカスを移す（サーバーも 422 で拒む）。
+  そうでなく、利用者の設定 `require_media_description` が真で説明のない添付があるときは、送る前に `alertdialog` で確かめる。
 - **送信**: 送信は下書きを「送信中」の一覧（outbox）に移してフォームを空にし、一覧が送った内容を表示する（S8）。成功したら一覧から消し、トーストで知らせ、タイムラインの query を無効にする。
   失敗したら、フォームが空ならそこへ下書きを戻し、空でなければ一覧に残して「もう一度送る」「編集する」「破棄する」を出す。一覧も保存するので、送信中にリロードしても失わない。
   1 つの下書きの試行はすべて同じ `Idempotency-Key` を送り、応答が届かなかった再送で二重に投稿しない。下書きを編集するとキーを作り直す。
@@ -592,6 +595,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。
   アップロードの画像・アバター・ヘッダーは `variants` を `@my/ui` の `Picture`（`lib/images` の `imageSources`）に渡し、表示する大きさに合う版をブラウザーが `srcset` / `sizes` で選ぶ。
   アニメーションの動く版は `<source media="(prefers-reduced-motion: no-preference)">` にだけ置き、設定「アニメーションを自動で再生する」（このブラウザーの localStorage `my:display:autoplay`、`lib/autoplay`、既定はオン）がオフなら、ポインタを重ねるか触れている間だけ動く版にする（ADR-0054 §3）。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
+  動画と音声（`type` が `video` / `audio` / `gifv`）は `url` を `MediaGrid` のマスで再生する（`MediaItem` の `playback`）。動画は `<video>` にアップロードのポスターの `large`（リモートの添付はポスターなし）を `poster` に、音声はポスターをマスの背景にして下端に `<audio>` を置く。
+  どちらもブラウザーの操作部（`controls`）を持ち、自分では再生を始めない。名前は説明（なければ「説明なし」とバッジ）で、字幕のファイルはない（ADR-0054 は字幕を扱わない）ので、内容は説明が伝える。
+  `gifv`（GIF の代わりの音のない短い動画）は、設定「アニメーションを自動で再生する」がオンで `prefers-reduced-motion: reduce` でない間だけ、操作部なしで音を消して繰り返し再生し、それ以外は操作部を出して止めておく。
   センシティブな画像を隠している間と、画像の読み込み中は、添付の `blurhash` のぼかし（`@my/ui` の `Blurhash`。自前の復号器が 32 × 32 ピクセルに復号して `<canvas>` に描き、飾りとして `aria-hidden`）をそのマスに出し、読み込み終えたら外す。`blurhash` のない添付と復号できないものは、マスの地の面（`bg-surface-sunken`）が代わりになる。
 - **楽観的更新**（S8）: 同じ投稿がタイムラインのページ・ブースト・スレッド・投稿の query に同時にあるので、`api/cache.ts` がキャッシュの答えを形（`Status`・`items`・`pages`・`ancestors` / `descendants`）で見分け、すべての写しを書き換える。
   トグルは押した時点で状態と数を変え、失敗したらその 1 回分だけ戻してトーストで理由を知らせる。同じ投稿の同じ操作は TanStack Query の mutation の `scope` で 1 つずつ順に送り、最後に押したものが残る。
@@ -618,6 +624,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   `features/status/reactions.test.tsx` がリアクションの列・押して加わる / 外すこと・お気に入りとの入れ替え・ピッカー・失敗時の巻き戻し・付けた人の一覧を MSW で検査し、E2E（`e2e/reactions.spec.ts`）はリアクションの列・ピッカー・付けた人のダイアログの axe・横スクロールを検査する。
   `features/status/poll.test.tsx` が投票の選択・回答・結果・締め切り後・サインインしていないとき・ほかのサーバーの投票・断られた回答を MSW で検査し、E2E（`e2e/polls.spec.ts`）は選択肢と回答後の結果の axe・横スクロールを検査する。
   `features/status/pin.test.tsx` が固定と外すこと・上限の失敗・出す投稿の範囲・プロフィールの先頭と出すタブを MSW で検査し、E2E（`e2e/pins.spec.ts`）はプロフィールの先頭の固定された投稿の axe・横スクロールと、キーボードでメニューから固定するまでを検査する。
+  E2E（`e2e/media.spec.ts`）は、動画・音声のある投稿で、操作部があって自分では再生を始めないことと axe・横スクロールを検査する。
   E2E（`e2e/status.spec.ts`）は、サインイン済みの状態でスレッドの ARIA スナップショット・焦点の投稿が最初の画面に入ること・axe・横スクロール・失敗したお気に入りの巻き戻し・メニューと削除の確認を検査する。
 
 ## 14. 管理画面

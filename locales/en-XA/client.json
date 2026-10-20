@@ -5360,47 +5360,47 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.add": {
-    "defaultMessage": "[Ȧḓḓ īḿȧȧɠḗḗş]",
+    "defaultMessage": "[Ȧḓḓ īḿȧȧɠḗḗş, ṽīḓḗḗǿǿ, ǿǿř ȧȧŭŭḓīǿǿ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.count": {
-    "defaultMessage": "[{count,plural,one{# īḿȧȧɠḗḗ ȧȧŧŧȧȧƈħḗḗḓ} other{# īḿȧȧɠḗḗş ȧȧŧŧȧȧƈħḗḗḓ}}]",
+    "defaultMessage": "[{count,plural,one{# ƒīŀḗḗ ȧȧŧŧȧȧƈħḗḗḓ} other{# ƒīŀḗḗş ȧȧŧŧȧȧƈħḗḗḓ}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.hint": {
-    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ ŧħḗḗ īḿȧȧɠḗḗ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ īŧ.]",
+    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ īŧ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ǿǿř ħḗḗȧȧř īŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.label": {
-    "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ īḿȧȧɠḗḗ {position}]",
+    "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ȧȧŧŧȧȧƈħḿḗḗƞŧ {position}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.missing": {
-    "defaultMessage": "[Ȧḓḓ ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ŧħīş īḿȧȧɠḗḗ. Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ǿǿƞḗḗ ƒǿǿř ḗḗṽḗḗřẏ īḿȧȧɠḗḗ.]",
+    "defaultMessage": "[Ȧḓḓ ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ŧħīş ȧȧŧŧȧȧƈħḿḗḗƞŧ. Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ǿǿƞḗḗ ƒǿǿř ḗḗṽḗḗřẏ ȧȧŧŧȧȧƈħḿḗḗƞŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.required": {
-    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ ŧħḗḗ īḿȧȧɠḗḗ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ īŧ. Ẏǿǿŭŭř şḗḗŧŧīƞɠş ȧȧşķ ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ īḿȧȧɠḗḗ.]",
+    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ īŧ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ǿǿř ħḗḗȧȧř īŧ. Ẏǿǿŭŭř şḗḗŧŧīƞɠş ȧȧşķ ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ ȧȧŧŧȧȧƈħḿḗḗƞŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.server_required": {
-    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ ŧħḗḗ īḿȧȧɠḗḗ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ īŧ. Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ īḿȧȧɠḗḗ.]",
+    "defaultMessage": "[Ḓḗḗşƈřīƀḗḗ īŧ ƒǿǿř ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ǿǿř ħḗḗȧȧř īŧ. Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ ȧȧŧŧȧȧƈħḿḗḗƞŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.failed": {
-    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ȧȧŧŧȧȧƈħ ŧħḗḗ īḿȧȧɠḗḗ: {reason}]",
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ȧȧŧŧȧȧƈħ ŧħḗḗ ƒīŀḗḗ: {reason}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.failed_processing": {
-    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƥřǿǿƈḗḗşş ŧħīş īḿȧȧɠḗḗ.]",
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƥřǿǿƈḗḗşş ŧħīş ƒīŀḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.hint": {
-    "defaultMessage": "[Ŭƥ ŧǿǿ {max,plural,other{# īḿȧȧɠḗḗş}}: ĴƤḖƓ, ƤȠƓ, ƓĪƑ ǿǿř ẆḗḗƀƤ. Ŀǿǿƈȧȧŧīǿǿƞ ȧȧƞḓ ǿǿŧħḗḗř ḿḗḗŧȧȧḓȧȧŧȧȧ ȧȧřḗḗ řḗḗḿǿǿṽḗḗḓ ƀḗḗƒǿǿřḗḗ ŭŭƥŀǿǿȧȧḓ.]",
+    "defaultMessage": "[Ŭƥ ŧǿǿ {max,plural,other{# ƒīŀḗḗş}}: ĴƤḖƓ, ƤȠƓ, ƓĪƑ, ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗş, ḾƤ4 ǿǿř ẆḗḗƀḾ ṽīḓḗḗǿǿ, ǿǿř ḾƤ3, Ǿɠɠ, ǿǿř Ḿ4Ȧ ȧȧŭŭḓīǿǿ. Ŀǿǿƈȧȧŧīǿǿƞ ȧȧƞḓ ǿǿŧħḗḗř ḿḗḗŧȧȧḓȧȧŧȧȧ ȧȧřḗḗ řḗḗḿǿǿṽḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.list": {
-    "defaultMessage": "[Ȧŧŧȧȧƈħḗḗḓ īḿȧȧɠḗḗş]",
+    "defaultMessage": "[Ȧŧŧȧȧƈħḗḗḓ ḿḗḗḓīȧȧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.processing": {
@@ -5408,15 +5408,15 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.remove": {
-    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ īḿȧȧɠḗḗ {position}]",
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ȧȧŧŧȧȧƈħḿḗḗƞŧ {position}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.too_many": {
-    "defaultMessage": "[Ȧ ƥǿǿşŧ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ {max,plural,other{# īḿȧȧɠḗḗş}}. Ŧħḗḗ řḗḗşŧ ẇḗḗřḗḗ ƞǿǿŧ ȧȧḓḓḗḗḓ.]",
+    "defaultMessage": "[Ȧ ƥǿǿşŧ ƈȧȧƞ ħȧȧṽḗḗ ȧȧŧ ḿǿǿşŧ {max,plural,other{# ƒīŀḗḗş}}. Ŧħḗḗ řḗḗşŧ ẇḗḗřḗḗ ƞǿǿŧ ȧȧḓḓḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.unsupported": {
-    "defaultMessage": "[{name} īş ƞǿǿŧ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ.]",
+    "defaultMessage": "[{name} īş ƞǿǿŧ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ, ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ, ȧȧƞ ḾƤ4 ǿǿř ẆḗḗƀḾ ṽīḓḗḗǿǿ, ǿǿř ȧȧƞ ḾƤ3, Ǿɠɠ, ǿǿř Ḿ4Ȧ ȧȧŭŭḓīǿǿ ƒīŀḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.uploading": {

@@ -100,15 +100,15 @@ describe("editing a post", () => {
     await waitFor(() => {
       expect(text).toHaveFocus();
     });
-    expect(within(dialog).getByRole("textbox", { name: "Description of image 1" })).toHaveValue("A dog");
+    expect(within(dialog).getByRole("textbox", { name: "Description of attachment 1" })).toHaveValue("A dog");
     // The images stay: an edit changes their descriptions only.
-    expect(within(dialog).queryByRole("button", { name: /Remove image/ })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /Remove attachment/ })).not.toBeInTheDocument();
 
     await user.clear(text);
     await user.type(text, "My better words");
     await user.click(within(dialog).getByRole("button", { name: "Add a content warning" }));
     await user.type(within(dialog).getByRole("textbox", { name: "Content warning" }), "Dogs");
-    await user.type(within(dialog).getByRole("textbox", { name: "Description of image 1" }), " on a beach");
+    await user.type(within(dialog).getByRole("textbox", { name: "Description of attachment 1" }), " on a beach");
     await user.click(within(dialog).getByRole("checkbox", { name: "Hide the images until readers show them" }));
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
@@ -193,9 +193,9 @@ describe("editing a post", () => {
     const { user } = await renderApp({ path: "/local" });
 
     const dialog = await openEditor(user, "My first words");
-    const description = await within(dialog).findByRole("textbox", { name: "Description of image 1" });
+    const description = await within(dialog).findByRole("textbox", { name: "Description of attachment 1" });
     expect(description).toBeRequired();
-    expect(description).toHaveAccessibleDescription(/This server requires a description of every image\./);
+    expect(description).toHaveAccessibleDescription(/This server requires a description of every attachment\./);
     await user.clear(description);
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
