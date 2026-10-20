@@ -71,11 +71,11 @@ jobs:
             stream=true
           fi
           echo "contexts: ${contexts//$'\n'/ }"
-          for c in go ui; do
-            if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
-          done
-          # The images hold everything but the docs: any context other than docs runs the smoke test.
           {
+            for c in go ui; do
+              if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi
+            done
+            # The images hold everything but the docs: any context other than docs runs the smoke test.
             if grep -vx docs <<< "$contexts" | grep -q .; then echo smoke=true; else echo smoke=false; fi
             echo "postgres=$postgres"
             echo "stream=$stream"
@@ -168,7 +168,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           lookup-only: true
       - if: steps.lookup.outputs.cache-hit != 'true'
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       - name: Install the client and i18n tool packages
