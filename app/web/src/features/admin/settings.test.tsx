@@ -6,10 +6,9 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import { instanceFixture, type Schemas } from "../../test/fixtures";
-import { apiBase, signedInHandler } from "../../test/msw/http";
+import { apiBase, operatorHandler, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { operatorHandler } from "./test/handlers";
 
 beforeEach(() => {
   document.documentElement.lang = "en";

@@ -13,6 +13,7 @@ const alice = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -26,6 +27,7 @@ const bob = {
   display_name: "Bob",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@bob",
   locked: false,
   bot: false,
@@ -38,7 +40,7 @@ const postId = "0192f0c4-7a8e-7000-8000-0000000000b1";
 const post = {
   id: postId,
   uri: `https://my.example/users/bob/statuses/${postId}`,
-  url: `https://my.example/@bob/${postId}`,
+  url: `https://my.example/@bob/status/${postId}`,
   account: bob,
   content: "<p>@alice https://example.com/a/very/long/path/that/must/wrap/somewhere/before/it/scrolls/the/page/sideways</p>",
   spoiler_text: "",
@@ -49,9 +51,11 @@ const post = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
 };
 
 /** Newest first: a mention (unread), a boost of a post behind a content warning (unread), a follow (read). */
@@ -157,14 +161,14 @@ test.describe("notifications", () => {
                 - /url: /@bob
             - time
             - link:
-              - /url: /@bob/${postId}
+              - /url: /@bob/status/${postId}
           - article:
             - paragraph:
               - link:
                 - /url: /@bob
             - time
             - link:
-              - /url: /@bob/${postId}
+              - /url: /@bob/status/${postId}
           - article:
             - paragraph:
               - link:
@@ -238,7 +242,7 @@ test.describe("notifications", () => {
             - /url: /@carol
         - time
         - link:
-          - /url: /@bob/${postId}
+          - /url: /@bob/status/${postId}
     `);
     await expect(feed.getByRole("article").first()).toHaveAccessibleName(/1|١/);
     await expect.poll(() => server.updates).toEqual([newest]);

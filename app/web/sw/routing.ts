@@ -17,15 +17,17 @@ const passThroughPaths = [
   "/ap",
   "/media",
   "/uploads",
+  "/theme",
   "/manifest.webmanifest",
 ] as const;
 
 /**
  * - `navigation`: network only with a timeout, falling back to the precached shell;
  * - `media`: cache first, bounded;
+ * - `theme`: cache first, bounded: the instance theme's stylesheets (ADR-0059), whose URL names their revision;
  * - `network`: not answered by the worker at all (the client API, every non-GET, other origins).
  */
-export type Handling = "navigation" | "media" | "network";
+export type Handling = "navigation" | "media" | "theme" | "network";
 
 /** The parts of a fetch event's Request that decide its handling. */
 export type RequestFacts = {
@@ -47,6 +49,9 @@ export function classify(request: RequestFacts, origin: string): Handling {
   // video's range requests get partial responses, which a cache cannot replay. A request with credentials
   // in a header is never cached.
   if (underAny(url.pathname, ["/media"]) && request.destination === "image" && !request.authorized) return "media";
+  // The instance theme's stylesheet (ADR-0059): its content never changes, so the offline shell gets the theme
+  // it was last shown with.
+  if (underAny(url.pathname, ["/theme"]) && request.destination === "style" && !request.authorized) return "theme";
   return "network";
 }
 

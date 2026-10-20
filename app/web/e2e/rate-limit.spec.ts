@@ -44,6 +44,7 @@ const alice: Schemas["CredentialAccount"] = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -58,7 +59,7 @@ const alice: Schemas["CredentialAccount"] = {
 const post: Schemas["Status"] = {
   id: "0192f0c4-7a8e-7000-8000-0000000000c1",
   uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000c1",
-  url: "https://my.example/@alice/0192f0c4-7a8e-7000-8000-0000000000c1",
+  url: "https://my.example/@alice/status/0192f0c4-7a8e-7000-8000-0000000000c1",
   account: alice,
   content: "<p>A post on the local timeline.</p>",
   spoiler_text: "",
@@ -69,9 +70,11 @@ const post: Schemas["Status"] = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
 };
 
 const instance: Schemas["Instance"] = {

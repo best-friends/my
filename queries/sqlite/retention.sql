@@ -7,7 +7,8 @@
 -- ListRemoteStatusesToPurge returns, in ID order after the cursor @after and below @id_before,
 -- the remote statuses that are not deleted and were published before @any_before, or before
 -- @unreferenced_before while nothing local refers to them: a live local reply, a live local
--- status in their thread, a local boost that is not retracted, a favourite, a bookmark, or a pin.
+-- status in their thread, a local boost that is not retracted, a favourite, a reaction, a
+-- bookmark, or a pin.
 -- name: ListRemoteStatusesToPurge :many
 SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
   s.conversation_uri, s.published_at
@@ -27,6 +28,7 @@ WHERE s.id > CAST(sqlc.arg(after) AS TEXT) AND s.id < CAST(sqlc.arg(id_before) A
       SELECT 1 FROM boosts b WHERE b.status_id = s.id AND b.is_local = 1
         AND NOT EXISTS (SELECT 1 FROM boost_retractions br WHERE br.boost_id = b.id))
     AND NOT EXISTS (SELECT 1 FROM favourites f WHERE f.status_id = s.id)
+    AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.status_id = s.id)
     AND NOT EXISTS (SELECT 1 FROM bookmarks k WHERE k.status_id = s.id)
     AND NOT EXISTS (SELECT 1 FROM status_pins p WHERE p.status_id = s.id)))
 ORDER BY s.id
@@ -135,6 +137,12 @@ LIMIT sqlc.arg(batch_limit);
 
 -- name: PrunePastProfileFields :exec
 DELETE FROM account_profile_fields WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r
+  WHERE r.account_id = sqlc.arg(account_id)
+    AND r.id <> (SELECT h.revision_id FROM account_profile_heads h WHERE h.account_id = sqlc.arg(account_id)));
+
+-- name: PrunePastProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r
   WHERE r.account_id = sqlc.arg(account_id)
     AND r.id <> (SELECT h.revision_id FROM account_profile_heads h WHERE h.account_id = sqlc.arg(account_id)));

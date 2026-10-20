@@ -32,6 +32,7 @@ const alice: Account = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -50,6 +51,7 @@ const carol: Account = {
   display_name: "Carol",
   note: "<p>Painter on another server.</p>",
   fields: [],
+  emojis: [],
   url: `https://${host}/@carol`,
   locked: false,
   bot: false,
@@ -88,9 +90,11 @@ const post: Status = {
   media_attachments: [remoteMedia("d1", "A blue square on canvas"), remoteMedia("d2", undefined)],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
   favourited: false,
   boosted: false,
   bookmarked: false,
@@ -233,7 +237,7 @@ test.describe("a profile of another server whose recent posts are being fetched"
 test.describe("a post of another server", () => {
   test("has its link on its page, without axe violations or sideways scrolling", async ({ page, makeAxeBuilder }) => {
     await serveApi(page);
-    await page.goto(`/@${carol.acct}/${postId}`);
+    await page.goto(`/@${carol.acct}/status/${postId}`);
     const article = page.getByRole("main").getByRole("article");
     await expect(article).toBeVisible();
     await expect(article.getByRole("link", { name: message("status.original", host) })).toHaveAttribute("href", post.url ?? "");

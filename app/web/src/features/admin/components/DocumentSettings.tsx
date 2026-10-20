@@ -8,7 +8,7 @@ import { useT } from "../../../lib/i18n";
 import { useUnsavedChangesGuard } from "../../settings";
 import { documentTextLimit } from "../api/documents";
 import { type DocumentEditor, useDocumentSettings } from "../hooks/useDocumentSettings";
-import { DateTime, DetailSection, RequirePermission } from "./parts";
+import { DateTime, DetailSection, RequirePermission } from "../../moderation";
 
 export type DocumentSettingsProps = {
   /** The language from the URL; undefined chooses the display language. */

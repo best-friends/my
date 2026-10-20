@@ -121,7 +121,11 @@ func fedBuildsTheNote(t *testing.T, e *fedEnv) {
 		!reflect.DeepEqual(note["contentMap"], map[string]any{"en": "<p>hello</p>", "ja": "<p>こんにちは</p>"}) {
 		t.Errorf("content = %v, contentMap = %v; want the revision's language and every language", note["content"], note["contentMap"])
 	}
-	if note["summary"] != "spoiler" || note["sensitive"] != true || note["published"] != federation.FormatTime(s.PublishedAt) || note["url"] != s.URL {
+	// A local status's url is derived from its author's current username (ADR-0053).
+	e.accounts.mu.Lock()
+	wantURL := content.StatusURL(contractHost, e.accounts.actors[a.author].Local.Username, s.ID)
+	e.accounts.mu.Unlock()
+	if note["summary"] != "spoiler" || note["sensitive"] != true || note["published"] != federation.FormatTime(s.PublishedAt) || note["url"] != wantURL {
 		t.Errorf("summary = %v, sensitive = %v, published = %v, url = %v", note["summary"], note["sensitive"], note["published"], note["url"])
 	}
 	if _, ok := note["updated"]; ok {

@@ -6,6 +6,7 @@
 <meta name="color-scheme" content="light dark">
 <title>{{.DocumentTitle}}</title>
 {{with .Stylesheet}}<link rel="stylesheet" href="{{.}}">
+{{end}}{{with .ThemeStylesheet}}<link rel="stylesheet" href="{{.}}">
 {{end}}</head>
 <body>
 <main class="page{{if .Document}} page-document{{end}}">

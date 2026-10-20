@@ -164,20 +164,22 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Follow` | ローカルの Actor | `graph.ReceiveFollow`。鍵アカウントでなければ承認し、`Accept` を配送する。鍵アカウントなら承認待ち + 通知。ブロック関係があれば `Reject` を配送する。承認済みのフォローがあれば `follow_resends` に記録して `Accept` を送り直す |
 | `Accept` | 自分が送った `Follow`（URI か埋め込み） | `graph.AcceptRemote`（`follow_acceptances`、`accepted_by = remote`）。`object` の `id` が主体をフォローされる側とするフォローに無ければ、埋め込みの `object.actor`（ローカル）と `actor`（相手）の承認待ち・承認済みのフォローで照合する。埋め込みが `Follow` 以外（GoToSocial の返信の承認など）なら捨てる |
 | `Reject` | 自分が送った `Follow`、または承認済みのフォロー | `graph.RejectRemote`。照合は `Accept` と同じ。承認待ちなら `follow_rejections`（`rejected_by = remote`）、承認済みなら `follow_terminations`（`removed_by_followee`） |
-| `Undo` | `Follow` / `Like` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Follow` は `graph.TerminateRemote`（`unfollowed`）で、`object` の `id` が主体のフォローに無ければ、埋め込みの `object.object`（ローカル）とのフォローで照合する（Misskey の `Undo` は送った `Follow` と違う `id` を持つ）。`Undo Accept` は `graph.RejectRemote` でフォローの終了として扱う。対象が URI だけなら、主体が作った同じ URI の `follows` / `favourites` / `boosts` / `blocks` を順に引く |
+| `Undo` | `Follow` / `Like` / `EmojiReact` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Follow` は `graph.TerminateRemote`（`unfollowed`）で、`object` の `id` が主体のフォローに無ければ、埋め込みの `object.object`（ローカル）とのフォローで照合する（Misskey の `Undo` は送った `Follow` と違う `id` を持つ）。`Undo Accept` は `graph.RejectRemote` でフォローの終了として扱う。`Undo Like` / `Undo EmojiReact` は、主体が作った同じ URI の `reactions`、`favourites` の順に引き、どちらにも無ければ埋め込みの `object` を `Like` / `EmojiReact` の行と同じ規則で振り分けて、リアクションなら主体のその投稿への同じ絵文字のリアクションを、お気に入りなら主体のその投稿へのお気に入りを消す（ADR-0052 §1）。対象が URI だけなら、主体が作った同じ URI の `follows` / `reactions` / `favourites` / `boosts` / `blocks` を順に引く |
 | `Create` | `Note` / `Question`。`Article` / `Page` / `Event` / `Image` / `Video` / `Audio` は変換して取り込む | 取り込み範囲（ADR-0034）に入れば `content.IngestRemoteStatus`。オブジェクトの `id` は `actor` と同じオリジンで、`attributedTo` は（あれば）`actor` でなければならない。保存済みの投稿は何もせず、削除済みの投稿は捨てる |
 | `Update` | 投稿 | `content.ReviseRemoteStatus`（新しい版）。投稿の作者とアクティビティの主体が一致し、オリジンが同じであること（[ActivityPub §7.3](https://www.w3.org/TR/activitypub/#update-activity-inbox)）。未知の投稿は §3.3 のとおり `Create` として扱う |
 | `Update` | Actor（自分自身） | `RemoteActors.ReceiveActorUpdate`。オリジンが同じ埋め込みの文書で `account.UpsertRemoteActor`（内容が変わればプロフィールの版が増える）。埋め込みが無い・`id` が主体と一致しなければ取得し直す。削除済みの Actor の `Update` は捨てる |
 | `Delete` | 投稿・`Tombstone` | `content.DeleteRemoteStatus`（`origin = remote`）。未知なら tombstone |
 | `Delete` | Actor（自分自身） | `RemoteActors.ReceiveActorDelete`。`account.MarkRemoteDeleted`（`remote_deleted`）で、プロフィールと投稿（タイムラインでは `feed_author_restrictions` の `profile_view`）がすぐに表示されなくなる。未知の Actor なら何もしない。投稿・フォロー・ブーストは消去ジョブが消す |
 | `Announce` | 投稿（URI か埋め込み） | `content.RecordRemoteBoost`。ローカルの投稿と保存済みの投稿は `id` で引く。保存していないリモートの投稿は、ブーストした人をローカルのアカウントがフォローしているときだけ取り込み（ADR-0034）、埋め込みの投稿は、オリジンが主体と同じでなければ `id` から取得し直す。ブーストの公開範囲は、`Announce` の宛先から決めた公開範囲と元投稿の公開範囲の狭いほう（`direct` になるものは捨てる）。`local` の投稿、ほかの人の `private` の投稿、主体が閲覧できないローカルの投稿は捨てる |
-| `Like` / `EmojiReact` | ローカルの投稿 | `content.RecordRemoteFavourite`。Misskey の絵文字リアクション（`_misskey_reaction` 付きの `Like`）と Pleroma / Akkoma の `EmojiReact` もお気に入りとして扱う（絵文字は保存しない）。主体が閲覧できない投稿（`ContextObjectFetch`）は捨てる |
+| `EmojiReact` | ローカルの投稿 | `content.RecordRemoteReaction`（絵文字リアクション、FR-116、ADR-0052）。`content` が絵文字でなければ捨てる。絵文字は、1 つの Unicode 絵文字（`emoji-test.txt` の表で fully-qualified の形に正規化する）か、`:shortcode:` で `tag` に `name` が一致する（コロンと `@host` の接尾辞を問わない）`Emoji` がちょうど 1 つあるカスタム絵文字。カスタム絵文字は ADR-0051 の規則で `custom_emojis` に画像と取り込み、ドメインは `Emoji` の `id` のホスト（`id` が無ければ主体のドメイン）。同じ主体・投稿・絵文字のリアクションは 1 つで、絵文字ごとに複数を記録する。主体が閲覧できない投稿（`ContextObjectFetch`）・ブロック関係・交流の禁止（FR-708）は捨てる |
+| `Like` | ローカルの投稿 | `_misskey_reaction`、無ければ `content` が `EmojiReact` と同じ規則で絵文字なら `content.RecordRemoteReaction`（Misskey のリアクション、FEP-c0e0）。それ以外は `content.RecordRemoteFavourite`（お気に入り）。主体が閲覧できない投稿（`ContextObjectFetch`）は捨てる |
 | `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`）。対象がローカルの利用者の Actor でなければ捨てる |
 | `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる。通報の対象は `object` の最初のローカルの Actor、無ければ最初のローカルの投稿の作者で、その作者の投稿を `report_statuses` に残す。ローカルの対象が無ければ捨てる |
 | `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C） |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
-- ブーストとお気に入りのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、`Like` / `Undo Like` を送ります。
+- ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、`Like` / `Undo Like` を送ります。
+- リアクションの送信（ローカルの人のリアクション）はまだありません。リモートの人のリアクションはローカルの投稿へのものだけを記録し、何も送りません。
 
 ## 4. AS2 の正規化
 
@@ -194,7 +196,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | 本文 | `contentMap` の言語ごとに 1 行（`status_revision_bodies`）。`content` だけなら `contentMap` の最初の言語、なければ `und` の 1 行。言語タグは BCP 47 として正規化し、不正なら `und`（NFR-I18N-5） |
 | CW | `summary`（無ければ `summaryMap` の最初の値）をプレーンテキストにして `spoiler_text`。`sensitive` は `toot:sensitive` |
 | 変換する型 | `Article` / `Page` / `Event` / `Image` / `Video` / `Audio` は、`name` を太字の段落、`summary` を段落にし、`url` へのリンクを付けた本文にする（Mastodon の `CONVERTED_TYPES` と同じ） |
-| `tag` | `Mention`（`href` を Actor の IRI として解決）、`Hashtag`（`name` から `#` を除いて `tags`）、`Emoji`（`icon.url`、カスタム絵文字） |
+| `tag` | `Mention`（`href` を Actor の IRI として解決）、`Hashtag`（`name` から `#` を除いて `tags`）、`Emoji`（`icon.url`、カスタム絵文字。`name` の前後の `:` を外した shortcode が 128 文字を超えるものと、同じ shortcode の 2 つ目以降は捨てる）。Actor の `tag` の `Emoji` も同じ規則で読み、プロフィールの版に結ぶ |
 | 宛先のメンション | `to` / `cc` に含まれるローカルの Actor は、`tag` に無くてもメンションとして記録する（`direct` / `private` の閲覧判定のため） |
 | `attachment` | `Document` / `Image` / `Video` / `Audio`。`url`（文字列か `Link`）、`mediaType`、`name`（代替テキスト）、`blurhash`、`focalPoint`、`width` / `height`。`href` だけの `Link` は添付として扱わない。4 件を超える分は捨てる |
 | `url` | 文字列・`Link`・配列のどれでもよい。`text/html` の最初のものを表示用 URL にする |
@@ -451,6 +453,9 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - 関係は署名者のドメインで集約します（[visibility.md §1](visibility.md#1-入力)）。ブロックは署名者のアカウントと作者の間のものです。メンション先とフォロワーは、`CanView` が許さなかったときだけ読みます（フォロワーは 1,000 件ずつ、そのドメインのアカウントがいるかを `account.AnyOnDomain` で確かめる）。
   - 未ログインでも同じ結果になる応答（`public` / `unlisted`）だけ `Cache-Control: public, max-age=60` を付け、それ以外は `private, no-store` です。
   - HTML を求めるリクエスト（ブラウザ）は署名を持たないので、未ログインで閲覧できる投稿だけ表示用 URL へ `303` でリダイレクトし、それ以外は 404 です。
+- 投稿の表示用 URL `/@{username}/status/{uuid}`（[ADR-0053](../adr/0053-status-page-url.md)）に ActivityPub の `Accept` で来たリクエストは、未ログインで閲覧できる削除されていないローカルの投稿だけ、その `id` へ `302` でリダイレクトし、それ以外は 404 です（`federation.Objects.PageStatusURI`）。
+  URL を貼った検索（FR-305）で、ほかのサーバーが投稿を引けるようにするためです。`id` の GET は上の規則で改めて判定します。
+  ローカルの投稿の `url`（`Note` とクライアント API）は保存せず、読むときに作者の現在のユーザー名と投稿 ID から作ります。
 - コレクションはだれにも同じ内容を返します。outbox・followers・following は `totalItems` と最初のページ（`?page=true`）へのリンクを持つ `OrderedCollection` で、ページ（`OrderedCollectionPage`）は `partOf` と次のページ（`?max_id={カーソル}&page=true`）を持ちます（Mastodon と同じ形）。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。

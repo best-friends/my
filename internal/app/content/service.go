@@ -243,7 +243,6 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 	st := content.Status{
 		ID:              id,
 		URI:             content.StatusURI(s.d.Host, id),
-		URL:             content.StatusURL(s.d.Host, author.Handle.Username, id),
 		AuthorAccountID: in.AuthorAccountID,
 		IsLocal:         true,
 		Visibility:      content.EffectiveVisibility(in.Visibility, restrictions.Author),

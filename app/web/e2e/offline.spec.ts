@@ -33,6 +33,7 @@ const bob: Status["account"] = {
   display_name: "Bob",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@bob",
   locked: false,
   bot: false,
@@ -42,7 +43,7 @@ const bob: Status["account"] = {
 const post: Status = {
   id: "0192f0c4-7a8e-7000-8000-0000000000c1",
   uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000c1",
-  url: "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000c1",
+  url: "https://my.example/@bob/status/0192f0c4-7a8e-7000-8000-0000000000c1",
   account: bob,
   content: "<p>A post to read while online.</p>",
   spoiler_text: "",
@@ -53,9 +54,11 @@ const post: Status = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
 };
 
 const instance: Instance = {

@@ -146,7 +146,7 @@ func newNotificationEnvWithViews(t *testing.T) (*authEnv, *fakeNotifications, *f
 	})
 	views := &fakeViews{statuses: map[string]appcontent.StatusView{statusID: {
 		Status: content.Status{
-			ID: statusID, URI: "https://social.example/ap/statuses/" + statusID, URL: "https://social.example/@alice/" + statusID,
+			ID: statusID, URI: "https://social.example/ap/statuses/" + statusID,
 			AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic, PublishedAt: at,
 		},
 		Revision: content.Revision{Seq: 1, Language: "en", RevisedAt: at, Bodies: []content.Body{{Language: "en", ContentHTML: "<p>hi</p>"}}},

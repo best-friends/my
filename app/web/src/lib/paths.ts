@@ -19,22 +19,22 @@ export function followListPath(acct: string, list: "followers" | "following"): s
  */
 export const accountStatusPath = "/settings/account-status";
 
-/** The admin page of one appeal of a moderation action, which an `admin_appeal` notification leads to. */
-export function adminAppealPath(id: string): string {
-  return `/admin/appeals/${id}`;
+/** The moderation page of one appeal of a moderation action, which an `admin_appeal` notification leads to. */
+export function moderationAppealPath(id: string): string {
+  return `/moderation/appeals/${id}`;
 }
 
-/** The admin page of one report, which an `admin_report` notification leads to. */
-export function adminReportPath(id: string): string {
-  return `/admin/reports/${id}`;
+/** The moderation page of one report, which an `admin_report` notification leads to. */
+export function moderationReportPath(id: string): string {
+  return `/moderation/reports/${id}`;
 }
 
 /**
  * The prefixes of the server's own paths (internal/interface/web/handler.go, reservedPrefixes): the client API,
  * the server-rendered pages (sign-in, sign-up, the terms of service and the privacy policy under /auth, OAuth
- * consent under /oauth), ActivityPub, and media. The app has no route under them.
+ * consent under /oauth), ActivityPub, media, and the instance theme's stylesheets (/theme). The app has no route under them.
  */
-const serverPathPrefixes = ["/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads"] as const;
+const serverPathPrefixes = ["/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads", "/theme"] as const;
 
 /** Whether `pathname` is one of the server's own paths, which a link loads in place of the app, never through the router. */
 export function isServerPath(pathname: string): boolean {

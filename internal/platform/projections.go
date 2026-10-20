@@ -40,7 +40,7 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 		Projections: []projection.Projection{
 			{
 				Name: "instance", Module: "instance",
-				Tables: []string{"instance_settings", "instance_texts", "instance_rule_heads"},
+				Tables: []string{"instance_settings", "instance_texts", "instance_rule_heads", "instance_theme"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return instance.RebuildProjections(ctx, u, r.instances)
 				},

@@ -15,11 +15,13 @@
 // badge's digits are hidden from assistive technology; the link is named with the count instead
 // ("Notifications, 3 unread"), a name that starts with the visible label (WCAG 2.5.3).
 //
-// A viewer whose roles have a permission of an admin screen also has Administration, after Settings in the rail
-// and the sidebar and in the menu's sheet. While open reports or registrations await the moderators (FR-712),
-// it shows their number as a badge the same way ("Administration, 3 pending"), and so does the tab bar's Menu
-// button, which leads there ("Menu, 3 pending in administration"): the count is in the names and drawn as
-// digits, never shown by color alone (WCAG 1.4.1).
+// The staff's screens are two areas (ADR-0058). A viewer whose roles have a permission of a moderation screen
+// also has Moderation, and one with a permission of a server administration screen has Administration, in that
+// order after Settings in the rail and the sidebar and in the menu's sheet; a moderator never sees
+// Administration. While open reports, registrations or appeals await the moderators (FR-712), Moderation shows
+// their number as a badge the same way ("Moderation, 3 pending"), and so does the tab bar's Menu button, which
+// leads there ("Menu, 3 pending in moderation"): the count is in the names and drawn as digits, never shown by
+// color alone (WCAG 1.4.1). Administration has no count.
 //
 // The local and federated timelines appear in the rail only while the instance serves them (FR-202). The tab
 // bar keeps its five items whatever the instance serves: only the Timelines screen's tabs change.
@@ -39,6 +41,7 @@ import {
   Link,
   LocalIcon,
   MenuIcon,
+  ModerationIcon,
   NotificationsIcon,
   PostCardAuthor,
   ProfileIcon,
@@ -51,6 +54,7 @@ import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
 import { DocumentLinks } from "../../features/documents";
+import { useModerationEntry } from "../../features/moderation";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
 import { ThemeRadioGroup } from "../../features/settings";
@@ -60,7 +64,7 @@ import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 
-type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/admin";
+type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/moderation" | "/admin";
 
 type NavigationItem = {
   section: Section;
@@ -70,8 +74,8 @@ type NavigationItem = {
   shows: "always" | "tab-bar" | "rail";
   /** The timeline the item opens, offered only while the instance serves it. */
   timeline?: keyof TimelineAvailability;
-  /** Whether the item is for a viewer whose roles have a permission of an admin screen only. */
-  admin?: true;
+  /** The staff's area (ADR-0058) whose screens the item leads to, for a viewer who may use one of them only. */
+  staff?: "moderation" | "admin";
 };
 
 const items: readonly NavigationItem[] = [
@@ -84,10 +88,11 @@ const items: readonly NavigationItem[] = [
   { section: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon />, shows: "rail" },
   { section: "/bookmarks", label: "client:shell.nav.bookmarks", icon: <BookmarkIcon />, shows: "rail" },
   { section: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon />, shows: "rail" },
-  { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", admin: true },
+  { section: "/moderation", label: "client:shell.nav.moderation", icon: <ModerationIcon />, shows: "rail", staff: "moderation" },
+  { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", staff: "admin" },
 ];
 
-/** The items of the menu sheet: those of the rail that are not in the tab bar, other than the timelines (and Administration only for its viewers). */
+/** The items of the menu sheet: those of the rail that are not in the tab bar, other than the timelines (and the staff's areas only for their viewers). */
 const menuItems = items.filter((item) => item.shows === "rail" && item.timeline === undefined);
 
 /**
@@ -127,7 +132,7 @@ function isUnder(pathname: string, path: string): boolean {
 /**
  * Whether `pathname` is in `section`: the page itself or one below it. "/profile" redirects to the viewer's own
  * profile page, so that page and its lists of followers and follows are its section too. The viewer's own posts
- * (`/@acct/{id}`) are below the profile's address but are pages of posts, not of the profile. The timelines of
+ * (`/@acct/status/{id}`) are below the profile's address but are pages of posts, not of the profile. The timelines of
  * the tab bar are the local and the federated timeline.
  */
 function inSection(pathname: string, section: Section, ownAcct: string | null): boolean {
@@ -150,18 +155,21 @@ export function Navigation() {
   const instanceName = useInstanceName();
   const pathname = useLocation({ select: (location) => location.pathname });
   const unread = useUnreadNotificationCount();
+  const moderationEntry = useModerationEntry();
   const adminEntry = useAdminEntry();
+  const staffAvailable = (item: NavigationItem) =>
+    item.staff === undefined || (item.staff === "moderation" ? moderationEntry.available : adminEntry.available);
   const viewer = useViewer();
   const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
-  const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && (item.admin !== true || adminEntry.available));
+  const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
   const badgeOf = (section: Section): ItemBadge => {
     if (section === "/notifications" && unread > 0) {
       return { count: unread, badgeLabel: t("client:notifications.unread_count", { count: unread }), name: t("client:shell.nav.notifications_unread", { count: unread }) };
     }
-    if (section === "/admin" && adminEntry.available && adminEntry.pending > 0) {
-      const count = adminEntry.pending;
-      return { count, badgeLabel: t("client:admin.pending_count", { count }), name: t("client:shell.nav.admin_pending", { count }) };
+    if (section === "/moderation" && moderationEntry.available && moderationEntry.pending > 0) {
+      const count = moderationEntry.pending;
+      return { count, badgeLabel: t("client:admin.pending_count", { count }), name: t("client:shell.nav.moderation_pending", { count }) };
     }
     return null;
   };
@@ -197,7 +205,7 @@ export function Navigation() {
           );
         })}
         <li className={shownAt["tab-bar"]}>
-          <NavigationMenu items={menuItems.filter((item) => item.admin !== true || adminEntry.available)} current={current} badgeOf={badgeOf} />
+          <NavigationMenu items={menuItems.filter(staffAvailable)} current={current} badgeOf={badgeOf} />
         </li>
       </ul>
       <ViewerLink />

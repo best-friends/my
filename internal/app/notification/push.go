@@ -386,7 +386,7 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 			return nil, err
 		}
 	}
-	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite {
+	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite || job.Type == notification.TypeReaction {
 		if recipient, err = s.d.Audience.Account(ctx, job.AccountID); err != nil {
 			return nil, err
 		}
@@ -410,21 +410,23 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 	case notification.TypeFollowAccepted:
 		p.Title, p.Path = l.ServerPushFollowAccepted(name), "/@"+source.Acct
 	case notification.TypeMention:
-		p.Title, p.Path = l.ServerPushMention(name), "/@"+source.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushMention(name), statusPath(source.Acct, job.StatusID)
 	case notification.TypeBoost:
-		p.Title, p.Path = l.ServerPushBoost(name), "/@"+recipient.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushBoost(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeFavourite:
-		p.Title, p.Path = l.ServerPushFavourite(name), "/@"+recipient.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushFavourite(name), statusPath(recipient.Acct, job.StatusID)
+	case notification.TypeReaction:
+		p.Title, p.Path = l.ServerPushReaction(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeModerationNotice:
 		p.Title, p.Path = l.ServerPushModerationNotice(instance), "/settings/account-status"
 	case notification.TypeAppealDecided:
 		p.Title, p.Path = l.ServerPushAppealDecided(instance), "/settings/account-status"
 	case notification.TypeAdminReport:
-		p.Title, p.Path = l.ServerPushAdminReport(instance), "/admin/reports/"+job.ReportID
+		p.Title, p.Path = l.ServerPushAdminReport(instance), "/moderation/reports/"+job.ReportID
 	case notification.TypeAdminSignUp:
-		p.Title, p.Path = l.ServerPushAdminSignUp(instance), "/admin/registrations"
+		p.Title, p.Path = l.ServerPushAdminSignUp(instance), "/moderation/registrations"
 	case notification.TypeAdminAppeal:
-		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/admin/appeals/"+job.AppealID
+		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/moderation/appeals/"+job.AppealID
 	case notification.TypeReportResolved:
 		p.Title = l.ServerPushReportResolved(instance)
 	case notification.TypeRelationshipsSevered:
@@ -434,3 +436,6 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 	}
 	return json.Marshal(p)
 }
+
+// statusPath is the web client's page of a status by the account acct (ADR-0053).
+func statusPath(acct, statusID string) string { return "/@" + acct + "/status/" + statusID }

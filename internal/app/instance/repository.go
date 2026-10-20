@@ -13,7 +13,7 @@ import (
 // ErrNotFound reports that no row matches a lookup.
 var ErrNotFound = errors.New("instance: not found")
 
-// Repository is the persistence port of the instance module's settings, texts, and rules
+// Repository is the persistence port of the instance module's settings, texts, rules, and theme
 // (data-model §4.9). The database adapters implement it and pass
 // testkit.InstanceRepositoryContract.
 //
@@ -53,4 +53,5 @@ type Repository interface {
 	ListTextHistory(ctx context.Context, key instance.TextKey, locale string, limit int) ([]instance.TextRevision, error)
 
 	RuleRepository
+	ThemeRepository
 }

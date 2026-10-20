@@ -8,6 +8,8 @@ export const cachePrefix = "my";
 
 /** The cache of public media (/media/ images), first-hit and bounded. */
 export const mediaCacheName = `${cachePrefix}-media`;
+/** The runtime cache of the instance theme's stylesheets (ADR-0059). */
+export const themeCacheName = `${cachePrefix}-theme`;
 
 /** The path of the generic HTML shell the worker precaches and returns for navigations it cannot fetch. */
 export const shellPath = "/";

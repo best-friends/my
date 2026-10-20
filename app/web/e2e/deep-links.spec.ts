@@ -10,7 +10,7 @@ import { serverURL } from "./server-origin.ts";
 test.use({ baseURL: serverURL });
 
 /** Pages below the root: a hashtag, a post address of the federated URI shape, and an unknown deep path. */
-const paths = ["/tags/cats", "/@alice/0192f0c4-7a8e-7000-8000-000000000001", "/a/b/c/d"] as const;
+const paths = ["/tags/cats", "/@alice/status/0192f0c4-7a8e-7000-8000-000000000001", "/a/b/c/d"] as const;
 
 for (const path of paths) {
   test(`${path} loads the app with root-relative assets`, async ({ page }) => {

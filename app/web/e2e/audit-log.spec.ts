@@ -27,6 +27,7 @@ const operator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -46,6 +47,7 @@ const moderator = {
   display_name: "عبد الرحمن بن محمد الهاشمي",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@abdulrahman",
   locked: false,
   bot: false,
@@ -164,10 +166,10 @@ function rows(page: Page) {
   return page.getByRole("main").getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3 }) });
 }
 
-test.describe("page /admin/audit-log", () => {
+test.describe("page /moderation/audit-log", () => {
   test.beforeEach(async ({ page }) => {
     await operatorServer(page);
-    await page.goto("/admin/audit-log");
+    await page.goto("/moderation/audit-log");
     await expect(rows(page)).toHaveCount(2);
   });
 
@@ -183,7 +185,7 @@ test.describe("page /admin/audit-log", () => {
 test.describe("audit log", () => {
   test("lists operations, filters them by a row's actor and by kind in the URL, and loads more", async ({ page, makeAxeBuilder }) => {
     const requests = await operatorServer(page);
-    await page.goto("/admin/audit-log");
+    await page.goto("/moderation/audit-log");
     await expect(rows(page)).toHaveCount(2);
 
     await expect(rows(page).first()).toMatchAriaSnapshot(`
@@ -203,7 +205,7 @@ test.describe("audit log", () => {
           - listitem:
             - link /${targetHandle.replaceAll(".", "\\.")}/
     `);
-    await expect(rows(page).first().getByRole("link", { name: targetHandle, exact: true })).toHaveAttribute("href", "/admin/accounts/0192f0c4-7a8e-7000-8000-000000000031");
+    await expect(rows(page).first().getByRole("link", { name: targetHandle, exact: true })).toHaveAttribute("href", "/moderation/accounts/0192f0c4-7a8e-7000-8000-000000000031");
 
     // Load more: the pages stay in the URL, and a reload shows them again.
     await page.getByRole("main").getByRole("button").last().click();
@@ -232,7 +234,7 @@ test.describe("audit log", () => {
     await listbox.getByRole("option", { name: message("admin.audit_log.action.domain_action_issued"), exact: true }).click();
     await expect(page).toHaveURL(/[?&]action=domain_action_issued/);
     await expect(rows(page)).toHaveCount(1);
-    await expect(rows(page).first().getByRole("link").first()).toHaveAttribute("href", `/admin/domain-actions?filter=all&domain=${longDomain}`);
+    await expect(rows(page).first().getByRole("link").first()).toHaveAttribute("href", `/moderation/domain-actions?filter=all&domain=${longDomain}`);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
@@ -248,12 +250,12 @@ test.describe("audit log", () => {
 
   test("shows a lift made on the domain actions at once when going back, however slowly the log comes", async ({ page, makeAxeBuilder }) => {
     await operatorServer(page, { domains: true });
-    await page.goto("/admin/audit-log");
+    await page.goto("/moderation/audit-log");
     await expect(rows(page)).toHaveCount(2);
 
     // The domain action's row links to the domain's actions; lifting the limit there is recorded in the log.
     await rows(page).nth(1).getByRole("link").first().click();
-    await expect(page).toHaveURL(/\/admin\/domain-actions\?/);
+    await expect(page).toHaveURL(/\/moderation\/domain-actions\?/);
     const lift = page.getByRole("main").getByRole("button").filter({ hasText: new RegExp(`^${message("admin.domain_actions.lift").replace(/[\\^$.*+?()[\]{}|]/g, "\\$&")}$`) });
     await expect(lift).toHaveCount(1);
     await lift.click();
@@ -262,7 +264,7 @@ test.describe("audit log", () => {
     // Back on the log, the lift heads it as soon as the operations show, though the server answers the log
     // slowly now: the log is not shown from a cache older than the lift.
     await page.goBack();
-    await expect(page).toHaveURL(/\/admin\/audit-log$/);
+    await expect(page).toHaveURL(/\/moderation\/audit-log$/);
     await expect(rows(page)).toHaveCount(2);
     expect(await rows(page).first().getByRole("heading", { level: 3 }).textContent()).toBe(message("admin.audit_log.action.domain_action_lifted"));
     await expectNoAxeViolations(makeAxeBuilder);

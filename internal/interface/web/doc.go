@@ -10,7 +10,7 @@
 //
 // Requests for HTML are always treated as anonymous, so every shell is the same for every
 // visitor and is cached by shared caches. The generic shell is the same for every SPA route.
-// Profile pages (/@alice) and post pages (/@alice/{id}) get a shell with link preview meta
+// Profile pages (/@alice) and post pages (/@alice/status/{id}) get a shell with link preview meta
 // tags (OGP, the X card, fediverse:creator) when an anonymous visitor may see the profile or
 // the post (Options.Previews); otherwise they get the generic shell with 404 and noindex,
 // identical whatever the reason (docs/operations/link-previews.md).

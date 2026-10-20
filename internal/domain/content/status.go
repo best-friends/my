@@ -15,7 +15,7 @@ func (v Visibility) CountsAsReply() bool {
 type Status struct {
 	ID              string
 	URI             string
-	URL             string // "" when the status has no separate HTML page
+	URL             string // a remote status's HTML page, "" when it has none or the status is local (PageURL)
 	AuthorAccountID string
 	IsLocal         bool
 	Visibility      Visibility

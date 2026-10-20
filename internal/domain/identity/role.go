@@ -19,6 +19,9 @@ const (
 	PermViewAudit      Permission = "view_audit"
 	// PermManageJobs: read and requeue the dead jobs of the job queue.
 	PermManageJobs Permission = "manage_jobs"
+	// PermManageTwoFactor: remove the two-factor authentication of a local user (FR-005). It is
+	// server administration (ADR-0058 §4): only the built-in admin role has it by default.
+	PermManageTwoFactor Permission = "manage_two_factor"
 )
 
 // AllPermissions lists every permission.
@@ -26,6 +29,29 @@ func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
+		PermManageTwoFactor,
+	}
+}
+
+// PermissionCategory is the area of the staff's work that a permission belongs to (ADR-0058):
+// moderation decides on people, posts and remote servers case by case; server administration
+// changes the server itself as a whole.
+type PermissionCategory string
+
+// Permission categories.
+const (
+	CategoryModeration PermissionCategory = "moderation"
+	CategoryServer     PermissionCategory = "server"
+)
+
+// Category returns the area that p belongs to. The web client's navigation and `my admin role`
+// group the permissions by it.
+func (p Permission) Category() PermissionCategory {
+	switch p {
+	case PermManageReports, PermManageAccounts, PermManageDomains, PermManageInvites, PermViewAudit:
+		return CategoryModeration
+	default:
+		return CategoryServer
 	}
 }
 

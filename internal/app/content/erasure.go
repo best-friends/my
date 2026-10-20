@@ -26,12 +26,13 @@ type ErasureRepository interface {
 	// status ID after, deleted or not.
 	ListAuthorStatusesToErase(ctx context.Context, tx uow.Tx, authorAccountID, after string, limit int) ([]ErasableStatus, error)
 	// EraseStatuses deletes the rows of deleted statuses: what PurgeStatuses deletes, their local
-	// rows and counters, every boost of them, and the favourites, bookmarks, and pins of them. The
-	// deletions stay.
+	// rows and counters, every boost of them, and the favourites, reactions (with their counts),
+	// bookmarks, and pins of them. The deletions stay.
 	EraseStatuses(ctx context.Context, tx uow.Tx, statusIDs []string) error
-	// EraseInteractionsBy deletes up to limit of each of the account's favourites, bookmarks,
-	// pins, and boosts (with their retractions), counting the favourites and the boosts in force
-	// out of the statuses' counters, and returns the most rows that one kind lost.
+	// EraseInteractionsBy deletes up to limit of each of the account's favourites, reactions,
+	// bookmarks, pins, and boosts (with their retractions), counting the favourites, the
+	// reactions, and the boosts in force out of the statuses' counters, and returns the most rows
+	// that one kind lost.
 	EraseInteractionsBy(ctx context.Context, tx uow.Tx, accountID string, limit int) (int64, error)
 }
 
@@ -55,7 +56,7 @@ type ErasureDeps struct {
 // StatusEraser erases the statuses of deleted local accounts (data-model §8): each status that
 // is not deleted yet gets a deletion with origin account_deletion, which takes it out of every
 // projection as the author's deletion does but sends no Delete (the Delete of the actor stands
-// for them, federation.md §7.1); then its rows, every boost, favourite, bookmark, and pin of it,
+// for them, federation.md §7.1); then its rows, every boost, favourite, reaction, bookmark, and pin of it,
 // and the notifications about it go. A status that a report or an action points at keeps its
 // rows (ADR-0038) until a later run finds the record gone.
 type StatusEraser struct{ d ErasureDeps }
@@ -116,7 +117,7 @@ func (e *StatusEraser) EraseAccountData(ctx context.Context, t appaccount.Erasur
 	return out, err
 }
 
-// InteractionEraser erases a deleted local account's favourites, bookmarks, pins, and boosts of
+// InteractionEraser erases a deleted local account's favourites, reactions, bookmarks, pins, and boosts of
 // other statuses (data-model §8), counting them out of the statuses' counters. The timeline
 // entries of its boosts and the notifications of its interactions go with the timeline and
 // notification modules' erasers.

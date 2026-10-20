@@ -21,6 +21,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -159,10 +160,10 @@ function rows(page: Page) {
   return page.getByRole("main").getByRole("region").last().getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3 }) });
 }
 
-test.describe("page /admin/accounts", () => {
+test.describe("page /moderation/accounts", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto("/admin/accounts");
+    await page.goto("/moderation/accounts");
     await expect(rows(page)).toHaveCount(2);
   });
 
@@ -175,10 +176,10 @@ test.describe("page /admin/accounts", () => {
   });
 });
 
-test.describe("page /admin/accounts/{id}", () => {
+test.describe("page /moderation/accounts/{id}", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto(`/admin/accounts/${local.id}`);
+    await page.goto(`/moderation/accounts/${local.id}`);
     await expect(page.getByRole("main").getByRole("heading", { level: 3 }).first()).toBeVisible();
   });
 
@@ -194,7 +195,7 @@ test.describe("page /admin/accounts/{id}", () => {
 test.describe("accounts", () => {
   test("opens an account from the search, shows its email and IP addresses only when asked, and lifts an action after its confirmation", async ({ page, makeAxeBuilder }) => {
     const requests = await moderatorServer(page);
-    await page.goto("/admin/accounts");
+    await page.goto("/moderation/accounts");
     await expect(rows(page)).toHaveCount(2);
     const limitedRow = await rows(page).first().textContent();
 
@@ -219,7 +220,7 @@ test.describe("accounts", () => {
     // By keyboard: the row's link opens the account's page, whose heading takes focus.
     await rows(page).first().getByRole("link").focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(new RegExp(`/admin/accounts/${local.id}$`));
+    await expect(page).toHaveURL(new RegExp(`/moderation/accounts/${local.id}$`));
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(main.getByRole("heading", { level: 3 }).first()).toBeVisible();
@@ -233,7 +234,7 @@ test.describe("accounts", () => {
     await expect(privateRegion.getByText(privateData.email ?? "")).toBeVisible();
     await expect(privateRegion.getByRole("heading", { level: 2 })).toBeFocused();
     await expect(privateRegion.getByText(userAgent)).toBeVisible();
-    await expect(privateRegion.getByRole("link", { name: /Carol/ })).toHaveAttribute("href", `/admin/accounts/${remote.id}`);
+    await expect(privateRegion.getByRole("link", { name: /Carol/ })).toHaveAttribute("href", `/moderation/accounts/${remote.id}`);
     expect(requests.filter((request) => request.endsWith("/reveal"))).toEqual([`POST /admin/accounts/${local.id}/reveal`]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
@@ -268,15 +269,15 @@ test.describe("accounts", () => {
 
     // Back on the search, the account is no longer limited as soon as the results show, though the server
     // answers the search slowly now: the results are not shown from a cache older than the lift.
-    await page.locator('main a[href="/admin/accounts"]').click();
-    await expect(page).toHaveURL(/\/admin\/accounts$/);
+    await page.locator('main a[href="/moderation/accounts"]').click();
+    await expect(page).toHaveURL(/\/moderation\/accounts$/);
     await expect(rows(page)).toHaveCount(2);
     expect(await rows(page).first().textContent()).not.toBe(limitedRow);
   });
 
   test("offers a remote account only the kinds of action it takes, and no email or IP addresses", async ({ page, makeAxeBuilder }) => {
     await moderatorServer(page);
-    await page.goto(`/admin/accounts/${remote.id}`);
+    await page.goto(`/moderation/accounts/${remote.id}`);
     const main = page.getByRole("main");
     const form = main.locator("form");
     await expect(form.locator('input[type="radio"]')).toHaveCount(3);

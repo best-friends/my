@@ -1,0 +1,75 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "Audience": {
+      "Cc": [
+        "https://mastodon.example/ap/users/117454922805771612/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168352/activity",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://mastodon.example/ap/users/117454922805771612",
+            "Audience": {
+              "Cc": [
+                "https://mastodon.example/ap/users/117454922805771612/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p>hello :blobcat: from mastodon 1792219932297590019</p>",
+                "Language": "en"
+              }
+            ],
+            "Emojis": [
+              {
+                "ID": "https://mastodon.example/emojis/1",
+                "IconURL": "https://mastodon.example/system/custom_emojis/images/000/000/001/original/blobcat.png",
+                "Shortcode": "blobcat"
+              }
+            ],
+            "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168352",
+            "Published": "2026-10-17T06:52:12Z",
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "Next": {
+                          "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168352/replies?only_other_accounts=true&page=true"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "",
+                    "Trusted": true
+                  },
+                  "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168352/replies"
+                }
+              },
+              "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168352/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://mastodon.example/@bob/117454925496168352"
+          }
+        },
+        "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168352",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T06:52:12Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

@@ -5,3 +5,5 @@
 @import "tailwindcss";
 @import "./theme.css";
 @source "../.storybook";
+/* The generated token list holds token names, which look like classes but are not. */
+@source not "./themeTokens.gen.ts";

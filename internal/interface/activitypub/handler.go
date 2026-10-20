@@ -33,6 +33,7 @@ type Objects interface {
 	Authenticate(ctx context.Context, r *appfederation.SignedRequest) (appfederation.Requester, error)
 	Status(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
 	StatusActivity(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
+	PageStatusURI(ctx context.Context, statusID string) (string, error)
 	OutboxTotal(ctx context.Context, accountID string) (int64, error)
 	Outbox(ctx context.Context, accountID, before string) (appfederation.OutboxPage, error)
 	Featured(ctx context.Context, accountID string) ([]federation.NoteDocument, error)

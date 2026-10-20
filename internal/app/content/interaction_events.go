@@ -26,6 +26,11 @@ import (
 //     Like of a remote status.
 //   - EventUnfavourited: a favourite was deleted. This module decrements favourites_count; the
 //     federation module delivers Undo Like.
+//   - EventReacted: an emoji reaction was inserted (ADR-0052). This module increments the count
+//     of its emoji in status_reaction_counts; the notification module notifies the status's
+//     author.
+//   - EventUnreacted: an emoji reaction was deleted. This module decrements the count of its
+//     emoji.
 //
 // Bookmarks and pins are private to their account and emit no events.
 const (
@@ -33,6 +38,8 @@ const (
 	EventBoostRetracted = "content.boost_retracted"
 	EventFavourited     = "content.favourited"
 	EventUnfavourited   = "content.unfavourited"
+	EventReacted        = "content.reacted"
+	EventUnreacted      = "content.unreacted"
 )
 
 // StatusRef is what subscribers of an interaction event need to know about the status.
@@ -87,3 +94,23 @@ type Unfavourited struct {
 
 // EventType implements uow.Event.
 func (Unfavourited) EventType() string { return EventUnfavourited }
+
+// Reacted is emitted when a reaction is inserted.
+type Reacted struct {
+	Reaction content.Reaction
+	Status   StatusRef
+}
+
+// EventType implements uow.Event.
+func (Reacted) EventType() string { return EventReacted }
+
+// Unreacted is emitted when a reaction is deleted.
+type Unreacted struct {
+	Reaction content.Reaction
+	Status   StatusRef
+	// RemovedAt is when the reaction was deleted.
+	RemovedAt time.Time
+}
+
+// EventType implements uow.Event.
+func (Unreacted) EventType() string { return EventUnreacted }

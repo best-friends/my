@@ -9,7 +9,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { Account } from "./accounts";
 
 /** The fields of an account that a change of its profile (PATCH /accounts/update_credentials) sets. */
-const profileFields = ["display_name", "note", "fields", "locked", "bot", "avatar", "header"] as const satisfies readonly (keyof Account)[];
+const profileFields = ["display_name", "note", "fields", "emojis", "locked", "bot", "avatar", "header"] as const satisfies readonly (keyof Account)[];
 
 function isAccount(value: unknown): value is Account {
   if (typeof value !== "object" || value === null) return false;
