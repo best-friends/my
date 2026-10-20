@@ -121,6 +121,8 @@ test.describe("the landing page", () => {
             - article
           - paragraph:
             - link
+        - paragraph:
+          - link
         - navigation:
           - list:
             - listitem:
@@ -136,6 +138,11 @@ test.describe("the landing page", () => {
 
   test("does not scroll horizontally", async ({ page }) => {
     await expectNoHorizontalScroll(page);
+  });
+
+  test("leads to the information page", async ({ page }) => {
+    await page.getByRole("main").locator('a[href="/about"]').click();
+    await expect(page).toHaveURL(/\/about$/);
   });
 
   test("leads to the local timeline", async ({ page }) => {

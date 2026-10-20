@@ -1,4 +1,68 @@
 {
+  "about.description.title": {
+    "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "[Ƞǿǿ şḗḗřṽḗḗřş ȧȧřḗḗ ḿǿǿḓḗḗřȧȧŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓƞ'ŧ ŀǿǿȧȧḓ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧḗḗḓ şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ŀīḿīŧş ǿǿř şŭŭşƥḗḗƞḓş ƒḗḗḓḗḗřȧȧŧīǿǿƞ ẇīŧħ ŧħḗḗşḗḗ şḗḗřṽḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "[Ŀīḿīŧḗḗḓ: īŧş ƥǿǿşŧş şŧȧȧẏ ǿǿƒƒ ŧħḗḗ ƥŭŭƀŀīƈ ŧīḿḗḗŀīƞḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "[Şŭŭşƥḗḗƞḓḗḗḓ: ƞǿǿ ƒḗḗḓḗḗřȧȧŧīǿǿƞ ȧȧŧ ȧȧŀŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧḗḗḓ şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.more": {
+    "defaultMessage": "[Şħǿǿẇ ḿǿǿřḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓƞ'ŧ ŀǿǿȧȧḓ ḿǿǿřḗḗ şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "[Şǿǿḿḗḗ şḗḗřṽḗḗř ƞȧȧḿḗḗş ȧȧřḗḗ ƥȧȧřŧŀẏ ħīḓḓḗḗƞ ẇīŧħ *.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "[Ǿƞŀẏ şīɠƞḗḗḓ-īƞ ŭŭşḗḗřş ƈȧȧƞ şḗḗḗḗ ŧħīş ŀīşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.title": {
+    "defaultMessage": "[Ḿǿǿḓḗḗřȧȧŧḗḗḓ şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.rules.title": {
+    "defaultMessage": "[Řŭŭŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.title": {
+    "defaultMessage": "[Ȧƀǿǿŭŭŧ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "account_status.active.empty": {
     "defaultMessage": "[Ƞǿǿ ȧȧƈŧīǿǿƞş ȧȧřḗḗ īƞ ḗḗƒƒḗḗƈŧ ǿǿƞ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6377,6 +6441,10 @@
   },
   "shell.about.domain": {
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧş ħḗḗřḗḗ ḗḗƞḓ ẇīŧħ @{domain}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.about.more": {
+    "defaultMessage": "[Ḿǿǿřḗḗ ȧȧƀǿǿŭŭŧ ŧħīş şḗḗřṽḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.about.title": {

@@ -823,6 +823,10 @@
     "defaultMessage": "Confirm your email address for {instance}",
     "description": "Subject of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none."
   },
+  "preview.about_title": {
+    "defaultMessage": "About {instance}",
+    "description": "Title of the link preview (og:title and the page title) of the instance's information page (/about). {instance} is the instance name."
+  },
   "push.admin_appeal": {
     "defaultMessage": "A new appeal awaits the moderators of {instance}",
     "description": "Web Push notification to a moderator: a user appealed a moderation action. It never names the user. {instance} is the server's display name, or its domain name when it has none."

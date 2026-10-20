@@ -111,7 +111,7 @@ describe("the user's arrangement", () => {
 
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Bookmarks", "Settings"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Bookmarks", "Settings", "More about this server"]);
   });
 
   test("keeps the place of a timeline the server does not offer among the first five", async () => {
@@ -125,7 +125,7 @@ describe("the user's arrangement", () => {
 
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "More about this server"]);
   });
 
   test("follows a change made in another tab", async () => {
@@ -153,7 +153,7 @@ describe("the tab bar's Menu", () => {
     await user.click(menu);
 
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "More about this server"]);
     expect(within(sheet).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
     expect(within(sheet).getByRole("link", { name: "Profile" })).not.toHaveAttribute("aria-current");
 
