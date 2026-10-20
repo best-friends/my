@@ -6027,10 +6027,6 @@
     "defaultMessage": "Sign in to follow",
     "description": "Link on a profile when nobody is signed in: it opens the sign-in page and comes back."
   },
-  "profile.signed_out.description": {
-    "defaultMessage": "Sign in to see your profile.",
-    "description": "Text of the Profile page of the navigation when nobody is signed in, above the sign-in link."
-  },
   "profile.tab.no_boosts": {
     "defaultMessage": "Without boosts",
     "description": "Tab of a profile: only the posts the account wrote itself, without replies and boosts."
@@ -7567,6 +7563,10 @@
     "defaultMessage": "Menu",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.about": {
+    "defaultMessage": "About",
+    "description": "Navigation item, shown while nobody is signed in, that opens the page about this server. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
   "shell.nav.admin": {
     "defaultMessage": "Administration",
     "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
@@ -7626,6 +7626,14 @@
   "shell.nav.settings": {
     "defaultMessage": "Settings",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Navigation item, shown while nobody is signed in, that opens the sign-in page and comes back to the current page. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
+  "shell.nav.sign_up": {
+    "defaultMessage": "Sign up",
+    "description": "Navigation item, shown while nobody is signed in and the server takes new accounts, that opens the server's registration page. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.viewer": {
     "defaultMessage": "The account you are signed in with",
@@ -8131,6 +8139,10 @@
     "defaultMessage": "Custom emoji image replaced",
     "description": "Kind of an audited operation: an administrator replaced the image of a custom emoji."
   },
+  "admin.audit_log.action.custom_emoji_copied": {
+    "defaultMessage": "Custom emoji copied from another server",
+    "description": "Kind of an audited operation: an administrator copied another server's custom emoji into a new emoji of this server."
+  },
   "admin.audit_log.action.custom_emoji_updated": {
     "defaultMessage": "Custom emoji changed",
     "description": "Kind of an audited operation: an administrator changed the category, other names, or place in the picker of a custom emoji."
@@ -8410,6 +8422,34 @@
   "admin.custom_emojis.deleted": {
     "defaultMessage": "{emoji} is deleted.",
     "description": "Status after deleting a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy": {
+    "defaultMessage": "Copy to this server",
+    "description": "Button of another server's custom emoji that opens the dialog copying it into an emoji of this server."
+  },
+  "admin.custom_emojis.copy_emoji": {
+    "defaultMessage": "Copy {emoji} to this server",
+    "description": "Accessible name of the copy button of another server's custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.title": {
+    "defaultMessage": "Copy {emoji} to this server",
+    "description": "Title of the dialog that copies another server's custom emoji into an emoji of this server. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.description": {
+    "defaultMessage": "This server fetches the image and registers it as its own emoji, shown in the picker. The image shrinks to 256 pixels at most.",
+    "description": "Body of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.submit": {
+    "defaultMessage": "Copy",
+    "description": "Confirm button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copied": {
+    "defaultMessage": "{emoji} is copied as {copy}.",
+    "description": "Status after copying another server's custom emoji. {emoji} is the copied emoji's :shortcode:@domain and {copy} the new emoji's :shortcode:, not translated."
   },
   "admin.custom_emojis.disable": {
     "defaultMessage": "Disable",

@@ -23,8 +23,8 @@ test("offers a waiting version and applies it only when the user presses Update"
   await registerServiceWorker(container, reload);
   expect(register).toHaveBeenCalledWith("/sw.js", { scope: "/" });
 
-  const { user } = await renderApp();
-  await screen.findByRole("heading", { level: 1, name: "Home" });
+  const { user } = await renderApp({ path: "/local" });
+  await screen.findByRole("heading", { level: 1, name: "Local timeline" });
   const region = await screen.findByRole("region", { name: "Messages" });
   expect(region).toHaveTextContent("A new version of the app is available.");
   expect(waiting.postMessage).not.toHaveBeenCalled();

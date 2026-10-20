@@ -5,6 +5,7 @@ import { DocumentsSection } from "../features/documents";
 import { ModerationMenu } from "../features/moderation";
 import { AccountSection } from "../features/session";
 import { SettingsMenu } from "../features/settings";
+import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
@@ -15,6 +16,8 @@ import { PageHeading } from "./-layout/PageHeading";
  */
 export const Route = createFileRoute("/settings/")({
   staticData: { title: "client:settings.title" },
+  // Every setting is the user's own, so the page needs a session (web-client.md §10).
+  beforeLoad: requireSignIn,
   component: SettingsPage,
 });
 

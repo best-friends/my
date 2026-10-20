@@ -120,9 +120,9 @@ report_note_added (report); registration_approved, registration_rejected
 rule_moved, rule_retired (rule); role_granted, role_revoked, role_created,
 role_updated, role_deleted (role); appeal_upheld, appeal_overturned (appeal);
 signup_block_added, signup_block_lifted (signup_block);
-custom_emoji_created, custom_emoji_image_replaced, custom_emoji_updated,
-custom_emoji_enabled, custom_emoji_disabled, custom_emoji_deleted
-(custom_emoji); webhook_created, webhook_updated, webhook_deleted,
+custom_emoji_created, custom_emoji_image_replaced, custom_emoji_copied,
+custom_emoji_updated, custom_emoji_enabled, custom_emoji_disabled,
+custom_emoji_deleted (custom_emoji); webhook_created, webhook_updated, webhook_deleted,
 webhook_enabled, webhook_disabled, webhook_secret_rotated (webhook);
 announcement_created, announcement_updated, announcement_published,
 announcement_withdrawn (announcement); invite_created, invite_revoked (invite).

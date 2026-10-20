@@ -267,6 +267,7 @@ export const auditActions = [
   "signup_block_lifted",
   "custom_emoji_created",
   "custom_emoji_image_replaced",
+  "custom_emoji_copied",
   "custom_emoji_updated",
   "custom_emoji_enabled",
   "custom_emoji_disabled",

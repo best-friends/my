@@ -4,3 +4,4 @@
 // documents. Routes and other features use it through this file only (web-client.md A3).
 export { instanceQueryOptions } from "./api/landing";
 export { Landing } from "./components/Landing";
+export { useSignUpHref } from "./hooks/useLanding";
