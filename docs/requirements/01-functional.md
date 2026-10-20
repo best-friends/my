@@ -34,7 +34,7 @@
 | FR-112 | 投票（Poll）の表示と回答。作成は C | C |
 | FR-113 | ブックマーク | S |
 | FR-114 | 引用投稿 | W |
-| FR-115 | 絵文字リアクション: Unicode 絵文字とローカルのカスタム絵文字で投稿にリアクションし、投稿ごとに絵文字別の件数と付けた人を見られる。ローカルの利用者は 1 投稿にお気に入りかリアクション 1 つのどちらかを付ける。Misskey / Pleroma / Akkoma とはリアクションとして、Mastodon / GoToSocial とはお気に入りとして往復する（[ADR-0052](../adr/0052-emoji-reactions.md)） | S |
+| FR-116 | 絵文字リアクション: Unicode 絵文字とローカルのカスタム絵文字で投稿にリアクションし、投稿ごとに絵文字別の件数と付けた人を見られる。ローカルの利用者は 1 投稿にお気に入りかリアクション 1 つのどちらかを付ける。Misskey / Pleroma / Akkoma とはリアクションとして、Mastodon / GoToSocial とはお気に入りとして往復する（[ADR-0052](../adr/0052-emoji-reactions.md)） | S |
 
 ## タイムライン・通知
 
@@ -44,7 +44,7 @@
 | FR-202 | ローカルタイムライン / 連合タイムライン（運営者が無効化可能） | M |
 | FR-203 | ハッシュタグタイムライン | M |
 | FR-204 | プロフィール（ユーザー別）タイムライン | M |
-| FR-205 | 通知: フォロー・フォローリクエスト・メンション・ブースト・お気に入り・絵文字リアクション（FR-115） | M |
+| FR-205 | 通知: フォロー・フォローリクエスト・メンション・ブースト・お気に入り・絵文字リアクション（FR-116） | M |
 | FR-206 | Web Push 通知 | S |
 | FR-207 | リアルタイム更新（SSE。[ADR-0016](../adr/0016-client-api-style.md)） | S |
 | FR-208 | 言語によるタイムラインのフィルタ | S |
@@ -68,7 +68,7 @@
 | FR-402 | NodeInfo 2.1 | M |
 | FR-403 | Actor / Inbox / Outbox / Shared Inbox / Followers / Following / Featured（ピン留め）コレクション | M |
 | FR-404 | HTTP Signatures（draft-cavage-12 と RFC 9421、double-knocking）による署名・検証 | M |
-| FR-405 | 受信アクティビティ: `Follow` `Accept` `Reject` `Undo` `Create` `Update` `Delete` `Announce` `Like` `Block` `Flag`、絵文字リアクションの `EmojiReact` と `_misskey_reaction` 付きの `Like`（FR-115） | M |
+| FR-405 | 受信アクティビティ: `Follow` `Accept` `Reject` `Undo` `Create` `Update` `Delete` `Announce` `Like` `Block` `Flag`、絵文字リアクションの `EmojiReact` と `_misskey_reaction` 付きの `Like`（FR-116） | M |
 | FR-406 | 配送: 非同期キュー経由、指数バックオフでリトライ、恒久失敗したドメインを一時停止 | M |
 | FR-407 | リモート Actor / Object の取得とキャッシュ、定期リフレッシュ | M |
 | FR-408 | Authorized Fetch（secure mode）を設定で有効化できる | S |
