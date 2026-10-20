@@ -5,11 +5,12 @@
 
 ## サーバーが返すもの
 
-プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
+ランディングページ（`https://<host>/`）、プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
 HTML のリクエストは常に未ログインとして扱うので、プレビューに出るのは未ログインでも見られるものだけです。
 
 | ページ | 応答 |
 | --- | --- |
+| ランディングページ（`/`） | 200。インスタンスを紹介する meta タグ付きの外枠（下の「ランディングページ」） |
 | `public` の投稿、有効なローカルアカウントのプロフィール | 200。meta タグ付きの外枠 |
 | `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex">` と `X-Robots-Tag: noindex` |
 | `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex`。本文とヘッダーは理由によらず同じ |
@@ -34,6 +35,14 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 | `fediverse:creator` | `@ユーザー名@アカウントドメイン`。Mastodon が「作成者」として表示する |
 | `<link rel="alternate" type="application/activity+json">` | AP の `id`（アクターまたは投稿のオブジェクト） |
 
+ランディングページの meta タグは、インスタンスそのものを紹介します。
+
+- `og:type` は `website`、`og:title`・`<title>`・`og:site_name` はインスタンスの名前、`og:url` と `<link rel="canonical">` は `https://<host>/` です。
+- `og:description` はインスタンスの文章 `short_description` を、200 書記素で切り詰めたものです。無ければ出しません。
+- 言語（`og:locale`、`<html lang dir>`）・名前・説明は、インスタンスの `default_locale` で選びます。
+- `og:image` は下の 3（インスタンスのプレビュー画像）、なければ 4 です。
+- アカウントのものではないので、`fediverse:creator` と ActivityPub の `alternate` は出しません。
+
 `og:image` は次の順で選びます。
 
 1. 投稿の最初の添付画像（代替テキストを `og:image:alt` に入れる）。センシティブ指定または CW 付きの投稿では使わない
@@ -51,7 +60,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 ### キャッシュ
 
 - `Cache-Control: public, max-age=60, stale-while-revalidate=300` を返します。削除や公開範囲の変更は、最長でこの時間だけ共有キャッシュに残ります。
-- ETag はテンプレート・アセット・インスタンスの設定の版、言語、投稿の版（リビジョン）、実効公開範囲、プロフィールの版、選んだ画像から作ります。`If-None-Match` には `304` を返します。
+- ETag はテンプレート・アセット・インスタンスの設定の版、言語、投稿の版（リビジョン）、実効公開範囲、プロフィールの版、選んだ画像（ランディングページは、インスタンスの説明と選んだ画像）から作ります。`If-None-Match` には `304` を返します。
 - CDN を前に置く場合は、`Accept` をキャッシュキーに含めてください（AP の JSON と HTML を取り違えないため）。
 
 ## 手動確認の手順

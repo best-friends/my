@@ -57,6 +57,7 @@ const (
 
 // Values of og:type and twitter:card.
 const (
+	ogTypeWebsite    = "website"
 	ogTypeProfile    = "profile"
 	ogTypeArticle    = "article"
 	cardSummary      = "summary"
@@ -71,8 +72,10 @@ type previewMeta struct {
 	// PublishedTime and AuthorURL are for posts (article:*), Username for profiles
 	// (profile:username).
 	PublishedTime, AuthorURL, Username string
-	Card, Creator, ActivityPubID       string
-	NoIndex                            bool
+	// Creator (fediverse:creator) and ActivityPubID (the ActivityPub alternate) are for profiles
+	// and posts; the landing page has neither.
+	Card, Creator, ActivityPubID string
+	NoIndex                      bool
 }
 
 // uuidPattern matches the canonical form of a UUIDv7, the only form of a status ID in a post
@@ -267,6 +270,14 @@ func (h *Handler) profileImage(ctx context.Context, lang string, p appcontent.Pr
 	case p.Avatar != nil:
 		return previewImage(p.Avatar, l.ServerPreviewAvatarAlt(name)), nil
 	}
+	return h.instanceImage(ctx, lang)
+}
+
+// instanceImage returns the instance's preview image for a preview in language lang, or the
+// built-in image when the instance has none. An image without alt text gets a generic one
+// naming the instance.
+func (h *Handler) instanceImage(ctx context.Context, lang string) (*Image, error) {
+	l := h.o.Messages.Localizer(lang)
 	if h.o.DefaultImage == nil {
 		return h.builtInImage(l.ServerPreviewBuiltinImageAlt()), nil
 	}
