@@ -63,11 +63,40 @@ export function countCharacters(text: string): number {
   return Array.from(text).length;
 }
 
-/** The most images a post can have (StatusMediaInput in api/openapi.yaml). */
+/** The most attachments a post can have (StatusMediaInput in api/openapi.yaml). */
 export const maxAttachments = 4;
 
 /** The longest alternative text (StatusMediaItem.description in api/openapi.yaml). */
 export const maxDescriptionLength = 1500;
 
 /** The image types the server accepts (the uploadMedia operation). */
-export const acceptedImageTypes: readonly string[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const acceptedImageTypes: readonly string[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+/** The video types the server accepts: MP4, QuickTime, and WebM (the uploadMedia operation, ADR-0054 §6). */
+const acceptedVideoTypes: readonly string[] = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"];
+
+/** The audio types the server accepts: MP3, Ogg, M4A, and WebM (the uploadMedia operation, ADR-0054 §6). */
+const acceptedAudioTypes: readonly string[] = [
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/ogg",
+  "audio/opus",
+  "audio/vorbis",
+  "application/ogg",
+  "audio/mp4",
+  "audio/x-m4a",
+  "audio/m4a",
+  "audio/aac",
+  "audio/webm",
+];
+
+/** Every type the file picker offers. */
+export const acceptedMediaTypes: readonly string[] = [...acceptedImageTypes, ...acceptedVideoTypes, ...acceptedAudioTypes];
+
+/** What a picked file is by its declared type, or null for a type the server does not accept. */
+export function mediaKind(type: string): "image" | "video" | "audio" | null {
+  if (acceptedImageTypes.includes(type)) return "image";
+  if (acceptedVideoTypes.includes(type)) return "video";
+  if (acceptedAudioTypes.includes(type)) return "audio";
+  return null;
+}

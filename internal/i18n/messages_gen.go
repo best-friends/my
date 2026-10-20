@@ -1103,9 +1103,23 @@ func (l *Localizer) ServerErrorsMediaTooLarge() string {
 	return l.format("server:errors.media_too_large", nil)
 }
 
-// ServerErrorsMediaUnsupportedFormat formats "server:errors.media_unsupported_format". API error title for HTTP 415 when an uploaded file is not an accepted image format, or its declared type does not match its content. JPEG, PNG, GIF, WebP are format names (not translated).
+// ServerErrorsMediaTooLong formats "server:errors.media_too_long". API error title for HTTP 422 when an uploaded video or audio file is longer than the server accepts.
 //
-//	en: This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image.
+//	en: The video or audio is too long.
+func (l *Localizer) ServerErrorsMediaTooLong() string {
+	return l.format("server:errors.media_too_long", nil)
+}
+
+// ServerErrorsMediaUnsupportedCodec formats "server:errors.media_unsupported_codec". Detail of the HTTP 415 API error when an uploaded video or audio file is in an accepted container but its codec is not accepted. HEVC and H.264 are codec names (not translated); High Efficiency and Most Compatible are the names of the iPhone camera formats.
+//
+//	en: This video or audio codec is not supported. HEVC (High Efficiency) video cannot be uploaded: record in H.264 (Most Compatible) instead.
+func (l *Localizer) ServerErrorsMediaUnsupportedCodec() string {
+	return l.format("server:errors.media_unsupported_codec", nil)
+}
+
+// ServerErrorsMediaUnsupportedFormat formats "server:errors.media_unsupported_format". API error title for HTTP 415 when an uploaded file is not an accepted image, video, or audio format, or its declared type does not match its content. JPEG, PNG, GIF, WebP, MP4, WebM, MP3, Ogg, M4A are format names (not translated).
+//
+//	en: This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file.
 func (l *Localizer) ServerErrorsMediaUnsupportedFormat() string {
 	return l.format("server:errors.media_unsupported_format", nil)
 }

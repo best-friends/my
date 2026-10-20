@@ -11,7 +11,8 @@
 // otherwise, which every federated server shows (always PNG for a custom emoji, which servers
 // do not take as JPEG, ADR-0051 §2), and the small and medium ones are WebP. An
 // animation also gets moving variants: a GIF for the large one and animated WebP for the
-// others (§3); its still variants show its first frame.
+// others (§3); its still variants show its first frame. Video and audio files are remuxed
+// without metadata and never transcoded (§6, AVProcessor).
 package media
 
 import (
@@ -306,11 +307,13 @@ type Processor interface {
 	// Output.Still.Small, decoding no more than the first frame. The media proxy makes it of
 	// remote files (ADR-0054 §7).
 	Preview(ctx context.Context, data []byte, limits Limits, sizes Sizes, req Request) (Variant, error)
+	// AVProcessor checks and remuxes video and audio files.
+	AVProcessor
 }
 
 // Rejected reports whether err means the content is not acceptable (as opposed to a failure
 // such as a cancelled context, after which a retry may succeed).
 func Rejected(err error) bool {
 	return errors.Is(err, ErrUnsupportedFormat) || errors.Is(err, ErrTooLarge) ||
-		errors.Is(err, ErrDimensions) || errors.Is(err, ErrCorrupt)
+		errors.Is(err, ErrDimensions) || errors.Is(err, ErrCorrupt) || errors.Is(err, ErrTooLong)
 }

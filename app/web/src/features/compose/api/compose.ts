@@ -56,10 +56,10 @@ export function cacheUploadedMedia(api: Api, queryClient: QueryClient, media: Me
 }
 
 /**
- * Uploads one image to attach to a post (POST /media, 202) and returns the file in its current state, usually
- * `processing`.
+ * Uploads one image, video, or audio file to attach to a post (POST /media, 202) and returns the file in its current
+ * state, usually `processing`. A video or audio file may come with its poster, sent as the `thumbnail`.
  */
-export async function uploadMedia(api: Api, file: File): Promise<MediaAttachment> {
+export async function uploadMedia(api: Api, file: File, poster: Blob | null = null): Promise<MediaAttachment> {
   const { data } = await api.fetch.POST("/media", {
     // The body is serialized by hand: openapi-typescript types a binary part as a string.
     body: { file: file.name, purpose: "attachment" },
@@ -67,6 +67,7 @@ export async function uploadMedia(api: Api, file: File): Promise<MediaAttachment
       const form = new FormData();
       form.append("file", file, file.name);
       form.append("purpose", "attachment");
+      if (poster !== null) form.append("thumbnail", poster, "poster.jpg");
       return form;
     },
   });

@@ -27,7 +27,9 @@ import (
 // WebP EXIF), the EXIF orientation, the small, medium, and large variants within the boxes of
 // each purpose (the avatars cropped to squares around the focal point), the still and moving
 // variants of animations, the output formats, a valid blurhash, repeatable output, and
-// cancellation.
+// cancellation; and for video and audio files (ADR-0054 §6), the remux of MP4, QuickTime, WebM,
+// MP3, and Ogg without metadata with their positions rewritten, the codec allowlist (no HEVC),
+// and the size, duration, dimension, and frame rate limits.
 func MediaProcessorContract(t *testing.T, p media.Processor) {
 	t.Helper()
 	cases := []struct {
@@ -50,6 +52,7 @@ func MediaProcessorContract(t *testing.T, p media.Processor) {
 		{"GivesTheSameOutputForTheSameInput", mediaIsDeterministic},
 		{"StopsOnCancelledContext", mediaStopsOnCancel},
 	}
+	cases = append(cases, mediaAVCases...)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, p) })
 	}
