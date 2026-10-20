@@ -243,7 +243,12 @@ func accountDocument(host string, act federation.OutboundActivity, a appaccount.
 		}
 		object = doc.Embedded()
 	}
-	return federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, object).Marshal()
+	doc := federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, aud, object)
+	if act.Type == federation.ActivityUpdate {
+		// The embedded actor has no context of its own; the Update carries the actor's.
+		doc.Context = federation.ActorLDContext()
+	}
+	return doc.Marshal()
 }
 
 // deleteDocument returns the Delete of a local status st, built from the deletion event alone so

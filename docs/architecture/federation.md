@@ -58,6 +58,7 @@ ADR-0032 のプロファイルに従います。要点:
 - **送信**: draft-cavage-12（`rsa-sha256`）で送り、400 / 401 なら RFC 9421 で 1 回だけ再送し、成功したホストを KV に 7 日記憶します。
 - **鍵**: リモートの公開鍵は `account_keys` に持ち、取得から 24 時間で古いとみなします。検証に失敗したら、`keyId` ごとに 5 分に 1 回まで取り直して 1 回だけ再検証します（ADR-0019 §5, §7）。
 - **署名者と主体**: 鍵の持ち主（`owner`）がアクティビティの `actor` と一致し、`keyId` のホストが `actor` のホストと一致することを確かめます。一致しなければ、オブジェクトを `id` からオリジンに取り直します（§3.3）。
+- **Object Integrity Proofs**（[FEP-8b32](https://codeberg.org/fediverse/fep/src/branch/main/fep/8b32/fep-8b32.md)、FR-410）: 配送する文書に、Actor の Ed25519 鍵で `eddsa-jcs-2022` の `proof` を付けます（§7.3）。鍵は Actor の文書の `assertionMethod` に `Multikey`（[FEP-521a](https://codeberg.org/fediverse/fep/src/branch/main/fep/521a/fep-521a.md)）で載せます（§10）。受信では、署名者が `actor` のアクティビティの `proof` を HTTP 署名に加えて検証します（§3.1 の手順 12）。HTTP 署名は省けず、署名者と `actor` が違うアクティビティは `proof` があっても取り直します（ADR-0032、ADR-0033）。
 - **インスタンス Actor**: オブジェクトの取得（GET）は、インスタンス Actor（`Application`）の鍵で署名します。相手が Authorized Fetch でも取得でき、特定の利用者の鍵を使わないので、相手のブロックに巻き込まれません。
 
 ### 2.1 実装
@@ -99,11 +100,16 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 | 9 | 未知の Actor の自分自身の `Delete` / `Update`（`actor == object`、`accounts (uri)` に無い）なら、鍵を取りに行かずに捨てる（ADR-0019 §7） | `202` |
 | 10 | 鍵の解決（未知・期限切れなら Actor を取得。5 秒で打ち切る） | `401`（取得できない）/ `503`（取得先がサーキットブレーカーで止まっている） |
 | 11 | 署名の検証（ADR-0032。保存した鍵で検証できなければ鍵を取り直して 1 回だけ再検証する） | `401` + `Accept-Signature` |
-| 12 | 署名者と `actor` の照合。一致しなければジョブに `trust = refetch` を付ける | — |
+| 12 | 署名者と `actor` の照合。一致しなければジョブに `trust = refetch` を付ける。一致すれば、本文の `proof`（FEP-8b32）を検証する（下記） | `401` + `Accept-Signature`（`proof` が検証できない） |
 | 13 | 1 つの短いトランザクションで、`received_activities` に `ON CONFLICT DO NOTHING` で挿入し、行が増えたときだけ `received_activity_documents` と `federation.inbox` ジョブ（`queue.Outbox`）を書く | — |
 | 14 | 署名者のドメインの `instance_health` を `available` に戻す（§7.3） | — |
 | 15 | `202 Accepted` | — |
 
+- 手順 12 の `proof` の検証（`SignatureVerifier.VerifyProof`）: 本文の最上位の `proof` が 1 つのオブジェクトで、`type` が `DataIntegrityProof`、`cryptosuite` が `eddsa-jcs-2022`、`proofPurpose` が `assertionMethod`、`expires` を過ぎていないときだけ検証します。`verificationMethod` の鍵は HTTP 署名と同じ `PublicKeyResolver` で引き、`assertionMethod` の `Multikey` から読んだ Ed25519 の鍵を使います。
+  - `proof` が無い・条件に合わない・鍵を引けない・鍵が Ed25519 でないときは、`proof` を無視して HTTP 署名だけで受け付けます（FEP-8b32 の「検証できない証明は無視して、ほかの認証に頼る」）。
+  - 鍵の持ち主が `actor` でない、または署名が合わないときは `401` で拒否します（FEP-8b32 は `proof` を HTTP 署名より優先する）。保存した鍵で合わなければ、HTTP 署名と同じく `keyId` ごとに 5 分に 1 回まで鍵を取り直して 1 回だけ再検証します。拒否の理由は `integrity proof does not verify` です。
+  - 検証は `proof` を除き、FEP-8b32 のとおり LD 署名（`signature`）も除いた文書に対して行います。`proof` に `@context` があれば、文書の `@context` がそれで始まることを確かめ、文書の `@context` をそれに置き換えて正規化します（vc-di-eddsa §3.3.2）。
+  - 署名者と `actor` が違う（`trust = refetch`）アクティビティの `proof` は検証しません。どのみちオブジェクトをオリジンから取り直すからです。`proof` が通ったときに取り直しや HTTP 署名を省くことはしません（省くなら ADR-0033 の改定が要る）。
 - `id` の無いアクティビティは、`actor`・改行・受け取った本文をつないだ SHA-256 の 16 進表記から `urn:my:digest:<hex>` を合成して重複排除のキーにします（[data-model §2.2](data-model.md#22-冪等キーと一意制約)）。
 - `id` のホストが `actor` のホストと異なるアクティビティと、鍵の持ち主（`owner`）が `keyId` のホストに無いアクティビティは、`trust = refetch` にします。
 - 鍵の取得はトランザクションの外で行います（ADR-0003）。取得した Actor の書き込みは、受信の記録とは別の短いトランザクションです。
@@ -362,7 +368,11 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 1. 宛先のドメインに送らない活動なら（`unavailable`、またはドメイン単位の `suspend`。§7.2 の手順 4 と同じ `federation.Deliverable`）、試行せず `skipped` を記録して完了にする。
 2. inbox のホストのサーキットブレーカーが開いていたら、送らずに `retryable_failure`（`signature_scheme` は NULL）を記録して `Retry` を返す。
-3. `outbound_activity_documents` の本文に、Actor の RSA 鍵（`{actor}#main-key`）で署名して POST する（§2 の double-knocking）。
+3. `outbound_activity_documents` の本文に Actor の Ed25519 鍵（`{actor}#ed25519-key`）で `proof`（FEP-8b32）を付け、Actor の RSA 鍵（`{actor}#main-key`）で HTTP 署名して POST する（§2 の double-knocking）。
+   - `proof` は `eddsa-jcs-2022`（JCS（[RFC 8785](https://www.rfc-editor.org/rfc/rfc8785)）・SHA-256・Ed25519）で、`created` は活動の時刻（`outbound_activities.created_at`）です。Ed25519 の署名は決定的なので、同じ活動の配送とリトライはどれも同じバイト列を送ります。保存する本文は変えません。
+   - 本文の `@context` に `https://w3id.org/security/data-integrity/v2` が無ければ足し、`proof` にも同じ `@context` を付けます（FEP-8b32 の例と同じ）。
+   - Ed25519 の鍵が無い Actor の文書と、LD 署名（`signature`）の付いた文書には付けません。LD 署名の後に `proof` を足すと LD 署名が壊れるので、両方を付けるなら LD 署名を作るところで、その前に `proof` を付けます（FEP-8b32 の Backward compatibility）。
+   - JCS と `proof` の作成・検証は `internal/domain/federation`（`CanonicalJSON`、`SignEdDSAJCS2022`、`ReadProof`）にあり、FEP-8b32 と FEP-521a のテストベクタで確かめます。
 4. 結果を分類して `delivery_attempts` に記録し、同じトランザクションでイベント `federation.delivery_attempted` を発行する。同期 projector が `instance_health` を更新する。
 
 | 応答 | 分類 | ジョブ |
@@ -401,7 +411,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - `Emoji`（[ADR-0051](../adr/0051-custom-emoji.md) §3）は、版の本文と CW で使った有効なカスタム絵文字です。`id` はローカルなら `https://{host}/ap/emojis/{uuid}`（リモートなら記録した `uri`、無ければ省く）、`name` は `:shortcode:`、`updated` は現在の画像を設定した時刻、`icon` は `Image` で、`url` と `mediaType` は `large` の版（アニメーションなら動く版の GIF、静止画は常に PNG）です。
     ローカルの投稿とプロフィールの絵文字は、保存のときに原文の `:shortcode:` から有効なローカルの絵文字だけを版に記録したものです（data-model §4.4）。リアクション（ADR-0052）も同じ形を使います（`federation.EmojiTag`）。
 - Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグ・カスタム絵文字は `content.Reader.Parts` で引きます。
-- `@context` は AS2・security・Mastodon 拡張（`toot:`。`Emoji` は `toot:Emoji`）の既存の Actor の文脈と同じものです。
+- `@context` は AS2・security・Mastodon 拡張（`toot:`。`Emoji` は `toot:Emoji`）です（`federation.LDContext`）。配送では `proof` のために data integrity の文脈を足します（§7.3）。
+- ローカルの Actor の文書と、それを埋め込む `Update` の `@context` は、security の後に Controlled Identifiers（`https://www.w3.org/ns/cid/v1`）を足したものです（`federation.ActorLDContext`）。`assertionMethod` に Ed25519 の鍵を `Multikey`（`id` は `{actor}#ed25519-key`、`controller` は Actor、`publicKeyMultibase` は base58btc の `z6Mk…`）で載せます（FEP-521a）。RSA の鍵は `publicKey` に載せます。
 
 ## 8. 公開範囲 `local` と連合
 

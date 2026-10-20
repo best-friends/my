@@ -296,6 +296,18 @@ func (i *Inbox) receive(ctx context.Context, in InboxRequest, typ *string) (Rece
 		ActivityURI: env.ActivityURI(r.Body), ActorURI: env.Actor, Type: env.Type,
 		Scheme: string(v.Scheme), Trust: env.TrustFor(owner), ReceivedAt: kernel.Normalize(i.d.Clock.Now()),
 	}
+	// The integrity proof of an activity that its actor signed (FEP-8b32). A relayed or
+	// forwarded activity is fetched again from its origin anyway (ADR-0033), so its proof is not
+	// checked.
+	if a.Trust == federation.TrustSigned {
+		_, rejected, err := i.d.Signatures.VerifyProof(ctx, r, env.Actor)
+		if err != nil {
+			return Received{}, err
+		}
+		if rejected != nil {
+			return Received{Rejection: rejection(rejected)}, nil
+		}
+	}
 	// 13. The record, the document, and the job, once per activity.
 	recorded, err := i.record(ctx, a, r.Body)
 	if err != nil {

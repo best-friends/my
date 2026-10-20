@@ -4,6 +4,7 @@ package federation
 
 import (
 	"context"
+	"crypto/ed25519"
 	"fmt"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
@@ -102,7 +103,7 @@ func ProfileURL(host, username string) string { return "https://" + host + "/@" 
 func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string, images ActorImages) federation.ActorDocument {
 	id := federation.IRI(a.Account.URI)
 	doc := federation.ActorDocument{
-		Context:    federation.LDContext(),
+		Context:    federation.ActorLDContext(),
 		ID:         id,
 		Type:       federation.ActorType(a.ActivityStreamsType()),
 		Following:  id + "/" + CollectionFollowing,
@@ -116,6 +117,9 @@ func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string
 	}
 	if k, ok := a.PublishedKey(); ok {
 		doc.PublicKey = &federation.PublicKeyDocument{ID: k.KeyID, Owner: id, PublicKeyPEM: k.PublicKeyPEM}
+	}
+	if m, ok := assertionMethod(a); ok {
+		doc.AssertionMethod = []federation.MultikeyDocument{m}
 	}
 	if a.IsInstanceActor() {
 		// The instance actor signs the instance's own requests and is followed by no one.
@@ -142,4 +146,25 @@ func LocalActorDocument(host string, a appaccount.Actor, instanceUsername string
 		}
 	}
 	return doc
+}
+
+// assertionMethod returns the Multikey of a's Ed25519 key (FEP-521a), which verifies the
+// integrity proofs of its activities (FEP-8b32), false when it has none.
+func assertionMethod(a appaccount.Actor) (federation.MultikeyDocument, bool) {
+	k, ok := a.AssertionKey()
+	if !ok {
+		return federation.MultikeyDocument{}, false
+	}
+	pub, err := appaccount.ParsePublicKeyPEM(k.PublicKeyPEM)
+	if err != nil {
+		return federation.MultikeyDocument{}, false
+	}
+	ed, ok := pub.(ed25519.PublicKey)
+	if !ok {
+		return federation.MultikeyDocument{}, false
+	}
+	return federation.MultikeyDocument{
+		ID: k.KeyID, Type: federation.MultikeyType, Controller: federation.IRI(a.Account.URI),
+		PublicKeyMultibase: federation.EncodeEd25519Multikey(ed),
+	}, true
 }

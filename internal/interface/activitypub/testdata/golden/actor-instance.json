@@ -2,6 +2,7 @@
   "@context": [
     "https://www.w3.org/ns/activitystreams",
     "https://w3id.org/security/v1",
+    "https://www.w3.org/ns/cid/v1",
     {
       "Emoji": "toot:Emoji",
       "Hashtag": "as:Hashtag",
@@ -43,6 +44,14 @@
     "owner": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e74",
     "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
   },
+  "assertionMethod": [
+    {
+      "id": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e74#ed25519-key",
+      "type": "Multikey",
+      "controller": "https://social.example.org/ap/actors/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e74",
+      "publicKeyMultibase": "z6MkhNrJJsFpMxLwM1dz4CSHfkecP3XRx6PzyVxaX3dPGXb3"
+    }
+  ],
   "tag": [],
   "attachment": [],
   "endpoints": {
