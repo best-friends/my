@@ -352,3 +352,55 @@ func TestClientAPIBlocksAndMutes(t *testing.T) {
 		t.Errorf("mutes after unmute = %+v", mutes)
 	}
 }
+
+func TestClientAPIDomainMutes(t *testing.T) {
+	t.Parallel()
+	e := newAccountsEnv(t)
+	alice, bob := e.user("alice"), e.user("bob")
+	mute := func(domain string) clientapi.DomainMute {
+		t.Helper()
+		var m clientapi.DomainMute
+		e.want(e.do(http.MethodPost, "/domain_mutes", alice.token, map[string]string{"domain": domain}, &m), http.StatusOK, "mute "+domain)
+		return m
+	}
+	// The domain is normalized: lower case, IDNA A-labels, no trailing dot.
+	if m := mute("Remote.Example."); m.Domain != "remote.example" || m.CreatedAt.IsZero() {
+		t.Errorf("mute = %+v", m)
+	}
+	if m := mute("例え.テスト"); m.Domain != "xn--r8jz45g.xn--zckzah" {
+		t.Errorf("mute IDN = %+v", m)
+	}
+	mute("remote.example") // again: nothing changes
+	mute("a.example")
+	for _, bad := range []string{"bad domain", "remote.example/path", "."} {
+		e.want(e.do(http.MethodPost, "/domain_mutes", alice.token, map[string]string{"domain": bad}, nil), http.StatusUnprocessableEntity, "mute "+bad)
+	}
+
+	var page clientapi.DomainMutePage
+	e.want(e.do(http.MethodGet, "/domain_mutes?limit=2", alice.token, nil, &page), http.StatusOK, "domain mutes")
+	if len(page.DomainMutes) != 2 || page.DomainMutes[0].Domain != "a.example" || page.DomainMutes[1].Domain != "remote.example" || page.NextCursor == nil {
+		t.Fatalf("first page = %+v", page)
+	}
+	cursor := *page.NextCursor
+	page = clientapi.DomainMutePage{}
+	e.want(e.do(http.MethodGet, "/domain_mutes?limit=2&cursor="+url.QueryEscape(cursor), alice.token, nil, &page), http.StatusOK, "domain mutes page 2")
+	if len(page.DomainMutes) != 1 || page.DomainMutes[0].Domain != "xn--r8jz45g.xn--zckzah" || page.NextCursor != nil {
+		t.Errorf("second page = %+v", page)
+	}
+	page = clientapi.DomainMutePage{}
+	e.want(e.do(http.MethodGet, "/domain_mutes", bob.token, nil, &page), http.StatusOK, "bob's domain mutes")
+	if len(page.DomainMutes) != 0 {
+		t.Errorf("bob's domain mutes = %+v", page)
+	}
+
+	// Unmuting takes the domain in any spelling, and again changes nothing.
+	for range 2 {
+		e.want(e.do(http.MethodDelete, "/domain_mutes/REMOTE.example", alice.token, nil, nil), http.StatusNoContent, "unmute")
+	}
+	page = clientapi.DomainMutePage{}
+	e.want(e.do(http.MethodGet, "/domain_mutes", alice.token, nil, &page), http.StatusOK, "domain mutes after unmute")
+	if len(page.DomainMutes) != 2 || page.DomainMutes[1].Domain != "xn--r8jz45g.xn--zckzah" {
+		t.Errorf("domain mutes after unmute = %+v", page)
+	}
+	e.want(e.do(http.MethodGet, "/domain_mutes", "", nil, nil), http.StatusUnauthorized, "anonymous")
+}

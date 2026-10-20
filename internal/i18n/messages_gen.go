@@ -118,7 +118,7 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadFollows() string {
 
 // ServerAuthAuthorizeScopeReadMutes formats "server:auth.authorize.scope.read_mutes". Permission (OAuth scope read:mutes) listed on the authorization page.
 //
-//	en: Read the accounts you mute
+//	en: Read the accounts and domains you mute
 func (l *Localizer) ServerAuthAuthorizeScopeReadMutes() string {
 	return l.format("server:auth.authorize.scope.read_mutes", nil)
 }
@@ -195,7 +195,7 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteMedia() string {
 
 // ServerAuthAuthorizeScopeWriteMutes formats "server:auth.authorize.scope.write_mutes". Permission (OAuth scope write:mutes) listed on the authorization page.
 //
-//	en: Mute and unmute accounts
+//	en: Mute and unmute accounts and domains
 func (l *Localizer) ServerAuthAuthorizeScopeWriteMutes() string {
 	return l.format("server:auth.authorize.scope.write_mutes", nil)
 }
@@ -933,6 +933,13 @@ func (l *Localizer) ServerErrorsBlocking() string {
 //	en: The request conflicts with the current state of the resource.
 func (l *Localizer) ServerErrorsConflict() string {
 	return l.format("server:errors.conflict", nil)
+}
+
+// ServerErrorsDomainMutesTooMany formats "server:errors.domain_mutes.too_many". API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains.
+//
+//	en: You already mute the most domains allowed. Unmute one first.
+func (l *Localizer) ServerErrorsDomainMutesTooMany() string {
+	return l.format("server:errors.domain_mutes.too_many", nil)
 }
 
 // ServerErrorsExportInProgress formats "server:errors.export.in_progress". API error title for HTTP 409 when the user asks for an archive of their data while another one is still being built.

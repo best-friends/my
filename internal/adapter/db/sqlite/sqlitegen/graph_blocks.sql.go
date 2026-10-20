@@ -12,6 +12,17 @@ import (
 	"database/sql"
 )
 
+const countDomainMutes = `-- name: CountDomainMutes :one
+SELECT COUNT(*) FROM account_domain_mutes WHERE account_id = ?
+`
+
+func (q *Queries) CountDomainMutes(ctx context.Context, accountID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countDomainMutes, accountID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteAllBlockEdges = `-- name: DeleteAllBlockEdges :exec
 DELETE FROM block_edges
 `
@@ -34,6 +45,25 @@ type DeleteBlockEdgeParams struct {
 func (q *Queries) DeleteBlockEdge(ctx context.Context, arg DeleteBlockEdgeParams) error {
 	_, err := q.db.ExecContext(ctx, deleteBlockEdge, arg.BlockerAccountID, arg.BlockedAccountID, arg.BlockID)
 	return err
+}
+
+const deleteDomainMute = `-- name: DeleteDomainMute :execrows
+DELETE FROM account_domain_mutes WHERE account_id = ? AND domain = ?
+`
+
+type DeleteDomainMuteParams struct {
+	AccountID string
+	Domain    string
+}
+
+// DeleteDomainMute deletes the domain mute and reports, by the rows it deleted, whether there
+// was one.
+func (q *Queries) DeleteDomainMute(ctx context.Context, arg DeleteDomainMuteParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteDomainMute, arg.AccountID, arg.Domain)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const deleteExpiredMutes = `-- name: DeleteExpiredMutes :many
@@ -252,6 +282,28 @@ func (q *Queries) InsertBlockRetraction(ctx context.Context, arg InsertBlockRetr
 	return err
 }
 
+const insertDomainMute = `-- name: InsertDomainMute :execrows
+
+INSERT INTO account_domain_mutes (account_id, domain, created_at) VALUES (?, ?, ?)
+ON CONFLICT (account_id, domain) DO NOTHING
+`
+
+type InsertDomainMuteParams struct {
+	AccountID string
+	Domain    string
+	CreatedAt int64
+}
+
+// Domain mutes (current value, FR-304).
+// InsertDomainMute inserts nothing when the account already mutes the domain.
+func (q *Queries) InsertDomainMute(ctx context.Context, arg InsertDomainMuteParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, insertDomainMute, arg.AccountID, arg.Domain, arg.CreatedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const listActiveMutesPage = `-- name: ListActiveMutesPage :many
 SELECT account_id, target_account_id, hide_notifications, expires_at, created_at
 FROM mutes
@@ -296,6 +348,35 @@ func (q *Queries) ListActiveMutesPage(ctx context.Context, arg ListActiveMutesPa
 			&i.ExpiresAt,
 			&i.CreatedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllDomainMutes = `-- name: ListAllDomainMutes :many
+SELECT account_id, domain, created_at FROM account_domain_mutes ORDER BY account_id, domain
+`
+
+// ListAllDomainMutes returns every domain mute, ordered by account and domain, as the source of
+// other modules' projections.
+func (q *Queries) ListAllDomainMutes(ctx context.Context) ([]AccountDomainMute, error) {
+	rows, err := q.db.QueryContext(ctx, listAllDomainMutes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AccountDomainMute{}
+	for rows.Next() {
+		var i AccountDomainMute
+		if err := rows.Scan(&i.AccountID, &i.Domain, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -446,6 +527,44 @@ func (q *Queries) ListBlockingPage(ctx context.Context, arg ListBlockingPagePara
 	for rows.Next() {
 		var i BlockEdge
 		if err := rows.Scan(&i.BlockerAccountID, &i.BlockedAccountID, &i.BlockID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDomainMutesPage = `-- name: ListDomainMutesPage :many
+SELECT account_id, domain, created_at FROM account_domain_mutes
+WHERE account_id = ?1 AND (CAST(?2 AS TEXT) = '' OR domain > CAST(?2 AS TEXT))
+ORDER BY domain
+LIMIT ?3
+`
+
+type ListDomainMutesPageParams struct {
+	AccountID    string
+	BeforeDomain string
+	PageLimit    int64
+}
+
+// ListDomainMutesPage pages the domain mutes of an account in the order of their domains; an
+// empty before_domain starts at the first.
+func (q *Queries) ListDomainMutesPage(ctx context.Context, arg ListDomainMutesPageParams) ([]AccountDomainMute, error) {
+	rows, err := q.db.QueryContext(ctx, listDomainMutesPage, arg.AccountID, arg.BeforeDomain, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AccountDomainMute{}
+	for rows.Next() {
+		var i AccountDomainMute
+		if err := rows.Scan(&i.AccountID, &i.Domain, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

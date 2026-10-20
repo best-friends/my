@@ -64,7 +64,7 @@
     "description": "Permission (OAuth scope read:follows) listed on the authorization page."
   },
   "auth.authorize.scope.read_mutes": {
-    "defaultMessage": "Read the accounts you mute",
+    "defaultMessage": "Read the accounts and domains you mute",
     "description": "Permission (OAuth scope read:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.read_notifications": {
@@ -108,7 +108,7 @@
     "description": "Permission (OAuth scope write:media) listed on the authorization page."
   },
   "auth.authorize.scope.write_mutes": {
-    "defaultMessage": "Mute and unmute accounts",
+    "defaultMessage": "Mute and unmute accounts and domains",
     "description": "Permission (OAuth scope write:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.write_notifications": {
@@ -942,5 +942,9 @@
   "errors.invalid_custom_emoji_detail": {
     "defaultMessage": "{reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
+  },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "You already mute the most domains allowed. Unmute one first.",
+    "description": "API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains."
   }
 }

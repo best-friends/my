@@ -61,6 +61,11 @@ func TestCSVExportAndImport(t *testing.T) {
 	if err := e.app.Interactions.Bookmark(ctx, alice.accountID, post); err != nil {
 		t.Fatal(err)
 	}
+	for _, d := range []string{"xn--r8jz45g.xn--zckzah", "spam.example"} {
+		if _, err := e.app.Graph.MuteDomain(ctx, alice.accountID, d); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	domain := e.app.Config.Host
 	if e.app.Config.AccountDomain != "" {
@@ -80,9 +85,10 @@ func TestCSVExportAndImport(t *testing.T) {
 	// The follow of carol is pending until her server accepts it, so only bob is listed.
 	files := map[domidentity.ImportKind]string{}
 	for kind, want := range map[domidentity.ImportKind]string{
-		domidentity.ImportFollowing: "Account address,Show boosts,Notify on new posts,Languages\nbob@" + domain + ",false,true,\n",
-		domidentity.ImportBlocks:    "dave@" + domain + "\n",
-		domidentity.ImportMutes:     "Account address,Hide notifications\nerin@" + domain + ",false\n",
+		domidentity.ImportFollowing:   "Account address,Show boosts,Notify on new posts,Languages\nbob@" + domain + ",false,true,\n",
+		domidentity.ImportBlocks:      "dave@" + domain + "\n",
+		domidentity.ImportMutes:       "Account address,Hide notifications\nerin@" + domain + ",false\n",
+		domidentity.ImportDomainMutes: "spam.example\nxn--r8jz45g.xn--zckzah\n",
 	} {
 		if got := export(string(kind)); got != want {
 			t.Errorf("%s = %q, want %q", kind, got, want)
@@ -96,6 +102,8 @@ func TestCSVExportAndImport(t *testing.T) {
 	files[domidentity.ImportBookmarks] = bookmarks
 	// A Mastodon file may name remote accounts and accounts that do not exist.
 	files[domidentity.ImportFollowing] += "carol@remote.example,true,false,\nghost@" + domain + ",true,false,\n"
+	// This server's own domain cannot be muted.
+	files[domidentity.ImportDomainMutes] += e.app.Config.Host + "\n"
 
 	// Bob imports them.
 	for _, kind := range domidentity.ImportKinds {
@@ -109,13 +117,16 @@ func TestCSVExportAndImport(t *testing.T) {
 		}
 	}
 	list, err := e.app.Imports.ListImports(ctx, bob.userID)
-	if err != nil || len(list) != 4 {
+	if err != nil || len(list) != len(domidentity.ImportKinds) {
 		t.Fatalf("ListImports = %+v, %v", list, err)
 	}
 	for _, imp := range list {
 		wantFailed := 0
-		if imp.Kind == domidentity.ImportFollowing {
+		switch imp.Kind {
+		case domidentity.ImportFollowing:
 			wantFailed = 2 // himself, and the ghost
+		case domidentity.ImportDomainMutes:
+			wantFailed = 1 // this server's domain
 		}
 		if !imp.Finished() || imp.Failed != wantFailed {
 			t.Errorf("%s import = %+v, want finished with %d failed", imp.Kind, imp, wantFailed)
@@ -138,6 +149,10 @@ func TestCSVExportAndImport(t *testing.T) {
 	if r := rel(erin.accountID); !r.Muting || r.MutingNotifications {
 		t.Errorf("bob → erin = %+v, want muting with notifications", r)
 	}
+	if mutes, err := e.app.Graph.DomainMutes(ctx, bob.accountID, graph.DomainMutePage{}); err != nil || len(mutes) != 2 ||
+		mutes[0].Domain != "spam.example" || mutes[1].Domain != "xn--r8jz45g.xn--zckzah" {
+		t.Errorf("bob's domain mutes = %+v, %v", mutes, err)
+	}
 	page, err := e.app.Statuses.Bookmarks(ctx, bob.accountID, "", 10)
 	if err != nil || len(page.Statuses) != 1 || page.Statuses[0].Status.ID != post {
 		t.Errorf("bob's bookmarks = %+v, %v; want the post", page, err)
@@ -154,5 +169,25 @@ func TestCSVExportAndImport(t *testing.T) {
 	}
 	if blocking, _ := e.app.Graph.IsBlocking(ctx, alice.accountID, dave.accountID); blocking {
 		t.Error("alice still blocks dave after the overwrite")
+	}
+
+	// Alice overwrites her muted domains with a file that names one of them as a U-label.
+	in = identity.ImportInput{
+		UserID: alice.userID, AccountID: alice.accountID, Kind: domidentity.ImportDomainMutes, Mode: domidentity.ImportOverwrite,
+		Text: "#domain\n例え.テスト\n",
+	}
+	preview, err := e.app.Imports.PreviewImport(ctx, in)
+	if err != nil || preview.Present != 1 || len(preview.Removals) != 1 || preview.Removals[0].ID != "spam.example" {
+		t.Fatalf("PreviewImport(domains) = %+v, %v; want one present and spam.example removed", preview, err)
+	}
+	started, err = e.app.Imports.StartImport(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.app.Imports.ProcessImport(ctx, started.ID, false); err != nil {
+		t.Fatal(err)
+	}
+	if mutes, err := e.app.Graph.DomainMutes(ctx, alice.accountID, graph.DomainMutePage{}); err != nil || len(mutes) != 1 || mutes[0].Domain != "xn--r8jz45g.xn--zckzah" {
+		t.Errorf("alice's domain mutes after the overwrite = %+v, %v", mutes, err)
 	}
 }

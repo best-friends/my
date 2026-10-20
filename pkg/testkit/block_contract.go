@@ -26,6 +26,7 @@ import (
 // the emitted domain events, the blocks of remote accounts received from their servers and a
 // local account's block of a remote one, muting with and without expiry (an expired mute no longer applies
 // on read), paging mutes, rejecting invalid mutes, deleting expired mutes with an Unmuted each,
+// muting domains (once each, in the order of their domains, with their events and replay),
 // and the property that follow_edges,
 // follow_counters, and block_edges equal a rebuild from the follows, the blocks, and their events.
 func BlockRepositoryContract(t *testing.T, newHarness FollowFactory) {
@@ -47,12 +48,16 @@ func BlockRepositoryContract(t *testing.T, newHarness FollowFactory) {
 		{"PagesMutes", mutePages},
 		{"RejectsInvalidMutes", muteRejectsInvalid},
 		{"DeletesExpiredMutes", muteDeletesExpired},
+		{"MutesDomains", muteDomains},
 		{"IncrementalProjectionEqualsRebuild", blockProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			e := newFollowEnv(t, newHarness)
-			for _, typ := range []string{appgraph.EventBlocked, appgraph.EventUnblocked, appgraph.EventMuted, appgraph.EventUnmuted} {
+			for _, typ := range []string{
+				appgraph.EventBlocked, appgraph.EventUnblocked, appgraph.EventMuted, appgraph.EventUnmuted,
+				appgraph.EventDomainMuted, appgraph.EventDomainUnmuted,
+			} {
 				e.captured.Register(typ, e.events.record)
 			}
 			tc.run(t, e)
@@ -588,6 +593,93 @@ func muteRejectsInvalid(t *testing.T, e *followEnv) {
 	}
 	if mutes, _ := e.graph.Mutes(ctx, alice, appgraph.MutePage{}); len(mutes) != 0 {
 		t.Errorf("Mutes = %+v, want none", mutes)
+	}
+}
+
+func muteDomains(t *testing.T, e *followEnv) {
+	ctx := t.Context()
+	alice, bob := e.user(t, "alice", false), e.user(t, "bob", false)
+	domains := []string{"c.example", "a.example", "b.example"}
+	for _, d := range domains {
+		m, err := e.graph.MuteDomain(ctx, alice, d)
+		if err != nil {
+			t.Fatalf("MuteDomain(%s) = %v", d, err)
+		}
+		if m.AccountID != alice || m.Domain != d || !m.CreatedAt.Equal(e.clock.Now()) {
+			t.Errorf("MuteDomain(%s) = %+v", d, m)
+		}
+		want := []uow.Event{appgraph.DomainMuted{Mute: m}}
+		if got := e.events.take(); !reflect.DeepEqual(got, want) {
+			t.Errorf("events of MuteDomain = %+v, want %+v", got, want)
+		}
+	}
+	// Muting a domain again changes nothing and emits nothing.
+	if _, err := e.graph.MuteDomain(ctx, alice, "a.example"); err != nil {
+		t.Fatal(err)
+	}
+	if got := e.events.take(); len(got) != 0 {
+		t.Errorf("events of a repeated MuteDomain = %+v, want none", got)
+	}
+	if _, err := e.graph.MuteDomain(ctx, bob, "a.example"); err != nil {
+		t.Fatal(err)
+	}
+	e.events.take()
+
+	var got []string
+	after := ""
+	for range 3 {
+		page, err := e.graph.DomainMutes(ctx, alice, appgraph.DomainMutePage{After: after, Limit: 2})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, m := range page {
+			got = append(got, m.Domain)
+			after = m.Domain
+		}
+	}
+	if want := []string{"a.example", "b.example", "c.example"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("DomainMutes pages = %v, want %v", got, want)
+	}
+
+	for _, d := range []string{"", "Upper.example", "a..example", "a.example/path", "a.example:443", contractHost} {
+		if _, err := e.graph.MuteDomain(ctx, alice, d); !errors.Is(err, graph.ErrInvalidDomain) {
+			t.Errorf("MuteDomain(%q) = %v, want ErrInvalidDomain", d, err)
+		}
+	}
+	missing := "00000000-0000-7000-8000-000000000000"
+	if _, err := e.graph.MuteDomain(ctx, missing, "a.example"); !errors.Is(err, appgraph.ErrAccountUnavailable) {
+		t.Errorf("MuteDomain(from missing) = %v, want ErrAccountUnavailable", err)
+	}
+
+	for range 2 {
+		if err := e.graph.UnmuteDomain(ctx, alice, "b.example"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := []uow.Event{appgraph.DomainUnmuted{AccountID: alice, Domain: "b.example"}}
+	if got := e.events.take(); !reflect.DeepEqual(got, want) {
+		t.Errorf("events of two UnmuteDomains = %+v, want %+v", got, want)
+	}
+
+	// Replaying emits a DomainMuted for each domain mute, ordered by account and domain.
+	var replayed []string
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return appgraph.ReplayEvents(ctx, tx, e.repo, func(ev uow.Event) error {
+			if m, ok := ev.(appgraph.DomainMuted); ok {
+				replayed = append(replayed, m.Mute.AccountID+" "+m.Mute.Domain)
+			}
+			return nil
+		})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantReplay := []string{alice + " a.example", alice + " c.example", bob + " a.example"}
+	if bob < alice {
+		wantReplay = []string{bob + " a.example", alice + " a.example", alice + " c.example"}
+	}
+	if !reflect.DeepEqual(replayed, wantReplay) {
+		t.Errorf("replayed domain mutes = %v, want %v", replayed, wantReplay)
 	}
 }
 

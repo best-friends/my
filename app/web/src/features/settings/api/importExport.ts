@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The user's follows, blocks, mutes, and bookmarks as Mastodon's CSV files (FR-008): downloading them, and importing a file
+// The user's follows, blocks, mutes, muted domains, and bookmarks as Mastodon's CSV files (FR-008): downloading them, and importing a file
 // after a preview, with the progress of the imports, which the server carries out in the background (web-client.md S1).
 import { type QueryClient, queryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -16,13 +16,14 @@ export type DataImportRequest = Schemas["DataImportRequest"];
 export type DataImportSkipped = Schemas["DataImportSkipped"];
 
 /** The kinds, in the order of the page. */
-export const dataImportKinds: readonly DataImportKind[] = ["following", "blocks", "mutes", "bookmarks"];
+export const dataImportKinds: readonly DataImportKind[] = ["following", "blocks", "mutes", "domain_mutes", "bookmarks"];
 
 /** The names Mastodon gives the files, which the server's Content-Disposition also names. */
 export const csvFileNames: Readonly<Record<DataImportKind, string>> = {
   following: "following_accounts.csv",
   blocks: "blocked_accounts.csv",
   mutes: "muted_accounts.csv",
+  domain_mutes: "blocked_domains.csv",
   bookmarks: "bookmarks.csv",
 };
 
@@ -61,10 +62,16 @@ export function startDataImportMutation(api: Api) {
   };
 }
 
-/** The query key paths of what a finished import changes: the lists, the profiles' relationships, and the bookmarks. */
+/**
+ * The query key paths of what a finished import changes: the lists, the profiles' relationships, the bookmarks, and the
+ * notifications that muted domains hide.
+ */
 const importedPaths: ReadonlySet<unknown> = new Set([
   "/blocks",
   "/mutes",
+  "/domain_mutes",
+  "/notifications",
+  "/notifications/marker",
   "/bookmarks",
   "/accounts/relationships",
   "/accounts/{id}/following",

@@ -21,6 +21,7 @@ const (
 	mastodonBlocks    = "spammer@spam.example\ntroll@example.net\n"
 	mastodonMutes     = "Account address,Hide notifications\nnoisy@example.com,true\nchatty@example.org,false\n"
 	mastodonBookmarks = "https://example.com/users/alice/statuses/1\nhttps://social.example/@bob/2\n"
+	mastodonDomains   = "spam.example\nexample.net\n"
 )
 
 func TestParseImportCSVReadsMastodonFiles(t *testing.T) {
@@ -44,6 +45,14 @@ func TestParseImportCSVReadsMastodonFiles(t *testing.T) {
 		{identity.ImportBookmarks, mastodonBookmarks, []identity.ImportEntry{
 			{Line: 1, Target: "https://example.com/users/alice/statuses/1", ShowBoosts: true, HideNotifications: true},
 			{Line: 2, Target: "https://social.example/@bob/2", ShowBoosts: true, HideNotifications: true},
+		}},
+		{identity.ImportDomainMutes, mastodonDomains, []identity.ImportEntry{
+			{Line: 1, Target: "spam.example", ShowBoosts: true, HideNotifications: true},
+			{Line: 2, Target: "example.net", ShowBoosts: true, HideNotifications: true},
+		}},
+		// A domains file with the header that Mastodon's import reads.
+		{identity.ImportDomainMutes, "#domain\nspam.example\n", []identity.ImportEntry{
+			{Line: 2, Target: "spam.example", ShowBoosts: true, HideNotifications: true},
 		}},
 		// The older following export had one address per line and no header.
 		{identity.ImportFollowing, "@carol@example.com\r\n\r\ndave\n", []identity.ImportEntry{
@@ -89,6 +98,21 @@ func TestParseImportCSVSkipsInvalidAndDuplicateLines(t *testing.T) {
 	if _, skipped, _ := identity.ParseImportCSV(identity.ImportBookmarks, "ftp://example.com/1\nhttps://example.com/1\n"); len(skipped) != 1 {
 		t.Errorf("bookmarks skipped = %+v, want the ftp URL", skipped)
 	}
+	domains, skipped, err := identity.ParseImportCSV(identity.ImportDomainMutes,
+		"spam.example\nSPAM.example.\nhttps://spam.example/\nuser@spam.example\nspam.example:443\nbad..example\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantSkipped := []identity.ImportSkipped{
+		{Line: 2, Value: "SPAM.example.", Reason: identity.ImportSkipDuplicate},
+		{Line: 3, Value: "https://spam.example/", Reason: identity.ImportSkipInvalid},
+		{Line: 4, Value: "user@spam.example", Reason: identity.ImportSkipInvalid},
+		{Line: 5, Value: "spam.example:443", Reason: identity.ImportSkipInvalid},
+		{Line: 6, Value: "bad..example", Reason: identity.ImportSkipInvalid},
+	}
+	if len(domains) != 1 || !reflect.DeepEqual(skipped, wantSkipped) {
+		t.Errorf("domains = %+v, skipped = %+v\nwant spam.example and %+v", domains, skipped, wantSkipped)
+	}
 }
 
 func TestParseImportCSVLimitsTheEntries(t *testing.T) {
@@ -123,6 +147,7 @@ func TestExportCSVRoundTrips(t *testing.T) {
 		{identity.ImportBookmarks, []identity.ExportRow{
 			{Target: "https://example.com/users/alice/statuses/1"}, {Target: "https://social.example/@bob/2"},
 		}, mastodonBookmarks},
+		{identity.ImportDomainMutes, []identity.ExportRow{{Target: "spam.example"}, {Target: "example.net"}}, mastodonDomains},
 	}
 	for _, c := range cases {
 		got, err := identity.ExportCSV(c.kind, c.rows)

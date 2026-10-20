@@ -21,6 +21,15 @@ func (q *Queries) DeleteAllFeedDirectRecipients(ctx context.Context) error {
 	return err
 }
 
+const deleteAllFeedDomainMutes = `-- name: DeleteAllFeedDomainMutes :exec
+DELETE FROM feed_domain_mutes
+`
+
+func (q *Queries) DeleteAllFeedDomainMutes(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllFeedDomainMutes)
+	return err
+}
+
 const deleteAllFeedEntries = `-- name: DeleteAllFeedEntries :exec
 
 DELETE FROM feed_entries
@@ -79,6 +88,20 @@ DELETE FROM feed_direct_recipients WHERE entry_id = ?
 
 func (q *Queries) DeleteFeedDirectRecipients(ctx context.Context, entryID string) error {
 	_, err := q.db.ExecContext(ctx, deleteFeedDirectRecipients, entryID)
+	return err
+}
+
+const deleteFeedDomainMute = `-- name: DeleteFeedDomainMute :exec
+DELETE FROM feed_domain_mutes WHERE viewer_account_id = ? AND domain = ?
+`
+
+type DeleteFeedDomainMuteParams struct {
+	ViewerAccountID string
+	Domain          string
+}
+
+func (q *Queries) DeleteFeedDomainMute(ctx context.Context, arg DeleteFeedDomainMuteParams) error {
+	_, err := q.db.ExecContext(ctx, deleteFeedDomainMute, arg.ViewerAccountID, arg.Domain)
 	return err
 }
 
@@ -193,6 +216,21 @@ func (q *Queries) InsertFeedDirectRecipient(ctx context.Context, arg InsertFeedD
 	return err
 }
 
+const insertFeedDomainMute = `-- name: InsertFeedDomainMute :exec
+INSERT INTO feed_domain_mutes (viewer_account_id, domain) VALUES (?, ?)
+ON CONFLICT (viewer_account_id, domain) DO NOTHING
+`
+
+type InsertFeedDomainMuteParams struct {
+	ViewerAccountID string
+	Domain          string
+}
+
+func (q *Queries) InsertFeedDomainMute(ctx context.Context, arg InsertFeedDomainMuteParams) error {
+	_, err := q.db.ExecContext(ctx, insertFeedDomainMute, arg.ViewerAccountID, arg.Domain)
+	return err
+}
+
 const insertFeedEntry = `-- name: InsertFeedEntry :execrows
 
 
@@ -280,6 +318,33 @@ func (q *Queries) ListAllFeedDirectRecipients(ctx context.Context) ([]FeedDirect
 	for rows.Next() {
 		var i FeedDirectRecipient
 		if err := rows.Scan(&i.EntryID, &i.RecipientAccountID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllFeedDomainMutes = `-- name: ListAllFeedDomainMutes :many
+SELECT viewer_account_id, domain FROM feed_domain_mutes ORDER BY viewer_account_id, domain
+`
+
+func (q *Queries) ListAllFeedDomainMutes(ctx context.Context) ([]FeedDomainMute, error) {
+	rows, err := q.db.QueryContext(ctx, listAllFeedDomainMutes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []FeedDomainMute{}
+	for rows.Next() {
+		var i FeedDomainMute
+		if err := rows.Scan(&i.ViewerAccountID, &i.Domain); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -648,6 +713,10 @@ WHERE e.author_account_id IN (
       AND (dr.domain IN (e.author_domain, e.original_author_domain)
         OR substr(e.author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain
         OR substr(e.original_author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = ?1 AND e.kind = 'boost' AND e.author_account_id <> ?1
+      AND (dm.domain = e.original_author_domain OR substr(e.original_author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain))
   AND (CAST(?5 AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(?6 AS TEXT))))
 ORDER BY e.id DESC
 LIMIT ?7
@@ -823,6 +892,10 @@ WHERE e.author_account_id = ?1
         AND (dr.effective_until IS NULL OR dr.effective_until > CAST(?9 AS INTEGER))
         AND (dr.domain = e.original_author_domain
           OR substr(e.original_author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain))))
+  AND (e.original_author_account_id = e.author_account_id OR NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = ?8
+      AND (dm.domain = e.original_author_domain OR substr(e.original_author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain)))
   AND (CAST(?10 AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(?11 AS TEXT))))
   AND (CAST(?12 AS INTEGER) = 0 OR e.is_reply = 0)
   AND (CAST(?13 AS INTEGER) = 0 OR e.kind = 'post')
@@ -924,6 +997,10 @@ WHERE e.kind = 'post' AND e.visibility = 'public'
     SELECT 1 FROM feed_exclusions x
     WHERE x.viewer_account_id = ?3 AND x.target_account_id = e.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > CAST(?2 AS INTEGER)))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = ?3
+      AND (dm.domain = e.author_domain OR substr(e.author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain))
   AND (CAST(?4 AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(?5 AS TEXT))))
 ORDER BY e.id DESC
 LIMIT ?6
@@ -1006,6 +1083,10 @@ WHERE t.tag_id = ?1 AND t.visibility IN ('public', 'local')
     SELECT 1 FROM feed_exclusions x
     WHERE x.viewer_account_id = ?5 AND x.target_account_id = t.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > CAST(?4 AS INTEGER)))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = ?5
+      AND (dm.domain = e.author_domain OR substr(e.author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain))
   AND (CAST(?6 AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(?7 AS TEXT))))
 ORDER BY t.entry_id DESC
 LIMIT ?8

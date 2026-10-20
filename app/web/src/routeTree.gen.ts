@@ -48,6 +48,7 @@ import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
 import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
+import { Route as SettingsDomainMutesRouteImport } from './routes/settings.domain-mutes'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
 import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
@@ -260,6 +261,11 @@ const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
   path: '/settings/blocks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsDomainMutesRoute = SettingsDomainMutesRouteImport.update({
+  id: '/settings/domain-mutes',
+  path: '/settings/domain-mutes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsFollowRequestsRoute = SettingsFollowRequestsRouteImport.update({
   id: '/settings/follow-requests',
   path: '/settings/follow-requests',
@@ -371,6 +377,7 @@ export interface FileRoutesByFullPath {
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/domain-mutes': typeof SettingsDomainMutesRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
@@ -426,6 +433,7 @@ export interface FileRoutesByTo {
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/domain-mutes': typeof SettingsDomainMutesRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
@@ -482,6 +490,7 @@ export interface FileRoutesById {
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
+  '/settings/domain-mutes': typeof SettingsDomainMutesRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
@@ -539,6 +548,7 @@ export interface FileRouteTypes {
     | '/settings/account-status'
     | '/settings/auto-delete'
     | '/settings/blocks'
+    | '/settings/domain-mutes'
     | '/settings/follow-requests'
     | '/settings/import-export'
     | '/settings/mutes'
@@ -594,6 +604,7 @@ export interface FileRouteTypes {
     | '/settings/account-status'
     | '/settings/auto-delete'
     | '/settings/blocks'
+    | '/settings/domain-mutes'
     | '/settings/follow-requests'
     | '/settings/import-export'
     | '/settings/mutes'
@@ -649,6 +660,7 @@ export interface FileRouteTypes {
     | '/settings/account-status'
     | '/settings/auto-delete'
     | '/settings/blocks'
+    | '/settings/domain-mutes'
     | '/settings/follow-requests'
     | '/settings/import-export'
     | '/settings/mutes'
@@ -705,6 +717,7 @@ export interface RootRouteChildren {
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
+  SettingsDomainMutesRoute: typeof SettingsDomainMutesRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
   SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
@@ -999,6 +1012,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsBlocksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/domain-mutes': {
+      id: '/settings/domain-mutes'
+      path: '/settings/domain-mutes'
+      fullPath: '/settings/domain-mutes'
+      preLoaderRoute: typeof SettingsDomainMutesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/follow-requests': {
       id: '/settings/follow-requests'
       path: '/settings/follow-requests'
@@ -1137,6 +1157,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
+  SettingsDomainMutesRoute: SettingsDomainMutesRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
   SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsMutesRoute: SettingsMutesRoute,

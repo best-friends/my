@@ -15,10 +15,13 @@ import (
 )
 
 // Accounts is the part of the account module's public API that the projectors read: whether a
-// recipient is a local account. Only local accounts receive notifications here; remote ones are
-// notified by their own servers. *appaccount.Service implements it.
+// recipient is a local account, and the domain of a source. Only local accounts receive
+// notifications here; remote ones are notified by their own servers. *appaccount.Service
+// implements it.
 type Accounts interface {
 	IsLocal(ctx context.Context, tx uow.Tx, accountID string) (bool, error)
+	// DomainOf returns the domain of a remote account, "" for a local or unknown one.
+	DomainOf(ctx context.Context, tx uow.Tx, accountID string) (string, error)
 }
 
 // Relationships is the part of the graph module's public API that the projectors read: whether
@@ -79,7 +82,8 @@ type ProjectorDeps struct {
 //     (notification.AppealDecidedKey).
 //
 // A notification goes only to a local recipient other than its source, and not when either
-// blocks the other, the recipient mutes the source with hide_notifications, or the source has
+// blocks the other, the recipient mutes the source with hide_notifications or mutes its domain
+// (FR-304), or the source has
 // unsolicited_reach (a limit on it or its domain) and the recipient does not follow it. Each notification
 // has a dedupe key unique per recipient (notification.FollowKey, MentionKey, InteractionKey,
 // ModerationNoticeKey),
@@ -95,6 +99,9 @@ type ProjectorDeps struct {
 //   - graph.muted: mute from the account to the target with the mute's expiry when the mute
 //     hides notifications; deletes it otherwise.
 //   - graph.unmuted: deletes the mute.
+//   - graph.domain_muted: a domain exclusion of the domain, which hides the notifications whose
+//     source_domain is the domain or one of its subdomains.
+//   - graph.domain_unmuted: deletes it.
 //
 // The projector of content.status_deleted records the status in notification_deleted_statuses
 // when a notification is about it, which the list and the unread count also apply, so that the
@@ -225,6 +232,14 @@ func registerExclusionProjectors(r *uow.Projectors, repo Repository) {
 		ev := e.(appgraph.Unmuted)
 		return repo.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, notification.ExcludedMute)
 	})
+	r.Register(appgraph.EventDomainMuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		m := e.(appgraph.DomainMuted).Mute
+		return repo.InsertDomainExclusion(ctx, tx, m.AccountID, m.Domain)
+	})
+	r.Register(appgraph.EventDomainUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appgraph.DomainUnmuted)
+		return repo.DeleteDomainExclusion(ctx, tx, ev.AccountID, ev.Domain)
+	})
 }
 
 // registerDeletedStatusProjector registers the projector of notification_deleted_statuses, for
@@ -282,8 +297,9 @@ func (p *projector) interaction(ctx context.Context, tx uow.Tx, t notification.T
 	})
 }
 
-// notify inserts n unless its recipient is its source or not local, the relationship between
-// them hides it, or the source may reach only its followers and the recipient is none. A
+// notify inserts n, with its source's domain, unless its recipient is its source or not local,
+// the relationship between them hides it, the source may reach only its followers and the
+// recipient is none, or the recipient mutes the source's domain. A
 // notification with the same dedupe key leaves n out.
 func (p *projector) notify(ctx context.Context, tx uow.Tx, n notification.Notification) error {
 	if n.RecipientAccountID == n.SourceAccountID {
@@ -300,6 +316,15 @@ func (p *projector) notify(ctx context.Context, tx uow.Tx, n notification.Notifi
 		}
 		if reached, err := p.reaches(ctx, tx, n.RecipientAccountID, n.SourceAccountID); err != nil || !reached {
 			return err
+		}
+		if n.SourceDomain, err = p.d.Accounts.DomainOf(ctx, tx, n.SourceAccountID); err != nil {
+			return err
+		}
+		if n.SourceDomain != "" {
+			muted, err := p.d.Repository.DomainExcluded(ctx, tx, n.RecipientAccountID, n.SourceDomain)
+			if err != nil || muted {
+				return err
+			}
 		}
 	}
 	n.ID = p.d.IDs.NewID()

@@ -92,6 +92,14 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
         return json(route, { accounts: [bob] });
       case "GET /mutes":
         return json(route, { mutes: [{ account: bob, notifications: true }] });
+      case "GET /domain_mutes":
+        // A long domain, and one in IDNA A-labels that the page shows with its U-labels too.
+        return json(route, {
+          domain_mutes: [
+            { domain: "a-very-long-subdomain-name-for-the-narrowest-screens.spam.example", created_at: "2026-10-17T10:00:00Z" },
+            { domain: "xn--r8jz45g.xn--zckzah", created_at: "2026-10-18T10:00:00Z" },
+          ],
+        });
       case "GET /follow_requests":
         return json(route, { accounts: [bob] });
       case "GET /exports":
@@ -181,6 +189,7 @@ const pages = [
   "/settings/follow-requests",
   "/settings/blocks",
   "/settings/mutes",
+  "/settings/domain-mutes",
   "/settings/two-factor",
   "/settings/auto-delete",
   "/settings/account",

@@ -70,6 +70,13 @@ type Exclusion struct {
 	ExpiresAt       *time.Time
 }
 
+// DomainMute is a domain, with its subdomains, whose posts a viewer does not see outside the
+// home timeline (feed_domain_mutes).
+type DomainMute struct {
+	ViewerAccountID string
+	Domain          string
+}
+
 // AuthorRestriction is a restriction of an account (feed_author_restrictions); EffectiveUntil
 // is nil for one that lasts until it is lifted.
 type AuthorRestriction struct {
@@ -93,6 +100,7 @@ type Projection struct {
 	TagEntries       []TagEntry
 	FollowEdges      []FollowEdge
 	Exclusions       []Exclusion
+	DomainMutes      []DomainMute
 }
 
 // Window selects a page of a timeline, newest first.
@@ -203,6 +211,9 @@ type Repository interface {
 	// UpsertExclusion stores x, replacing the expiry of the same exclusion.
 	UpsertExclusion(ctx context.Context, tx uow.Tx, x Exclusion) error
 	DeleteExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, targetAccountID string, reason timeline.ExclusionReason) error
+	// InsertDomainMute stores m; storing it again changes nothing.
+	InsertDomainMute(ctx context.Context, tx uow.Tx, m DomainMute) error
+	DeleteDomainMute(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) error
 	// UpsertAuthorRestriction and UpsertDomainRestriction store a restriction, replacing its end.
 	UpsertAuthorRestriction(ctx context.Context, tx uow.Tx, r AuthorRestriction) error
 	DeleteAuthorRestriction(ctx context.Context, tx uow.Tx, accountID string, r timeline.Restriction) error

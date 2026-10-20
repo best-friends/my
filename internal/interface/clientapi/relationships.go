@@ -37,6 +37,10 @@ type Graph interface {
 	FollowRequests(ctx context.Context, accountID string, p appgraph.Page) ([]graph.Edge, error)
 	Blocks(ctx context.Context, accountID string, p appgraph.Page) ([]graph.BlockEdge, error)
 	Mutes(ctx context.Context, accountID string, p appgraph.MutePage) ([]graph.Mute, error)
+
+	MuteDomain(ctx context.Context, accountID, domain string) (graph.DomainMute, error)
+	UnmuteDomain(ctx context.Context, accountID, domain string) error
+	DomainMutes(ctx context.Context, accountID string, p appgraph.DomainMutePage) ([]graph.DomainMute, error)
 }
 
 // ProblemTypeBlocking is the problem of following an account that the viewer blocks.

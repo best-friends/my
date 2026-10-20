@@ -250,13 +250,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+         * Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
          * @description Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
          *     Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
          *     (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
          *     `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
-         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
-         *     `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect),
+         *     `domain_mutes` is `blocked_domains.csv` (one domain per line, the domains the user
+         *     mutes, which Mastodon imports as blocked domains), and `bookmarks` is `bookmarks.csv`
+         *     (one post URI per line, the posts the user may still see).
          *     Addresses are `username@domain`, with the account domain for this server's accounts;
          *     remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
          *     are accepted every hour.
@@ -285,7 +287,7 @@ export interface paths {
         get: operations["listDataImports"];
         put?: never;
         /**
-         * Import a CSV file of follows, blocks, mutes, or bookmarks
+         * Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
          * @description Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
          *     entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
          *     `overwrite` also removes what the user has of `kind` that the file does not list. The
@@ -803,6 +805,56 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/domain_mutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the domains that the viewer mutes
+         * @description In the order of the domains.
+         */
+        get: operations["listDomainMutes"];
+        put?: never;
+        /**
+         * Mute a domain
+         * @description Hides the posts of a remote domain and of its subdomains from the viewer's timelines
+         *     other than home, their boosts from home, and their notifications (FR-304). The accounts
+         *     of the domain that the viewer follows stay on the home timeline. Nothing is sent to the
+         *     domain. Muting a domain that the viewer already mutes changes nothing. The domain is
+         *     normalized (IDNA A-labels in lower case, without a trailing dot); one that is not a
+         *     valid remote domain, or this server's own, is a 422 naming `domain`. A viewer mutes at
+         *     most 1000 domains; one more is a 422 `/api/v1/problems/too-many-domain-mutes`.
+         */
+        post: operations["muteDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/domain_mutes/{domain}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unmute a domain
+         * @description The domain is normalized as in `muteDomain`. Without a mute it changes nothing.
+         */
+        delete: operations["unmuteDomain"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3422,6 +3474,8 @@ export interface components {
          *       which.
          *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
          *       reason in `theme_errors` (`PUT /admin/theme`).
+         *     - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+         *       allowed. Unmute one first.
          */
         Problem: {
             /**
@@ -3696,6 +3750,25 @@ export interface components {
              * @description When the mute ends; left out for a mute until unmuted.
              */
             expires_at?: string;
+        };
+        /** @description The domain to mute. */
+        MuteDomainRequest: {
+            /** @description A remote domain, such as `mastodon.example`; its subdomains are muted too. */
+            domain: string;
+        };
+        /** @description A domain that the viewer mutes, with its subdomains. */
+        DomainMute: {
+            /** @description The domain, in IDNA A-labels. */
+            domain: string;
+            /**
+             * Format: date-time
+             * @description When the viewer muted the domain.
+             */
+            created_at: string;
+        };
+        /** @description A page of domain mutes. */
+        DomainMutePage: components["schemas"]["PageInfo"] & {
+            domain_mutes: components["schemas"]["DomainMute"][];
         };
         /** @description One metadata field of a profile. */
         ProfileField: {
@@ -4012,11 +4085,13 @@ export interface components {
         };
         /**
          * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-         *     accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+         *     accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+         *     domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+         *     `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
          *     posts the user bookmarked).
          * @enum {string}
          */
-        DataImportKind: "following" | "blocks" | "mutes" | "bookmarks";
+        DataImportKind: "following" | "blocks" | "mutes" | "domain_mutes" | "bookmarks";
         /**
          * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
          *     what the user has that the file does not list.
@@ -4051,8 +4126,9 @@ export interface components {
             /** @description The line as written. */
             value: string;
             /**
-             * @description `invalid`: the line names no account address (or for bookmarks, no post URL).
-             *     `duplicate`: an earlier line names the same account or post.
+             * @description `invalid`: the line names no account address (for bookmarks, no post URL; for
+             *     domain mutes, no domain).
+             *     `duplicate`: an earlier line names the same account, post, or domain.
              * @enum {string}
              */
             reason: "invalid" | "duplicate";
@@ -4078,7 +4154,8 @@ export interface components {
             processed: number;
             /**
              * @description How many of them could not be carried out: an account or post that cannot be found
-             *     or acted on, or a follow that a block stops.
+             *     or acted on, a follow that a block stops, or a domain that cannot be muted (this
+             *     server's own, or one beyond the most muted domains allowed).
              */
             failed: number;
         };
@@ -7527,6 +7604,81 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MutePage"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDomainMutes: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of domain mutes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainMutePage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    muteDomain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MuteDomainRequest"];
+            };
+        };
+        responses: {
+            /** @description The domain mute. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainMute"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    unmuteDomain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The muted domain, such as `mastodon.example`. */
+                domain: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain is not muted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

@@ -42,7 +42,7 @@ type AccountErasureFactory func(t *testing.T, opts uow.Options) AccountErasureHa
 // AccountErasureContract verifies the erasure of deleted local accounts (data-model §8) on a
 // database adapter, with the real modules: an account deleted longer than the delay ago, without
 // a retention hold, loses its personal data (profile, keys, email addresses, credentials,
-// sessions, preferences, statuses, favourites, bookmarks, boosts, follows, mutes, uploads,
+// sessions, preferences, statuses, favourites, bookmarks, boosts, follows, mutes, domain mutes, uploads,
 // notifications, timeline rows) while its row, URI, domain, username, and lifecycle stay; its
 // statuses become deletions with origin account_deletion, the other accounts' counters lose it,
 // and a status that the moderation records need keeps its rows until they are gone, after which
@@ -259,6 +259,11 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	if _, err := e.graph.Mute(ctx, aliceID, bob, appgraph.MuteInput{}); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := e.graph.MuteDomain(ctx, aliceID, "muted.example"); err != nil {
+		t.Fatal(err)
+	}
+	e.rows(t, "feed_domain_mutes", "viewer_account_id", aliceID, 1)
+	e.rows(t, "notification_domain_exclusions", "viewer_account_id", aliceID, 1)
 	if c, _ := e.graph.Counters(ctx, bob); c.FollowersCount != 1 || c.FollowingCount != 1 {
 		t.Fatalf("bob's counters before = %+v", c)
 	}
@@ -283,7 +288,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		t.Errorf("erased actor = %+v, want the account, its username, and its lifecycle only", actor)
 	}
 	for _, table := range []string{"account_profile_revisions", "account_profile_heads", "account_keys", "follow_counters",
-		"account_post_counters", "local_post_counters", "mutes", "favourites", "reactions", "bookmarks", "status_pins",
+		"account_post_counters", "local_post_counters", "mutes", "account_domain_mutes", "favourites", "reactions", "bookmarks", "status_pins",
 		"notification_read_markers"} {
 		e.rows(t, table, "account_id", aliceID, 0)
 	}
@@ -303,6 +308,8 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	e.rows(t, "feed_follow_edges", "followee_account_id", aliceID, 0)
 	e.rows(t, "mutes", "target_account_id", aliceID, 0)
 	e.rows(t, "feed_exclusions", "viewer_account_id", aliceID, 0)
+	e.rows(t, "feed_domain_mutes", "viewer_account_id", aliceID, 0)
+	e.rows(t, "notification_domain_exclusions", "viewer_account_id", aliceID, 0)
 	e.rows(t, "boosts", "booster_account_id", aliceID, 0)
 	e.rows(t, "boost_edges", "booster_account_id", aliceID, 0)
 	e.rows(t, "feed_entries", "author_account_id", aliceID, 0)

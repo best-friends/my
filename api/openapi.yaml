@@ -422,14 +422,16 @@ paths:
   /csv_exports/{kind}:
     get:
       operationId: exportCsv
-      summary: Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+      summary: Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
       description: |
         Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
         Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
         (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
         `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
-        `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
-        `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+        `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect),
+        `domain_mutes` is `blocked_domains.csv` (one domain per line, the domains the user
+        mutes, which Mastodon imports as blocked domains), and `bookmarks` is `bookmarks.csv`
+        (one post URI per line, the posts the user may still see).
         Addresses are `username@domain`, with the account domain for this server's accounts;
         remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
         are accepted every hour.
@@ -483,7 +485,7 @@ paths:
           $ref: "#/components/responses/Problem"
     post:
       operationId: startDataImport
-      summary: Import a CSV file of follows, blocks, mutes, or bookmarks
+      summary: Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
       description: |
         Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
         entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
@@ -1044,6 +1046,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MutePage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /domain_mutes:
+    get:
+      operationId: listDomainMutes
+      summary: List the domains that the viewer mutes
+      description: In the order of the domains.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:mutes"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of domain mutes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainMutePage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: muteDomain
+      summary: Mute a domain
+      description: |
+        Hides the posts of a remote domain and of its subdomains from the viewer's timelines
+        other than home, their boosts from home, and their notifications (FR-304). The accounts
+        of the domain that the viewer follows stay on the home timeline. Nothing is sent to the
+        domain. Muting a domain that the viewer already mutes changes nothing. The domain is
+        normalized (IDNA A-labels in lower case, without a trailing dot); one that is not a
+        valid remote domain, or this server's own, is a 422 naming `domain`. A viewer mutes at
+        most 1000 domains; one more is a 422 `/api/v1/problems/too-many-domain-mutes`.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:mutes"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MuteDomainRequest"
+      responses:
+        "200":
+          description: The domain mute.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainMute"
+        default:
+          $ref: "#/components/responses/Problem"
+  /domain_mutes/{domain}:
+    delete:
+      operationId: unmuteDomain
+      summary: Unmute a domain
+      description: The domain is normalized as in `muteDomain`. Without a mute it changes nothing.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:mutes"]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          description: The muted domain, such as `mastodon.example`.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 253
+      responses:
+        "204":
+          description: The domain is not muted.
         default:
           $ref: "#/components/responses/Problem"
   # --- End of accounts and relationships (#108) ---
@@ -4397,7 +4476,7 @@ components:
             "read:bookmarks": Read the user's bookmarks.
             "read:favourites": Read the user's favourites.
             "read:follows": Read follows and follow requests.
-            "read:mutes": Read the accounts the user mutes.
+            "read:mutes": Read the accounts and domains the user mutes.
             "read:notifications": Read the user's notifications.
             "read:reports": Read the reports the user filed and whether they are resolved.
             "read:statuses": Read posts and timelines.
@@ -4407,7 +4486,7 @@ components:
             "write:favourites": Favourite posts and react to them with emoji, and take both back.
             "write:follows": Follow and unfollow accounts and answer follow requests.
             "write:media": Upload media and change their descriptions.
-            "write:mutes": Mute and unmute accounts.
+            "write:mutes": Mute and unmute accounts and domains.
             "write:notifications": Mark notifications read and dismiss them.
             "write:reports": Report accounts and posts to the moderators.
             "write:statuses": Post, edit, delete, boost, and pin posts.
@@ -4989,6 +5068,8 @@ components:
           which.
         - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
           reason in `theme_errors` (`PUT /admin/theme`).
+        - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+          allowed. Unmute one first.
       type: object
       required: [type, title, status]
       properties:
@@ -5361,6 +5442,39 @@ components:
           description: When the mute ends; left out for a mute until unmuted.
           type: string
           format: date-time
+    MuteDomainRequest:
+      description: The domain to mute.
+      type: object
+      required: [domain]
+      properties:
+        domain:
+          description: A remote domain, such as `mastodon.example`; its subdomains are muted too.
+          type: string
+          minLength: 1
+          maxLength: 253
+    DomainMute:
+      description: A domain that the viewer mutes, with its subdomains.
+      type: object
+      required: [domain, created_at]
+      properties:
+        domain:
+          description: The domain, in IDNA A-labels.
+          type: string
+        created_at:
+          description: When the viewer muted the domain.
+          type: string
+          format: date-time
+    DomainMutePage:
+      description: A page of domain mutes.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [domain_mutes]
+          properties:
+            domain_mutes:
+              type: array
+              items:
+                $ref: "#/components/schemas/DomainMute"
     ProfileField:
       description: One metadata field of a profile.
       type: object
@@ -5784,10 +5898,12 @@ components:
     DataImportKind:
       description: |
         What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-        accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+        accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+        domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+        `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
         posts the user bookmarked).
       type: string
-      enum: [following, blocks, mutes, bookmarks]
+      enum: [following, blocks, mutes, domain_mutes, bookmarks]
     DataImportMode:
       description: |
         `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
@@ -5845,8 +5961,9 @@ components:
           type: string
         reason:
           description: |
-            `invalid`: the line names no account address (or for bookmarks, no post URL).
-            `duplicate`: an earlier line names the same account or post.
+            `invalid`: the line names no account address (for bookmarks, no post URL; for
+            domain mutes, no domain).
+            `duplicate`: an earlier line names the same account, post, or domain.
           type: string
           enum: [invalid, duplicate]
     DataImport:
@@ -5879,7 +5996,8 @@ components:
         failed:
           description: |
             How many of them could not be carried out: an account or post that cannot be found
-            or acted on, or a follow that a block stops.
+            or acted on, a follow that a block stops, or a domain that cannot be muted (this
+            server's own, or one beyond the most muted domains allowed).
           type: integer
           minimum: 0
     DataImportList:
