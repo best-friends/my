@@ -1,0 +1,436 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package notification
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/notification"
+	"github.com/best-friends/my/internal/i18n"
+)
+
+// Web Push (FR-206): a local account's browsers subscribe through the client API, one
+// subscription per OAuth grant, choosing the notification types to receive. When a projector
+// creates a notification, the same transaction enqueues JobPush for each subscription of the
+// recipient that takes its type (Transactional Outbox, ADR-0004), so a message goes out only
+// once the notification is committed. The job encrypts the message for the browser and posts
+// it to the push service through the PushSender (RFC 8030, RFC 8291, RFC 8292), whose adapter
+// uses the SSRF-guarded kernel.HTTPClient (ADR-0019 §1).
+
+// PushRepository is the persistence of the Web Push subscriptions (push_subscriptions and
+// push_subscription_alerts, data-model §4.7). The database adapters' notification repositories
+// implement it and pass testkit.PushSubscriptionContract.
+type PushRepository interface {
+	// SavePushSubscription stores s with its alerts, replacing the subscription of the same
+	// token family and the one with the same endpoint, if any, with their alerts.
+	SavePushSubscription(ctx context.Context, tx uow.Tx, s notification.PushSubscription) error
+	// DeletePushSubscription deletes a subscription with its alerts and reports whether there
+	// was one.
+	DeletePushSubscription(ctx context.Context, tx uow.Tx, id string) (bool, error)
+	// PushSubscriptionIDs returns inside tx the subscriptions of the account that take
+	// notifications of type t, in order.
+	PushSubscriptionIDs(ctx context.Context, tx uow.Tx, accountID string, t notification.Type) ([]string, error)
+	// FindPushSubscription returns a subscription by ID, and FindPushSubscriptionOfFamily the
+	// subscription of a token family. They fail with an error wrapping ErrNotFound when there is
+	// none.
+	FindPushSubscription(ctx context.Context, id string) (notification.PushSubscription, error)
+	FindPushSubscriptionOfFamily(ctx context.Context, tokenFamilyID string) (notification.PushSubscription, error)
+}
+
+// PushMessage is one message to a push service.
+type PushMessage struct {
+	// Payload is the plaintext that the sender encrypts for the subscription (RFC 8291).
+	Payload []byte
+	// TTL is how long the push service keeps the message for an offline browser (RFC 8030 §5.2).
+	TTL time.Duration
+	// Topic replaces an undelivered message of the same topic (RFC 8030 §5.4): at most 32
+	// characters of the base64url alphabet.
+	Topic string
+}
+
+// PushOutcome is how the push service answered a message.
+type PushOutcome int
+
+// Outcomes.
+const (
+	// PushDelivered: the push service accepted the message (201).
+	PushDelivered PushOutcome = iota + 1
+	// PushGone: the subscription no longer exists (404, 410), or its endpoint is a destination
+	// the server refuses (ADR-0019 §1); the subscription is deleted.
+	PushGone
+	// PushRetry: a temporary failure (429, 5xx, a network error); the message is sent again
+	// after RetryAfter, or the job's backoff when it is zero.
+	PushRetry
+	// PushRejected: the push service refused the message for good (another 4xx).
+	PushRejected
+)
+
+// PushResult is the answer of PushSender.Send.
+type PushResult struct {
+	Outcome PushOutcome
+	// StatusCode is the push service's status code; 0 when there was no response.
+	StatusCode int
+	// RetryAfter is the push service's Retry-After for a PushRetry; zero when it gave none.
+	RetryAfter time.Duration
+}
+
+// PushSender encrypts and sends Web Push messages. The adapter (internal/adapter/webpush)
+// holds the server's VAPID key pair and sends through kernel.HTTPClient.
+type PushSender interface {
+	// ServerKey returns the server's VAPID public key, an uncompressed P-256 point in unpadded
+	// base64url: the applicationServerKey that browsers subscribe with (RFC 8292 §3.2).
+	ServerKey() string
+	// Send encrypts m.Payload for s (RFC 8291) and posts it to s.Endpoint with a VAPID
+	// authorization (RFC 8292). A transport failure is a PushRetry result, not an error; the
+	// error reports a message that cannot be built, such as invalid keys.
+	Send(ctx context.Context, s notification.PushSubscription, m PushMessage) (PushResult, error)
+}
+
+// PushAccount is how a push message names an account.
+type PushAccount struct {
+	// DisplayName is the account's display name; "" when it has none.
+	DisplayName string
+	// Acct is the account's handle without the leading @: username for a local account and
+	// username@domain for a remote one, as the web client's profile paths use it.
+	Acct string
+}
+
+// PushAudience is what the push job reads of the identity and account modules. The
+// composition root implements it.
+type PushAudience interface {
+	// GrantActive reports whether an OAuth grant (its token family) can still be used: a token of
+	// it is neither revoked nor expired (counting its refresh token), so that signing out of an
+	// app, or a revocation by a moderator or a password change, ends its subscription.
+	GrantActive(ctx context.Context, tokenFamilyID string) (bool, error)
+	// Locale returns the UI locale of the user of a local account; "" when the user has none.
+	Locale(ctx context.Context, accountID string) (string, error)
+	// Account returns how a message names an account; ErrNotFound when the account is gone.
+	Account(ctx context.Context, accountID string) (PushAccount, error)
+}
+
+// JobPush is the job that sends one notification to one Web Push subscription.
+const JobPush = "notification.push"
+
+// pushJob is the payload of JobPush: the subscription, and the notification as far as the
+// message needs it, so that the job reads no notification row.
+type pushJob struct {
+	SubscriptionID  string            `json:"subscription_id"`
+	NotificationID  string            `json:"notification_id"`
+	AccountID       string            `json:"account_id"`
+	Type            notification.Type `json:"type"`
+	SourceAccountID string            `json:"source_account_id,omitempty"`
+	StatusID        string            `json:"status_id,omitempty"`
+	ReportID        string            `json:"report_id,omitempty"`
+	AppealID        string            `json:"appeal_id,omitempty"`
+}
+
+// PushTTL is how long a push service keeps a message for a browser that is offline.
+const PushTTL = 48 * time.Hour
+
+// Pusher enqueues the Web Push jobs of new notifications inside the transaction that creates
+// them. The projectors call it through ProjectorDeps.Push and ModeratorDeps.Push.
+type Pusher struct {
+	Repository PushRepository
+	Outbox     queue.Outbox
+}
+
+// enqueue enqueues JobPush for each subscription of n's recipient that takes n's type. A nil
+// Pusher pushes nothing. The idempotency key is per notification and subscription, so that a
+// retried transaction or a reprojected event enqueues each job once.
+func (p *Pusher) enqueue(ctx context.Context, tx uow.Tx, n notification.Notification) error {
+	if p == nil || p.Repository == nil || p.Outbox == nil {
+		return nil
+	}
+	ids, err := p.Repository.PushSubscriptionIDs(ctx, tx, n.RecipientAccountID, n.Type)
+	if err != nil || len(ids) == 0 {
+		return err
+	}
+	jobs := make([]queue.NewJob, 0, len(ids))
+	for _, id := range ids {
+		payload, err := json.Marshal(pushJob{
+			SubscriptionID: id, NotificationID: n.ID, AccountID: n.RecipientAccountID, Type: n.Type,
+			SourceAccountID: n.SourceAccountID, StatusID: n.StatusID, ReportID: n.ReportID, AppealID: n.AppealID,
+		})
+		if err != nil {
+			return err
+		}
+		jobs = append(jobs, queue.NewJob{Type: JobPush, Payload: payload, IdempotencyKey: JobPush + ":" + n.ID + ":" + id})
+	}
+	return p.Outbox.EnqueueTx(ctx, tx, jobs...)
+}
+
+// PushDeps are the ports of the Web Push use cases and job.
+type PushDeps struct {
+	UnitOfWork uow.UnitOfWork
+	Repository PushRepository
+	Clock      kernel.Clock
+	IDs        kernel.IDGenerator
+	// Sender sends the messages; nil turns Web Push off: subscribing fails with
+	// ErrPushUnavailable and the server key is "".
+	Sender   PushSender
+	Audience PushAudience
+	// Messages words the messages; nil means the embedded catalogs (i18n.Load).
+	Messages *i18n.Bundle
+	// Host names the instance in a message whose source is the instance, when InstanceName
+	// gives no name.
+	Host string
+	// InstanceName returns the instance's display name for readers of locale; nil or "" names
+	// it by Host.
+	InstanceName func(ctx context.Context, locale string) string
+}
+
+// PushService runs the Web Push use cases of the client API (FR-206): reading, registering, and
+// deleting the subscription of the caller's grant.
+type PushService struct {
+	d PushDeps
+}
+
+// NewPushService returns a PushService on d.
+func NewPushService(d PushDeps) *PushService { return &PushService{d: d} }
+
+// ErrPushUnavailable reports that the instance has no VAPID key, so it sends no Web Push.
+var ErrPushUnavailable = errors.New("notification: Web Push is not configured")
+
+// ServerKey returns the server's VAPID public key, "" when Web Push is off.
+func (s *PushService) ServerKey() string {
+	if s == nil || s.d.Sender == nil {
+		return ""
+	}
+	return s.d.Sender.ServerKey()
+}
+
+// Subscription returns the subscription of a token family, or an error wrapping ErrNotFound.
+func (s *PushService) Subscription(ctx context.Context, tokenFamilyID string) (notification.PushSubscription, error) {
+	return s.d.Repository.FindPushSubscriptionOfFamily(ctx, tokenFamilyID)
+}
+
+// SubscribeInput is a registration of a subscription.
+type SubscribeInput struct {
+	AccountID     string
+	TokenFamilyID string
+	Endpoint      string
+	KeyP256DH     string
+	KeyAuth       string
+	Alerts        []notification.Type
+}
+
+// Subscribe registers the subscription of the grant tokenFamilyID, replacing the grant's
+// earlier subscription and any other subscription with the same endpoint. It fails with
+// ErrPushUnavailable when Web Push is off, notification.ErrInvalidPushEndpoint,
+// notification.ErrInvalidPushKey, or notification.ErrInvalidType.
+func (s *PushService) Subscribe(ctx context.Context, in SubscribeInput) (notification.PushSubscription, error) {
+	if s.d.Sender == nil {
+		return notification.PushSubscription{}, ErrPushUnavailable
+	}
+	alerts, ok := notification.NormalizeAlerts(in.Alerts)
+	if !ok {
+		return notification.PushSubscription{}, notification.ErrInvalidType
+	}
+	p256dh, auth := notification.NormalizePushKeys(in.KeyP256DH, in.KeyAuth)
+	now := s.d.Clock.Now()
+	sub := notification.PushSubscription{
+		ID: s.d.IDs.NewID(), AccountID: in.AccountID, TokenFamilyID: in.TokenFamilyID, Endpoint: in.Endpoint,
+		KeyP256DH: p256dh, KeyAuth: auth, Alerts: alerts, CreatedAt: now, UpdatedAt: now,
+	}
+	if err := sub.Validate(); err != nil {
+		return notification.PushSubscription{}, err
+	}
+	if prev, err := s.d.Repository.FindPushSubscriptionOfFamily(ctx, in.TokenFamilyID); err == nil && prev.Endpoint == sub.Endpoint {
+		sub.ID, sub.CreatedAt = prev.ID, prev.CreatedAt // the same browser changes its alerts
+	} else if err != nil && !errors.Is(err, ErrNotFound) {
+		return notification.PushSubscription{}, err
+	}
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		return s.d.Repository.SavePushSubscription(ctx, tx, sub)
+	})
+	if err != nil {
+		return notification.PushSubscription{}, err
+	}
+	return sub, nil
+}
+
+// Unsubscribe deletes the subscription of a token family, if any.
+func (s *PushService) Unsubscribe(ctx context.Context, tokenFamilyID string) error {
+	sub, err := s.d.Repository.FindPushSubscriptionOfFamily(ctx, tokenFamilyID)
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	return s.delete(ctx, sub.ID)
+}
+
+func (s *PushService) delete(ctx context.Context, id string) error {
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := s.d.Repository.DeletePushSubscription(ctx, tx, id)
+		return err
+	})
+}
+
+// RegisterPushJobs registers the handler of JobPush on reg. The handler is idempotent: it
+// sends nothing when the subscription is gone, no longer takes the type, or its grant has
+// ended (deleting it then); a message sent again after a crash carries the same Topic, which
+// replaces it at the push service while undelivered, and the same notification ID, which the
+// Service Worker uses as the tag that replaces it on screen. A subscription that the push
+// service reports gone (404, 410) is deleted.
+func (s *PushService) RegisterPushJobs(reg *queue.JobHandlerRegistry) {
+	reg.Register(JobPush, func(ctx context.Context, j queue.Job) queue.Result {
+		var job pushJob
+		if err := json.Unmarshal(j.Payload, &job); err != nil {
+			return queue.Fail(fmt.Errorf("notification: the payload of %s: %w", j.ID, err))
+		}
+		return s.push(ctx, job)
+	})
+}
+
+func (s *PushService) push(ctx context.Context, job pushJob) queue.Result {
+	if s.d.Sender == nil {
+		return queue.Done()
+	}
+	sub, err := s.d.Repository.FindPushSubscription(ctx, job.SubscriptionID)
+	if errors.Is(err, ErrNotFound) {
+		return queue.Done()
+	}
+	if err != nil {
+		return queue.Retry(0, err)
+	}
+	if sub.AccountID != job.AccountID || !sub.Alerted(job.Type) {
+		return queue.Done()
+	}
+	active, err := s.d.Audience.GrantActive(ctx, sub.TokenFamilyID)
+	if err != nil {
+		return queue.Retry(0, err)
+	}
+	if !active {
+		return s.retire(ctx, sub.ID)
+	}
+	payload, err := s.message(ctx, job)
+	if errors.Is(err, ErrNotFound) {
+		return queue.Done() // the account the message names is gone
+	}
+	if err != nil {
+		return queue.Retry(0, err)
+	}
+	res, err := s.d.Sender.Send(ctx, sub, PushMessage{Payload: payload, TTL: PushTTL, Topic: pushTopic(job.NotificationID)})
+	if err != nil {
+		return queue.Fail(fmt.Errorf("notification: push %s to %s: %w", job.NotificationID, sub.ID, err))
+	}
+	switch res.Outcome {
+	case PushDelivered:
+		return queue.Done()
+	case PushGone:
+		return s.retire(ctx, sub.ID)
+	case PushRejected:
+		return queue.Fail(fmt.Errorf("notification: the push service refused %s with %d", job.NotificationID, res.StatusCode))
+	}
+	return queue.Retry(res.RetryAfter, fmt.Errorf("notification: the push service answered %s with %d", job.NotificationID, res.StatusCode))
+}
+
+// retire deletes a subscription that can take no more messages.
+func (s *PushService) retire(ctx context.Context, id string) queue.Result {
+	if err := s.delete(ctx, id); err != nil {
+		return queue.Retry(0, err)
+	}
+	return queue.Done()
+}
+
+// pushTopic is the Topic of a notification's messages: its ID without the hyphens, 32
+// hexadecimal digits, which the base64url alphabet includes.
+func pushTopic(notificationID string) string {
+	t := strings.ReplaceAll(notificationID, "-", "")
+	return t[:min(len(t), 32)]
+}
+
+// PushPayload is the JSON document that a push message carries to the Service Worker
+// (app/web/sw/push.ts), which shows it as a notification.
+type PushPayload struct {
+	// NotificationID is the notification's ID; the Service Worker shows the message with it
+	// as the tag, so that a message sent twice replaces itself.
+	NotificationID string `json:"notification_id"`
+	// Type is the notification's type.
+	Type notification.Type `json:"type"`
+	// Title is the notification's text, localized for the recipient.
+	Title string `json:"title"`
+	// Lang is the locale of Title.
+	Lang string `json:"lang"`
+	// Path is the page of the web client that tapping the notification opens.
+	Path string `json:"path"`
+}
+
+// message returns the payload of job's message, worded in the recipient's locale.
+func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) {
+	locale, err := s.d.Audience.Locale(ctx, job.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	bundle := s.d.Messages
+	if bundle == nil {
+		if bundle, err = i18n.Load(); err != nil {
+			return nil, err
+		}
+	}
+	users := &i18n.Resolver{Bundle: bundle, UserLocale: func(context.Context) string { return locale }}
+	l := users.Localizer(ctx, "")
+	var source, recipient PushAccount
+	if job.SourceAccountID != "" {
+		if source, err = s.d.Audience.Account(ctx, job.SourceAccountID); err != nil {
+			return nil, err
+		}
+	}
+	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite {
+		if recipient, err = s.d.Audience.Account(ctx, job.AccountID); err != nil {
+			return nil, err
+		}
+	}
+	name := source.DisplayName
+	if name == "" && source.Acct != "" {
+		name = "@" + source.Acct
+	}
+	instance := s.d.Host
+	if s.d.InstanceName != nil {
+		if n := s.d.InstanceName(ctx, l.RequestedLocale()); n != "" {
+			instance = n
+		}
+	}
+	p := PushPayload{NotificationID: job.NotificationID, Type: job.Type, Lang: l.RequestedLocale(), Path: "/notifications"}
+	switch job.Type {
+	case notification.TypeFollow:
+		p.Title, p.Path = l.ServerPushFollow(name), "/@"+source.Acct
+	case notification.TypeFollowRequest:
+		p.Title, p.Path = l.ServerPushFollowRequest(name), "/settings/follow-requests"
+	case notification.TypeFollowAccepted:
+		p.Title, p.Path = l.ServerPushFollowAccepted(name), "/@"+source.Acct
+	case notification.TypeMention:
+		p.Title, p.Path = l.ServerPushMention(name), "/@"+source.Acct+"/"+job.StatusID
+	case notification.TypeBoost:
+		p.Title, p.Path = l.ServerPushBoost(name), "/@"+recipient.Acct+"/"+job.StatusID
+	case notification.TypeFavourite:
+		p.Title, p.Path = l.ServerPushFavourite(name), "/@"+recipient.Acct+"/"+job.StatusID
+	case notification.TypeModerationNotice:
+		p.Title, p.Path = l.ServerPushModerationNotice(instance), "/settings/account-status"
+	case notification.TypeAppealDecided:
+		p.Title, p.Path = l.ServerPushAppealDecided(instance), "/settings/account-status"
+	case notification.TypeAdminReport:
+		p.Title, p.Path = l.ServerPushAdminReport(instance), "/moderation/reports/"+job.ReportID
+	case notification.TypeAdminSignUp:
+		p.Title, p.Path = l.ServerPushAdminSignUp(instance), "/moderation/registrations"
+	case notification.TypeAdminAppeal:
+		p.Title, p.Path = l.ServerPushAdminAppeal(instance), "/moderation/appeals/"+job.AppealID
+	case notification.TypeReportResolved:
+		p.Title = l.ServerPushReportResolved(instance)
+	case notification.TypeRelationshipsSevered:
+		p.Title = l.ServerPushRelationshipsSevered(instance)
+	default:
+		p.Title = l.ServerPushOther(instance)
+	}
+	return json.Marshal(p)
+}

@@ -408,3 +408,26 @@ func (q *Queries) RevokeTokensOfUser(ctx context.Context, arg RevokeTokensOfUser
 	_, err := q.db.Exec(ctx, revokeTokensOfUser, arg.Reason, arg.RevokedAt, arg.UserID)
 	return err
 }
+
+const tokenFamilyActive = `-- name: TokenFamilyActive :one
+SELECT EXISTS (
+  SELECT 1 FROM oauth_access_tokens t
+  WHERE t.family_id = $1
+    AND (t.expires_at > $2::timestamptz OR t.refresh_expires_at > $2::timestamptz)
+    AND NOT EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id)
+) AS active
+`
+
+type TokenFamilyActiveParams struct {
+	FamilyID string
+	Now      time.Time
+}
+
+// TokenFamilyActive reports whether a token of the family has no revocation and an access or
+// refresh token that has not expired at now: whether the grant can still be used or refreshed.
+func (q *Queries) TokenFamilyActive(ctx context.Context, arg TokenFamilyActiveParams) (bool, error) {
+	row := q.db.QueryRow(ctx, tokenFamilyActive, arg.FamilyID, arg.Now)
+	var active bool
+	err := row.Scan(&active)
+	return active, err
+}

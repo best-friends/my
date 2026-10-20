@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtChar123acctChar125RouteImport } from './routes/@{$acct}'
+import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
@@ -43,6 +44,7 @@ import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
+import { Route as AtChar123acctChar125IdHistoryRouteImport } from './routes/@{$acct}_.$id_.history'
 import { Route as ModerationAccountsIdRouteImport } from './routes/moderation.accounts_.$id'
 import { Route as ModerationAppealsIdRouteImport } from './routes/moderation.appeals_.$id'
 import { Route as ModerationInstancesDomainRouteImport } from './routes/moderation.instances_.$domain'
@@ -56,6 +58,11 @@ const IndexRoute = IndexRouteImport.update({
 const AtChar123acctChar125Route = AtChar123acctChar125RouteImport.update({
   id: '/@{$acct}',
   path: '/@{$acct}',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookmarksRoute = BookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -220,6 +227,12 @@ const TagsTagRoute = TagsTagRouteImport.update({
   path: '/tags/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125IdHistoryRoute =
+  AtChar123acctChar125IdHistoryRouteImport.update({
+    id: '/@{$acct}_/$id_/history',
+    path: '/@{$acct}/$id/history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ModerationAccountsIdRoute = ModerationAccountsIdRouteImport.update({
   id: '/moderation/accounts_/$id',
   path: '/moderation/accounts/$id',
@@ -245,6 +258,7 @@ const ModerationReportsIdRoute = ModerationReportsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -277,6 +291,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
   '/moderation/accounts/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
@@ -285,6 +300,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -317,6 +333,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/moderation': typeof ModerationIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
   '/moderation/accounts/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
@@ -326,6 +343,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -358,6 +376,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}_/$id_/history': typeof AtChar123acctChar125IdHistoryRoute
   '/moderation/accounts_/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals_/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances_/$domain': typeof ModerationInstancesDomainRoute
@@ -368,6 +387,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -400,6 +420,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/moderation/'
     | '/settings/'
+    | '/@{$acct}/$id/history'
     | '/moderation/accounts/$id'
     | '/moderation/appeals/$id'
     | '/moderation/instances/$domain'
@@ -408,6 +429,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -440,6 +462,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/moderation'
     | '/settings'
+    | '/@{$acct}/$id/history'
     | '/moderation/accounts/$id'
     | '/moderation/appeals/$id'
     | '/moderation/instances/$domain'
@@ -448,6 +471,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -480,6 +504,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/moderation/'
     | '/settings/'
+    | '/@{$acct}_/$id_/history'
     | '/moderation/accounts_/$id'
     | '/moderation/appeals_/$id'
     | '/moderation/instances_/$domain'
@@ -489,6 +514,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtChar123acctChar125Route: typeof AtChar123acctChar125Route
+  BookmarksRoute: typeof BookmarksRoute
   HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
   LoginRoute: typeof LoginRoute
@@ -521,6 +547,7 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  AtChar123acctChar125IdHistoryRoute: typeof AtChar123acctChar125IdHistoryRoute
   ModerationAccountsIdRoute: typeof ModerationAccountsIdRoute
   ModerationAppealsIdRoute: typeof ModerationAppealsIdRoute
   ModerationInstancesDomainRoute: typeof ModerationInstancesDomainRoute
@@ -541,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}'
       fullPath: '/@{$acct}'
       preLoaderRoute: typeof AtChar123acctChar125RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookmarks': {
+      id: '/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof BookmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -767,6 +801,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/$id_/history': {
+      id: '/@{$acct}_/$id_/history'
+      path: '/@{$acct}/$id/history'
+      fullPath: '/@{$acct}/$id/history'
+      preLoaderRoute: typeof AtChar123acctChar125IdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/moderation/accounts_/$id': {
       id: '/moderation/accounts_/$id'
       path: '/moderation/accounts/$id'
@@ -801,6 +842,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtChar123acctChar125Route: AtChar123acctChar125Route,
+  BookmarksRoute: BookmarksRoute,
   HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
   LoginRoute: LoginRoute,
@@ -833,6 +875,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  AtChar123acctChar125IdHistoryRoute: AtChar123acctChar125IdHistoryRoute,
   ModerationAccountsIdRoute: ModerationAccountsIdRoute,
   ModerationAppealsIdRoute: ModerationAppealsIdRoute,
   ModerationInstancesDomainRoute: ModerationInstancesDomainRoute,

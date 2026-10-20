@@ -739,6 +739,62 @@
     "defaultMessage": "{instance} のメールアドレスの確認",
     "description": "Subject of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none."
   },
+  "push.admin_appeal": {
+    "defaultMessage": "{instance} のモデレーターに新しい異議申し立てが届きました",
+    "description": "Web Push notification to a moderator: a user appealed a moderation action. It never names the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.admin_report": {
+    "defaultMessage": "{instance} のモデレーターに新しい通報が届きました",
+    "description": "Web Push notification to a moderator: someone reported an account that had no open report. It never names the accounts. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.admin_sign_up": {
+    "defaultMessage": "{instance} で新しい登録が承認を待っています",
+    "description": "Web Push notification to a moderator: a new user signed up and waits for approval. It never names the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.appeal_decided": {
+    "defaultMessage": "{instance} のモデレーターがあなたの異議申し立てを審査しました",
+    "description": "Web Push notification: the moderators upheld or overturned the user's appeal. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.boost": {
+    "defaultMessage": "{name}さんがあなたの投稿をブーストしました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that boosted the user's post."
+  },
+  "push.favourite": {
+    "defaultMessage": "{name}さんがあなたの投稿をお気に入りに登録しました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that favourited the user's post."
+  },
+  "push.follow": {
+    "defaultMessage": "{name}さんにフォローされました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that followed the user."
+  },
+  "push.follow_accepted": {
+    "defaultMessage": "{name}さんがフォローリクエストを承認しました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that accepted the user's follow request."
+  },
+  "push.follow_request": {
+    "defaultMessage": "{name}さんからフォローリクエストが届きました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that asked to follow the user."
+  },
+  "push.mention": {
+    "defaultMessage": "{name}さんがあなたをメンションしました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that wrote a post that mentions the user."
+  },
+  "push.moderation_notice": {
+    "defaultMessage": "{instance} のモデレーターからお知らせが届きました",
+    "description": "Web Push notification: a notice to the user from the moderators. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.other": {
+    "defaultMessage": "{instance} で新しい通知があります",
+    "description": "Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.relationships_severed": {
+    "defaultMessage": "{instance} のモデレーターによる凍結で、いくつかのフォロー関係が解除されました",
+    "description": "Web Push notification: the moderators suspended a server or an account, which ended follows between it and the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.report_resolved": {
+    "defaultMessage": "{instance} で送った通報への対応が完了しました",
+    "description": "Web Push notification: the moderators resolved a report that the user filed. It never says how. {instance} is the server's display name, or its domain name when it has none."
+  },
   "moderation.action.category": {
     "defaultMessage": "{category, select, spam {スパム} legal {法的な理由} violation {サーバーのルール違反} other {その他}}",
     "description": "Label of the reason category that a moderator chose for an action on the user's own account. {category} is the category."
