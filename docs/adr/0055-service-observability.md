@@ -84,19 +84,21 @@ OpenTelemetry Go（`go.opentelemetry.io/otel`・`otel/metric`・`otel/sdk` v1.47
 
 ### 1. 計測の port（ADR-0002 の依存の向き）
 
-- `internal/app/kernel` に `Meter` port を置く。持つのは Counter・UpDownCounter・Histogram・非同期の Gauge（収集のときに呼ぶ関数）を作る口だけで、
+- `internal/app/kernel` に `Meter` port を置く。持つのは Counter・UpDownCounter・Histogram・非同期の Gauge（収集のときに呼ぶ関数）・
+  非同期の observable counter（収集のときに呼ぶ関数が、プロセスの CPU 時間やコネクションプールの待ちのように別の場所で持つ累積を返す。値はプロセスの再起動まで減らない）を作る口だけで、
   型は標準ライブラリだけで書く。OTel の型は port に出さない
 - 計器（instrument）は、名前・単位・説明・**許すラベルのキーの一覧** を宣言してから使う。宣言にないラベルのキーを渡すのはプログラムの誤りとして、テストで落とす
 - 実装はアダプタ `internal/adapter/telemetry/` に置く:
   - `none`（既定）: 何もしない。計測の呼び出しの費用はほぼない
   - `otel`: OpenTelemetry Go SDK（`go.opentelemetry.io/otel/sdk/metric`）に渡し、OTel のエクスポーター（Prometheus・OTLP）で出す
   - `emf`: 1 つのリクエスト・ジョブの終わりに、そこで記録した値を EMF の JSON 1 行として標準出力に書く（集計は CloudWatch が行う）
+- observable counter は、Prometheus では `_total` の counter、OTLP では単調増加（monotonic）の Sum として出す。`emf` は収集を持たないので、書くときに前回書いてからの増分を書く
 - 計測の多くは境界に置く: HTTP のミドルウェア（`internal/platform`）、ジョブの実行（`internal/app/queue` の runner が port を呼ぶ）、
   外向きの配送（`internal/app/federation` の配送のジョブ）、ストリームの接続（`internal/interface/clientapi`）。ドメイン（`internal/domain`）は計測しない
 - ADR-0056 は同じ port とアダプタでシステムの指標を足す（Go のランタイム・プロセスの指標を OTel の contrib から足すかは ADR-0056 が決める）
 
 B を選ばない理由: OTel の API は no-op を前提にした薄い層で、B の最も強い利点は自前の port の重複がないことである。
-ただし ADR-0002 の「コアは外部ライブラリを import しない」に例外を作り、EMF のように OTel の集計を通さない出力を同じ呼び出しで扱えない。port は計器の宣言と 4 種の記録だけで小さく、重複は少ない。
+ただし ADR-0002 の「コアは外部ライブラリを import しない」に例外を作り、EMF のように OTel の集計を通さない出力を同じ呼び出しで扱えない。port は計器の宣言と 5 種の記録だけで小さく、重複は少ない。
 
 C を選ばない理由: pull の 1 経路だけになり、Cloud Run（リクエストベース課金）と Lambda では scrape を当てにできない。OTel は Prometheus の形式も出せるので、C の利点は A に含まれる。
 
