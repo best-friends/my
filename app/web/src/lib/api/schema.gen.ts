@@ -2478,6 +2478,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/custom_emojis/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a remote custom emoji into a local one
+         * @description Registers a new local emoji with the image of a remote emoji, under the shortcode of the
+         *     request or the remote one's. The image is fetched through the media proxy, so the
+         *     instance does not fetch the media of a domain whose media it rejects, and is checked as
+         *     the image of a new emoji (`createCustomEmoji`); it shrinks into the boxes of an emoji.
+         *     The new emoji is in the picker, without a category or aliases. A local emoji is a 422
+         *     with the reason `local_emoji`; an image that cannot be fetched is a 422 with the reason
+         *     `fetch_failed`; a shortcode or an image that does not qualify is a 422 whose `reason`
+         *     says which, and keeps nothing of the copy. The copy is recorded in the audit log
+         *     (`custom_emoji_copied` on the new emoji). An unknown ID is a 404. Needs the
+         *     `manage_custom_emojis` permission.
+         */
+        post: operations["copyCustomEmoji"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/instance_texts": {
         parameters: {
             query?: never;
@@ -4964,6 +4993,7 @@ export interface components {
          *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
          *     `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+         *     `custom_emoji_copied` (a new local emoji copied from a remote one),
          *     `custom_emoji_updated` (its category, aliases, or place in the picker),
          *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
          *     `webhook_created`, `webhook_updated` (its URL, description, or events),
@@ -4976,7 +5006,7 @@ export interface components {
          *     characters of its code, never the whole code.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -5605,6 +5635,14 @@ export interface components {
             /** @description The new aliases, each following the rules of a shortcode; at most 10. */
             aliases?: string[];
         };
+        /** @description The local custom emoji that a copy of a remote one becomes. */
+        CopyCustomEmojiRequest: {
+            /**
+             * @description The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+             *     underscores; case matters. Absent, the remote emoji's.
+             */
+            shortcode?: string;
+        };
         /** @description The new image of a local custom emoji. */
         ReplaceCustomEmojiImageRequest: {
             media_id: components["schemas"]["Id"];
@@ -5625,10 +5663,12 @@ export interface components {
          *     file is not an upload of the user. `media_not_ready`: it has not finished processing.
          *     `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
          *     than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-         *     `remote_emoji`: the operation is for local emoji only.
+         *     `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+         *     for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+         *     fetched (its server did not return it, or the instance rejects the media of its domain).
          * @enum {string}
          */
-        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji";
+        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji" | "local_emoji" | "fetch_failed";
         /**
          * @description An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
          *     `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
@@ -5834,8 +5874,8 @@ export interface components {
         WebhookCustomEmoji: components["schemas"]["AdminCustomEmoji"] & {
             /**
              * @description The operation, named as in the audit log: `custom_emoji_created`,
-             *     `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
-             *     `custom_emoji_disabled`, or `custom_emoji_deleted`.
+             *     `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+             *     `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
              */
             operation: string;
         };
@@ -9597,6 +9637,27 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReplaceCustomEmojiImageRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminCustomEmoji"];
+            422: components["responses"]["CustomEmojiProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    copyCustomEmoji: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CopyCustomEmojiRequest"];
             };
         };
         responses: {

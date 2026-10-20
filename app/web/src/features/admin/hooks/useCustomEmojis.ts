@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The custom emoji of the admin screen (ADR-0051, manage_custom_emojis): the list under a filter, registering a local
-// emoji with an image file, changing its settings, replacing its image, deleting it, and enabling or disabling a
-// remote one. What each change did is announced and kept in a StatusMessage; a failure stays next to its cause.
+// emoji with an image file, changing its settings, replacing its image, deleting it, and enabling, disabling or
+// copying a remote one. What each change did is announced and kept in a StatusMessage; a failure stays next to its cause.
 import { useAnnouncer } from "@my/ui";
 import { useMutation, useQueryClient, useSuspenseInfiniteQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
@@ -16,6 +16,7 @@ import {
   cacheChangedCustomEmoji,
   cacheCreatedCustomEmoji,
   cacheDeletedCustomEmoji,
+  copyCustomEmojiMutation,
   createCustomEmojiMutation,
   type CustomEmojiChange,
   type CustomEmojiFilter,
@@ -121,6 +122,8 @@ export type CustomEmojiActions = {
   replaceImage: (emoji: AdminCustomEmoji, file: File) => void;
   /** Deletes a local emoji; resolves with whether it succeeded. */
   remove: (emoji: AdminCustomEmoji) => Promise<boolean>;
+  /** Copies a remote emoji into a local one named `shortcode`; resolves with whether it succeeded. */
+  copy: (emoji: AdminCustomEmoji, shortcode: string) => Promise<boolean>;
   /** The emoji being changed. */
   pendingId: string | undefined;
   /** Why the last change failed, localized, until the next change. */
@@ -146,9 +149,10 @@ export function useCustomEmojiActions(onDeleted: (id: string) => void): CustomEm
   const update = useMutation(updateCustomEmojiMutation(api));
   const replace = useMutation(replaceCustomEmojiImageMutation(api));
   const remove = useMutation(deleteCustomEmojiMutation(api));
-  const pending = [update, replace].find((mutation) => mutation.isPending);
+  const copy = useMutation(copyCustomEmojiMutation(api));
+  const pending = [update, replace, copy].find((mutation) => mutation.isPending);
   const pendingId = remove.isPending ? remove.variables : pending?.variables.id;
-  const failed = [update, replace, remove].find((mutation) => mutation.isError);
+  const failed = [update, replace, remove, copy].find((mutation) => mutation.isError);
   const changed = async (emoji: AdminCustomEmoji, message: string) => {
     await cacheChangedCustomEmoji(queryClient, emoji);
     report(message);
@@ -157,6 +161,7 @@ export function useCustomEmojiActions(onDeleted: (id: string) => void): CustomEm
     update: async (emoji, change) => {
       replace.reset();
       remove.reset();
+      copy.reset();
       try {
         const saved = await update.mutateAsync({ id: emoji.id, change });
         await changed(saved, t("client:admin.custom_emojis.updated", { emoji: emojiInText(saved) }));
@@ -168,6 +173,7 @@ export function useCustomEmojiActions(onDeleted: (id: string) => void): CustomEm
     setEnabled: (emoji, enabled) => {
       replace.reset();
       remove.reset();
+      copy.reset();
       update.mutate(
         { id: emoji.id, change: { enabled } },
         {
@@ -180,6 +186,7 @@ export function useCustomEmojiActions(onDeleted: (id: string) => void): CustomEm
     replaceImage: (emoji, file) => {
       update.reset();
       remove.reset();
+      copy.reset();
       replace.mutate(
         { id: emoji.id, file },
         {
@@ -192,6 +199,7 @@ export function useCustomEmojiActions(onDeleted: (id: string) => void): CustomEm
     remove: async (emoji) => {
       update.reset();
       replace.reset();
+      copy.reset();
       try {
         await remove.mutateAsync(emoji.id);
       } catch {
@@ -200,6 +208,22 @@ export function useCustomEmojiActions(onDeleted: (id: string) => void): CustomEm
       onDeleted(emoji.id);
       await cacheDeletedCustomEmoji(queryClient, emoji.id);
       report(t("client:admin.custom_emojis.deleted", { emoji: emojiInText(emoji) }));
+      return true;
+    },
+    copy: async (emoji, shortcode) => {
+      update.reset();
+      replace.reset();
+      remove.reset();
+      // The remote one's shortcode is the server's default; another one is sent.
+      const named = shortcode === emoji.shortcode ? undefined : shortcode;
+      let created: AdminCustomEmoji;
+      try {
+        created = await copy.mutateAsync({ id: emoji.id, shortcode: named });
+      } catch {
+        return false;
+      }
+      await cacheCreatedCustomEmoji(queryClient);
+      report(t("client:admin.custom_emojis.copied", { emoji: emojiInText(emoji), copy: emojiInText(created) }));
       return true;
     },
     pendingId,

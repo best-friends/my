@@ -112,6 +112,7 @@ func withOperation(v any, operation string) (json.RawMessage, error) {
 // customEmojiEvents maps the operations on custom emoji to their events (ADR-0060).
 var customEmojiEvents = map[string]webhook.EventType{
 	appcontent.CustomEmojiCreated:       webhook.EventCustomEmojiCreated,
+	appcontent.CustomEmojiCopied:        webhook.EventCustomEmojiCreated,
 	appcontent.CustomEmojiImageReplaced: webhook.EventCustomEmojiUpdated,
 	appcontent.CustomEmojiUpdated:       webhook.EventCustomEmojiUpdated,
 	appcontent.CustomEmojiEnabled:       webhook.EventCustomEmojiUpdated,

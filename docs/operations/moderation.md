@@ -273,7 +273,7 @@ my admin report reopen <report id>
 | `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪）・`role_created`・`role_updated`・`role_deleted`（ロールの作成・変更・削除） |
 | `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted`、`ban` なら `account_deletion_cancelled` も記録する） |
 | `signup_block` | `signup_block_added`・`signup_block_lifted`（登録の拒否の追加・解除） |
-| `custom_emoji` | `custom_emoji_created`・`custom_emoji_image_replaced`・`custom_emoji_updated`・`custom_emoji_enabled`・`custom_emoji_disabled`・`custom_emoji_deleted`（カスタム絵文字の登録・画像の差し替え・変更・有効化・無効化・削除） |
+| `custom_emoji` | `custom_emoji_created`・`custom_emoji_image_replaced`・`custom_emoji_copied`・`custom_emoji_updated`・`custom_emoji_enabled`・`custom_emoji_disabled`・`custom_emoji_deleted`（カスタム絵文字の登録・画像の差し替え・ほかのサーバーの絵文字の複製・変更・有効化・無効化・削除） |
 | `webhook` | `webhook_created`・`webhook_updated`・`webhook_deleted`・`webhook_enabled`・`webhook_disabled`・`webhook_secret_rotated`（webhook の設定・変更・削除・有効化・無効化・秘密の作り直し） |
 | `announcement` | `announcement_created`・`announcement_updated`・`announcement_published`・`announcement_withdrawn`（お知らせの作成・変更・公開・取り下げ） |
 | `invite` | `invite_created`・`invite_revoked`（招待の作成・失効。対象の名前はコードの先頭 4 文字） |
