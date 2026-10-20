@@ -3,6 +3,7 @@
 // The network is mocked only through MSW (web-client.md T3); a request that no handler matches fails the test.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
+import { destroyAnnouncer } from "react-aria/private/live-announcer/LiveAnnouncer";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { forgetUnsavedStorage } from "../lib/storage";
 import { server } from "./msw/server";
@@ -30,6 +31,11 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  // React Aria's components announce through a live announcer of its own, kept in a module variable. An
+  // announcement made outside act (while waitFor polls) waits for a 100 ms timer, which can fire after the
+  // last test of the file, once jsdom is gone ("document is not defined"). Destroying the announcer makes
+  // that timer do nothing and gives the next test a fresh one.
+  destroyAnnouncer();
   server.resetHandlers();
   // What the app keeps in the browser (lib/storage) must not leak into the next test, nor what it kept in
   // memory when a test blocked the storage.
