@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The form of a moderation action on an account (FR-703), as a report's page offers it on the report's target:
 // the kinds the account can take (a remote account takes three), the category of the reason, the public reason
-// and the private note, how long it lasts, whether the account is told, and the posts of an action on posts. An
+// and the private note, how long it lasts, whether the account is told, whether a ban also blocks sign-ups with
+// the email address of the account's user (FR-719), and the posts of an action on posts. An
 // action that cannot be undone (a ban, deleting posts) asks first in an alert dialog (NFR-MOD-7). With a report,
 // the action resolves it as actioned (FR-710).
 import { type SyntheticEvent, useState } from "react";
@@ -10,6 +11,7 @@ import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
 import { cacheIssuedAccountAction, refreshActedReports } from "../api/accounts";
+import { refreshSignupBlockLists } from "../api/signupBlocks";
 import { type AccountAction, type AccountActionCategory, type AccountActionKind, createAccountActionMutation, type NewAccountAction } from "../api/reports";
 
 /** The kinds of action, from the lightest to the heaviest, in the order of the form. */
@@ -48,6 +50,14 @@ export function isPostKind(kind: AccountActionKind | null): boolean {
   return kind !== null && postKinds.includes(kind);
 }
 
+/**
+ * Whether an action of `kind` on `target` may also block sign-ups with the email address of the account's user:
+ * only a ban of a local account whose user has one (the API refuses `block_email` on anything else).
+ */
+export function takesEmailBlock(kind: AccountActionKind | null, target: ActionTarget): boolean {
+  return kind === "ban" && !target.remote && target.hasEmail !== false;
+}
+
 /** The account the form acts on, and what it starts from. */
 export type ActionTarget = {
   accountId: string;
@@ -62,6 +72,11 @@ export type ActionTarget = {
   statusIds: readonly string[];
   /** The category of the reason at first: the report's own. */
   category: AccountActionCategory;
+  /**
+   * Whether the account's user has an email address that a ban can block sign-ups with (FR-719); false offers no
+   * such block, and unknown offers it on every local account (the server refuses it when there is none).
+   */
+  hasEmail?: boolean | undefined;
 };
 
 /** The form, filled in by the moderator. */
@@ -73,12 +88,14 @@ type Draft = {
   /** The seconds the action lasts, or null until it is lifted. */
   expiresIn: number | null;
   notify: boolean;
+  /** Whether a ban also blocks sign-ups with the email address of the account's user (FR-719). */
+  blockEmail: boolean;
   /** The posts of the target that the moderator left out of an action on posts. */
   leftOut: readonly string[];
 };
 
 function emptyDraft(target: ActionTarget): Draft {
-  return { kind: null, category: target.category, publicReason: "", privateNote: "", expiresIn: null, notify: true, leftOut: [] };
+  return { kind: null, category: target.category, publicReason: "", privateNote: "", expiresIn: null, notify: true, blockEmail: false, leftOut: [] };
 }
 
 /** The request of a draft whose kind is chosen; empty texts and what the kind does not take are left out. */
@@ -93,6 +110,7 @@ function requestOf(draft: Draft, kind: AccountActionKind, target: ActionTarget, 
     notify_target: !target.remote && draft.notify,
     ...(takesDuration(kind) && draft.expiresIn !== null ? { expires_in: draft.expiresIn } : {}),
     ...(isPostKind(kind) ? { status_ids: [...statusIds] } : {}),
+    ...(takesEmailBlock(kind, target) && draft.blockEmail ? { block_email: true } : {}),
   };
 }
 
@@ -120,7 +138,8 @@ export type AccountActionForm = {
  * The form of a moderation action on `target`. `onIssued(action)` is called once the server has taken it and the
  * account, its actions, the searches and the audit log (and, for an action that resolves a report, the lists of
  * reports, and for an action that changes what everyone sees of the account, its profile and the lists of posts)
- * are fetched again, after the form is emptied; the reports and the posts acted on are fetched again after it.
+ * are fetched again, after the form is emptied; the reports, the posts acted on and, for a ban that blocks the
+ * email address, the lists of sign-up blocks are fetched again after it.
  */
 export function useAccountActionForm(target: ActionTarget, onIssued: (action: AccountAction) => void): AccountActionForm {
   const api = useApi();
@@ -142,6 +161,8 @@ export function useAccountActionForm(target: ActionTarget, onIssued: (action: Ac
       // (useFocusAfterChange), which must come after this call.
       onIssued(action);
       refreshActedReports(queryClient, action);
+      // A ban that blocks the email address adds a sign-up block, which every cached list of them misses.
+      if (body.block_email === true) void refreshSignupBlockLists(queryClient);
     },
   });
   const chosenStatusIds = target.statusIds.filter((id) => !draft.leftOut.includes(id));

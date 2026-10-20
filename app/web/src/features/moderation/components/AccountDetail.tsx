@@ -89,7 +89,7 @@ function AccountPage({ id }: { id: string }) {
           <>
             <p className="text-sm text-fg-muted">{t("client:admin.account.action.posts")}</p>
             <AccountActionForm
-              target={{ accountId: account.id, remote: !account.local, statusIds: [], category: "other" }}
+              target={{ accountId: account.id, remote: !account.local, statusIds: [], category: "other", hasEmail: account.email_verified !== undefined }}
               handle={handle}
               posts={[]}
               onIssued={(action) => {

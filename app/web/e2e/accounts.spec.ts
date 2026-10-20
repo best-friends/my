@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The account search and an account's admin page in every width × locale project (ADR-0027, FR-714, FR-703,
 // FR-713): a local account with a long name and a remote one on a long domain, showing the email and IP
-// addresses only when asked, lifting an action after its alert dialog, and the kinds of action a remote account
-// takes, each passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
+// addresses only when asked, lifting an action after its alert dialog, the kinds of action a remote account
+// takes, and a ban that blocks sign-ups with the account's email address and shows in the sign-up blocks, each passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
 // a signed-in moderator with page.route; names change with the locale, so the structure is checked by role and by
 // what the server sends (names, handles, addresses).
 import type { Page, Route } from "@playwright/test";
@@ -90,6 +90,9 @@ const privateData: Schemas["AdminAccountPrivateData"] = {
   same_ip_accounts: [{ ip: "192.0.2.7", accounts: [remoteAccount] }],
 };
 
+/** The hash of the email address that a ban blocks, as the sign-up block of the ban keeps it. */
+const emailHash = "5d41402abc4b2a76b9719d911017c592ae0b4f1c7ad8e2c6f5a1b0e9d8c7b6a5";
+
 function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({ status, contentType: "application/json", headers: { "Cache-Control": "no-store" }, body: JSON.stringify(body) });
 }
@@ -104,6 +107,7 @@ const slowSearchMs = 1500;
 async function moderatorServer(page: Page) {
   const locale = test.info().project.use.locale ?? "en";
   let actions = [limit];
+  let blocks: Schemas["AdminSignupBlock"][] = [];
   let slowSearch = false;
   const requests: string[] = [];
   /** The account as it is now: limited while its action is in effect. */
@@ -144,6 +148,17 @@ async function moderatorServer(page: Page) {
     if (key === `GET /admin/accounts/${local.id}/actions`) return json(route, { items: actions });
     if (key === `GET /admin/accounts/${remote.id}/actions`) return json(route, { items: [] });
     if (key === `POST /admin/accounts/${local.id}/reveal`) return json(route, privateData);
+    if (key === `POST /admin/accounts/${local.id}/actions`) {
+      const body = request.postDataJSON() as Schemas["CreateAccountActionRequest"];
+      requests.push(`${key} ${body.kind}${body.block_email === true ? " block_email" : ""}`);
+      const action: Schemas["AdminAccountAction"] = { ...limit, id: "0192f0c4-7a8e-7000-8000-0000000d00a0", kind: body.kind, issued_at: "2026-10-17T00:00:00Z" };
+      actions = [action, ...actions];
+      if (body.block_email === true) {
+        blocks = [{ id: "0192f0c4-7a8e-7000-8000-0000000001a1", kind: "email_hash", value: emailHash, severity: "reject", moderation_action_id: action.id, state: "active", created_at: "2026-10-17T00:00:00Z" }];
+      }
+      return json(route, action);
+    }
+    if (key === "GET /admin/signup_blocks") return json(route, { items: blocks });
     if (key === `POST /admin/account_actions/${limit.id}/lift`) {
       const lifted: Schemas["AdminAccountAction"] = { ...limit, state: "lifted", lifted_at: "2026-10-17T00:00:00Z" };
       actions = [lifted];
@@ -287,6 +302,37 @@ test.describe("accounts", () => {
     await expect(form.locator('input[type="checkbox"]')).toHaveCount(0);
     // Account, restrictions, actions, reports, action: no region of email and IP addresses.
     await expect(main.getByRole("region")).toHaveCount(5);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("bans a local account with a block on sign-ups with its email address, which the sign-up blocks list", async ({ page, makeAxeBuilder }) => {
+    const requests = await moderatorServer(page);
+    await page.goto(`/moderation/accounts/${local.id}`);
+    const form = page.getByRole("main").locator("form");
+    const blockEmail = form.locator('input[type="checkbox"][name="block_email"]');
+    // Only a ban offers the block: by keyboard, the radio's and the checkbox's inputs are visually hidden.
+    await form.locator('input[type="radio"][value="suspend"]').focus();
+    await page.keyboard.press("Space");
+    await expect(blockEmail).toHaveCount(0);
+    await form.locator('input[type="radio"][value="ban"]').focus();
+    await page.keyboard.press("Space");
+    await expect(blockEmail).not.toBeChecked();
+    await blockEmail.focus();
+    await page.keyboard.press("Space");
+    await expect(blockEmail).toBeChecked();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await form.locator('button[type="submit"]').click();
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    await dialog.locator('button[type="submit"]').click();
+    await expect(dialog).toBeHidden();
+    expect(requests).toContain(`POST /admin/accounts/${local.id}/actions ban block_email`);
+
+    await page.goto("/moderation/signup-blocks");
+    await expect(page.getByRole("main").getByRole("tabpanel").getByRole("heading", { level: 3, name: emailHash })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

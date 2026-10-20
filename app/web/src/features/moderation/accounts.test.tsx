@@ -9,7 +9,7 @@ import { accountFixture, otherAccountFixture, remoteAccountFixture, type Schemas
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { accountActionFixture, adminAccountDetailFixture, adminAccountFixture, newAccountAction, reportFixture } from "./test/handlers";
+import { accountActionFixture, adminAccountDetailFixture, adminAccountFixture, newAccountAction, reportFixture, signupBlockFixture } from "./test/handlers";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_accounts", "manage_reports", "view_audit"]));
@@ -228,6 +228,7 @@ const bobDetail = adminAccountDetailFixture(otherAccountFixture, {
   reports: [reportFixture({ id: "0192f0c4-7a8e-7000-8000-0000000c0007", comment: "Spam again." })],
 });
 const limit = accountActionFixture({ public_reason: "Spam links." });
+const emailHash = "5d41402abc4b2a76b9719d911017c592ae0b4f1c7ad8e2c6f5a1b0e9d8c7b6a5";
 const ban = accountActionFixture({ id: "0192f0c4-7a8e-7000-8000-0000000d00a0", kind: "ban", issued_at: "2026-09-01T00:00:00Z", state: "active" });
 
 describe("an account's admin page", () => {
@@ -355,6 +356,53 @@ describe("an account's admin page", () => {
 
     expect(await within(action).findByText("Action taken (Restrict posting).")).toBeInTheDocument();
     expect(api.created).toEqual([{ kind: "restrict_posting", reason_category: "other", private_note: "Second time.", notify_target: true, expires_in: 7 * 86_400 }]);
+  });
+
+  test("a ban of a local account can also block sign-ups with its email address, which the list of sign-up blocks shows at once; only a ban offers it", async () => {
+    const api = accountServer(bobDetail);
+    // The server adds the block with the ban.
+    let blocks: Schemas["AdminSignupBlock"][] = [];
+    server.use(
+      http.get(`${apiBase}/admin/signup_blocks`, () => HttpResponse.json({ items: blocks })),
+      http.post(`${apiBase}/admin/accounts/:id/actions`, async ({ request }) => {
+        const body = (await request.clone().json()) as Schemas["CreateAccountActionRequest"];
+        if (body.block_email === true) blocks = [signupBlockFixture({ kind: "email_hash", value: emailHash, moderation_action_id: ban.id })];
+        // Falls through to accountServer's handler, which takes the action.
+      }),
+    );
+    // The list is read once before the ban, and kept fresh for a while (staleTime).
+    const { user, router } = await renderApp({ path: "/moderation/signup-blocks" });
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign-up blocks" })).toBeInTheDocument();
+    expect(await within(screen.getByRole("tabpanel")).findByRole("heading", { level: 3 })).toBeInTheDocument();
+    await router.navigate({ to: "/moderation/accounts/$id", params: { id: bobDetail.id } });
+
+    const action = await screen.findByRole("region", { name: "Take action" });
+    await user.click(within(action).getByRole("radio", { name: "Suspend" }));
+    expect(within(action).queryByRole("checkbox", { name: "Block sign-ups with this email address" })).not.toBeInTheDocument();
+    await user.click(within(action).getByRole("radio", { name: "Ban" }));
+    const blockEmail = within(action).getByRole("checkbox", { name: "Block sign-ups with this email address" });
+    expect(blockEmail).not.toBeChecked();
+    expect(blockEmail).toHaveAccessibleDescription(/^New sign-ups with the email address of the account's user are rejected too\./);
+    await user.click(blockEmail);
+    await user.click(within(action).getByRole("button", { name: "Take action" }));
+    const confirmation = await screen.findByRole("alertdialog", { name: `Ban ${isolated("@bob")}?` });
+    await user.click(within(confirmation).getByRole("button", { name: "Ban" }));
+
+    expect(await within(action).findByText("Action taken (Ban).")).toBeInTheDocument();
+    expect(api.created).toEqual([{ kind: "ban", reason_category: "other", notify_target: true, block_email: true }]);
+
+    await router.navigate({ to: "/moderation/signup-blocks" });
+    expect(await within(await screen.findByRole("tabpanel")).findByRole("heading", { level: 3, name: emailHash })).toBeInTheDocument();
+  });
+
+  test("a ban of a local account without an email address offers no block of it", async () => {
+    const { email_verified: _, ...withoutEmail } = bobDetail;
+    accountServer(withoutEmail);
+    const { user } = await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
+
+    const action = await screen.findByRole("region", { name: "Take action" });
+    await user.click(within(action).getByRole("radio", { name: "Ban" }));
+    expect(within(action).queryByRole("checkbox", { name: "Block sign-ups with this email address" })).not.toBeInTheDocument();
   });
 
   test("lifts an action after its confirmation with an optional reason, and keeps focus on its row; a ban has no lift", async () => {

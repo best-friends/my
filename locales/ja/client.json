@@ -571,6 +571,14 @@
     "defaultMessage": "二要素認証を解除できませんでした：{reason}",
     "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
   },
+  "admin.account_actions.block_email": {
+    "defaultMessage": "このメールアドレスでの登録を拒否する",
+    "description": "Checkbox of a ban of a local account: whether it also rejects sign-ups with the email address of the account's user."
+  },
+  "admin.account_actions.block_email.description": {
+    "defaultMessage": "アカウントのユーザーのメールアドレスでの新規登録も拒否します。拒否は登録拒否の一覧に載り、そこで解除できます。",
+    "description": "Help of the checkbox of blocking the email address of a banned account."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "理由の種類",
     "description": "Label of the select of the category of the reason for a moderation action on an account."

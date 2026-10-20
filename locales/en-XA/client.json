@@ -571,6 +571,14 @@
     "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.account_actions.block_email": {
+    "defaultMessage": "[Ɓŀǿǿƈķ şīɠƞ-ŭŭƥş ẇīŧħ ŧħīş ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account_actions.block_email.description": {
+    "defaultMessage": "[Ƞḗḗẇ şīɠƞ-ŭŭƥş ẇīŧħ ŧħḗḗ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ǿǿƒ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ'ş ŭŭşḗḗř ȧȧřḗḗ řḗḗĵḗḗƈŧḗḗḓ ŧǿǿǿǿ. Ŧħḗḗ ƀŀǿǿƈķ şħǿǿẇş īƞ ŧħḗḗ ŀīşŧ ǿǿƒ şīɠƞ-ŭŭƥ ƀŀǿǿƈķş, ẇħḗḗřḗḗ īŧ ƈȧȧƞ ƀḗḗ ŀīƒŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "[Řḗḗȧȧşǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
