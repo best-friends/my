@@ -1,7 +1,8 @@
 name: Stream contract
 
 # The stream.Bus contracts of internal/adapter/stream on broker containers (the valkey/valkey container of
-# pkg/testkit/valkeytest) instead of the in-process fakes (miniredis) that pull requests and merge groups run in
+# pkg/testkit/valkeytest, the Floci AWS emulator of pkg/testkit/awstest, the Pub/Sub emulator) instead of the in-process
+# fakes (miniredis, the SNS / SQS fake of pkg/testkit/awstest, pstest) that pull requests and merge groups run in
 # ctx-go.yml's go-test job (ADR-0050 §5). Called by main.yml on the pushes to main that touch a path they depend on
 # and by nightly.yml.
 

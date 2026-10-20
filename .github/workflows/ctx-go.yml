@@ -73,7 +73,8 @@ jobs:
   go-test:
     # The PostgreSQL tests run on pgmem inside the test processes, without Docker (ADR-0041); postgres-contract.yml
     # runs them on a real postgres container after the merge (main.yml) and nightly. The Valkey tests run on a container,
-    # except the stream.Bus contracts: miniredis here, the container in stream-contract.yml.
+    # except the stream.Bus contracts: miniredis here, the container in stream-contract.yml. The Pub/Sub contracts run on
+    # pstest here and on the emulator container in stream-contract.yml.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
