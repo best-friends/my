@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useId } from "react";
+import { Announcements } from "../features/announcements";
 import {
   forgetSavedHomeTimeline,
   HomeTimeline,
@@ -58,6 +59,8 @@ function HomePage() {
   return (
     <>
       <PageHeading id={headingId}>{t("client:home.title")}</PageHeading>
+      {/* The server's announcements to every user (FR-726); not while the page shows the posts kept on this browser. */}
+      {!saved && <Announcements />}
       {/* Mounted again once the session resumes: the user change replaced the kept posts' query (lib/auth/userData). */}
       <HomeTimeline key={saved ? "saved" : "loaded"} aria-labelledby={headingId} saved={saved} />
     </>

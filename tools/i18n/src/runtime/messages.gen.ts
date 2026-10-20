@@ -560,6 +560,96 @@ export interface MessageArgs {
   "client:admin.accounts.summary": {};
   /** Accounts */
   "client:admin.accounts.title": {};
+  /** Cancel */
+  "client:admin.announcements.cancel": {};
+  /** The announcement could not be changed: {reason} */
+  "client:admin.announcements.change_failed": { reason: string };
+  /** Save as a draft */
+  "client:admin.announcements.create_draft": {};
+  /** The announcement could not be written: {reason} */
+  "client:admin.announcements.create_failed": { reason: string };
+  /** Publish the announcement */
+  "client:admin.announcements.create_published": {};
+  /** Announcements show above the home timeline of everyone on this server, who can mark them as read. The audit log records every change. */
+  "client:admin.announcements.description": {};
+  /** Saved the announcement as a draft. The audit log records the change. */
+  "client:admin.announcements.drafted": {};
+  /** Show for */
+  "client:admin.announcements.duration": {};
+  /** From when you write it. It stops showing after that. */
+  "client:admin.announcements.duration.description": {};
+  /** Edit */
+  "client:admin.announcements.edit": {};
+  /** Edit: {announcement} */
+  "client:admin.announcements.edit_one": { announcement: string };
+  /** Close */
+  "client:admin.announcements.edit.close": {};
+  /** Edit the announcement */
+  "client:admin.announcements.edit.title": {};
+  /** No announcements */
+  "client:admin.announcements.empty": {};
+  /** Announcements you write appear here. */
+  "client:admin.announcements.empty.description": {};
+  /** Shows until */
+  "client:admin.announcements.ends_at": {};
+  /** {announcement} ({state}) */
+  "client:admin.announcements.heading": { announcement: string; state: string };
+  /** All announcements */
+  "client:admin.announcements.list.title": {};
+  /** Write an announcement */
+  "client:admin.announcements.new.title": {};
+  /** Publish */
+  "client:admin.announcements.publish": {};
+  /** Publish now */
+  "client:admin.announcements.publish_now": {};
+  /** Without it, the announcement stays a draft that only the administrators see. */
+  "client:admin.announcements.publish_now.description": {};
+  /** Publish: {announcement} */
+  "client:admin.announcements.publish_one": { announcement: string };
+  /** Published the announcement. The audit log records the change. */
+  "client:admin.announcements.published": {};
+  /** Published */
+  "client:admin.announcements.published_at": {};
+  /** Published {announcement}. The audit log records the change. */
+  "client:admin.announcements.published_one": { announcement: string };
+  /** Save */
+  "client:admin.announcements.save": {};
+  /** Shows from */
+  "client:admin.announcements.starts_at": {};
+  /** State */
+  "client:admin.announcements.state": {};
+  /** Draft */
+  "client:admin.announcements.state.draft": {};
+  /** Published */
+  "client:admin.announcements.state.published": {};
+  /** Withdrawn */
+  "client:admin.announcements.state.withdrawn": {};
+  /** Tell everyone on this server about maintenance and changes. */
+  "client:admin.announcements.summary": {};
+  /** Text */
+  "client:admin.announcements.text": {};
+  /** Write the announcement. */
+  "client:admin.announcements.text_required": {};
+  /** Markdown: paragraphs, emphasis, lists, quotes, code and links. Raw HTML is removed. */
+  "client:admin.announcements.text.description": {};
+  /** Announcements */
+  "client:admin.announcements.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.announcements.too_long": { max: string };
+  /** Until withdrawn */
+  "client:admin.announcements.until_withdrawn": {};
+  /** Changed {announcement}. The audit log records the change. */
+  "client:admin.announcements.updated": { announcement: string };
+  /** Withdraw */
+  "client:admin.announcements.withdraw": {};
+  /** Withdraw: {announcement} */
+  "client:admin.announcements.withdraw_one": { announcement: string };
+  /** Nobody sees the announcement again, and it cannot be published or changed any more. */
+  "client:admin.announcements.withdraw.description": {};
+  /** Withdraw {announcement}? */
+  "client:admin.announcements.withdraw.title": { announcement: string };
+  /** Withdrew {announcement}. The audit log records the change. */
+  "client:admin.announcements.withdrawn": { announcement: string };
   /** Account */
   "client:admin.appeal.account": {};
   /** Open the account in the admin screens */
@@ -664,6 +754,14 @@ export interface MessageArgs {
   "client:admin.audit_log.action.account_action_lifted": {};
   /** Account deletion cancelled */
   "client:admin.audit_log.action.account_deletion_cancelled": {};
+  /** Announcement written */
+  "client:admin.audit_log.action.announcement_created": {};
+  /** Announcement published */
+  "client:admin.audit_log.action.announcement_published": {};
+  /** Announcement changed */
+  "client:admin.audit_log.action.announcement_updated": {};
+  /** Announcement withdrawn */
+  "client:admin.audit_log.action.announcement_withdrawn": {};
   /** Appeal overturned */
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
@@ -792,6 +890,8 @@ export interface MessageArgs {
   "client:admin.audit_log.summary": {};
   /** Account */
   "client:admin.audit_log.target_kind.account": {};
+  /** Announcement */
+  "client:admin.audit_log.target_kind.announcement": {};
   /** Appeal */
   "client:admin.audit_log.target_kind.appeal": {};
   /** Custom emoji */
@@ -2264,6 +2364,20 @@ export interface MessageArgs {
   "client:admin.webhooks.url": {};
   /** Where the messages are posted, an https URL. A destination on this server's own network works only when the operator allows it in the configuration. */
   "client:admin.webhooks.url.description": {};
+  /** Announcement of {date} */
+  "client:announcements.heading": { date: string };
+  /** Mark as read */
+  "client:announcements.mark_read": {};
+  /** The announcement could not be marked as read: {reason} */
+  "client:announcements.mark_read_failed": { reason: string };
+  /** Announcements */
+  "client:announcements.title": {};
+  /** Unread */
+  "client:announcements.unread": {};
+  /** {count, plural, one {# unread} other {# unread}} */
+  "client:announcements.unread_count": { count: number };
+  /** Shown until {date} */
+  "client:announcements.until": { date: string };
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */

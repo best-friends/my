@@ -33,7 +33,7 @@ const moderator = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks", "manage_announcements"],
 };
 
 /** The reported account: a long display name, local. */
@@ -209,6 +209,18 @@ const webhook: Schemas["AdminWebhook"] = {
   updated_at: "2026-10-16T00:00:00Z",
 };
 
+/** A published announcement with a long first line and a link, as GET /admin/announcements lists it. */
+const announcement: Schemas["AdminAnnouncement"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e6",
+  text: `# Scheduled maintenance of the database ${"and of the media storage ".repeat(3)}\n\nSee [the status page](https://status.example/).`,
+  content: `<h2>Scheduled maintenance of the database ${"and of the media storage ".repeat(3)}</h2><p>See <a href="https://status.example/">the status page</a>.</p>`,
+  state: "published",
+  published_at: "2026-10-20T00:00:00Z",
+  ends_at: "2026-10-27T00:00:00Z",
+  created_at: "2026-10-20T00:00:00Z",
+  updated_at: "2026-10-20T00:00:00Z",
+};
+
 /** A failing delivery of the webhook, as GET /admin/webhooks/{id}/deliveries lists it. */
 const webhookDelivery: Schemas["AdminWebhookDelivery"] = {
   id: "0192f0c4-7a8e-7000-8000-0000000000e4",
@@ -374,6 +386,7 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/invites") return json(route, { items: [invite] });
     if (key === "GET /admin/custom_emojis") return json(route, { items: url.searchParams.get("local") === "false" ? [] : [customEmoji] });
     if (key === "GET /admin/webhooks") return json(route, { items: [webhook] });
+    if (key === "GET /admin/announcements") return json(route, { items: [announcement] });
     if (key === `GET /admin/webhooks/${webhook.id}`) return json(route, webhook);
     if (key === `GET /admin/webhooks/${webhook.id}/deliveries`) return json(route, { items: [webhookDelivery] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
@@ -425,6 +438,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
   "admin.webhooks": { path: "/admin/webhooks", ready: webhook.description ?? "" },
   "admin.webhooks_.$id": { path: `/admin/webhooks/${webhook.id}`, ready: webhookDelivery.message_id },
+  "admin.announcements": { path: "/admin/announcements", ready: "the status page" },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },
