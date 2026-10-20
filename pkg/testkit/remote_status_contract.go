@@ -112,8 +112,22 @@ type remoteStatusEnv struct {
 	notifications *appnotification.Service
 	processor     *appfederation.InboxProcessor
 	statuses      *appfederation.StatusHandlers
+	// votes records the votes in local polls once an environment with interactions sets them.
+	votes *lateVotes
 	// projectors are the projectors of the harness's UnitOfWork.
 	projectors *uow.Projectors
+}
+
+// lateVotes records the remote votes in local polls through target, which an environment with
+// the interactions service sets after the status handlers exist; without it, no status has a
+// poll to vote in.
+type lateVotes struct{ target appfederation.RemotePollVotes }
+
+func (v *lateVotes) RecordRemotePollVote(ctx context.Context, in appcontent.RemotePollVoteInput) (bool, error) {
+	if v.target == nil {
+		return false, appcontent.ErrNoPoll
+	}
+	return v.target.RecordRemotePollVote(ctx, in)
 }
 
 func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteStatusEnv {
@@ -158,9 +172,10 @@ func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteSta
 	e.processor = appfederation.NewInboxProcessor(appfederation.InboxProcessorDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Inbox, Actors: e.actors, Fetcher: e.fetcher, Clock: ae.clock,
 	})
+	e.votes = &lateVotes{}
 	e.statuses = appfederation.NewStatusHandlers(appfederation.StatusHandlersDeps{
 		UnitOfWork: h.UnitOfWork, Statuses: e.content, Accounts: e.remote, Actors: e.actors, Fetcher: e.fetcher,
-		Followers: e.graph, Clock: ae.clock, Host: contractHost,
+		Followers: e.graph, Votes: e.votes, Clock: ae.clock, Host: contractHost,
 	})
 	e.statuses.Register(e.processor)
 	return e

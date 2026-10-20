@@ -611,6 +611,7 @@ type Poll struct {
 	ID         string
 	RevisionID string
 	Multiple   bool
+	HideTotals bool
 	ClosesAt   *time.Time
 }
 

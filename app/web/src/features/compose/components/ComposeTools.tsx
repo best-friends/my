@@ -4,6 +4,7 @@ import {
   FileTrigger,
   ImageIcon,
   LanguageIcon,
+  PollIcon,
   Select,
   SelectItem,
   ToggleButton,
@@ -23,10 +24,10 @@ import { VisibilityPicker } from "./VisibilityPicker";
 export type ComposeToolsProps = { form: ReadyComposeForm };
 
 /**
- * The tools of the form, in one row under the text: images, content warning, custom emoji, visibility and language
+ * The tools of the form, in one row under the text: images, poll, content warning, custom emoji, visibility and language
  * (web-client.md §12). Every control is a button of the same height, so the row stays level at every width.
  * The icon-only buttons are named by aria-label and show the same words as a tooltip (G12); each control
- * also says its current value: the images attached (description), the warning (aria-pressed), the
+ * also says its current value: the images attached (description), the poll and the warning (aria-pressed), the
  * visibility (its name and who can see it) and the language (the select shows it).
  */
 export function ComposeTools({ form }: ComposeToolsProps) {
@@ -37,6 +38,7 @@ export function ComposeTools({ form }: ComposeToolsProps) {
   const count = attachments.items.length;
   const addLabel = t("client:compose.media.add");
   const warningLabel = t("client:compose.warning.toggle");
+  const pollLabel = t("client:compose.poll.toggle");
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-1">
       <TooltipTrigger>
@@ -52,7 +54,7 @@ export function ComposeTools({ form }: ComposeToolsProps) {
             size="toolbar"
             aria-label={addLabel}
             aria-describedby={count > 0 ? `${countId} ${hintId}` : hintId}
-            isDisabled={!attachments.canAdd}
+            isDisabled={!form.canAttach}
           >
             <ImageIcon />
           </Button>
@@ -61,6 +63,17 @@ export function ComposeTools({ form }: ComposeToolsProps) {
       </TooltipTrigger>
       {count > 0 && <VisuallyHidden id={countId}>{t("client:compose.media.count", { count })}</VisuallyHidden>}
       <VisuallyHidden id={hintId}>{t("client:compose.media.hint", { max: maxAttachments })}</VisuallyHidden>
+      <TooltipTrigger>
+        <ToggleButton
+          aria-label={pollLabel}
+          isSelected={form.poll.draft !== null}
+          isDisabled={!form.poll.canAdd}
+          onChange={form.poll.toggle}
+        >
+          <PollIcon filled={form.poll.draft !== null} />
+        </ToggleButton>
+        <Tooltip>{pollLabel}</Tooltip>
+      </TooltipTrigger>
       <TooltipTrigger>
         <ToggleButton
           aria-label={warningLabel}

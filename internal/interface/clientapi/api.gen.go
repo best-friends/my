@@ -3684,6 +3684,10 @@ type CreateStatusRequest struct {
 	// Media The media to attach, in order.
 	Media *StatusMediaInput `json:"media,omitempty"`
 
+	// Poll A poll of a new status (FR-112). It ends `expires_in` seconds after the status is
+	// posted; the author and the users who voted are notified then.
+	Poll *PollInput `json:"poll,omitempty"`
+
 	// Sensitive Whether the media are sensitive.
 	Sensitive *bool `json:"sensitive,omitempty"`
 
@@ -4990,8 +4994,9 @@ type PickerCustomEmojiList struct {
 }
 
 // Poll The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
-// another server are those its server last reported. `voted` and `own_votes` describe the
-// authenticated user's vote and are omitted for anonymous requests.
+// another server are those its server last reported. A poll whose author hides the votes of
+// each option until it ends leaves out `votes_count` of its options until then. `voted` and
+// `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
 type Poll struct {
 	// Expired Whether the poll has ended. An ended poll takes no votes and shows its results.
 	Expired bool `json:"expired"`
@@ -5024,13 +5029,30 @@ type Poll struct {
 	VotesCount int `json:"votes_count"`
 }
 
+// PollInput A poll of a new status (FR-112). It ends `expires_in` seconds after the status is
+// posted; the author and the users who voted are notified then.
+type PollInput struct {
+	// ExpiresIn How long the poll takes votes, in seconds (5 minutes to 30 days).
+	ExpiresIn int `json:"expires_in"`
+
+	// HideTotals Whether the votes of each option are hidden until the poll ends.
+	HideTotals *bool `json:"hide_totals,omitempty"`
+
+	// Multiple Whether a vote may choose several options.
+	Multiple *bool `json:"multiple,omitempty"`
+
+	// Options The options, in order, as plain text; each one different from the others.
+	Options []string `json:"options"`
+}
+
 // PollOption One option of a poll.
 type PollOption struct {
 	// Title The option as plain text.
 	Title string `json:"title"`
 
-	// VotesCount The number of votes for the option.
-	VotesCount int `json:"votes_count"`
+	// VotesCount The number of votes for the option; omitted while the poll hides the votes of each
+	// option until it ends.
+	VotesCount *int `json:"votes_count,omitempty"`
 }
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
@@ -5617,8 +5639,9 @@ type Status struct {
 	Pinned *bool `json:"pinned,omitempty"`
 
 	// Poll The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
-	// another server are those its server last reported. `voted` and `own_votes` describe the
-	// authenticated user's vote and are omitted for anonymous requests.
+	// another server are those its server last reported. A poll whose author hides the votes of
+	// each option until it ends leaves out `votes_count` of its options until then. `voted` and
+	// `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
 	Poll *Poll `json:"poll,omitempty"`
 
 	// Reactions The emoji reactions to the status, counted per emoji: the 20 emoji with the most

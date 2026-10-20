@@ -25,6 +25,7 @@ export function StatusPoll({ status, canVote }: StatusPollProps) {
   return (
     <section aria-label={t("client:status.poll.label")} className="flex min-w-0 flex-col gap-2">
       {view.form === null ? <Results view={view} /> : <Form view={view} form={view.form} />}
+      {view.hidden && view.form === null && <p className="text-sm text-fg-muted">{t("client:status.poll.hidden")}</p>}
       <p className="flex min-w-0 flex-wrap gap-x-3 text-sm text-fg-muted">
         <span className="tabular-nums">{view.total}</span>
         {view.closed && <span>{t("client:status.poll.closed")}</span>}
@@ -114,14 +115,16 @@ function Results({ view }: { view: PollView }) {
         return (
           <li key={option.index} className="flex min-w-0 flex-col gap-1">
             <span className="flex min-w-0 items-baseline gap-2">
-              <span className="w-12 shrink-0 text-sm font-semibold tabular-nums">{option.share}</span>
+              {option.share !== null && <span className="w-12 shrink-0 text-sm font-semibold tabular-nums">{option.share}</span>}
               <Title view={view} option={option} />
               {option.ownChoice && <span className="shrink-0 text-sm text-fg-muted">{t("client:status.poll.own_vote")}</span>}
             </span>
             {/* The share drawn as a bar; the percentage before it says the same. */}
-            <span aria-hidden="true" className="block h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
-              <span className={option.ownChoice ? ownChoiceFill : otherFill} style={{ inlineSize: `${String(Math.round(option.ratio * 100))}%` }} />
-            </span>
+            {option.share !== null && (
+              <span aria-hidden="true" className="block h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken">
+                <span className={option.ownChoice ? ownChoiceFill : otherFill} style={{ inlineSize: `${String(Math.round(option.ratio * 100))}%` }} />
+              </span>
+            )}
           </li>
         );
       })}

@@ -771,6 +771,10 @@
     "defaultMessage": "この投票は締め切られました。",
     "description": "Detail of the HTTP 422 API error when a user votes in a poll whose end has passed."
   },
+  "errors.status.poll_invalid": {
+    "defaultMessage": "投票の選択肢は互いに異なる {min}〜{max} 個（それぞれ {length} 文字以内）にし、期間は 5 分〜30 日にしてください。",
+    "description": "Detail of the HTTP 422 API error when a new poll has too few or too many options, a blank, too long, or repeated option, or a duration out of range. {min} and {max} bound the number of options, {length} is the maximum number of characters of an option."
+  },
   "errors.status.poll_invalid_choices": {
     "defaultMessage": "投票の選択肢から選んでください。複数選べるのは複数選択の投票だけです。",
     "description": "Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll."
@@ -778,6 +782,14 @@
   "errors.status.poll_missing": {
     "defaultMessage": "この投稿には投票がありません。",
     "description": "Detail of the HTTP 422 API error when a user votes on a post that has no poll."
+  },
+  "errors.status.poll_not_editable": {
+    "defaultMessage": "投票のある投稿は編集できません。",
+    "description": "Detail of the HTTP 422 API error when a user edits a post that has a poll: the votes belong to the poll as it was posted."
+  },
+  "errors.status.poll_with_media": {
+    "defaultMessage": "投票のある投稿にはファイルを添付できません。",
+    "description": "Detail of the HTTP 422 API error when a new post has both a poll and attached media."
   },
   "errors.status.posting_restricted": {
     "defaultMessage": "現在、あなたのアカウントは投稿できません。",
@@ -966,6 +978,10 @@
   "push.other": {
     "defaultMessage": "{instance} で新しい通知があります",
     "description": "Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.poll_closed": {
+    "defaultMessage": "参加した投票が終了しました",
+    "description": "Web Push notification: a poll that the user created or voted in has ended."
   },
   "push.reaction": {
     "defaultMessage": "{name}さんがあなたの投稿にリアクションしました",

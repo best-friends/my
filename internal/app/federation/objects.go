@@ -467,7 +467,7 @@ func (o *Objects) viewNote(ctx context.Context, v appcontent.StatusView) (federa
 // viewParts returns the parts of the Note of a status from those the reader resolved, with the
 // custom emoji of its revision.
 func (o *Objects) viewParts(ctx context.Context, v appcontent.StatusView) (appcontent.RevisionParts, error) {
-	parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
+	parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags, Poll: v.Poll}
 	var err error
 	parts.Emojis, err = o.d.Reader.EmojiTags(ctx, v.Revision.EmojiIDs)
 	return parts, err

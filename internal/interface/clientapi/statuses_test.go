@@ -321,6 +321,17 @@ func TestCreateStatus(t *testing.T) {
 		t.Errorf("CreateInput = %+v, want %+v", got, want)
 	}
 
+	// A poll ends expires_in seconds after the post (FR-112).
+	res = e.send(t, http.MethodPost, "/statuses", "write", `{"text":"which?","visibility":"public",
+		"poll":{"options":["a","b"],"expires_in":3600,"multiple":true,"hide_totals":true}}`)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("POST with a poll = %d", res.StatusCode)
+	}
+	wantPoll := content.PollInput{Options: []string{"a", "b"}, Duration: time.Hour, Multiple: true, HideTotals: true}
+	if got.Poll == nil || fmt.Sprint(*got.Poll) != fmt.Sprint(wantPoll) {
+		t.Errorf("poll = %+v, want %+v", got.Poll, wantPoll)
+	}
+
 	req := httptest.NewRequest(http.MethodPost, clientapi.BasePath+"/statuses", strings.NewReader(`{"text":"hi","visibility":"public"}`))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer write")
@@ -344,6 +355,9 @@ func TestStatusProblems(t *testing.T) {
 		{fmt.Errorf("x: %w", appcontent.ErrMediaNotReady), http.StatusUnprocessableEntity, "", "添付したファイルは処理中か、処理できませんでした。"},
 		{appcontent.ErrTooManyMedia, http.StatusUnprocessableEntity, "", "1 件の投稿に添付できるファイルは重複なしで 4 個までです。"},
 		{appcontent.ErrReplyTargetNotFound, http.StatusUnprocessableEntity, "", "返信先の投稿が見つかりません。"},
+		{fmt.Errorf("x: %w", content.ErrInvalidPoll), http.StatusUnprocessableEntity, "", "投票の選択肢は互いに異なる 2〜4 個（それぞれ 50 文字以内）にし、期間は 5 分〜30 日にしてください。"},
+		{appcontent.ErrPollWithMedia, http.StatusUnprocessableEntity, "", "投票のある投稿にはファイルを添付できません。"},
+		{appcontent.ErrPollNotEditable, http.StatusUnprocessableEntity, "", "投票のある投稿は編集できません。"},
 		{content.ErrInvalidVisibility, http.StatusUnprocessableEntity, "", ""},
 		{fmt.Errorf("x: %w", content.ErrInvalidIdempotencyKey), http.StatusUnprocessableEntity, "", "Idempotency-Key の値が正しくありません。"},
 		{appcontent.ErrPostingRestricted, http.StatusForbidden, "", "現在、あなたのアカウントは投稿できません。"},

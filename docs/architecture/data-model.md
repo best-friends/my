@@ -898,12 +898,12 @@ flowchart LR
 | `custom_emoji_images` | イベント（版） | `id`, `emoji_id`, `media_id`, `revised_at` | インデックス `(emoji_id, id DESC)`, `(media_id)`。最新の行が現在の画像。ローカルは管理者（CLI はインスタンスの Actor）がアップロードした `media_files`、リモートは `remote_media` |
 | `custom_emoji_settings` | 現在値 | `emoji_id`（PK）, `enabled`, `visible_in_picker`（`bool`）, `category`（NULL 可、64 文字まで） | 行が無ければ有効・ピッカーに出す・カテゴリなし（既定に戻すと行を消す）。リモートの絵文字は `enabled` だけを使う |
 | `custom_emoji_aliases` | 現在値 | `emoji_id`, `alias`（shortcode と同じ文字種） | PK `(emoji_id, alias)`。ローカルだけ。ピッカーの検索に使う |
-| `polls` | イベント（版の子） | `id`, `revision_id`, `multiple`（`bool`）, `closes_at`（NULL 可） | 一意 `(revision_id)`。投票を作り直す編集は新しい版の新しい投票になる |
+| `polls` | イベント（版の子） | `id`, `revision_id`, `multiple`（`bool`）, `hide_totals`（`bool`。ローカルの投票で、締め切りまで選択肢ごとの票数を隠す）, `closes_at`（NULL 可） | 一意 `(revision_id)`。投票を作り直す編集は新しい版の新しい投票になる |
 | `poll_options` | イベント（子） | `poll_id`, `position`, `title` | PK `(poll_id, position)` |
 | `poll_votes` | イベント | `id`, `poll_id`, `account_id`, `position`, `uri`（NULL 可）, `voted_at` | 一意 `(poll_id, account_id, position)`, `(uri)`。インデックス `(account_id)`（消去）。複数選択の回答は選択肢ごとに 1 行 |
-| `poll_tally_observations` | イベント | `id`, `poll_id`, `voters_count`（NULL 可）, `observed_at` | リモートの投票の集計値（`Update` で届く） |
+| `poll_tally_observations` | イベント | `id`, `poll_id`, `voters_count`（NULL 可）, `observed_at` | 投票の集計値。リモートの投票は相手が `Create` / `Update` で送ったもの、ローカルの投票は投稿したとき（0）と回答のたびに `poll_votes` を数え直したもの |
 | `poll_tally_observation_counts` | イベント（子） | `observation_id`, `position`, `votes` | PK `(observation_id, position)` |
-| `poll_tallies` | 投影 | `poll_id`, `position`, `votes`, `voters_count`（NULL 可。投票者数の分からない複数選択のリモートの投票） | PK `(poll_id, position)`。ローカルは `poll_votes` から、リモートは最新の観測から |
+| `poll_tallies` | 投影 | `poll_id`, `position`, `votes`, `voters_count`（NULL 可。投票者数の分からない複数選択のリモートの投票） | PK `(poll_id, position)`。ローカルもリモートも最新の観測から |
 
 - ローカルの絵文字（ADR-0051）: shortcode は `[A-Za-z0-9_]{2,30}` で、大文字と小文字を区別し、変えられません。投稿とプロフィールを保存するとき、本文・CW・表示名・自己紹介・補足情報の
   `:shortcode:`（前後が英数字と `:` でないもの）から有効なローカルの絵文字だけを版の `status_revision_emojis` / `account_profile_revision_emojis` に記録します。
@@ -918,6 +918,14 @@ flowchart LR
 - リモートの投票で `votersCount` が無いときは、単一選択なら票数の合計を投票者数にし、複数選択なら（誰も投票していなければ 0、それ以外は）NULL にします。
 - 投票への回答（FR-112）: ローカルのアカウントは、閲覧できる削除されていない投稿の現在版の投票に、締め切り（`closes_at`）の前に 1 回だけ回答します（`content.Interactions.VotePoll`。交流の禁止 `interact` の対象）。選んだ選択肢ごとに `poll_votes` を 1 行書き、同じトランザクションで既に回答した行が無いことを確かめます。回答は取り消しません。
   リモートの投票への回答は、行ごとに `uri`（`https://{host}/ap/objects/{id}`）を持ち、ドメインイベント `content.poll_voted` で `federation` が選択肢ごとの `Note` を投票の作者に送ります（[federation.md §7.1](federation.md#71-記録)）。リモートの投票の票数は相手が送る集計（`poll_tallies`）のままで、回答は相手が次に送る `Update` の集計に入ります。
+- ローカルの投票の作成（FR-112）: 投稿（`content.Service.Create`）は投票を 1 つ持てます。選択肢は互いに異なる 2〜4 個（前後の空白を除き、それぞれ 50 文字以内）、期間は 5 分〜30 日（`closes_at` は投稿の時刻に足して秒に切り捨てる）で、複数選択と `hide_totals` を選べます。添付のある投稿には付けられません。
+  投稿のトランザクションで、版の `polls` / `poll_options` と、すべての選択肢が 0 票・投票者 0 人の観測を記録します。投票のある投稿は編集できません（回答はその版の投票のものなので、版を作り直すと回答が離れるため）。
+- ローカルの投票の集計: ローカルのアカウントの回答（`VotePoll`）とリモートのアカウントの回答（`content.Interactions.RecordRemotePollVote`。`Question` への返信の `Note` の `name` が選択肢の題、[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）は、
+  同じトランザクションで投票の行をロックし（PostgreSQL は `SELECT … FOR UPDATE`。SQLite は書き込みのトランザクションが 1 つずつ）、`poll_votes` を選択肢ごとと投票者ごとに数え直した観測を記録して `content.poll_tally_observed` を発行します。
+  リモートの回答は `Note` の `id` を `uri` に持つので、同じ `Note` を 2 回受けても 1 票です。単一選択の投票に同じアカウントが 2 つ目の選択肢を送ったときと、締め切り後・無い選択肢への回答は捨てます。
+- 投票の締め切り（FR-112）: 締め切りは時刻だけで決まり（`closes_at` を過ぎた投票は回答を受け付けない）、締め切りを表す行は持ちません。ローカルの投票を投稿したときと、ローカルのアカウントがリモートの投票に回答したときに、
+  同じトランザクションで `closes_at` に動くジョブ `content.close_poll`（冪等キーは投票ごと）を outbox に入れます。ジョブは投票が投稿の現在版のものであることを確かめ、回答したアカウントを読んで、ドメインイベント `content.poll_closed` を発行します。
+  `notification` はこのイベントで、投票の作者（差出人なし）とローカルの回答者（差出人は作者）に `poll_closed` を作り（冪等キーは投票ごと）、`federation` はローカルの投票の最後の集計の `Update` を送ります。
 - タグのモデレーション（使用禁止・トレンド除外）は、v0 では持ちません。必要になったら `tag_moderation_actions` を同じ型で追加します。
 
 #### 利用者ごとの関係【現在値】

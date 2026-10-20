@@ -205,6 +205,7 @@ test.describe("the new-post form", () => {
       - form:
         - ${ariaNode(`textbox ${JSON.stringify(message("compose.text.label"))}`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.media.add"))}`)}
+        - ${ariaNode(`button ${JSON.stringify(message("compose.poll.toggle"))} [pressed=false]`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.warning.toggle"))} [pressed=false]`)}
         - ${ariaNode(`button ${JSON.stringify(message("compose.visibility.button", { visibility: message("compose.visibility.public") }))}`)}
         - ${ariaNode(`button /${endingWith(message("compose.language.label"))}/`)}
@@ -220,6 +221,7 @@ test.describe("the new-post form", () => {
     // Every tool is as tall as the others at the project's width (no field with a label beside one without).
     const tools = [
       form.getByRole("button", { name: message("compose.media.add") }),
+      form.getByRole("button", { name: message("compose.poll.toggle") }),
       form.getByRole("button", { name: message("compose.warning.toggle") }),
       form.getByRole("button", { name: message("compose.visibility.button", { visibility: message("compose.visibility.public") }) }),
       form.getByRole("button", { name: new RegExp(endingWith(message("compose.language.label"))) }),
@@ -253,6 +255,36 @@ test.describe("the new-post form", () => {
     expect(posted[1]?.idempotencyKey).toBe(posted[0]?.idempotencyKey);
     expect(posted[1]?.body).toEqual({ text: "Hello from the E2E", visibility: "public", language: "en" });
     await expectNoHorizontalScroll(page);
+  });
+
+  test("posts a poll from its fields, which have no axe violations and do not scroll horizontally (FR-112)", async ({ page, makeAxeBuilder, hasTouch }) => {
+    const posted = await serveApi(page);
+    await page.goto("/");
+    const form = await openForm(page, hasTouch);
+    await form.getByRole("textbox", { name: message("compose.text.label") }).fill("Which one?");
+    await form.getByRole("button", { name: message("compose.poll.toggle") }).click();
+    const poll = form.getByRole("group", { name: message("compose.poll.legend") });
+    await poll.getByRole("textbox", { name: formatted("compose.poll.option", { number: "1" }) }).fill("Tea");
+    await poll.getByRole("textbox", { name: formatted("compose.poll.option", { number: "2" }) }).fill("Coffee");
+    await poll.getByRole("button", { name: message("compose.poll.option.add") }).click();
+    await expect(poll.getByRole("textbox", { name: formatted("compose.poll.option", { number: "3" }) })).toBeVisible();
+    await expect(form.getByRole("button", { name: message("compose.media.add") })).toBeDisabled();
+
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await poll.getByRole("button", { name: formatted("compose.poll.option.remove", { number: "3" }) }).click();
+    // The first post fails (serveApi), the second goes through.
+    await form.getByRole("button", { name: message("compose.submit") }).click();
+    await expect(form.getByText(message("compose.failed", { reason: "Service Unavailable" }))).toBeVisible();
+    await form.getByRole("button", { name: message("compose.submit") }).click();
+    await expect(page.getByRole("region", { name: message("shell.toast.region") }).getByText(message("compose.posted"))).toBeVisible();
+    expect(posted[1]?.body).toEqual({
+      text: "Which one?",
+      visibility: "public",
+      language: "en",
+      poll: { options: ["Tea", "Coffee"], expires_in: 86400 },
+    });
   });
 
   test("warns that a local post does not reach a mentioned account of another server that does not follow the viewer", async ({ page, makeAxeBuilder, hasTouch }) => {

@@ -1397,6 +1397,13 @@ func (l *Localizer) ServerErrorsStatusPollClosed() string {
 	return l.format("server:errors.status.poll_closed", nil)
 }
 
+// ServerErrorsStatusPollInvalid formats "server:errors.status.poll_invalid". Detail of the HTTP 422 API error when a new poll has too few or too many options, a blank, too long, or repeated option, or a duration out of range. {min} and {max} bound the number of options, {length} is the maximum number of characters of an option.
+//
+//	en: A poll needs {min} to {max} different options of at most {length} characters each, and must last from 5 minutes to 30 days.
+func (l *Localizer) ServerErrorsStatusPollInvalid(length string, max string, min string) string {
+	return l.format("server:errors.status.poll_invalid", map[string]any{"length": length, "max": max, "min": min})
+}
+
 // ServerErrorsStatusPollInvalidChoices formats "server:errors.status.poll_invalid_choices". Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll.
 //
 //	en: Choose one of the poll's options, or several only when the poll allows it.
@@ -1409,6 +1416,20 @@ func (l *Localizer) ServerErrorsStatusPollInvalidChoices() string {
 //	en: This post has no poll.
 func (l *Localizer) ServerErrorsStatusPollMissing() string {
 	return l.format("server:errors.status.poll_missing", nil)
+}
+
+// ServerErrorsStatusPollNotEditable formats "server:errors.status.poll_not_editable". Detail of the HTTP 422 API error when a user edits a post that has a poll: the votes belong to the poll as it was posted.
+//
+//	en: A post with a poll cannot be edited.
+func (l *Localizer) ServerErrorsStatusPollNotEditable() string {
+	return l.format("server:errors.status.poll_not_editable", nil)
+}
+
+// ServerErrorsStatusPollWithMedia formats "server:errors.status.poll_with_media". Detail of the HTTP 422 API error when a new post has both a poll and attached media.
+//
+//	en: A post with a poll cannot attach files.
+func (l *Localizer) ServerErrorsStatusPollWithMedia() string {
+	return l.format("server:errors.status.poll_with_media", nil)
 }
 
 // ServerErrorsStatusPostingRestricted formats "server:errors.status.posting_restricted". Detail of the HTTP 403 API error when a moderator restricted the account from posting.
@@ -1766,6 +1787,13 @@ func (l *Localizer) ServerPushModerationNotice(instance string) string {
 //	en: You have a new notification on {instance}
 func (l *Localizer) ServerPushOther(instance string) string {
 	return l.format("server:push.other", map[string]any{"instance": instance})
+}
+
+// ServerPushPollClosed formats "server:push.poll_closed". Web Push notification: a poll that the user created or voted in has ended.
+//
+//	en: A poll you took part in has ended
+func (l *Localizer) ServerPushPollClosed() string {
+	return l.format("server:push.poll_closed", nil)
 }
 
 // ServerPushReaction formats "server:push.reaction". Web Push notification. {name} is the display name, or the @handle, of the account that reacted to the user's post with an emoji.

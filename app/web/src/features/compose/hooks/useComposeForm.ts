@@ -19,6 +19,7 @@ import {
   type Visibility,
 } from "../api/compose";
 import { type Draft, isEmptyDraft } from "./draftStore";
+import { newPoll, type PollDraft, pollProblem, pollRequest, withOption, withoutOption } from "./poll";
 import { type LanguageOption, languageOptions } from "./languages";
 import { countCharacters, defaultVisibility, postedVisibility, visibilities } from "./policy";
 import { type Attachments, descriptionFieldId, useAttachments } from "./useAttachments";
@@ -68,6 +69,9 @@ export type ReadyComposeForm = {
   replyTo: ReplyTarget;
   cancelReply: () => void;
   attachments: Attachments;
+  /** Whether files can be attached: not to a post with a poll (FR-112), and up to the limit. */
+  canAttach: boolean;
+  poll: PollForm;
   /** Whether the post must describe its images before it is sent without asking (the preference). */
   requireDescriptions: boolean;
   /**
@@ -90,6 +94,22 @@ export type ReadyComposeForm = {
   discard: (idempotencyKey: string) => void;
 };
 
+/** The poll of the draft and its editing (FR-112). */
+export type PollForm = {
+  /** The poll, or null when the post has none. */
+  draft: PollDraft | null;
+  /** Whether a poll can be added: a post with attachments has none. */
+  canAdd: boolean;
+  /** What keeps the poll from being sent (an empty or a repeated option), or null. */
+  problem: "empty" | "duplicate" | null;
+  /** Adds an empty poll, or removes the poll. */
+  toggle: (on: boolean) => void;
+  edit: (change: Partial<Omit<PollDraft, "options">>) => void;
+  editOption: (key: string, title: string) => void;
+  addOption: () => void;
+  removeOption: (key: string) => void;
+};
+
 /** The request a draft becomes. */
 function requestBody(draft: Draft, visibility: Visibility, language: string): CreateStatusRequest {
   const media = draft.attachments.flatMap((a) =>
@@ -101,6 +121,7 @@ function requestBody(draft: Draft, visibility: Visibility, language: string): Cr
     language,
     ...(draft.hasWarning && draft.spoilerText.trim() !== "" ? { spoiler_text: draft.spoilerText.trim() } : {}),
     ...(media.length > 0 ? { media, sensitive: draft.sensitive } : {}),
+    ...(draft.poll === null ? {} : { poll: pollRequest(draft.poll) }),
     ...(draft.replyToId === null ? {} : { in_reply_to_id: draft.replyToId }),
   };
 }
@@ -210,8 +231,37 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const warningLength = draft.hasWarning ? countCharacters(draft.spoilerText) : 0;
   const textLimit = maxCharacters - warningLength;
   const missing = attachments.items.filter((item) => item.description.trim() === "").length;
+  const problem = draft.poll === null ? null : pollProblem(draft.poll);
   const canSubmit =
-    draft.text.trim() !== "" && countCharacters(draft.text) <= textLimit && !attachments.isBusy && !attachments.hasFailed && replyTo.status !== "loading";
+    draft.text.trim() !== "" &&
+    countCharacters(draft.text) <= textLimit &&
+    !attachments.isBusy &&
+    !attachments.hasFailed &&
+    problem === null &&
+    replyTo.status !== "loading";
+  const editPoll = (change: (poll: PollDraft) => PollDraft) => {
+    if (draft.poll !== null) store.edit({ poll: change(draft.poll) });
+  };
+  const poll: PollForm = {
+    draft: draft.poll,
+    canAdd: draft.attachments.length === 0,
+    problem,
+    toggle: (on) => {
+      store.edit({ poll: on ? newPoll() : null });
+    },
+    edit: (change) => {
+      editPoll((p) => ({ ...p, ...change }));
+    },
+    editOption: (key, title) => {
+      editPoll((p) => ({ ...p, options: p.options.map((o) => (o.key === key ? { ...o, title } : o)) }));
+    },
+    addOption: () => {
+      editPoll(withOption);
+    },
+    removeOption: (key) => {
+      editPoll((p) => withoutOption(p, key));
+    },
+  };
 
   const sendDraft = () => {
     const idempotencyKey = draft.idempotencyKey ?? crypto.randomUUID();
@@ -248,6 +298,8 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
       store.edit({ replyToId: null });
     },
     attachments,
+    canAttach: attachments.canAdd && draft.poll === null,
+    poll,
     requireDescriptions,
     isDescriptionRequired,
     canSubmit,

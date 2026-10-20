@@ -5747,6 +5747,54 @@
     "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŧǿǿǿǿ ḿȧȧƞẏ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŧǿǿǿǿ ḿȧȧƞẏ}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.poll.duplicate": {
+    "defaultMessage": "[Ḗȧȧƈħ ǿǿƥŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ḓīƒƒḗḗřḗḗƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration": {
+    "defaultMessage": "[Ḓŭŭřȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration.days": {
+    "defaultMessage": "[{count,plural,one{# ḓȧȧẏ} other{# ḓȧȧẏş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration.hours": {
+    "defaultMessage": "[{count,plural,one{# ħǿǿŭŭř} other{# ħǿǿŭŭřş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration.minutes": {
+    "defaultMessage": "[{count,plural,one{# ḿīƞŭŭŧḗḗ} other{# ḿīƞŭŭŧḗḗş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.hide_totals": {
+    "defaultMessage": "[Ħīḓḗḗ ŧħḗḗ ṽǿǿŧḗḗş ŭŭƞŧīŀ ŧħḗḗ ƥǿǿŀŀ ḗḗƞḓş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.legend": {
+    "defaultMessage": "[Ƥǿǿŀŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.multiple": {
+    "defaultMessage": "[Ȧŀŀǿǿẇ ƈħǿǿǿǿşīƞɠ şḗḗṽḗḗřȧȧŀ ǿǿƥŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.option": {
+    "defaultMessage": "[Ǿƥŧīǿǿƞ {number}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.option.add": {
+    "defaultMessage": "[Ȧḓḓ ȧȧƞ ǿǿƥŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.option.remove": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ǿǿƥŧīǿǿƞ {number}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.toggle": {
+    "defaultMessage": "[Ȧḓḓ ȧȧ ƥǿǿŀŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.posted": {
     "defaultMessage": "[Ƥǿǿşŧḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8453,6 +8501,10 @@
   },
   "status.poll.ends": {
     "defaultMessage": "[Ḗƞḓş {time}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.hidden": {
+    "defaultMessage": "[Ŧħḗḗ ṽǿǿŧḗḗş ǿǿƒ ḗḗȧȧƈħ ǿǿƥŧīǿǿƞ ȧȧřḗḗ şħǿǿẇƞ ẇħḗḗƞ ŧħḗḗ ƥǿǿŀŀ ḗḗƞḓş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.poll.label": {

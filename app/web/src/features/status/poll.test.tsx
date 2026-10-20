@@ -105,6 +105,18 @@ describe("the poll of a post", () => {
     expect(within(poll).queryByRole("button", { name: "Vote" })).not.toBeInTheDocument();
   });
 
+  test("that hides its votes until it ends shows the options without shares", async () => {
+    const { voted: _voted, own_votes: _ownVotes, ...anonymous } = pollFixture;
+    const { path } = servePoll({ ...anonymous, options: anonymous.options.map(({ title }) => ({ title })) });
+    await renderApp({ path });
+
+    const poll = await screen.findByRole("region", { name: "Poll" });
+    const rows = within(within(poll).getByRole("list", { name: "Poll results" })).getAllByRole("listitem");
+    expect(rows.map((row) => row.textContent)).toEqual(["Red", "Blue", "Green"]);
+    expect(within(poll).getByText("The votes of each option are shown when the poll ends.")).toBeInTheDocument();
+    expect(within(poll).getByText("4 people")).toBeInTheDocument();
+  });
+
   test("shows its results to a visitor who is not signed in", async () => {
     const { voted: _voted, own_votes: _ownVotes, ...anonymous } = pollFixture;
     const { path } = servePoll(anonymous);

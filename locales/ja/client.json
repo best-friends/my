@@ -5375,6 +5375,54 @@
     "defaultMessage": "{count, plural, other {# 文字}}多すぎます",
     "description": "Counter under a text field when the text is longer than allowed. {count} is how many characters are over."
   },
+  "compose.poll.toggle": {
+    "defaultMessage": "投票を付ける",
+    "description": "Toggle button (an icon) that adds a poll to the new post, or removes it. A post with a poll attaches no files."
+  },
+  "compose.poll.legend": {
+    "defaultMessage": "投票",
+    "description": "Name of the group of fields of the poll of the new post: its options, how long it lasts, and its settings."
+  },
+  "compose.poll.option": {
+    "defaultMessage": "選択肢 {number}",
+    "description": "Label of a text field of the poll of the new post: one option the readers can vote for. {number} is its position, from 1."
+  },
+  "compose.poll.option.remove": {
+    "defaultMessage": "選択肢 {number} を削除",
+    "description": "Button (an icon) that removes an option of the poll of the new post. {number} is its position, from 1."
+  },
+  "compose.poll.option.add": {
+    "defaultMessage": "選択肢を追加",
+    "description": "Button that adds an empty option to the poll of the new post."
+  },
+  "compose.poll.duplicate": {
+    "defaultMessage": "選択肢はそれぞれ異なるものにしてください。",
+    "description": "Error under the options of the poll of the new post when two of them are the same."
+  },
+  "compose.poll.duration": {
+    "defaultMessage": "期間",
+    "description": "Label of the select of how long the poll of the new post takes votes."
+  },
+  "compose.poll.duration.minutes": {
+    "defaultMessage": "{count, plural, other {# 分}}",
+    "description": "Option of how long a poll takes votes. {count} is a number of minutes."
+  },
+  "compose.poll.duration.hours": {
+    "defaultMessage": "{count, plural, other {# 時間}}",
+    "description": "Option of how long a poll takes votes. {count} is a number of hours."
+  },
+  "compose.poll.duration.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "Option of how long a poll takes votes. {count} is a number of days."
+  },
+  "compose.poll.multiple": {
+    "defaultMessage": "複数の選択肢を選べるようにする",
+    "description": "Checkbox of the poll of the new post: a vote may choose several options."
+  },
+  "compose.poll.hide_totals": {
+    "defaultMessage": "締め切りまで票数を隠す",
+    "description": "Checkbox of the poll of the new post: nobody sees the votes of each option until the poll ends."
+  },
   "compose.posted": {
     "defaultMessage": "投稿しました。",
     "description": "Notice after a post was published."
@@ -7922,6 +7970,10 @@
   "status.poll.ends": {
     "defaultMessage": "{time}に締め切り",
     "description": "Under a poll: when it ends. {time} is a relative time ahead, such as \"in 3 hr.\" or \"in 2 days\"."
+  },
+  "status.poll.hidden": {
+    "defaultMessage": "選択肢ごとの票数は締め切り後に表示されます。",
+    "description": "Under a poll whose author hides the votes of each option until it ends, in place of the shares of the votes."
   },
   "status.poll.label": {
     "defaultMessage": "投票",

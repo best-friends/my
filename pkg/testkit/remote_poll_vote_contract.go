@@ -11,8 +11,10 @@ import (
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appfederation "github.com/best-friends/my/internal/app/federation"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/domain/federation"
+	"github.com/best-friends/my/internal/domain/notification"
 )
 
 // remoteSendsPollVotes checks the votes of local accounts in a remote poll (FR-112): a vote is
@@ -133,6 +135,194 @@ func remoteSendsPollVotes(t *testing.T, e *remoteInteractionEnv) {
 	if got := e.pollVotesSent(t, st.ID); len(got) != 2 {
 		t.Errorf("activities after refused votes = %d, want the 2 of the first vote", len(got))
 	}
+}
+
+// remoteVotesInLocalPolls checks a local poll across servers (FR-112): a local status posts
+// its poll with no votes; a Note with a name in reply to it, as Mastodon and Misskey send votes,
+// is a vote counted with the local ones, once per Note, never a reply, and a second choice in a
+// single-choice poll, an unknown choice, and a vote after the end are dropped; the votes enqueue
+// the Update of the poll after PollUpdateDelay, whose Question carries the counts to the
+// voters' servers; and at its end the author and the local voters are notified, and the Update
+// tells that the poll is closed.
+func remoteVotesInLocalPolls(t *testing.T, e *remoteInteractionEnv) {
+	ctx := t.Context()
+	author := e.user(t, "author")
+	voter := e.user(t, "voter")
+	const bob = "https://remote.example/users/bob"
+	e.actor(t, bob)
+	p, err := e.content.Create(ctx, appcontent.CreateInput{
+		AuthorAccountID: author, TextInput: appcontent.TextInput{Text: "which?"}, Visibility: content.VisibilityPublic,
+		Poll: &content.PollInput{Options: []string{"yes", "no"}, Duration: time.Hour},
+	})
+	if err != nil {
+		t.Fatalf("Create with a poll = %v", err)
+	}
+	st, poll := p.Status, p.Revision.Poll
+	if poll == nil || poll.Multiple || poll.ClosesAt == nil || len(poll.Options) != 2 {
+		t.Fatalf("poll = %+v, want a single-choice poll of two options with an end", poll)
+	}
+	counts := func(want []int64, voters int64) {
+		t.Helper()
+		view, err := e.reader.View(ctx, appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: author}, st.ID)
+		if err != nil {
+			t.Fatalf("View = %v", err)
+		}
+		if v := view.Poll; v == nil || !slices.Equal(v.Votes, want) || v.VotersCount == nil || *v.VotersCount != voters {
+			t.Errorf("poll = %+v, want the votes %v of %d voters", view.Poll, want, voters)
+		}
+	}
+	counts([]int64{0, 0}, 0)
+
+	vote := func(id, name string) []byte {
+		return remoteActivity(t, "Create", id+"/activity", bob, map[string]any{
+			"id": id, "type": "Note", "attributedTo": bob, "name": name, "inReplyTo": st.URI,
+			"to": []string{e.localIRI(author)}, "published": e.clock.Now().Format(time.RFC3339),
+		})
+	}
+	e.expect(t, vote(bob+"/votes/1", "yes"), appfederation.InboxHandled)
+	counts([]int64{1, 0}, 1)
+	if e.stored(t, bob+"/votes/1") {
+		t.Error("the vote was stored as a reply")
+	}
+	e.expect(t, vote(bob+"/votes/1", "yes"), appfederation.InboxHandled) // the same Note again
+	e.expect(t, vote(bob+"/votes/2", "no"), appfederation.InboxDropped)  // a second choice
+	e.expect(t, vote(bob+"/votes/3", "maybe"), appfederation.InboxDropped)
+	if _, err := e.interactions.VotePoll(ctx, voter, st.ID, poll.ID, []int{1}); err != nil {
+		t.Fatalf("VotePoll = %v", err)
+	}
+	counts([]int64{1, 1}, 2)
+
+	// The votes enqueue one Update after PollUpdateDelay; it reaches the remote voter.
+	updates := e.runPollJobs(t)
+	if len(updates) != 1 || updates[0].RunAt.Before(e.clock.Now().Add(appfederation.PollUpdateDelay-time.Minute)) {
+		t.Fatalf("poll update jobs = %+v, want one after the delay", updates)
+	}
+	if err := e.pollUpdates.Run(ctx, st.ID, poll.ID); err != nil {
+		t.Fatalf("PollUpdates.Run = %v", err)
+	}
+	e.runPollJobs(t)
+	sent := e.questionsSent(t, st.ID)
+	if len(sent) != 1 || !slices.Contains(sent[0].Inboxes, bob+"/inbox") {
+		t.Fatalf("Updates = %+v, want one to the remote voter", sent)
+	}
+	q := sent[0].question(t)
+	if q.Type != "Question" || q.Updated != "" || q.Closed != "" || q.VotersCount != 2 || len(q.OneOf) != 2 ||
+		q.OneOf[0].Name != "yes" || q.OneOf[0].Replies.TotalItems != 1 || q.OneOf[1].Replies.TotalItems != 1 ||
+		q.EndTime != federation.FormatTime(*poll.ClosesAt) {
+		t.Errorf("Question = %s", sent[0].Raw)
+	}
+
+	// At the end, the author and the local voter are notified, and the Update tells it.
+	e.clock.Advance(2 * time.Hour)
+	e.expect(t, vote(bob+"/votes/4", "no"), appfederation.InboxDropped)
+	if wait, err := e.pollCloser.Close(ctx, poll.ID); err != nil || wait != 0 {
+		t.Fatalf("Close = %s, %v", wait, err)
+	}
+	if _, err := e.pollCloser.Close(ctx, poll.ID); err != nil {
+		t.Fatalf("Close again = %v", err)
+	}
+	if n := e.notified(t, author, "", notification.TypePollClosed); n != 1 {
+		t.Errorf("poll_closed notifications of the author = %d, want 1", n)
+	}
+	if n := e.notified(t, voter, author, notification.TypePollClosed); n != 1 {
+		t.Errorf("poll_closed notifications of the voter = %d, want 1", n)
+	}
+	if err := e.pollUpdates.Run(ctx, st.ID, poll.ID); err != nil {
+		t.Fatalf("PollUpdates.Run = %v", err)
+	}
+	e.runPollJobs(t)
+	sent = e.questionsSent(t, st.ID)
+	if len(sent) != 2 {
+		t.Fatalf("Updates = %d, want 2", len(sent))
+	}
+	if q := sent[1].question(t); q.Closed != q.EndTime || q.Closed == "" {
+		t.Errorf("Question at the end = %s, want it closed", sent[1].Raw)
+	}
+}
+
+// questionDoc is the object of the Update of a local poll.
+type questionDoc struct {
+	Type        string `json:"type"`
+	Updated     string `json:"updated"`
+	EndTime     string `json:"endTime"`
+	Closed      string `json:"closed"`
+	VotersCount int64  `json:"votersCount"`
+	OneOf       []struct {
+		Name    string `json:"name"`
+		Replies struct {
+			TotalItems int64 `json:"totalItems"`
+		} `json:"replies"`
+	} `json:"oneOf"`
+}
+
+func (s remoteInteractionSent) question(t *testing.T) questionDoc {
+	t.Helper()
+	var doc struct {
+		Object questionDoc `json:"object"`
+	}
+	if err := json.Unmarshal(s.Raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	return doc.Object
+}
+
+// runPollJobs runs the pending fan-out jobs and returns the JobPollUpdate jobs, which it leaves
+// to the caller.
+func (e *remoteInteractionEnv) runPollJobs(t *testing.T) []queue.NewJob {
+	t.Helper()
+	fanOut, _, ok := e.handlers.Lookup(appfederation.JobFanOut)
+	if !ok {
+		t.Fatal("no handler for " + appfederation.JobFanOut)
+	}
+	var updates []queue.NewJob
+	for {
+		nj, ok := e.jobs.pop()
+		if !ok {
+			return updates
+		}
+		switch nj.Type {
+		case appfederation.JobPollUpdate:
+			updates = append(updates, nj)
+		case appfederation.JobFanOut:
+			j, err := nj.Build(e.ids.NewID(), e.clock.Now())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if r := fanOut(t.Context(), j); !r.IsDone() {
+				t.Fatalf("fan-out %s = %+v (%v), want Done", j.Payload, r, r.Err())
+			}
+		}
+	}
+}
+
+// questionsSent returns the Updates recorded about a local status, oldest first, with their
+// documents and inboxes.
+func (e *remoteInteractionEnv) questionsSent(t *testing.T, statusID string) []remoteInteractionSent {
+	t.Helper()
+	ctx := t.Context()
+	acts, err := e.ih.Federation.ListOutboundActivitiesOf(ctx, federation.OutboundStatus, statusID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out []remoteInteractionSent
+	for _, a := range acts {
+		if a.Type != federation.ActivityUpdate {
+			continue
+		}
+		s := remoteInteractionSent{Type: a.Type}
+		if s.Raw, err = e.ih.Federation.FindOutboundDocument(ctx, a.ID); err != nil {
+			t.Fatalf("FindOutboundDocument(%s): %v", a.ID, err)
+		}
+		ds, err := e.ih.Federation.ListDeliveries(ctx, a.ID, "", 100)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, d := range ds {
+			s.Inboxes = append(s.Inboxes, string(d.InboxURL))
+		}
+		out = append(out, s)
+	}
+	return out
 }
 
 // pollVotesSent runs the pending fan-out jobs of votes and returns the activities recorded about

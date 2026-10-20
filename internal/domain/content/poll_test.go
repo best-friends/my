@@ -5,6 +5,7 @@ package content
 import (
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -74,5 +75,60 @@ func TestPollOption(t *testing.T) {
 func TestPollVoteURI(t *testing.T) {
 	if got, want := PollVoteURI("example.org", "v1"), "https://example.org/ap/objects/v1"; got != want {
 		t.Errorf("PollVoteURI = %q, want %q", got, want)
+	}
+}
+
+func TestNewPoll(t *testing.T) {
+	now := time.Date(2026, 10, 1, 12, 0, 0, 500_000_000, time.UTC)
+	ok := PollInput{Options: []string{" yes ", "no"}, Duration: time.Hour, Multiple: true, HideTotals: true}
+	p, err := NewPoll("p1", ok, now)
+	if err != nil {
+		t.Fatalf("NewPoll = %v", err)
+	}
+	want := now.Add(time.Hour).Truncate(time.Second)
+	if p.ID != "p1" || !p.Multiple || !p.HideTotals || p.ClosesAt == nil || !p.ClosesAt.Equal(want) ||
+		!slices.Equal(p.Options, []PollOption{{Position: 0, Title: "yes"}, {Position: 1, Title: "no"}}) {
+		t.Errorf("NewPoll = %+v", p)
+	}
+	long := strings.Repeat("あ", MaxPollOptionLength+1)
+	cases := []struct {
+		name string
+		in   PollInput
+	}{
+		{"one choice", PollInput{Options: []string{"a"}, Duration: time.Hour}},
+		{"too many choices", PollInput{Options: []string{"a", "b", "c", "d", "e"}, Duration: time.Hour}},
+		{"blank choice", PollInput{Options: []string{"a", " "}, Duration: time.Hour}},
+		{"long choice", PollInput{Options: []string{"a", long}, Duration: time.Hour}},
+		{"NUL", PollInput{Options: []string{"a", "b\x00"}, Duration: time.Hour}},
+		{"twice", PollInput{Options: []string{"a", " a"}, Duration: time.Hour}},
+		{"short", PollInput{Options: []string{"a", "b"}, Duration: MinPollDuration - time.Second}},
+		{"long", PollInput{Options: []string{"a", "b"}, Duration: MaxPollDuration + time.Second}},
+	}
+	for _, c := range cases {
+		if _, err := NewPoll("p", c.in, now); !errors.Is(err, ErrInvalidPoll) {
+			t.Errorf("%s: NewPoll = %v, want ErrInvalidPoll", c.name, err)
+		}
+	}
+	if _, err := NewPoll("p", PollInput{Options: []string{"a", strings.Repeat("あ", MaxPollOptionLength)}, Duration: MaxPollDuration}, now); err != nil {
+		t.Errorf("NewPoll at the limits = %v", err)
+	}
+}
+
+func TestPollOptionByTitleAndTotalsHidden(t *testing.T) {
+	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+	future, past := now.Add(time.Minute), now.Add(-time.Minute)
+	p := Poll{Options: []PollOption{{Position: 0, Title: "a"}, {Position: 1, Title: "b"}}, HideTotals: true, ClosesAt: &future}
+	if pos, ok := p.OptionByTitle(" b "); !ok || pos != 1 {
+		t.Errorf("OptionByTitle(b) = %d, %v", pos, ok)
+	}
+	if _, ok := p.OptionByTitle("c"); ok {
+		t.Error("OptionByTitle(c) found a choice")
+	}
+	if !p.TotalsHidden(now) {
+		t.Error("TotalsHidden of an open poll that hides them = false")
+	}
+	p.ClosesAt = &past
+	if p.TotalsHidden(now) {
+		t.Error("TotalsHidden of an ended poll = true")
 	}
 }

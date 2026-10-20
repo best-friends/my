@@ -92,7 +92,10 @@ type StatusHandlersDeps struct {
 	// restricted authors (ADR-0061); without Relayed, nothing a relay brings in is stored.
 	Relayed     RelayedStatuses
 	RelayPolicy RelayPolicy
-	Clock       kernel.Clock
+	// Votes records the votes of remote accounts in local polls; nil takes every Note in reply
+	// to a local status as a post.
+	Votes RemotePollVotes
+	Clock kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger
@@ -127,9 +130,13 @@ func (h *StatusHandlers) Register(p *InboxProcessor) {
 
 // Create ingests the post of a Create when it is in scope (ADR-0034). A post that is stored
 // already is left as it is, and one that is deleted, or whose URI a deletion keeps, is dropped.
+// A Note with a name in reply to a local status with a poll is a vote in it (vote).
 func (h *StatusHandlers) Create(ctx context.Context, a *InboxActivity) error {
 	obj, err := h.object(ctx, a)
 	if err != nil {
+		return err
+	}
+	if voted, err := h.vote(ctx, a, obj); voted || err != nil {
 		return err
 	}
 	switch _, err := h.d.Statuses.FindStatusByURI(ctx, string(obj.ID)); {
@@ -146,6 +153,42 @@ func (h *StatusHandlers) Create(ctx context.Context, a *InboxActivity) error {
 		return fmt.Errorf("%w: %s is deleted", ErrDropActivity, obj.ID)
 	}
 	return nil
+}
+
+// RemotePollVotes records the votes of remote accounts in local polls; *appcontent.Interactions
+// implements it.
+type RemotePollVotes interface {
+	RecordRemotePollVote(ctx context.Context, in appcontent.RemotePollVoteInput) (bool, error)
+}
+
+// vote records a Note of the actor that votes in a local poll (FR-112, federation.md §3.4): a
+// Note with a name in reply to a local status, as Mastodon, Misskey, Pleroma (Akkoma), and
+// GoToSocial send votes. It reports whether obj was a vote. A reply to a local status without a
+// poll is no vote: it is a post like any other. A vote in a poll that has ended, for a choice
+// the poll does not have, a second one in a single-choice poll, or in a status the actor may not
+// see is dropped.
+func (h *StatusHandlers) vote(ctx context.Context, a *InboxActivity, obj *federation.Object) (bool, error) {
+	if h.d.Votes == nil || obj.Type != federation.ObjectNote || obj.Name == "" || obj.InReplyTo == "" || !h.isLocal(obj.InReplyTo) {
+		return false, nil
+	}
+	st, err := h.d.Statuses.FindStatusByURI(ctx, string(obj.InReplyTo))
+	if errors.Is(err, appcontent.ErrNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	_, err = h.d.Votes.RecordRemotePollVote(ctx, appcontent.RemotePollVoteInput{
+		URI: string(obj.ID), AccountID: a.Actor.Account.ID, StatusID: st.ID, Title: obj.Name, VotedAt: obj.Published,
+	})
+	switch {
+	case errors.Is(err, appcontent.ErrNoPoll):
+		return false, nil
+	case errors.Is(err, appcontent.ErrPollClosed), errors.Is(err, appcontent.ErrInvalidPollChoices),
+		errors.Is(err, appcontent.ErrAlreadyVoted):
+		return true, fmt.Errorf("%w: vote %s in %s: %w", ErrDropActivity, obj.ID, st.URI, err)
+	}
+	return true, interactionError(err)
 }
 
 // Update records a new revision of a stored post (federation.md §3.3): an Update older than the

@@ -116,7 +116,7 @@ async function serveApi(page: Page): Promise<void> {
         ...poll,
         votes_count: poll.votes_count + choices.length,
         voters_count: (poll.voters_count ?? 0) + 1,
-        options: poll.options.map((option, index) => (choices.includes(index) ? { ...option, votes_count: option.votes_count + 1 } : option)),
+        options: poll.options.map((option, index) => (choices.includes(index) ? { ...option, votes_count: (option.votes_count ?? 0) + 1 } : option)),
         voted: true,
         own_votes: choices,
       };

@@ -1630,7 +1630,8 @@ paths:
       description: |
         Posts a status as the authenticated user. Retrying with the same `Idempotency-Key`
         returns the status posted with it. Attached media must be the user's own uploads that
-        finished processing (422 otherwise).
+        finished processing (422 otherwise). A status with a `poll` attaches no media, and a
+        poll outside the limits of `PollInput` is a 422 (FR-112).
       tags: [statuses]
       security:
         - oauth2: ["write:statuses"]
@@ -1684,7 +1685,7 @@ paths:
         Replaces the text, content warning, sensitivity, language, and media of a status; the
         previous content stays in the edit history. The visibility and reply target never
         change. Attached media must be the user's own uploads that finished processing (422
-        otherwise).
+        otherwise). A status with a poll cannot be edited (422): its votes belong to its poll.
       tags: [statuses]
       security:
         - oauth2: ["write:statuses"]
@@ -6634,6 +6635,35 @@ components:
           $ref: "#/components/schemas/Id"
         media:
           $ref: "#/components/schemas/StatusMediaInput"
+        poll:
+          $ref: "#/components/schemas/PollInput"
+    PollInput:
+      description: |
+        A poll of a new status (FR-112). It ends `expires_in` seconds after the status is
+        posted; the author and the users who voted are notified then.
+      type: object
+      required: [options, expires_in]
+      properties:
+        options:
+          description: The options, in order, as plain text; each one different from the others.
+          type: array
+          minItems: 2
+          maxItems: 4
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+        expires_in:
+          description: How long the poll takes votes, in seconds (5 minutes to 30 days).
+          type: integer
+          minimum: 300
+          maximum: 2592000
+        multiple:
+          description: Whether a vote may choose several options.
+          type: boolean
+        hide_totals:
+          description: Whether the votes of each option are hidden until the poll ends.
+          type: boolean
     EditStatusRequest:
       description: The new content of a status.
       type: object
@@ -6790,8 +6820,9 @@ components:
     Poll:
       description: |
         The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
-        another server are those its server last reported. `voted` and `own_votes` describe the
-        authenticated user's vote and are omitted for anonymous requests.
+        another server are those its server last reported. A poll whose author hides the votes of
+        each option until it ends leaves out `votes_count` of its options until then. `voted` and
+        `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
       type: object
       required: [id, multiple, expired, votes_count, options]
       properties:
@@ -6836,13 +6867,15 @@ components:
     PollOption:
       description: One option of a poll.
       type: object
-      required: [title, votes_count]
+      required: [title]
       properties:
         title:
           description: The option as plain text.
           type: string
         votes_count:
-          description: The number of votes for the option.
+          description: |
+            The number of votes for the option; omitted while the poll hides the votes of each
+            option until it ends.
           type: integer
           minimum: 0
     VoteInPollRequest:

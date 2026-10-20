@@ -600,6 +600,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	instance.RegisterCommitHooks(a.Projectors, a.Streams)
 	a.registerBusinessMetrics(a.Projectors)
 	fedOutbox := a.setUpFederation(cfg, feds)
+	a.setUpPolls(cfg, statuses, feds, fedOutbox)
 
 	if err := a.setUpDelivery(feds); err != nil {
 		_ = a.Close()
@@ -760,6 +761,21 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
 	}, a.Accounts)
 	return outbox
+}
+
+// setUpPolls registers the end of polls and the Updates of local polls (FR-112): the jobs that
+// close a poll at its end, enqueued in the transaction that posts it or votes in it, and the
+// jobs that send the counts of a local poll after its votes and at its end.
+func (a *App) setUpPolls(cfg *config.Config, statuses content.Repository, repo federation.Repository, outbox queue.Outbox) {
+	closer := content.NewPollCloser(content.PollCloserDeps{
+		UnitOfWork: a.UnitOfWork, Repository: statuses, Outbox: outbox, Clock: a.Clock,
+	})
+	closer.RegisterProjectors(a.Projectors)
+	closer.RegisterJobs(a.Handlers)
+	federation.NewPollUpdates(federation.PollUpdatesDeps{
+		UnitOfWork: a.UnitOfWork, Statuses: a.Content, Clock: a.Clock,
+		Recorder: federation.RecorderDeps{Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host},
+	}).RegisterJobs(a.Handlers)
 }
 
 // setUpFanOut registers the fan-out of outbound activities (federation.md §7.2). It comes after

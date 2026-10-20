@@ -2876,6 +2876,30 @@ export interface MessageArgs {
   "client:compose.outbox.unsent": {};
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:compose.over": { count: number };
+  /** Each option must be different. */
+  "client:compose.poll.duplicate": {};
+  /** Duration */
+  "client:compose.poll.duration": {};
+  /** {count, plural, one {# day} other {# days}} */
+  "client:compose.poll.duration.days": { count: number };
+  /** {count, plural, one {# hour} other {# hours}} */
+  "client:compose.poll.duration.hours": { count: number };
+  /** {count, plural, one {# minute} other {# minutes}} */
+  "client:compose.poll.duration.minutes": { count: number };
+  /** Hide the votes until the poll ends */
+  "client:compose.poll.hide_totals": {};
+  /** Poll */
+  "client:compose.poll.legend": {};
+  /** Allow choosing several options */
+  "client:compose.poll.multiple": {};
+  /** Option {number} */
+  "client:compose.poll.option": { number: string };
+  /** Add an option */
+  "client:compose.poll.option.add": {};
+  /** Remove option {number} */
+  "client:compose.poll.option.remove": { number: string };
+  /** Add a poll */
+  "client:compose.poll.toggle": {};
   /** Posted. */
   "client:compose.posted": {};
   /** {count, plural, one {# character left} other {# characters left}} */
@@ -4230,6 +4254,8 @@ export interface MessageArgs {
   "client:status.poll.closed": {};
   /** Ends {time} */
   "client:status.poll.ends": { time: string };
+  /** The votes of each option are shown when the poll ends. */
+  "client:status.poll.hidden": {};
   /** Poll */
   "client:status.poll.label": {};
   /** Poll options */
@@ -4746,10 +4772,16 @@ export interface MessageArgs {
   "server:errors.status.poll_changed": {};
   /** This poll has ended. */
   "server:errors.status.poll_closed": {};
+  /** A poll needs {min} to {max} different options of at most {length} characters each, and must last from 5 minutes to 30 days. */
+  "server:errors.status.poll_invalid": { length: string; max: string; min: string };
   /** Choose one of the poll's options, or several only when the poll allows it. */
   "server:errors.status.poll_invalid_choices": {};
   /** This post has no poll. */
   "server:errors.status.poll_missing": {};
+  /** A post with a poll cannot be edited. */
+  "server:errors.status.poll_not_editable": {};
+  /** A post with a poll cannot attach files. */
+  "server:errors.status.poll_with_media": {};
   /** Your account may not post right now. */
   "server:errors.status.posting_restricted": {};
   /** The post you are replying to was not found. */
@@ -4852,6 +4884,8 @@ export interface MessageArgs {
   "server:push.moderation_notice": { instance: string };
   /** You have a new notification on {instance} */
   "server:push.other": { instance: string };
+  /** A poll you took part in has ended */
+  "server:push.poll_closed": {};
   /** {name} reacted to your post */
   "server:push.reaction": { name: string };
   /** A suspension by the moderators of {instance} ended some of your follows */

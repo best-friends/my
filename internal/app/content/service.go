@@ -58,6 +58,11 @@ var (
 	// ErrMissingMediaDescription reports an attachment without an alt text while the instance
 	// requires one (the require_media_description setting, FR-105).
 	ErrMissingMediaDescription = errors.New("content: the media file has no description")
+	// ErrPollWithMedia reports a post with both a poll and media attachments (FR-112).
+	ErrPollWithMedia = errors.New("content: a post with a poll attaches no media")
+	// ErrPollNotEditable reports an edit of a status with a poll: the votes belong to the poll
+	// of the revision they were cast in (FR-112).
+	ErrPollNotEditable = errors.New("content: a status with a poll cannot be edited")
 )
 
 // TextTooLongError is the ErrTextTooLong of one post, with the limit in effect.
@@ -207,6 +212,9 @@ type CreateInput struct {
 	Visibility content.Visibility
 	// InReplyToID is the ID of the status replied to, "" for none (FR-106).
 	InReplyToID string
+	// Poll is the poll of the status, nil for none (FR-112). A status with a poll attaches no
+	// media.
+	Poll *content.PollInput
 	// ClientID is the OAuth client that posts, "" when none is recorded.
 	ClientID string
 	// IdempotencyKey is the client API's Idempotency-Key, "" for none. A key that the author
@@ -218,6 +226,8 @@ type CreateInput struct {
 // ones, and remote ones resolved before the transaction), hashtags, and URLs linked; attached media must be the author's own processed uploads
 // (ErrMediaNotFound, ErrMediaNotReady); the visibility is capped by the author's visibility ceiling
 // (data-model §5.4) and stored as capped. A reply must target a status the author may see.
+// A poll (FR-112) must keep the limits of content.NewPoll (content.ErrInvalidPoll) and comes
+// without media (ErrPollWithMedia); it is posted with a tally observation of no votes.
 //
 // Retrying with an IdempotencyKey that the author already used returns the status posted with it
 // and changes nothing; when that status is deleted, it fails with ErrAlreadyDeleted. A key that
@@ -242,6 +252,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 	if err != nil {
 		return Post{}, err
 	}
+	if in.Poll != nil && len(in.Media) > 0 {
+		return Post{}, ErrPollWithMedia
+	}
 	body, err := s.prepareText(ctx, author, in.TextInput)
 	if err != nil {
 		return Post{}, err
@@ -249,6 +262,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 
 	id := s.d.IDs.NewID()
 	now := s.d.Clock.Now()
+	var poll *content.Poll
+	if in.Poll != nil {
+		p, err := content.NewPoll(s.d.IDs.NewID(), *in.Poll, now)
+		if err != nil {
+			return Post{}, err
+		}
+		poll = &p
+	}
 	st := content.Status{
 		ID:              id,
 		URI:             content.StatusURI(s.d.Host, id),
@@ -273,7 +294,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 		StatusID: id, AuthorAccountID: in.AuthorAccountID, ClientID: in.ClientID, IdempotencyKey: in.IdempotencyKey,
 	}
 	rev := body.revision(s.d.IDs.NewID(), id, 1, now)
+	rev.Poll = poll
 	tags := body.tags(s.d.IDs, now)
+	var tally content.PollTallyObservation
+	if poll != nil {
+		// A local poll starts with no votes; every vote records its new counts (pollTally).
+		var none int64
+		tally = content.PollTallyObservation{
+			ID: s.d.IDs.NewID(), PollID: poll.ID, VotersCount: &none, ObservedAt: now, Votes: make([]int64, len(poll.Options)),
+		}
+	}
 
 	repo := s.d.Repository
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
@@ -290,7 +320,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 		if err := repo.InsertRevision(ctx, tx, rev); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, StatusCreated{Status: st, Revision: rev})
+		if err := tx.Emit(ctx, StatusCreated{Status: st, Revision: rev}); err != nil {
+			return err
+		}
+		if poll == nil {
+			return nil
+		}
+		if err := repo.InsertPollObservation(ctx, tx, tally); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, PollTallyObserved{Observation: tally})
 	})
 	if errors.Is(err, ErrIdempotencyKeyUsed) {
 		// A concurrent request with the same key won.
@@ -368,7 +407,8 @@ type EditInput struct {
 // Edit records a new revision of a local status with new content (FR-109), checking the text
 // and the attached media as Create does. The visibility,
 // author, and reply target never change. The new revision becomes the head. A status that does
-// not exist or is deleted fails with ErrNotFound; another account's status with ErrNotAuthor.
+// not exist or is deleted fails with ErrNotFound; another account's status with ErrNotAuthor;
+// a status with a poll with ErrPollNotEditable.
 func (s *Service) Edit(ctx context.Context, in EditInput) (Post, error) {
 	author, err := s.localActive(ctx, in.AccountID)
 	if err != nil {
@@ -377,6 +417,14 @@ func (s *Service) Edit(ctx context.Context, in EditInput) (Post, error) {
 	st, err := s.ownStatus(ctx, in.AccountID, in.StatusID)
 	if err != nil {
 		return Post{}, err
+	}
+	current, err := s.d.Repository.FindCurrentRevision(ctx, st.ID)
+	if err != nil {
+		return Post{}, err
+	}
+	if current.Poll != nil {
+		// The votes are of the poll of the current revision; a new revision would leave them.
+		return Post{}, fmt.Errorf("status %s: %w", st.ID, ErrPollNotEditable)
 	}
 	if _, err := s.postingRestrictions(ctx, in.AccountID); err != nil {
 		return Post{}, err

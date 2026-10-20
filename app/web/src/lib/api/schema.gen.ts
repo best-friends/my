@@ -1195,7 +1195,8 @@ export interface paths {
          * Post a status
          * @description Posts a status as the authenticated user. Retrying with the same `Idempotency-Key`
          *     returns the status posted with it. Attached media must be the user's own uploads that
-         *     finished processing (422 otherwise).
+         *     finished processing (422 otherwise). A status with a `poll` attaches no media, and a
+         *     poll outside the limits of `PollInput` is a 422 (FR-112).
          */
         post: operations["createStatus"];
         delete?: never;
@@ -1224,7 +1225,7 @@ export interface paths {
          * @description Replaces the text, content warning, sensitivity, language, and media of a status; the
          *     previous content stays in the edit history. The visibility and reply target never
          *     change. Attached media must be the user's own uploads that finished processing (422
-         *     otherwise).
+         *     otherwise). A status with a poll cannot be edited (422): its votes belong to its poll.
          */
         put: operations["editStatus"];
         post?: never;
@@ -4613,6 +4614,21 @@ export interface components {
             visibility: components["schemas"]["Visibility"];
             in_reply_to_id?: components["schemas"]["Id"];
             media?: components["schemas"]["StatusMediaInput"];
+            poll?: components["schemas"]["PollInput"];
+        };
+        /**
+         * @description A poll of a new status (FR-112). It ends `expires_in` seconds after the status is
+         *     posted; the author and the users who voted are notified then.
+         */
+        PollInput: {
+            /** @description The options, in order, as plain text; each one different from the others. */
+            options: string[];
+            /** @description How long the poll takes votes, in seconds (5 minutes to 30 days). */
+            expires_in: number;
+            /** @description Whether a vote may choose several options. */
+            multiple?: boolean;
+            /** @description Whether the votes of each option are hidden until the poll ends. */
+            hide_totals?: boolean;
         };
         /** @description The new content of a status. */
         EditStatusRequest: {
@@ -4712,8 +4728,9 @@ export interface components {
         };
         /**
          * @description The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
-         *     another server are those its server last reported. `voted` and `own_votes` describe the
-         *     authenticated user's vote and are omitted for anonymous requests.
+         *     another server are those its server last reported. A poll whose author hides the votes of
+         *     each option until it ends leaves out `votes_count` of its options until then. `voted` and
+         *     `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
          */
         Poll: {
             id: components["schemas"]["Id"];
@@ -4744,8 +4761,11 @@ export interface components {
         PollOption: {
             /** @description The option as plain text. */
             title: string;
-            /** @description The number of votes for the option. */
-            votes_count: number;
+            /**
+             * @description The number of votes for the option; omitted while the poll hides the votes of each
+             *     option until it ends.
+             */
+            votes_count?: number;
         };
         /** @description A vote in the poll of a status. */
         VoteInPollRequest: {

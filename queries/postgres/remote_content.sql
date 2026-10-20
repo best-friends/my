@@ -120,13 +120,13 @@ LEFT JOIN remote_media r ON r.media_id = i.media_id
 WHERE i.emoji_id = @emoji_id ORDER BY i.id DESC LIMIT 1;
 
 -- name: InsertPoll :exec
-INSERT INTO polls (id, revision_id, multiple, closes_at) VALUES (@id, @revision_id, @multiple, @closes_at);
+INSERT INTO polls (id, revision_id, multiple, hide_totals, closes_at) VALUES (@id, @revision_id, @multiple, @hide_totals, @closes_at);
 
 -- name: InsertPollOption :exec
 INSERT INTO poll_options (poll_id, position, title) VALUES (@poll_id, @position, @title);
 
 -- name: GetPollByRevision :one
-SELECT id, revision_id, multiple, closes_at FROM polls WHERE revision_id = @revision_id;
+SELECT id, revision_id, multiple, hide_totals, closes_at FROM polls WHERE revision_id = @revision_id;
 
 -- name: ListPollOptions :many
 SELECT poll_id, position, title FROM poll_options WHERE poll_id = @poll_id ORDER BY position;
@@ -141,6 +141,26 @@ ON CONFLICT DO NOTHING;
 -- name: ListPollVotesOfAccount :many
 SELECT id, poll_id, account_id, position, uri, voted_at FROM poll_votes
 WHERE poll_id = @poll_id AND account_id = @account_id ORDER BY position;
+
+-- GetPollStatus returns the status whose revision has the poll.
+-- name: GetPollStatus :one
+SELECT r.status_id FROM polls p JOIN status_revisions r ON r.id = p.revision_id WHERE p.id = @poll_id;
+
+-- LockPoll locks the poll until the transaction ends, so that the votes of a local poll are
+-- counted one transaction at a time.
+-- name: LockPoll :one
+SELECT id FROM polls WHERE id = @poll_id FOR UPDATE;
+
+-- name: CountPollVotes :many
+SELECT position, count(*) AS votes FROM poll_votes WHERE poll_id = @poll_id GROUP BY position ORDER BY position;
+
+-- name: CountPollVoters :one
+SELECT count(DISTINCT account_id) FROM poll_votes WHERE poll_id = @poll_id;
+
+-- ListPollVoterIDs returns the accounts that voted in a poll after @after, in order.
+-- name: ListPollVoterIDs :many
+SELECT DISTINCT account_id FROM poll_votes
+WHERE poll_id = @poll_id AND account_id > @after ORDER BY account_id LIMIT @lim;
 
 -- name: InsertPollTallyObservation :exec
 INSERT INTO poll_tally_observations (id, poll_id, voters_count, observed_at)

@@ -112,12 +112,14 @@ type MediaView struct {
 
 // RevisionParts are what a revision refers to, resolved: the attached media that finished
 // processing, in order; the mentioned accounts that exist, in the revision's order; the
-// hashtags, in the revision's order; and the custom emoji that can be shown, by shortcode.
+// hashtags, in the revision's order; the custom emoji that can be shown, by shortcode; and the
+// poll with its counts as an anonymous viewer sees them, nil when the revision has none.
 type RevisionParts struct {
 	Attachments []MediaView
 	Mentions    []appaccount.Actor
 	Tags        []content.Tag
 	Emojis      []EmojiTag
+	Poll        *PollView
 }
 
 // RevisionView is one revision of a status, for its edit history.
@@ -407,6 +409,9 @@ func (r *Reader) Parts(ctx context.Context, rev content.Revision) (RevisionParts
 		out.Tags = append(out.Tags, tag)
 	}
 	if out.Emojis, err = r.EmojiTags(ctx, rev.EmojiIDs); err != nil {
+		return RevisionParts{}, err
+	}
+	if out.Poll, err = r.poll(ctx, rev, ""); err != nil {
 		return RevisionParts{}, err
 	}
 	return out, nil

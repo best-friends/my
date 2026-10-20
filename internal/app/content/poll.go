@@ -13,11 +13,13 @@ import (
 	"github.com/best-friends/my/internal/domain/content"
 )
 
-// This file holds the votes of local accounts in polls (FR-112) and what a viewer sees of a
-// poll. A vote in a remote poll is recorded in poll_votes and carried to the poll's server by
-// the federation module, one Note per choice (federation.md §7.1); the counts of a remote poll
-// stay those its server reports (poll_tallies), which include the vote once the server sends
-// its next Update.
+// This file holds the votes in polls (FR-112) and what a viewer sees of a poll. A vote in a
+// remote poll is recorded in poll_votes and carried to the poll's server by the federation
+// module, one Note per choice (federation.md §7.1); the counts of a remote poll stay those its
+// server reports (poll_tallies), which include the vote once the server sends its next Update.
+// The votes in a local poll, of local accounts and of remote ones (a Note in reply to the
+// Question, federation.md §3.4), are counted again after each vote and recorded as a tally
+// observation, so that poll_tallies follows the newest counts of every poll alike.
 
 // EventPollVoted is emitted when a local account votes in a poll: the federation module delivers
 // the votes in a remote poll to its author.
@@ -35,6 +37,15 @@ type PollVoted struct {
 
 // EventType implements uow.Event.
 func (PollVoted) EventType() string { return EventPollVoted }
+
+// The refusals of votes, for the modules that cannot import the domain (content.ErrNoPoll and
+// the others).
+var (
+	ErrNoPoll             = content.ErrNoPoll
+	ErrPollClosed         = content.ErrPollClosed
+	ErrAlreadyVoted       = content.ErrAlreadyVoted
+	ErrInvalidPollChoices = content.ErrInvalidPollChoices
+)
 
 type (
 	// Poll is content.Poll.
@@ -55,6 +66,10 @@ type PollView struct {
 	OwnVotes []int
 	// Closed is whether the poll has ended (content.Poll.Closed).
 	Closed bool
+	// TotalsHidden is whether the votes of each choice are hidden until the poll ends
+	// (content.Poll.TotalsHidden): readers show neither Votes nor the share of a choice, only
+	// how many voted.
+	TotalsHidden bool
 }
 
 // wallClock is the system's clock, for a Reader without one.
@@ -117,9 +132,15 @@ func (s *Interactions) VotePoll(ctx context.Context, accountID, statusID, pollID
 			votes[i].URI = content.PollVoteURI(s.d.Host, id)
 		}
 	}
+	tallyID := s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.ensureLive(ctx, tx, st.ID); err != nil {
 			return err
+		}
+		if st.IsLocal {
+			if err := s.d.Statuses.LockPoll(ctx, tx, poll.ID); err != nil {
+				return err
+			}
 		}
 		prior, err := s.d.Statuses.ListPollVotesTx(ctx, tx, poll.ID, accountID)
 		if err != nil {
@@ -137,12 +158,121 @@ func (s *Interactions) VotePoll(ctx context.Context, accountID, statusID, pollID
 				return fmt.Errorf("poll %s: %w", poll.ID, content.ErrAlreadyVoted)
 			}
 		}
-		return tx.Emit(ctx, PollVoted{Votes: votes, Poll: *poll, Status: RefOf(st), AuthorURI: author.Account.URI})
+		return s.voted(ctx, tx, PollVoted{Votes: votes, Poll: *poll, Status: RefOf(st), AuthorURI: author.Account.URI}, tallyID)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return votes, nil
+}
+
+// voted counts the votes of a local poll again after ev's votes, inside tx and with the poll
+// locked (Repository.LockPoll), records the counts as a new tally observation with the ID
+// tallyID (data-model §4.4), and emits ev.
+func (s *Interactions) voted(ctx context.Context, tx uow.Tx, ev PollVoted, tallyID string) error {
+	if ev.Status.IsLocal {
+		counts, voters, err := s.d.Statuses.CountPollVotes(ctx, tx, ev.Poll.ID)
+		if err != nil {
+			return err
+		}
+		o := content.PollTallyObservation{
+			ID: tallyID, PollID: ev.Poll.ID, VotersCount: &voters, ObservedAt: ev.Votes[0].VotedAt,
+			Votes: make([]int64, len(ev.Poll.Options)),
+		}
+		for pos, n := range counts {
+			if pos >= 0 && pos < len(o.Votes) {
+				o.Votes[pos] = n
+			}
+		}
+		if err := s.d.Statuses.InsertPollObservation(ctx, tx, o); err != nil {
+			return err
+		}
+		if err := tx.Emit(ctx, PollTallyObserved{Observation: o}); err != nil {
+			return err
+		}
+	}
+	return tx.Emit(ctx, ev)
+}
+
+// RemotePollVoteInput is a remote account's choice in a local poll: the Create of a Note named
+// after the choice, in reply to the Question (federation.md §3.4).
+type RemotePollVoteInput struct {
+	// URI is the id of the Note.
+	URI       string
+	AccountID string
+	// StatusID is the local status the Note replies to.
+	StatusID string
+	// Title is the name of the Note, the title of the choice.
+	Title string
+	// VotedAt is the published time of the Note; zero, or a time in the future, is now.
+	VotedAt time.Time
+}
+
+// RecordRemotePollVote records a remote account's choice in the poll of a local status and
+// reports whether it is new; a Note recorded already, or a choice the account voted for
+// already, records nothing and reports false. The status must be one the account may see, with
+// a poll in its current revision (content.ErrNoPoll otherwise), the poll must not have ended
+// (content.ErrPollClosed), the title must name a choice (content.ErrInvalidPollChoices), and a
+// single-choice poll takes one vote per account (content.ErrAlreadyVoted). The counts of the
+// poll are recorded again, and PollVoted is emitted, as for a local account's vote.
+func (s *Interactions) RecordRemotePollVote(ctx context.Context, in RemotePollVoteInput) (bool, error) {
+	st, err := s.remoteVisibleStatus(ctx, in.AccountID, in.StatusID)
+	if err != nil {
+		return false, err
+	}
+	if !st.IsLocal {
+		return false, fmt.Errorf("status %s is not local: %w", st.ID, content.ErrNoPoll)
+	}
+	rev, err := s.d.Statuses.FindCurrentRevision(ctx, st.ID)
+	if err != nil {
+		return false, err
+	}
+	poll := rev.Poll
+	if poll == nil {
+		return false, fmt.Errorf("status %s: %w", st.ID, content.ErrNoPoll)
+	}
+	at := s.remoteTime(in.VotedAt)
+	if poll.Closed(s.d.Clock.Now()) {
+		return false, fmt.Errorf("poll %s: %w", poll.ID, content.ErrPollClosed)
+	}
+	position, ok := poll.OptionByTitle(in.Title)
+	if !ok {
+		return false, fmt.Errorf("%w: no choice %q in poll %s", content.ErrInvalidPollChoices, in.Title, poll.ID)
+	}
+	vote := content.PollVote{ID: s.d.IDs.NewIDAt(at), PollID: poll.ID, AccountID: in.AccountID, Position: position, URI: in.URI, VotedAt: at}
+	tallyID := s.d.IDs.NewID()
+	var inserted bool
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		inserted = false
+		if err := s.ensureLive(ctx, tx, st.ID); err != nil {
+			return err
+		}
+		if err := s.d.Statuses.LockPoll(ctx, tx, poll.ID); err != nil {
+			return err
+		}
+		if !poll.Multiple {
+			prior, err := s.d.Statuses.ListPollVotesTx(ctx, tx, poll.ID, in.AccountID)
+			if err != nil {
+				return err
+			}
+			if len(prior) > 0 {
+				if prior[0].URI == in.URI {
+					return nil // the same Note again
+				}
+				return fmt.Errorf("poll %s: %w", poll.ID, content.ErrAlreadyVoted)
+			}
+		}
+		ok, err := s.d.Statuses.InsertPollVote(ctx, tx, vote)
+		if err != nil || !ok {
+			return err
+		}
+		inserted = true
+		return s.voted(ctx, tx, PollVoted{Votes: []content.PollVote{vote}, Poll: *poll, Status: RefOf(st)}, tallyID)
+	})
+	if err != nil {
+		return false, err
+	}
+	return inserted, nil
 }
 
 // poll returns the poll of rev as viewerID sees it ("" for an anonymous viewer), nil when rev
@@ -152,7 +282,8 @@ func (r *Reader) poll(ctx context.Context, rev content.Revision, viewerID string
 		return nil, nil
 	}
 	p := *rev.Poll
-	out := &PollView{Poll: p, Votes: make([]int64, len(p.Options)), Closed: p.Closed(r.d.Clock.Now())}
+	now := r.d.Clock.Now()
+	out := &PollView{Poll: p, Votes: make([]int64, len(p.Options)), Closed: p.Closed(now), TotalsHidden: p.TotalsHidden(now)}
 	tallies, err := r.d.Statuses.FindPollTallies(ctx, p.ID)
 	if err != nil {
 		return nil, err

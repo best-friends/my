@@ -175,6 +175,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Reject` | 自分が送った `Follow`、または承認済みのフォロー | `graph.RejectRemote`。照合は `Accept` と同じ。承認待ちなら `follow_rejections`（`rejected_by = remote`）、承認済みなら `follow_terminations`（`removed_by_followee`） |
 | `Undo` | `Follow` / `Like` / `EmojiReact` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Follow` は `graph.TerminateRemote`（`unfollowed`）で、`object` の `id` が主体のフォローに無ければ、埋め込みの `object.object`（ローカル）とのフォローで照合する（Misskey の `Undo` は送った `Follow` と違う `id` を持つ）。`Undo Accept` は `graph.RejectRemote` でフォローの終了として扱う。`Undo Like` / `Undo EmojiReact` は、主体が作った同じ URI の `reactions`、`favourites` の順に引き、どちらにも無ければ埋め込みの `object` を `Like` / `EmojiReact` の行と同じ規則で振り分けて、リアクションなら主体のその投稿への同じ絵文字のリアクションを、お気に入りなら主体のその投稿へのお気に入りを消す（ADR-0052 §1）。対象が URI だけなら、主体が作った同じ URI の `follows` / `reactions` / `favourites` / `boosts` / `blocks` を順に引く |
 | `Create` | `Note` / `Question`。`Article` / `Page` / `Event` / `Image` / `Video` / `Audio` は変換して取り込む | 取り込み範囲（ADR-0034）に入れば `content.IngestRemoteStatus`。オブジェクトの `id` は `actor` と同じオリジンで、`attributedTo` は（あれば）`actor` でなければならない。保存済みの投稿は何もせず、削除済みの投稿は捨てる |
+| `Create` | `name` を持ち、投票のあるローカルの投稿への返信の `Note`（投票への回答。Mastodon・Misskey・Pleroma（Akkoma）・GoToSocial が送る形） | `content.RecordRemotePollVote`（FR-112）。`name` が選択肢の題で、投稿としては取り込まない。同じ `Note` は 1 票で、締め切り後・無い選択肢・単一選択の 2 つ目の回答・主体が見られない投稿への回答は捨てる。投票のない投稿への返信は投稿として扱う |
 | `Update` | 投稿 | `content.ReviseRemoteStatus`（新しい版）。投稿の作者とアクティビティの主体が一致し、オリジンが同じであること（[ActivityPub §7.3](https://www.w3.org/TR/activitypub/#update-activity-inbox)）。未知の投稿は §3.3 のとおり `Create` として扱う |
 | `Update` | Actor（自分自身） | `RemoteActors.ReceiveActorUpdate`。オリジンが同じ埋め込みの文書で `account.UpsertRemoteActor`（内容が変わればプロフィールの版が増える）。埋め込みが無い・`id` が主体と一致しなければ取得し直す。削除済みの Actor の `Update` は捨てる |
 | `Delete` | 投稿・`Tombstone` | `content.DeleteRemoteStatus`（`origin = remote`）。未知なら tombstone |
@@ -211,7 +212,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `attachment` | `Document` / `Image` / `Video` / `Audio`。`url`（文字列か `Link`）、`mediaType`、`name`（代替テキスト）、`blurhash`、`focalPoint`、`width` / `height`。`href` だけの `Link` は添付として扱わない。4 件を超える分は捨てる |
 | `url` | 文字列・`Link`・配列のどれでもよい。`text/html` の最初のものを表示用 URL にする |
 | 時刻 | `published` / `updated` は RFC 3339 として読み、未来の時刻は現在時刻に丸める。投稿の `id`（UUIDv7）は `published` から作る（#71） |
-| 投票 | `Question` の `oneOf` / `anyOf`（各 `name` と `replies.totalItems`）、`endTime`、`votersCount`（FR-112、C） |
+| 投票 | `Question` の `oneOf` / `anyOf`（各 `name` と `replies.totalItems`）、`endTime`、`votersCount`（FR-112）。変換しない投稿の `name` は、投票への回答の選択肢の題として読む（§3.4） |
 | 返信の一覧 | 投稿の `replies` はコレクションへの参照（IRI か埋め込み）として読む。`Collection` / `OrderedCollection` / `CollectionPage` / `OrderedCollectionPage` は、`items`（順序付きなら `orderedItems`）を 100 件まで、`first` と `next` をページへの参照として読む（Mastodon は最初のページを埋め込む） |
 | 方言 | Misskey の `_misskey_content`（MFM の原文）・`_misskey_summary` は使わず、`content` / `summary` を使う。`_misskey_quote` / `quoteUrl` / `quoteUri` は引用（FR-114 は W）なので、本文に含まれるリンクとしてだけ扱う。`isCat` などの未知のプロパティは無視する |
 | 未知のプロパティ | 無視する（[AS2 Core §5](https://www.w3.org/TR/activitystreams-core/#extensibility)）。原本は `received_activity_documents` に短期間残る |
@@ -326,6 +327,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `content.favourited` / `content.unfavourited`（リモートの投稿だけ） | `Like` / `Undo Like`（本文は projector がイベントから組み立てて保存する。Mastodon と同じく宛先を持たない） | 投稿の作者の inbox |
 | `content.reacted` / `content.unreacted`（ローカルの人のリモートの投稿へのものだけ） | `content` と `_misskey_reaction`（同じ文字列。Unicode 絵文字か `:shortcode:`）を付けた `Like`、カスタム絵文字なら `tag` に `Emoji` を 1 つ（ADR-0051 の形）。`@context` に `misskey` と `_misskey_reaction` を足す。`Undo Like` はその `Like` を埋め込む（ADR-0052 §3。お気に入りと同じ `Like` の枠の活動） | 投稿の作者の inbox |
 | `content.poll_voted`（リモートの投票だけ） | 選んだ選択肢ごとに `Create`。`object` は `Note`（`id` は回答の `uri`、`name` は選択肢の題、`inReplyTo` は `Question`、`attributedTo` は回答した人、`to` は投票の作者）で、`Create` の `id` は `{Note}/activity`。Mastodon が送る形で、Mastodon・Misskey・Pleroma（Akkoma）・GoToSocial は回答として数える（FR-112）。本文は projector がイベントから組み立てて保存する | 投稿の作者の inbox |
+| `content.poll_voted`（ローカルの投票。ローカルとリモートのアカウントの回答）、`content.poll_closed`（ローカルの投票） | ジョブ `federation.poll_update`（冪等キーは投票ごと）を、回答なら 3 分後（`PollUpdateDelay`。その間の回答は 1 つの `Update` にまとまる）に、締め切りならすぐに動かす。ジョブは投票が投稿の現在版のものなら、その版の `Update` を記録する。`Question` の票数は展開がその時点の集計から組み立てる | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー）+ 回答したリモートのアカウント |
 | `graph.follow_requested` / `graph.followed`（相手がリモート） | `Follow` | 相手の inbox |
 | `graph.follow_terminated`（`unfollowed` / `blocked` / `moderation`、自分がフォローした相手がリモート） | `Undo Follow` | 相手の inbox |
 | `graph.followed` / `graph.follow_accepted` / `graph.follow_rejected`（フォローした人がリモート。相手の `Accept` / `Reject` によるものを除く） | `Accept` / `Reject` | フォローした人の inbox |
@@ -355,7 +357,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | アクティビティ | フェーズ（順に） |
 | --- | --- |
 | `Create` | 版のメンション先 → 作者の承認済みのフォロワー → （`public` だけ）参加中のリレーの inbox（§13） |
-| `Update` / `Delete` | 元の `Create` の `deliveries` → （`public` / `unlisted` だけ）その時点のフォロワー |
+| `Update` / `Delete` | 元の `Create` の `deliveries` → （`public` / `unlisted` だけ）その時点のフォロワー → （投票のある投稿の `Update` だけ）回答したアカウント（`ContextObjectFetch` で判定する。回答した人は投稿を見ているが、配送の相手とは限らないため） |
 | `Announce` / `Undo Announce` | ブーストした人の承認済みのフォロワー → 元投稿の作者 |
 | `Like` / `Undo Like`、投票への回答の `Create` | 投稿の作者 |
 | `Update`（Actor） | Actor の承認済みのフォロワー |
@@ -434,6 +436,8 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   - `Mention` は `href` が Actor の IRI、`name` が `@user@domain`（ローカルのアカウントは設定 `account_domain`）、`Hashtag` は `href` が `https://{host}/tags/{name}`（ADR-0018）、`name` が `#name` です。
   - `Emoji`（[ADR-0051](../adr/0051-custom-emoji.md) §3）は、版の本文と CW で使った有効なカスタム絵文字です。`id` はローカルなら `https://{host}/ap/emojis/{uuid}`（リモートなら記録した `uri`、無ければ省く）、`name` は `:shortcode:`、`updated` は現在の画像を設定した時刻、`icon` は `Image` で、`url` と `mediaType` は `large` の版（アニメーションなら動く版の GIF、静止画は常に PNG）です。
     ローカルの投稿とプロフィールの絵文字は、保存のときに原文の `:shortcode:` から有効なローカルの絵文字だけを版に記録したものです（data-model §4.4）。リアクション（ADR-0052）も同じ形を使います（`federation.EmojiTag`）。
+- 投票のある投稿は `Question` です（FR-112）。単一選択は `oneOf`、複数選択は `anyOf` に、選択肢ごとの `Note`（`name` は題、`replies` は `totalItems` だけの `Collection`）を載せ、`endTime`（締め切り）、締め切った後は `closed`（`endTime` と同じ時刻）、`votersCount`（`toot:votersCount`）を付けます。
+  票数は文書を組み立てる時点の集計で、作者が締め切りまで票数を隠す投票では締め切りまで 0 です。編集されていない投稿の票数の `Update` は `updated` を持たず、受け取ったサーバーは投稿を編集済みにしません（Mastodon は投票だけの更新として扱う）。
 - Note は `federation.notes`（`internal/app/federation`）の 1 か所で組み立て、配送（`Create` / `Update` の `object`）とオブジェクトの GET（§10）が同じものを使います。版のメディア・メンション先・ハッシュタグ・カスタム絵文字は `content.Reader.Parts` で引きます。
 - `@context` は AS2・security・Mastodon 拡張（`toot:`。`Emoji` は `toot:Emoji`）です（`federation.LDContext`）。配送では `proof` のために data integrity の文脈を足します（§7.3）。
 - ローカルの Actor の文書と、それを埋め込む `Update` の `@context` は、security の後に Controlled Identifiers（`https://www.w3.org/ns/cid/v1`）を足したものです（`federation.ActorLDContext`）。`assertionMethod` に Ed25519 の鍵を `Multikey`（`id` は `{actor}#ed25519-key`、`controller` は Actor、`publicKeyMultibase` は base58btc の `z6Mk…`）で載せます（FEP-521a）。RSA の鍵は `publicKey` に載せます。

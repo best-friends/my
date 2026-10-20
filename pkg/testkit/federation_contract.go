@@ -265,6 +265,11 @@ func (s *fedStatuses) AuthorRestrictions(_ context.Context, accountID string) (a
 	return s.restrictions[accountID], nil
 }
 
+// PollVoterIDs returns no voters: the contract's statuses have no polls.
+func (s *fedStatuses) PollVoterIDs(context.Context, string, string, int) ([]string, error) {
+	return nil, nil
+}
+
 func (s *fedStatuses) FindBoost(_ context.Context, id string) (appcontent.Boost, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

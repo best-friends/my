@@ -286,6 +286,9 @@ type Object struct {
 	Emojis       []Emoji
 	Attachments  []Attachment
 	Poll         *Poll
+	// Name is the name of a post that is not converted, as received, "" for none: the title of
+	// the choice that a Note in reply to a Question votes for (federation.md §3.4).
+	Name string
 	// Replies is the collection of the replies to the object, the zero Ref when it declares none.
 	Replies Ref
 }

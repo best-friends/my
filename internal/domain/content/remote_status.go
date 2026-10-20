@@ -93,7 +93,10 @@ type Poll struct {
 	Multiple bool
 	// ClosesAt is nil for a poll without an end.
 	ClosesAt *time.Time
-	Options  []PollOption
+	// HideTotals hides the counts until the poll ends (a local poll's option; a remote poll
+	// shows what its server reports).
+	HideTotals bool
+	Options    []PollOption
 }
 
 // PollOption is one choice of a poll.

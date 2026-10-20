@@ -22,6 +22,8 @@ import {
   PiBookmarkSimpleFill,
   PiCaretLeft,
   PiCaretRight,
+  PiChartBarHorizontal,
+  PiChartBarHorizontalFill,
   PiDotsThreeBold,
   PiEye,
   PiEyeSlash,
@@ -104,6 +106,12 @@ export const iconTable = {
   EyeIcon: { off: glyph(PiEye, "PiEye") },
   LanguageIcon: { off: glyph(PiTranslate, "PiTranslate") },
   EmojiIcon: { off: glyph(PiSmiley, "PiSmiley") },
+  // The bars of the results grow from the start of the line, so they mirror; filled while the post has a poll.
+  PollIcon: {
+    off: glyph(PiChartBarHorizontal, "PiChartBarHorizontal"),
+    on: glyph(PiChartBarHorizontalFill, "PiChartBarHorizontalFill"),
+    directional: true,
+  },
   // Navigation.
   HomeIcon: { off: glyph(PiHouse, "PiHouse") },
   LocalIcon: { off: glyph(PiTextAlignLeft, "PiTextAlignLeft") },
@@ -235,6 +243,11 @@ export function LanguageIcon() {
 /** A smiling face, for the button that opens the picker of custom emoji. */
 export function EmojiIcon() {
   return renderIcon(iconTable.EmojiIcon);
+}
+
+/** Bars of results, for adding a poll to a post; filled while on. */
+export function PollIcon({ filled = false }: ToggleIconProps) {
+  return renderIcon(iconTable.PollIcon, filled);
 }
 
 // Navigation.

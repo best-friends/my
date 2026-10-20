@@ -46,7 +46,8 @@ func TestStatusPoll(t *testing.T) {
 	p := s.Poll
 	if p == nil || p.Id != samplePollID || p.Multiple || !p.Expired || p.ExpiresAt == nil || !p.ExpiresAt.Equal(closesAt) ||
 		p.VotesCount != 5 || p.VotersCount == nil || *p.VotersCount != 5 || len(p.Options) != 2 ||
-		p.Options[0].Title != "Yes" || p.Options[0].VotesCount != 3 || p.Options[1].VotesCount != 2 {
+		p.Options[0].Title != "Yes" || p.Options[0].VotesCount == nil || *p.Options[0].VotesCount != 3 ||
+		p.Options[1].VotesCount == nil || *p.Options[1].VotesCount != 2 {
 		t.Fatalf("anonymous poll = %+v", p)
 	}
 	if p.Voted != nil || p.OwnVotes != nil {
@@ -56,6 +57,17 @@ func TestStatusPoll(t *testing.T) {
 	s = decodeStatus(t, e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "read", ""))
 	if p := s.Poll; p == nil || p.Voted == nil || !*p.Voted || p.OwnVotes == nil || !slices.Equal(*p.OwnVotes, []int{1}) {
 		t.Errorf("authenticated poll = %+v", s.Poll)
+	}
+
+	// A poll that hides its counts until it ends leaves out those of its options.
+	f.view = func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) {
+		view := pollView(v, closesAt, false)
+		view.Poll.Poll.HideTotals, view.Poll.TotalsHidden = true, true
+		return view, nil
+	}
+	s = decodeStatus(t, e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "", ""))
+	if p := s.Poll; p == nil || p.VotersCount == nil || *p.VotersCount != 5 || p.Options[0].VotesCount != nil || p.Options[1].VotesCount != nil {
+		t.Errorf("poll that hides its counts = %+v", s.Poll)
 	}
 
 	// A status without a poll has none.
