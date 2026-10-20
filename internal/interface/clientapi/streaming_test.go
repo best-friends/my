@@ -15,6 +15,7 @@ import (
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/interface/clientapi"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // openStream opens GET /streaming with token on a real HTTP server, so that the response
@@ -128,15 +129,26 @@ func TestStreamingHeartbeatAndTokenCheck(t *testing.T) {
 
 func TestStreamingReleasesOnDisconnectAndShutdown(t *testing.T) {
 	hub := stream.NewHub(stream.HubOptions{})
-	e := newAuthEnv(t, func(o *clientapi.Options) { o.Streams = hub })
+	m := testkit.NewMeter()
+	e := newAuthEnv(t, func(o *clientapi.Options) { o.Streams, o.Meter = hub, m })
 	srv := httptest.NewServer(e.h)
 	t.Cleanup(srv.Close)
+	user := map[string]string{"my.stream.kind": "user"}
 
 	ctx, cancel := context.WithCancel(t.Context())
 	_, _, r := openStream(ctx, t, srv, "read")
 	readLine(t, r)
+	if got := m.Sum("my.stream.connections", user); got != 1 {
+		t.Errorf("my.stream.connections = %v with a stream open, want 1", got)
+	}
 	cancel()
 	waitReleased(t, hub)
+	if got := m.Sum("my.stream.connections", user); got != 0 {
+		t.Errorf("my.stream.connections = %v after the stream ended, want 0", got)
+	}
+	if err := m.Err(); err != nil {
+		t.Error(err)
+	}
 
 	_, _, r = openStream(t.Context(), t, srv, "read")
 	readLine(t, r)

@@ -47,6 +47,9 @@ const (
 	HTTPPurposeVideo
 	// HTTPPurposeHumanCheck posts a CAPTCHA token to the service's siteverify API (ADR-0042 §3).
 	HTTPPurposeHumanCheck
+	// HTTPPurposeWebPush posts an encrypted Web Push message to a push service (RFC 8030),
+	// whose answer has no body that the server reads.
+	HTTPPurposeWebPush
 )
 
 // MaxRedirects is the number of redirects the HTTPClient follows for one request.
@@ -62,7 +65,8 @@ type HTTPLimits struct {
 }
 
 // DefaultHTTPLimits returns the limits of ADR-0019 §1 for p (ADR-0042 §3 for
-// HTTPPurposeHumanCheck), and false for an unknown purpose.
+// HTTPPurposeHumanCheck; HTTPPurposeWebPush reads at most the small error document of a push
+// service), and false for an unknown purpose.
 func DefaultHTTPLimits(p HTTPPurpose) (HTTPLimits, bool) {
 	switch p {
 	case HTTPPurposeJSON, HTTPPurposeHTML:
@@ -73,6 +77,8 @@ func DefaultHTTPLimits(p HTTPPurpose) (HTTPLimits, bool) {
 		return HTTPLimits{MaxBodyBytes: 100 << 20, Timeout: 60 * time.Second}, true
 	case HTTPPurposeHumanCheck:
 		return HTTPLimits{MaxBodyBytes: 64 << 10, Timeout: 10 * time.Second}, true
+	case HTTPPurposeWebPush:
+		return HTTPLimits{MaxBodyBytes: 64 << 10, Timeout: 30 * time.Second}, true
 	}
 	return HTTPLimits{}, false
 }

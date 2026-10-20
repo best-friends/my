@@ -25,6 +25,36 @@ Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../
 クエリ文字列は記録しない。リクエスト中のログには `request_id` が付き、同じ ID をレスポンスの `X-Request-Id` で返す。
 リクエストの `X-Request-Id` が 128 文字以内の英数字と `-_.:` だけなら、ロードバランサが振った ID としてそのまま使う。
 
+## 指標（メトリクス）
+
+設定 `metrics_exporter`（既定 `none`）でサービスの指標を出す（[ADR-0055](../adr/0055-service-observability.md)、設定は [configuration.md](../reference/configuration.md)）。
+
+| `metrics_exporter` | 経路 | 向くターゲット |
+| --- | --- | --- |
+| `none` | 出さない。計測はほぼ費用がない | Cloud Run（基盤の指標とログベースの指標で代える） |
+| `prometheus` | `metrics_listen`（既定 `127.0.0.1:9464`）の `GET /metrics`。公開の `listen` とは別のリスナーで、認証はない。どの `role` でも出す | Self-hosted（Prometheus 互換のサーバー・KEDA が scrape する） |
+| `otlp` | OTLP/HTTP で OpenTelemetry Collector へ送る。宛先は `OTEL_EXPORTER_OTLP_ENDPOINT` など OTel の標準の環境変数 | コレクターを動かせる構成 |
+| `emf` | 標準出力に CloudWatch Embedded Metric Format の JSON 行。リクエスト・ジョブの終わりに、ラベルの組ごとに 1 行 | AWS Lambda |
+
+出す指標は次のとおり。Prometheus では名前の `.` が `_` になり、単位の接尾辞（`_seconds`、Counter の `_total`）が付く。
+
+| 指標 | 種類 | ラベル |
+| --- | --- | --- |
+| `http.server.request.duration` | Histogram・秒 | `http.request.method`、`http.route`（ルートのパターンのパス。一致しないものは `other`）、`http.response.status_code`、`my.surface`（`client_api` / `admin` / `activitypub` / `oauth` / `media` / `web`） |
+| `http.server.active_requests` | UpDownCounter | `my.surface` |
+| `my.inbox.activities` | Counter | `activity.type`（既知の Activity の型か `other`）、`my.outcome`（`accepted` / `duplicate` / `rejected` / `ignored` / `error`） |
+| `my.delivery.attempts` | Counter | `my.outcome`（`success` / `retry` / `gone` / `failed`。`gone` は 410 と、利用できない・停止したサーバーで送らなかったもの） |
+| `my.delivery.duration` | Histogram・秒 | `my.outcome` |
+| `my.job.duration` | Histogram・秒 | `my.job.type`（登録済みのジョブの型か `other`）、`my.outcome`（`success` / `retry` / `dead`） |
+| `my.job.wait` | Histogram・秒 | `my.job.type` |
+| `my.timeline.delivery.lag` | Histogram・秒 | なし（ローカルの投稿の作成から、ホームタイムラインへの書き込みとストリームへの知らせまで） |
+| `my.stream.connections` | UpDownCounter | `my.stream.kind`（`user`） |
+| `my.accounts.registered` | Counter | なし |
+| `my.statuses.created` | Counter | `my.visibility` |
+
+ヘルスチェック（`/healthz`・`/readyz`）は計測しない。ラベルに連合先のドメイン・アカウント・URL・クライアント IP は入らない。
+インスタンス全体の値（キューの滞留・利用者数など）とプロセス・ランタイムの指標は、この一覧にない。
+
 ## 停止する
 
 SIGTERM または SIGINT で graceful shutdown する。

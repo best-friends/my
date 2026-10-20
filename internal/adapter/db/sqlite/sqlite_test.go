@@ -109,6 +109,13 @@ func TestNotificationContract(t *testing.T) {
 	})
 }
 
+func TestPushSubscriptionContract(t *testing.T) {
+	testkit.PushSubscriptionContract(t, func(t *testing.T) testkit.PushHarness {
+		db, _ := newTestDB(t, "", uow.Options{})
+		return testkit.PushHarness{UnitOfWork: db, Push: db.NotificationRepository()}
+	})
+}
+
 func TestFollowRepositoryContract(t *testing.T) {
 	testkit.FollowRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FollowHarness {
 		db, _ := newTestDB(t, "", opts)

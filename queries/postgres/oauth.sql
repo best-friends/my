@@ -81,3 +81,13 @@ SELECT t.id, sqlc.arg(reason)::text, sqlc.arg(revoked_at)::timestamptz FROM oaut
 WHERE t.user_id = sqlc.arg(user_id)
   AND (t.expires_at > sqlc.arg(revoked_at)::timestamptz OR t.refresh_expires_at > sqlc.arg(revoked_at)::timestamptz)
 ON CONFLICT (token_id) DO NOTHING;
+
+-- TokenFamilyActive reports whether a token of the family has no revocation and an access or
+-- refresh token that has not expired at now: whether the grant can still be used or refreshed.
+-- name: TokenFamilyActive :one
+SELECT EXISTS (
+  SELECT 1 FROM oauth_access_tokens t
+  WHERE t.family_id = sqlc.arg(family_id)
+    AND (t.expires_at > sqlc.arg(now)::timestamptz OR t.refresh_expires_at > sqlc.arg(now)::timestamptz)
+    AND NOT EXISTS (SELECT 1 FROM oauth_token_revocations r WHERE r.token_id = t.id)
+) AS active;

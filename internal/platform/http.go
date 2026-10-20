@@ -46,13 +46,15 @@ func (a *App) Handler() http.Handler {
 	mux.HandleFunc("GET "+PathLiveness, a.liveness)
 	mux.HandleFunc("GET "+PathReadiness, a.readiness)
 	var page http.Handler
+	targets := map[string]routeTarget{}
 	if a.Config.Role != config.RoleWorker {
 		for _, r := range a.routes {
 			mux.Handle(r.pattern, r.handler)
+			targets[r.pattern] = routeTarget{route: routeOf(r.pattern), surface: r.surface}
 		}
 		page = a.page
 	}
-	h := a.problemFallback(mux, page)
+	h := a.problemFallback(mux, page, targets)
 	h = a.rejectInvalidText(h)
 	h = a.clientIPs(h)
 	h = clientAPICORS(a.Config.WebOrigin, h)
@@ -171,10 +173,22 @@ func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status 
 }
 
 // problemFallback serves mux, replacing its plain-text 404 and 405 responses with problem
-// documents, or the 404 of a GET request with page when there is one.
-func (a *App) problemFallback(mux *http.ServeMux, page http.Handler) http.Handler {
+// documents, or the 404 of a GET request with page when there is one. With the HTTP metrics, it
+// counts the request as active under the surface of its route (targets, by pattern), or of the
+// web for the requests that no route serves, and passes the route to the access log; the health
+// checks are not measured.
+func (a *App) problemFallback(mux *http.ServeMux, page http.Handler, targets map[string]routeTarget) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h, pattern := mux.Handler(r)
+		if a.http != nil {
+			t, ok := targets[pattern]
+			if !ok {
+				t = routeTarget{route: routeOther, surface: surfaceWeb}
+			}
+			if pattern == "" || ok {
+				defer a.http.begin(r, t)()
+			}
+		}
 		if pattern != "" {
 			mux.ServeHTTP(w, r) // sets the request's pattern and path values
 			return
@@ -352,10 +366,23 @@ func validRequestID(id string) bool {
 
 // accessLog logs one line per request. It logs the path without the query string, which may
 // carry tokens, and logs the health checks at debug level, since probes call them constantly.
+// With the HTTP metrics, it also records the request's http.server.request.duration in a unit
+// of work of the Meter (ADR-0055 §3), under the route that problemFallback found.
 func (a *App) accessLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		if a.http != nil {
+			ctx, end := a.Meter.Begin(r.Context())
+			defer end()
+			rr := &requestRoute{}
+			r = r.WithContext(context.WithValue(ctx, requestRouteKey{}, rr))
+			defer func() {
+				if rr.route != "" {
+					a.http.record(ctx, r, rr, rw.status, time.Since(start))
+				}
+			}()
+		}
 		next.ServeHTTP(rw, r)
 		level := slog.LevelInfo
 		if r.URL.Path == PathLiveness || r.URL.Path == PathReadiness {

@@ -552,6 +552,17 @@ type PollTallyObservationCount struct {
 	Votes         int64
 }
 
+type PushSubscription struct {
+	ID                 string
+	AccountID          string
+	OauthTokenFamilyID string
+	Endpoint           string
+	KeyP256dh          string
+	KeyAuth            string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
+}
+
 type ReceivedActivity struct {
 	ActivityUri     string
 	ActorUri        string
