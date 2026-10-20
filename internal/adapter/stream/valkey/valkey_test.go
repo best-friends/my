@@ -45,8 +45,12 @@ func TestStreamBusContractMiniredis(t *testing.T) {
 	})
 }
 
-// The contract on a Valkey server (pkg/testkit/valkeytest), skipped without Docker.
+// The contract on a Valkey server (pkg/testkit/valkeytest), only with TEST_STREAM=container
+// (make go-test-stream; CI on main and nightly, ADR-0050 §5): pull requests run it on miniredis.
 func TestStreamBusContractValkey(t *testing.T) {
+	if os.Getenv("TEST_STREAM") != "container" {
+		t.Skip("the Valkey server runs with TEST_STREAM=container (make go-test-stream)")
+	}
 	testkit.StreamBusContract(t, func(t *testing.T) testkit.StreamBus {
 		s := valkeytest.New(t)
 		// The connections of the test carry a name of the test's own, by which Break finds the

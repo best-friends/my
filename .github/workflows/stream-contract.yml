@@ -1,0 +1,41 @@
+name: Stream contract
+
+# The stream.Bus contracts of internal/adapter/stream on broker containers (the valkey/valkey container of
+# pkg/testkit/valkeytest) instead of the in-process fakes (miniredis) that pull requests and merge groups run in
+# ctx-go.yml's go-test job (ADR-0050 §5). Called by main.yml on the pushes to main that touch a path they depend on
+# and by nightly.yml.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  # Use exactly the Go version from .tool-versions; never auto-download another toolchain.
+  GOTOOLCHAIN: local
+
+jobs:
+  stream-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: .tool-versions
+          cache: false
+      # The go-test cache that main.yml saves, without saving one.
+      - name: Restore the Go module and build cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-${{ github.sha }}
+          restore-keys: |
+            go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
+            go-test-${{ runner.os }}-
+      # testcontainers-go starts the brokers on the runner's Docker; the target makes a missing Docker fail the job
+      # instead of skipping the tests.
+      - name: make go-test-stream
+        run: make go-test-stream
