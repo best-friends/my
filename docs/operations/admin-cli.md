@@ -5,7 +5,7 @@
 ## 前提
 
 - 設定（`host`・`db`・`database_url`・`kek` など）が [設定リファレンス](../reference/configuration.md) どおりに与えられている。`my config check` で確かめられる。
-- DB にスキーマが適用済み（Atlas で `schema/<dialect>.sql` を適用する。[ADR-0023](../adr/0023-declarative-schema-management.md)）。
+- DB にスキーマが適用済み（Atlas で `schema/<dialect>.sql` を適用する。[DB の初期化と作り直し](database.md)）。
 
 ## 作る
 
