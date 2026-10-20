@@ -380,11 +380,12 @@ describe("the hashtag timeline", () => {
 });
 
 describe("the home timeline", () => {
-  test("offers to sign in without a session", async () => {
-    await renderApp({ path: "/home" });
+  test("sends to sign in without a session, and back here after it", async () => {
+    const { router } = await renderApp({ path: "/home" });
 
-    expect(await screen.findByRole("heading", { level: 2, name: "You are not signed in" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?return_to=%2Fhome");
+    expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/login");
+    expect(router.state.location.search).toEqual({ return_to: "/home" });
   });
 
   test("shows the signed-in user's timeline", async () => {

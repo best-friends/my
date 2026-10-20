@@ -3098,8 +3098,6 @@ export interface MessageArgs {
   "client:profile.remote.original": { host: string };
   /** Sign in to follow */
   "client:profile.sign_in_to_follow": {};
-  /** Sign in to see your profile. */
-  "client:profile.signed_out.description": {};
   /** Without boosts */
   "client:profile.tab.no_boosts": {};
   /** Posts */
@@ -3934,6 +3932,8 @@ export interface MessageArgs {
   "client:shell.menu.close": {};
   /** Menu */
   "client:shell.menu.title": {};
+  /** About */
+  "client:shell.nav.about": {};
   /** Administration */
   "client:shell.nav.admin": {};
   /** Bookmarks */
@@ -3964,6 +3964,10 @@ export interface MessageArgs {
   "client:shell.nav.search": {};
   /** Settings */
   "client:shell.nav.settings": {};
+  /** Sign in */
+  "client:shell.nav.sign_in": {};
+  /** Sign up */
+  "client:shell.nav.sign_up": {};
   /** The account you are signed in with */
   "client:shell.nav.viewer": {};
   /** There is no page at this address. */

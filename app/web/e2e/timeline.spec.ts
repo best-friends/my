@@ -232,9 +232,11 @@ test.describe("the hashtag timeline", () => {
   });
 });
 
-test("the home timeline offers to sign in without a session", async ({ page, makeAxeBuilder }) => {
+test("the home timeline sends to sign in without a session, to come back afterwards", async ({ page, makeAxeBuilder }) => {
   await page.goto("/home");
-  await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/login?return_to=%2Fhome");
+  await expect(page).toHaveURL(/\/login\?/);
+  expect(new URL(page.url()).searchParams.get("return_to")).toBe("/home");
+  await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);
 });

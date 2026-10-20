@@ -5791,10 +5791,6 @@
     "defaultMessage": "ログインしてフォロー",
     "description": "Link on a profile when nobody is signed in: it opens the sign-in page and comes back."
   },
-  "profile.signed_out.description": {
-    "defaultMessage": "ログインすると自分のプロフィールを見られます。",
-    "description": "Text of the Profile page of the navigation when nobody is signed in, above the sign-in link."
-  },
   "profile.tab.no_boosts": {
     "defaultMessage": "ブーストを除く",
     "description": "Tab of a profile: only the posts the account wrote itself, without replies and boosts."
@@ -7331,6 +7327,10 @@
     "defaultMessage": "メニュー",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.about": {
+    "defaultMessage": "サーバー情報",
+    "description": "Navigation item, shown while nobody is signed in, that opens the page about this server. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
   "shell.nav.admin": {
     "defaultMessage": "管理",
     "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
@@ -7390,6 +7390,14 @@
   "shell.nav.settings": {
     "defaultMessage": "設定",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Navigation item, shown while nobody is signed in, that opens the sign-in page and comes back to the current page. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
+  "shell.nav.sign_up": {
+    "defaultMessage": "新規登録",
+    "description": "Navigation item, shown while nobody is signed in and the server takes new accounts, that opens the server's registration page. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.viewer": {
     "defaultMessage": "サインインしているアカウント",

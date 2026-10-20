@@ -118,8 +118,9 @@ test("opens another page offline with its heading under the offline bar, which g
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
   await context.setOffline(true);
 
-  await page.getByRole("navigation").locator('a[href="/notifications"]').click();
-  await expect(page.getByRole("main").getByRole("heading", { level: 1, name: "Notifications" })).toBeVisible();
+  // Signed out (no session here): the navigation has the pages usable without one.
+  await page.getByRole("navigation").locator('a[href="/search"]').click();
+  await expect(page.getByRole("main").getByRole("heading", { level: 1, name: "Search" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "You are offline." })).toBeVisible();
 
   await context.setOffline(false);
