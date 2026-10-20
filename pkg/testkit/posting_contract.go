@@ -66,6 +66,7 @@ func PostingContract(t *testing.T, newHarness PostingFactory) {
 		{"UsesTheDefaultLanguage", postingDefaultLanguage},
 		{"EditsIntoNewRevisions", postingEdits},
 		{"AttachesOwnProcessedMedia", postingAttachesMedia},
+		{"RequiresMediaDescriptions", postingRequiresDescriptions},
 		{"DeletesIntoATombstone", postingDeletes},
 		{"CarriesOutModerationOnStatuses", postingModeration},
 	}
@@ -222,19 +223,20 @@ func newPostingEnv(t *testing.T, newHarness PostingFactory) *postingEnv {
 		inTx: inTx, actors: map[string]appaccount.RemoteActorInput{},
 	}
 	e.content = appcontent.NewService(appcontent.Deps{
-		UnitOfWork:      trackingUnitOfWork{UnitOfWork: ph.UnitOfWork, inTx: inTx},
-		Repository:      ph.Statuses,
-		Accounts:        ae.accounts,
-		Relationships:   e.graph,
-		Restrictions:    e.restrictions,
-		Media:           ph.Media,
-		RemoteMentions:  e.remote,
-		MaxStatusLength: e.instance.MaxStatusLength,
-		DefaultLanguage: func(_ context.Context, userID string) (string, error) { return e.languages[userID], nil },
-		Clock:           ae.clock,
-		IDs:             ae.ids,
-		Host:            contractHost,
-		AccountDomain:   "example.org",
+		UnitOfWork:              trackingUnitOfWork{UnitOfWork: ph.UnitOfWork, inTx: inTx},
+		Repository:              ph.Statuses,
+		Accounts:                ae.accounts,
+		Relationships:           e.graph,
+		Restrictions:            e.restrictions,
+		Media:                   ph.Media,
+		RemoteMentions:          e.remote,
+		MaxStatusLength:         e.instance.MaxStatusLength,
+		RequireMediaDescription: e.instance.RequireMediaDescription,
+		DefaultLanguage:         func(_ context.Context, userID string) (string, error) { return e.languages[userID], nil },
+		Clock:                   ae.clock,
+		IDs:                     ae.ids,
+		Host:                    contractHost,
+		AccountDomain:           "example.org",
 	})
 	return e
 }
@@ -919,4 +921,52 @@ func postingAttachesMedia(t *testing.T, e *postingEnv) {
 	if err != nil || !reflect.DeepEqual(edited.Revision.Attachments, []content.Attachment{{Position: 0, MediaID: first, Description: "a dog"}}) {
 		t.Errorf("Edit = %+v, %v; want the one attachment", edited.Revision.Attachments, err)
 	}
+}
+
+// postingRequiresDescriptions checks the require_media_description setting (FR-105): while it is
+// on, a post or an edit with a media file without an alt text, or with one of only spaces, fails,
+// and one whose every file has an alt text succeeds; turning it off accepts files without one.
+func postingRequiresDescriptions(t *testing.T, e *postingEnv) {
+	ctx := t.Context()
+	alice := e.user(t, "alice")
+	first, second := e.upload(t, alice, content.MediaReady), e.upload(t, alice, content.MediaReady)
+	p := e.post(t, appcontent.CreateInput{
+		AuthorAccountID: alice, Visibility: content.VisibilityPublic,
+		TextInput: appcontent.TextInput{Text: "before", Media: []appcontent.MediaInput{{MediaID: first}}},
+	})
+	set := func(v string) {
+		t.Helper()
+		if _, err := e.instance.SetSetting(ctx, appinstance.SetSettingInput{Key: instance.SettingRequireMediaDescription, Value: v}); err != nil {
+			t.Fatalf("SetSetting(require_media_description, %s) = %v", v, err)
+		}
+	}
+	set("true")
+	for name, media := range map[string][]appcontent.MediaInput{
+		"no description":          {{MediaID: first}},
+		"a blank description":     {{MediaID: first, Description: " \n\t"}},
+		"one file of two without": {{MediaID: first, Description: "a cat"}, {MediaID: second}},
+	} {
+		_, err := e.content.Create(ctx, appcontent.CreateInput{
+			AuthorAccountID: alice, Visibility: content.VisibilityPublic, TextInput: appcontent.TextInput{Text: "x", Media: media},
+		})
+		if !errors.Is(err, appcontent.ErrMissingMediaDescription) {
+			t.Errorf("Create with %s = %v, want ErrMissingMediaDescription", name, err)
+		}
+		_, err = e.content.Edit(ctx, appcontent.EditInput{AccountID: alice, StatusID: p.Status.ID, TextInput: appcontent.TextInput{Text: "x", Media: media}})
+		if !errors.Is(err, appcontent.ErrMissingMediaDescription) {
+			t.Errorf("Edit with %s = %v, want ErrMissingMediaDescription", name, err)
+		}
+	}
+	described := []appcontent.MediaInput{{MediaID: first, Description: "a cat"}, {MediaID: second, Description: "a dog"}}
+	if _, err := e.content.Edit(ctx, appcontent.EditInput{AccountID: alice, StatusID: p.Status.ID, TextInput: appcontent.TextInput{Text: "described", Media: described}}); err != nil {
+		t.Errorf("Edit with descriptions = %v", err)
+	}
+	e.post(t, appcontent.CreateInput{AuthorAccountID: alice, Visibility: content.VisibilityPublic, TextInput: appcontent.TextInput{Text: "described", Media: described}})
+	e.postText(t, alice, "no media", content.VisibilityPublic)
+
+	set("false")
+	e.post(t, appcontent.CreateInput{
+		AuthorAccountID: alice, Visibility: content.VisibilityPublic,
+		TextInput: appcontent.TextInput{Text: "after", Media: []appcontent.MediaInput{{MediaID: second}}},
+	})
 }

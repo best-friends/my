@@ -2116,6 +2116,12 @@ export interface MessageArgs {
   "client:admin.settings.policies.saved": {};
   /** The settings are already saved. */
   "client:admin.settings.policies.unchanged": {};
+  /** Require a description of every image */
+  "client:admin.settings.posts.require_media_description": {};
+  /** Posts and edits with an image without a description (alt text) are refused, so that people who cannot see the images can follow every post. */
+  "client:admin.settings.posts.require_media_description.description": {};
+  /** Posts */
+  "client:admin.settings.posts.title": {};
   /** With approval */
   "client:admin.settings.registration.approval": {};
   /** Anyone may sign up with a reason; the account works once a moderator approves it. */
@@ -2664,8 +2670,12 @@ export interface MessageArgs {
   "client:compose.media.description.hint": {};
   /** Description of image {position} */
   "client:compose.media.description.label": { position: string };
+  /** Add a description of this image. This server requires one for every image. */
+  "client:compose.media.description.missing": {};
   /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
   "client:compose.media.description.required": {};
+  /** Describe the image for people who cannot see it. This server requires a description of every image. */
+  "client:compose.media.description.server_required": {};
   /** Could not attach the image: {reason} */
   "client:compose.media.failed": { reason: string };
   /** The server could not process this image. */
@@ -4390,6 +4400,8 @@ export interface MessageArgs {
   "server:errors.status.media_not_found": {};
   /** An attached file is still being processed or could not be processed. */
   "server:errors.status.media_not_ready": {};
+  /** This server requires a description (alt text) for every image. Add one to each image before posting. */
+  "server:errors.status.missing_media_description": {};
   /** Only the author can change this post. */
   "server:errors.status.not_author": {};
   /** This post cannot be boosted. */

@@ -1250,6 +1250,13 @@ func (l *Localizer) ServerErrorsStatusMediaNotReady() string {
 	return l.format("server:errors.status.media_not_ready", nil)
 }
 
+// ServerErrorsStatusMissingMediaDescription formats "server:errors.status.missing_media_description". Detail of the HTTP 422 API error when an attached image has no alternative text while the server requires one for every image (the instance setting require_media_description).
+//
+//	en: This server requires a description (alt text) for every image. Add one to each image before posting.
+func (l *Localizer) ServerErrorsStatusMissingMediaDescription() string {
+	return l.format("server:errors.status.missing_media_description", nil)
+}
+
 // ServerErrorsStatusNotAuthor formats "server:errors.status.not_author". Detail of the HTTP 403 API error when a user tries to edit or delete another account's post.
 //
 //	en: Only the author can change this post.

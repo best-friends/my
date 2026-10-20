@@ -106,6 +106,16 @@ func (s *Service) MaxStatusLength(ctx context.Context) (int, error) {
 	return settings.MaxStatusLength(), nil
 }
 
+// RequireMediaDescription returns the current value of the require_media_description setting
+// (FR-105).
+func (s *Service) RequireMediaDescription(ctx context.Context) (bool, error) {
+	settings, err := s.Settings(ctx)
+	if err != nil {
+		return false, err
+	}
+	return settings.RequireMediaDescription(), nil
+}
+
 // AuthorizedFetch returns the current value of the authorized_fetch setting (FR-408).
 func (s *Service) AuthorizedFetch(ctx context.Context) (bool, error) {
 	settings, err := s.Settings(ctx)

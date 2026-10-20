@@ -55,6 +55,9 @@ var (
 	// ErrInvalidMediaDescription reports an alt text longer than MaxMediaDescription, or one
 	// that is not valid UTF-8 or contains a NUL character.
 	ErrInvalidMediaDescription = errors.New("content: the media description is not valid")
+	// ErrMissingMediaDescription reports an attachment without an alt text while the instance
+	// requires one (the require_media_description setting, FR-105).
+	ErrMissingMediaDescription = errors.New("content: the media file has no description")
 )
 
 // TextTooLongError is the ErrTextTooLong of one post, with the limit in effect.
@@ -133,6 +136,9 @@ type Deps struct {
 	// MaxStatusLength returns the current max_status_length instance setting (FR-101); it is
 	// read per command, so that changes apply at once.
 	MaxStatusLength func(ctx context.Context) (int, error)
+	// RequireMediaDescription returns the current require_media_description instance setting
+	// (FR-105), read per command; nil requires no alt text.
+	RequireMediaDescription func(ctx context.Context) (bool, error)
 	// DefaultLanguage returns the default post language of a user (FR-110), used when a post
 	// names none; nil or UndeterminedLanguage leaves the language undetermined.
 	DefaultLanguage func(ctx context.Context, userID string) (string, error)
@@ -613,13 +619,20 @@ func (s *Service) RenderProfileText(ctx context.Context, text string) (string, e
 
 // attachments checks the media files that authorID attaches (FR-105): at most MaxAttachments
 // distinct files, each an upload of authorID whose newest processing result is ready, with a
-// valid alt text.
+// valid alt text, which must not be blank while the instance requires alt text.
 func (s *Service) attachments(ctx context.Context, authorID string, in []MediaInput) ([]content.Attachment, error) {
 	if len(in) == 0 {
 		return nil, nil
 	}
 	if len(in) > MaxAttachments {
 		return nil, fmt.Errorf("%w: %d, at most %d", ErrTooManyMedia, len(in), MaxAttachments)
+	}
+	requireDescription := false
+	if s.d.RequireMediaDescription != nil {
+		var err error
+		if requireDescription, err = s.d.RequireMediaDescription(ctx); err != nil {
+			return nil, err
+		}
 	}
 	out := make([]content.Attachment, 0, len(in))
 	for i, m := range in {
@@ -629,6 +642,9 @@ func (s *Service) attachments(ctx context.Context, authorID string, in []MediaIn
 		d := m.Description
 		if !content.ValidText(d) || utf8.RuneCountInString(d) > MaxMediaDescription {
 			return nil, fmt.Errorf("media %s: %w", m.MediaID, ErrInvalidMediaDescription)
+		}
+		if requireDescription && strings.TrimSpace(d) == "" {
+			return nil, fmt.Errorf("media %s: %w", m.MediaID, ErrMissingMediaDescription)
 		}
 		if err := s.checkMedia(ctx, authorID, m.MediaID); err != nil {
 			return nil, err

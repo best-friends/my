@@ -711,6 +711,10 @@
     "defaultMessage": "‮∀u ɐʇʇɐɔɥǝp ɟıʅǝ ıs sʇıʅʅ qǝıuƃ dɹoɔǝssǝp oɹ ɔonʅp uoʇ qǝ dɹoɔǝssǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ɐ pǝsɔɹıdʇıou (ɐʅʇ ʇǝxʇ) ɟoɹ ǝʌǝɹʎ ıɯɐƃǝ. ∀pp ouǝ ʇo ǝɐɔɥ ıɯɐƃǝ qǝɟoɹǝ dosʇıuƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.not_author": {
     "defaultMessage": "‮Ouʅʎ ʇɥǝ ɐnʇɥoɹ ɔɐu ɔɥɐuƃǝ ʇɥıs dosʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

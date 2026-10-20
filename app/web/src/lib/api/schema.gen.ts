@@ -3549,6 +3549,12 @@ export interface components {
         InstanceLimits: {
             /** @description The maximum number of characters in the text and content warning of a post. */
             max_post_characters: number;
+            /**
+             * @description Whether every media file attached to a post needs an alternative text (the instance
+             *     setting `require_media_description`, FR-105). While it is on, a post or an edit with
+             *     a media file without one is a 422, so clients ask for it before sending.
+             */
+            require_media_description: boolean;
         };
         /**
          * @description Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
@@ -4438,7 +4444,11 @@ export interface components {
         /** @description A media file to attach, with its alternative text. */
         StatusMediaItem: {
             id: components["schemas"]["Id"];
-            /** @description The alternative text; omitted or empty for none. */
+            /**
+             * @description The alternative text; omitted or empty for none. While the instance requires alt
+             *     text (`limits.require_media_description` of `GET /instance`), a post or an edit
+             *     whose media file has none, or only spaces, is a 422.
+             */
             description?: string;
         };
         /** @description An account that a status mentions. */
@@ -6270,7 +6280,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.

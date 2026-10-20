@@ -5148,12 +5148,18 @@ components:
     InstanceLimits:
       description: Limits that clients check before sending a request.
       type: object
-      required: [max_post_characters]
+      required: [max_post_characters, require_media_description]
       properties:
         max_post_characters:
           description: The maximum number of characters in the text and content warning of a post.
           type: integer
           minimum: 1
+        require_media_description:
+          description: |
+            Whether every media file attached to a post needs an alternative text (the instance
+            setting `require_media_description`, FR-105). While it is on, a post or an edit with
+            a media file without one is a 422, so clients ask for it before sending.
+          type: boolean
     InstanceTimelines:
       description: |
         Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
@@ -6452,7 +6458,10 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         description:
-          description: The alternative text; omitted or empty for none.
+          description: |
+            The alternative text; omitted or empty for none. While the instance requires alt
+            text (`limits.require_media_description` of `GET /instance`), a post or an edit
+            whose media file has none, or only spaces, is a 422.
           type: string
           maxLength: 1500
     StatusMention:
@@ -9288,6 +9297,7 @@ components:
         - ai_usage
         - indexable_default
         - security_contact
+        - require_media_description
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from

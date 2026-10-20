@@ -4227,6 +4227,18 @@
     "defaultMessage": "‮⊥ɥǝ sǝʇʇıuƃs ɐɹǝ ɐʅɹǝɐpʎ sɐʌǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.posts.require_media_description": {
+    "defaultMessage": "‮ᴚǝbnıɹǝ ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ıɯɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.posts.require_media_description.description": {
+    "defaultMessage": "‮Ԁosʇs ɐup ǝpıʇs ʍıʇɥ ɐu ıɯɐƃǝ ʍıʇɥonʇ ɐ pǝsɔɹıdʇıou (ɐʅʇ ʇǝxʇ) ɐɹǝ ɹǝɟnsǝp, so ʇɥɐʇ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ʇɥǝ ıɯɐƃǝs ɔɐu ɟoʅʅoʍ ǝʌǝɹʎ dosʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.posts.title": {
+    "defaultMessage": "‮Ԁosʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.registration.approval": {
     "defaultMessage": "‮Mıʇɥ ɐddɹoʌɐʅ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -5323,8 +5335,16 @@
     "defaultMessage": "‮ᗡǝsɔɹıdʇıou oɟ ıɯɐƃǝ {position}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.media.description.missing": {
+    "defaultMessage": "‮∀pp ɐ pǝsɔɹıdʇıou oɟ ʇɥıs ıɯɐƃǝ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ouǝ ɟoɹ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.media.description.required": {
     "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ. ⅄onɹ sǝʇʇıuƃs ɐsʞ ɟoɹ ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.media.description.server_required": {
+    "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ıɯɐƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.failed": {

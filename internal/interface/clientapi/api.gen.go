@@ -1102,6 +1102,7 @@ const (
 	InstanceSettingKeyRegistrationMode                 InstanceSettingKey = "registration_mode"
 	InstanceSettingKeyRemoteMediaCacheTtl              InstanceSettingKey = "remote_media_cache_ttl"
 	InstanceSettingKeyRemoteMediaPolicy                InstanceSettingKey = "remote_media_policy"
+	InstanceSettingKeyRequireMediaDescription          InstanceSettingKey = "require_media_description"
 	InstanceSettingKeyRetentionAuditLog                InstanceSettingKey = "retention_audit_log"
 	InstanceSettingKeyRetentionModerationActions       InstanceSettingKey = "retention_moderation_actions"
 	InstanceSettingKeyRetentionRegistrationOrigins     InstanceSettingKey = "retention_registration_origins"
@@ -1146,6 +1147,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyRemoteMediaCacheTtl:
 		return true
 	case InstanceSettingKeyRemoteMediaPolicy:
+		return true
+	case InstanceSettingKeyRequireMediaDescription:
 		return true
 	case InstanceSettingKeyRetentionAuditLog:
 		return true
@@ -4068,6 +4071,11 @@ type InstanceDomainActionPage struct {
 type InstanceLimits struct {
 	// MaxPostCharacters The maximum number of characters in the text and content warning of a post.
 	MaxPostCharacters int `json:"max_post_characters"`
+
+	// RequireMediaDescription Whether every media file attached to a post needs an alternative text (the instance
+	// setting `require_media_description`, FR-105). While it is on, a post or an edit with
+	// a media file without one is a 422, so clients ask for it before sending.
+	RequireMediaDescription bool `json:"require_media_description"`
 }
 
 // InstanceRegistrations How people sign up on the instance.
@@ -5215,7 +5223,9 @@ type StatusMediaInput = []StatusMediaItem
 
 // StatusMediaItem A media file to attach, with its alternative text.
 type StatusMediaItem struct {
-	// Description The alternative text; omitted or empty for none.
+	// Description The alternative text; omitted or empty for none. While the instance requires alt
+	// text (`limits.require_media_description` of `GET /instance`), a post or an edit
+	// whose media file has none, or only spaces, is a 422.
 	Description *string `json:"description,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
