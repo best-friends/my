@@ -1,9 +1,45 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The app shell in every width × locale project (ADR-0027): the layout of each page, its landmarks, and
 // what a navigation does to focus and the document title (web-client.md Y5). Names change with the
-// locale, so elements are found by role and position, and texts are compared with each other.
-import type { Page } from "@playwright/test";
+// locale, so elements are found by role and position, and texts are compared with each other. The user's
+// navigation needs a session: `vite preview` has no API, so serveSignedIn answers as a signed-in user's server.
+import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, imageVariants, test } from "./fixtures";
+
+/** Alice, the signed-in user. */
+const alice = {
+  id: "0192f0c4-7a8e-7000-8000-000000000001",
+  username: "alice",
+  acct: "alice",
+  domain: "my.example",
+  uri: "https://my.example/ap/actors/0192f0c4-7a8e-7000-8000-000000000001",
+  display_name: "Alice",
+  note: "",
+  fields: [],
+  emojis: [],
+  url: "https://my.example/@alice",
+  locked: false,
+  bot: false,
+  created_at: "2026-10-01T00:00:00Z",
+};
+
+/**
+ * Answers the session refresh and the client API as the server of `account` would: the account, no notifications
+ * and empty timelines and lists. Everything else is a 404, GET /instance included, so the navigation has no
+ * Federated (the server does not say that it serves it).
+ */
+async function serveSignedIn(page: Page, account: Record<string, unknown> = alice): Promise<void> {
+  const json = (route: Route, body: unknown, status = 200) =>
+    route.fulfill({ status, contentType: status < 400 ? "application/json" : "application/problem+json", body: JSON.stringify(body) });
+  await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 }));
+  await page.route("**/api/v1/**", (route) => {
+    const path = new URL(route.request().url()).pathname.replace("/api/v1", "");
+    if (path === "/accounts/verify_credentials" || path === "/accounts/lookup") return json(route, account);
+    if (path === "/notifications/marker") return json(route, { last_read_id: "0", unread_count: 0 });
+    if (path.startsWith("/timelines/") || path === "/notifications" || path.endsWith("/statuses")) return json(route, { items: [] });
+    return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
+  });
+}
 
 /** Every page of the shell, in the order of the navigation. */
 const pages = ["/home", "/local", "/notifications", "/search", "/profile", "/settings"] as const;
@@ -32,6 +68,7 @@ function escapeRegExp(text: string): string {
 for (const path of pages) {
   test.describe(`page ${path}`, () => {
     test.beforeEach(async ({ page }) => {
+      await serveSignedIn(page);
       await page.goto(path);
       await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
     });
@@ -64,7 +101,7 @@ for (const path of pages) {
   });
 }
 
-// The sign-in page is outside the navigation; vite preview has no OAuth endpoints, so no session resumes.
+// Signed out: vite preview has no OAuth endpoints, so no session resumes.
 test.describe("page /login", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/login");
@@ -82,10 +119,50 @@ test.describe("page /login", () => {
   test("offers the one button to the server's sign-in screen", async ({ page }) => {
     await expect(page.getByRole("main").getByRole("button")).toHaveCount(1);
   });
+
+  test("marks the navigation's sign-in item as current", async ({ page }) => {
+    const current = page.locator('nav a[aria-current="page"]').filter({ visible: true });
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveAttribute("href", /^\/login/);
+  });
+});
+
+test.describe("the navigation while signed out", () => {
+  test("offers only the pages usable without a session and signing in, without axe violations", async ({ page, makeAxeBuilder }) => {
+    await page.goto("/local");
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+    // Local, Search, About and Sign in, and on phones the Menu button (the instance answers nothing here, so no
+    // Federated and no Sign up).
+    const items = hasTabBar(page) ? ["link", "link", "link", "link", "button"] : ["link", "link", "link", "link"];
+    await expect(page.getByRole("navigation")).toMatchAriaSnapshot(`
+      - navigation:
+        - list:
+          - /children: equal
+${items.map((role) => `          - listitem:\n            - ${role}`).join("\n")}
+    `);
+    const links = shownItems(page).locator("a");
+    await expect(links.nth(0)).toHaveAttribute("href", "/local");
+    await expect(links.nth(1)).toHaveAttribute("href", "/search");
+    await expect(links.nth(2)).toHaveAttribute("href", "/about");
+    await expect(links.nth(3)).toHaveAttribute("href", "/login?return_to=%2Flocal");
+    for (const path of ["/home", "/notifications", "/profile", "/bookmarks", "/settings"]) {
+      await expect(page.getByRole("navigation").locator(`a[href="${path}"]`)).toHaveCount(0);
+    }
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("sends a page that needs a session to sign in, which comes back to it", async ({ page }) => {
+    await page.goto("/notifications");
+    await expect(page).toHaveURL(/\/login\?/);
+    expect(new URL(page.url()).searchParams.get("return_to")).toBe("/notifications");
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+  });
 });
 
 test.describe("layout", () => {
   test.beforeEach(async ({ page }) => {
+    await serveSignedIn(page);
     await page.goto("/home");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });
@@ -229,6 +306,7 @@ ${Array.from({ length: 7 }, () => "          - listitem:\n            - link").j
 
 test.describe("navigation", () => {
   test("moves focus to the new page's heading and retitles the document", async ({ page, hasTouch }) => {
+    await serveSignedIn(page);
     await page.goto("/home");
     const firstHeading = await page.getByRole("heading", { level: 1 }).textContent();
     await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
@@ -247,6 +325,7 @@ test.describe("navigation", () => {
   });
 
   test("works from the keyboard, and back and forward keep focus on the page's heading", async ({ page }) => {
+    await serveSignedIn(page);
     await page.goto("/home");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
@@ -271,6 +350,7 @@ test.describe("navigation", () => {
 test.describe("the menu of the phones' tab bar", () => {
   test.beforeEach(async ({ page }) => {
     test.skip(!hasTabBar(page), "the rail from md has every item and no menu");
+    await serveSignedIn(page);
     await page.goto("/home");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   });

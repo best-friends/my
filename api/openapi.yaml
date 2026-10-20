@@ -3410,6 +3410,38 @@ paths:
           $ref: "#/components/responses/CustomEmojiProblem"
         default:
           $ref: "#/components/responses/Problem"
+  /admin/custom_emojis/{id}/copy:
+    post:
+      operationId: copyCustomEmoji
+      summary: Copy a remote custom emoji into a local one
+      description: |
+        Registers a new local emoji with the image of a remote emoji, under the shortcode of the
+        request or the remote one's. The image is fetched through the media proxy, so the
+        instance does not fetch the media of a domain whose media it rejects, and is checked as
+        the image of a new emoji (`createCustomEmoji`); it shrinks into the boxes of an emoji.
+        The new emoji is in the picker, without a category or aliases. A local emoji is a 422
+        with the reason `local_emoji`; an image that cannot be fetched is a 422 with the reason
+        `fetch_failed`; a shortcode or an image that does not qualify is a 422 whose `reason`
+        says which, and keeps nothing of the copy. The copy is recorded in the audit log
+        (`custom_emoji_copied` on the new emoji). An unknown ID is a 404. Needs the
+        `manage_custom_emojis` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/CustomEmojiId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopyCustomEmojiRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminCustomEmoji"
+        "422":
+          $ref: "#/components/responses/CustomEmojiProblem"
+        default:
+          $ref: "#/components/responses/Problem"
   # --- end of admin: custom emoji (#621) ---
   # --- admin: instance texts (#489) ---
   /admin/instance_texts:
@@ -7565,6 +7597,7 @@ components:
         `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
         `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
         `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+        `custom_emoji_copied` (a new local emoji copied from a remote one),
         `custom_emoji_updated` (its category, aliases, or place in the picker),
         `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
         `webhook_created`, `webhook_updated` (its URL, description, or events),
@@ -7609,6 +7642,7 @@ components:
         - password_reset_link_issued
         - custom_emoji_created
         - custom_emoji_image_replaced
+        - custom_emoji_copied
         - custom_emoji_updated
         - custom_emoji_enabled
         - custom_emoji_disabled
@@ -8534,6 +8568,17 @@ components:
             type: string
             minLength: 2
             maxLength: 30
+    CopyCustomEmojiRequest:
+      description: The local custom emoji that a copy of a remote one becomes.
+      type: object
+      properties:
+        shortcode:
+          description: |
+            The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+            underscores; case matters. Absent, the remote emoji's.
+          type: string
+          minLength: 2
+          maxLength: 30
     ReplaceCustomEmojiImageRequest:
       description: The new image of a local custom emoji.
       type: object
@@ -8561,7 +8606,9 @@ components:
         file is not an upload of the user. `media_not_ready`: it has not finished processing.
         `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
         than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-        `remote_emoji`: the operation is for local emoji only.
+        `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+        for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+        fetched (its server did not return it, or the instance rejects the media of its domain).
       type: string
       enum:
         - invalid_shortcode
@@ -8574,6 +8621,8 @@ components:
         - too_large
         - too_big
         - remote_emoji
+        - local_emoji
+        - fetch_failed
     # --- end of admin: custom emoji (#621) ---
     # --- admin: webhooks (#666) ---
     WebhookEventType:
@@ -8907,8 +8956,8 @@ components:
             operation:
               description: |
                 The operation, named as in the audit log: `custom_emoji_created`,
-                `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
-                `custom_emoji_disabled`, or `custom_emoji_deleted`.
+                `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+                `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
               type: string
     WebhookTest:
       description: The data of a `webhook.test` message.

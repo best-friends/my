@@ -75,10 +75,15 @@ function instance(federated: boolean): Instance {
   };
 }
 
-/** Answers GET /instance, the local timeline, and the federated timeline, which is a 404 while it is off. */
+/**
+ * Answers a signed-in user's session (the home timeline and the user's navigation need one), GET /instance, the
+ * home and the local timeline, and the federated timeline, which is a 404 while it is off.
+ */
 async function serveApi(page: Page, federated: boolean): Promise<void> {
   const json = (route: Route, body: unknown, statusCode = 200) =>
     route.fulfill({ status: statusCode, contentType: statusCode < 400 ? "application/json" : "application/problem+json", body: JSON.stringify(body) });
+  await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600 }));
+  await page.route("**/api/v1/timelines/home*", (route) => json(route, { items: [] } satisfies StatusPage));
   await page.route("**/api/v1/instance", (route) => json(route, instance(federated)));
   // The local timeline, which phones open first: its page has the federated timeline as its other tab.
   await page.route("**/api/v1/timelines/local*", (route) => json(route, { items: [status(1, bob)] } satisfies StatusPage));

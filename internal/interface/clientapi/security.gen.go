@@ -122,6 +122,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/admin/appeals/{id}/overturn":                            {Operation: "overturnAppeal", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/appeals/{id}/uphold":                              {Operation: "upholdAppeal", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/custom_emojis":                                    {Operation: "createCustomEmoji", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/custom_emojis/{id}/copy":                          {Operation: "copyCustomEmoji", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/dead_jobs/{id}/retry":                             {Operation: "retryDeadJob", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/domain_actions":                                   {Operation: "createDomainAction", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/domain_actions/import":                            {Operation: "importDomainBlocks", Scopes: []string{"admin:write"}},

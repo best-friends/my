@@ -89,7 +89,8 @@ type StatusHandlersDeps struct {
 }
 
 // StatusHandlers are the inbox handlers of remote posts (federation.md §3.4): Create and Update
-// of Note, Question, and the converted types, and Delete of a post. Only posts related to a local
+// of Note, Question, and the converted types, Delete of a post, and Add and Remove of the pinned
+// posts. Only posts related to a local
 // account are ingested (ADR-0034).
 type StatusHandlers struct {
 	d      StatusHandlersDeps
@@ -104,11 +105,14 @@ func NewStatusHandlers(d StatusHandlersDeps) *StatusHandlers {
 	return &StatusHandlers{d: d, origin: federation.IRI("https://" + d.Host).Origin()}
 }
 
-// Register sets the handlers of Create, Update, and Delete on p.
+// Register sets the handlers of Create, Update, and Delete, and of the Add and Remove of the
+// pinned posts (FeaturedChanged), on p.
 func (h *StatusHandlers) Register(p *InboxProcessor) {
 	p.Handle(federation.ActivityCreate, h.Create)
 	p.Handle(federation.ActivityUpdate, h.Update)
 	p.Handle(federation.ActivityDelete, h.Delete)
+	p.Handle(federation.ActivityAdd, h.FeaturedChanged)
+	p.Handle(federation.ActivityRemove, h.FeaturedChanged)
 }
 
 // Create ingests the post of a Create when it is in scope (ADR-0034). A post that is stored

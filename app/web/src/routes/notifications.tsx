@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useId } from "react";
 import { z } from "zod";
 import { type NotificationFilter, notificationFilters, notificationMarkerQueryOptions, notificationsQueryOptions, NotificationsSkeleton, NotificationsView } from "../features/notifications";
+import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
@@ -16,12 +17,11 @@ export const Route = createFileRoute("/notifications")({
   staticData: { title: "client:notifications.title" },
   validateSearch: searchSchema,
   loaderDeps: ({ search: { filter } }): { filter: NotificationFilter } => ({ filter: filter ?? "all" }),
-  // The first page and the read marker load with the page; without a session there is nothing to load,
-  // and the page offers to sign in. A failure (offline, say) is the list's own, shown below the page's
-  // heading with what to do (useNotifications), so the loader lets the page open.
-  loader: async ({ context: { queryClient, api, session }, deps: { filter } }) => {
-    if (session.status === "unknown") await session.restore();
-    if (session.status !== "signed-in") return;
+  // Notifications are the user's own, so the page needs a session (web-client.md §10).
+  beforeLoad: requireSignIn,
+  // The first page and the read marker load with the page. A failure (offline, say) is the list's own, shown
+  // below the page's heading with what to do (useNotifications), so the loader lets the page open.
+  loader: async ({ context: { queryClient, api }, deps: { filter } }) => {
     await Promise.allSettled([
       queryClient.infiniteQuery({ ...notificationsQueryOptions(api, filter), staleTime: Infinity }),
       queryClient.query({ ...notificationMarkerQueryOptions(api), staleTime: Infinity }),

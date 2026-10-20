@@ -51,6 +51,11 @@ const (
 	EmojiTooLarge          CustomEmojiReason = "too_large"
 	EmojiTooBig            CustomEmojiReason = "too_big"
 	EmojiRemote            CustomEmojiReason = "remote_emoji"
+	// EmojiLocal refuses an operation for remote emoji only (the copy) on a local one.
+	EmojiLocal CustomEmojiReason = "local_emoji"
+	// EmojiFetchFailed reports the image of a remote emoji that could not be fetched: its
+	// server did not return it, or its domain's media are rejected.
+	EmojiFetchFailed CustomEmojiReason = "fetch_failed"
 )
 
 // ErrInvalidCustomEmoji is wrapped by every *CustomEmojiError.

@@ -158,6 +158,9 @@ const (
 	AuditCustomEmojiCreated AuditAction = "custom_emoji_created"
 	// AuditCustomEmojiImageReplaced: a local custom emoji got a new image (custom_emoji_images).
 	AuditCustomEmojiImageReplaced AuditAction = "custom_emoji_image_replaced"
+	// AuditCustomEmojiCopied: a remote custom emoji was copied into a new local one
+	// (custom_emojis).
+	AuditCustomEmojiCopied AuditAction = "custom_emoji_copied"
 	// AuditCustomEmojiUpdated: the category, aliases, or place in the picker of a local custom
 	// emoji changed (custom_emoji_settings, custom_emoji_aliases).
 	AuditCustomEmojiUpdated AuditAction = "custom_emoji_updated"
@@ -234,6 +237,7 @@ var auditActions = []struct {
 	{AuditPasswordResetLinkIssued, AuditTargetAccount},
 	{AuditCustomEmojiCreated, AuditTargetCustomEmoji},
 	{AuditCustomEmojiImageReplaced, AuditTargetCustomEmoji},
+	{AuditCustomEmojiCopied, AuditTargetCustomEmoji},
 	{AuditCustomEmojiUpdated, AuditTargetCustomEmoji},
 	{AuditCustomEmojiEnabled, AuditTargetCustomEmoji},
 	{AuditCustomEmojiDisabled, AuditTargetCustomEmoji},
