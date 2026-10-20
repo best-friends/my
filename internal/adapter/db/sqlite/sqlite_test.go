@@ -263,6 +263,7 @@ func TestRetentionContract(t *testing.T) {
 			Retention:    db.StatusRepository(),
 			Purges:       db.FederationRepository(),
 			Profiles:     db.AccountRepository(),
+			Emojis:       db.CustomEmojiRepository(),
 		}
 	})
 }

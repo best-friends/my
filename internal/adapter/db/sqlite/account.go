@@ -617,6 +617,12 @@ func (r *AccountRepository) IsMediaReferenced(ctx context.Context, mediaID strin
 	return ok, wrap(err, "look up profile media")
 }
 
+// IsEmojiReferenced implements account.Repository.
+func (r *AccountRepository) IsEmojiReferenced(ctx context.Context, emojiID string) (bool, error) {
+	ok, err := r.db.reader().IsEmojiReferencedByProfiles(ctx, emojiID)
+	return ok, wrap(err, "look up profile emoji")
+}
+
 // CountLocalAccounts implements account.Repository.
 func (r *AccountRepository) CountLocalAccounts(ctx context.Context) (int, error) {
 	n, err := r.db.reader().CountLocalAccounts(ctx)

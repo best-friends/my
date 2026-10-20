@@ -28,6 +28,9 @@ const (
 	// DefaultCustomEmojiMaxBytes is the default limit of the size of the image of a local emoji
 	// (the setting custom_emoji_max_bytes), Mastodon's limit.
 	DefaultCustomEmojiMaxBytes = 256 << 10
+	// DefaultRemoteCustomEmojiMaxBytes is the default limit of the size of the image of a remote
+	// emoji that the media proxy serves (the setting remote_custom_emoji_max_bytes).
+	DefaultRemoteCustomEmojiMaxBytes = 1 << 20
 	// CustomEmojiFederationWarnBytes is the size above which GoToSocial does not fetch a remote
 	// emoji by default; the admin screen warns about it.
 	CustomEmojiFederationWarnBytes = 100 << 10
@@ -147,13 +150,22 @@ type CustomEmojiImageFacts struct {
 	Width, Height int
 }
 
+// CustomEmojiFormat reports whether contentType, detected from the content, is a format of the
+// images of custom emoji, local or remote (ADR-0051 §2): PNG (APNG too), GIF, or WebP. JPEG,
+// AVIF, and SVG are not, as Mastodon does not take them as emoji.
+func CustomEmojiFormat(contentType string) bool {
+	switch contentType {
+	case "image/png", "image/gif", "image/webp":
+		return true
+	}
+	return false
+}
+
 // CheckCustomEmojiImage checks the image of a local emoji (ADR-0051 §2): a PNG (an APNG shows
 // its first frame), a GIF, or a WebP, of at most maxBytes, at most MaxCustomEmojiSide pixels on
 // its longer side.
 func CheckCustomEmojiImage(f CustomEmojiImageFacts, maxBytes int64) error {
-	switch f.ContentType {
-	case "image/png", "image/gif", "image/webp":
-	default:
+	if !CustomEmojiFormat(f.ContentType) {
 		return emojiError(EmojiUnsupportedFormat, f.ContentType)
 	}
 	if maxBytes > 0 && f.FileSize > maxBytes {

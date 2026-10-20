@@ -236,6 +236,13 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.CustomEmojiMaxBytes, _ = strconv.ParseInt(v, 10, 64) },
 	},
 	{
+		key:   "remote_custom_emoji_max_bytes",
+		doc:   "Largest image in bytes of a remote custom emoji that the media proxy serves (ADR-0051 §2); the proxy answers 404 for a larger one, and for one that is not a PNG, a GIF, or a WebP.",
+		def:   strconv.Itoa(1 << 20),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.RemoteCustomEmojiMaxBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
 		key:   "remote_media_cache_max_bytes",
 		doc:   "Size limit in bytes of the copies of remote media that the media proxy keeps when the instance setting `remote_media_policy` is `avatars` or `all` (FR-409). The hourly cleanup deletes the expired copies, then the least recently accessed ones over this limit (FR-803).",
 		def:   strconv.Itoa(1 << 30),

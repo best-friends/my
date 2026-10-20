@@ -4,6 +4,7 @@ package clientapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
@@ -59,6 +60,10 @@ func (s *Server) reactionEmojiOf(ctx context.Context, n notification.Notificatio
 		return nil, nil
 	}
 	v, err := s.o.StatusReader.ReactionEmoji(ctx, appcontent.ReactionEmoji{CustomEmojiID: n.ReactionCustomEmojiID})
+	if errors.Is(err, appcontent.ErrNotFound) {
+		// The emoji was deleted (a local one) or purged (a remote one, ADR-0051 §1).
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: the emoji of notification %s: %w", n.ID, err)
 	}

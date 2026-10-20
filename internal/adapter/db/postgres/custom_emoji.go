@@ -20,7 +20,10 @@ type CustomEmojiRepository struct {
 	db *DB
 }
 
-var _ appcontent.CustomEmojiRepository = (*CustomEmojiRepository)(nil)
+var (
+	_ appcontent.CustomEmojiRepository = (*CustomEmojiRepository)(nil)
+	_ appcontent.EmojiPurgeRepository  = (*CustomEmojiRepository)(nil)
+)
 
 // CustomEmojiRepository returns the content module's repository of the custom emoji that the
 // administrators manage on d.
@@ -218,4 +221,51 @@ func (r *CustomEmojiRepository) ListLocalCustomEmojis(ctx context.Context, short
 		out[i] = emojiRecordRow(row)
 	}
 	return r.records(ctx, out)
+}
+
+// ListUnreferencedRemoteEmojis implements content.EmojiPurgeRepository.
+func (r *CustomEmojiRepository) ListUnreferencedRemoteEmojis(ctx context.Context, after string, limit int) ([]string, error) {
+	n, err := toInt32(limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	ids, err := r.db.reader().ListUnreferencedRemoteEmojis(ctx, postgresgen.ListUnreferencedRemoteEmojisParams{After: after, RowLimit: n})
+	return ids, wrap(err, "list unreferenced remote emoji")
+}
+
+// CustomEmojiImageMediaIDs implements content.EmojiPurgeRepository.
+func (r *CustomEmojiRepository) CustomEmojiImageMediaIDs(ctx context.Context, emojiID string) ([]string, error) {
+	ids, err := r.db.reader().ListCustomEmojiImageMediaIDs(ctx, emojiID)
+	return ids, wrap(err, "list custom emoji image media")
+}
+
+// PurgeRemoteEmoji implements content.EmojiPurgeRepository.
+func (r *CustomEmojiRepository) PurgeRemoteEmoji(ctx context.Context, tx uow.Tx, emojiID string, mediaIDs []string) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	n, err := q.DeleteUnreferencedRemoteEmoji(ctx, emojiID)
+	if err != nil || n == 0 {
+		return false, wrap(err, "delete remote emoji")
+	}
+	for _, del := range []func(context.Context, string) error{
+		q.DeleteCustomEmojiAliases, q.DeleteCustomEmojiSettings, q.DeleteCustomEmojiImages,
+	} {
+		if err := del(ctx, emojiID); err != nil {
+			return false, wrap(err, "delete remote emoji")
+		}
+	}
+	for _, id := range mediaIDs {
+		n, err := q.DeleteUnreferencedRemoteMedia(ctx, id)
+		if err != nil {
+			return false, wrap(err, "delete remote emoji image")
+		}
+		if n > 0 {
+			if err := q.DeleteRemoteMediaFile(ctx, id); err != nil {
+				return false, wrap(err, "delete remote emoji image")
+			}
+		}
+	}
+	return true, nil
 }
