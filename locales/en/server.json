@@ -639,6 +639,14 @@
     "defaultMessage": "{seconds, plural, one {Try again in # second.} other {Try again in # seconds.}}",
     "description": "Detail of the HTTP 429 API error. {seconds} is the wait in whole seconds."
   },
+  "errors.relay.invalid": {
+    "defaultMessage": "The relay cannot be changed that way.",
+    "description": "API error title for HTTP 422 when a relay cannot be registered, joined, left, or deleted; the detail says why."
+  },
+  "errors.relay.invalid_detail": {
+    "defaultMessage": "{reason, select, url {The URL must be an https URL of at most 2048 bytes.} exists {A relay with this URL is already registered.} domain_suspended {The relay's server is suspended by a domain action.} not_actor {The URL does not serve the actor of a relay with an inbox.} state {The relay is not in a state that allows this: leave a relay before you delete it, and join only one that you left or that rejected you.} other {The relay cannot be changed that way.}}",
+    "description": "API error detail for HTTP 422 when a relay operation is refused. {reason} is url, exists, domain_suspended, not_actor, or state."
+  },
   "errors.remote_account": {
     "defaultMessage": "This is not available for accounts on other servers.",
     "description": "Detail of the HTTP 422 API error when a block targets an account on another server, which the operation does not support."

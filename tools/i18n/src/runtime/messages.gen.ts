@@ -4242,6 +4242,10 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** The relay cannot be changed that way. */
+  "server:errors.relay.invalid": {};
+  /** {reason, select, url {The URL must be an https URL of at most 2048 bytes.} exists {A relay with this URL is already registered.} domain_suspended {The relay's server is suspended by a domain action.} not_actor {The URL does not serve the actor of a relay with an inbox.} state {The relay is not in a state that allows this: leave a relay before you delete it, and join only one that you left or that rejected you.} other {The relay cannot be changed that way.}} */
+  "server:errors.relay.invalid_detail": { reason: "domain_suspended" | "exists" | "not_actor" | "state" | "url" | (string & {}) };
   /** This is not available for accounts on other servers. */
   "server:errors.remote_account": {};
   /** Only a resolved report can be reopened. */

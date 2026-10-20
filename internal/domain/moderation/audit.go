@@ -61,12 +61,14 @@ const (
 	// AuditTargetWebhook is a webhook endpoint (ADR-0060); its label is its description and the
 	// host name of its URL, never the URL, which may hold a secret.
 	AuditTargetWebhook AuditTargetKind = "webhook"
+	// AuditTargetRelay is a relay (ADR-0061); its label is its registered URL.
+	AuditTargetRelay AuditTargetKind = "relay"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
-	AuditTargetCustomEmoji, AuditTargetWebhook,
+	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetRelay,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -172,6 +174,19 @@ const (
 	AuditWebhookDisabled AuditAction = "webhook_disabled"
 	// AuditWebhookSecretRotated: a webhook endpoint got a new secret (webhook_secrets).
 	AuditWebhookSecretRotated AuditAction = "webhook_secret_rotated"
+	// AuditRelayAdded: a relay was registered (relays).
+	AuditRelayAdded AuditAction = "relay_added"
+	// AuditRelayFollowed and AuditRelayUnfollowed: the instance actor sent the Follow that joins
+	// a relay or the Undo that leaves it (relay_events, follow_sent and left).
+	AuditRelayFollowed   AuditAction = "relay_followed"
+	AuditRelayUnfollowed AuditAction = "relay_unfollowed"
+	// AuditRelayRemoved: the registration of a relay was deleted with its events; the operation
+	// has no row of its own.
+	AuditRelayRemoved AuditAction = "relay_removed"
+	// AuditRelayAccepted and AuditRelayRejected: a relay accepted or rejected the Follow
+	// (relay_events, accepted and rejected), as the remote actor.
+	AuditRelayAccepted AuditAction = "relay_accepted"
+	AuditRelayRejected AuditAction = "relay_rejected"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -220,6 +235,12 @@ var auditActions = []struct {
 	{AuditWebhookEnabled, AuditTargetWebhook},
 	{AuditWebhookDisabled, AuditTargetWebhook},
 	{AuditWebhookSecretRotated, AuditTargetWebhook},
+	{AuditRelayAdded, AuditTargetRelay},
+	{AuditRelayFollowed, AuditTargetRelay},
+	{AuditRelayUnfollowed, AuditTargetRelay},
+	{AuditRelayRemoved, AuditTargetRelay},
+	{AuditRelayAccepted, AuditTargetRelay},
+	{AuditRelayRejected, AuditTargetRelay},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

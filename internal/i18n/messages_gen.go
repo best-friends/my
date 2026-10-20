@@ -1138,6 +1138,20 @@ func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 	return l.format("server:errors.rate_limited_detail", map[string]any{"seconds": seconds})
 }
 
+// ServerErrorsRelayInvalid formats "server:errors.relay.invalid". API error title for HTTP 422 when a relay cannot be registered, joined, left, or deleted; the detail says why.
+//
+//	en: The relay cannot be changed that way.
+func (l *Localizer) ServerErrorsRelayInvalid() string {
+	return l.format("server:errors.relay.invalid", nil)
+}
+
+// ServerErrorsRelayInvalidDetail formats "server:errors.relay.invalid_detail". API error detail for HTTP 422 when a relay operation is refused. {reason} is url, exists, domain_suspended, not_actor, or state.
+//
+//	en: {reason, select, url {The URL must be an https URL of at most 2048 bytes.} exists {A relay with this URL is already registered.} domain_suspended {The relay's server is suspended by a domain action.} not_actor {The URL does not serve the actor of a relay with an inbox.} state {The relay is not in a state that allows this: leave a relay before you delete it, and join only one that you left or that rejected you.} other {The relay cannot be changed that way.}}
+func (l *Localizer) ServerErrorsRelayInvalidDetail(reason string) string {
+	return l.format("server:errors.relay.invalid_detail", map[string]any{"reason": reason})
+}
+
 // ServerErrorsRemoteAccount formats "server:errors.remote_account". Detail of the HTTP 422 API error when a block targets an account on another server, which the operation does not support.
 //
 //	en: This is not available for accounts on other servers.

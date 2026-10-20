@@ -42,6 +42,12 @@ type RemoteStatuses interface {
 	LocalStatusInConversation(ctx context.Context, conversationURI string) (bool, error)
 }
 
+// RelayedStatuses records the remote posts that only a relay brought in, which are kept for
+// relay_status_retention (ADR-0061); *appcontent.Service implements it.
+type RelayedStatuses interface {
+	RecordRelayedStatus(ctx context.Context, tx uow.Tx, statusID, relayID string, at time.Time) error
+}
+
 // StatusAccounts is the part of the account module's public API that ingesting posts reads: the
 // accounts that a post mentions and the followers collection of its author.
 // *appaccount.Service implements it.
@@ -79,7 +85,11 @@ type StatusHandlersDeps struct {
 	Profiles      OutboxAccounts
 	Relationships Relationships
 	Restrictions  AccountPolicy
-	Clock         kernel.Clock
+	// Relayed records the posts that only a relay brought in, and RelayPolicy keeps out those of
+	// restricted authors (ADR-0061); without Relayed, nothing a relay brings in is stored.
+	Relayed     RelayedStatuses
+	RelayPolicy RelayPolicy
+	Clock       kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger
@@ -262,22 +272,77 @@ func (h *StatusHandlers) ingest(ctx context.Context, a *InboxActivity, obj *fede
 	if err != nil {
 		return err
 	}
-	if !ok {
+	// A post that no local account relates to is taken in from an accepted relay when it is
+	// public (ADR-0061), without the fetches of its parent and of the unknown actors it mentions.
+	relayed := !ok && a.Relay != nil && h.d.Relayed != nil
+	if !ok && !relayed {
 		return fmt.Errorf("%w: %s is not related to a local account (ADR-0034)", ErrDropActivity, obj.ID)
 	}
-	if err := h.resolveMentions(ctx, mentions); err != nil {
-		return err
+	if !relayed {
+		if err := h.resolveMentions(ctx, mentions); err != nil {
+			return err
+		}
 	}
 	in := h.input(a, obj, followers, mentions)
+	if relayed && in.Visibility != appcontent.VisibilityPublic {
+		return fmt.Errorf("%w: the relayed %s is not public", ErrDropActivity, obj.ID)
+	}
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		p, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
 		if err != nil {
 			return err
 		}
+		if relayed {
+			return h.recordRelayed(ctx, tx, p.Status, a.Relay)
+		}
 		return h.fetchParentTx(ctx, tx, p.Status)
 	})
 	if errors.Is(err, appcontent.ErrStatusExists) {
 		return nil // a concurrent activity stored it
+	}
+	return err
+}
+
+// recordRelayed records in tx that st came in through relay m alone.
+func (h *StatusHandlers) recordRelayed(ctx context.Context, tx uow.Tx, st appcontent.Status, m *RelayMembership) error {
+	if h.d.Relayed == nil {
+		return fmt.Errorf("%w: nothing records relayed posts", ErrDropActivity)
+	}
+	return h.d.Relayed.RecordRelayedStatus(ctx, tx, st.ID, m.RelayID, kernel.Normalize(h.d.Clock.Now()))
+}
+
+// RelayedAnnounce takes in the post that an accepted relay announces (ADR-0061): it is fetched
+// from its origin, whatever the Announce embeds, and stored as a relayed post when it is public
+// and not stored yet. It is never recorded as a boost: the relay is not a reader of it.
+func (h *StatusHandlers) RelayedAnnounce(ctx context.Context, in *InboxActivity) error {
+	ref := in.Activity.Object()
+	switch {
+	case ref.ID == "":
+		return fmt.Errorf("%w: Announce without an object", ErrDropActivity)
+	case h.isLocal(ref.ID):
+		return fmt.Errorf("%w: a relay announced the local post %s", ErrDropActivity, ref.ID)
+	case h.d.Relayed == nil || in.Relay == nil:
+		return fmt.Errorf("%w: nothing records relayed posts", ErrDropActivity)
+	}
+	switch _, err := h.d.Statuses.FindStatusByURI(ctx, string(ref.ID)); {
+	case err == nil:
+		return nil
+	case !errors.Is(err, appcontent.ErrNotFound):
+		return err
+	}
+	if err := h.untombstoned(ctx, ref.ID); err != nil {
+		return fmt.Errorf("%w: %w", ErrDropActivity, err)
+	}
+	got, err := h.d.Fetcher.Fetch(ctx, string(ref.ID))
+	if err != nil {
+		return err
+	}
+	if got.Document.ID() != ref.ID {
+		return fmt.Errorf("%w: %s is not an object", ErrDropActivity, ref.ID)
+	}
+	_, err = h.fetchedWith(ctx, got, storeOptions{relay: in.Relay})
+	if errors.Is(err, ErrNotTaken) && !errors.Is(err, ErrFetchFailed) && !errors.Is(err, ErrFetchUnavailable) {
+		return fmt.Errorf("%w: %w", ErrDropActivity, err)
 	}
 	return err
 }

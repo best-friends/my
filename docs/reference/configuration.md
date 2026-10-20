@@ -84,6 +84,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`webhook_allowed_destinations`](#webhook_allowed_destinations) | `MY_WEBHOOK_ALLOWED_DESTINATIONS` | none | no | no |
 | [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
 | [`remote_status_max_retention`](#remote_status_max_retention) | `MY_REMOTE_STATUS_MAX_RETENTION` | none | no | no |
+| [`relay_status_retention`](#relay_status_retention) | `MY_RELAY_STATUS_RETENTION` | `168h` | no | no |
+| [`relay_ingest_hourly_limit`](#relay_ingest_hourly_limit) | `MY_RELAY_INGEST_HOURLY_LIMIT` | `1000` | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
 | [`metrics_listen`](#metrics_listen) | `MY_METRICS_LISTEN` | `127.0.0.1:9464` | no | no |
@@ -561,6 +563,22 @@ The longest a remote post is kept after its publication, even when this instance
 
 - Environment variable: `MY_REMOTE_STATUS_MAX_RETENTION`
 - Default: none
+- Required: no
+
+### `relay_status_retention`
+
+How long a remote post that only a relay brought in is kept after its publication when nothing on this instance refers to it and no local account follows its author; the hourly purge then deletes it (ADR-0061). A Go duration such as `168h` (7 days).
+
+- Environment variable: `MY_RELAY_STATUS_RETENTION`
+- Default: `168h`
+- Required: no
+
+### `relay_ingest_hourly_limit`
+
+How many activities each relay may bring in per hour (ADR-0061). The ones over it are dropped before their posts are fetched, and counted in `my.relay.activities` and on the relays screen. It bounds the fetches, rows, and jobs that a relay costs.
+
+- Environment variable: `MY_RELAY_INGEST_HOURLY_LIMIT`
+- Default: `1000`
 - Required: no
 
 ### `dead_job_retention`

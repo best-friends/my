@@ -156,6 +156,9 @@ type Options struct {
 	// WebhookReads are the reads in a transaction behind the data of the webhook messages
 	// (webhook_data.go); without them the presenter methods fail.
 	WebhookReads WebhookReads
+	// Relays runs the admin operations on the relays (admin_relays.go); nil answers 404 to
+	// them.
+	Relays Relays
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

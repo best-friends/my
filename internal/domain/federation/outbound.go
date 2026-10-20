@@ -26,12 +26,16 @@ const (
 	OutboundBlock     OutboundObjectKind = "block"
 	OutboundAccount   OutboundObjectKind = "account"
 	OutboundReport    OutboundObjectKind = "report"
+	// OutboundRelay is the membership of a relay (ADR-0061): the Follow and Undo that join and
+	// leave it, and the Accept or Reject of a Follow of the instance actor. Its object is the
+	// relay, or the remote actor whose Follow of the instance actor is rejected.
+	OutboundRelay OutboundObjectKind = "relay"
 )
 
 // Valid reports whether k is one of the outbound object kinds.
 func (k OutboundObjectKind) Valid() bool {
 	switch k {
-	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport:
+	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundRelay:
 		return true
 	}
 	return false

@@ -257,6 +257,10 @@ func activityURI(in *InboxActivity) string {
 }
 
 func (h interactionHandlers) announce(ctx context.Context, in *InboxActivity) error {
+	if in.Relay != nil && in.Activity.Actor == in.Relay.ActorURI {
+		// The Announce of a LitePub relay carries a post to take in, not a boost (ADR-0061).
+		return h.d.Statuses.RelayedAnnounce(ctx, in)
+	}
 	st, err := h.d.Statuses.boosted(ctx, in)
 	if err != nil {
 		return err

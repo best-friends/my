@@ -7,6 +7,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/federation"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
@@ -31,6 +32,7 @@ type projectionRepositories struct {
 	moderation    moderation.Repository
 	identities    identity.Repository
 	webhooks      webhook.Repository
+	relays        federation.RelayRepository
 }
 
 // setUpProjections builds the service of `my projection` and registers the projection.verify
@@ -127,6 +129,13 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				Tables: []string{"notification_deleted_statuses"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return notification.RebuildDeletedStatuses(ctx, u, r.notifications, a.Content)
+				},
+			},
+			{
+				Name: "relay_states", Module: "federation",
+				Tables: []string{"relay_states"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return federation.RebuildRelayStates(ctx, u, r.relays)
 				},
 			},
 			{

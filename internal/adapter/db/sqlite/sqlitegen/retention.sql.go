@@ -12,6 +12,97 @@ import (
 	"database/sql"
 )
 
+const insertRelayedStatus = `-- name: InsertRelayedStatus :exec
+INSERT INTO relayed_statuses (status_id, relay_id, received_at) VALUES (?1, ?2, ?3)
+ON CONFLICT (status_id) DO NOTHING
+`
+
+type InsertRelayedStatusParams struct {
+	StatusID   string
+	RelayID    string
+	ReceivedAt int64
+}
+
+// InsertRelayedStatus records a status that only a relay brought in; a status recorded already
+// keeps its row.
+func (q *Queries) InsertRelayedStatus(ctx context.Context, arg InsertRelayedStatusParams) error {
+	_, err := q.db.ExecContext(ctx, insertRelayedStatus, arg.StatusID, arg.RelayID, arg.ReceivedAt)
+	return err
+}
+
+const listRelayedStatusesToPurge = `-- name: ListRelayedStatusesToPurge :many
+SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
+  s.conversation_uri, s.published_at
+FROM relayed_statuses rs JOIN statuses s ON s.id = rs.status_id
+WHERE rs.status_id > CAST(?1 AS TEXT) AND rs.status_id < CAST(?2 AS TEXT)
+  AND s.is_local = 0
+  AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+  AND s.published_at < CAST(?3 AS INTEGER)
+  AND NOT EXISTS (
+    SELECT 1 FROM statuses r WHERE r.in_reply_to_uri = s.uri AND r.is_local = 1
+      AND NOT EXISTS (SELECT 1 FROM status_deletions rd WHERE rd.status_id = r.id))
+  AND (s.conversation_uri IS NULL OR NOT EXISTS (
+    SELECT 1 FROM statuses l WHERE l.conversation_uri = s.conversation_uri AND l.is_local = 1
+      AND NOT EXISTS (SELECT 1 FROM status_deletions ld WHERE ld.status_id = l.id)))
+  AND NOT EXISTS (
+    SELECT 1 FROM boosts b WHERE b.status_id = s.id AND b.is_local = 1
+      AND NOT EXISTS (SELECT 1 FROM boost_retractions br WHERE br.boost_id = b.id))
+  AND NOT EXISTS (SELECT 1 FROM favourites f WHERE f.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM bookmarks k WHERE k.status_id = s.id)
+  AND NOT EXISTS (SELECT 1 FROM status_pins p WHERE p.status_id = s.id)
+ORDER BY rs.status_id
+LIMIT ?4
+`
+
+type ListRelayedStatusesToPurgeParams struct {
+	After         string
+	IDBefore      string
+	RelayedBefore int64
+	BatchLimit    int64
+}
+
+// ListRelayedStatusesToPurge returns, in ID order after the cursor @after and below @id_before,
+// the statuses that only a relay brought in, that are not deleted, and that were published
+// before @relayed_before while nothing local refers to them (as ListRemoteStatusesToPurge).
+func (q *Queries) ListRelayedStatusesToPurge(ctx context.Context, arg ListRelayedStatusesToPurgeParams) ([]Status, error) {
+	rows, err := q.db.QueryContext(ctx, listRelayedStatusesToPurge,
+		arg.After,
+		arg.IDBefore,
+		arg.RelayedBefore,
+		arg.BatchLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Status{}
+	for rows.Next() {
+		var i Status
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uri,
+			&i.Url,
+			&i.AuthorAccountID,
+			&i.IsLocal,
+			&i.Visibility,
+			&i.InReplyToUri,
+			&i.ConversationUri,
+			&i.PublishedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRemoteAccountsWithPastProfiles = `-- name: ListRemoteAccountsWithPastProfiles :many
 SELECT ra.account_id FROM remote_accounts ra
 WHERE ra.account_id > CAST(?1 AS TEXT)
@@ -266,6 +357,15 @@ DELETE FROM polls WHERE revision_id IN (
 
 func (q *Queries) PurgePolls(ctx context.Context, ids string) error {
 	_, err := q.db.ExecContext(ctx, purgePolls, ids)
+	return err
+}
+
+const purgeRelayedStatuses = `-- name: PurgeRelayedStatuses :exec
+DELETE FROM relayed_statuses WHERE status_id IN (SELECT value FROM json_each(CAST(?1 AS TEXT)))
+`
+
+func (q *Queries) PurgeRelayedStatuses(ctx context.Context, ids string) error {
+	_, err := q.db.ExecContext(ctx, purgeRelayedStatuses, ids)
 	return err
 }
 

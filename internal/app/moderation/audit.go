@@ -53,16 +53,27 @@ const (
 	AuditWebhookEnabled       = moderation.AuditWebhookEnabled
 	AuditWebhookDisabled      = moderation.AuditWebhookDisabled
 	AuditWebhookSecretRotated = moderation.AuditWebhookSecretRotated
+	AuditRelayAdded           = moderation.AuditRelayAdded
+	AuditRelayFollowed        = moderation.AuditRelayFollowed
+	AuditRelayUnfollowed      = moderation.AuditRelayUnfollowed
+	AuditRelayRemoved         = moderation.AuditRelayRemoved
+	AuditRelayAccepted        = moderation.AuditRelayAccepted
+	AuditRelayRejected        = moderation.AuditRelayRejected
 
 	AuditTargetUser    = moderation.AuditTargetUser
 	AuditTargetSetting = moderation.AuditTargetSetting
 	AuditTargetRule    = moderation.AuditTargetRule
 	AuditTargetRole    = moderation.AuditTargetRole
 	AuditTargetWebhook = moderation.AuditTargetWebhook
+	AuditTargetRelay   = moderation.AuditTargetRelay
 )
 
-// AuditActorSystem is moderation.AuditActorSystem, the server itself.
-const AuditActorSystem = moderation.AuditActorSystem
+// AuditActorSystem is moderation.AuditActorSystem, the server itself, and AuditActorRemote
+// moderation.AuditActorRemote, another server.
+const (
+	AuditActorSystem = moderation.AuditActorSystem
+	AuditActorRemote = moderation.AuditActorRemote
+)
 
 // AuditActor returns the actor of an operation given the user ID that the use cases take: the
 // user, or the CLI for "".

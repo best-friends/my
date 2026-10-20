@@ -203,6 +203,13 @@ func TestInstanceRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestRelayContract(t *testing.T) {
+	testkit.RelayContract(t, func(t *testing.T, opts uow.Options) testkit.RelayHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.RelayHarness{UnitOfWork: db, Relays: db.FederationRepository()}
+	})
+}
+
 func TestFederationRepositoryContract(t *testing.T) {
 	testkit.FederationRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FederationHarness {
 		db, _ := newTestDB(t, "", opts)

@@ -647,6 +647,14 @@
     "defaultMessage": "[{seconds,plural,one{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓ.} other{Ŧřẏ ȧȧɠȧȧīƞ īƞ # şḗḗƈǿǿƞḓş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.relay.invalid": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗŀȧȧẏ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ŧħȧȧŧ ẇȧȧẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.relay.invalid_detail": {
+    "defaultMessage": "[{reason,select,domain_suspended{Ŧħḗḗ řḗḗŀȧȧẏ'ş şḗḗřṽḗḗř īş şŭŭşƥḗḗƞḓḗḗḓ ƀẏ ȧȧ ḓǿǿḿȧȧīƞ ȧȧƈŧīǿǿƞ.} exists{Ȧ řḗḗŀȧȧẏ ẇīŧħ ŧħīş ŬŘĿ īş ȧȧŀřḗḗȧȧḓẏ řḗḗɠīşŧḗḗřḗḗḓ.} not_actor{Ŧħḗḗ ŬŘĿ ḓǿǿḗḗş ƞǿǿŧ şḗḗřṽḗḗ ŧħḗḗ ȧȧƈŧǿǿř ǿǿƒ ȧȧ řḗḗŀȧȧẏ ẇīŧħ ȧȧƞ īƞƀǿǿẋ.} other{Ŧħḗḗ řḗḗŀȧȧẏ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ŧħȧȧŧ ẇȧȧẏ.} state{Ŧħḗḗ řḗḗŀȧȧẏ īş ƞǿǿŧ īƞ ȧȧ şŧȧȧŧḗḗ ŧħȧȧŧ ȧȧŀŀǿǿẇş ŧħīş: ŀḗḗȧȧṽḗḗ ȧȧ řḗḗŀȧȧẏ ƀḗḗƒǿǿřḗḗ ẏǿǿŭŭ ḓḗḗŀḗḗŧḗḗ īŧ, ȧȧƞḓ ĵǿǿīƞ ǿǿƞŀẏ ǿǿƞḗḗ ŧħȧȧŧ ẏǿǿŭŭ ŀḗḗƒŧ ǿǿř ŧħȧȧŧ řḗḗĵḗḗƈŧḗḗḓ ẏǿǿŭŭ.} url{Ŧħḗḗ ŬŘĿ ḿŭŭşŧ ƀḗḗ ȧȧƞ ħŧŧƥş ŬŘĿ ǿǿƒ ȧȧŧ ḿǿǿşŧ 2048 ƀẏŧḗḗş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.remote_account": {
     "defaultMessage": "[Ŧħīş īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ƒǿǿř ȧȧƈƈǿǿŭŭƞŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş.]",
     "description": "Generated from en by tools/i18n; do not edit."
