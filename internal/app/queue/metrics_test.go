@@ -3,8 +3,12 @@
 package queue_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -86,5 +90,60 @@ func TestRunnerRecordsJobMetrics(t *testing.T) {
 	}
 	if got := m.values["my.job.wait my.job.type=ok"]; len(got) == 1 && got[0] != 3600 {
 		t.Errorf("my.job.wait = %v, want 3600 seconds", got[0])
+	}
+}
+
+// TestRunnerLogsJobRuns checks that each run writes one line with the labels of my.job.duration
+// under the same names and values, and the duration and wait in seconds (ADR-0055 §5).
+func TestRunnerLogsJobRuns(t *testing.T) {
+	src := &jobsSource{emptySource: emptySource{claims: make(chan struct{}, 1)}, jobs: []queue.Job{
+		{ID: "1", Type: "ok"}, {ID: "2", Type: "flaky"}, {ID: "3", Type: "bad"}, {ID: "4", Type: "unknown.type"},
+	}}
+	reg := &queue.JobHandlerRegistry{}
+	reg.Register("ok", func(context.Context, queue.Job) queue.Result { return queue.Done() })
+	reg.Register("flaky", func(context.Context, queue.Job) queue.Result { return queue.Retry(0, errors.New("later")) })
+	reg.Register("bad", func(context.Context, queue.Job) queue.Result { return queue.Fail(errors.New("never")) })
+	var buf bytes.Buffer
+	r := queue.NewPullRunner(src, reg, queue.RunnerOptions{Clock: clock{}, Logger: slog.New(slog.NewJSONHandler(&buf, nil))})
+	if n, err := r.Drain(t.Context()); err != nil || n != 4 {
+		t.Fatalf("Drain() = %d, %v", n, err)
+	}
+	want := map[string]struct{ jobType, outcome, level, err string }{
+		"1": {"ok", queue.OutcomeSuccess, "INFO", ""},
+		"2": {"flaky", queue.OutcomeRetry, "WARN", "later"},
+		"3": {"bad", queue.OutcomeDead, "ERROR", "never"},
+		"4": {queue.JobTypeOther, queue.OutcomeRetry, "WARN", queue.ErrNoHandler.Error() + ": unknown.type"},
+	}
+	lines := 0
+	for line := range strings.Lines(buf.String()) {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Fatalf("line %q: %v", line, err)
+		}
+		if m["msg"] != "job" {
+			continue
+		}
+		lines++
+		id, _ := m["job_id"].(string)
+		w, ok := want[id]
+		if !ok {
+			t.Errorf("unexpected line %v", m)
+			continue
+		}
+		if m[queue.LabelJobType] != w.jobType || m[queue.LabelOutcome] != w.outcome || m["level"] != w.level || m["attempt"] != 1.0 {
+			t.Errorf("job %s: line %v, want my.job.type %s, my.outcome %s, level %s, attempt 1", id, m, w.jobType, w.outcome, w.level)
+		}
+		if _, ok := m["duration_seconds"].(float64); !ok {
+			t.Errorf("job %s: duration_seconds = %v, want a number", id, m["duration_seconds"])
+		}
+		if m["wait_seconds"] != 3600.0 {
+			t.Errorf("job %s: wait_seconds = %v, want 3600", id, m["wait_seconds"])
+		}
+		if got, _ := m["error"].(string); got != w.err {
+			t.Errorf("job %s: error = %q, want %q", id, got, w.err)
+		}
+	}
+	if lines != len(want) {
+		t.Errorf("%d job lines, want %d:\n%s", lines, len(want), buf.String())
 	}
 }
