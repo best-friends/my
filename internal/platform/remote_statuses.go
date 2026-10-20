@@ -34,7 +34,7 @@ func (a *App) registerStatusHandlers(repo federation.InboxRepository) {
 	a.RemoteStatuses = federation.NewStatusHandlers(federation.StatusHandlersDeps{
 		UnitOfWork: a.UnitOfWork, Statuses: a.Content, Accounts: a.Accounts, Actors: a.RemoteActors,
 		Fetcher: a.RemoteActors, Followers: a.Graph, Tombstones: repo, Outbox: outbox, Jobs: a.Jobs, KV: a.KV,
-		Profiles: a.Accounts, Relationships: a.Graph, Restrictions: a.ModerationPolicy,
+		Profiles: a.Accounts, Relationships: a.Graph, Restrictions: a.ModerationPolicy, Votes: a.Interactions,
 		Clock: a.Clock, Host: a.Config.Host, Logger: a.Logger,
 	})
 	a.RemoteStatuses.Register(a.InboxProcessor)

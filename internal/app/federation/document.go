@@ -125,7 +125,29 @@ func statusNote(st appcontent.Status, rev appcontent.Revision, author appaccount
 	for _, e := range parts.Emojis {
 		note.Tag = append(note.Tag, EmojiTagOf(e, host))
 	}
+	if p := parts.Poll; p != nil {
+		note = note.AsQuestion(questionPoll(p))
+	}
 	return note
+}
+
+// questionPoll returns the poll of a Question from the poll as an anonymous viewer sees it: the
+// counts of each choice are 0 while they are hidden (content.Poll.TotalsHidden), and the poll
+// is closed once it has ended (FR-112).
+func questionPoll(v *appcontent.PollView) federation.QuestionPoll {
+	q := federation.QuestionPoll{Multiple: v.Poll.Multiple, Closed: v.Closed, VotersCount: v.VotersCount}
+	if v.Poll.ClosesAt != nil {
+		q.EndTime = *v.Poll.ClosesAt
+	}
+	for i, o := range v.Poll.Options {
+		q.Options = append(q.Options, o.Title)
+		var votes int64
+		if !v.TotalsHidden && i < len(v.Votes) {
+			votes = v.Votes[i]
+		}
+		q.Votes = append(q.Votes, votes)
+	}
+	return q
 }
 
 // attachmentOf returns the attachment document of a processed media file: the URL, type, and
@@ -203,7 +225,10 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 	case federation.OutboundStatus:
 		published, updated := s.status.PublishedAt, time.Time{}
 		if act.Type == federation.ActivityUpdate {
-			published, updated = s.revision.RevisedAt, s.revision.RevisedAt
+			// The Update of the counts of a poll that was never edited has no updated, so that
+			// the receivers do not mark the status as edited (Mastodon takes it as an implicit
+			// update of the poll).
+			published, updated = s.revision.RevisedAt, updatedOf(s.revision)
 		}
 		note, err := f.notes.note(ctx, s.status, s.revision, author, s.visibility, updated)
 		if err != nil {

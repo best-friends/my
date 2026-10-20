@@ -251,6 +251,8 @@ const (
 	phaseSharedInboxes phase = "shared_inboxes"
 	// phaseReported is the remote account a forwarded report is about, in one batch.
 	phaseReported phase = "reported"
+	// phaseVoters are the accounts that voted in the poll of a status, in batches.
+	phaseVoters phase = "voters"
 )
 
 // subject is what the fan-out of one activity needs to know about its object.
@@ -296,7 +298,8 @@ type subject struct {
 //
 //   - Create: the mentioned accounts, then the followers.
 //   - Update and Delete: the inboxes of the Create, then, for a public or unlisted status, the
-//     followers at that time.
+//     followers at that time, and, for the Update of a status with a poll, the accounts that
+//     voted in it (FR-112).
 //   - Announce and Undo Announce: the booster's followers, then the boosted status's author.
 //   - Update of an actor: its followers. Delete of an actor, and the Update of a suspension or
 //     of its end: its followers, then every shared inbox known to the instance (data-model §8,
@@ -324,10 +327,14 @@ func (s subject) phases() []phase {
 		if s.act.Type == federation.ActivityCreate {
 			return []phase{phaseMentions, phaseFollowers}
 		}
+		phases := []phase{phasePrior}
 		if s.visibility == appcontent.VisibilityPublic || s.visibility == appcontent.VisibilityUnlisted {
-			return []phase{phasePrior, phaseFollowers}
+			phases = append(phases, phaseFollowers)
 		}
-		return []phase{phasePrior}
+		if s.act.Type == federation.ActivityUpdate && s.revision.Poll != nil {
+			phases = append(phases, phaseVoters)
+		}
+		return phases
 	case federation.OutboundBoost:
 		return []phase{phaseFollowers, phaseBoostedAuthor}
 	}
@@ -462,6 +469,16 @@ func (f *FanOut) batch(ctx context.Context, act federation.OutboundActivity, s s
 		}
 		targets, err = f.resolve(ctx, act, s, ids, true)
 		return targets, next, err
+	case phaseVoters:
+		ids, err := f.d.Statuses.PollVoterIDs(ctx, s.revision.Poll.ID, after, f.d.Batch)
+		if err != nil {
+			return nil, "", err
+		}
+		if len(ids) == f.d.Batch {
+			next = ids[len(ids)-1]
+		}
+		targets, err = f.resolveIn(ctx, act, s, ids, false, appcontent.ContextObjectFetch)
+		return targets, next, err
 	case phaseBlocked:
 		targets, err = f.blockedInbox(ctx, s)
 		return targets, "", err
@@ -517,6 +534,13 @@ func (f *FanOut) createOf(ctx context.Context, act federation.OutboundActivity) 
 // are the followers of a status that every follower could see. Neither are the followers of an
 // actor's Update: a profile is public.
 func (f *FanOut) resolve(ctx context.Context, act federation.OutboundActivity, s subject, accountIDs []string, followers bool) ([]target, error) {
+	return f.resolveIn(ctx, act, s, accountIDs, followers, appcontent.ContextDelivery)
+}
+
+// resolveIn is resolve with the recipients judged in the context view: ContextDelivery, or, for
+// the accounts that voted in a poll, ContextObjectFetch, since they saw the status to vote in it
+// without being among the accounts that a delivery pushes it to.
+func (f *FanOut) resolveIn(ctx context.Context, act federation.OutboundActivity, s subject, accountIDs []string, followers bool, view appcontent.ViewContext) ([]target, error) {
 	judged := act.Type != federation.ActivityDelete && act.ObjectKind != federation.OutboundAccount
 	var out []target
 	for _, id := range accountIDs {
@@ -531,7 +555,7 @@ func (f *FanOut) resolve(ctx context.Context, act federation.OutboundActivity, s
 			return nil, err
 		}
 		if judged {
-			ok, err := f.admits(ctx, s, id, followers)
+			ok, err := f.admits(ctx, s, id, followers, view)
 			if err != nil {
 				return nil, err
 			}
@@ -548,10 +572,10 @@ func (f *FanOut) resolve(ctx context.Context, act federation.OutboundActivity, s
 }
 
 // admits reports whether content.CanView lets the remote account recipient see the object in
-// ContextDelivery. An active follower is not blocked by either side: a block ends the follows
+// the context view (ContextDelivery but for the voters of a poll). An active follower is not blocked by either side: a block ends the follows
 // between the two accounts in its transaction (data-model §2.1). Any other recipient's
 // relationship with the actor is read from the graph module.
-func (f *FanOut) admits(ctx context.Context, s subject, recipient string, follower bool) (bool, error) {
+func (f *FanOut) admits(ctx context.Context, s subject, recipient string, follower bool, view appcontent.ViewContext) (bool, error) {
 	rel := appcontent.Relation{Mentioned: slices.Contains(s.mentioned, recipient)}
 	if follower {
 		rel.Follow = appcontent.FollowActive
@@ -569,7 +593,7 @@ func (f *FanOut) admits(ctx context.Context, s subject, recipient string, follow
 		rel.Blocking, rel.BlockedBy = r.Blocking, r.BlockedBy
 	}
 	viewer := appcontent.Viewer{Kind: appcontent.ViewerRemote, AccountID: recipient}
-	return appcontent.CanView(appcontent.ContextDelivery, viewer, s.facts, s.restrictions, rel), nil
+	return appcontent.CanView(view, viewer, s.facts, s.restrictions, rel), nil
 }
 
 // targetOf returns the target of an inbox, false when the inbox is not an https IRI with a host.

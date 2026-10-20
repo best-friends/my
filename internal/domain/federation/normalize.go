@@ -178,6 +178,7 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 		obj.Bodies = []Body{{Language: lang, HTML: convertedBody(name, summary, link)}}
 	} else {
 		obj.SpoilerText = summary
+		obj.Name = strings.TrimSpace(str(o.get("name")))
 	}
 	if obj.Mentions, obj.Hashtags, obj.Emojis, err = n.tags(o.get("tag")); err != nil {
 		return nil, err

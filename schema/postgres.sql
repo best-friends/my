@@ -1713,11 +1713,12 @@ CREATE TABLE custom_emoji_aliases (
 );
 
 -- Event (child of a revision): the poll of a status revision (FR-112). closes_at is NULL for a
--- poll without an end.
+-- poll without an end; hide_totals hides the counts of a local poll until it ends.
 CREATE TABLE polls (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   revision_id text COLLATE "C" NOT NULL,
   multiple boolean NOT NULL,
+  hide_totals boolean NOT NULL,
   closes_at timestamptz
 );
 CREATE UNIQUE INDEX polls_revision_id ON polls (revision_id);
@@ -1745,7 +1746,8 @@ CREATE UNIQUE INDEX poll_votes_poll_id_account_id_position ON poll_votes (poll_i
 CREATE UNIQUE INDEX poll_votes_uri ON poll_votes (uri);
 CREATE INDEX poll_votes_account_id ON poll_votes (account_id);
 
--- Event: the counts of a remote poll as its server reported them (in a Create or an Update).
+-- Event: the counts of a poll: of a remote poll as its server reported them (in a Create or an
+-- Update), of a local poll as its votes counted when it was posted and after each vote.
 CREATE TABLE poll_tally_observations (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   poll_id text COLLATE "C" NOT NULL,
@@ -1762,7 +1764,7 @@ CREATE TABLE poll_tally_observation_counts (
   PRIMARY KEY (observation_id, position)
 );
 
--- Projection: the votes of each choice of a poll, from its newest observation (remote polls).
+-- Projection: the votes of each choice of a poll, from its newest observation.
 -- voters_count is NULL when the server did not report it.
 CREATE TABLE poll_tallies (
   poll_id text COLLATE "C" NOT NULL,

@@ -12,6 +12,49 @@ import (
 	"database/sql"
 )
 
+const countPollVoters = `-- name: CountPollVoters :one
+SELECT count(DISTINCT account_id) FROM poll_votes WHERE poll_id = ?1
+`
+
+func (q *Queries) CountPollVoters(ctx context.Context, pollID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPollVoters, pollID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countPollVotes = `-- name: CountPollVotes :many
+SELECT position, count(*) AS votes FROM poll_votes WHERE poll_id = ?1 GROUP BY position ORDER BY position
+`
+
+type CountPollVotesRow struct {
+	Position int64
+	Votes    int64
+}
+
+func (q *Queries) CountPollVotes(ctx context.Context, pollID string) ([]CountPollVotesRow, error) {
+	rows, err := q.db.QueryContext(ctx, countPollVotes, pollID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountPollVotesRow{}
+	for rows.Next() {
+		var i CountPollVotesRow
+		if err := rows.Scan(&i.Position, &i.Votes); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deletePollTallies = `-- name: DeletePollTallies :exec
 DELETE FROM poll_tallies WHERE poll_id = ?1
 `
@@ -149,7 +192,7 @@ func (q *Queries) GetLatestPollTallyObservation(ctx context.Context, pollID stri
 }
 
 const getPollByRevision = `-- name: GetPollByRevision :one
-SELECT id, revision_id, multiple, closes_at FROM polls WHERE revision_id = ?1
+SELECT id, revision_id, multiple, hide_totals, closes_at FROM polls WHERE revision_id = ?1
 `
 
 func (q *Queries) GetPollByRevision(ctx context.Context, revisionID string) (Poll, error) {
@@ -159,9 +202,22 @@ func (q *Queries) GetPollByRevision(ctx context.Context, revisionID string) (Pol
 		&i.ID,
 		&i.RevisionID,
 		&i.Multiple,
+		&i.HideTotals,
 		&i.ClosesAt,
 	)
 	return i, err
+}
+
+const getPollStatus = `-- name: GetPollStatus :one
+SELECT r.status_id FROM polls p JOIN status_revisions r ON r.id = p.revision_id WHERE p.id = ?1
+`
+
+// GetPollStatus returns the status whose revision has the poll.
+func (q *Queries) GetPollStatus(ctx context.Context, pollID string) (string, error) {
+	row := q.db.QueryRowContext(ctx, getPollStatus, pollID)
+	var status_id string
+	err := row.Scan(&status_id)
+	return status_id, err
 }
 
 const getRemoteMedia = `-- name: GetRemoteMedia :one
@@ -301,13 +357,14 @@ func (q *Queries) InsertCustomEmojiImage(ctx context.Context, arg InsertCustomEm
 }
 
 const insertPoll = `-- name: InsertPoll :exec
-INSERT INTO polls (id, revision_id, multiple, closes_at) VALUES (?1, ?2, ?3, ?4)
+INSERT INTO polls (id, revision_id, multiple, hide_totals, closes_at) VALUES (?1, ?2, ?3, ?4, ?5)
 `
 
 type InsertPollParams struct {
 	ID         string
 	RevisionID string
 	Multiple   int64
+	HideTotals int64
 	ClosesAt   sql.NullInt64
 }
 
@@ -316,6 +373,7 @@ func (q *Queries) InsertPoll(ctx context.Context, arg InsertPollParams) error {
 		arg.ID,
 		arg.RevisionID,
 		arg.Multiple,
+		arg.HideTotals,
 		arg.ClosesAt,
 	)
 	return err
@@ -733,6 +791,41 @@ func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observatio
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPollVoterIDs = `-- name: ListPollVoterIDs :many
+SELECT DISTINCT account_id FROM poll_votes
+WHERE poll_id = ?1 AND account_id > ?2 ORDER BY account_id LIMIT ?3
+`
+
+type ListPollVoterIDsParams struct {
+	PollID string
+	After  string
+	Lim    int64
+}
+
+// ListPollVoterIDs returns the accounts that voted in a poll after @after, in order.
+func (q *Queries) ListPollVoterIDs(ctx context.Context, arg ListPollVoterIDsParams) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listPollVoterIDs, arg.PollID, arg.After, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var account_id string
+		if err := rows.Scan(&account_id); err != nil {
+			return nil, err
+		}
+		items = append(items, account_id)
 	}
 	if err := rows.Close(); err != nil {
 		return nil, err

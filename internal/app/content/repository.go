@@ -187,4 +187,15 @@ type Repository interface {
 	ListPollVotes(ctx context.Context, pollID, accountID string) ([]content.PollVote, error)
 	// ListPollVotesTx is ListPollVotes in tx.
 	ListPollVotesTx(ctx context.Context, tx uow.Tx, pollID, accountID string) ([]content.PollVote, error)
+	// PollStatusID returns the ID of the status whose revision has the poll.
+	PollStatusID(ctx context.Context, pollID string) (string, error)
+	// LockPoll locks the poll until tx ends, so that the votes of a local poll are counted one
+	// transaction at a time (a no-op where write transactions are serialized already).
+	LockPoll(ctx context.Context, tx uow.Tx, pollID string) error
+	// CountPollVotes returns, in tx, the votes of each choice of a poll by position (choices
+	// without votes are left out) and the number of accounts that voted.
+	CountPollVotes(ctx context.Context, tx uow.Tx, pollID string) (map[int]int64, int64, error)
+	// ListPollVoterIDs returns at most limit accounts that voted in a poll, ordered by ID, after
+	// the ID after ("" for the first page).
+	ListPollVoterIDs(ctx context.Context, pollID, after string, limit int) ([]string, error)
 }

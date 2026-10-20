@@ -100,6 +100,7 @@ func TestKeys(t *testing.T) {
 		ModerationNoticeKey("m1"):                 "moderation_notice:m1",
 		AppealDecidedKey("p1"):                    "appeal_decided:p1",
 		AdminAppealKey("p1"):                      "admin_appeal:p1",
+		PollClosedKey("p1"):                       "poll_closed:p1",
 	} {
 		if got != want {
 			t.Errorf("key = %q, want %q", got, want)

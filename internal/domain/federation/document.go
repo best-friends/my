@@ -35,6 +35,7 @@ func LDContext() []any {
 			"Emoji":                     "toot:Emoji",
 			"blurhash":                  "toot:blurhash",
 			"focalPoint":                map[string]string{"@container": "@list", "@id": "toot:focalPoint"},
+			"votersCount":               "toot:votersCount",
 		},
 	}
 }
@@ -212,6 +213,66 @@ type NoteDocument struct {
 	ContentMap map[string]string    `json:"contentMap,omitempty"`
 	Attachment []AttachmentDocument `json:"attachment"`
 	Tag        []TagDocument        `json:"tag"`
+	// The poll of a Question (FR-112), left out of a Note: the choices of a single-choice poll
+	// in OneOf or of a multiple-choice one in AnyOf, when it ends, when it ended (Closed, once
+	// it has), and how many voted, as Mastodon publishes them.
+	OneOf       []QuestionOption `json:"oneOf,omitempty"`
+	AnyOf       []QuestionOption `json:"anyOf,omitempty"`
+	EndTime     string           `json:"endTime,omitempty"`
+	Closed      string           `json:"closed,omitempty"`
+	VotersCount *int64           `json:"votersCount,omitempty"`
+}
+
+// QuestionOption is one choice of a Question: a Note named after it, whose replies count its
+// votes.
+type QuestionOption struct {
+	Type    ObjectType      `json:"type"`
+	Name    string          `json:"name"`
+	Replies QuestionReplies `json:"replies"`
+}
+
+// QuestionReplies is the replies collection of a QuestionOption, with only its size.
+type QuestionReplies struct {
+	Type       string `json:"type"`
+	TotalItems int64  `json:"totalItems"`
+}
+
+// QuestionPoll is the poll of a status as its Question carries it.
+type QuestionPoll struct {
+	Multiple bool
+	// Options are the titles of the choices, in order, and Votes their counts.
+	Options []string
+	Votes   []int64
+	// EndTime is when the poll ends, zero for no end; Closed is set once it has ended.
+	EndTime     time.Time
+	Closed      bool
+	VotersCount *int64
+}
+
+// AsQuestion returns n as the Question of a status with the poll p.
+func (n NoteDocument) AsQuestion(p QuestionPoll) NoteDocument {
+	n.Type = ObjectQuestion
+	options := make([]QuestionOption, len(p.Options))
+	for i, title := range p.Options {
+		var votes int64
+		if i < len(p.Votes) {
+			votes = p.Votes[i]
+		}
+		options[i] = QuestionOption{Type: ObjectNote, Name: title, Replies: QuestionReplies{Type: "Collection", TotalItems: votes}}
+	}
+	if p.Multiple {
+		n.AnyOf = options
+	} else {
+		n.OneOf = options
+	}
+	if !p.EndTime.IsZero() {
+		n.EndTime = FormatTime(p.EndTime)
+		if p.Closed {
+			n.Closed = n.EndTime
+		}
+	}
+	n.VotersCount = p.VotersCount
+	return n
 }
 
 // TopLevelNote is a Note served on its own, with its context.

@@ -71,6 +71,7 @@ func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory
 		{"SendsLikesAndUndoLikes", remoteSendsLikes},
 		{"SendsReactionsInTheLikeSlot", remoteSendsReactions},
 		{"SendsPollVotes", remoteSendsPollVotes},
+		{"VotesInLocalPolls", remoteVotesInLocalPolls},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteInteractionEnv(t, newHarness)) })
@@ -87,6 +88,11 @@ type remoteInteractionEnv struct {
 	handlers     *queue.JobHandlerRegistry
 	// emojiTags are the Emoji tags of the local custom emoji that reactions use, by emoji ID.
 	emojiTags map[string]appcontent.EmojiTag
+	// pollCloser ends polls and pollUpdates records the Updates of local polls (FR-112).
+	pollCloser  *appcontent.PollCloser
+	pollUpdates *appfederation.PollUpdates
+	// reader presents statuses to viewers and resolves the parts of the Notes the fan-out builds.
+	reader *appcontent.Reader
 }
 
 func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) *remoteInteractionEnv {
@@ -117,14 +123,26 @@ func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) 
 	appfederation.RegisterInteractionHandlers(rs.processor, appfederation.InteractionHandlersDeps{
 		Interactions: e.interactions, Statuses: rs.statuses,
 	})
+	rs.votes.target = e.interactions
 	outbox := queue.AfterCommit(rs.projectors, e.jobs, nil)
 	appfederation.RegisterOutboundProjectors(rs.projectors, appfederation.RecorderDeps{
 		Repository: ih.Federation, Outbox: outbox, IDs: rs.ids, Host: contractHost,
 	})
+	e.pollCloser = appcontent.NewPollCloser(appcontent.PollCloserDeps{
+		UnitOfWork: ih.UnitOfWork, Repository: ih.Statuses, Outbox: outbox, Clock: rs.clock,
+	})
+	e.pollCloser.RegisterProjectors(rs.projectors)
+	e.pollUpdates = appfederation.NewPollUpdates(appfederation.PollUpdatesDeps{
+		UnitOfWork: ih.UnitOfWork, Statuses: rs.content, Clock: rs.clock,
+		Recorder: appfederation.RecorderDeps{Repository: ih.Federation, Outbox: outbox, IDs: rs.ids, Host: contractHost},
+	})
+	e.reader = appcontent.NewReader(appcontent.ReaderDeps{
+		Statuses: ih.Statuses, Interactions: ih.Interactions, Accounts: rs.accounts, Relationships: rs.graph, Clock: rs.clock,
+	})
 	appfederation.NewFanOut(appfederation.FanOutDeps{
 		UnitOfWork: ih.UnitOfWork, Repository: ih.Federation, Outbox: outbox,
 		Statuses: appfederation.ContentStatuses{Service: rs.content, Interactions: e.interactions},
-		Accounts: rs.accounts, Graph: rs.graph, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
+		Accounts: rs.accounts, Graph: rs.graph, Clock: rs.clock, IDs: rs.ids, Host: contractHost, Parts: e.reader,
 	}).RegisterJobs(e.handlers)
 	return e
 }

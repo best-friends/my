@@ -12,9 +12,9 @@ import (
 type Type string
 
 // Notification types. The notification module generates follow, follow_request,
-// follow_accepted, mention, boost, favourite, and reaction from the graph and content events, and
-// moderation_notice, appeal_decided, report_resolved, and relationships_severed from the
-// moderation events; poll_closed belongs to the module that closes polls. admin_report,
+// follow_accepted, mention, boost, favourite, reaction, and poll_closed from the graph and
+// content events, and moderation_notice, appeal_decided, report_resolved, and
+// relationships_severed from the moderation events. admin_report,
 // admin_sign_up, and admin_appeal go to the moderators whose roles grant the permission they
 // need (ModeratorPermission).
 const (
@@ -152,6 +152,10 @@ func InteractionKey(t Type, statusID, sourceAccountID string) string {
 func ReactionKey(statusID, sourceAccountID, emojiKey string) string {
 	return string(TypeReaction) + ":" + statusID + ":" + sourceAccountID + ":" + emojiKey
 }
+
+// PollClosedKey is the dedupe key of a poll_closed notification: one per poll, so that closing
+// the poll again (the job runs at least once) does not notify again.
+func PollClosedKey(pollID string) string { return string(TypePollClosed) + ":" + pollID }
 
 // ReportResolvedKey is the dedupe key of a report_resolved notification: one per report, so
 // that resolving a reopened report again does not notify the reporter again.

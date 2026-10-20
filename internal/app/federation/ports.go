@@ -80,6 +80,9 @@ type Statuses interface {
 	LiveRevision(ctx context.Context, statusID, revisionID string) (appcontent.Status, appcontent.Revision, error)
 	AuthorRestrictions(ctx context.Context, accountID string) (appcontent.AuthorRestrictions, error)
 	FindBoost(ctx context.Context, id string) (appcontent.Boost, error)
+	// PollVoterIDs returns at most limit accounts that voted in a poll, ordered by ID, after
+	// after: the Update of a local poll goes to the remote ones too.
+	PollVoterIDs(ctx context.Context, pollID, after string, limit int) ([]string, error)
 }
 
 // ContentStatuses joins the content module's services into Statuses.

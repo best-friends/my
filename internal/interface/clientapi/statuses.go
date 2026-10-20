@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strconv"
+	"time"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
@@ -162,6 +164,12 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return unprocessable(l.ServerErrorsStatusPollAlreadyVoted())
 	case errors.Is(err, content.ErrInvalidPollChoices):
 		return unprocessable(l.ServerErrorsStatusPollInvalidChoices())
+	case errors.Is(err, content.ErrInvalidPoll):
+		return unprocessable(l.ServerErrorsStatusPollInvalid(strconv.Itoa(content.MaxPollOptionLength), strconv.Itoa(content.MaxLocalPollOptions), strconv.Itoa(content.MinPollOptions)))
+	case errors.Is(err, appcontent.ErrPollWithMedia):
+		return unprocessable(l.ServerErrorsStatusPollWithMedia())
+	case errors.Is(err, appcontent.ErrPollNotEditable):
+		return unprocessable(l.ServerErrorsStatusPollNotEditable())
 	}
 	return problem{}, false
 }
@@ -295,11 +303,15 @@ func newPoll(v appcontent.PollView, withViewer bool) Poll {
 		out.VotersCount = &n
 	}
 	for i, o := range v.Poll.Options {
-		var votes int64
-		if i < len(v.Votes) {
-			votes = v.Votes[i]
+		opt := PollOption{Title: o.Title}
+		if !v.TotalsHidden {
+			var votes int
+			if i < len(v.Votes) {
+				votes = int(v.Votes[i])
+			}
+			opt.VotesCount = &votes
 		}
-		out.Options = append(out.Options, PollOption{Title: o.Title, VotesCount: int(votes)})
+		out.Options = append(out.Options, opt)
 	}
 	if withViewer {
 		own := slices.Clone(v.OwnVotes)
@@ -376,7 +388,7 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 			Language: deref(body.Language), Media: mediaInput(body.Media),
 		},
 		AuthorAccountID: v.AccountID, Visibility: content.Visibility(body.Visibility), InReplyToID: deref(body.InReplyToId),
-		ClientID: v.ClientID, IdempotencyKey: deref(req.Params.IdempotencyKey),
+		ClientID: v.ClientID, IdempotencyKey: deref(req.Params.IdempotencyKey), Poll: pollInput(body.Poll),
 	})
 	if err == nil {
 		var out Status
@@ -388,6 +400,17 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 		return CreateStatusdefaultApplicationProblemPlusJSONResponse(p), nil
 	}
 	return nil, err
+}
+
+// pollInput maps the poll of a new status, nil for none.
+func pollInput(p *PollInput) *content.PollInput {
+	if p == nil {
+		return nil
+	}
+	return &content.PollInput{
+		Options: p.Options, Duration: time.Duration(p.ExpiresIn) * time.Second,
+		Multiple: deref(p.Multiple), HideTotals: deref(p.HideTotals),
+	}
 }
 
 // GetStatus serves GET /api/v1/statuses/{id}.

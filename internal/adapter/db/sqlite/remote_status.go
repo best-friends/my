@@ -17,7 +17,7 @@ import (
 func insertRemoteRevisionParts(ctx context.Context, q *sqlitegen.Queries, rev content.Revision) error {
 	if p := rev.Poll; p != nil {
 		err := q.InsertPoll(ctx, sqlitegen.InsertPollParams{
-			ID: p.ID, RevisionID: rev.ID, Multiple: boolToInt(p.Multiple), ClosesAt: toNullMillis(p.ClosesAt),
+			ID: p.ID, RevisionID: rev.ID, Multiple: boolToInt(p.Multiple), HideTotals: boolToInt(p.HideTotals), ClosesAt: toNullMillis(p.ClosesAt),
 		})
 		if err != nil {
 			return wrap(err, "insert poll")
@@ -48,7 +48,7 @@ func findRemoteRevisionParts(ctx context.Context, q *sqlitegen.Queries, rev *con
 	case err != nil:
 		return wrap(err, "get poll")
 	default:
-		p := &content.Poll{ID: poll.ID, Multiple: poll.Multiple != 0, ClosesAt: fromNullMillis(poll.ClosesAt)}
+		p := &content.Poll{ID: poll.ID, Multiple: poll.Multiple != 0, HideTotals: poll.HideTotals != 0, ClosesAt: fromNullMillis(poll.ClosesAt)}
 		options, err := q.ListPollOptions(ctx, poll.ID)
 		if err != nil {
 			return wrap(err, "list poll options")
@@ -282,4 +282,47 @@ func (r *StatusRepository) ListPollVotesTx(ctx context.Context, tx uow.Tx, pollI
 		return nil, err
 	}
 	return (&StatusRepository{db: db}).ListPollVotes(ctx, pollID, accountID)
+}
+
+// PollStatusID implements content.Repository.
+func (r *StatusRepository) PollStatusID(ctx context.Context, pollID string) (string, error) {
+	id, err := r.db.reader().GetPollStatus(ctx, pollID)
+	if err != nil {
+		return "", notFound(err, appcontent.ErrNotFound, "poll "+pollID)
+	}
+	return id, nil
+}
+
+// LockPoll implements content.Repository. It does nothing: write transactions begin with BEGIN
+// IMMEDIATE and run one at a time.
+func (r *StatusRepository) LockPoll(context.Context, uow.Tx, string) error { return nil }
+
+// CountPollVotes implements content.Repository.
+func (r *StatusRepository) CountPollVotes(ctx context.Context, tx uow.Tx, pollID string) (map[int]int64, int64, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, 0, err
+	}
+	rows, err := q.CountPollVotes(ctx, pollID)
+	if err != nil {
+		return nil, 0, wrap(err, "count poll votes")
+	}
+	votes := make(map[int]int64, len(rows))
+	for _, row := range rows {
+		votes[int(row.Position)] = row.Votes
+	}
+	voters, err := q.CountPollVoters(ctx, pollID)
+	if err != nil {
+		return nil, 0, wrap(err, "count poll voters")
+	}
+	return votes, voters, nil
+}
+
+// ListPollVoterIDs implements content.Repository.
+func (r *StatusRepository) ListPollVoterIDs(ctx context.Context, pollID, after string, limit int) ([]string, error) {
+	ids, err := r.db.reader().ListPollVoterIDs(ctx, sqlitegen.ListPollVoterIDsParams{PollID: pollID, After: after, Lim: int64(limit)})
+	if err != nil {
+		return nil, wrap(err, "list poll voters")
+	}
+	return ids, nil
 }

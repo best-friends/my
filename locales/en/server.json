@@ -735,6 +735,10 @@
     "defaultMessage": "This poll has ended.",
     "description": "Detail of the HTTP 422 API error when a user votes in a poll whose end has passed."
   },
+  "errors.status.poll_invalid": {
+    "defaultMessage": "A poll needs {min} to {max} different options of at most {length} characters each, and must last from 5 minutes to 30 days.",
+    "description": "Detail of the HTTP 422 API error when a new poll has too few or too many options, a blank, too long, or repeated option, or a duration out of range. {min} and {max} bound the number of options, {length} is the maximum number of characters of an option."
+  },
   "errors.status.poll_invalid_choices": {
     "defaultMessage": "Choose one of the poll's options, or several only when the poll allows it.",
     "description": "Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll."
@@ -742,6 +746,14 @@
   "errors.status.poll_missing": {
     "defaultMessage": "This post has no poll.",
     "description": "Detail of the HTTP 422 API error when a user votes on a post that has no poll."
+  },
+  "errors.status.poll_not_editable": {
+    "defaultMessage": "A post with a poll cannot be edited.",
+    "description": "Detail of the HTTP 422 API error when a user edits a post that has a poll: the votes belong to the poll as it was posted."
+  },
+  "errors.status.poll_with_media": {
+    "defaultMessage": "A post with a poll cannot attach files.",
+    "description": "Detail of the HTTP 422 API error when a new post has both a poll and attached media."
   },
   "errors.status.posting_restricted": {
     "defaultMessage": "Your account may not post right now.",
@@ -918,6 +930,10 @@
   "push.other": {
     "defaultMessage": "You have a new notification on {instance}",
     "description": "Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.poll_closed": {
+    "defaultMessage": "A poll you took part in has ended",
+    "description": "Web Push notification: a poll that the user created or voted in has ended."
   },
   "push.reaction": {
     "defaultMessage": "{name} reacted to your post",

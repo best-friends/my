@@ -68,6 +68,8 @@ type ProjectorDeps struct {
 //   - content.reacted: reaction, to the status's author, with the reaction's emoji. Its dedupe
 //     key is per emoji (notification.ReactionKey), so a reaction with another emoji notifies
 //     again (ADR-0052 §5).
+//   - content.poll_closed: poll_closed, to the author of the poll without a source, and to each
+//     account that voted in it from the author, once per poll (notification.PollClosedKey).
 //   - moderation.report_resolved: report_resolved, to the reporter when the reporter is a local
 //     account. It comes from the instance and has no source account. Its dedupe key is the
 //     report's (notification.ReportResolvedKey), so only the first resolution notifies: a
@@ -164,6 +166,10 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 			ReactionEmoji: re.Emoji.Unicode, ReactionCustomEmojiID: re.Emoji.CustomEmojiID,
 			DedupeKey: notification.ReactionKey(st.ID, re.AccountID, re.Emoji.Key()), CreatedAt: re.CreatedAt,
 		})
+	})
+	r.Register(appcontent.EventPollClosed, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appcontent.PollClosed)
+		return p.pollClosed(ctx, tx, ev)
 	})
 	r.Register(appmoderation.EventReportResolved, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appmoderation.ReportResolved)
@@ -279,6 +285,33 @@ func (p *projector) mentions(ctx context.Context, tx uow.Tx, statusID, authorID 
 		err := p.notify(ctx, tx, notification.Notification{
 			RecipientAccountID: id, SourceAccountID: authorID, Type: notification.TypeMention, StatusID: statusID,
 			DedupeKey: notification.MentionKey(statusID), CreatedAt: at,
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// pollClosed notifies the author of a poll that has ended, without a source, and each voter,
+// from the author; notify keeps the local recipients. The author who voted in the own poll is
+// notified once (the dedupe key is the poll's).
+func (p *projector) pollClosed(ctx context.Context, tx uow.Tx, ev appcontent.PollClosed) error {
+	st, at := ev.Status, *ev.Poll.ClosesAt
+	key := notification.PollClosedKey(ev.Poll.ID)
+	err := p.notify(ctx, tx, notification.Notification{
+		RecipientAccountID: st.AuthorAccountID, Type: notification.TypePollClosed, StatusID: st.ID, DedupeKey: key, CreatedAt: at,
+	})
+	if err != nil {
+		return err
+	}
+	for _, id := range ev.VoterAccountIDs {
+		if id == st.AuthorAccountID {
+			continue
+		}
+		err := p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: id, SourceAccountID: st.AuthorAccountID, Type: notification.TypePollClosed, StatusID: st.ID,
+			DedupeKey: key, CreatedAt: at,
 		})
 		if err != nil {
 			return err

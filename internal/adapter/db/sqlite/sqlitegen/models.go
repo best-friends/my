@@ -577,6 +577,7 @@ type Poll struct {
 	ID         string
 	RevisionID string
 	Multiple   int64
+	HideTotals int64
 	ClosesAt   sql.NullInt64
 }
 

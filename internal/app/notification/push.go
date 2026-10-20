@@ -386,7 +386,8 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 			return nil, err
 		}
 	}
-	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite || job.Type == notification.TypeReaction {
+	if job.Type == notification.TypeBoost || job.Type == notification.TypeFavourite || job.Type == notification.TypeReaction ||
+		(job.Type == notification.TypePollClosed && job.SourceAccountID == "") {
 		if recipient, err = s.d.Audience.Account(ctx, job.AccountID); err != nil {
 			return nil, err
 		}
@@ -417,6 +418,13 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 		p.Title, p.Path = l.ServerPushFavourite(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeReaction:
 		p.Title, p.Path = l.ServerPushReaction(name), statusPath(recipient.Acct, job.StatusID)
+	case notification.TypePollClosed:
+		// The voters' notifications are from the poll's author; the author's own has no source.
+		author := source.Acct
+		if job.SourceAccountID == "" {
+			author = recipient.Acct
+		}
+		p.Title, p.Path = l.ServerPushPollClosed(), statusPath(author, job.StatusID)
 	case notification.TypeModerationNotice:
 		p.Title, p.Path = l.ServerPushModerationNotice(instance), "/settings/account-status"
 	case notification.TypeAppealDecided:
