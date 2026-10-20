@@ -507,9 +507,9 @@ describe("images", () => {
     const sheet = await openSheet(user);
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Look");
     await user.upload(fileInput(), new File(["png"], "chart.png", { type: "image/png" }));
-    const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
+    const description = await within(sheet).findByRole("textbox", { name: "Description of attachment 1" });
     expect(description).toBeRequired();
-    expect(description).toHaveAccessibleDescription(/This server requires a description of every image\./);
+    expect(description).toHaveAccessibleDescription(/This server requires a description of every attachment\./);
     const post = within(sheet).getByRole("button", { name: "Post" });
     await waitFor(() => {
       expect(post).toBeEnabled();
@@ -521,7 +521,7 @@ describe("images", () => {
       expect(description).toHaveFocus();
     });
     expect(description).toBeInvalid();
-    expect(description).toHaveAccessibleDescription(/Add a description of this image\./);
+    expect(description).toHaveAccessibleDescription(/Add a description of this attachment\./);
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(sent).toHaveLength(0);
 

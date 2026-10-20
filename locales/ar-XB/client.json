@@ -5348,7 +5348,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.missing": {
-    "defaultMessage": "‮∀pp ɐ pǝsɔɹıdʇıou oɟ ʇɥıs ıɯɐƃǝ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ouǝ ɟoɹ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮∀pp ɐ pǝsɔɹıdʇıou oɟ ʇɥıs ɐʇʇɐɔɥɯǝuʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ouǝ ɟoɹ ǝʌǝɹʎ ɐʇʇɐɔɥɯǝuʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.required": {
@@ -5356,7 +5356,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.server_required": {
-    "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮ᗡǝsɔɹıqǝ ıʇ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ oɹ ɥǝɐɹ ıʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ɐʇʇɐɔɥɯǝuʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.failed": {

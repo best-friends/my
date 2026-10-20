@@ -2676,11 +2676,11 @@ export interface MessageArgs {
   "client:compose.media.description.hint": {};
   /** Description of attachment {position} */
   "client:compose.media.description.label": { position: string };
-  /** Add a description of this image. This server requires one for every image. */
+  /** Add a description of this attachment. This server requires one for every attachment. */
   "client:compose.media.description.missing": {};
   /** Describe it for people who cannot see or hear it. Your settings ask for a description of every attachment. */
   "client:compose.media.description.required": {};
-  /** Describe the image for people who cannot see it. This server requires a description of every image. */
+  /** Describe it for people who cannot see or hear it. This server requires a description of every attachment. */
   "client:compose.media.description.server_required": {};
   /** Could not attach the file: {reason} */
   "client:compose.media.failed": { reason: string };

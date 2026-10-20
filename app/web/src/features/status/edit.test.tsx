@@ -193,9 +193,9 @@ describe("editing a post", () => {
     const { user } = await renderApp({ path: "/local" });
 
     const dialog = await openEditor(user, "My first words");
-    const description = await within(dialog).findByRole("textbox", { name: "Description of image 1" });
+    const description = await within(dialog).findByRole("textbox", { name: "Description of attachment 1" });
     expect(description).toBeRequired();
-    expect(description).toHaveAccessibleDescription(/This server requires a description of every image\./);
+    expect(description).toHaveAccessibleDescription(/This server requires a description of every attachment\./);
     await user.clear(description);
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
