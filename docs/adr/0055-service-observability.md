@@ -98,7 +98,7 @@ OpenTelemetry Go（`go.opentelemetry.io/otel`・`otel/metric`・`otel/sdk` v1.47
 - ADR-0056 は同じ port とアダプタでシステムの指標を足す（Go のランタイム・プロセスの指標を OTel の contrib から足すかは ADR-0056 が決める）
 
 B を選ばない理由: OTel の API は no-op を前提にした薄い層で、B の最も強い利点は自前の port の重複がないことである。
-ただし ADR-0002 の「コアは外部ライブラリを import しない」に例外を作り、EMF のように OTel の集計を通さない出力を同じ呼び出しで扱えない。port は計器の宣言と 4 種の記録だけで小さく、重複は少ない。
+ただし ADR-0002 の「コアは外部ライブラリを import しない」に例外を作り、EMF のように OTel の集計を通さない出力を同じ呼び出しで扱えない。port は計器の宣言と 5 種の記録だけで小さく、重複は少ない。
 
 C を選ばない理由: pull の 1 経路だけになり、Cloud Run（リクエストベース課金）と Lambda では scrape を当てにできない。OTel は Prometheus の形式も出せるので、C の利点は A に含まれる。
 
