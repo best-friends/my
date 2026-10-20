@@ -36,14 +36,14 @@ type notes struct {
 	host, accountDomain string
 }
 
-// note returns the Note of st as of rev by author, addressed by the effective visibility vis. A
-// zero updated leaves updated out.
+// note returns the Note of st as of rev by its local author, addressed by the effective
+// visibility vis. A zero updated leaves updated out.
 //
 // The Note of a local-visibility status leaves out of tag the remote accounts that do not
 // actively follow the author at the time it is built (ADR-0035): a server that gets the status
 // for a follower would otherwise let a mentioned account there see it. The mention links in the
 // content stay. Its addressing has no mentioned accounts anyway (ADR-0017).
-func (n notes) note(ctx context.Context, st appcontent.Status, rev appcontent.Revision, author federation.IRI, vis appcontent.Visibility, updated time.Time) (federation.NoteDocument, error) {
+func (n notes) note(ctx context.Context, st appcontent.Status, rev appcontent.Revision, author appaccount.Actor, vis appcontent.Visibility, updated time.Time) (federation.NoteDocument, error) {
 	parts, err := n.parts.Parts(ctx, rev)
 	if err != nil {
 		return federation.NoteDocument{}, err
@@ -67,20 +67,22 @@ func (n notes) note(ctx context.Context, st appcontent.Status, rev appcontent.Re
 	return statusNote(st, rev, author, vis, parts, updated, n.host, n.accountDomain), nil
 }
 
-// statusNote returns the Note of a local status st as of rev by actor, addressed by the effective
-// visibility vis to its followers and the mentioned accounts of parts, with the body of rev:
-// content per language, content warning, attachments, and the mentions and hashtags of parts as
-// tag (federation.md §7.4). A zero updated leaves updated out.
-func statusNote(st appcontent.Status, rev appcontent.Revision, actor federation.IRI, vis appcontent.Visibility, parts appcontent.RevisionParts, updated time.Time, host, accountDomain string) federation.NoteDocument {
+// statusNote returns the Note of a local status st as of rev by author, addressed by the
+// effective visibility vis to its followers and the mentioned accounts of parts, with the body of
+// rev: content per language, content warning, attachments, and the mentions and hashtags of parts
+// as tag (federation.md §7.4). Its url is the status page under the author's current username
+// (ADR-0053). A zero updated leaves updated out.
+func statusNote(st appcontent.Status, rev appcontent.Revision, author appaccount.Actor, vis appcontent.Visibility, parts appcontent.RevisionParts, updated time.Time, host, accountDomain string) federation.NoteDocument {
 	mentioned := make([]federation.IRI, 0, len(parts.Mentions))
 	for _, m := range parts.Mentions {
 		mentioned = append(mentioned, federation.IRI(m.Account.URI))
 	}
+	actor := federation.IRI(author.Account.URI)
 	aud := federation.Address(federation.Visibility(vis), federation.FollowersOf(actor), mentioned)
 	note := federation.NoteDocument{
 		ObjectDocument: federation.ObjectDocument{
 			ID: federation.IRI(st.URI), Type: federation.ObjectNote,
-			Published: federation.FormatTime(st.PublishedAt), URL: st.URL,
+			Published: federation.FormatTime(st.PublishedAt), URL: appcontent.StatusPageURL(host, st, author),
 			AttributedTo: actor, To: aud.To, Cc: aud.Cc,
 		},
 		Summary: rev.SpoilerText,
@@ -178,10 +180,11 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 	if act.ObjectKind == federation.OutboundFavourite || (act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete) {
 		return nil, nil
 	}
-	actor, err := f.actorIRI(ctx, act.ActorAccountID)
+	author, err := f.d.Accounts.FindByID(ctx, act.ActorAccountID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("actor %s: %w", act.ActorAccountID, err)
 	}
+	actor := federation.IRI(author.Account.URI)
 
 	var doc federation.ActivityDocument
 	switch act.ObjectKind {
@@ -190,7 +193,7 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		if act.Type == federation.ActivityUpdate {
 			published, updated = s.revision.RevisedAt, s.revision.RevisedAt
 		}
-		note, err := f.notes.note(ctx, s.status, s.revision, actor, s.visibility, updated)
+		note, err := f.notes.note(ctx, s.status, s.revision, author, s.visibility, updated)
 		if err != nil {
 			return nil, err
 		}

@@ -248,6 +248,7 @@ CREATE INDEX account_lifecycle_states_state_deletion_due_at ON account_lifecycle
 CREATE TABLE statuses (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   uri text NOT NULL,
+  -- the HTML page of a remote status; a local status's page is derived on read (ADR-0053).
   url text,
   author_account_id text COLLATE "C" NOT NULL,
   is_local boolean NOT NULL,

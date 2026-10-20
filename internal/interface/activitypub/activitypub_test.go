@@ -231,7 +231,7 @@ func TestProfilePageServesHTML(t *testing.T) {
 		{"missing account", "/@nobody", acceptBrowser, http.StatusOK, true, []string{"Accept"}},
 		{"Mastodon", "/@alice", acceptMastodon, http.StatusFound, false, []string{"Accept"}},
 		{"Mastodon, missing account", "/@nobody", acceptMastodon, http.StatusNotFound, false, []string{"Accept"}},
-		{"SPA route", "/home", acceptBrowser, http.StatusOK, true, nil},
+		{"SPA route", "/home", acceptBrowser, http.StatusOK, true, []string{"Accept"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -241,6 +241,49 @@ func TestProfilePageServesHTML(t *testing.T) {
 			}
 			if got := rec.Header().Values("Vary"); !reflect.DeepEqual(got, tt.vary) {
 				t.Errorf("Vary = %q, want %q", got, tt.vary)
+			}
+		})
+	}
+}
+
+// TestPagesAnswerActivityPub checks the web client's pages (Handler.Pages): requests for HTML
+// get the page, and requests for ActivityPub get 404, except that a post page that an anonymous
+// visitor may see redirects to the post's id with 302 (ADR-0053).
+func TestPagesAnswerActivityPub(t *testing.T) {
+	s := &server{mux: http.NewServeMux(), accounts: newAccounts(t), objects: newObjects()}
+	h := activitypub.New(activitypub.Options{
+		Host: host, Accounts: s.accounts, Objects: s.objects, Problem: problem,
+		HTML: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("shell")) }),
+	})
+	h.Register(s.mux)
+	s.mux.Handle("GET /", h.Pages())
+	id := "https://" + host + "/ap/objects/" + publicStatusID
+	tests := []struct {
+		name, path, accept string
+		status             int
+		location           string
+		shell              bool
+	}{
+		{"browser", "/@alice/status/" + publicStatusID, acceptBrowser, http.StatusOK, "", true},
+		{"Mastodon", "/@alice/status/" + publicStatusID, acceptMastodon, http.StatusFound, id, false},
+		{"Mastodon, another name", "/@renamed/status/" + publicStatusID, acceptMastodon, http.StatusFound, id, false},
+		{"Mastodon, followers-only", "/@alice/status/" + followersOnlyID, acceptMastodon, http.StatusNotFound, "", false},
+		{"Mastodon, deleted", "/@alice/status/" + deletedStatusID, acceptMastodon, http.StatusNotFound, "", false},
+		{"Mastodon, missing", "/@alice/status/" + missingStatusID, acceptMastodon, http.StatusNotFound, "", false},
+		{"Mastodon, not an ID", "/@alice/status/abc", acceptMastodon, http.StatusNotFound, "", false},
+		{"Mastodon, the form without status", "/@alice/" + publicStatusID, acceptMastodon, http.StatusNotFound, "", false},
+		{"Mastodon, a page under the post", "/@alice/status/" + publicStatusID + "/boosts", acceptMastodon, http.StatusNotFound, "", false},
+		{"Mastodon, another page", "/@alice/followers", acceptMastodon, http.StatusNotFound, "", false},
+		{"browser, SPA route", "/settings/profile", acceptBrowser, http.StatusOK, "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := s.get(t, tt.path, tt.accept)
+			if rec.Code != tt.status || rec.Header().Get("Location") != tt.location || (rec.Body.String() == "shell") != tt.shell {
+				t.Fatalf("GET %s = %d Location %q %q, want %d %q (shell: %v)", tt.path, rec.Code, rec.Header().Get("Location"), rec.Body, tt.status, tt.location, tt.shell)
+			}
+			if got := rec.Header().Values("Vary"); !reflect.DeepEqual(got, []string{"Accept"}) {
+				t.Errorf("Vary = %q, want Accept", got)
 			}
 		})
 	}

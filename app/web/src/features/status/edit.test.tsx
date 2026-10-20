@@ -127,7 +127,7 @@ describe("editing a post", () => {
     });
     // The post changes where it is, and says it was edited, with a link to its history.
     const article = within(feed).getByRole("article");
-    expect(within(article).getByRole("link", { name: "Edited" })).toHaveAttribute("href", `/@alice/${ownId}/history`);
+    expect(within(article).getByRole("link", { name: "Edited" })).toHaveAttribute("href", `/@alice/status/${ownId}/history`);
     expect(within(article).getByText("Dogs")).toBeInTheDocument();
   });
 
@@ -192,12 +192,12 @@ describe("a post's edit history", () => {
     signedIn();
     serveOwnPost(edited);
     server.use(http.get(`${apiBase}/statuses/:id/history`, () => HttpResponse.json({ items: revisions })));
-    const { user, router } = await renderApp({ path: `/@alice/${ownId}` });
+    const { user, router } = await renderApp({ path: `/@alice/status/${ownId}` });
 
     await user.click(await screen.findByRole("link", { name: "Edited" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Edit history" })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe(`/@alice/${ownId}/history`);
+    expect(router.state.location.pathname).toBe(`/@alice/status/${ownId}/history`);
     await waitFor(() => {
       expect(document.title).toBe("Edit history – my example");
     });
@@ -220,7 +220,7 @@ describe("a post's edit history", () => {
 
   test("says when the post is not found", async () => {
     server.use(http.get(`${apiBase}/statuses/:id/history`, () => problem(404, "/api/v1/problems/not-found", "Not Found")));
-    await renderApp({ path: `/@alice/${ownId}/history` });
+    await renderApp({ path: `/@alice/status/${ownId}/history` });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post not found" })).toBeInTheDocument();
   });

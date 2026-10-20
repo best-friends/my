@@ -132,7 +132,7 @@ func (h *Handler) lookupUsername(r *http.Request, username string) (appaccount.A
 func (h *Handler) profilePage(w http.ResponseWriter, r *http.Request) {
 	username, ok := cutAt(r.PathValue("name"))
 	if !ok {
-		h.html(w, r)
+		h.page(w, r)
 		return
 	}
 	w.Header().Add("Vary", "Accept")

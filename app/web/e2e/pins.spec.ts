@@ -42,7 +42,7 @@ function post(n: number): Status {
   return {
     id,
     uri: `https://my.example/ap/statuses/${id}`,
-    url: `https://my.example/@alice/${id}`,
+    url: `https://my.example/@alice/status/${id}`,
     account: alice,
     content: `<p>Fresh bread number ${String(n)}.</p>`,
     spoiler_text: "",

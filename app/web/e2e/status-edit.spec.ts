@@ -56,7 +56,7 @@ const revisions: StatusEdit[] = [original, latest];
 const post: Status = {
   id: postId,
   uri: `https://my.example/ap/statuses/${postId}`,
-  url: `https://my.example/@alice/${postId}`,
+  url: `https://my.example/@alice/status/${postId}`,
   account: alice,
   content: latest.content,
   spoiler_text: latest.spoiler_text,
@@ -112,7 +112,7 @@ async function serveApi(page: Page): Promise<void> {
 
 test("the history of an edited post lists its revisions, newest first", async ({ page, makeAxeBuilder }) => {
   await serveApi(page);
-  await page.goto(`/@alice/${postId}`);
+  await page.goto(`/@alice/status/${postId}`);
   const article = page.getByRole("main").getByRole("article");
   await article.getByRole("link", { name: message("status.edited") }).click();
 
@@ -148,7 +148,7 @@ test("the history of an edited post lists its revisions, newest first", async ({
 
 test("the viewer edits their post in a dialog, and the post shows the edit", async ({ page, makeAxeBuilder }) => {
   await serveApi(page);
-  await page.goto(`/@alice/${postId}`);
+  await page.goto(`/@alice/status/${postId}`);
   const article = page.getByRole("main").getByRole("article");
   await article.getByRole("button", { name: message("status.action.more") }).click();
   await page.getByRole("menuitem", { name: message("status.action.edit") }).click();

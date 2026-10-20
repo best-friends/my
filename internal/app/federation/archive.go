@@ -78,7 +78,7 @@ func (o *Objects) ArchiveOutbox(ctx context.Context, accountID string, w io.Writ
 		}
 		for _, v := range views {
 			parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
-			note := statusNote(v.Status, v.Revision, actor, v.Status.Visibility, parts, updatedOf(v.Revision), o.d.Host, o.d.AccountDomain)
+			note := statusNote(v.Status, v.Revision, v.Author, v.Status.Visibility, parts, updatedOf(v.Revision), o.d.Host, o.d.AccountDomain)
 			item, err := marshalNoEscape(createOf(v.Status, actor, note).Embedded())
 			if err != nil {
 				return err

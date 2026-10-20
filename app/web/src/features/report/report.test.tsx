@@ -59,7 +59,7 @@ describe("reporting from a post", () => {
     server.use(signedInHandler, instanceWithRules);
     servePost();
     const bodies = recordReports();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const article = await screen.findByRole("article", { description: "The post" });
     const more = await within(article).findByRole("button", { name: "More actions" });
 
@@ -145,7 +145,7 @@ describe("reporting from a post", () => {
   test("asks for a reason and, for a rule violation, a rule before going on", async () => {
     server.use(signedInHandler, instanceWithRules);
     servePost();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const dialog = await openFromPost(user);
 
     await user.click(within(dialog).getByRole("button", { name: "Next" }));
@@ -173,7 +173,7 @@ describe("reporting from a post", () => {
     server.use(signedInHandler);
     servePost();
     const bodies = recordReports();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const dialog = await openFromPost(user);
 
     expect(within(dialog).getAllByRole("radio").map((radio) => radio.getAttribute("value"))).toEqual(["spam", "legal", "other"]);
@@ -196,7 +196,7 @@ describe("reporting from a post", () => {
       http.post(`${apiBase}/reports`, () => problem(429, "/api/v1/problems/rate-limited", "Too many reports in the last hour.")),
     );
     servePost();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const dialog = await openFromPost(user);
 
     await user.click(within(dialog).getByRole("radio", { name: "Something else" }));
@@ -219,7 +219,7 @@ describe("reporting from a post", () => {
       ),
     );
     servePost();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const dialog = await openFromPost(user);
     await user.click(within(dialog).getByRole("radio", { name: "Spam" }));
     await user.click(within(dialog).getByRole("button", { name: "Next" }));
@@ -235,7 +235,7 @@ describe("reporting from a post", () => {
     const own = viewerStatusFixture({ id: "0192f0c4-7a8e-7000-8000-0000000000e1", content: "<p>My post</p>" });
     server.use(signedInHandler);
     servePost(own);
-    const { user } = await renderApp({ path: `/@alice/${own.id}` });
+    const { user } = await renderApp({ path: `/@alice/status/${own.id}` });
 
     await user.click(await within(await screen.findByRole("article", { description: "My post" })).findByRole("button", { name: "More actions" }));
     expect(await screen.findByRole("menuitem", { name: "Copy link" })).toBeInTheDocument();

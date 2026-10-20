@@ -94,13 +94,13 @@ Trusted Types を必須にし（`require-trusted-types-for 'script'`）、作れ
 
 | パス | 内容 | `Cache-Control` |
 | --- | --- | --- |
-| ほかのルートに当たらない `GET`（`/`、`/@alice`、`/@alice/{id}`、`/settings` など） | SPA の HTML の外枠。インスタンスの設定は `<script type="application/json" id="config">` で渡す | `public, max-age=60, stale-while-revalidate=300`、ETag |
+| ほかのルートに当たらない `GET`（`/`、`/@alice`、`/@alice/status/{id}`、`/settings` など） | SPA の HTML の外枠。インスタンスの設定は `<script type="application/json" id="config">` で渡す | `public, max-age=60, stale-while-revalidate=300`、ETag |
 | `GET /assets/*` | ビルドのハッシュ付きファイル | `public, max-age=31536000, immutable`、ETag |
 | `GET /manifest.webmanifest` | インスタンスの設定から作る Web アプリマニフェスト | `public, max-age=60, stale-while-revalidate=300`、ETag |
 | `GET /sw.js`、`/icon.svg` などビルドの直下のファイル | そのまま配る | `no-cache`、ETag |
 
 - `/api`、`/oauth`、`/auth`、`/.well-known`、`/nodeinfo`、`/ap`、`/media`、`/uploads`、`/theme`（サーバーのテーマのスタイルシート）の下は外枠を返さず、ほかのルートに当たらなければ 404 の problem になる。
-- 外枠は ActivityPub のコンテントネゴシエーションの後に返す。ActivityPub の `Accept` で外枠のパスを取ると 404 になる。
+- 外枠は ActivityPub のコンテントネゴシエーションの後に返す。ActivityPub の `Accept` で外枠のパスを取ると 404 になる（投稿のページは下記のリダイレクト）。
   外枠には常に `Vary: Accept` が付く。CDN を前に置くときは `Accept` の種類（ActivityPub か HTML か）をキャッシュキーに含めるか、
   外枠と `/ap/*`、`/@*` をキャッシュ対象から外す。CDN から配るのは `/assets/*` だけにする。
 - Web クライアントを含めずにビルドしたバイナリ（`make build` を通さない `go build`）は、起動時に警告を出し、スクリプトのない外枠を返す。
@@ -118,6 +118,7 @@ URI の形式は [ADR-0018](../adr/0018-federated-uris.md) に従う。
 | `GET /ap/actors/{uuid}` | Actor（`publicKey` は RSA の `#main-key`）。HTML を優先するリクエストは `/@{username}` へ 303 |
 | `GET /ap/actors/{uuid}/{outbox,followers,following,featured,featured-tags}` | コレクション。投稿・フォローを実装するまでは空 |
 | `GET /@{username}` | ActivityPub の `Accept` なら Actor の `id` へ 302。それ以外は Web クライアントの HTML（下記） |
+| `GET /@{username}/status/{uuid}` | ActivityPub の `Accept` なら、未ログインで見られる投稿の `id`（`/ap/objects/{uuid}`）へ 302、見られなければ 404（[ADR-0053](../adr/0053-status-page-url.md)）。それ以外は Web クライアントの HTML |
 
 - インスタンス Actor のハンドルは `{account_domain}@{account_domain}`（Mastodon と同じ形）。
 - 存在しない、または見せられない（停止中・削除済み・リモートの）アカウントは、どれも同じ 404（`Cache-Control: no-store`）になる。

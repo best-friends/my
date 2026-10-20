@@ -76,7 +76,7 @@ describe("the notifications page", () => {
     expect(articles[0]).toHaveAccessibleName(/^Unread: Bob mentioned you/);
     expect(articles[1]).toHaveAccessibleName(/^Bob followed you/);
     // The post the mention is about is quoted as its text, in one link to its page.
-    expect(within(articles[0] ?? feed).getByRole("link", { name: "@alice hello" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    expect(within(articles[0] ?? feed).getByRole("link", { name: "@alice hello" })).toHaveAttribute("href", "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b1");
     // The time is relative as in the timelines, with the full date and time as its tooltip.
     const time = within(articles[0] ?? feed).getByRole("time");
     expect(time).toHaveAttribute("datetime", "2026-10-16T09:00:00Z");
@@ -114,7 +114,7 @@ describe("the notifications page", () => {
     await user.click(within(feed).getByRole("link", { name: "@alice hello" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toHaveFocus();
-    expect(router.state.location.pathname).toBe("/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    expect(router.state.location.pathname).toBe("/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b1");
     expect(await screen.findByRole("region", { name: "Replies" })).toBeInTheDocument();
   });
 
@@ -274,7 +274,7 @@ describe("the notifications page", () => {
     expect(within(feed).getByRole("article", { name: /bob signed up and awaits approval/ })).toBeInTheDocument();
     // A post behind a content warning shows the warning only; its page asks to open it.
     const boost = within(feed).getByRole("article", { name: /bob boosted your post/ });
-    expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b2");
+    expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b2");
     expect(within(boost).queryByText("the ending", { exact: false })).not.toBeInTheDocument();
     // The types without an actor link to no profile, only to where the user follows them up.
     expect(within(within(feed).getByRole("article", { name: /The moderators/ })).getAllByRole("link").map((link) => link.textContent)).toEqual(["View your account status"]);
@@ -510,7 +510,7 @@ describe("the notifications page", () => {
 
 describe("the favourites and the boosts of one post", () => {
   const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000b1");
-  const postPath = "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1";
+  const postPath = "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b1";
   const carol = accountFixture(3, "Carol");
   const dave = accountFixture(4, "Dave");
   /** A favourite of the post by `account`. */

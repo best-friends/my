@@ -91,7 +91,7 @@ describe("a reply", () => {
         return HttpResponse.json(reply);
       }),
     );
-    const { user, router } = await renderApp({ path: `/@bob/${parent.id}` });
+    const { user, router } = await renderApp({ path: `/@bob/status/${parent.id}` });
     const article = await screen.findByRole("article", { description: "The question" }, { timeout: latency * 5 });
     await user.click(await within(article).findByRole("button", { name: "Reply" }));
     const sheet = await screen.findByRole("dialog", { name: "New post" });
@@ -102,7 +102,7 @@ describe("a reply", () => {
 
     await user.click(within(navigation()).getByRole("link", { name: "Home" }));
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
-    await router.navigate({ to: "/@{$acct}/$id", params: { acct: "bob", id: parent.id } });
+    await router.navigate({ to: "/@{$acct}/status/$id", params: { acct: "bob", id: parent.id } });
     // The post counts the reply from the page's first render, not as it was before the reply.
     const again = await screen.findByRole("article", { description: "The question" });
     expect(within(again).getByRole("button", { name: "Reply" })).toHaveAccessibleDescription("1");

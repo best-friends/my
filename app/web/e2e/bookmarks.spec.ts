@@ -43,7 +43,7 @@ function status(n: number, content: string): Status {
   return {
     id,
     uri: `https://my.example/ap/statuses/${id}`,
-    url: `https://my.example/@bob/${id}`,
+    url: `https://my.example/@bob/status/${id}`,
     account: bob,
     content,
     spoiler_text: "",

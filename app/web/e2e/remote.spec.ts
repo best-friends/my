@@ -237,7 +237,7 @@ test.describe("a profile of another server whose recent posts are being fetched"
 test.describe("a post of another server", () => {
   test("has its link on its page, without axe violations or sideways scrolling", async ({ page, makeAxeBuilder }) => {
     await serveApi(page);
-    await page.goto(`/@${carol.acct}/${postId}`);
+    await page.goto(`/@${carol.acct}/status/${postId}`);
     const article = page.getByRole("main").getByRole("article");
     await expect(article).toBeVisible();
     await expect(article.getByRole("link", { name: message("status.original", host) })).toHaveAttribute("href", post.url ?? "");

@@ -157,7 +157,7 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 	}
 	v := appcontent.StatusView{
 		Status: content.Status{
-			ID: sampleStatusID, URI: "https://social.example/ap/statuses/" + sampleStatusID, URL: "https://social.example/@alice/" + sampleStatusID,
+			ID: sampleStatusID, URI: "https://social.example/ap/statuses/" + sampleStatusID,
 			AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic, PublishedAt: published,
 		},
 		Revision: content.Revision{

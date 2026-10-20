@@ -194,7 +194,7 @@ export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}):
 /** A post by Bob that mentions Alice. */
 export function statusFixture(id: string): Schemas["Status"] {
   return postFixture(otherAccountFixture, id, {
-    url: `https://my.example/@bob/${id}`,
+    url: `https://my.example/@bob/status/${id}`,
     content: '<p><a href="https://my.example/@alice">@alice</a> hello</p>',
     mentions: [{ id: viewerFixture.id, username: "alice", acct: "alice", url: viewerFixture.url }],
   });
@@ -203,7 +203,7 @@ export function statusFixture(id: string): Schemas["Status"] {
 /** A local post of another account, for the timelines. */
 export const timelineStatusFixture: Schemas["Status"] = postFixture(otherAccountFixture, "0192f0c4-7a8e-7000-8000-0000000000a1", {
   uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
-  url: "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000a1",
+  url: "https://my.example/@bob/status/0192f0c4-7a8e-7000-8000-0000000000a1",
   content: "<p>Hello from the local timeline!</p>",
 });
 

@@ -76,7 +76,7 @@ describe("a deleted post", () => {
     const { user, router } = await renderApp({ path: "/profile" });
     expect(within(await screen.findByRole("feed", { name: "Posts" }, { timeout: latency * 5 })).getByRole("article", { description: "My post" })).toBeInTheDocument();
 
-    await router.navigate({ to: "/@{$acct}/$id", params: { acct: viewerFixture.acct, id: own.id } });
+    await router.navigate({ to: "/@{$acct}/status/$id", params: { acct: viewerFixture.acct, id: own.id } });
     const article = await screen.findByRole("article", { description: "My post" });
     await user.click(await within(article).findByRole("button", { name: "More actions" }));
     await user.click(await screen.findByRole("menuitem", { name: "Delete" }));

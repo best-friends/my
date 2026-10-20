@@ -177,7 +177,7 @@ func TestWebPush(t *testing.T) {
 		t.Errorf("message to %s with Authorization %q", reqs[0].URL, reqs[0].Header.Get("Authorization"))
 	}
 	msg := openPushMessage(t, reqs[0].Body, ua, auth)
-	if msg.Type != "mention" || msg.Path != "/@bob/"+statusID || msg.Lang != "ja" || msg.Title != "Bobさんがあなたをメンションしました" || msg.NotificationID == "" {
+	if msg.Type != "mention" || msg.Path != "/@bob/status/"+statusID || msg.Lang != "ja" || msg.Title != "Bobさんがあなたをメンションしました" || msg.NotificationID == "" {
 		t.Errorf("message = %+v", msg)
 	}
 

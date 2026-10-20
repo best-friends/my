@@ -9,13 +9,13 @@ import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
 
 /**
- * `/@{acct}/{id}/history`: as on the post's page, the handle only makes the address readable. The `_`s keep
+ * `/@{acct}/status/{id}/history`: as on the post's page, the handle only makes the address readable. The `_`s keep
  * the page out of the layouts of the profile and of the post's page.
  */
 const paramsSchema = z.object({ acct: z.string().min(1), id: z.string().min(1) });
 
 /** The edit history of a post (FR-109): every revision, newest first. */
-export const Route = createFileRoute("/@{$acct}_/$id_/history")({
+export const Route = createFileRoute("/@{$acct}_/status/$id_/history")({
   staticData: { title: "client:status.history.title" },
   params: { parse: (params) => paramsSchema.parse(params) },
   loader: async ({ context: { queryClient, api }, params: { id } }) => {

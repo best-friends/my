@@ -410,13 +410,13 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 	case notification.TypeFollowAccepted:
 		p.Title, p.Path = l.ServerPushFollowAccepted(name), "/@"+source.Acct
 	case notification.TypeMention:
-		p.Title, p.Path = l.ServerPushMention(name), "/@"+source.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushMention(name), statusPath(source.Acct, job.StatusID)
 	case notification.TypeBoost:
-		p.Title, p.Path = l.ServerPushBoost(name), "/@"+recipient.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushBoost(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeFavourite:
-		p.Title, p.Path = l.ServerPushFavourite(name), "/@"+recipient.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushFavourite(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeReaction:
-		p.Title, p.Path = l.ServerPushReaction(name), "/@"+recipient.Acct+"/"+job.StatusID
+		p.Title, p.Path = l.ServerPushReaction(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeModerationNotice:
 		p.Title, p.Path = l.ServerPushModerationNotice(instance), "/settings/account-status"
 	case notification.TypeAppealDecided:
@@ -436,3 +436,6 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 	}
 	return json.Marshal(p)
 }
+
+// statusPath is the web client's page of a status by the account acct (ADR-0053).
+func statusPath(acct, statusID string) string { return "/@" + acct + "/status/" + statusID }

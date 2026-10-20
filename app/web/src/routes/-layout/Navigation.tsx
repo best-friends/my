@@ -132,7 +132,7 @@ function isUnder(pathname: string, path: string): boolean {
 /**
  * Whether `pathname` is in `section`: the page itself or one below it. "/profile" redirects to the viewer's own
  * profile page, so that page and its lists of followers and follows are its section too. The viewer's own posts
- * (`/@acct/{id}`) are below the profile's address but are pages of posts, not of the profile. The timelines of
+ * (`/@acct/status/{id}`) are below the profile's address but are pages of posts, not of the profile. The timelines of
  * the tab bar are the local and the federated timeline.
  */
 function inSection(pathname: string, section: Section, ownAcct: string | null): boolean {

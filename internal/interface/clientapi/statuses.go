@@ -226,9 +226,9 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		FavouritesCount: int(v.Counters.FavouritesCount),
 		Reactions:       newStatusReactions(v.Reactions, v.Relation != nil),
 	}
-	if st.URL != "" {
-		// A local status's stored url is under https://Host, like its ActivityPub id.
-		u := st.URL
+	// A local status's page is derived from its author's current username (ADR-0053) and served
+	// by the web client's origin.
+	if u := appcontent.StatusPageURL(s.o.Host, st, v.Author); u != "" {
 		if st.IsLocal {
 			u = s.pageURL(u)
 		}

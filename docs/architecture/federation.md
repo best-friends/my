@@ -452,6 +452,9 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   - 関係は署名者のドメインで集約します（[visibility.md §1](visibility.md#1-入力)）。ブロックは署名者のアカウントと作者の間のものです。メンション先とフォロワーは、`CanView` が許さなかったときだけ読みます（フォロワーは 1,000 件ずつ、そのドメインのアカウントがいるかを `account.AnyOnDomain` で確かめる）。
   - 未ログインでも同じ結果になる応答（`public` / `unlisted`）だけ `Cache-Control: public, max-age=60` を付け、それ以外は `private, no-store` です。
   - HTML を求めるリクエスト（ブラウザ）は署名を持たないので、未ログインで閲覧できる投稿だけ表示用 URL へ `303` でリダイレクトし、それ以外は 404 です。
+- 投稿の表示用 URL `/@{username}/status/{uuid}`（[ADR-0053](../adr/0053-status-page-url.md)）に ActivityPub の `Accept` で来たリクエストは、未ログインで閲覧できる削除されていないローカルの投稿だけ、その `id` へ `302` でリダイレクトし、それ以外は 404 です（`federation.Objects.PageStatusURI`）。
+  URL を貼った検索（FR-305）で、ほかのサーバーが投稿を引けるようにするためです。`id` の GET は上の規則で改めて判定します。
+  ローカルの投稿の `url`（`Note` とクライアント API）は保存せず、読むときに作者の現在のユーザー名と投稿 ID から作ります。
 - コレクションはだれにも同じ内容を返します。outbox・followers・following は `totalItems` と最初のページ（`?page=true`）へのリンクを持つ `OrderedCollection` で、ページ（`OrderedCollectionPage`）は `partOf` と次のページ（`?max_id={カーソル}&page=true`）を持ちます（Mastodon と同じ形）。
   - outbox は、未ログインの閲覧者がプロフィールで見られる投稿（`public` / `unlisted`）の `Create` を、新しい順に 20 件ずつ返します。ブーストは載せません。`totalItems` は削除されていない投稿の数です（Mastodon と同じ）。
   - followers / following は、承認済みのフォローの相手の Actor の `id` を、新しいフォロー順に 40 件ずつ返します。有効でないアカウントは省き、`totalItems` はフォローの件数です。

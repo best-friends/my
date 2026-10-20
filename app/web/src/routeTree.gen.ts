@@ -19,7 +19,6 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PublicRouteImport } from './routes/public'
 import { Route as SearchRouteImport } from './routes/search'
-import { Route as AtChar123acctChar125IdRouteImport } from './routes/@{$acct}_.$id'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -47,11 +46,12 @@ import { Route as SettingsPreferencesRouteImport } from './routes/settings.prefe
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
-import { Route as AtChar123acctChar125IdHistoryRouteImport } from './routes/@{$acct}_.$id_.history'
+import { Route as AtChar123acctChar125StatusIdRouteImport } from './routes/@{$acct}_.status.$id'
 import { Route as ModerationAccountsIdRouteImport } from './routes/moderation.accounts_.$id'
 import { Route as ModerationAppealsIdRouteImport } from './routes/moderation.appeals_.$id'
 import { Route as ModerationInstancesDomainRouteImport } from './routes/moderation.instances_.$domain'
 import { Route as ModerationReportsIdRouteImport } from './routes/moderation.reports_.$id'
+import { Route as AtChar123acctChar125StatusIdHistoryRouteImport } from './routes/@{$acct}_.status.$id_.history'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -101,11 +101,6 @@ const PublicRoute = PublicRouteImport.update({
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AtChar123acctChar125IdRoute = AtChar123acctChar125IdRouteImport.update({
-  id: '/@{$acct}_/$id',
-  path: '/@{$acct}/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AtChar123acctChar125FollowersRoute =
@@ -245,10 +240,10 @@ const TagsTagRoute = TagsTagRouteImport.update({
   path: '/tags/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AtChar123acctChar125IdHistoryRoute =
-  AtChar123acctChar125IdHistoryRouteImport.update({
-    id: '/@{$acct}_/$id_/history',
-    path: '/@{$acct}/$id/history',
+const AtChar123acctChar125StatusIdRoute =
+  AtChar123acctChar125StatusIdRouteImport.update({
+    id: '/@{$acct}_/status/$id',
+    path: '/@{$acct}/status/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ModerationAccountsIdRoute = ModerationAccountsIdRouteImport.update({
@@ -272,6 +267,12 @@ const ModerationReportsIdRoute = ModerationReportsIdRouteImport.update({
   path: '/moderation/reports/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125StatusIdHistoryRoute =
+  AtChar123acctChar125StatusIdHistoryRouteImport.update({
+    id: '/@{$acct}_/status/$id_/history',
+    path: '/@{$acct}/status/$id/history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -284,7 +285,6 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
-  '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
@@ -312,11 +312,12 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
+  '/@{$acct}/status/$id': typeof AtChar123acctChar125StatusIdRoute
   '/moderation/accounts/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
   '/moderation/reports/$id': typeof ModerationReportsIdRoute
+  '/@{$acct}/status/$id/history': typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -329,7 +330,6 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
-  '/@{$acct}/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
@@ -357,11 +357,12 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/moderation': typeof ModerationIndexRoute
   '/settings': typeof SettingsIndexRoute
-  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
+  '/@{$acct}/status/$id': typeof AtChar123acctChar125StatusIdRoute
   '/moderation/accounts/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
   '/moderation/reports/$id': typeof ModerationReportsIdRoute
+  '/@{$acct}/status/$id/history': typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -375,7 +376,6 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/public': typeof PublicRoute
   '/search': typeof SearchRoute
-  '/@{$acct}_/$id': typeof AtChar123acctChar125IdRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
@@ -403,11 +403,12 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/moderation/': typeof ModerationIndexRoute
   '/settings/': typeof SettingsIndexRoute
-  '/@{$acct}_/$id_/history': typeof AtChar123acctChar125IdHistoryRoute
+  '/@{$acct}_/status/$id': typeof AtChar123acctChar125StatusIdRoute
   '/moderation/accounts_/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals_/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances_/$domain': typeof ModerationInstancesDomainRoute
   '/moderation/reports_/$id': typeof ModerationReportsIdRoute
+  '/@{$acct}_/status/$id_/history': typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -422,7 +423,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
-    | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/admin/dead-jobs'
@@ -450,11 +450,12 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/moderation/'
     | '/settings/'
-    | '/@{$acct}/$id/history'
+    | '/@{$acct}/status/$id'
     | '/moderation/accounts/$id'
     | '/moderation/appeals/$id'
     | '/moderation/instances/$domain'
     | '/moderation/reports/$id'
+    | '/@{$acct}/status/$id/history'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -467,7 +468,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
-    | '/@{$acct}/$id'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
     | '/admin/dead-jobs'
@@ -495,11 +495,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/moderation'
     | '/settings'
-    | '/@{$acct}/$id/history'
+    | '/@{$acct}/status/$id'
     | '/moderation/accounts/$id'
     | '/moderation/appeals/$id'
     | '/moderation/instances/$domain'
     | '/moderation/reports/$id'
+    | '/@{$acct}/status/$id/history'
   id:
     | '__root__'
     | '/'
@@ -512,7 +513,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/public'
     | '/search'
-    | '/@{$acct}_/$id'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
     | '/admin/dead-jobs'
@@ -540,11 +540,12 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/moderation/'
     | '/settings/'
-    | '/@{$acct}_/$id_/history'
+    | '/@{$acct}_/status/$id'
     | '/moderation/accounts_/$id'
     | '/moderation/appeals_/$id'
     | '/moderation/instances_/$domain'
     | '/moderation/reports_/$id'
+    | '/@{$acct}_/status/$id_/history'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -558,7 +559,6 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   PublicRoute: typeof PublicRoute
   SearchRoute: typeof SearchRoute
-  AtChar123acctChar125IdRoute: typeof AtChar123acctChar125IdRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
@@ -586,11 +586,12 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   ModerationIndexRoute: typeof ModerationIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
-  AtChar123acctChar125IdHistoryRoute: typeof AtChar123acctChar125IdHistoryRoute
+  AtChar123acctChar125StatusIdRoute: typeof AtChar123acctChar125StatusIdRoute
   ModerationAccountsIdRoute: typeof ModerationAccountsIdRoute
   ModerationAppealsIdRoute: typeof ModerationAppealsIdRoute
   ModerationInstancesDomainRoute: typeof ModerationInstancesDomainRoute
   ModerationReportsIdRoute: typeof ModerationReportsIdRoute
+  AtChar123acctChar125StatusIdHistoryRoute: typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -663,13 +664,6 @@ declare module '@tanstack/react-router' {
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/@{$acct}_/$id': {
-      id: '/@{$acct}_/$id'
-      path: '/@{$acct}/$id'
-      fullPath: '/@{$acct}/$id'
-      preLoaderRoute: typeof AtChar123acctChar125IdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/@{$acct}_/followers': {
@@ -861,11 +855,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/@{$acct}_/$id_/history': {
-      id: '/@{$acct}_/$id_/history'
-      path: '/@{$acct}/$id/history'
-      fullPath: '/@{$acct}/$id/history'
-      preLoaderRoute: typeof AtChar123acctChar125IdHistoryRouteImport
+    '/@{$acct}_/status/$id': {
+      id: '/@{$acct}_/status/$id'
+      path: '/@{$acct}/status/$id'
+      fullPath: '/@{$acct}/status/$id'
+      preLoaderRoute: typeof AtChar123acctChar125StatusIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/moderation/accounts_/$id': {
@@ -896,6 +890,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModerationReportsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/status/$id_/history': {
+      id: '/@{$acct}_/status/$id_/history'
+      path: '/@{$acct}/status/$id/history'
+      fullPath: '/@{$acct}/status/$id/history'
+      preLoaderRoute: typeof AtChar123acctChar125StatusIdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -910,7 +911,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   PublicRoute: PublicRoute,
   SearchRoute: SearchRoute,
-  AtChar123acctChar125IdRoute: AtChar123acctChar125IdRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
@@ -938,11 +938,13 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   ModerationIndexRoute: ModerationIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
-  AtChar123acctChar125IdHistoryRoute: AtChar123acctChar125IdHistoryRoute,
+  AtChar123acctChar125StatusIdRoute: AtChar123acctChar125StatusIdRoute,
   ModerationAccountsIdRoute: ModerationAccountsIdRoute,
   ModerationAppealsIdRoute: ModerationAppealsIdRoute,
   ModerationInstancesDomainRoute: ModerationInstancesDomainRoute,
   ModerationReportsIdRoute: ModerationReportsIdRoute,
+  AtChar123acctChar125StatusIdHistoryRoute:
+    AtChar123acctChar125StatusIdHistoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
