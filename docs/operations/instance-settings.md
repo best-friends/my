@@ -40,9 +40,6 @@
 | `thumbnail` | メディア ID（空 = 未設定） | 空 | インスタンスを表す画像（サムネイル） |
 | `remote_media_policy` | `none` / `avatars` / `all` | `none` | リモートのメディアの複製を持つか（FR-409、ADR-0005）。`none` はメディアプロキシが毎回中継し、`avatars` はアバター・ヘッダー・カスタム絵文字、`all` はすべてを `remote_media_cache_ttl` の間 Blob にキャッシュする。キャッシュの合計の上限は設定 `remote_media_cache_max_bytes`（[federation.md §9](../architecture/federation.md#9-リモートメディア)） |
 | `remote_media_cache_ttl` | 整数 60〜31536000（秒） | `86400` | 取得したリモートのメディアを持ってよい期間。メディアプロキシのレスポンスの `Cache-Control: max-age` で、CDN とブラウザがこの間キャッシュする（[federation.md §9](../architecture/federation.md#9-リモートメディア)） |
-| `media_max_av_bytes` | 整数 1048576〜536870912（バイト） | `104857600` | 利用者がアップロードできる動画・音声のファイルの大きさの上限（ADR-0054 §6）。画像の上限は設定 `media_max_image_bytes`。検査と remux の間ファイルをメモリに持つので、1 回のアップロードのメモリの上限にもなる |
-| `media_max_video_duration` | 整数 1〜10800（秒） | `300` | アップロードできる動画の長さの上限（ADR-0054 §6） |
-| `media_max_audio_duration` | 整数 1〜10800（秒） | `600` | アップロードできる音声の長さの上限（ADR-0054 §6） |
 | `authorized_fetch` | `true` / `false` | `false` | Authorized Fetch（secure mode、FR-408）。`true` にすると、検証できる HTTP 署名の無い ActivityPub の GET に、オブジェクトとコレクションは `401` で、利用者の Actor は鍵の取得のための最小の文書で答える（[federation.md §10](../architecture/federation.md#10-コレクションとオブジェクトの-get)）。インスタンス Actor は署名なしでも文書全体を返すので、署名の検証のための鍵の取得はどのサーバーからもできる |
 | `domain_actions_visibility` | `none` / `users` / `all` | `none` | 処分したドメインの一覧（`GET /api/v1/instance/domain_actions`）を誰に見せるか: 誰にも / ログインした利用者に / 誰にでも（FR-718、[ドメイン単位の処分と通報の対応](moderation.md#処分したドメインの公開)） |
 | `domain_actions_rationale_visibility` | `none` / `users` / `all` | `none` | その一覧の公開コメントを誰に見せるか。一覧を見られない相手には見せない（FR-718） |
@@ -162,7 +159,7 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
 
   連絡先とサムネイル（`contact_account`・`contact_email`・`thumbnail` と文章 `thumbnail_alt`）は、名前と説明の下の「連絡先とサムネイル」の区画で変えます。画像は選んだときにアップロードされ、保存したときにサムネイルになります。
 
-  `max_status_length`・`preview_image`・`appeal_window`・保持期間（`retention_*`）・動画と音声の上限（`media_max_*`）は、画面には出ず、CLI とクライアント API で変えます。
+  `max_status_length`・`preview_image`・`appeal_window`・保持期間（`retention_*`）は、画面には出ず、CLI とクライアント API で変えます。
 - **クライアント API**: `GET /api/v1/admin/settings` がすべての設定値を、現在値・既定値・設定済みか・型と受け付ける値（選択肢・範囲）とともに返します。
   `PATCH /api/v1/admin/settings` は `{"values": {"<キー>": "<値>", ...}}` の設定値をまとめて変えます。値はすべて文字列で、CLI と同じく正規形にして保存します。
   1 つでも知らないキーか不正な値があれば、そのキーを挙げた 422 で、何も変えません。変えたキーは同じトランザクションで版と監査ログに残ります。

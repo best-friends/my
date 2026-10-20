@@ -72,9 +72,9 @@ type MediaDeps struct {
 	Limits media.Limits
 	// Sizes bound the variants; zero fields take media.DefaultSizes.
 	Sizes media.Sizes
-	// AVLimits returns the limits of video and audio uploads, which are instance settings
-	// (ADR-0054 §6); nil means media.DefaultAVLimits. Zero fields take the defaults.
-	AVLimits func(ctx context.Context) (media.AVLimits, error)
+	// AVLimits bound video and audio uploads (ADR-0054 §6); zero fields take
+	// media.DefaultAVLimits.
+	AVLimits media.AVLimits
 	// UnattachedTTL is how long an upload may stay unattached; zero means DefaultUnattachedTTL.
 	UnattachedTTL time.Duration
 	Referrers     []MediaReferrer
@@ -110,6 +110,7 @@ type MediaService struct {
 func NewMediaService(d MediaDeps) *MediaService {
 	d.Limits = d.Limits.WithDefaults()
 	d.Sizes = d.Sizes.WithDefaults()
+	d.AVLimits = d.AVLimits.WithDefaults()
 	if d.UnattachedTTL <= 0 {
 		d.UnattachedTTL = DefaultUnattachedTTL
 	}
@@ -122,26 +123,8 @@ func NewMediaService(d MediaDeps) *MediaService {
 // Limits returns the upload limits of images in effect.
 func (s *MediaService) Limits() media.Limits { return s.d.Limits }
 
-// AVLimitsNow returns the upload limits of video and audio files in effect.
-func (s *MediaService) AVLimitsNow(ctx context.Context) (media.AVLimits, error) {
-	if s.d.AVLimits == nil {
-		return media.DefaultAVLimits(), nil
-	}
-	l, err := s.d.AVLimits(ctx)
-	if err != nil {
-		return media.AVLimits{}, err
-	}
-	return l.WithDefaults(), nil
-}
-
 // MaxUploadBytes returns the size limit of an uploaded file, an image or a video or audio file.
-func (s *MediaService) MaxUploadBytes(ctx context.Context) (int64, error) {
-	av, err := s.AVLimitsNow(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return max(s.d.Limits.MaxBytes, av.MaxBytes), nil
-}
+func (s *MediaService) MaxUploadBytes() int64 { return max(s.d.Limits.MaxBytes, s.d.AVLimits.MaxBytes) }
 
 // RegisterJobs registers the media job handlers on reg and the cleanup schedule on sched.
 func (s *MediaService) RegisterJobs(reg *queue.JobHandlerRegistry, sched *queue.Scheduler) {
@@ -188,11 +171,8 @@ func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error
 	if !in.Purpose.Valid() {
 		return Media{}, fmt.Errorf("%w: %q", ErrInvalidPurpose, in.Purpose)
 	}
-	av, err := s.AVLimitsNow(ctx)
-	if err != nil {
-		return Media{}, err
-	}
-	data, err := io.ReadAll(io.LimitReader(in.Content, max(s.d.Limits.MaxBytes, av.MaxBytes)+1))
+	av := s.d.AVLimits
+	data, err := io.ReadAll(io.LimitReader(in.Content, s.MaxUploadBytes()+1))
 	if err != nil {
 		return Media{}, fmt.Errorf("content: read upload: %w", err)
 	}
@@ -869,10 +849,7 @@ func (s *MediaService) recordResult(ctx context.Context, up *content.UploadedMed
 // job must stop or be retried, nil when result is to be recorded.
 func (s *MediaService) processAV(ctx context.Context, up *content.UploadedMedia, result *content.MediaProcessingResult, req media.Request) *queue.Result {
 	retry := func(err error) *queue.Result { r := queue.Retry(0, err); return &r }
-	av, err := s.AVLimitsNow(ctx)
-	if err != nil {
-		return retry(err)
-	}
+	av := s.d.AVLimits
 	data, err := s.readBlob(ctx, up.BlobKey, av.MaxBytes)
 	var out media.AVOutput
 	if err == nil {

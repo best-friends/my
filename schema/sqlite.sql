@@ -590,8 +590,7 @@ CREATE TABLE instance_setting_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'contact_account', 'contact_email', 'thumbnail', 'remote_media_policy', 'remote_media_cache_ttl',
-    'media_max_av_bytes', 'media_max_video_duration', 'media_max_audio_duration', 'authorized_fetch',
+    'preview_image', 'contact_account', 'contact_email', 'thumbnail', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
     'retention_moderation_actions', 'retention_audit_log',

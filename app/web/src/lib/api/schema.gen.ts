@@ -745,8 +745,8 @@ export interface paths {
          *     `failed`. A file used for another purpose later is processed again for it.
          *
          *     The size limits of images and of video and audio files differ, and the limits of video
-         *     and audio files are instance settings (`media_max_av_bytes`,
-         *     `media_max_video_duration`, `media_max_audio_duration`).
+         *     and audio files are set by the operator (`media_max_av_bytes`,
+         *     `media_max_video_duration`, `media_max_audio_duration` in the server configuration).
          *
          *     A body larger than the size limit is refused with a 413 before it is read. Uploads
          *     count against a limit per account besides the API-wide one. Only the uploader can
@@ -5717,7 +5717,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "media_max_av_bytes" | "media_max_video_duration" | "media_max_audio_duration" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.

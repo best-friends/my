@@ -41,12 +41,7 @@ const (
 	SettingThumbnail           SettingKey = "thumbnail"
 	SettingRemoteMediaPolicy   SettingKey = "remote_media_policy"
 	SettingRemoteMediaCacheTTL SettingKey = "remote_media_cache_ttl"
-	// SettingMediaMaxAVBytes, SettingMediaMaxVideoDuration, and SettingMediaMaxAudioDuration
-	// bound the video and audio uploads (ADR-0054 §6).
-	SettingMediaMaxAVBytes       SettingKey = "media_max_av_bytes"
-	SettingMediaMaxVideoDuration SettingKey = "media_max_video_duration"
-	SettingMediaMaxAudioDuration SettingKey = "media_max_audio_duration"
-	SettingAuthorizedFetch       SettingKey = "authorized_fetch"
+	SettingAuthorizedFetch     SettingKey = "authorized_fetch"
 	// SettingDomainActionsVisibility and SettingDomainActionsRationaleVisibility decide who
 	// may read the public list of domain actions and their public comments (FR-718).
 	SettingDomainActionsVisibility          SettingKey = "domain_actions_visibility"
@@ -132,20 +127,6 @@ const (
 	AIAllow        AIUsage = "allow"         // no reservation
 	AIDenyTraining AIUsage = "deny_training" // no training of AI models
 	AIDeny         AIUsage = "deny"          // no training, and no use by AI (AI search, assistants, agents)
-)
-
-// Bounds of SettingMediaMaxAVBytes: 1 MiB to 512 MiB. A file is held in memory while it is
-// checked and remuxed, so the largest one bounds the memory of an upload.
-const (
-	MinMediaMaxAVBytes = 1 << 20
-	MaxMediaMaxAVBytes = 512 << 20
-)
-
-// Bounds of SettingMediaMaxVideoDuration and SettingMediaMaxAudioDuration, in seconds: a second
-// to three hours.
-const (
-	MinMediaMaxDuration = 1
-	MaxMediaMaxDuration = 3 * 60 * 60
 )
 
 // Bounds of SettingRemoteMediaCacheTTL, in seconds: a minute to a year.
@@ -260,18 +241,6 @@ var definitions = []Definition{
 	{
 		Key: SettingRemoteMediaCacheTTL, Kind: KindInt, Default: "86400", Min: MinRemoteMediaCacheTTL, Max: MaxRemoteMediaCacheTTL,
 		Doc: "How long a fetched remote media file may be kept, in seconds: the max-age of the media proxy's responses for the CDN and browsers (FR-409).",
-	},
-	{
-		Key: SettingMediaMaxAVBytes, Kind: KindInt, Default: "104857600", Min: MinMediaMaxAVBytes, Max: MaxMediaMaxAVBytes,
-		Doc: "Largest video or audio file that users may upload, in bytes (ADR-0054 §6); images have the media_max_image_bytes configuration instead.",
-	},
-	{
-		Key: SettingMediaMaxVideoDuration, Kind: KindInt, Default: "300", Min: MinMediaMaxDuration, Max: MaxMediaMaxDuration,
-		Doc: "Longest video that users may upload, in seconds (ADR-0054 §6).",
-	},
-	{
-		Key: SettingMediaMaxAudioDuration, Kind: KindInt, Default: "600", Min: MinMediaMaxDuration, Max: MaxMediaMaxDuration,
-		Doc: "Longest audio file that users may upload, in seconds (ADR-0054 §6).",
 	},
 	{
 		Key: SettingAuthorizedFetch, Kind: KindBool, Default: "false",
@@ -632,19 +601,6 @@ func (s Settings) RemoteMediaPolicy() RemoteMediaPolicy {
 // RemoteMediaCacheTTL returns the value of SettingRemoteMediaCacheTTL.
 func (s Settings) RemoteMediaCacheTTL() time.Duration {
 	return time.Duration(s.intValue(SettingRemoteMediaCacheTTL)) * time.Second
-}
-
-// MediaMaxAVBytes returns the value of SettingMediaMaxAVBytes.
-func (s Settings) MediaMaxAVBytes() int64 { return int64(s.intValue(SettingMediaMaxAVBytes)) }
-
-// MediaMaxVideoDuration returns the value of SettingMediaMaxVideoDuration.
-func (s Settings) MediaMaxVideoDuration() time.Duration {
-	return time.Duration(s.intValue(SettingMediaMaxVideoDuration)) * time.Second
-}
-
-// MediaMaxAudioDuration returns the value of SettingMediaMaxAudioDuration.
-func (s Settings) MediaMaxAudioDuration() time.Duration {
-	return time.Duration(s.intValue(SettingMediaMaxAudioDuration)) * time.Second
 }
 
 // AuthorizedFetch returns the value of SettingAuthorizedFetch.

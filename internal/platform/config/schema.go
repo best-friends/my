@@ -229,6 +229,27 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.MediaUnattachedTTL, _ = time.ParseDuration(v) },
 	},
 	{
+		key:   "media_max_av_bytes",
+		doc:   "Largest accepted video or audio upload in bytes (ADR-0019 §8, ADR-0054 §6). The file is held in memory while it is checked and remuxed, so this also bounds the memory of one upload.",
+		def:   strconv.Itoa(100 << 20),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxAVBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:   "media_max_video_duration",
+		doc:   "Longest accepted video upload (ADR-0054 §6), as a Go duration such as `5m`.",
+		def:   "5m",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.MediaMaxVideoDuration, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "media_max_audio_duration",
+		doc:   "Longest accepted audio upload (ADR-0054 §6), as a Go duration such as `10m`.",
+		def:   "10m",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.MediaMaxAudioDuration, _ = time.ParseDuration(v) },
+	},
+	{
 		key:   "custom_emoji_max_bytes",
 		doc:   "Largest image in bytes that a local custom emoji may be registered with (ADR-0051 §2); the image must also be a PNG, a GIF, or a WebP of at most 1,024 pixels on a side. The default is Mastodon's limit. GoToSocial does not fetch remote emoji larger than 100 KiB by default.",
 		def:   strconv.Itoa(256 << 10),

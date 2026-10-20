@@ -291,7 +291,7 @@ func (f *fakeMedia) Images(ctx context.Context, refs []appcontent.ImageRef) (map
 
 func (f *fakeMedia) Limits() media.Limits { return media.Limits{MaxBytes: testMaxBytes}.WithDefaults() }
 
-func (f *fakeMedia) MaxUploadBytes(context.Context) (int64, error) { return testMaxAVBytes, nil }
+func (f *fakeMedia) MaxUploadBytes() int64 { return testMaxAVBytes }
 
 type mediaEnv struct {
 	*authEnv

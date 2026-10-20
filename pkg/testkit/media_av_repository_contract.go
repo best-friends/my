@@ -4,7 +4,6 @@ package testkit
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -120,10 +119,10 @@ func mediaRejectsVideoAndAudio(t *testing.T, e *mediaEnv) {
 	e.service = appcontent.NewMediaService(appcontent.MediaDeps{
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Media, Blobs: e.blobs, Processor: FakeMediaProcessor{},
 		Jobs: e.jobs, Clock: e.clock, IDs: e.ids, Limits: media.Limits{MaxBytes: 1 << 10},
-		AVLimits: func(context.Context) (media.AVLimits, error) { return media.AVLimits{MaxBytes: 1 << 12}, nil },
+		AVLimits: media.AVLimits{MaxBytes: 1 << 12},
 	})
-	if n, err := e.service.MaxUploadBytes(t.Context()); err != nil || n != 1<<12 {
-		t.Errorf("MaxUploadBytes = %d, %v; want the video and audio limit", n, err)
+	if n := e.service.MaxUploadBytes(); n != 1<<12 {
+		t.Errorf("MaxUploadBytes = %d, want the video and audio limit", n)
 	}
 	for name, tc := range map[string]struct {
 		in   appcontent.UploadInput

@@ -854,12 +854,8 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository, emojis 
 		Limits: media.Limits{
 			MaxBytes: cfg.MediaMaxImageBytes, MaxSide: cfg.MediaMaxImageSide, MaxPixels: cfg.MediaMaxImagePixels,
 		},
-		// The limits of video and audio files are instance settings (ADR-0054 §6).
-		AVLimits: func(ctx context.Context) (media.AVLimits, error) {
-			s, err := a.Instance.Settings(ctx)
-			return media.AVLimits{
-				MaxBytes: s.MediaMaxAVBytes(), MaxVideoDuration: s.MediaMaxVideoDuration(), MaxAudioDuration: s.MediaMaxAudioDuration(),
-			}, err
+		AVLimits: media.AVLimits{
+			MaxBytes: cfg.MediaMaxAVBytes, MaxVideoDuration: cfg.MediaMaxVideoDuration, MaxAudioDuration: cfg.MediaMaxAudioDuration,
 		},
 		UnattachedTTL: cfg.MediaUnattachedTTL,
 		// Avatars and headers refer to media files from the account module.

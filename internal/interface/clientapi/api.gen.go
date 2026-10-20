@@ -936,9 +936,6 @@ const (
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
-	InstanceSettingKeyMediaMaxAudioDuration            InstanceSettingKey = "media_max_audio_duration"
-	InstanceSettingKeyMediaMaxAvBytes                  InstanceSettingKey = "media_max_av_bytes"
-	InstanceSettingKeyMediaMaxVideoDuration            InstanceSettingKey = "media_max_video_duration"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
 	InstanceSettingKeyRegistrationMode                 InstanceSettingKey = "registration_mode"
 	InstanceSettingKeyRemoteMediaCacheTtl              InstanceSettingKey = "remote_media_cache_ttl"
@@ -979,12 +976,6 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyLocalTimelineEnabled:
 		return true
 	case InstanceSettingKeyMaxStatusLength:
-		return true
-	case InstanceSettingKeyMediaMaxAudioDuration:
-		return true
-	case InstanceSettingKeyMediaMaxAvBytes:
-		return true
-	case InstanceSettingKeyMediaMaxVideoDuration:
 		return true
 	case InstanceSettingKeyPreviewImage:
 		return true

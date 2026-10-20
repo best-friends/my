@@ -933,8 +933,8 @@ paths:
         `failed`. A file used for another purpose later is processed again for it.
 
         The size limits of images and of video and audio files differ, and the limits of video
-        and audio files are instance settings (`media_max_av_bytes`,
-        `media_max_video_duration`, `media_max_audio_duration`).
+        and audio files are set by the operator (`media_max_av_bytes`,
+        `media_max_video_duration`, `media_max_audio_duration` in the server configuration).
 
         A body larger than the size limit is refused with a 413 before it is read. Uploads
         count against a limit per account besides the API-wide one. Only the uploader can
@@ -8498,9 +8498,6 @@ components:
         - thumbnail
         - remote_media_policy
         - remote_media_cache_ttl
-        - media_max_av_bytes
-        - media_max_video_duration
-        - media_max_audio_duration
         - authorized_fetch
         - domain_actions_visibility
         - domain_actions_rationale_visibility
