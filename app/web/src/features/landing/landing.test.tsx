@@ -78,7 +78,7 @@ describe("the landing page", () => {
     ]);
     const documents = within(main).getByRole("region", { name: "Terms and policies" });
     const more = within(main).getByRole("link", { name: "More about this server" });
-    const source = within(main).getByRole("link", { name: "View the source code" });
+    const source = within(main).getByRole("link", { name: newTabName("View the source code") });
     expect(documents.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(more.compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
