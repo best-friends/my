@@ -5449,11 +5449,12 @@ components:
         max:
           type: number
     ThemeProblem:
-      description: The problem of a theme that cannot be saved (`/api/v1/problems/invalid-theme`).
+      description: |
+        A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+        lists why the theme cannot be saved; another 422 (a malformed request) has none.
       allOf:
         - $ref: "#/components/schemas/Problem"
         - type: object
-          required: [theme_errors]
           properties:
             theme_errors:
               type: array

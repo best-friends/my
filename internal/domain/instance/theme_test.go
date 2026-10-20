@@ -63,7 +63,7 @@ func TestNormalizeThemeCanonicalizes(t *testing.T) {
 		{Token: "font-sans", Value: `"Noto Sans JP",  sans-serif`},
 		{Token: "ease-standard", Value: "cubic-bezier(0.4, 0, 0.2, 1)"},
 		{Token: "transition-duration-fast", Value: "0.05s"},
-		{Token: "text-base--line-height", Value: "1.8"},
+		{Token: "text-base--line-height", Value: "1.8"}, //nolint:gosec // a design token, not a credential
 	}, "a { color: red }")
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestNormalizeThemeCanonicalizes(t *testing.T) {
 	want := []instance.ThemeTokenValue{
 		{Token: "color-accent", Light: "#1447e6", Dark: "#92c5fe"},
 		{Token: "font-sans", Value: `"Noto Sans JP", sans-serif`},
-		{Token: "text-base--line-height", Value: "1.8"},
+		{Token: "text-base--line-height", Value: "1.8"}, //nolint:gosec // a design token, not a credential
 		{Token: "radius-md", Value: "4px"},
 		{Token: "elevation-md", Value: "0 2px 4px #00000033, inset 0 0 0 1px #000000"},
 		{Token: "ease-standard", Value: "cubic-bezier(0.4, 0, 0.2, 1)"},
@@ -99,7 +99,7 @@ func TestNormalizeThemeRejects(t *testing.T) {
 		{"radius too large", instance.ThemeTokenValue{Token: "radius-md", Value: "40px"}, instance.ThemeOutOfRange},
 		{"spacing too small", instance.ThemeTokenValue{Token: "spacing", Value: "0"}, instance.ThemeOutOfRange},
 		{"text too small", instance.ThemeTokenValue{Token: "text-xs", Value: "8px"}, instance.ThemeOutOfRange},
-		{"line height", instance.ThemeTokenValue{Token: "text-sm--line-height", Value: "3"}, instance.ThemeOutOfRange},
+		{"line height", instance.ThemeTokenValue{Token: "text-sm--line-height", Value: "3"}, instance.ThemeOutOfRange}, //nolint:gosec // a design token, not a credential
 		{"duration", instance.ThemeTokenValue{Token: "transition-duration-slow", Value: "2s"}, instance.ThemeOutOfRange},
 		{"easing", instance.ThemeTokenValue{Token: "ease-exit", Value: "cubic-bezier(2, 0, 0, 1)"}, instance.ThemeInvalidValue},
 		{"steps easing", instance.ThemeTokenValue{Token: "ease-exit", Value: "steps(4)"}, instance.ThemeInvalidValue},
@@ -150,7 +150,7 @@ func TestNormalizeThemeChecksContrastWithDefaults(t *testing.T) {
 	// with the default accent-hover (dark blue) then fails instead.
 	_, err = instance.NormalizeTheme([]instance.ThemeTokenValue{
 		{Token: "color-accent", Light: "#a0c4ff", Dark: "#57a2fe"},
-		{Token: "color-accent-fg", Light: "#000000", Dark: "#060d1a"},
+		{Token: "color-accent-fg", Light: "#000000", Dark: "#060d1a"}, //nolint:gosec // a design token, not a credential
 	}, "")
 	for _, p := range problemsOf(t, err) {
 		if p.Token == "color-accent-fg" && p.Background == "color-accent" {

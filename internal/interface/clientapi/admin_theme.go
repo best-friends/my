@@ -143,7 +143,7 @@ func (s *Server) themeProblem(ctx context.Context, te *instance.ThemeError) SetA
 	l := s.Localizer(ctx)
 	body, headers := s.NewProblem(ctx, http.StatusUnprocessableEntity, ProblemTypeInvalidTheme, l.ServerErrorsInvalidTheme(), "")
 	out := ThemeProblem{Type: body.Type, Title: body.Title, Status: body.Status, Detail: body.Detail, RequestId: body.RequestId}
-	out.ThemeErrors = make([]ThemeError, len(te.Problems))
+	errs := make([]ThemeError, len(te.Problems))
 	num := func(f float64) *float32 { v := float32(f); return &v }
 	for i, p := range te.Problems {
 		e := ThemeError{Code: ThemeErrorCode(p.Code)}
@@ -162,8 +162,9 @@ func (s *Server) themeProblem(ctx context.Context, te *instance.ThemeError) SetA
 		case instance.ThemeCSSTooLong:
 			e.Max = num(p.Max)
 		}
-		out.ThemeErrors[i] = e
+		errs[i] = e
 	}
+	out.ThemeErrors = &errs
 	return SetAdminTheme422ApplicationProblemPlusJSONResponse{
 		Body:    out,
 		Headers: SetAdminTheme422ResponseHeaders{CacheControl: headers.CacheControl, ContentLanguage: headers.ContentLanguage},

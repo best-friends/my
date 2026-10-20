@@ -121,21 +121,21 @@ func TestThemeProblems(t *testing.T) {
 		t.Fatalf("status = %d", res.StatusCode)
 	}
 	p := decodeJSON[clientapi.ThemeProblem](t, res)
-	if p.Type != clientapi.ProblemTypeInvalidTheme || p.Title == "" || len(p.ThemeErrors) != 3 {
+	if p.Type != clientapi.ProblemTypeInvalidTheme || p.Title == "" || len(themeErrors(p)) != 3 {
 		t.Fatalf("problem = %s", mustJSON(t, p))
 	}
-	codes := []clientapi.ThemeErrorCode{p.ThemeErrors[0].Code, p.ThemeErrors[1].Code, p.ThemeErrors[2].Code}
+	codes := []clientapi.ThemeErrorCode{themeErrors(p)[0].Code, themeErrors(p)[1].Code, themeErrors(p)[2].Code}
 	if codes[0] != "unknown_token" || codes[1] != "invalid_value" || codes[2] != "out_of_range" ||
-		*p.ThemeErrors[2].Min != 0.125 || *p.ThemeErrors[2].Max != 0.5 {
-		t.Errorf("errors = %s", mustJSON(t, p.ThemeErrors))
+		*themeErrors(p)[2].Min != 0.125 || *themeErrors(p)[2].Max != 0.5 {
+		t.Errorf("errors = %s", mustJSON(t, themeErrors(p)))
 	}
 
 	res = e.sendJSON(t, http.MethodPut, "/admin/theme", "admin", `{"tokens":[{"token":"color-fg","light":"#eeeeee","dark":"#f9fafb"}],"custom_css":""}`)
 	p = decodeJSON[clientapi.ThemeProblem](t, res)
-	if res.StatusCode != http.StatusUnprocessableEntity || len(p.ThemeErrors) != 3 {
+	if res.StatusCode != http.StatusUnprocessableEntity || len(themeErrors(p)) != 3 {
 		t.Fatalf("low contrast = %d %s", res.StatusCode, mustJSON(t, p))
 	}
-	e0 := p.ThemeErrors[0]
+	e0 := themeErrors(p)[0]
 	if e0.Code != "low_contrast" || *e0.Token != "color-fg" || *e0.Background != "color-surface" || *e0.Scheme != "light" ||
 		*e0.Minimum != 4.5 || *e0.Ratio >= 4.5 {
 		t.Errorf("contrast error = %s", mustJSON(t, e0))
@@ -143,6 +143,14 @@ func TestThemeProblems(t *testing.T) {
 	if len(f.sets) != 0 {
 		t.Error("an invalid theme was saved")
 	}
+}
+
+// themeErrors returns the reasons of an invalid-theme problem, none when it has none.
+func themeErrors(p clientapi.ThemeProblem) []clientapi.ThemeError {
+	if p.ThemeErrors == nil {
+		return nil
+	}
+	return *p.ThemeErrors
 }
 
 func mustJSON(t *testing.T, v any) string {

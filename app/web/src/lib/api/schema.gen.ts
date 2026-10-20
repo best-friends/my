@@ -3724,9 +3724,12 @@ export interface components {
             min?: number;
             max?: number;
         };
-        /** @description The problem of a theme that cannot be saved (`/api/v1/problems/invalid-theme`). */
+        /**
+         * @description A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+         *     lists why the theme cannot be saved; another 422 (a malformed request) has none.
+         */
         ThemeProblem: components["schemas"]["Problem"] & {
-            theme_errors: components["schemas"]["ThemeError"][];
+            theme_errors?: components["schemas"]["ThemeError"][];
         };
         /** @description The current text of a key in one locale. */
         AdminInstanceText: {

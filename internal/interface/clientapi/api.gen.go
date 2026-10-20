@@ -3427,7 +3427,8 @@ type ThemeErrorCode string
 // ThemeErrorScheme defines model for ThemeError.Scheme.
 type ThemeErrorScheme string
 
-// ThemeProblem The problem of a theme that cannot be saved (`/api/v1/problems/invalid-theme`).
+// ThemeProblem A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+// lists why the theme cannot be saved; another 422 (a malformed request) has none.
 type ThemeProblem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -3436,8 +3437,8 @@ type ThemeProblem struct {
 	RequestId *string `json:"request_id,omitempty"`
 
 	// Status The HTTP status code.
-	Status      int          `json:"status"`
-	ThemeErrors []ThemeError `json:"theme_errors"`
+	Status      int           `json:"status"`
+	ThemeErrors *[]ThemeError `json:"theme_errors,omitempty"`
 
 	// Title A short summary of the problem type, localized from `Accept-Language`.
 	Title string `json:"title"`
