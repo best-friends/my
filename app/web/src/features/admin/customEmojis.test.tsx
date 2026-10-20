@@ -162,6 +162,49 @@ describe("the custom emoji screen", () => {
     expect(screen.getByText("Disabled: shown as text")).toBeInTheDocument();
   });
 
+  test("copies an emoji of another server under a new shortcode, and keeps a refusal in the dialog", async () => {
+    const remote = adminCustomEmojiFixture("e3", "party-parrot", { local: false, domain: "remote.example", uri: "https://remote.example/emojis/1" });
+    const sent: { id: string; body: Schemas["CopyCustomEmojiRequest"] }[] = [];
+    server.use(
+      http.get(`${apiBase}/admin/custom_emojis`, ({ request }) =>
+        HttpResponse.json({ items: new URL(request.url).searchParams.get("local") === "false" ? [remote] : [] }),
+      ),
+      http.post(`${apiBase}/admin/custom_emojis/:id/copy`, async ({ params, request }) => {
+        const body = (await request.json()) as Schemas["CopyCustomEmojiRequest"];
+        sent.push({ id: String(params["id"]), body });
+        if (sent.length === 1) {
+          return HttpResponse.json(
+            { type: "/api/v1/problems/invalid-custom-emoji", title: "The custom emoji cannot be saved.", status: 422, detail: "A custom emoji of this server already has this shortcode.", reason: "shortcode_taken" },
+            { status: 422, headers: { "Content-Type": "application/problem+json" } },
+          );
+        }
+        return HttpResponse.json(adminCustomEmojiFixture("e4", body.shortcode ?? remote.shortcode));
+      }),
+    );
+    const { user } = await renderApp({ path: "/admin/custom-emojis?origin=remote" });
+    await user.click(await screen.findByRole("button", { name: "Copy ⁦:party-parrot:@remote.example⁩ to this server" }));
+    const dialog = await screen.findByRole("dialog", { name: "Copy ⁦:party-parrot:@remote.example⁩ to this server" });
+    // The remote shortcode breaks the rules of a local one, so a new one is asked for.
+    const shortcode = within(dialog).getByRole("textbox", { name: "Shortcode" });
+    expect(shortcode).toHaveValue("");
+    await user.type(shortcode, "parrot");
+    await user.click(within(dialog).getByRole("button", { name: "Copy" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("A custom emoji of this server already has this shortcode.");
+
+    await user.clear(shortcode);
+    await user.type(shortcode, "party_parrot");
+    await user.click(within(dialog).getByRole("button", { name: "Copy" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(sent).toEqual([
+      { id: "e3", body: { shortcode: "parrot" } },
+      { id: "e3", body: { shortcode: "party_parrot" } },
+    ]);
+    const list = screen.getByRole("region", { name: "Registered custom emoji" });
+    expect(within(list).getByRole("status")).toHaveTextContent("is copied as ⁦:party_parrot:⁩.");
+  });
+
   test("shows a failure to list the emoji as the screen's error", async () => {
     server.use(http.get(`${apiBase}/admin/custom_emojis`, () => problem(403, "/api/v1/problems/missing-permission", "Forbidden")));
     await renderApp({ path: "/admin/custom-emojis" });

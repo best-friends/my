@@ -3,15 +3,18 @@
 package content
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
 )
@@ -79,6 +82,7 @@ type CustomEmojiQuery struct {
 const (
 	CustomEmojiCreated       = "custom_emoji_created"
 	CustomEmojiImageReplaced = "custom_emoji_image_replaced"
+	CustomEmojiCopied        = "custom_emoji_copied"
 	CustomEmojiUpdated       = "custom_emoji_updated"
 	CustomEmojiEnabled       = "custom_emoji_enabled"
 	CustomEmojiDisabled      = "custom_emoji_disabled"
@@ -178,13 +182,19 @@ func (s *CustomEmojiService) Create(ctx context.Context, in CreateCustomEmojiInp
 	if err := s.checkImage(ctx, in.OwnerAccountID, in.MediaID); err != nil {
 		return AdminCustomEmoji{}, err
 	}
+	return s.register(ctx, in, aliases, category, CustomEmojiCreated)
+}
+
+// register records the local emoji of in, whose fields and image are checked, as the operation
+// action.
+func (s *CustomEmojiService) register(ctx context.Context, in CreateCustomEmojiInput, aliases []string, category, action string) (AdminCustomEmoji, error) {
 	now := s.d.Clock.Now()
 	e := content.CustomEmoji{ID: s.d.IDs.NewID(), Shortcode: in.Shortcode, CreatedAt: now}
 	img := content.CustomEmojiImage{ID: s.d.IDs.NewID(), EmojiID: e.ID, MediaID: in.MediaID, RevisedAt: now}
 	settings := content.DefaultCustomEmojiSettings(e.ID)
 	settings.VisibleInPicker, settings.Category = in.VisibleInPicker, category
-	event := s.event(CustomEmojiCreated, e, img.ID, in.ByUserID, now)
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	event := s.event(action, e, img.ID, in.ByUserID, now)
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.d.Repository.InsertCustomEmoji(ctx, tx, e); err != nil {
 			return err
 		}
@@ -206,6 +216,124 @@ func (s *CustomEmojiService) Create(ctx context.Context, in CreateCustomEmojiInp
 		return AdminCustomEmoji{}, fmt.Errorf("content: create custom emoji :%s:: %w", in.Shortcode, err)
 	}
 	return s.Get(ctx, e.ID)
+}
+
+// CopyCustomEmojiInput describes the copy of a remote custom emoji into a new local one.
+type CopyCustomEmojiInput struct {
+	// ID is the remote emoji.
+	ID string
+	// Shortcode is the shortcode of the local emoji; "" keeps the remote one's.
+	Shortcode string
+	// OwnerAccountID uploads the image of the local emoji.
+	OwnerAccountID string
+	// ByUserID is the administrator, "" for the CLI.
+	ByUserID string
+}
+
+// Copy registers a new local emoji with the image of a remote one (ADR-0051 §4, as Mastodon's
+// copy): the image is fetched through the media proxy, under its domain restrictions (a
+// reject_media domain's image is not fetched) and limits, then uploaded as OwnerAccountID's
+// with the emoji purpose and checked as the image of a new emoji, so that it shrinks into the
+// emoji's boxes. The new emoji is in the picker, without a category or aliases, and the copy is
+// audited. It fails with a *content.CustomEmojiError for a local emoji (content.EmojiLocal), a
+// shortcode that breaks the rules or that a local emoji has, an image that cannot be fetched
+// (content.EmojiFetchFailed), or one that does not qualify; then the upload it made is deleted.
+// It fails with ErrNotFound for an unknown ID.
+func (s *CustomEmojiService) Copy(ctx context.Context, in CopyCustomEmojiInput) (AdminCustomEmoji, error) {
+	r, err := s.d.Repository.FindCustomEmojiRecord(ctx, in.ID)
+	if err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	if r.Emoji.Local() {
+		return AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiLocal, Value: in.ID}
+	}
+	shortcode := cmp.Or(in.Shortcode, r.Emoji.Shortcode)
+	if !content.ValidLocalShortcode(shortcode) {
+		return AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiInvalidShortcode, Value: shortcode}
+	}
+	// A taken shortcode is refused before the image is fetched; the registration checks it again.
+	taken, err := s.d.Repository.ListLocalCustomEmojis(ctx, []string{shortcode})
+	if err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	if slices.ContainsFunc(taken, func(t content.CustomEmojiRecord) bool { return t.Emoji.Shortcode == shortcode }) {
+		return AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiShortcodeTaken, Value: shortcode}
+	}
+	data, err := s.remoteImage(ctx, r.Image.MediaID)
+	if err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	m, err := s.d.Media.Upload(ctx, UploadInput{OwnerAccountID: in.OwnerAccountID, Content: bytes.NewReader(data), Purpose: content.PurposeEmoji})
+	switch {
+	case errors.Is(err, media.ErrTooLarge):
+		return AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiTooLarge, Value: in.ID}
+	case errors.Is(err, media.ErrDimensions):
+		return AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiTooBig, Value: in.ID}
+	case media.Rejected(err):
+		return AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiUnsupportedFormat, Value: in.ID}
+	case err != nil:
+		return AdminCustomEmoji{}, err
+	}
+	out, err := s.registerCopy(ctx, in, r, shortcode, m.File.ID)
+	if err != nil {
+		// Nothing of a failed copy stays: its upload goes with its blobs.
+		if _, derr := s.d.Media.deleteUnattached(context.WithoutCancel(ctx), m.File.ID); derr != nil {
+			err = errors.Join(err, derr)
+		}
+		return AdminCustomEmoji{}, err
+	}
+	return out, nil
+}
+
+// registerCopy processes the upload mediaID of the image of the remote emoji r and registers it
+// as the local emoji shortcode.
+func (s *CustomEmojiService) registerCopy(ctx context.Context, in CopyCustomEmojiInput, r content.CustomEmojiRecord, shortcode, mediaID string) (AdminCustomEmoji, error) {
+	if res := s.d.Media.Process(ctx, mediaID, content.PurposeEmoji); !res.IsDone() {
+		return AdminCustomEmoji{}, fmt.Errorf("content: copy custom emoji %s: process its image: %v", r.Emoji.ID, res)
+	}
+	if err := s.checkImage(ctx, in.OwnerAccountID, mediaID); err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	reg := CreateCustomEmojiInput{
+		Shortcode: shortcode, MediaID: mediaID, OwnerAccountID: in.OwnerAccountID, VisibleInPicker: true, ByUserID: in.ByUserID,
+	}
+	return s.register(ctx, reg, nil, "", CustomEmojiCopied)
+}
+
+// remoteImage reads the current image of a remote emoji through the media proxy, at most the
+// limit of a local emoji's image and one byte more. An image that the proxy does not serve
+// fails with a *content.CustomEmojiError.
+func (s *CustomEmojiService) remoteImage(ctx context.Context, mediaID string) ([]byte, error) {
+	fail := func(reason content.CustomEmojiReason) error {
+		return &content.CustomEmojiError{Reason: reason, Value: mediaID}
+	}
+	proxy := s.d.Media.d.Proxy
+	if proxy == nil {
+		return nil, fail(content.EmojiFetchFailed)
+	}
+	pm, err := proxy.open(ctx, mediaID, ProxyFull)
+	switch {
+	case errors.Is(err, kernel.ErrResponseTooLarge):
+		return nil, fail(content.EmojiTooLarge)
+	case errors.Is(err, ErrUnsupportedRemoteMedia):
+		return nil, fail(content.EmojiUnsupportedFormat)
+	case errors.Is(err, ErrNotFound), errors.Is(err, ErrProxyUpstream):
+		return nil, fail(content.EmojiFetchFailed)
+	case err != nil:
+		return nil, err
+	}
+	defer func() { _ = pm.Body.Close() }()
+	if pm.Length > s.d.MaxBytes {
+		return nil, fail(content.EmojiTooLarge)
+	}
+	data, err := io.ReadAll(io.LimitReader(pm.Body, s.d.MaxBytes+1))
+	switch {
+	case errors.Is(err, kernel.ErrResponseTooLarge), err == nil && int64(len(data)) > s.d.MaxBytes:
+		return nil, fail(content.EmojiTooLarge)
+	case err != nil:
+		return nil, fail(content.EmojiFetchFailed)
+	}
+	return data, nil
 }
 
 // checkImage checks that mediaID is an upload of ownerAccountID that finished processing and

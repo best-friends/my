@@ -7895,6 +7895,10 @@
     "defaultMessage": "カスタム絵文字の画像の差し替え",
     "description": "Kind of an audited operation: an administrator replaced the image of a custom emoji."
   },
+  "admin.audit_log.action.custom_emoji_copied": {
+    "defaultMessage": "ほかのサーバーのカスタム絵文字の複製",
+    "description": "Kind of an audited operation: an administrator copied another server's custom emoji into a new emoji of this server."
+  },
   "admin.audit_log.action.custom_emoji_updated": {
     "defaultMessage": "カスタム絵文字の変更",
     "description": "Kind of an audited operation: an administrator changed the category, other names, or place in the picker of a custom emoji."
@@ -8174,6 +8178,34 @@
   "admin.custom_emojis.deleted": {
     "defaultMessage": "{emoji} を削除しました。",
     "description": "Status after deleting a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy": {
+    "defaultMessage": "このサーバーに複製",
+    "description": "Button of another server's custom emoji that opens the dialog copying it into an emoji of this server."
+  },
+  "admin.custom_emojis.copy_emoji": {
+    "defaultMessage": "{emoji} をこのサーバーに複製",
+    "description": "Accessible name of the copy button of another server's custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.title": {
+    "defaultMessage": "{emoji} をこのサーバーに複製",
+    "description": "Title of the dialog that copies another server's custom emoji into an emoji of this server. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.description": {
+    "defaultMessage": "画像を取得し、このサーバーの絵文字として登録します。絵文字はピッカーに表示されます。画像は最大 256 ピクセルに縮みます。",
+    "description": "Body of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.submit": {
+    "defaultMessage": "複製する",
+    "description": "Confirm button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copied": {
+    "defaultMessage": "{emoji} を {copy} として複製しました。",
+    "description": "Status after copying another server's custom emoji. {emoji} is the copied emoji's :shortcode:@domain and {copy} the new emoji's :shortcode:, not translated."
   },
   "admin.custom_emojis.disable": {
     "defaultMessage": "無効にする",
