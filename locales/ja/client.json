@@ -4247,6 +4247,74 @@
     "defaultMessage": "プロフィールを保存せずに移動しますか？",
     "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
   },
+  "settings.push.denied": {
+    "defaultMessage": "このサイトの通知はブラウザでブロックされています。プッシュ通知を使うには、ブラウザのサイトの設定で通知を許可してください。",
+    "description": "Shown in the push notification settings when the user blocked notifications for this site in the browser."
+  },
+  "settings.push.enable": {
+    "defaultMessage": "この端末に通知する",
+    "description": "Label of the switch that turns on Web Push notifications for this browser and signed-in session."
+  },
+  "settings.push.enable.description": {
+    "defaultMessage": "アプリを閉じているときも、新しい通知がこの端末に表示されます。",
+    "description": "Help text of the switch that turns on Web Push notifications."
+  },
+  "settings.push.failed": {
+    "defaultMessage": "この端末でプッシュ通知を設定できませんでした。しばらくしてからもう一度試してください。",
+    "description": "Error shown when the browser failed to subscribe to push notifications."
+  },
+  "settings.push.not_allowed": {
+    "defaultMessage": "ブラウザで通知が許可されなかったため、プッシュ通知はオフのままです。",
+    "description": "Error shown when the user did not allow notifications in the browser's permission prompt after turning on push notifications."
+  },
+  "settings.push.title": {
+    "defaultMessage": "プッシュ通知",
+    "description": "Heading of the section of the preferences about Web Push notifications on this device."
+  },
+  "settings.push.type.admin": {
+    "defaultMessage": "モデレーター向けの通知",
+    "description": "Checkbox of the push notification kinds, shown to moderators only: new reports, sign-ups awaiting approval and appeals."
+  },
+  "settings.push.type.boost": {
+    "defaultMessage": "ブースト",
+    "description": "Checkbox of the push notification kinds: someone boosted the user's post."
+  },
+  "settings.push.type.favourite": {
+    "defaultMessage": "お気に入り",
+    "description": "Checkbox of the push notification kinds: someone favourited the user's post."
+  },
+  "settings.push.type.follow": {
+    "defaultMessage": "新しいフォロワー",
+    "description": "Checkbox of the push notification kinds: someone followed the user."
+  },
+  "settings.push.type.follow_accepted": {
+    "defaultMessage": "承認されたフォローリクエスト",
+    "description": "Checkbox of the push notification kinds: someone accepted the user's follow request."
+  },
+  "settings.push.type.follow_request": {
+    "defaultMessage": "フォローリクエスト",
+    "description": "Checkbox of the push notification kinds: someone asked to follow the user."
+  },
+  "settings.push.type.mention": {
+    "defaultMessage": "メンション",
+    "description": "Checkbox of the push notification kinds: a post mentions the user."
+  },
+  "settings.push.type.moderation": {
+    "defaultMessage": "モデレーターからのお知らせ",
+    "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
+  },
+  "settings.push.types.description": {
+    "defaultMessage": "この端末に通知する内容を選びます。",
+    "description": "Help text of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.types.label": {
+    "defaultMessage": "通知する内容",
+    "description": "Label of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.unsupported": {
+    "defaultMessage": "このブラウザはプッシュ通知を受け取れません。iPhone と iPad では、このサイトをホーム画面に追加して、そこから開いてください。",
+    "description": "Shown in the push notification settings when the browser has no Push API."
+  },
   "settings.saved": {
     "defaultMessage": "保存しました",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."

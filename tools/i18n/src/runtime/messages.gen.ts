@@ -2126,6 +2126,40 @@ export interface MessageArgs {
   "client:settings.profile.unsaved.stay": {};
   /** Leave without saving your profile? */
   "client:settings.profile.unsaved.title": {};
+  /** Notifications are blocked for this site. To turn on push notifications, allow them in the browser's settings for this site. */
+  "client:settings.push.denied": {};
+  /** Notify me on this device */
+  "client:settings.push.enable": {};
+  /** New notifications appear on this device even when the app is closed. */
+  "client:settings.push.enable.description": {};
+  /** Push notifications could not be set up on this device. Try again later. */
+  "client:settings.push.failed": {};
+  /** Push notifications are off because the browser did not allow notifications. */
+  "client:settings.push.not_allowed": {};
+  /** Push notifications */
+  "client:settings.push.title": {};
+  /** Moderator notifications */
+  "client:settings.push.type.admin": {};
+  /** Boosts */
+  "client:settings.push.type.boost": {};
+  /** Favourites */
+  "client:settings.push.type.favourite": {};
+  /** New followers */
+  "client:settings.push.type.follow": {};
+  /** Accepted follow requests */
+  "client:settings.push.type.follow_accepted": {};
+  /** Follow requests */
+  "client:settings.push.type.follow_request": {};
+  /** Mentions */
+  "client:settings.push.type.mention": {};
+  /** Notices from the moderators */
+  "client:settings.push.type.moderation": {};
+  /** Choose what this device notifies you of. */
+  "client:settings.push.types.description": {};
+  /** Notify me of */
+  "client:settings.push.types.label": {};
+  /** This browser cannot receive push notifications. On iPhone and iPad, add this site to the Home Screen and open it from there. */
+  "client:settings.push.unsupported": {};
   /** Saved */
   "client:settings.saved": {};
   /** Dark */
@@ -2818,6 +2852,34 @@ export interface MessageArgs {
   "server:preview.header_alt": { name: string };
   /** {name} (@{handle}) */
   "server:preview.title": { handle: string; name: string };
+  /** A new appeal awaits the moderators of {instance} */
+  "server:push.admin_appeal": { instance: string };
+  /** A new report awaits the moderators of {instance} */
+  "server:push.admin_report": { instance: string };
+  /** A new sign-up awaits approval on {instance} */
+  "server:push.admin_sign_up": { instance: string };
+  /** The moderators of {instance} decided your appeal */
+  "server:push.appeal_decided": { instance: string };
+  /** {name} boosted your post */
+  "server:push.boost": { name: string };
+  /** {name} favourited your post */
+  "server:push.favourite": { name: string };
+  /** {name} followed you */
+  "server:push.follow": { name: string };
+  /** {name} accepted your follow request */
+  "server:push.follow_accepted": { name: string };
+  /** {name} requested to follow you */
+  "server:push.follow_request": { name: string };
+  /** {name} mentioned you */
+  "server:push.mention": { name: string };
+  /** The moderators of {instance} sent you a notice */
+  "server:push.moderation_notice": { instance: string };
+  /** You have a new notification on {instance} */
+  "server:push.other": { instance: string };
+  /** A suspension by the moderators of {instance} ended some of your follows */
+  "server:push.relationships_severed": { instance: string };
+  /** A report you filed on {instance} has been resolved */
+  "server:push.report_resolved": { instance: string };
 }
 
 export type MessageKey = keyof MessageArgs;

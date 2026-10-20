@@ -76,6 +76,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`captcha`](#captcha) | `MY_CAPTCHA` | `none` | no | no |
 | [`captcha_site_key`](#captcha_site_key) | `MY_CAPTCHA_SITE_KEY` | none | when `captcha` is not `none` | no |
 | [`captcha_secret_key`](#captcha_secret_key) | `MY_CAPTCHA_SECRET_KEY` | none | when `captcha` is not `none` | yes |
+| [`vapid_private_key`](#vapid_private_key) | `MY_VAPID_PRIVATE_KEY` | none | no | yes |
 | [`profile`](#profile) | `MY_PROFILE` | `production` | no | no |
 | [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
 | [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
@@ -479,6 +480,14 @@ Secret key of the `captcha` service, which the server sends with each token to t
 - Environment variable: `MY_CAPTCHA_SECRET_KEY` or `MY_CAPTCHA_SECRET_KEY_FILE`
 - Default: none
 - Required: when `captcha` is not `none`
+
+### `vapid_private_key`
+
+VAPID private key of the server's Web Push notifications (FR-206, RFC 8292): a P-256 private key, 32 bytes in base64url. Generate one with `my config vapid-key`. Without it, the server sends no Web Push and clients do not offer it. Changing it ends every subscription, since browsers subscribe with its public key (docs/operations/key-management.md).
+
+- Environment variable: `MY_VAPID_PRIVATE_KEY` or `MY_VAPID_PRIVATE_KEY_FILE`
+- Default: none
+- Required: no
 
 ### `profile`
 

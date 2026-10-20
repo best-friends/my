@@ -115,6 +115,9 @@ type OAuthRepository interface {
 	// RevokeTokensOfUser revokes every token of a user whose access or refresh token has not
 	// expired at at and that has no revocation yet.
 	RevokeTokensOfUser(ctx context.Context, tx uow.Tx, userID string, reason identity.TokenRevocationReason, at time.Time) error
+	// TokenFamilyActive reports whether a token of the family has no revocation and an access
+	// or refresh token that has not expired at now.
+	TokenFamilyActive(ctx context.Context, familyID string, now time.Time) (bool, error)
 	// RevokeSessionOfTokenFamily revokes the browser session that authorized the code a family
 	// started from, unless the session has a revocation already or the code had no session.
 	RevokeSessionOfTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.RevocationReason, at time.Time) error
@@ -544,6 +547,13 @@ func (s *Service) RevokeToken(ctx context.Context, in RevokeRequest) error {
 		})
 	}
 	return nil
+}
+
+// TokenFamilyActive reports whether the grant that a token family stands for can still be
+// used: one of its tokens is neither revoked nor expired, counting its refresh token. Signing
+// out of an app, a moderator's revocation, and a password change end it.
+func (s *Service) TokenFamilyActive(ctx context.Context, familyID string) (bool, error) {
+	return s.d.Repository.TokenFamilyActive(ctx, familyID, s.d.Clock.Now())
 }
 
 // AuthenticateAccessToken returns the token of a bearer access token, for the client API's
