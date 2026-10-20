@@ -256,6 +256,25 @@ func (q *Queries) EraseDeletedStatusesOfStatuses(ctx context.Context, ids []stri
 	return err
 }
 
+const eraseDomainMutesBy = `-- name: EraseDomainMutesBy :execrows
+DELETE FROM account_domain_mutes WHERE account_domain_mutes.account_id = $1 AND account_domain_mutes.domain IN (
+  SELECT m.domain FROM account_domain_mutes m WHERE m.account_id = $1
+  ORDER BY m.domain LIMIT $2)
+`
+
+type EraseDomainMutesByParams struct {
+	AccountID string
+	Lim       int32
+}
+
+func (q *Queries) EraseDomainMutesBy(ctx context.Context, arg EraseDomainMutesByParams) (int64, error) {
+	result, err := q.db.Exec(ctx, eraseDomainMutesBy, arg.AccountID, arg.Lim)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const eraseEmailAddresses = `-- name: EraseEmailAddresses :exec
 DELETE FROM user_email_addresses WHERE user_id = $1
 `
@@ -331,6 +350,25 @@ DELETE FROM feed_direct_recipients WHERE entry_id = ANY($1::text[])
 func (q *Queries) EraseFeedDirectRecipientsOfEntries(ctx context.Context, ids []string) error {
 	_, err := q.db.Exec(ctx, eraseFeedDirectRecipientsOfEntries, ids)
 	return err
+}
+
+const eraseFeedDomainMutesOf = `-- name: EraseFeedDomainMutesOf :execrows
+DELETE FROM feed_domain_mutes WHERE feed_domain_mutes.viewer_account_id = $1 AND feed_domain_mutes.domain IN (
+  SELECT m.domain FROM feed_domain_mutes m WHERE m.viewer_account_id = $1
+  ORDER BY m.domain LIMIT $2)
+`
+
+type EraseFeedDomainMutesOfParams struct {
+	AccountID string
+	Lim       int32
+}
+
+func (q *Queries) EraseFeedDomainMutesOf(ctx context.Context, arg EraseFeedDomainMutesOfParams) (int64, error) {
+	result, err := q.db.Exec(ctx, eraseFeedDomainMutesOf, arg.AccountID, arg.Lim)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const eraseFeedEntries = `-- name: EraseFeedEntries :exec
@@ -588,6 +626,25 @@ DELETE FROM notification_dismissals WHERE notification_id IN (
 func (q *Queries) EraseNotificationDismissalsOfStatuses(ctx context.Context, ids []string) error {
 	_, err := q.db.Exec(ctx, eraseNotificationDismissalsOfStatuses, ids)
 	return err
+}
+
+const eraseNotificationDomainExclusionsOf = `-- name: EraseNotificationDomainExclusionsOf :execrows
+DELETE FROM notification_domain_exclusions WHERE notification_domain_exclusions.viewer_account_id = $1 AND notification_domain_exclusions.domain IN (
+  SELECT x.domain FROM notification_domain_exclusions x WHERE x.viewer_account_id = $1
+  ORDER BY x.domain LIMIT $2)
+`
+
+type EraseNotificationDomainExclusionsOfParams struct {
+	AccountID string
+	Lim       int32
+}
+
+func (q *Queries) EraseNotificationDomainExclusionsOf(ctx context.Context, arg EraseNotificationDomainExclusionsOfParams) (int64, error) {
+	result, err := q.db.Exec(ctx, eraseNotificationDomainExclusionsOf, arg.AccountID, arg.Lim)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const eraseNotificationExclusionsAsTarget = `-- name: EraseNotificationExclusionsAsTarget :execrows

@@ -20,7 +20,8 @@ var (
 	ErrAlreadyRecorded = errors.New("graph: the follow or block already has this event")
 )
 
-// Repository is the persistence port of the graph module: follows, blocks, and mutes
+// Repository is the persistence port of the graph module: follows, blocks, mutes, and domain
+// mutes
 // (data-model §4.5). The database adapters implement it and pass testkit.FollowRepositoryContract
 // and testkit.BlockRepositoryContract.
 //
@@ -66,6 +67,13 @@ type Repository interface {
 	DeleteExpiredMutes(ctx context.Context, tx uow.Tx, now time.Time, limit int) ([]graph.Mute, error)
 	// Mute is FindMute inside tx.
 	Mute(ctx context.Context, tx uow.Tx, accountID, targetAccountID string, now time.Time) (graph.Mute, error)
+	// InsertDomainMute inserts a domain mute and reports false, writing nothing, when the
+	// account already mutes the domain.
+	InsertDomainMute(ctx context.Context, tx uow.Tx, m graph.DomainMute) (bool, error)
+	// DeleteDomainMute deletes accountID's mute of domain and reports whether there was one.
+	DeleteDomainMute(ctx context.Context, tx uow.Tx, accountID, domain string) (bool, error)
+	// CountDomainMutes returns how many domains accountID mutes.
+	CountDomainMutes(ctx context.Context, tx uow.Tx, accountID string) (int, error)
 
 	// Projections, written only by this module's projectors and rebuild.
 
@@ -103,6 +111,9 @@ type Repository interface {
 	// ListAllMutes returns every mute, expired ones included, ordered by account and target, as
 	// a source of other modules' projections (ReplayEvents).
 	ListAllMutes(ctx context.Context, tx uow.Tx) ([]graph.Mute, error)
+	// ListAllDomainMutes returns every domain mute, ordered by account and domain, as a source
+	// of other modules' projections (ReplayEvents).
+	ListAllDomainMutes(ctx context.Context, tx uow.Tx) ([]graph.DomainMute, error)
 
 	// Projection contents, for verifying the projections.
 
@@ -139,6 +150,9 @@ type Repository interface {
 	// and then target account ID, starting after before (the zero cursor for the newest) and
 	// returning at most limit mutes.
 	ListMutes(ctx context.Context, accountID string, now time.Time, before MuteCursor, limit int) ([]graph.Mute, error)
+	// ListDomainMutes returns accountID's domain mutes in the order of their domains, starting
+	// after the domain after ("" for the first) and returning at most limit mutes.
+	ListDomainMutes(ctx context.Context, accountID, after string, limit int) ([]graph.DomainMute, error)
 }
 
 // MuteCursor is the position of a mute in a list of mutes: its creation and target account.

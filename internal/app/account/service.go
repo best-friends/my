@@ -520,6 +520,19 @@ func (s *Service) IsLocal(ctx context.Context, tx uow.Tx, id string) (bool, erro
 	return a.IsLocal(), nil
 }
 
+// DomainOf returns, inside tx, the domain of a remote account: account.LocalDomain ("") for a
+// local account or one that does not exist.
+func (s *Service) DomainOf(ctx context.Context, tx uow.Tx, id string) (string, error) {
+	a, err := s.d.Repository.Account(ctx, tx, id)
+	if errors.Is(err, ErrNotFound) {
+		return account.LocalDomain, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return a.Domain, nil
+}
+
 // FindByHandle returns the actor with a handle. username compares case-insensitively; domain is
 // account.LocalDomain for local accounts. It fails with ErrNotFound when there is none.
 func (s *Service) FindByHandle(ctx context.Context, username, domain string) (Actor, error) {

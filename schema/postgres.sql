@@ -503,6 +503,16 @@ CREATE INDEX mutes_account_created_at_target ON mutes (account_id, created_at, t
 -- The periodic cleanup deletes the expired mutes (FR-803).
 CREATE INDEX mutes_expires_at ON mutes (expires_at);
 
+-- Current value: an account's mute of a remote domain and of its subdomains (FR-304): their
+-- posts and notifications are hidden from the account. It keeps no history and federates
+-- nothing.
+CREATE TABLE account_domain_mutes (
+  account_id text COLLATE "C" NOT NULL,
+  domain text NOT NULL,
+  created_at timestamptz NOT NULL,
+  PRIMARY KEY (account_id, domain)
+);
+
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
 -- Owned by internal/adapter/queue/db.
@@ -1209,6 +1219,14 @@ CREATE TABLE feed_exclusions (
   PRIMARY KEY (viewer_account_id, target_account_id, reason)
 );
 
+-- Projection: the domains (and their subdomains) whose posts a viewer does not see on the
+-- timelines other than home, nor boosted on home (FR-304).
+CREATE TABLE feed_domain_mutes (
+  viewer_account_id text COLLATE "C" NOT NULL,
+  domain text NOT NULL,
+  PRIMARY KEY (viewer_account_id, domain)
+);
+
 -- Projection: the moderation restrictions of accounts that bear on timelines, until
 -- effective_until (NULL: until lifted).
 CREATE TABLE feed_author_restrictions (
@@ -1245,6 +1263,8 @@ CREATE TABLE notifications (
     'admin_appeal', 'admin_webhook_disabled'
   )),
   source_account_id text COLLATE "C",
+  -- the domain of a remote source account; NULL for a local source or none.
+  source_domain text,
   status_id text COLLATE "C",
   moderation_action_id text COLLATE "C",
   -- admin_report, report_resolved: the report.
@@ -1289,6 +1309,14 @@ CREATE TABLE notification_exclusions (
   reason text NOT NULL CHECK (reason IN ('block', 'blocked_by', 'mute')),
   expires_at timestamptz,
   PRIMARY KEY (viewer_account_id, target_account_id, reason)
+);
+
+-- Projection of the graph events: the notifications whose source_domain is the domain or one
+-- of its subdomains are hidden from viewer_account_id at read time (FR-304).
+CREATE TABLE notification_domain_exclusions (
+  viewer_account_id text COLLATE "C" NOT NULL,
+  domain text NOT NULL,
+  PRIMARY KEY (viewer_account_id, domain)
 );
 
 -- Projection of content.status_deleted: the notifications about these statuses are hidden at

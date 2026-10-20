@@ -30,6 +30,7 @@ var errEntryExists = errors.New("timeline: the feed entry already exists")
 //   - feed_tag_entries holds the current tags of each post;
 //   - feed_follow_edges holds each active follow with its show_boosts preference;
 //   - feed_exclusions holds both directions of each block in force and each mute;
+//   - feed_domain_mutes holds each domain mute;
 //   - feed_author_restrictions holds profile_view for each deleted account, local or remote,
 //     whose entries disappear at once while the purge removes them later.
 //
@@ -154,6 +155,14 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	r.Register(appgraph.EventUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appgraph.Unmuted)
 		return repo.DeleteExclusion(ctx, tx, ev.AccountID, ev.TargetAccountID, timeline.ExcludedMute)
+	})
+	r.Register(appgraph.EventDomainMuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		m := e.(appgraph.DomainMuted).Mute
+		return repo.InsertDomainMute(ctx, tx, DomainMute{ViewerAccountID: m.AccountID, Domain: m.Domain})
+	})
+	r.Register(appgraph.EventDomainUnmuted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appgraph.DomainUnmuted)
+		return repo.DeleteDomainMute(ctx, tx, ev.AccountID, ev.Domain)
 	})
 
 	registerDeletionProjector(r, repo)

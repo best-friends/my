@@ -3886,7 +3886,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_favourites": {};
   /** Read your follows and follow requests */
   "server:auth.authorize.scope.read_follows": {};
-  /** Read the accounts you mute */
+  /** Read the accounts and domains you mute */
   "server:auth.authorize.scope.read_mutes": {};
   /** Read your notifications */
   "server:auth.authorize.scope.read_notifications": {};
@@ -3908,7 +3908,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_follows": {};
   /** Upload images and edit their descriptions */
   "server:auth.authorize.scope.write_media": {};
-  /** Mute and unmute accounts */
+  /** Mute and unmute accounts and domains */
   "server:auth.authorize.scope.write_mutes": {};
   /** Mark notifications as read and dismiss them */
   "server:auth.authorize.scope.write_notifications": {};
@@ -4120,6 +4120,8 @@ export interface MessageArgs {
   "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
+  /** You already mute the most domains allowed. Unmute one first. */
+  "server:errors.domain_mutes.too_many": {};
   /** An archive of your data is already being prepared. Wait until it is ready. */
   "server:errors.export.in_progress": {};
   /** This archive cannot be downloaded. */

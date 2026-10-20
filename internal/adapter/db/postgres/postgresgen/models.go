@@ -18,6 +18,12 @@ type Account struct {
 	CreatedAt time.Time
 }
 
+type AccountDomainMute struct {
+	AccountID string
+	Domain    string
+	CreatedAt time.Time
+}
+
 type AccountHandle struct {
 	AccountID          string
 	Username           string
@@ -234,6 +240,11 @@ type FeedAuthorRestriction struct {
 type FeedDirectRecipient struct {
 	EntryID            string
 	RecipientAccountID string
+}
+
+type FeedDomainMute struct {
+	ViewerAccountID string
+	Domain          string
 }
 
 type FeedDomainRestriction struct {
@@ -482,6 +493,7 @@ type Notification struct {
 	RecipientAccountID    string
 	Type                  string
 	SourceAccountID       *string
+	SourceDomain          *string
 	StatusID              *string
 	ModerationActionID    *string
 	ReportID              *string

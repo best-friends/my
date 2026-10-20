@@ -101,7 +101,7 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 			},
 			{
 				Name: "feeds", Module: "timeline",
-				Tables: []string{"feed_entries", "feed_direct_recipients", "feed_tag_entries", "feed_follow_edges", "feed_exclusions"},
+				Tables: []string{"feed_entries", "feed_direct_recipients", "feed_tag_entries", "feed_follow_edges", "feed_exclusions", "feed_domain_mutes"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return timeline.RebuildProjections(ctx, u, r.feeds,
 						timeline.ContentSource(r.statuses, r.interactions), timeline.GraphSource(r.follows))
@@ -117,7 +117,7 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 			},
 			{
 				Name: "notification_exclusions", Module: "notification",
-				Tables: []string{"notification_exclusions"},
+				Tables: []string{"notification_exclusions", "notification_domain_exclusions"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return notification.RebuildExclusions(ctx, u, r.notifications, notification.GraphSource(r.follows))
 				},

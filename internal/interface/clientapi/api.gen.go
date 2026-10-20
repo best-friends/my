@@ -3615,6 +3615,23 @@ type DeleteOwnAccountRequest struct {
 	Password string `json:"password"`
 }
 
+// DomainMute A domain that the viewer mutes, with its subdomains.
+type DomainMute struct {
+	// CreatedAt When the viewer muted the domain.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Domain The domain, in IDNA A-labels.
+	Domain string `json:"domain"`
+}
+
+// DomainMutePage A page of domain mutes.
+type DomainMutePage struct {
+	DomainMutes []DomainMute `json:"domain_mutes"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
 // EditStatusRequest The new content of a status.
 type EditStatusRequest struct {
 	// Language A BCP 47 language tag; omitted means the user's default post language.
@@ -4181,6 +4198,12 @@ type MuteAccountRequest struct {
 	Notifications *bool `json:"notifications,omitempty"`
 }
 
+// MuteDomainRequest The domain to mute.
+type MuteDomainRequest struct {
+	// Domain A remote domain, such as `mastodon.example`; its subdomains are muted too.
+	Domain string `json:"domain"`
+}
+
 // MutePage A page of mutes.
 type MutePage struct {
 	Mutes []MutedAccount `json:"mutes"`
@@ -4462,6 +4485,8 @@ type Preferences struct {
 //     which.
 //   - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
 //     reason in `theme_errors` (`PUT /admin/theme`).
+//   - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+//     allowed. Unmute one first.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -5779,6 +5804,15 @@ type ListBookmarksParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListDomainMutesParams defines parameters for ListDomainMutes.
+type ListDomainMutesParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListFollowRequestsParams defines parameters for ListFollowRequests.
 type ListFollowRequestsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -5982,6 +6016,9 @@ type CreateWebhookJSONRequestBody = CreateWebhookRequest
 
 // UpdateWebhookJSONRequestBody defines body for UpdateWebhook for application/json ContentType.
 type UpdateWebhookJSONRequestBody = UpdateWebhookRequest
+
+// MuteDomainJSONRequestBody defines body for MuteDomain for application/json ContentType.
+type MuteDomainJSONRequestBody = MuteDomainRequest
 
 // StartDataImportJSONRequestBody defines body for StartDataImport for application/json ContentType.
 type StartDataImportJSONRequestBody = DataImportRequest
@@ -6327,6 +6364,15 @@ type ServerInterface interface {
 	// ListCustomEmojis List the custom emoji of the picker
 	// (GET /custom_emojis)
 	ListCustomEmojis(w http.ResponseWriter, r *http.Request)
+	// ListDomainMutes List the domains that the viewer mutes
+	// (GET /domain_mutes)
+	ListDomainMutes(w http.ResponseWriter, r *http.Request, params ListDomainMutesParams)
+	// MuteDomain Mute a domain
+	// (POST /domain_mutes)
+	MuteDomain(w http.ResponseWriter, r *http.Request)
+	// UnmuteDomain Unmute a domain
+	// (DELETE /domain_mutes/{domain})
+	UnmuteDomain(w http.ResponseWriter, r *http.Request, domain string)
 	// ListDataExports List the authenticated user's data exports
 	// (GET /exports)
 	ListDataExports(w http.ResponseWriter, r *http.Request)
@@ -9646,6 +9692,92 @@ func (siw *ServerInterfaceWrapper) ListCustomEmojis(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ListDomainMutes operation middleware
+func (siw *ServerInterfaceWrapper) ListDomainMutes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDomainMutesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDomainMutes(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MuteDomain operation middleware
+func (siw *ServerInterfaceWrapper) MuteDomain(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MuteDomain(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnmuteDomain operation middleware
+func (siw *ServerInterfaceWrapper) UnmuteDomain(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "domain" -------------
+	var domain string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", r.PathValue("domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnmuteDomain(w, r, domain)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListDataExports operation middleware
 func (siw *ServerInterfaceWrapper) ListDataExports(w http.ResponseWriter, r *http.Request) {
 
@@ -11315,6 +11447,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/follow_requests/{id}/authorize", wrapper.AcceptFollowRequest)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/follow_requests/{id}/reject", wrapper.RejectFollowRequest)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/mutes", wrapper.ListMutes)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/domain_mutes", wrapper.ListDomainMutes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/domain_mutes", wrapper.MuteDomain)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/domain_mutes/{domain}", wrapper.UnmuteDomain)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/media", wrapper.UploadMedia)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/media/{id}", wrapper.GetMedia)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/media/{id}", wrapper.UpdateMedia)
@@ -17482,6 +17617,176 @@ func (response ListCustomEmojisdefaultApplicationProblemPlusJSONResponse) VisitL
 	return err
 }
 
+type ListDomainMutesRequestObject struct {
+	Params ListDomainMutesParams
+}
+
+type ListDomainMutesResponseObject interface {
+	VisitListDomainMutesResponse(w http.ResponseWriter) error
+}
+
+type ListDomainMutes200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListDomainMutes200JSONResponse struct {
+	Body    DomainMutePage
+	Headers ListDomainMutes200ResponseHeaders
+}
+
+func (response ListDomainMutes200JSONResponse) VisitListDomainMutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDomainMutesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListDomainMutesdefaultApplicationProblemPlusJSONResponse) VisitListDomainMutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MuteDomainRequestObject struct {
+	Body *MuteDomainJSONRequestBody
+}
+
+type MuteDomainResponseObject interface {
+	VisitMuteDomainResponse(w http.ResponseWriter) error
+}
+
+type MuteDomain200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type MuteDomain200JSONResponse struct {
+	Body    DomainMute
+	Headers MuteDomain200ResponseHeaders
+}
+
+func (response MuteDomain200JSONResponse) VisitMuteDomainResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MuteDomaindefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response MuteDomaindefaultApplicationProblemPlusJSONResponse) VisitMuteDomainResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnmuteDomainRequestObject struct {
+	Domain string `json:"domain"`
+}
+
+type UnmuteDomainResponseObject interface {
+	VisitUnmuteDomainResponse(w http.ResponseWriter) error
+}
+
+type UnmuteDomain204Response struct {
+}
+
+func (response UnmuteDomain204Response) VisitUnmuteDomainResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UnmuteDomaindefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnmuteDomaindefaultApplicationProblemPlusJSONResponse) VisitUnmuteDomainResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListDataExportsRequestObject struct {
 }
 
@@ -21149,6 +21454,15 @@ type StrictServerInterface interface {
 	// ListCustomEmojis List the custom emoji of the picker
 	// (GET /custom_emojis)
 	ListCustomEmojis(ctx context.Context, request ListCustomEmojisRequestObject) (ListCustomEmojisResponseObject, error)
+	// ListDomainMutes List the domains that the viewer mutes
+	// (GET /domain_mutes)
+	ListDomainMutes(ctx context.Context, request ListDomainMutesRequestObject) (ListDomainMutesResponseObject, error)
+	// MuteDomain Mute a domain
+	// (POST /domain_mutes)
+	MuteDomain(ctx context.Context, request MuteDomainRequestObject) (MuteDomainResponseObject, error)
+	// UnmuteDomain Unmute a domain
+	// (DELETE /domain_mutes/{domain})
+	UnmuteDomain(ctx context.Context, request UnmuteDomainRequestObject) (UnmuteDomainResponseObject, error)
 	// ListDataExports List the authenticated user's data exports
 	// (GET /exports)
 	ListDataExports(ctx context.Context, request ListDataExportsRequestObject) (ListDataExportsResponseObject, error)
@@ -24096,6 +24410,89 @@ func (sh *strictHandler) ListCustomEmojis(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListCustomEmojisResponseObject); ok {
 		if err := validResponse.VisitListCustomEmojisResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDomainMutes operation middleware
+func (sh *strictHandler) ListDomainMutes(w http.ResponseWriter, r *http.Request, params ListDomainMutesParams) {
+	var request ListDomainMutesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDomainMutes(ctx, request.(ListDomainMutesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDomainMutes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDomainMutesResponseObject); ok {
+		if err := validResponse.VisitListDomainMutesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MuteDomain operation middleware
+func (sh *strictHandler) MuteDomain(w http.ResponseWriter, r *http.Request) {
+	var request MuteDomainRequestObject
+
+	var body MuteDomainJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MuteDomain(ctx, request.(MuteDomainRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MuteDomain")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MuteDomainResponseObject); ok {
+		if err := validResponse.VisitMuteDomainResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnmuteDomain operation middleware
+func (sh *strictHandler) UnmuteDomain(w http.ResponseWriter, r *http.Request, domain string) {
+	var request UnmuteDomainRequestObject
+
+	request.Domain = domain
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnmuteDomain(ctx, request.(UnmuteDomainRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnmuteDomain")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnmuteDomainResponseObject); ok {
+		if err := validResponse.VisitUnmuteDomainResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
