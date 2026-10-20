@@ -25,7 +25,7 @@ type ReactionView struct {
 type EmojiView struct {
 	Emoji content.ReactionEmoji
 	// Custom is the custom emoji, nil for a Unicode emoji.
-	Custom *CustomEmojiView
+	Custom *ReactionCustomEmoji
 }
 
 // Name returns the name that clients show and filter the reactions with: the Unicode emoji,
@@ -42,14 +42,14 @@ func (v EmojiView) Name() string {
 	}
 }
 
-// CustomEmojiView is a custom emoji with the URL of its current image: its upload's full
-// variant, or the media proxy URL of a remote image; "" when it has none to show.
-type CustomEmojiView struct {
+// ReactionCustomEmoji is the custom emoji of a reaction: its shortcode and server, with its image
+// as clients show it (MediaService.CustomEmojis), nil when it cannot be shown.
+type ReactionCustomEmoji struct {
 	ID        string
 	Shortcode string
 	// Domain is the server of the emoji, "" for this instance.
 	Domain string
-	URL    string
+	Image  *CustomEmojiView
 }
 
 // ReactedView is one reaction to a status, for the list of the accounts that reacted.
@@ -85,7 +85,7 @@ func (r *Reader) Reactions(ctx context.Context, viewer Viewer, statusID, emoji, 
 	if err != nil {
 		return ReactedPage{}, err
 	}
-	emojis := emojiCache{r: r, seen: map[string]*CustomEmojiView{}}
+	emojis := emojiCache{r: r, seen: map[string]*ReactionCustomEmoji{}}
 	out := ReactedPage{Reactions: make([]ReactedView, 0, len(rs))}
 	for _, re := range rs {
 		v, err := emojis.view(ctx, re.Emoji)
@@ -134,7 +134,7 @@ func (r *Reader) reactions(ctx context.Context, st content.Status, accountID str
 			mine[re.Emoji.Key()] = true
 		}
 	}
-	emojis := emojiCache{r: r, seen: map[string]*CustomEmojiView{}}
+	emojis := emojiCache{r: r, seen: map[string]*ReactionCustomEmoji{}}
 	out := make([]ReactionView, 0, len(counts))
 	for _, c := range counts {
 		v, err := emojis.view(ctx, c.Emoji)
@@ -149,7 +149,7 @@ func (r *Reader) reactions(ctx context.Context, st content.Status, accountID str
 // emojiCache presents the emoji of reactions, reading each custom emoji once.
 type emojiCache struct {
 	r    *Reader
-	seen map[string]*CustomEmojiView
+	seen map[string]*ReactionCustomEmoji
 }
 
 func (c emojiCache) view(ctx context.Context, e content.ReactionEmoji) (EmojiView, error) {
@@ -163,36 +163,22 @@ func (c emojiCache) view(ctx context.Context, e content.ReactionEmoji) (EmojiVie
 	if err != nil {
 		return EmojiView{}, err
 	}
-	v := &CustomEmojiView{ID: emoji.ID, Shortcode: emoji.Shortcode, Domain: emoji.Domain}
-	if v.URL, err = c.r.emojiImageURL(ctx, emoji.ID); err != nil {
-		return EmojiView{}, err
+	v := &ReactionCustomEmoji{ID: emoji.ID, Shortcode: emoji.Shortcode, Domain: emoji.Domain}
+	if c.r.d.Media != nil {
+		images, err := c.r.d.Media.CustomEmojis(ctx, []string{emoji.ID})
+		if err != nil {
+			return EmojiView{}, err
+		}
+		if img, ok := images[emoji.ID]; ok {
+			v.Image = &img
+		}
 	}
 	c.seen[e.CustomEmojiID] = v
 	return EmojiView{Emoji: e, Custom: v}, nil
 }
 
-// emojiImageURL returns the URL of the current image of a custom emoji, "" when it has none to
-// show (no image, an upload that did not finish processing, or no media proxy).
-func (r *Reader) emojiImageURL(ctx context.Context, emojiID string) (string, error) {
-	if r.d.Media == nil {
-		return "", nil
-	}
-	img, err := r.d.Statuses.FindCustomEmojiImage(ctx, emojiID)
-	if errors.Is(err, ErrNotFound) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
-	}
-	views, err := r.attachments(ctx, []content.Attachment{{MediaID: img.MediaID}})
-	if err != nil || len(views) == 0 {
-		return "", err
-	}
-	return views[0].URL, nil
-}
-
 // ReactionEmoji returns the emoji of a reaction with what a client shows of it, for the
 // notifications of reactions.
 func (r *Reader) ReactionEmoji(ctx context.Context, e content.ReactionEmoji) (EmojiView, error) {
-	return emojiCache{r: r, seen: map[string]*CustomEmojiView{}}.view(ctx, e)
+	return emojiCache{r: r, seen: map[string]*ReactionCustomEmoji{}}.view(ctx, e)
 }

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4):
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
+import type { CustomEmojiImage } from "@my/ui";
 import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
-import { accountStatusPath, adminAppealPath, adminReportPath, followListPath, profilePath } from "../../../lib/paths";
+import { accountStatusPath, moderationAppealPath, moderationReportPath, followListPath, profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { useViewer } from "../../session";
 import { statusPath } from "../../status";
@@ -11,7 +12,8 @@ import type { ModerationAction, Notification, NotificationAccount, NotificationS
 import type { NotificationGroup } from "./groupNotifications";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
-export type NotificationActor = { name: string; href: string; avatar: string | undefined };
+/** An account a row names: its display name with the custom emoji of its profile, its profile page, and its avatar. */
+export type NotificationActor = { name: string; emojis: readonly CustomEmojiImage[]; href: string; avatar: string | undefined };
 
 /** A link from a row to the page where the user follows up what it tells. */
 type NotificationLink = { href: string; label: ClientMessageKey };
@@ -105,7 +107,7 @@ const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey
 };
 
 function actorOf(account: NotificationAccount): NotificationActor {
-  return { name: account.display_name || account.username, href: profilePath(account.acct), avatar: account.avatar_url };
+  return { name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: account.avatar_url };
 }
 
 /**
@@ -177,11 +179,11 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
     case "appeal_decided":
       return [{ href: accountStatusPath, label: "client:notifications.link.account_status" }];
     case "admin_appeal":
-      return notification.appeal_id === undefined ? [] : [{ href: adminAppealPath(notification.appeal_id), label: "client:notifications.link.appeal" }];
+      return notification.appeal_id === undefined ? [] : [{ href: moderationAppealPath(notification.appeal_id), label: "client:notifications.link.appeal" }];
     case "admin_report":
-      return notification.report_id === undefined ? [] : [{ href: adminReportPath(notification.report_id), label: "client:notifications.link.report" }];
+      return notification.report_id === undefined ? [] : [{ href: moderationReportPath(notification.report_id), label: "client:notifications.link.report" }];
     case "admin_sign_up":
-      return [{ href: "/admin/registrations", label: "client:notifications.link.registrations" }];
+      return [{ href: "/moderation/registrations", label: "client:notifications.link.registrations" }];
     case "relationships_severed":
       return ownAcct === null
         ? []

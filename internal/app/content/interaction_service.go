@@ -27,11 +27,11 @@ type InteractionDeps struct {
 	Relationships Relationships
 	// Restrictions are the authors' moderation restrictions; nil means NoRestrictions.
 	Restrictions RestrictionPolicy
-	// RemoteMedia records the images of the custom emoji that remote reactions use; nil refuses
-	// those reactions.
-	RemoteMedia RemoteMediaRecorder
-	Clock       kernel.Clock
-	IDs         kernel.IDGenerator
+	// RecordRemoteEmojis records the custom emoji that remote reactions use, as those of remote
+	// posts (Service.RecordRemoteEmojis); nil refuses those reactions.
+	RecordRemoteEmojis func(ctx context.Context, tx uow.Tx, ownerAccountID, domain string, emojis []RemoteEmojiInput) ([]string, error)
+	Clock              kernel.Clock
+	IDs                kernel.IDGenerator
 	// Host is the serving domain of the Announce and Like activity URIs (ADR-0018).
 	Host string
 }

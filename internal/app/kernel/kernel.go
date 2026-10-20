@@ -4,12 +4,14 @@
 // the Clock and IDGenerator ports and UUIDv7 helpers, the KeyManager port with the Sealer
 // that encrypts secrets for storage (ADR-0019 §6), the KeyValueStore port with the
 // RateLimiter built on it and the client IP of an HTTP request that keys its IP limits
-// (ADR-0019 §5), the Mailer port, and the HTMLSanitizer port for remote HTML (ADR-0019 §2).
+// (ADR-0019 §5), the Mailer port, the HTMLSanitizer port for remote HTML (ADR-0019 §2), and the
+// Meter port of the metrics (ADR-0055).
 // Use cases obtain time and IDs only through these ports and pass plain values
 // (time.Time, ID strings) to the domain, so that tests stay deterministic (ADR-0015).
 // The production Clock and IDGenerator live in internal/adapter/system, the KeyManager adapters
 // in internal/adapter/keymanager, the KeyValueStore adapters in internal/adapter/kv, the
-// Mailer adapters in internal/adapter/mail, and the HTMLSanitizer in internal/adapter/htmlsanitizer;
+// Mailer adapters in internal/adapter/mail, the HTMLSanitizer in internal/adapter/htmlsanitizer, and
+// the Meter adapters in internal/adapter/telemetry;
 // contract tests and deterministic fakes live in pkg/testkit.
 package kernel
 

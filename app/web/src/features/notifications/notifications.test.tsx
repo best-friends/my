@@ -299,7 +299,7 @@ describe("the notifications page", () => {
         name: "blobcat@misskey.example",
         shortcode: "blobcat",
         domain: "misskey.example",
-        url: "https://my.example/media/proxy/blobcat",
+        emoji: { shortcode: "blobcat", url: "https://my.example/media/proxy/blobcat", static_url: "https://my.example/media/proxy/blobcat" },
       }),
     ];
     server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
@@ -431,17 +431,17 @@ describe("the notifications page", () => {
     expect(within(resolved).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/@bob"]);
     // A moderator's notifications lead to the report and to the registrations.
     const report = within(feed).getByRole("article", { name: /A new report awaits the moderators/ });
-    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/admin/reports/${reportId}`);
+    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/moderation/reports/${reportId}`);
     // The decision on an appeal says what was decided and why, and leads to the account status.
     const decided = within(feed).getByRole("article", { name: /The moderators decided your appeal/ });
     expect(decided).toHaveAccessibleDescription(/Limit: Spam.*Your appeal was granted, and the action was lifted\..*We were wrong\./);
     expect(within(decided).getByRole("link", { name: "View your account status" })).toHaveAttribute("href", "/settings/account-status");
     const appeal = within(feed).getByRole("article", { name: /A new appeal awaits the moderators/ });
-    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/admin/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
+    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/moderation/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
     const signUp = within(feed).getByRole("article", { name: /Bob signed up and awaits approval/ });
     await user.click(within(signUp).getByRole("link", { name: "Review registrations" }));
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe("/admin/registrations");
+      expect(router.state.location.pathname).toBe("/moderation/registrations");
     });
   });
 

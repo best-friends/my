@@ -24,9 +24,8 @@ func newReactionEmoji(v appcontent.EmojiView) ReactionEmoji {
 			domain := c.Domain
 			out.Domain = &domain
 		}
-		if c.URL != "" {
-			u := c.URL
-			out.Url = &u
+		if img := c.Image; img != nil {
+			out.Emoji = &CustomEmoji{Shortcode: img.Shortcode, Url: img.URL, StaticUrl: img.StaticURL}
 		}
 	}
 	return out
@@ -37,7 +36,7 @@ func newStatusReactions(in []appcontent.ReactionView, signedIn bool) []StatusRea
 	out := make([]StatusReaction, 0, len(in))
 	for _, r := range in {
 		e := newReactionEmoji(r.EmojiView)
-		item := StatusReaction{Name: e.Name, Shortcode: e.Shortcode, Domain: e.Domain, Url: e.Url, Count: int(r.Count)}
+		item := StatusReaction{Name: e.Name, Shortcode: e.Shortcode, Domain: e.Domain, Emoji: e.Emoji, Count: int(r.Count)}
 		if signedIn {
 			me := r.Me
 			item.Me = &me

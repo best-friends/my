@@ -22,6 +22,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -72,6 +73,7 @@ const post: Schemas["Status"] = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
@@ -158,10 +160,10 @@ function rows(page: Page) {
   return page.getByRole("tabpanel").getByRole("listitem").filter({ has: page.getByRole("heading", { level: 2 }) });
 }
 
-test.describe("page /admin/reports", () => {
+test.describe("page /moderation/reports", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto("/admin/reports");
+    await page.goto("/moderation/reports");
     await expect(rows(page)).toHaveCount(2);
   });
 
@@ -174,10 +176,10 @@ test.describe("page /admin/reports", () => {
   });
 });
 
-test.describe("page /admin/reports/{id}", () => {
+test.describe("page /moderation/reports/{id}", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto(`/admin/reports/${reportId}`);
+    await page.goto(`/moderation/reports/${reportId}`);
     await expect(page.getByRole("main").getByRole("article")).toBeVisible();
   });
 
@@ -193,7 +195,7 @@ test.describe("page /admin/reports/{id}", () => {
 test.describe("reports", () => {
   test("opens a report from the queue, asks before a ban, and resolves it with an action that takes it off the queue", async ({ page, makeAxeBuilder }) => {
     const actions = await moderatorServer(page);
-    await page.goto("/admin/reports");
+    await page.goto("/moderation/reports");
     await expect(rows(page)).toHaveCount(2);
 
     await expect(rows(page).first()).toMatchAriaSnapshot(`
@@ -217,7 +219,7 @@ test.describe("reports", () => {
     // By keyboard: the row's link opens the report's page, whose heading takes focus.
     await rows(page).first().getByRole("link").focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(new RegExp(`/admin/reports/${reportId}$`));
+    await expect(page).toHaveURL(new RegExp(`/moderation/reports/${reportId}$`));
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(main.getByRole("article")).toBeVisible();
@@ -259,6 +261,6 @@ test.describe("reports", () => {
     // Back on the queue, the report is gone from the open ones.
     await main.getByRole("link").first().click();
     await expect(rows(page)).toHaveCount(1);
-    await expect(rows(page).first().getByRole("link")).toHaveAttribute("href", "/admin/reports/0192f0c4-7a8e-7000-8000-0000000c0001");
+    await expect(rows(page).first().getByRole("link")).toHaveAttribute("href", "/moderation/reports/0192f0c4-7a8e-7000-8000-0000000c0001");
   });
 });

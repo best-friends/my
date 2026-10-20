@@ -201,11 +201,13 @@ func (s *Server) presentStatuses(ctx context.Context, views []appcontent.StatusV
 func (s *Server) statusParts(ctx context.Context, views []appcontent.StatusView, more ...appaccount.Actor) (accountParts, error) {
 	actors := slices.Clone(more)
 	var mentioned []appaccount.Actor
+	var emojis []string
 	for _, v := range views {
 		actors = append(actors, v.Author)
 		mentioned = append(mentioned, v.Mentions...)
+		emojis = append(emojis, v.Revision.EmojiIDs...)
 	}
-	return s.readAccountParts(ctx, actors, mentioned)
+	return s.readAccountParts(ctx, actors, mentioned, emojis)
 }
 
 // newStatus presents a status as the Status schema; parts holds its author's images and the
@@ -219,6 +221,7 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		MediaAttachments: newMediaAttachments(v.Attachments),
 		Mentions:         make([]StatusMention, 0, len(v.Mentions)),
 		Tags:             make([]StatusTag, 0, len(v.Tags)),
+		Emojis:           parts.customEmojis(rev.EmojiIDs),
 		RepliesCount:     int(v.Counters.RepliesCount), BoostsCount: int(v.Counters.BoostsCount),
 		FavouritesCount: int(v.Counters.FavouritesCount),
 		Reactions:       newStatusReactions(v.Reactions, v.Relation != nil),
@@ -440,11 +443,19 @@ func (s *Server) GetStatusHistory(ctx context.Context, req GetStatusHistoryReque
 		}
 		return nil, err
 	}
+	var emojiIDs []string
+	for _, r := range revs {
+		emojiIDs = append(emojiIDs, r.Revision.EmojiIDs...)
+	}
+	parts, err := s.readAccountParts(ctx, nil, nil, emojiIDs)
+	if err != nil {
+		return nil, err
+	}
 	out := StatusHistory{Items: make([]StatusEdit, 0, len(revs))}
 	for _, r := range revs {
 		e := StatusEdit{
 			SpoilerText: r.Revision.SpoilerText, Sensitive: r.Revision.Sensitive, CreatedAt: r.Revision.RevisedAt,
-			MediaAttachments: newMediaAttachments(r.Attachments),
+			MediaAttachments: newMediaAttachments(r.Attachments), Emojis: parts.customEmojis(r.Revision.EmojiIDs),
 		}
 		if len(r.Revision.Bodies) > 0 {
 			e.Content = r.Revision.Bodies[0].ContentHTML

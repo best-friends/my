@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The accessibility regression suite of the admin screens (ADR-0015, ADR-0027, web-client.md §14): every admin
-// screen passes axe without scrolling sideways in every width × locale project (the nightly E2E_MATRIX=full runs
-// them all), the list of screens follows the admin routes, and a moderator handles a report with the keyboard
-// alone — the queue, the report, the target's history on its admin page, back to the report, an action that
-// resolves it, and back to the queue — with focus on the new page's h1 after every navigation. `vite preview`
+// The accessibility regression suite of the staff's screens (ADR-0015, ADR-0027, ADR-0058, web-client.md §14):
+// every moderation and server administration screen passes axe without scrolling sideways in every width × locale
+// project (the nightly E2E_MATRIX=full runs them all), the list of screens follows the moderation and admin
+// routes, and a moderator handles a report with the keyboard alone — the moderation page, the queue, the report,
+// the target's history on its moderation page, back to the report, an action that resolves it, and back to the
+// queue — with focus on the new page's h1 after every navigation. `vite preview`
 // has no API, so each test plays the server of a signed-in moderator with every admin permission with
 // page.route; names change with the locale, so the structure is checked by role and by what the server sends.
 import { readdirSync } from "node:fs";
@@ -23,6 +24,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -73,6 +75,7 @@ const post: Schemas["Status"] = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
@@ -300,46 +303,48 @@ const instanceNames: Schemas["AdminInstanceText"][] = [
 ];
 
 /**
- * Every admin screen, by the name of its route file in src/routes, with an address that opens it and a text of
+ * Every staff screen, by the name of its route file in src/routes, with an address that opens it and a text of
  * the server's answer that shows once it has loaded (or, for a screen that shows it only as the value of a field,
- * that field's value). A new admin route fails the test below until it is listed.
+ * that field's value). A new moderation or admin route fails the test below until it is listed.
  */
 const adminPages: Readonly<Record<string, { path: string; ready: string | { value: string } }>> = {
+  "moderation.index": { path: "/moderation", ready: "" },
   "admin.index": { path: "/admin", ready: "" },
-  "admin.reports": { path: "/admin/reports", ready: `@${target.acct}` },
-  "admin.reports_.$id": { path: `/admin/reports/${reportId}`, ready: "Same as last week." },
-  "admin.accounts": { path: "/admin/accounts", ready: target.display_name },
-  "admin.accounts_.$id": { path: `/admin/accounts/${target.id}`, ready: target.display_name },
-  "admin.appeals": { path: "/admin/appeals", ready: target.display_name },
-  "admin.appeals_.$id": { path: `/admin/appeals/${appealId}`, ready: target.display_name },
-  "admin.registrations": { path: "/admin/registrations", ready: registration.email },
-  "admin.domain-actions": { path: "/admin/domain-actions", ready: domainAction.public_comment },
-  "admin.signup-blocks": { path: "/admin/signup-blocks", ready: signupBlock.comment },
-  "admin.audit-log": { path: "/admin/audit-log", ready: auditEntry.target_label },
-  "admin.instances": { path: "/admin/instances", ready: longDomain },
-  "admin.instances_.$domain": { path: `/admin/instances/${longDomain}`, ready: longDomain },
+  "moderation.reports": { path: "/moderation/reports", ready: `@${target.acct}` },
+  "moderation.reports_.$id": { path: `/moderation/reports/${reportId}`, ready: "Same as last week." },
+  "moderation.accounts": { path: "/moderation/accounts", ready: target.display_name },
+  "moderation.accounts_.$id": { path: `/moderation/accounts/${target.id}`, ready: target.display_name },
+  "moderation.appeals": { path: "/moderation/appeals", ready: target.display_name },
+  "moderation.appeals_.$id": { path: `/moderation/appeals/${appealId}`, ready: target.display_name },
+  "moderation.registrations": { path: "/moderation/registrations", ready: registration.email },
+  "moderation.domain-actions": { path: "/moderation/domain-actions", ready: domainAction.public_comment },
+  "moderation.signup-blocks": { path: "/moderation/signup-blocks", ready: signupBlock.comment },
+  "moderation.audit-log": { path: "/moderation/audit-log", ready: auditEntry.target_label },
+  "moderation.instances": { path: "/moderation/instances", ready: longDomain },
+  "moderation.instances_.$domain": { path: `/moderation/instances/${longDomain}`, ready: longDomain },
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
 };
 
-test("the suite lists every admin route", () => {
+test("the suite lists every moderation and admin route", () => {
   const routes = readdirSync(new URL("../src/routes", import.meta.url))
-    .filter((name) => /^admin\..+\.tsx$/.test(name) && !name.endsWith(".test.tsx"))
+    .filter((name) => /^(moderation|admin)\..+\.tsx$/.test(name) && !name.endsWith(".test.tsx"))
     .map((name) => name.replace(/\.tsx$/, ""));
   expect(Object.keys(adminPages).toSorted()).toEqual(routes.toSorted());
 });
 
 for (const [route, { path, ready }] of Object.entries(adminPages)) {
-  test.describe(`admin page ${path} (${route})`, () => {
+  test.describe(`staff page ${path} (${route})`, () => {
     test.beforeEach(async ({ page }) => {
       await moderatorServer(page);
       await page.goto(path);
       const main = page.getByRole("main");
       await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
-      // The administration page lists links only; the other screens show what the server sent.
+      // The pages of the two areas list links only; the other screens show what the server sent.
       if (typeof ready !== "string") await expect(main.getByRole("textbox").first()).toHaveValue(ready.value);
-      else await expect(ready === "" ? main.locator('a[href="/admin/reports"]') : main.getByText(ready).first()).toBeVisible();
+      else if (ready === "") await expect(main.getByRole("link").first()).toBeVisible();
+      else await expect(main.getByText(ready).first()).toBeVisible();
     });
 
     test("has no axe violations", async ({ makeAxeBuilder }) => {
@@ -383,37 +388,37 @@ test.describe("handling a report with the keyboard alone", () => {
     // Every step is many presses of Tab, each checked for focus.
     test.setTimeout(120_000);
     const issued = await moderatorServer(page);
-    await page.goto("/admin");
+    await page.goto("/moderation");
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
 
-    // The administration page leads to the report queue.
-    await tabTo(page, main.locator('a[href="/admin/reports"]'));
+    // The moderation page leads to the report queue.
+    await tabTo(page, main.locator('a[href="/moderation/reports"]'));
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/admin\/reports$/);
+    await expect(page).toHaveURL(/\/moderation\/reports$/);
     const queue = main.getByRole("tabpanel");
-    await expect(queue.locator(`a[href="/admin/reports/${reportId}"]`)).toBeVisible();
+    await expect(queue.locator(`a[href="/moderation/reports/${reportId}"]`)).toBeVisible();
     await expectPageReached(page, makeAxeBuilder);
 
     // The queue opens the report.
-    await tabTo(page, queue.locator(`a[href="/admin/reports/${reportId}"]`));
+    await tabTo(page, queue.locator(`a[href="/moderation/reports/${reportId}"]`));
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(new RegExp(`/admin/reports/${reportId}$`));
+    await expect(page).toHaveURL(new RegExp(`/moderation/reports/${reportId}$`));
     await expect(main.getByRole("article")).toBeVisible();
     await expectPageReached(page, makeAxeBuilder);
 
-    // The target's history: its action on the report's page, and its admin page with its reports and actions.
+    // The target's history: its action on the report's page, and its moderation page with its reports and actions.
     await expect(main.getByRole("region").filter({ hasText: warning.public_reason ?? "" })).toBeVisible();
-    await tabTo(page, main.locator(`a[href="/admin/accounts/${target.id}"]`));
+    await tabTo(page, main.locator(`a[href="/moderation/accounts/${target.id}"]`));
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(new RegExp(`/admin/accounts/${target.id}$`));
+    await expect(page).toHaveURL(new RegExp(`/moderation/accounts/${target.id}$`));
     await expect(main.getByText(warning.public_reason ?? "").first()).toBeVisible();
     await expectPageReached(page, makeAxeBuilder);
 
     // Back to the report from the account's reports.
-    await tabTo(page, main.locator(`a[href="/admin/reports/${reportId}"]`));
+    await tabTo(page, main.locator(`a[href="/moderation/reports/${reportId}"]`));
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(new RegExp(`/admin/reports/${reportId}$`));
+    await expect(page).toHaveURL(new RegExp(`/moderation/reports/${reportId}$`));
     await expect(main.getByRole("article")).toBeVisible();
     await expectPageReached(page, makeAxeBuilder);
 
@@ -434,13 +439,13 @@ test.describe("handling a report with the keyboard alone", () => {
 
     // Back on the queue, the report is gone from the open ones as soon as the queue shows, though the server
     // answers the lists slowly now: the queue is not shown from a cache older than the action.
-    await tabTo(page, main.locator('a[href="/admin/reports"]'), { backward: true });
+    await tabTo(page, main.locator('a[href="/moderation/reports"]'), { backward: true });
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/admin\/reports$/);
-    await expect(queue.locator(`a[href="/admin/reports/${otherReportId}"]`)).toBeVisible();
-    expect(await queue.locator(`a[href="/admin/reports/${reportId}"]`).count()).toBe(0);
-    await expect(queue.locator('a[href^="/admin/reports/"]')).toHaveCount(1);
-    await expect(queue.locator(`a[href="/admin/reports/${reportId}"]`)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/moderation\/reports$/);
+    await expect(queue.locator(`a[href="/moderation/reports/${otherReportId}"]`)).toBeVisible();
+    expect(await queue.locator(`a[href="/moderation/reports/${reportId}"]`).count()).toBe(0);
+    await expect(queue.locator('a[href^="/moderation/reports/"]')).toHaveCount(1);
+    await expect(queue.locator(`a[href="/moderation/reports/${reportId}"]`)).toHaveCount(0);
     await expectPageReached(page, makeAxeBuilder);
   });
 });

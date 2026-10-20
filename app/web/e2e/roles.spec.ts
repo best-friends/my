@@ -20,6 +20,7 @@ const viewer = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -118,7 +119,7 @@ function rolesRegion(page: Page) {
 test.describe("roles", () => {
   test("grants a role by keyboard after its confirmation, with a role above the viewer's highest one explained", async ({ page, makeAxeBuilder }) => {
     const changes = await rolesServer(page);
-    await page.goto(`/admin/accounts/${local.id}`);
+    await page.goto(`/moderation/accounts/${local.id}`);
     const region = rolesRegion(page);
     await expect(region.getByRole("listitem")).toHaveCount(3);
     await expect(region).toMatchAriaSnapshot(`

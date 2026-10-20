@@ -113,8 +113,12 @@ func (f *fakeStatuses) ReactionEmoji(_ context.Context, e appcontent.ReactionEmo
 }
 
 // sampleCustomEmoji is a custom emoji of another server.
-var sampleCustomEmoji = appcontent.CustomEmojiView{
-	ID: "01890a5d-ac96-774b-bcce-b302099a9200", Shortcode: "blobcat", Domain: "misskey.example", URL: "https://social.example/media/proxy/blobcat",
+var sampleCustomEmoji = appcontent.ReactionCustomEmoji{
+	ID: "01890a5d-ac96-774b-bcce-b302099a9200", Shortcode: "blobcat", Domain: "misskey.example",
+	Image: &appcontent.CustomEmojiView{
+		ID: "01890a5d-ac96-774b-bcce-b302099a9200", Shortcode: "blobcat",
+		URL: "https://social.example/media/proxy/blobcat", StaticURL: "https://social.example/media/proxy/blobcat",
+	},
 }
 
 func (f *fakeStatuses) do(op, accountID, id string) error {
@@ -231,9 +235,9 @@ func TestGetStatus(t *testing.T) {
 	if s.Favourited != nil || s.Boosted != nil || s.Bookmarked != nil || s.Pinned != nil {
 		t.Errorf("an anonymous status has the viewer's relation: %+v", s)
 	}
-	if r := s.Reactions; len(r) != 2 || r[0].Name != "👍" || r[0].Count != 4 || r[0].Me != nil || r[0].Shortcode != nil || r[0].Url != nil ||
+	if r := s.Reactions; len(r) != 2 || r[0].Name != "👍" || r[0].Count != 4 || r[0].Me != nil || r[0].Shortcode != nil || r[0].Emoji != nil ||
 		r[1].Name != "blobcat@misskey.example" || *r[1].Shortcode != "blobcat" || *r[1].Domain != "misskey.example" ||
-		*r[1].Url != sampleCustomEmoji.URL || r[1].Count != 1 {
+		r[1].Emoji == nil || r[1].Emoji.Url != sampleCustomEmoji.Image.URL || r[1].Count != 1 {
 		t.Errorf("anonymous reactions = %+v", r)
 	}
 	if len(s.MediaAttachments) != 1 || s.MediaAttachments[0].Type != clientapi.MediaAttachmentTypeImage || s.MediaAttachments[0].Meta.Width == nil || *s.MediaAttachments[0].Meta.Width != 640 ||

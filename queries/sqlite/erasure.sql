@@ -25,6 +25,10 @@ DELETE FROM account_profile_field_sources WHERE revision_id IN (
 DELETE FROM account_profile_fields WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
 
+-- name: EraseProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
+
 -- name: EraseProfileRevisionSources :exec
 DELETE FROM account_profile_revision_sources WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));

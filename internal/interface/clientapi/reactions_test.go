@@ -65,7 +65,7 @@ func TestListStatusReactions(t *testing.T) {
 	if gotEmoji != "blobcat@misskey.example" || gotBefore != "r2" {
 		t.Errorf("Reactions(emoji %q, before %q), want the emoji and the cursor", gotEmoji, gotBefore)
 	}
-	if c := page.Items[len(page.Items)-1].Emoji; c.Name != "blobcat@misskey.example" || *c.Shortcode != "blobcat" || *c.Domain != "misskey.example" || *c.Url != sampleCustomEmoji.URL {
+	if c := page.Items[len(page.Items)-1].Emoji; c.Name != "blobcat@misskey.example" || *c.Shortcode != "blobcat" || *c.Domain != "misskey.example" || c.Emoji == nil || c.Emoji.StaticUrl != sampleCustomEmoji.Image.StaticURL {
 		t.Errorf("custom emoji = %+v", c)
 	}
 

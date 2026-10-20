@@ -15,6 +15,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -94,10 +95,10 @@ async function moderatorServer(page: Page) {
   return decisions;
 }
 
-test.describe("page /admin/registrations", () => {
+test.describe("page /moderation/registrations", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto("/admin/registrations");
+    await page.goto("/moderation/registrations");
     await expect(page.getByRole("main").getByRole("heading", { level: 2 }).first()).toBeVisible();
   });
 
@@ -113,7 +114,7 @@ test.describe("page /admin/registrations", () => {
 test.describe("registrations", () => {
   test("lists the registrations with their reasons, approves one with a note after confirming, and rejects the other", async ({ page, makeAxeBuilder }) => {
     const decisions = await moderatorServer(page);
-    await page.goto("/admin/registrations");
+    await page.goto("/moderation/registrations");
     const main = page.getByRole("main");
     const list = main.getByRole("list");
     await expect(list.getByRole("heading", { level: 2 })).toHaveCount(2);

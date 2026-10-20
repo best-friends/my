@@ -101,15 +101,17 @@ func (s *Interactions) RecordRemoteReaction(ctx context.Context, in RemoteReacti
 			return err
 		}
 		if c := in.Emoji.Custom; c != nil {
-			if s.d.RemoteMedia == nil {
-				return errors.New("content: remote custom emoji reactions need a remote media recorder")
+			if s.d.RecordRemoteEmojis == nil {
+				return errors.New("content: remote custom emoji reactions need a custom emoji recorder")
 			}
-			rec := remoteEmojiRecorder{repo: s.d.Statuses, media: s.d.RemoteMedia, ids: s.d.IDs, now: s.d.Clock.Now()}
-			emoji, err := rec.record(ctx, tx, in.AccountID, in.Emoji.Domain, *c)
+			ids, err := s.d.RecordRemoteEmojis(ctx, tx, in.AccountID, in.Emoji.Domain, []RemoteEmojiInput{*c})
 			if err != nil {
 				return err
 			}
-			r.Emoji = content.ReactionEmoji{CustomEmojiID: emoji.ID}
+			if len(ids) != 1 {
+				return fmt.Errorf("custom emoji %q: %w", c.Shortcode, content.ErrInvalidReaction)
+			}
+			r.Emoji = content.ReactionEmoji{CustomEmojiID: ids[0]}
 		}
 		ok, err := s.d.Interactions.InsertReaction(ctx, tx, r)
 		if err != nil || !ok {

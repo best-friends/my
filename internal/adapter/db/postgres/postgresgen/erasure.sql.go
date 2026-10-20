@@ -704,6 +704,16 @@ func (q *Queries) EraseProfileHead(ctx context.Context, accountID string) error 
 	return err
 }
 
+const eraseProfileRevisionEmojis = `-- name: EraseProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = $1)
+`
+
+func (q *Queries) EraseProfileRevisionEmojis(ctx context.Context, accountID string) error {
+	_, err := q.db.Exec(ctx, eraseProfileRevisionEmojis, accountID)
+	return err
+}
+
 const eraseProfileRevisionSources = `-- name: EraseProfileRevisionSources :exec
 DELETE FROM account_profile_revision_sources WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r WHERE r.account_id = $1)

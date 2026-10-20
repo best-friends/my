@@ -113,13 +113,16 @@ type InboxDeps struct {
 	DomainLimit kernel.Limit
 	Clock       kernel.Clock
 	Logger      *slog.Logger
+	// Meter records my.inbox.activities (ADR-0055 §3); nil records nothing.
+	Meter kernel.Meter
 }
 
 // Inbox is the synchronous part of receiving an activity (federation.md §3.1, ADR-0033): it
 // verifies the request, records the activity once, and enqueues JobInbox, whose handlers do the
 // rest asynchronously.
 type Inbox struct {
-	d InboxDeps
+	d          InboxDeps
+	activities kernel.Counter
 }
 
 // NewInbox returns the Inbox on d.
@@ -136,7 +139,7 @@ func NewInbox(d InboxDeps) *Inbox {
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
-	return &Inbox{d: d}
+	return &Inbox{d: d, activities: kernel.MeterOrNop(d.Meter).Counter(InboxActivities)}
 }
 
 // InboxRequest is one POST to an inbox whose content type and body size the HTTP handler has
@@ -209,6 +212,25 @@ type Received struct {
 // failures (500). They are separate results so that the caller can log an unexpected failure
 // without the header values that a refusal quotes.
 func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) {
+	typ := ActivityTypeOther
+	rec, err := i.receive(ctx, in, &typ)
+	outcome := InboxOutcomeAccepted
+	switch {
+	case err != nil:
+		outcome = InboxOutcomeError
+	case rec.Rejection != nil:
+		outcome = InboxOutcomeRejected
+	case rec.Dropped:
+		outcome = InboxOutcomeIgnored
+	case !rec.Recorded:
+		outcome = InboxOutcomeDuplicate
+	}
+	i.activities.Add(ctx, 1, kernel.NewLabels(LabelActivityType, typ, LabelOutcome, outcome))
+	return rec, err
+}
+
+// receive is Receive; it sets *typ to the activity.type label once the envelope is read.
+func (i *Inbox) receive(ctx context.Context, in InboxRequest, typ *string) (Received, error) {
 	r := in.Request
 	// 3. The client IP's rate limit.
 	if in.ClientIP != "" {
@@ -247,6 +269,7 @@ func (i *Inbox) Receive(ctx context.Context, in InboxRequest) (Received, error) 
 	if err != nil {
 		return Received{Rejection: &InboxRejection{Status: http.StatusBadRequest, Err: err}}, nil
 	}
+	*typ = activityTypeLabel(env.Type)
 	// 9. An unknown actor's Delete or Update of itself.
 	if env.SelfRemoval() {
 		switch _, err := i.d.Accounts.FindByURI(ctx, string(env.Actor)); {

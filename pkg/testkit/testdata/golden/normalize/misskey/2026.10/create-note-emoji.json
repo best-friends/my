@@ -1,0 +1,53 @@
+{
+  "Activity": {
+    "Actor": "https://misskey.example/users/asfo7no84zv70002",
+    "Audience": {
+      "Cc": [
+        "https://misskey.example/users/asfo7no84zv70002/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://misskey.example/notes/asfo829i4zv7000e/activity",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://misskey.example/users/asfo7no84zv70002",
+            "Audience": {
+              "Cc": [
+                "https://misskey.example/users/asfo7no84zv70002/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "hello :blobcat: from misskey 1792224025972706875",
+                "Language": "und"
+              }
+            ],
+            "Emojis": [
+              {
+                "ID": "https://misskey.example/emojis/blobcat",
+                "IconURL": "https://media.misskey.example/emoji/blobcat.png",
+                "Shortcode": "blobcat"
+              }
+            ],
+            "ID": "https://misskey.example/notes/asfo829i4zv7000e",
+            "Published": "2026-10-17T08:00:25.974Z",
+            "RawType": "Note",
+            "Type": "Note"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfo829i4zv7000e",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T08:00:25.974Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

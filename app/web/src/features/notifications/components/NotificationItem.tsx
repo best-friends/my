@@ -20,7 +20,7 @@
 // pointer, out of the tab order), and the quote of the post or the follow back button. The avatars of the
 // others are links to their profiles for the pointer only; the post's page lists who favourited and
 // boosted it.
-import { Avatar, Link, PostCard, VisuallyHidden } from "@my/ui";
+import { Avatar, EmojiText, Link, PostCard, VisuallyHidden } from "@my/ui";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import { RelationshipActions, useRelationship } from "../../profile";
@@ -81,7 +81,9 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
                   name:
                     named === null ? null : (
                       <Link key="name" href={named.href} className={nameLink}>
-                        <bdi>{named.name}</bdi>
+                        <bdi>
+                          <EmojiText text={named.name} emojis={named.emojis} />
+                        </bdi>
                       </Link>
                     ),
                   count: view.others.length,

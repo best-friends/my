@@ -1038,6 +1038,11 @@ type Account struct {
 	// confirmed handle.
 	Domain string `json:"domain"`
 
+	// Emojis The custom emoji of the display name, the note, and the fields' names and values
+	// (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+	// image, and the rest as text.
+	Emojis []CustomEmoji `json:"emojis"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -1891,8 +1896,8 @@ type AdminReportStatus struct {
 	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
-	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `reactions` are empty, and
-	// its counts are zero.
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, and its counts are zero.
 	Status Status `json:"status"`
 }
 
@@ -2205,6 +2210,11 @@ type CredentialAccount struct {
 	// confirmed handle.
 	Domain string `json:"domain"`
 
+	// Emojis The custom emoji of the display name, the note, and the fields' names and values
+	// (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+	// image, and the rest as text.
+	Emojis []CustomEmoji `json:"emojis"`
+
 	// Fields The profile's metadata fields, in their order; empty when there are none.
 	Fields []ProfileField `json:"fields"`
 
@@ -2259,6 +2269,22 @@ type CredentialAccount struct {
 
 // Cursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 type Cursor = string
+
+// CustomEmoji A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+// An emoji that is disabled or deleted, or whose images come from a domain whose media the
+// instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+// `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+// otherwise.
+type CustomEmoji struct {
+	// Shortcode The shortcode, without the colons around it.
+	Shortcode string `json:"shortcode"`
+
+	// StaticUrl The URL of a still image of the emoji; the same as `url` when no still version is served.
+	StaticUrl string `json:"static_url"`
+
+	// Url The URL of the image, animated when the emoji is.
+	Url string `json:"url"`
+}
 
 // DecideAppealRequest The moderators' explanation of a decision on an appeal.
 type DecideAppealRequest struct {
@@ -3002,6 +3028,10 @@ type ReactionEmoji struct {
 	// Domain The server of a custom emoji of another server; omitted otherwise.
 	Domain *string `json:"domain,omitempty"`
 
+	// Emoji The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+	// be shown (as `CustomEmoji` leaves such an emoji out).
+	Emoji *CustomEmoji `json:"emoji,omitempty"`
+
 	// Name The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
 	// custom emoji of this server, or `shortcode@domain` for a custom emoji of another
 	// server.
@@ -3009,10 +3039,6 @@ type ReactionEmoji struct {
 
 	// Shortcode The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
 	Shortcode *string `json:"shortcode,omitempty"`
-
-	// Url The image of a custom emoji; omitted for a Unicode emoji and when the image cannot be
-	// shown.
-	Url *string `json:"url,omitempty"`
 }
 
 // RegistrationDecisionRequest A moderator's decision on a registration.
@@ -3177,8 +3203,8 @@ type SpoilerText = string
 // In a timeline, a boost is a status of the booster with `boost` set to the boosted
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
-// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `reactions` are empty, and
-// its counts are zero.
+// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+// empty, and its counts are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
@@ -3193,8 +3219,8 @@ type Status struct {
 	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
-	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `reactions` are empty, and
-	// its counts are zero.
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, and its counts are zero.
 	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
@@ -3212,6 +3238,11 @@ type Status struct {
 
 	// EditedAt When the status was last edited; omitted when it never was.
 	EditedAt *time.Time `json:"edited_at,omitempty"`
+
+	// Emojis The custom emoji of the text, the content warning, and the poll's choices
+	// (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+	// image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+	Emojis []CustomEmoji `json:"emojis"`
 
 	// Favourited Whether the authenticated user favourited the status.
 	Favourited *bool `json:"favourited,omitempty"`
@@ -3294,6 +3325,9 @@ type StatusEdit struct {
 	// CreatedAt When the revision was made; the first one is when the status was posted.
 	CreatedAt time.Time `json:"created_at"`
 
+	// Emojis The custom emoji of the revision's text and content warning, as `Status.emojis`.
+	Emojis []CustomEmoji `json:"emojis"`
+
 	// MediaAttachments The media the revision attaches, in order.
 	MediaAttachments []MediaAttachment `json:"media_attachments"`
 
@@ -3369,6 +3403,10 @@ type StatusReaction struct {
 	// Domain The server of a custom emoji of another server; omitted otherwise.
 	Domain *string `json:"domain,omitempty"`
 
+	// Emoji The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+	// be shown (as `CustomEmoji` leaves such an emoji out).
+	Emoji *CustomEmoji `json:"emoji,omitempty"`
+
 	// Me Whether the authenticated user reacted with the emoji; omitted for anonymous
 	// requests.
 	Me *bool `json:"me,omitempty"`
@@ -3380,10 +3418,6 @@ type StatusReaction struct {
 
 	// Shortcode The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
 	Shortcode *string `json:"shortcode,omitempty"`
-
-	// Url The image of a custom emoji; omitted for a Unicode emoji and when the image cannot be
-	// shown.
-	Url *string `json:"url,omitempty"`
 }
 
 // StatusReactionPage A page of the emoji reactions to a status, newest first.
@@ -3576,8 +3610,8 @@ type AccountProfile = Account
 // In a timeline, a boost is a status of the booster with `boost` set to the boosted
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
-// `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `reactions` are empty, and
-// its counts are zero.
+// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+// empty, and its counts are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.

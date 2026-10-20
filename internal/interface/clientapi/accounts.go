@@ -65,6 +65,20 @@ type accountParts struct {
 	images map[appcontent.ImageRef]string
 	// profiles are the profile pages of remote accounts, by account ID.
 	profiles map[string]string
+	// emojis are the custom emoji that can be shown, by ID.
+	emojis map[string]appcontent.CustomEmojiView
+}
+
+// customEmojis presents the custom emoji with an ID in ids that can be shown, in the order of
+// ids, as the CustomEmoji schema; never nil.
+func (p accountParts) customEmojis(ids []string) []CustomEmoji {
+	out := make([]CustomEmoji, 0, len(ids))
+	for _, id := range ids {
+		if e, ok := p.emojis[id]; ok {
+			out = append(out, CustomEmoji{Shortcode: e.Shortcode, Url: e.URL, StaticUrl: e.StaticURL})
+		}
+	}
+	return out
 }
 
 // url returns the URL of an account's image, or nil when it has none to show.
@@ -82,15 +96,17 @@ func (p accountParts) url(accountID, mediaID string) *string {
 // and one of the account use cases, so that a response presents a page of accounts without a
 // lookup per account.
 func (s *Server) accountParts(ctx context.Context, actors ...appaccount.Actor) (accountParts, error) {
-	return s.readAccountParts(ctx, actors, nil)
+	return s.readAccountParts(ctx, actors, nil, nil)
 }
 
-// readAccountParts reads the images and profile pages of actors, and only the profile pages of
-// linked (accounts that a response links to without showing them, such as mentions).
-func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccount.Actor) (accountParts, error) {
+// readAccountParts reads the images, custom emoji, and profile pages of actors, only the profile
+// pages of linked (accounts that a response links to without showing them, such as mentions), and
+// the custom emoji with an ID in emojiIDs (those of the statuses of a response).
+func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccount.Actor, emojiIDs []string) (accountParts, error) {
 	var parts accountParts
 	var refs []appcontent.ImageRef
 	var remote []string
+	emojis := slices.Clone(emojiIDs)
 	for _, a := range actors {
 		if p := a.Profile; p != nil {
 			for _, id := range []string{p.AvatarMediaID, p.HeaderMediaID} {
@@ -98,6 +114,7 @@ func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccou
 					refs = append(refs, appcontent.ImageRef{AccountID: a.Account.ID, MediaID: id})
 				}
 			}
+			emojis = append(emojis, p.EmojiIDs...)
 		}
 	}
 	for _, a := range slices.Concat(actors, linked) {
@@ -111,6 +128,13 @@ func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccou
 			return accountParts{}, fmt.Errorf("clientapi: the profile images: %w", err)
 		}
 		parts.images = urls
+	}
+	if s.o.Media != nil && len(emojis) > 0 {
+		views, err := s.o.Media.CustomEmojis(ctx, emojis)
+		if err != nil {
+			return accountParts{}, fmt.Errorf("clientapi: the custom emoji: %w", err)
+		}
+		parts.emojis = views
 	}
 	if s.o.RemoteProfiles != nil && len(remote) > 0 {
 		urls, err := s.o.RemoteProfiles.RemoteProfileURLs(ctx, remote)
@@ -128,7 +152,7 @@ func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccou
 func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 	out := Account{
 		Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Uri: a.Account.URI, Url: a.Account.URI,
-		Domain: a.Account.Domain, Fields: []ProfileField{},
+		Domain: a.Account.Domain, Fields: []ProfileField{}, Emojis: []CustomEmoji{},
 	}
 	if a.Account.IsLocal() {
 		out.Domain = s.accountDomain()
@@ -154,6 +178,7 @@ func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 			out.Fields = append(out.Fields, ProfileField{Name: f.Name, Value: f.ValueHTML})
 		}
 		out.AvatarUrl, out.HeaderUrl = parts.url(a.Account.ID, p.AvatarMediaID), parts.url(a.Account.ID, p.HeaderMediaID)
+		out.Emojis = parts.customEmojis(p.EmojiIDs)
 	}
 	return out
 }

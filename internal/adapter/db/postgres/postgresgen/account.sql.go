@@ -484,6 +484,20 @@ func (q *Queries) InsertProfileRevision(ctx context.Context, arg InsertProfileRe
 	return err
 }
 
+const insertProfileRevisionEmoji = `-- name: InsertProfileRevisionEmoji :exec
+INSERT INTO account_profile_revision_emojis (revision_id, emoji_id) VALUES ($1, $2)
+`
+
+type InsertProfileRevisionEmojiParams struct {
+	RevisionID string
+	EmojiID    string
+}
+
+func (q *Queries) InsertProfileRevisionEmoji(ctx context.Context, arg InsertProfileRevisionEmojiParams) error {
+	_, err := q.db.Exec(ctx, insertProfileRevisionEmoji, arg.RevisionID, arg.EmojiID)
+	return err
+}
+
 const insertProfileRevisionSource = `-- name: InsertProfileRevisionSource :exec
 INSERT INTO account_profile_revision_sources (revision_id, note_source) VALUES ($1, $2)
 `
@@ -842,6 +856,30 @@ func (q *Queries) ListProfileHeads(ctx context.Context) ([]ListProfileHeadsRow, 
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listProfileRevisionEmojis = `-- name: ListProfileRevisionEmojis :many
+SELECT emoji_id FROM account_profile_revision_emojis WHERE revision_id = $1 ORDER BY emoji_id
+`
+
+func (q *Queries) ListProfileRevisionEmojis(ctx context.Context, revisionID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listProfileRevisionEmojis, revisionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var emoji_id string
+		if err := rows.Scan(&emoji_id); err != nil {
+			return nil, err
+		}
+		items = append(items, emoji_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

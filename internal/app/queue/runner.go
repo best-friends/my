@@ -70,14 +70,17 @@ type RunnerOptions struct {
 	Random func() float64
 	// Logger receives errors that Run survives; the default is slog.Default().
 	Logger *slog.Logger
+	// Meter records my.job.duration and my.job.wait (ADR-0055 §3); nil records nothing.
+	Meter kernel.Meter
 }
 
 // PullRunner claims jobs from a Source, runs their handlers, and records the results. It
 // implements JobRunner. Several PullRunners (in one or several processes) may share a Source.
 type PullRunner struct {
-	src  Source
-	reg  *JobHandlerRegistry
-	opts RunnerOptions
+	src     Source
+	reg     *JobHandlerRegistry
+	opts    RunnerOptions
+	metrics jobMetrics
 }
 
 var _ JobRunner = (*PullRunner)(nil)
@@ -109,7 +112,7 @@ func NewPullRunner(src Source, reg *JobHandlerRegistry, opts RunnerOptions) *Pul
 	if reg == nil {
 		reg = &JobHandlerRegistry{}
 	}
-	return &PullRunner{src: src, reg: reg, opts: opts}
+	return &PullRunner{src: src, reg: reg, opts: opts, metrics: newJobMetrics(opts.Meter)}
 }
 
 // Worker returns the name this runner claims jobs under.
@@ -196,9 +199,17 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 
 	handler, policy, found := r.reg.Lookup(j.Type)
 	policy = policy.Or(r.opts.Retry)
+	jobType := j.Type
+	if !found {
+		jobType = JobTypeOther // a type no handler knows is not a finite label value
+	}
+	mctx, end := r.metrics.meter.Begin(ctx)
+	defer end()
+	r.metrics.waited(mctx, jobType, now.Sub(j.RunAt))
+	started := time.Now() // the monotonic clock: Clock.Now has millisecond precision
 	var res Result
 	if found {
-		res = r.call(ctx, handler, j)
+		res = r.call(mctx, handler, j)
 	} else {
 		res = Retry(0, fmt.Errorf("%w: %s", ErrNoHandler, j.Type))
 	}
@@ -206,13 +217,17 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 	done := r.opts.Clock.Now()
 	switch {
 	case res.IsDone():
+		r.metrics.ran(mctx, jobType, OutcomeSuccess, time.Since(started))
 		return true, r.src.Complete(recordCtx, r.opts.Worker, j)
 	case res.IsFail():
+		r.metrics.ran(mctx, jobType, OutcomeDead, time.Since(started))
 		return true, r.src.Bury(recordCtx, r.opts.Worker, j, errorText(res.Err(), "failed"), done)
 	case j.Attempt >= policy.MaxAttempts:
+		r.metrics.ran(mctx, jobType, OutcomeDead, time.Since(started))
 		return true, r.src.Bury(recordCtx, r.opts.Worker, j, errorText(res.Err(), "retried")+
 			fmt.Sprintf(" (gave up after %d attempts)", j.Attempt), done)
 	default:
+		r.metrics.ran(mctx, jobType, OutcomeRetry, time.Since(started))
 		after := res.After()
 		if after <= 0 {
 			after = policy.Backoff(j.Attempt, r.opts.Random)

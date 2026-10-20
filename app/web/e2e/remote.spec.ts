@@ -32,6 +32,7 @@ const alice: Account = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -50,6 +51,7 @@ const carol: Account = {
   display_name: "Carol",
   note: "<p>Painter on another server.</p>",
   fields: [],
+  emojis: [],
   url: `https://${host}/@carol`,
   locked: false,
   bot: false,
@@ -88,6 +90,7 @@ const post: Status = {
   media_attachments: [remoteMedia("d1", "A blue square on canvas"), remoteMedia("d2", undefined)],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
@@ -139,6 +142,8 @@ async function serveApi(page: Page, { fetching = false } = {}): Promise<{ status
       ]);
     }
     if (path === `/accounts/${carol.id}/statuses`) {
+      // Carol pinned nothing that this server knows of.
+      if (url.searchParams.get("pinned") === "true") return json(route, { items: [] });
       requests.statuses += 1;
       if (!fetching) return json(route, { items: [post] });
       return requests.statuses === 1 ? json(route, { items: [post], remote_fetch_started: true }) : json(route, { items: [post, fetchedPost] });

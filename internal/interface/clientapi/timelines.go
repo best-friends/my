@@ -124,7 +124,8 @@ func (s *Server) statuses(ctx context.Context, viewer appcontent.Viewer, items [
 		out = append(out, Status{
 			Id: b.ID, Uri: b.URI, CreatedAt: b.BoostedAt, Account: s.newAccount(*booster, parts),
 			Visibility: st.Visibility, Language: st.Language, Boost: &boosted,
-			MediaAttachments: []MediaAttachment{}, Mentions: []StatusMention{}, Tags: []StatusTag{}, Reactions: []StatusReaction{},
+			MediaAttachments: []MediaAttachment{}, Mentions: []StatusMention{}, Tags: []StatusTag{}, Emojis: []CustomEmoji{},
+			Reactions: []StatusReaction{},
 		})
 	}
 	return out, nil

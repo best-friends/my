@@ -90,7 +90,7 @@ func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) 
 	appcontent.RegisterInteractionProjectors(rs.projectors, ih.Interactions)
 	e.interactions = appcontent.NewInteractions(appcontent.InteractionDeps{
 		UnitOfWork: ih.UnitOfWork, Statuses: ih.Statuses, Interactions: ih.Interactions, Accounts: rs.accounts,
-		Relationships: rs.graph, RemoteMedia: rs.media, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
+		Relationships: rs.graph, RecordRemoteEmojis: rs.content.RecordRemoteEmojis, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
 	})
 	appfederation.RegisterInteractionHandlers(rs.processor, appfederation.InteractionHandlersDeps{
 		Interactions: e.interactions, Statuses: rs.statuses,

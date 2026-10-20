@@ -23,6 +23,8 @@ const DefaultShutdownTimeout = 25 * time.Second
 type ServeOptions struct {
 	// Listener, when set, is used instead of listening on the configured address.
 	Listener net.Listener
+	// MetricsListener, when set, is used instead of listening on metrics_listen.
+	MetricsListener net.Listener
 	// ShutdownTimeout bounds the graceful shutdown; the default is DefaultShutdownTimeout.
 	ShutdownTimeout time.Duration
 }
@@ -30,6 +32,7 @@ type ServeOptions struct {
 // Serve runs the App in its configured role until ctx ends, then shuts down gracefully:
 //
 //   - every role serves HTTP on the listen address (the worker role only the health checks);
+//   - with metrics_exporter = prometheus, every role serves GET /metrics on metrics_listen;
 //   - the worker and all roles run the job runner and the scheduler of periodic jobs.
 //
 // When ctx ends, Serve stops accepting connections and claiming jobs, and waits up to
@@ -80,8 +83,20 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 			a.Logger.WarnContext(ctx, "web client not registered yet", slog.Any("error", err))
 		}
 	}
-	serveErr := make(chan error, 1)
+	metricsSrv, err := a.serveMetrics(ctx, opts.MetricsListener)
+	if err != nil {
+		_ = ln.Close()
+		return err
+	}
+	serveErr := make(chan error, 2)
 	go func() { serveErr <- srv.Serve(ln) }()
+	if metricsSrv != nil {
+		go func() {
+			if err := metricsSrv.srv.Serve(metricsSrv.ln); !errors.Is(err, http.ErrServerClosed) {
+				serveErr <- fmt.Errorf("metrics: %w", err)
+			}
+		}()
+	}
 
 	var jobs sync.WaitGroup
 	stopJobs := make(chan struct{})
@@ -93,7 +108,6 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 	}
 	a.Logger.InfoContext(ctx, "started", slog.String("role", string(a.Config.Role)), slog.String("addr", ln.Addr().String()))
 
-	var err error
 	select {
 	case <-ctx.Done():
 	case err = <-serveErr:
@@ -106,6 +120,10 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 	defer cancel()
 	if shutdownErr := srv.Shutdown(graceCtx); shutdownErr != nil {
 		err = errors.Join(err, fmt.Errorf("http server shutdown: %w", shutdownErr))
+	}
+	if metricsSrv != nil {
+		// A scrape is short; the metrics stay available while the requests finish.
+		_ = metricsSrv.srv.Shutdown(graceCtx)
 	}
 	jobsDone := make(chan struct{})
 	go func() { jobs.Wait(); close(jobsDone) }()
@@ -122,4 +140,37 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 		a.Logger.InfoContext(ctx, "stopped")
 	}
 	return err
+}
+
+// metricsServer is the listener of the Prometheus scrape.
+type metricsServer struct {
+	srv *http.Server
+	ln  net.Listener
+}
+
+// serveMetrics listens on metrics_listen (or ln) for GET /metrics when the App has a scrape, and
+// returns nil otherwise. The metrics are never served on the public listener (ADR-0055 §2).
+func (a *App) serveMetrics(ctx context.Context, ln net.Listener) (*metricsServer, error) {
+	if a.metricsHandler == nil {
+		if ln != nil {
+			_ = ln.Close()
+		}
+		return nil, nil
+	}
+	if ln == nil {
+		var err error
+		if ln, err = (&net.ListenConfig{}).Listen(ctx, "tcp", a.Config.MetricsListen); err != nil {
+			return nil, fmt.Errorf("listen for metrics: %w", err)
+		}
+	}
+	mux := http.NewServeMux()
+	mux.Handle("GET "+PathMetrics, a.metricsHandler)
+	a.Logger.InfoContext(ctx, "serving metrics", slog.String("addr", ln.Addr().String()))
+	return &metricsServer{
+		srv: &http.Server{
+			Handler: mux, ReadHeaderTimeout: 10 * time.Second, WriteTimeout: 30 * time.Second,
+			ErrorLog: slog.NewLogLogger(a.Logger.Handler(), slog.LevelWarn),
+		},
+		ln: ln,
+	}, nil
 }
