@@ -106,6 +106,10 @@ my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
 - `GET /api/v1/admin/accounts/{id}` は、状態・制限と、ローカルのアカウントでは登録の申請と審査・メールの確認・ロール、新しい順に 20 件までの処分と通報を返します。
 - `POST /api/v1/admin/accounts/{id}/reveal` は、ローカルのアカウントのメールアドレス、登録とログイン（新しい順に 20 件）の IP アドレスと User-Agent、同じ IP アドレスを使ったほかのアカウント（IP アドレスごとに 20 件まで）を返します。
   呼ぶたびに監査ログに `revealed_private_data` を記録し、記録できたときだけ返します。IP アドレスは保持期間（既定 180 日）を過ぎると消えるので、それより前のログイン元は表示できません。
+- `GET /api/v1/admin/accounts/{id}` の `two_factor_enabled` は、ローカルのアカウントの利用者が二要素認証（TOTP、FR-005）を使っているかを示します。
+  認証アプリとリカバリーコードを両方なくした利用者は、`POST /api/v1/admin/accounts/{id}/two_factor/disable` で二要素認証を外すとパスワードだけでログインできます。
+  外すと監査ログに `two_factor_disabled` を記録します。本人であることは、メールなど別の経路で確かめてから外してください。
+  ほかに管理者のいない管理者自身がなくしたときは、運営者が CLI の `my admin account disable-two-factor @alice` で外します（監査ログの操作者は CLI）。
 - 検索は 1 ページを埋めるのに 400 アカウントまで読みます。条件に合うアカウントが少ないと、短いページや空のページにも `next_cursor` が付くので、続けて読みます。
 
 ## ドメイン単位の処分
@@ -216,7 +220,7 @@ my admin report reopen <report id>
 
 | 対象の種類 | 操作 |
 | --- | --- |
-| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し）・`revealed_private_data`（IP アドレスとメールアドレスの表示） |
+| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し）・`revealed_private_data`（IP アドレスとメールアドレスの表示）・`two_factor_disabled`（二要素認証の解除） |
 | `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
 | `report` | `report_assigned`・`report_unassigned`・`report_resolved`・`report_reopened`・`report_note_added`（通報の担当・担当の解除・解決・再開・メモ） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |

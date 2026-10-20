@@ -25,6 +25,7 @@ type AccountAdmin interface {
 	Search(ctx context.Context, q appidentity.AccountSearch, limit int) ([]appidentity.AdminAccount, string, error)
 	Detail(ctx context.Context, accountID string) (appidentity.AdminAccountDetail, error)
 	Reveal(ctx context.Context, accountID, byUserID string) (appidentity.PrivateData, error)
+	DisableTwoFactor(ctx context.Context, accountID, byUserID string) error
 }
 
 // AccountReports reads the reports of an account for its details. *appmoderation.Service
@@ -148,6 +149,10 @@ func (s *Server) GetAdminAccount(ctx context.Context, req GetAdminAccountRequest
 	for _, r := range d.Roles {
 		out.Roles = append(out.Roles, r.Key)
 	}
+	if d.UserID != "" {
+		enabled := d.TwoFactorEnabled
+		out.TwoFactorEnabled = &enabled
+	}
 	if d.HasEmail {
 		v := d.EmailVerified
 		out.EmailVerified = &v
@@ -181,6 +186,34 @@ func (s *Server) GetAdminAccount(ctx context.Context, req GetAdminAccountRequest
 	}
 	cache := cacheNoStore
 	return GetAdminAccount200JSONResponse{Body: out, Headers: GetAdminAccount200ResponseHeaders{CacheControl: &cache}}, nil
+}
+
+// DisableAdminAccountTwoFactor serves POST /api/v1/admin/accounts/{id}/two_factor/disable.
+func (s *Server) DisableAdminAccountTwoFactor(ctx context.Context, req DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error) {
+	if p, err := s.requirePermission(ctx, identity.PermManageAccounts); err != nil {
+		return nil, err
+	} else if p != nil {
+		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = s.o.AccountAdmin.DisableTwoFactor(ctx, req.Id, v.UserID)
+	l := s.Localizer(ctx)
+	switch {
+	case errors.Is(err, appaccount.ErrNotFound):
+		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	case errors.Is(err, appidentity.ErrNotLocalAccount):
+		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(
+			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), l.ServerErrorsInvalidValue("id"))), nil
+	case errors.Is(err, appidentity.ErrTwoFactorNotEnabled):
+		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(
+			s.problem(ctx, http.StatusConflict, ProblemTypeTwoFactorNotEnabled, l.ServerErrorsTwoFactorNotEnabled(), "")), nil
+	case err != nil:
+		return nil, fmt.Errorf("clientapi: remove the two-factor authentication of account %s: %w", req.Id, err)
+	}
+	return DisableAdminAccountTwoFactor204Response{}, nil
 }
 
 // RevealAdminAccount serves POST /api/v1/admin/accounts/{id}/reveal.

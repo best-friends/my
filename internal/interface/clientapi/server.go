@@ -56,6 +56,8 @@ type Options struct {
 	Posting PostingPolicy
 	// Preferences reads and changes the viewer's preferences.
 	Preferences UserPreferences
+	// TwoFactor runs the viewer's two-factor authentication; nil answers its operations 404.
+	TwoFactor TwoFactorSettings
 	// Media runs the media use cases and presents profile images; nil serves no media
 	// operation (they fail with 500) and presents no images.
 	Media MediaFiles

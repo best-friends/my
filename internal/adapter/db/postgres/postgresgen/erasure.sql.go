@@ -760,6 +760,45 @@ func (q *Queries) EraseSessions(ctx context.Context, userID string) error {
 	return err
 }
 
+const eraseTOTPEnrollmentRevocations = `-- name: EraseTOTPEnrollmentRevocations :exec
+DELETE FROM totp_enrollment_revocations WHERE enrollment_id IN (
+  SELECT e.id FROM totp_enrollments e WHERE e.user_id = $1)
+`
+
+func (q *Queries) EraseTOTPEnrollmentRevocations(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, eraseTOTPEnrollmentRevocations, userID)
+	return err
+}
+
+const eraseTOTPEnrollments = `-- name: EraseTOTPEnrollments :exec
+DELETE FROM totp_enrollments WHERE user_id = $1
+`
+
+func (q *Queries) EraseTOTPEnrollments(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, eraseTOTPEnrollments, userID)
+	return err
+}
+
+const eraseTOTPRecoveryCodeUses = `-- name: EraseTOTPRecoveryCodeUses :exec
+DELETE FROM totp_recovery_code_uses WHERE enrollment_id IN (
+  SELECT e.id FROM totp_enrollments e WHERE e.user_id = $1)
+`
+
+func (q *Queries) EraseTOTPRecoveryCodeUses(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, eraseTOTPRecoveryCodeUses, userID)
+	return err
+}
+
+const eraseTOTPRecoveryCodes = `-- name: EraseTOTPRecoveryCodes :exec
+DELETE FROM totp_recovery_codes WHERE enrollment_id IN (
+  SELECT e.id FROM totp_enrollments e WHERE e.user_id = $1)
+`
+
+func (q *Queries) EraseTOTPRecoveryCodes(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, eraseTOTPRecoveryCodes, userID)
+	return err
+}
+
 const eraseUserPreferences = `-- name: EraseUserPreferences :exec
 DELETE FROM user_preferences WHERE user_id = $1
 `

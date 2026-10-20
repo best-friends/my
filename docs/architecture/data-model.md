@@ -230,6 +230,11 @@ flowchart LR
 | `totp_recovery_codes` | リソース | `enrollment_id`, `code_hash` | PK `(enrollment_id, code_hash)` |
 | `totp_recovery_code_uses` | イベント | `enrollment_id`, `code_hash`, `used_at` | PK `(enrollment_id, code_hash)`。挿入の成否で 1 回性を保証 |
 
+- `secret_enc` は TOTP の 160 ビットの秘密を `kernel.Sealer` で暗号化した値です（ADR-0019 §6）。AAD は登録の `id` と列名 `totp_enrollments.secret_enc` です。
+- `code_hash` は、正規化したリカバリーコード（80 ビットの乱数）の SHA-256 です。
+- リカバリーコードを作り直すときは、同じ秘密を新しい登録に移し、古い登録に失効のイベントを記録します。管理者が二要素認証を外すときも失効のイベントを記録し、監査ログに `two_factor_disabled` を残します。
+- 使った TOTP のコードの時間ステップと、パスワードの後で 2 段目を待つサインインのチャレンジ（5 分）は、DB ではなく `KeyValueStore` の名前空間 `two_factor` に置きます。
+
 #### 登録審査
 
 | テーブル | 分類 | カラム | 制約 |
@@ -541,6 +546,7 @@ flowchart LR
   | `role_granted`, `role_revoked` | `role` | `roles.id` | ロールのキーと利用者のハンドル（`moderator @alice`） | `user_role_grants.id`（剥奪の行もこの ID が PK） |
   | `appeal_upheld`, `appeal_overturned` | `appeal` | `moderation_appeals.id` | 申し立てたアカウントのハンドル | `moderation_appeal_decisions.appeal_id`（= `moderation_appeals.id`） |
   | `revealed_private_data` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | なし（元の記録を持たない操作） |
+  | `two_factor_disabled` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | `totp_enrollment_revocations.enrollment_id` |
   | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。

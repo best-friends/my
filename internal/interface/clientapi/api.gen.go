@@ -250,6 +250,7 @@ const (
 	AdminAuditActionSignupBlockAdded         AdminAuditAction = "signup_block_added"
 	AdminAuditActionSignupBlockLifted        AdminAuditAction = "signup_block_lifted"
 	AdminAuditActionTextChanged              AdminAuditAction = "text_changed"
+	AdminAuditActionTwoFactorDisabled        AdminAuditAction = "two_factor_disabled"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditAction enum.
@@ -304,6 +305,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionSignupBlockLifted:
 		return true
 	case AdminAuditActionTextChanged:
+		return true
+	case AdminAuditActionTwoFactorDisabled:
 		return true
 	default:
 		return false
@@ -1275,6 +1278,10 @@ type AdminAccountDetail struct {
 	// and `pending` (the registration of a local account), `limited` (a `limit`), and
 	// `active`.
 	State AdminAccountState `json:"state"`
+
+	// TwoFactorEnabled Whether the user of a local account signs in with two-factor authentication;
+	// omitted for a remote account.
+	TwoFactorEnabled *bool `json:"two_factor_enabled,omitempty"`
 }
 
 // AdminAccountPage A page of accounts, newest first.
@@ -1397,7 +1404,8 @@ type AdminAppealPage struct {
 // AdminAuditAction The kind of an audited operation, each on one kind of target. On an `account`:
 // `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
 // `revealed_private_data` (a moderator was shown the account's email address and IP
-// addresses). On a `domain`:
+// addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+// authentication). On a `domain`:
 // `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 // `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 // `user` (a registration):
@@ -1420,7 +1428,8 @@ type AdminAuditEntry struct {
 	// Action The kind of an audited operation, each on one kind of target. On an `account`:
 	// `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
 	// `revealed_private_data` (a moderator was shown the account's email address and IP
-	// addresses). On a `domain`:
+	// addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+	// authentication). On a `domain`:
 	// `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
 	// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 	// `user` (a registration):
@@ -2281,6 +2290,15 @@ type EditStatusRequest struct {
 	Text StatusText `json:"text"`
 }
 
+// EnableTotpRequest The setup to enroll and a code of the app that shows it has the secret.
+type EnableTotpRequest struct {
+	// Code The six-digit code that the app shows now.
+	Code string `json:"code"`
+
+	// SetupToken The `setup_token` of `POST /two_factor/totp/setup`.
+	SetupToken string `json:"setup_token"`
+}
+
 // FollowAccountRequest The viewer's preferences of the follow; a preference left out keeps its value.
 type FollowAccountRequest struct {
 	// Notify Notify the viewer of the account's new posts. New follows do not.
@@ -2917,6 +2935,14 @@ type Preferences struct {
 //   - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
 //     account is deleted, so it can no longer be appealed or overturned.
 //   - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+//   - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+//     already used, or is not a code.
+//   - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+//     Start a new one.
+//   - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+//     authentication.
+//   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+//     operation, has no two-factor authentication.
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -2942,6 +2968,22 @@ type ProfileField struct {
 
 	// Value The field's value as sanitized HTML.
 	Value string `json:"value"`
+}
+
+// QrCode A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+// zone of four modules included) on a light background.
+type QrCode struct {
+	// Path The path data (`d`) of the dark modules, one unit per module.
+	Path string `json:"path"`
+
+	// Size The width and height of the view box, in modules.
+	Size int `json:"size"`
+}
+
+// RecoveryCodes Recovery codes, each of which signs in once in place of a code of the app. They are
+// shown only once.
+type RecoveryCodes struct {
+	RecoveryCodes []string `json:"recovery_codes"`
 }
 
 // RegistrationDecisionRequest A moderator's decision on a registration.
@@ -3313,6 +3355,43 @@ type StatusTag struct {
 
 // StatusText The plain text; the server links mentions, hashtags, and URLs.
 type StatusText = string
+
+// TotpSetup A new TOTP secret to add to an authenticator app.
+type TotpSetup struct {
+	// ExpiresAt When `setup_token` stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// QrCode A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+	// zone of four modules included) on a light background.
+	QrCode QrCode `json:"qr_code"`
+
+	// Secret The secret in base32, for typing it into the app.
+	Secret string `json:"secret"`
+
+	// SetupToken An opaque token that carries the secret to `POST /two_factor/totp`.
+	SetupToken string `json:"setup_token"`
+
+	// Uri The `otpauth://totp/...` URI of the secret.
+	Uri string `json:"uri"`
+}
+
+// TwoFactor Where the authenticated user's two-factor authentication (TOTP) stands.
+type TwoFactor struct {
+	// Enabled Whether signing in asks for a code after the password.
+	Enabled bool `json:"enabled"`
+
+	// EnrolledAt When the authenticator app was enrolled; omitted when not enabled.
+	EnrolledAt *time.Time `json:"enrolled_at,omitempty"`
+
+	// RecoveryCodesRemaining How many recovery codes are unused; omitted when not enabled.
+	RecoveryCodesRemaining *int `json:"recovery_codes_remaining,omitempty"`
+}
+
+// TwoFactorCodeRequest A code that confirms an operation on two-factor authentication.
+type TwoFactorCodeRequest struct {
+	// Code A six-digit code of the app or an unused recovery code.
+	Code string `json:"code"`
+}
 
 // UpdateCredentialsRequest A change of the profile; properties left out keep their current values.
 type UpdateCredentialsRequest struct {
@@ -3878,6 +3957,15 @@ type CreateStatusJSONRequestBody = CreateStatusRequest
 // EditStatusJSONRequestBody defines body for EditStatus for application/json ContentType.
 type EditStatusJSONRequestBody = EditStatusRequest
 
+// RegenerateRecoveryCodesJSONRequestBody defines body for RegenerateRecoveryCodes for application/json ContentType.
+type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
+
+// EnableTotpJSONRequestBody defines body for EnableTotp for application/json ContentType.
+type EnableTotpJSONRequestBody = EnableTotpRequest
+
+// DisableTotpJSONRequestBody defines body for DisableTotp for application/json ContentType.
+type DisableTotpJSONRequestBody = TwoFactorCodeRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// LookupAccount Look up or resolve an account by its handle or URL
@@ -3955,6 +4043,9 @@ type ServerInterface interface {
 	// GrantAccountRole Grant a role to a local account
 	// (PUT /admin/accounts/{id}/roles/{role})
 	GrantAccountRole(w http.ResponseWriter, r *http.Request, id AdminAccountId, role RoleKey)
+	// DisableAdminAccountTwoFactor Remove the two-factor authentication of a local account
+	// (POST /admin/accounts/{id}/two_factor/disable)
+	DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request, id AdminAccountId)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(w http.ResponseWriter, r *http.Request, params ListAppealsParams)
@@ -4195,6 +4286,21 @@ type ServerInterface interface {
 	// GetHashtagTimeline Get the timeline of a hashtag
 	// (GET /timelines/tag/{hashtag})
 	GetHashtagTimeline(w http.ResponseWriter, r *http.Request, hashtag string, params GetHashtagTimelineParams)
+	// GetTwoFactor Get where the authenticated user's two-factor authentication stands
+	// (GET /two_factor)
+	GetTwoFactor(w http.ResponseWriter, r *http.Request)
+	// RegenerateRecoveryCodes Replace the recovery codes
+	// (POST /two_factor/recovery_codes)
+	RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request)
+	// EnableTotp Enable two-factor authentication with the secret of a setup
+	// (POST /two_factor/totp)
+	EnableTotp(w http.ResponseWriter, r *http.Request)
+	// DisableTotp Disable two-factor authentication
+	// (POST /two_factor/totp/disable)
+	DisableTotp(w http.ResponseWriter, r *http.Request)
+	// SetUpTotp Generate a TOTP secret for the authenticated user to add to an authenticator app
+	// (POST /two_factor/totp/setup)
+	SetUpTotp(w http.ResponseWriter, r *http.Request)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -5147,6 +5253,32 @@ func (siw *ServerInterfaceWrapper) GrantAccountRole(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GrantAccountRole(w, r, id, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableAdminAccountTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableAdminAccountTwoFactor(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7706,6 +7838,76 @@ func (siw *ServerInterfaceWrapper) GetHashtagTimeline(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetTwoFactor operation middleware
+func (siw *ServerInterfaceWrapper) GetTwoFactor(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetTwoFactor(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegenerateRecoveryCodes operation middleware
+func (siw *ServerInterfaceWrapper) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegenerateRecoveryCodes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableTotp operation middleware
+func (siw *ServerInterfaceWrapper) EnableTotp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableTotp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableTotp operation middleware
+func (siw *ServerInterfaceWrapper) DisableTotp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableTotp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUpTotp operation middleware
+func (siw *ServerInterfaceWrapper) SetUpTotp(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUpTotp(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -7832,6 +8034,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/two_factor", wrapper.GetTwoFactor)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/setup", wrapper.SetUpTotp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp", wrapper.EnableTotp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/disable", wrapper.DisableTotp)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/recovery_codes", wrapper.RegenerateRecoveryCodes)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}", wrapper.GetAccount)
@@ -7915,6 +8122,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/reveal", wrapper.RevealAdminAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/two_factor/disable", wrapper.DisableAdminAccountTwoFactor)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/roles", wrapper.ListAccountRoles)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.RevokeAccountRole)
@@ -9492,6 +9700,52 @@ type GrantAccountRoledefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GrantAccountRoledefaultApplicationProblemPlusJSONResponse) VisitGrantAccountRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableAdminAccountTwoFactorRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type DisableAdminAccountTwoFactorResponseObject interface {
+	VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type DisableAdminAccountTwoFactor204Response struct {
+}
+
+func (response DisableAdminAccountTwoFactor204Response) VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse) VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -14154,6 +14408,314 @@ func (response GetHashtagTimelinedefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type GetTwoFactorRequestObject struct {
+}
+
+type GetTwoFactorResponseObject interface {
+	VisitGetTwoFactorResponse(w http.ResponseWriter) error
+}
+
+type GetTwoFactor200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetTwoFactor200JSONResponse struct {
+	Body    TwoFactor
+	Headers GetTwoFactor200ResponseHeaders
+}
+
+func (response GetTwoFactor200JSONResponse) VisitGetTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetTwoFactordefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetTwoFactordefaultApplicationProblemPlusJSONResponse) VisitGetTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodesRequestObject struct {
+	Body *RegenerateRecoveryCodesJSONRequestBody
+}
+
+type RegenerateRecoveryCodesResponseObject interface {
+	VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error
+}
+
+type RegenerateRecoveryCodes200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RegenerateRecoveryCodes200JSONResponse struct {
+	Body    RecoveryCodes
+	Headers RegenerateRecoveryCodes200ResponseHeaders
+}
+
+func (response RegenerateRecoveryCodes200JSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegenerateRecoveryCodesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RegenerateRecoveryCodesdefaultApplicationProblemPlusJSONResponse) VisitRegenerateRecoveryCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableTotpRequestObject struct {
+	Body *EnableTotpJSONRequestBody
+}
+
+type EnableTotpResponseObject interface {
+	VisitEnableTotpResponse(w http.ResponseWriter) error
+}
+
+type EnableTotp200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type EnableTotp200JSONResponse struct {
+	Body    RecoveryCodes
+	Headers EnableTotp200ResponseHeaders
+}
+
+func (response EnableTotp200JSONResponse) VisitEnableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableTotpdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response EnableTotpdefaultApplicationProblemPlusJSONResponse) VisitEnableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTotpRequestObject struct {
+	Body *DisableTotpJSONRequestBody
+}
+
+type DisableTotpResponseObject interface {
+	VisitDisableTotpResponse(w http.ResponseWriter) error
+}
+
+type DisableTotp200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type DisableTotp200JSONResponse struct {
+	Body    TwoFactor
+	Headers DisableTotp200ResponseHeaders
+}
+
+func (response DisableTotp200JSONResponse) VisitDisableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableTotpdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DisableTotpdefaultApplicationProblemPlusJSONResponse) VisitDisableTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUpTotpRequestObject struct {
+}
+
+type SetUpTotpResponseObject interface {
+	VisitSetUpTotpResponse(w http.ResponseWriter) error
+}
+
+type SetUpTotp200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type SetUpTotp200JSONResponse struct {
+	Body    TotpSetup
+	Headers SetUpTotp200ResponseHeaders
+}
+
+func (response SetUpTotp200JSONResponse) VisitSetUpTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetUpTotpdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetUpTotpdefaultApplicationProblemPlusJSONResponse) VisitSetUpTotpResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// LookupAccount Look up or resolve an account by its handle or URL
@@ -14231,6 +14793,9 @@ type StrictServerInterface interface {
 	// GrantAccountRole Grant a role to a local account
 	// (PUT /admin/accounts/{id}/roles/{role})
 	GrantAccountRole(ctx context.Context, request GrantAccountRoleRequestObject) (GrantAccountRoleResponseObject, error)
+	// DisableAdminAccountTwoFactor Remove the two-factor authentication of a local account
+	// (POST /admin/accounts/{id}/two_factor/disable)
+	DisableAdminAccountTwoFactor(ctx context.Context, request DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(ctx context.Context, request ListAppealsRequestObject) (ListAppealsResponseObject, error)
@@ -14471,6 +15036,21 @@ type StrictServerInterface interface {
 	// GetHashtagTimeline Get the timeline of a hashtag
 	// (GET /timelines/tag/{hashtag})
 	GetHashtagTimeline(ctx context.Context, request GetHashtagTimelineRequestObject) (GetHashtagTimelineResponseObject, error)
+	// GetTwoFactor Get where the authenticated user's two-factor authentication stands
+	// (GET /two_factor)
+	GetTwoFactor(ctx context.Context, request GetTwoFactorRequestObject) (GetTwoFactorResponseObject, error)
+	// RegenerateRecoveryCodes Replace the recovery codes
+	// (POST /two_factor/recovery_codes)
+	RegenerateRecoveryCodes(ctx context.Context, request RegenerateRecoveryCodesRequestObject) (RegenerateRecoveryCodesResponseObject, error)
+	// EnableTotp Enable two-factor authentication with the secret of a setup
+	// (POST /two_factor/totp)
+	EnableTotp(ctx context.Context, request EnableTotpRequestObject) (EnableTotpResponseObject, error)
+	// DisableTotp Disable two-factor authentication
+	// (POST /two_factor/totp/disable)
+	DisableTotp(ctx context.Context, request DisableTotpRequestObject) (DisableTotpResponseObject, error)
+	// SetUpTotp Generate a TOTP secret for the authenticated user to add to an authenticator app
+	// (POST /two_factor/totp/setup)
+	SetUpTotp(ctx context.Context, request SetUpTotpRequestObject) (SetUpTotpResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -15201,6 +15781,32 @@ func (sh *strictHandler) GrantAccountRole(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GrantAccountRoleResponseObject); ok {
 		if err := validResponse.VisitGrantAccountRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableAdminAccountTwoFactor operation middleware
+func (sh *strictHandler) DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request DisableAdminAccountTwoFactorRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableAdminAccountTwoFactor(ctx, request.(DisableAdminAccountTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableAdminAccountTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableAdminAccountTwoFactorResponseObject); ok {
+		if err := validResponse.VisitDisableAdminAccountTwoFactorResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -17415,6 +18021,147 @@ func (sh *strictHandler) GetHashtagTimeline(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetHashtagTimelineResponseObject); ok {
 		if err := validResponse.VisitGetHashtagTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetTwoFactor operation middleware
+func (sh *strictHandler) GetTwoFactor(w http.ResponseWriter, r *http.Request) {
+	var request GetTwoFactorRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetTwoFactor(ctx, request.(GetTwoFactorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetTwoFactor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetTwoFactorResponseObject); ok {
+		if err := validResponse.VisitGetTwoFactorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegenerateRecoveryCodes operation middleware
+func (sh *strictHandler) RegenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	var request RegenerateRecoveryCodesRequestObject
+
+	var body RegenerateRecoveryCodesJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegenerateRecoveryCodes(ctx, request.(RegenerateRecoveryCodesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegenerateRecoveryCodes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegenerateRecoveryCodesResponseObject); ok {
+		if err := validResponse.VisitRegenerateRecoveryCodesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableTotp operation middleware
+func (sh *strictHandler) EnableTotp(w http.ResponseWriter, r *http.Request) {
+	var request EnableTotpRequestObject
+
+	var body EnableTotpJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableTotp(ctx, request.(EnableTotpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableTotp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableTotpResponseObject); ok {
+		if err := validResponse.VisitEnableTotpResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableTotp operation middleware
+func (sh *strictHandler) DisableTotp(w http.ResponseWriter, r *http.Request) {
+	var request DisableTotpRequestObject
+
+	var body DisableTotpJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableTotp(ctx, request.(DisableTotpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableTotp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableTotpResponseObject); ok {
+		if err := validResponse.VisitDisableTotpResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetUpTotp operation middleware
+func (sh *strictHandler) SetUpTotp(w http.ResponseWriter, r *http.Request) {
+	var request SetUpTotpRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetUpTotp(ctx, request.(SetUpTotpRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetUpTotp")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetUpTotpResponseObject); ok {
+		if err := validResponse.VisitSetUpTotpResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
