@@ -232,9 +232,8 @@ test.describe("the hashtag timeline", () => {
   });
 });
 
-test("the root address opens the home timeline, which offers to sign in without a session", async ({ page, makeAxeBuilder }) => {
-  await page.goto("/");
-  await expect(page).toHaveURL(/\/home$/);
+test("the home timeline offers to sign in without a session", async ({ page, makeAxeBuilder }) => {
+  await page.goto("/home");
   await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/login?return_to=%2Fhome");
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);

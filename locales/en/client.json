@@ -4423,6 +4423,62 @@
     "defaultMessage": "The local timeline is off",
     "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
   },
+  "landing.title": {
+    "defaultMessage": "Welcome to {instance}",
+    "description": "Heading and document title of the landing page that people who are not signed in see at the root address. {instance} is the name of this server."
+  },
+  "landing.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Button on the landing page that opens the server's sign-in screen."
+  },
+  "landing.sign_up.open": {
+    "defaultMessage": "Create an account",
+    "description": "Link on the landing page to the server's registration page, when anyone may sign up."
+  },
+  "landing.sign_up.approval": {
+    "defaultMessage": "Apply for an account",
+    "description": "Link on the landing page to the server's registration page, when moderators approve each sign-up."
+  },
+  "landing.sign_up.invite": {
+    "defaultMessage": "Create an account with an invite",
+    "description": "Link on the landing page to the server's registration page, when only people with an invite may sign up."
+  },
+  "landing.registrations.approval": {
+    "defaultMessage": "Moderators review each new account before it can be used.",
+    "description": "Note next to the landing page's registration link, when moderators approve each sign-up."
+  },
+  "landing.registrations.invite": {
+    "defaultMessage": "Only people with an invite can create an account.",
+    "description": "Note next to the landing page's registration link, when only people with an invite may sign up."
+  },
+  "landing.registrations.closed": {
+    "defaultMessage": "This server is not accepting new accounts.",
+    "description": "Text on the landing page, in place of the registration link, when nobody may sign up."
+  },
+  "landing.about.title": {
+    "defaultMessage": "About this server",
+    "description": "Heading of the landing page's section with the server's description."
+  },
+  "landing.rules.title": {
+    "defaultMessage": "Rules",
+    "description": "Heading of the landing page's section with the server's rules."
+  },
+  "landing.posts.title": {
+    "defaultMessage": "Recent posts",
+    "description": "Heading of the landing page's section with a few recent public posts of this server's accounts."
+  },
+  "landing.posts.more": {
+    "defaultMessage": "See the local timeline",
+    "description": "Link under the recent posts of the landing page to the local timeline."
+  },
+  "landing.posts.failed": {
+    "defaultMessage": "Couldn't load the recent posts",
+    "description": "Heading shown in place of the recent posts of the landing page when they could not be loaded."
+  },
+  "landing.posts.empty": {
+    "defaultMessage": "No posts yet",
+    "description": "Heading shown in place of the recent posts of the landing page when there are none."
+  },
   "local.title": {
     "defaultMessage": "Local timeline",
     "description": "Heading and document title of the page with the public posts of this server's accounts."

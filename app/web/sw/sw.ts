@@ -4,7 +4,8 @@
 // template (https://vite-pwa-org.netlify.app/guide/inject-manifest.html) and Workbox's modules
 // (https://developer.chrome.com/docs/workbox/modules):
 //
-// - the hashed files of the build are precached, together with the generic HTML shell at /;
+// - the hashed files of the build are precached, together with the generic HTML shell at /home (the shell of /
+//   carries the landing page's link preview tags, so it is not replayed for other URLs);
 // - navigations go to the network, which decides the status, the link preview tags and noindex of every
 //   page; when it fails or takes longer than 3 seconds, the precached shell starts the app offline. No
 //   navigation response is stored, so a page's own shell is never replayed for another URL;
@@ -87,7 +88,7 @@ const handlingOf = ({ request }: { request: Request }): Handling =>
     self.location.origin,
   );
 
-// Registered before the precache's route, so that a navigation to / also goes to the network first.
+// Registered before the precache's route, so that a navigation to the shell's path also goes to the network first.
 registerRoute(
   (options) => handlingOf(options) === "navigation",
   new NetworkOnly({

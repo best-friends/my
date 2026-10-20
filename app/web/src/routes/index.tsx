@@ -1,10 +1,51 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, type ErrorComponentProps, redirect } from "@tanstack/react-router";
+import { instanceQueryOptions, Landing } from "../features/landing";
+import { useT } from "../lib/i18n";
+import { useInstanceName } from "../lib/instanceName";
+import { PageHeading } from "./-layout/PageHeading";
+import { RouteError } from "./-layout/RouteStates";
 
-/** The root address opens the home timeline; the timelines are named by their own paths (web-client.md S3). */
+/**
+ * The root address: the landing page for people who are not signed in, and the home timeline for signed-in users,
+ * whom it sends there (the timelines are named by their own paths, web-client.md S3). The server's shell of this
+ * address carries the instance's link preview (ADR-0028).
+ */
 export const Route = createFileRoute("/")({
-  beforeLoad: () => {
-    // eslint-disable-next-line typescript/only-throw-error -- TanStack Router's redirects are thrown objects.
-    throw redirect({ to: "/home", replace: true });
+  loader: async ({ context: { queryClient, api, session } }) => {
+    await session.restore();
+    // While the server cannot be reached to resume the session (a page opened offline), the home timeline shows
+    // the posts kept on this browser (web-client.md §11).
+    if (session.status === "signed-in" || session.unreachable) {
+      // eslint-disable-next-line typescript/only-throw-error -- TanStack Router's redirects are thrown objects.
+      throw redirect({ to: "/home", replace: true });
+    }
+    // The instance tells what to show; the page still offers to sign in without it, so its failure does not fail
+    // the page (the shell, which reads the same query, handles it). Cached data is shown at once (web-client.md S7).
+    await queryClient.query({ ...instanceQueryOptions(api), staleTime: Infinity }).catch(() => undefined);
   },
+  component: LandingPage,
+  errorComponent: LandingError,
 });
+
+function LandingPage() {
+  return (
+    <>
+      <LandingHeading />
+      <Landing />
+    </>
+  );
+}
+
+/** The page's heading, which welcomes the reader to the instance by its name. */
+function LandingHeading() {
+  const t = useT();
+  const instance = useInstanceName();
+  return <PageHeading>{t("client:landing.title", { instance })}</PageHeading>;
+}
+
+function LandingError(props: ErrorComponentProps) {
+  const t = useT();
+  const instance = useInstanceName();
+  return <RouteError {...props} heading={t("client:landing.title", { instance })} />;
+}

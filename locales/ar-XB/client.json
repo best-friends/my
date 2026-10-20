@@ -4751,6 +4751,62 @@
     "defaultMessage": "‮Hoɯǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "landing.about.title": {
+    "defaultMessage": "‮∀qonʇ ʇɥıs sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.empty": {
+    "defaultMessage": "‮No dosʇs ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.failed": {
+    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ʇɥǝ ɹǝɔǝuʇ dosʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.more": {
+    "defaultMessage": "‮Sǝǝ ʇɥǝ ʅoɔɐʅ ʇıɯǝʅıuǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.title": {
+    "defaultMessage": "‮ᴚǝɔǝuʇ dosʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.registrations.approval": {
+    "defaultMessage": "‮Wopǝɹɐʇoɹs ɹǝʌıǝʍ ǝɐɔɥ uǝʍ ɐɔɔonuʇ qǝɟoɹǝ ıʇ ɔɐu qǝ nsǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.registrations.closed": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ıs uoʇ ɐɔɔǝdʇıuƃ uǝʍ ɐɔɔonuʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.registrations.invite": {
+    "defaultMessage": "‮Ouʅʎ dǝodʅǝ ʍıʇɥ ɐu ıuʌıʇǝ ɔɐu ɔɹǝɐʇǝ ɐu ɐɔɔonuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.rules.title": {
+    "defaultMessage": "‮ᴚnʅǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_in": {
+    "defaultMessage": "‮Sıƃu ıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_up.approval": {
+    "defaultMessage": "‮∀ddʅʎ ɟoɹ ɐu ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_up.invite": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐu ɐɔɔonuʇ ʍıʇɥ ɐu ıuʌıʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_up.open": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐu ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.title": {
+    "defaultMessage": "‮Mǝʅɔoɯǝ ʇo {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "local.disabled.body": {
     "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ poǝs uoʇ sɥoʍ ʇɥǝ dnqʅıɔ dosʇs oɟ ıʇs ɐɔɔonuʇs ıu ouǝ ʇıɯǝʅıuǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

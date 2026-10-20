@@ -37,7 +37,7 @@ export async function renderWithProviders(ui: ReactNode, { locale = "en", ...opt
 }
 
 export type RenderAppOptions = {
-  /** The address the app opens at. */
+  /** The address the app opens at; the home timeline by default (the root address is the landing page without a session). */
   path?: string;
   locale?: string;
   /** Creates the router; createAppRouter (every route of the app) by default. */
@@ -49,7 +49,7 @@ export type RenderAppOptions = {
  * QueryClient and session as main.tsx makes them (the session resumes from the refresh endpoint, which
  * answers "signed out" by default), and MSW for the network. Wait for the first page with a `findBy` query.
  */
-export async function renderApp({ path = "/", locale = "en", createRouter = createAppRouter }: RenderAppOptions = {}) {
+export async function renderApp({ path = "/home", locale = "en", createRouter = createAppRouter }: RenderAppOptions = {}) {
   const i18n: I18n = await loadI18n(locale);
   /** Where the app sent the browser away to (the authorization screen); jsdom cannot load it. */
   const leftTo: URL[] = [];

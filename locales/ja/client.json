@@ -4423,6 +4423,62 @@
     "defaultMessage": "ローカルタイムラインは提供されていません",
     "description": "Heading and document title of the local timeline's page when the server's operators have turned that timeline off."
   },
+  "landing.title": {
+    "defaultMessage": "{instance} へようこそ",
+    "description": "Heading and document title of the landing page that people who are not signed in see at the root address. {instance} is the name of this server."
+  },
+  "landing.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Button on the landing page that opens the server's sign-in screen."
+  },
+  "landing.sign_up.open": {
+    "defaultMessage": "アカウントを作る",
+    "description": "Link on the landing page to the server's registration page, when anyone may sign up."
+  },
+  "landing.sign_up.approval": {
+    "defaultMessage": "アカウントを申し込む",
+    "description": "Link on the landing page to the server's registration page, when moderators approve each sign-up."
+  },
+  "landing.sign_up.invite": {
+    "defaultMessage": "招待でアカウントを作る",
+    "description": "Link on the landing page to the server's registration page, when only people with an invite may sign up."
+  },
+  "landing.registrations.approval": {
+    "defaultMessage": "新しいアカウントは、モデレーターが承認してから使えるようになります。",
+    "description": "Note next to the landing page's registration link, when moderators approve each sign-up."
+  },
+  "landing.registrations.invite": {
+    "defaultMessage": "招待を受けた人だけがアカウントを作れます。",
+    "description": "Note next to the landing page's registration link, when only people with an invite may sign up."
+  },
+  "landing.registrations.closed": {
+    "defaultMessage": "このサーバーは新しいアカウントを受け付けていません。",
+    "description": "Text on the landing page, in place of the registration link, when nobody may sign up."
+  },
+  "landing.about.title": {
+    "defaultMessage": "このサーバーについて",
+    "description": "Heading of the landing page's section with the server's description."
+  },
+  "landing.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Heading of the landing page's section with the server's rules."
+  },
+  "landing.posts.title": {
+    "defaultMessage": "最近の投稿",
+    "description": "Heading of the landing page's section with a few recent public posts of this server's accounts."
+  },
+  "landing.posts.more": {
+    "defaultMessage": "ローカルタイムラインを見る",
+    "description": "Link under the recent posts of the landing page to the local timeline."
+  },
+  "landing.posts.failed": {
+    "defaultMessage": "最近の投稿を読み込めませんでした",
+    "description": "Heading shown in place of the recent posts of the landing page when they could not be loaded."
+  },
+  "landing.posts.empty": {
+    "defaultMessage": "まだ投稿はありません",
+    "description": "Heading shown in place of the recent posts of the landing page when there are none."
+  },
   "local.title": {
     "defaultMessage": "ローカルタイムライン",
     "description": "Heading and document title of the page with the public posts of this server's accounts."
