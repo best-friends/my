@@ -47,3 +47,39 @@ func TestWritesGaugesWhenAsked(t *testing.T) {
 		t.Errorf("unlabeled line = %v", lines[2])
 	}
 }
+
+func TestWritesTheIncreaseOfObservableCounters(t *testing.T) {
+	var w buffer
+	m := newMeter(&w)
+	user, system := 1.5, 0.5
+	m.ObservableCounter(kernel.Instrument{Name: "process.cpu.time", Unit: "s", LabelKeys: []string{"cpu.mode"}},
+		func(_ context.Context, o kernel.GaugeObserver) error {
+			o.Observe(user, kernel.NewLabels("cpu.mode", "user"))
+			o.Observe(system, kernel.NewLabels("cpu.mode", "system"))
+			return nil
+		})
+	values := func() map[string]any {
+		t.Helper()
+		if err := m.WriteGauges(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		got := map[string]any{}
+		for _, line := range w.lines(t) {
+			got[line["cpu.mode"].(string)] = line["process.cpu.time"]
+		}
+		w.reset()
+		return got
+	}
+	if got := values(); got["user"] != 1.5 || got["system"] != 0.5 {
+		t.Errorf("first write = %v, want the totals", got)
+	}
+	user, system = 2.25, 0.5
+	if got := values(); got["user"] != 0.75 || got["system"] != 0.0 {
+		t.Errorf("second write = %v, want the increases", got)
+	}
+	// A total that went back to 0 (its source restarted) counts from 0.
+	user = 0.25
+	if got := values(); got["user"] != 0.25 {
+		t.Errorf("write after a restart = %v, want the new total", got)
+	}
+}

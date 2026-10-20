@@ -188,6 +188,18 @@ func (m *Meter) Gauge(i kernel.Instrument, f kernel.GaugeFunc) {
 	}
 }
 
+// ObservableCounter implements kernel.Meter: an asynchronous monotonic Sum, which the
+// Prometheus exporter shows as a counter (_total).
+func (m *Meter) ObservableCounter(i kernel.Instrument, f kernel.GaugeFunc) {
+	_, err := m.meter.Float64ObservableCounter(i.Name, metric.WithDescription(i.Description), metric.WithUnit(i.Unit),
+		metric.WithFloat64Callback(func(ctx context.Context, o metric.Float64Observer) error {
+			return f(ctx, observer{o: o, i: i})
+		}))
+	if err != nil {
+		m.fail(err)
+	}
+}
+
 // Begin implements kernel.Meter: the SDK aggregates every measurement, so a unit of work needs
 // nothing.
 func (m *Meter) Begin(ctx context.Context) (context.Context, func()) { return ctx, func() {} }

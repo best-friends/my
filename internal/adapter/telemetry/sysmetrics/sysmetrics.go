@@ -9,9 +9,8 @@
 //
 // Names follow the OpenTelemetry semantic conventions where they define the metric and start
 // with "my." otherwise (ADR-0055 §3). Labels never carry a remote host, an account, a URL, or a
-// blob key (ADR-0056 §1). kernel.Meter has no observable counter, so the cumulative values
-// that the runtime and the pools keep (CPU time, connection waits) are gauges whose value only
-// grows until the process restarts; rate() and increase() still apply to them.
+// blob key (ADR-0056 §1). The totals that the kernel and the pools keep (CPU time, connection
+// waits) are observable counters, which only grow until the process restarts.
 //
 // The domain and application layers never see these metrics: the platform wraps the adapters
 // with the decorators when it assembles them, and every decorator returns the adapter itself

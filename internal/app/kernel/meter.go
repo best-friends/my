@@ -11,8 +11,10 @@ import (
 // Meter creates the instruments of the service and system metrics (ADR-0055 §1, ADR-0056).
 // An instrument is declared once, at startup, with its name, unit, description, and the label
 // keys it accepts, and then records measurements: a Counter adds to a sum, an UpDownCounter
-// adds to a value that also goes down, a Histogram records a distribution, and a Gauge is a
-// function that the exporter calls when it collects.
+// adds to a value that also goes down, a Histogram records a distribution, a Gauge is a
+// function that the exporter calls when it collects, and an ObservableCounter is such a
+// function that reports a total kept elsewhere (the CPU time of the process, the waits of a
+// connection pool), which only grows until the process restarts.
 //
 // Labels take their values from finite sets fixed in code (ADR-0055 §6): never a remote
 // domain, an account, status, or job ID, a raw URL or path, a client IP, or a User-Agent.
@@ -29,6 +31,11 @@ type Meter interface {
 	// Gauge registers f, which reports the current values of i whenever the exporter collects.
 	// Exporters that do not collect (emf) call it only when asked through GaugeWriter.
 	Gauge(i Instrument, f GaugeFunc)
+	// ObservableCounter registers f, which reports the totals of i whenever the exporter
+	// collects: monotonic sums that the exporters show as counters (Prometheus's _total, an
+	// OTLP monotonic Sum). A total never goes down until the process restarts. Exporters that do
+	// not collect (emf) call it only when asked through GaugeWriter.
+	ObservableCounter(i Instrument, f GaugeFunc)
 	// Begin starts a unit of work, an HTTP request or a job, and returns its context and the
 	// function that ends it. An exporter that writes one record per unit of work (emf) collects
 	// the measurements made with that context and writes them when end is called; the others
@@ -37,8 +44,8 @@ type Meter interface {
 }
 
 // GaugeWriter is implemented by a Meter whose exporter does not collect (emf): WriteGauges
-// calls the functions of the gauges once and writes what they report, so that a periodic job
-// exports the gauges of the metrics snapshot (ADR-0055 §4).
+// calls the functions of the gauges and the observable counters once and writes what they
+// report, so that a periodic job exports the gauges of the metrics snapshot (ADR-0055 §4).
 type GaugeWriter interface {
 	WriteGauges(ctx context.Context) error
 }
@@ -90,7 +97,8 @@ type Histogram interface {
 	Record(ctx context.Context, v float64, l Labels)
 }
 
-// GaugeFunc reports the current values of a gauge to o, one per label set.
+// GaugeFunc reports the current values of a gauge, or the totals of an observable counter, to
+// o, one per label set.
 type GaugeFunc func(ctx context.Context, o GaugeObserver) error
 
 // GaugeObserver receives the values of a GaugeFunc.
@@ -185,6 +193,9 @@ func (NopMeter) Histogram(Instrument) Histogram { return nopInstrument{} }
 
 // Gauge implements Meter.
 func (NopMeter) Gauge(Instrument, GaugeFunc) {}
+
+// ObservableCounter implements Meter.
+func (NopMeter) ObservableCounter(Instrument, GaugeFunc) {}
 
 // Begin implements Meter.
 func (NopMeter) Begin(ctx context.Context) (context.Context, func()) { return ctx, nopEnd }

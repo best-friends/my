@@ -84,13 +84,13 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `go.goroutine.count`・`go.processor.limit`・`go.config.gogc` | Gauge | なし |
 | `go.schedule.duration`・`go.memory.gc.pause.duration` | Histogram・秒 | なし（実行可能になってから動き出すまでの待ち、GC の停止） |
 | `go.memory.gc.cycles` | Counter | なし |
-| `process.cpu.time` | Gauge・秒（起動からの合計） | `cpu.mode`（`user` / `system`） |
+| `process.cpu.time` | Observable Counter・秒（起動からの合計） | `cpu.mode`（`user` / `system`） |
 | `process.memory.usage` | Gauge・バイト | なし（常駐メモリ、RSS） |
 | `process.unix.file_descriptor.count`・`my.process.file_descriptor.limit` | Gauge | なし（開いたファイル記述子の数と上限） |
 | `process.uptime` | Gauge・秒 | なし |
 | `db.client.connection.count` | Gauge | `db.client.connection.pool.name`（`postgres` / `sqlite`）、`db.client.connection.state`（`idle` / `used`） |
 | `db.client.connection.max` | Gauge | `db.client.connection.pool.name` |
-| `db.client.connection.wait_time`・`my.db.client.connection.waits`・`db.client.connection.timeouts` | Gauge（起動からの合計。秒・回） | `db.client.connection.pool.name`。`timeouts` は PostgreSQL だけ |
+| `db.client.connection.wait_time`・`my.db.client.connection.waits`・`db.client.connection.timeouts` | Observable Counter（起動からの合計。秒・回） | `db.client.connection.pool.name`。`timeouts` は PostgreSQL だけ |
 | `my.adapter.operation.duration` | Histogram・秒 | `my.adapter`（`queue.db` / `kv.db` / `kv.memory` / `kv.valkey` / `stream.<stream>` / `blob.fs`）、`my.operation`、`my.outcome`（`success` / `error`） |
 | `my.adapter.connections` | UpDownCounter | `my.adapter`（`valkey` の接続、`stream.<stream>` の受信） |
 | `my.adapter.reconnects` | Counter | `my.adapter` |
@@ -98,8 +98,9 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `http.client.open_connections` | UpDownCounter | なし |
 | `my.readiness.failures` | Counter | なし |
 
-- Go のランタイムの指標（`go.*`）は `prometheus` と `otlp` だけが出す。プロセスと接続のプールの Gauge は、`emf` ではスナップショットの定期ジョブが書く
-- プールの待ちと CPU 時間は、プールとランタイムが持つ起動からの合計なので Gauge で出す。PromQL の `rate()` で増え方を見る
+- Go のランタイムの指標（`go.*`）は `prometheus` と `otlp` だけが出す。プロセスと接続のプールの Gauge と Observable Counter は、`emf` ではスナップショットの定期ジョブが書く
+- プールの待ちと CPU 時間は、プールとカーネルが持つ起動からの合計を収集のときに読む Observable Counter で出す。Prometheus では `_total` の Counter（`process_cpu_time_seconds_total` など）、OTLP では単調増加の Sum になり、PromQL の `rate()` で増え方を見る。
+  `emf` には合計の Counter がないので、前回の書き込みからの増分を書く（CloudWatch の Sum で足し合わせる）
 - キューの取得（`claim`）は、ジョブを取れたときと失敗したときだけ計測する。待機中のワーカーのポーリングは何も記録しない
 - `db.client.connection.pending_requests` は出さない。pgx と `database/sql` の統計に待っている数がないので、待ちの回数と時間で代える
 - 警報の目安: `go.memory.used` の合計と `go.memory.limit` の比、`db.client.connection.wait_time` の増え方（プールの上限に当たっている）

@@ -19,7 +19,7 @@ import (
 // registerOSProcess reports the CPU time, the resident memory, and the file descriptors from
 // getrusage(2), getrlimit(2), and /proc/self.
 func registerOSProcess(m kernel.Meter) {
-	m.Gauge(ProcessCPUTime, func(_ context.Context, o kernel.GaugeObserver) error {
+	m.ObservableCounter(ProcessCPUTime, func(_ context.Context, o kernel.GaugeObserver) error {
 		var ru syscall.Rusage
 		if err := syscall.Getrusage(syscall.RUSAGE_SELF, &ru); err != nil {
 			return fmt.Errorf("getrusage: %w", err)
