@@ -1,6 +1,6 @@
 # ADR-0055: サービスメトリクスの可観測性
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #645
@@ -10,7 +10,7 @@
 決定者の指示（原文）: 「Observability についての方針を2つ建てる。1つはサービスメトリクスとしての Observability を保証するもの。1つはシステムメトリクスとしての Observability を保証するもの。この2つがないとオートスケーリングなどの契機が作れない。」
 
 この ADR は **サービスの指標**（利用者から見た振る舞い: リクエスト・連合・ジョブ・配送・ストリーム・業務の数）と、
-システムの指標の ADR（ADR-0056 システムメトリクスの可観測性、#646）と共有する **計測の手段**（ライブラリ、port、エクスポートの経路、ラベルの規則）を決める。
+システムの指標の ADR（[ADR-0056](0056-system-observability.md) システムメトリクスの可観測性、#646）と共有する **計測の手段**（ライブラリ、port、エクスポートの経路、ラベルの規則）を決める。
 プロセス・Go のランタイム・CPU・メモリ・DB の接続プール・アダプタの資源の指標は ADR-0056 が扱う。
 
 今のサーバーが出すのは slog の JSON ログと `request_id` だけである（`internal/platform/log.go`）。メトリクスも `/metrics` もトレースもない。
@@ -78,9 +78,7 @@ OpenTelemetry Go（`go.opentelemetry.io/otel`・`otel/metric`・`otel/sdk` v1.47
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: A（自前の `Meter` port + OpenTelemetry Go SDK のアダプタ）と、契機は c（基盤の指標を優先し、足りない分だけアプリが出す）。**
+**決定: A（自前の `Meter` port + OpenTelemetry Go SDK のアダプタ）と、契機は c（基盤の指標を優先し、足りない分だけアプリが出す）。**
 エクスポートの既定は `none` で、ターゲットごとに Prometheus（pull）・OTLP（push）・EMF（ログ）から選ぶ。
 出来事の数はプロセスごとに持ってバックエンドで集計し、インスタンス全体の値（キューの滞留・利用者数・メディアの容量）は KV に置く 1 つのスナップショットを全プロセスで共有する。トレースはこの ADR では保証しない。
 
@@ -109,7 +107,7 @@ D を選ばない理由: 費用は最も小さいが、Self-hosted のキュー�
 
 設定は `metrics_exporter`（`none` | `prometheus` | `otlp` | `emf`）。既定は `none`。
 
-| ターゲット | 推奨の設定 | 経路 | 追加の固定費 |
+| ターゲット | 設定 | 経路 | 追加の固定費 |
 | --- | --- | --- | --- |
 | Self-hosted（Docker Compose / microk8s） | `prometheus` | 公開のリスナーとは別のアドレス `metrics_listen`（既定 `127.0.0.1:9464`）で `/metrics` を出し、Prometheus 互換のサーバー（Prometheus・VictoriaMetrics など）が scrape する。KEDA はそこを読む | Prometheus 互換のサーバーの分だけ（運用者が選ぶ。M6 で計測） |
 | Google Cloud（Cloud Run） | `none` | 基盤の指標（リクエスト数・遅延・インスタンス数、Cloud Tasks のキューの深さ）と、構造化ログ（§5）から作る **ログベースの指標** をデプロイのテンプレートが定義する | ログベースの指標の課金（要検証）。インスタンスベース課金にするなら `otlp` + コレクターのサイドカーも選べる |
@@ -200,7 +198,7 @@ web・worker を分けたり、レプリカ・サーバーレスのインスタ�
 - 連合先ごとの状態（配送の失敗の続き、到達できないホスト）はメトリクスでなく DB と管理画面（NFR-OPS-3、[federation.md](../architecture/federation.md)）で見る
 - 資源の属性（OTel の resource）は `service.name`（既定 `my`）、`service.version`、`my.role`（`web` / `worker` / `all`）と、基盤が与えるインスタンスの識別子だけにする
 
-### 7. オートスケーリングの契機（推奨案 c）
+### 7. オートスケーリングの契機（c）
 
 | ターゲット | web の契機 | worker の契機 | アプリの指標の役割 |
 | --- | --- | --- | --- |
@@ -249,7 +247,7 @@ OTel を計測の基盤に選ぶので、トレースを足すときも同じ SD
   - スナップショット（§4）: 計算の関数、KV の名前空間 `metrics` とロック、定期ジョブ `metrics.snapshot`、`my.metrics.snapshot.age`
   - DB キューの `my.queue.*` と、メディアの容量 `my.media.stored_bytes` の問い合わせ
   - M6: Cloud Run のログベースの指標・CloudWatch のダッシュボードとアラーム・microk8s の KEDA の `ScaledObject` と Prometheus の設定をデプロイのテンプレートに入れる
-  - [overview.md](../architecture/overview.md) の port の表（`Logger` / `Tracer`）を、この ADR が Accepted になったら `Meter` に合わせて直す
+  - [overview.md](../architecture/overview.md) の port の表（`Logger` / `Tracer`）を `Meter` に合わせて直す
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
