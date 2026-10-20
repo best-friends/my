@@ -1,4 +1,68 @@
 {
+  "about.description.title": {
+    "defaultMessage": "‮ᗡǝsɔɹıdʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "‮No sǝɹʌǝɹs ɐɹǝ ɯopǝɹɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ʇɥǝ ɯopǝɹɐʇǝp sǝɹʌǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ʅıɯıʇs oɹ snsdǝups ɟǝpǝɹɐʇıou ʍıʇɥ ʇɥǝsǝ sǝɹʌǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "‮⅂ıɯıʇǝp: ıʇs dosʇs sʇɐʎ oɟɟ ʇɥǝ dnqʅıɔ ʇıɯǝʅıuǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "‮Snsdǝupǝp: uo ɟǝpǝɹɐʇıou ɐʇ ɐʅʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ʇɥǝ ɯopǝɹɐʇǝp sǝɹʌǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.more": {
+    "defaultMessage": "‮Sɥoʍ ɯoɹǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ɯoɹǝ sǝɹʌǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "‮Soɯǝ sǝɹʌǝɹ uɐɯǝs ɐɹǝ dɐɹʇʅʎ ɥıppǝu ʍıʇɥ *.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "‮Sıƃu ıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "‮Ouʅʎ sıƃuǝp-ıu nsǝɹs ɔɐu sǝǝ ʇɥıs ʅısʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.domains.title": {
+    "defaultMessage": "‮Wopǝɹɐʇǝp sǝɹʌǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.rules.title": {
+    "defaultMessage": "‮ᴚnʅǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.title": {
+    "defaultMessage": "‮∀qonʇ {instance}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "account_status.active.empty": {
     "defaultMessage": "‮No ɐɔʇıous ɐɹǝ ıu ǝɟɟǝɔʇ ou ʎonɹ ɐɔɔonuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6377,6 +6441,10 @@
   },
   "shell.about.domain": {
     "defaultMessage": "‮∀ɔɔonuʇs ɥǝɹǝ ǝup ʍıʇɥ @{domain}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.about.more": {
+    "defaultMessage": "‮Woɹǝ ɐqonʇ ʇɥıs sǝɹʌǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.about.title": {

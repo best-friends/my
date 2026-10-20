@@ -1,4 +1,68 @@
 {
+  "about.description.title": {
+    "defaultMessage": "Description",
+    "description": "Heading of the section of the server's information page with the server's description."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "No servers are moderated",
+    "description": "Shown in place of the list of moderated servers when there are none."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "Couldn't load the moderated servers",
+    "description": "Heading shown in place of the list of moderated servers when it could not be loaded."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "This server limits or suspends federation with these servers.",
+    "description": "Explanation under the heading of the list of moderated servers on the server's information page."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "Limited: its posts stay off the public timelines",
+    "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "Suspended: no federation at all",
+    "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "Loading the moderated servers",
+    "description": "Accessible name of the progress indicator while the list of moderated servers loads."
+  },
+  "about.domains.more": {
+    "defaultMessage": "Show more",
+    "description": "Button under the list of moderated servers that loads more of them."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "Couldn't load more servers",
+    "description": "Shown under the list of moderated servers when its next page could not be loaded."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "Some server names are partly hidden with *.",
+    "description": "Note above the list of moderated servers when the moderators hid part of some servers' names."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that tries again to load the list of moderated servers after a failure."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Link after the note that only signed-in users can see the list of moderated servers; it opens the sign-in screen."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "Only signed-in users can see this list.",
+    "description": "Shown in place of the list of moderated servers to a visitor who is not signed in, when the server shows it to signed-in users only."
+  },
+  "about.domains.title": {
+    "defaultMessage": "Moderated servers",
+    "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.rules.title": {
+    "defaultMessage": "Rules",
+    "description": "Heading of the section of the server's information page with the server's rules."
+  },
+  "about.title": {
+    "defaultMessage": "About {instance}",
+    "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
+  },
   "account_status.active.empty": {
     "defaultMessage": "No actions are in effect on your account",
     "description": "Shown when no moderation action is in effect on the user's account."
@@ -5978,6 +6042,10 @@
   "shell.about.domain": {
     "defaultMessage": "Accounts here end with @{domain}.",
     "description": "In the side column about this server: the domain of the handles of local accounts, for example 'Accounts here end with @example.com.'."
+  },
+  "shell.about.more": {
+    "defaultMessage": "More about this server",
+    "description": "Link in the side column about this server to the server's information page."
   },
   "shell.about.title": {
     "defaultMessage": "About this server",
