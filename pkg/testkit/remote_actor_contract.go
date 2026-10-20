@@ -114,7 +114,7 @@ func newRemoteEnv(t *testing.T, newHarness RemoteActorFactory) *remoteEnv {
 		UnitOfWork: h.UnitOfWork, Repository: h.Accounts, Clock: clock, IDs: ids,
 		Sealer: kernel.NewSealer(NewKeyManager("remote")), Host: contractHost, GenerateKey: cachedKey,
 		Sanitizer: remoteSanitizer{},
-		RecordRemoteImage: func(_ context.Context, _ uow.Tx, accountID, u string) (string, error) {
+		RecordRemoteImage: func(_ context.Context, _ uow.Tx, accountID, u string, _ account.ProfileProperty) (string, error) {
 			k := accountID + " " + u
 			if images[k] == "" {
 				images[k] = ids.NewID()

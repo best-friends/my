@@ -1393,14 +1393,16 @@ CREATE TABLE remote_status_revisions (
   html_policy_version INTEGER NOT NULL
 ) STRICT;
 
--- Resource (subtype of media_files): a remote file as the received document declared it. The
--- file itself is not fetched. owner_account_id copies media_files.owner_account_id.
+-- Resource (subtype of media_files): a remote file as the received document declared it, and
+-- what it was recorded for (purpose), which sizes the media proxy's small variant (ADR-0054).
+-- The file itself is not fetched. owner_account_id copies media_files.owner_account_id.
 CREATE TABLE remote_media (
   media_id TEXT NOT NULL PRIMARY KEY,
   owner_account_id TEXT NOT NULL,
   remote_url TEXT NOT NULL,
   declared_content_type TEXT,
   declared_media_type TEXT NOT NULL CHECK (declared_media_type IN ('image', 'gifv', 'video', 'audio', 'unknown')),
+  purpose TEXT NOT NULL CHECK (purpose IN ('attachment', 'avatar', 'header', 'emoji')),
   width INTEGER,
   height INTEGER,
   blurhash TEXT,

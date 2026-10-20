@@ -12,28 +12,28 @@ WHERE revision_id = @revision_id;
 
 -- name: InsertRemoteMedia :execrows
 INSERT INTO remote_media (
-  media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+  media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 ) VALUES (
-  @media_id, @owner_account_id, @remote_url, @declared_content_type, @declared_media_type, @width, @height,
+  @media_id, @owner_account_id, @remote_url, @declared_content_type, @declared_media_type, @purpose, @width, @height,
   @blurhash, @focus_x, @focus_y, @description
 )
 ON CONFLICT (owner_account_id, remote_url) DO NOTHING;
 
 -- name: GetRemoteMediaByURL :one
-SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE owner_account_id = @owner_account_id AND remote_url = @remote_url;
 
 -- name: GetRemoteMedia :one
-SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE media_id = @media_id;
 
 -- ListRemoteMedia returns the remote media files with an ID in @media_ids, for the images of a
 -- page of accounts.
 -- name: ListRemoteMedia :many
-SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE media_id IN (SELECT value FROM json_each(CAST(@media_ids AS TEXT))) ORDER BY media_id;
 

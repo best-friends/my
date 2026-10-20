@@ -86,6 +86,16 @@ func TestMediaProxy(t *testing.T) {
 	if resp.StatusCode != http.StatusOK || body != string(png) {
 		t.Fatalf("GET %s = %d, %d bytes", path, resp.StatusCode, len(body))
 	}
+	// The small variant is a still WebP made from the file (ADR-0054 §7).
+	small := strings.Replace(path, "/full?", "/small?", 1)
+	id := strings.TrimPrefix(strings.Split(path, "/full?")[0], content.ProxyPathPrefix)
+	if u, err := url.Parse(s.app.MediaProxy.URL(id, content.ProxySmall)); err == nil {
+		small = u.RequestURI()
+	}
+	if resp, body := s.do(t, http.MethodGet, small, nil); resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "image/webp" ||
+		!strings.HasPrefix(body, "RIFF") || resp.Header.Get("Cache-Control") != "public, max-age=86400" {
+		t.Errorf("GET %s = %d %s %q", small, resp.StatusCode, resp.Header.Get("Content-Type"), resp.Header.Get("Cache-Control"))
+	}
 	for k, want := range map[string]string{
 		"Content-Type":                 "image/png",
 		"X-Content-Type-Options":       "nosniff",

@@ -20,6 +20,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
 )
@@ -30,10 +31,12 @@ type RemoteMediaInput struct {
 	RemoteURL           string
 	DeclaredContentType string
 	DeclaredMediaType   content.MediaType
-	Width, Height       int
-	Blurhash            string
-	Focus               *content.MediaFocus
-	Description         string
+	// Purpose is what the file is recorded for; "" is content.PurposeAttachment.
+	Purpose       content.MediaPurpose
+	Width, Height int
+	Blurhash      string
+	Focus         *content.MediaFocus
+	Description   string
 }
 
 // RecordRemoteMedia records a remote media file inside tx: the media file (origin remote) and
@@ -51,9 +54,13 @@ func (s *MediaService) RecordRemoteMedia(ctx context.Context, tx uow.Tx, in Remo
 	if kind == "" {
 		kind = content.MediaTypeUnknown
 	}
+	purpose := in.Purpose
+	if !purpose.Valid() {
+		purpose = content.PurposeAttachment
+	}
 	m := content.RemoteMedia{
 		MediaID: s.d.IDs.NewID(), OwnerAccountID: in.OwnerAccountID, RemoteURL: in.RemoteURL,
-		DeclaredContentType: in.DeclaredContentType, DeclaredMediaType: kind,
+		DeclaredContentType: in.DeclaredContentType, DeclaredMediaType: kind, Purpose: purpose,
 		Width: in.Width, Height: in.Height, Blurhash: in.Blurhash, Description: in.Description,
 	}
 	if in.Focus != nil {
@@ -113,6 +120,10 @@ type ProxyDeps struct {
 	// ProfileImages tells the avatars and headers of profiles, which the avatars policy caches
 	// with the custom emoji images; nil caches only the custom emoji images under it.
 	ProfileImages MediaReferrer
+	// Processor makes the small variant (ProxySmall) of remote images, within Sizes (zero
+	// fields take media.DefaultSizes); without it the proxy serves no small variant.
+	Processor media.Processor
+	Sizes     media.Sizes
 	// MaxCacheSize bounds the total size of the cache in bytes; zero means
 	// DefaultRemoteMediaCacheMaxSize. The cleanup deletes the least recently accessed copies
 	// over it.
@@ -158,6 +169,7 @@ func NewMediaProxy(d ProxyDeps) (*MediaProxy, error) {
 		d.MaxCacheSize = DefaultRemoteMediaCacheMaxSize
 	}
 	d.BaseURL = strings.TrimSuffix(d.BaseURL, "/")
+	d.Sizes = d.Sizes.WithDefaults()
 	return &MediaProxy{d: d}, nil
 }
 
@@ -168,10 +180,14 @@ type ProxyVariant string
 const (
 	// ProxyFull is the remote file itself.
 	ProxyFull ProxyVariant = "full"
+	// ProxySmall is the small still variant of a remote image within the boxes of the purpose
+	// it was recorded for (ADR-0054 §7): of an animation, its first frame. Video and audio
+	// have none.
+	ProxySmall ProxyVariant = "small"
 )
 
 // proxyVariants are the variants the proxy serves.
-var proxyVariants = map[ProxyVariant]bool{ProxyFull: true}
+var proxyVariants = map[ProxyVariant]bool{ProxyFull: true, ProxySmall: true}
 
 // URL returns the signed proxy URL of a remote media file's variant.
 func (p *MediaProxy) URL(mediaID string, variant ProxyVariant) string {
@@ -223,7 +239,7 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if !p.verify(mediaID, variant, sig) {
 		return nil, notFound("bad signature")
 	}
-	if !proxyVariants[ProxyVariant(variant)] {
+	if !proxyVariants[ProxyVariant(variant)] || ProxyVariant(variant) == ProxySmall && p.d.Processor == nil {
 		return nil, notFound("unknown variant")
 	}
 	m, err := p.d.Repository.FindRemoteMedia(ctx, mediaID)
@@ -252,10 +268,91 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if err != nil {
 		return nil, err
 	}
+	if ProxyVariant(variant) == ProxySmall {
+		return p.openSmall(ctx, m, settings.CacheTTL, cache)
+	}
 	if cache {
 		return p.openCached(ctx, m, settings.CacheTTL)
 	}
 	return p.relay(ctx, m, settings.CacheTTL)
+}
+
+// smallCacheURL is the key of the small variant of m in the remote media cache: its URL with
+// the variant and the purpose, which sizes it, as a fragment.
+func smallCacheURL(m content.RemoteMedia) string {
+	return m.RemoteURL + "#" + string(ProxySmall) + "-" + string(m.Purpose)
+}
+
+// openSmall serves the small still variant of a remote image (ADR-0054 §7). It makes it from the
+// file, which it fetches or reads from its cached copy as the full variant would, on every
+// request; under a policy that caches m, it keeps the variant in the cache too.
+func (p *MediaProxy) openSmall(ctx context.Context, m content.RemoteMedia, ttl time.Duration, cache bool) (*ProxiedMedia, error) {
+	notFound := func(why string) error {
+		return fmt.Errorf("proxy media %s/%s: %s: %w", m.MediaID, ProxySmall, why, ErrNotFound)
+	}
+	switch m.DeclaredMediaType {
+	case content.MediaTypeVideo, content.MediaTypeGIFV, content.MediaTypeAudio:
+		return nil, notFound("not an image")
+	}
+	key := smallCacheURL(m)
+	if cache {
+		if pm, err := p.openCopy(ctx, key, ttl); pm != nil || err != nil {
+			return pm, err
+		}
+	}
+	var (
+		src *ProxiedMedia
+		err error
+	)
+	if cache {
+		src, err = p.openCached(ctx, m, ttl)
+	} else {
+		src, err = p.relay(ctx, m, ttl)
+	}
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = src.Body.Close() }()
+	if !strings.HasPrefix(src.ContentType, "image/") {
+		return nil, notFound("not an image")
+	}
+	data, err := io.ReadAll(src.Body)
+	if err != nil {
+		return nil, readError(m, err)
+	}
+	req := media.Request{Purpose: media.Purpose(m.Purpose)}
+	if m.Focus != nil {
+		req.FocusX, req.FocusY = m.Focus.X, m.Focus.Y
+	}
+	v, err := p.d.Processor.Preview(ctx, data, media.Limits{}, p.d.Sizes, req)
+	if media.Rejected(err) {
+		return nil, notFound(err.Error())
+	}
+	if err != nil {
+		return nil, fmt.Errorf("proxy media %s/%s: %w", m.MediaID, ProxySmall, err)
+	}
+	if cache {
+		p.keepSmall(ctx, m, key, v, ttl)
+	}
+	return &ProxiedMedia{ContentType: v.ContentType, Length: int64(len(v.Data)), MaxAge: ttl, Body: io.NopCloser(bytes.NewReader(v.Data))}, nil
+}
+
+// keepSmall keeps the small variant v of m in the remote media cache under key. A failure is
+// logged: the variant is served anyway and made again next time.
+func (p *MediaProxy) keepSmall(ctx context.Context, m content.RemoteMedia, key string, v media.Variant, ttl time.Duration) {
+	blobKey := remoteMediaKey(key)
+	info, err := p.d.Blobs.Put(ctx, blobKey, bytes.NewReader(v.Data), blob.PutOptions{ContentType: v.ContentType})
+	if err == nil {
+		now := p.d.Clock.Now()
+		e := content.RemoteMediaCacheEntry{
+			URL: key, BlobKey: blobKey, ContentType: v.ContentType, FileSize: info.Size,
+			FetchedAt: now, ExpiresAt: now.Add(ttl), LastAccessedAt: now,
+		}
+		err = p.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return p.d.Repository.UpsertRemoteMediaCache(ctx, tx, e) })
+	}
+	if err != nil {
+		p.d.Logger.WarnContext(ctx, "small variant of remote media not cached", slog.String("media_id", m.MediaID), slog.Any("error", err))
+	}
 }
 
 // rejects returns the first of domains whose media are rejected (the media_fetch restriction of

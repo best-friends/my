@@ -71,7 +71,12 @@ func (s *MediaService) CustomEmojis(ctx context.Context, ids []string) (map[stri
 			continue
 		}
 		proxied := s.d.Proxy.URL(m.MediaID, ProxyFull)
-		out[e.Emoji.ID] = CustomEmojiView{ID: e.Emoji.ID, Shortcode: e.Emoji.Shortcode, URL: proxied, StaticURL: proxied}
+		// The still version is the proxy's small variant (ADR-0054 §7), when the proxy can make it.
+		still := proxied
+		if s.d.Proxy.d.Processor != nil {
+			still = s.d.Proxy.URL(m.MediaID, ProxySmall)
+		}
+		out[e.Emoji.ID] = CustomEmojiView{ID: e.Emoji.ID, Shortcode: e.Emoji.Shortcode, URL: proxied, StaticURL: still}
 	}
 	return out, nil
 }

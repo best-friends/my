@@ -149,7 +149,7 @@ func (q *Queries) GetPollByRevision(ctx context.Context, revisionID string) (Pol
 }
 
 const getRemoteMedia = `-- name: GetRemoteMedia :one
-SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE media_id = ?1
 `
@@ -163,6 +163,7 @@ func (q *Queries) GetRemoteMedia(ctx context.Context, mediaID string) (RemoteMed
 		&i.RemoteUrl,
 		&i.DeclaredContentType,
 		&i.DeclaredMediaType,
+		&i.Purpose,
 		&i.Width,
 		&i.Height,
 		&i.Blurhash,
@@ -174,7 +175,7 @@ func (q *Queries) GetRemoteMedia(ctx context.Context, mediaID string) (RemoteMed
 }
 
 const getRemoteMediaByURL = `-- name: GetRemoteMediaByURL :one
-SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE owner_account_id = ?1 AND remote_url = ?2
 `
@@ -193,6 +194,7 @@ func (q *Queries) GetRemoteMediaByURL(ctx context.Context, arg GetRemoteMediaByU
 		&i.RemoteUrl,
 		&i.DeclaredContentType,
 		&i.DeclaredMediaType,
+		&i.Purpose,
 		&i.Width,
 		&i.Height,
 		&i.Blurhash,
@@ -380,11 +382,11 @@ func (q *Queries) InsertPollTallyObservationCount(ctx context.Context, arg Inser
 
 const insertRemoteMedia = `-- name: InsertRemoteMedia :execrows
 INSERT INTO remote_media (
-  media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+  media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 ) VALUES (
-  ?1, ?2, ?3, ?4, ?5, ?6, ?7,
-  ?8, ?9, ?10, ?11
+  ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8,
+  ?9, ?10, ?11, ?12
 )
 ON CONFLICT (owner_account_id, remote_url) DO NOTHING
 `
@@ -395,6 +397,7 @@ type InsertRemoteMediaParams struct {
 	RemoteUrl           string
 	DeclaredContentType sql.NullString
 	DeclaredMediaType   string
+	Purpose             string
 	Width               sql.NullInt64
 	Height              sql.NullInt64
 	Blurhash            sql.NullString
@@ -410,6 +413,7 @@ func (q *Queries) InsertRemoteMedia(ctx context.Context, arg InsertRemoteMediaPa
 		arg.RemoteUrl,
 		arg.DeclaredContentType,
 		arg.DeclaredMediaType,
+		arg.Purpose,
 		arg.Width,
 		arg.Height,
 		arg.Blurhash,
@@ -681,7 +685,7 @@ func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observatio
 }
 
 const listRemoteMedia = `-- name: ListRemoteMedia :many
-SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, width, height,
+SELECT media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
   blurhash, focus_x, focus_y, description
 FROM remote_media WHERE media_id IN (SELECT value FROM json_each(CAST(?1 AS TEXT))) ORDER BY media_id
 `
@@ -703,6 +707,7 @@ func (q *Queries) ListRemoteMedia(ctx context.Context, mediaIds string) ([]Remot
 			&i.RemoteUrl,
 			&i.DeclaredContentType,
 			&i.DeclaredMediaType,
+			&i.Purpose,
 			&i.Width,
 			&i.Height,
 			&i.Blurhash,

@@ -659,6 +659,7 @@ type RemoteMedium struct {
 	RemoteUrl           string
 	DeclaredContentType sql.NullString
 	DeclaredMediaType   string
+	Purpose             string
 	Width               sql.NullInt64
 	Height              sql.NullInt64
 	Blurhash            sql.NullString

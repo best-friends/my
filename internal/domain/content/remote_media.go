@@ -20,10 +20,13 @@ type RemoteMedia struct {
 	// media proxy detects the type from the content.
 	DeclaredContentType string
 	DeclaredMediaType   MediaType
-	Width, Height       int
-	Blurhash            string
-	Focus               *MediaFocus
-	Description         string
+	// Purpose is what the file was recorded for: an attachment, an avatar, a header, or a
+	// custom emoji. It sizes the media proxy's small variant.
+	Purpose       MediaPurpose
+	Width, Height int
+	Blurhash      string
+	Focus         *MediaFocus
+	Description   string
 }
 
 // RemoteMediaCacheEntry is a remote file that the media proxy copied into blob storage

@@ -45,6 +45,7 @@ func MediaProcessorContract(t *testing.T, p media.Processor) {
 		{"CropsAvatarsAroundTheFocus", mediaCropsAvatars},
 		{"WritesTheDocumentedFormats", mediaWritesFormats},
 		{"MakesStillAndMovingVariantsOfAnimations", mediaAnimates},
+		{"PreviewsTheSmallStillVariant", mediaPreviews},
 		{"ComputesABlurhash", mediaComputesBlurhash},
 		{"GivesTheSameOutputForTheSameInput", mediaIsDeterministic},
 		{"StopsOnCancelledContext", mediaStopsOnCancel},
@@ -499,6 +500,40 @@ func mediaAnimates(t *testing.T, p media.Processor) {
 	g, err := gif.DecodeAll(bytes.NewReader(out.Animated.Large.Data))
 	if err != nil || len(g.Image) != 3 || g.Delay[1] != 10 || g.Config.Width != 32 || g.Config.Height != 32 {
 		t.Errorf("resized gif: %v frames, %v, %v", len(g.Image), g, err)
+	}
+}
+
+func mediaPreviews(t *testing.T, p media.Processor) {
+	for name, data := range map[string][]byte{
+		"jpeg": FixtureJPEG(400, 200, 6), "png with alpha": FixturePNG(400, 200, true), "gif": FixtureGIF(200, 100, 3),
+		"webp animation": FixtureWebPAnimation(200, 100, 3), "webp lossy": FixtureWebPLossy,
+	} {
+		for _, req := range []media.Request{{}, {Purpose: media.PurposeAvatar, FocusX: -1}, {Purpose: media.PurposeEmoji}} {
+			v, err := p.Preview(t.Context(), data, media.Limits{}, media.Sizes{}, req)
+			if err != nil {
+				t.Errorf("%s %s: Preview: %v", name, req.Purpose, err)
+				continue
+			}
+			small := mediaProcessFor(t, p, data, media.Sizes{}, req).Still.Small
+			if v.ContentType != "image/webp" || v.Extension != "webp" || webpAnimationFlag(v.Data) || v.Width != small.Width || v.Height != small.Height {
+				t.Errorf("%s %s: Preview = %s %d×%d, want a still WebP of %d×%d", name, req.Purpose, v.ContentType, v.Width, v.Height, small.Width, small.Height)
+				continue
+			}
+			decodeVariant(t, v)
+			if bytes.Contains(v.Data, []byte(MetadataMarker)) {
+				t.Errorf("%s: Preview keeps the metadata", name)
+			}
+		}
+	}
+	for name, data := range map[string][]byte{"svg": []byte("<svg/>"), "bomb": FixturePNGHeader(65535, 65535), "truncated": FixtureJPEG(40, 20, 1)[:200]} {
+		if _, err := p.Preview(t.Context(), data, media.Limits{}, media.Sizes{}, media.Request{}); !media.Rejected(err) {
+			t.Errorf("%s: Preview = %v, want a rejection", name, err)
+		}
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := p.Preview(ctx, FixtureJPEG(40, 20, 1), media.Limits{}, media.Sizes{}, media.Request{}); err == nil || media.Rejected(err) {
+		t.Errorf("Preview with a cancelled context = %v, want the context's error", err)
 	}
 }
 

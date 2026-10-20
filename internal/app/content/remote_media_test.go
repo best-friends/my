@@ -17,6 +17,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/media"
 	domain "github.com/best-friends/my/internal/domain/content"
 )
 
@@ -319,4 +320,68 @@ func TestNewMediaProxyNeedsAKey(t *testing.T) {
 			t.Errorf("NewMediaProxy(%q) succeeded", keys)
 		}
 	}
+}
+
+// openSmall opens the small variant of a remote media file through proxy.
+func openSmall(t *testing.T, proxy *content.MediaProxy, id string) (*content.ProxiedMedia, []byte, error) {
+	t.Helper()
+	u, err := url.Parse(proxy.URL(id, content.ProxySmall))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := proxy.Open(t.Context(), id, string(content.ProxySmall), u.Query().Get("sig"))
+	if err != nil {
+		return nil, nil, err
+	}
+	defer func() { _ = m.Body.Close() }()
+	data, err := io.ReadAll(m.Body)
+	return m, data, err
+}
+
+func TestMediaProxySmallVariant(t *testing.T) {
+	e := newProxyEnv(t)
+	e.add(pngID, "https://remote.example/a.png", domain.MediaTypeImage, fakeResponse{body: pngData})
+	mp4 := append([]byte("\x00\x00\x00\x18ftypisom\x00\x00\x02\x00isomiso2mp41"), make([]byte, 1000)...)
+	e.add(remoteMP, "https://remote.example/v.mp4", domain.MediaTypeUnknown, fakeResponse{body: mp4})
+	const videoID = "0192f0c1-0000-7000-8000-000000000003"
+	e.add(videoID, "https://remote.example/w.mp4", domain.MediaTypeVideo, fakeResponse{body: mp4})
+
+	// Without a processor, there is no small variant.
+	if _, _, err := openSmall(t, e.proxy, pngID); !errors.Is(err, content.ErrNotFound) {
+		t.Errorf("small without a processor = %v, want ErrNotFound", err)
+	}
+
+	proxy, err := content.NewMediaProxy(content.ProxyDeps{
+		Repository: e.repo, HTTP: e.http, Accounts: domains{ownerID: "remote.example"}, Policy: e.rej,
+		Settings: func(context.Context) (content.ProxySettings, error) {
+			return content.ProxySettings{Policy: content.RemoteMediaCacheNone, CacheTTL: time.Hour}, nil
+		},
+		Keys: [][]byte{bytes.Repeat([]byte("k"), 32)}, BaseURL: "https://social.example/", Processor: stubPreview{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, data, err := openSmall(t, proxy, pngID)
+	want, _ := stubPreview{}.Preview(t.Context(), pngData, media.Limits{}, media.Sizes{}, media.Request{})
+	if err != nil || m.ContentType != want.ContentType || !bytes.Equal(data, want.Data) || m.MaxAge != time.Hour {
+		t.Errorf("small = %+v, %q, %v; want the preview", m, data, err)
+	}
+	// Content that is not an image, and a declared video, have no small variant; the video is
+	// not even fetched.
+	before := len(e.http.requests)
+	for _, id := range []string{remoteMP, videoID} {
+		if _, _, err := openSmall(t, proxy, id); !errors.Is(err, content.ErrNotFound) {
+			t.Errorf("small of %s = %v, want ErrNotFound", id, err)
+		}
+	}
+	if n := len(e.http.requests) - before; n != 1 {
+		t.Errorf("%d fetches, want 1 (the video declared as one is not fetched)", n)
+	}
+}
+
+// stubPreview is a media.Processor whose preview is the source behind a marker.
+type stubPreview struct{ media.Processor }
+
+func (stubPreview) Preview(_ context.Context, data []byte, _ media.Limits, _ media.Sizes, _ media.Request) (media.Variant, error) {
+	return media.Variant{Data: append([]byte("small:"), data[:8]...), ContentType: "image/webp", Extension: "webp", Width: 1, Height: 1}, nil
 }

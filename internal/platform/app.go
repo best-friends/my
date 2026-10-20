@@ -525,6 +525,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	if err := a.setMediaProcessor(cfg); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// The media service presents remote files with the proxy's signed URLs, so the proxy comes first.
 	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
 		_ = a.Close()
@@ -750,15 +754,20 @@ func (a *App) themeStylesheet(ctx context.Context) string {
 	return web.ThemeStylesheetPath(rev.ID)
 }
 
-// setMedia builds the blob store, the media processor, and the media use cases, and registers
-// their jobs and schedules.
-func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
+// setMediaProcessor builds the media processor, which the media proxy and the media use cases
+// share.
+func (a *App) setMediaProcessor(cfg *config.Config) error {
 	switch cfg.Media {
 	case "native":
 		a.MediaProcessor = native.New(native.Options{})
 	default:
 		return fmt.Errorf("media %q is not implemented yet", cfg.Media)
 	}
+	return nil
+}
+
+// setMedia builds the media use cases, and registers their jobs and schedules.
+func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository) error {
 	a.Media = content.NewMediaService(content.MediaDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Blobs: a.Blobs, Processor: a.MediaProcessor,
 		Outbox: a.Outbox, Jobs: a.Jobs, Clock: a.Clock, IDs: a.IDs,
@@ -819,8 +828,8 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*c
 		},
 		// The account module's avatars and headers are what the avatars policy keeps.
 		UnitOfWork: a.UnitOfWork, Blobs: a.Blobs, Clock: a.Clock, ProfileImages: a.Accounts,
-		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes,
-		Keys:         keys, BaseURL: cfg.ServerOrigin(), Logger: a.Logger,
+		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes, Processor: a.MediaProcessor,
+		Keys: keys, BaseURL: cfg.ServerOrigin(), Logger: a.Logger,
 	})
 	if err != nil {
 		return nil, err

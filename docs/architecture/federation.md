@@ -422,7 +422,11 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - クライアント API は、リモートのメディアの URL を **メディアプロキシの URL** `https://{host}/media/proxy/{media_id}/{variant}?sig=…`（`content.MediaProxy.URL`）で返します。
   `sig` は `media_id` と `variant` の HMAC-SHA256（base64url）で、プロキシを任意の URL の中継に使わせません。
   鍵は設定 `kek` から HKDF-SHA256 で導くので、プロキシに専用の秘密はありません。`kek_previous` から導いた鍵も検証に使うので、KEK のローテーション中も前の URL が使えます。
-  `variant` は元のファイルそのものの `full` だけです。
+  `variant` は元のファイルそのものの `full` と、静止画の小さい版の `small` です（[ADR-0054](../adr/0054-media-variants-video-audio.md) §7）。
+  - `small` は、記録したときの用途（`remote_media.purpose`: 添付・アイコン・ヘッダー・絵文字）の S の箱（ローカルの版と同じ、data-model §4.4）に縮めた静止画の WebP です。アニメーションは最初のフレームです。
+    プロキシが `full` と同じように取得して（キャッシュがあればそこから読んで）、要求のたびに `media.Processor.Preview` で作ります。宣言が動画・音声・`gifv` のもの、中身が画像でないもの、処理できないものは 404 です。
+    `remote_media_policy` がそのファイルをキャッシュするときは、`remote_media_cache` に URL と用途を合わせたキー（`{URL}#small-{purpose}`）でも保存します。M / L は作らず、`full` を使います。
+  - クライアント API はリモートの画像の `small` にこの URL を、`medium` / `large` に `full` を載せます。リモートのアカウントのアイコン・ヘッダーと添付の `preview_url` が小さくなり、アニメーションを止めて表示できます。
 - プロキシ（`content.MediaProxy` と `internal/interface/media`）は、`HTTPClient` で元の URL を取得し、形式を中身の先頭のバイトで判定して（ADR-0019 §8。許可リストは JPEG / PNG / GIF / WebP / AVIF / MP4 / WebM / MP3 / Ogg で、SVG は拒否）、
   判定した `Content-Type`、`Cache-Control: public, max-age={remote_media_cache_ttl}`、`X-Content-Type-Options: nosniff`、`Content-Security-Policy: default-src 'none'; sandbox`、`Cross-Origin-Resource-Policy: cross-origin` を付けて中継します。
   リモートのヘッダ（`Content-Type` など）と利用者のリクエストのヘッダは使いません。CDN がキャッシュします（NFR-COST-4）。

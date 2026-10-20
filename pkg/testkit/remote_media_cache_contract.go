@@ -16,6 +16,7 @@ import (
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/media"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
 )
@@ -77,6 +78,7 @@ func newCacheEnv(t *testing.T, e *mediaEnv, maxSize int64) *cacheEnv {
 		},
 		UnitOfWork: e.h.UnitOfWork, Blobs: e.blobs, Clock: e.clock, ProfileImages: e.referrers,
 		MaxCacheSize: maxSize, Keys: [][]byte{bytes.Repeat([]byte("k"), 32)}, BaseURL: "https://social.example",
+		Processor: FakeMediaProcessor{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -231,6 +233,56 @@ func mediaCachesRemoteMedia(t *testing.T, e *mediaEnv) {
 		if n, want := c.net.count(tc.m.RemoteURL), map[bool]int{false: 2, true: 1}[tc.kept]; n != want {
 			t.Errorf("avatars fetched %s %d times, want %d", tc.m.RemoteURL, n, want)
 		}
+	}
+}
+
+// mediaCachesSmallRemoteVariants checks the media proxy's small variant (ADR-0054 §7): made
+// from the remote file on every request under none, and kept in the cache next to the file,
+// keyed by the URL and the purpose, under all.
+func mediaCachesSmallRemoteVariants(t *testing.T, e *mediaEnv) {
+	c := newCacheEnv(t, e, 0)
+	m := c.record(t, "https://remote.example/small.png")
+	want, err := FakeMediaProcessor{}.Preview(t.Context(), c.data, media.Limits{}, media.Sizes{}, media.Request{Purpose: media.PurposeAttachment})
+	if err != nil {
+		t.Fatal(err)
+	}
+	open := func() {
+		t.Helper()
+		u, err := url.Parse(c.proxy.URL(m.MediaID, appcontent.ProxySmall))
+		if err != nil {
+			t.Fatal(err)
+		}
+		pm, err := c.proxy.Open(t.Context(), m.MediaID, string(appcontent.ProxySmall), u.Query().Get("sig"))
+		if err != nil {
+			t.Fatalf("Open(small): %v", err)
+		}
+		defer func() { _ = pm.Body.Close() }()
+		got, err := io.ReadAll(pm.Body)
+		if err != nil || !bytes.Equal(got, want.Data) || pm.ContentType != want.ContentType || pm.Length != int64(len(want.Data)) {
+			t.Fatalf("Open(small) = %s, %d, %d bytes, %v; want the preview", pm.ContentType, pm.Length, len(got), err)
+		}
+	}
+	key := m.RemoteURL + "#small-attachment"
+
+	c.set(appcontent.RemoteMediaCacheNone, time.Hour)
+	open()
+	open()
+	if n := c.net.count(m.RemoteURL); n != 2 {
+		t.Errorf("none fetched %d times for 2 requests, want 2", n)
+	}
+	if _, ok := c.entry(t, key); ok {
+		t.Error("none kept the small variant")
+	}
+
+	c.set(appcontent.RemoteMediaCacheAll, time.Hour)
+	open()
+	open()
+	if n := c.net.count(m.RemoteURL); n != 3 {
+		t.Errorf("all fetched %d times in total, want 3 (the second small request served from the cache)", n)
+	}
+	small, ok := c.entry(t, key)
+	if _, full := c.entry(t, m.RemoteURL); !ok || !full || small.ContentType != want.ContentType || !bytes.Equal(e.blobs.Bytes(small.BlobKey), want.Data) {
+		t.Errorf("cache entry of the small variant = %+v, %v (file kept: %v)", small, ok, full)
 	}
 }
 
