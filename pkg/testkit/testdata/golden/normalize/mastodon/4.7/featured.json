@@ -1,0 +1,105 @@
+{
+  "Collection": {
+    "ID": "https://mastodon.example/ap/users/117454922805771612/collections/featured",
+    "Items": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://mastodon.example/ap/users/117454922805771612",
+            "Audience": {
+              "Cc": [
+                "https://mastodon.example/ap/users/117454922805771612/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p>hello from mastodon 1792219932297590019</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351",
+            "Published": "2026-10-17T06:52:12Z",
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "Next": {
+                          "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351/replies?only_other_accounts=true&page=true"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "",
+                    "Trusted": true
+                  },
+                  "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351/replies"
+                }
+              },
+              "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://mastodon.example/@bob/117454925496168351"
+          }
+        },
+        "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351",
+        "Trusted": true
+      },
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://mastodon.example/ap/users/117454922805771612",
+            "Audience": {
+              "Cc": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ],
+              "To": [
+                "https://mastodon.example/ap/users/117454922805771612/followers"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p>unlisted from mastodon.example 1792220104447410152</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454936765897454",
+            "Published": "2026-10-17T06:55:04Z",
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "Next": {
+                          "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454936765897454/replies?only_other_accounts=true&page=true"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "",
+                    "Trusted": true
+                  },
+                  "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454936765897454/replies"
+                }
+              },
+              "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454936765897454/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://mastodon.example/@bob/117454936765897454"
+          }
+        },
+        "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454936765897454",
+        "Trusted": true
+      }
+    ]
+  }
+}

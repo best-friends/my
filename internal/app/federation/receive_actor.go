@@ -63,7 +63,11 @@ func (r *RemoteActors) ReceiveActorUpdate(ctx context.Context, act *federation.A
 	}
 	in := r.input(ctx, actor, doc)
 	return r.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if _, err := r.d.Accounts.UpsertRemoteActor(ctx, tx, in); err != nil {
+		stored, err := r.d.Accounts.UpsertRemoteActor(ctx, tx, in)
+		if err != nil {
+			return err
+		}
+		if err := enqueueFetchFeaturedTx(ctx, tx, r.d.Outbox, stored.ID, actor.ID, actor.Featured); err != nil {
 			return err
 		}
 		return r.seeInstance(ctx, tx, in.Domain)

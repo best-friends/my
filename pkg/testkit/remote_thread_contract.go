@@ -31,6 +31,9 @@ type remoteFetchEnv struct {
 	handlers *queue.JobHandlerRegistry
 	statuses *appfederation.StatusHandlers
 	resolver *appfederation.Resolver
+	// remoteActors fetch and refresh remote actors, which enqueues the fetches of their
+	// featured collections.
+	remoteActors *appfederation.RemoteActors
 	// suspended are the accounts with the federation restriction.
 	suspended remoteSuspensions
 }
@@ -61,10 +64,18 @@ func newRemoteFetchEnv(t *testing.T, e *remoteStatusEnv) *remoteFetchEnv {
 	e.processor = appfederation.NewInboxProcessor(appfederation.InboxProcessorDeps{
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Inbox, Actors: actors, Fetcher: actors, Clock: e.clock,
 	})
+	fe.remoteActors = actors
+	var pins appfederation.RemotePins
+	if e.h.Pins != nil {
+		pins = appcontent.NewInteractions(appcontent.InteractionDeps{
+			UnitOfWork: e.h.UnitOfWork, Statuses: e.h.Statuses, Interactions: e.h.Pins, Accounts: e.accounts,
+			Relationships: e.graph, Clock: e.clock, IDs: e.ids, Host: contractHost,
+		})
+	}
 	fe.statuses = appfederation.NewStatusHandlers(appfederation.StatusHandlersDeps{
 		UnitOfWork: e.h.UnitOfWork, Statuses: e.content, Accounts: e.remote, Actors: actors, Fetcher: actors,
 		Followers: e.graph, Tombstones: e.h.Inbox, Outbox: outbox, Jobs: fe.jobs, KV: kv, Clock: e.clock, Host: contractHost,
-		Profiles: e.remote, Relationships: e.graph, Restrictions: fe.suspended,
+		Profiles: e.remote, Relationships: e.graph, Restrictions: fe.suspended, Pins: pins,
 	})
 	fe.statuses.Register(e.processor)
 	fe.statuses.RegisterJobs(fe.handlers)

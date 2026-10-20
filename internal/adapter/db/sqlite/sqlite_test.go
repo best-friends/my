@@ -265,6 +265,7 @@ func TestRemoteStatusContract(t *testing.T) {
 			Inbox:          db.FederationRepository(),
 			Federation:     db.FederationRepository(),
 			Instances:      db.FederationRepository(),
+			Pins:           db.InteractionRepository(),
 		}
 	})
 }

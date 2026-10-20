@@ -1,0 +1,61 @@
+{
+  "Collection": {
+    "ID": "https://misskey.example/users/asfo7no84zv70002/collections/featured",
+    "Items": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://misskey.example/users/asfo7no84zv70002",
+            "Audience": {
+              "Cc": [
+                "https://misskey.example/users/asfo7no84zv70002/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "hello from misskey 1792224025972706875",
+                "Language": "und"
+              }
+            ],
+            "ID": "https://misskey.example/notes/asfo829i4zv7000d",
+            "Published": "2026-10-17T08:00:25.974Z",
+            "RawType": "Note",
+            "Type": "Note"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfo829i4zv7000d",
+        "Trusted": true
+      },
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://misskey.example/users/asfo7no84zv70002",
+            "Audience": {
+              "Cc": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ],
+              "To": [
+                "https://misskey.example/users/asfo7no84zv70002/followers"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "unlisted from misskey.example 1792224340386942740",
+                "Language": "und"
+              }
+            ],
+            "ID": "https://misskey.example/notes/asfoesv84zv7001s",
+            "Published": "2026-10-17T08:05:40.388Z",
+            "RawType": "Note",
+            "Type": "Note"
+          }
+        },
+        "ID": "https://misskey.example/notes/asfoesv84zv7001s",
+        "Trusted": true
+      }
+    ]
+  }
+}
