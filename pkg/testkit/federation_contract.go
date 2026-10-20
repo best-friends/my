@@ -50,8 +50,9 @@ type FederationFactory func(t *testing.T, opts uow.Options) FederationHarness
 // and the Flag of the instance actor that forwards a report to the reported account's inbox.
 // The documents carry the body of the revision they present
 // (federation.md §7.4); a local status leaves the remote accounts that do not follow its author
-// out of tag (ADR-0035); and the Delete is stored with the deletion, so that it reaches the
-// inboxes of the Create after the status's rows are gone. It also covers one delivery (federation.md §7.3): the classification of
+// out of tag (ADR-0035); the Delete is stored with the deletion, so that it reaches the
+// inboxes of the Create after the status's rows are gone; and the automatic deletion of an old
+// post (FR-118) sends the same Delete as its author's deletion. It also covers one delivery (federation.md §7.3): the classification of
 // responses, the circuit breaker, the failure days that make a server unavailable and the
 // successes, signed requests, and probes that bring it back, and the dead job after the retry
 // schedule. It covers the admin views too: the servers with a health row by state and page, the
@@ -80,6 +81,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"BuildsTheNoteOfTheRevision", fedBuildsTheNote},
 		{"LeavesNonFollowersOutOfTheTagOfLocalStatuses", fedLeavesNonFollowersOutOfLocalTags},
 		{"DeliversTheStoredDeleteAfterThePurge", fedDeliversTheStoredDelete},
+		{"DeliversTheDeleteOfAnAutomaticDeletion", fedDeliversAutoDelete},
 		{"ClassifiesDeliveryResponses", fedClassifiesResponses},
 		{"SignsIntegrityProofs", fedSignsIntegrityProofs},
 		{"BreaksTheCircuitOfAHost", fedBreaksTheCircuit},
@@ -459,13 +461,19 @@ func (e *fedEnv) reviseWith(t *testing.T, s content.Status, edit func(*content.R
 
 func (e *fedEnv) delete(t *testing.T, s content.Status) {
 	t.Helper()
+	e.deleteBy(t, s, content.DeletedByAuthor)
+}
+
+// deleteBy deletes s with the deletion's origin.
+func (e *fedEnv) deleteBy(t *testing.T, s content.Status, origin content.DeletionOrigin) {
+	t.Helper()
 	e.clock.Advance(time.Second)
 	e.statuses.mu.Lock()
 	e.statuses.deleted[s.ID] = true
 	e.statuses.mu.Unlock()
 	e.emit(t, appcontent.StatusDeleted{
 		Status:   s,
-		Deletion: content.Deletion{StatusID: s.ID, URI: s.URI, AuthorAccountID: s.AuthorAccountID, Origin: content.DeletedByAuthor, DeletedAt: e.clock.Now()},
+		Deletion: content.Deletion{StatusID: s.ID, URI: s.URI, AuthorAccountID: s.AuthorAccountID, Origin: origin, DeletedAt: e.clock.Now()},
 	})
 }
 

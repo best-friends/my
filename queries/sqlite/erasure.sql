@@ -226,6 +226,14 @@ DELETE FROM bookmarks WHERE bookmarks.account_id = sqlc.arg(account_id) AND book
 -- name: ErasePinsBy :execrows
 DELETE FROM status_pins WHERE account_id = sqlc.arg(account_id);
 
+-- The account's automatic deletion policy (FR-118) goes with its kept visibilities.
+
+-- name: EraseAutoDeleteKeptVisibilitiesBy :exec
+DELETE FROM status_auto_delete_kept_visibilities WHERE account_id = sqlc.arg(account_id);
+
+-- name: EraseAutoDeletePolicyBy :exec
+DELETE FROM status_auto_delete_policies WHERE account_id = sqlc.arg(account_id);
+
 -- The account's boosts in force: the counts go down with their edges, then every boost of the
 -- account goes with its retraction.
 

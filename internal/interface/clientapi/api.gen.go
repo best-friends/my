@@ -2885,6 +2885,41 @@ type AppealModerationActionRequest struct {
 	Text string `json:"text"`
 }
 
+// AutoDeletePolicy The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+// deleted once it was published more than `min_age_days` days ago, unless one of the
+// exceptions (the `keep_` properties) keeps it.
+type AutoDeletePolicy struct {
+	// Enabled Whether old posts are deleted.
+	Enabled bool `json:"enabled"`
+
+	// KeepBookmarked Keep the posts that the user bookmarked.
+	KeepBookmarked bool `json:"keep_bookmarked"`
+
+	// KeepFavourited Keep the posts that the user favourited.
+	KeepFavourited bool `json:"keep_favourited"`
+
+	// KeepMedia Keep the posts with media attachments.
+	KeepMedia bool `json:"keep_media"`
+
+	// KeepMinBoosts Keep the posts boosted at least this many times; 0 keeps none for their boosts.
+	KeepMinBoosts int `json:"keep_min_boosts"`
+
+	// KeepMinFavourites Keep the posts favourited at least this many times; 0 keeps none for their favourites.
+	KeepMinFavourites int `json:"keep_min_favourites"`
+
+	// KeepPinned Keep the posts pinned to the profile.
+	KeepPinned bool `json:"keep_pinned"`
+
+	// KeepPolls Keep the posts with a poll.
+	KeepPolls bool `json:"keep_polls"`
+
+	// KeepVisibilities Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility.
+	KeepVisibilities []Visibility `json:"keep_visibilities"`
+
+	// MinAgeDays How many days after its publication a post is deleted.
+	MinAgeDays int `json:"min_age_days"`
+}
+
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
 	// BlockEmail Whether a `ban` also blocks sign-ups with the email address of the account's user (a
@@ -5530,6 +5565,9 @@ type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 // UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
 type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 
+// UpdateAutoDeletePolicyJSONRequestBody defines body for UpdateAutoDeletePolicy for application/json ContentType.
+type UpdateAutoDeletePolicyJSONRequestBody = AutoDeletePolicy
+
 // PutPushSubscriptionJSONRequestBody defines body for PutPushSubscription for application/json ContentType.
 type PutPushSubscriptionJSONRequestBody = PushSubscriptionRequest
 
@@ -5898,6 +5936,12 @@ type ServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(w http.ResponseWriter, r *http.Request)
+	// GetAutoDeletePolicy Get the authenticated user's automatic deletion of old posts
+	// (GET /preferences/auto_delete)
+	GetAutoDeletePolicy(w http.ResponseWriter, r *http.Request)
+	// UpdateAutoDeletePolicy Replace the authenticated user's automatic deletion of old posts
+	// (PUT /preferences/auto_delete)
+	UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(w http.ResponseWriter, r *http.Request)
@@ -9600,6 +9644,34 @@ func (siw *ServerInterfaceWrapper) UpdatePreferences(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// GetAutoDeletePolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAutoDeletePolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAutoDeletePolicy operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAutoDeletePolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeletePushSubscription operation middleware
 func (siw *ServerInterfaceWrapper) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {
 
@@ -10617,6 +10689,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/auto_delete", wrapper.GetAutoDeletePolicy)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/auto_delete", wrapper.UpdateAutoDeletePolicy)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports", wrapper.ListDataExports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/exports", wrapper.RequestDataExport)
@@ -17703,6 +17777,129 @@ func (response UpdatePreferencesdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type GetAutoDeletePolicyRequestObject struct {
+}
+
+type GetAutoDeletePolicyResponseObject interface {
+	VisitGetAutoDeletePolicyResponse(w http.ResponseWriter) error
+}
+
+type GetAutoDeletePolicy200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetAutoDeletePolicy200JSONResponse struct {
+	Body    AutoDeletePolicy
+	Headers GetAutoDeletePolicy200ResponseHeaders
+}
+
+func (response GetAutoDeletePolicy200JSONResponse) VisitGetAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAutoDeletePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAutoDeletePolicydefaultApplicationProblemPlusJSONResponse) VisitGetAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAutoDeletePolicyRequestObject struct {
+	Body *UpdateAutoDeletePolicyJSONRequestBody
+}
+
+type UpdateAutoDeletePolicyResponseObject interface {
+	VisitUpdateAutoDeletePolicyResponse(w http.ResponseWriter) error
+}
+
+type UpdateAutoDeletePolicy200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateAutoDeletePolicy200JSONResponse struct {
+	Body    AutoDeletePolicy
+	Headers UpdateAutoDeletePolicy200ResponseHeaders
+}
+
+func (response UpdateAutoDeletePolicy200JSONResponse) VisitUpdateAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAutoDeletePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateAutoDeletePolicydefaultApplicationProblemPlusJSONResponse) VisitUpdateAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeletePushSubscriptionRequestObject struct {
 }
 
@@ -19902,6 +20099,12 @@ type StrictServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(ctx context.Context, request UpdatePreferencesRequestObject) (UpdatePreferencesResponseObject, error)
+	// GetAutoDeletePolicy Get the authenticated user's automatic deletion of old posts
+	// (GET /preferences/auto_delete)
+	GetAutoDeletePolicy(ctx context.Context, request GetAutoDeletePolicyRequestObject) (GetAutoDeletePolicyResponseObject, error)
+	// UpdateAutoDeletePolicy Replace the authenticated user's automatic deletion of old posts
+	// (PUT /preferences/auto_delete)
+	UpdateAutoDeletePolicy(ctx context.Context, request UpdateAutoDeletePolicyRequestObject) (UpdateAutoDeletePolicyResponseObject, error)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(ctx context.Context, request DeletePushSubscriptionRequestObject) (DeletePushSubscriptionResponseObject, error)
@@ -23197,6 +23400,61 @@ func (sh *strictHandler) UpdatePreferences(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePreferencesResponseObject); ok {
 		if err := validResponse.VisitUpdatePreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAutoDeletePolicy operation middleware
+func (sh *strictHandler) GetAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+	var request GetAutoDeletePolicyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAutoDeletePolicy(ctx, request.(GetAutoDeletePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAutoDeletePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAutoDeletePolicyResponseObject); ok {
+		if err := validResponse.VisitGetAutoDeletePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAutoDeletePolicy operation middleware
+func (sh *strictHandler) UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+	var request UpdateAutoDeletePolicyRequestObject
+
+	var body UpdateAutoDeletePolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAutoDeletePolicy(ctx, request.(UpdateAutoDeletePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAutoDeletePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAutoDeletePolicyResponseObject); ok {
+		if err := validResponse.VisitUpdateAutoDeletePolicyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

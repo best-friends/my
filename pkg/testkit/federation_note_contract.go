@@ -251,3 +251,24 @@ func fedDeliversTheStoredDelete(t *testing.T, e *fedEnv) {
 		t.Errorf("Delete to = %v, cc = %v; want the public status's addressing", doc["to"], doc["cc"])
 	}
 }
+
+// fedDeliversAutoDelete checks that the automatic deletion of an old local post (FR-118) sends its
+// Delete to the inboxes of the Create, as its author's deletion does.
+func fedDeliversAutoDelete(t *testing.T, e *fedEnv) {
+	a := e.audience()
+	s := e.post(t, a.author, content.VisibilityPublic, a.mentioned)
+	e.drain(t)
+	created := e.inboxes(t, e.activity(t, federation.OutboundStatus, s.ID, federation.ActivityCreate).ID)
+
+	e.deleteBy(t, s, content.DeletedByAutoDelete)
+	e.drain(t)
+	del := e.activity(t, federation.OutboundStatus, s.ID, federation.ActivityDelete)
+	if got := e.inboxes(t, del.ID); !slices.Equal(got, created) {
+		t.Errorf("Delete inboxes = %v, want those of the Create %v", got, created)
+	}
+	doc := e.document(t, del.ID)
+	obj, _ := doc["object"].(map[string]any)
+	if doc["type"] != "Delete" || doc["actor"] != e.uri(a.author) || obj["type"] != "Tombstone" || obj["id"] != s.URI {
+		t.Errorf("Delete document = %v, want the author's Delete of a Tombstone", doc)
+	}
+}

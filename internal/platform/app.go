@@ -135,6 +135,8 @@ type App struct {
 	Interactions *content.Interactions
 	// Statuses presents statuses, their threads and history, and bookmarks to a viewer.
 	Statuses *content.Reader
+	// AutoDelete holds the users' automatic deletion of their old posts and runs it (FR-118).
+	AutoDelete *content.AutoDelete
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
 	// Moderation records the actions on domains and accounts and the reports received from
@@ -333,6 +335,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks = d.WebhookRepository()
 		retention = retentionRepositories{
 			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -359,6 +362,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks = d.WebhookRepository()
 		retention = retentionRepositories{
 			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -654,7 +658,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	api := clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,

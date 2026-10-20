@@ -56,6 +56,9 @@ type Options struct {
 	Posting PostingPolicy
 	// Preferences reads and changes the viewer's preferences.
 	Preferences UserPreferences
+	// AutoDelete reads and replaces the viewer's automatic deletion of their old posts (FR-118);
+	// nil answers its operations 404.
+	AutoDelete AutoDeletePolicies
 	// TwoFactor runs the viewer's two-factor authentication; nil answers its operations 404.
 	TwoFactor TwoFactorSettings
 	// Media runs the media use cases and presents profile images; nil serves no media

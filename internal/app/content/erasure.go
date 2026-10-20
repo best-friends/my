@@ -30,9 +30,9 @@ type ErasureRepository interface {
 	// bookmarks, and pins of them. The deletions stay.
 	EraseStatuses(ctx context.Context, tx uow.Tx, statusIDs []string) error
 	// EraseInteractionsBy deletes up to limit of each of the account's favourites, reactions,
-	// bookmarks, pins, and boosts (with their retractions), counting the favourites, the
-	// reactions, and the boosts in force out of the statuses' counters, and returns the most rows
-	// that one kind lost.
+	// bookmarks, pins, and boosts (with their retractions), and its automatic deletion policy,
+	// counting the favourites, the reactions, and the boosts in force out of the statuses'
+	// counters, and returns the most rows that one kind lost.
 	EraseInteractionsBy(ctx context.Context, tx uow.Tx, accountID string, limit int) (int64, error)
 }
 
