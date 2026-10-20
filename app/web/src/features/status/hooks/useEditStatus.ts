@@ -28,7 +28,7 @@ export type EditSource =
   | { status: "loading" }
   /** `message` is localized. */
   | { status: "error"; message: string; retry: () => void }
-  | { status: "ready"; source: StatusSource; maxCharacters: number };
+  | { status: "ready"; source: StatusSource; maxCharacters: number; isDescriptionRequired: boolean };
 
 /** Reads what the form of post `id` starts from: the author's text, and the instance's character limit. */
 export function useEditSource(id: string): EditSource {
@@ -46,7 +46,8 @@ export function useEditSource(id: string): EditSource {
     };
   }
   if (source.data === undefined || instance.data === undefined) return { status: "loading" };
-  return { status: "ready", source: source.data, maxCharacters: instance.data.limits.max_post_characters };
+  const { max_post_characters: maxCharacters, require_media_description: isDescriptionRequired } = instance.data.limits;
+  return { status: "ready", source: source.data, maxCharacters, isDescriptionRequired };
 }
 
 /** The fields of the form. */

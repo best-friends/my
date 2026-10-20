@@ -12,6 +12,11 @@ export type AttachmentListProps = {
   onRemove?: (key: string) => void;
   /** Whether the user's preferences ask for a description of every image. */
   requireDescriptions: boolean;
+  /**
+   * Whether the server requires a description of every image (`limits.require_media_description`): the fields are
+   * required, and the browser keeps the form from being sent while one is empty or only spaces.
+   */
+  isDescriptionRequired?: boolean;
   isDisabled?: boolean;
 };
 
@@ -19,8 +24,13 @@ export type AttachmentListProps = {
  * The images of the draft. Every image has a description field, always shown, whatever its state
  * (web-client.md Y9): the description can be written while the file uploads.
  */
-export function AttachmentList({ items, onDescribe, onRemove, requireDescriptions, isDisabled = false }: AttachmentListProps) {
+export function AttachmentList({ items, onDescribe, onRemove, requireDescriptions, isDescriptionRequired = false, isDisabled = false }: AttachmentListProps) {
   const t = useT();
+  const hint = isDescriptionRequired
+    ? "client:compose.media.description.server_required"
+    : requireDescriptions
+      ? "client:compose.media.description.required"
+      : "client:compose.media.description.hint";
   const formatRemaining = useFormatRemaining();
   if (items.length === 0) return null;
   return (
@@ -42,8 +52,10 @@ export function AttachmentList({ items, onDescribe, onRemove, requireDescription
             <TextArea
               id={descriptionFieldId(item.key)}
               label={t("client:compose.media.description.label", { position: String(item.position) })}
-              description={t(requireDescriptions ? "client:compose.media.description.required" : "client:compose.media.description.hint")}
+              description={t(hint)}
               value={item.description}
+              isRequired={isDescriptionRequired}
+              validate={(value) => (isDescriptionRequired && value.trim() === "" ? t("client:compose.media.description.missing") : null)}
               onChange={(description) => {
                 onDescribe(item.key, description);
               }}
