@@ -5,6 +5,7 @@ package inline_test
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -109,5 +110,43 @@ func TestRunSynchronouslyWhileAnotherDrainRuns(t *testing.T) {
 	}
 	if err := <-slow; err != nil {
 		t.Errorf("Enqueue of the slow job: %v", err)
+	}
+}
+
+// An Enqueue does not return before its jobs ran while RunUntil polls the queue: the loop never
+// claims a job outside the drain of the Enqueue that added it.
+func TestRunUntilWithSynchronousEnqueue(t *testing.T) {
+	clock := testkit.NewClock(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC))
+	q := inline.New(inline.Options{Clock: clock, IDs: testkit.NewIDGenerator(clock)})
+	var reg queue.JobHandlerRegistry
+	var mu sync.Mutex
+	ran := map[string]bool{}
+	reg.Register("job", func(_ context.Context, j queue.Job) queue.Result {
+		time.Sleep(10 * time.Microsecond) // widens the window in which another worker holds the job
+		mu.Lock()
+		defer mu.Unlock()
+		ran[string(j.Payload)] = true
+		return queue.Done()
+	})
+	q.RunSynchronously(queue.NewPullRunner(q, &reg, queue.RunnerOptions{Clock: clock}))
+
+	stop := make(chan struct{})
+	done := make(chan error, 1)
+	go func() { done <- q.RunUntil(t.Context(), stop, time.Nanosecond) }()
+	for i := range 2000 {
+		payload := json.RawMessage(strconv.Itoa(i))
+		if err := q.Enqueue(t.Context(), queue.NewJob{Type: "job", Payload: payload}); err != nil {
+			t.Fatalf("Enqueue: %v", err)
+		}
+		mu.Lock()
+		ok := ran[string(payload)]
+		mu.Unlock()
+		if !ok {
+			t.Fatalf("Enqueue %d returned before its job ran", i)
+		}
+	}
+	close(stop)
+	if err := <-done; err != nil {
+		t.Errorf("RunUntil: %v", err)
 	}
 }

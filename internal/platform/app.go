@@ -97,6 +97,9 @@ type App struct {
 	Handlers *queue.JobHandlerRegistry
 	// Runner runs the jobs of the queue for the worker role.
 	Runner *queue.PullRunner
+	// runJobs runs the jobs of the worker role until stop is closed: Runner.RunUntil, or for
+	// the inline queue its RunUntil, which runs Runner without racing the runs of Enqueue.
+	runJobs func(ctx context.Context, stop <-chan struct{}) error
 
 	// KV is the key-value store that cfg.KV selects; RateLimiter keeps its counters there.
 	KV          kernel.KeyValueStore
@@ -367,6 +370,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		a.Jobs, a.DeadJobs = q, q
 		a.Runner = queue.NewPullRunner(q, a.Handlers, runnerOpts)
 		q.RunSynchronously(a.Runner)
+		a.runJobs = func(ctx context.Context, stop <-chan struct{}) error {
+			return q.RunUntil(ctx, stop, runnerOpts.PollInterval)
+		}
 	default:
 		_ = a.Close()
 		return nil, fmt.Errorf("queue %q is not implemented yet", cfg.Queue)
@@ -375,6 +381,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The adapter operations of ADR-0056 §1; the inline queue runs the jobs in Enqueue.
 		a.Jobs = sysmetrics.Jobs(a.Jobs, a.Meter, "queue."+cfg.Queue)
 		a.Runner = queue.NewPullRunner(sysmetrics.Source(a.source, a.Meter, "queue."+cfg.Queue), a.Handlers, runnerOpts)
+		a.runJobs = a.Runner.RunUntil
 	}
 	a.Scheduler = queue.NewScheduler(a.Jobs, a.Clock, a.Logger)
 	switch cfg.KV {
