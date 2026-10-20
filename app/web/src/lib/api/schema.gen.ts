@@ -4385,7 +4385,7 @@ export interface components {
          *     status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
          *     `visibility` and `language` are those of the boosted status, its `content`,
          *     `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-         *     empty, and its counts are zero.
+         *     empty, its `card` is omitted, and its counts are zero.
          */
         Status: {
             id: components["schemas"]["Id"];
@@ -4459,6 +4459,7 @@ export interface components {
             /** @description Whether the status is pinned to the author's profile; given only to the author. */
             pinned?: boolean;
             poll?: components["schemas"]["Poll"];
+            card?: components["schemas"]["LinkCard"];
         };
         /**
          * @description The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
@@ -4502,6 +4503,65 @@ export interface components {
             poll_id: components["schemas"]["Id"];
             /** @description The indexes of the chosen options in `Poll.options`; one for a single-choice poll. */
             choices: number[];
+        };
+        /**
+         * @description The card of the first link in a status (ADR-0062): the title, description, and image
+         *     that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+         *     after the status was posted or received. Omitted from a status with attachments or a
+         *     poll, from a status whose link has no card yet, and when the instance setting
+         *     `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+         *     it was posted may have none.
+         *
+         *     Clients show the card as one link to `url` and, under a content warning, only once the
+         *     warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+         *     shows it.
+         */
+        LinkCard: {
+            /**
+             * Format: uri
+             * @description The page that the card links to, after redirects.
+             */
+            url: string;
+            /** @description The title of the page, as plain text. */
+            title: string;
+            /** @description The description of the page, as plain text; empty when it has none. */
+            description: string;
+            /** @description The name of the site, as plain text; the host of `url` when the page names none. */
+            site_name: string;
+            /** @description The author that the page names, as plain text; omitted when it names none. */
+            author_name?: string;
+            /**
+             * Format: date-time
+             * @description When the page says it was published; omitted when it does not say.
+             */
+            published_at?: string;
+            /** @description The BCP 47 language of the page; omitted when it does not say. */
+            language?: string;
+            image?: components["schemas"]["LinkCardImage"];
+            /**
+             * @description The account that the page names as its creator (`fediverse:creator`), given only when
+             *     the account's server lists the page's domain among its `attributionDomains`.
+             */
+            author?: components["schemas"]["Account"];
+        };
+        /**
+         * @description The image of a link card, served by this server's media proxy in the small size of an
+         *     attachment's image. An animated image is its first frame.
+         */
+        LinkCardImage: {
+            /**
+             * Format: uri
+             * @description The image through the media proxy.
+             */
+            url: string;
+            /** @description The width of the original image in pixels. */
+            width: number;
+            /** @description The height of the original image in pixels. */
+            height: number;
+            /** @description The blurhash (https://blurha.sh) of the image, to show while it loads. */
+            blurhash?: string;
+            /** @description The alternative text of the image (`og:image:alt`); omitted when it has none. */
+            description?: string;
         };
         /**
          * @description The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
@@ -6431,7 +6491,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.

@@ -286,6 +286,7 @@ const instanceSettings: Schemas["AdminSettingList"] = {
     { key: "ai_usage", kind: "enum", value: "deny", default: "deny", stored: false, choices: ["allow", "deny_training", "deny"] },
     { key: "indexable_default", kind: "bool", value: "false", default: "false", stored: false },
     { key: "security_contact", kind: "uri", value: "", default: "", stored: false },
+    { key: "link_cards_enabled", kind: "bool", value: "true", default: "true", stored: false },
   ],
 };
 

@@ -170,6 +170,8 @@ type App struct {
 	CustomEmojis *content.CustomEmojiService
 	// MediaProxy relays remote media files under /media/proxy/ and signs their URLs (ADR-0005).
 	MediaProxy *content.MediaProxy
+	// LinkCards fetches and presents the cards of the links in statuses (ADR-0062).
+	LinkCards *content.LinkCards
 	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
 	// previews of the web client's profile and post pages (ADR-0028).
 	Previews *content.Previews
@@ -307,6 +309,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		instances    instance.Repository
 		follows      graph.Repository
 		statuses     content.Repository
+		linkCards    content.LinkCardRepository
 		interactions content.InteractionRepository
 		feeds        timeline.Repository
 		notifs       notification.Repository
@@ -330,6 +333,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		d.RegisterMetrics(a.Meter)
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
+		linkCards = d.StatusRepository()
 		emojis = d.CustomEmojiRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
@@ -357,6 +361,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		d.RegisterMetrics(a.Meter)
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
+		linkCards = d.StatusRepository()
 		emojis = d.CustomEmojiRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
 		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
@@ -595,7 +600,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	// The media service presents remote files with the proxy's signed URLs, so the proxy comes first.
-	if a.MediaProxy, err = newMediaProxy(cfg, medias, a); err != nil {
+	if a.MediaProxy, err = newMediaProxy(cfg, medias, linkCards, a); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
@@ -603,6 +608,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.setUpLinkCards(cfg, linkCards, statuses, fedOutbox)
 	a.setUpExports(identities)
 	a.setUpImports(identities)
 	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
@@ -613,7 +619,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpInbox(feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
-		Restrictions: a.AccountPolicy.Content(), Media: a.Media, Clock: a.Clock,
+		Restrictions: a.AccountPolicy.Content(), Media: a.Media, Clock: a.Clock, LinkCards: a.LinkCards,
 	})
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
@@ -897,7 +903,7 @@ const mediaProxyKeyInfo = "my media proxy url signature v1"
 // newMediaProxy builds the media proxy. Its HMAC keys are derived from the key-encryption keys
 // with HKDF-SHA256, so that it needs no secret of its own: the current KEK signs, and the
 // previous ones still verify the URLs signed before a rotation.
-func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*content.MediaProxy, error) {
+func newMediaProxy(cfg *config.Config, repo content.MediaRepository, cards content.LinkCardMediaReader, a *App) (*content.MediaProxy, error) {
 	var keys [][]byte
 	for _, kek := range append([][]byte{cfg.KEK}, cfg.PreviousKEKs...) {
 		if len(kek) == 0 {
@@ -922,6 +928,8 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, a *App) (*c
 		UnitOfWork: a.UnitOfWork, Blobs: a.Blobs, Clock: a.Clock, ProfileImages: a.Accounts,
 		MaxCacheSize: cfg.RemoteMediaCacheMaxBytes, EmojiMaxBytes: cfg.RemoteCustomEmojiMaxBytes, Processor: a.MediaProcessor,
 		Keys: keys, BaseURL: cfg.ServerOrigin(), Logger: a.Logger,
+		// The images of link cards are remote files without an owner (ADR-0062 §3).
+		LinkCardMedia: cards,
 	})
 	if err != nil {
 		return nil, err
