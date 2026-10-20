@@ -38,7 +38,7 @@ const postId = "0192f0c4-7a8e-7000-8000-0000000000b1";
 const post = {
   id: postId,
   uri: `https://my.example/users/bob/statuses/${postId}`,
-  url: `https://my.example/@bob/${postId}`,
+  url: `https://my.example/@bob/status/${postId}`,
   account: bob,
   content: "<p>@alice https://example.com/a/very/long/path/that/must/wrap/somewhere/before/it/scrolls/the/page/sideways</p>",
   spoiler_text: "",
@@ -157,14 +157,14 @@ test.describe("notifications", () => {
                 - /url: /@bob
             - time
             - link:
-              - /url: /@bob/${postId}
+              - /url: /@bob/status/${postId}
           - article:
             - paragraph:
               - link:
                 - /url: /@bob
             - time
             - link:
-              - /url: /@bob/${postId}
+              - /url: /@bob/status/${postId}
           - article:
             - paragraph:
               - link:
@@ -238,7 +238,7 @@ test.describe("notifications", () => {
             - /url: /@carol
         - time
         - link:
-          - /url: /@bob/${postId}
+          - /url: /@bob/status/${postId}
     `);
     await expect(feed.getByRole("article").first()).toHaveAccessibleName(/1|١/);
     await expect.poll(() => server.updates).toEqual([newest]);

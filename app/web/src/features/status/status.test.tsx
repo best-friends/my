@@ -120,12 +120,12 @@ describe("a post's page", () => {
 
     const feed = await screen.findByRole("feed", { name: "Local timeline" });
     const time = within(feed).getByRole("link", { name: "3 hr. ago" });
-    expect(time).toHaveAttribute("href", `/@bob/${postId}`);
+    expect(time).toHaveAttribute("href", `/@bob/status/${postId}`);
     const scrolled = vi.spyOn(Element.prototype, "scrollIntoView");
     await user.click(time);
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Post" });
-    expect(router.state.location.pathname).toBe(`/@bob/${postId}`);
+    expect(router.state.location.pathname).toBe(`/@bob/status/${postId}`);
     expect(await screen.findByRole("region", { name: "Earlier in the thread" })).toBeInTheDocument();
     // The post comes into view once the posts above it are there; focus stays on the page's heading.
     const article = await findFocusedPost();

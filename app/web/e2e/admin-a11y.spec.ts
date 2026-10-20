@@ -62,7 +62,7 @@ const postId = "0192f0c4-7a8e-7000-8000-0000000000b1";
 const post: Schemas["Status"] = {
   id: postId,
   uri: `https://my.example/ap/statuses/${postId}`,
-  url: `https://my.example/@maximiliana/${postId}`,
+  url: `https://my.example/@maximiliana/status/${postId}`,
   account: target,
   content: "<p>Buy cheap followers at https://spam.example/now — limited offer!</p>",
   spoiler_text: "",

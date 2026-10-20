@@ -190,7 +190,7 @@ export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}):
 /** A post by Bob that mentions Alice. */
 export function statusFixture(id: string): Schemas["Status"] {
   return postFixture(otherAccountFixture, id, {
-    url: `https://my.example/@bob/${id}`,
+    url: `https://my.example/@bob/status/${id}`,
     content: '<p><a href="https://my.example/@alice">@alice</a> hello</p>',
     mentions: [{ id: viewerFixture.id, username: "alice", acct: "alice", url: viewerFixture.url }],
   });

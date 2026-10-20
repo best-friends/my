@@ -124,7 +124,7 @@ function startsWith(text: string): RegExp {
 test.describe("a post's page", () => {
   test.beforeEach(async ({ page }) => {
     await serveApi(page);
-    await page.goto(`/@bob/${postId}`);
+    await page.goto(`/@bob/status/${postId}`);
     await expect(page.getByRole("heading", { level: 1, name: message("status.title") })).toBeVisible();
     await expect(page.getByRole("region", { name: message("status.thread.replies") }).getByRole("article")).toBeVisible();
   });
@@ -221,7 +221,7 @@ test("the viewer's own post asks before it is deleted", async ({ page, makeAxeBu
     route.request().method() === "DELETE" ? route.fulfill({ status: 204 }) : route.fulfill({ json: own }),
   );
   await page.route(`**/api/v1/statuses/${own.id}/context`, (route) => route.fulfill({ json: { ancestors: [], descendants: [] } }));
-  await page.goto(`/@alice/${own.id}`);
+  await page.goto(`/@alice/status/${own.id}`);
   // A page of the viewer's own post is not their profile page. (The actions show once signed in.)
   await expect(page.getByRole("main").getByRole("article").getByRole("button", { name: message("status.action.more") })).toBeVisible();
   const navigation = page.getByRole("navigation", { name: message("shell.nav.label") });
