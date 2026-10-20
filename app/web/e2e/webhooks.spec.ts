@@ -126,7 +126,10 @@ test.describe("webhooks", () => {
 
     await form.getByRole("textbox", { name: message("admin.webhooks.url"), exact: true }).fill("https://hooks.example/in");
     await form.getByRole("textbox", { name: message("admin.webhooks.description"), exact: true }).fill(description);
-    await form.getByRole("checkbox", { name: message("admin.webhooks.event.report_created"), exact: true }).check();
+    // The checkbox is visually hidden behind its box; its label is what a pointer presses.
+    const events = form.getByRole("group", { name: message("admin.webhooks.events"), exact: true });
+    await events.getByText(message("admin.webhooks.event.report_created"), { exact: true }).click();
+    await expect(events.getByRole("checkbox", { name: message("admin.webhooks.event.report_created"), exact: true })).toBeChecked();
     await form.getByRole("button", { name: message("admin.webhooks.submit"), exact: true }).click();
 
     await expect(form.getByText(secret, { exact: true })).toBeVisible();
