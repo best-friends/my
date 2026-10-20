@@ -44,6 +44,8 @@ tags:
     description: The authenticated user's preferences.
   - name: two_factor
     description: The authenticated user's two-factor authentication.
+  - name: passkeys
+    description: The authenticated user's passkeys, which sign in instead of the password.
   - name: moderation
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
@@ -687,6 +689,111 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of two-factor authentication (#628) ---
+  # --- passkeys (#639) ---
+  /passkeys:
+    get:
+      operationId: listPasskeys
+      summary: List the authenticated user's passkeys
+      description: The passkeys that sign the user in, oldest first; there are at most 20.
+      tags: [passkeys]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The passkeys.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createPasskey
+      summary: Register a passkey with the browser's response to a registration
+      description: |
+        Verifies `credential`, the browser's answer to the `options` of
+        `POST /passkeys/registration`, and stores the passkey under the name given there. From
+        then on the passkey signs in on the server's sign-in page instead of the password; a
+        user with two-factor authentication still enters a code after it. A response that does
+        not verify (another origin, no user verification, a credential that is registered
+        already) is a 422 `/api/v1/problems/invalid-passkey`, an expired or unknown
+        `registration_token` a 422 `/api/v1/problems/passkey-registration-expired`, and a user
+        with 20 passkeys a 409 `/api/v1/problems/too-many-passkeys`.
+      tags: [passkeys]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePasskeyRequest"
+      responses:
+        "201":
+          description: The new passkey.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passkey"
+        default:
+          $ref: "#/components/responses/Problem"
+  /passkeys/registration:
+    post:
+      operationId: beginPasskeyRegistration
+      summary: Start the registration of a passkey
+      description: |
+        Checks the user's current `password` and returns the options of a WebAuthn
+        registration (a discoverable credential with user verification, no attestation) for the
+        browser's `navigator.credentials.create()`, with a `registration_token` that carries
+        them and `name` to `POST /passkeys` for 5 minutes. Nothing is stored until then. A
+        wrong password is a 422 `/api/v1/problems/wrong-password`, and at most 5 wrong
+        passwords per user are accepted every hour; a user with 20 passkeys gets a 409
+        `/api/v1/problems/too-many-passkeys`.
+      tags: [passkeys]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasskeyRegistrationRequest"
+      responses:
+        "200":
+          description: The options of the registration.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyRegistration"
+        default:
+          $ref: "#/components/responses/Problem"
+  /passkeys/{id}:
+    delete:
+      operationId: deletePasskey
+      summary: Remove a passkey
+      description: The passkey no longer signs in. An unknown or removed passkey is a 404.
+      tags: [passkeys]
+      security:
+        - oauth2: ["write:accounts"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the passkey.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The passkey is removed.
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of passkeys (#639) ---
   # --- Accounts and relationships (#108): accounts, follows, follow requests, blocks, mutes ---
   /accounts/lookup:
     get:
@@ -1133,14 +1240,22 @@ paths:
       summary: Upload a media file
       description: |
         Uploads an image to attach to a post or to use as an avatar, a header, or a custom
-        emoji (`purpose`). The server checks the format from the content (JPEG, PNG, GIF, or
-        WebP, the last two animated or not; the declared type must match it) and the size and
-        dimension limits before it accepts the file, then processes it in the background: it
+        emoji (`purpose`), or a video or audio file to attach to a post. The server checks the
+        format from the content (images: JPEG, PNG, GIF, or WebP, the last two animated or not;
+        video: MP4, QuickTime, or WebM of H.264, VP8, VP9, or AV1; audio: MP3, Ogg, M4A, or WebM
+        of AAC, Opus, Vorbis, or MP3; the declared type must match it) and the size, dimension,
+        and duration limits before it accepts the file, then processes it in the background: it
         removes the metadata (such as the location) by re-encoding the image into small,
         medium, and large variants for its purpose, still and, for an animation, moving ones,
-        and makes a blurhash. The answer is 202 with the file in its current `state`, usually
-        `processing`; poll `getMedia` until it is `ready` or `failed`. A file used for another
-        purpose later is processed again for it.
+        and makes a blurhash. A video or audio file is not re-encoded: the server writes its
+        streams again without metadata, and makes the variants and the blurhash of its
+        `thumbnail`, or of the cover image in the file. The answer is 202 with the file in its
+        current `state`, usually `processing`; poll `getMedia` until it is `ready` or
+        `failed`. A file used for another purpose later is processed again for it.
+
+        The size limits of images and of video and audio files differ, and the limits of video
+        and audio files are set by the operator (`media_max_av_bytes`,
+        `media_max_video_duration`, `media_max_audio_duration` in the server configuration).
 
         A body larger than the size limit is refused with a 413 before it is read. Uploads
         count against a limit per account besides the API-wide one. Only the uploader can
@@ -3268,6 +3383,38 @@ paths:
           $ref: "#/components/responses/CustomEmojiProblem"
         default:
           $ref: "#/components/responses/Problem"
+  /admin/custom_emojis/{id}/copy:
+    post:
+      operationId: copyCustomEmoji
+      summary: Copy a remote custom emoji into a local one
+      description: |
+        Registers a new local emoji with the image of a remote emoji, under the shortcode of the
+        request or the remote one's. The image is fetched through the media proxy, so the
+        instance does not fetch the media of a domain whose media it rejects, and is checked as
+        the image of a new emoji (`createCustomEmoji`); it shrinks into the boxes of an emoji.
+        The new emoji is in the picker, without a category or aliases. A local emoji is a 422
+        with the reason `local_emoji`; an image that cannot be fetched is a 422 with the reason
+        `fetch_failed`; a shortcode or an image that does not qualify is a 422 whose `reason`
+        says which, and keeps nothing of the copy. The copy is recorded in the audit log
+        (`custom_emoji_copied` on the new emoji). An unknown ID is a 404. Needs the
+        `manage_custom_emojis` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/CustomEmojiId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopyCustomEmojiRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminCustomEmoji"
+        "422":
+          $ref: "#/components/responses/CustomEmojiProblem"
+        default:
+          $ref: "#/components/responses/Problem"
   # --- end of admin: custom emoji (#621) ---
   # --- admin: instance texts (#489) ---
   /admin/instance_texts:
@@ -5055,11 +5202,14 @@ components:
         - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
           instance accepts.
         - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-          accepted format, or its declared type does not match its content.
+          accepted format or codec (such as HEVC video), or its declared type does not match its
+          content.
         - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-          many pixels or frames.
-        - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
-          of its format.
+          many pixels or frames; or the video has too many pixels or frames per second.
+        - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+          instance accepts.
+        - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+          its format.
         - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
           no longer be changed on its own.
         - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
@@ -5089,6 +5239,12 @@ components:
           authentication.
         - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
           operation, has no two-factor authentication.
+        - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+          registration does not verify, or the passkey is registered already.
+        - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+          unknown or expired. Start a new one.
+        - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+          allowed. Remove one first.
         - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
           says which.
         - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -5596,7 +5752,10 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         type:
-          description: The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+          description: |
+            The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+            a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+            an animated image: muted, looped, without controls.
           type: string
           enum: [image, gifv, video, audio, unknown]
         state:
@@ -5619,11 +5778,14 @@ components:
         url:
           description: |
             Where the file is served on this instance; for an upload, `variants.large.url`, or
-            `variants.animated.large.url` for an animation.
+            `variants.animated.large.url` for an animation, and the file itself for a video or
+            audio file.
           type: string
           format: uri
         preview_url:
-          description: Where its preview is served; for an upload, `variants.small.url` (still).
+          description: |
+            Where its preview is served; for an upload, `variants.small.url` (still). A video or
+            audio file without a poster has none.
           type: string
           format: uri
         remote_url:
@@ -5662,6 +5824,11 @@ components:
           minimum: 1
         focus:
           $ref: "#/components/schemas/MediaFocus"
+        duration:
+          description: The length of a video or audio file in seconds; absent for an image and until the file is ready.
+          type: number
+          format: double
+          minimum: 0
     MediaUpdate:
       description: The changes to a media file; a property left out keeps its value.
       type: object
@@ -5695,6 +5862,13 @@ components:
           type: string
           enum: [attachment, avatar, header, emoji]
           default: attachment
+        thumbnail:
+          description: |
+            The poster of a video or audio file: an image that it shows before it plays, which
+            the client takes from the file. Its declared type is ignored; it must be an image
+            within the image limits. It is ignored for an image.
+          type: string
+          format: binary
     MediaVariant:
       description: |
         A rendition of a media file, without metadata. Its URL never serves other content, so
@@ -5728,7 +5902,8 @@ components:
       description: |
         The renditions of a ready media file within the sizes of its purpose (see
         `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-        still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+        still: for an animation, its first frame, and for a video or audio file, its poster
+        (absent without one). Clients pick one by its width (`srcset`), and
         show `animated` instead only when the user lets animations play and does not prefer
         reduced motion.
       type: object
@@ -7131,6 +7306,80 @@ components:
           description: The six-digit code that the app shows now.
           type: string
           maxLength: 64
+    # --- passkeys (#639) ---
+    Passkey:
+      description: A passkey that signs the authenticated user in instead of the password.
+      type: object
+      required: [id, name, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        name:
+          description: What the user calls the passkey, such as the device it is on.
+          type: string
+        created_at:
+          description: When the passkey was registered.
+          type: string
+          format: date-time
+    PasskeyList:
+      description: The authenticated user's passkeys, oldest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Passkey"
+    PasskeyRegistrationRequest:
+      description: The name of a new passkey and the user's password that confirms it.
+      type: object
+      required: [name, password]
+      properties:
+        name:
+          description: What the user calls the passkey; spaces around it are dropped.
+          type: string
+          minLength: 1
+          maxLength: 64
+        password:
+          description: The user's current password.
+          type: string
+          minLength: 1
+          maxLength: 1024
+    PasskeyRegistration:
+      description: The start of a passkey registration.
+      type: object
+      required: [options, registration_token, expires_at]
+      properties:
+        options:
+          description: |
+            The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+            values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+          type: object
+          additionalProperties: true
+        registration_token:
+          description: An opaque token that carries the registration to `POST /passkeys`.
+          type: string
+        expires_at:
+          description: When `registration_token` stops working.
+          type: string
+          format: date-time
+    CreatePasskeyRequest:
+      description: The browser's answer to a passkey registration.
+      type: object
+      required: [registration_token, credential]
+      properties:
+        registration_token:
+          description: The `registration_token` of `POST /passkeys/registration`.
+          type: string
+          maxLength: 4096
+        credential:
+          description: |
+            The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+            `PublicKeyCredential.toJSON()` returns for the new credential.
+          type: object
+          additionalProperties: true
+    # --- end of passkeys (#639) ---
     TwoFactorCodeRequest:
       description: A code that confirms an operation on two-factor authentication.
       type: object
@@ -7305,6 +7554,7 @@ components:
         `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
         `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
         `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+        `custom_emoji_copied` (a new local emoji copied from a remote one),
         `custom_emoji_updated` (its category, aliases, or place in the picker),
         `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
         `webhook_created`, `webhook_updated` (its URL, description, or events),
@@ -7348,6 +7598,7 @@ components:
         - two_factor_disabled
         - custom_emoji_created
         - custom_emoji_image_replaced
+        - custom_emoji_copied
         - custom_emoji_updated
         - custom_emoji_enabled
         - custom_emoji_disabled
@@ -8273,6 +8524,17 @@ components:
             type: string
             minLength: 2
             maxLength: 30
+    CopyCustomEmojiRequest:
+      description: The local custom emoji that a copy of a remote one becomes.
+      type: object
+      properties:
+        shortcode:
+          description: |
+            The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+            underscores; case matters. Absent, the remote emoji's.
+          type: string
+          minLength: 2
+          maxLength: 30
     ReplaceCustomEmojiImageRequest:
       description: The new image of a local custom emoji.
       type: object
@@ -8300,7 +8562,9 @@ components:
         file is not an upload of the user. `media_not_ready`: it has not finished processing.
         `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
         than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-        `remote_emoji`: the operation is for local emoji only.
+        `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+        for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+        fetched (its server did not return it, or the instance rejects the media of its domain).
       type: string
       enum:
         - invalid_shortcode
@@ -8313,6 +8577,8 @@ components:
         - too_large
         - too_big
         - remote_emoji
+        - local_emoji
+        - fetch_failed
     # --- end of admin: custom emoji (#621) ---
     # --- admin: webhooks (#666) ---
     WebhookEventType:
@@ -8646,8 +8912,8 @@ components:
             operation:
               description: |
                 The operation, named as in the audit log: `custom_emoji_created`,
-                `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
-                `custom_emoji_disabled`, or `custom_emoji_deleted`.
+                `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+                `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
               type: string
     WebhookTest:
       description: The data of a `webhook.test` message.

@@ -89,6 +89,10 @@ const ProxyPathPrefix = "/media/proxy/"
 // the file: a network error, a timeout, or a 5xx status. A later request may succeed.
 var ErrProxyUpstream = errors.New("content: the remote server did not return the media file")
 
+// ErrUnsupportedRemoteMedia reports a remote media file whose content is not in a format that
+// the media proxy serves for it. The errors wrapping it wrap ErrNotFound too.
+var ErrUnsupportedRemoteMedia = errors.New("content: the remote media file is not in an allowed format")
+
 // AccountDomains tells the domain of an account. The account module implements it.
 type AccountDomains interface {
 	// AccountDomain returns the domain of an account ("" for a local one).
@@ -259,6 +263,16 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if !proxyVariants[ProxyVariant(variant)] || ProxyVariant(variant) == ProxySmall && p.d.Processor == nil {
 		return nil, notFound("unknown variant")
 	}
+	return p.open(ctx, mediaID, ProxyVariant(variant))
+}
+
+// open fetches the variant of a recorded remote media file as Open does, without a signature to
+// check: the server's own reads of a remote file (the copy of a remote custom emoji) go through
+// the same domain restrictions, limits, and cache as the clients' requests.
+func (p *MediaProxy) open(ctx context.Context, mediaID string, variant ProxyVariant) (*ProxiedMedia, error) {
+	notFound := func(why string) error {
+		return fmt.Errorf("proxy media %s/%s: %s: %w", mediaID, variant, why, ErrNotFound)
+	}
 	m, err := p.find(ctx, mediaID)
 	if err != nil {
 		return nil, err
@@ -287,7 +301,7 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if err != nil {
 		return nil, err
 	}
-	if ProxyVariant(variant) == ProxySmall {
+	if variant == ProxySmall {
 		return p.openSmall(ctx, m, settings.CacheTTL, cache)
 	}
 	if cache {
@@ -504,7 +518,7 @@ func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia) (*fetched
 	head = head[:n]
 	contentType, kind := content.SniffRemoteMedia(head)
 	if contentType == "" || isEmojiImage(m) && !content.CustomEmojiFormat(contentType) {
-		return nil, fmt.Errorf("proxy media %s: unsupported format: %w", m.MediaID, ErrNotFound)
+		return nil, fmt.Errorf("proxy media %s: %w: %w", m.MediaID, ErrNotFound, ErrUnsupportedRemoteMedia)
 	}
 	limitPurpose := kernel.HTTPPurposeVideo
 	if kind == content.MediaTypeImage {
@@ -543,7 +557,11 @@ func (p *MediaProxy) checkEmojiCopy(m content.RemoteMedia, pm *ProxiedMedia) err
 		return nil
 	}
 	_ = pm.Body.Close()
-	return fmt.Errorf("proxy media %s: a copy of %d bytes of %s: %w", m.MediaID, pm.Length, pm.ContentType, ErrNotFound)
+	why := ErrUnsupportedRemoteMedia
+	if content.CustomEmojiFormat(pm.ContentType) {
+		why = kernel.ErrResponseTooLarge
+	}
+	return fmt.Errorf("proxy media %s: a copy of %d bytes of %s: %w: %w", m.MediaID, pm.Length, pm.ContentType, ErrNotFound, why)
 }
 
 // limitedBody reads at most left bytes and fails with kernel.ErrResponseTooLarge past them.

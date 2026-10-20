@@ -5020,68 +5020,68 @@
     "description": "Choice of post language when the user does not say which language the post is in."
   },
   "compose.media.add": {
-    "defaultMessage": "Add images",
-    "description": "Button that opens the file picker to attach images to a post."
+    "defaultMessage": "Add images, video, or audio",
+    "description": "Button that opens the file picker to attach images, a video, or an audio file to a post."
   },
   "compose.media.count": {
-    "defaultMessage": "{count, plural, one {# image attached} other {# images attached}}",
-    "description": "Description of the button that attaches images, while the post has some. {count} is how many."
+    "defaultMessage": "{count, plural, one {# file attached} other {# files attached}}",
+    "description": "Description of the button that attaches media, while the post has some. {count} is how many files."
   },
   "compose.media.description.hint": {
-    "defaultMessage": "Describe the image for people who cannot see it.",
-    "description": "Help text under the alternative text field of an attached image."
+    "defaultMessage": "Describe it for people who cannot see or hear it.",
+    "description": "Help text under the alternative text field of an attached image, video, or audio file."
   },
   "compose.media.description.label": {
-    "defaultMessage": "Description of image {position}",
-    "description": "Label of the alternative text field of an attached image. {position} is its number in the post, from 1."
+    "defaultMessage": "Description of attachment {position}",
+    "description": "Label of the alternative text field of an attached image, video, or audio file. {position} is its number in the post, from 1."
   },
   "compose.media.description.required": {
-    "defaultMessage": "Describe the image for people who cannot see it. Your settings ask for a description of every image.",
-    "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
+    "defaultMessage": "Describe it for people who cannot see or hear it. Your settings ask for a description of every attachment.",
+    "description": "Help text under the alternative text field of an attachment when the user's settings ask for a description of every attachment."
   },
   "compose.media.description.server_required": {
-    "defaultMessage": "Describe the image for people who cannot see it. This server requires a description of every image.",
-    "description": "Help text under the alternative text field of an attached image when the server requires a description of every image (the instance setting require_media_description)."
+    "defaultMessage": "Describe it for people who cannot see or hear it. This server requires a description of every attachment.",
+    "description": "Help text under the alternative text field of an attached image, video, or audio file when the server requires a description of every image (the instance setting require_media_description)."
   },
   "compose.media.description.missing": {
-    "defaultMessage": "Add a description of this image. This server requires one for every image.",
-    "description": "Error of the alternative text field of an attached image that has no description while the server requires one for every image."
+    "defaultMessage": "Add a description of this attachment. This server requires one for every attachment.",
+    "description": "Error of the alternative text field of an attached image, video, or audio file that has no description while the server requires one for every image."
   },
   "compose.media.failed": {
-    "defaultMessage": "Could not attach the image: {reason}",
-    "description": "State of an attached image whose upload failed. {reason} is the error message."
+    "defaultMessage": "Could not attach the file: {reason}",
+    "description": "State of an attached file whose upload failed. {reason} is the error message."
   },
   "compose.media.failed_processing": {
-    "defaultMessage": "The server could not process this image.",
-    "description": "Why an attached image failed: the server could not process it."
+    "defaultMessage": "The server could not process this file.",
+    "description": "Why an attached file failed: the server could not process it."
   },
   "compose.media.hint": {
-    "defaultMessage": "Up to {max, plural, other {# images}}: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload.",
-    "description": "Help text next to the button that attaches images. {max} is the most images a post can have."
+    "defaultMessage": "Up to {max, plural, other {# files}}: JPEG, PNG, GIF, or WebP images, MP4 or WebM video, or MP3, Ogg, or M4A audio. Location and other metadata are removed.",
+    "description": "Help text next to the button that attaches media. {max} is the most files a post can have. JPEG, PNG, GIF, WebP, MP4, WebM, MP3, Ogg, M4A are format names (not translated)."
   },
   "compose.media.list": {
-    "defaultMessage": "Attached images",
-    "description": "Accessible name of the list of images attached to the post being written."
+    "defaultMessage": "Attached media",
+    "description": "Accessible name of the list of images, videos, and audio files attached to the post being written."
   },
   "compose.media.processing": {
     "defaultMessage": "Processing…",
-    "description": "State of an attached image while the server prepares it."
+    "description": "State of an attached file while the server prepares it."
   },
   "compose.media.remove": {
-    "defaultMessage": "Remove image {position}",
-    "description": "Button that removes an attached image from the post. {position} is its number in the post, from 1."
+    "defaultMessage": "Remove attachment {position}",
+    "description": "Button that removes an attached file from the post. {position} is its number in the post, from 1."
   },
   "compose.media.too_many": {
-    "defaultMessage": "A post can have at most {max, plural, other {# images}}. The rest were not added.",
-    "description": "Notice when the user picked more images than a post can have. {max} is the most images a post can have."
+    "defaultMessage": "A post can have at most {max, plural, other {# files}}. The rest were not added.",
+    "description": "Notice when the user picked more files than a post can have. {max} is the most files a post can have."
   },
   "compose.media.unsupported": {
-    "defaultMessage": "{name} is not a JPEG, PNG, GIF or WebP image.",
-    "description": "Notice when a picked file is not an image type the server accepts. {name} is the file name."
+    "defaultMessage": "{name} is not a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file.",
+    "description": "Notice when a picked file is not a type the server accepts. {name} is the file name. The format names are not translated."
   },
   "compose.media.uploading": {
     "defaultMessage": "Uploading…",
-    "description": "State of an attached image while it is being sent to the server."
+    "description": "State of an attached file while it is being sent to the server."
   },
   "compose.mention.unreached": {
     "defaultMessage": "{count, plural, one {{accounts} is on another server and does not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see this mention as a plain link.} other {{accounts} are on other servers and do not follow you, so they will not receive this post. Outside this server, “This server” posts reach only your followers, who see these mentions as plain links.}}",
@@ -5790,10 +5790,6 @@
   "profile.sign_in_to_follow": {
     "defaultMessage": "Sign in to follow",
     "description": "Link on a profile when nobody is signed in: it opens the sign-in page and comes back."
-  },
-  "profile.signed_out.description": {
-    "defaultMessage": "Sign in to see your profile.",
-    "description": "Text of the Profile page of the navigation when nobody is signed in, above the sign-in link."
   },
   "profile.tab.no_boosts": {
     "defaultMessage": "Without boosts",
@@ -7103,6 +7099,134 @@
     "defaultMessage": "Turn off",
     "description": "Button that turns two-factor authentication off."
   },
+  "settings.passkeys.title": {
+    "defaultMessage": "Passkeys",
+    "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
+  },
+  "settings.passkeys.summary": {
+    "defaultMessage": "Sign in with your device's screen lock instead of your password",
+    "description": "Description of the passkeys page in the settings menu."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Your password keeps working.",
+    "description": "Explanation at the top of the passkeys settings page."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "Add a passkey",
+    "description": "Heading of the form that adds a passkey on the passkeys settings page."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey.",
+    "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "Name",
+    "description": "Label of the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "Such as the device or password manager that keeps it.",
+    "description": "Hint under the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "Enter a name.",
+    "description": "Error of the empty name field of a new passkey."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "Current password",
+    "description": "Label of the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "Adding a way to sign in needs your password.",
+    "description": "Hint under the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "Enter your password.",
+    "description": "Error of the empty password field when adding a passkey."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "Add passkey",
+    "description": "Button that adds a passkey: it checks the password and opens the browser's prompt."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error of the password field when the server refused the password that confirms adding a passkey."
+  },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "No passkey was added: the browser's prompt was closed or timed out. Try again.",
+    "description": "Alert when the user dismissed the browser's passkey prompt or it timed out."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "This device or password manager already has a passkey for your account.",
+    "description": "Alert when the authenticator already holds a passkey of the account."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "The browser could not create a passkey for this site.",
+    "description": "Alert when the browser refused to create a passkey for another reason (unsupported, or the site's address does not allow it)."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "The passkey could not be verified. Try again with another device or password manager.",
+    "description": "Alert when the server could not verify the new passkey (for example, the device has no screen lock)."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "Adding the passkey took too long. Try again.",
+    "description": "Alert when the passkey was created after the registration expired (5 minutes)."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "You have as many passkeys as allowed. Remove one first.",
+    "description": "Alert when the user already has the most passkeys allowed (20)."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "Too many incorrect passwords: {reason}",
+    "description": "Alert when too many wrong passwords were entered to add a passkey. {reason} is the server's message, which says when to try again."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "Could not add the passkey: {reason}",
+    "description": "Alert when adding a passkey failed for another reason. {reason} is the error's message."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "The passkey “{name}” was added.",
+    "description": "Status after a passkey was added. {name} is the name the user gave it."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "This browser cannot create passkeys. Open this page in a browser that supports them to add one.",
+    "description": "Note instead of the form that adds a passkey, in a browser without passkey support."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "Your passkeys",
+    "description": "Heading of the list of the user's passkeys."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "No passkeys yet",
+    "description": "Empty state of the list of the user's passkeys."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "Added {date}",
+    "description": "When a passkey was added, under its name. {date} is a formatted date and time."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "Remove",
+    "description": "Button that removes a passkey, and the confirm button of its dialog."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "Remove the passkey “{name}”?",
+    "description": "Title of the dialog that confirms removing a passkey. {name} is its name."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "You will no longer be able to sign in with it. Delete it from your device or password manager too.",
+    "description": "Explanation in the dialog that confirms removing a passkey."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the dialog without removing the passkey."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "Could not remove the passkey: {reason}",
+    "description": "Alert in the dialog when removing a passkey failed. {reason} is the error's message."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "The passkey “{name}” was removed.",
+    "description": "Announcement after a passkey was removed. {name} is its name."
+  },
   "settings.visibility.direct": {
     "defaultMessage": "Mentioned people",
     "description": "Visibility option: only the mentioned accounts."
@@ -7203,6 +7327,10 @@
     "defaultMessage": "Menu",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.about": {
+    "defaultMessage": "About",
+    "description": "Navigation item, shown while nobody is signed in, that opens the page about this server. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
   "shell.nav.admin": {
     "defaultMessage": "Administration",
     "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
@@ -7262,6 +7390,14 @@
   "shell.nav.settings": {
     "defaultMessage": "Settings",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.sign_in": {
+    "defaultMessage": "Sign in",
+    "description": "Navigation item, shown while nobody is signed in, that opens the sign-in page and comes back to the current page. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
+  "shell.nav.sign_up": {
+    "defaultMessage": "Sign up",
+    "description": "Navigation item, shown while nobody is signed in and the server takes new accounts, that opens the server's registration page. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.viewer": {
     "defaultMessage": "The account you are signed in with",
@@ -7783,6 +7919,10 @@
     "defaultMessage": "Custom emoji image replaced",
     "description": "Kind of an audited operation: an administrator replaced the image of a custom emoji."
   },
+  "admin.audit_log.action.custom_emoji_copied": {
+    "defaultMessage": "Custom emoji copied from another server",
+    "description": "Kind of an audited operation: an administrator copied another server's custom emoji into a new emoji of this server."
+  },
   "admin.audit_log.action.custom_emoji_updated": {
     "defaultMessage": "Custom emoji changed",
     "description": "Kind of an audited operation: an administrator changed the category, other names, or place in the picker of a custom emoji."
@@ -8062,6 +8202,34 @@
   "admin.custom_emojis.deleted": {
     "defaultMessage": "{emoji} is deleted.",
     "description": "Status after deleting a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy": {
+    "defaultMessage": "Copy to this server",
+    "description": "Button of another server's custom emoji that opens the dialog copying it into an emoji of this server."
+  },
+  "admin.custom_emojis.copy_emoji": {
+    "defaultMessage": "Copy {emoji} to this server",
+    "description": "Accessible name of the copy button of another server's custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.title": {
+    "defaultMessage": "Copy {emoji} to this server",
+    "description": "Title of the dialog that copies another server's custom emoji into an emoji of this server. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.description": {
+    "defaultMessage": "This server fetches the image and registers it as its own emoji, shown in the picker. The image shrinks to 256 pixels at most.",
+    "description": "Body of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.submit": {
+    "defaultMessage": "Copy",
+    "description": "Confirm button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copied": {
+    "defaultMessage": "{emoji} is copied as {copy}.",
+    "description": "Status after copying another server's custom emoji. {emoji} is the copied emoji's :shortcode:@domain and {copy} the new emoji's :shortcode:, not translated."
   },
   "admin.custom_emojis.disable": {
     "defaultMessage": "Disable",

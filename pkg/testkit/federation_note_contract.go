@@ -272,3 +272,44 @@ func fedDeliversAutoDelete(t *testing.T, e *fedEnv) {
 		t.Errorf("Delete document = %v, want the author's Delete of a Tombstone", doc)
 	}
 }
+
+// fedSendsVideoAndAudio checks the attachments of video and audio files (ADR-0054 §5): the
+// file as url with its media type, the poster's large variant as icon when there is one, and
+// the length as duration.
+func fedSendsVideoAndAudio(t *testing.T, e *fedEnv) {
+	a := e.audience()
+	poster := appcontent.ImageVariants{
+		Small:  appcontent.ImageVariant{URL: "https://files.social.example/media/v/small.webp", ContentType: "image/webp", Width: 160, Height: 90},
+		Medium: appcontent.ImageVariant{URL: "https://files.social.example/media/v/medium.webp", ContentType: "image/webp", Width: 320, Height: 180},
+		Large:  appcontent.ImageVariant{URL: "https://files.social.example/media/v/large.jpg", ContentType: "image/jpeg", Width: 640, Height: 360},
+	}
+	video := appcontent.MediaView{
+		Media: appcontent.Media{Result: &content.MediaProcessingResult{
+			Outcome: content.MediaReady, MediaType: content.MediaTypeVideo, Width: 640, Height: 360, DurationMS: 12500, Blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
+		}},
+		Description: "a cat jumps",
+		Image: appcontent.Image{Still: poster, Media: &appcontent.ImageVariant{
+			URL: "https://files.social.example/media/v/large-animated.mp4", ContentType: "video/mp4", Width: 640, Height: 360,
+		}},
+	}
+	audio := appcontent.MediaView{
+		Media: appcontent.Media{Result: &content.MediaProcessingResult{Outcome: content.MediaReady, MediaType: content.MediaTypeAudio, DurationMS: 61000}},
+		Image: appcontent.Image{Media: &appcontent.ImageVariant{URL: "https://files.social.example/media/a/large-animated.ogg", ContentType: "audio/ogg"}},
+	}
+	s := e.postWith(t, a.author, content.VisibilityPublic, func(r *content.Revision) {
+		r.Attachments = []content.Attachment{{MediaID: "v1", Description: "a cat jumps"}, {Position: 1, MediaID: "a1"}}
+		e.parts.media[r.ID] = []appcontent.MediaView{video, audio}
+	})
+	e.drain(t)
+	want := []any{
+		map[string]any{
+			"type": "Document", "mediaType": "video/mp4", "url": video.Image.Media.URL, "name": "a cat jumps",
+			"blurhash": "LEHV6nWB2yk8pyo0adR*.7kCMdnj", "width": 640.0, "height": 360.0, "duration": "PT12.5S",
+			"icon": map[string]any{"type": "Image", "mediaType": "image/jpeg", "url": poster.Large.URL},
+		},
+		map[string]any{"type": "Document", "mediaType": "audio/ogg", "url": audio.Image.Media.URL, "duration": "PT61S"},
+	}
+	if got := e.note(t, s, federation.ActivityCreate)["attachment"]; !reflect.DeepEqual(got, want) {
+		t.Errorf("attachment = %v, want %v", got, want)
+	}
+}

@@ -47,7 +47,7 @@ Remote servers ──AP──►│                               │
 
 | モジュール | 責務 | 主な集約 / エンティティ |
 | --- | --- | --- |
-| `identity` | 利用者登録・認証・セッション・OAuth アプリ / トークン・2FA | User, Session, OAuthApp, AccessToken |
+| `identity` | 利用者登録・認証・セッション・OAuth アプリ / トークン・2FA・パスキー | User, Session, OAuthApp, AccessToken, PasskeyCredential |
 | `account` | ローカル / リモートのアカウント（Actor）とプロフィール | Account, ProfileField, ActorKey |
 | `content` | 投稿・メディア・メンション・タグ・カスタム絵文字・投票 | Status, MediaAttachment, Tag, Emoji, Poll |
 | `graph` | フォロー・フォローリクエスト・ブロック・ミュート | Follow, FollowRequest, Block, Mute |
@@ -213,7 +213,7 @@ internal/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）。スタッフの操作（/admin/*、ADR-0058）の入口もここだけ
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     media/           # 公開メディア（Blob のキー media/...）の配信 /media/
-    authpages/       # ログイン・ログアウト・登録・メール確認の画面と、利用規約・プライバシーポリシーの公開ページ（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042）
+    authpages/       # ログイン・ログアウト・登録・メール確認の画面と、利用規約・プライバシーポリシーの公開ページ（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042。ログインの画面は、パスキーに対応したブラウザでだけパスキーのボタンを出す Web ビルドのスクリプトを読む。FR-004）
     web/             # Web クライアントの HTML の外枠（ランディングページ・インスタンスの情報ページ・プロフィール・投稿のリンクプレビューを含む）・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
     db/{sqlite,libsql,postgres}/
@@ -233,6 +233,7 @@ internal/
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
     keymanager/local/ # KeyManager の実装（設定の KEK。KMS アダプタは後続）
     htmlsanitizer/   # HTMLSanitizer の実装（bluemonday。リモート HTML の許可リスト。federation.md §5）と、インスタンスの文書の許可リスト
+    webauthn/        # identity.PasskeyCeremonies の実装（go-webauthn。パスキーの登録とログインの WebAuthn の手続き。FR-004）
     markdown/        # instance.DocumentRenderer の実装（goldmark。利用規約・プライバシーポリシーの Markdown を HTML にし、htmlsanitizer の文書の許可リストに通す）
   platform/          # 設定、composition root、ログ、HTTP サーバー
   i18n/              # メッセージ整形・ロケール解決（型付きアクセサは tools/i18n が生成）

@@ -181,7 +181,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Like` | ローカルの投稿 | `_misskey_reaction`、無ければ `content` が `EmojiReact` と同じ規則で絵文字なら `content.RecordRemoteReaction`（Misskey のリアクション、FEP-c0e0）。それ以外は `content.RecordRemoteFavourite`（お気に入り）。主体が閲覧できない投稿（`ContextObjectFetch`）は捨てる |
 | `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`）。対象がローカルの利用者の Actor でなければ捨てる |
 | `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる。通報の対象は `object` の最初のローカルの Actor、無ければ最初のローカルの投稿の作者で、その作者の投稿を `report_statuses` に残す。ローカルの対象が無ければ捨てる |
-| `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C）。現在は受け取っても何もせず、ピン留めは Actor の取り直しのときに同期する（§6.2） |
+| `Add` / `Remove` | 主体の `featured` | `StatusHandlers.FeaturedChanged`。`target` が、保存した主体の Actor の文書が宣言する `featured` と一致し、主体と同じオリジンなら、ジョブ `federation.fetch_featured` を投入してピン留めの一覧を取得し直す（§6.2）。`object` は読まない。署名者が主体であることは §3.2 で確かめてあるので、主体がコレクションの持ち主になる。ほかの `target`（主体のほかのコレクション・別のオリジン・`target` なし）と、ほかの人の `featured` への `Add` / `Remove` は捨てる |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
 - ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、お気に入りと絵文字リアクションの `Like` / `Undo Like` を送ります（`Like` の枠の付け替えでは、外したものの `Undo` が新しい `Like` の前に記録され、同じ inbox へその順に届く。§7.2 の順序キー）。
@@ -263,6 +263,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
   URL は、正規化した IRI で保存済みのアカウント・投稿を引き、無ければ文書を 1 回だけ取得して、Actor なら保存してから `ResolveURL` と同じくハンドルを確かめ、投稿なら §6.3 の取得した投稿として取り込みます（ADR-0034 の「URL の検索で解決した」）。投稿の返信先は受信時と同じく 1 段だけ取得します。
   自サーバーの URL は取得せず、保存済みのものだけを返します。それ以外（コレクションなど）と取得できないものは `ErrUnresolvable` です。
 - ピン留め（`featured`、[ADR-0044](../adr/0044-remote-profile-recent-posts.md)）: Actor の文書を保存するとき（取得・取り直し・Actor 自身の `Update`）、文書が Actor と同じオリジンの `featured` を宣言していれば、保存のトランザクションでジョブ `federation.fetch_featured`（ペイロードは `account_id`、冪等キー `fetch_featured:<account_id>`）を `queue.Outbox` に投入します。
+  - Actor が自分の `featured` への `Add` / `Remove`（Mastodon・Misskey などがピン留めの変化で送る）を送ってきたときも、同じジョブを同じ冪等キーで投入します（§3.4）。冪等キーにより、そのアカウントのジョブが完了するまで次のジョブは投入されず、続けて届いた通知の取得は重なりません。
   - ジョブ（`StatusHandlers`）は、実行時にもアカウントの条件（有効なリモート・`federation` の制限なし・同じオリジンの `featured`）を確かめ直し、コレクションの項目か、無ければ `first` のページ（同じオリジンのものだけ。2 ページ目はたどらない）を読みます。
   - 項目の順に、埋め込みなら `attributedTo` がそのアカウントで宛先に `as:Public` を含む投稿、IRI ならアカウントと同じオリジンの投稿を 5 件（`FeaturedMaxPosts`）まで選び、保存済みでなければ §6.3 の outbox と同じく取得した投稿として取り込みます（返信先は取得しない）。1 回の文書はコレクション・ページ・投稿の合わせて 7 件（`FeaturedMaxDocuments`）までです。
   - 選んだ投稿で `content.Interactions.ReplaceRemotePins` がそのアカウントの `status_pins` を置き換えます（コレクションの順、新しいピン留めが先）。空のコレクションと `featured` を宣言しなくなった文書はピン留めを消し、コレクションが取得できなければピン留めを残してジョブを完了にします。ストアの失敗は `Retry` です。
@@ -420,6 +421,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - `contentMap` は版の言語ごとの本文、`content` は版の既定の言語の本文です（NFR-I18N-5）。言語が `und` の本文は `contentMap` に入れません。`sensitive`・`summary`（CW）・`tag`（`Mention` / `Hashtag` / `Emoji`）・`attachment`（メディアの公開 URL・`mediaType`・`name`・`blurhash`・`focalPoint`・`width` / `height`）を付けます。
   - `sensitive` は CW があれば真です（Mastodon と同じ）。`summary` と `contentMap` は空なら省き、`sensitive`・`content`・`tag`・`attachment` は常に付けます。
   - `attachment` は処理の終わったメディアだけで、種類を問わず `type` は `Document`（Mastodon と同じ。種類は `mediaType` で伝える）、URL・`mediaType`・寸法は `large` の版のもので、アニメーションなら動く版（GIF）です（[ADR-0054](../adr/0054-media-variants-video-audio.md) §5）。焦点が中央なら `focalPoint` を省きます。
+    動画・音声は remux したファイルを `url` に、ポスターの `large` を `icon`（`Image`。ポスターがなければ省く）に、長さを `duration`（`PT12.5S` の形の `xsd:duration`）に載せます（Mastodon と同じ形）。
   - `Mention` は `href` が Actor の IRI、`name` が `@user@domain`（ローカルのアカウントは設定 `account_domain`）、`Hashtag` は `href` が `https://{host}/tags/{name}`（ADR-0018）、`name` が `#name` です。
   - `Emoji`（[ADR-0051](../adr/0051-custom-emoji.md) §3）は、版の本文と CW で使った有効なカスタム絵文字です。`id` はローカルなら `https://{host}/ap/emojis/{uuid}`（リモートなら記録した `uri`、無ければ省く）、`name` は `:shortcode:`、`updated` は現在の画像を設定した時刻、`icon` は `Image` で、`url` と `mediaType` は `large` の版（アニメーションなら動く版の GIF、静止画は常に PNG）です。
     ローカルの投稿とプロフィールの絵文字は、保存のときに原文の `:shortcode:` から有効なローカルの絵文字だけを版に記録したものです（data-model §4.4）。リアクション（ADR-0052）も同じ形を使います（`federation.EmojiTag`）。

@@ -276,6 +276,7 @@ const (
 	AdminAuditActionAnnouncementWithdrawn    AdminAuditAction = "announcement_withdrawn"
 	AdminAuditActionAppealOverturned         AdminAuditAction = "appeal_overturned"
 	AdminAuditActionAppealUpheld             AdminAuditAction = "appeal_upheld"
+	AdminAuditActionCustomEmojiCopied        AdminAuditAction = "custom_emoji_copied"
 	AdminAuditActionCustomEmojiCreated       AdminAuditAction = "custom_emoji_created"
 	AdminAuditActionCustomEmojiDeleted       AdminAuditAction = "custom_emoji_deleted"
 	AdminAuditActionCustomEmojiDisabled      AdminAuditAction = "custom_emoji_disabled"
@@ -336,6 +337,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAppealOverturned:
 		return true
 	case AdminAuditActionAppealUpheld:
+		return true
+	case AdminAuditActionCustomEmojiCopied:
 		return true
 	case AdminAuditActionCustomEmojiCreated:
 		return true
@@ -864,9 +867,11 @@ func (e AdminWebhookStateReason) Valid() bool {
 
 // Defines values for CustomEmojiProblemReason.
 const (
+	CustomEmojiProblemReasonFetchFailed       CustomEmojiProblemReason = "fetch_failed"
 	CustomEmojiProblemReasonInvalidAlias      CustomEmojiProblemReason = "invalid_alias"
 	CustomEmojiProblemReasonInvalidCategory   CustomEmojiProblemReason = "invalid_category"
 	CustomEmojiProblemReasonInvalidShortcode  CustomEmojiProblemReason = "invalid_shortcode"
+	CustomEmojiProblemReasonLocalEmoji        CustomEmojiProblemReason = "local_emoji"
 	CustomEmojiProblemReasonMediaNotFound     CustomEmojiProblemReason = "media_not_found"
 	CustomEmojiProblemReasonMediaNotReady     CustomEmojiProblemReason = "media_not_ready"
 	CustomEmojiProblemReasonRemoteEmoji       CustomEmojiProblemReason = "remote_emoji"
@@ -879,11 +884,15 @@ const (
 // Valid indicates whether the value is a known member of the CustomEmojiProblemReason enum.
 func (e CustomEmojiProblemReason) Valid() bool {
 	switch e {
+	case CustomEmojiProblemReasonFetchFailed:
+		return true
 	case CustomEmojiProblemReasonInvalidAlias:
 		return true
 	case CustomEmojiProblemReasonInvalidCategory:
 		return true
 	case CustomEmojiProblemReasonInvalidShortcode:
+		return true
+	case CustomEmojiProblemReasonLocalEmoji:
 		return true
 	case CustomEmojiProblemReasonMediaNotFound:
 		return true
@@ -2332,6 +2341,7 @@ type AdminAppealPage struct {
 // `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
 // `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
 // `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+// `custom_emoji_copied` (a new local emoji copied from a remote one),
 // `custom_emoji_updated` (its category, aliases, or place in the picker),
 // `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
 // `webhook_created`, `webhook_updated` (its URL, description, or events),
@@ -2369,6 +2379,7 @@ type AdminAuditEntry struct {
 	// `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
 	// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
 	// `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+	// `custom_emoji_copied` (a new local emoji copied from a remote one),
 	// `custom_emoji_updated` (its category, aliases, or place in the picker),
 	// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
 	// `webhook_created`, `webhook_updated` (its URL, description, or events),
@@ -3336,6 +3347,13 @@ type AutoDeletePolicy struct {
 	MinAgeDays int `json:"min_age_days"`
 }
 
+// CopyCustomEmojiRequest The local custom emoji that a copy of a remote one becomes.
+type CopyCustomEmojiRequest struct {
+	// Shortcode The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+	// underscores; case matters. Absent, the remote emoji's.
+	Shortcode *string `json:"shortcode,omitempty"`
+}
+
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
 	// BlockEmail Whether a `ban` also blocks sign-ups with the email address of the account's user (a
@@ -3421,6 +3439,16 @@ type CreateInviteRequest struct {
 
 	// MaxUses How many sign-ups the invite allows; omitted for no limit.
 	MaxUses *int `json:"max_uses,omitempty"`
+}
+
+// CreatePasskeyRequest The browser's answer to a passkey registration.
+type CreatePasskeyRequest struct {
+	// Credential The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+	// `PublicKeyCredential.toJSON()` returns for the new credential.
+	Credential map[string]interface{} `json:"credential"`
+
+	// RegistrationToken The `registration_token` of `POST /passkeys/registration`.
+	RegistrationToken string `json:"registration_token"`
 }
 
 // CreateReportNoteRequest A note to add to a report.
@@ -3655,7 +3683,9 @@ type CustomEmojiProblem struct {
 	// file is not an upload of the user. `media_not_ready`: it has not finished processing.
 	// `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
 	// than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-	// `remote_emoji`: the operation is for local emoji only.
+	// `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+	// for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+	// fetched (its server did not return it, or the instance rejects the media of its domain).
 	Reason *CustomEmojiProblemReason `json:"reason,omitempty"`
 
 	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
@@ -3679,7 +3709,9 @@ type CustomEmojiProblem struct {
 // file is not an upload of the user. `media_not_ready`: it has not finished processing.
 // `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
 // than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-// `remote_emoji`: the operation is for local emoji only.
+// `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+// for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+// fetched (its server did not return it, or the instance rejects the media of its domain).
 type CustomEmojiProblemReason string
 
 // DataExport A request for an archive of the user's data.
@@ -4329,7 +4361,8 @@ type MediaAttachment struct {
 	// Meta What the server knows about the media file.
 	Meta MediaMeta `json:"meta"`
 
-	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still).
+	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still). A video or
+	// audio file without a poster has none.
 	PreviewUrl *string `json:"preview_url,omitempty"`
 
 	// RemoteUrl The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
@@ -4339,16 +4372,20 @@ type MediaAttachment struct {
 	// then `ready`, or `failed` when the content could not be processed.
 	State MediaAttachmentState `json:"state"`
 
-	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+	// Type The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+	// a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+	// an animated image: muted, looped, without controls.
 	Type MediaAttachmentType `json:"type"`
 
 	// Url Where the file is served on this instance; for an upload, `variants.large.url`, or
-	// `variants.animated.large.url` for an animation.
+	// `variants.animated.large.url` for an animation, and the file itself for a video or
+	// audio file.
 	Url *string `json:"url,omitempty"`
 
 	// Variants The renditions of a ready media file within the sizes of its purpose (see
 	// `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-	// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+	// still: for an animation, its first frame, and for a video or audio file, its poster
+	// (absent without one). Clients pick one by its width (`srcset`), and
 	// show `animated` instead only when the user lets animations play and does not prefer
 	// reduced motion.
 	Variants *MediaVariants `json:"variants,omitempty"`
@@ -4358,7 +4395,9 @@ type MediaAttachment struct {
 // then `ready`, or `failed` when the content could not be processed.
 type MediaAttachmentState string
 
-// MediaAttachmentType The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+// MediaAttachmentType The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+// a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+// an animated image: muted, looped, without controls.
 type MediaAttachmentType string
 
 // MediaFocus The focal point that previews keep in view when they crop the image, from -1.0 (left,
@@ -4370,6 +4409,9 @@ type MediaFocus struct {
 
 // MediaMeta What the server knows about the media file.
 type MediaMeta struct {
+	// Duration The length of a video or audio file in seconds; absent for an image and until the file is ready.
+	Duration *float64 `json:"duration,omitempty"`
+
 	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
 	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
 	Focus MediaFocus `json:"focus"`
@@ -4405,6 +4447,11 @@ type MediaUpload struct {
 	// (within 750 × 250, 1500 × 500, and 3000 × 1000), or a custom `emoji` (within 64,
 	// 128, and 256 pixels).
 	Purpose *MediaUploadPurpose `json:"purpose,omitempty"`
+
+	// Thumbnail The poster of a video or audio file: an image that it shows before it plays, which
+	// the client takes from the file. Its declared type is ignored; it must be an image
+	// within the image limits. It is ignored for an image.
+	Thumbnail *openapi_types.File `json:"thumbnail,omitempty"`
 }
 
 // MediaUploadPurpose What the file is for, which picks the sizes of its variants: an `attachment` of a
@@ -4437,7 +4484,8 @@ type MediaVariant struct {
 
 // MediaVariants The renditions of a ready media file within the sizes of its purpose (see
 // `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+// still: for an animation, its first frame, and for a video or audio file, its poster
+// (absent without one). Clients pick one by its width (`srcset`), and
 // show `animated` instead only when the user lets animations play and does not prefer
 // reduced motion.
 type MediaVariants struct {
@@ -4709,6 +4757,47 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
+// Passkey A passkey that signs the authenticated user in instead of the password.
+type Passkey struct {
+	// CreatedAt When the passkey was registered.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Name What the user calls the passkey, such as the device it is on.
+	Name string `json:"name"`
+}
+
+// PasskeyList The authenticated user's passkeys, oldest first.
+type PasskeyList struct {
+	Items []Passkey `json:"items"`
+}
+
+// PasskeyRegistration The start of a passkey registration.
+type PasskeyRegistration struct {
+	// ExpiresAt When `registration_token` stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Options The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+	// values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+	Options map[string]interface{} `json:"options"`
+
+	// RegistrationToken An opaque token that carries the registration to `POST /passkeys`.
+	RegistrationToken string `json:"registration_token"`
+}
+
+// PasskeyRegistrationRequest The name of a new passkey and the user's password that confirms it.
+type PasskeyRegistrationRequest struct {
+	// Name What the user calls the passkey; spaces around it are dropped.
+	Name string `json:"name"`
+
+	// Password The user's current password.
+	Password string `json:"password"`
+}
+
 // Permission A capability that a role grants. `manage_accounts`: the accounts and their moderation
 // actions.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
@@ -4859,11 +4948,14 @@ type PreviewDomainBlockImportRequest struct {
 //   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
 //     instance accepts.
 //   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-//     accepted format, or its declared type does not match its content.
+//     accepted format or codec (such as HEVC video), or its declared type does not match its
+//     content.
 //   - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-//     many pixels or frames.
-//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
-//     of its format.
+//     many pixels or frames; or the video has too many pixels or frames per second.
+//   - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+//     instance accepts.
+//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+//     its format.
 //   - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
 //     no longer be changed on its own.
 //   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
@@ -4893,6 +4985,12 @@ type PreviewDomainBlockImportRequest struct {
 //     authentication.
 //   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
 //     operation, has no two-factor authentication.
+//   - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+//     registration does not verify, or the passkey is registered already.
+//   - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+//     unknown or expired. Start a new one.
+//   - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+//     allowed. Remove one first.
 //   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
 //     says which.
 //   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -5749,8 +5847,8 @@ type WebhookCustomEmoji struct {
 	Local bool `json:"local"`
 
 	// Operation The operation, named as in the audit log: `custom_emoji_created`,
-	// `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
-	// `custom_emoji_disabled`, or `custom_emoji_deleted`.
+	// `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+	// `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
 	Operation string `json:"operation"`
 
 	// Shortcode The shortcode, without the colons around it.
@@ -6415,6 +6513,9 @@ type CreateCustomEmojiJSONRequestBody = CreateCustomEmojiRequest
 // UpdateCustomEmojiJSONRequestBody defines body for UpdateCustomEmoji for application/json ContentType.
 type UpdateCustomEmojiJSONRequestBody = UpdateCustomEmojiRequest
 
+// CopyCustomEmojiJSONRequestBody defines body for CopyCustomEmoji for application/json ContentType.
+type CopyCustomEmojiJSONRequestBody = CopyCustomEmojiRequest
+
 // ReplaceCustomEmojiImageJSONRequestBody defines body for ReplaceCustomEmojiImage for application/json ContentType.
 type ReplaceCustomEmojiImageJSONRequestBody = ReplaceCustomEmojiImageRequest
 
@@ -6498,6 +6599,12 @@ type AppealModerationActionJSONRequestBody = AppealModerationActionRequest
 
 // UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
 type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
+
+// CreatePasskeyJSONRequestBody defines body for CreatePasskey for application/json ContentType.
+type CreatePasskeyJSONRequestBody = CreatePasskeyRequest
+
+// BeginPasskeyRegistrationJSONRequestBody defines body for BeginPasskeyRegistration for application/json ContentType.
+type BeginPasskeyRegistrationJSONRequestBody = PasskeyRegistrationRequest
 
 // UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
 type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
@@ -6666,6 +6773,9 @@ type ServerInterface interface {
 	// UpdateCustomEmoji Change the settings of a custom emoji
 	// (PATCH /admin/custom_emojis/{id})
 	UpdateCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
+	// CopyCustomEmoji Copy a remote custom emoji into a local one
+	// (POST /admin/custom_emojis/{id}/copy)
+	CopyCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
 	// ReplaceCustomEmojiImage Replace the image of a local custom emoji
 	// (PUT /admin/custom_emojis/{id}/image)
 	ReplaceCustomEmojiImage(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
@@ -6933,6 +7043,18 @@ type ServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(w http.ResponseWriter, r *http.Request, id Id)
+	// ListPasskeys List the authenticated user's passkeys
+	// (GET /passkeys)
+	ListPasskeys(w http.ResponseWriter, r *http.Request)
+	// CreatePasskey Register a passkey with the browser's response to a registration
+	// (POST /passkeys)
+	CreatePasskey(w http.ResponseWriter, r *http.Request)
+	// BeginPasskeyRegistration Start the registration of a passkey
+	// (POST /passkeys/registration)
+	BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request)
+	// DeletePasskey Remove a passkey
+	// (DELETE /passkeys/{id})
+	DeletePasskey(w http.ResponseWriter, r *http.Request, id Id)
 	// GetPreferences Get the authenticated user's preferences
 	// (GET /preferences)
 	GetPreferences(w http.ResponseWriter, r *http.Request)
@@ -8594,6 +8716,32 @@ func (siw *ServerInterfaceWrapper) UpdateCustomEmoji(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateCustomEmoji(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CopyCustomEmoji operation middleware
+func (siw *ServerInterfaceWrapper) CopyCustomEmoji(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CustomEmojiId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CopyCustomEmoji(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -11056,6 +11204,74 @@ func (siw *ServerInterfaceWrapper) DismissNotification(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// ListPasskeys operation middleware
+func (siw *ServerInterfaceWrapper) ListPasskeys(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPasskeys(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePasskey operation middleware
+func (siw *ServerInterfaceWrapper) CreatePasskey(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePasskey(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BeginPasskeyRegistration operation middleware
+func (siw *ServerInterfaceWrapper) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BeginPasskeyRegistration(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeletePasskey operation middleware
+func (siw *ServerInterfaceWrapper) DeletePasskey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeletePasskey(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPreferences operation middleware
 func (siw *ServerInterfaceWrapper) GetPreferences(w http.ResponseWriter, r *http.Request) {
 
@@ -12170,6 +12386,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp", wrapper.EnableTotp)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/disable", wrapper.DisableTotp)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/recovery_codes", wrapper.RegenerateRecoveryCodes)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/passkeys", wrapper.ListPasskeys)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys", wrapper.CreatePasskey)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys/registration", wrapper.BeginPasskeyRegistration)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/passkeys/{id}", wrapper.DeletePasskey)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}", wrapper.GetAccount)
@@ -12273,6 +12493,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/custom_emojis/{id}", wrapper.GetAdminCustomEmoji)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/custom_emojis/{id}", wrapper.UpdateCustomEmoji)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/custom_emojis/{id}/image", wrapper.ReplaceCustomEmojiImage)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/custom_emojis/{id}/copy", wrapper.CopyCustomEmoji)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance_texts", wrapper.ListInstanceTexts)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}/{locale}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
@@ -15102,6 +15323,84 @@ type UpdateCustomEmojidefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateCustomEmojidefaultApplicationProblemPlusJSONResponse) VisitUpdateCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CopyCustomEmojiRequestObject struct {
+	Id   CustomEmojiId `json:"id"`
+	Body *CopyCustomEmojiJSONRequestBody
+}
+
+type CopyCustomEmojiResponseObject interface {
+	VisitCopyCustomEmojiResponse(w http.ResponseWriter) error
+}
+
+type CopyCustomEmoji200JSONResponse struct{ AdminCustomEmojiJSONResponse }
+
+func (response CopyCustomEmoji200JSONResponse) VisitCopyCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CopyCustomEmoji422ApplicationProblemPlusJSONResponse struct {
+	CustomEmojiProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CopyCustomEmoji422ApplicationProblemPlusJSONResponse) VisitCopyCustomEmojiResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CopyCustomEmojidefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CopyCustomEmojidefaultApplicationProblemPlusJSONResponse) VisitCopyCustomEmojiResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -20471,6 +20770,227 @@ func (response DismissNotificationdefaultApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListPasskeysRequestObject struct {
+}
+
+type ListPasskeysResponseObject interface {
+	VisitListPasskeysResponse(w http.ResponseWriter) error
+}
+
+type ListPasskeys200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListPasskeys200JSONResponse struct {
+	Body    PasskeyList
+	Headers ListPasskeys200ResponseHeaders
+}
+
+func (response ListPasskeys200JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPasskeysdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListPasskeysdefaultApplicationProblemPlusJSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePasskeyRequestObject struct {
+	Body *CreatePasskeyJSONRequestBody
+}
+
+type CreatePasskeyResponseObject interface {
+	VisitCreatePasskeyResponse(w http.ResponseWriter) error
+}
+
+type CreatePasskey201JSONResponse Passkey
+
+func (response CreatePasskey201JSONResponse) VisitCreatePasskeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePasskeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreatePasskeydefaultApplicationProblemPlusJSONResponse) VisitCreatePasskeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BeginPasskeyRegistrationRequestObject struct {
+	Body *BeginPasskeyRegistrationJSONRequestBody
+}
+
+type BeginPasskeyRegistrationResponseObject interface {
+	VisitBeginPasskeyRegistrationResponse(w http.ResponseWriter) error
+}
+
+type BeginPasskeyRegistration200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type BeginPasskeyRegistration200JSONResponse struct {
+	Body    PasskeyRegistration
+	Headers BeginPasskeyRegistration200ResponseHeaders
+}
+
+func (response BeginPasskeyRegistration200JSONResponse) VisitBeginPasskeyRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BeginPasskeyRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response BeginPasskeyRegistrationdefaultApplicationProblemPlusJSONResponse) VisitBeginPasskeyRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePasskeyRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DeletePasskeyResponseObject interface {
+	VisitDeletePasskeyResponse(w http.ResponseWriter) error
+}
+
+type DeletePasskey204Response struct {
+}
+
+func (response DeletePasskey204Response) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeletePasskeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeletePasskeydefaultApplicationProblemPlusJSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetPreferencesRequestObject struct {
 }
 
@@ -22762,6 +23282,9 @@ type StrictServerInterface interface {
 	// UpdateCustomEmoji Change the settings of a custom emoji
 	// (PATCH /admin/custom_emojis/{id})
 	UpdateCustomEmoji(ctx context.Context, request UpdateCustomEmojiRequestObject) (UpdateCustomEmojiResponseObject, error)
+	// CopyCustomEmoji Copy a remote custom emoji into a local one
+	// (POST /admin/custom_emojis/{id}/copy)
+	CopyCustomEmoji(ctx context.Context, request CopyCustomEmojiRequestObject) (CopyCustomEmojiResponseObject, error)
 	// ReplaceCustomEmojiImage Replace the image of a local custom emoji
 	// (PUT /admin/custom_emojis/{id}/image)
 	ReplaceCustomEmojiImage(ctx context.Context, request ReplaceCustomEmojiImageRequestObject) (ReplaceCustomEmojiImageResponseObject, error)
@@ -23029,6 +23552,18 @@ type StrictServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(ctx context.Context, request DismissNotificationRequestObject) (DismissNotificationResponseObject, error)
+	// ListPasskeys List the authenticated user's passkeys
+	// (GET /passkeys)
+	ListPasskeys(ctx context.Context, request ListPasskeysRequestObject) (ListPasskeysResponseObject, error)
+	// CreatePasskey Register a passkey with the browser's response to a registration
+	// (POST /passkeys)
+	CreatePasskey(ctx context.Context, request CreatePasskeyRequestObject) (CreatePasskeyResponseObject, error)
+	// BeginPasskeyRegistration Start the registration of a passkey
+	// (POST /passkeys/registration)
+	BeginPasskeyRegistration(ctx context.Context, request BeginPasskeyRegistrationRequestObject) (BeginPasskeyRegistrationResponseObject, error)
+	// DeletePasskey Remove a passkey
+	// (DELETE /passkeys/{id})
+	DeletePasskey(ctx context.Context, request DeletePasskeyRequestObject) (DeletePasskeyResponseObject, error)
 	// GetPreferences Get the authenticated user's preferences
 	// (GET /preferences)
 	GetPreferences(ctx context.Context, request GetPreferencesRequestObject) (GetPreferencesResponseObject, error)
@@ -24409,6 +24944,42 @@ func (sh *strictHandler) UpdateCustomEmoji(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateCustomEmojiResponseObject); ok {
 		if err := validResponse.VisitUpdateCustomEmojiResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CopyCustomEmoji operation middleware
+func (sh *strictHandler) CopyCustomEmoji(w http.ResponseWriter, r *http.Request, id CustomEmojiId) {
+	var request CopyCustomEmojiRequestObject
+
+	request.Id = id
+
+	var body CopyCustomEmojiJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CopyCustomEmoji(ctx, request.(CopyCustomEmojiRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CopyCustomEmoji")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CopyCustomEmojiResponseObject); ok {
+		if err := validResponse.VisitCopyCustomEmojiResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -26871,6 +27442,118 @@ func (sh *strictHandler) DismissNotification(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DismissNotificationResponseObject); ok {
 		if err := validResponse.VisitDismissNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPasskeys operation middleware
+func (sh *strictHandler) ListPasskeys(w http.ResponseWriter, r *http.Request) {
+	var request ListPasskeysRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPasskeys(ctx, request.(ListPasskeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPasskeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPasskeysResponseObject); ok {
+		if err := validResponse.VisitListPasskeysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePasskey operation middleware
+func (sh *strictHandler) CreatePasskey(w http.ResponseWriter, r *http.Request) {
+	var request CreatePasskeyRequestObject
+
+	var body CreatePasskeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePasskey(ctx, request.(CreatePasskeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePasskey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePasskeyResponseObject); ok {
+		if err := validResponse.VisitCreatePasskeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BeginPasskeyRegistration operation middleware
+func (sh *strictHandler) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+	var request BeginPasskeyRegistrationRequestObject
+
+	var body BeginPasskeyRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BeginPasskeyRegistration(ctx, request.(BeginPasskeyRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BeginPasskeyRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BeginPasskeyRegistrationResponseObject); ok {
+		if err := validResponse.VisitBeginPasskeyRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeletePasskey operation middleware
+func (sh *strictHandler) DeletePasskey(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DeletePasskeyRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeletePasskey(ctx, request.(DeletePasskeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeletePasskey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeletePasskeyResponseObject); ok {
+		if err := validResponse.VisitDeletePasskeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

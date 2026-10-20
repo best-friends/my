@@ -106,7 +106,7 @@ export const SensitiveRevealed: Story = {
  */
 export const Viewer: Story = {
   args: {
-    items: pictures.slice(0, 2).map((item) => ({ ...item, original: { sources: { still: [{ url: item.src }] }, width: 1600, height: 900 } })),
+    items: pictures.slice(0, 2).map((item) => ({ ...item, original: { sources: { still: [{ url: item.src ?? "" }] }, width: 1600, height: 900 } })),
     viewerLabels: {
       title: (position, count) => `Image ${String(position)} of ${String(count)}`,
       close: "Close",
@@ -143,4 +143,44 @@ export const Viewer: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Snowy hills in a green valley" }));
     await expect(await canvas.findByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
   },
+};
+/** A one-second VP8 video of one blue frame and a one-second silent Opus file, so stories load no network media. */
+const videoFile =
+  "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAIpEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEfTbuMU6uEHFO7a1OsggIT7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNTguNDUuMTAwV0GNTGF2ZjU4LjQ1LjEwMESJiECPQAAAAAAAFlSua8KuAQAAAAAAADnXgQFzxYiPgJbYbBAl7pyBACK1nIN1bmSGhVZfVlA4g4EBI+ODhDuaygDgAQAAAAAAAAawgaC6gVoSVMNnQJlzcwEAAAAAAAAnY8CAZ8gBAAAAAAAAGkWjh0VOQ09ERVJEh41MYXZmNTguNDUuMTAwc3MBAAAAAAAAXmPAi2PFiI+AlthsECXuZ8gBAAAAAAAAIUWjh0VOQ09ERVJEh5RMYXZjNTguOTEuMTAwIGxpYnZweGfIokWjiERVUkFUSU9ORIeUMDA6MDA6MDEuMDAwMDAwMDAwAAAfQ7Z10OeBAKPLgQAAgLAFAJ0BKqAAWgABhwiFhYiZhIgIAgJ1qgIGeZak569GXiOevRl4jnr0ZeI569GXiOevRl4jlAD+7gpnySPVzHQfit9QM0gAHFO7a5G7j7OBALeK94EB8YIBvvCBAw==";
+const audioFile =
+  "data:audio/ogg;base64,T2dnUwACAAAAAAAAAABf1EMQAAAAAL7MFqUBE09wdXNIZWFkAQE4AYC7AAAAAABPZ2dTAAAAAAAAAAAAAF/UQxABAAAAIiMbKgE+T3B1c1RhZ3MNAAAATGF2ZjU4LjQ1LjEwMAEAAAAdAAAAZW5jb2Rlcj1MYXZjNTguOTEuMTAwIGxpYm9wdXNPZ2dTAACAuwAAAAAAAF/UQxACAAAAWsUo5TIHBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBggL5FMVS/IIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsYIBuCzDsZPZ2dTAAS4vAAAAAAAAF/UQxADAAAAEH17vgEGCAbgsw7G";
+
+/** A video, an audio file with a poster, an audio file without one, and a short silent video that loops like a GIF. */
+const playables: readonly MediaItem[] = [
+  { id: "v", src: pictures[0]?.src, playback: { kind: "video", url: videoFile }, alt: "A sunny sky, filmed for a second", lang: "en", blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj" },
+  { id: "a", src: pictures[1]?.src, playback: { kind: "audio", url: audioFile }, alt: "A second of silence", lang: "en" },
+  { id: "n", src: undefined, playback: { kind: "audio", url: audioFile }, alt: null },
+  { id: "g", src: pictures[2]?.src, playback: { kind: "gifv", url: videoFile }, alt: "A pink square" },
+];
+
+/**
+ * Videos and audio files play in their cells with the browser's controls and never start by themselves; each player
+ * is named by its description. These stories take no screenshots: the browser's media controls draw the time once the
+ * file has loaded, which a screenshot cannot wait for.
+ */
+export const Video: Story = {
+  args: { items: playables.slice(0, 1) },
+  tags: ["no-screenshot"],
+  play: async ({ canvasElement }) => {
+    // A <video> has no ARIA role to query by.
+    const video = canvasElement.querySelector("video");
+    await expect(video).toHaveAccessibleName("A sunny sky, filmed for a second");
+    await expect(video).toHaveAttribute("controls");
+    await expect(video).not.toHaveAttribute("autoplay");
+  },
+};
+
+export const Audio: Story = { args: { items: playables.slice(1, 3) }, tags: ["no-screenshot"] };
+
+/** A gifv loops by itself without controls, unless animations do not play by themselves or motion is reduced. */
+export const Gifv: Story = { args: { items: playables.slice(3) }, tags: ["no-screenshot"] };
+
+export const Mixed: Story = {
+  args: { items: [...pictures.slice(0, 1), ...playables.slice(0, 2), ...playables.slice(3)] },
+  tags: ["no-screenshot"],
 };

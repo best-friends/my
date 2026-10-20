@@ -79,6 +79,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"UpdatesAndDeletesActors", fedUpdatesAndDeletesActors},
 		{"PropagatesSuspensionsOfLocalActors", fedPropagatesSuspensions},
 		{"BuildsTheNoteOfTheRevision", fedBuildsTheNote},
+		{"SendsVideoAndAudioWithPosterAndDuration", fedSendsVideoAndAudio},
 		{"LeavesNonFollowersOutOfTheTagOfLocalStatuses", fedLeavesNonFollowersOutOfLocalTags},
 		{"DeliversTheStoredDeleteAfterThePurge", fedDeliversTheStoredDelete},
 		{"DeliversTheDeleteOfAnAutomaticDeletion", fedDeliversAutoDelete},

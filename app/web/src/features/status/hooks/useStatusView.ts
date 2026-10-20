@@ -42,7 +42,7 @@ export type StatusView = {
   lang: string | undefined;
   /** The author's content warning, or null when there is none. */
   contentWarning: string | null;
-  /** The pictures that are ready to show. */
+  /** The pictures, videos, and audio files that are ready to show. */
   media: MediaItem[];
   /** Whether the author marked the media sensitive; it covers the image of the link card too. */
   sensitive: boolean;
@@ -96,27 +96,39 @@ function useLinkCardView(card: LinkCard | undefined): LinkCardView | null {
 }
 
 /**
- * The pictures of a status that are ready to show: `preview_url` is the small still rendition of an upload, and
- * the media proxy's small one of a remote file; an upload also has its renditions to choose from by size, still and
- * moving (api/openapi.yaml, MediaAttachment). The blurhash stands in for a picture while it is concealed or loading.
- * The image viewer shows the original size: the large rendition of an upload, or `url` (the proxy's) of a remote file.
+ * The pictures, videos, and audio files of a status that are ready to show (api/openapi.yaml, MediaAttachment). For a
+ * picture, `preview_url` is the small still rendition of an upload and the media proxy's small one of a remote file; an
+ * upload also has its renditions to choose from by size, still and moving. A video or audio file plays from `url`, with
+ * its poster's renditions (an upload's, when it has one) as the poster. The blurhash stands in while it is concealed or loading.
+ * The image viewer shows a picture at its original size: the large rendition of an upload, or `url` (the proxy's) of a remote file.
  */
 export function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
-  return attachments.flatMap((attachment) =>
-    attachment.state === "ready" && attachment.type === "image" && attachment.preview_url !== undefined
-      ? [
-          {
-            id: attachment.id,
-            src: attachment.preview_url,
-            sources: imageSources(attachment.variants),
-            alt: attachment.description ?? null,
-            lang,
-            blurhash: attachment.blurhash,
-            original: originalImage(attachment.variants, attachment.url, attachment.meta),
-          },
-        ]
-      : [],
-  );
+  return attachments.flatMap((attachment): MediaItem[] => {
+    if (attachment.state !== "ready") return [];
+    const common = { id: attachment.id, alt: attachment.description ?? null, lang, blurhash: attachment.blurhash };
+    switch (attachment.type) {
+      case "image":
+        return attachment.preview_url === undefined
+          ? []
+          : [{ ...common, src: attachment.preview_url, sources: imageSources(attachment.variants), original: originalImage(attachment.variants, attachment.url, attachment.meta) }];
+      case "video":
+      case "audio":
+      case "gifv":
+        return attachment.url === undefined
+          ? []
+          : [
+              {
+                ...common,
+                // The poster: the large still rendition fills the cell as a video would.
+                src: attachment.variants?.large.url ?? attachment.preview_url,
+                sources: imageSources(attachment.variants),
+                playback: { kind: attachment.type, url: attachment.url },
+              },
+            ];
+      default:
+        return [];
+    }
+  });
 }
 
 /** The page of a remote post on its server and that page's host; null for a local post. */

@@ -64,6 +64,7 @@ export { VisuallyHidden, type VisuallyHiddenProps } from "./VisuallyHidden";
 
 // Icons (web-client.md §16.3): Phosphor through react-icons/pi (ADR-0043), decorative, sized by the control around them.
 export {
+  AboutIcon,
   AdminIcon,
   BackIcon,
   BookmarkIcon,
@@ -88,6 +89,8 @@ export {
   ReplyIcon,
   SearchIcon,
   SettingsIcon,
+  SignInIcon,
+  SignUpIcon,
   StarIcon,
   SubmenuIcon,
   type ToggleIconProps,
@@ -100,7 +103,7 @@ export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, t
 export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type PickerEmoji } from "./EmojiPicker";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { LinkCard, type LinkCardImage, type LinkCardProps } from "./LinkCard";
-export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
+export { MediaGrid, type MediaGridProps, type MediaItem, type MediaPlayback } from "./MediaGrid";
 export type { MediaViewerLabels } from "./MediaViewer";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
 export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";

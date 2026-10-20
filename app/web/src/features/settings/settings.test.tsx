@@ -732,9 +732,10 @@ describe("signed out", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ return_to: "/settings/blocks" });
   });
+});
 
-  test("the settings page lists the settings pages", async () => {
-    server.resetHandlers();
+describe("the settings page", () => {
+  test("lists the settings pages", async () => {
     await renderApp({ path: "/settings" });
 
     const menu = await screen.findByRole("region", { name: "Settings pages" });
@@ -742,6 +743,7 @@ describe("signed out", () => {
       "/settings/profile",
       "/settings/preferences",
       "/settings/two-factor",
+      "/settings/passkeys",
       "/settings/auto-delete",
       "/settings/follow-requests",
       "/settings/blocks",

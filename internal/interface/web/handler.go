@@ -545,3 +545,8 @@ func addVary(h http.Header, value string) {
 // pages from the client's design tokens (app/web/src/server-pages.css, ADR-0030), or "" when the
 // build has none (no build, or a Vite dev server).
 func (h *Handler) Stylesheet() string { return h.tags.ServerPages }
+
+// PasskeySignInScript returns the URL of the module script that signs in with a passkey on the
+// server-rendered sign-in page (app/web/src/server-pages/passkey-sign-in.ts), or "" when the
+// build has none.
+func (h *Handler) PasskeySignInScript() string { return h.tags.PasskeySignIn }

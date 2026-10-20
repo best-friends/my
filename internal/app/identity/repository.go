@@ -54,6 +54,7 @@ type Repository interface {
 	ListUserIDsWithPermission(ctx context.Context, tx uow.Tx, p identity.Permission) ([]string, error)
 
 	TOTPRepository
+	PasskeyRepository
 	PreferencesRepository
 	OAuthRepository
 	RegistrationRepository
@@ -93,6 +94,24 @@ type TOTPRepository interface {
 	UseTOTPRecoveryCode(ctx context.Context, tx uow.Tx, u identity.TOTPRecoveryCodeUse) (bool, error)
 	// CountUnusedTOTPRecoveryCodes returns how many recovery codes of an enrollment are unused.
 	CountUnusedTOTPRecoveryCodes(ctx context.Context, enrollmentID string) (int, error)
+}
+
+// PasskeyRepository is the part of Repository that keeps passkeys (data-model §4.1). The
+// database adapters pass testkit.AccountRepositoryContract.
+type PasskeyRepository interface {
+	// InsertPasskeyCredential records a passkey.
+	InsertPasskeyCredential(ctx context.Context, tx uow.Tx, c identity.PasskeyCredential) error
+	// ListActivePasskeyCredentials returns the passkeys of a user without a revocation, oldest
+	// first.
+	ListActivePasskeyCredentials(ctx context.Context, userID string) ([]identity.PasskeyCredential, error)
+	// FindPasskeyCredential returns the passkey with a credential ID, revoked or not;
+	// ErrNotFound when there is none.
+	FindPasskeyCredential(ctx context.Context, credentialID []byte) (identity.PasskeyCredential, error)
+	// FindActivePasskeyCredential returns the passkey with a credential ID unless it has a
+	// revocation; ErrNotFound otherwise.
+	FindActivePasskeyCredential(ctx context.Context, credentialID []byte) (identity.PasskeyCredential, error)
+	// InsertPasskeyCredentialRevocation ends a passkey; it does nothing for one that ended.
+	InsertPasskeyCredentialRevocation(ctx context.Context, tx uow.Tx, r identity.PasskeyCredentialRevocation) error
 }
 
 // TxReads are the reads of Repository that run in a transaction tx, with what tx has written, for the

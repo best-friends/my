@@ -95,12 +95,12 @@ func (e *MediaEraser) referenced(ctx context.Context, mediaID string) (bool, err
 	return false, nil
 }
 
-// mediaBlobKeys returns the blob keys of an upload: the file as received and the variants of
-// every processing result.
+// mediaBlobKeys returns the blob keys of an upload: the file as received, the poster of a video
+// or audio file, and the variants of every processing result.
 func mediaBlobKeys(ctx context.Context, r MediaRepository, mediaID string) ([]string, error) {
 	var keys []string
 	if up, err := r.FindUploadedMedia(ctx, mediaID); err == nil {
-		keys = append(keys, up.BlobKey)
+		keys = append(keys, up.BlobKey, posterKey(mediaID))
 	} else if !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}

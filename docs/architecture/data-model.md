@@ -188,7 +188,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
@@ -237,6 +237,17 @@ flowchart LR
 - `code_hash` は、正規化したリカバリーコード（80 ビットの乱数）の SHA-256 です。
 - リカバリーコードを作り直すときは、同じ秘密を新しい登録に移し、古い登録に失効のイベントを記録します。管理者が二要素認証を外すときも失効のイベントを記録し、監査ログに `two_factor_disabled` を残します。
 - 使った TOTP のコードの時間ステップと、パスワードの後で 2 段目を待つサインインのチャレンジ（5 分）は、DB ではなく `KeyValueStore` の名前空間 `two_factor` に置きます。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `passkey_credentials` | リソース | `id`, `user_id`, `credential_id`（`bytes`）, `public_key`（`bytes`。COSE_Key）, `backup_eligible`（`bool`）, `name`, `created_at` | 一意 `(credential_id)`、インデックス `(user_id, id)` |
+| `passkey_credential_revocations` | イベント | `passkey_id`（PK）, `revoked_at` | 有効なパスキー = 失効イベントの無いパスキー |
+
+- パスキー（FR-004）は WebAuthn の発見可能な資格情報（discoverable credential）で、パスワードの代わりにログインに使います。ユーザーハンドルは利用者の `id` です。登録とログインはどちらも利用者の検証（端末の PIN や生体認証）を求め、アテステーションは求めません。
+- パスキーはパスワードの代わりになるだけで、二要素認証の 2 段目は省きません。TOTP を有効にした利用者は、パスキーでのログインの後にも認証コードを入力します。
+- 登録には現在のパスワードの確認が要ります（失敗は利用者ごとに 1 時間 5 回まで、`passkey.password`）。1 人の利用者が持てるパスキーは 20 個までです。削除したパスキーの行は残すので、同じ資格情報 ID を登録し直すことはできません。
+- 署名カウンターは保存しません。同期されるパスキーは常に 0 を返すので、複製の検出に使えないからです。
+- 登録とログインの途中の状態（チャレンジ、5 分）は、`kernel.Sealer` で封をしてブラウザに持たせ、DB にも KV にも置きません。ログインのチャレンジは 1 回だけ使えるように、使ったことを `KeyValueStore` の名前空間 `passkey` に有効期限まで記録します。ログインの失敗は、パスワードの失敗と同じクライアントのログイン失敗の上限（`login.ip`）に数えます。
 
 #### 登録審査
 
@@ -595,7 +606,7 @@ flowchart LR
   | `revealed_private_data` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | なし（元の記録を持たない操作） |
   | `two_factor_disabled` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | `totp_enrollment_revocations.enrollment_id` |
   | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
-  | `custom_emoji_created`, `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted` | `custom_emoji` | `custom_emojis.id` | `:shortcode:`（リモートは `:shortcode:@domain`） | `custom_emoji_images.id`（画像を記録した操作）。ほかはなし |
+  | `custom_emoji_created`, `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`, `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted` | `custom_emoji` | `custom_emojis.id` | `:shortcode:`（リモートは `:shortcode:@domain`） | `custom_emoji_images.id`（画像を記録した操作。`custom_emoji_copied` は複製した絵文字の画像）。ほかはなし |
   | `webhook_created`, `webhook_updated`, `webhook_deleted`, `webhook_enabled`, `webhook_disabled`, `webhook_secret_rotated` | `webhook` | `webhook_endpoints.id` | 説明と URL のホスト名（`Moderation chat (hooks.example.com)`）。URL は写さない | `webhook_endpoint_revisions.id` / `webhook_endpoint_state_changes.id` / `webhook_secrets.id` |
   | `announcement_created`, `announcement_updated`, `announcement_published`, `announcement_withdrawn` | `announcement` | `announcements.id` | 本文の最初の行（80 文字まで） | `announcement_revisions.id` / `announcement_state_changes.id` |
   | `invite_created`, `invite_revoked` | `invite` | `invites.id` | コードの先頭 4 文字と `…`（`ABCD…`）。使える間は登録に使えるコード全体は写さない | `invites.id` / `invite_revocations.invite_id`（= `invites.id`） |
@@ -858,7 +869,11 @@ flowchart LR
   - 用途ごとの大きさ: 投稿の画像は面積 640×360 / 1920×1080 / 3840×2160 まで、アイコンは焦点（`media_focus`、なければ中央）に合わせて正方形に切り抜いた 96 / 192 / 400 px、ヘッダーは 750×250 / 1500×500 / 3000×1000 の箱、カスタム絵文字は 64 / 128 / 256 px の箱に収めます。元より大きくはしません。
   - 別の用途で使う（投稿の画像をアバターにするなど）と、`content.MediaService.CheckProfileImage` が新しい用途の `media.process` を投入し、現在の結果の `large`（アニメーションなら動く版）から処理し直して新しい結果を記録します。それまでは前の結果の版を表示します。古い結果の Blob は残ります。
   ジョブは冪等です。最新の結果が同じ用途のファイルは受け取ったままのファイルの削除だけを繰り返し、消去済みのファイルは何もしません。初めての処理で処理できない中身は `outcome = failed`（版なし）の結果として記録します。処理し直しが失敗したときは記録せず、前の結果が残ります。
-- `width` / `height` は EXIF の向きを適用した元画像の寸法です（処理し直しても元の寸法を写す）。`media_variants` の寸法は各版の実寸です。
+- 動画・音声（投稿の添付だけ）はトランスコードしません（[ADR-0054](../adr/0054-media-variants-video-audio.md) §6）。アップロードのときに container を解析して codec・長さ・寸法を検査し（上限は設定 `media_max_av_bytes`・`media_max_video_duration`・`media_max_audio_duration`、[設定リファレンス](../reference/configuration.md)）、
+  クライアントが送ったポスター（API の `thumbnail`）を `uploads/<id>.poster` に置きます。`media.process` は、メタデータを落として並べ直した（remux）ファイルを `size = large`・`motion = animated` の版（`media/<id>/<result_id>/large-animated.<ext>`）にし、
+  ポスター（なければファイルに埋め込まれたカバー画像）を投稿の画像として処理した静止版 3 つと blurhash を同じ結果に入れます。ポスターのない動画・音声は静止版を持ちません。結果の `media_type` は `video` / `audio`、`duration_ms` は長さで、受け取ったままのファイルとポスターは処理のあとに消します。
+  動画・音声はほかの用途（アバター・ヘッダー・カスタム絵文字）に使えません。
+- `width` / `height` は EXIF の向きを適用した元画像の寸法（動画は回転を適用した表示の寸法、音声は NULL）です（処理し直しても元の寸法を写す）。`media_variants` の寸法は各版の実寸です。
 - 未添付のアップロードを読めるのも、説明（`media_descriptions`）と焦点（`media_focus`）を変えられるのも、アップロードした本人だけです。
   版が添付したあとは説明を版の `status_revision_attachments.description` で持つので、ファイル単体の説明・焦点は変えられません（投稿を編集して直す）。
 - 未添付のアップロード（どの版からも参照されず、`account_profile_revisions` のアバター・ヘッダーにも使われていない `media_files`）は、
@@ -1510,6 +1525,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-001 登録モード | M | `instance_settings`（`registration_mode`）, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions` |
 | FR-002 メール + パスワード | M | `user_email_addresses`, `user_email_verifications`, `user_primary_emails`, `password_credentials`, `user_tokens` |
 | FR-003 OAuth 2.0 + PKCE | M | `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_access_tokens`, `sessions` |
+| FR-004 パスキー | C | `passkey_credentials`, `passkey_credential_revocations` |
 | FR-005 TOTP | S | `totp_enrollments`, `totp_recovery_codes`, `totp_recovery_code_uses` |
 | FR-006 プロフィール | M | `account_profile_revisions`, `account_profile_fields`, `account_profile_heads` |
 | FR-007 言語・タイムゾーン | M | `user_preferences`, `user_time_zones` |

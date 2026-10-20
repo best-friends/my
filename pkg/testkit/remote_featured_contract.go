@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
@@ -257,5 +258,79 @@ func remoteMirrorsFeaturedWithinBounds(t *testing.T, e *remoteStatusEnv) {
 	if got := fe.pins(t, account); len(got) != 0 {
 		t.Errorf("pins of an actor without a featured collection = %v, want none", got)
 	}
+}
 
+// featuredChange returns an Add or Remove (typ) of the post object to the collection target by
+// actor, without an id as Mastodon sends it.
+func featuredChange(t *testing.T, typ, actor, object, target string) []byte {
+	t.Helper()
+	b, err := json.Marshal(map[string]any{
+		"@context": "https://www.w3.org/ns/activitystreams", "type": typ, "actor": actor, "object": object, "target": target,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+func remoteAppliesFeaturedChanges(t *testing.T, e *remoteStatusEnv) {
+	if e.h.Pins == nil {
+		t.Skip("the harness has no interaction repository")
+	}
+	fe := newRemoteFetchEnv(t, e)
+	const bob, carol = "https://other.example/users/bob", "https://third.example/users/carol"
+	featured := bob + "/collections/featured"
+	note := func(n int) string { return fmt.Sprintf("%s/notes/%d", bob, n) }
+	for n := range 3 {
+		fe.serve(t, note(n), remoteNote(note(n), bob, remoteNow.Add(-time.Duration(n+1)*time.Hour), nil))
+	}
+	collection := func(notes ...string) {
+		fe.serve(t, featured, map[string]any{"id": featured, "type": "OrderedCollection", "totalItems": len(notes), "orderedItems": notes})
+	}
+	collection(note(0))
+	fe.actor(t, carol)
+	account := fe.featuredActor(t, bob, featured)
+	fe.runFeatured(t)
+	if got, want := fe.pins(t, account), fe.statusIDs(t, note(0)); !slices.Equal(got, want) {
+		t.Fatalf("pins = %v, want %v", got, want)
+	}
+
+	// An Add to the featured collection of its actor fetches the collection again.
+	collection(note(1), note(0))
+	fe.expect(t, featuredChange(t, "Add", bob, note(1), featured), appfederation.InboxHandled)
+	if n := fe.runFeatured(t); n != 1 {
+		t.Fatalf("featured fetches after an Add = %d, want 1", n)
+	}
+	if got, want := fe.pins(t, account), fe.statusIDs(t, note(1), note(0)); !slices.Equal(got, want) {
+		t.Errorf("pins after an Add = %v, want %v", got, want)
+	}
+
+	// Removes in a row enqueue one fetch while it is pending.
+	collection()
+	fe.expect(t, featuredChange(t, "Remove", bob, note(1), featured), appfederation.InboxHandled)
+	fe.expect(t, featuredChange(t, "Remove", bob, note(0), featured), appfederation.InboxHandled)
+	if n := fe.runFeatured(t); n != 1 {
+		t.Fatalf("featured fetches after two Removes = %d, want 1", n)
+	}
+	if got := fe.pins(t, account); len(got) != 0 {
+		t.Errorf("pins after the Removes = %v, want none", got)
+	}
+
+	// An Add by someone else than the owner, to another collection of the actor, or to a
+	// collection of another origin is dropped.
+	collection(note(2))
+	for _, doc := range [][]byte{
+		featuredChange(t, "Add", carol, note(2), featured),
+		featuredChange(t, "Add", bob, note(2), bob+"/collections/other"),
+		featuredChange(t, "Add", bob, note(2), carol+"/collections/featured"),
+		featuredChange(t, "Remove", bob, note(2), ""),
+	} {
+		fe.expect(t, doc, appfederation.InboxDropped)
+	}
+	if n := fe.runFeatured(t); n != 0 {
+		t.Errorf("featured fetches after the Adds of others = %d, want 0", n)
+	}
+	if got := fe.pins(t, account); len(got) != 0 {
+		t.Errorf("pins after the Adds of others = %v, want none", got)
+	}
 }
