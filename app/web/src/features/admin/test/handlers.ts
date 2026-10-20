@@ -124,13 +124,15 @@ export function adminAccountFixture(account: Schemas["Account"], overrides: Part
 
 /**
  * The details of `account` as GET /admin/accounts/{id} answers them: a local one registered on 2026-10-01 with
- * a verified email address and no roles, actions or reports; `overrides` replace its fields.
+ * a verified email address, no two-factor authentication, and no roles, actions or reports; `overrides` replace its fields.
  */
 export function adminAccountDetailFixture(account: Schemas["Account"], overrides: Partial<Schemas["AdminAccountDetail"]> = {}): Schemas["AdminAccountDetail"] {
   const summary = adminAccountFixture(account);
   return {
     ...summary,
-    ...(summary.local ? { registration: { submitted_at: "2026-10-01T00:00:00Z", state_changed_at: "2026-10-01T01:00:00Z" }, email_verified: true } : {}),
+    ...(summary.local
+      ? { registration: { submitted_at: "2026-10-01T00:00:00Z", state_changed_at: "2026-10-01T01:00:00Z" }, email_verified: true, two_factor_enabled: false }
+      : {}),
     roles: [],
     actions: [],
     reports: [],
@@ -322,6 +324,8 @@ export const handlers = [
     withViewer(request, () => HttpResponse.json(adminAccountDetailFixture({ ...otherAccountFixture, id: String(params["id"]) }))),
   ),
   http.post(`${apiBase}/admin/accounts/:id/reveal`, ({ request }) => withViewer(request, () => HttpResponse.json(privateDataFixture))),
+  // operationId disableAdminAccountTwoFactor.
+  http.post(`${apiBase}/admin/accounts/:id/two_factor/disable`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds listRoles, listAccountRoles, grantAccountRole, revokeAccountRole: the instance's two roles; the
   // viewer holds admin and every other account none; a change answers the role granted, or none after a revoke.
   http.get(`${apiBase}/admin/roles`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: rolesFixture }))),

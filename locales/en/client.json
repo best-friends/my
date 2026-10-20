@@ -535,6 +535,42 @@
     "defaultMessage": "Account",
     "description": "Title of an account's admin page."
   },
+  "admin.account.two_factor.title": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Heading of the region of a local account's admin page about its two-factor authentication."
+  },
+  "admin.account.two_factor.on": {
+    "defaultMessage": "On: signing in asks for a code from an authenticator app.",
+    "description": "Text while the account's user has two-factor authentication."
+  },
+  "admin.account.two_factor.off": {
+    "defaultMessage": "Off.",
+    "description": "Text while the account's user has no two-factor authentication."
+  },
+  "admin.account.two_factor.remove": {
+    "defaultMessage": "Remove two-factor authentication",
+    "description": "Button (and the confirmation's button) that removes the two-factor authentication of the account."
+  },
+  "admin.account.two_factor.remove.description": {
+    "defaultMessage": "For a user who lost their authenticator app and recovery codes. Make sure the request comes from the account's owner first. The removal is recorded in the audit log.",
+    "description": "Explanation above the button that removes the two-factor authentication of an account."
+  },
+  "admin.account.two_factor.confirm.title": {
+    "defaultMessage": "Remove the two-factor authentication of {handle}?",
+    "description": "Title of the confirmation of removing the two-factor authentication. {handle} is the account's handle."
+  },
+  "admin.account.two_factor.confirm.description": {
+    "defaultMessage": "They will sign in with their password alone until they set it up again. This cannot be undone.",
+    "description": "Body of the confirmation of removing the two-factor authentication."
+  },
+  "admin.account.two_factor.removed": {
+    "defaultMessage": "Removed the two-factor authentication of {handle}.",
+    "description": "Status message after removing the two-factor authentication of the account {handle}."
+  },
+  "admin.account.two_factor.failed": {
+    "defaultMessage": "Could not remove two-factor authentication: {reason}",
+    "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "Reason",
     "description": "Label of the select of the category of the reason for a moderation action on an account."
@@ -1298,6 +1334,10 @@
   "admin.audit_log.action.signup_block_lifted": {
     "defaultMessage": "Sign-up block lifted",
     "description": "Heading of an audit log entry: a moderator lifted a block on sign-ups."
+  },
+  "admin.audit_log.action.two_factor_disabled": {
+    "defaultMessage": "Two-factor authentication removed",
+    "description": "Heading of an audit log entry: an administrator removed the two-factor authentication of a local account."
   },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "Text changed",
@@ -4302,6 +4342,150 @@
   "settings.title": {
     "defaultMessage": "Settings",
     "description": "Heading and document title of the settings page."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Heading and document title of the settings page of two-factor authentication with an authenticator app, and its item in the settings menu."
+  },
+  "settings.two_factor.summary": {
+    "defaultMessage": "Sign in with a code from an authenticator app as well as your password",
+    "description": "Description of the two-factor authentication item in the settings menu."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "Current setting",
+    "description": "Heading of the region of the two-factor authentication page that says whether it is on."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Term of the description list: whether two-factor authentication is on."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "On",
+    "description": "Value of the two-factor authentication term while it is on."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "Off. Signing in asks only for your password.",
+    "description": "Text of the two-factor authentication page while it is off."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "Turned on",
+    "description": "Term of the description list: when two-factor authentication was turned on; the value is a date and time."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "Unused recovery codes",
+    "description": "Term of the description list: how many recovery codes are left; the value is a number."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "Set up an authenticator app",
+    "description": "Heading of the region that enrolls an authenticator app while two-factor authentication is off."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "Add this account to an authenticator app on your phone. From then on, signing in also asks for the six-digit code that the app shows.",
+    "description": "Explanation above the button that starts setting up an authenticator app."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "Set up",
+    "description": "Button that generates a new secret to add to an authenticator app."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "Scan the QR code with your authenticator app, or type the key below into it.",
+    "description": "First step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "Enter the six-digit code that the app shows to turn on two-factor authentication.",
+    "description": "Second step of setting up an authenticator app."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "QR code for your authenticator app",
+    "description": "Accessible name of the QR code image that holds the secret for the authenticator app."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "Key",
+    "description": "Label of the secret shown as text, for typing it into an authenticator app instead of scanning the QR code."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "The six-digit code that the app shows now.",
+    "description": "Help under the code field that confirms the setup of an authenticator app."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "Turn on",
+    "description": "Button that turns two-factor authentication on with the code of the app."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "The setup took too long. Start again.",
+    "description": "Error when the setup of an authenticator app expired (after 15 minutes) before its code was entered."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "Authentication code",
+    "description": "Label of the field for a code of the authenticator app or a recovery code."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "A code from your authenticator app, or one of your recovery codes.",
+    "description": "Help under the code field that confirms replacing the recovery codes or turning two-factor authentication off."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "Enter the code.",
+    "description": "Error of an empty code field."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "The code is incorrect or was already used.",
+    "description": "Error of the code field when the server refused the code."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "Two-factor authentication was changed elsewhere. The page now shows its current setting.",
+    "description": "Error when two-factor authentication was turned on or off in another tab or device meanwhile."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "Too many incorrect codes: {reason}",
+    "description": "Error after too many wrong codes. {reason} is the server's explanation of when to try again."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "Could not change two-factor authentication: {reason}",
+    "description": "Error when a change of two-factor authentication failed. {reason} is the server's explanation."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "Two-factor authentication is on.",
+    "description": "Status message after turning two-factor authentication on."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "Two-factor authentication is off.",
+    "description": "Status message after turning two-factor authentication off."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "Recovery codes",
+    "description": "Heading of the region that replaces the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "If you lose your authenticator app, sign in with a recovery code instead. Each code works once. New codes replace the old ones, which stop working.",
+    "description": "Explanation of the recovery codes above the form that replaces them."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "Replace recovery codes",
+    "description": "Button that replaces the recovery codes with new ones."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "New recovery codes are ready. The old ones no longer work.",
+    "description": "Status message after replacing the recovery codes."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "Save your recovery codes",
+    "description": "Heading of the list of new recovery codes, which is shown only once."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "Keep these codes somewhere safe, such as a password manager. They are shown only now. Each one signs you in once without the app.",
+    "description": "Text above the list of new recovery codes."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "Turn off two-factor authentication",
+    "description": "Heading of the region that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "Signing in will ask only for your password. Enter a code to confirm.",
+    "description": "Explanation above the form that turns two-factor authentication off."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "Turn off",
+    "description": "Button that turns two-factor authentication off."
   },
   "settings.visibility.direct": {
     "defaultMessage": "Mentioned people",

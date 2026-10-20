@@ -188,7 +188,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 ## 8. サーバーが描画する画面
 
-ログイン・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。
+ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -197,7 +197,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - CSP は `style-src 'self'` で、インラインのスタイルとスクリプトを置かない。
 - ダークモードは `prefers-color-scheme` に従う（トークンの `light-dark()` と `<meta name="color-scheme" content="light dark">`）。フォーカスのリングは `theme.css` の `:focus-visible`、
   タップ領域は `pointer-coarse:` で 44 px 以上、方向は論理プロパティ（`px-`・`ps-`・`pe-`）で書く（D4・D7・Y4）。
-- フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
+- フォームは `<label for>`、`autocomplete`（`username`・`current-password`・`new-password`・`one-time-code`）、ヒントとエラーの `aria-describedby`、エラーの `aria-invalid` を持ち、ブラウザの制約検証（`required`・`minlength`）を使う。
 - 利用規約とプライバシーポリシー（#489）: 管理者が Markdown で書いた文書を、サーバーが HTML にしてサニタイズし（`internal/adapter/markdown`）、`.document` の区画に、文書のロケールの `lang` と `dir="auto"` で出す。見出しはページの `h1` の下の `h2` から始まり、幅の広い表は区画の中で横にスクロールして、ページは横にスクロールしない（D3）。
   サーバーが公開している文書は、すべての画面の `main` の後のフッター（`nav`「規約とポリシー」）と、登録のフォームの作成のボタンの前の同意の文（ボタンの `aria-describedby`）からリンクする。公開していない文書はリンクせず、そのページは 404 にする。
 
@@ -562,6 +562,8 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
     持っているかは `GET /admin/accounts/{id}/roles`、閲覧者のいちばん高いロールは `GET /admin/accounts/{閲覧者の ID}/roles` で読む。閲覧者のいちばん高いロール以下のロールには「付与する」か「剥奪する」（アクセシブルネームにロールのキー）を出し、それより上のロールはボタンの代わりに、閲覧者のいちばん高いロールを挙げて変えられない理由を書く。
     どちらも `ConfirmDialog` で確かめる（付与は `primary`、剥奪は `danger`。`admin` の剥奪の本文は、ただ 1 人の管理者からは剥奪できないことを書く）。失敗はダイアログの中に出し、上位のロール（403）と最後の管理者（409）はクライアントのカタログの文言で理由を書く。403 のときは閲覧者のロールを読み直す。
     成功したら応答のロールでキャッシュを置き換え、押したボタンが反対のボタンに替わるので区画の見出しにフォーカスを移し、監査ログに記録したことを区画の `StatusMessage` に出して、アカウント・検索・監査ログを読み直す（閲覧者自身のロールなら閲覧者の権限も）。
+  - **二要素認証**（FR-005、ローカルのアカウントだけ）: 利用者が二要素認証を使っているか（`two_factor_enabled`）を出す。使っていれば「二要素認証を解除」を出し、`ConfirmDialog`（`danger`）で確かめてから `POST /admin/accounts/{id}/two_factor/disable` を送る。
+    失敗はダイアログの中に出す。成功したらアカウントと監査ログを読み直し、ボタンが消えるので区画の見出しにフォーカスを移して、結果を区画の `StatusMessage` に出す。
   - **メールアドレスと IP アドレス**（ADR-0038）: 画面を開いただけでは要求しない。「メールアドレスと IP アドレスを表示する」を押したときだけ `POST /admin/accounts/{id}/reveal` を送る（サーバーは送るたびに監査ログに `revealed_private_data` を記録するので、query にせず mutation にする。R7）。
     答えは mutation の中にだけ置き、Query のキャッシュに入れないので、画面を離れて戻ると隠れ、見るにはもう一度押す。表示したら区画の見出しにフォーカスを移し、監査ログに記録したことを区画の `StatusMessage` に出す。失敗はトーストで知らせ、ボタンを残す（E2）。
     メールアドレス（確認の有無、そのドメインのアカウントの検索へのリンク）、登録元の IP と日時、最近のログイン（日時・IP・User-Agent。IP・User-Agent・メールアドレスは `dir="ltr"`）、同じ IP アドレスのほかのアカウント（IP ごとに、各アカウントの管理画面とその IP の検索へのリンク）を出す。残っていないものは「不明」にする。
@@ -667,7 +669,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 | # | 規約 | 強制 |
 | --- | --- | --- |
-| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする。部品も SVG を描かない。例外は部品の形の一部で状態とともに変わる印（`Checkbox` のチェック、`Select` と `ContentWarning` の山形、`Tooltip` の矢印、`Avatar` の人影）と、テストやストーリーの差し替えの中身だけで、`app/.oxlintrc.json` に理由とともに挙げる | `restrict/svg`（JSX の `<svg>`・`<path>` などの SVG の要素）、`no-restricted-imports`、`boundaries/dependencies`、`knip` |
+| G10 | アイコンは `@my/ui` のアイコン集（`Icons.tsx`）から使う。機能やルートに SVG のパスを書かない。形は Phosphor（`react-icons/pi`、[ADR-0043](../adr/0043-icon-set.md)）で、`Icons.tsx` の表が意味の名前（`ReplyIcon`）を Phosphor のアイコン（オフ・オンの形、向きの有無）に対応させる。太さは Regular を基本にする。新しいアイコンは描かずに表に 1 行足し、`react-icons` を import するのは `Icons.tsx` だけ、`react-icons/pi` だけにする。部品も SVG を描かない。例外は部品の形の一部で状態とともに変わる印（`Checkbox` のチェック、`Select` と `ContentWarning` の山形、`Tooltip` の矢印、`Avatar` の人影）と、サーバーが符号化した QR コードを描く `QrCode`（アイコンではなくデータの絵）と、テストやストーリーの差し替えの中身だけで、`app/.oxlintrc.json` に理由とともに挙げる | `restrict/svg`（JSX の `<svg>`・`<path>` などの SVG の要素）、`no-restricted-imports`、`boundaries/dependencies`、`knip` |
 | G11 | アイコンの大きさは置き場所で決める: 文と並ぶものは `size-4`、ボタンの中は `size-5`、ナビゲーションは `size-6`。`Button`・`ToggleButton`・`Link` が子の SVG の大きさを決め、アイコンの側では大きさを指定しない（react-icons が書く `1em` より `[&>svg]:size-*` が優先し、置き場所が決めない所では文字の大きさで描かれる） | 部品のテスト（ボタンの中の SVG が 0 × 0 でない）、スクリーンショット |
 | G12 | アイコンは飾り（`aria-hidden="true"`、`focusable="false"`、`Icons.tsx` がどのアイコンにも付ける）にし、意味は見える文言かアクセシブルネームで伝える。アイコンだけのボタンには `aria-label` と、同じ文言の `Tooltip` を付ける | `@my/ui` の部品のテスト（`Foundations/Icons` の play）、レビュー |
 | G13 | オン / オフはアイコンの形でも示し、色だけに頼らない（WCAG 1.4.1）: オンは、形が閉じるもの（星・ブックマーク・警告）を Phosphor の Fill、閉じないもの（ブースト）を Bold にする。向きのあるアイコン（返信・戻る・外部へのリンク）は `rtl:-scale-x-100` で反転し（Phosphor の `mirrored` は書字方向を見ないので使わない）、時計回りの意味を持つもの（再読み込み）や輪（ブースト）は反転しない | `Foundations/Icons` の play（`ar-XB` で向きのあるものだけが反転する）、スクリーンショット（`ar-XB`）、レビュー |

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An account's admin page below its heading (FR-714, FR-703, FR-713): the account with its state, registration
 // and roles; what its actions take away now; its email address and IP addresses, which a local account shows only
-// when the moderator presses "show" (each time is recorded in the audit log, ADR-0038); the moderation actions
+// when the moderator presses "show" (each time is recorded in the audit log, ADR-0038); whether its user has
+// two-factor authentication, with its removal, which asks first (recorded in the audit log); the moderation actions
 // on it, each in effect with a lift that asks for an optional reason first; its reports; and the form of a new
 // action, which offers a remote account only the kinds a remote account takes. What a change did stays on the
 // page in a StatusMessage (role="status") next to what caused it (web-client.md §14). A viewer with manage_roles
@@ -21,6 +22,7 @@ import {
   useAdminAccount,
   useLiftAccountAction,
   usePrivateData,
+  useRemoveTwoFactor,
 } from "../hooks/useAdminAccounts";
 import { useHasPermission } from "../hooks/usePermissions";
 import {
@@ -70,6 +72,9 @@ function AccountPage({ id }: { id: string }) {
         )}
       </DetailSection>
       {account.local && canManageRoles && <AccountRoles accountId={account.id} handle={isolate(handle)} />}
+      {account.local && account.two_factor_enabled !== undefined && (
+        <TwoFactorSection id={account.id} enabled={account.two_factor_enabled} handle={isolate(handle)} />
+      )}
       {account.local && <PrivateDataSection id={account.id} />}
       <ActionHistory account={account} />
       <DetailSection title={t("client:admin.account.reports.title")}>
@@ -182,6 +187,47 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
         </DescriptionList>
       )}
     </div>
+  );
+}
+
+/**
+ * Whether the user of a local account signs in with a code too, and removing it for a user who lost their
+ * authenticator app and recovery codes, which asks first; the removal is recorded in the audit log.
+ */
+function TwoFactorSection({ id, enabled, handle }: { id: string; enabled: boolean; handle: string }) {
+  const t = useT();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  // The button goes away with the removal: focus moves to the region's heading.
+  const focusHeading = useFocusAfterChange(headingRef, enabled);
+  const remove = useRemoveTwoFactor(id, handle, focusHeading);
+  return (
+    <DetailSection title={t("client:admin.account.two_factor.title")} headingRef={headingRef}>
+      <StatusMessage tone="success">{remove.status}</StatusMessage>
+      <p>{enabled ? t("client:admin.account.two_factor.on") : t("client:admin.account.two_factor.off")}</p>
+      {enabled && (
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-sm text-fg-muted">{t("client:admin.account.two_factor.remove.description")}</p>
+          <Button onPress={remove.open} isPending={remove.isPending}>
+            {t("client:admin.account.two_factor.remove")}
+          </Button>
+        </div>
+      )}
+      <ConfirmDialog
+        isOpen={remove.isOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) remove.cancel();
+        }}
+        title={t("client:admin.account.two_factor.confirm.title", { handle })}
+        description={t("client:admin.account.two_factor.confirm.description")}
+        confirmLabel={t("client:admin.account.two_factor.remove")}
+        cancelLabel={t("client:admin.account_actions.confirm.cancel")}
+        onConfirm={() => {
+          remove.confirm();
+        }}
+        isPending={remove.isPending}
+        {...(remove.error === undefined ? {} : { errorMessage: t("client:admin.account.two_factor.failed", { reason: remove.error }) })}
+      />
+    </DetailSection>
   );
 }
 

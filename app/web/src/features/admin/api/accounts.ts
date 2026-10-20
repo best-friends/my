@@ -2,7 +2,7 @@
 // The queries and mutations of the moderators' account screens (FR-714, FR-703, FR-713): searching the local and
 // remote accounts, one account as the moderators see it, showing the email address and the IP addresses of a
 // local account (recorded in the audit log, so only on the moderator's explicit action: a mutation, never a
-// query that runs by itself or again), and lifting a moderation action. The search follows the API's keyset
+// query that runs by itself or again), removing its two-factor authentication, and lifting a moderation action. The search follows the API's keyset
 // pagination as an infinite query whose key ends with "pages" (web-client.md §10).
 import { type InfiniteData, infiniteQueryOptions, type Query, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -110,6 +110,30 @@ export function revealAccountMutation(api: Api) {
       return data;
     },
   };
+}
+
+/**
+ * Removes the two-factor authentication of a local account (POST /admin/accounts/{id}/two_factor/disable), as the
+ * options of useMutation. The server records it in the audit log.
+ */
+export function disableAccountTwoFactorMutation(api: Api) {
+  return {
+    mutationKey: ["post", "/admin/accounts/{id}/two_factor/disable"] as const,
+    mutationFn: async (id: string): Promise<void> => {
+      const { error } = await api.fetch.POST("/admin/accounts/{id}/two_factor/disable", { params: { path: { id } } });
+      // The middleware throws an ApiError for every error status; this is only for the types.
+      if (error !== undefined) throw new ApiError(error);
+    },
+  };
+}
+
+/**
+ * What removing the two-factor authentication of account `id` changes (web-client.md S1, ADR-0045): its page, which
+ * shows whether it has one, and the audit log, which records the removal. Both are marked stale; resolves once those
+ * on screen are fetched again.
+ */
+export async function refreshAccountTwoFactor(queryClient: QueryClient, api: Api, id: string): Promise<void> {
+  await Promise.all([queryClient.invalidateQueries({ queryKey: adminAccountQueryOptions(api, id).queryKey }), refreshAuditLog(queryClient)]);
 }
 
 /** Lifts a moderation action on an account (POST /admin/account_actions/{id}/lift), as the options of useMutation. */

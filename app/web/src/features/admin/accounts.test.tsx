@@ -451,6 +451,41 @@ describe("an account's admin page", () => {
     expect(within(row).queryByText("Limited")).not.toBeInTheDocument();
   });
 
+  test("removes the two-factor authentication of a local account after its confirmation, and keeps focus in its region", async () => {
+    const requests = recordAccountRequests();
+    let detail: Detail = { ...bobDetail, two_factor_enabled: true };
+    server.use(
+      http.get(`${apiBase}/admin/accounts/:id`, () => HttpResponse.json(detail)),
+      http.post(`${apiBase}/admin/accounts/:id/two_factor/disable`, () => {
+        detail = { ...detail, two_factor_enabled: false };
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const { user } = await renderApp({ path: `/admin/accounts/${bobDetail.id}` });
+
+    const twoFactor = await screen.findByRole("region", { name: "Two-factor authentication" });
+    expect(within(twoFactor).getByText("On: signing in asks for a code from an authenticator app.")).toBeInTheDocument();
+    await user.click(within(twoFactor).getByRole("button", { name: "Remove two-factor authentication" }));
+    const dialog = await screen.findByRole("alertdialog", { name: `Remove the two-factor authentication of ${isolated("@bob")}?` });
+    await user.click(within(dialog).getByRole("button", { name: "Remove two-factor authentication" }));
+
+    expect(await within(twoFactor).findByRole("status")).toHaveTextContent(`Removed the two-factor authentication of ${isolated("@bob")}.`);
+    expect(within(twoFactor).getByText("Off.")).toBeInTheDocument();
+    expect(within(twoFactor).queryByRole("button", { name: "Remove two-factor authentication" })).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(twoFactor).getByRole("heading", { level: 2 })).toHaveFocus();
+    });
+    expect(requests.filter((request) => request.includes("two_factor"))).toEqual([`POST /admin/accounts/${bobDetail.id}/two_factor/disable`]);
+  });
+
+  test("a remote account has no two-factor authentication region", async () => {
+    accountServer(adminAccountDetailFixture(remoteAccountFixture));
+    await renderApp({ path: `/admin/accounts/${remoteAccountFixture.id}` });
+
+    expect(await screen.findByRole("region", { name: "Actions on the account" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Two-factor authentication" })).not.toBeInTheDocument();
+  });
+
   test("an unknown account says it is not found", async () => {
     accountServer(bobDetail);
     await renderApp({ path: "/admin/accounts/0192f0c4-7a8e-7000-8000-00000000ffff" });

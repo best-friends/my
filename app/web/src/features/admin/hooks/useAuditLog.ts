@@ -13,6 +13,7 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   account_action_issued: "client:admin.audit_log.action.account_action_issued",
   account_action_lifted: "client:admin.audit_log.action.account_action_lifted",
   revealed_private_data: "client:admin.audit_log.action.revealed_private_data",
+  two_factor_disabled: "client:admin.audit_log.action.two_factor_disabled",
   domain_action_issued: "client:admin.audit_log.action.domain_action_issued",
   domain_action_lifted: "client:admin.audit_log.action.domain_action_lifted",
   report_assigned: "client:admin.audit_log.action.report_assigned",

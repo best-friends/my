@@ -274,6 +274,7 @@ export const auditActions = [
   "account_action_issued",
   "account_action_lifted",
   "revealed_private_data",
+  "two_factor_disabled",
   "domain_action_issued",
   "domain_action_lifted",
   "report_assigned",
