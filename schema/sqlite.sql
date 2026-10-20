@@ -25,6 +25,37 @@ CREATE TABLE password_credentials (
 ) STRICT;
 CREATE INDEX password_credentials_user_id_id ON password_credentials (user_id, id DESC);
 
+-- Event: a TOTP authenticator a user enrolled (FR-005). The secret is sealed with kernel.Sealer
+-- (ADR-0019 §6). The active enrollment is the newest one without a revocation.
+CREATE TABLE totp_enrollments (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  secret_enc BLOB NOT NULL,
+  enrolled_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX totp_enrollments_user_id_id ON totp_enrollments (user_id, id DESC);
+
+-- Event: a TOTP enrollment ended (disabled by its user, replaced, or removed by an administrator).
+CREATE TABLE totp_enrollment_revocations (
+  enrollment_id TEXT NOT NULL PRIMARY KEY,
+  revoked_at INTEGER NOT NULL
+) STRICT;
+
+-- Resource: a recovery code of a TOTP enrollment, stored as the SHA-256 digest of its normalized form.
+CREATE TABLE totp_recovery_codes (
+  enrollment_id TEXT NOT NULL,
+  code_hash BLOB NOT NULL,
+  PRIMARY KEY (enrollment_id, code_hash)
+) STRICT;
+
+-- Event: a recovery code was used. The primary key makes each code work once.
+CREATE TABLE totp_recovery_code_uses (
+  enrollment_id TEXT NOT NULL,
+  code_hash BLOB NOT NULL,
+  used_at INTEGER NOT NULL,
+  PRIMARY KEY (enrollment_id, code_hash)
+) STRICT;
+
 -- Resource: an email address a user added.
 CREATE TABLE user_email_addresses (
   id TEXT NOT NULL PRIMARY KEY,
@@ -57,7 +88,8 @@ CREATE TABLE role_permissions (
   role_id TEXT NOT NULL,
   permission TEXT NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
+    'manage_two_factor'
   )),
   PRIMARY KEY (role_id, permission)
 ) STRICT;
@@ -1801,7 +1833,7 @@ CREATE TABLE audit_log_entries (
     'registration_approved', 'registration_rejected', 'setting_changed', 'text_changed',
     'rule_added', 'rule_revised', 'rule_moved', 'rule_retired', 'role_granted', 'role_revoked', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
-    'revealed_private_data', 'signup_block_added', 'signup_block_lifted'
+    'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',

@@ -535,6 +535,42 @@
     "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.account.two_factor.confirm.description": {
+    "defaultMessage": "[Ŧħḗḗẏ ẇīŀŀ şīɠƞ īƞ ẇīŧħ ŧħḗḗīř ƥȧȧşşẇǿǿřḓ ȧȧŀǿǿƞḗḗ ŭŭƞŧīŀ ŧħḗḗẏ şḗḗŧ īŧ ŭŭƥ ȧȧɠȧȧīƞ. Ŧħīş ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭƞḓǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.confirm.title": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ ǿǿƒ {handle}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗḿǿǿṽḗḗ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.off": {
+    "defaultMessage": "[Ǿƒƒ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.on": {
+    "defaultMessage": "[Ǿƞ: şīɠƞīƞɠ īƞ ȧȧşķş ƒǿǿř ȧȧ ƈǿǿḓḗḗ ƒřǿǿḿ ȧȧƞ ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.remove": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.remove.description": {
+    "defaultMessage": "[Ƒǿǿř ȧȧ ŭŭşḗḗř ẇħǿǿ ŀǿǿşŧ ŧħḗḗīř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ ȧȧƞḓ řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş. Ḿȧȧķḗḗ şŭŭřḗḗ ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿḿḗḗş ƒřǿǿḿ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ'ş ǿǿẇƞḗḗř ƒīřşŧ. Ŧħḗḗ řḗḗḿǿǿṽȧȧŀ īş řḗḗƈǿǿřḓḗḗḓ īƞ ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.removed": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗḓ ŧħḗḗ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ ǿǿƒ {handle}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.two_factor.title": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account_actions.category": {
     "defaultMessage": "[Řḗḗȧȧşǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1301,6 +1337,10 @@
   },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "[Ŧḗḗẋŧ ƈħȧȧƞɠḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.two_factor_disabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ řḗḗḿǿǿṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.actor": {
@@ -4393,6 +4433,150 @@
   },
   "settings.title": {
     "defaultMessage": "[Şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code": {
+    "defaultMessage": "[Ȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ ƈǿǿḓḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code.description": {
+    "defaultMessage": "[Ȧ ƈǿǿḓḗḗ ƒřǿǿḿ ẏǿǿŭŭř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ, ǿǿř ǿǿƞḗḗ ǿǿƒ ẏǿǿŭŭř řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿḓḗḗ īş īƞƈǿǿřřḗḗƈŧ ǿǿř ẇȧȧş ȧȧŀřḗḗȧȧḓẏ ŭŭşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.code.required": {
+    "defaultMessage": "[Ḗƞŧḗḗř ŧħḗḗ ƈǿǿḓḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disable.description": {
+    "defaultMessage": "[Şīɠƞīƞɠ īƞ ẇīŀŀ ȧȧşķ ǿǿƞŀẏ ƒǿǿř ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ. Ḗƞŧḗḗř ȧȧ ƈǿǿḓḗḗ ŧǿǿ ƈǿǿƞƒīřḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disable.submit": {
+    "defaultMessage": "[Ŧŭŭřƞ ǿǿƒƒ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disable.title": {
+    "defaultMessage": "[Ŧŭŭřƞ ǿǿƒƒ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.disabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ǿǿƒƒ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.enabled": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.enrolled_at": {
+    "defaultMessage": "[Ŧŭŭřƞḗḗḓ ǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.rate_limited": {
+    "defaultMessage": "[Ŧǿǿǿǿ ḿȧȧƞẏ īƞƈǿǿřřḗḗƈŧ ƈǿǿḓḗḗş: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.description": {
+    "defaultMessage": "[Īƒ ẏǿǿŭŭ ŀǿǿşḗḗ ẏǿǿŭŭř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ, şīɠƞ īƞ ẇīŧħ ȧȧ řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗ īƞşŧḗḗȧȧḓ. Ḗȧȧƈħ ƈǿǿḓḗḗ ẇǿǿřķş ǿǿƞƈḗḗ. Ƞḗḗẇ ƈǿǿḓḗḗş řḗḗƥŀȧȧƈḗḗ ŧħḗḗ ǿǿŀḓ ǿǿƞḗḗş, ẇħīƈħ şŧǿǿƥ ẇǿǿřķīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.new.description": {
+    "defaultMessage": "[Ķḗḗḗḗƥ ŧħḗḗşḗḗ ƈǿǿḓḗḗş şǿǿḿḗḗẇħḗḗřḗḗ şȧȧƒḗḗ, şŭŭƈħ ȧȧş ȧȧ ƥȧȧşşẇǿǿřḓ ḿȧȧƞȧȧɠḗḗř. Ŧħḗḗẏ ȧȧřḗḗ şħǿǿẇƞ ǿǿƞŀẏ ƞǿǿẇ. Ḗȧȧƈħ ǿǿƞḗḗ şīɠƞş ẏǿǿŭŭ īƞ ǿǿƞƈḗḗ ẇīŧħǿǿŭŭŧ ŧħḗḗ ȧȧƥƥ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.new.title": {
+    "defaultMessage": "[Şȧȧṽḗḗ ẏǿǿŭŭř řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.remaining": {
+    "defaultMessage": "[Ŭƞŭŭşḗḗḓ řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.replace": {
+    "defaultMessage": "[Řḗḗƥŀȧȧƈḗḗ řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.replaced": {
+    "defaultMessage": "[Ƞḗḗẇ řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş ȧȧřḗḗ řḗḗȧȧḓẏ. Ŧħḗḗ ǿǿŀḓ ǿǿƞḗḗş ƞǿǿ ŀǿǿƞɠḗḗř ẇǿǿřķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.recovery_codes.title": {
+    "defaultMessage": "[Řḗḗƈǿǿṽḗḗřẏ ƈǿǿḓḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.code.description": {
+    "defaultMessage": "[Ŧħḗḗ şīẋ-ḓīɠīŧ ƈǿǿḓḗḗ ŧħȧȧŧ ŧħḗḗ ȧȧƥƥ şħǿǿẇş ƞǿǿẇ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.description": {
+    "defaultMessage": "[Ȧḓḓ ŧħīş ȧȧƈƈǿǿŭŭƞŧ ŧǿǿ ȧȧƞ ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ ǿǿƞ ẏǿǿŭŭř ƥħǿǿƞḗḗ. Ƒřǿǿḿ ŧħḗḗƞ ǿǿƞ, şīɠƞīƞɠ īƞ ȧȧŀşǿǿ ȧȧşķş ƒǿǿř ŧħḗḗ şīẋ-ḓīɠīŧ ƈǿǿḓḗḗ ŧħȧȧŧ ŧħḗḗ ȧȧƥƥ şħǿǿẇş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.expired": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗŧŭŭƥ ŧǿǿǿǿķ ŧǿǿǿǿ ŀǿǿƞɠ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.qr_code": {
+    "defaultMessage": "[ɊŘ ƈǿǿḓḗḗ ƒǿǿř ẏǿǿŭŭř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.secret": {
+    "defaultMessage": "[Ķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.start": {
+    "defaultMessage": "[Şḗḗŧ ŭŭƥ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.step.confirm": {
+    "defaultMessage": "[Ḗƞŧḗḗř ŧħḗḗ şīẋ-ḓīɠīŧ ƈǿǿḓḗḗ ŧħȧȧŧ ŧħḗḗ ȧȧƥƥ şħǿǿẇş ŧǿǿ ŧŭŭřƞ ǿǿƞ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.step.scan": {
+    "defaultMessage": "[Şƈȧȧƞ ŧħḗḗ ɊŘ ƈǿǿḓḗḗ ẇīŧħ ẏǿǿŭŭř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ, ǿǿř ŧẏƥḗḗ ŧħḗḗ ķḗḗẏ ƀḗḗŀǿǿẇ īƞŧǿǿ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.submit": {
+    "defaultMessage": "[Ŧŭŭřƞ ǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.setup.title": {
+    "defaultMessage": "[Şḗḗŧ ŭŭƥ ȧȧƞ ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.state_changed": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ ẇȧȧş ƈħȧȧƞɠḗḗḓ ḗḗŀşḗḗẇħḗḗřḗḗ. Ŧħḗḗ ƥȧȧɠḗḗ ƞǿǿẇ şħǿǿẇş īŧş ƈŭŭřřḗḗƞŧ şḗḗŧŧīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status.off": {
+    "defaultMessage": "[Ǿƒƒ. Şīɠƞīƞɠ īƞ ȧȧşķş ǿǿƞŀẏ ƒǿǿř ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status.on": {
+    "defaultMessage": "[Ǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.status.title": {
+    "defaultMessage": "[Ƈŭŭřřḗḗƞŧ şḗḗŧŧīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.summary": {
+    "defaultMessage": "[Şīɠƞ īƞ ẇīŧħ ȧȧ ƈǿǿḓḗḗ ƒřǿǿḿ ȧȧƞ ȧȧŭŭŧħḗḗƞŧīƈȧȧŧǿǿř ȧȧƥƥ ȧȧş ẇḗḗŀŀ ȧȧş ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.two_factor.title": {
+    "defaultMessage": "[Ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.visibility.direct": {

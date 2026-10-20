@@ -111,6 +111,116 @@ export interface paths {
         patch: operations["updatePreferences"];
         trace?: never;
     };
+    "/two_factor": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get where the authenticated user's two-factor authentication stands */
+        get: operations["getTwoFactor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/totp/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a TOTP secret for the authenticated user to add to an authenticator app
+         * @description A new secret (RFC 6238: HMAC-SHA-1, six digits, 30-second steps) as text, as an
+         *     `otpauth://` URI, and as a QR code of the URI, with a `setup_token` that carries the
+         *     secret to `POST /two_factor/totp` for 15 minutes. Nothing is stored until then. A user
+         *     who has two-factor authentication enabled gets a 409
+         *     `/api/v1/problems/two-factor-enabled`.
+         */
+        post: operations["setUpTotp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable two-factor authentication with the secret of a setup
+         * @description Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns
+         *     the recovery codes, which are shown only this once. From then on, signing in asks for
+         *     a code after the password. A wrong code is a 422
+         *     `/api/v1/problems/invalid-two-factor-code`, an expired or unknown setup a 422
+         *     `/api/v1/problems/totp-setup-expired`, and too many wrong codes a 429.
+         */
+        post: operations["enableTotp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/totp/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable two-factor authentication
+         * @description Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms
+         *     it. A wrong code is a 422 `/api/v1/problems/invalid-two-factor-code`, too many wrong
+         *     codes a 429, and a user without two-factor authentication a 409
+         *     `/api/v1/problems/two-factor-not-enabled`.
+         */
+        post: operations["disableTotp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/two_factor/recovery_codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the recovery codes
+         * @description Returns new recovery codes, shown only this once, once `code` confirms it; the previous
+         *     ones stop working and the app keeps working. The problems are those of
+         *     `POST /two_factor/totp/disable`.
+         */
+        post: operations["regenerateRecoveryCodes"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/lookup": {
         parameters: {
             query?: never;
@@ -1905,6 +2015,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/accounts/{id}/two_factor/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove the two-factor authentication of a local account
+         * @description Ends the TOTP enrollment of a local account's user, who lost their authenticator app
+         *     and recovery codes, so that they sign in with the password alone (FR-005). It is
+         *     recorded in the audit log as `two_factor_disabled`. A remote account or the instance
+         *     actor is a 422 naming `id`, an account without two-factor authentication a 409
+         *     `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
+         *     `manage_two_factor` permission, which only the built-in admin role has by default.
+         */
+        post: operations["disableAdminAccountTwoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/roles": {
         parameters: {
             query?: never;
@@ -2304,6 +2439,14 @@ export interface components {
          *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
          *       account is deleted, so it can no longer be appealed or overturned.
          *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+         *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+         *       already used, or is not a code.
+         *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+         *       Start a new one.
+         *     - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+         *       authentication.
+         *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+         *       operation, has no two-factor authentication.
          */
         Problem: {
             /**
@@ -3288,6 +3431,62 @@ export interface components {
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
         };
+        /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
+        TwoFactor: {
+            /** @description Whether signing in asks for a code after the password. */
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description When the authenticator app was enrolled; omitted when not enabled.
+             */
+            enrolled_at?: string;
+            /** @description How many recovery codes are unused; omitted when not enabled. */
+            recovery_codes_remaining?: number;
+        };
+        /** @description A new TOTP secret to add to an authenticator app. */
+        TotpSetup: {
+            /** @description The secret in base32, for typing it into the app. */
+            secret: string;
+            /** @description The `otpauth://totp/...` URI of the secret. */
+            uri: string;
+            qr_code: components["schemas"]["QrCode"];
+            /** @description An opaque token that carries the secret to `POST /two_factor/totp`. */
+            setup_token: string;
+            /**
+             * Format: date-time
+             * @description When `setup_token` stops working.
+             */
+            expires_at: string;
+        };
+        /**
+         * @description A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+         *     zone of four modules included) on a light background.
+         */
+        QrCode: {
+            /** @description The width and height of the view box, in modules. */
+            size: number;
+            /** @description The path data (`d`) of the dark modules, one unit per module. */
+            path: string;
+        };
+        /** @description The setup to enroll and a code of the app that shows it has the secret. */
+        EnableTotpRequest: {
+            /** @description The `setup_token` of `POST /two_factor/totp/setup`. */
+            setup_token: string;
+            /** @description The six-digit code that the app shows now. */
+            code: string;
+        };
+        /** @description A code that confirms an operation on two-factor authentication. */
+        TwoFactorCodeRequest: {
+            /** @description A six-digit code of the app or an unused recovery code. */
+            code: string;
+        };
+        /**
+         * @description Recovery codes, each of which signs in once in place of a code of the app. They are
+         *     shown only once.
+         */
+        RecoveryCodes: {
+            recovery_codes: string[];
+        };
         /**
          * @description What the account's current moderation restrictions let it post (data-model.md §5.4). The
          *     server applies the same policy when it posts: a status asked for with a visibility that is
@@ -3373,7 +3572,8 @@ export interface components {
          * @description The kind of an audited operation, each on one kind of target. On an `account`:
          *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
          *     `revealed_private_data` (a moderator was shown the account's email address and IP
-         *     addresses). On a `domain`:
+         *     addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+         *     authentication). On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
          *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
          *     `user` (a registration):
@@ -3386,7 +3586,7 @@ export interface components {
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -3738,10 +3938,11 @@ export interface components {
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
          *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-         *     log. The others guard no client API operation yet.
+         *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+         *     the built-in admin role by default). The others guard no client API operation yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor";
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
@@ -3872,6 +4073,11 @@ export interface components {
              *     it has none.
              */
             email_verified?: boolean;
+            /**
+             * @description Whether the user of a local account signs in with two-factor authentication;
+             *     omitted for a remote account.
+             */
+            two_factor_enabled?: boolean;
             /** @description The keys of the user's roles, highest position first; empty for a remote account. */
             roles: string[];
             /** @description The newest 20 actions on the account, newest first. */
@@ -4546,6 +4752,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two-factor authentication of the user. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFactor"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setUpTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new secret. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpSetup"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    enableTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnableTotpRequest"];
+            };
+        };
+        responses: {
+            /** @description The recovery codes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    disableTotp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TwoFactorCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description The two-factor authentication of the user, disabled. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwoFactor"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    regenerateRecoveryCodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TwoFactorCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery codes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCodes"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -6489,6 +6817,28 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AdminAccountPrivateData"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    disableAdminAccountTwoFactor: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The two-factor authentication is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

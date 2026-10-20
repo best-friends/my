@@ -227,6 +227,38 @@
     "defaultMessage": "Sign in",
     "description": "Title and heading of the sign-in page."
   },
+  "auth.two_factor.code_label": {
+    "defaultMessage": "Authentication code",
+    "description": "Label of the code field on the second step of signing in, which takes a six-digit code of an authenticator app or a recovery code."
+  },
+  "auth.two_factor.expired": {
+    "defaultMessage": "The sign-in took too long. Sign in again.",
+    "description": "Error on the sign-in form when the second step (the authentication code) was not completed within five minutes or was already used."
+  },
+  "auth.two_factor.invalid": {
+    "defaultMessage": "The code is incorrect or was already used.",
+    "description": "Error on the second step of signing in when the authentication code or recovery code is wrong or was used before."
+  },
+  "auth.two_factor.missing": {
+    "defaultMessage": "Enter the code.",
+    "description": "Error when the authentication code form was submitted empty."
+  },
+  "auth.two_factor.prompt": {
+    "defaultMessage": "Enter the six-digit code that your authenticator app shows. If you cannot use the app, enter one of your recovery codes instead.",
+    "description": "Text above the code field on the second step of signing in, for users who turned on two-factor authentication."
+  },
+  "auth.two_factor.restart_link": {
+    "defaultMessage": "Sign in again",
+    "description": "Link from the second step of signing in back to the sign-in form, to start over."
+  },
+  "auth.two_factor.submit": {
+    "defaultMessage": "Verify",
+    "description": "Button that submits the authentication code on the second step of signing in."
+  },
+  "auth.two_factor.title": {
+    "defaultMessage": "Two-factor authentication",
+    "description": "Title and heading of the second step of signing in, which asks for an authentication code."
+  },
   "auth.sign_out.submit": {
     "defaultMessage": "Sign out",
     "description": "Button that ends the current browser session."
@@ -686,6 +718,22 @@
   "errors.too_many": {
     "defaultMessage": "{max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}}",
     "description": "Detail of an API error (HTTP 422) when a list property of the request body has too many items. {name} is the property name, e.g. fields (not translated); {max} is the limit."
+  },
+  "errors.two_factor.code_invalid": {
+    "defaultMessage": "The code is incorrect or was already used.",
+    "description": "Title of the HTTP 422 API error when a two-factor authentication code (six digits from an authenticator app, or a recovery code) is wrong, was used before, or is not a code."
+  },
+  "errors.two_factor.enabled": {
+    "defaultMessage": "Two-factor authentication is already enabled.",
+    "description": "Title of the HTTP 409 API error when the user starts setting up two-factor authentication while it is already on."
+  },
+  "errors.two_factor.not_enabled": {
+    "defaultMessage": "Two-factor authentication is not enabled.",
+    "description": "Title of the HTTP 409 API error when an operation needs two-factor authentication on an account that does not have it."
+  },
+  "errors.two_factor.setup_expired": {
+    "defaultMessage": "The setup of the authenticator app expired. Start again.",
+    "description": "Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup."
   },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",

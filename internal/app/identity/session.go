@@ -93,6 +93,10 @@ type SignedIn struct {
 // nobody can lock another person's account with bad tokens. When the service cannot check the
 // token (kernel.ErrHumanCheckUnavailable), the sign-in goes on without the check (fail open,
 // ADR-0042 §4), so that an outage of the service or a wrong key does not lock everyone out.
+//
+// For a user with two-factor authentication, a right password starts no session: SignIn fails
+// with a *SecondFactorRequiredError (ErrSecondFactorRequired) whose challenge CompleteSignIn
+// takes with the code. The CAPTCHA belongs to this first step only.
 func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) {
 	if s.d.RateLimiter == nil {
 		return SignedIn{}, errors.New("identity: SignIn needs a RateLimiter")
@@ -129,10 +133,6 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 	}
 
 	now := s.d.Clock.Now()
-	session, err := s.prepareSession(ctx, cred.cred.UserID, in.IP, in.UserAgent, in.CurrentToken, now)
-	if err != nil {
-		return SignedIn{}, err
-	}
 	var rehashed *identity.PasswordCredential
 	if cred.needsRehash {
 		h, err := s.d.Passwords.Hash(ctx, in.Password)
@@ -141,11 +141,35 @@ func (s *Service) SignIn(ctx context.Context, in SignInInput) (SignedIn, error) 
 		}
 		rehashed = &identity.PasswordCredential{ID: s.d.IDs.NewID(), UserID: cred.cred.UserID, Hash: h, SetAt: now}
 	}
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	writeRehash := func(tx uow.Tx) error {
+		if rehashed == nil {
+			return nil
+		}
+		return s.d.Repository.InsertPasswordCredential(ctx, tx, *rehashed)
+	}
+	switch _, err := s.d.Repository.FindActiveTOTPEnrollment(ctx, cred.cred.UserID); {
+	case err == nil:
+		// The password was right; the session waits for the second factor (CompleteSignIn).
+		challenge, err := s.newChallenge(ctx, cred.cred.UserID)
+		if err != nil {
+			return SignedIn{}, err
+		}
 		if rehashed != nil {
-			if err := s.d.Repository.InsertPasswordCredential(ctx, tx, *rehashed); err != nil {
-				return err
+			if err := s.d.UnitOfWork.Tx(ctx, writeRehash); err != nil {
+				return SignedIn{}, err
 			}
+		}
+		return SignedIn{}, &SecondFactorRequiredError{Challenge: challenge}
+	case !errors.Is(err, ErrNotFound):
+		return SignedIn{}, err
+	}
+	session, err := s.prepareSession(ctx, cred.cred.UserID, in.IP, in.UserAgent, in.CurrentToken, now)
+	if err != nil {
+		return SignedIn{}, err
+	}
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := writeRehash(tx); err != nil {
+			return err
 		}
 		return s.writeSession(ctx, tx, session)
 	})

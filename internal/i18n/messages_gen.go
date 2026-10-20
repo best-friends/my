@@ -753,6 +753,62 @@ func (l *Localizer) ServerAuthStatusVerifyEmail(email string) string {
 	return l.format("server:auth.status.verify_email", map[string]any{"email": email})
 }
 
+// ServerAuthTwoFactorCodeLabel formats "server:auth.two_factor.code_label". Label of the code field on the second step of signing in, which takes a six-digit code of an authenticator app or a recovery code.
+//
+//	en: Authentication code
+func (l *Localizer) ServerAuthTwoFactorCodeLabel() string {
+	return l.format("server:auth.two_factor.code_label", nil)
+}
+
+// ServerAuthTwoFactorExpired formats "server:auth.two_factor.expired". Error on the sign-in form when the second step (the authentication code) was not completed within five minutes or was already used.
+//
+//	en: The sign-in took too long. Sign in again.
+func (l *Localizer) ServerAuthTwoFactorExpired() string {
+	return l.format("server:auth.two_factor.expired", nil)
+}
+
+// ServerAuthTwoFactorInvalid formats "server:auth.two_factor.invalid". Error on the second step of signing in when the authentication code or recovery code is wrong or was used before.
+//
+//	en: The code is incorrect or was already used.
+func (l *Localizer) ServerAuthTwoFactorInvalid() string {
+	return l.format("server:auth.two_factor.invalid", nil)
+}
+
+// ServerAuthTwoFactorMissing formats "server:auth.two_factor.missing". Error when the authentication code form was submitted empty.
+//
+//	en: Enter the code.
+func (l *Localizer) ServerAuthTwoFactorMissing() string {
+	return l.format("server:auth.two_factor.missing", nil)
+}
+
+// ServerAuthTwoFactorPrompt formats "server:auth.two_factor.prompt". Text above the code field on the second step of signing in, for users who turned on two-factor authentication.
+//
+//	en: Enter the six-digit code that your authenticator app shows. If you cannot use the app, enter one of your recovery codes instead.
+func (l *Localizer) ServerAuthTwoFactorPrompt() string {
+	return l.format("server:auth.two_factor.prompt", nil)
+}
+
+// ServerAuthTwoFactorRestartLink formats "server:auth.two_factor.restart_link". Link from the second step of signing in back to the sign-in form, to start over.
+//
+//	en: Sign in again
+func (l *Localizer) ServerAuthTwoFactorRestartLink() string {
+	return l.format("server:auth.two_factor.restart_link", nil)
+}
+
+// ServerAuthTwoFactorSubmit formats "server:auth.two_factor.submit". Button that submits the authentication code on the second step of signing in.
+//
+//	en: Verify
+func (l *Localizer) ServerAuthTwoFactorSubmit() string {
+	return l.format("server:auth.two_factor.submit", nil)
+}
+
+// ServerAuthTwoFactorTitle formats "server:auth.two_factor.title". Title and heading of the second step of signing in, which asks for an authentication code.
+//
+//	en: Two-factor authentication
+func (l *Localizer) ServerAuthTwoFactorTitle() string {
+	return l.format("server:auth.two_factor.title", nil)
+}
+
 // ServerAuthVerifyEmailDone formats "server:auth.verify_email.done". Body of the page after the email address was confirmed.
 //
 //	en: Thank you. Your email address is confirmed.
@@ -1206,6 +1262,34 @@ func (l *Localizer) ServerErrorsTooLong(max int, name string) string {
 //	en: {max, plural, one {{name} can have at most # item.} other {{name} can have at most # items.}}
 func (l *Localizer) ServerErrorsTooMany(max int, name string) string {
 	return l.format("server:errors.too_many", map[string]any{"max": max, "name": name})
+}
+
+// ServerErrorsTwoFactorCodeInvalid formats "server:errors.two_factor.code_invalid". Title of the HTTP 422 API error when a two-factor authentication code (six digits from an authenticator app, or a recovery code) is wrong, was used before, or is not a code.
+//
+//	en: The code is incorrect or was already used.
+func (l *Localizer) ServerErrorsTwoFactorCodeInvalid() string {
+	return l.format("server:errors.two_factor.code_invalid", nil)
+}
+
+// ServerErrorsTwoFactorEnabled formats "server:errors.two_factor.enabled". Title of the HTTP 409 API error when the user starts setting up two-factor authentication while it is already on.
+//
+//	en: Two-factor authentication is already enabled.
+func (l *Localizer) ServerErrorsTwoFactorEnabled() string {
+	return l.format("server:errors.two_factor.enabled", nil)
+}
+
+// ServerErrorsTwoFactorNotEnabled formats "server:errors.two_factor.not_enabled". Title of the HTTP 409 API error when an operation needs two-factor authentication on an account that does not have it.
+//
+//	en: Two-factor authentication is not enabled.
+func (l *Localizer) ServerErrorsTwoFactorNotEnabled() string {
+	return l.format("server:errors.two_factor.not_enabled", nil)
+}
+
+// ServerErrorsTwoFactorSetupExpired formats "server:errors.two_factor.setup_expired". Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup.
+//
+//	en: The setup of the authenticator app expired. Start again.
+func (l *Localizer) ServerErrorsTwoFactorSetupExpired() string {
+	return l.format("server:errors.two_factor.setup_expired", nil)
 }
 
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.

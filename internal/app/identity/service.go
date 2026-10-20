@@ -35,8 +35,13 @@ type Deps struct {
 	// means i18n.SourceLocale.
 	DefaultLocale func(ctx context.Context) (string, error)
 
-	// RateLimiter limits failed sign-ins (LoginIPLimit, LoginAccountLimit); SignIn needs it.
+	// RateLimiter limits failed sign-ins (LoginIPLimit, LoginAccountLimit) and failed codes of
+	// two-factor authentication (SecondFactorLimit); SignIn needs it.
 	RateLimiter *kernel.RateLimiter
+	// Sealer seals the secrets of TOTP enrollments (ADR-0019 §6), and KV keeps the sign-in
+	// challenges and used TOTP steps; two-factor authentication needs both.
+	Sealer *kernel.Sealer
+	KV     kernel.KeyValueStore
 	// HumanVerifier checks the CAPTCHA token of every sign-in and sign-up (ADR-0042 §3); nil,
 	// as with the captcha setting none, checks nothing.
 	HumanVerifier kernel.HumanVerifier

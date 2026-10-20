@@ -28,6 +28,12 @@ type fakeAccountAdmin struct {
 	queries  []appidentity.AccountSearch
 	reveals  []string // "account by user"
 	reports  []moderation.ReportRecord
+	// twoFactor holds the accounts whose users have two-factor authentication, and
+	// twoFactorRemovals the removals ("account by user").
+	twoFactor         map[string]bool
+	twoFactorRemovals []string
+	// perms are the permissions of the env's users.
+	perms fakePermissions
 }
 
 func (f *fakeAccountAdmin) present(a appaccount.Actor) appidentity.AdminAccount {
@@ -71,6 +77,7 @@ func (f *fakeAccountAdmin) Detail(_ context.Context, id string) (appidentity.Adm
 		d.Application = &identity.RegistrationApplication{UserID: a.Local.UserID, Reason: "hi", SubmittedAt: adminNow.Add(-time.Hour)}
 		d.HasEmail, d.EmailVerified = true, true
 		d.Roles = []identity.Role{{Key: identity.RoleAdmin}}
+		d.TwoFactorEnabled = f.twoFactor[id]
 	}
 	return d, nil
 }
@@ -98,6 +105,21 @@ func (f *fakeAccountAdmin) Reveal(_ context.Context, id, by string) (appidentity
 	}, nil
 }
 
+func (f *fakeAccountAdmin) DisableTwoFactor(_ context.Context, id, by string) error {
+	a, ok := f.accounts[id]
+	switch {
+	case !ok:
+		return appaccount.ErrNotFound
+	case a.Local == nil:
+		return appidentity.ErrNotLocalAccount
+	case !f.twoFactor[id]:
+		return appidentity.ErrTwoFactorNotEnabled
+	}
+	delete(f.twoFactor, id)
+	f.twoFactorRemovals = append(f.twoFactorRemovals, id+" by "+by)
+	return nil
+}
+
 func (f *fakeAccountAdmin) RecentReportsOf(_ context.Context, target string, limit int) ([]moderation.ReportRecord, error) {
 	var out []moderation.ReportRecord
 	for _, r := range slices.Backward(f.reports) {
@@ -111,7 +133,7 @@ func (f *fakeAccountAdmin) RecentReportsOf(_ context.Context, target string, lim
 // newAccountAdminEnv is newAccountModerationEnv with the account management.
 func newAccountAdminEnv(t *testing.T) (*authEnv, *fakeAccountAdmin, *fakeAccountModeration) {
 	t.Helper()
-	admin := &fakeAccountAdmin{}
+	admin := &fakeAccountAdmin{twoFactor: map[string]bool{aliceAccountID: true}}
 	mod := &fakeAccountModeration{now: adminNow}
 	e, reports := newModerationEnvWith(t, func(o *clientapi.Options) {
 		accounts := o.Accounts.(fakeAccounts)
@@ -121,6 +143,7 @@ func newAccountAdminEnv(t *testing.T) (*authEnv, *fakeAccountAdmin, *fakeAccount
 			Lifecycle: account.InitialLifecycleState(bobAccountID),
 		}
 		admin.accounts, mod.accounts = accounts, accounts
+		admin.perms = o.Permissions.(fakePermissions)
 		o.AccountAdmin, o.AccountReports, o.AccountModeration = admin, admin, mod
 	})
 	admin.reports = reports.reports
@@ -140,8 +163,8 @@ func TestAccountAdminOperationsNeedAPermission(t *testing.T) {
 			t.Errorf("%s %s by bob = %d %+v, want 403 for manage_accounts", op.method, op.path, res.StatusCode, p)
 		}
 	}
-	if len(admin.queries) != 0 || len(admin.reveals) != 0 {
-		t.Errorf("a refused operation ran: %v %v", admin.queries, admin.reveals)
+	if len(admin.queries) != 0 || len(admin.reveals) != 0 || len(admin.twoFactorRemovals) != 0 {
+		t.Errorf("a refused operation ran: %v %v %v", admin.queries, admin.reveals, admin.twoFactorRemovals)
 	}
 }
 
@@ -203,7 +226,8 @@ func TestGetAdminAccount(t *testing.T) {
 	if res.StatusCode != http.StatusOK || d.Id != aliceAccountID || d.State != clientapi.AdminAccountStateLimited ||
 		!slices.Equal(d.Roles, []string{identity.RoleAdmin}) || d.EmailVerified == nil || !*d.EmailVerified ||
 		d.Registration == nil || d.Registration.Reason == nil || *d.Registration.Reason != "hi" || !d.Registration.StateChangedAt.Equal(adminNow) ||
-		len(d.Actions) != 1 || d.Actions[0].Kind != clientapi.AdminAccountActionKindLimit {
+		len(d.Actions) != 1 || d.Actions[0].Kind != clientapi.AdminAccountActionKindLimit ||
+		d.TwoFactorEnabled == nil || !*d.TwoFactorEnabled {
 		t.Errorf("alice = %d %+v", res.StatusCode, d)
 	}
 	// The reports of the account, newest first.
@@ -213,7 +237,7 @@ func TestGetAdminAccount(t *testing.T) {
 
 	res = e.send(t, http.MethodGet, "/admin/accounts/"+reporterAccountID, "admin-read", "")
 	remote := decodeJSON[clientapi.AdminAccountDetail](t, res)
-	if res.StatusCode != http.StatusOK || remote.Local || remote.Registration != nil || remote.EmailVerified != nil ||
+	if res.StatusCode != http.StatusOK || remote.Local || remote.Registration != nil || remote.EmailVerified != nil || remote.TwoFactorEnabled != nil ||
 		len(remote.Roles) != 0 || len(remote.Actions) != 0 || len(remote.Reports) != 0 {
 		t.Errorf("remote = %d %+v", res.StatusCode, remote)
 	}
@@ -254,5 +278,43 @@ func TestRevealAdminAccount(t *testing.T) {
 	}
 	if len(admin.reveals) != 1 {
 		t.Errorf("reveals = %v, want only alice's", admin.reveals)
+	}
+}
+
+func TestDisableAdminAccountTwoFactor(t *testing.T) {
+	e, admin, _ := newAccountAdminEnv(t)
+	path := func(id string) string { return "/admin/accounts/" + id + "/two_factor/disable" }
+	// A moderator's manage_accounts is not enough: removing 2FA is the administrators' (ADR-0058).
+	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
+	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
+		p.Detail == nil || !strings.Contains(*p.Detail, "manage_two_factor") {
+		t.Errorf("by a moderator = %d %+v, want 403 for manage_two_factor", res.StatusCode, p)
+	}
+	if len(admin.twoFactorRemovals) != 0 {
+		t.Fatalf("a refused removal ran: %v", admin.twoFactorRemovals)
+	}
+	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin-read", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {
+		t.Errorf("with admin:read = %d %+v, want 403 insufficient scope", res.StatusCode, p)
+	}
+	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin", "")
+	if res.StatusCode != http.StatusNoContent {
+		t.Fatalf("disable = %d, want 204", res.StatusCode)
+	}
+	if want := []string{aliceAccountID + " by user-" + aliceAccountID}; !slices.Equal(admin.twoFactorRemovals, want) {
+		t.Errorf("removals = %v, want %v", admin.twoFactorRemovals, want)
+	}
+	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusConflict || p.Type != clientapi.ProblemTypeTwoFactorNotEnabled {
+		t.Errorf("disable twice = %d %+v, want 409 two-factor-not-enabled", res.StatusCode, p)
+	}
+	res = e.send(t, http.MethodPost, path(reporterAccountID), "admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, "id") {
+		t.Errorf("remote = %d %+v, want 422 naming id", res.StatusCode, p)
+	}
+	res = e.send(t, http.MethodPost, path(reportThree), "admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusNotFound {
+		t.Errorf("unknown = %d %+v", res.StatusCode, p)
 	}
 }

@@ -3,7 +3,7 @@
 // against a real `my serve` (e2e/server.ts) in every width × locale project. Fields are found by their
 // autocomplete tokens, which are part of what these pages promise (password managers), and stay the same
 // in every locale.
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 import type AxeBuilder from "@axe-core/playwright";
 import type { Browser, BrowserContext, Page } from "@playwright/test";
 import { axeBuilder, expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
@@ -209,6 +209,159 @@ test.describe("status page of a suspended account", () => {
     await expect(page.getByRole("main")).toContainText("The links were not spam.");
     expect(runMy(["admin", "appeal", "list", "-state", "pending"])).toContain(actionID);
     await expectNoHorizontalScroll(page);
+  });
+});
+
+/** Decodes unpadded base32 (RFC 4648), the form of TOTP secrets. */
+function base32Decode(text: string): Buffer {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  let bits = 0;
+  let value = 0;
+  const out: number[] = [];
+  for (const char of text) {
+    value = (value << 5) | alphabet.indexOf(char);
+    bits += 5;
+    if (bits >= 8) {
+      out.push((value >>> (bits - 8)) & 0xff);
+      bits -= 8;
+    }
+  }
+  return Buffer.from(out);
+}
+
+/** The TOTP code (RFC 6238: HMAC-SHA-1, six digits) of `secret` at the 30-second `step`. */
+function totp(secret: Buffer, step: number): string {
+  const message = Buffer.alloc(8);
+  message.writeBigUInt64BE(BigInt(step));
+  const mac = createHmac("sha1", secret).update(message).digest();
+  const offset = (mac.at(-1) ?? 0) & 0x0f;
+  return String((mac.readUInt32BE(offset) & 0x7fffffff) % 1_000_000).padStart(6, "0");
+}
+
+const currentStep = (): number => Math.floor(Date.now() / 30_000);
+
+/**
+ * A code that the server accepts and has not seen: that of the current step, or of the next one while the
+ * current one is the step whose code enabled TOTP (codes of the adjacent steps are accepted, each once).
+ */
+function unusedCode(user: { secret: Buffer; step: number }): string {
+  const step = currentStep();
+  return totp(user.secret, step > user.step ? step : user.step + 1);
+}
+
+const codeField = (page: Page) => page.locator('input[autocomplete="one-time-code"]');
+
+test.describe("two-factor sign-in", () => {
+  test.use({ javaScriptEnabled: false });
+  test.skip(!ownsServer, "the test creates a user with bin/my, which needs the database of the server e2e/server.ts starts");
+
+  /** A user of its own per project with TOTP enabled through the client API, and the step of the code that enabled it. */
+  async function twoFactorUser(page: Page): Promise<{ email: string; password: string; secret: Buffer; step: number; recoveryCodes: string[] }> {
+    const username = `e2e_totp_${randomBytes(4).toString("hex")}`;
+    const user = { email: `${username}@example.com`, password: `e2e-password-${username}` };
+    runMy(["admin", "create", "-username", username, "-email", user.email], `${user.password}\n`);
+
+    // An access token of the web client by the authorization code flow with PKCE. JavaScript is off, so
+    // the client's callback page does not redeem the code first.
+    const verifier = randomBytes(32).toString("base64url");
+    const redirectURI = `${serverURL}/login/callback`;
+    const query = new URLSearchParams({
+      response_type: "code",
+      client_id: "my-web",
+      redirect_uri: redirectURI,
+      state: "e2e-state",
+      code_challenge: createHash("sha256").update(verifier).digest("base64url"),
+      code_challenge_method: "S256",
+    });
+    await page.goto(`/oauth/authorize?${query.toString()}`);
+    await emailField(page).fill(user.email);
+    await passwordField(page, "current-password").fill(user.password);
+    await submitButton(page).click();
+    await expect(page).toHaveURL(/\/login\/callback\?/);
+    const code = new URL(page.url()).searchParams.get("code") ?? "";
+    const token = await page.request.post("/oauth/token", {
+      form: { grant_type: "authorization_code", code, redirect_uri: redirectURI, client_id: "my-web", code_verifier: verifier },
+    });
+    expect(token.ok()).toBe(true);
+    const { access_token: accessToken } = (await token.json()) as { access_token: string };
+    const headers = { Authorization: `Bearer ${accessToken}` };
+
+    const setup = await page.request.post("/api/v1/two_factor/totp/setup", { headers });
+    expect(setup.ok()).toBe(true);
+    const { secret, setup_token } = (await setup.json()) as { secret: string; setup_token: string };
+    const key = base32Decode(secret);
+    const step = currentStep();
+    const enabled = await page.request.post("/api/v1/two_factor/totp", { headers, data: { setup_token, code: totp(key, step) } });
+    expect(enabled.ok()).toBe(true);
+    const { recovery_codes } = (await enabled.json()) as { recovery_codes: string[] };
+    await page.context().clearCookies();
+    return { ...user, secret: key, step, recoveryCodes: recovery_codes };
+  }
+
+  async function signInWithPassword(page: Page, user: { email: string; password: string }): Promise<void> {
+    await page.goto("/auth/sign_in");
+    await emailField(page).fill(user.email);
+    await passwordField(page, "current-password").fill(user.password);
+    await submitButton(page).click();
+    await expect(page).toHaveURL(/\/auth\/sign_in\/two_factor$/);
+  }
+
+  test("asks for the code after the password and signs in with it", async ({ browser, context, page }) => {
+    const user = await twoFactorUser(page);
+    await signInWithPassword(page, user);
+    await expectPageBasics(page);
+    await expect(codeField(page)).toHaveAccessibleName(/\S/);
+    await expect(codeField(page)).toHaveAccessibleDescription(/\S/);
+    await expect(page.getByRole("main")).toMatchAriaSnapshot(`
+      - main:
+        - heading [level=1]
+        - paragraph
+        - textbox
+        - button
+        - paragraph:
+          - link
+    `);
+    await withJavaScript(browser, context, page, async (form, makeAxeBuilder) => {
+      await expect(codeField(form)).toBeVisible();
+      await expectNoAxeViolationsInBothThemes(form, makeAxeBuilder);
+      await expectNoHorizontalScroll(form);
+    });
+
+    // An expired form is refused before the code counts against a rate limit.
+    await context.clearCookies({ name: "__Host-my_csrf" });
+    await codeField(page).fill(unusedCode(user));
+    await submitButton(page).click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expectDescribedError(page, codeField(page), "two-factor-error");
+    await withJavaScript(browser, context, page, async (form, makeAxeBuilder) => {
+      await expect(codeField(form)).toBeVisible();
+      await expectNoAxeViolations(makeAxeBuilder);
+    });
+
+    await codeField(page).fill(unusedCode(user));
+    await submitButton(page).click();
+    await expect(page).toHaveURL(`${serverURL}/`);
+    await page.goto("/auth/sign_in");
+    await expect(page.locator('form[action="/auth/sign_out"]')).toBeVisible();
+  });
+
+  test("signs in once with each recovery code", async ({ page }, testInfo) => {
+    // A reused code counts against the sign-in rate limit of the address, so one project checks it.
+    test.skip(testInfo.project.name !== "en-320", "a refused code counts against the sign-in rate limit");
+    const user = await twoFactorUser(page);
+    const [recoveryCode = ""] = user.recoveryCodes;
+    await signInWithPassword(page, user);
+    await codeField(page).fill(recoveryCode.toUpperCase());
+    await submitButton(page).click();
+    await expect(page).toHaveURL(`${serverURL}/`);
+
+    await page.context().clearCookies();
+    await signInWithPassword(page, user);
+    await codeField(page).fill(recoveryCode);
+    await submitButton(page).click();
+    await expect(page.getByRole("alert")).toBeVisible();
+    await expectDescribedError(page, codeField(page), "two-factor-error");
+    await expect(page).toHaveURL(/\/auth\/sign_in\/two_factor$/);
   });
 });
 

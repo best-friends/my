@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The moderators' account screens (FR-714, FR-703, FR-713): the search form and its results, one account, showing
 // its email address and IP addresses only when the moderator asks (each time is recorded in the audit log, ADR-0038),
-// and lifting the moderation actions on it. Failures of what the moderator does are toasts or stay in the
+// removing its two-factor authentication, and lifting the moderation actions on it. Failures of what the moderator does are toasts or stay in the
 // confirmation; a failure to load the results stays in their region (web-client.md E2, G16).
 import { useToast } from "@my/ui";
 import { useInfiniteQuery, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
-import { errorMessage } from "../../../lib/errors";
+import { ApiError, errorMessage } from "../../../lib/errors";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { domainToAscii } from "../../../lib/idn";
 import {
@@ -26,7 +26,9 @@ import {
   type AdminAccountState,
   adminAccountStates,
   cacheLiftedAccountAction,
+  disableAccountTwoFactorMutation,
   liftAccountActionMutation,
+  refreshAccountTwoFactor,
   refreshLiftedAccountAction,
   revealAccountMutation,
 } from "../api/accounts";
@@ -302,5 +304,64 @@ export function useLiftAccountAction(accountId: string, onLifted: (action: Accou
     },
     isPending: mutation.isPending,
     error: isOpen && mutation.isError ? errorMessage(mutation.error) : undefined,
+  };
+}
+
+/** Removing the two-factor authentication of a local account, which asks first in a confirmation. */
+export type RemoveTwoFactor = {
+  open: () => void;
+  isOpen: boolean;
+  /** Removes it; on success the confirmation closes and the account shows it without. */
+  confirm: () => void;
+  cancel: () => void;
+  isPending: boolean;
+  /** Why the removal failed, localized, for the confirmation (which stays open). */
+  error: string | undefined;
+  /** What the removal did, for the region's StatusMessage; undefined before it. */
+  status: string | undefined;
+};
+
+/**
+ * Removing the two-factor authentication of local account `accountId`, whose handle (isolated) is `handle`, for a
+ * user who lost their authenticator app and recovery codes. It is done once the account's page and the audit log,
+ * which records it, are fetched again (refreshAccountTwoFactor); `onRemoved()` is called then, just before the
+ * button that removes it goes away.
+ */
+export function useRemoveTwoFactor(accountId: string, handle: string, onRemoved: () => void): RemoveTwoFactor {
+  const api = useApi();
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+  const [status, setStatus] = useState<string | undefined>(undefined);
+  const mutation = useMutation({
+    ...disableAccountTwoFactorMutation(api),
+    onSuccess: async () => {
+      await refreshAccountTwoFactor(queryClient, api, accountId);
+      setIsOpen(false);
+      onRemoved();
+      setStatus(t("client:admin.account.two_factor.removed", { handle }));
+    },
+    onError: (error) => {
+      // Removed elsewhere already: the page shows the account as it is now.
+      if (error instanceof ApiError && error.status === 409) void refreshAccountTwoFactor(queryClient, api, accountId);
+    },
+  });
+  return {
+    open: () => {
+      mutation.reset();
+      setIsOpen(true);
+    },
+    isOpen,
+    confirm: () => {
+      if (!isOpen || mutation.isPending) return;
+      mutation.mutate(accountId);
+    },
+    cancel: () => {
+      setIsOpen(false);
+      mutation.reset();
+    },
+    isPending: mutation.isPending,
+    error: isOpen && mutation.isError ? errorMessage(mutation.error) : undefined,
+    status,
   };
 }
