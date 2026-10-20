@@ -31,8 +31,8 @@ type InstanceFactory func(t *testing.T, opts uow.Options) InstanceHarness
 
 // InstanceRepositoryContract verifies the instance repository of a database adapter through the
 // use cases that drive it: defaults for unset settings, every change kept as a revision,
-// canonical values, rejection of invalid input without writing, localized texts with their
-// history, lookups through the locale fallback chain, the media files that media settings
+// canonical values, rejection of invalid input without writing, texts (one value for every
+// locale) with their history, cleared texts, the media files that media settings
 // refer to, the property that the synchronous projections equal a rebuild from the
 // revisions, the instance rules (instanceRuleCases), the theme (instanceThemeCases), and the
 // announcements (instanceAnnouncementCases).
@@ -48,7 +48,7 @@ func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 		{"RejectsInvalidSettings", instanceRejectsInvalidSettings},
 		{"SetsSeveralSettingsAtOnce", instanceSetsSeveralSettings},
 		{"KeepsTextRevisions", instanceKeepsTextRevisions},
-		{"LooksUpTextsThroughTheFallbackChain", instanceLooksUpTextsThroughFallback},
+		{"ClearsTexts", instanceClearsTexts},
 		{"RejectsInvalidTexts", instanceRejectsInvalidTexts},
 		{"IncrementalProjectionEqualsRebuild", instanceProjectionEqualsRebuild},
 		{"ReferencesMediaFromSettings", instanceReferencesMedia},
@@ -93,12 +93,12 @@ func (e *instanceEnv) set(t *testing.T, key instance.SettingKey, value, by strin
 	return rev
 }
 
-func (e *instanceEnv) setText(t *testing.T, key instance.TextKey, locale, body string) instance.TextRevision {
+func (e *instanceEnv) setText(t *testing.T, key instance.TextKey, body string) instance.TextRevision {
 	t.Helper()
 	e.clock.Advance(time.Second)
-	rev, err := e.service.SetText(t.Context(), appinstance.SetTextInput{Key: key, Locale: locale, Body: body})
+	rev, err := e.service.SetText(t.Context(), appinstance.SetTextInput{Key: key, Body: body})
 	if err != nil {
-		t.Fatalf("SetText(%s, %s, %q) = %v", key, locale, body, err)
+		t.Fatalf("SetText(%s, %q) = %v", key, body, err)
 	}
 	return rev
 }
@@ -128,7 +128,7 @@ func instanceReadsDefaults(t *testing.T, e *instanceEnv) {
 	if err != nil || len(texts) != 0 {
 		t.Errorf("Texts = %+v, %v; want none", texts, err)
 	}
-	if _, ok, err := e.service.Text(t.Context(), instance.TextName, "en"); ok || err != nil {
+	if _, ok, err := e.service.Text(t.Context(), instance.TextName); ok || err != nil {
 		t.Errorf("Text(name) = _, %v, %v; want not found", ok, err)
 	}
 }
@@ -254,20 +254,19 @@ func instanceSetsSeveralSettings(t *testing.T, e *instanceEnv) {
 
 func instanceKeepsTextRevisions(t *testing.T, e *instanceEnv) {
 	ctx := t.Context()
-	first := e.setText(t, instance.TextDescription, "ja_jp", "最初の説明")
-	second := e.setText(t, instance.TextDescription, "ja-JP", "二番目の説明\n改行あり")
-	e.setText(t, instance.TextDescription, "en", "English description")
-	e.setText(t, instance.TextName, "en", "Example Social")
+	first := e.setText(t, instance.TextDescription, "最初の説明")
+	second := e.setText(t, instance.TextDescription, "Second description\nwith a line break")
+	e.setText(t, instance.TextName, "Example Social")
 
-	if first.Locale != "ja-JP" {
-		t.Errorf("stored locale = %q, want the canonical ja-JP", first.Locale)
-	}
-	history, err := e.service.TextHistory(ctx, instance.TextDescription, "ja-jp", 10)
+	history, err := e.service.TextHistory(ctx, instance.TextDescription, 10)
 	if err != nil {
 		t.Fatalf("TextHistory = %v", err)
 	}
 	if want := []instance.TextRevision{second, first}; !reflect.DeepEqual(history, want) {
 		t.Errorf("history = %+v\nwant      %+v", history, want)
+	}
+	if _, err := e.service.TextHistory(ctx, "motto", 10); !errors.Is(err, instance.ErrUnknownKey) {
+		t.Errorf("TextHistory(unknown) = %v, want ErrUnknownKey", err)
 	}
 	texts, err := e.service.Texts(ctx)
 	if err != nil {
@@ -275,60 +274,36 @@ func instanceKeepsTextRevisions(t *testing.T, e *instanceEnv) {
 	}
 	var got []string
 	for _, x := range texts {
-		got = append(got, fmt.Sprintf("%s/%s=%s", x.Key, x.Locale, x.Body))
+		got = append(got, fmt.Sprintf("%s=%s", x.Key, x.Body))
 	}
-	want := []string{"description/en=English description", "description/ja-JP=二番目の説明\n改行あり", "name/en=Example Social"}
+	want := []string{"description=Second description\nwith a line break", "name=Example Social"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Texts = %q, want %q", got, want)
 	}
-	if texts[1].RevisionID != second.ID || !texts[1].RevisedAt.Equal(second.RevisedAt) {
-		t.Errorf("current ja-JP text = %+v, want revision %+v", texts[1], second)
+	if texts[0].RevisionID != second.ID || !texts[0].RevisedAt.Equal(second.RevisedAt) {
+		t.Errorf("current description = %+v, want revision %+v", texts[0], second)
+	}
+	if x, ok, err := e.service.Text(ctx, instance.TextDescription); err != nil || !ok || x.Body != second.Body {
+		t.Errorf("Text(description) = %+v, %v, %v; want %q", x, ok, err, second.Body)
 	}
 }
 
-func instanceLooksUpTextsThroughFallback(t *testing.T, e *instanceEnv) {
+// instanceClearsTexts checks that an empty body clears a text, which is then not found and
+// not listed, and that a later body sets it again.
+func instanceClearsTexts(t *testing.T, e *instanceEnv) {
 	ctx := t.Context()
-	e.setText(t, instance.TextName, "en", "Example")
-	e.setText(t, instance.TextName, "ja", "例")
-	e.setText(t, instance.TextName, "zh-Hant", "範例")
-
-	lookup := func(locale string) string {
-		t.Helper()
-		x, ok, err := e.service.Text(ctx, instance.TextName, locale)
-		if err != nil {
-			t.Fatalf("Text(%q) = %v", locale, err)
-		}
-		if !ok {
-			return "<none>"
-		}
-		return x.Locale + ":" + x.Body
+	e.setText(t, instance.TextName, "Example")
+	e.setText(t, instance.TextName, "")
+	if x, ok, err := e.service.Text(ctx, instance.TextName); ok || err != nil {
+		t.Errorf("Text(cleared name) = %+v, %v, %v; want not found", x, ok, err)
 	}
-	check := func(locale, want string) {
-		t.Helper()
-		if got := lookup(locale); got != want {
-			t.Errorf("Text(name, %q) = %q, want %q", locale, got, want)
-		}
+	if texts, err := e.service.Texts(ctx); err != nil || len(texts) != 0 {
+		t.Errorf("Texts = %+v, %v; want none", texts, err)
 	}
-	check("ja-JP", "ja:例")
-	check("ja", "ja:例")
-	check("zh-TW", "zh-Hant:範例")
-	check("zh", "en:Example")
-	check("fr", "en:Example")
-	check("", "en:Example")
-	check("en-GB", "en:Example")
-
-	// The instance's default locale comes before the source locale.
-	e.set(t, instance.SettingDefaultLocale, "ja", "")
-	check("fr", "ja:例")
-	check("en-GB", "en:Example")
-
-	// A cleared text falls back to the next locale of the chain.
-	e.setText(t, instance.TextName, "ja", "")
-	check("ja-JP", "en:Example")
-	check("fr", "en:Example")
-	e.setText(t, instance.TextName, "en", "")
-	check("fr", "<none>")
-	check("zh-HK", "zh-Hant:範例")
+	e.setText(t, instance.TextName, "例")
+	if x, ok, err := e.service.Text(ctx, instance.TextName); !ok || err != nil || x.Body != "例" {
+		t.Errorf("Text(name) = %+v, %v, %v; want 例", x, ok, err)
+	}
 }
 
 func instanceRejectsInvalidTexts(t *testing.T, e *instanceEnv) {
@@ -337,13 +312,11 @@ func instanceRejectsInvalidTexts(t *testing.T, e *instanceEnv) {
 		in   appinstance.SetTextInput
 		want error
 	}{
-		{appinstance.SetTextInput{Key: "motto", Locale: "en", Body: "x"}, instance.ErrUnknownKey},
-		{appinstance.SetTextInput{Key: instance.TextName, Locale: "", Body: "x"}, instance.ErrInvalidValue},
-		{appinstance.SetTextInput{Key: instance.TextName, Locale: "e n", Body: "x"}, instance.ErrInvalidValue},
-		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: "two\nlines"}, instance.ErrInvalidValue},
-		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: "   "}, instance.ErrInvalidValue},
-		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: strings.Repeat("a", 101)}, instance.ErrInvalidValue},
-		{appinstance.SetTextInput{Key: instance.TextName, Locale: "en", Body: "\xff"}, instance.ErrInvalidValue},
+		{appinstance.SetTextInput{Key: "motto", Body: "x"}, instance.ErrUnknownKey},
+		{appinstance.SetTextInput{Key: instance.TextName, Body: "two\nlines"}, instance.ErrInvalidValue},
+		{appinstance.SetTextInput{Key: instance.TextName, Body: "   "}, instance.ErrInvalidValue},
+		{appinstance.SetTextInput{Key: instance.TextName, Body: strings.Repeat("a", 101)}, instance.ErrInvalidValue},
+		{appinstance.SetTextInput{Key: instance.TextName, Body: "\xff"}, instance.ErrInvalidValue},
 	} {
 		if _, err := e.service.SetText(ctx, tc.in); !errors.Is(err, tc.want) {
 			t.Errorf("SetText(%+v) = %v, want %v", tc.in, err, tc.want)
@@ -354,7 +327,7 @@ func instanceRejectsInvalidTexts(t *testing.T, e *instanceEnv) {
 		t.Errorf("ListAllCurrentTexts = %+v, %v; want nothing written", all, err)
 	}
 	// The longest allowed name is accepted, counted in characters.
-	e.setText(t, instance.TextName, "ja", strings.Repeat("あ", 100))
+	e.setText(t, instance.TextName, strings.Repeat("あ", 100))
 }
 
 func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
@@ -393,7 +366,7 @@ func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
 				if rng.IntN(4) > 0 {
 					body = fmt.Sprintf("text %d.%d", round, step)
 				}
-				e.setText(t, texts[rng.IntN(len(texts))].Key, locales[rng.IntN(len(locales))], body)
+				e.setText(t, texts[rng.IntN(len(texts))].Key, body)
 			}
 		}
 		incremental := snapshotInstanceProjections(t, e.h.Instance)
@@ -435,17 +408,14 @@ func instanceReferencesMedia(t *testing.T, e *instanceEnv) {
 		second = "0199f0e0-0000-7000-8000-00000000f002"
 		other  = "0199f0e0-0000-7000-8000-00000000f003"
 	)
-	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.Image{}) {
+	if p, err := e.service.PreviewImage(ctx); err != nil || p != (appinstance.Image{}) {
 		t.Errorf("PreviewImage unset = %+v, %v; want none", p, err)
 	}
 	e.set(t, instance.SettingPreviewImage, strings.ToUpper(first), "")
 	e.set(t, instance.SettingPreviewImage, second, "")
-	e.setText(t, instance.TextPreviewImageAlt, "en", "A mascot")
-	e.setText(t, instance.TextPreviewImageAlt, "ja", "マスコット")
-	for locale, alt := range map[string]string{"ja-JP": "マスコット", "fr": "A mascot"} {
-		if p, err := e.service.PreviewImage(ctx, locale); err != nil || p.MediaID != second || p.Alt != alt {
-			t.Errorf("PreviewImage(%s) = %+v, %v; want %s with %q", locale, p, err, second, alt)
-		}
+	e.setText(t, instance.TextPreviewImageAlt, "A mascot")
+	if p, err := e.service.PreviewImage(ctx); err != nil || p.MediaID != second || p.Alt != "A mascot" {
+		t.Errorf("PreviewImage = %+v, %v; want %s with its alt text", p, err, second)
 	}
 	// Every revision keeps its file, so that the setting can go back to an earlier one.
 	for id, want := range map[string]bool{first: true, second: true, other: false} {
@@ -454,7 +424,7 @@ func instanceReferencesMedia(t *testing.T, e *instanceEnv) {
 		}
 	}
 	e.set(t, instance.SettingPreviewImage, "", "")
-	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.Image{}) {
+	if p, err := e.service.PreviewImage(ctx); err != nil || p != (appinstance.Image{}) {
 		t.Errorf("PreviewImage cleared = %+v, %v; want none", p, err)
 	}
 	// "" is the cleared value, never a media file.
@@ -503,15 +473,15 @@ func instanceKeepsContactAndThumbnail(t *testing.T, e *instanceEnv) {
 	if got := e.settings(t).ContactEmail(); got != "admin@example.com" {
 		t.Errorf("contact_email after a refused change = %q", got)
 	}
-	e.setText(t, instance.TextThumbnailAlt, "en", "The beach")
-	if img, err := service.Thumbnail(ctx, "ja"); err != nil || img.MediaID != thumbnail || img.Alt != "The beach" {
-		t.Errorf("Thumbnail(ja) = %+v, %v", img, err)
+	e.setText(t, instance.TextThumbnailAlt, "The beach")
+	if img, err := service.Thumbnail(ctx); err != nil || img.MediaID != thumbnail || img.Alt != "The beach" {
+		t.Errorf("Thumbnail = %+v, %v", img, err)
 	}
 	if used, err := service.IsMediaReferenced(ctx, thumbnail); err != nil || !used {
 		t.Errorf("IsMediaReferenced(thumbnail) = %v, %v; want true", used, err)
 	}
 	e.set(t, instance.SettingThumbnail, "", "")
-	if img, err := service.Thumbnail(ctx, "en"); err != nil || img != (appinstance.Image{}) {
+	if img, err := service.Thumbnail(ctx); err != nil || img != (appinstance.Image{}) {
 		t.Errorf("Thumbnail cleared = %+v, %v; want none", img, err)
 	}
 }

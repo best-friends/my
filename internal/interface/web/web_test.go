@@ -52,8 +52,8 @@ func locale(l string) func(context.Context) string {
 }
 
 // named names the instance n in every locale.
-func named(n string) func(context.Context, string) string {
-	return func(context.Context, string) string { return n }
+func named(n string) func(context.Context) string {
+	return func(context.Context) string { return n }
 }
 
 func newHandler(t *testing.T, o web.Options) (*web.Handler, *http.ServeMux) {
@@ -369,18 +369,14 @@ func TestWebManifest(t *testing.T) {
 	}
 }
 
-// TestInstanceName checks that the shell and the manifest name the instance by its display name
-// in the default locale, read per request so that a change applies at once, and by its host
-// when it has none; the handle domain stays in the runtime config either way.
+// TestInstanceName checks that the shell and the manifest name the instance by its display name,
+// read per request so that a change applies at once, and by its host when it has none; the
+// handle domain stays in the runtime config either way.
 func TestInstanceName(t *testing.T) {
 	var name string
-	var asked []string
 	_, mux := newHandler(t, web.Options{
 		Host: "social.example", AccountDomain: "example.org", DefaultLocale: locale("ja"),
-		InstanceName: func(_ context.Context, locale string) string {
-			asked = append(asked, locale)
-			return name
-		},
+		InstanceName: func(context.Context) string { return name },
 	})
 	check := func(want string) {
 		t.Helper()
@@ -406,9 +402,6 @@ func TestInstanceName(t *testing.T) {
 	check("Example Social")
 	name = "例のサーバー"
 	check("例のサーバー")
-	if len(asked) == 0 || slices.ContainsFunc(asked, func(l string) bool { return l != "ja" }) {
-		t.Errorf("asked for the name in %q, want the default locale ja", asked)
-	}
 }
 
 // TestWithoutBuild checks the binary that Go builds without `make web-build`: it starts,

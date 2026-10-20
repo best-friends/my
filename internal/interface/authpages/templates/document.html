@@ -1,7 +1,9 @@
 {{define "content"}}
 <h1>{{.Title}}</h1>
 {{with .Document}}<p class="hint">{{$.L.ServerAuthDocumentUpdated .Updated}}</p>
-<div class="document" lang="{{.Lang}}" dir="auto">
+{{/* The administrators' text, one value for every locale, in a language the server does not
+know: lang="" marks it as unknown instead of the page's language (ADR-0009). */ -}}
+<div class="document" lang="" dir="auto">
 {{.HTML}}
 </div>{{end}}
 {{end}}

@@ -252,26 +252,25 @@ func TestSignInPageIsAccessibleHTML(t *testing.T) {
 	}
 }
 
-// TestPagesNameTheInstance checks that the pages show the instance's name in the page's locale
-// above the card and in the title, escaped as text.
+// TestPagesNameTheInstance checks that the pages show the instance's name, the same in every
+// locale, above the card and in the title, escaped as text.
 func TestPagesNameTheInstance(t *testing.T) {
 	b, err := i18n.Load()
 	if err != nil {
 		t.Fatal(err)
 	}
-	names := map[string]string{"ja": "例の<サーバー>", "en": "Example Social"}
 	m := mux{http.NewServeMux()}
 	authpages.New(authpages.Options{
 		Identity: newFakeIdentity(), Locales: &i18n.Resolver{Bundle: b},
-		InstanceName: func(_ context.Context, locale string) string { return names[locale] },
+		InstanceName: func(context.Context) string { return "例の<サーバー>" },
 	}).Register(m)
 	br := newBrowser(t, m)
 	for _, tt := range []struct{ path, lang, want string }{
 		{authpages.PathSignIn, "ja", `<title>ログイン – 例の&lt;サーバー&gt;</title>`},
-		{authpages.PathSignUp, "en", `<title>Create an account – Example Social</title>`},
+		{authpages.PathSignUp, "en", `<title>Create an account – 例の&lt;サーバー&gt;</title>`},
 	} {
 		body := br.do(http.MethodGet, tt.path, nil, map[string]string{"Accept-Language": tt.lang}).Body.String()
-		name := strings.ReplaceAll(strings.ReplaceAll(names[tt.lang], "<", "&lt;"), ">", "&gt;")
+		name := "例の&lt;サーバー&gt;"
 		if !strings.Contains(body, tt.want) || !strings.Contains(body, `<p class="site-name" dir="auto">`+name+`</p>`) {
 			t.Errorf("GET %s in %s lacks the name:\n%s", tt.path, tt.lang, body)
 		}

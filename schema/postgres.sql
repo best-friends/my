@@ -627,7 +627,7 @@ CREATE TABLE user_timeline_languages (
 -- ---------------------------------------------------------------------------------------------
 -- instance: settings and texts (data-model §4.9). Owned by internal/app/instance.
 -- Keys are defined in internal/domain/instance; add a key there and to its CHECK here together.
--- key and locale use COLLATE "C" so that listings sort as in SQLite.
+-- key uses COLLATE "C" so that listings sort as in SQLite.
 -- ---------------------------------------------------------------------------------------------
 
 -- Event (revision): one change of a setting. value is the canonical string form of the key's
@@ -656,26 +656,23 @@ CREATE TABLE instance_settings (
   value text NOT NULL
 );
 
--- Event (revision): one version of a localized text. An empty body clears the text in that
--- locale. revised_by_user_id is NULL for a change from the CLI.
+-- Event (revision): one version of an instance text, one value shown in every locale. An empty
+-- body clears the text. revised_by_user_id is NULL for a change from the CLI.
 CREATE TABLE instance_text_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   key text COLLATE "C" NOT NULL CHECK (key IN (
     'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt'
   )),
-  locale text COLLATE "C" NOT NULL,
   body text NOT NULL,
   revised_by_user_id text COLLATE "C",
   revised_at timestamptz NOT NULL
 );
-CREATE INDEX instance_text_revisions_key_locale_id ON instance_text_revisions (key, locale, id DESC);
+CREATE INDEX instance_text_revisions_key_id ON instance_text_revisions (key, id DESC);
 
--- Projection: the current revision of each text in each locale.
+-- Projection: the current revision of each text.
 CREATE TABLE instance_texts (
-  key text COLLATE "C" NOT NULL,
-  locale text COLLATE "C" NOT NULL,
-  revision_id text COLLATE "C" NOT NULL,
-  PRIMARY KEY (key, locale)
+  key text COLLATE "C" NOT NULL PRIMARY KEY,
+  revision_id text COLLATE "C" NOT NULL
 );
 
 -- ---------------------------------------------------------------------------------------------
@@ -732,25 +729,19 @@ CREATE TABLE instance_rules (
   created_at timestamptz NOT NULL
 );
 
--- Event (revision): one version of a rule, with its position and texts. revised_by_user_id is
--- NULL for a change from the CLI.
+-- Event (revision): one version of a rule, with its position, its text, and its hint (an optional
+-- explanation, empty for none), one value shown in every locale. revised_by_user_id is NULL for a
+-- change from the CLI.
 CREATE TABLE instance_rule_revisions (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   rule_id text COLLATE "C" NOT NULL,
   position integer NOT NULL,
+  text text NOT NULL,
+  hint text NOT NULL,
   revised_by_user_id text COLLATE "C",
   revised_at timestamptz NOT NULL
 );
 CREATE INDEX instance_rule_revisions_rule_id_id ON instance_rule_revisions (rule_id, id DESC);
-
--- Event (child of a revision): the text of a rule revision in one locale. An empty hint means none.
-CREATE TABLE instance_rule_texts (
-  rule_revision_id text COLLATE "C" NOT NULL,
-  locale text COLLATE "C" NOT NULL,
-  text text NOT NULL,
-  hint text NOT NULL,
-  PRIMARY KEY (rule_revision_id, locale)
-);
 
 -- Event: the retirement of a rule. retired_by_user_id is NULL for the CLI.
 CREATE TABLE instance_rule_retirements (

@@ -114,7 +114,7 @@ const (
 	AuditRegistrationRejected AuditAction = "registration_rejected"
 	// AuditSettingChanged: an instance setting got a new value (instance_setting_revisions).
 	AuditSettingChanged AuditAction = "setting_changed"
-	// AuditTextChanged: an instance text got a new text in one locale (instance_text_revisions).
+	// AuditTextChanged: an instance text got a new text (instance_text_revisions).
 	AuditTextChanged AuditAction = "text_changed"
 	// AuditRuleAdded: a new instance rule (instance_rule_revisions).
 	AuditRuleAdded AuditAction = "rule_added"

@@ -25,8 +25,8 @@ export function Landing() {
       <div className="flex flex-col gap-4">
         {landing.thumbnail !== undefined && <ServerThumbnail thumbnail={landing.thumbnail} />}
         {landing.summary !== "" && (
-          // The administrator's text, in any language (web-client.md Y10).
-          <p dir="auto" className="text-lg">
+          // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
+          <p dir="auto" lang="" className="text-lg">
             {landing.summary}
           </p>
         )}
@@ -108,7 +108,7 @@ function About({ paragraphs }: { paragraphs: readonly string[] }) {
       </h2>
       {paragraphs.map((paragraph) => (
         // Paragraphs of one text have no IDs; the text itself is the key (two equal paragraphs are not expected).
-        <p key={paragraph} dir="auto" className="whitespace-pre-line">
+        <p key={paragraph} dir="auto" lang="" className="whitespace-pre-line">
           {paragraph}
         </p>
       ))}
@@ -127,8 +127,8 @@ function Rules({ rules }: { rules: LandingData["rules"] }) {
       <ol className="flex list-decimal flex-col gap-2 ps-6">
         {rules.map((rule) => (
           // The item follows the page's direction, so that its number stays in the list's padding; the rule's text
-          // follows its own (dir="auto").
-          <li key={rule.id} lang={rule.lang}>
+          // follows its own (dir="auto"); lang="" because the administrator's text has no known language.
+          <li key={rule.id} lang="">
             <p dir="auto" className="font-medium">
               {rule.text}
             </p>

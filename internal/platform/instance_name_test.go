@@ -20,7 +20,7 @@ import (
 
 // TestInstanceNameAndDomain checks that the instance's display name names it wherever people
 // read its name (the shell, the manifest, NodeInfo, the sign-in pages, GET /instance, and the
-// emails), in the reader's locale and without a restart, while handles and URLs keep the
+// emails), the same in every locale and without a restart, while handles and URLs keep the
 // domain; without a name, the domain names it.
 func TestInstanceNameAndDomain(t *testing.T) {
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_QUEUE": "inline", "MY_MAIL": "none"})
@@ -80,15 +80,13 @@ func TestInstanceNameAndDomain(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for locale, name := range map[string]string{"en": "Example Social", "ja": "例のソーシャル"} {
-		if _, err := app.Instance.SetText(ctx, appinstance.SetTextInput{Key: instance.TextName, Locale: locale, Body: name, RevisedByUserID: admin.User.ID}); err != nil {
-			t.Fatal(err)
-		}
+	if _, err := app.Instance.SetText(ctx, appinstance.SetTextInput{Key: instance.TextName, Body: "例のソーシャル", RevisedByUserID: admin.User.ID}); err != nil {
+		t.Fatal(err)
 	}
-	check("Example Social", "例のソーシャル")
+	check("例のソーシャル", "例のソーシャル")
 
-	// The verification email of a sign-up names the instance in the user's locale, and the
-	// domain where it says where the user signed up.
+	// The verification email of a sign-up names the instance, and the domain where it says where
+	// the user signed up.
 	if _, err := app.Instance.SetSetting(ctx, appinstance.SetSettingInput{Key: instance.SettingRegistrationMode, Value: "open"}); err != nil {
 		t.Fatal(err)
 	}

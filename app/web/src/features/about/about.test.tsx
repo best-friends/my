@@ -21,7 +21,7 @@ describe("the information page", () => {
     serveInstance({
       short_description: "A small server for gardeners.",
       description: "We grow vegetables.\n\nEveryone is welcome.",
-      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", hint: "No insults.", lang: "en" }],
+      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", hint: "No insults." }],
       terms_url: "http://localhost:3000/auth/terms",
       privacy_policy_url: "http://localhost:3000/auth/privacy",
     });
@@ -34,7 +34,7 @@ describe("the information page", () => {
     expect(within(description).getAllByText(/./u, { selector: "p" }).map((p) => p.textContent)).toEqual(["We grow vegetables.", "Everyone is welcome."]);
 
     const rule = within(screen.getByRole("region", { name: "Rules" })).getByRole("listitem");
-    expect(rule).toHaveAttribute("lang", "en");
+    expect(rule).toHaveAttribute("lang", "");
     expect(rule).toHaveTextContent("Be kindNo insults.");
 
     const domains = screen.getByRole("region", { name: "Moderated servers" });
@@ -57,7 +57,7 @@ describe("the information page", () => {
   test("puts the terms and policies right after the rules, and the operators and the source code last", async () => {
     serveInstance({
       description: "We grow vegetables.",
-      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", lang: "en" }],
+      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind" }],
       contact: { email: "admin@my.example" },
       terms_url: "http://localhost:3000/auth/terms",
       privacy_policy_url: "http://localhost:3000/auth/privacy",

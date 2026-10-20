@@ -66,7 +66,9 @@ test.describe("the documents' pages on the server", () => {
       const main = page.getByRole("main");
       await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
       await expect(main).toMatchAriaSnapshot(snapshot);
-      await expect(main.locator(".document")).toHaveAttribute("lang", "en");
+      // The administrator's text, one value for every locale in a language the server does not know.
+      await expect(main.locator(".document")).toHaveAttribute("lang", "");
+      await expect(main.locator(".document")).toHaveAttribute("dir", "auto");
       await expectNoHorizontalScroll(page);
       for (const colorScheme of ["light", "dark"] as const) {
         await page.emulateMedia({ colorScheme });
@@ -106,12 +108,12 @@ const administrator = {
 };
 
 /**
- * Plays the server of a signed-in administrator, with terms of service in English and no privacy policy; the
+ * Plays the server of a signed-in administrator, with terms of service and no privacy policy; the
  * texts change with what the screen saves. Returns the saves.
  */
 async function administratorServer(page: Page, origin: string) {
   const locale = test.info().project.use.locale ?? "en";
-  let texts = [{ key: "terms", locale: "en", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" }];
+  let texts = [{ key: "terms", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" }];
   const saves: string[] = [];
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
   await page.route("**/api/v1/**", async (route) => {
@@ -142,12 +144,12 @@ async function administratorServer(page: Page, origin: string) {
     }
     if (key === "GET /notifications/marker") return json(route, {});
     if (key === "GET /admin/instance_texts") return json(route, { items: texts });
-    const put = /^PUT \/admin\/instance_texts\/([^/]+)\/([^/]+)$/.exec(key);
+    const put = /^PUT \/admin\/instance_texts\/([^/]+)$/.exec(key);
     if (put) {
       const { body } = request.postDataJSON() as { body: string };
-      const text = { key: put[1] ?? "", locale: put[2] ?? "", body, revised_at: "2026-10-17T00:00:00Z" };
-      saves.push(`${text.key} ${text.locale} ${body}`);
-      texts = [...texts.filter((item) => item.key !== text.key || item.locale !== text.locale), ...(body === "" ? [] : [text])];
+      const text = { key: put[1] ?? "", body, revised_at: "2026-10-17T00:00:00Z" };
+      saves.push(`${text.key} ${body}`);
+      texts = [...texts.filter((item) => item.key !== text.key), ...(body === "" ? [] : [text])];
       return json(route, text);
     }
     if (key === "GET /streaming") return route.fulfill({ status: 200, contentType: "text/event-stream", body: "" });
@@ -159,7 +161,7 @@ async function administratorServer(page: Page, origin: string) {
 test.describe("the terms and policies screen", () => {
   test("writes the privacy policy with the keyboard, without axe violations or scrolling sideways", async ({ page, baseURL, makeAxeBuilder }) => {
     const saves = await administratorServer(page, new URL(baseURL ?? "").origin);
-    await page.goto("/admin/documents?locale=en");
+    await page.goto("/admin/documents");
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
     await expect(main.getByRole("textbox").first()).toHaveValue("# Accounts\n\nBe kind.");
@@ -167,11 +169,8 @@ test.describe("the terms and policies screen", () => {
       - main:
         - heading [level=1]
         - link
-        - button
         - region:
           - heading [level=2]
-          - term
-          - definition
           - term
           - definition
           - paragraph:
@@ -180,8 +179,6 @@ test.describe("the terms and policies screen", () => {
           - button
         - region:
           - heading [level=2]
-          - term
-          - definition
           - term
           - definition
           - textbox
@@ -200,7 +197,7 @@ test.describe("the terms and policies screen", () => {
     await page.keyboard.press("Enter");
     // The form's StatusMessage shows its result in a paragraph.
     await expect(privacy.locator('[role="status"] p')).toBeVisible();
-    expect(saves).toEqual(["privacy_policy en # What we keep\n\nYour email address."]);
+    expect(saves).toEqual(["privacy_policy # What we keep\n\nYour email address."]);
     // The page of the new policy is linked once it is saved.
     await expect(privacy.getByRole("link")).toHaveAttribute("href", /\/auth\/privacy$/);
     await expectNoAxeViolations(makeAxeBuilder);

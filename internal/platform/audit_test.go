@@ -42,18 +42,18 @@ func TestAuditLogOfEveryModule(t *testing.T) {
 	if _, err := app.Instance.SetSetting(ctx, appinstance.SetSettingInput{Key: instance.SettingRegistrationMode, Value: "nonsense"}); err == nil {
 		t.Fatal("SetSetting(nonsense) succeeded")
 	}
-	if _, err := app.Instance.SetText(ctx, appinstance.SetTextInput{Key: instance.TextTerms, Locale: "ja_jp", Body: "規約"}); err != nil {
+	if _, err := app.Instance.SetText(ctx, appinstance.SetTextInput{Key: instance.TextTerms, Body: "規約"}); err != nil {
 		t.Fatal(err)
 	}
-	first, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Be kind"}}, CreatedByUserID: by})
+	first, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Text: "Be kind", CreatedByUserID: by})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "No spam"}}, CreatedByUserID: by})
+	second, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Text: "No spam", CreatedByUserID: by})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.Instance.ReviseRule(ctx, appinstance.ReviseRuleInput{RuleID: first.ID, Texts: []instance.RuleText{{Locale: "en", Text: "Be very kind"}}, RevisedByUserID: by}); err != nil {
+	if _, err := app.Instance.ReviseRule(ctx, appinstance.ReviseRuleInput{RuleID: first.ID, Text: "Be very kind", RevisedByUserID: by}); err != nil {
 		t.Fatal(err)
 	}
 	moved, err := app.Instance.MoveRule(ctx, appinstance.MoveRuleInput{RuleID: second.ID, Position: 1, RevisedByUserID: by})
@@ -114,7 +114,7 @@ func TestAuditLogOfEveryModule(t *testing.T) {
 	user, cli := moderation.AuditActorUser, moderation.AuditActorCLI
 	want := []row{
 		{user, by, moderation.AuditSettingChanged, moderation.AuditTargetSetting, "registration_mode", "registration_mode", rows[0].source},
-		{cli, "", moderation.AuditTextChanged, moderation.AuditTargetSetting, "terms", "terms [ja-JP]", rows[1].source},
+		{cli, "", moderation.AuditTextChanged, moderation.AuditTargetSetting, "terms", "terms", rows[1].source},
 		{user, by, moderation.AuditRuleAdded, moderation.AuditTargetRule, first.ID, "Be kind", first.Revision.ID},
 		{user, by, moderation.AuditRuleAdded, moderation.AuditTargetRule, second.ID, "No spam", second.Revision.ID},
 		{user, by, moderation.AuditRuleRevised, moderation.AuditTargetRule, first.ID, "Be very kind", rows[4].source},

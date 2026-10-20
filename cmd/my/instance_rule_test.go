@@ -28,19 +28,18 @@ func TestInstanceRules(t *testing.T) {
 		t.Errorf("first rule position = %s, want 1", pos)
 	}
 	spam, _ := mustRule(t, "add", "No spam")
-	if id, _ := mustRule(t, "edit", "-locale", "ja", kind, "親切に"); id != kind {
+	if id, _ := mustRule(t, "edit", kind, "親切に"); id != kind {
 		t.Errorf("edit changed the rule ID to %s, want %s", id, kind)
 	}
-	mustRule(t, "edit", kind, "Be very kind")
 	if _, pos := mustRule(t, "move", spam, "1"); pos != "1" {
 		t.Errorf("moved position = %s, want 1", pos)
 	}
 
 	list := mustInstance(t, "", "rule", "list")
 	lines := strings.Split(strings.TrimSpace(list), "\n")
-	if len(lines) != 4 || !strings.HasPrefix(lines[1], spam) ||
-		!strings.Contains(lines[2], `en      "Be very kind"  "No harassment."`) || !strings.Contains(lines[3], `ja      "親切に"`) {
-		t.Errorf("list = %q, want the spam rule, then the kind rule in en (hint kept) and ja", list)
+	if len(lines) != 3 || !strings.HasPrefix(lines[1], spam) || !strings.HasPrefix(lines[2], kind) ||
+		!strings.Contains(lines[2], `"親切に"`) || !strings.Contains(lines[2], `"No harassment."`) {
+		t.Errorf("list = %q, want the spam rule, then the kind rule with its new text and its hint kept", list)
 	}
 
 	mustRule(t, "retire", kind)
@@ -62,7 +61,8 @@ func TestInstanceRules(t *testing.T) {
 		{[]string{"rule", "add", "two\nlines"}, 1, "line break"},
 		{[]string{"rule", "edit", kind, "x"}, 1, "retired"},
 		{[]string{"rule", "retire", "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f"}, 1, "not found"},
-		{[]string{"rule", "edit", spam, ""}, 1, "at least one locale"},
+		{[]string{"rule", "edit", spam, ""}, 1, "is blank"},
+		{[]string{"rule", "add", "-locale", "ja", "x"}, 2, "flag provided but not defined: -locale"},
 	} {
 		code, _, stderr := runInstanceCmd(t, "", tc.args...)
 		if code != tc.code || !strings.Contains(stderr, tc.want) {

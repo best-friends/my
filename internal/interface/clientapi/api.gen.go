@@ -2426,7 +2426,7 @@ type AdminAppealPage struct {
 // `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 // `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
-// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+// (an instance setting), `text_changed` (an instance text). On a `rule`:
 // `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
 // `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
 // `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
@@ -2467,7 +2467,7 @@ type AdminAuditEntry struct {
 	// `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
 	// `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
-	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+	// (an instance setting), `text_changed` (an instance text). On a `rule`:
 	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
 	// `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
 	// `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
@@ -2760,25 +2760,22 @@ type AdminInstanceHealthPage struct {
 // `Reject`.
 type AdminInstanceState string
 
-// AdminInstanceText The current text of a key in one locale.
+// AdminInstanceText The current text of a key, the same in every locale.
 type AdminInstanceText struct {
 	// Body The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
 	// Empty only in the answer to clearing it.
 	Body string `json:"body"`
 
 	// Key The key of an instance text: the name (one line), the short and full descriptions,
-	// the terms of service and the privacy policy (Markdown), and the alternative text of the
-	// preview image.
+	// the terms of service and the privacy policy (Markdown), and the alternative texts of the
+	// preview image and the thumbnail.
 	Key InstanceTextKey `json:"key"`
-
-	// Locale The BCP 47 tag of the locale, canonical (`ja-JP`).
-	Locale string `json:"locale"`
 
 	// RevisedAt When the revision was recorded.
 	RevisedAt time.Time `json:"revised_at"`
 }
 
-// AdminInstanceTextList The current instance texts, by key and locale.
+// AdminInstanceTextList The current instance texts, by key.
 type AdminInstanceTextList struct {
 	Items []AdminInstanceText `json:"items"`
 }
@@ -3128,10 +3125,13 @@ type AdminRoleList struct {
 	Items []AdminRole `json:"items"`
 }
 
-// AdminRule A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
-// across revisions, so reports keep citing it.
+// AdminRule A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
+// citing it.
 type AdminRule struct {
 	CreatedAt time.Time `json:"created_at"`
+
+	// Hint An explanation of the rule, as plain text; omitted when there is none.
+	Hint *string `json:"hint,omitempty"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
@@ -3148,25 +3148,13 @@ type AdminRule struct {
 	// RevisedAt When the current revision was recorded.
 	RevisedAt time.Time `json:"revised_at"`
 
-	// Texts The texts by locale.
-	Texts []AdminRuleText `json:"texts"`
+	// Text The rule, on one line, as plain text.
+	Text string `json:"text"`
 }
 
 // AdminRuleList The rules.
 type AdminRuleList struct {
 	Items []AdminRule `json:"items"`
-}
-
-// AdminRuleText The text of a rule in one locale.
-type AdminRuleText struct {
-	// Hint An explanation of the rule, as plain text; omitted when there is none.
-	Hint *string `json:"hint,omitempty"`
-
-	// Locale The BCP 47 tag of the locale, canonical (`ja-JP`).
-	Locale string `json:"locale"`
-
-	// Text The rule, on one line, as plain text.
-	Text string `json:"text"`
 }
 
 // AdminSameIpAccounts The other accounts that used one IP address.
@@ -4229,7 +4217,7 @@ type Instance struct {
 	Name string `json:"name"`
 
 	// PrivacyPolicyUrl The public page of the instance's privacy policy, which needs no sign-in; omitted
-	// when no locale of the request's fallback chain has it.
+	// when the instance has none.
 	PrivacyPolicyUrl *string `json:"privacy_policy_url,omitempty"`
 
 	// PushServerKey The instance's VAPID public key (RFC 8292), an uncompressed P-256 point in unpadded
@@ -4240,7 +4228,7 @@ type Instance struct {
 	// Registrations How people sign up on the instance.
 	Registrations InstanceRegistrations `json:"registrations"`
 
-	// Rules The rules in effect, in order, each in the locale of the request.
+	// Rules The rules in effect, in order.
 	Rules []InstanceRule `json:"rules"`
 
 	// SearchIndexing Whether the instance lets search engines index its pages (the instance setting
@@ -4261,8 +4249,7 @@ type Instance struct {
 	SourceUrl string `json:"source_url"`
 
 	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted
-	// when no locale of the request's fallback chain has them, so that clients do not
-	// link to it.
+	// when the instance has none, so that clients do not link to it.
 	TermsUrl *string `json:"terms_url,omitempty"`
 
 	// Theme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
@@ -4344,9 +4331,8 @@ type InstanceRegistrations struct {
 // approval), `invite` (only with an invite), or `closed` (nobody).
 type InstanceRegistrationsMode string
 
-// InstanceRule A rule of the instance (FR-705), in the first locale of the request's fallback chain
-// that the rule has (the request's locale and its parents, the instance's default locale
-// and its parents, then `en`), or else in its first locale. Reports cite it by `id`.
+// InstanceRule A rule of the instance (FR-705). Its text and hint hold one value each, written in any
+// language and the same in every locale. Reports cite it by `id`.
 type InstanceRule struct {
 	// Hint An explanation of the rule, as plain text; omitted when there is none.
 	Hint *string `json:"hint,omitempty"`
@@ -4356,26 +4342,15 @@ type InstanceRule struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// Lang The BCP 47 tag of the locale of `text` and `hint`, for the `lang` attribute.
-	Lang string `json:"lang"`
-
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
 }
 
-// InstanceRuleInput The texts of a rule.
+// InstanceRuleInput The text and the hint of a rule, written once in any language and shown as they are in
+// every locale; they replace the earlier ones.
 type InstanceRuleInput struct {
-	// Texts The rule in each locale, at least one; they replace every earlier text.
-	Texts []InstanceRuleTextInput `json:"texts"`
-}
-
-// InstanceRuleTextInput The text of a rule in one locale.
-type InstanceRuleTextInput struct {
 	// Hint An explanation of the rule, as plain text; omitted or empty for none.
 	Hint *string `json:"hint,omitempty"`
-
-	// Locale A BCP 47 tag; it is canonicalized (`ja_jp` becomes `ja-JP`).
-	Locale string `json:"locale"`
 
 	// Text The rule, on one line, as plain text.
 	Text string `json:"text"`
@@ -4394,8 +4369,8 @@ type InstanceSettingKey string
 type InstanceSettingKind string
 
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
-// the terms of service and the privacy policy (Markdown), and the alternative text of the
-// preview image.
+// the terms of service and the privacy policy (Markdown), and the alternative texts of the
+// preview image and the thumbnail.
 type InstanceTextKey string
 
 // InstanceTheme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
@@ -4410,8 +4385,7 @@ type InstanceTheme struct {
 // InstanceThumbnail The image that represents the instance (the instance setting `thumbnail`): the large still
 // variant of the media file. Omitted when there is none, or while the file is processing.
 type InstanceThumbnail struct {
-	// Alt The alt text (the instance text `thumbnail_alt`) in the locale of the request;
-	// omitted when no locale of the request's fallback chain has one.
+	// Alt The alt text (the instance text `thumbnail_alt`); omitted when there is none.
 	Alt    *string `json:"alt,omitempty"`
 	Height int     `json:"height"`
 	Url    string  `json:"url"`
@@ -5567,9 +5541,9 @@ type RoleProblemReason string
 // the reverse.
 type SearchIndexing string
 
-// SetInstanceTextRequest A new revision of an instance text in one locale.
+// SetInstanceTextRequest A new revision of an instance text.
 type SetInstanceTextRequest struct {
-	// Body The text; empty clears it in the locale.
+	// Body The text, in any language; empty clears it.
 	Body string `json:"body"`
 }
 
@@ -6308,9 +6282,6 @@ type IdempotencyKey = string
 
 // InstanceDomain defines model for InstanceDomain.
 type InstanceDomain = string
-
-// InstanceTextLocale defines model for InstanceTextLocale.
-type InstanceTextLocale = string
 
 // InviteId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -7122,9 +7093,9 @@ type ServerInterface interface {
 	// ListInstanceTexts List the instance texts
 	// (GET /admin/instance_texts)
 	ListInstanceTexts(w http.ResponseWriter, r *http.Request)
-	// SetInstanceText Set an instance text in one locale
-	// (PUT /admin/instance_texts/{key}/{locale})
-	SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey, locale InstanceTextLocale)
+	// SetInstanceText Set an instance text
+	// (PUT /admin/instance_texts/{key})
+	SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
 	ListInstanceHealth(w http.ResponseWriter, r *http.Request, params ListInstanceHealthParams)
@@ -7212,7 +7183,7 @@ type ServerInterface interface {
 	// GetInstanceRule Get an instance rule
 	// (GET /admin/rules/{id})
 	GetInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
-	// UpdateInstanceRule Revise the texts of an instance rule
+	// UpdateInstanceRule Revise the text of an instance rule
 	// (PATCH /admin/rules/{id})
 	UpdateInstanceRule(w http.ResponseWriter, r *http.Request, id RuleId)
 	// MoveInstanceRule Move an instance rule
@@ -9431,17 +9402,8 @@ func (siw *ServerInterfaceWrapper) SetInstanceText(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// ------------- Path parameter "locale" -------------
-	var locale InstanceTextLocale
-
-	err = runtime.BindStyledParameterWithOptions("simple", "locale", r.PathValue("locale"), &locale, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locale", Err: err})
-		return
-	}
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SetInstanceText(w, r, key, locale)
+		siw.Handler.SetInstanceText(w, r, key)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -12992,7 +12954,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/custom_emojis/{id}/image", wrapper.ReplaceCustomEmojiImage)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/custom_emojis/{id}/copy", wrapper.CopyCustomEmoji)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance_texts", wrapper.ListInstanceTexts)
-	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}/{locale}", wrapper.SetInstanceText)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts", wrapper.ListAdminAccounts)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
@@ -16766,9 +16728,8 @@ func (response ListInstanceTextsdefaultApplicationProblemPlusJSONResponse) Visit
 }
 
 type SetInstanceTextRequestObject struct {
-	Key    InstanceTextKey    `json:"key"`
-	Locale InstanceTextLocale `json:"locale"`
-	Body   *SetInstanceTextJSONRequestBody
+	Key  InstanceTextKey `json:"key"`
+	Body *SetInstanceTextJSONRequestBody
 }
 
 type SetInstanceTextResponseObject interface {
@@ -24422,8 +24383,8 @@ type StrictServerInterface interface {
 	// ListInstanceTexts List the instance texts
 	// (GET /admin/instance_texts)
 	ListInstanceTexts(ctx context.Context, request ListInstanceTextsRequestObject) (ListInstanceTextsResponseObject, error)
-	// SetInstanceText Set an instance text in one locale
-	// (PUT /admin/instance_texts/{key}/{locale})
+	// SetInstanceText Set an instance text
+	// (PUT /admin/instance_texts/{key})
 	SetInstanceText(ctx context.Context, request SetInstanceTextRequestObject) (SetInstanceTextResponseObject, error)
 	// ListInstanceHealth List the remote servers with delivery failures or marked unavailable
 	// (GET /admin/instances)
@@ -24512,7 +24473,7 @@ type StrictServerInterface interface {
 	// GetInstanceRule Get an instance rule
 	// (GET /admin/rules/{id})
 	GetInstanceRule(ctx context.Context, request GetInstanceRuleRequestObject) (GetInstanceRuleResponseObject, error)
-	// UpdateInstanceRule Revise the texts of an instance rule
+	// UpdateInstanceRule Revise the text of an instance rule
 	// (PATCH /admin/rules/{id})
 	UpdateInstanceRule(ctx context.Context, request UpdateInstanceRuleRequestObject) (UpdateInstanceRuleResponseObject, error)
 	// MoveInstanceRule Move an instance rule
@@ -26500,11 +26461,10 @@ func (sh *strictHandler) ListInstanceTexts(w http.ResponseWriter, r *http.Reques
 }
 
 // SetInstanceText operation middleware
-func (sh *strictHandler) SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey, locale InstanceTextLocale) {
+func (sh *strictHandler) SetInstanceText(w http.ResponseWriter, r *http.Request, key InstanceTextKey) {
 	var request SetInstanceTextRequestObject
 
 	request.Key = key
-	request.Locale = locale
 
 	var body SetInstanceTextJSONRequestBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {

@@ -1156,9 +1156,9 @@ export interface MessageArgs {
   "client:admin.dead_jobs.summary": {};
   /** Failed jobs */
   "client:admin.dead_jobs.title": {};
-  /** Text in {language} */
-  "client:admin.documents.body": { language: string };
-  /** Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language. */
+  /** Text */
+  "client:admin.documents.body": {};
+  /** Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Write it once, in any language: everyone reads the same text, whatever the language of their app. Save it empty to remove the text. */
   "client:admin.documents.body.description": {};
   /** {count, plural, one {# character left} other {# characters left}} */
   "client:admin.documents.characters_left": { count: number };
@@ -1168,33 +1168,25 @@ export interface MessageArgs {
   "client:admin.documents.confirm_remove.cancel": {};
   /** Remove */
   "client:admin.documents.confirm_remove.confirm": {};
-  /** People who read this language get the text in another language, or no page when no language has one. You can write it again later. */
+  /** The page and its links are hidden until the text is written again. */
   "client:admin.documents.confirm_remove.description": {};
-  /** Remove the privacy policy in {language}? */
-  "client:admin.documents.confirm_remove.privacy_policy": { language: string };
-  /** Remove the terms of service in {language}? */
-  "client:admin.documents.confirm_remove.terms": { language: string };
-  /** Written in */
-  "client:admin.documents.languages": {};
-  /** No language yet, so the page and its links are hidden */
-  "client:admin.documents.languages.none": {};
-  /** Language */
-  "client:admin.documents.locale": {};
-  /** Each language has its own text. People read the text in their language, or else in the server's default language or English. */
-  "client:admin.documents.locale.description": {};
+  /** Remove the privacy policy? */
+  "client:admin.documents.confirm_remove.privacy_policy": {};
+  /** Remove the terms of service? */
+  "client:admin.documents.confirm_remove.terms": {};
   /** Privacy policy */
   "client:admin.documents.privacy_policy": {};
-  /** The text in {language} is removed. The audit log records the change. */
-  "client:admin.documents.removed": { language: string };
+  /** The text is removed. The audit log records the change. */
+  "client:admin.documents.removed": {};
   /** Save */
   "client:admin.documents.save": {};
   /** Could not save the text: {reason} */
   "client:admin.documents.save_failed": { reason: string };
-  /** The text in {language} is saved. The audit log records the change. */
-  "client:admin.documents.saved": { language: string };
-  /** Last saved in {language} */
-  "client:admin.documents.saved_at": { language: string };
-  /** Not written yet */
+  /** The text is saved. The audit log records the change. */
+  "client:admin.documents.saved": {};
+  /** Last saved */
+  "client:admin.documents.saved_at": {};
+  /** Not written yet, so the page and its links are hidden */
   "client:admin.documents.saved_at.never": {};
   /** The terms of service and the privacy policy that anyone can read and that people agree to when they sign up. */
   "client:admin.documents.summary": {};
@@ -2048,7 +2040,7 @@ export interface MessageArgs {
   "client:admin.rules.cancel": {};
   /** Could not change the rule: {reason} */
   "client:admin.rules.change_failed": { reason: string };
-  /** The about page and the report form show each rule in the reader's language. Each rule has a text of one line and an optional hint in each language. A retired rule leaves the list, and the reports that cite it keep it. */
+  /** The about page and the report form show the rules. Each rule has a text of one line and an optional hint, written once in any language: everyone sees them as they are, whatever the language of their app. A retired rule leaves the list, and the reports that cite it keep it. */
   "client:admin.rules.description": {};
   /** Edit */
   "client:admin.rules.edit": {};
@@ -2064,8 +2056,8 @@ export interface MessageArgs {
   "client:admin.rules.empty.description": {};
   /** Rule {place}: {rule} */
   "client:admin.rules.heading": { place: string; rule: string };
-  /** Hint in {language} */
-  "client:admin.rules.hint": { language: string };
+  /** Hint */
+  "client:admin.rules.hint": {};
   /** Rules in effect */
   "client:admin.rules.list.title": {};
   /** Move down */
@@ -2080,7 +2072,7 @@ export interface MessageArgs {
   "client:admin.rules.moved": { position: string; rule: string };
   /** Add a rule */
   "client:admin.rules.new.title": {};
-  /** Enter the rule in at least one language. */
+  /** Enter the rule. */
   "client:admin.rules.no_text": {};
   /** Retire */
   "client:admin.rules.retire": {};
@@ -2096,10 +2088,8 @@ export interface MessageArgs {
   "client:admin.rules.save": {};
   /** The rules people agree to and reports cite. */
   "client:admin.rules.summary": {};
-  /** Rule in {language} */
-  "client:admin.rules.text": { language: string };
-  /** Enter the rule, or empty its hint too. */
-  "client:admin.rules.text_required": {};
+  /** Rule */
+  "client:admin.rules.text": {};
   /** One line of at most {max} characters. */
   "client:admin.rules.text.description": { max: string };
   /** Rules */
@@ -2138,8 +2128,8 @@ export interface MessageArgs {
   "client:admin.settings.contact.saved": {};
   /** Thumbnail */
   "client:admin.settings.contact.thumbnail": {};
-  /** Description of the image in {language} */
-  "client:admin.settings.contact.thumbnail.alt": { language: string };
+  /** Description of the image */
+  "client:admin.settings.contact.thumbnail.alt": {};
   /** Choose an image */
   "client:admin.settings.contact.thumbnail.choose": {};
   /** A wide image, such as 1600 × 900 pixels, at the top of the about page and the page that welcomes visitors. */
@@ -2188,18 +2178,18 @@ export interface MessageArgs {
   "client:admin.settings.crawlers.security_contact.description": {};
   /** Search engines and AI */
   "client:admin.settings.crawlers.title": {};
-  /** The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language. */
+  /** The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Write them once, in any language: everyone sees them as they are, whatever the language of their app. */
   "client:admin.settings.descriptions.description": {};
-  /** Description in {language} */
-  "client:admin.settings.descriptions.full": { language: string };
+  /** Description */
+  "client:admin.settings.descriptions.full": {};
   /** Save the descriptions */
   "client:admin.settings.descriptions.save": {};
   /** Could not save the descriptions: {reason} */
   "client:admin.settings.descriptions.save_failed": { reason: string };
   /** Saved the descriptions. The audit log records the change. */
   "client:admin.settings.descriptions.saved": {};
-  /** Short description in {language} */
-  "client:admin.settings.descriptions.short": { language: string };
+  /** Short description */
+  "client:admin.settings.descriptions.short": {};
   /** Descriptions */
   "client:admin.settings.descriptions.title": {};
   /** The descriptions are already saved. */
@@ -2242,16 +2232,16 @@ export interface MessageArgs {
   "client:admin.settings.federation.title": {};
   /** Default language */
   "client:admin.settings.language.default": {};
-  /** The language of new accounts, of visitors whose language the app does not have, and of the server's texts missing in a language. */
+  /** The language of new accounts and of visitors whose language the app does not have. */
   "client:admin.settings.language.description": {};
   /** Language */
   "client:admin.settings.language.title": {};
   /** Enter a name with letters, or leave the field empty. */
   "client:admin.settings.name.blank": {};
-  /** People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain. */
+  /** People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Write it once, in any language: everyone sees the same name, whatever the language of their app. Without a name, the domain shows. Handles and links always use the domain. */
   "client:admin.settings.name.description": { domain: string };
-  /** Name in {language} */
-  "client:admin.settings.name.field": { language: string };
+  /** Name */
+  "client:admin.settings.name.field": {};
   /** Save */
   "client:admin.settings.name.save": {};
   /** Could not save the name: {reason} */
@@ -2262,7 +2252,7 @@ export interface MessageArgs {
   "client:admin.settings.name.title": {};
   /** Use at most {max} characters. */
   "client:admin.settings.name.too_long": { max: string };
-  /** The names are already saved. */
+  /** The name is already saved. */
   "client:admin.settings.name.unchanged": {};
   /** Save the settings */
   "client:admin.settings.policies.save": {};

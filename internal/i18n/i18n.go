@@ -169,9 +169,8 @@ func (l *Localizer) Locale() string { return l.locale }
 // RequestedLocale returns the locale that the request asked for and that Locale matches: the
 // user's saved locale or the Accept-Language tag whose fallback chain reached Locale, region
 // and script included ("ja-JP" for a Locale of "ja"), or Locale itself for a Localizer that no
-// request preference chose. Content that operators write per locale, such as the instance
-// texts, is looked up from it, so that a text written for "ja-JP" reaches a reader of "ja-JP"
-// even though the messages are in "ja".
+// request preference chose. It names the reader's language more precisely than Locale, as the
+// lang of a Web Push message does.
 func (l *Localizer) RequestedLocale() string { return l.requested }
 
 // Direction returns "rtl" or "ltr" for the Localizer's locale.

@@ -14,19 +14,13 @@ import (
 // TestLandingPreview checks that the landing page (/) previews the instance in its default
 // locale: its name, its summary, and its preview image, without the meta tags of an account.
 func TestLandingPreview(t *testing.T) {
-	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
 	summary := "  Gardeners & friends\n" + strings.Repeat("あ", 250)
 	_, mux := newHandler(t, web.Options{
-		Settings:      crawlerSettings("allow", "allow"),
-		DefaultLocale: locale("ja"),
-		InstanceName:  func(_ context.Context, l string) string { return names[l] },
-		InstanceDescription: func(_ context.Context, l string) string {
-			if l != "ja" {
-				t.Errorf("summary read for %q, want the default locale", l)
-			}
-			return summary
-		},
-		DefaultImage: func(context.Context, string) (*web.Image, error) {
+		Settings:            crawlerSettings("allow", "allow"),
+		DefaultLocale:       locale("ja"),
+		InstanceName:        named("例のサーバー"),
+		InstanceDescription: func(context.Context) string { return summary },
+		DefaultImage: func(context.Context) (*web.Image, error) {
 			return &web.Image{URL: "https://social.example/media/p/full.png", Width: 1200, Height: 630}, nil
 		},
 	})
@@ -85,11 +79,10 @@ func TestLandingPreview(t *testing.T) {
 // TestAboutPreview checks that the information page (/about) previews the instance like the
 // landing page, under its own address and title, in the instance's default locale.
 func TestAboutPreview(t *testing.T) {
-	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
 	_, mux := newHandler(t, web.Options{
 		DefaultLocale:       locale("ja"),
-		InstanceName:        func(_ context.Context, l string) string { return names[l] },
-		InstanceDescription: func(context.Context, string) string { return "Gardeners & friends" },
+		InstanceName:        named("例のサーバー"),
+		InstanceDescription: func(context.Context) string { return "Gardeners & friends" },
 	})
 	rec := get(mux, "/about", map[string]string{"Accept-Language": "en"})
 	if rec.Code != http.StatusOK {

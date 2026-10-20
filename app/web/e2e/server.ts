@@ -26,7 +26,7 @@ db.close();
 
 runMy(["admin", "create", "-username", "alice", "-email", admin.email], `${admin.password}\n`);
 
-// The documents, in the default locale, so that every project's pages link to them (#489).
+// The documents, one text each that every locale shows, so that every project's pages link to them (#489).
 runMy(["instance", "set", "terms", "-"], documents.terms);
 runMy(["instance", "set", "privacy_policy", "-"], documents.privacyPolicy);
 

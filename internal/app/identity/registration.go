@@ -448,7 +448,7 @@ func (s *Service) mailContext(ctx context.Context, locale string) (mailContext, 
 	}
 	m.name = m.host
 	if s.d.InstanceName != nil {
-		if n := s.d.InstanceName(ctx, m.l.RequestedLocale()); n != "" {
+		if n := s.d.InstanceName(ctx); n != "" {
 			m.name = n
 		}
 	}

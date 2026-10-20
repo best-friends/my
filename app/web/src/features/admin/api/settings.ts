@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the server settings screen (web-client.md S1): the instance's texts in some locales
-// (its display name and its descriptions, PUT /admin/instance_texts/{key}/{locale}), and the instance settings
-// (GET and PATCH /admin/settings): the registration mode, the default language, the public timelines, the
-// federation and the publication of the domain actions, all for manage_settings. GET /instance reads the name,
-// the descriptions, the registration mode and the timelines in the reader's locale. The texts and the instance
-// are read with the queries of api/documents.ts.
+// The queries and mutations of the server settings screen (web-client.md S1): the instance's texts (its display
+// name and its descriptions, PUT /admin/instance_texts/{key}), one value each that every locale shows, and the
+// instance settings (GET and PATCH /admin/settings): the registration mode, the default language, the public
+// timelines, the federation and the publication of the domain actions, all for manage_settings. GET /instance
+// reads the name, the descriptions, the registration mode and the timelines. The texts and the instance are read
+// with the queries of api/documents.ts.
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -27,23 +27,23 @@ export const descriptionLimit = 20_000;
 /** The most characters of the thumbnail's alt text (internal/domain/instance, text.go). */
 export const thumbnailAltLimit = 1500;
 
-/** The texts of the server settings screen, edited in each language. */
+/** The texts of the server settings screen. */
 type SettingsTextKey = Extract<Schemas["InstanceTextKey"], "name" | "short_description" | "description" | "thumbnail_alt">;
 
-/** A text in one locale; an empty `body` clears it there. */
-export type InstanceTextChange = { key: SettingsTextKey; locale: string; body: string };
+/** A new value of a text; an empty `body` clears it. */
+export type InstanceTextChange = { key: SettingsTextKey; body: string };
 
 /**
- * Sets each text of the changes in its locale (one audited change each), as the options of useMutation. Returns
- * the texts as recorded.
+ * Sets each text of the changes (one audited change each), as the options of useMutation. Returns the texts as
+ * recorded.
  */
 export function setInstanceTextsMutation(api: Api) {
   return {
-    mutationKey: ["put", "/admin/instance_texts/{key}/{locale}"] as const,
+    mutationKey: ["put", "/admin/instance_texts/{key}"] as const,
     mutationFn: (changes: readonly InstanceTextChange[]): Promise<InstanceText[]> =>
       Promise.all(
-        changes.map(async ({ key, locale, body }) => {
-          const { data, error } = await api.fetch.PUT("/admin/instance_texts/{key}/{locale}", { params: { path: { key, locale } }, body: { body } });
+        changes.map(async ({ key, body }) => {
+          const { data, error } = await api.fetch.PUT("/admin/instance_texts/{key}", { params: { path: { key } }, body: { body } });
           // The middleware throws an ApiError for every error status; this narrows the type.
           if (data === undefined) throw new ApiError(error);
           return data;
@@ -91,7 +91,7 @@ export async function cacheSavedSettings(queryClient: QueryClient, api: Api, set
   await Promise.all([queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }), refreshAuditLog(queryClient)]);
 }
 
-/** A change of the server's contact and thumbnail: the settings that changed, and the alt texts that changed. */
+/** A change of the server's contact and thumbnail: the settings that changed, and the alt text when it changed. */
 export type ContactChange = {
   values: Readonly<Partial<Record<InstanceSettingKey, string>>>;
   texts: readonly InstanceTextChange[];
@@ -99,7 +99,7 @@ export type ContactChange = {
 
 /**
  * Saves the server's contact and thumbnail, as the options of useMutation: the settings together, all or none
- * (PATCH /admin/settings), then each alt text that changed (PUT /admin/instance_texts/thumbnail_alt/{locale}). Returns
+ * (PATCH /admin/settings), then the alt text when it changed (PUT /admin/instance_texts/thumbnail_alt). Returns
  * every setting as it is now, or undefined when no setting changed.
  */
 export function saveContactMutation(api: Api) {

@@ -1,50 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server settings screen: the instance's display name in each language of the app, which names the
-// instance to people in place of its domain (the navigation, the tab title, the sign-in pages, emails, link
-// previews). A language without a name shows the name of the instance's default language, and with no name at
-// all the domain; handles and links keep the domain.
+// The server settings screen: the instance's display name, which names the instance to people in place of its
+// domain (the navigation, the tab title, the sign-in pages, emails, link previews). The administrator writes it once,
+// in any language, and every language shows it as it is; with no name the domain shows. Handles and links keep the
+// domain.
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
-import { useLocale, useT } from "../../../lib/i18n";
+import { useT } from "../../../lib/i18n";
 import { instanceQueryOptions, instanceTextsQueryOptions } from "../api/documents";
-import { cacheSavedTexts, type InstanceTextChange, instanceNameLimit, setInstanceTextsMutation } from "../api/settings";
-import { characterCount, editedLocales, languageName } from "./languages";
-
-/** The name in one language: what is saved, what the field holds, and why that cannot be saved. */
-type NameField = {
-  locale: string;
-  /** The language's name in the app's language. */
-  language: string;
-  value: string;
-  onChange: (value: string) => void;
-  /** Why the field cannot be saved, localized; undefined when it can. */
-  error: string | undefined;
-};
+import { cacheSavedTexts, instanceNameLimit, setInstanceTextsMutation } from "../api/settings";
+import { characterCount } from "./languages";
 
 export function useServerSettings() {
   const api = useApi();
   const queryClient = useQueryClient();
   const t = useT();
-  const displayLocale = useLocale();
   const { data } = useSuspenseQuery(instanceTextsQueryOptions(api));
   const { data: instance } = useSuspenseQuery(instanceQueryOptions(api));
-  const saved = new Map(data.items.filter((text) => text.key === "name").map((text) => [text.locale, text.body]));
-  // The languages of the app, and any other language a name was saved in (from the CLI).
-  const locales = editedLocales(saved.keys());
-  const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
+  const saved = data.items.find((text) => text.key === "name")?.body ?? "";
+  const [draft, setDraft] = useState<string | undefined>(undefined);
   const [status, setStatus] = useState<string | undefined>(undefined);
 
-  const valueOf = (locale: string) => drafts[locale] ?? saved.get(locale) ?? "";
-  const changes: InstanceTextChange[] = locales
-    .filter((locale) => valueOf(locale) !== (saved.get(locale) ?? ""))
-    .map((locale) => ({ key: "name", locale, body: valueOf(locale) }));
-  const errorOf = (value: string): string | undefined => {
+  const value = draft ?? saved;
+  const error = (() => {
     if (characterCount(value) > instanceNameLimit) return t("client:admin.settings.name.too_long", { max: String(instanceNameLimit) });
     if (value !== "" && value.trim() === "") return t("client:admin.settings.name.blank");
     return undefined;
-  };
+  })();
 
   const save = useMutation({
     ...setInstanceTextsMutation(api),
@@ -55,41 +38,26 @@ export function useServerSettings() {
       // The navigation and the tab title show the new name once GET /instance is fetched again (the button
       // stays pending until then); the audit log has the change when it is opened next (cacheSavedTexts).
       await cacheSavedTexts(queryClient);
-      setDrafts({});
+      setDraft(undefined);
       setStatus(t("client:admin.settings.name.saved"));
     },
-    // Some languages may have been saved before one failed: the form compares with what is saved now, and keeps
-    // the rest of the drafts to send again (web-client.md E2).
-    onError: () => cacheSavedTexts(queryClient),
-  });
-
-  const fields: NameField[] = locales.map((locale) => {
-    const value = valueOf(locale);
-    return {
-      locale,
-      language: languageName(locale, displayLocale),
-      value,
-      onChange: (next: string) => {
-        setDrafts({ ...drafts, [locale]: next });
-      },
-      error: errorOf(value),
-    };
   });
 
   return {
-    /** The domain that names the instance where no language has a name, and that handles and links use. */
+    /** The domain that names the instance without a name, and that handles and links use. */
     domain: instance.domain,
-    fields,
-    /** Whether a field holds a name that is not saved. */
-    hasChanges: changes.length > 0,
+    /** The name: what the field holds, how to change it, and why it cannot be saved (localized; undefined when it can). */
+    field: { value, onChange: setDraft, error },
+    /** Whether the field holds a name that is not saved. */
+    hasChanges: value !== saved,
     submit: (event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (fields.some((field) => field.error !== undefined)) return;
-      if (changes.length === 0) {
+      if (error !== undefined || save.isPending) return;
+      if (value === saved) {
         setStatus(t("client:admin.settings.name.unchanged"));
         return;
       }
-      save.mutate(changes);
+      save.mutate([{ key: "name", body: value }]);
     },
     isSaving: save.isPending,
     /** Why the last save failed, localized; the server names the invalid property in it. */

@@ -4,9 +4,9 @@ package instance
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
@@ -250,38 +250,32 @@ func (s *Service) SettingHistory(ctx context.Context, key instance.SettingKey, l
 	return s.d.Repository.ListSettingHistory(ctx, key, limit)
 }
 
-// SetTextInput describes a change of a text in one locale.
+// SetTextInput describes a change of a text.
 type SetTextInput struct {
-	Key    instance.TextKey
-	Locale string
-	// Body is the new text; "" clears the text in Locale.
+	Key instance.TextKey
+	// Body is the new text; "" clears it.
 	Body string
 	// RevisedByUserID is the user making the change, or "" for the CLI.
 	RevisedByUserID string
 }
 
-// SetText records a new revision of a text in one locale, which becomes its current text.
-// The locale is canonicalized first, and the change is audited in the same transaction. It fails
-// with an error wrapping instance.ErrUnknownKey or instance.ErrInvalidValue for bad input.
+// SetText records a new revision of a text, which becomes its current text in every locale.
+// The change is audited in the same transaction. It fails with an error wrapping
+// instance.ErrUnknownKey or instance.ErrInvalidValue for bad input.
 func (s *Service) SetText(ctx context.Context, in SetTextInput) (instance.TextRevision, error) {
 	def, err := instance.LookupText(in.Key)
 	if err != nil {
-		return instance.TextRevision{}, err
-	}
-	locale := i18n.Canonicalize(in.Locale)
-	if err := instance.ValidateLocale(locale); err != nil {
 		return instance.TextRevision{}, err
 	}
 	if err := def.Validate(in.Body); err != nil {
 		return instance.TextRevision{}, err
 	}
 	rev := instance.TextRevision{
-		ID: s.d.IDs.NewID(), Key: in.Key, Locale: locale, Body: in.Body,
+		ID: s.d.IDs.NewID(), Key: in.Key, Body: in.Body,
 		RevisedByUserID: in.RevisedByUserID, RevisedAt: s.d.Clock.Now(),
 	}
-	// The texts of a key in every locale are one target; the label names the locale.
 	audit := s.audit(appmoderation.AuditTextChanged, appmoderation.AuditTargetSetting, string(in.Key),
-		string(in.Key)+" ["+locale+"]", rev.ID, in.RevisedByUserID, rev.RevisedAt)
+		string(in.Key), rev.ID, in.RevisedByUserID, rev.RevisedAt)
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		if err := s.d.Repository.InsertTextRevision(ctx, tx, rev); err != nil {
 			return err
@@ -297,96 +291,86 @@ func (s *Service) SetText(ctx context.Context, in SetTextInput) (instance.TextRe
 	return rev, nil
 }
 
-// Text returns the text of key for a reader of locale, following the locale fallback chain
-// (ADR-0009): locale and its parents, then the instance's default locale and its parents, then
-// i18n.SourceLocale ("ja-JP" -> "ja" -> default -> "en"). A locale whose text is cleared is
-// skipped. It reports false when no locale of the chain has the text.
-func (s *Service) Text(ctx context.Context, key instance.TextKey, locale string) (instance.Text, bool, error) {
+// Text returns the current text of key, the same for readers of every locale. It reports
+// false when the key has no text or its text is cleared.
+func (s *Service) Text(ctx context.Context, key instance.TextKey) (instance.Text, bool, error) {
 	if _, err := instance.LookupText(key); err != nil {
 		return instance.Text{}, false, err
 	}
-	settings, err := s.Settings(ctx)
+	t, err := s.d.Repository.FindCurrentText(ctx, key)
+	if errors.Is(err, ErrNotFound) {
+		return instance.Text{}, false, nil
+	}
 	if err != nil {
 		return instance.Text{}, false, err
 	}
-	texts, err := s.d.Repository.ListCurrentTexts(ctx, key)
-	if err != nil {
-		return instance.Text{}, false, err
-	}
-	t, ok := instance.PickText(texts, TextFallbackChain(locale, settings.DefaultLocale()))
-	return t, ok, nil
+	return t, t.Body != "", nil
 }
 
-// Document is a document text rendered for a reader.
+// Document is a document text rendered for readers.
 type Document struct {
 	Key instance.TextKey
-	// Locale is the locale of the text, which may differ from the reader's (the fallback chain).
-	Locale string
 	// HTML is the sanitized HTML of the text (DocumentRenderer).
 	HTML      string
 	RevisedAt time.Time
 }
 
-// Document returns the document text key (instance.TextDefinition.Document) rendered for a
-// reader of locale, along the fallback chain of Text. It reports false when no locale of the
-// chain has the text, and always without Deps.Documents. A key that is not a document is an
-// error wrapping instance.ErrUnknownKey.
-func (s *Service) Document(ctx context.Context, key instance.TextKey, locale string) (Document, bool, error) {
-	def, err := instance.LookupText(key)
-	if err != nil {
+// Document returns the document text key (instance.TextDefinition.Document) rendered. It
+// reports false when the key has no text, and always without Deps.Documents. A key that is
+// not a document is an error wrapping instance.ErrUnknownKey.
+func (s *Service) Document(ctx context.Context, key instance.TextKey) (Document, bool, error) {
+	if err := checkDocument(key); err != nil || s.d.Documents == nil {
 		return Document{}, false, err
 	}
-	if !def.Document {
-		return Document{}, false, fmt.Errorf("text %q is not a document: %w", key, instance.ErrUnknownKey)
-	}
-	if s.d.Documents == nil {
-		return Document{}, false, nil
-	}
-	t, ok, err := s.Text(ctx, key, locale)
+	t, ok, err := s.Text(ctx, key)
 	if err != nil || !ok {
 		return Document{}, false, err
 	}
-	return Document{Key: key, Locale: t.Locale, HTML: s.d.Documents.RenderDocument(t.Body), RevisedAt: t.RevisedAt}, true, nil
+	return Document{Key: key, HTML: s.d.Documents.RenderDocument(t.Body), RevisedAt: t.RevisedAt}, true, nil
 }
 
-// HasDocument reports whether a reader of locale finds the document text key: what Document
-// reports, without rendering it.
-func (s *Service) HasDocument(ctx context.Context, key instance.TextKey, locale string) (bool, error) {
-	def, err := instance.LookupText(key)
-	if err != nil {
+// HasDocument reports whether the document text key is published: what Document reports,
+// without rendering it.
+func (s *Service) HasDocument(ctx context.Context, key instance.TextKey) (bool, error) {
+	if err := checkDocument(key); err != nil || s.d.Documents == nil {
 		return false, err
 	}
-	if !def.Document {
-		return false, fmt.Errorf("text %q is not a document: %w", key, instance.ErrUnknownKey)
-	}
-	if s.d.Documents == nil {
-		return false, nil
-	}
-	_, ok, err := s.Text(ctx, key, locale)
+	_, ok, err := s.Text(ctx, key)
 	return ok, err
 }
 
-// Image is one of the instance's images, a media setting with its localized alt text.
+func checkDocument(key instance.TextKey) error {
+	def, err := instance.LookupText(key)
+	if err != nil {
+		return err
+	}
+	if !def.Document {
+		return fmt.Errorf("text %q is not a document: %w", key, instance.ErrUnknownKey)
+	}
+	return nil
+}
+
+// Image is one of the instance's images, a media setting with its alt text.
 type Image struct {
 	// MediaID is the value of the setting, "" when unset.
 	MediaID string
-	// Alt is the alt text, "" when no locale of the chain has it.
+	// Alt is the alt text, "" when there is none.
 	Alt string
 }
 
 // PreviewImage returns the instance's link preview image (ADR-0028): the preview_image setting
-// with its alt text, the preview_image_alt text, for a reader of locale.
-func (s *Service) PreviewImage(ctx context.Context, locale string) (Image, error) {
-	return s.image(ctx, instance.SettingPreviewImage, instance.TextPreviewImageAlt, locale)
+// with its alt text, the preview_image_alt text.
+func (s *Service) PreviewImage(ctx context.Context) (Image, error) {
+	return s.image(ctx, instance.SettingPreviewImage, instance.TextPreviewImageAlt)
 }
 
 // Thumbnail returns the image that represents the instance: the thumbnail setting with its alt
-// text, the thumbnail_alt text, for a reader of locale.
-func (s *Service) Thumbnail(ctx context.Context, locale string) (Image, error) {
-	return s.image(ctx, instance.SettingThumbnail, instance.TextThumbnailAlt, locale)
+// text, the thumbnail_alt text.
+func (s *Service) Thumbnail(ctx context.Context) (Image, error) {
+	return s.image(ctx, instance.SettingThumbnail, instance.TextThumbnailAlt)
 }
 
-func (s *Service) image(ctx context.Context, key instance.SettingKey, alt instance.TextKey, locale string) (Image, error) {
+func (s *Service) image(ctx context.Context, key instance.SettingKey, alt instance.TextKey) (Image, error) {
 	settings, err := s.Settings(ctx)
 	if err != nil {
 		return Image{}, err
@@ -396,7 +380,7 @@ func (s *Service) image(ctx context.Context, key instance.SettingKey, alt instan
 	if out.MediaID == "" {
 		return out, nil
 	}
-	t, ok, err := s.Text(ctx, alt, locale)
+	t, ok, err := s.Text(ctx, alt)
 	if err != nil {
 		return Image{}, err
 	}
@@ -406,26 +390,7 @@ func (s *Service) image(ctx context.Context, key instance.SettingKey, alt instan
 	return out, nil
 }
 
-// TextFallbackChain returns the locales consulted for an instance text read in locale, most
-// specific first: i18n.FallbackChain(locale), without the source locale it appends when
-// locale is not a variant of it, then i18n.FallbackChain(defaultLocale), without duplicates.
-func TextFallbackChain(locale, defaultLocale string) []string {
-	var chain []string
-	if canonical := i18n.Canonicalize(locale); canonical != "" {
-		chain = i18n.FallbackChain(canonical)
-		if lang, _, _ := strings.Cut(canonical, "-"); lang != i18n.SourceLocale {
-			chain = slices.DeleteFunc(chain, func(l string) bool { return l == i18n.SourceLocale })
-		}
-	}
-	for _, l := range i18n.FallbackChain(defaultLocale) {
-		if !slices.Contains(chain, l) {
-			chain = append(chain, l)
-		}
-	}
-	return chain
-}
-
-// Texts returns every current, non-empty text, by key and locale.
+// Texts returns every current, non-empty text, by key.
 func (s *Service) Texts(ctx context.Context) ([]instance.Text, error) {
 	all, err := s.d.Repository.ListAllCurrentTexts(ctx)
 	if err != nil {
@@ -434,19 +399,15 @@ func (s *Service) Texts(ctx context.Context) ([]instance.Text, error) {
 	return slices.DeleteFunc(all, func(t instance.Text) bool { return t.Body == "" }), nil
 }
 
-// TextHistory returns the revisions of a text in one locale, newest first, at most limit of them.
-func (s *Service) TextHistory(ctx context.Context, key instance.TextKey, locale string, limit int) ([]instance.TextRevision, error) {
+// TextHistory returns the revisions of a text, newest first, at most limit of them.
+func (s *Service) TextHistory(ctx context.Context, key instance.TextKey, limit int) ([]instance.TextRevision, error) {
 	if _, err := instance.LookupText(key); err != nil {
 		return nil, err
 	}
 	if err := checkLimit(limit); err != nil {
 		return nil, err
 	}
-	canonical := i18n.Canonicalize(locale)
-	if err := instance.ValidateLocale(canonical); err != nil {
-		return nil, fmt.Errorf("text history: %w", err)
-	}
-	return s.d.Repository.ListTextHistory(ctx, key, canonical, limit)
+	return s.d.Repository.ListTextHistory(ctx, key, limit)
 }
 
 // MaxHistoryLimit bounds the limit of SettingHistory and TextHistory.

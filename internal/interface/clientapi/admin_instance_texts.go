@@ -13,24 +13,23 @@ import (
 	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
 )
 
-// The instance texts (FR-705): the admin operations that read and write them in every locale
-// (manage_settings), and the links of GET /instance to the public pages of the documents among
+// The instance texts (FR-705): the admin operations that read and write them (manage_settings),
+// one value each, shown as it is in every locale, and the links of GET /instance to the public pages of the documents among
 // them (the terms of service and the privacy policy, #489).
 
 // InstanceTexts runs the use cases of the instance texts. *appinstance.Service implements it.
 type InstanceTexts interface {
-	// Texts returns every current, non-empty text, by key and locale.
+	// Texts returns every current, non-empty text, by key.
 	Texts(ctx context.Context) ([]instance.Text, error)
-	// SetText records a new revision of a text in one locale, audited.
+	// SetText records a new revision of a text, audited.
 	SetText(ctx context.Context, in appinstance.SetTextInput) (instance.TextRevision, error)
 }
 
-// documentURLs sets the links of out to the public pages of the documents that a reader of
-// locale finds (Options.TermsPath, Options.PrivacyPolicyPath).
-func (s *Server) documentURLs(ctx context.Context, out *Instance, locale string) error {
+// documentURLs sets the links of out to the public pages of the documents that the instance has
+// published (Options.TermsPath, Options.PrivacyPolicyPath).
+func (s *Server) documentURLs(ctx context.Context, out *Instance) error {
 	for _, d := range []struct {
 		key  instance.TextKey
 		path string
@@ -42,7 +41,7 @@ func (s *Server) documentURLs(ctx context.Context, out *Instance, locale string)
 		if d.path == "" {
 			continue
 		}
-		_, ok, err := s.o.Instance.Text(ctx, d.key, locale)
+		_, ok, err := s.o.Instance.Text(ctx, d.key)
 		if err != nil {
 			return fmt.Errorf("clientapi: instance text %s: %w", d.key, err)
 		}
@@ -53,8 +52,8 @@ func (s *Server) documentURLs(ctx context.Context, out *Instance, locale string)
 	return nil
 }
 
-func newAdminInstanceText(key instance.TextKey, locale, body string, revisedAt time.Time) AdminInstanceText {
-	return AdminInstanceText{Key: InstanceTextKey(key), Locale: locale, Body: body, RevisedAt: revisedAt.UTC()}
+func newAdminInstanceText(key instance.TextKey, body string, revisedAt time.Time) AdminInstanceText {
+	return AdminInstanceText{Key: InstanceTextKey(key), Body: body, RevisedAt: revisedAt.UTC()}
 }
 
 // ListInstanceTexts serves GET /api/v1/admin/instance_texts.
@@ -70,13 +69,13 @@ func (s *Server) ListInstanceTexts(ctx context.Context, _ ListInstanceTextsReque
 	}
 	list := AdminInstanceTextList{Items: make([]AdminInstanceText, 0, len(texts))}
 	for _, t := range texts {
-		list.Items = append(list.Items, newAdminInstanceText(t.Key, t.Locale, t.Body, t.RevisedAt))
+		list.Items = append(list.Items, newAdminInstanceText(t.Key, t.Body, t.RevisedAt))
 	}
 	cache := cacheNoStore
 	return ListInstanceTexts200JSONResponse{Body: list, Headers: ListInstanceTexts200ResponseHeaders{CacheControl: &cache}}, nil
 }
 
-// SetInstanceText serves PUT /api/v1/admin/instance_texts/{key}/{locale}.
+// SetInstanceText serves PUT /api/v1/admin/instance_texts/{key}.
 func (s *Server) SetInstanceText(ctx context.Context, req SetInstanceTextRequestObject) (SetInstanceTextResponseObject, error) {
 	if p, err := s.requirePermission(ctx, identity.PermManageSettings); err != nil {
 		return nil, err
@@ -95,9 +94,6 @@ func (s *Server) SetInstanceText(ctx context.Context, req SetInstanceTextRequest
 	if err != nil {
 		return SetInstanceTextdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
-	if instance.ValidateLocale(i18n.Canonicalize(req.Locale)) != nil {
-		return unprocessable(l.ServerErrorsInvalidValue("locale")), nil
-	}
 	if req.Body == nil {
 		return SetInstanceTextdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "body")), nil
 	}
@@ -105,17 +101,17 @@ func (s *Server) SetInstanceText(ctx context.Context, req SetInstanceTextRequest
 		return unprocessable(l.ServerErrorsTooLong(def.MaxLength, "body")), nil
 	}
 	rev, err := s.o.InstanceTexts.SetText(ctx, appinstance.SetTextInput{
-		Key: def.Key, Locale: req.Locale, Body: req.Body.Body, RevisedByUserID: v.UserID,
+		Key: def.Key, Body: req.Body.Body, RevisedByUserID: v.UserID,
 	})
 	switch {
 	case errors.Is(err, instance.ErrInvalidValue):
 		return unprocessable(l.ServerErrorsInvalidValue("body")), nil
 	case err != nil:
-		return nil, fmt.Errorf("clientapi: set instance text %s [%s]: %w", req.Key, req.Locale, err)
+		return nil, fmt.Errorf("clientapi: set instance text %s: %w", req.Key, err)
 	}
 	cache := cacheNoStore
 	return SetInstanceText200JSONResponse{
-		Body:    newAdminInstanceText(rev.Key, rev.Locale, rev.Body, rev.RevisedAt),
+		Body:    newAdminInstanceText(rev.Key, rev.Body, rev.RevisedAt),
 		Headers: SetInstanceText200ResponseHeaders{CacheControl: &cache},
 	}, nil
 }

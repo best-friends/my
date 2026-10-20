@@ -57,14 +57,10 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	fs.Usage = func() { instanceUsage(stderr) }
 	file := fs.String("config", "", "TOML config file (default: $"+config.EnvConfigFile+")")
-	var locale *string
 	limit := 20
 	owner := ""
 	if sub == "set" {
 		fs.StringVar(&owner, "owner", "", "local username that owns an image file given as a media setting's value")
-	}
-	if sub != "list" {
-		locale = fs.String("locale", "", "locale of a text key (default: the default_locale setting)")
 	}
 	if sub == "history" {
 		fs.IntVar(&limit, "limit", limit, "number of revisions to show, newest first")
@@ -86,10 +82,6 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		var err error
 		if key, err = parseInstanceKey(pos[0]); err != nil {
 			_, _ = fmt.Fprintf(stderr, "%s: %v\n", name, err)
-			return 2
-		}
-		if key.setting != "" && *locale != "" {
-			_, _ = fmt.Fprintf(stderr, "%s: -locale applies only to text keys, not to %s\n", name, pos[0])
 			return 2
 		}
 		if owner != "" && !key.media() {
@@ -131,11 +123,11 @@ func runInstance(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "list":
 		err = cmd.list(ctx)
 	case "get":
-		err = cmd.get(ctx, key, *locale)
+		err = cmd.get(ctx, key)
 	case "set":
-		err = cmd.set(ctx, key, *locale, owner, value)
+		err = cmd.set(ctx, key, owner, value)
 	case "history":
-		err = cmd.history(ctx, key, *locale, limit)
+		err = cmd.history(ctx, key, limit)
 	}
 	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "%s: %v\n", name, err)
@@ -172,18 +164,6 @@ type instanceCommand struct {
 	stdout io.Writer
 }
 
-// textLocale returns locale, or the default_locale setting when it is empty.
-func (c instanceCommand) textLocale(ctx context.Context, locale string) (string, error) {
-	if locale != "" {
-		return locale, nil
-	}
-	s, err := c.svc.Settings(ctx)
-	if err != nil {
-		return "", err
-	}
-	return s.DefaultLocale(), nil
-}
-
 func (c instanceCommand) list(ctx context.Context) error {
 	s, err := c.svc.Settings(ctx)
 	if err != nil {
@@ -206,14 +186,14 @@ func (c instanceCommand) list(ctx context.Context) error {
 	_ = tw.Flush()
 	_, _ = fmt.Fprintln(c.stdout)
 	tw = tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "TEXT\tLOCALE\tREVISED\tBODY")
+	_, _ = fmt.Fprintln(tw, "TEXT\tREVISED\tBODY")
 	for _, t := range texts {
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", t.Key, t.Locale, t.RevisedAt.Format(time.RFC3339), preview(t.Body))
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\n", t.Key, t.RevisedAt.Format(time.RFC3339), preview(t.Body))
 	}
 	return tw.Flush()
 }
 
-func (c instanceCommand) get(ctx context.Context, key instanceKey, locale string) error {
+func (c instanceCommand) get(ctx context.Context, key instanceKey) error {
 	if key.setting != "" {
 		s, err := c.svc.Settings(ctx)
 		if err != nil {
@@ -223,18 +203,18 @@ func (c instanceCommand) get(ctx context.Context, key instanceKey, locale string
 		_, err = fmt.Fprintln(c.stdout, v)
 		return err
 	}
-	t, ok, err := c.svc.Text(ctx, key.text, locale)
+	t, ok, err := c.svc.Text(ctx, key.text)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("%s is not set in any locale of the fallback chain", key.text)
+		return fmt.Errorf("%s is not set", key.text)
 	}
 	_, err = fmt.Fprintln(c.stdout, t.Body)
 	return err
 }
 
-func (c instanceCommand) set(ctx context.Context, key instanceKey, locale, owner, value string) error {
+func (c instanceCommand) set(ctx context.Context, key instanceKey, owner, value string) error {
 	if owner != "" {
 		id, err := c.upload(ctx, owner, value)
 		if err != nil {
@@ -250,11 +230,7 @@ func (c instanceCommand) set(ctx context.Context, key instanceKey, locale, owner
 		_, err = fmt.Fprintf(c.stdout, "set %s = %s (revision %s)\n", rev.Key, rev.Value, rev.ID)
 		return err
 	}
-	locale, err := c.textLocale(ctx, locale)
-	if err != nil {
-		return err
-	}
-	rev, err := c.svc.SetText(ctx, appinstance.SetTextInput{Key: key.text, Locale: locale, Body: value})
+	rev, err := c.svc.SetText(ctx, appinstance.SetTextInput{Key: key.text, Body: value})
 	if err != nil {
 		return err
 	}
@@ -262,7 +238,7 @@ func (c instanceCommand) set(ctx context.Context, key instanceKey, locale, owner
 	if rev.Body == "" {
 		verb = "cleared"
 	}
-	_, err = fmt.Fprintf(c.stdout, "%s %s in %s (revision %s)\n", verb, rev.Key, rev.Locale, rev.ID)
+	_, err = fmt.Fprintf(c.stdout, "%s %s (revision %s)\n", verb, rev.Key, rev.ID)
 	return err
 }
 
@@ -290,7 +266,7 @@ func (c instanceCommand) upload(ctx context.Context, owner, path string) (string
 	return m.File.ID, err
 }
 
-func (c instanceCommand) history(ctx context.Context, key instanceKey, locale string, limit int) error {
+func (c instanceCommand) history(ctx context.Context, key instanceKey, limit int) error {
 	tw := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
 	_, _ = fmt.Fprintln(tw, "REVISION\tREVISED\tBY\tVALUE")
 	by := func(userID string) string {
@@ -309,11 +285,7 @@ func (c instanceCommand) history(ctx context.Context, key instanceKey, locale st
 		}
 		return tw.Flush()
 	}
-	locale, err := c.textLocale(ctx, locale)
-	if err != nil {
-		return err
-	}
-	revs, err := c.svc.TextHistory(ctx, key.text, locale, limit)
+	revs, err := c.svc.TextHistory(ctx, key.text, limit)
 	if err != nil {
 		return err
 	}
@@ -335,24 +307,23 @@ func preview(body string) string {
 func instanceUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage:
   my instance list [-config <file>]
-  my instance get [-locale <tag>] [-config <file>] <key>
-  my instance set [-locale <tag>] [-config <file>] <key> <value>
+  my instance get [-config <file>] <key>
+  my instance set [-config <file>] <key> <value>
   my instance set -owner <username> [-config <file>] <preview_image|thumbnail> <image file>
-  my instance history [-locale <tag>] [-limit <n>] [-config <file>] <key>
+  my instance history [-limit <n>] [-config <file>] <key>
   my instance rule <list|add|edit|move|retire> ...  (my instance rule -h)
   my instance theme <get|set> ...  (my instance theme -h)
 
-Reads and changes the instance settings and localized texts stored in the
+Reads and changes the instance settings and texts stored in the
 database (docs/operations/instance-settings.md). Every change is kept as a
 revision; history shows them, newest first. The database schema must already
 be applied with Atlas.
 
 Setting keys hold one value each; a key that has never been set reads as its
 default. Text keys (name, short_description, description, terms,
-privacy_policy, preview_image_alt, thumbnail_alt) hold one text per locale:
--locale selects it, defaulting to the default_locale setting. get follows the
-locale fallback chain (ja-JP, ja, the default locale, en). An empty value
-clears a text in that locale. A value of "-" is read from standard input.
+privacy_policy, preview_image_alt, thumbnail_alt) hold one text each, written
+in any language and shown as it is in every locale. An empty value clears a
+text. A value of "-" is read from standard input.
 
 preview_image is the media ID of the image of link previews for profiles and
 posts without images (empty: the built-in image), and the text

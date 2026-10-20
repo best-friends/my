@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The languages that the server's texts are edited in (its name, its descriptions, its rules): those of the app's
-// catalogs, and any other language a text was saved in (from the CLI), each named in the app's language.
+// The languages that the server settings offer as the server's default language, each named in the app's language,
+// and how the server counts the characters of the texts that administrators write.
 import { supportedLocales } from "../../../lib/i18n";
 
-/** Pseudo-locales are for testing; nobody reads the server's texts in them. */
+/** Pseudo-locales are for testing; nobody uses the app in them. */
 const pseudoLocales: ReadonlySet<string> = new Set(["en-XA", "ar-XB"]);
-
-/** The languages to edit a text in: the app's, and those of `saved`, sorted by tag. */
-export function editedLocales(saved: Iterable<string>): string[] {
-  return [...new Set([...supportedLocales.filter((locale) => !pseudoLocales.has(locale)), ...saved])].toSorted();
-}
 
 /** The app's languages that people may pick as the server's default language. */
 export function selectableLocales(): string[] {

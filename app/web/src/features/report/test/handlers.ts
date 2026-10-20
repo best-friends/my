@@ -8,8 +8,8 @@ import { apiBase, problem, withViewer } from "../../../test/msw/http";
 
 /** Two rules in effect, the second with a hint. */
 export const rulesFixture: Schemas["InstanceRule"][] = [
-  { id: "0192f0c4-7a8e-7000-8000-0000000007a1", text: "Be kind to each other", lang: "en" },
-  { id: "0192f0c4-7a8e-7000-8000-0000000007a2", text: "No advertising", hint: "Posts that sell something without being asked.", lang: "en" },
+  { id: "0192f0c4-7a8e-7000-8000-0000000007a1", text: "Be kind to each other" },
+  { id: "0192f0c4-7a8e-7000-8000-0000000007a2", text: "No advertising", hint: "Posts that sell something without being asked." },
 ];
 
 /** GET /instance with `rulesFixture` in effect. */

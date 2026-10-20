@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server's descriptions in each language (FR-705): the short one, a paragraph that the about page and other
-// servers' directories show, and the full one. A language without a description shows the one of the server's
-// default language. Saving sends only the texts that changed, each an audited change.
+// The server's descriptions (FR-705): the short one, a paragraph that the about page and other servers' directories
+// show, and the full one. The administrator writes each once, in any language, and every language shows it as it
+// is. Saving sends only the texts that changed, each an audited change.
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
-import { useLocale, useT } from "../../../lib/i18n";
+import { useT } from "../../../lib/i18n";
 import { instanceTextsQueryOptions } from "../api/documents";
 import { cacheSavedTexts, descriptionLimit, type InstanceTextChange, setInstanceTextsMutation, shortDescriptionLimit } from "../api/settings";
-import { characterCount, editedLocales, languageName } from "./languages";
+import { characterCount } from "./languages";
 
 type DescriptionKey = Extract<InstanceTextChange["key"], "short_description" | "description">;
 
@@ -19,45 +19,26 @@ export const descriptionLimits: Readonly<Record<DescriptionKey, number>> = {
   description: descriptionLimit,
 };
 
-/** One description in one language: what the field holds and how to change it. */
+/** One description: what the field holds and how to change it. */
 export type DescriptionField = {
   key: DescriptionKey;
   value: string;
   onChange: (value: string) => void;
 };
 
-/** The descriptions of one language. */
-type DescriptionLanguage = {
-  locale: string;
-  /** The language's name in the app's language. */
-  language: string;
-  short: DescriptionField;
-  full: DescriptionField;
-};
-
-function draftKey(key: DescriptionKey, locale: string): string {
-  return `${key}:${locale}`;
-}
+const descriptionKeys = ["short_description", "description"] as const;
 
 export function useServerDescriptions() {
   const api = useApi();
   const queryClient = useQueryClient();
   const t = useT();
-  const displayLocale = useLocale();
   const { data } = useSuspenseQuery(instanceTextsQueryOptions(api));
-  const texts = data.items.flatMap((text) => (text.key === "short_description" || text.key === "description" ? [{ ...text, key: text.key }] : []));
-  const saved = new Map(texts.map((text) => [draftKey(text.key, text.locale), text.body]));
-  // The languages of the app, and any other language a description was saved in (from the CLI).
-  const locales = editedLocales(texts.map((text) => text.locale));
-  const [drafts, setDrafts] = useState<Readonly<Record<string, string>>>({});
+  const savedOf = (key: DescriptionKey) => data.items.find((text) => text.key === key)?.body ?? "";
+  const [drafts, setDrafts] = useState<Readonly<Partial<Record<DescriptionKey, string>>>>({});
   const [status, setStatus] = useState<string | undefined>(undefined);
 
-  const valueOf = (key: DescriptionKey, locale: string) => drafts[draftKey(key, locale)] ?? saved.get(draftKey(key, locale)) ?? "";
-  const changes: (InstanceTextChange & { key: DescriptionKey })[] = locales.flatMap((locale) =>
-    (["short_description", "description"] as const)
-      .filter((key) => valueOf(key, locale) !== (saved.get(draftKey(key, locale)) ?? ""))
-      .map((key) => ({ key, locale, body: valueOf(key, locale) })),
-  );
+  const valueOf = (key: DescriptionKey) => drafts[key] ?? savedOf(key);
+  const changes = descriptionKeys.filter((key) => valueOf(key) !== savedOf(key)).map((key) => ({ key, body: valueOf(key) }));
   const tooLong = changes.some((change) => characterCount(change.body) > descriptionLimits[change.key]);
 
   const save = useMutation({
@@ -72,29 +53,22 @@ export function useServerDescriptions() {
       setDrafts({});
       setStatus(t("client:admin.settings.descriptions.saved"));
     },
-    // Some texts may have been saved before one failed: the form compares with what is saved now, and keeps the
-    // rest of the drafts to send again (web-client.md E2).
+    // One description may have been saved before the other failed: the form compares with what is saved now, and
+    // keeps the other draft to send again (web-client.md E2).
     onError: () => cacheSavedTexts(queryClient),
   });
 
-  const field = (key: DescriptionKey, locale: string): DescriptionField => ({
+  const field = (key: DescriptionKey): DescriptionField => ({
     key,
-    value: valueOf(key, locale),
+    value: valueOf(key),
     onChange: (next) => {
-      const id = draftKey(key, locale);
-      setDrafts({ ...drafts, [id]: next });
+      setDrafts({ ...drafts, [key]: next });
     },
   });
 
-  const languages: DescriptionLanguage[] = locales.map((locale) => ({
-    locale,
-    language: languageName(locale, displayLocale),
-    short: field("short_description", locale),
-    full: field("description", locale),
-  }));
-
   return {
-    languages,
+    short: field("short_description"),
+    full: field("description"),
     /** Whether a field holds a description that is not saved. */
     hasChanges: changes.length > 0,
     submit: (event: SyntheticEvent<HTMLFormElement>) => {

@@ -32,10 +32,10 @@ func (c instanceAccounts) CheckLocalAccount(ctx context.Context, username string
 	return nil
 }
 
-// instanceThumbnail returns the instance's thumbnail for a reader of locale, or nil when it is
+// instanceThumbnail returns the instance's thumbnail, or nil when it is
 // unset or its media file is not a processed image.
-func (a *App) instanceThumbnail(ctx context.Context, locale string) (*clientapi.InstanceImage, error) {
-	setting, err := a.Instance.Thumbnail(ctx, locale)
+func (a *App) instanceThumbnail(ctx context.Context) (*clientapi.InstanceImage, error) {
+	setting, err := a.Instance.Thumbnail(ctx)
 	if err != nil || setting.MediaID == "" {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (a *App) nodeMetadata(ctx context.Context) (activitypub.NodeMetadata, error
 	if err != nil {
 		return activitypub.NodeMetadata{}, err
 	}
-	out := activitypub.NodeMetadata{Description: a.instanceSummary(ctx, ""), ContactEmail: settings.ContactEmail()}
+	out := activitypub.NodeMetadata{Description: a.instanceSummary(ctx), ContactEmail: settings.ContactEmail()}
 	if username := settings.ContactAccount(); username != "" {
 		actor, err := a.Accounts.FindByHandle(ctx, username, account.LocalDomain)
 		switch {
@@ -75,7 +75,7 @@ func (a *App) nodeMetadata(ctx context.Context) (activitypub.NodeMetadata, error
 			}
 		}
 	}
-	thumbnail, err := a.instanceThumbnail(ctx, "")
+	thumbnail, err := a.instanceThumbnail(ctx)
 	if err != nil {
 		return activitypub.NodeMetadata{}, err
 	}

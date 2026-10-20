@@ -202,9 +202,9 @@ function RulesStep({ form, headingId }: { form: ReportForm; headingId: string })
           onChange={(isSelected) => {
             form.change({ ruleIds: isSelected ? [...form.draft.ruleIds, rule.id] : form.draft.ruleIds.filter((id) => id !== rule.id) });
           }}
-          {...(rule.hint !== undefined && { description: <span lang={rule.lang}>{rule.hint}</span> })}
+          {...(rule.hint !== undefined && { description: <span dir="auto" lang="">{rule.hint}</span> })}
         >
-          <span lang={rule.lang}>{rule.text}</span>
+          <span dir="auto" lang="">{rule.text}</span>
         </Checkbox>
       ))}
       {form.isRuleMissing && (

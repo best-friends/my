@@ -28,21 +28,10 @@ func (r *InstanceRepository) InsertRuleRevision(ctx context.Context, tx uow.Tx, 
 		return err
 	}
 	err = q.InsertInstanceRuleRevision(ctx, sqlitegen.InsertInstanceRuleRevisionParams{
-		ID: rev.ID, RuleID: rev.RuleID, Position: int64(rev.Position),
+		ID: rev.ID, RuleID: rev.RuleID, Position: int64(rev.Position), Text: rev.Text, Hint: rev.Hint,
 		RevisedByUserID: toNullString(rev.RevisedByUserID), RevisedAt: toMillis(rev.RevisedAt),
 	})
-	if err != nil {
-		return wrap(err, "insert instance rule revision")
-	}
-	for _, t := range rev.Texts {
-		err := q.InsertInstanceRuleText(ctx, sqlitegen.InsertInstanceRuleTextParams{
-			RuleRevisionID: rev.ID, Locale: t.Locale, Text: t.Text, Hint: t.Hint,
-		})
-		if err != nil {
-			return wrap(err, "insert instance rule text")
-		}
-	}
-	return nil
+	return wrap(err, "insert instance rule revision")
 }
 
 // InsertRuleRetirement implements instance.RuleRepository.
@@ -76,11 +65,7 @@ func findRule(ctx context.Context, q *sqlitegen.Queries, id string) (instance.Ru
 	if err != nil {
 		return instance.Rule{}, notFound(err, appinstance.ErrNotFound, "instance rule "+id)
 	}
-	rules := []instance.Rule{ruleOf(sqlitegen.ListAllInstanceRulesRow(row))}
-	if err := withRuleTexts(ctx, q, rules); err != nil {
-		return instance.Rule{}, err
-	}
-	return rules[0], nil
+	return ruleOf(sqlitegen.ListAllInstanceRulesRow(row)), nil
 }
 
 // ListRules implements instance.RuleRepository.
@@ -104,13 +89,10 @@ func (r *InstanceRepository) ListRules(ctx context.Context, includeRetired bool)
 		rules = make([]instance.Rule, len(rows))
 		for i, row := range rows {
 			rules[i] = ruleOf(sqlitegen.ListAllInstanceRulesRow{
-				ID: row.ID, CreatedAt: row.CreatedAt, RevisionID: row.RevisionID, Position: row.Position,
+				ID: row.ID, CreatedAt: row.CreatedAt, RevisionID: row.RevisionID, Position: row.Position, Text: row.Text, Hint: row.Hint,
 				RevisedByUserID: row.RevisedByUserID, RevisedAt: row.RevisedAt,
 			})
 		}
-	}
-	if err := withRuleTexts(ctx, q, rules); err != nil {
-		return nil, err
 	}
 	return rules, nil
 }
@@ -119,7 +101,7 @@ func ruleOf(row sqlitegen.ListAllInstanceRulesRow) instance.Rule {
 	rule := instance.Rule{
 		ID: row.ID, CreatedAt: fromMillis(row.CreatedAt),
 		Revision: instance.RuleRevision{
-			ID: row.RevisionID, RuleID: row.ID, Position: int(row.Position),
+			ID: row.RevisionID, RuleID: row.ID, Position: int(row.Position), Text: row.Text, Hint: row.Hint,
 			RevisedByUserID: row.RevisedByUserID.String, RevisedAt: fromMillis(row.RevisedAt),
 		},
 	}
@@ -129,29 +111,6 @@ func ruleOf(row sqlitegen.ListAllInstanceRulesRow) instance.Rule {
 		}
 	}
 	return rule
-}
-
-// withRuleTexts loads the texts of the rules' revisions, by locale.
-func withRuleTexts(ctx context.Context, q *sqlitegen.Queries, rules []instance.Rule) error {
-	if len(rules) == 0 {
-		return nil
-	}
-	ids := make([]string, len(rules))
-	for i, rule := range rules {
-		ids[i] = rule.Revision.ID
-	}
-	rows, err := q.ListInstanceRuleTexts(ctx, ids)
-	if err != nil {
-		return wrap(err, "list instance rule texts")
-	}
-	texts := map[string][]instance.RuleText{}
-	for _, row := range rows {
-		texts[row.RuleRevisionID] = append(texts[row.RuleRevisionID], instance.RuleText{Locale: row.Locale, Text: row.Text, Hint: row.Hint})
-	}
-	for i := range rules {
-		rules[i].Revision.Texts = texts[rules[i].Revision.ID]
-	}
-	return nil
 }
 
 // RuleHead implements instance.RuleRepository.

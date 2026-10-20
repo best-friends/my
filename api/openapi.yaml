@@ -86,10 +86,10 @@ paths:
       responses:
         "200":
           description: |
-            The instance. Its texts are in the locale of the request (the user's locale,
-            then `Accept-Language`, then the instance's default locale), falling back along
-            the locale chain to the instance's default locale. Like every response of the
-            API, it varies with `Accept-Language`.
+            The instance. The texts that its administrators write (the name, the descriptions,
+            the rules, the alternative text of the thumbnail) hold one value each, which is the
+            same in every locale. Like every response of the API, it varies with
+            `Accept-Language`.
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
@@ -3008,7 +3008,7 @@ paths:
       operationId: listInstanceRules
       summary: List the instance rules
       description: |
-        Every rule in every locale (FR-705): the rules in effect by position, followed, when
+        Every rule (FR-705): the rules in effect by position, followed, when
         `include_retired` is set, by the retired ones. The list is not paginated; at most 100
         rules are in effect. Needs the `manage_rules` permission.
       tags: [admin-server]
@@ -3039,10 +3039,9 @@ paths:
       summary: Add an instance rule
       description: |
         Adds a rule after the rules in effect. A text that is blank, longer than 300
-        characters, or on more than one line, a hint longer than 1,000 characters, a locale
-        that is not a BCP 47 tag or appears twice (after canonicalization: `ja_jp` is `ja-JP`),
-        no texts, or more than 50 is a 422 naming the property (`texts[0].text`). With 100
-        rules in effect it is a 422 naming `rules`. Needs the `manage_rules` permission.
+        characters, or on more than one line, or a hint longer than 1,000 characters, is a 422
+        naming the property (`text`, `hint`). With 100 rules in effect it is a 422 naming
+        `rules`. Needs the `manage_rules` permission.
       tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
@@ -3076,10 +3075,10 @@ paths:
           $ref: "#/components/responses/Problem"
     patch:
       operationId: updateInstanceRule
-      summary: Revise the texts of an instance rule
+      summary: Revise the text of an instance rule
       description: |
-        Records a revision whose texts replace every text of the rule; the rule keeps its ID
-        and position. The texts are checked as for a new rule (422). A retired rule is a 409
+        Records a revision whose text and hint replace those of the rule; the rule keeps its ID
+        and position. They are checked as for a new rule (422). A retired rule is a 409
         and an unknown ID a 404. Needs the `manage_rules` permission.
       tags: [admin-server]
       security:
@@ -3536,10 +3535,10 @@ paths:
       operationId: listInstanceTexts
       summary: List the instance texts
       description: |
-        The current text of every key in every locale that has one (FR-705): the name, the
-        descriptions, the terms of service, the privacy policy, and the alternative text of the
-        preview image, by key and locale. Cleared texts are not listed. The list is not
-        paginated. Needs the `manage_settings` permission.
+        The current text of every key that has one (FR-705): the name, the descriptions, the
+        terms of service, the privacy policy, and the alternative texts of the preview image and
+        the thumbnail, by key. Each holds one value, shown as it is in every locale. Cleared
+        texts are not listed. The list is not paginated. Needs the `manage_settings` permission.
       tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
@@ -3555,23 +3554,21 @@ paths:
                 $ref: "#/components/schemas/AdminInstanceTextList"
         default:
           $ref: "#/components/responses/Problem"
-  /admin/instance_texts/{key}/{locale}:
+  /admin/instance_texts/{key}:
     put:
       operationId: setInstanceText
-      summary: Set an instance text in one locale
+      summary: Set an instance text
       description: |
-        Records a revision of the text of `key` in `locale`, which becomes its current text; an
-        empty `body` clears the text in that locale, so that readers get the next locale of
-        their fallback chain. The revision and the change are kept (`instance_text_revisions`,
-        the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
-        The terms of service and the privacy policy are Markdown, which the server renders and
+        Records a revision of the text of `key`, which becomes its current text in every locale:
+        the administrator writes it once, in any language, and readers of every locale see the
+        same value. An empty `body` clears the text. The revision and the change are kept
+        (`instance_text_revisions`, the audit log's `text_changed`). The terms of service and the privacy policy are Markdown, which the server renders and
         sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
         the other texts are plain text. The display name (`name`) names the instance to people
         in place of its domain: the web client's navigation and tab title, the server-rendered
         pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
-        where no locale of the chain has a name, the domain names it, and handles and URLs always
-        use the domain. An unknown key is a 404. A locale that is not a BCP 47
-        tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
+        without a name, the domain names it, and handles and URLs always use the domain. An
+        unknown key is a 404. A body longer than the key allows (100 characters for
         `name`, 500 for `short_description`, 1,500 for `preview_image_alt` and `thumbnail_alt`, 20,000 for
         `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
         or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
@@ -3581,7 +3578,6 @@ paths:
         - oauth2: ["admin:write"]
       parameters:
         - $ref: "#/components/parameters/InstanceTextKey"
-        - $ref: "#/components/parameters/InstanceTextLocale"
       requestBody:
         required: true
         content:
@@ -5053,15 +5049,6 @@ components:
       description: The key of the text.
       schema:
         $ref: "#/components/schemas/InstanceTextKey"
-    InstanceTextLocale:
-      name: locale
-      in: path
-      required: true
-      description: The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized.
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 64
     # --- end of admin: instance texts (#489) ---
     # --- admin: roles (#348) ---
     RoleKey:
@@ -5591,21 +5578,20 @@ components:
             `putPushSubscription`. Omitted when the instance sends no Web Push.
           type: string
         rules:
-          description: The rules in effect, in order, each in the locale of the request.
+          description: The rules in effect, in order.
           type: array
           items:
             $ref: "#/components/schemas/InstanceRule"
         terms_url:
           description: |
             The public page of the instance's terms of service, which needs no sign-in; omitted
-            when no locale of the request's fallback chain has them, so that clients do not
-            link to it.
+            when the instance has none, so that clients do not link to it.
           type: string
           format: uri
         privacy_policy_url:
           description: |
             The public page of the instance's privacy policy, which needs no sign-in; omitted
-            when no locale of the request's fallback chain has it.
+            when the instance has none.
           type: string
           format: uri
         theme:
@@ -5651,8 +5637,7 @@ components:
           minimum: 1
         alt:
           description: |
-            The alt text (the instance text `thumbnail_alt`) in the locale of the request;
-            omitted when no locale of the request's fallback chain has one.
+            The alt text (the instance text `thumbnail_alt`); omitted when there is none.
           type: string
     SearchIndexing:
       description: |
@@ -5711,11 +5696,10 @@ components:
           type: boolean
     InstanceRule:
       description: |
-        A rule of the instance (FR-705), in the first locale of the request's fallback chain
-        that the rule has (the request's locale and its parents, the instance's default locale
-        and its parents, then `en`), or else in its first locale. Reports cite it by `id`.
+        A rule of the instance (FR-705). Its text and hint hold one value each, written in any
+        language and the same in every locale. Reports cite it by `id`.
       type: object
-      required: [id, text, lang]
+      required: [id, text]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -5724,9 +5708,6 @@ components:
           type: string
         hint:
           description: An explanation of the rule, as plain text; omitted when there is none.
-          type: string
-        lang:
-          description: The BCP 47 tag of the locale of `text` and `hint`, for the `lang` attribute.
           type: string
     # --- instance: public domain actions (#347) ---
     InstanceDomainAction:
@@ -7924,7 +7905,7 @@ components:
         `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
         `user` (a registration):
         `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
-        (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+        (an instance setting), `text_changed` (an instance text). On a `rule`:
         `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
         `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
         `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
@@ -8535,10 +8516,10 @@ components:
     # --- admin: instance rules (#331) ---
     AdminRule:
       description: |
-        A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
-        across revisions, so reports keep citing it.
+        A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
+        citing it.
       type: object
-      required: [id, position, texts, created_at, revised_at]
+      required: [id, position, text, created_at, revised_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -8548,11 +8529,12 @@ components:
             leaves a gap until the next move.
           type: integer
           minimum: 1
-        texts:
-          description: The texts by locale.
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminRuleText"
+        text:
+          description: The rule, on one line, as plain text.
+          type: string
+        hint:
+          description: An explanation of the rule, as plain text; omitted when there is none.
+          type: string
         created_at:
           type: string
           format: date-time
@@ -8573,42 +8555,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdminRule"
-    AdminRuleText:
-      description: The text of a rule in one locale.
-      type: object
-      required: [locale, text]
-      properties:
-        locale:
-          description: The BCP 47 tag of the locale, canonical (`ja-JP`).
-          type: string
-        text:
-          description: The rule, on one line, as plain text.
-          type: string
-        hint:
-          description: An explanation of the rule, as plain text; omitted when there is none.
-          type: string
     InstanceRuleInput:
-      description: The texts of a rule.
+      description: |
+        The text and the hint of a rule, written once in any language and shown as they are in
+        every locale; they replace the earlier ones.
       type: object
-      required: [texts]
+      required: [text]
       properties:
-        texts:
-          description: The rule in each locale, at least one; they replace every earlier text.
-          type: array
-          minItems: 1
-          maxItems: 50
-          items:
-            $ref: "#/components/schemas/InstanceRuleTextInput"
-    InstanceRuleTextInput:
-      description: The text of a rule in one locale.
-      type: object
-      required: [locale, text]
-      properties:
-        locale:
-          description: A BCP 47 tag; it is canonicalized (`ja_jp` becomes `ja-JP`).
-          type: string
-          minLength: 1
-          maxLength: 64
         text:
           description: The rule, on one line, as plain text.
           type: string
@@ -9525,15 +9478,12 @@ components:
               items:
                 $ref: "#/components/schemas/ThemeError"
     AdminInstanceText:
-      description: The current text of a key in one locale.
+      description: The current text of a key, the same in every locale.
       type: object
-      required: [key, locale, body, revised_at]
+      required: [key, body, revised_at]
       properties:
         key:
           $ref: "#/components/schemas/InstanceTextKey"
-        locale:
-          description: The BCP 47 tag of the locale, canonical (`ja-JP`).
-          type: string
         body:
           description: |
             The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
@@ -9544,7 +9494,7 @@ components:
           type: string
           format: date-time
     AdminInstanceTextList:
-      description: The current instance texts, by key and locale.
+      description: The current instance texts, by key.
       type: object
       required: [items]
       properties:
@@ -9555,17 +9505,17 @@ components:
     InstanceTextKey:
       description: |
         The key of an instance text: the name (one line), the short and full descriptions,
-        the terms of service and the privacy policy (Markdown), and the alternative text of the
-        preview image.
+        the terms of service and the privacy policy (Markdown), and the alternative texts of the
+        preview image and the thumbnail.
       type: string
       enum: [name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt]
     SetInstanceTextRequest:
-      description: A new revision of an instance text in one locale.
+      description: A new revision of an instance text.
       type: object
       required: [body]
       properties:
         body:
-          description: The text; empty clears it in the locale.
+          description: The text, in any language; empty clears it.
           type: string
           maxLength: 100000
     # --- end of admin: instance texts (#489) ---

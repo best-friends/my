@@ -41,15 +41,15 @@ type Options struct {
 	WebOrigin string
 	// AccountDomain is the domain of handles; empty means Host.
 	AccountDomain string
-	// InstanceName returns the instance's display name for readers of locale, which the shell,
-	// the Web App Manifest, and link previews show; nil or "" names the instance by Host. It is
-	// called per request, so that a change of the name applies without a restart. Handles and
-	// URLs always use the domains.
-	InstanceName func(ctx context.Context, locale string) string
-	// InstanceDescription returns the instance's one-paragraph summary for readers of locale, as
-	// plain text, which the link preview of the landing page (/) shows; nil or "" leaves the
-	// preview without a description. It is called per request, like InstanceName.
-	InstanceDescription func(ctx context.Context, locale string) string
+	// InstanceName returns the instance's display name, the same in every locale, which the
+	// shell, the Web App Manifest, and link previews show; nil or "" names the instance by Host.
+	// It is called per request, so that a change of the name applies without a restart. Handles
+	// and URLs always use the domains.
+	InstanceName func(ctx context.Context) string
+	// InstanceDescription returns the instance's one-paragraph summary, as plain text, which the
+	// link preview of the landing page (/) shows; nil or "" leaves the preview without a
+	// description. It is called per request, like InstanceName.
+	InstanceDescription func(ctx context.Context) string
 	// DefaultLocale returns the instance's current default locale, for <html lang dir>, the
 	// runtime config, and the manifest; nil means the source locale. It is read per request so
 	// that a change of the setting applies without a restart. The HTML never depends on
@@ -75,7 +75,7 @@ type Options struct {
 	// PathDefaultImage. An image without alt text gets a generic one naming the instance.
 	// It is called per request, so that a change of the setting applies without a restart; nil
 	// means the built-in image.
-	DefaultImage func(ctx context.Context, lang string) (*Image, error)
+	DefaultImage func(ctx context.Context) (*Image, error)
 
 	// Settings returns the current instance settings, whose search_indexing, ai_usage, and
 	// security_contact decide what /robots.txt, the pages, and /.well-known/ state to crawlers
@@ -271,11 +271,10 @@ func (h *Handler) instanceLocale(ctx context.Context) string {
 	return i18n.SourceLocale
 }
 
-// instanceName returns the instance's display name for readers of locale, or its host when it
-// has none.
-func (h *Handler) instanceName(ctx context.Context, locale string) string {
+// instanceName returns the instance's display name, or its host when it has none.
+func (h *Handler) instanceName(ctx context.Context) string {
 	if h.o.InstanceName != nil {
-		if name := h.o.InstanceName(ctx, locale); name != "" {
+		if name := h.o.InstanceName(ctx); name != "" {
 			return name
 		}
 	}
@@ -288,7 +287,7 @@ func (h *Handler) instanceName(ctx context.Context, locale string) string {
 // are not found (ADR-0057).
 func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 	locale := h.instanceLocale(ctx)
-	name := h.instanceName(ctx, locale)
+	name := h.instanceName(ctx)
 	theme, err := h.currentTheme(ctx)
 	if err != nil {
 		return nil, err

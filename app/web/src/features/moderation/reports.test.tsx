@@ -209,7 +209,7 @@ describe("a report's page", () => {
           sends_email: true,
           search_indexing: "deny",
           ai_usage: "deny",
-          rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000f0001", text: "No spam", lang: "en" }],
+          rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000f0001", text: "No spam" }],
         }),
       ),
       http.get(`${apiBase}/admin/accounts/:id/actions`, () =>
@@ -239,7 +239,7 @@ describe("a report's page", () => {
     expect(within(summary).getByText("Breaks the server rules")).toBeInTheDocument();
     expect(within(summary).getByText("Another server")).toBeInTheDocument();
     expect(within(summary).getByText("To the account's server")).toBeInTheDocument();
-    expect(await within(summary).findByText("No spam")).toHaveAttribute("lang", "en");
+    expect(await within(summary).findByText("No spam")).toHaveAttribute("lang", "");
     expect(within(summary).getByText("A rule no longer in effect")).toBeInTheDocument();
 
     // The posts, whatever their visibility, without the actions on them: a direct one, one its author deleted, and

@@ -12,11 +12,10 @@ import (
 	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
 )
 
 // The instance rules (FR-705, data-model §4.9). A rule keeps its ID for life: revising its
-// texts or moving it records a new revision, and retiring it removes it from the rules in
+// text or moving it records a new revision, and retiring it removes it from the rules in
 // effect while reports that cite it still find it.
 //
 // Each change that records something records its audit log entry in the same transaction
@@ -25,7 +24,7 @@ import (
 // RuleRepository is the persistence port of the instance rules. It is part of Repository.
 type RuleRepository interface {
 	InsertRule(ctx context.Context, tx uow.Tx, id string, createdAt time.Time) error
-	// InsertRuleRevision inserts the revision with its texts.
+	// InsertRuleRevision inserts the revision.
 	InsertRuleRevision(ctx context.Context, tx uow.Tx, r instance.RuleRevision) error
 	// InsertRuleRetirement records the retirement, and reports false when the rule was
 	// already retired (the earlier retirement stays).
@@ -126,41 +125,27 @@ func rebuildRuleHeads(ctx context.Context, tx uow.Tx, repo Repository) error {
 	return nil
 }
 
-// canonicalRuleTexts canonicalizes the locales of texts, sorts them by locale, and validates
-// them; errors keep the index of the input.
-func canonicalRuleTexts(texts []instance.RuleText) ([]instance.RuleText, error) {
-	out := make([]instance.RuleText, len(texts))
-	for i, t := range texts {
-		out[i] = instance.RuleText{Locale: i18n.Canonicalize(t.Locale), Text: t.Text, Hint: t.Hint}
-	}
-	if err := instance.ValidateRuleTexts(out); err != nil {
-		return nil, err
-	}
-	instance.SortRuleTexts(out)
-	return out, nil
-}
-
 // AddRuleInput describes a new rule.
 type AddRuleInput struct {
-	// Texts are the rule's text in each locale, at least one.
-	Texts []instance.RuleText
+	Text string
+	// Hint is an optional explanation of the rule; "" for none.
+	Hint string
 	// CreatedByUserID is the user adding the rule, or "" for the CLI.
 	CreatedByUserID string
 }
 
 // AddRule records a new rule after the rules in effect. It fails with an error wrapping
-// instance.ErrInvalidValue (a *instance.RuleTextError) for bad texts and
+// instance.ErrInvalidValue (a *instance.RuleTextError) for a bad text or hint and
 // instance.ErrTooManyRules when instance.MaxRules rules are in effect.
 func (s *Service) AddRule(ctx context.Context, in AddRuleInput) (instance.Rule, error) {
-	texts, err := canonicalRuleTexts(in.Texts)
-	if err != nil {
+	if err := instance.ValidateRuleText(in.Text, in.Hint); err != nil {
 		return instance.Rule{}, err
 	}
 	now := s.d.Clock.Now()
 	rule := instance.Rule{ID: s.d.IDs.NewID(), CreatedAt: now}
 	revID := s.d.IDs.NewID()
-	audit := s.audit(appmoderation.AuditRuleAdded, appmoderation.AuditTargetRule, rule.ID, ruleLabel(texts), revID, in.CreatedByUserID, now)
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	audit := s.audit(appmoderation.AuditRuleAdded, appmoderation.AuditTargetRule, rule.ID, in.Text, revID, in.CreatedByUserID, now)
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		heads, err := s.d.Repository.ListRuleHeads(ctx, tx)
 		if err != nil {
 			return err
@@ -173,7 +158,7 @@ func (s *Service) AddRule(ctx context.Context, in AddRuleInput) (instance.Rule, 
 			position = heads[len(heads)-1].Position + 1
 		}
 		rule.Revision = instance.RuleRevision{
-			ID: revID, RuleID: rule.ID, Position: position, Texts: texts, RevisedByUserID: in.CreatedByUserID, RevisedAt: now,
+			ID: revID, RuleID: rule.ID, Position: position, Text: in.Text, Hint: in.Hint, RevisedByUserID: in.CreatedByUserID, RevisedAt: now,
 		}
 		if err := s.d.Repository.InsertRule(ctx, tx, rule.ID, now); err != nil {
 			return err
@@ -192,83 +177,43 @@ func (s *Service) AddRule(ctx context.Context, in AddRuleInput) (instance.Rule, 
 	return rule, nil
 }
 
-// ReviseRuleInput describes new texts of a rule.
+// ReviseRuleInput describes a new text of a rule.
 type ReviseRuleInput struct {
 	RuleID string
-	// Texts replace every text of the rule; at least one.
-	Texts []instance.RuleText
-	// RevisedByUserID is the user making the change, or "" for the CLI.
-	RevisedByUserID string
-}
-
-// ReviseRule records a revision of the rule with new texts, at its position; the rule keeps
-// its ID. It fails with an error wrapping ErrNotFound for an unknown rule,
-// instance.ErrRuleRetired for a retired one, and instance.ErrInvalidValue for bad texts.
-func (s *Service) ReviseRule(ctx context.Context, in ReviseRuleInput) (instance.Rule, error) {
-	texts, err := canonicalRuleTexts(in.Texts)
-	if err != nil {
-		return instance.Rule{}, err
-	}
-	return s.revise(ctx, in.RuleID, in.RevisedByUserID, func([]instance.RuleText) ([]instance.RuleText, error) { return texts, nil })
-}
-
-// SetRuleTextInput describes a change of a rule's text in one locale.
-type SetRuleTextInput struct {
-	RuleID string
-	Locale string
-	// Text is the new text; "" removes the locale from the rule, which keeps at least one.
-	Text string
-	// Hint is the new hint; "" for none. KeepHint keeps the locale's current hint instead.
+	Text   string
+	// Hint is the new hint; "" for none. KeepHint keeps the current hint instead.
 	Hint     string
 	KeepHint bool
 	// RevisedByUserID is the user making the change, or "" for the CLI.
 	RevisedByUserID string
 }
 
-// SetRuleText records a revision of the rule that changes, adds, or removes its text in one
-// locale and keeps the others. It fails like ReviseRule.
-func (s *Service) SetRuleText(ctx context.Context, in SetRuleTextInput) (instance.Rule, error) {
-	locale := i18n.Canonicalize(in.Locale)
-	return s.revise(ctx, in.RuleID, in.RevisedByUserID, func(cur []instance.RuleText) ([]instance.RuleText, error) {
-		next := make([]instance.RuleText, 0, len(cur)+1)
-		hint := in.Hint
-		for _, t := range cur {
-			if t.Locale == locale {
-				if in.KeepHint {
-					hint = t.Hint
-				}
-				continue
-			}
-			next = append(next, t)
-		}
-		if in.Text != "" {
-			next = append(next, instance.RuleText{Locale: locale, Text: in.Text, Hint: hint})
-		}
-		return canonicalRuleTexts(next)
-	})
-}
-
-// revise records a revision of the rule at its position, with the texts that edit returns
-// for its current texts.
-func (s *Service) revise(ctx context.Context, ruleID, by string, edit func([]instance.RuleText) ([]instance.RuleText, error)) (instance.Rule, error) {
+// ReviseRule records a revision of the rule with a new text and hint, at its position; the
+// rule keeps its ID. It fails with an error wrapping ErrNotFound for an unknown rule,
+// instance.ErrRuleRetired for a retired one, and instance.ErrInvalidValue (a
+// *instance.RuleTextError) for a bad text or hint.
+func (s *Service) ReviseRule(ctx context.Context, in ReviseRuleInput) (instance.Rule, error) {
+	if err := instance.ValidateRuleText(in.Text, in.Hint); err != nil {
+		return instance.Rule{}, err
+	}
 	now := s.d.Clock.Now()
 	revID := s.d.IDs.NewID()
-	audit := s.audit(appmoderation.AuditRuleRevised, appmoderation.AuditTargetRule, ruleID, "", revID, by, now)
+	audit := s.audit(appmoderation.AuditRuleRevised, appmoderation.AuditTargetRule, in.RuleID, in.Text, revID, in.RevisedByUserID, now)
 	var rule instance.Rule
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		var err error
-		if rule, err = s.d.Repository.Rule(ctx, tx, ruleID); err != nil {
+		if rule, err = s.d.Repository.Rule(ctx, tx, in.RuleID); err != nil {
 			return err
 		}
 		if rule.Retired() {
-			return fmt.Errorf("revise rule %s: %w", ruleID, instance.ErrRuleRetired)
+			return fmt.Errorf("revise rule %s: %w", in.RuleID, instance.ErrRuleRetired)
 		}
-		texts, err := edit(slices.Clone(rule.Revision.Texts))
-		if err != nil {
-			return err
+		hint := in.Hint
+		if in.KeepHint {
+			hint = rule.Revision.Hint
 		}
 		rule.Revision = instance.RuleRevision{
-			ID: revID, RuleID: rule.ID, Position: rule.Revision.Position, Texts: texts, RevisedByUserID: by, RevisedAt: now,
+			ID: revID, RuleID: rule.ID, Position: rule.Revision.Position, Text: in.Text, Hint: hint, RevisedByUserID: in.RevisedByUserID, RevisedAt: now,
 		}
 		if err := s.d.Repository.InsertRuleRevision(ctx, tx, rule.Revision); err != nil {
 			return err
@@ -276,7 +221,7 @@ func (s *Service) revise(ctx context.Context, ruleID, by string, edit func([]ins
 		if err := tx.Emit(ctx, RuleRevised{Revision: rule.Revision}); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, withLabel(audit, ruleLabel(texts)))
+		return tx.Emit(ctx, audit)
 	})
 	if err != nil {
 		return instance.Rule{}, err
@@ -294,7 +239,7 @@ type MoveRuleInput struct {
 }
 
 // MoveRule moves the rule to a place among the rules in effect and numbers them 1, 2, ... in
-// their new order. Every rule whose position changes gets a revision with its texts
+// their new order. Every rule whose position changes gets a revision with its text
 // unchanged. It fails with an error wrapping ErrNotFound for an unknown rule,
 // instance.ErrRuleRetired for a retired one, and instance.ErrInvalidValue for a position
 // below 1.
@@ -341,7 +286,7 @@ func (s *Service) MoveRule(ctx context.Context, in MoveRuleInput) (instance.Rule
 				}
 			}
 			r.Revision = instance.RuleRevision{
-				ID: id(n), RuleID: r.ID, Position: i + 1, Texts: r.Revision.Texts, RevisedByUserID: in.RevisedByUserID, RevisedAt: now,
+				ID: id(n), RuleID: r.ID, Position: i + 1, Text: r.Revision.Text, Hint: r.Revision.Hint, RevisedByUserID: in.RevisedByUserID, RevisedAt: now,
 			}
 			n++
 			if err := s.d.Repository.InsertRuleRevision(ctx, tx, r.Revision); err != nil {
@@ -362,7 +307,7 @@ func (s *Service) MoveRule(ctx context.Context, in MoveRuleInput) (instance.Rule
 		}
 		// The entry's source is the moved rule's revision, or, when only the rules after it were
 		// renumbered, the first revision recorded.
-		e := withLabel(audit, ruleLabel(moved.Revision.Texts))
+		e := withLabel(audit, moved.Revision.Text)
 		e.Entry.SourceEventID = source
 		return tx.Emit(ctx, e)
 	})
@@ -396,7 +341,7 @@ func (s *Service) RetireRule(ctx context.Context, ruleID, retiredByUserID string
 		if err := tx.Emit(ctx, RuleRetired{Retirement: ret}); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, withLabel(audit, ruleLabel(rule.Revision.Texts)))
+		return tx.Emit(ctx, withLabel(audit, rule.Revision.Text))
 	})
 	if err != nil {
 		return instance.Rule{}, err
@@ -431,43 +376,6 @@ func (s *Service) RuleInEffect(ctx context.Context, id string) (bool, error) {
 // includeRetired is set.
 func (s *Service) Rules(ctx context.Context, includeRetired bool) ([]instance.Rule, error) {
 	return s.d.Repository.ListRules(ctx, includeRetired)
-}
-
-// LocalizedRule is a rule in effect in the locale of a reader.
-type LocalizedRule struct {
-	ID   string
-	Text instance.RuleText
-}
-
-// LocalizedRules returns the rules in effect by position, each in the locale that comes
-// first in the text fallback chain of locale (TextFallbackChain), or in its first locale when
-// none of the chain has it.
-func (s *Service) LocalizedRules(ctx context.Context, locale string) ([]LocalizedRule, error) {
-	settings, err := s.Settings(ctx)
-	if err != nil {
-		return nil, err
-	}
-	rules, err := s.d.Repository.ListRules(ctx, false)
-	if err != nil {
-		return nil, err
-	}
-	chain := TextFallbackChain(locale, settings.DefaultLocale())
-	out := make([]LocalizedRule, 0, len(rules))
-	for _, r := range rules {
-		if t, ok := instance.PickRuleText(r.Revision.Texts, chain); ok {
-			out = append(out, LocalizedRule{ID: r.ID, Text: t})
-		}
-	}
-	return out, nil
-}
-
-// ruleLabel returns the display name of a rule for the audit log: its text in the first of its
-// locales, which are sorted.
-func ruleLabel(texts []instance.RuleText) string {
-	if len(texts) == 0 {
-		return ""
-	}
-	return texts[0].Text
 }
 
 // withLabel returns e with the target label set, for an entry whose label is known only inside

@@ -198,29 +198,6 @@ func TestSupersedes(t *testing.T) {
 	}
 }
 
-func TestPickText(t *testing.T) {
-	texts := []instance.Text{
-		{Locale: "en", Body: "Example"},
-		{Locale: "ja", Body: ""},
-		{Locale: "ja-JP", Body: "例"},
-	}
-	for _, tc := range []struct {
-		chain []string
-		want  string
-		ok    bool
-	}{
-		{[]string{"ja-JP", "ja", "en"}, "例", true},
-		{[]string{"ja", "en"}, "Example", true},
-		{[]string{"fr"}, "", false},
-		{nil, "", false},
-	} {
-		got, ok := instance.PickText(texts, tc.chain)
-		if ok != tc.ok || got.Body != tc.want {
-			t.Errorf("PickText(%q) = %q, %v; want %q, %v", tc.chain, got.Body, ok, tc.want, tc.ok)
-		}
-	}
-}
-
 func TestTextValidate(t *testing.T) {
 	name, _ := instance.LookupText(instance.TextName)
 	desc, _ := instance.LookupText(instance.TextDescription)

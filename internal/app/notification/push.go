@@ -182,9 +182,9 @@ type PushDeps struct {
 	// Host names the instance in a message whose source is the instance, when InstanceName
 	// gives no name.
 	Host string
-	// InstanceName returns the instance's display name for readers of locale; nil or "" names
+	// InstanceName returns the instance's display name; nil or "" names
 	// it by Host.
-	InstanceName func(ctx context.Context, locale string) string
+	InstanceName func(ctx context.Context) string
 }
 
 // PushService runs the Web Push use cases of the client API (FR-206): reading, registering, and
@@ -398,7 +398,7 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 	}
 	instance := s.d.Host
 	if s.d.InstanceName != nil {
-		if n := s.d.InstanceName(ctx, l.RequestedLocale()); n != "" {
+		if n := s.d.InstanceName(ctx); n != "" {
 			instance = n
 		}
 	}

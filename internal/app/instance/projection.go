@@ -53,14 +53,14 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	})
 	r.Register(EventTextRevised, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		rev := e.(TextRevised).Revision
-		cur, err := repo.CurrentText(ctx, tx, rev.Key, rev.Locale)
+		cur, err := repo.CurrentText(ctx, tx, rev.Key)
 		if err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 		if !rev.Supersedes(cur) {
 			return nil
 		}
-		return repo.UpsertCurrentText(ctx, tx, instance.CurrentText{Key: rev.Key, Locale: rev.Locale, RevisionID: rev.ID})
+		return repo.UpsertCurrentText(ctx, tx, instance.CurrentText{Key: rev.Key, RevisionID: rev.ID})
 	})
 	registerRuleProjectors(r, repo)
 	registerThemeProjectors(r, repo)
@@ -123,24 +123,19 @@ func rebuildTexts(ctx context.Context, tx uow.Tx, repo Repository) error {
 	if err != nil {
 		return err
 	}
-	type slot struct {
-		key    instance.TextKey
-		locale string
-	}
-	current := map[slot]instance.CurrentText{}
-	var order []slot
+	current := map[instance.TextKey]instance.CurrentText{}
+	var order []instance.TextKey
 	for _, r := range revs {
-		s := slot{r.Key, r.Locale}
-		c, seen := current[s]
+		c, seen := current[r.Key]
 		if !seen {
-			order = append(order, s)
+			order = append(order, r.Key)
 		}
 		if (instance.TextRevision{ID: r.RevisionID}).Supersedes(c) {
-			current[s] = r
+			current[r.Key] = r
 		}
 	}
-	for _, s := range order {
-		if err := repo.UpsertCurrentText(ctx, tx, current[s]); err != nil {
+	for _, k := range order {
+		if err := repo.UpsertCurrentText(ctx, tx, current[k]); err != nil {
 			return err
 		}
 	}

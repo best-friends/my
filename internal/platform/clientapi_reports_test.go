@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	appinstance "github.com/best-friends/my/internal/app/instance"
-	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
@@ -24,11 +23,11 @@ func TestReportsThroughTheAPI(t *testing.T) {
 	t.Parallel()
 	c := newStatusesClient(t, "alice", "bob", "carol")
 	ctx := t.Context()
-	rule, err := c.app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Be kind"}}})
+	rule, err := c.app.Instance.AddRule(ctx, appinstance.AddRuleInput{Text: "Be kind"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	retired, err := c.app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Old"}}})
+	retired, err := c.app.Instance.AddRule(ctx, appinstance.AddRuleInput{Text: "Old"})
 	if err != nil {
 		t.Fatal(err)
 	}

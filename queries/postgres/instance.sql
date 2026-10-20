@@ -24,34 +24,34 @@ SELECT id, key, value, revised_by_user_id, revised_at FROM instance_setting_revi
 WHERE key = $1 ORDER BY id DESC LIMIT $2;
 
 -- name: InsertInstanceTextRevision :exec
-INSERT INTO instance_text_revisions (id, key, locale, body, revised_by_user_id, revised_at) VALUES ($1, $2, $3, $4, $5, $6);
+INSERT INTO instance_text_revisions (id, key, body, revised_by_user_id, revised_at) VALUES ($1, $2, $3, $4, $5);
 
 -- name: GetInstanceText :one
-SELECT key, locale, revision_id FROM instance_texts WHERE key = $1 AND locale = $2;
+SELECT key, revision_id FROM instance_texts WHERE key = $1;
 
 -- name: UpsertInstanceText :exec
-INSERT INTO instance_texts (key, locale, revision_id) VALUES ($1, $2, $3)
-ON CONFLICT (key, locale) DO UPDATE SET revision_id = excluded.revision_id;
+INSERT INTO instance_texts (key, revision_id) VALUES ($1, $2)
+ON CONFLICT (key) DO UPDATE SET revision_id = excluded.revision_id;
 
 -- name: DeleteAllInstanceTexts :exec
 DELETE FROM instance_texts;
 
 -- name: ListInstanceTextRevisionHeads :many
-SELECT key, locale, id FROM instance_text_revisions ORDER BY id;
+SELECT key, id FROM instance_text_revisions ORDER BY id;
 
--- name: ListCurrentInstanceTexts :many
-SELECT t.key, t.locale, t.revision_id, r.body, r.revised_at
+-- name: GetCurrentInstanceText :one
+SELECT t.key, t.revision_id, r.body, r.revised_at
 FROM instance_texts t JOIN instance_text_revisions r ON r.id = t.revision_id
-WHERE t.key = $1 ORDER BY t.locale;
+WHERE t.key = $1;
 
 -- name: ListAllCurrentInstanceTexts :many
-SELECT t.key, t.locale, t.revision_id, r.body, r.revised_at
+SELECT t.key, t.revision_id, r.body, r.revised_at
 FROM instance_texts t JOIN instance_text_revisions r ON r.id = t.revision_id
-ORDER BY t.key, t.locale;
+ORDER BY t.key;
 
 -- name: ListInstanceTextHistory :many
-SELECT id, key, locale, body, revised_by_user_id, revised_at FROM instance_text_revisions
-WHERE key = $1 AND locale = $2 ORDER BY id DESC LIMIT $3;
+SELECT id, key, body, revised_by_user_id, revised_at FROM instance_text_revisions
+WHERE key = $1 ORDER BY id DESC LIMIT $2;
 
 -- Whether any revision of a setting, current or not, has a value; the content module's media
 -- cleanup keeps the media files that a media setting refers to.

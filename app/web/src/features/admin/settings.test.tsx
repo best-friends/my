@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server settings screen through the whole app (web-client.md T4): an administrator with manage_settings
-// names the server in each language, the app then calls the server by that name instead of its domain, and
-// a name that the server would refuse is caught in the form; the descriptions are saved by language, and the
+// names the server once, in any language, the app then calls the server by that name instead of its domain, and
+// a name that the server would refuse is caught in the form; the descriptions are saved one by one, and the
 // policies (registration, language, timelines, federation, domain actions) together; with MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -21,24 +21,22 @@ beforeEach(() => {
 type Text = Schemas["AdminInstanceText"];
 
 /**
- * Plays the instance texts of the server: GET /instance names the instance by its English name, or its domain
- * without one, and each PUT changes a name; records the changes.
+ * Plays the instance name: GET /instance names the instance by it, or its domain without one, and each PUT changes
+ * it; records the changes.
  */
-function namesServer(initial: Readonly<Record<string, string>>) {
-  const names = new Map(Object.entries(initial));
-  const changes: { locale: string; body: string }[] = [];
+function namesServer(initial: string | undefined) {
+  let name = initial;
+  const changes: string[] = [];
   server.use(
-    http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, name: names.get("en") ?? instanceFixture.domain })),
+    http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, name: name ?? instanceFixture.domain })),
     http.get(`${apiBase}/admin/instance_texts`, () =>
-      HttpResponse.json({ items: [...names].map(([locale, body]): Text => ({ key: "name", locale, body, revised_at: "2026-10-16T00:00:00Z" })) }),
+      HttpResponse.json({ items: name === undefined ? [] : [{ key: "name", body: name, revised_at: "2026-10-16T00:00:00Z" } satisfies Text] }),
     ),
-    http.put(`${apiBase}/admin/instance_texts/name/:locale`, async ({ request, params }) => {
-      const locale = String(params["locale"]);
+    http.put(`${apiBase}/admin/instance_texts/name`, async ({ request }) => {
       const { body } = (await request.json()) as Schemas["SetInstanceTextRequest"];
-      changes.push({ locale, body });
-      if (body === "") names.delete(locale);
-      else names.set(locale, body);
-      return HttpResponse.json({ key: "name", locale, body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
+      changes.push(body);
+      name = body === "" ? undefined : body;
+      return HttpResponse.json({ key: "name", body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
     }),
   );
   return { changes };
@@ -49,52 +47,48 @@ describe("the server's name", () => {
     server.use(signedInHandler, operatorHandler(["manage_settings"]));
   });
 
-  test("shows the name in each language of the app, and the domain that stands in for a missing one", async () => {
-    namesServer({ en: "my example" });
+  test("shows the name in one field, and the domain that stands in without one", async () => {
+    namesServer("my example");
     await renderApp({ path: "/admin/settings" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Server settings" })).toBeInTheDocument();
     const section = screen.getByRole("region", { name: "Name" });
     expect(within(section).getByText(/in place of the domain my\.example/)).toBeInTheDocument();
-    expect(within(section).getByRole("textbox", { name: "Name in English" })).toHaveValue("my example");
-    expect(within(section).getByRole("textbox", { name: "Name in Japanese" })).toHaveValue("");
+    expect(within(section).getAllByRole("textbox")).toHaveLength(1);
+    expect(within(section).getByRole("textbox", { name: "Name" })).toHaveValue("my example");
   });
 
   test("saves a new name, after which the app calls the server by it", async () => {
-    const names = namesServer({ en: "my example" });
+    const names = namesServer("my example");
     const { user } = await renderApp({ path: "/admin/settings" });
-    const english = await screen.findByRole("textbox", { name: "Name in English" });
+    const field = await screen.findByRole("textbox", { name: "Name" });
     await waitFor(() => {
       expect(document.title).toBe("Server settings – my example");
     });
 
-    await user.clear(english);
-    await user.type(english, "Example Social");
-    await user.type(screen.getByRole("textbox", { name: "Name in Japanese" }), "例のソーシャル");
+    await user.clear(field);
+    await user.type(field, "例のソーシャル");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
-    expect(names.changes.toSorted((a, b) => a.locale.localeCompare(b.locale))).toEqual([
-      { locale: "en", body: "Example Social" },
-      { locale: "ja", body: "例のソーシャル" },
-    ]);
-    // The tab title and the sidebar take the new name without a reload.
+    expect(names.changes).toEqual(["例のソーシャル"]);
+    // The tab title and the sidebar take the new name without a reload, whatever the app's language.
     await waitFor(() => {
-      expect(document.title).toBe("Server settings – Example Social");
+      expect(document.title).toBe("Server settings – 例のソーシャル");
     });
-    expect(screen.getAllByText("Example Social").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("例のソーシャル").length).toBeGreaterThan(0);
     expect(screen.queryByText("my example")).not.toBeInTheDocument();
 
     // Saving again without a change sends nothing.
     await user.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("The names are already saved.")).toBeInTheDocument();
-    expect(names.changes).toHaveLength(2);
+    expect(await screen.findByText("The name is already saved.")).toBeInTheDocument();
+    expect(names.changes).toHaveLength(1);
   });
 
-  test("clearing every name names the server by its domain", async () => {
-    namesServer({ en: "Example Social" });
+  test("clearing the name names the server by its domain", async () => {
+    namesServer("Example Social");
     const { user } = await renderApp({ path: "/admin/settings" });
-    await user.clear(await screen.findByRole("textbox", { name: "Name in English" }));
+    await user.clear(await screen.findByRole("textbox", { name: "Name" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
@@ -104,9 +98,9 @@ describe("the server's name", () => {
   });
 
   test("keeps a name the server would refuse in the form, with what to change", async () => {
-    const names = namesServer({});
+    const names = namesServer(undefined);
     const { user } = await renderApp({ path: "/admin/settings" });
-    const english = await screen.findByRole("textbox", { name: "Name in English" });
+    const english = await screen.findByRole("textbox", { name: "Name" });
 
     await user.type(english, "   ");
     await user.click(screen.getByRole("button", { name: "Save" }));
@@ -122,15 +116,15 @@ describe("the server's name", () => {
   });
 
   test("shows why a save failed and keeps the names", async () => {
-    namesServer({});
+    namesServer(undefined);
     const refusal: Schemas["Problem"] = { type: "about:blank", title: "Unprocessable", status: 422, detail: "body is invalid" };
     server.use(
-      http.put(`${apiBase}/admin/instance_texts/name/:locale`, () =>
+      http.put(`${apiBase}/admin/instance_texts/name`, () =>
         HttpResponse.json(refusal, { status: 422, headers: { "Content-Type": "application/problem+json" } }),
       ),
     );
     const { user } = await renderApp({ path: "/admin/settings" });
-    const english = await screen.findByRole("textbox", { name: "Name in English" });
+    const english = await screen.findByRole("textbox", { name: "Name" });
     await user.type(english, "Example Social");
     await user.click(screen.getByRole("button", { name: "Save" }));
 
@@ -139,7 +133,7 @@ describe("the server's name", () => {
   });
 
   test("is in the administration menu", async () => {
-    namesServer({});
+    namesServer(undefined);
     const { user } = await renderApp({ path: "/admin" });
     await user.click(await screen.findByRole("link", { name: "Server settings" }));
 
@@ -169,28 +163,28 @@ describe("the server's descriptions", () => {
     server.use(signedInHandler, operatorHandler(["manage_settings"]));
   });
 
-  test("saves only the descriptions that changed, each in its language", async () => {
-    const changes: { key: string; locale: string; body: string }[] = [];
+  test("saves only the descriptions that changed", async () => {
+    const changes: { key: string; body: string }[] = [];
     server.use(
       http.get(`${apiBase}/admin/instance_texts`, () =>
-        HttpResponse.json({ items: [{ key: "short_description", locale: "en", body: "A small server.", revised_at: "2026-10-16T00:00:00Z" }] satisfies Text[] }),
+        HttpResponse.json({ items: [{ key: "short_description", body: "A small server.", revised_at: "2026-10-16T00:00:00Z" }] satisfies Text[] }),
       ),
-      http.put(`${apiBase}/admin/instance_texts/:key/:locale`, async ({ request, params }) => {
+      http.put(`${apiBase}/admin/instance_texts/:key`, async ({ request, params }) => {
         const { body } = (await request.json()) as Schemas["SetInstanceTextRequest"];
         const key = String(params["key"]) as Schemas["InstanceTextKey"];
-        changes.push({ key, locale: String(params["locale"]), body });
-        return HttpResponse.json({ key, locale: String(params["locale"]), body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
+        changes.push({ key, body });
+        return HttpResponse.json({ key, body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
       }),
     );
     const { user } = await renderApp({ path: "/admin/settings" });
     const section = await screen.findByRole("region", { name: "Descriptions" });
-    expect(within(section).getByRole("textbox", { name: "Short description in English" })).toHaveValue("A small server.");
+    expect(within(section).getByRole("textbox", { name: "Short description" })).toHaveValue("A small server.");
 
-    await user.type(within(section).getByRole("textbox", { name: "Description in Japanese" }), "小さなサーバーです。");
+    await user.type(within(section).getByRole("textbox", { name: "Description" }), "小さなサーバーです。");
     await user.click(within(section).getByRole("button", { name: "Save the descriptions" }));
 
     expect(await within(section).findByText("Saved the descriptions. The audit log records the change.")).toBeInTheDocument();
-    expect(changes).toEqual([{ key: "description", locale: "ja", body: "小さなサーバーです。" }]);
+    expect(changes).toEqual([{ key: "description", body: "小さなサーバーです。" }]);
   });
 });
 
@@ -321,7 +315,7 @@ describe("the server's contact and thumbnail", () => {
   function contactServer(stored: Readonly<Partial<Record<Schemas["InstanceSettingKey"], string>>>) {
     let current = { ...stored };
     const patches: Schemas["UpdateInstanceSettingsRequest"][] = [];
-    const alts: { locale: string; body: string }[] = [];
+    const alts: string[] = [];
     const purposes: string[] = [];
     server.use(
       http.get(`${apiBase}/instance`, () =>
@@ -337,10 +331,10 @@ describe("the server's contact and thumbnail", () => {
         current = { ...current, ...body.values };
         return HttpResponse.json(instanceSettingsFixture(current));
       }),
-      http.put(`${apiBase}/admin/instance_texts/thumbnail_alt/:locale`, async ({ request, params }) => {
+      http.put(`${apiBase}/admin/instance_texts/thumbnail_alt`, async ({ request }) => {
         const { body } = (await request.json()) as Schemas["SetInstanceTextRequest"];
-        alts.push({ locale: String(params["locale"]), body });
-        return HttpResponse.json({ key: "thumbnail_alt", locale: String(params["locale"]), body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
+        alts.push(body);
+        return HttpResponse.json({ key: "thumbnail_alt", body, revised_at: "2026-10-17T00:00:00Z" } satisfies Text);
       }),
       http.post(`${apiBase}/media`, async ({ request }) => {
         purposes.push(/name="purpose"\r\n\r\n([a-z]+)/u.exec(await request.text())?.[1] ?? "");
@@ -365,14 +359,14 @@ describe("the server's contact and thumbnail", () => {
     if (input === null) throw new Error("no file input");
     await user.upload(input, nodeUploadFile("png", "beach.png", "image/png"));
     expect(await within(section).findByRole("button", { name: "Remove the image" })).toBeInTheDocument();
-    await user.type(within(section).getByRole("textbox", { name: "Description of the image in English" }), "A beach at dawn");
+    await user.type(within(section).getByRole("textbox", { name: "Description of the image" }), "A beach at dawn");
     await user.click(within(section).getByRole("button", { name: "Save the contact and thumbnail" }));
 
     expect(await within(section).findByText("Saved the contact and thumbnail. The audit log records the change.")).toBeInTheDocument();
     expect(contact.purposes).toEqual(["attachment"]);
     // The @ that people type before a username is not part of it.
     expect(contact.patches).toEqual([{ values: { contact_account: "Admin", contact_email: "admin@my.example", thumbnail: uploadedId } }]);
-    expect(contact.alts).toEqual([{ locale: "en", body: "A beach at dawn" }]);
+    expect(contact.alts).toEqual(["A beach at dawn"]);
 
     // Saving again without a change sends nothing.
     await user.click(within(section).getByRole("button", { name: "Save the contact and thumbnail" }));

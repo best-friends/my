@@ -185,7 +185,7 @@ var operationSecurity = map[string]operationAccess{
 	"PUT /api/v1/admin/accounts/{id}/roles/{role}":                        {Operation: "grantAccountRole", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/admin/announcements/{id}":                                {Operation: "updateAdminAnnouncement", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/admin/custom_emojis/{id}/image":                          {Operation: "replaceCustomEmojiImage", Scopes: []string{"admin:write"}},
-	"PUT /api/v1/admin/instance_texts/{key}/{locale}":                     {Operation: "setInstanceText", Scopes: []string{"admin:write"}},
+	"PUT /api/v1/admin/instance_texts/{key}":                              {Operation: "setInstanceText", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/admin/theme":                                             {Operation: "setAdminTheme", Scopes: []string{"admin:write"}},
 	"PUT /api/v1/notifications/marker":                                    {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 	"PUT /api/v1/preferences/auto_delete":                                 {Operation: "updateAutoDeletePolicy", Scopes: []string{"write:accounts"}},

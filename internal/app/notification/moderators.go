@@ -181,9 +181,9 @@ type MailDeps struct {
 	// Host is the server's domain name, which the emails name the instance by when it has no
 	// display name.
 	Host string
-	// InstanceName returns the instance's display name for readers of locale, which the emails
+	// InstanceName returns the instance's display name, which the emails
 	// name the instance by; nil or "" names it by Host.
-	InstanceName func(ctx context.Context, locale string) string
+	InstanceName func(ctx context.Context) string
 	// WebOrigin is the origin of the web client, whose notifications page the emails link to.
 	WebOrigin string
 }
@@ -233,7 +233,7 @@ func sendModeratorEmail(ctx context.Context, d MailDeps, job moderatorEmail) err
 	link := strings.TrimSuffix(d.WebOrigin, "/") + "/notifications"
 	name := d.Host
 	if d.InstanceName != nil {
-		if n := d.InstanceName(ctx, l.RequestedLocale()); n != "" {
+		if n := d.InstanceName(ctx); n != "" {
 			name = n
 		}
 	}
