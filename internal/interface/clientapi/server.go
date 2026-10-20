@@ -63,6 +63,9 @@ type Options struct {
 	Graph Graph
 	// Notifications runs the use cases of the viewer's notifications.
 	Notifications Notifications
+	// Push runs the Web Push subscription use cases and gives Instance.push_server_key; nil
+	// sends no Web Push.
+	Push WebPush
 	// Statuses posts, edits, and deletes statuses; StatusReader presents them; Interactions
 	// boosts, favourites, bookmarks, and pins them (the statuses operations).
 	Statuses     Statuses

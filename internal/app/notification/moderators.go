@@ -72,6 +72,8 @@ type ModeratorDeps struct {
 	IDs        kernel.IDGenerator
 	// Outbox enqueues the emails in the transaction of the notifications; nil sends none.
 	Outbox queue.Outbox
+	// Push enqueues the Web Push messages of the new notifications; nil pushes none.
+	Push *Pusher
 }
 
 // RegisterModeratorProjectors registers the synchronous projectors that create the moderator
@@ -139,6 +141,11 @@ func (p *moderatorProjector) notify(ctx context.Context, tx uow.Tx, n notificati
 		created, err := p.d.Repository.InsertNotification(ctx, tx, n)
 		if err != nil {
 			return err
+		}
+		if created {
+			if err := p.d.Push.enqueue(ctx, tx, n); err != nil {
+				return err
+			}
 		}
 		if !created || !m.Email || p.d.Outbox == nil {
 			continue

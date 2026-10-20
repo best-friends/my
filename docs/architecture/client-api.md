@@ -165,7 +165,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    ヘッダがなければ匿名です。あれば `Bearer <token>` でなければならず、`identity.Service.AuthenticateBearer` が照合します。
    照合はトークン（ハッシュ・失効・期限）に加えて、利用者が `Access.Allowed`（登録が承認済みで、必要ならメールが確認済みで、ログインを奪う処分を受けていない）であることと、ローカルアカウントが有効なことを要求ごとに確かめます。
    トークンを送った要求は、匿名を受け付ける操作でも必ず照合し、無効なら 401 にします（匿名として扱わない）。
-2. **閲覧者**: 照合できたら `Viewer`（`UserID`・`AccountID`・`TokenID`・`ClientID`・`Scope`）を context に入れます。
+2. **閲覧者**: 照合できたら `Viewer`（`UserID`・`AccountID`・`TokenID`・`ClientID`・`FamilyID`（トークン系列。Web Push の購読はこれに結び付く）・`Scope`）を context に入れます。
    `platform` の `i18n.Resolver.UserLocale` は `ViewerFrom` で閲覧者を見つけ、利用者設定のロケールを使います（ADR-0009 §2）。
 3. **レート制限**: 閲覧者があればアカウント単位（`AccountLimit`、1,500 / 5 分）、なければクライアント IP 単位（`AnonymousLimit`、300 / 5 分、IPv6 は `/64`）です。
    無効なトークン・使えないアカウントの要求も IP 単位で数えます。カウンタは `KeyValueStore` 上の `kernel.RateLimiter` で、ストアが失敗したときは要求を通してログに残します。

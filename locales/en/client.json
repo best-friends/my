@@ -4243,6 +4243,74 @@
     "defaultMessage": "Leave without saving your profile?",
     "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
   },
+  "settings.push.denied": {
+    "defaultMessage": "Notifications are blocked for this site. To turn on push notifications, allow them in the browser's settings for this site.",
+    "description": "Shown in the push notification settings when the user blocked notifications for this site in the browser."
+  },
+  "settings.push.enable": {
+    "defaultMessage": "Notify me on this device",
+    "description": "Label of the switch that turns on Web Push notifications for this browser and signed-in session."
+  },
+  "settings.push.enable.description": {
+    "defaultMessage": "New notifications appear on this device even when the app is closed.",
+    "description": "Help text of the switch that turns on Web Push notifications."
+  },
+  "settings.push.failed": {
+    "defaultMessage": "Push notifications could not be set up on this device. Try again later.",
+    "description": "Error shown when the browser failed to subscribe to push notifications."
+  },
+  "settings.push.not_allowed": {
+    "defaultMessage": "Push notifications are off because the browser did not allow notifications.",
+    "description": "Error shown when the user did not allow notifications in the browser's permission prompt after turning on push notifications."
+  },
+  "settings.push.title": {
+    "defaultMessage": "Push notifications",
+    "description": "Heading of the section of the preferences about Web Push notifications on this device."
+  },
+  "settings.push.type.admin": {
+    "defaultMessage": "Moderator notifications",
+    "description": "Checkbox of the push notification kinds, shown to moderators only: new reports, sign-ups awaiting approval and appeals."
+  },
+  "settings.push.type.boost": {
+    "defaultMessage": "Boosts",
+    "description": "Checkbox of the push notification kinds: someone boosted the user's post."
+  },
+  "settings.push.type.favourite": {
+    "defaultMessage": "Favourites",
+    "description": "Checkbox of the push notification kinds: someone favourited the user's post."
+  },
+  "settings.push.type.follow": {
+    "defaultMessage": "New followers",
+    "description": "Checkbox of the push notification kinds: someone followed the user."
+  },
+  "settings.push.type.follow_accepted": {
+    "defaultMessage": "Accepted follow requests",
+    "description": "Checkbox of the push notification kinds: someone accepted the user's follow request."
+  },
+  "settings.push.type.follow_request": {
+    "defaultMessage": "Follow requests",
+    "description": "Checkbox of the push notification kinds: someone asked to follow the user."
+  },
+  "settings.push.type.mention": {
+    "defaultMessage": "Mentions",
+    "description": "Checkbox of the push notification kinds: a post mentions the user."
+  },
+  "settings.push.type.moderation": {
+    "defaultMessage": "Notices from the moderators",
+    "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
+  },
+  "settings.push.types.description": {
+    "defaultMessage": "Choose what this device notifies you of.",
+    "description": "Help text of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.types.label": {
+    "defaultMessage": "Notify me of",
+    "description": "Label of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.unsupported": {
+    "defaultMessage": "This browser cannot receive push notifications. On iPhone and iPad, add this site to the Home Screen and open it from there.",
+    "description": "Shown in the push notification settings when the browser has no Push API."
+  },
   "settings.saved": {
     "defaultMessage": "Saved",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."

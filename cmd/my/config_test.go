@@ -9,7 +9,37 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/best-friends/my/internal/adapter/webpush"
 )
+
+func TestRunConfigVAPIDKey(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := run([]string{"config", "vapid-key"}, &stdout, &stderr); code != 0 {
+		t.Fatalf("exit %d, stderr %q", code, stderr.String())
+	}
+	var priv, pub string
+	for line := range strings.Lines(stdout.String()) {
+		k, v, _ := strings.Cut(line, "=")
+		switch strings.TrimSpace(k) {
+		case "vapid_private_key":
+			priv = strings.TrimSpace(v)
+		case "vapid_public_key":
+			pub = strings.TrimSpace(v)
+		}
+	}
+	key, err := webpush.ParsePrivateKey(priv)
+	if err != nil {
+		t.Fatalf("private key %q: %v", priv, err)
+	}
+	b, _ := key.PublicKey.Bytes()
+	if got := base64.RawURLEncoding.EncodeToString(b); got != pub {
+		t.Errorf("public key %q, want %q", pub, got)
+	}
+	if code := run([]string{"config", "vapid-key", "extra"}, &stdout, &stderr); code != 2 {
+		t.Errorf("an extra argument exits %d, want 2", code)
+	}
+}
 
 const captchaSecret = "0x5eCrE7-captcha-secret" //nolint:gosec // G101: a test secret
 
