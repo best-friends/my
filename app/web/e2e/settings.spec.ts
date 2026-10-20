@@ -95,6 +95,28 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
             },
           ],
         });
+      case "GET /imports":
+        return json(route, {
+          items: [
+            {
+              id: "0192f0c4-7a8e-7000-8000-0000000009a1",
+              kind: "following",
+              mode: "overwrite",
+              state: "in_progress",
+              created_at: "2026-10-21T09:30:00Z",
+              total: 1200,
+              processed: 340,
+              failed: 2,
+            },
+          ],
+        });
+      case "POST /imports/preview":
+        return json(route, {
+          entries: 1200,
+          present: 30,
+          removals: 4,
+          skipped: [{ line: 7, value: "a-very-long-line-that-is-not-an-address-and-goes-on-and-on@", reason: "invalid" }],
+        });
       case "GET /two_factor":
         return json(route, { enabled: false });
       case "POST /two_factor/totp/setup":
@@ -143,6 +165,7 @@ const pages = [
   "/settings/mutes",
   "/settings/two-factor",
   "/settings/account",
+  "/settings/import-export",
 ] as const;
 
 /** A TOTP setup whose QR code is the three finder patterns of a 21-module code with its quiet zone. */
@@ -160,6 +183,35 @@ test("two-factor setup shows the QR code and the key without axe violations or h
   await page.getByRole("main").getByRole("button", { name: message("settings.two_factor.setup.start"), exact: true }).click();
   await expect(page.getByRole("main").getByRole("img")).toBeVisible();
   await expect(page.getByRole("main").getByRole("textbox")).toBeVisible();
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+});
+
+test("checking a file to import shows what it does without axe violations or horizontal scroll", async ({ page, makeAxeBuilder }) => {
+  await signedInServer(page, projectLocale());
+  await page.goto("/settings/import-export");
+  const main = page.getByRole("main");
+  await main.getByText(message("settings.import_export.import.mode.overwrite"), { exact: true }).click();
+  await expect(main.getByRole("radio", { name: message("settings.import_export.import.mode.overwrite") })).toBeChecked();
+  // FileTrigger's input is hidden; Playwright sets its files as the file picker would.
+  await main.locator('input[type="file"]').setInputFiles({ name: "following_accounts.csv", mimeType: "text/csv", buffer: Buffer.from("bob@remote.example\n") });
+  await main.getByRole("button", { name: message("settings.import_export.import.preview"), exact: true }).click();
+  const preview = main.getByRole("region", { name: message("settings.import_export.import.preview.title") });
+  await expect(preview.getByRole("button", { name: message("settings.import_export.import.start"), exact: true })).toBeVisible();
+  await expect(preview).toMatchAriaSnapshot(`
+    - region:
+      - heading [level=3]
+      - term
+      - definition
+      - term
+      - definition
+      - term
+      - definition
+      - heading [level=4]
+      - list:
+        - listitem
+      - button
+  `);
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);
 });

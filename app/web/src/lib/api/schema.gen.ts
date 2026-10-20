@@ -177,8 +177,10 @@ export interface paths {
          * Request an archive of the authenticated user's data
          * @description Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
          *     `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
-         *     activities), and `moderation.json` (the moderation actions on the account, its appeals,
-         *     and the reports it filed). The export is `pending` until the archive is built. While
+         *     activities), `moderation.json` (the moderation actions on the account, its appeals, and
+         *     the reports it filed), and the CSV files of `exportCsv` (`following_accounts.csv`,
+         *     `blocked_accounts.csv`, `muted_accounts.csv`, `bookmarks.csv`). The export is
+         *     `pending` until the archive is built. While
          *     another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
          *     at most 3 requests per account are accepted every day.
          */
@@ -204,6 +206,93 @@ export interface paths {
         get: operations["downloadDataExport"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/csv_exports/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+         * @description Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
+         *     Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
+         *     (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
+         *     `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
+         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
+         *     `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+         *     Addresses are `username@domain`, with the account domain for this server's accounts;
+         *     remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
+         *     are accepted every hour.
+         */
+        get: operations["exportCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's imports
+         * @description Lists the user's latest 10 imports of CSV files, newest first, with their progress.
+         *     Imports are removed 7 days after they start.
+         */
+        get: operations["listDataImports"];
+        put?: never;
+        /**
+         * Import a CSV file of follows, blocks, mutes, or bookmarks
+         * @description Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
+         *     entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
+         *     `overwrite` also removes what the user has of `kind` that the file does not list. The
+         *     server carries the import out in the background: it resolves remote accounts and posts
+         *     on their servers, sends the follows, and counts the entries it could not carry out
+         *     (an account or post that cannot be found or acted on). The import is `in_progress`
+         *     until every entry is done. While another import of the user is `in_progress` the
+         *     request is a 409 `/api/v1/problems/import-in-progress`. At most 10 imports per account
+         *     are accepted every day.
+         */
+        post: operations["startDataImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview an import of a CSV file
+         * @description Reads a CSV file as `startDataImport` would and tells what importing it would do,
+         *     changing nothing. The header row is optional, a leading `@` of an address is dropped,
+         *     and blank lines are ignored; a line that names no address (or for `bookmarks`, no
+         *     `http(s)` URL) is skipped as `invalid`, and one that repeats an earlier entry as
+         *     `duplicate`. Settings left out default as in Mastodon: boosts shown, no notifications of
+         *     new posts, notifications of a muted account hidden. The `Languages` column of a follow
+         *     is ignored. A file that is not CSV or has more than 10,000 entries is a 422.
+         */
+        post: operations["previewDataImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3008,6 +3097,8 @@ export interface components {
          *       built. Wait for it to end.
          *     - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
          *       it is being built, failed, or expired.
+         *     - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+         *       carried out. Wait for it to finish.
          *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
          *       already used, or is not a code.
          *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -3561,6 +3652,82 @@ export interface components {
         /** @description The user's latest data exports, newest first. */
         DataExportList: {
             items: components["schemas"]["DataExport"][];
+        };
+        /**
+         * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+         *     accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+         *     posts the user bookmarked).
+         * @enum {string}
+         */
+        DataImportKind: "following" | "blocks" | "mutes" | "bookmarks";
+        /**
+         * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+         *     what the user has that the file does not list.
+         * @enum {string}
+         */
+        DataImportMode: "merge" | "overwrite";
+        /** @description A CSV file to import, and how. */
+        DataImportRequest: {
+            kind: components["schemas"]["DataImportKind"];
+            mode: components["schemas"]["DataImportMode"];
+            /** @description The content of the CSV file, in UTF-8. */
+            text: string;
+        };
+        /** @description What an import of a CSV file would do. */
+        DataImportPreview: {
+            /** @description The number of entries of the file, each of which the import adds. */
+            entries: number;
+            /** @description How many of the entries the user has already. */
+            present: number;
+            /**
+             * @description How many things the user has of the kind that the file does not list, which an
+             *     `overwrite` removes; 0 for a `merge`.
+             */
+            removals: number;
+            /** @description The lines that are not entries, in line order. */
+            skipped: components["schemas"]["DataImportSkipped"][];
+        };
+        /** @description A line of a CSV file that is not an entry. */
+        DataImportSkipped: {
+            /** @description The line of the file, from 1. */
+            line: number;
+            /** @description The line as written. */
+            value: string;
+            /**
+             * @description `invalid`: the line names no account address (or for bookmarks, no post URL).
+             *     `duplicate`: an earlier line names the same account or post.
+             * @enum {string}
+             */
+            reason: "invalid" | "duplicate";
+        };
+        /** @description An import of a CSV file, with its progress. */
+        DataImport: {
+            id: components["schemas"]["Id"];
+            kind: components["schemas"]["DataImportKind"];
+            mode: components["schemas"]["DataImportMode"];
+            /**
+             * @description `in_progress` until every entry and removal is done, then `finished`.
+             * @enum {string}
+             */
+            state: "in_progress" | "finished";
+            /**
+             * Format: date-time
+             * @description When the import started.
+             */
+            created_at: string;
+            /** @description The number of entries to add and things to remove. */
+            total: number;
+            /** @description How many of them are done, including the failed ones. */
+            processed: number;
+            /**
+             * @description How many of them could not be carried out: an account or post that cannot be found
+             *     or acted on, or a follow that a block stops.
+             */
+            failed: number;
+        };
+        /** @description The user's latest imports, newest first. */
+        DataImportList: {
+            items: components["schemas"]["DataImport"][];
         };
         /** @description An appeal of an action on the user's own account. */
         AppealModerationActionRequest: {
@@ -6120,6 +6287,107 @@ export interface operations {
                 };
                 content: {
                     "application/zip": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    exportCsv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What to export. */
+                kind: components["schemas"]["DataImportKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    /** @description Names the file to save the CSV as, the name Mastodon gives it. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDataImports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The imports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    startDataImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataImportRequest"];
+            };
+        };
+        responses: {
+            /** @description The import, being carried out. */
+            202: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImport"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    previewDataImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataImportRequest"];
+            };
+        };
+        responses: {
+            /** @description What the import would do. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportPreview"];
                 };
             };
             default: components["responses"]["Problem"];
