@@ -2,13 +2,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminMenu } from "../features/admin";
 import { DocumentsSection } from "../features/documents";
+import { ModerationMenu } from "../features/moderation";
 import { AccountSection } from "../features/session";
 import { SettingsMenu } from "../features/settings";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
 /**
- * The settings: the links to their pages and, for a viewer with admin permissions, to the admin screens; the
+ * The settings: the links to their pages and, for a viewer with staff permissions, to the moderation screens and
+ * to the server administration screens (ADR-0058); the
  * signed-in account with signing out; and the links to the server's terms of service and privacy policy.
  */
 export const Route = createFileRoute("/settings/")({
@@ -22,6 +24,7 @@ function SettingsPage() {
     <>
       <PageHeading>{t("client:settings.title")}</PageHeading>
       <SettingsMenu />
+      <ModerationMenu />
       <AdminMenu />
       <AccountSection />
       <DocumentsSection />

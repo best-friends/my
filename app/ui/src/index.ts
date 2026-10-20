@@ -74,6 +74,7 @@ export {
   LanguageIcon,
   LocalIcon,
   MenuIcon,
+  ModerationIcon,
   MoreIcon,
   NotificationsIcon,
   PlusIcon,
