@@ -388,6 +388,30 @@ type Invite struct {
 	CreatedAt       int64
 }
 
+type LinkCard struct {
+	Url              string
+	CardUrl          string
+	Title            string
+	Description      string
+	SiteName         string
+	AuthorName       string
+	PublishedAt      sql.NullInt64
+	ImageMediaID     sql.NullString
+	CreatorAccountID sql.NullString
+	Language         sql.NullString
+	FetchedAt        int64
+}
+
+type LinkCardMedium struct {
+	MediaID     string
+	RemoteUrl   string
+	ContentType string
+	Width       int64
+	Height      int64
+	Blurhash    string
+	Description string
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string

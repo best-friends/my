@@ -208,6 +208,9 @@ func (s *Server) statusParts(ctx context.Context, views []appcontent.StatusView,
 	var emojis []string
 	for _, v := range views {
 		actors = append(actors, v.Author)
+		if v.Card != nil && v.Card.Author != nil {
+			actors = append(actors, *v.Card.Author)
+		}
 		mentioned = append(mentioned, v.Mentions...)
 		emojis = append(emojis, v.Revision.EmojiIDs...)
 	}
@@ -264,7 +267,38 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 			out.Pinned = &r.Pinned
 		}
 	}
+	if v.Card != nil {
+		out.Card = s.newLinkCard(*v.Card, parts)
+	}
 	return out
+}
+
+// newLinkCard presents the card of a status (ADR-0062 §8); parts holds its author's images.
+func (s *Server) newLinkCard(v appcontent.LinkCardView, parts accountParts) *LinkCard {
+	c := v.Card
+	out := &LinkCard{
+		Url: c.CardURL, Title: c.Title, Description: c.Description, SiteName: c.SiteName,
+		AuthorName: optionalString(c.AuthorName), PublishedAt: c.PublishedAt, Language: optionalString(c.Language),
+	}
+	if img := v.Image; img != nil {
+		out.Image = &LinkCardImage{
+			Url: img.URL, Width: img.Width, Height: img.Height,
+			Blurhash: optionalString(img.Blurhash), Description: optionalString(img.Description),
+		}
+	}
+	if v.Author != nil {
+		a := s.newAccount(*v.Author, parts)
+		out.Author = &a
+	}
+	return out
+}
+
+// optionalString returns nil for "", so that an empty value is omitted.
+func optionalString(v string) *string {
+	if v == "" {
+		return nil
+	}
+	return &v
 }
 
 // viewImage presents the image of a MediaView, which the reader resolved already.

@@ -120,7 +120,7 @@ func (r *StatusRepository) EraseStatuses(ctx context.Context, tx uow.Tx, statusI
 	}
 	ids := statusIDs
 	if err := runSteps(ctx, ids, "erase statuses",
-		q.EraseLocalStatusesOfStatuses, q.EraseCountersOfStatuses, q.EraseBoostEdgesOfStatuses,
+		q.EraseLocalStatusesOfStatuses, q.EraseCountersOfStatuses, q.EraseLinkCardsOfStatuses, q.EraseBoostEdgesOfStatuses,
 		q.EraseBoostRetractionsOfStatuses, q.EraseBoostsOfStatuses, q.EraseFavouritesOfStatuses,
 		q.EraseReactionsOfStatuses, q.EraseReactionCountsOfStatuses, q.EraseBookmarksOfStatuses, q.ErasePinsOfStatuses); err != nil {
 		return err

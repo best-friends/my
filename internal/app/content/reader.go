@@ -29,6 +29,8 @@ type ReaderDeps struct {
 	Restrictions RestrictionPolicy
 	// Media reads the attached media; nil presents no attachments.
 	Media *MediaService
+	// LinkCards presents the cards of the links in statuses (ADR-0062); nil presents none.
+	LinkCards *LinkCards
 }
 
 // Reader presents statuses to a viewer: one status, its thread, its edit history, and a local
@@ -73,6 +75,8 @@ type StatusView struct {
 	Reactions []ReactionView
 	// Relation is the viewer's relation to the status, nil for an anonymous viewer.
 	Relation *ViewerRelation
+	// Card is the card of the link in the status, nil for none (ADR-0062).
+	Card *LinkCardView
 }
 
 // Edited reports whether the status has a revision after its first.
@@ -323,7 +327,13 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 		return StatusView{}, err
 	}
 	out.Attachments, out.Mentions, out.Tags = parts.Attachments, parts.Mentions, parts.Tags
-	if len(out.Attachments) > 0 && !out.Revision.Sensitive {
+	if r.d.LinkCards != nil {
+		if out.Card, err = r.d.LinkCards.View(ctx, st, rev); err != nil {
+			return StatusView{}, err
+		}
+	}
+	// The image of a card is shown as sensitive as the attachments are (ADR-0062 §7).
+	if (len(out.Attachments) > 0 || out.Card != nil && out.Card.Image != nil) && !out.Revision.Sensitive {
 		if out.Revision.Sensitive, err = r.forcedSensitive(ctx, st); err != nil {
 			return StatusView{}, err
 		}

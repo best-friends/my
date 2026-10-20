@@ -66,6 +66,9 @@ const (
 	// SettingSecurityContact is where vulnerabilities are reported (/.well-known/security.txt,
 	// RFC 9116); empty serves no security.txt.
 	SettingSecurityContact SettingKey = "security_contact"
+	// SettingLinkCardsEnabled is whether statuses show the cards of their links, fetched from
+	// the linked pages (FR-117, ADR-0062).
+	SettingLinkCardsEnabled SettingKey = "link_cards_enabled"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -295,6 +298,10 @@ var definitions = []Definition{
 	{
 		Key: SettingSecurityContact, Kind: KindURI, Default: "",
 		Doc: "Where to report vulnerabilities, an https: or mailto: URI; /.well-known/security.txt is served only when it is set (RFC 9116, ADR-0057).",
+	},
+	{
+		Key: SettingLinkCardsEnabled, Kind: KindBool, Default: "true",
+		Doc: "Whether statuses show the cards of their links, which the server fetches from the linked pages (FR-117, ADR-0062).",
 	},
 }
 
@@ -652,6 +659,9 @@ func (s Settings) AIUsage() AIUsage {
 
 // IndexableDefault returns the value of SettingIndexableDefault.
 func (s Settings) IndexableDefault() bool { return s.boolValue(SettingIndexableDefault) }
+
+// LinkCardsEnabled returns the value of SettingLinkCardsEnabled.
+func (s Settings) LinkCardsEnabled() bool { return s.boolValue(SettingLinkCardsEnabled) }
 
 // SecurityContact returns the value of SettingSecurityContact, "" when unset.
 func (s Settings) SecurityContact() string {
