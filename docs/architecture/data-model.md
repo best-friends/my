@@ -236,6 +236,7 @@ flowchart LR
 - `secret_enc` は TOTP の 160 ビットの秘密を `kernel.Sealer` で暗号化した値です（ADR-0019 §6）。AAD は登録の `id` と列名 `totp_enrollments.secret_enc` です。
 - `code_hash` は、正規化したリカバリーコード（80 ビットの乱数）の SHA-256 です。
 - リカバリーコードを作り直すときは、同じ秘密を新しい登録に移し、古い登録に失効のイベントを記録します。管理者が二要素認証を外すときも失効のイベントを記録し、監査ログに `two_factor_disabled` を残します。
+- パスワードのリセットと変更（FR-002）は、`password_credentials` に新しい行を足し、その利用者のセッションに `session_revocations`（`password_changed`）、トークンに `oauth_token_revocations`（`password_changed`）を同じトランザクションで記録します。設定の画面からの変更は、変更を要求したトークンの系列だけを残します。TOTP の登録とパスキーには何も記録しないので、どちらもそのまま使えます。
 - 使った TOTP のコードの時間ステップと、パスワードの後で 2 段目を待つサインインのチャレンジ（5 分）は、DB ではなく `KeyValueStore` の名前空間 `two_factor` に置きます。
 
 | テーブル | 分類 | カラム | 制約 |
@@ -277,8 +278,13 @@ flowchart LR
 | `invites` | リソース | `id`, `code`（80 ビットの乱数の base32、16 文字。照合は大文字・空白とハイフンを除いた形で行う）, `created_by_user_id`（NULL 可 = CLI による作成）, `max_uses`（NULL 可 = 無制限）, `expires_at`（NULL 可）, `created_at` | 一意 `(code)` |
 | `invite_redemptions` | イベント | `invite_id`, `seq`（`int`、1 始まり）, `user_id`, `redeemed_at` | PK `(invite_id, seq)`。`seq = 既存件数 + 1` で挿入し、一意制約違反なら再試行する。`seq > max_uses` は拒否する |
 | `invite_revocations` | イベント | `invite_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による取り消し）, `revoked_at` | 取り消しは 1 回だけ記録する（2 回目は何もしない） |
-| `user_tokens` | リソース | `id`, `user_id`, `purpose`（`enum(email_verification, password_reset)`）, `email_address_id`（NULL 可）, `token_hash`（`bytes`。トークンの SHA-256）, `expires_at`, `issued_at` | 一意 `(token_hash)`。メール確認のトークンは接頭辞 `my_evt_`、有効期限 24 時間 |
+| `user_tokens` | リソース | `id`, `user_id`, `purpose`（`enum(email_verification, password_reset)`）, `email_address_id`（NULL 可）, `token_hash`（`bytes`。トークンの SHA-256）, `expires_at`, `issued_at` | 一意 `(token_hash)`。メール確認のトークンは接頭辞 `my_evt_`、有効期限 24 時間。パスワードリセットのトークンは接頭辞 `my_prt_`、有効期限 1 時間 |
 | `user_token_redemptions` | イベント | `token_id`（PK）, `redeemed_at` | 挿入の成否で 1 回性を保証する |
+
+- パスワードリセットのトークン（FR-002）は、期限内で使われておらず、発行が現在のパスワード（`password_credentials` の最新行）の `set_at` より前でないときだけ使えます。
+  リセット・変更・管理者の発行など、どの経路でもパスワードが新しくなれば、それより前に発行したリンクは使えなくなります。状態の列は持たず、この 2 つのイベントから求めます。
+- リセットのリンクは、メールを送るサーバー（`mail` が `none` でない）ではログインの画面から本人がメールで受け取り、どのサーバーでも管理者が CLI（`my admin account password-reset-link`）で発行できます。
+  管理者の発行は監査ログに `password_reset_link_issued` を残し、その `source_event_id` はトークンの `id` です。
 
 #### 権限
 
@@ -605,6 +611,7 @@ flowchart LR
   | `appeal_upheld`, `appeal_overturned` | `appeal` | `moderation_appeals.id` | 申し立てたアカウントのハンドル | `moderation_appeal_decisions.appeal_id`（= `moderation_appeals.id`） |
   | `revealed_private_data` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | なし（元の記録を持たない操作） |
   | `two_factor_disabled` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | `totp_enrollment_revocations.enrollment_id` |
+  | `password_reset_link_issued` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | `user_tokens.id` |
   | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
   | `custom_emoji_created`, `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted` | `custom_emoji` | `custom_emojis.id` | `:shortcode:`（リモートは `:shortcode:@domain`） | `custom_emoji_images.id`（画像を記録した操作）。ほかはなし |
   | `webhook_created`, `webhook_updated`, `webhook_deleted`, `webhook_enabled`, `webhook_disabled`, `webhook_secret_rotated` | `webhook` | `webhook_endpoints.id` | 説明と URL のホスト名（`Moderation chat (hooks.example.com)`）。URL は写さない | `webhook_endpoint_revisions.id` / `webhook_endpoint_state_changes.id` / `webhook_secrets.id` |
