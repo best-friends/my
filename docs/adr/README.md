@@ -67,6 +67,7 @@
 | [0054](0054-media-variants-video-audio.md) | メディアの派生と動画・音声の扱い | Accepted |
 | [0055](0055-service-observability.md) | サービスメトリクスの可観測性 | Accepted |
 | [0056](0056-system-observability.md) | システムメトリクスの可観測性 | Accepted |
+| [0058](0058-moderation-admin-separation.md) | モデレーションとサーバー管理の分離 | Accepted |
 | [0059](0059-design-tokens-and-instance-theme.md) | デザイントークンの体系とサーバー単位のテーマ | Accepted |
 | [0060](0060-instance-webhooks.md) | サーバー単位の webhook | Accepted |
 | [0061](0061-federation-relays.md) | 連合リレーへの参加と脱退 | Accepted |
