@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a route shows instead of its page: while it loads, when it fails, and for an unknown address
 // (web-client.md E1, E3, G16). Each has the page's h1, so the layout moves focus to it and titles the document.
-import { Center, Link, RegionError, Spinner } from "@my/ui";
+import { Center, RegionError, Spinner } from "@my/ui";
 import { useQueryClient, useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { type ErrorComponentProps, useMatch, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
@@ -9,6 +9,7 @@ import { type ErrorKind, errorKind, errorMessage } from "../../lib/errors";
 import { type PlainClientMessageKey, useT } from "../../lib/i18n";
 import { useOnReconnect } from "../../lib/network";
 import { PageHeading } from "./PageHeading";
+import { HomeLink } from "./HomeLink";
 
 /** The router's defaultPendingComponent: shown only when a page takes longer than defaultPendingMs to load. */
 export function RoutePending() {
@@ -125,11 +126,7 @@ export function NotFound() {
     <>
       <PageHeading>{t("client:shell.not_found.title")}</PageHeading>
       <p>{t("client:shell.not_found.body")}</p>
-      <p>
-        <Link href="/home" variant="standalone">
-          {t("client:shell.not_found.home")}
-        </Link>
-      </p>
+      <HomeLink />
     </>
   );
 }

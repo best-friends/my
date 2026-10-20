@@ -276,16 +276,19 @@ test.describe("the sidebar of desktops", () => {
       return;
     }
     await expect(viewer).toBeVisible();
-    // The list's links keep their order; the server's name comes before the list and the account after it.
+    // The list's links keep their order; the server's name, a link to the root address, comes before the list and
+    // the account after it.
     await expect(navigation).toMatchAriaSnapshot(`
       - navigation:
-        - paragraph: ${instanceName}
+        - paragraph:
+          - link "${instanceName}"
         - list:
           - /children: equal
 ${Array.from({ length: 7 }, () => "          - listitem:\n            - link").join("\n")}
         - link "${displayName} @alice"
     `);
     await expect(viewer).not.toHaveAttribute("aria-current");
+    await expect(navigation.locator('a[href="/"]')).toHaveText(instanceName);
     // The account is always in view, at the bottom of the sidebar, inside it.
     const box = await viewer.boundingBox();
     const nav = await navigation.boundingBox();
@@ -396,9 +399,12 @@ test.describe("the menu of the phones' tab bar", () => {
           - radio
           - radio
         - paragraph:
+          - link "${instanceName}"
+        - paragraph:
           - link
     `);
-    await expect(sheet.getByRole("link")).toHaveText([/./, /./, /./, /./]);
+    await expect(sheet.getByRole("link")).toHaveText([/./, /./, /./, /./, /./]);
+    await expect(sheet.locator('a[href="/"]')).toBeVisible();
     await expect(sheet.locator('a[href="/about"]')).toBeVisible();
     await expect(sheet.locator('a[href="/profile"]')).toBeVisible();
     await expect(sheet.locator('a[href="/bookmarks"]')).toBeVisible();

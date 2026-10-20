@@ -51,7 +51,7 @@ describe("while signed out", () => {
     // The tab bar's Menu holds Sign up, the color theme and the server's information page.
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Sign up", "More about this server"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Sign up", "my example", "More about this server"]);
     expect(within(sheet).getByRole("radiogroup", { name: "Theme" })).toBeInTheDocument();
   });
 
@@ -191,7 +191,7 @@ describe("the user's arrangement", () => {
 
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Bookmarks", "Settings", "More about this server"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Bookmarks", "Settings", "my example", "More about this server"]);
   });
 
   test("keeps the place of a timeline the server does not offer among the first five", async () => {
@@ -205,7 +205,7 @@ describe("the user's arrangement", () => {
 
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "More about this server"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "my example", "More about this server"]);
   });
 
   test("follows a change made in another tab", async () => {
@@ -233,7 +233,7 @@ describe("the tab bar's Menu", () => {
     await user.click(menu);
 
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "More about this server"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "my example", "More about this server"]);
     expect(within(sheet).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
     expect(within(sheet).getByRole("link", { name: "Profile" })).not.toHaveAttribute("aria-current");
 
@@ -340,7 +340,11 @@ describe("the sidebar's server and viewer", () => {
     expect(viewer).not.toHaveAttribute("aria-current");
     expect(within(nav).getByRole("link", { name: "Profile" })).toHaveAttribute("aria-current", "page");
 
-    const name = within(nav).getByText("my example");
+    // The server's name links to the root address, which opens the home timeline for a signed-in user.
+    const name = within(nav).getByRole("link", { name: "my example" });
+    expect(name).toHaveAttribute("href", "/");
+    expect(name).toHaveAccessibleDescription("Top page of this server");
+    expect(name).not.toHaveAttribute("aria-current");
     const list = within(nav).getByRole("list");
     expect(name.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(list.compareDocumentPosition(viewer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -359,12 +363,29 @@ describe("the sidebar's server and viewer", () => {
     ]);
   });
 
-  test("shows no account while signed out", async () => {
+  test("shows no account while signed out, and the server's name leads to the landing page", async () => {
     server.resetHandlers();
-    await renderApp({ path: "/local" });
+    const { user, router } = await renderApp({ path: "/local" });
     await screen.findByRole("heading", { level: 1, name: "Local timeline" });
-    expect(within(navigation()).getByText("my example")).toBeInTheDocument();
     expect(within(navigation()).queryByRole("link", { name: /@alice/ })).not.toBeInTheDocument();
+    const name = within(navigation()).getByRole("link", { name: "my example" });
+    expect(name).toHaveAccessibleDescription("Top page of this server");
+
+    await user.click(name);
+    expect(await screen.findByRole("heading", { level: 1, name: "Welcome to my example" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/");
+    // On the landing page, the name marks the place.
+    expect(within(navigation()).getByRole("link", { name: "my example" })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("names the server in the menu's sheet as a link to the root address", async () => {
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await user.click(await within(navigation()).findByRole("button", { name: "Menu" }));
+    const sheet = await screen.findByRole("dialog", { name: "Menu" });
+    const name = within(sheet).getByRole("link", { name: "my example" });
+    expect(name).toHaveAttribute("href", "/");
+    expect(name).toHaveAccessibleDescription("Top page of this server");
   });
 
   test("is in Japanese in the ja locale", async () => {
@@ -374,5 +395,6 @@ describe("the sidebar's server and viewer", () => {
     expect(await within(nav).findByRole("link", { name: "Alice @alice" })).toHaveAccessibleDescription(
       "サインインしているアカウント",
     );
+    expect(within(nav).getByRole("link", { name: "my example" })).toHaveAccessibleDescription("このサーバーのトップページ");
   });
 });

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
-import { Link } from "@my/ui";
 import { useId } from "react";
 import { TimelineFeed, TimelineSkeleton, timelineQueryOptions } from "../features/timeline";
 import { ApiError } from "../lib/errors";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
+import { HomeLink } from "./-layout/HomeLink";
 
 /**
  * The federated timeline (FR-202): the public posts of this server's accounts and of the accounts of other
@@ -58,11 +58,7 @@ function PublicError(props: ErrorComponentProps) {
     <>
       <PageHeading visuallyHidden={false}>{t("client:public.disabled.title")}</PageHeading>
       <p>{t("client:public.disabled.body")}</p>
-      <p>
-        <Link href="/home" variant="standalone">
-          {t("client:shell.not_found.home")}
-        </Link>
-      </p>
+      <HomeLink />
     </>
   );
 }

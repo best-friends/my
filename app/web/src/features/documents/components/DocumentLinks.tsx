@@ -42,7 +42,7 @@ export function DocumentLinks({ labelledBy, placement = "inline" }: DocumentLink
   );
 }
 
-/** The settings page's section of the links to the published documents; nothing when the server publishes none. */
+/** The section of the links to the published documents (settings, the information page, the landing page); nothing when the server publishes none. */
 export function DocumentsSection() {
   const t = useT();
   const headingId = useId();

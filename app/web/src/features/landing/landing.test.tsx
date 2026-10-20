@@ -59,6 +59,30 @@ describe("the landing page", () => {
     expect(within(documents).getAllByRole("link").map(visibleText)).toEqual(["Terms of service", "Privacy policy"]);
   });
 
+  test("orders its sections as the information page does, with the links to it and to the source code last", async () => {
+    serveInstance({
+      description: "We grow vegetables.",
+      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", lang: "en" }],
+      terms_url: "http://localhost:3000/auth/terms",
+      privacy_policy_url: "http://localhost:3000/auth/privacy",
+    });
+    await renderApp({ path: "/" });
+
+    await screen.findByRole("region", { name: "Terms and policies" });
+    const main = screen.getByRole("main");
+    expect(within(main).getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)).toEqual([
+      "About this server",
+      "Recent posts",
+      "Rules",
+      "Terms and policies",
+    ]);
+    const documents = within(main).getByRole("region", { name: "Terms and policies" });
+    const more = within(main).getByRole("link", { name: "More about this server" });
+    const source = within(main).getByRole("link", { name: newTabName("View the source code") });
+    expect(documents.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(more.compareDocumentPosition(source) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   test("links to the source code the server runs, or to an email that requests it", async () => {
     serveInstance({ source_url: "https://git.example.org/fork/my" });
     const { unmount } = await renderApp({ path: "/" });
