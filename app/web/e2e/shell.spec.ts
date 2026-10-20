@@ -186,7 +186,7 @@ test.describe("the sidebar of desktops", () => {
         - paragraph: ${instanceName}
         - list:
           - /children: equal
-${Array.from({ length: 6 }, () => "          - listitem:\n            - link").join("\n")}
+${Array.from({ length: 7 }, () => "          - listitem:\n            - link").join("\n")}
         - link "${displayName} @alice"
     `);
     await expect(viewer).not.toHaveAttribute("aria-current");
