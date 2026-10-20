@@ -134,7 +134,8 @@ type Outbox interface {
 }
 
 // DeadJob is a job that failed for good: its handler returned Fail, or it used up its
-// attempts. Dead jobs stay until an operator requeues or discards them.
+// attempts. Dead jobs stay until an operator requeues them or the dead job purge deletes them
+// after their retention (DeadJobPurger, FR-803).
 type DeadJob struct {
 	ID             string
 	Type           string
@@ -168,6 +169,9 @@ type DeadJobs interface {
 	// and removes it from the dead jobs. When a job with the same IdempotencyKey is pending,
 	// that job stands in for it. It returns ErrDeadJobNotFound when there is no such dead job.
 	RequeueDeadJob(ctx context.Context, id string) error
+	// DeleteDeadJobsBefore deletes at most limit dead jobs that failed before t, the oldest
+	// first, and returns how many it deleted; none when limit <= 0. It is safe to repeat.
+	DeleteDeadJobsBefore(ctx context.Context, t time.Time, limit int) (int64, error)
 }
 
 var (

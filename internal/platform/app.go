@@ -388,6 +388,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	a.RateLimiter = kernel.NewRateLimiter(a.KV, a.Clock)
 	a.registerKVCleanup()
+	queue.NewDeadJobPurger(queue.DeadJobPurgeDeps{
+		DeadJobs: a.DeadJobs, Clock: a.Clock, Retention: cfg.DeadJobRetention,
+	}).RegisterJobs(a.Handlers, a.Scheduler)
 
 	account.RegisterProjectors(a.Projectors, accounts)
 	a.Accounts = account.NewService(account.Deps{

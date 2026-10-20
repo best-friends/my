@@ -163,6 +163,14 @@ func (sqliteStore) deleteDead(ctx context.Context, tx uow.Tx, id string) (int64,
 	return q.DeleteDeadJob(ctx, id)
 }
 
+func (sqliteStore) deleteDeadBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error) {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return 0, err
+	}
+	return q.DeleteDeadJobsBefore(ctx, sqlitequeue.DeleteDeadJobsBeforeParams{FailedBefore: millis(before), BatchLimit: int64(limit)})
+}
+
 func (sqliteStore) insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) error {
 	q, err := sqliteQueries(tx)
 	if err != nil {

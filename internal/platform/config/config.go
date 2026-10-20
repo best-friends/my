@@ -97,6 +97,8 @@ type Config struct {
 	// RemoteStatusMaxRetention bounds how long any remote post is kept, zero for no bound (ADR-0034).
 	RemoteStatusRetention    time.Duration
 	RemoteStatusMaxRetention time.Duration
+	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
+	DeadJobRetention time.Duration
 	// MetricsExporter is the Meter adapter (ADR-0055 §2); MetricsListen is the address of the
 	// scrape of prometheus, and the EMF fields configure emf.
 	MetricsExporter      string
@@ -172,6 +174,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Bool("http_allow_private_networks", c.HTTPAllowPrivateNetworks),
 		slog.Duration("remote_status_retention", c.RemoteStatusRetention),
 		slog.Duration("remote_status_max_retention", c.RemoteStatusMaxRetention),
+		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),
 		slog.String("metrics_listen", c.MetricsListen),
 		slog.String("metrics_emf_namespace", c.MetricsEMFNamespace),

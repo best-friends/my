@@ -273,6 +273,36 @@ func (q *Queue) ListDeadJobs(_ context.Context, after queue.DeadJobPosition, lim
 	return out, nil
 }
 
+// DeleteDeadJobsBefore implements queue.DeadJobs.
+func (q *Queue) DeleteDeadJobsBefore(_ context.Context, before time.Time, limit int) (int64, error) {
+	if limit <= 0 {
+		return 0, nil
+	}
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	old := make([]queue.DeadJob, 0)
+	for _, d := range q.dead {
+		if d.FailedAt.Before(before) {
+			old = append(old, d)
+		}
+	}
+	slices.SortStableFunc(old, func(a, b queue.DeadJob) int {
+		if c := a.FailedAt.Compare(b.FailedAt); c != 0 {
+			return c
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	if len(old) > limit {
+		old = old[:limit]
+	}
+	gone := make(map[string]bool, len(old))
+	for _, d := range old {
+		gone[d.ID] = true
+	}
+	q.dead = slices.DeleteFunc(q.dead, func(d queue.DeadJob) bool { return gone[d.ID] })
+	return int64(len(old)), nil
+}
+
 // RequeueDeadJob implements queue.DeadJobs.
 func (q *Queue) RequeueDeadJob(_ context.Context, id string) error {
 	now := q.opts.Clock.Now()

@@ -82,6 +82,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`http_allow_private_networks`](#http_allow_private_networks) | `MY_HTTP_ALLOW_PRIVATE_NETWORKS` | `false` | no | no |
 | [`remote_status_retention`](#remote_status_retention) | `MY_REMOTE_STATUS_RETENTION` | `2160h` | no | no |
 | [`remote_status_max_retention`](#remote_status_max_retention) | `MY_REMOTE_STATUS_MAX_RETENTION` | none | no | no |
+| [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
 | [`metrics_listen`](#metrics_listen) | `MY_METRICS_LISTEN` | `127.0.0.1:9464` | no | no |
 | [`metrics_emf_namespace`](#metrics_emf_namespace) | `MY_METRICS_EMF_NAMESPACE` | `my` | no | no |
@@ -542,6 +543,14 @@ The longest a remote post is kept after its publication, even when this instance
 
 - Environment variable: `MY_REMOTE_STATUS_MAX_RETENTION`
 - Default: none
+- Required: no
+
+### `dead_job_retention`
+
+How long a dead job (a job that failed for good or used up its attempts, ADR-0004) is kept after it failed, for an operator to inspect and requeue it; the hourly purge then deletes it (FR-803). A Go duration such as `720h` (30 days).
+
+- Environment variable: `MY_DEAD_JOB_RETENTION`
+- Default: `720h`
 - Required: no
 
 ### `metrics_exporter`

@@ -9,6 +9,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/graph"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/platform"
 )
 
@@ -26,7 +27,7 @@ func TestSchedulerRunsTheCleanups(t *testing.T) {
 	for _, s := range app.Scheduler.Schedules() {
 		names = append(names, s.Name)
 	}
-	for _, want := range []string{platform.JobCleanupKV, graph.JobCleanupMutes, content.JobCleanupMedia} {
+	for _, want := range []string{platform.JobCleanupKV, graph.JobCleanupMutes, content.JobCleanupMedia, queue.JobPurgeDeadJobs} {
 		if !slices.Contains(names, want) {
 			t.Errorf("schedules = %v, want %s among them", names, want)
 		}

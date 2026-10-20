@@ -37,6 +37,7 @@ type store interface {
 	listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error)
 	requeueDead(ctx context.Context, tx uow.Tx, id string, runAt time.Time) error
 	deleteDead(ctx context.Context, tx uow.Tx, id string) (int64, error)
+	deleteDeadBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error)
 	insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) error
 	listOutbox(ctx context.Context, tx uow.Tx, limit int) ([]queue.Job, error)
 	deleteOutbox(ctx context.Context, tx uow.Tx, id string) error
@@ -202,6 +203,23 @@ func (q *Queue) RequeueDeadJob(ctx context.Context, id string) error {
 		return fmt.Errorf("queue/db: requeue dead job: %w", err)
 	}
 	return err
+}
+
+// DeleteDeadJobsBefore implements queue.DeadJobs, in one short transaction.
+func (q *Queue) DeleteDeadJobsBefore(ctx context.Context, before time.Time, limit int) (int64, error) {
+	if limit <= 0 {
+		return 0, nil
+	}
+	var n int64
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		n, err = q.st.deleteDeadBefore(ctx, tx, kernel.Normalize(before), limit)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("queue/db: delete dead jobs: %w", err)
+	}
+	return n, nil
 }
 
 // Backlog implements queue.BacklogReader.
