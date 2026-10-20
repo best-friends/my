@@ -50,7 +50,7 @@ import { type TimelineAvailability, useTimelineAvailability } from "../../featur
 import { handleOf } from "../../lib/handle";
 import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
-import { followListPath, profilePath } from "../../lib/paths";
+import { aboutPath, followListPath, profilePath } from "../../lib/paths";
 import { imageSources } from "../../lib/images";
 
 type Section = "/home" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/moderation" | "/admin";
@@ -255,8 +255,9 @@ type NavigationMenuProps = {
  * focus (useViewChange); a navigation that the unsaved-changes guard holds does not start, and the sheet stays.
  * The button carries the counts of the sheet's items (what awaits the moderators), so that they show in the tab
  * bar too, and the sheet's items show them as the rail does. Under the items, the sheet switches the color theme
- * (the same control as the preferences page, in a row), and under that it links to the server's terms of service
- * and privacy policy, which the third column shows on wide screens, when the server publishes them.
+ * (the same control as the preferences page, in a row), and under that it links to the server's information page
+ * and to its terms of service and privacy policy, which the third column shows on wide screens (the documents when
+ * the server publishes them).
  */
 function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
   const t = useT();
@@ -305,6 +306,11 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
         <div className="mt-4 border-t border-border px-3 pt-4">
           <ThemeRadioGroup layout="sheet" />
         </div>
+        <p className="mt-3 border-t border-border px-3 pt-3 text-sm">
+          <Link href={aboutPath} variant="standalone">
+            {t("client:shell.about.more")}
+          </Link>
+        </p>
         <DocumentLinks placement="sheet" />
       </Sheet>
     </DialogTrigger>

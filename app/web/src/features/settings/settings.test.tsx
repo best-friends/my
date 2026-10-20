@@ -475,9 +475,42 @@ describe("profile", () => {
         fields: [{ name: "Site", value: "https://alice.example" }],
         locked: true,
         bot: false,
+        indexable: true,
+        ai_opt_out: false,
         avatar_media_id: "0192f0c4-7a8e-7000-8000-00000000bbbb",
       },
     ]);
+  });
+
+  test("saves whether search and AI may use the profile, and says what the server already denies", async () => {
+    const changes = profileServer();
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, search_indexing: "deny", ai_usage: "deny_training" })));
+    const { user } = await renderApp({ path: "/settings/profile" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    const indexable = within(crawlers).getByRole("checkbox", { name: "Show my profile and public posts in search" });
+    expect(indexable).toBeChecked();
+    expect(
+      await within(crawlers).findByText("This server asks search engines not to index any page, so they do not index yours even if you allow it."),
+    ).toBeInTheDocument();
+    expect(
+      within(crawlers).getByText("This server already denies AI training on every page; this also denies the use by AI search and assistants."),
+    ).toBeInTheDocument();
+
+    await user.click(indexable);
+    await user.click(within(crawlers).getByRole("checkbox", { name: "Deny AI training and use" }));
+    await user.click(screen.getByRole("button", { name: "Save profile" }));
+
+    expect((await screen.findAllByText("Your profile has been saved.")).length).toBeGreaterThan(0);
+    expect(changes).toEqual([expect.objectContaining({ indexable: false, ai_opt_out: true })]);
+  });
+
+  test("says nothing about the server when it allows search and AI", async () => {
+    profileServer();
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, search_indexing: "allow", ai_usage: "allow" })));
+    await renderApp({ path: "/settings/profile" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    expect(within(crawlers).getByRole("checkbox", { name: "Deny AI training and use" })).not.toBeChecked();
+    expect(within(crawlers).queryByText(/^This server/u)).not.toBeInTheDocument();
   });
 
   test("leaving with unsaved changes asks first: keeping them stays, discarding them leaves", async () => {
@@ -709,6 +742,7 @@ describe("signed out", () => {
       "/settings/profile",
       "/settings/preferences",
       "/settings/two-factor",
+      "/settings/auto-delete",
       "/settings/follow-requests",
       "/settings/blocks",
       "/settings/mutes",

@@ -81,6 +81,26 @@ func (q *Queries) EraseAuthorizationCodes(ctx context.Context, userID string) er
 	return err
 }
 
+const eraseAutoDeleteKeptVisibilitiesBy = `-- name: EraseAutoDeleteKeptVisibilitiesBy :exec
+
+DELETE FROM status_auto_delete_kept_visibilities WHERE account_id = ?1
+`
+
+// The account's automatic deletion policy (FR-118) goes with its kept visibilities.
+func (q *Queries) EraseAutoDeleteKeptVisibilitiesBy(ctx context.Context, accountID string) error {
+	_, err := q.db.ExecContext(ctx, eraseAutoDeleteKeptVisibilitiesBy, accountID)
+	return err
+}
+
+const eraseAutoDeletePolicyBy = `-- name: EraseAutoDeletePolicyBy :exec
+DELETE FROM status_auto_delete_policies WHERE account_id = ?1
+`
+
+func (q *Queries) EraseAutoDeletePolicyBy(ctx context.Context, accountID string) error {
+	_, err := q.db.ExecContext(ctx, eraseAutoDeletePolicyBy, accountID)
+	return err
+}
+
 const eraseBlockEdgesOfBlocks = `-- name: EraseBlockEdgesOfBlocks :exec
 DELETE FROM block_edges WHERE block_id IN (SELECT value FROM json_each(CAST(?1 AS TEXT)))
 `

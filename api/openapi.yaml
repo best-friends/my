@@ -251,6 +251,61 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end profile and preferences ---
+  # --- the user's automatic deletion of old posts (#657) ---
+  /preferences/auto_delete:
+    get:
+      operationId: getAutoDeletePolicy
+      summary: Get the authenticated user's automatic deletion of old posts
+      description: |
+        The policy that deletes the user's own posts some days after their publication (FR-118).
+        A user who has never saved one gets the default policy, which is disabled.
+      tags: [preferences]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The policy.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoDeletePolicy"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateAutoDeletePolicy
+      summary: Replace the authenticated user's automatic deletion of old posts
+      description: |
+        Replaces the whole policy. Once it is enabled, an hourly job deletes the user's posts
+        published more than `min_age_days` days ago, unless an exception keeps them, as the user
+        would delete them: each deletion is sent to the servers the post went to. A run deletes
+        at most 100 posts of a user, so a policy that finds more spreads their deletion over the
+        following hours. Boosts are not deleted. A 422 problem names the property that is invalid
+        in `detail`.
+      tags: [preferences]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutoDeletePolicy"
+      responses:
+        "200":
+          description: The policy as saved.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutoDeletePolicy"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of the user's automatic deletion of old posts (#657) ---
   # --- the user's own account: deletion and data exports (#627) ---
   /accounts/delete:
     post:
@@ -4558,7 +4613,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules]
+      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -4617,6 +4672,26 @@ components:
           format: uri
         theme:
           $ref: "#/components/schemas/InstanceTheme"
+        search_indexing:
+          $ref: "#/components/schemas/SearchIndexing"
+        ai_usage:
+          $ref: "#/components/schemas/AIUsage"
+    SearchIndexing:
+      description: |
+        Whether the instance lets search engines index its pages (the instance setting
+        `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+        that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+        the reverse.
+      type: string
+      enum: [allow, deny]
+    AIUsage:
+      description: |
+        What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+        `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+        and no use by AI search, assistants, and agents. An account can opt out of what the
+        instance allows (`ai_opt_out`), never the reverse.
+      type: string
+      enum: [allow, deny_training, deny]
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -6067,13 +6142,22 @@ components:
       allOf:
         - $ref: "#/components/schemas/Account"
         - type: object
-          required: [discoverable, indexable, source, posting, permissions]
+          required: [discoverable, indexable, ai_opt_out, source, posting, permissions]
           properties:
             discoverable:
               description: Whether the account may be suggested to others and listed in directories.
               type: boolean
             indexable:
-              description: Whether the account's public posts may be indexed for search.
+              description: |
+                Whether the account's profile and public posts may be indexed for search: by this
+                instance's search and, when the instance's `search_indexing` is `allow`, by search
+                engines (FR-412, ADR-0057). New accounts take the instance's default.
+              type: boolean
+            ai_opt_out:
+              description: |
+                Whether the account's pages state that AI may neither train on nor use them
+                (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+                pages of this instance only; other servers and the media files do not carry it.
               type: boolean
             source:
               $ref: "#/components/schemas/AccountSource"
@@ -6122,7 +6206,10 @@ components:
           description: Whether the account may be suggested to others and listed in directories.
           type: boolean
         indexable:
-          description: Whether the account's public posts may be indexed for search.
+          description: Whether the account's profile and public posts may be indexed for search (FR-412).
+          type: boolean
+        ai_opt_out:
+          description: Whether the account's pages state that AI may neither train on nor use them (FR-412).
           type: boolean
     Preferences:
       description: The authenticated user's preferences.
@@ -6186,6 +6273,55 @@ components:
           items:
             type: string
     # --- end profile and preferences ---
+    # --- the user's automatic deletion of old posts (#657) ---
+    AutoDeletePolicy:
+      description: |
+        The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+        deleted once it was published more than `min_age_days` days ago, unless one of the
+        exceptions (the `keep_` properties) keeps it.
+      type: object
+      required: [enabled, min_age_days, keep_pinned, keep_bookmarked, keep_favourited, keep_media, keep_polls, keep_visibilities, keep_min_boosts, keep_min_favourites]
+      properties:
+        enabled:
+          description: Whether old posts are deleted.
+          type: boolean
+        min_age_days:
+          description: How many days after its publication a post is deleted.
+          type: integer
+          minimum: 1
+          maximum: 3650
+        keep_pinned:
+          description: Keep the posts pinned to the profile.
+          type: boolean
+        keep_bookmarked:
+          description: Keep the posts that the user bookmarked.
+          type: boolean
+        keep_favourited:
+          description: Keep the posts that the user favourited.
+          type: boolean
+        keep_media:
+          description: Keep the posts with media attachments.
+          type: boolean
+        keep_polls:
+          description: Keep the posts with a poll.
+          type: boolean
+        keep_visibilities:
+          description: Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility.
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/Visibility"
+        keep_min_boosts:
+          description: Keep the posts boosted at least this many times; 0 keeps none for their boosts.
+          type: integer
+          minimum: 0
+          maximum: 1000000
+        keep_min_favourites:
+          description: Keep the posts favourited at least this many times; 0 keeps none for their favourites.
+          type: integer
+          minimum: 0
+          maximum: 1000000
+    # --- end of the user's automatic deletion of old posts (#657) ---
     # --- two-factor authentication (#628) ---
     TwoFactor:
       description: Where the authenticated user's two-factor authentication (TOTP) stands.
@@ -8387,13 +8523,18 @@ components:
         - retention_reports
         - retention_moderation_actions
         - retention_audit_log
+        - search_indexing
+        - ai_usage
+        - indexable_default
+        - security_contact
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
         `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-        `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+        `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
+        `https:` or `mailto:` URI, or empty for none.
       type: string
-      enum: [bool, int, enum, locale, media]
+      enum: [bool, int, enum, locale, media, uri]
     UpdateInstanceSettingsRequest:
       description: New values of some instance settings, saved together.
       type: object

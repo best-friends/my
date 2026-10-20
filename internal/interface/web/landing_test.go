@@ -17,6 +17,7 @@ func TestLandingPreview(t *testing.T) {
 	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
 	summary := "  Gardeners & friends\n" + strings.Repeat("あ", 250)
 	_, mux := newHandler(t, web.Options{
+		Settings:      crawlerSettings("allow", "allow"),
 		DefaultLocale: locale("ja"),
 		InstanceName:  func(_ context.Context, l string) string { return names[l] },
 		InstanceDescription: func(_ context.Context, l string) string {
@@ -78,5 +79,44 @@ func TestLandingPreview(t *testing.T) {
 	summary = " "
 	if got := get(mux, "/", nil).Body.String(); strings.Contains(got, "og:description") {
 		t.Errorf("an empty summary is described:\n%s", got)
+	}
+}
+
+// TestAboutPreview checks that the information page (/about) previews the instance like the
+// landing page, under its own address and title, in the instance's default locale.
+func TestAboutPreview(t *testing.T) {
+	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
+	_, mux := newHandler(t, web.Options{
+		DefaultLocale:       locale("ja"),
+		InstanceName:        func(_ context.Context, l string) string { return names[l] },
+		InstanceDescription: func(context.Context, string) string { return "Gardeners & friends" },
+	})
+	rec := get(mux, "/about", map[string]string{"Accept-Language": "en"})
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /about = %d", rec.Code)
+	}
+	body := rec.Body.String()
+	got := metas(t, body)
+	want := map[string]string{
+		"og:type":           "website",
+		"og:site_name":      "例のサーバー",
+		"og:title":          "例のサーバー について",
+		"og:url":            "https://social.example/about",
+		"og:description":    "Gardeners & friends",
+		"og:locale":         "ja",
+		"link:canonical":    "https://social.example/about",
+		"fediverse:creator": "",
+		"link:alternate":    "",
+	}
+	for k, v := range want {
+		if got[k] != v {
+			t.Errorf("%s = %q, want %q", k, got[k], v)
+		}
+	}
+	if !strings.Contains(body, "<title>例のサーバー について</title>") {
+		t.Errorf("GET /about:\n%s", body)
+	}
+	if rec.Header().Get("ETag") == "" || rec.Header().Get("ETag") == get(mux, "/", nil).Header().Get("ETag") {
+		t.Errorf("ETag of /about = %q, want its own", rec.Header().Get("ETag"))
 	}
 }

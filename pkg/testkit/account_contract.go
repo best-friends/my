@@ -445,7 +445,7 @@ func accountRevisesProfiles(t *testing.T, e *accountEnv) {
 	ctx := t.Context()
 	reg := e.register(t, "dave")
 	in := appaccount.ProfileInput{
-		DisplayName: "Dave", NoteHTML: "<p>hi</p>", Locked: true, Bot: true, Discoverable: true, Indexable: true,
+		DisplayName: "Dave", NoteHTML: "<p>hi</p>", Locked: true, Bot: true, Discoverable: true, Indexable: true, AIOptOut: true,
 		AvatarMediaID: "0192f3a4-0000-7000-8000-000000000001",
 		Fields:        []account.ProfileField{{Name: "web", ValueHTML: "<a>x</a>"}, {Name: "pronouns", ValueHTML: "he/him"}},
 	}

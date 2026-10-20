@@ -18,6 +18,7 @@ import (
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/domain/account"
 	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
 )
 
@@ -75,7 +76,6 @@ type previewMeta struct {
 	// Creator (fediverse:creator) and ActivityPubID (the ActivityPub alternate) are for profiles
 	// and posts; the landing page has neither.
 	Card, Creator, ActivityPubID string
-	NoIndex                      bool
 }
 
 // uuidPattern matches the canonical form of a UUIDv7, the only form of a status ID in a post
@@ -154,9 +154,6 @@ func (h *Handler) servePreview(w http.ResponseWriter, r *http.Request, route pre
 		h.fail(w, r, err)
 	default:
 		h.shellHeaders(w.Header())
-		if doc.noIndex {
-			w.Header().Set("X-Robots-Tag", "noindex")
-		}
 		doc.serve(w, r)
 	}
 }
@@ -173,7 +170,8 @@ func (h *Handler) serveHidden(w http.ResponseWriter, r *http.Request) {
 	}
 	hd := w.Header()
 	h.shellHeaders(hd)
-	hd.Set("X-Robots-Tag", "noindex")
+	// The generic shell is never indexed (documents).
+	d.shell.crawlers.set(hd)
 	hd.Set("Content-Type", d.shell.contentType)
 	hd.Set("Content-Length", strconv.Itoa(len(d.shell.body)))
 	w.WriteHeader(http.StatusNotFound)
@@ -200,7 +198,11 @@ func (h *Handler) renderProfile(ctx context.Context, p appcontent.ProfilePreview
 	meta.Image = img
 	meta.Card = card(meta.Image)
 	version = append(version, "profile", imageVersion(meta.Image))
-	return h.renderPreview(ctx, lang, meta, version)
+	policy, err := h.ownerPolicy(ctx, p)
+	if err != nil {
+		return document{}, err
+	}
+	return h.renderPreview(ctx, lang, meta, policy, version)
 }
 
 // renderStatus renders the shell of a post page.
@@ -225,10 +227,16 @@ func (h *Handler) renderStatus(ctx context.Context, s appcontent.StatusPreview) 
 	}
 	meta.Image = img
 	meta.Card = card(meta.Image)
-	// An unlisted post is for anyone with the link, not for search engines (ADR-0028).
-	meta.NoIndex = s.Visibility == content.VisibilityUnlisted
+	policy, err := h.ownerPolicy(ctx, s.Author)
+	if err != nil {
+		return document{}, err
+	}
+	if s.Visibility == content.VisibilityUnlisted {
+		// An unlisted post is for anyone with the link, not for search engines (ADR-0028).
+		policy = policy.NoIndex()
+	}
 	version = append(version, "status", st.ID, rev.ID, string(s.Visibility), imageVersion(meta.Image))
-	return h.renderPreview(ctx, lang, meta, version)
+	return h.renderPreview(ctx, lang, meta, policy, version)
 }
 
 // authorMeta fills the meta tags that a profile page and its posts share, and returns them
@@ -327,19 +335,35 @@ func (h *Handler) previewLanguage(ctx context.Context, lang string) string {
 	return h.instanceLocale(ctx)
 }
 
-// renderPreview renders the shell with meta in language lang. Its ETag comes from the version
-// of the template and the assets, the language, and the parts of the profile or post it shows
-// (ADR-0028). lang sets only <html lang> and og:locale: the runtime config keeps the instance's
-// default locale.
-func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMeta, version []string) (document, error) {
+// ownerPolicy returns the crawler policy of the pages of a local account: the instance's,
+// narrowed by the account's indexable and ai_opt_out (ADR-0057). An account without a profile
+// is not indexable.
+func (h *Handler) ownerPolicy(ctx context.Context, p appcontent.ProfilePreview) (instance.CrawlerPolicy, error) {
+	settings, err := h.settings(ctx)
+	if err != nil {
+		return instance.CrawlerPolicy{}, err
+	}
+	indexable, aiOptOut := false, false
+	if prof := p.Actor.Profile; prof != nil {
+		indexable, aiOptOut = prof.Indexable, prof.AIOptOut
+	}
+	return settings.CrawlerPolicy().ForOwner(indexable, aiOptOut), nil
+}
+
+// renderPreview renders the shell with meta in language lang, stating policy to crawlers. Its
+// ETag comes from the version of the template and the assets, the language, the policy, and the
+// parts of the profile or post it shows (ADR-0028). lang sets only <html lang> and og:locale:
+// the runtime config keeps the instance's default locale.
+func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMeta, policy instance.CrawlerPolicy, version []string) (document, error) {
 	locale := h.instanceLocale(ctx)
 	name := h.instanceName(ctx, locale)
 	theme, err := h.currentTheme(ctx)
 	if err != nil {
 		return document{}, err
 	}
+	crawlers := directivesOf(policy)
 	d, err := renderShell(shellData{
-		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, Theme: theme,
+		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, Theme: theme, Crawlers: crawlers,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, HasThemeScript: h.hasThemeScript, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config:  h.runtimeConfig(locale, name),
 		Preview: &meta,
@@ -347,9 +371,9 @@ func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMe
 	if err != nil {
 		return document{}, err
 	}
-	key := append([]string{h.previewVersion, lang, locale, name, theme.Stylesheet, theme.Light, theme.Dark}, version...)
+	key := append([]string{h.previewVersion, lang, locale, name, theme.Stylesheet, theme.Light, theme.Dark, string(policy.Search), string(policy.AI)}, version...)
 	d.etag = etag([]byte(strings.Join(key, "\x00")))
-	d.noIndex = meta.NoIndex
+	d.crawlers = &crawlers
 	return d, nil
 }
 

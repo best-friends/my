@@ -97,6 +97,7 @@ async function serveApi(page: Page): Promise<Posted[]> {
         ...account,
         discoverable: true,
         indexable: true,
+        ai_opt_out: false,
         source: { note: "", fields: [] },
         posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
         permissions: [],

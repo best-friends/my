@@ -1,4 +1,92 @@
 {
+  "about.description.title": {
+    "defaultMessage": "説明",
+    "description": "Heading of the section of the server's information page with the server's description."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "制限しているサーバーはありません",
+    "description": "Shown in place of the list of moderated servers when there are none."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "制限しているサーバーを読み込めませんでした",
+    "description": "Heading shown in place of the list of moderated servers when it could not be loaded."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "このサーバーは、次のサーバーとの連合を制限または停止しています。",
+    "description": "Explanation under the heading of the list of moderated servers on the server's information page."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "制限：投稿を公開のタイムラインに出さない",
+    "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "停止：一切連合しない",
+    "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "制限しているサーバーを読み込んでいます",
+    "description": "Accessible name of the progress indicator while the list of moderated servers loads."
+  },
+  "about.domains.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under the list of moderated servers that loads more of them."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "続きを読み込めませんでした",
+    "description": "Shown under the list of moderated servers when its next page could not be loaded."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "一部のサーバーの名前は * で伏せています。",
+    "description": "Note above the list of moderated servers when the moderators hid part of some servers' names."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the list of moderated servers after a failure."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link after the note that only signed-in users can see the list of moderated servers; it opens the sign-in screen."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "この一覧は、ログインした利用者だけが見られます。",
+    "description": "Shown in place of the list of moderated servers to a visitor who is not signed in, when the server shows it to signed-in users only."
+  },
+  "about.domains.title": {
+    "defaultMessage": "制限しているサーバー",
+    "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server's information page that says what the server states to search engines and AI crawlers."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "{setting, select, allow {検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。} other {このサーバーは、すべてのページを検索エンジンの索引に載せないよう求めています。}}",
+    "description": "What the server states to search engines, by the server setting search_indexing (allow or deny)."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "{setting, select, allow {このサーバーは AI に対して何も留保していません。拒否したアカウントのページを除き、AI はページを学習にも利用にも使えます。} deny_training {このサーバーは、ページを AI のモデルの学習に使うことを拒否しています。拒否したアカウントのページを除き、AI の検索やアシスタントによる利用は拒否していません。} other {このサーバーは、ページを AI のモデルの学習に使うことと、AI の検索・アシスタント・エージェントで利用することを拒否しています。}}",
+    "description": "What the server states to AI crawlers, by the server setting ai_usage (allow, deny_training, or deny)."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "このサーバーは、この表明を robots.txt（既知の AI クローラーの一覧を含む）、ページの robots の meta タグと X-Robots-Tag・Content-Usage・tdm-reservation のヘッダー、/.well-known/tdmrep.json で示します。これらは要請です。主要なクローラーの多くは一部に従うとしていますが、従わないクローラーを技術的に止めるものではありません。",
+    "description": "How the server states its search and AI settings: the machine-readable means it uses."
+  },
+  "about.crawlers.accounts": {
+    "defaultMessage": "アカウントごとに、このサーバーにある自分のページについて、検索エンジンへの掲載や AI を拒否することもできます。サーバーが拒否しているものを、アカウントが許可することはできません。メディアのファイルと、ほかのサーバーにある投稿の写しには、アカウントの選択は及びません。",
+    "description": "That each account can narrow the server's statement for its own pages, but never widen it."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "この表明が法的にどう扱われるかは国によって異なります。EU では、デジタル単一市場における著作権指令 4 条 3 項にいうテキストとデータのマイニングに対する機械可読な権利の留保として示しています。日本では、著作権法 30 条の 4 が情報解析のための多くの利用を許諾なしに認めているため、この表明は法的な拒否として扱われない場合があります。それでも多くの事業者は、こうした表明に自主的に従っています。このページは法的な助言ではありません。",
+    "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
+  },
+  "about.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Heading of the section of the server's information page with the server's rules."
+  },
+  "about.title": {
+    "defaultMessage": "{instance} について",
+    "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
+  },
   "account_status.active.empty": {
     "defaultMessage": "アカウントに効いている処分はありません",
     "description": "Shown when no moderation action is in effect on the user's account."
@@ -3011,6 +3099,78 @@
     "defaultMessage": "一覧を見られる人なら誰でもコメントを見られます。",
     "description": "Description of showing the comments of the domain actions to everyone."
   },
+  "admin.settings.crawlers.title": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.description": {
+    "defaultMessage": "サーバーが検索エンジンと AI のクローラーに示す表明です。設定するまでは、どちらも拒否します。サーバーはこの設定と、同梱する既知の AI クローラーの一覧から robots.txt を作り、すべてのページでも表明します。アカウントごとに自分のページについてさらに拒否できますが、許可を広げることはできません。",
+    "description": "Explanation of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.search": {
+    "defaultMessage": "検索エンジン",
+    "description": "Label of the radio group of whether search engines may index the server's pages (search_indexing)."
+  },
+  "admin.settings.crawlers.search.allow": {
+    "defaultMessage": "索引に載せることを許可する",
+    "description": "Choice that lets search engines index the pages of the accounts that allow it."
+  },
+  "admin.settings.crawlers.search.allow.description": {
+    "defaultMessage": "検索エンジンは、許可したアカウントのプロフィールと公開投稿を索引に載せられます。ほかのページは載せません。",
+    "description": "Description of letting search engines index pages."
+  },
+  "admin.settings.crawlers.search.deny": {
+    "defaultMessage": "索引に載せることを拒否する",
+    "description": "Choice that asks search engines not to index any page."
+  },
+  "admin.settings.crawlers.search.deny.description": {
+    "defaultMessage": "すべてのページで、検索エンジンに索引に載せないよう求めます（noindex）。リンクのプレビューはこれまでどおり表示されます。",
+    "description": "Description of asking search engines not to index any page."
+  },
+  "admin.settings.crawlers.indexable_default": {
+    "defaultMessage": "新しいアカウントで検索への掲載を許可する",
+    "description": "Label of the checkbox of whether new accounts allow search indexing (indexable_default)."
+  },
+  "admin.settings.crawlers.indexable_default.description": {
+    "defaultMessage": "これから登録するアカウントの初めの設定です。登録済みのアカウントの設定は変わりません。",
+    "description": "Help text of the indexable default checkbox."
+  },
+  "admin.settings.crawlers.ai": {
+    "defaultMessage": "AI",
+    "description": "Label of the radio group of what the server states to AI crawlers (ai_usage)."
+  },
+  "admin.settings.crawlers.ai.allow": {
+    "defaultMessage": "許可する",
+    "description": "Choice that reserves nothing against AI."
+  },
+  "admin.settings.crawlers.ai.allow.description": {
+    "defaultMessage": "サーバーとしては AI に対して何も留保しません。アカウントは自分のページについて拒否できます。",
+    "description": "Description of reserving nothing against AI."
+  },
+  "admin.settings.crawlers.ai.deny_training": {
+    "defaultMessage": "学習を拒否する",
+    "description": "Choice that denies the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny_training.description": {
+    "defaultMessage": "AI のモデルの学習のためにデータを集めるクローラーを拒否します。人の依頼でページを読む AI の検索やアシスタントは拒否しません。",
+    "description": "Description of denying the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny": {
+    "defaultMessage": "学習と利用を拒否する",
+    "description": "Choice that denies both the training and the use by AI."
+  },
+  "admin.settings.crawlers.ai.deny.description": {
+    "defaultMessage": "人の依頼でページを読む AI の検索・アシスタント・エージェントを含め、AI のクローラーを拒否します。",
+    "description": "Description of denying both the training and the use by AI."
+  },
+  "admin.settings.crawlers.security_contact": {
+    "defaultMessage": "脆弱性の連絡先",
+    "description": "Label of the field of the address to report vulnerabilities to (security_contact)."
+  },
+  "admin.settings.crawlers.security_contact.description": {
+    "defaultMessage": "脆弱性を報告する先です。https か mailto の URI（メールアドレスなら先頭に mailto と半角のコロンを付けたもの）を入れます。設定している間だけ、サーバーは /.well-known/security.txt を返します。",
+    "description": "Help text of the security contact field."
+  },
   "admin.settings.domain_actions.comments.none": {
     "defaultMessage": "コメントは表示しません。",
     "description": "Description of not showing the comments of the domain actions."
@@ -5727,6 +5887,34 @@
     "defaultMessage": "自動で投稿するアカウントであることを、ほかの人に示します。",
     "description": "Help text of the 'This is a bot' checkbox."
   },
+  "settings.profile.crawlers": {
+    "defaultMessage": "検索エンジンと AI",
+    "description": "Heading of the part of the profile form about search engines and AI."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "プロフィールと公開投稿を検索に載せる",
+    "description": "Label of the checkbox that lets the profile and public posts appear in search."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "このサーバーの検索と、サーバーが許可していれば検索エンジンが、索引に載せられます。この選択に従うほかのサーバーにも伝わります。",
+    "description": "Help text of the indexable checkbox."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "このサーバーはすべてのページを検索エンジンの索引に載せないよう求めているため、許可しても検索エンジンには載りません。",
+    "description": "Note shown when the server denies search engines, so the user's choice does not reach them."
+  },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "AI の学習と利用を拒否する",
+    "description": "Label of the checkbox that denies AI training on and use of the user's pages."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "このサーバーにあるプロフィールと投稿のページで、AI に学習や利用をしないよう求めます。メディアのファイルと、ほかのサーバーにある投稿の写しには及びません。",
+    "description": "Help text of the AI opt-out checkbox, with its limits."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "{usage, select, deny_training {このサーバーはすべてのページで AI の学習を拒否しています。この設定では、AI の検索やアシスタントによる利用も拒否します。} other {このサーバーはすべてのページで AI の学習と利用を拒否しています。}}",
+    "description": "Note shown when the server already denies AI training (deny_training) or both training and use (deny)."
+  },
   "settings.profile.characters_left": {
     "defaultMessage": "{count, plural, other {残り # 文字}}",
     "description": "Character count under the bio field while the text is within the limit."
@@ -5979,6 +6167,122 @@
     "defaultMessage": "パスワードに加えて、認証アプリのコードでログインします",
     "description": "Description of the two-factor authentication item in the settings menu."
   },
+  "settings.auto_delete.title": {
+    "defaultMessage": "古い投稿の自動削除",
+    "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
+  },
+  "settings.auto_delete.summary": {
+    "defaultMessage": "古くなった自分の投稿を、残すものを除いて自動で削除します",
+    "description": "Description of the automatic deletion item in the settings menu."
+  },
+  "settings.auto_delete.description": {
+    "defaultMessage": "選んだ日数より古くなった自分の投稿を、自分で削除したときと同じく、このサーバーと投稿が届いたサーバーから削除します。削除した投稿は元に戻せません。ブーストは削除しません。",
+    "description": "Explanation at the top of the automatic deletion settings page."
+  },
+  "settings.auto_delete.enabled": {
+    "defaultMessage": "古い投稿を自動で削除する",
+    "description": "Label of the switch that turns the automatic deletion of old posts on."
+  },
+  "settings.auto_delete.enabled.description": {
+    "defaultMessage": "サーバーが 1 時間ごとに確かめ、1 回に 100 件まで削除します。古い投稿が多いときは、消し終えるまで数時間かかります。",
+    "description": "Help of the switch of the automatic deletion of old posts."
+  },
+  "settings.auto_delete.age": {
+    "defaultMessage": "削除する投稿の古さ",
+    "description": "Label of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.description": {
+    "defaultMessage": "投稿した日時から数えます。",
+    "description": "Help of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.days": {
+    "defaultMessage": "{count, plural, other {# 日}}",
+    "description": "An age of posts in days, an option of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.keep": {
+    "defaultMessage": "残す投稿",
+    "description": "Legend of the checkboxes of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.description": {
+    "defaultMessage": "チェックした項目のどれかに当てはまる投稿は、自動では削除しません。",
+    "description": "Help of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.pinned": {
+    "defaultMessage": "プロフィールにピン留めした投稿",
+    "description": "Exception of the automatic deletion: posts pinned to the profile."
+  },
+  "settings.auto_delete.keep.bookmarked": {
+    "defaultMessage": "自分がブックマークした投稿",
+    "description": "Exception of the automatic deletion: posts the user bookmarked."
+  },
+  "settings.auto_delete.keep.favourited": {
+    "defaultMessage": "自分がお気に入りにした投稿",
+    "description": "Exception of the automatic deletion: posts the user favourited."
+  },
+  "settings.auto_delete.keep.media": {
+    "defaultMessage": "画像などのメディアが付いた投稿",
+    "description": "Exception of the automatic deletion: posts with media attachments."
+  },
+  "settings.auto_delete.keep.polls": {
+    "defaultMessage": "投票が付いた投稿",
+    "description": "Exception of the automatic deletion: posts with a poll."
+  },
+  "settings.auto_delete.visibilities": {
+    "defaultMessage": "残す公開範囲",
+    "description": "Legend of the checkboxes of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.visibilities.description": {
+    "defaultMessage": "チェックした公開範囲の投稿は、自動では削除しません。",
+    "description": "Help of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.min_boosts": {
+    "defaultMessage": "これ以上ブーストされた投稿を残す",
+    "description": "Label of the select of the number of boosts that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.min_favourites": {
+    "defaultMessage": "これ以上お気に入りにされた投稿を残す",
+    "description": "Label of the select of the number of favourites that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.threshold.off": {
+    "defaultMessage": "この条件では残さない",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion that keeps no post for it."
+  },
+  "settings.auto_delete.threshold.count": {
+    "defaultMessage": "{count, plural, other {# 回}}",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion: a number of boosts or favourites."
+  },
+  "settings.auto_delete.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves the automatic deletion settings."
+  },
+  "settings.auto_delete.saved_on": {
+    "defaultMessage": "保存しました。{days, plural, other {# 日}}より古い投稿を、残すものを除いて削除します。",
+    "description": "Status after the automatic deletion settings were saved turned on."
+  },
+  "settings.auto_delete.saved_off": {
+    "defaultMessage": "保存しました。投稿は自動では削除しません。",
+    "description": "Status after the automatic deletion settings were saved turned off."
+  },
+  "settings.auto_delete.save_failed": {
+    "defaultMessage": "設定を保存できませんでした：{reason}",
+    "description": "Error after saving the automatic deletion settings failed. {reason} is the localized reason."
+  },
+  "settings.auto_delete.unsaved.title": {
+    "defaultMessage": "保存せずに移動しますか？",
+    "description": "Title of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.description": {
+    "defaultMessage": "自動削除の設定の変更は失われます。",
+    "description": "Description of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.leave": {
+    "defaultMessage": "変更を破棄する",
+    "description": "Button that leaves the automatic deletion settings without saving."
+  },
+  "settings.auto_delete.unsaved.stay": {
+    "defaultMessage": "編集を続ける",
+    "description": "Button that stays on the automatic deletion settings."
+  },
   "settings.two_factor.status.title": {
     "defaultMessage": "現在の設定",
     "description": "Heading of the region of the two-factor authentication page that says whether it is on."
@@ -6158,6 +6462,10 @@
   "shell.about.domain": {
     "defaultMessage": "このサーバーのアカウントは @{domain} で終わります。",
     "description": "In the side column about this server: the domain of the handles of local accounts, for example 'Accounts here end with @example.com.'."
+  },
+  "shell.about.more": {
+    "defaultMessage": "このサーバーについて詳しく",
+    "description": "Link to the server's information page: in the side column about this server, in the menu sheet, and on the landing page."
   },
   "shell.about.title": {
     "defaultMessage": "このサーバーについて",

@@ -22,6 +22,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AIUsage.
+const (
+	AIUsageAllow        AIUsage = "allow"
+	AIUsageDeny         AIUsage = "deny"
+	AIUsageDenyTraining AIUsage = "deny_training"
+)
+
+// Valid indicates whether the value is a known member of the AIUsage enum.
+func (e AIUsage) Valid() bool {
+	switch e {
+	case AIUsageAllow:
+		return true
+	case AIUsageDeny:
+		return true
+	case AIUsageDenyTraining:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAccountActionIssuer.
 const (
 	AdminAccountActionIssuerModerator AdminAccountActionIssuer = "moderator"
@@ -972,12 +993,14 @@ func (e InstanceRegistrationsMode) Valid() bool {
 
 // Defines values for InstanceSettingKey.
 const (
+	InstanceSettingKeyAiUsage                          InstanceSettingKey = "ai_usage"
 	InstanceSettingKeyAppealWindow                     InstanceSettingKey = "appeal_window"
 	InstanceSettingKeyAuthorizedFetch                  InstanceSettingKey = "authorized_fetch"
 	InstanceSettingKeyDefaultLocale                    InstanceSettingKey = "default_locale"
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
@@ -989,11 +1012,15 @@ const (
 	InstanceSettingKeyRetentionRegistrationOrigins     InstanceSettingKey = "retention_registration_origins"
 	InstanceSettingKeyRetentionReports                 InstanceSettingKey = "retention_reports"
 	InstanceSettingKeyRetentionSessionOrigins          InstanceSettingKey = "retention_session_origins"
+	InstanceSettingKeySearchIndexing                   InstanceSettingKey = "search_indexing"
+	InstanceSettingKeySecurityContact                  InstanceSettingKey = "security_contact"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKey enum.
 func (e InstanceSettingKey) Valid() bool {
 	switch e {
+	case InstanceSettingKeyAiUsage:
+		return true
 	case InstanceSettingKeyAppealWindow:
 		return true
 	case InstanceSettingKeyAuthorizedFetch:
@@ -1005,6 +1032,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyDomainActionsVisibility:
 		return true
 	case InstanceSettingKeyFederatedTimelineEnabled:
+		return true
+	case InstanceSettingKeyIndexableDefault:
 		return true
 	case InstanceSettingKeyLocalTimelineEnabled:
 		return true
@@ -1028,6 +1057,10 @@ func (e InstanceSettingKey) Valid() bool {
 		return true
 	case InstanceSettingKeyRetentionSessionOrigins:
 		return true
+	case InstanceSettingKeySearchIndexing:
+		return true
+	case InstanceSettingKeySecurityContact:
+		return true
 	default:
 		return false
 	}
@@ -1040,6 +1073,7 @@ const (
 	InstanceSettingKindInt    InstanceSettingKind = "int"
 	InstanceSettingKindLocale InstanceSettingKind = "locale"
 	InstanceSettingKindMedia  InstanceSettingKind = "media"
+	InstanceSettingKindUri    InstanceSettingKind = "uri"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKind enum.
@@ -1054,6 +1088,8 @@ func (e InstanceSettingKind) Valid() bool {
 	case InstanceSettingKindLocale:
 		return true
 	case InstanceSettingKindMedia:
+		return true
+	case InstanceSettingKindUri:
 		return true
 	default:
 		return false
@@ -1372,6 +1408,24 @@ func (e ReportState) Valid() bool {
 	}
 }
 
+// Defines values for SearchIndexing.
+const (
+	SearchIndexingAllow SearchIndexing = "allow"
+	SearchIndexingDeny  SearchIndexing = "deny"
+)
+
+// Valid indicates whether the value is a known member of the SearchIndexing enum.
+func (e SearchIndexing) Valid() bool {
+	switch e {
+	case SearchIndexingAllow:
+		return true
+	case SearchIndexingDeny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SignupBlockImportSkippedReason.
 const (
 	SignupBlockImportSkippedReasonAlreadyBlocked SignupBlockImportSkippedReason = "already_blocked"
@@ -1629,6 +1683,12 @@ func (e ListAdminAccountsParamsOrigin) Valid() bool {
 		return false
 	}
 }
+
+// AIUsage What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+// `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+// and no use by AI search, assistants, and agents. An account can opt out of what the
+// instance allows (`ai_opt_out`), never the reverse.
+type AIUsage string
 
 // Account An account, as clients show it (FR-006).
 type Account struct {
@@ -2726,7 +2786,8 @@ type AdminSetting struct {
 
 	// Kind The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
 	// `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-	// `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+	// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
+	// `https:` or `mailto:` URI, or empty for none.
 	Kind InstanceSettingKind `json:"kind"`
 
 	// Maximum The greatest value of an `int` setting; omitted for other kinds.
@@ -2963,6 +3024,41 @@ type AppealModerationActionRequest struct {
 	Text string `json:"text"`
 }
 
+// AutoDeletePolicy The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+// deleted once it was published more than `min_age_days` days ago, unless one of the
+// exceptions (the `keep_` properties) keeps it.
+type AutoDeletePolicy struct {
+	// Enabled Whether old posts are deleted.
+	Enabled bool `json:"enabled"`
+
+	// KeepBookmarked Keep the posts that the user bookmarked.
+	KeepBookmarked bool `json:"keep_bookmarked"`
+
+	// KeepFavourited Keep the posts that the user favourited.
+	KeepFavourited bool `json:"keep_favourited"`
+
+	// KeepMedia Keep the posts with media attachments.
+	KeepMedia bool `json:"keep_media"`
+
+	// KeepMinBoosts Keep the posts boosted at least this many times; 0 keeps none for their boosts.
+	KeepMinBoosts int `json:"keep_min_boosts"`
+
+	// KeepMinFavourites Keep the posts favourited at least this many times; 0 keeps none for their favourites.
+	KeepMinFavourites int `json:"keep_min_favourites"`
+
+	// KeepPinned Keep the posts pinned to the profile.
+	KeepPinned bool `json:"keep_pinned"`
+
+	// KeepPolls Keep the posts with a poll.
+	KeepPolls bool `json:"keep_polls"`
+
+	// KeepVisibilities Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility.
+	KeepVisibilities []Visibility `json:"keep_visibilities"`
+
+	// MinAgeDays How many days after its publication a post is deleted.
+	MinAgeDays int `json:"min_age_days"`
+}
+
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
 	// BlockEmail Whether a `ban` also blocks sign-ups with the email address of the account's user (a
@@ -3151,6 +3247,11 @@ type CredentialAccount struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
+	// AiOptOut Whether the account's pages state that AI may neither train on nor use them
+	// (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+	// pages of this instance only; other servers and the media files do not carry it.
+	AiOptOut bool `json:"ai_opt_out"`
+
 	// Avatar The avatar image, square; omitted when the account has none, or its image is not
 	// processed yet or could not be processed. Clients show a placeholder instead. For a
 	// remote account, every size is its media proxy URL.
@@ -3197,7 +3298,9 @@ type CredentialAccount struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// Indexable Whether the account's public posts may be indexed for search.
+	// Indexable Whether the account's profile and public posts may be indexed for search: by this
+	// instance's search and, when the instance's `search_indexing` is `allow`, by search
+	// engines (FR-412, ADR-0057). New accounts take the instance's default.
 	Indexable bool `json:"indexable"`
 
 	// Locked Whether follow requests need the account's approval.
@@ -3498,6 +3601,12 @@ type ImportSignupBlocksRequest struct {
 
 // Instance Public information about the instance.
 type Instance struct {
+	// AiUsage What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+	// `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+	// and no use by AI search, assistants, and agents. An account can opt out of what the
+	// instance allows (`ai_opt_out`), never the reverse.
+	AiUsage AIUsage `json:"ai_usage"`
+
 	// Description The full description of the instance, as plain text; omitted when there is none.
 	Description *string `json:"description,omitempty"`
 
@@ -3524,6 +3633,12 @@ type Instance struct {
 
 	// Rules The rules in effect, in order, each in the locale of the request.
 	Rules []InstanceRule `json:"rules"`
+
+	// SearchIndexing Whether the instance lets search engines index its pages (the instance setting
+	// `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+	// that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+	// the reverse.
+	SearchIndexing SearchIndexing `json:"search_indexing"`
 
 	// SendsEmail Whether the instance sends email (the server setting `mail` is not `none`). Without
 	// email, the moderator notifications come only in the app, so clients do not offer
@@ -3643,7 +3758,8 @@ type InstanceSettingKey string
 
 // InstanceSettingKind The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
 // `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-// `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
+// `https:` or `mailto:` URI, or empty for none.
 type InstanceSettingKind string
 
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
@@ -4469,6 +4585,12 @@ type ResolveReportRequest struct {
 	Outcome AdminReportOutcome `json:"outcome"`
 }
 
+// SearchIndexing Whether the instance lets search engines index its pages (the instance setting
+// `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+// that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+// the reverse.
+type SearchIndexing string
+
 // SetInstanceTextRequest A new revision of an instance text in one locale.
 type SetInstanceTextRequest struct {
 	// Body The text; empty clears it in the locale.
@@ -4877,6 +4999,9 @@ type TwoFactorCodeRequest struct {
 
 // UpdateCredentialsRequest A change of the profile; properties left out keep their current values.
 type UpdateCredentialsRequest struct {
+	// AiOptOut Whether the account's pages state that AI may neither train on nor use them (FR-412).
+	AiOptOut *bool `json:"ai_opt_out,omitempty"`
+
 	// AvatarMediaId The ID of a processed image that the user uploaded, to become the avatar; empty
 	// removes the avatar.
 	AvatarMediaId *string `json:"avatar_media_id,omitempty"`
@@ -4897,7 +5022,7 @@ type UpdateCredentialsRequest struct {
 	// empty removes the header image.
 	HeaderMediaId *string `json:"header_media_id,omitempty"`
 
-	// Indexable Whether the account's public posts may be indexed for search.
+	// Indexable Whether the account's profile and public posts may be indexed for search (FR-412).
 	Indexable *bool `json:"indexable,omitempty"`
 
 	// Locked Whether follow requests need the user's approval.
@@ -5714,6 +5839,9 @@ type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 // UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
 type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 
+// UpdateAutoDeletePolicyJSONRequestBody defines body for UpdateAutoDeletePolicy for application/json ContentType.
+type UpdateAutoDeletePolicyJSONRequestBody = AutoDeletePolicy
+
 // PutPushSubscriptionJSONRequestBody defines body for PutPushSubscription for application/json ContentType.
 type PutPushSubscriptionJSONRequestBody = PushSubscriptionRequest
 
@@ -6094,6 +6222,12 @@ type ServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(w http.ResponseWriter, r *http.Request)
+	// GetAutoDeletePolicy Get the authenticated user's automatic deletion of old posts
+	// (GET /preferences/auto_delete)
+	GetAutoDeletePolicy(w http.ResponseWriter, r *http.Request)
+	// UpdateAutoDeletePolicy Replace the authenticated user's automatic deletion of old posts
+	// (PUT /preferences/auto_delete)
+	UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(w http.ResponseWriter, r *http.Request)
@@ -9864,6 +9998,34 @@ func (siw *ServerInterfaceWrapper) UpdatePreferences(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// GetAutoDeletePolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAutoDeletePolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAutoDeletePolicy operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAutoDeletePolicy(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeletePushSubscription operation middleware
 func (siw *ServerInterfaceWrapper) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {
 
@@ -10881,6 +11043,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/auto_delete", wrapper.GetAutoDeletePolicy)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/auto_delete", wrapper.UpdateAutoDeletePolicy)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports", wrapper.ListDataExports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/exports", wrapper.RequestDataExport)
@@ -18226,6 +18390,129 @@ func (response UpdatePreferencesdefaultApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type GetAutoDeletePolicyRequestObject struct {
+}
+
+type GetAutoDeletePolicyResponseObject interface {
+	VisitGetAutoDeletePolicyResponse(w http.ResponseWriter) error
+}
+
+type GetAutoDeletePolicy200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetAutoDeletePolicy200JSONResponse struct {
+	Body    AutoDeletePolicy
+	Headers GetAutoDeletePolicy200ResponseHeaders
+}
+
+func (response GetAutoDeletePolicy200JSONResponse) VisitGetAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAutoDeletePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAutoDeletePolicydefaultApplicationProblemPlusJSONResponse) VisitGetAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAutoDeletePolicyRequestObject struct {
+	Body *UpdateAutoDeletePolicyJSONRequestBody
+}
+
+type UpdateAutoDeletePolicyResponseObject interface {
+	VisitUpdateAutoDeletePolicyResponse(w http.ResponseWriter) error
+}
+
+type UpdateAutoDeletePolicy200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateAutoDeletePolicy200JSONResponse struct {
+	Body    AutoDeletePolicy
+	Headers UpdateAutoDeletePolicy200ResponseHeaders
+}
+
+func (response UpdateAutoDeletePolicy200JSONResponse) VisitUpdateAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAutoDeletePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateAutoDeletePolicydefaultApplicationProblemPlusJSONResponse) VisitUpdateAutoDeletePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeletePushSubscriptionRequestObject struct {
 }
 
@@ -20437,6 +20724,12 @@ type StrictServerInterface interface {
 	// UpdatePreferences Change the authenticated user's preferences
 	// (PATCH /preferences)
 	UpdatePreferences(ctx context.Context, request UpdatePreferencesRequestObject) (UpdatePreferencesResponseObject, error)
+	// GetAutoDeletePolicy Get the authenticated user's automatic deletion of old posts
+	// (GET /preferences/auto_delete)
+	GetAutoDeletePolicy(ctx context.Context, request GetAutoDeletePolicyRequestObject) (GetAutoDeletePolicyResponseObject, error)
+	// UpdateAutoDeletePolicy Replace the authenticated user's automatic deletion of old posts
+	// (PUT /preferences/auto_delete)
+	UpdateAutoDeletePolicy(ctx context.Context, request UpdateAutoDeletePolicyRequestObject) (UpdateAutoDeletePolicyResponseObject, error)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(ctx context.Context, request DeletePushSubscriptionRequestObject) (DeletePushSubscriptionResponseObject, error)
@@ -23844,6 +24137,61 @@ func (sh *strictHandler) UpdatePreferences(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePreferencesResponseObject); ok {
 		if err := validResponse.VisitUpdatePreferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAutoDeletePolicy operation middleware
+func (sh *strictHandler) GetAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+	var request GetAutoDeletePolicyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAutoDeletePolicy(ctx, request.(GetAutoDeletePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAutoDeletePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAutoDeletePolicyResponseObject); ok {
+		if err := validResponse.VisitGetAutoDeletePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAutoDeletePolicy operation middleware
+func (sh *strictHandler) UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request) {
+	var request UpdateAutoDeletePolicyRequestObject
+
+	var body UpdateAutoDeletePolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAutoDeletePolicy(ctx, request.(UpdateAutoDeletePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAutoDeletePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAutoDeletePolicyResponseObject); ok {
+		if err := validResponse.VisitUpdateAutoDeletePolicyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

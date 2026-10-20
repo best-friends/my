@@ -75,6 +75,7 @@ type AccountProfileRevision struct {
 	Bot           int64
 	Discoverable  int64
 	Indexable     int64
+	AiOptOut      int64
 	AvatarMediaID sql.NullString
 	HeaderMediaID sql.NullString
 	RevisedAt     int64
@@ -788,6 +789,20 @@ type Status struct {
 	InReplyToUri    sql.NullString
 	ConversationUri sql.NullString
 	PublishedAt     int64
+}
+
+type StatusAutoDeletePolicy struct {
+	AccountID         string
+	Enabled           int64
+	MinAgeDays        int64
+	KeepPinned        int64
+	KeepBookmarked    int64
+	KeepFavourited    int64
+	KeepMedia         int64
+	KeepPolls         int64
+	KeepMinBoosts     int64
+	KeepMinFavourites int64
+	UpdatedAt         int64
 }
 
 type StatusCounter struct {

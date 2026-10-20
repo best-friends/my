@@ -77,6 +77,14 @@ type Options struct {
 	// means the built-in image.
 	DefaultImage func(ctx context.Context, lang string) (*Image, error)
 
+	// Settings returns the current instance settings, whose search_indexing, ai_usage, and
+	// security_contact decide what /robots.txt, the pages, and /.well-known/ state to crawlers
+	// (ADR-0057). It is called per request, so that a change applies without a restart; nil
+	// reads every setting as its default, which denies search engines and AI.
+	Settings func(ctx context.Context) (instance.Settings, error)
+	// Now returns the current time, for the expiry of security.txt; nil means time.Now.
+	Now func() time.Time
+
 	// NotFound writes the 404 response of the server, for paths the web client does not own.
 	NotFound func(w http.ResponseWriter, r *http.Request)
 	// Logger logs warnings at start; nil means slog.Default().
@@ -97,7 +105,7 @@ const (
 // reservedPrefixes are the paths of the server's other endpoints. The SPA has no routes under
 // them, so a request there that no endpoint serves is the server's 404, never the shell.
 // /uploads is the blob prefix of media as received, which is never served (it may carry EXIF).
-var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads", "/theme"}
+var reservedPrefixes = []string{"/api", "/oauth", "/auth", "/.well-known", "/nodeinfo", "/ap", "/media", "/uploads", "/theme", PathRobots}
 
 // Cache-Control values (ADR-0028).
 const (
@@ -135,10 +143,11 @@ type Handler struct {
 }
 
 // localizedDocuments are the documents that depend on the default locale, and the instance
-// name and the theme they show.
+// name, the theme, and the instance's crawler policy they show.
 type localizedDocuments struct {
 	name            string
 	theme           themeState
+	policy          instance.CrawlerPolicy
 	shell, manifest document
 }
 
@@ -147,8 +156,8 @@ type document struct {
 	body        []byte
 	etag        string
 	contentType string
-	// noIndex asks search engines not to index the document (X-Robots-Tag).
-	noIndex bool
+	// crawlers are the headers that state the document's crawler policy; nil for none.
+	crawlers *crawlerDirectives
 }
 
 // New returns a Handler on o. A build without a Vite manifest is not an error: the shell then
@@ -232,7 +241,7 @@ func New(o Options) (*Handler, error) {
 	version = append(append(version, tags.Stylesheet...), tags.Preload...)
 	h.previewVersion = etag([]byte(strings.Join(version, "\x00")))
 	// Render once now, so that a template or encoding error fails the start.
-	if _, err := h.render(i18n.SourceLocale, o.Host, defaultTheme()); err != nil {
+	if _, err := h.render(i18n.SourceLocale, o.Host, defaultTheme(), instance.DenyAll); err != nil {
 		return nil, err
 	}
 	return h, nil
@@ -274,7 +283,9 @@ func (h *Handler) instanceName(ctx context.Context, locale string) string {
 }
 
 // documents returns the shell and the manifest for the current default locale, the instance's
-// name in it, and the current theme.
+// name in it, the current theme, and the instance's crawler policy. The generic shell is never
+// indexed: it is the shell of the app's screens, of remote accounts' pages, and of pages that
+// are not found (ADR-0057).
 func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 	locale := h.instanceLocale(ctx)
 	name := h.instanceName(ctx, locale)
@@ -282,28 +293,40 @@ func (h *Handler) documents(ctx context.Context) (*localizedDocuments, error) {
 	if err != nil {
 		return nil, err
 	}
-	if d, ok := h.localized.Load(locale); ok && d.(*localizedDocuments).name == name && d.(*localizedDocuments).theme == theme {
-		return d.(*localizedDocuments), nil
+	settings, err := h.settings(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return h.render(locale, name, theme)
+	policy := settings.CrawlerPolicy().NoIndex()
+	if d, ok := h.localized.Load(locale); ok {
+		if d := d.(*localizedDocuments); d.name == name && d.theme == theme && d.policy == policy {
+			return d, nil
+		}
+	}
+	return h.render(locale, name, theme, policy)
 }
 
-// render renders the documents of a default locale that show the instance name and the theme,
-// and caches them in place of those of an earlier name or theme.
-func (h *Handler) render(locale, name string, theme themeState) (*localizedDocuments, error) {
+// render renders the documents of a default locale that show the instance name, the theme, and
+// the crawler policy, and caches them in place of those of an earlier name, theme, or policy.
+func (h *Handler) render(locale, name string, theme themeState, policy instance.CrawlerPolicy) (*localizedDocuments, error) {
+	crawlers := directivesOf(policy)
 	shell, err := renderShell(shellData{
-		Lang: locale, Dir: i18n.Direction(locale), Title: name, Theme: theme,
+		Lang: locale, Dir: i18n.Direction(locale), Title: name, Theme: theme, Crawlers: crawlers,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, HasThemeScript: h.hasThemeScript, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config: h.runtimeConfig(locale, name),
 	})
 	if err != nil {
 		return nil, err
 	}
+	shell.crawlers = &crawlers
+	// The headers state more than the meta tags (Content-Usage tells deny_training from deny), so
+	// the ETag covers the policy too.
+	shell.etag = etag([]byte(string(shell.body) + "\x00" + string(policy.Search) + "\x00" + string(policy.AI)))
 	manifest, err := renderWebManifest(locale, name, theme, h.icons)
 	if err != nil {
 		return nil, err
 	}
-	d := &localizedDocuments{name: name, theme: theme, shell: shell, manifest: manifest}
+	d := &localizedDocuments{name: name, theme: theme, policy: policy, shell: shell, manifest: manifest}
 	h.localized.Store(locale, d)
 	return d, nil
 }
@@ -377,12 +400,15 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathWebManifest, http.HandlerFunc(h.webManifest))
 	r.Handle("GET "+PathDefaultImage, http.HandlerFunc(h.serveDefaultImage))
 	r.Handle("GET "+PathTheme+"{file}", http.HandlerFunc(h.serveThemeStylesheet))
+	r.Handle("GET "+PathRobots, http.HandlerFunc(h.serveRobots))
+	r.Handle("GET "+PathTDMRep, http.HandlerFunc(h.serveTDMRep))
+	r.Handle("GET "+PathSecurityTxt, http.HandlerFunc(h.serveSecurityTxt))
 }
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one
 // has the requested name, the server's 404 under the paths of other endpoints, the shell with
-// link preview meta tags at the landing page (/) and at profile and post pages, and the generic
-// shell otherwise.
+// link preview meta tags at the pages about the instance (/ and /about) and at profile and post
+// pages, and the generic shell otherwise.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if (r.Method != http.MethodGet && r.Method != http.MethodHead) || reserved(p) {
@@ -400,8 +426,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if p == "/" {
-		h.serveLanding(w, r)
+	if p == pathLanding || p == pathAbout {
+		h.serveInstancePage(w, r, p)
 		return
 	}
 	if h.o.Previews != nil {
@@ -496,9 +522,13 @@ func (h *Handler) serveFile(w http.ResponseWriter, r *http.Request, name, cacheC
 	http.ServeContent(w, r, name, time.Time{}, content)
 }
 
-// serve writes the document with its ETag, answering conditional requests.
+// serve writes the document with its ETag and its crawler headers, answering conditional
+// requests.
 func (d document) serve(w http.ResponseWriter, r *http.Request) {
 	hd := w.Header()
+	if d.crawlers != nil {
+		d.crawlers.set(hd)
+	}
 	hd.Set("Content-Type", d.contentType)
 	hd.Set("ETag", d.etag)
 	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(d.body))

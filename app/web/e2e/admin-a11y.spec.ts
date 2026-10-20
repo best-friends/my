@@ -31,6 +31,7 @@ const moderator = {
   created_at: "2026-10-01T00:00:00Z",
   discoverable: true,
   indexable: true,
+  ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
   permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks"],
@@ -257,6 +258,10 @@ const instanceSettings: Schemas["AdminSettingList"] = {
     { key: "authorized_fetch", kind: "bool", value: "false", default: "false", stored: false },
     { key: "domain_actions_visibility", kind: "enum", value: "none", default: "none", stored: false, choices: ["none", "users", "all"] },
     { key: "domain_actions_rationale_visibility", kind: "enum", value: "none", default: "none", stored: false, choices: ["none", "users", "all"] },
+    { key: "search_indexing", kind: "enum", value: "deny", default: "deny", stored: false, choices: ["allow", "deny"] },
+    { key: "ai_usage", kind: "enum", value: "deny", default: "deny", stored: false, choices: ["allow", "deny_training", "deny"] },
+    { key: "indexable_default", kind: "bool", value: "false", default: "false", stored: false },
+    { key: "security_contact", kind: "uri", value: "", default: "", stored: false },
   ],
 };
 

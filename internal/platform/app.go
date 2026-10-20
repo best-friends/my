@@ -138,6 +138,8 @@ type App struct {
 	Interactions *content.Interactions
 	// Statuses presents statuses, their threads and history, and bookmarks to a viewer.
 	Statuses *content.Reader
+	// AutoDelete holds the users' automatic deletion of their old posts and runs it (FR-118).
+	AutoDelete *content.AutoDelete
 	// Timeline reads the home, local, hashtag, and profile timelines (FR-201 to FR-204).
 	Timeline *timeline.Service
 	// Moderation records the actions on domains and accounts and the reports received from
@@ -336,6 +338,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks = d.WebhookRepository()
 		retention = retentionRepositories{
 			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -362,6 +365,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks = d.WebhookRepository()
 		retention = retentionRepositories{
 			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -488,6 +492,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RegistrationMode: func(ctx context.Context) (domainidentity.RegistrationMode, error) {
 			mode, err := a.Instance.RegistrationMode(ctx)
 			return domainidentity.RegistrationMode(mode), err
+		},
+		// New accounts take the instance's indexable default (FR-412, ADR-0057).
+		IndexableDefault: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.IndexableDefault(), err
 		},
 		Mailer: a.Mailer,
 		// The registration page screens sign-ups against the sign-up block list (FR-719).
@@ -658,7 +667,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	api := clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,
@@ -787,8 +796,11 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		// The instance theme (ADR-0059), read per request so that a saved theme applies at once.
 		Theme:         a.Instance.Theme,
 		ThemeRevision: a.themeRevision,
-		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:        a.Logger,
+		// What /robots.txt, the pages, and /.well-known/ state to crawlers (ADR-0057), read per request.
+		Settings: a.Instance.Settings,
+		Now:      a.Clock.Now,
+		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:   a.Logger,
 	})
 	if err != nil {
 		return err

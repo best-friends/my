@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the settings feature (web-client.md §7): the user's own profile and
-// preferences, two-factor authentication, the lists of blocks, mutes and follow requests, the archives of the user's
+// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes and follow requests, the archives of the user's
 // data, the CSV exports and imports, and deleting the account. Unblocking and unmuting are the account
 // actions of the profile feature's handlers.
 import { http, HttpResponse } from "msw";
@@ -25,7 +25,27 @@ export const totpSetupFixture: Schemas["TotpSetup"] = {
 /** The recovery codes that turning two-factor authentication on, or replacing them, answers by default. */
 export const recoveryCodesFixture: Schemas["RecoveryCodes"] = { recovery_codes: ["abcd-efgh-ijkl-mnop", "qrst-uvwx-yz23-4567"] };
 
+/** The viewer's automatic deletion of old posts by default: the server's default policy, disabled. */
+export const autoDeletePolicyFixture: Schemas["AutoDeletePolicy"] = {
+  enabled: false,
+  min_age_days: 30,
+  keep_pinned: true,
+  keep_bookmarked: true,
+  keep_favourited: true,
+  keep_media: false,
+  keep_polls: false,
+  keep_visibilities: ["direct"],
+  keep_min_boosts: 0,
+  keep_min_favourites: 0,
+};
+
 export const handlers = [
+  // operationIds getAutoDeletePolicy, updateAutoDeletePolicy: the server answers the policy it saved.
+  http.get(`${apiBase}/preferences/auto_delete`, ({ request }) => withViewer(request, () => HttpResponse.json(autoDeletePolicyFixture))),
+  http.put(`${apiBase}/preferences/auto_delete`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["AutoDeletePolicy"];
+    return withViewer(request, () => HttpResponse.json(body));
+  }),
   // operationIds getTwoFactor, setUpTotp, enableTotp, regenerateRecoveryCodes, disableTotp.
   http.get(`${apiBase}/two_factor`, ({ request }) => withViewer(request, () => HttpResponse.json(twoFactorOffFixture))),
   http.post(`${apiBase}/two_factor/totp/setup`, ({ request }) => withViewer(request, () => HttpResponse.json(totpSetupFixture))),

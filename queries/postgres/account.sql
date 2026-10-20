@@ -8,9 +8,9 @@ INSERT INTO local_accounts (account_id, user_id, username, username_normalized) 
 
 -- name: InsertProfileRevision :exec
 INSERT INTO account_profile_revisions (
-  id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable,
+  id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable, ai_opt_out,
   avatar_media_id, header_media_id, revised_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
 
 -- name: InsertProfileField :exec
 INSERT INTO account_profile_fields (revision_id, position, name, value_html) VALUES ($1, $2, $3, $4);
@@ -136,7 +136,7 @@ WHERE username_normalized = $1 AND domain = $2;
 SELECT account_id, username, username_normalized, domain FROM account_handles WHERE account_id = $1;
 
 -- name: GetProfileRevision :one
-SELECT id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable,
+SELECT id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable, ai_opt_out,
   avatar_media_id, header_media_id, revised_at
 FROM account_profile_revisions WHERE id = $1;
 

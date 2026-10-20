@@ -181,6 +181,7 @@ my instance set domain_actions_rationale_visibility users
 - `-obfuscate`（`obfuscate`）を付けた処分は、ドメインの中ほど半分の文字（ドット以外）を `*` に置き換えて公開します（`bad.example` → `bad.*****le`）。
   知っているドメインの SHA-256 と比べれば、伏せたドメインかどうかを確かめられます。
 - `reject_media`・`reject_reports`・`force_sensitive` の処分と、解除・期限切れの処分は公開しません。
+- Web クライアントのインスタンスの情報ページ（`https://<host>/about`）は、この一覧を同じ設定に従って出します。`none` では一覧の区画を出さず、`users` ではサインインしていない人に、ログインした利用者だけが見られることを出します。
 
 ## 通報
 

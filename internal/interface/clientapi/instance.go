@@ -62,6 +62,8 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength()}
 	out.Timelines = InstanceTimelines{Local: settings.LocalTimelineEnabled(), Federated: settings.FederatedTimelineEnabled()}
 	out.SendsEmail = s.o.SendsEmail
+	// What the instance states to search engines and AI crawlers (FR-725, ADR-0057).
+	out.SearchIndexing, out.AiUsage = SearchIndexing(settings.SearchIndexing()), AIUsage(settings.AIUsage())
 	if key := s.pushServerKey(); key != "" {
 		out.PushServerKey = &key
 	}

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtChar123acctChar125RouteImport } from './routes/@{$acct}'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
@@ -43,6 +44,7 @@ import { Route as ModerationSignupBlocksRouteImport } from './routes/moderation.
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
+import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
 import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
@@ -67,6 +69,11 @@ const IndexRoute = IndexRouteImport.update({
 const AtChar123acctChar125Route = AtChar123acctChar125RouteImport.update({
   id: '/@{$acct}',
   path: '/@{$acct}',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookmarksRoute = BookmarksRouteImport.update({
@@ -231,6 +238,11 @@ const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
   path: '/settings/account-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAutoDeleteRoute = SettingsAutoDeleteRouteImport.update({
+  id: '/settings/auto-delete',
+  path: '/settings/auto-delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
   id: '/settings/blocks',
   path: '/settings/blocks',
@@ -313,6 +325,7 @@ const AtChar123acctChar125StatusIdHistoryRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/about': typeof AboutRoute
   '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
@@ -342,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
@@ -364,6 +378,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/about': typeof AboutRoute
   '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
@@ -393,6 +408,7 @@ export interface FileRoutesByTo {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
@@ -416,6 +432,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/about': typeof AboutRoute
   '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
@@ -445,6 +462,7 @@ export interface FileRoutesById {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/import-export': typeof SettingsImportExportRoute
@@ -469,6 +487,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/@{$acct}'
+    | '/about'
     | '/bookmarks'
     | '/home'
     | '/local'
@@ -498,6 +517,7 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/import-export'
@@ -520,6 +540,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/@{$acct}'
+    | '/about'
     | '/bookmarks'
     | '/home'
     | '/local'
@@ -549,6 +570,7 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/import-export'
@@ -571,6 +593,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/@{$acct}'
+    | '/about'
     | '/bookmarks'
     | '/home'
     | '/local'
@@ -600,6 +623,7 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/import-export'
@@ -623,6 +647,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtChar123acctChar125Route: typeof AtChar123acctChar125Route
+  AboutRoute: typeof AboutRoute
   BookmarksRoute: typeof BookmarksRoute
   HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
@@ -652,6 +677,7 @@ export interface RootRouteChildren {
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
+  SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
   SettingsImportExportRoute: typeof SettingsImportExportRoute
@@ -686,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}'
       fullPath: '/@{$acct}'
       preLoaderRoute: typeof AtChar123acctChar125RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/bookmarks': {
@@ -912,6 +945,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/auto-delete': {
+      id: '/settings/auto-delete'
+      path: '/settings/auto-delete'
+      fullPath: '/settings/auto-delete'
+      preLoaderRoute: typeof SettingsAutoDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/blocks': {
       id: '/settings/blocks'
       path: '/settings/blocks'
@@ -1023,6 +1063,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtChar123acctChar125Route: AtChar123acctChar125Route,
+  AboutRoute: AboutRoute,
   BookmarksRoute: BookmarksRoute,
   HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
@@ -1052,6 +1093,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
+  SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
   SettingsImportExportRoute: SettingsImportExportRoute,

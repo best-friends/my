@@ -296,8 +296,11 @@ test.describe("the menu of the phones' tab bar", () => {
           - radio [checked]
           - radio
           - radio
+        - paragraph:
+          - link
     `);
-    await expect(sheet.getByRole("link")).toHaveText([/./, /./, /./]);
+    await expect(sheet.getByRole("link")).toHaveText([/./, /./, /./, /./]);
+    await expect(sheet.locator('a[href="/about"]')).toBeVisible();
     await expect(sheet.locator('a[href="/profile"]')).toBeVisible();
     await expect(sheet.locator('a[href="/bookmarks"]')).toBeVisible();
     await expect(sheet.locator('a[href="/settings"]')).toBeVisible();

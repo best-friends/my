@@ -246,6 +246,26 @@ describe("the server's policies", () => {
     expect(settings.patches).toHaveLength(1);
   });
 
+  test("sends what the server states to search engines and AI, and its security contact", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    // Unset, the server denies both.
+    expect(within(crawlers).getByRole("radio", { name: "Deny indexing" })).toBeChecked();
+    expect(within(crawlers).getByRole("radio", { name: "Deny training and use" })).toBeChecked();
+
+    await user.click(within(crawlers).getByRole("radio", { name: "Allow indexing" }));
+    await user.click(within(crawlers).getByRole("checkbox", { name: "New accounts allow search indexing" }));
+    await user.click(within(crawlers).getByRole("radio", { name: "Deny training" }));
+    await user.type(within(crawlers).getByRole("textbox", { name: "Security contact" }), "mailto:security@example.com");
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText(/^Saved the settings\./)).toBeInTheDocument();
+    expect(settings.patches).toEqual([
+      { values: { search_indexing: "allow", indexable_default: "true", ai_usage: "deny_training", security_contact: "mailto:security@example.com" } },
+    ]);
+  });
+
   test("sends the default language picked from the app's languages", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });

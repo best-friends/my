@@ -75,6 +75,7 @@ type AccountProfileRevision struct {
 	Bot           bool
 	Discoverable  bool
 	Indexable     bool
+	AiOptOut      bool
 	AvatarMediaID *string
 	HeaderMediaID *string
 	RevisedAt     time.Time
@@ -788,6 +789,20 @@ type Status struct {
 	InReplyToUri    *string
 	ConversationUri *string
 	PublishedAt     time.Time
+}
+
+type StatusAutoDeletePolicy struct {
+	AccountID         string
+	Enabled           bool
+	MinAgeDays        int32
+	KeepPinned        bool
+	KeepBookmarked    bool
+	KeepFavourited    bool
+	KeepMedia         bool
+	KeepPolls         bool
+	KeepMinBoosts     int32
+	KeepMinFavourites int32
+	UpdatedAt         time.Time
 }
 
 type StatusCounter struct {

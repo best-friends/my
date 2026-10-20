@@ -134,6 +134,36 @@ export interface paths {
         patch: operations["updatePreferences"];
         trace?: never;
     };
+    "/preferences/auto_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated user's automatic deletion of old posts
+         * @description The policy that deletes the user's own posts some days after their publication (FR-118).
+         *     A user who has never saved one gets the default policy, which is disabled.
+         */
+        get: operations["getAutoDeletePolicy"];
+        /**
+         * Replace the authenticated user's automatic deletion of old posts
+         * @description Replaces the whole policy. Once it is enabled, an hourly job deletes the user's posts
+         *     published more than `min_age_days` days ago, unless an exception keeps them, as the user
+         *     would delete them: each deletion is sent to the servers the post went to. A run deletes
+         *     at most 100 posts of a user, so a policy that finds more spreads their deletion over the
+         *     following hours. Boosts are not deleted. A 422 problem names the property that is invalid
+         *     in `detail`.
+         */
+        put: operations["updateAutoDeletePolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/delete": {
         parameters: {
             query?: never;
@@ -3178,7 +3208,25 @@ export interface components {
              */
             privacy_policy_url?: string;
             theme?: components["schemas"]["InstanceTheme"];
+            search_indexing: components["schemas"]["SearchIndexing"];
+            ai_usage: components["schemas"]["AIUsage"];
         };
+        /**
+         * @description Whether the instance lets search engines index its pages (the instance setting
+         *     `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+         *     that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+         *     the reverse.
+         * @enum {string}
+         */
+        SearchIndexing: "allow" | "deny";
+        /**
+         * @description What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+         *     `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+         *     and no use by AI search, assistants, and agents. An account can opt out of what the
+         *     instance allows (`ai_opt_out`), never the reverse.
+         * @enum {string}
+         */
+        AIUsage: "allow" | "deny_training" | "deny";
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
             /**
@@ -4175,8 +4223,18 @@ export interface components {
         CredentialAccount: components["schemas"]["Account"] & {
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable: boolean;
-            /** @description Whether the account's public posts may be indexed for search. */
+            /**
+             * @description Whether the account's profile and public posts may be indexed for search: by this
+             *     instance's search and, when the instance's `search_indexing` is `allow`, by search
+             *     engines (FR-412, ADR-0057). New accounts take the instance's default.
+             */
             indexable: boolean;
+            /**
+             * @description Whether the account's pages state that AI may neither train on nor use them
+             *     (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+             *     pages of this instance only; other servers and the media files do not carry it.
+             */
+            ai_opt_out: boolean;
             source: components["schemas"]["AccountSource"];
             posting: components["schemas"]["PostingLimits"];
             /**
@@ -4210,8 +4268,10 @@ export interface components {
             bot?: boolean;
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable?: boolean;
-            /** @description Whether the account's public posts may be indexed for search. */
+            /** @description Whether the account's profile and public posts may be indexed for search (FR-412). */
             indexable?: boolean;
+            /** @description Whether the account's pages state that AI may neither train on nor use them (FR-412). */
+            ai_opt_out?: boolean;
         };
         /** @description The authenticated user's preferences. */
         Preferences: {
@@ -4252,6 +4312,33 @@ export interface components {
             email_moderator_notifications?: boolean;
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
+        };
+        /**
+         * @description The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+         *     deleted once it was published more than `min_age_days` days ago, unless one of the
+         *     exceptions (the `keep_` properties) keeps it.
+         */
+        AutoDeletePolicy: {
+            /** @description Whether old posts are deleted. */
+            enabled: boolean;
+            /** @description How many days after its publication a post is deleted. */
+            min_age_days: number;
+            /** @description Keep the posts pinned to the profile. */
+            keep_pinned: boolean;
+            /** @description Keep the posts that the user bookmarked. */
+            keep_bookmarked: boolean;
+            /** @description Keep the posts that the user favourited. */
+            keep_favourited: boolean;
+            /** @description Keep the posts with media attachments. */
+            keep_media: boolean;
+            /** @description Keep the posts with a poll. */
+            keep_polls: boolean;
+            /** @description Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility. */
+            keep_visibilities: components["schemas"]["Visibility"][];
+            /** @description Keep the posts boosted at least this many times; 0 keeps none for their boosts. */
+            keep_min_boosts: number;
+            /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
+            keep_min_favourites: number;
         };
         /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
         TwoFactor: {
@@ -5655,14 +5742,15 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
+         *     `https:` or `mailto:` URI, or empty for none.
          * @enum {string}
          */
-        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media";
+        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "uri";
         /** @description New values of some instance settings, saved together. */
         UpdateInstanceSettingsRequest: {
             /** @description The new value of each setting to change, by key, as a string. */
@@ -6193,6 +6281,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAutoDeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The policy. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoDeletePolicy"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateAutoDeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutoDeletePolicy"];
+            };
+        };
+        responses: {
+            /** @description The policy as saved. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoDeletePolicy"];
                 };
             };
             default: components["responses"]["Problem"];
