@@ -11,12 +11,20 @@ function expectFocusInside(dialog: HTMLElement) {
   expect(dialog).toContainElement(document.activeElement as HTMLElement);
 }
 
-function EditProfile({ sheet = false }: { sheet?: boolean }) {
+/** The scrim behind the panel: the overlay that holds the modal that holds the dialog. */
+function scrimOf(dialog: HTMLElement): HTMLElement {
+  // eslint-disable-next-line testing-library/no-node-access -- the scrim has no role; it is the dialog's grandparent
+  const scrim = dialog.parentElement?.parentElement;
+  if (scrim == null) throw new Error("no scrim");
+  return scrim;
+}
+
+function EditProfile({ sheet = false, isDismissable = true }: { sheet?: boolean; isDismissable?: boolean }) {
   const Modal = sheet ? Sheet : Dialog;
   return (
     <DialogTrigger>
       <Button>Edit profile</Button>
-      <Modal title="Edit profile" closeLabel="Close">
+      <Modal title="Edit profile" closeLabel="Close" isDismissable={isDismissable}>
         {({ close }) => (
           <>
             <Button onPress={close}>Cancel</Button>
@@ -52,6 +60,29 @@ describe.each([
     await waitFor(() => {
       expect(trigger).toHaveFocus();
     });
+  });
+
+  it("closes on a press on the scrim and returns focus to the trigger", async () => {
+    const user = userEvent.setup();
+    render(<EditProfile sheet={sheet} />);
+    const trigger = screen.getByRole("button", { name: "Edit profile" });
+    await user.click(trigger);
+    await user.click(scrimOf(await screen.findByRole("dialog", { name: "Edit profile" })));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(trigger).toHaveFocus();
+    });
+  });
+
+  it("stays open on a press on the scrim when it is not dismissable", async () => {
+    const user = userEvent.setup();
+    render(<EditProfile sheet={sheet} isDismissable={false} />);
+    await user.click(screen.getByRole("button", { name: "Edit profile" }));
+    const dialog = await screen.findByRole("dialog", { name: "Edit profile" });
+    await user.click(scrimOf(dialog));
+    expect(dialog).toBeInTheDocument();
   });
 
   it("returns focus to the trigger after the × button closes it", async () => {

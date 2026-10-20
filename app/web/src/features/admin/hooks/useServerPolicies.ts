@@ -22,6 +22,7 @@ const policyKeys = [
   "authorized_fetch",
   "remote_media_policy",
   "remote_media_cache_ttl",
+  "link_cards_enabled",
   "domain_actions_visibility",
   "domain_actions_rationale_visibility",
   "search_indexing",

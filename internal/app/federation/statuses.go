@@ -85,6 +85,9 @@ type StatusHandlersDeps struct {
 	Profiles      OutboxAccounts
 	Relationships Relationships
 	Restrictions  AccountPolicy
+	// Pins mirrors the featured collections of remote accounts (JobFetchFeatured, ADR-0044);
+	// without Pins (or Profiles), featured collections are not fetched.
+	Pins RemotePins
 	// Relayed records the posts that only a relay brought in, and RelayPolicy keeps out those of
 	// restricted authors (ADR-0061); without Relayed, nothing a relay brings in is stored.
 	Relayed     RelayedStatuses

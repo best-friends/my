@@ -151,6 +151,12 @@ describe("the reactions of a post", () => {
     const [row] = await within(dialog).findAllByRole("listitem");
     expect(within(row as HTMLElement).getByRole("link", { name: /Bob/ })).toBeInTheDocument();
     expect(row).toHaveTextContent("👍");
+
+    // The × button closes it by click or tap alone.
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
   });
 
   test("are shown without buttons while nobody is signed in", async () => {

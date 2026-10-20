@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Dialog stories. The play functions are the dialog's behaviour tests (they run in Chromium with
-// `make ui-test`): focus moves in on open, Tab stays inside, Esc and the close buttons close it,
+// `make ui-test`): focus moves in on open, Tab stays inside, Esc, the close buttons and the scrim close it,
 // and focus returns to the trigger.
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, waitFor } from "storybook/test";
@@ -99,7 +99,7 @@ export const Small: Story = { ...Open, args: { size: "sm", title: "Sign out?" } 
 
 export const Large: Story = { ...Open, args: { size: "lg" } };
 
-/** A confirmation without a × button: it must be answered, and Esc still cancels. */
+/** A confirmation without a × button: Cancel answers it, and Esc and a press on the scrim cancel too. */
 export const AlertDialog: Story = {
   args: {
     role: "alertdialog",
@@ -122,7 +122,7 @@ export const AlertDialog: Story = {
   render: ({ title, children }) => (
     <DialogTrigger defaultOpen>
       <Button>Delete</Button>
-      <Dialog role="alertdialog" title={title}>
+      <Dialog role="alertdialog" closeLabel={null} title={title}>
         {children}
       </Dialog>
     </DialogTrigger>
@@ -157,9 +157,8 @@ export const LongContent: Story = {
   render: renderOpen,
 };
 
-/** With isDismissable, a press on the scrim closes the dialog. */
+/** A press on the scrim closes the dialog (isDismissable is on by default). */
 export const Dismissable: Story = {
-  args: { isDismissable: true },
   play: async ({ canvas, userEvent }) => {
     const trigger = canvas.getByRole("button", { name: "Edit profile" });
     await userEvent.click(trigger);

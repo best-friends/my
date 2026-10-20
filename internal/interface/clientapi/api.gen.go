@@ -1129,6 +1129,7 @@ const (
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
+	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
@@ -1168,6 +1169,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyFederatedTimelineEnabled:
 		return true
 	case InstanceSettingKeyIndexableDefault:
+		return true
+	case InstanceSettingKeyLinkCardsEnabled:
 		return true
 	case InstanceSettingKeyLocalTimelineEnabled:
 		return true
@@ -3074,7 +3077,7 @@ type AdminReportStatus struct {
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
 	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-	// empty, and its counts are zero.
+	// empty, its `card` is omitted, and its counts are zero.
 	Status Status `json:"status"`
 }
 
@@ -4374,6 +4377,66 @@ type LiftAccountActionRequest struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// LinkCard The card of the first link in a status (ADR-0062): the title, description, and image
+// that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+// after the status was posted or received. Omitted from a status with attachments or a
+// poll, from a status whose link has no card yet, and when the instance setting
+// `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+// it was posted may have none.
+//
+// Clients show the card as one link to `url` and, under a content warning, only once the
+// warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+// shows it.
+type LinkCard struct {
+	// Author The account that the page names as its creator (`fediverse:creator`), given only when
+	// the account's server lists the page's domain among its `attributionDomains`.
+	Author *Account `json:"author,omitempty"`
+
+	// AuthorName The author that the page names, as plain text; omitted when it names none.
+	AuthorName *string `json:"author_name,omitempty"`
+
+	// Description The description of the page, as plain text; empty when it has none.
+	Description string `json:"description"`
+
+	// Image The image of a link card, served by this server's media proxy in the small size of an
+	// attachment's image. An animated image is its first frame.
+	Image *LinkCardImage `json:"image,omitempty"`
+
+	// Language The BCP 47 language of the page; omitted when it does not say.
+	Language *string `json:"language,omitempty"`
+
+	// PublishedAt When the page says it was published; omitted when it does not say.
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+
+	// SiteName The name of the site, as plain text; the host of `url` when the page names none.
+	SiteName string `json:"site_name"`
+
+	// Title The title of the page, as plain text.
+	Title string `json:"title"`
+
+	// Url The page that the card links to, after redirects.
+	Url string `json:"url"`
+}
+
+// LinkCardImage The image of a link card, served by this server's media proxy in the small size of an
+// attachment's image. An animated image is its first frame.
+type LinkCardImage struct {
+	// Blurhash The blurhash (https://blurha.sh) of the image, to show while it loads.
+	Blurhash *string `json:"blurhash,omitempty"`
+
+	// Description The alternative text of the image (`og:image:alt`); omitted when it has none.
+	Description *string `json:"description,omitempty"`
+
+	// Height The height of the original image in pixels.
+	Height int `json:"height"`
+
+	// Url The image through the media proxy.
+	Url string `json:"url"`
+
+	// Width The width of the original image in pixels.
+	Width int `json:"width"`
+}
+
 // MediaAnimatedVariants The moving renditions of an animation, absent for a still image: animated WebP for
 // `small` and `medium`, and a GIF for `large`.
 type MediaAnimatedVariants struct {
@@ -5370,7 +5433,7 @@ type SpoilerText = string
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
 // `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-// empty, and its counts are zero.
+// empty, its `card` is omitted, and its counts are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
@@ -5386,7 +5449,7 @@ type Status struct {
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
 	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-	// empty, and its counts are zero.
+	// empty, its `card` is omitted, and its counts are zero.
 	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
@@ -5394,6 +5457,18 @@ type Status struct {
 
 	// BoostsCount The number of boosts.
 	BoostsCount int `json:"boosts_count"`
+
+	// Card The card of the first link in a status (ADR-0062): the title, description, and image
+	// that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+	// after the status was posted or received. Omitted from a status with attachments or a
+	// poll, from a status whose link has no card yet, and when the instance setting
+	// `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+	// it was posted may have none.
+	//
+	// Clients show the card as one link to `url` and, under a content warning, only once the
+	// warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+	// shows it.
+	Card *LinkCard `json:"card,omitempty"`
 
 	// Content The text as sanitized HTML, with mentions, hashtags, and URLs linked. The HTML of a
 	// remote status is what the server's sanitizer kept of the received document (ADR-0019 §2).
@@ -6108,7 +6183,7 @@ type AccountProfile = Account
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
 // `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-// empty, and its counts are zero.
+// empty, its `card` is omitted, and its counts are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.

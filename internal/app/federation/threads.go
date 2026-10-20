@@ -78,6 +78,7 @@ func fetchObjectJob(p fetchObjectPayload) (queue.NewJob, error) {
 func (h *StatusHandlers) RegisterJobs(r *queue.JobHandlerRegistry) {
 	r.Register(JobFetchObject, h.handleFetchObject)
 	r.Register(JobFetchOutbox, h.handleFetchOutbox)
+	r.Register(JobFetchFeatured, h.handleFetchFeatured)
 }
 
 // fetchParentTx enqueues in tx the fetch of the parent of a reply that was just ingested, when

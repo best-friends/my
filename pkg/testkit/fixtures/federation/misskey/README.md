@@ -22,6 +22,10 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
   `renderOrderedCollectionPage` of `ApRendererService` and wraps them in `addContext`; `packActivity` renders the items. The items
   are the captured `2026.10/create-note-unlisted.json`, `announce.json`, `create-note-reply.json`, and `create-note.json` without
   their `@context` (the outbox lists only `public` and `home` notes), newest first.
+- `2026.10/featured.json` is what Misskey 2026.10.0 serves for grace's featured collection, rendered from its source: `featured` of
+  `ActivityPubServerService` renders the pinned `public` and `home` notes with `renderNote` into `renderOrderedCollection` and wraps
+  it in `addContext` (the `@context` of `2026.10/outbox.json`). The items are the objects of the captured `2026.10/create-note.json`
+  and `create-note-unlisted.json`, the newest pin first (the public note was pinned last).
 
 | File | Source | License |
 | --- | --- | --- |
@@ -52,6 +56,7 @@ See [pkg/testkit/README.md](../../../README.md#federation-fixtures) for the layo
 | `2026.10/undo-like-reaction.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Undo` of that reaction | capture |
 | `2026.10/delete-note.json` | capture of Misskey 2026.10.0, 2026-10-17: the `Delete` of a note | capture |
 | `2026.10/outbox.json` | `outbox` of [server/ActivityPubServerService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/server/ActivityPubServerService.ts) and `renderOrderedCollection` of [core/activitypub/ApRendererService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/core/activitypub/ApRendererService.ts) | AGPL-3.0 |
+| `2026.10/featured.json` | `featured` of [server/ActivityPubServerService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/server/ActivityPubServerService.ts) and `renderOrderedCollection` of [core/activitypub/ApRendererService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/core/activitypub/ApRendererService.ts): the captured notes above | AGPL-3.0 |
 | `2026.10/outbox-page.json` | the same, with `renderOrderedCollectionPage` and `packActivity`: the captured notes and renote above | AGPL-3.0 |
 | `2026.10/create-note-emoji.json` | `2026.10/create-note.json` with a custom emoji `:blobcat:` in the text and the `tag` that `renderEmoji` of [ApRendererService.ts](https://github.com/misskey-dev/misskey/blob/2026.10.0/packages/backend/src/core/activitypub/ApRendererService.ts) renders for it (`renderNote`); the note id ends in `e` | AGPL-3.0 |
 | `2025.4/actor-emoji.json` | `2025.4/actor.json` with `:blobcat:` in `name` and `summary` and the `tag` of `renderPerson` with `renderEmoji` of [ApRendererService.ts](https://github.com/misskey-dev/misskey/blob/2025.4.0/packages/backend/src/core/activitypub/ApRendererService.ts) | AGPL-3.0 |

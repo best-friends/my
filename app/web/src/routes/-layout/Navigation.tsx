@@ -281,7 +281,7 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
         </span>
         <span className={labelClass}>{t("client:shell.nav.menu")}</span>
       </Button>
-      <Sheet title={t("client:shell.menu.title")} closeLabel={t("client:shell.menu.close")} isDismissable>
+      <Sheet title={t("client:shell.menu.title")} closeLabel={t("client:shell.menu.close")}>
         <ul className="flex flex-col">
           {items.map((item) => {
             const badge = badgeOf(item.section);
