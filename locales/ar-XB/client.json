@@ -2975,6 +2975,10 @@
     "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ɔonʅp uoʇ ɥɐupʅǝ ʇɥǝ ɹǝbnǝsʇ (ǝɹɹoɹ {status}). ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "bookmarks.title": {
+    "defaultMessage": "‮Ԑooʞɯɐɹʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.close": {
     "defaultMessage": "‮Ↄʅosǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4407,6 +4411,10 @@
     "defaultMessage": "‮∀pɯıuısʇɹɐʇıou, {count,plural,one{# dǝupıuƃ} other{# dǝupıuƃ}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.bookmarks": {
+    "defaultMessage": "‮Ԑooʞɯɐɹʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.home": {
     "defaultMessage": "‮Hoɯǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4661,6 +4669,14 @@
   },
   "timeline.empty.account.heading": {
     "defaultMessage": "‮No dosʇs ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.bookmarks.description": {
+    "defaultMessage": "‮Ԁosʇs ʎon qooʞɯɐɹʞ ɐddǝɐɹ ɥǝɹǝ. Ouʅʎ ʎon ɔɐu sǝǝ ʎonɹ qooʞɯɐɹʞs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.bookmarks.heading": {
+    "defaultMessage": "‮No qooʞɯɐɹʞs ʎǝʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.empty.home.action": {

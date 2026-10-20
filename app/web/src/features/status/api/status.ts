@@ -75,6 +75,9 @@ function isAccountStatusesQuery(queryKey: QueryKey, accountId: string): boolean 
  * `last` press: an answer to an earlier press does not undo a later one still on its way. A boost is also an
  * entry of the viewer's home timeline and of their own posts, which it joins or leaves: those lists are marked,
  * and only marked stale: a list on screen keeps its top (Y7), and a list opened next is fetched again before it shows (S7).
+ * A bookmark likewise joins or leaves the viewer's list of bookmarks, which is only marked: on the bookmarks page a
+ * removed post stays, shown unbookmarked, so that the press can be undone and focus stays on its button; the post is
+ * gone when the list is opened again.
  */
 export function cacheRelationAnswer(queryClient: QueryClient, id: string, relation: Relation, answer: Status, last: boolean, viewerId: string): void {
   if (last) {
@@ -86,6 +89,9 @@ export function cacheRelationAnswer(queryClient: QueryClient, id: string, relati
       predicate: (query) => query.queryKey[1] === "/timelines/home" || isAccountStatusesQuery(query.queryKey, viewerId),
       refetchType: "none",
     });
+  }
+  if (relation === "bookmark") {
+    void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[1] === "/bookmarks", refetchType: "none" });
   }
 }
 

@@ -2975,6 +2975,10 @@
     "defaultMessage": "The server could not handle the request (error {status}). Try again later.",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
   },
+  "bookmarks.title": {
+    "defaultMessage": "Bookmarks",
+    "description": "Heading and document title of the page that lists the posts the user bookmarked. Bookmarks are private."
+  },
   "compose.close": {
     "defaultMessage": "Close",
     "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
@@ -4407,6 +4411,10 @@
     "defaultMessage": "Administration, {count, plural, one {# pending} other {# pending}}",
     "description": "Accessible name of the navigation item to the admin screens while open reports or registrations awaiting approval wait for the moderators; starts with the visible label."
   },
+  "shell.nav.bookmarks": {
+    "defaultMessage": "Bookmarks",
+    "description": "Navigation item that opens the list of the posts the user bookmarked. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
   "shell.nav.home": {
     "defaultMessage": "Home",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -4662,6 +4670,14 @@
   "timeline.empty.account.heading": {
     "defaultMessage": "No posts yet",
     "description": "Shown instead of the posts of a profile's tab when it has none."
+  },
+  "timeline.empty.bookmarks.description": {
+    "defaultMessage": "Posts you bookmark appear here. Only you can see your bookmarks.",
+    "description": "Text under the heading of the empty list of bookmarks."
+  },
+  "timeline.empty.bookmarks.heading": {
+    "defaultMessage": "No bookmarks yet",
+    "description": "Heading shown instead of posts when the user has bookmarked none."
   },
   "timeline.empty.home.action": {
     "defaultMessage": "Browse the local timeline",

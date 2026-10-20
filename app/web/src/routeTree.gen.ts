@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtChar123acctChar125RouteImport } from './routes/@{$acct}'
+import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
@@ -55,6 +56,11 @@ const IndexRoute = IndexRouteImport.update({
 const AtChar123acctChar125Route = AtChar123acctChar125RouteImport.update({
   id: '/@{$acct}',
   path: '/@{$acct}',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookmarksRoute = BookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -238,6 +244,7 @@ const AdminReportsIdRoute = AdminReportsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -277,6 +284,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -358,6 +367,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -436,6 +447,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -476,6 +488,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtChar123acctChar125Route: typeof AtChar123acctChar125Route
+  BookmarksRoute: typeof BookmarksRoute
   HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
   LoginRoute: typeof LoginRoute
@@ -527,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}'
       fullPath: '/@{$acct}'
       preLoaderRoute: typeof AtChar123acctChar125RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookmarks': {
+      id: '/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof BookmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -780,6 +800,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtChar123acctChar125Route: AtChar123acctChar125Route,
+  BookmarksRoute: BookmarksRoute,
   HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
   LoginRoute: LoginRoute,

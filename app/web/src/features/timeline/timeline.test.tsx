@@ -281,3 +281,108 @@ describe("the home timeline", () => {
     expect(screen.getByRole("link", { name: "Browse the local timeline" })).toHaveAttribute("href", "/local");
   });
 });
+
+describe("the bookmarks", () => {
+  test("send to sign in without a session, and back here after it", async () => {
+    const { router } = await renderApp({ path: "/bookmarks" });
+
+    await screen.findByRole("heading", { level: 1 });
+    expect(router.state.location.pathname).toBe("/login");
+    expect(router.state.location.search).toEqual({ return_to: "/bookmarks" });
+  });
+
+  test("list the bookmarked posts as a feed, opened from the navigation", async () => {
+    server.use(http.post(oauthPaths.refresh, () => tokenResponse("test-access-token")));
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("feed", { name: "Home" });
+    const navigation = screen.getByRole("navigation", { name: "Main" });
+
+    await user.click(within(navigation).getByRole("link", { name: "Bookmarks" }));
+
+    const feed = await screen.findByRole("feed", { name: "Bookmarks" });
+    const article = within(feed).getByRole("article", { description: "Hello from the local timeline!" });
+    expect(within(article).getByRole("button", { name: "Bookmark", pressed: true })).toBeInTheDocument();
+    expect(within(navigation).getByRole("link", { name: "Bookmarks" })).toHaveAttribute("aria-current", "page");
+  });
+
+  test("load the older pages by their cursor", async () => {
+    const cursors: (string | null)[] = [];
+    server.use(
+      http.post(oauthPaths.refresh, () => tokenResponse("test-access-token")),
+      http.get(`${apiBase}/bookmarks`, ({ request }) => {
+        const cursor = new URL(request.url).searchParams.get("cursor");
+        cursors.push(cursor);
+        return HttpResponse.json(cursor === null ? statusPage([status(1, { bookmarked: true })], "page-2") : statusPage([status(2, { bookmarked: true })]));
+      }),
+    );
+    const { user } = await renderApp({ path: "/bookmarks" });
+    const feed = await screen.findByRole("feed", { name: "Bookmarks" });
+
+    await user.click(screen.getByRole("button", { name: "Load more posts" }));
+
+    expect(await within(feed).findByRole("article", { description: "Post 2" })).toBeInTheDocument();
+    expect(cursors).toEqual([null, "page-2"]);
+  });
+
+  test("say what fills an empty list", async () => {
+    server.use(
+      http.post(oauthPaths.refresh, () => tokenResponse("test-access-token")),
+      http.get(`${apiBase}/bookmarks`, () => HttpResponse.json(statusPage([]))),
+    );
+    await renderApp({ path: "/bookmarks" });
+
+    expect(await screen.findByRole("heading", { level: 2, name: "No bookmarks yet" })).toBeInTheDocument();
+    expect(screen.getByText("Posts you bookmark appear here. Only you can see your bookmarks.")).toBeInTheDocument();
+  });
+
+  test("gain a post bookmarked elsewhere, and lose one whose bookmark is removed once opened again", async () => {
+    const bookmarked = new Map<string, Status>();
+    const local = status(1);
+    server.use(
+      http.post(oauthPaths.refresh, () => tokenResponse("test-access-token")),
+      http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([{ ...local, bookmarked: bookmarked.has(local.id) }]))),
+      http.get(`${apiBase}/bookmarks`, () => HttpResponse.json(statusPage([...bookmarked.values()]))),
+      http.post(`${apiBase}/statuses/:id/bookmark`, () => {
+        const answer = { ...local, bookmarked: true };
+        bookmarked.set(local.id, answer);
+        return HttpResponse.json(answer);
+      }),
+      http.delete(`${apiBase}/statuses/:id/bookmark`, () => {
+        bookmarked.delete(local.id);
+        return HttpResponse.json({ ...local, bookmarked: false });
+      }),
+    );
+    const { user } = await renderApp({ path: "/bookmarks" });
+    expect(await screen.findByRole("heading", { level: 2, name: "No bookmarks yet" })).toBeInTheDocument();
+    const navigation = screen.getByRole("navigation", { name: "Main" });
+
+    await user.click(within(navigation).getByRole("link", { name: "Local" }));
+    const timeline = await screen.findByRole("feed", { name: "Local timeline" });
+    await user.click(within(timeline).getByRole("button", { name: "Bookmark", pressed: false }));
+    expect(await within(politeAnnouncer()).findByText("Bookmarked")).toBeInTheDocument();
+    await user.click(within(navigation).getByRole("link", { name: "Bookmarks" }));
+
+    const feed = await screen.findByRole("feed", { name: "Bookmarks" });
+    const toggle = within(within(feed).getByRole("article", { description: "Post 1" })).getByRole("button", { name: "Bookmark", pressed: true });
+
+    await user.click(toggle);
+
+    // The list being read keeps the post, shown unbookmarked, so that the press can be undone.
+    expect(await within(politeAnnouncer()).findByText("Bookmark removed")).toBeInTheDocument();
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(within(feed).getByRole("article", { description: "Post 1" })).toBeInTheDocument();
+
+    await user.click(within(navigation).getByRole("link", { name: "Local" }));
+    await screen.findByRole("feed", { name: "Local timeline" });
+    await user.click(within(navigation).getByRole("link", { name: "Bookmarks" }));
+
+    expect(await screen.findByRole("heading", { level: 2, name: "No bookmarks yet" })).toBeInTheDocument();
+  });
+});
+
+/** The announcer's polite live region; the app's offline bar is another status region, empty while online. */
+function politeAnnouncer(): HTMLElement {
+  const region = screen.getAllByRole("status").find((element) => element.hasAttribute("data-live-announcer"));
+  if (region === undefined) throw new Error("the announcer is not rendered");
+  return region;
+}

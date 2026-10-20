@@ -1490,6 +1490,8 @@ export interface MessageArgs {
   "client:api.error.offline": {};
   /** The server could not handle the request (error {status}). Try again later. */
   "client:api.error.status": { status: string };
+  /** Bookmarks */
+  "client:bookmarks.title": {};
   /** Close */
   "client:compose.close": {};
   /** Could not send the post: {reason} */
@@ -2206,6 +2208,8 @@ export interface MessageArgs {
   "client:shell.nav.admin": {};
   /** Administration, {count, plural, one {# pending} other {# pending}} */
   "client:shell.nav.admin_pending": { count: number };
+  /** Bookmarks */
+  "client:shell.nav.bookmarks": {};
   /** Home */
   "client:shell.nav.home": {};
   /** Main */
@@ -2334,6 +2338,10 @@ export interface MessageArgs {
   "client:timeline.content_warning.toggle": {};
   /** No posts yet */
   "client:timeline.empty.account.heading": {};
+  /** Posts you bookmark appear here. Only you can see your bookmarks. */
+  "client:timeline.empty.bookmarks.description": {};
+  /** No bookmarks yet */
+  "client:timeline.empty.bookmarks.heading": {};
   /** Browse the local timeline */
   "client:timeline.empty.home.action": {};
   /** Your posts and the posts of the people you follow appear here. */
