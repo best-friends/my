@@ -72,6 +72,9 @@ type MediaDeps struct {
 	Limits media.Limits
 	// Sizes bound the variants; zero fields take media.DefaultSizes.
 	Sizes media.Sizes
+	// AVLimits bound video and audio uploads (ADR-0054 §6); zero fields take
+	// media.DefaultAVLimits.
+	AVLimits media.AVLimits
 	// UnattachedTTL is how long an upload may stay unattached; zero means DefaultUnattachedTTL.
 	UnattachedTTL time.Duration
 	Referrers     []MediaReferrer
@@ -94,6 +97,11 @@ type MediaDeps struct {
 // media/<id>/<result>/<size>-animated.<ext>), so that they never change and can be cached for
 // good. Then the job deletes the file as received, so that no location data is kept. Using a
 // file for another purpose processes its large variant again for that purpose.
+//
+// A video or audio file is never transcoded (ADR-0054 §6): the job remuxes it without metadata
+// into one large animated variant (media/<id>/<result>/large-animated.<ext>), and processes the
+// poster that the client sent with it, or else the cover embedded in the file, into the still
+// variants and the blurhash of an attachment.
 type MediaService struct {
 	d MediaDeps
 }
@@ -102,6 +110,7 @@ type MediaService struct {
 func NewMediaService(d MediaDeps) *MediaService {
 	d.Limits = d.Limits.WithDefaults()
 	d.Sizes = d.Sizes.WithDefaults()
+	d.AVLimits = d.AVLimits.WithDefaults()
 	if d.UnattachedTTL <= 0 {
 		d.UnattachedTTL = DefaultUnattachedTTL
 	}
@@ -111,8 +120,11 @@ func NewMediaService(d MediaDeps) *MediaService {
 	return &MediaService{d: d}
 }
 
-// Limits returns the upload limits in effect.
+// Limits returns the upload limits of images in effect.
 func (s *MediaService) Limits() media.Limits { return s.d.Limits }
+
+// MaxUploadBytes returns the size limit of an uploaded file, an image or a video or audio file.
+func (s *MediaService) MaxUploadBytes() int64 { return max(s.d.Limits.MaxBytes, s.d.AVLimits.MaxBytes) }
 
 // RegisterJobs registers the media job handlers on reg and the cleanup schedule on sched.
 func (s *MediaService) RegisterJobs(reg *queue.JobHandlerRegistry, sched *queue.Scheduler) {
@@ -133,14 +145,20 @@ type UploadInput struct {
 	// Purpose is what the file is for, which picks the sizes of its variants; "" is
 	// content.PurposeAttachment.
 	Purpose content.MediaPurpose
+	// Poster is the image that a video or audio attachment shows before it plays, which the
+	// client takes from the file (ADR-0054 §6); nil for none. It is ignored for an image.
+	Poster io.Reader
 }
 
 // ErrInvalidPurpose reports an upload for an unknown purpose.
 var ErrInvalidPurpose = errors.New("content: unknown media purpose")
 
-// Upload checks and stores an upload and enqueues its processing. It fails with an error
-// wrapping media.ErrUnsupportedFormat, media.ErrTooLarge, media.ErrDimensions,
-// media.ErrCorrupt, or ErrContentTypeMismatch for content it does not accept, and with
+// Upload checks and stores an upload and enqueues its processing. An image is checked against
+// the image limits; a video or audio file (an attachment only) against the video and audio
+// limits, with its container parsed and its codecs checked. It fails with an error wrapping
+// media.ErrUnsupportedFormat (media.ErrUnsupportedCodec for a codec such as HEVC),
+// media.ErrTooLarge, media.ErrDimensions, media.ErrTooLong, media.ErrCorrupt,
+// ErrContentTypeMismatch, or ErrInvalidPoster for content it does not accept, and with
 // content.ErrDescriptionTooLong or content.ErrInvalidDescription for a description it does not
 // accept.
 func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error) {
@@ -153,23 +171,36 @@ func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error
 	if !in.Purpose.Valid() {
 		return Media{}, fmt.Errorf("%w: %q", ErrInvalidPurpose, in.Purpose)
 	}
-	data, err := io.ReadAll(io.LimitReader(in.Content, s.d.Limits.MaxBytes+1))
+	av := s.d.AVLimits
+	data, err := io.ReadAll(io.LimitReader(in.Content, s.MaxUploadBytes()+1))
 	if err != nil {
 		return Media{}, fmt.Errorf("content: read upload: %w", err)
 	}
-	probe, err := s.d.Processor.Inspect(ctx, data, s.d.Limits)
-	if err != nil {
-		return Media{}, err
-	}
-	if err := checkDeclaredType(in.DeclaredContentType, probe.Format); err != nil {
-		return Media{}, err
-	}
 	file := content.MediaFile{ID: s.d.IDs.NewID(), OwnerAccountID: in.OwnerAccountID, Origin: content.MediaOriginUpload, CreatedAt: s.d.Clock.Now()}
-	up := content.UploadedMedia{
-		MediaID: file.ID, BlobKey: uploadKey(file.ID), ContentType: probe.Format.ContentType(), FileSize: int64(len(data)),
+	up := content.UploadedMedia{MediaID: file.ID, BlobKey: uploadKey(file.ID), FileSize: int64(len(data))}
+	var poster []byte
+	if format := media.SniffAV(data); format != "" {
+		if up.ContentType, poster, err = s.checkAV(ctx, in, data, format, av); err != nil {
+			return Media{}, err
+		}
+	} else {
+		probe, err := s.d.Processor.Inspect(ctx, data, s.d.Limits)
+		if err != nil {
+			return Media{}, err
+		}
+		if err := checkDeclaredType(in.DeclaredContentType, probe.Format); err != nil {
+			return Media{}, err
+		}
+		up.ContentType = probe.Format.ContentType()
 	}
 	if _, err := s.d.Blobs.Put(ctx, up.BlobKey, bytes.NewReader(data), blob.PutOptions{ContentType: up.ContentType}); err != nil {
 		return Media{}, err
+	}
+	if poster != nil {
+		if _, err := s.d.Blobs.Put(ctx, posterKey(file.ID), bytes.NewReader(poster), blob.PutOptions{}); err != nil {
+			_ = s.d.Blobs.Delete(context.WithoutCancel(ctx), up.BlobKey)
+			return Media{}, err
+		}
 	}
 	job := processJob(file.ID, in.Purpose, "")
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
@@ -191,6 +222,7 @@ func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error
 	})
 	if err != nil {
 		_ = s.d.Blobs.Delete(context.WithoutCancel(ctx), up.BlobKey)
+		_ = s.d.Blobs.Delete(context.WithoutCancel(ctx), posterKey(file.ID))
 		return Media{}, err
 	}
 	if s.d.Outbox == nil {
@@ -200,6 +232,38 @@ func (s *MediaService) Upload(ctx context.Context, in UploadInput) (Media, error
 	}
 	return s.Media(ctx, file.ID)
 }
+
+// checkAV checks a video or audio upload of the container format against av (ADR-0054 §6): it
+// must be an attachment whose declared type, if any, is one of the container's, and its poster,
+// if any, an image within the image limits. It returns the media type of the file as served and
+// the poster.
+func (s *MediaService) checkAV(ctx context.Context, in UploadInput, data []byte, format media.Format, av media.AVLimits) (string, []byte, error) {
+	if in.Purpose != content.PurposeAttachment {
+		return "", nil, fmt.Errorf("%w: a %s file as %s", media.ErrUnsupportedFormat, format, in.Purpose)
+	}
+	if mt, _, _ := mime.ParseMediaType(in.DeclaredContentType); in.DeclaredContentType != "" && mt != "application/octet-stream" && !format.Declares(in.DeclaredContentType) {
+		return "", nil, fmt.Errorf("%w: declared %s, content is %s", ErrContentTypeMismatch, in.DeclaredContentType, format)
+	}
+	probe, err := s.d.Processor.InspectAV(ctx, data, av)
+	if err != nil {
+		return "", nil, err
+	}
+	if in.Poster == nil {
+		return probe.ContentType, nil, nil
+	}
+	poster, err := io.ReadAll(io.LimitReader(in.Poster, s.d.Limits.MaxBytes+1))
+	if err != nil {
+		return "", nil, fmt.Errorf("content: read poster: %w", err)
+	}
+	if _, err := s.d.Processor.Inspect(ctx, poster, s.d.Limits); err != nil {
+		return "", nil, fmt.Errorf("%w: the poster: %w", ErrInvalidPoster, err)
+	}
+	return probe.ContentType, poster, nil
+}
+
+// ErrInvalidPoster reports a poster of a video or audio upload that is not an accepted image; it
+// wraps the error of the image.
+var ErrInvalidPoster = errors.New("content: invalid poster")
 
 func checkDeclaredType(declared string, detected media.Format) error {
 	if declared == "" {
@@ -222,6 +286,15 @@ func checkDeclaredType(declared string, detected media.Format) error {
 }
 
 func uploadKey(mediaID string) string { return "uploads/" + mediaID }
+
+// posterKey returns the private key of the poster of a video or audio upload, which stays there
+// until processing ends like the file as received.
+func posterKey(mediaID string) string { return "uploads/" + mediaID + ".poster" }
+
+// playable reports whether contentType is a video or audio type.
+func playable(contentType string) bool {
+	return strings.HasPrefix(contentType, "video/") || strings.HasPrefix(contentType, "audio/")
+}
 
 // variantKey returns the blob key of a variant of a processing result. The result is part of
 // the key, so that a key never names other content.
@@ -545,7 +618,8 @@ func (s *MediaService) Image(m Media) (Image, bool) {
 	return s.image(m.Result.Variants)
 }
 
-// image presents the variants of a processing result; false without the still ones.
+// image presents the variants of a processing result; false without the still ones, unless it
+// is a video or audio file, whose poster is optional.
 func (s *MediaService) image(variants []content.MediaVariant) (Image, bool) {
 	var (
 		img             Image
@@ -554,6 +628,10 @@ func (s *MediaService) image(variants []content.MediaVariant) (Image, bool) {
 	)
 	for _, v := range variants {
 		iv := ImageVariant{URL: s.URL(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
+		if playable(v.ContentType) {
+			img.Media = &iv
+			continue
+		}
 		set := &img.Still
 		if v.Motion == content.MotionAnimated {
 			set, animated = &moving, animated+1
@@ -570,6 +648,9 @@ func (s *MediaService) image(variants []content.MediaVariant) (Image, bool) {
 		}
 	}
 	if still != len(content.MediaSizes) {
+		if img.Media != nil {
+			return Image{Media: img.Media}, true
+		}
 		return Image{}, false
 	}
 	if animated == len(content.MediaSizes) {
@@ -581,7 +662,8 @@ func (s *MediaService) image(variants []content.MediaVariant) (Image, bool) {
 // RemoteImage returns the image of a remote media file through the media proxy (federation.md
 // §9): the file itself as the medium and large variants, with the declared dimensions, and, for
 // a file that may be an image, the proxy's small still variant as the small one (ADR-0054 §7);
-// false when no proxy is configured.
+// a video or audio file (gifv included) is its Media alone. It returns false when no proxy is
+// configured.
 func (s *MediaService) RemoteImage(m content.RemoteMedia) (Image, bool) {
 	if s.d.Proxy == nil {
 		return Image{}, false
@@ -590,6 +672,8 @@ func (s *MediaService) RemoteImage(m content.RemoteMedia) (Image, bool) {
 	small := full
 	switch m.DeclaredMediaType {
 	case content.MediaTypeVideo, content.MediaTypeGIFV, content.MediaTypeAudio:
+		full.ContentType = m.DeclaredContentType
+		return Image{Media: &full}, true
 	default:
 		if s.d.Proxy.d.Processor != nil {
 			small = ImageVariant{URL: s.d.Proxy.URL(m.MediaID, ProxySmall)}
@@ -614,7 +698,7 @@ func (s *MediaService) CheckProfileImage(ctx context.Context, accountID, mediaID
 	if err != nil {
 		return err
 	}
-	if m.Upload == nil || m.File.OwnerAccountID != accountID || !m.Ready() {
+	if m.Upload == nil || m.File.OwnerAccountID != accountID || !m.Ready() || m.Result.MediaType != content.MediaTypeImage {
 		return fmt.Errorf("media %s: %w", mediaID, appaccount.ErrUnusableImage)
 	}
 	return s.RequirePurpose(ctx, m, purpose)
@@ -692,6 +776,9 @@ func (s *MediaService) Process(ctx context.Context, mediaID string, purpose cont
 		return queue.Done() // cleaned up
 	case current != nil && current.Outcome != content.MediaReady:
 		return s.deleteReceived(ctx, up) // a failed file stays failed
+	case current != nil && current.MediaType != content.MediaTypeImage:
+		s.d.Logger.WarnContext(ctx, "a video or audio file is not processed for another purpose", slog.String("media_id", mediaID), slog.String("purpose", string(purpose)))
+		return s.deleteReceived(ctx, up)
 	}
 
 	req := media.Request{Purpose: media.Purpose(purpose)}
@@ -703,6 +790,12 @@ func (s *MediaService) Process(ctx context.Context, mediaID string, purpose cont
 	}
 	result := content.MediaProcessingResult{
 		ID: s.d.IDs.NewID(), MediaID: mediaID, Purpose: purpose, MediaType: content.MediaTypeImage, ProcessedAt: s.d.Clock.Now(),
+	}
+	if current == nil && playable(up.ContentType) {
+		if res := s.processAV(ctx, up, &result, req); res != nil {
+			return *res
+		}
+		return s.recordResult(ctx, up, result)
 	}
 	key := ""
 	if current == nil {
@@ -731,9 +824,14 @@ func (s *MediaService) Process(ctx context.Context, mediaID string, purpose cont
 	default:
 		return queue.Retry(0, err)
 	}
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+	return s.recordResult(ctx, up, result)
+}
+
+// recordResult records a processing result, then deletes the file as received.
+func (s *MediaService) recordResult(ctx context.Context, up *content.UploadedMedia, result content.MediaProcessingResult) queue.Result {
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		// A concurrent run of the same job may have recorded its result first.
-		if done, err := s.d.Repository.HasProcessingResult(ctx, tx, mediaID, purpose); err != nil || done {
+		if done, err := s.d.Repository.HasProcessingResult(ctx, tx, result.MediaID, result.Purpose); err != nil || done {
 			return err
 		}
 		return s.d.Repository.InsertProcessingResult(ctx, tx, result)
@@ -742,6 +840,84 @@ func (s *MediaService) Process(ctx context.Context, mediaID string, purpose cont
 		return queue.Retry(0, err)
 	}
 	return s.deleteReceived(ctx, up)
+}
+
+// processAV remuxes a video or audio upload into result (ADR-0054 §6): the file without
+// metadata as its large animated variant, and the poster, or else the cover embedded in the
+// file, as its still variants and blurhash. A poster that is not an accepted image is left out.
+// Content the processor rejects makes result a failure. It returns the job's result when the
+// job must stop or be retried, nil when result is to be recorded.
+func (s *MediaService) processAV(ctx context.Context, up *content.UploadedMedia, result *content.MediaProcessingResult, req media.Request) *queue.Result {
+	retry := func(err error) *queue.Result { r := queue.Retry(0, err); return &r }
+	av := s.d.AVLimits
+	data, err := s.readBlob(ctx, up.BlobKey, av.MaxBytes)
+	var out media.AVOutput
+	if err == nil {
+		out, err = s.d.Processor.Remux(ctx, data, av)
+	}
+	switch {
+	case media.Rejected(err) || errors.Is(err, blob.ErrNotFound):
+		s.d.Logger.WarnContext(ctx, "media processing failed", slog.String("media_id", up.MediaID), slog.Any("error", err))
+		result.Outcome, result.MediaType = content.MediaFailed, content.MediaTypeUnknown
+		return nil
+	case err != nil:
+		return retry(err)
+	}
+	result.Outcome, result.MediaType = content.MediaReady, content.MediaTypeVideo
+	if out.Kind == media.AVAudio {
+		result.MediaType = content.MediaTypeAudio
+	}
+	result.Width, result.Height, result.DurationMS = out.Width, out.Height, int(out.Duration.Milliseconds())
+	poster, err := s.readBlob(ctx, posterKey(up.MediaID), s.d.Limits.MaxBytes)
+	switch {
+	case errors.Is(err, blob.ErrNotFound):
+		poster = out.Cover
+	case err != nil:
+		return retry(err)
+	}
+	if poster != nil {
+		req.Purpose = media.PurposeAttachment
+		still, err := s.d.Processor.Process(ctx, poster, s.d.Limits, s.d.Sizes, req)
+		switch {
+		case media.Rejected(err):
+			s.d.Logger.WarnContext(ctx, "media poster left out", slog.String("media_id", up.MediaID), slog.Any("error", err))
+		case err != nil:
+			return retry(err)
+		default:
+			still.Animated = nil
+			result.Blurhash = still.Blurhash
+			if err := s.storeVariants(ctx, result, still); err != nil {
+				return retry(err)
+			}
+		}
+	}
+	key := variantKey(up.MediaID, result.ID, content.SizeLarge, content.MotionAnimated, out.Extension)
+	info, err := s.d.Blobs.Put(ctx, key, bytes.NewReader(out.Data), blob.PutOptions{ContentType: out.ContentType})
+	if err != nil {
+		return retry(err)
+	}
+	result.Variants = append(result.Variants, content.MediaVariant{
+		ResultID: result.ID, Size: content.SizeLarge, Motion: content.MotionAnimated, BlobKey: key, ContentType: out.ContentType,
+		FileSize: info.Size, Width: out.Width, Height: out.Height,
+	})
+	return nil
+}
+
+// readBlob reads the blob of key, failing past maxBytes with media.ErrTooLarge.
+func (s *MediaService) readBlob(ctx context.Context, key string, maxBytes int64) ([]byte, error) {
+	r, _, err := s.d.Blobs.Get(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = r.Close() }()
+	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("content: read %s: %w", key, err)
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("%w: %s", media.ErrTooLarge, key)
+	}
+	return data, nil
 }
 
 // sourceVariant returns the variant that processing a file again starts from: the large moving
@@ -800,8 +976,10 @@ func (s *MediaService) deleteReceived(ctx context.Context, up *content.UploadedM
 	if up == nil {
 		return queue.Done()
 	}
-	if err := s.d.Blobs.Delete(ctx, up.BlobKey); err != nil {
-		return queue.Retry(0, err)
+	for _, key := range []string{up.BlobKey, posterKey(up.MediaID)} {
+		if err := s.d.Blobs.Delete(ctx, key); err != nil {
+			return queue.Retry(0, err)
+		}
 	}
 	return queue.Done()
 }

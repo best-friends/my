@@ -24,8 +24,12 @@ import (
 	"github.com/best-friends/my/pkg/testkit"
 )
 
-// testMaxBytes is the upload limit of fakeMedia. bobAccountID is in notifications_test.go.
-const testMaxBytes = 4096
+// testMaxBytes and testMaxAVBytes are the upload limits of fakeMedia for images and for video
+// and audio files. bobAccountID is in notifications_test.go.
+const (
+	testMaxBytes   = 4096
+	testMaxAVBytes = 8192
+)
 
 // fakeMedia is a MediaFiles that keeps media files in memory. Upload rejects content as the
 // real service does: by its sniffed format, its declared type, and its size; content
@@ -39,10 +43,12 @@ type fakeMedia struct {
 	imageCalls int
 	// purposes are the purposes of the uploads.
 	purposes map[string]content.MediaPurpose
+	// posters are the posters of the uploads.
+	posters map[string][]byte
 }
 
 func newFakeMedia() *fakeMedia {
-	return &fakeMedia{files: map[string]appcontent.Media{}, attached: map[string]bool{}, purposes: map[string]content.MediaPurpose{}}
+	return &fakeMedia{files: map[string]appcontent.Media{}, attached: map[string]bool{}, purposes: map[string]content.MediaPurpose{}, posters: map[string][]byte{}}
 }
 
 func (f *fakeMedia) Upload(_ context.Context, in appcontent.UploadInput) (appcontent.Media, error) {
@@ -52,6 +58,15 @@ func (f *fakeMedia) Upload(_ context.Context, in appcontent.UploadInput) (appcon
 	}
 	if err := content.ValidateMediaDescription(in.Description); err != nil {
 		return appcontent.Media{}, err
+	}
+	var poster []byte
+	if in.Poster != nil {
+		if poster, err = io.ReadAll(in.Poster); err != nil {
+			return appcontent.Media{}, err
+		}
+	}
+	if av := media.SniffAV(data); av != "" {
+		return f.uploadAV(in, data, av, poster)
 	}
 	format := media.Sniff(data)
 	switch {
@@ -78,6 +93,68 @@ func (f *fakeMedia) Upload(_ context.Context, in appcontent.UploadInput) (appcon
 	f.files[id] = m
 	f.purposes[id] = in.Purpose
 	return m, nil
+}
+
+// uploadAV accepts a video or audio upload as the real service does: an MP4 is a video and
+// anything else audio; content containing "hevc" has an unsupported codec, and "too-long" is
+// too long.
+func (f *fakeMedia) uploadAV(in appcontent.UploadInput, data []byte, format media.Format, poster []byte) (appcontent.Media, error) {
+	switch {
+	case int64(len(data)) > testMaxAVBytes:
+		return appcontent.Media{}, media.ErrTooLarge
+	case in.Purpose != "" && in.Purpose != content.PurposeAttachment:
+		return appcontent.Media{}, media.ErrUnsupportedFormat
+	case in.DeclaredContentType != "" && !format.Declares(in.DeclaredContentType):
+		return appcontent.Media{}, appcontent.ErrContentTypeMismatch
+	case bytes.Contains(data, []byte("hevc")):
+		return appcontent.Media{}, media.ErrUnsupportedCodec
+	case bytes.Contains(data, []byte("too-long")):
+		return appcontent.Media{}, media.ErrTooLong
+	}
+	contentType := "audio/mpeg"
+	if format == media.FormatMP4 {
+		contentType = "video/mp4"
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.next++
+	id := fmt.Sprintf("01890a5d-ac96-774b-bcce-%012d", f.next)
+	m := appcontent.Media{
+		File:        content.MediaFile{ID: id, OwnerAccountID: in.OwnerAccountID, Origin: content.MediaOriginUpload, CreatedAt: createdAt},
+		Upload:      &content.UploadedMedia{MediaID: id, BlobKey: "uploads/" + id, ContentType: contentType, FileSize: int64(len(data))},
+		Description: in.Description,
+	}
+	f.files[id] = m
+	f.purposes[id] = in.Purpose
+	f.posters[id] = poster
+	return m, nil
+}
+
+// processAV records a ready result for a video or audio upload, as the processing job would:
+// the file, and the still variants of its poster when it has one.
+func (f *fakeMedia) processAV(id string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	m := f.files[id]
+	r := content.MediaProcessingResult{ID: "result-" + id, MediaID: id, Outcome: content.MediaReady, Purpose: content.PurposeAttachment, DurationMS: 12500}
+	file := content.MediaVariant{ResultID: r.ID, Size: content.SizeLarge, Motion: content.MotionAnimated, ContentType: m.Upload.ContentType, FileSize: 5000}
+	if m.Upload.ContentType == "video/mp4" {
+		r.MediaType, r.Width, r.Height = content.MediaTypeVideo, 640, 360
+		file.BlobKey, file.Width, file.Height = "media/"+id+"/r/large-animated.mp4", 640, 360
+	} else {
+		r.MediaType, file.BlobKey = content.MediaTypeAudio, "media/"+id+"/r/large-animated.mp3"
+	}
+	r.Variants = []content.MediaVariant{file}
+	if f.posters[id] != nil {
+		r.Blurhash = "LEHV6nWB2yk8pyo0adR*.7kCMdnj"
+		r.Variants = append(r.Variants,
+			content.MediaVariant{ResultID: r.ID, Size: content.SizeLarge, Motion: content.MotionStill, BlobKey: "media/" + id + "/r/large.png", ContentType: "image/png", FileSize: 1234, Width: 640, Height: 480},
+			content.MediaVariant{ResultID: r.ID, Size: content.SizeMedium, Motion: content.MotionStill, BlobKey: "media/" + id + "/r/medium.webp", ContentType: "image/webp", FileSize: 456, Width: 640, Height: 480},
+			content.MediaVariant{ResultID: r.ID, Size: content.SizeSmall, Motion: content.MotionStill, BlobKey: "media/" + id + "/r/small.webp", ContentType: "image/webp", FileSize: 99, Width: 415, Height: 311},
+		)
+	}
+	m.Result = &r
+	f.files[id] = m
 }
 
 // process records a result for a media file, as the processing job would.
@@ -164,6 +241,10 @@ func (f *fakeMedia) Image(m appcontent.Media) (appcontent.Image, bool) {
 	if !m.Ready() {
 		return appcontent.Image{}, false
 	}
+	var file *appcontent.ImageVariant
+	if v, ok := m.Result.Variant(content.SizeLarge, content.MotionAnimated); ok && m.Result.MediaType != content.MediaTypeImage {
+		file = &appcontent.ImageVariant{URL: f.url(v), ContentType: v.ContentType, Width: v.Width, Height: v.Height, Size: v.FileSize}
+	}
 	set := func(motion content.MediaMotion) (appcontent.ImageVariants, bool) {
 		var out appcontent.ImageVariants
 		for i, size := range content.MediaSizes {
@@ -177,6 +258,9 @@ func (f *fakeMedia) Image(m appcontent.Media) (appcontent.Image, bool) {
 		return out, true
 	}
 	still, ok := set(content.MotionStill)
+	if file != nil {
+		return appcontent.Image{Still: still, Media: file}, true
+	}
 	if !ok {
 		return appcontent.Image{}, false
 	}
@@ -206,6 +290,8 @@ func (f *fakeMedia) Images(ctx context.Context, refs []appcontent.ImageRef) (map
 }
 
 func (f *fakeMedia) Limits() media.Limits { return media.Limits{MaxBytes: testMaxBytes}.WithDefaults() }
+
+func (f *fakeMedia) MaxUploadBytes() int64 { return testMaxAVBytes }
 
 type mediaEnv struct {
 	*authEnv
@@ -380,6 +466,76 @@ func TestUploadMediaRejects(t *testing.T) {
 	})
 }
 
+func mp4() part {
+	return part{name: "file", filename: "clip.mov", contentType: "video/quicktime", data: []byte("\x00\x00\x00\x18ftypqt  \x00\x00\x02\x00qt  video")}
+}
+
+func TestUploadVideoAndAudio(t *testing.T) {
+	e := newMediaEnv(t)
+	poster := testkit.FixturePNG(4, 3, false)
+	res := e.upload(t, "bob-write", mp4(), part{name: "thumbnail", filename: "poster.png", data: poster}, part{name: "description", data: []byte("a cat jumps")})
+	if res.StatusCode != http.StatusAccepted {
+		t.Fatalf("upload = %d", res.StatusCode)
+	}
+	got := decode[clientapi.MediaAttachment](t, res)
+	if got.State != "processing" || got.Type != "video" || got.Url != nil || got.Meta.Duration != nil {
+		t.Errorf("upload = %+v", got)
+	}
+	if !bytes.Equal(e.media.posters[got.Id], poster) {
+		t.Error("the thumbnail part is not the poster")
+	}
+	e.media.processAV(got.Id)
+	ready := decode[clientapi.MediaAttachment](t, e.send(t, http.MethodGet, "/media/"+got.Id, "bob-write", "", nil))
+	if ready.State != "ready" || ready.Type != "video" || ready.Url == nil || *ready.Url != "https://social.example/media/"+got.Id+"/r/large-animated.mp4" ||
+		ready.Meta.Duration == nil || *ready.Meta.Duration != 12.5 || ready.Meta.Width == nil || *ready.Meta.Width != 640 {
+		t.Errorf("ready video = %+v", ready)
+	}
+	if want := processedVariants(got.Id); ready.Variants == nil || !reflect.DeepEqual(*ready.Variants, want) ||
+		ready.PreviewUrl == nil || *ready.PreviewUrl != want.Small.Url || ready.Blurhash == nil {
+		t.Errorf("the poster of the video is %+v (preview %v)", ready.Variants, ready.PreviewUrl)
+	}
+
+	// An audio file without a poster has no variants and no preview.
+	audio := decode[clientapi.MediaAttachment](t, e.upload(t, "bob-write", part{name: "file", contentType: "audio/mpeg", data: []byte("ID3\x04\x00\x00song")}))
+	if audio.Type != "audio" {
+		t.Errorf("audio upload = %+v", audio)
+	}
+	e.media.processAV(audio.Id)
+	ready = decode[clientapi.MediaAttachment](t, e.send(t, http.MethodGet, "/media/"+audio.Id, "bob-write", "", nil))
+	if ready.Type != "audio" || ready.Url == nil || ready.Variants != nil || ready.PreviewUrl != nil || ready.Meta.Width != nil {
+		t.Errorf("ready audio = %+v", ready)
+	}
+
+	for _, tc := range []struct {
+		name       string
+		parts      []part
+		wantStatus int
+		wantType   string
+	}{
+		{"hevc", []part{{name: "file", contentType: "video/mp4", data: append(mp4().data, "hevc"...)}},
+			http.StatusUnsupportedMediaType, clientapi.ProblemTypeUnsupportedMediaFormat},
+		{"too long", []part{{name: "file", contentType: "video/mp4", data: append(mp4().data, "too-long"...)}},
+			http.StatusUnprocessableEntity, clientapi.ProblemTypeMediaTooLong},
+		{"as an avatar", []part{mp4(), {name: "purpose", data: []byte("avatar")}}, http.StatusUnsupportedMediaType, clientapi.ProblemTypeUnsupportedMediaFormat},
+		{"declared as an image", []part{{name: "file", contentType: "image/png", data: mp4().data}},
+			http.StatusUnsupportedMediaType, clientapi.ProblemTypeUnsupportedMediaFormat},
+		{"over the video limit", []part{{name: "file", contentType: "video/mp4", data: append(mp4().data, make([]byte, testMaxAVBytes)...)}},
+			http.StatusRequestEntityTooLarge, clientapi.ProblemTypeMediaTooLarge},
+		{"thumbnail over the image limit", []part{mp4(), {name: "thumbnail", data: make([]byte, testMaxBytes+1)}},
+			http.StatusRequestEntityTooLarge, clientapi.ProblemTypeMediaTooLarge},
+		{"two thumbnails", []part{mp4(), {name: "thumbnail", data: poster}, {name: "thumbnail", data: poster}},
+			http.StatusBadRequest, clientapi.ProblemTypeBlank},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			wantProblem(t, e.upload(t, "bob-write", tc.parts...), tc.wantStatus, tc.wantType)
+		})
+	}
+	// An image larger than the image limit is too large, even under the video limit.
+	big := png()
+	big.data = append(big.data, make([]byte, testMaxBytes)...)
+	wantProblem(t, e.upload(t, "bob-write", big), http.StatusRequestEntityTooLarge, clientapi.ProblemTypeMediaTooLarge)
+}
+
 // unreadBody fails the test when the handler reads the body.
 type unreadBody struct{ t *testing.T }
 
@@ -392,7 +548,7 @@ func (b unreadBody) Read([]byte) (int, error) {
 // when it declares its length, and cut off at the limit when it does not.
 func TestUploadMediaBodyLimit(t *testing.T) {
 	e := newMediaEnv(t)
-	limit := int64(testMaxBytes + 64<<10)
+	limit := int64(testMaxAVBytes + testMaxBytes + 64<<10)
 
 	req := httptest.NewRequest(http.MethodPost, clientapi.BasePath+"/media", unreadBody{t})
 	req.ContentLength = limit + 1
