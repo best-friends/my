@@ -112,12 +112,18 @@ and notes. The target's name is the one it had at the time, so entries stay
 readable after the target is gone. The audit log cannot be changed or deleted.
 
 Actions: account_action_issued, account_action_lifted,
-account_deletion_cancelled (target kind account);
-domain_action_issued, domain_action_lifted (domain);
-report_assigned, report_unassigned, report_resolved (report);
-registration_approved, registration_rejected (user); setting_changed,
-text_changed (setting); rule_added, rule_revised, rule_moved, rule_retired
-(rule); role_granted, role_revoked, role_created, role_updated, role_deleted
-(role); appeal_upheld, appeal_overturned (appeal).
+account_deletion_cancelled, revealed_private_data, two_factor_disabled
+(target kind account); domain_action_issued, domain_action_lifted (domain);
+report_assigned, report_unassigned, report_resolved, report_reopened,
+report_note_added (report); registration_approved, registration_rejected
+(user); setting_changed, text_changed (setting); rule_added, rule_revised,
+rule_moved, rule_retired (rule); role_granted, role_revoked, role_created,
+role_updated, role_deleted (role); appeal_upheld, appeal_overturned (appeal);
+signup_block_added, signup_block_lifted (signup_block);
+custom_emoji_created, custom_emoji_image_replaced, custom_emoji_updated,
+custom_emoji_enabled, custom_emoji_disabled, custom_emoji_deleted
+(custom_emoji); webhook_created, webhook_updated, webhook_deleted,
+webhook_enabled, webhook_disabled, webhook_secret_rotated (webhook);
+invite_created, invite_revoked (invite).
 `)
 }
