@@ -87,7 +87,7 @@ async function serveApi(page: Page, federated: boolean): Promise<void> {
   );
 }
 
-/** The navigation item of the federated timeline, in the rail from md (hidden in the document below md). */
+/** The navigation item of the federated timeline, in the tab bar below md and in the rail from md. */
 function federatedLink(page: Page) {
   return page.getByRole("navigation").locator('a[href="/public"]');
 }
@@ -106,28 +106,17 @@ test.describe("the federated timeline while the server serves it", () => {
 
   test("opens from the navigation as a feed named by the page heading", async ({ page, hasTouch }) => {
     const heading = page.getByRole("heading", { level: 1 });
-    const tabs = page.getByRole("main").getByRole("tab");
-    if (hasTabBar(page)) {
-      // Phones open the Timelines screen (the local timeline) and then its Federated tab (ADR-0039).
-      await openFromNavigation(page, "/local", hasTouch);
-      await expect(page).toHaveURL(/\/local$/);
-      await expect(tabs).toHaveCount(2);
-    } else {
-      await expect(federatedLink(page)).toBeVisible();
-    }
-    // The heading of the page the federated timeline opens from (Home, or Local on phones).
+    // An item of its own at every width, the tab bar's included.
+    await expect(federatedLink(page)).toBeVisible();
     const previous = (await heading.textContent()) ?? "";
     await openFromNavigation(page, "/public", hasTouch);
 
     await expect(page).toHaveURL(/\/public$/);
     // Where focus goes after a navigation is the shell's, and e2e/shell.spec.ts checks it.
-    if (hasTabBar(page)) {
-      // The tab bar's Timelines (to /local) stays current on the Federated tab.
-      await expect(page.getByRole("navigation").locator('a[href="/local"]').filter({ visible: true })).toHaveAttribute("aria-current", "page");
-    } else {
-      await expect(federatedLink(page)).toHaveAttribute("aria-current", "page");
-    }
-    await expect(tabs.and(page.locator('[href="/public"]'))).toHaveAttribute("aria-selected", "true");
+    await expect(federatedLink(page)).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation").locator('a[href="/local"]').filter({ visible: true })).not.toHaveAttribute("aria-current");
+    // A screen of its own: no tabs to the local timeline.
+    await expect(page.getByRole("main").getByRole("tablist")).toHaveCount(0);
     // The URL and the navigation can change before the new page renders its heading.
     await expect(heading).not.toHaveText(previous);
     const name = (await heading.textContent()) ?? "";
@@ -164,9 +153,10 @@ test.describe("the federated timeline while the server serves it", () => {
 
   test("fits every item of the navigation in its width, with every label whole", async ({ page }) => {
     const nav = page.getByRole("navigation");
-    // Five in the phones' tab bar (four links and the menu button), eight in the rail (ADR-0039).
+    // Six in the phones' tab bar (Home, Local, Federated, Notifications, Search and the menu button), eight in the
+    // rail. A label that does not fit wraps, inside a word if it must, and is never cut.
     const items = nav.getByRole("listitem").filter({ visible: true });
-    await expect(items).toHaveCount(hasTabBar(page) ? 5 : 8);
+    await expect(items).toHaveCount(hasTabBar(page) ? 6 : 8);
     await expect(nav.getByRole("button")).toBeVisible({ visible: hasTabBar(page) });
     const navBox = await nav.boundingBox();
     expect(navBox).not.toBeNull();
@@ -196,10 +186,10 @@ test.describe("the federated timeline while the server has turned it off", () =>
     await page.goto("/home");
     await answered;
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    // The local timeline is there (Timelines below md, Local from md); the federated one never appears.
+    // The local timeline is there; the federated one never appears.
     await expect(page.getByRole("navigation").locator('a[href="/local"]').filter({ visible: true })).toBeVisible();
     await expect(federatedLink(page)).toHaveCount(0);
-    // The tab bar keeps its five items (ADR-0039).
+    // Home, Local, Notifications, Search and the menu button.
     if (hasTabBar(page)) await expect(page.getByRole("navigation").getByRole("listitem").filter({ visible: true })).toHaveCount(5);
   });
 

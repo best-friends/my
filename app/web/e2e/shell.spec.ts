@@ -57,7 +57,6 @@ for (const path of pages) {
         await expect(sheet.locator(`a[href="${path}"]`)).toHaveAttribute("aria-current", "page");
         await expect(sheet.locator('a[aria-current="page"]')).toHaveCount(1);
       } else {
-        // On phones /local is the tab bar's Timelines, which links to it.
         await expect(current).toHaveCount(1);
         await expect(current).toHaveAttribute("href", path);
       }
@@ -92,8 +91,8 @@ test.describe("layout", () => {
   });
 
   test("exposes the skip link, the navigation, and the main landmark with one level-one heading", async ({ page }) => {
-    // Phones: Home, Timelines, Notifications, Search and the Menu button (ADR-0039). From md: Home, Local,
-    // Notifications, Search, Profile, Bookmarks and Settings (the instance answers nothing here, so no Federated).
+    // Phones: Home, Local, Notifications, Search and the Menu button. From md: Home, Local, Notifications, Search,
+    // Profile, Bookmarks and Settings (the instance answers nothing here, so no Federated).
     const items = hasTabBar(page) ? ["link", "link", "link", "link", "button"] : ["link", "link", "link", "link", "link", "link", "link"];
     await expect(page.locator("body")).toMatchAriaSnapshot(`
       - link
@@ -234,7 +233,7 @@ test.describe("navigation", () => {
     const firstHeading = await page.getByRole("heading", { level: 1 }).textContent();
     await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
 
-    // The tab bar's Timelines on phones, Local from md: both link to the local timeline.
+    // Local, in the tab bar on phones and in the rail from md.
     const local = page.getByRole("navigation").locator('a[href="/local"]').filter({ visible: true });
     if (hasTouch) await local.tap();
     else await local.click();

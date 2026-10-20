@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The main navigation, one landmark for every width (web-client.md D1, D2, ADR-0039): a tab bar of five items
-// on the bottom edge of phones, a side rail of icons with short labels on tablets (md), and a sidebar with full
-// labels on desktops (lg). The link to the current section has aria-current="page".
+// The main navigation, one landmark for every width (web-client.md D1, D2, ADR-0039): a tab bar on the bottom
+// edge of phones, a side rail of icons with short labels on tablets (md), and a sidebar with full labels on
+// desktops (lg). The link to the current section has aria-current="page".
 //
-// Below md the tab bar holds Home, Timelines, Notifications, Search and Menu, so that every label fits a fifth
-// of a 320 px screen. Timelines opens the local timeline (or the federated one where the local one is off),
-// whose page has both as tabs; Menu is a button that opens a sheet with the profile, the bookmarks, the settings and
-// the color theme. From md the rail holds Home, Local, Federated, Notifications, Search, Profile, Bookmarks and Settings
-// instead. Both are one list
-// in one order, and each item hides at the widths where it does not belong (display: none, so it leaves the
-// accessibility tree too).
+// Below md the tab bar holds Home, Local, Federated, Notifications, Search and Menu: the local and the federated
+// timeline are items of their own at every width, never tabs of one screen. Menu is a button that opens a sheet
+// with the profile, the bookmarks, the settings and the color theme. From md the rail holds Home, Local,
+// Federated, Notifications, Search, Profile, Bookmarks and Settings instead. Both are one list in one order, and
+// each item hides at the widths where it does not belong (display: none, so it leaves the accessibility tree
+// too).
 //
 // The notifications item shows the number of unread notifications as a badge on the icon's corner. The
 // badge's digits are hidden from assistive technology; the link is named with the count instead
@@ -23,8 +22,8 @@
 // leads there ("Menu, 3 pending in moderation"): the count is in the names and drawn as digits, never shown by
 // color alone (WCAG 1.4.1). Administration has no count.
 //
-// The local and federated timelines appear in the rail only while the instance serves them (FR-202). The tab
-// bar keeps its five items whatever the instance serves: only the Timelines screen's tabs change.
+// The local and federated timelines appear in the tab bar, the rail and the sidebar only while the instance
+// serves them (FR-202), so the tab bar has four to six items.
 //
 // The sidebar (lg) also says where and who the user is: the server's name above the list and, below it, the
 // signed-in account (avatar, display name and handle) as a link to its profile. Both are outside the list, so
@@ -48,7 +47,6 @@ import {
   SearchIcon,
   SettingsIcon,
   Sheet,
-  TimelinesIcon,
 } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
@@ -65,7 +63,7 @@ import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 import { imageSources } from "../../lib/images";
 
-type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/moderation" | "/admin";
+type Section = "/home" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/moderation" | "/admin";
 
 type NavigationItem = {
   section: Section;
@@ -81,9 +79,8 @@ type NavigationItem = {
 
 const items: readonly NavigationItem[] = [
   { section: "/home", label: "client:shell.nav.home", icon: <HomeIcon />, shows: "always" },
-  { section: "/timelines", label: "client:shell.nav.timelines", icon: <TimelinesIcon />, shows: "tab-bar" },
-  { section: "/local", label: "client:shell.nav.local", icon: <LocalIcon />, shows: "rail", timeline: "local" },
-  { section: "/public", label: "client:shell.nav.public", icon: <FederatedIcon />, shows: "rail", timeline: "federated" },
+  { section: "/local", label: "client:shell.nav.local", icon: <LocalIcon />, shows: "always", timeline: "local" },
+  { section: "/public", label: "client:shell.nav.public", icon: <FederatedIcon />, shows: "always", timeline: "federated" },
   { section: "/notifications", label: "client:shell.nav.notifications", icon: <NotificationsIcon />, shows: "always" },
   { section: "/search", label: "client:shell.nav.search", icon: <SearchIcon />, shows: "always" },
   { section: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon />, shows: "rail" },
@@ -93,8 +90,8 @@ const items: readonly NavigationItem[] = [
   { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", staff: "admin" },
 ];
 
-/** The items of the menu sheet: those of the rail that are not in the tab bar, other than the timelines (and the staff's areas only for their viewers). */
-const menuItems = items.filter((item) => item.shows === "rail" && item.timeline === undefined);
+/** The items of the menu sheet: those of the rail that are not in the tab bar (and the staff's areas only for their viewers). */
+const menuItems = items.filter((item) => item.shows === "rail");
 
 /**
  * The list item's classes for where the item shows (the tab bar is below md, the rail from md). In the tab bar
@@ -133,19 +130,12 @@ function isUnder(pathname: string, path: string): boolean {
 /**
  * Whether `pathname` is in `section`: the page itself or one below it. "/profile" redirects to the viewer's own
  * profile page, so that page and its lists of followers and follows are its section too. The viewer's own posts
- * (`/@acct/status/{id}`) are below the profile's address but are pages of posts, not of the profile. The timelines of
- * the tab bar are the local and the federated timeline.
+ * (`/@acct/status/{id}`) are below the profile's address but are pages of posts, not of the profile.
  */
 function inSection(pathname: string, section: Section, ownAcct: string | null): boolean {
-  if (section === "/timelines") return isUnder(pathname, "/local") || isUnder(pathname, "/public");
   if (isUnder(pathname, section)) return true;
   if (section !== "/profile" || ownAcct === null) return false;
   return [profilePath(ownAcct), followListPath(ownAcct, "followers"), followListPath(ownAcct, "following")].includes(pathname);
-}
-
-/** Where the tab bar's Timelines goes: the local timeline, or the federated one where only it is served. */
-function timelinesPath(timelines: TimelineAvailability): "/local" | "/public" {
-  return !timelines.local && timelines.federated ? "/public" : "/local";
 }
 
 /** The badge of an item and the name of its link while it shows one, or null for an item without a count now. */
@@ -190,7 +180,7 @@ export function Navigation() {
           return (
             <li key={item.section} className={shownAt[item.shows]}>
               <Link
-                href={item.section === "/timelines" ? timelinesPath(timelines) : item.section}
+                href={item.section}
                 {...(badge !== null && { "aria-label": badge.name })}
                 aria-current={current(item.section)}
                 variant="navigation"

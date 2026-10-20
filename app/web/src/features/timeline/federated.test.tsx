@@ -127,11 +127,10 @@ describe("the navigation's timelines", () => {
     await screen.findByRole("heading", { level: 1, name: "Home" });
 
     const federated = await within(navigation()).findByRole("link", { name: "Federated" });
-    // jsdom applies no styles, so the phones' tab bar and the rail are both here: Timelines (/local) comes from
-    // the tab bar, Local and Federated from the rail.
+    // jsdom applies no styles, so the items of the rail only are here too. Local and Federated are items of
+    // their own at every width.
     expect(within(navigation()).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/home",
-      "/local",
       "/local",
       "/public",
       "/notifications",
