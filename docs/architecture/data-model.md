@@ -190,7 +190,7 @@ flowchart LR
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
-| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
+| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_resends`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
 | `timeline` | なし | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
@@ -822,7 +822,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `media_files` | リソース | `id`, `owner_account_id`, `origin`（`enum(upload, remote)`）, `created_at` | インデックス `(owner_account_id, id)` |
+| `media_files` | リソース | `id`, `owner_account_id`（リンクのカードの画像は空）, `origin`（`enum(upload, remote)`）, `created_at` | インデックス `(owner_account_id, id)` |
 | `uploaded_media` | リソース（部分型） | `media_id`（PK）, `blob_key`, `content_type`, `file_size`（`bigint`） | |
 | `remote_media` | リソース（部分型） | `media_id`（PK）, `owner_account_id`（`media_files` の値を写す）, `remote_url`, `declared_content_type`（NULL 可。AP の `mediaType`）, `declared_media_type`（`enum(image, gifv, video, audio, unknown)`）, `purpose`（`enum(attachment, avatar, header, emoji)`。記録した用途で、メディアプロキシの `small` の大きさを決める）, `width` / `height`（NULL 可）, `blurhash`（NULL 可）, `focus_x` / `focus_y`（`real`、-1.0〜1.0、NULL 可。範囲外の宣言は取り込み時に丸める）, `description`（`text`、NULL 可） | 一意 `(owner_account_id, remote_url)`。受信した文書が宣言した値で、ファイルは取得しない（[federation.md §9](federation.md#9-リモートメディア)） |
 | `media_processing_results` | イベント | `id`, `media_id`, `purpose`（`enum(attachment, avatar, header, emoji)`）, `outcome`（`enum(ready, failed)`）, `media_type`（`enum(image, gifv, video, audio, unknown)`）, `width` / `height` / `duration_ms`（NULL 可）, `blurhash`（NULL 可）, `processed_at` | インデックス `(media_id, id DESC)`。最新行が現在の処理結果 |
@@ -830,6 +830,19 @@ flowchart LR
 | `media_focus` | 現在値 | `media_id`（PK）, `focus_x` / `focus_y`（`real`、-1.0〜1.0） | 行がなければ中央 |
 | `media_descriptions` | 現在値 | `media_id`（PK）, `description`（`text`、空でない、1,500 文字まで） | 行がなければ説明なし。投稿が添付するときに `status_revision_attachments.description` へ写す |
 | `remote_media_cache` | 現在値（キャッシュ） | `url`（PK。メディアプロキシの `small` は `{URL}#small-{purpose}`）, `blob_key`（`remote/{url の SHA-256}`）, `content_type`（中身で判定した形式）, `file_size`（`bigint`）, `fetched_at`, `expires_at`, `last_accessed_at`（1 時間単位で更新） | FR-409, NFR-COST-4。インデックス `(expires_at)`, `(last_accessed_at)`。メディアプロキシが書き、`media.cleanup_remote` が期限切れと容量超過の分を消す（federation.md §9） |
+| `link_card_media` | リソース（部分型） | `media_id`（PK）, `remote_url`, `content_type`（中身で判定した形式）, `width` / `height`（`int`）, `blurhash`, `description`（`og:image:alt`。無ければ空） | 一意 `(remote_url)`。リンクのカードの画像（[ADR-0062](../adr/0062-link-preview-cards.md) §3）。所有者はアカウントではなくカードの URL で、`media_files.owner_account_id` は空。1 回だけ取得して形式・寸法・blurhash を記録し、本体は保存しない。メディアプロキシが添付の画像と同じ規則で中継する |
+
+#### リンクのカード
+
+[ADR-0062](../adr/0062-link-preview-cards.md) の、投稿中のリンクの先のページから作るカードです（FR-117、[federation.md §9.1](federation.md#91-リンクのカード)）。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `link_cards` | 現在値（キャッシュ） | `url`（PK。正規化した要求の URL）, `card_url`（最終 URL、または同じオリジンの `og:url`）, `title`, `description`, `site_name`, `author_name`（無ければ空）, `published_at`（NULL 可）, `image_media_id`（NULL 可。`link_card_media`）, `creator_account_id`（NULL 可。`attributionDomains` で検証できた `fediverse:creator`）, `language`（NULL 可。`<html lang>`）, `fetched_at` | インデックス `(fetched_at)`, `(image_media_id)`。取得のたびに UPSERT する。URL ごとに共有し、取得から 14 日を過ぎたら、その URL を新しく参照した投稿の取り込みで取り直す |
+| `status_link_cards` | 投影 | `status_id`（PK）, `url` | インデックス `(url)`。削除されていない投稿の現在の版から選んだ URL。`link_cards` の行がない間はカードを出さない |
+
+- `status_link_cards` は、投稿の作成・編集のイベントの投影が書き、削除のイベントと消去のトランザクションが消します。カードの取得は投影が積むジョブ `content.fetch_link_card` が行います。
+- 1 日 1 回のジョブ `content.cleanup_link_cards` が、どの投稿からも参照されず取得から 14 日を過ぎた `link_cards` の行と、どのカードも使わない `link_card_media`（と `media_files` の行）を消します（FR-803）。
 
 - アップロードは同期で受け付けます。形式は中身から判定し（申告された `Content-Type` とファイル名は信用しない）、サイズと寸法の上限は全体をデコードする前にヘッダで検査します（ADR-0019 §8）。
   `uploaded_media.content_type` は判定した形式で、`blob_key`（`uploads/<id>`）は受け取ったままの非公開のファイルです。
@@ -1098,7 +1111,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
+| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, link_cards_enabled)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
 | `instance_settings` | 投影 | `key`（PK）, `revision_id`, `value` | |
 | `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt)`）, `locale`（`lang`）, `body`（空 = そのロケールの文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, locale, id DESC)` |
 | `instance_texts` | 投影 | `key`, `locale`, `revision_id` | PK `(key, locale)`。表示はロケールのフォールバックチェーン（ADR-0009）で選ぶ |
@@ -1408,6 +1421,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `user_primary_emails` | `user_email_addresses` | 同期 |
 | `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts` と `remote_account_handle_verifications`、`remote_account_snapshots` と取得の結果、`account_profile_revisions` | 同期 |
 | `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
+| `status_link_cards` | `status_revisions` の本文・ソース・添付・投票、`status_deletions` | 同期（URL は Go の `content.LinkCardURL` が選ぶので、`my projection` の対象ではない） |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
 | `feed_*` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
 | `feed_author_restrictions` / `feed_domain_restrictions` | `moderation.ReplayEvents` と `account.ReplayDeletions` が再生するイベント（下記） | 同期 |
@@ -1480,6 +1494,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-112 投票 | C | `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tallies` |
 | FR-113 ブックマーク | S | `bookmarks` |
 | FR-116 絵文字リアクション | M | `reactions`, `status_reaction_counts`, `custom_emojis`, `notifications`（`reaction`） |
+| FR-117 リンクのカード | S | `link_cards`, `link_card_media`, `status_link_cards`, `instance_settings`（`link_cards_enabled`） |
 | FR-201〜204 タイムライン | M | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | FR-205 通知 | M | `notifications`, `notification_dismissals`, `notification_read_markers` |
 | FR-206 Web Push | S | `push_subscriptions`, `push_subscription_alerts` |
@@ -1511,7 +1526,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-704 監査ログ | M | `audit_log_entries` |
 | FR-705 インスタンス設定 | M | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules` とその版 |
 | FR-801 CLI | M | `dead_jobs`, §9 の再構築、管理者作成（`users`, `user_primary_emails`, `user_role_grants`） |
-| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 未添付の `media_files`, `kv_entries`, `webhook_messages` とその配送・試行, 期限切れの制限 |
+| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 参照されない `link_cards` と `link_card_media`, 未添付の `media_files`, `kv_entries`, `webhook_messages` とその配送・試行, 期限切れの制限 |
 
 ## 11. 未決事項
 

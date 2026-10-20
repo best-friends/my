@@ -471,6 +471,39 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
 - サムネイル・blurhash がない動画は、クライアントが「プレビューなし」として表示します。
 
+### 9.1 リンクのカード
+
+投稿の本文にあるリンクの先のページから、題名・説明・画像を取り出してカードにします（FR-117、[ADR-0062](../adr/0062-link-preview-cards.md)）。
+自サーバーのページに付ける OGP / X Card の meta（ADR-0028 の「プレビュー」）とは別の仕組みです。実装は `content.LinkCards`（`internal/app/content/link_card*.go`）です。
+
+- **契機**: 投稿の作成・編集のイベント（ローカルとリモートの両方。リモートは `Create` / `Update` の取り込み）の投影が、現在の版から URL を選んで `status_link_cards` に書き、
+  そのカードがない・取得から 14 日を過ぎているときに、ジョブ `content.fetch_link_card`（引数は投稿の ID）を同じトランザクションで outbox に積みます。リモートの投稿のジョブは 0〜60 秒のランダムな遅延を付けます。
+  ジョブは実行時に `status_link_cards` の現在の URL を読むので、編集で URL が変わっても古い URL は取りません。公開範囲によらず取得します。
+- **選ぶ URL**: 本文の最初の `http` / `https` のリンクで、メンション・ハッシュタグ・自サーバーのホスト（`host`・`account_domain`・`web_origin` のホスト）のものを除きます。
+  ローカルの投稿は `ParseText` の区分で、リモートの投稿はサニタイズ済み HTML の `a` の `class`（`mention`, `hashtag`, `u-url`）・`rel="tag"`・`@` や `#` で始まるリンクの文字で、メンションとハッシュタグを見分けます。
+  添付か投票のある投稿はカードを持ちません。URL は `content.NormalizeLinkURL`（スキームとホストを小文字に、既定のポート・フラグメント・利用者情報を除く。クエリはそのまま）で正規化し、カードはこの URL ごとに共有します。
+- **取得**: `HTTPClient` に `HTTPPurposeHTML` で `GET` を送ります（`Accept: text/html, application/xhtml+xml`、`Accept-Language` はインスタンスの `default_locale`。Cookie と `Referer` は送りません）。
+  SSRF ガード・リダイレクト・本文 1 MiB・30 秒は §1.1 と ADR-0019 §1 のとおりで、`https` 以外の URL は取得しません。状態コード 200 で `text/html` / `application/xhtml+xml` の応答だけを読みます。
+- **解析**: `golang.org/x/net/html` のトークナイザで `<head>` だけを読み（`</head>` か `<body>` で止める）、文字コードは `golang.org/x/net/html/charset` で UTF-8 にします。
+  題名は `og:title` → `twitter:title` → JSON-LD の `headline` → `<title>`、説明は `og:description` → `twitter:description` → JSON-LD の `description` → `<meta name="description">`、
+  サイト名は `og:site_name` → JSON-LD の `publisher.name` → ホスト、作者は `article:author`（URL でないもの）→ `<meta name="author">` → JSON-LD の `author.name`、
+  公開日時は `article:published_time` → JSON-LD の `datePublished`（RFC 3339 のもの）、画像は `og:image:secure_url` → `og:image` → `twitter:image`、言語は `<html lang>` です。
+  JSON-LD は `<script type="application/ld+json">`（64 KiB まで）を JSON として読み、最上位か `@graph` の `NewsArticle` / `Article` / `BlogPosting` / `WebPage` の最初のものだけを使います。`@context` は取得しません。
+  値はプレーンテキストにして、題名 200・説明 500・サイト名 100・作者 100・画像の代替テキスト 1,500 の書記素で切ります。`og:url` は応答の最終 URL と同じオリジンのときだけカードの URL にします。
+  題名のないページはカードにしません。oEmbed・`twitter:player`・`og:video` の埋め込みは扱いません。
+- **失敗と同時取得**: 取得・解釈の失敗は URL の SHA-256 をキーに KV（名前空間 `content.link_card_failure`）へ 24 時間記録し、その間は取りません。
+  取得の前に URL ごとのロック（`content.link_card_lock`、60 秒）を取り、取得中なら 60 秒後に再試行します。
+- **画像**: カードのホストと画像のホストのどちらにも `media_fetch` の制限がなければ、画像を `HTTPPurposeImage` で 1 回だけ取得し、中身で形式を判定して（§9 の許可リストのうち画像。SVG は拒否）、
+  `media.Processor` で寸法と blurhash を求め、`media_files`（`origin = remote`、所有者なし）と `link_card_media` に記録します。本体は保存しません。同じ URL の画像は最初の記録を使います。
+  クライアント API はメディアプロキシの `small`（添付と同じ S の箱の静止画）の URL だけを返し、プロキシは `link_card_media` を添付の画像と同じ規則で中継・キャッシュします。
+- **`fediverse:creator`**: 最初の `<meta name="fediverse:creator">` を `RemoteActors.VerifyCreator` で WebFinger から解決し（10 秒まで）、Actor の文書を取り直して、
+  その `attributionDomains` がカードの URL のホストかその親ドメインを含むときだけ、カードの作者のアカウントにします。ローカルのアカウントは検証しません。
+- **処分**: カードの URL のホスト（要求の URL と最終 URL）に `federation` の制限（`suspend`）があれば、取得せず、既存のカードも出しません。
+  `media_fetch` の制限（`reject_media`）がカード・画像のホストにあれば、画像を取得せず、既存の画像も出しません。投稿がセンシティブか、作者に `media_sensitive` の制限があれば、画像はセンシティブとして表示します。
+  カードは連合しません。
+- **保持**: 1 日 1 回のジョブ `content.cleanup_link_cards` が、どの投稿からも参照されず取得から 14 日を過ぎたカードと、どのカードも使わない画像（`link_card_media` と `media_files`）を消します（FR-803）。
+- インスタンス設定 `link_cards_enabled`（既定 `true`）が偽のとき、ジョブは何もせず、API はカードを返しません。
+
 ## 10. コレクションとオブジェクトの GET
 
 - `GET /ap/objects/{uuid}`（`/activity` を含む）は、署名から閲覧者（署名者のドメイン）を決め、`content.CanView`（`ContextObjectFetch`）を通します。権限が無いときと存在しないときは同じ 404 です（ADR-0018）。削除済みは、削除の前に閲覧できた相手にだけ `410 Gone` と `Tombstone` を返し、それ以外には 404 を返します（[ActivityPub §6.4](https://www.w3.org/TR/activitypub/#delete-activity-outbox)）。
