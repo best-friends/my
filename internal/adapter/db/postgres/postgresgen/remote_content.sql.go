@@ -115,6 +115,22 @@ func (q *Queries) GetLatestCustomEmojiImage(ctx context.Context, emojiID string)
 	return i, err
 }
 
+const getLatestCustomEmojiImageRemoteURL = `-- name: GetLatestCustomEmojiImageRemoteURL :one
+SELECT CAST(COALESCE(r.remote_url, '') AS TEXT) AS remote_url
+FROM custom_emoji_images i
+LEFT JOIN remote_media r ON r.media_id = i.media_id
+WHERE i.emoji_id = $1 ORDER BY i.id DESC LIMIT 1
+`
+
+// GetLatestCustomEmojiImageRemoteURL returns the remote URL of the newest image of an emoji, ”
+// when that image is not a remote media file.
+func (q *Queries) GetLatestCustomEmojiImageRemoteURL(ctx context.Context, emojiID string) (string, error) {
+	row := q.db.QueryRow(ctx, getLatestCustomEmojiImageRemoteURL, emojiID)
+	var remote_url string
+	err := row.Scan(&remote_url)
+	return remote_url, err
+}
+
 const getLatestPollTallyObservation = `-- name: GetLatestPollTallyObservation :one
 SELECT id, poll_id, voters_count, observed_at FROM poll_tally_observations
 WHERE poll_id = $1 ORDER BY id DESC LIMIT 1

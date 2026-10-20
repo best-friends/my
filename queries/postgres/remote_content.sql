@@ -111,6 +111,14 @@ VALUES (@id, @emoji_id, @media_id, @revised_at);
 SELECT id, emoji_id, media_id, revised_at FROM custom_emoji_images
 WHERE emoji_id = @emoji_id ORDER BY id DESC LIMIT 1;
 
+-- GetLatestCustomEmojiImageRemoteURL returns the remote URL of the newest image of an emoji, ''
+-- when that image is not a remote media file.
+-- name: GetLatestCustomEmojiImageRemoteURL :one
+SELECT CAST(COALESCE(r.remote_url, '') AS TEXT) AS remote_url
+FROM custom_emoji_images i
+LEFT JOIN remote_media r ON r.media_id = i.media_id
+WHERE i.emoji_id = @emoji_id ORDER BY i.id DESC LIMIT 1;
+
 -- name: InsertPoll :exec
 INSERT INTO polls (id, revision_id, multiple, closes_at) VALUES (@id, @revision_id, @multiple, @closes_at);
 

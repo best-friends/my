@@ -37,7 +37,8 @@ type CustomEmojiFactory func(t *testing.T, opts uow.Options) CustomEmojiHarness
 // breaks a rule; settings and aliases as current values, with the disabled and hidden emoji left
 // out of the picker, the views, the Emoji tags, and the emoji of local texts; new images as new
 // revisions; local emoji deleted with their rows while their images become unattached uploads;
-// remote emoji that can only be enabled and disabled; the administrators' list with its filters
+// remote emoji that can only be enabled and disabled, whose image changes only with its URL;
+// the administrators' list with its filters
 // and pages; and every operation audited by an event in its transaction.
 func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) {
 	t.Helper()
@@ -51,6 +52,7 @@ func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) 
 		{"ReplacesImagesWithNewRevisions", emojiReplacesImages},
 		{"DeletesLocalEmoji", emojiDeletesLocal},
 		{"OnlyEnablesAndDisablesRemoteEmoji", emojiLimitsRemote},
+		{"ReplacesRemoteImagesByURL", emojiReplacesRemoteImagesByURL},
 		{"ListsAndFiltersEmoji", emojiLists},
 	}
 	for _, tc := range cases {
@@ -62,6 +64,8 @@ const (
 	emojiAdmin     = "0192f0c1-0000-7000-8000-0000000ad111"
 	emojiAdminUser = "0192f0c1-0000-7000-8000-0000000ad112"
 	emojiOther     = "0192f0c1-0000-7000-8000-0000000ad113"
+	emojiSenderA   = "0192f0c1-0000-7000-8000-0000000ad114"
+	emojiSenderB   = "0192f0c1-0000-7000-8000-0000000ad115"
 )
 
 type emojiEnv struct {
@@ -473,5 +477,60 @@ func emojiLists(t *testing.T, e *emojiEnv) {
 	remote, err := e.service.Get(ctx, r1.ID)
 	if err != nil || remote.Emoji.Domain != "one.example" || remote.Emoji.URI == "" || !remote.Settings.Enabled {
 		t.Errorf("Get(remote) = %+v, %v", remote, err)
+	}
+}
+
+func emojiReplacesRemoteImagesByURL(t *testing.T, e *emojiEnv) {
+	ctx := t.Context()
+	statuses := appcontent.NewService(appcontent.Deps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Statuses, RemoteMedia: e.media, Clock: e.clock, IDs: e.ids,
+	})
+	// receive records :blobfox: of remote.example with the image at url, as a document of owner.
+	receive := func(owner, url string) content.CustomEmojiImage {
+		t.Helper()
+		e.clock.Advance(time.Second)
+		var ids []string
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			var err error
+			ids, err = statuses.RecordRemoteEmojis(ctx, tx, owner, "remote.example", []appcontent.RemoteEmojiInput{
+				{Shortcode: "blobfox", URI: "https://remote.example/emojis/blobfox", ImageURL: url},
+			})
+			return err
+		})
+		if err != nil || len(ids) != 1 {
+			t.Fatalf("RecordRemoteEmojis(%s) = %v, %v", url, ids, err)
+		}
+		_, img, err := statuses.CustomEmoji(ctx, ids[0])
+		if err != nil {
+			t.Fatalf("CustomEmoji: %v", err)
+		}
+		return img
+	}
+	const v1, v2 = "https://remote.example/files/blobfox.png", "https://remote.example/files/blobfox-2.png"
+	first := receive(emojiSenderA, v1)
+	// The same image in another document, or in a document of another account, is no new image.
+	for _, owner := range []string{emojiSenderA, emojiSenderB} {
+		if got := receive(owner, v1); got != first {
+			t.Errorf("the same image from %s = %+v, want the first image %+v", owner, got, first)
+		}
+	}
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		_, err := e.h.Media.RemoteMediaByURL(ctx, tx, emojiSenderB, v1)
+		return err
+	})
+	if !errors.Is(err, appcontent.ErrNotFound) {
+		t.Errorf("RemoteMediaByURL(B, v1) = %v; want no media file of the second sender", err)
+	}
+	// A new URL is a new image, from whichever account.
+	second := receive(emojiSenderB, v2)
+	if second.ID == first.ID || second.MediaID == first.MediaID || !second.RevisedAt.Equal(e.clock.Now()) {
+		t.Errorf("a new image = %+v, want a new revision after %+v", second, first)
+	}
+	if got := receive(emojiSenderA, v2); got != second {
+		t.Errorf("the new image again = %+v, want %+v", got, second)
+	}
+	// Going back to the first URL is a change too.
+	if back := receive(emojiSenderA, v1); back.ID == second.ID || back.MediaID != first.MediaID {
+		t.Errorf("the first image again = %+v, want a new revision of media %s", back, first.MediaID)
 	}
 }
