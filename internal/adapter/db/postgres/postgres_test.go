@@ -77,6 +77,13 @@ func TestCustomEmojiRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestWebhookRepositoryContract(t *testing.T) {
+	testkit.WebhookRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.WebhookHarness {
+		db := newTestDB(t, opts)
+		return testkit.WebhookHarness{UnitOfWork: db, Webhooks: db.WebhookRepository(), Moderation: db.ModerationRepository()}
+	})
+}
+
 func TestStatusRepositoryContract(t *testing.T) {
 	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
 		db := newTestDB(t, opts)

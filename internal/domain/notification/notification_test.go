@@ -125,6 +125,7 @@ func TestValidateModeratorNotifications(t *testing.T) {
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAdminAppeal, AppealID: "p", SourceAccountID: "b", DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeAppealDecided, DedupeKey: "k"},
+		{ID: "n", RecipientAccountID: "a", Type: TypeAdminWebhookDisabled, SourceAccountID: "b", DedupeKey: "k"},
 		{ID: "n", RecipientAccountID: "a", Type: TypeFollow, SourceAccountID: "b", AppealID: "p", DedupeKey: "k"},
 	} {
 		if err := n.Validate(); err == nil {
@@ -138,10 +139,11 @@ func TestHiddenTypes(t *testing.T) {
 		granted []Permission
 		want    []Type
 	}{
-		{nil, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal}},
-		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp, TypeAdminAppeal}},
-		{[]Permission{PermissionManageAccounts}, []Type{TypeAdminReport}},
-		{[]Permission{PermissionManageAccounts, PermissionManageReports, "view_audit"}, nil},
+		{nil, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled}},
+		{[]Permission{PermissionManageReports}, []Type{TypeAdminSignUp, TypeAdminAppeal, TypeAdminWebhookDisabled}},
+		{[]Permission{PermissionManageAccounts}, []Type{TypeAdminReport, TypeAdminWebhookDisabled}},
+		{[]Permission{PermissionManageWebhooks}, []Type{TypeAdminReport, TypeAdminSignUp, TypeAdminAppeal}},
+		{[]Permission{PermissionManageAccounts, PermissionManageReports, PermissionManageWebhooks, "view_audit"}, nil},
 	} {
 		if got := HiddenTypes(tc.granted); !slices.Equal(got, tc.want) {
 			t.Errorf("HiddenTypes(%v) = %v, want %v", tc.granted, got, tc.want)

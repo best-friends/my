@@ -36,6 +36,9 @@ const (
 	TypeRelationshipsSevered Type = "relationships_severed"
 	TypeAppealDecided        Type = "appeal_decided"
 	TypeAdminAppeal          Type = "admin_appeal"
+	// TypeAdminWebhookDisabled tells the holders of manage_webhooks that the server disabled a
+	// webhook endpoint that kept failing (ADR-0060).
+	TypeAdminWebhookDisabled Type = "admin_webhook_disabled"
 )
 
 // Types are every notification type, in a stable order.
@@ -43,7 +46,7 @@ var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 	TypeReaction, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 	TypeRelationshipsSevered,
-	TypeAppealDecided, TypeAdminAppeal,
+	TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled,
 }
 
 // Valid reports whether t is a known notification type.
@@ -51,7 +54,7 @@ func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
 		TypeReaction, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
-		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal:
+		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled:
 		return true
 	}
 	return false
@@ -119,6 +122,7 @@ func (n Notification) Validate() error {
 	switch {
 	case n.Type == TypeAdminReport && (n.ReportID == "" || n.SourceAccountID != ""),
 		n.Type == TypeAdminAppeal && n.SourceAccountID != "",
+		n.Type == TypeAdminWebhookDisabled && n.SourceAccountID != "",
 		n.Type == TypeAdminSignUp && (n.SubjectUserID == "" || n.SourceAccountID != ""):
 		return errors.New("notification: a moderator notification needs its subject and has no source account")
 	}
@@ -169,17 +173,21 @@ type Permission string
 const (
 	PermissionManageReports  Permission = "manage_reports"
 	PermissionManageAccounts Permission = "manage_accounts"
+	PermissionManageWebhooks Permission = "manage_webhooks"
 )
 
 // ModeratorPermission returns the permission that the recipient of a notification of type t
 // needs, when they get it and while they read it, and whether t needs one: admin_report needs
-// manage_reports, and admin_sign_up and admin_appeal manage_accounts. The other types need none.
+// manage_reports, admin_sign_up and admin_appeal manage_accounts, and admin_webhook_disabled
+// manage_webhooks. The other types need none.
 func ModeratorPermission(t Type) (Permission, bool) {
 	switch t {
 	case TypeAdminReport:
 		return PermissionManageReports, true
 	case TypeAdminSignUp, TypeAdminAppeal:
 		return PermissionManageAccounts, true
+	case TypeAdminWebhookDisabled:
+		return PermissionManageWebhooks, true
 	}
 	return "", false
 }
@@ -208,6 +216,12 @@ func AdminSignUpKey(userID string) string { return string(TypeAdminSignUp) + ":"
 
 // AppealDecidedKey is the dedupe key of an appeal_decided notification: one per appeal.
 func AppealDecidedKey(appealID string) string { return string(TypeAppealDecided) + ":" + appealID }
+
+// AdminWebhookDisabledKey is the dedupe key of an admin_webhook_disabled notification: one per
+// state change of the endpoint that disabled it.
+func AdminWebhookDisabledKey(stateChangeID string) string {
+	return string(TypeAdminWebhookDisabled) + ":" + stateChangeID
+}
 
 // AdminAppealKey is the dedupe key of an admin_appeal notification: one per appeal.
 func AdminAppealKey(appealID string) string { return string(TypeAdminAppeal) + ":" + appealID }

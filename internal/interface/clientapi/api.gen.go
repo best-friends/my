@@ -257,6 +257,12 @@ const (
 	AdminAuditActionSignupBlockLifted        AdminAuditAction = "signup_block_lifted"
 	AdminAuditActionTextChanged              AdminAuditAction = "text_changed"
 	AdminAuditActionTwoFactorDisabled        AdminAuditAction = "two_factor_disabled"
+	AdminAuditActionWebhookCreated           AdminAuditAction = "webhook_created"
+	AdminAuditActionWebhookDeleted           AdminAuditAction = "webhook_deleted"
+	AdminAuditActionWebhookDisabled          AdminAuditAction = "webhook_disabled"
+	AdminAuditActionWebhookEnabled           AdminAuditAction = "webhook_enabled"
+	AdminAuditActionWebhookSecretRotated     AdminAuditAction = "webhook_secret_rotated"
+	AdminAuditActionWebhookUpdated           AdminAuditAction = "webhook_updated"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditAction enum.
@@ -326,6 +332,18 @@ func (e AdminAuditAction) Valid() bool {
 		return true
 	case AdminAuditActionTwoFactorDisabled:
 		return true
+	case AdminAuditActionWebhookCreated:
+		return true
+	case AdminAuditActionWebhookDeleted:
+		return true
+	case AdminAuditActionWebhookDisabled:
+		return true
+	case AdminAuditActionWebhookEnabled:
+		return true
+	case AdminAuditActionWebhookSecretRotated:
+		return true
+	case AdminAuditActionWebhookUpdated:
+		return true
 	default:
 		return false
 	}
@@ -368,6 +386,7 @@ const (
 	AdminAuditTargetKindSignupBlock AdminAuditTargetKind = "signup_block"
 	AdminAuditTargetKindStatus      AdminAuditTargetKind = "status"
 	AdminAuditTargetKindUser        AdminAuditTargetKind = "user"
+	AdminAuditTargetKindWebhook     AdminAuditTargetKind = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditTargetKind enum.
@@ -394,6 +413,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindStatus:
 		return true
 	case AdminAuditTargetKindUser:
+		return true
+	case AdminAuditTargetKindWebhook:
 		return true
 	default:
 		return false
@@ -673,6 +694,93 @@ func (e AdminSignupBlockState) Valid() bool {
 	case AdminSignupBlockStateExpired:
 		return true
 	case AdminSignupBlockStateLifted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminWebhookAttemptOutcome.
+const (
+	AdminWebhookAttemptOutcomeConnectionError      AdminWebhookAttemptOutcome = "connection_error"
+	AdminWebhookAttemptOutcomeForbiddenDestination AdminWebhookAttemptOutcome = "forbidden_destination"
+	AdminWebhookAttemptOutcomeHttpError            AdminWebhookAttemptOutcome = "http_error"
+	AdminWebhookAttemptOutcomeSucceeded            AdminWebhookAttemptOutcome = "succeeded"
+	AdminWebhookAttemptOutcomeTimeout              AdminWebhookAttemptOutcome = "timeout"
+)
+
+// Valid indicates whether the value is a known member of the AdminWebhookAttemptOutcome enum.
+func (e AdminWebhookAttemptOutcome) Valid() bool {
+	switch e {
+	case AdminWebhookAttemptOutcomeConnectionError:
+		return true
+	case AdminWebhookAttemptOutcomeForbiddenDestination:
+		return true
+	case AdminWebhookAttemptOutcomeHttpError:
+		return true
+	case AdminWebhookAttemptOutcomeSucceeded:
+		return true
+	case AdminWebhookAttemptOutcomeTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminWebhookDeliveryStatus.
+const (
+	AdminWebhookDeliveryStatusFailing   AdminWebhookDeliveryStatus = "failing"
+	AdminWebhookDeliveryStatusPending   AdminWebhookDeliveryStatus = "pending"
+	AdminWebhookDeliveryStatusSucceeded AdminWebhookDeliveryStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the AdminWebhookDeliveryStatus enum.
+func (e AdminWebhookDeliveryStatus) Valid() bool {
+	switch e {
+	case AdminWebhookDeliveryStatusFailing:
+		return true
+	case AdminWebhookDeliveryStatusPending:
+		return true
+	case AdminWebhookDeliveryStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminWebhookState.
+const (
+	AdminWebhookStateDisabled AdminWebhookState = "disabled"
+	AdminWebhookStateEnabled  AdminWebhookState = "enabled"
+)
+
+// Valid indicates whether the value is a known member of the AdminWebhookState enum.
+func (e AdminWebhookState) Valid() bool {
+	switch e {
+	case AdminWebhookStateDisabled:
+		return true
+	case AdminWebhookStateEnabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminWebhookStateReason.
+const (
+	AdminWebhookStateReasonAdmin   AdminWebhookStateReason = "admin"
+	AdminWebhookStateReasonFailing AdminWebhookStateReason = "failing"
+	AdminWebhookStateReasonGone    AdminWebhookStateReason = "gone"
+)
+
+// Valid indicates whether the value is a known member of the AdminWebhookStateReason enum.
+func (e AdminWebhookStateReason) Valid() bool {
+	switch e {
+	case AdminWebhookStateReasonAdmin:
+		return true
+	case AdminWebhookStateReasonFailing:
+		return true
+	case AdminWebhookStateReasonGone:
 		return true
 	default:
 		return false
@@ -1002,6 +1110,7 @@ const (
 	NotificationTypeAdminAppeal          NotificationType = "admin_appeal"
 	NotificationTypeAdminReport          NotificationType = "admin_report"
 	NotificationTypeAdminSignUp          NotificationType = "admin_sign_up"
+	NotificationTypeAdminWebhookDisabled NotificationType = "admin_webhook_disabled"
 	NotificationTypeAppealDecided        NotificationType = "appeal_decided"
 	NotificationTypeBoost                NotificationType = "boost"
 	NotificationTypeFavourite            NotificationType = "favourite"
@@ -1024,6 +1133,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeAdminReport:
 		return true
 	case NotificationTypeAdminSignUp:
+		return true
+	case NotificationTypeAdminWebhookDisabled:
 		return true
 	case NotificationTypeAppealDecided:
 		return true
@@ -1066,6 +1177,7 @@ const (
 	PermissionManageRules        Permission = "manage_rules"
 	PermissionManageSettings     Permission = "manage_settings"
 	PermissionManageTwoFactor    Permission = "manage_two_factor"
+	PermissionManageWebhooks     Permission = "manage_webhooks"
 	PermissionViewAudit          Permission = "view_audit"
 )
 
@@ -1091,6 +1203,8 @@ func (e Permission) Valid() bool {
 	case PermissionManageSettings:
 		return true
 	case PermissionManageTwoFactor:
+		return true
+	case PermissionManageWebhooks:
 		return true
 	case PermissionViewAudit:
 		return true
@@ -1273,6 +1387,147 @@ func (e Visibility) Valid() bool {
 	case VisibilityPublic:
 		return true
 	case VisibilityUnlisted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebhookEventType.
+const (
+	WebhookEventTypeAccountCreated                WebhookEventType = "account.created"
+	WebhookEventTypeAccountUpdated                WebhookEventType = "account.updated"
+	WebhookEventTypeAppealCreated                 WebhookEventType = "appeal.created"
+	WebhookEventTypeCustomEmojiCreated            WebhookEventType = "custom_emoji.created"
+	WebhookEventTypeCustomEmojiDeleted            WebhookEventType = "custom_emoji.deleted"
+	WebhookEventTypeCustomEmojiUpdated            WebhookEventType = "custom_emoji.updated"
+	WebhookEventTypeDomainModerationActionCreated WebhookEventType = "domain_moderation_action.created"
+	WebhookEventTypeDomainModerationActionLifted  WebhookEventType = "domain_moderation_action.lifted"
+	WebhookEventTypeModerationActionCreated       WebhookEventType = "moderation_action.created"
+	WebhookEventTypeModerationActionLifted        WebhookEventType = "moderation_action.lifted"
+	WebhookEventTypeRegistrationPending           WebhookEventType = "registration.pending"
+	WebhookEventTypeReportCreated                 WebhookEventType = "report.created"
+	WebhookEventTypeReportReopened                WebhookEventType = "report.reopened"
+	WebhookEventTypeReportResolved                WebhookEventType = "report.resolved"
+	WebhookEventTypeStatusCreated                 WebhookEventType = "status.created"
+)
+
+// Valid indicates whether the value is a known member of the WebhookEventType enum.
+func (e WebhookEventType) Valid() bool {
+	switch e {
+	case WebhookEventTypeAccountCreated:
+		return true
+	case WebhookEventTypeAccountUpdated:
+		return true
+	case WebhookEventTypeAppealCreated:
+		return true
+	case WebhookEventTypeCustomEmojiCreated:
+		return true
+	case WebhookEventTypeCustomEmojiDeleted:
+		return true
+	case WebhookEventTypeCustomEmojiUpdated:
+		return true
+	case WebhookEventTypeDomainModerationActionCreated:
+		return true
+	case WebhookEventTypeDomainModerationActionLifted:
+		return true
+	case WebhookEventTypeModerationActionCreated:
+		return true
+	case WebhookEventTypeModerationActionLifted:
+		return true
+	case WebhookEventTypeRegistrationPending:
+		return true
+	case WebhookEventTypeReportCreated:
+		return true
+	case WebhookEventTypeReportReopened:
+		return true
+	case WebhookEventTypeReportResolved:
+		return true
+	case WebhookEventTypeStatusCreated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebhookMessageType.
+const (
+	WebhookMessageTypeAccountCreated                WebhookMessageType = "account.created"
+	WebhookMessageTypeAccountUpdated                WebhookMessageType = "account.updated"
+	WebhookMessageTypeAppealCreated                 WebhookMessageType = "appeal.created"
+	WebhookMessageTypeCustomEmojiCreated            WebhookMessageType = "custom_emoji.created"
+	WebhookMessageTypeCustomEmojiDeleted            WebhookMessageType = "custom_emoji.deleted"
+	WebhookMessageTypeCustomEmojiUpdated            WebhookMessageType = "custom_emoji.updated"
+	WebhookMessageTypeDomainModerationActionCreated WebhookMessageType = "domain_moderation_action.created"
+	WebhookMessageTypeDomainModerationActionLifted  WebhookMessageType = "domain_moderation_action.lifted"
+	WebhookMessageTypeModerationActionCreated       WebhookMessageType = "moderation_action.created"
+	WebhookMessageTypeModerationActionLifted        WebhookMessageType = "moderation_action.lifted"
+	WebhookMessageTypeRegistrationPending           WebhookMessageType = "registration.pending"
+	WebhookMessageTypeReportCreated                 WebhookMessageType = "report.created"
+	WebhookMessageTypeReportReopened                WebhookMessageType = "report.reopened"
+	WebhookMessageTypeReportResolved                WebhookMessageType = "report.resolved"
+	WebhookMessageTypeStatusCreated                 WebhookMessageType = "status.created"
+	WebhookMessageTypeWebhookTest                   WebhookMessageType = "webhook.test"
+)
+
+// Valid indicates whether the value is a known member of the WebhookMessageType enum.
+func (e WebhookMessageType) Valid() bool {
+	switch e {
+	case WebhookMessageTypeAccountCreated:
+		return true
+	case WebhookMessageTypeAccountUpdated:
+		return true
+	case WebhookMessageTypeAppealCreated:
+		return true
+	case WebhookMessageTypeCustomEmojiCreated:
+		return true
+	case WebhookMessageTypeCustomEmojiDeleted:
+		return true
+	case WebhookMessageTypeCustomEmojiUpdated:
+		return true
+	case WebhookMessageTypeDomainModerationActionCreated:
+		return true
+	case WebhookMessageTypeDomainModerationActionLifted:
+		return true
+	case WebhookMessageTypeModerationActionCreated:
+		return true
+	case WebhookMessageTypeModerationActionLifted:
+		return true
+	case WebhookMessageTypeRegistrationPending:
+		return true
+	case WebhookMessageTypeReportCreated:
+		return true
+	case WebhookMessageTypeReportReopened:
+		return true
+	case WebhookMessageTypeReportResolved:
+		return true
+	case WebhookMessageTypeStatusCreated:
+		return true
+	case WebhookMessageTypeWebhookTest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebhookProblemReason.
+const (
+	WebhookProblemReasonDescription       WebhookProblemReason = "description"
+	WebhookProblemReasonEvents            WebhookProblemReason = "events"
+	WebhookProblemReasonMissingPermission WebhookProblemReason = "missing_permission"
+	WebhookProblemReasonUrl               WebhookProblemReason = "url"
+)
+
+// Valid indicates whether the value is a known member of the WebhookProblemReason enum.
+func (e WebhookProblemReason) Valid() bool {
+	switch e {
+	case WebhookProblemReasonDescription:
+		return true
+	case WebhookProblemReasonEvents:
+		return true
+	case WebhookProblemReasonMissingPermission:
+		return true
+	case WebhookProblemReasonUrl:
 		return true
 	default:
 		return false
@@ -1706,7 +1961,11 @@ type AdminAppealPage struct {
 // `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
 // `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
 // `custom_emoji_updated` (its category, aliases, or place in the picker),
-// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
+// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
+// `webhook_created`, `webhook_updated` (its URL, description, or events),
+// `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
+// endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
+// description and the host name of its URL, never the URL.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -1733,7 +1992,11 @@ type AdminAuditEntry struct {
 	// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
 	// `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
 	// `custom_emoji_updated` (its category, aliases, or place in the picker),
-	// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
+	// `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
+	// `webhook_created`, `webhook_updated` (its URL, description, or events),
+	// `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
+	// endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
+	// description and the host name of its URL, never the URL.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -2484,6 +2747,138 @@ type AdminTheme struct {
 	Tokens []ThemeTokenValue `json:"tokens"`
 }
 
+// AdminWebhook A webhook endpoint (ADR-0060). Its secret is never shown again after it is made.
+type AdminWebhook struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// Description What the webhook is for; omitted for none.
+	Description *string `json:"description,omitempty"`
+
+	// Events The events it subscribes to, in a stable order.
+	Events []WebhookEventType `json:"events"`
+
+	// Failure The attempts that failed since the last success; omitted when the last attempt
+	// succeeded. The server disables the webhook once they span 72 hours and number 20.
+	Failure *AdminWebhookFailure `json:"failure,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// State Whether the webhook receives the messages of its events.
+	State          AdminWebhookState `json:"state"`
+	StateChangedAt time.Time         `json:"state_changed_at"`
+
+	// StateReason Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
+	// server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
+	// it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
+	StateReason AdminWebhookStateReason `json:"state_reason"`
+
+	// UpdatedAt When the URL, the description, or the events last changed.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Url Where the messages are posted.
+	Url string `json:"url"`
+}
+
+// AdminWebhookAttempt The last attempt of a delivery.
+type AdminWebhookAttempt struct {
+	AttemptedAt time.Time `json:"attempted_at"`
+	DurationMs  int       `json:"duration_ms"`
+
+	// Outcome `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
+	// `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
+	// `forbidden_destination`: the server may not reach the URL (a loopback or private address
+	// that `webhook_allowed_destinations` does not list).
+	Outcome AdminWebhookAttemptOutcome `json:"outcome"`
+
+	// StatusCode The status code of the answer; omitted without one.
+	StatusCode *int `json:"status_code,omitempty"`
+}
+
+// AdminWebhookAttemptOutcome `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
+// `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
+// `forbidden_destination`: the server may not reach the URL (a loopback or private address
+// that `webhook_allowed_destinations` does not list).
+type AdminWebhookAttemptOutcome string
+
+// AdminWebhookCreated A new webhook and its secret.
+type AdminWebhookCreated struct {
+	// Secret The secret that signs the messages, `whsec_` and the base64 of 32 bytes, as the
+	// Standard Webhooks libraries take it. It is shown only now.
+	Secret string `json:"secret"`
+
+	// Webhook A webhook endpoint (ADR-0060). Its secret is never shown again after it is made.
+	Webhook AdminWebhook `json:"webhook"`
+}
+
+// AdminWebhookDelivery A message to a webhook and its attempts.
+type AdminWebhookDelivery struct {
+	// Attempts How many times it was sent.
+	Attempts  int       `json:"attempts"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// EventType The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+	// `POST /admin/webhooks/{id}/test`.
+	EventType WebhookMessageType `json:"event_type"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// LastAttempt The last attempt of a delivery.
+	LastAttempt *AdminWebhookAttempt `json:"last_attempt,omitempty"`
+
+	// MessageId The `webhook-id` of the message, the same on every attempt.
+	MessageId Id `json:"message_id"`
+
+	// Status `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
+	// attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
+	// sent again by hand after that.
+	Status AdminWebhookDeliveryStatus `json:"status"`
+}
+
+// AdminWebhookDeliveryPage A page of the deliveries of a webhook, newest first.
+type AdminWebhookDeliveryPage struct {
+	Items []AdminWebhookDelivery `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminWebhookDeliveryStatus `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
+// attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
+// sent again by hand after that.
+type AdminWebhookDeliveryStatus string
+
+// AdminWebhookFailure The attempts that failed since the last success; omitted when the last attempt
+// succeeded. The server disables the webhook once they span 72 hours and number 20.
+type AdminWebhookFailure struct {
+	ConsecutiveFailures int       `json:"consecutive_failures"`
+	FirstFailedAt       time.Time `json:"first_failed_at"`
+}
+
+// AdminWebhookList The webhooks, newest first.
+type AdminWebhookList struct {
+	Items []AdminWebhook `json:"items"`
+}
+
+// AdminWebhookSecret A new secret of a webhook.
+type AdminWebhookSecret struct {
+	// Secret The new secret, as in `AdminWebhookCreated`. It is shown only now.
+	Secret string `json:"secret"`
+}
+
+// AdminWebhookState Whether the webhook receives the messages of its events.
+type AdminWebhookState string
+
+// AdminWebhookStateReason Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
+// server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
+// it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
+type AdminWebhookStateReason string
+
 // AppealModerationActionRequest An appeal of an action on the user's own account.
 type AppealModerationActionRequest struct {
 	// Text Why the moderators should reconsider the action, as plain text.
@@ -2657,6 +3052,20 @@ type CreateStatusRequest struct {
 	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
 	// accounts.
 	Visibility Visibility `json:"visibility"`
+}
+
+// CreateWebhookRequest A new webhook.
+type CreateWebhookRequest struct {
+	// Description What the webhook is for, up to 200 characters.
+	Description *string `json:"description,omitempty"`
+
+	// Events The events to subscribe to, at least one.
+	Events []WebhookEventType `json:"events"`
+
+	// Url An absolute `https` (or `http`) URL of at most 2048 bytes, without user info or a
+	// fragment. A destination on loopback or a private network is reached only when the
+	// operator allows it (`webhook_allowed_destinations`).
+	Url string `json:"url"`
 }
 
 // CredentialAccount The authenticated user's own account, with what only its owner sees.
@@ -3449,7 +3858,8 @@ type Notification struct {
 	// with the `manage_reports` permission, `admin_sign_up` (a registration awaits
 	// approval; `account` is the new user's account) to those with `manage_accounts`, and
 	// `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
-	// `manage_accounts`.
+	// `manage_accounts`, and `admin_webhook_disabled` (the server disabled a webhook that
+	// answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
 	Type NotificationType `json:"type"`
 }
 
@@ -3500,7 +3910,8 @@ type NotificationPage struct {
 // with the `manage_reports` permission, `admin_sign_up` (a registration awaits
 // approval; `account` is the new user's account) to those with `manage_accounts`, and
 // `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
-// `manage_accounts`.
+// `manage_accounts`, and `admin_webhook_disabled` (the server disabled a webhook that
+// answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
 type NotificationType string
 
 // PageInfo The pagination of a collection page; collection responses embed it with allOf.
@@ -3516,7 +3927,8 @@ type PageInfo struct {
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
 // log. `manage_two_factor`: removing the two-factor authentication of a local user (only
 // the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-// remote. The others guard no client API operation yet.
+// remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
+// operation yet.
 type Permission string
 
 // PickerCustomEmoji A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
@@ -3641,6 +4053,8 @@ type Preferences struct {
 //     operation, has no two-factor authentication.
 //   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
 //     says which.
+//   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
+//     which.
 //   - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
 //     reason in `theme_errors` (`PUT /admin/theme`).
 type Problem struct {
@@ -4363,11 +4777,292 @@ type UpdatePreferencesRequest struct {
 	TimelineLanguages *[]string `json:"timeline_languages,omitempty"`
 }
 
+// UpdateWebhookRequest The changes to a webhook; what is omitted stays.
+type UpdateWebhookRequest struct {
+	// Description The new description; empty removes it.
+	Description *string             `json:"description,omitempty"`
+	Events      *[]WebhookEventType `json:"events,omitempty"`
+	Url         *string             `json:"url,omitempty"`
+}
+
 // Visibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
 // `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
 // public timelines; `private` followers and mentioned accounts; `direct` mentioned
 // accounts.
 type Visibility string
+
+// WebhookAccount The new profile of an `account.updated` message.
+type WebhookAccount struct {
+	Bot          bool   `json:"bot"`
+	Discoverable bool   `json:"discoverable"`
+	DisplayName  string `json:"display_name"`
+	Fields       []struct {
+		Name string `json:"name"`
+
+		// Value Sanitized HTML.
+		Value string `json:"value"`
+	} `json:"fields"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id        Id   `json:"id"`
+	Indexable bool `json:"indexable"`
+	Locked    bool `json:"locked"`
+
+	// Note The profile text as sanitized HTML.
+	Note      string    `json:"note"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// WebhookAccountAction The action of a `moderation_action.*` message, named as in `AdminAccountAction`.
+type WebhookAccountAction struct {
+	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	AccountId Id         `json:"account_id"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id             Id         `json:"id"`
+	IssuedAt       time.Time  `json:"issued_at"`
+	Issuer         string     `json:"issuer"`
+	Kind           string     `json:"kind"`
+	LiftReason     *string    `json:"lift_reason,omitempty"`
+	LiftedAt       *time.Time `json:"lifted_at,omitempty"`
+	NotifyTarget   bool       `json:"notify_target"`
+	PrivateNote    *string    `json:"private_note,omitempty"`
+	PublicReason   *string    `json:"public_reason,omitempty"`
+	ReasonCategory string     `json:"reason_category"`
+
+	// ReportId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ReportId *Id `json:"report_id,omitempty"`
+
+	// State `active`, or `lifted` for `moderation_action.lifted`.
+	State     string `json:"state"`
+	StatusIds []Id   `json:"status_ids"`
+}
+
+// WebhookAppeal The appeal of an `appeal.created` message, named as in `AdminAppeal`.
+type WebhookAppeal struct {
+	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	AccountId Id `json:"account_id"`
+
+	// ActionId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ActionId Id `json:"action_id"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id          Id        `json:"id"`
+	State       string    `json:"state"`
+	SubmittedAt time.Time `json:"submitted_at"`
+	Text        string    `json:"text"`
+}
+
+// WebhookCustomEmoji The emoji of a `custom_emoji.*` message, named as in `AdminCustomEmoji`.
+type WebhookCustomEmoji struct {
+	CreatedAt time.Time `json:"created_at"`
+	Domain    *string   `json:"domain,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id    Id   `json:"id"`
+	Local bool `json:"local"`
+
+	// Operation The operation, named as in the audit log: `custom_emoji_created`,
+	// `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
+	// `custom_emoji_disabled`, or `custom_emoji_deleted`.
+	Operation string  `json:"operation"`
+	Shortcode string  `json:"shortcode"`
+	Uri       *string `json:"uri,omitempty"`
+}
+
+// WebhookDomainAction The action of a `domain_moderation_action.*` message, named as in `AdminDomainAction`.
+type WebhookDomainAction struct {
+	Domain    string     `json:"domain"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id            Id         `json:"id"`
+	IssuedAt      time.Time  `json:"issued_at"`
+	Kind          string     `json:"kind"`
+	LiftedAt      *time.Time `json:"lifted_at,omitempty"`
+	Obfuscate     bool       `json:"obfuscate"`
+	PrivateNote   *string    `json:"private_note,omitempty"`
+	PublicComment *string    `json:"public_comment,omitempty"`
+
+	// State `active`, or `lifted` for `domain_moderation_action.lifted`.
+	State string `json:"state"`
+}
+
+// WebhookEventType An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
+// `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
+// `registration.pending`, `account.*`, `moderation_action.*`, and `appeal.created`;
+// `manage_domains` for `domain_moderation_action.*`; `manage_custom_emojis` for
+// `custom_emoji.*`; and nothing more for `status.created`. `report.created`: a report,
+// local or from another server. `report.resolved`, `report.reopened`. `registration.pending`:
+// a registration awaits a moderator. `account.created`: a registration was approved, at
+// the sign-up or by a moderator. `account.updated`: a local account changed its profile.
+// `moderation_action.created`, `moderation_action.lifted`: an action on an account.
+// `appeal.created`. `domain_moderation_action.created`, `domain_moderation_action.lifted`.
+// `status.created`: a public post of a local account. `custom_emoji.created`,
+// `custom_emoji.updated` (its image, settings, aliases, or whether it is enabled), and
+// `custom_emoji.deleted`: an administrator's operation on a custom emoji.
+type WebhookEventType string
+
+// WebhookMessage The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
+// `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
+// `webhook-signature`. `data` is the `Webhook*` schema of the type: `WebhookReport` for
+// `report.*`, `WebhookRegistration` for `registration.pending` and `account.created`,
+// `WebhookAccount` for `account.updated`, `WebhookAccountAction` for
+// `moderation_action.*`, `WebhookAppeal` for `appeal.created`, `WebhookDomainAction` for
+// `domain_moderation_action.*`, `WebhookStatus` for `status.created`,
+// `WebhookCustomEmoji` for `custom_emoji.*`, and `WebhookTest` for `webhook.test`. No
+// operation returns it; docs/reference/webhooks.md describes it.
+type WebhookMessage struct {
+	Data map[string]interface{} `json:"data"`
+
+	// Timestamp When the event happened.
+	Timestamp time.Time `json:"timestamp"`
+
+	// Type The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+	// `POST /admin/webhooks/{id}/test`.
+	Type WebhookMessageType `json:"type"`
+}
+
+// WebhookMessageType The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+// `POST /admin/webhooks/{id}/test`.
+type WebhookMessageType string
+
+// WebhookProblem The problem of a webhook that breaks a rule (422, `/api/v1/problems/invalid-webhook`);
+// `reason` says which. Another 422 (a malformed request) has none.
+type WebhookProblem struct {
+	// Detail An explanation of this occurrence, localized from `Accept-Language`.
+	Detail *string `json:"detail,omitempty"`
+
+	// MissingPermissions The permissions that the events need and the user lacks, for `missing_permission`.
+	MissingPermissions *[]Permission `json:"missing_permissions,omitempty"`
+
+	// Reason Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
+	// bytes without user info or a fragment. `description`: longer than 200 characters or with
+	// control characters. `events`: none, or one twice. `missing_permission`: the user lacks
+	// the permission of an event (`missing_permissions`).
+	Reason *WebhookProblemReason `json:"reason,omitempty"`
+
+	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Status The HTTP status code.
+	Status int `json:"status"`
+
+	// Title A short summary of the problem type, localized from `Accept-Language`.
+	Title string `json:"title"`
+
+	// Type A URI that identifies the problem type, stable for clients to branch on.
+	// It is `about:blank` when the problem means no more than its HTTP status.
+	Type string `json:"type"`
+}
+
+// WebhookProblemReason Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
+// bytes without user info or a fragment. `description`: longer than 200 characters or with
+// control characters. `events`: none, or one twice. `missing_permission`: the user lacks
+// the permission of an event (`missing_permissions`).
+type WebhookProblemReason string
+
+// WebhookRegistration The registration of a `registration.pending` (state `pending`) or `account.created`
+// (state `approved`) message, named as in `AdminRegistration`.
+type WebhookRegistration struct {
+	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	AccountId Id        `json:"account_id"`
+	Since     time.Time `json:"since"`
+	State     string    `json:"state"`
+
+	// UserId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	UserId   Id     `json:"user_id"`
+	Username string `json:"username"`
+}
+
+// WebhookReport The report of a `report.*` message, named as in `AdminReport`.
+type WebhookReport struct {
+	Category  string    `json:"category"`
+	Comment   string    `json:"comment"`
+	FiledAt   time.Time `json:"filed_at"`
+	Forwarded bool      `json:"forwarded"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Outcome How a resolved report was resolved.
+	Outcome *string `json:"outcome,omitempty"`
+
+	// ReporterAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	ReporterAccountId Id   `json:"reporter_account_id"`
+	RuleIds           []Id `json:"rule_ids"`
+
+	// State `open` or `resolved`.
+	State          string    `json:"state"`
+	StateChangedAt time.Time `json:"state_changed_at"`
+	StatusIds      []Id      `json:"status_ids"`
+
+	// TargetAccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	TargetAccountId Id `json:"target_account_id"`
+
+	// Uri The id of the Flag of a report from another server.
+	Uri *string `json:"uri,omitempty"`
+}
+
+// WebhookStatus The post of a `status.created` message, always `public` and local.
+type WebhookStatus struct {
+	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	AccountId Id `json:"account_id"`
+
+	// Content Sanitized HTML.
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id           Id      `json:"id"`
+	InReplyToUri *string `json:"in_reply_to_uri,omitempty"`
+	Language     string  `json:"language"`
+	Sensitive    bool    `json:"sensitive"`
+	SpoilerText  string  `json:"spoiler_text"`
+	Uri          string  `json:"uri"`
+	Visibility   string  `json:"visibility"`
+}
+
+// WebhookTest The data of a `webhook.test` message.
+type WebhookTest struct {
+	// EndpointId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	EndpointId Id `json:"endpoint_id"`
+}
 
 // AccountActionId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -4443,6 +5138,11 @@ type SignupBlockId = Id
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type StatusId = Id
+
+// WebhookId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type WebhookId = Id
 
 // AccountProfile An account, as clients show it (FR-006).
 type AccountProfile = Account
@@ -4705,6 +5405,15 @@ type ListSignupBlocksParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListWebhookDeliveriesParams defines parameters for ListWebhookDeliveries.
+type ListWebhookDeliveriesParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListBlocksParams defines parameters for ListBlocks.
 type ListBlocksParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -4914,6 +5623,12 @@ type ImportSignupBlocksJSONRequestBody = ImportSignupBlocksRequest
 
 // SetAdminThemeJSONRequestBody defines body for SetAdminTheme for application/json ContentType.
 type SetAdminThemeJSONRequestBody = SetThemeRequest
+
+// CreateWebhookJSONRequestBody defines body for CreateWebhook for application/json ContentType.
+type CreateWebhookJSONRequestBody = CreateWebhookRequest
+
+// UpdateWebhookJSONRequestBody defines body for UpdateWebhook for application/json ContentType.
+type UpdateWebhookJSONRequestBody = UpdateWebhookRequest
 
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
@@ -5196,6 +5911,39 @@ type ServerInterface interface {
 	// SetAdminTheme Replace the instance theme
 	// (PUT /admin/theme)
 	SetAdminTheme(w http.ResponseWriter, r *http.Request)
+	// ListAdminWebhooks List the webhooks
+	// (GET /admin/webhooks)
+	ListAdminWebhooks(w http.ResponseWriter, r *http.Request)
+	// CreateWebhook Set up a webhook
+	// (POST /admin/webhooks)
+	CreateWebhook(w http.ResponseWriter, r *http.Request)
+	// DeleteWebhook Delete a webhook
+	// (DELETE /admin/webhooks/{id})
+	DeleteWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// GetAdminWebhook Get a webhook
+	// (GET /admin/webhooks/{id})
+	GetAdminWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// UpdateWebhook Change a webhook
+	// (PATCH /admin/webhooks/{id})
+	UpdateWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// ListWebhookDeliveries List the deliveries of a webhook
+	// (GET /admin/webhooks/{id}/deliveries)
+	ListWebhookDeliveries(w http.ResponseWriter, r *http.Request, id WebhookId, params ListWebhookDeliveriesParams)
+	// RedeliverWebhookDelivery Send a delivery of a webhook again
+	// (POST /admin/webhooks/{id}/deliveries/{delivery_id}/redeliver)
+	RedeliverWebhookDelivery(w http.ResponseWriter, r *http.Request, id WebhookId, deliveryId Id)
+	// DisableWebhook Disable a webhook
+	// (POST /admin/webhooks/{id}/disable)
+	DisableWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// EnableWebhook Enable a webhook
+	// (POST /admin/webhooks/{id}/enable)
+	EnableWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// RotateWebhookSecret Give a webhook a new secret
+	// (POST /admin/webhooks/{id}/rotate_secret)
+	RotateWebhookSecret(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// TestWebhook Send a test message to a webhook
+	// (POST /admin/webhooks/{id}/test)
+	TestWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -8011,6 +8759,306 @@ func (siw *ServerInterfaceWrapper) SetAdminTheme(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListAdminWebhooks operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminWebhooks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminWebhooks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateWebhook operation middleware
+func (siw *ServerInterfaceWrapper) CreateWebhook(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateWebhook(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteWebhook operation middleware
+func (siw *ServerInterfaceWrapper) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteWebhook(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminWebhook operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminWebhook(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateWebhook operation middleware
+func (siw *ServerInterfaceWrapper) UpdateWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateWebhook(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWebhookDeliveries operation middleware
+func (siw *ServerInterfaceWrapper) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWebhookDeliveriesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWebhookDeliveries(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RedeliverWebhookDelivery operation middleware
+func (siw *ServerInterfaceWrapper) RedeliverWebhookDelivery(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "delivery_id" -------------
+	var deliveryId Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "delivery_id", r.PathValue("delivery_id"), &deliveryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "delivery_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RedeliverWebhookDelivery(w, r, id, deliveryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableWebhook operation middleware
+func (siw *ServerInterfaceWrapper) DisableWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableWebhook(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableWebhook operation middleware
+func (siw *ServerInterfaceWrapper) EnableWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableWebhook(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RotateWebhookSecret operation middleware
+func (siw *ServerInterfaceWrapper) RotateWebhookSecret(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RotateWebhookSecret(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestWebhook operation middleware
+func (siw *ServerInterfaceWrapper) TestWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id WebhookId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestWebhook(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBlocks operation middleware
 func (siw *ServerInterfaceWrapper) ListBlocks(w http.ResponseWriter, r *http.Request) {
 
@@ -9812,6 +10860,17 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/invites", wrapper.ListInvites)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/invites", wrapper.CreateInvite)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/invites/{id}/revoke", wrapper.RevokeInvite)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/webhooks", wrapper.ListAdminWebhooks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks", wrapper.CreateWebhook)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/webhooks/{id}", wrapper.DeleteWebhook)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/webhooks/{id}", wrapper.GetAdminWebhook)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/webhooks/{id}", wrapper.UpdateWebhook)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/enable", wrapper.EnableWebhook)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/disable", wrapper.DisableWebhook)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/rotate_secret", wrapper.RotateWebhookSecret)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/test", wrapper.TestWebhook)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/webhooks/{id}/deliveries", wrapper.ListWebhookDeliveries)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/deliveries/{delivery_id}/redeliver", wrapper.RedeliverWebhookDelivery)
 
 	return m
 }
@@ -9960,6 +11019,24 @@ type AdminThemeJSONResponse struct {
 	Headers AdminThemeResponseHeaders
 }
 
+type AdminWebhookResponseHeaders struct {
+	CacheControl *string
+}
+type AdminWebhookJSONResponse struct {
+	Body AdminWebhook
+
+	Headers AdminWebhookResponseHeaders
+}
+
+type AdminWebhookDeliveryResponseHeaders struct {
+	CacheControl *string
+}
+type AdminWebhookDeliveryJSONResponse struct {
+	Body AdminWebhookDelivery
+
+	Headers AdminWebhookDeliveryResponseHeaders
+}
+
 type CustomEmojiProblemResponseHeaders struct {
 	CacheControl    *string
 	ContentLanguage *string
@@ -10007,6 +11084,16 @@ type StatusPageJSONResponse struct {
 	Body StatusPage
 
 	Headers StatusPageResponseHeaders
+}
+
+type WebhookProblemResponseHeaders struct {
+	CacheControl    *string
+	ContentLanguage *string
+}
+type WebhookProblemApplicationProblemPlusJSONResponse struct {
+	Body WebhookProblem
+
+	Headers WebhookProblemResponseHeaders
 }
 
 type DeleteOwnAccountRequestObject struct {
@@ -14671,6 +15758,680 @@ func (response SetAdminThemedefaultApplicationProblemPlusJSONResponse) VisitSetA
 	return err
 }
 
+type ListAdminWebhooksRequestObject struct {
+}
+
+type ListAdminWebhooksResponseObject interface {
+	VisitListAdminWebhooksResponse(w http.ResponseWriter) error
+}
+
+type ListAdminWebhooks200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminWebhooks200JSONResponse struct {
+	Body    AdminWebhookList
+	Headers ListAdminWebhooks200ResponseHeaders
+}
+
+func (response ListAdminWebhooks200JSONResponse) VisitListAdminWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminWebhooksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminWebhooksdefaultApplicationProblemPlusJSONResponse) VisitListAdminWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWebhookRequestObject struct {
+	Body *CreateWebhookJSONRequestBody
+}
+
+type CreateWebhookResponseObject interface {
+	VisitCreateWebhookResponse(w http.ResponseWriter) error
+}
+
+type CreateWebhook200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type CreateWebhook200JSONResponse struct {
+	Body    AdminWebhookCreated
+	Headers CreateWebhook200ResponseHeaders
+}
+
+func (response CreateWebhook200JSONResponse) VisitCreateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWebhook422ApplicationProblemPlusJSONResponse struct {
+	WebhookProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateWebhook422ApplicationProblemPlusJSONResponse) VisitCreateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateWebhookdefaultApplicationProblemPlusJSONResponse) VisitCreateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteWebhookRequestObject struct {
+	Id WebhookId `json:"id"`
+}
+
+type DeleteWebhookResponseObject interface {
+	VisitDeleteWebhookResponse(w http.ResponseWriter) error
+}
+
+type DeleteWebhook204Response struct {
+}
+
+func (response DeleteWebhook204Response) VisitDeleteWebhookResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteWebhookdefaultApplicationProblemPlusJSONResponse) VisitDeleteWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminWebhookRequestObject struct {
+	Id WebhookId `json:"id"`
+}
+
+type GetAdminWebhookResponseObject interface {
+	VisitGetAdminWebhookResponse(w http.ResponseWriter) error
+}
+
+type GetAdminWebhook200JSONResponse struct{ AdminWebhookJSONResponse }
+
+func (response GetAdminWebhook200JSONResponse) VisitGetAdminWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminWebhookdefaultApplicationProblemPlusJSONResponse) VisitGetAdminWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateWebhookRequestObject struct {
+	Id   WebhookId `json:"id"`
+	Body *UpdateWebhookJSONRequestBody
+}
+
+type UpdateWebhookResponseObject interface {
+	VisitUpdateWebhookResponse(w http.ResponseWriter) error
+}
+
+type UpdateWebhook200JSONResponse struct{ AdminWebhookJSONResponse }
+
+func (response UpdateWebhook200JSONResponse) VisitUpdateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateWebhook422ApplicationProblemPlusJSONResponse struct {
+	WebhookProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateWebhook422ApplicationProblemPlusJSONResponse) VisitUpdateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateWebhookdefaultApplicationProblemPlusJSONResponse) VisitUpdateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWebhookDeliveriesRequestObject struct {
+	Id     WebhookId `json:"id"`
+	Params ListWebhookDeliveriesParams
+}
+
+type ListWebhookDeliveriesResponseObject interface {
+	VisitListWebhookDeliveriesResponse(w http.ResponseWriter) error
+}
+
+type ListWebhookDeliveries200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListWebhookDeliveries200JSONResponse struct {
+	Body    AdminWebhookDeliveryPage
+	Headers ListWebhookDeliveries200ResponseHeaders
+}
+
+func (response ListWebhookDeliveries200JSONResponse) VisitListWebhookDeliveriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWebhookDeliveriesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListWebhookDeliveriesdefaultApplicationProblemPlusJSONResponse) VisitListWebhookDeliveriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RedeliverWebhookDeliveryRequestObject struct {
+	Id         WebhookId `json:"id"`
+	DeliveryId Id        `json:"delivery_id"`
+}
+
+type RedeliverWebhookDeliveryResponseObject interface {
+	VisitRedeliverWebhookDeliveryResponse(w http.ResponseWriter) error
+}
+
+type RedeliverWebhookDelivery200JSONResponse struct {
+	AdminWebhookDeliveryJSONResponse
+}
+
+func (response RedeliverWebhookDelivery200JSONResponse) VisitRedeliverWebhookDeliveryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RedeliverWebhookDeliverydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RedeliverWebhookDeliverydefaultApplicationProblemPlusJSONResponse) VisitRedeliverWebhookDeliveryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableWebhookRequestObject struct {
+	Id WebhookId `json:"id"`
+}
+
+type DisableWebhookResponseObject interface {
+	VisitDisableWebhookResponse(w http.ResponseWriter) error
+}
+
+type DisableWebhook200JSONResponse struct{ AdminWebhookJSONResponse }
+
+func (response DisableWebhook200JSONResponse) VisitDisableWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DisableWebhookdefaultApplicationProblemPlusJSONResponse) VisitDisableWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableWebhookRequestObject struct {
+	Id WebhookId `json:"id"`
+}
+
+type EnableWebhookResponseObject interface {
+	VisitEnableWebhookResponse(w http.ResponseWriter) error
+}
+
+type EnableWebhook200JSONResponse struct{ AdminWebhookJSONResponse }
+
+func (response EnableWebhook200JSONResponse) VisitEnableWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response EnableWebhookdefaultApplicationProblemPlusJSONResponse) VisitEnableWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateWebhookSecretRequestObject struct {
+	Id WebhookId `json:"id"`
+}
+
+type RotateWebhookSecretResponseObject interface {
+	VisitRotateWebhookSecretResponse(w http.ResponseWriter) error
+}
+
+type RotateWebhookSecret200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RotateWebhookSecret200JSONResponse struct {
+	Body    AdminWebhookSecret
+	Headers RotateWebhookSecret200ResponseHeaders
+}
+
+func (response RotateWebhookSecret200JSONResponse) VisitRotateWebhookSecretResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateWebhookSecretdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RotateWebhookSecretdefaultApplicationProblemPlusJSONResponse) VisitRotateWebhookSecretResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestWebhookRequestObject struct {
+	Id WebhookId `json:"id"`
+}
+
+type TestWebhookResponseObject interface {
+	VisitTestWebhookResponse(w http.ResponseWriter) error
+}
+
+type TestWebhook200JSONResponse struct {
+	AdminWebhookDeliveryJSONResponse
+}
+
+func (response TestWebhook200JSONResponse) VisitTestWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response TestWebhookdefaultApplicationProblemPlusJSONResponse) VisitTestWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListBlocksRequestObject struct {
 	Params ListBlocksParams
 }
@@ -18154,6 +19915,39 @@ type StrictServerInterface interface {
 	// SetAdminTheme Replace the instance theme
 	// (PUT /admin/theme)
 	SetAdminTheme(ctx context.Context, request SetAdminThemeRequestObject) (SetAdminThemeResponseObject, error)
+	// ListAdminWebhooks List the webhooks
+	// (GET /admin/webhooks)
+	ListAdminWebhooks(ctx context.Context, request ListAdminWebhooksRequestObject) (ListAdminWebhooksResponseObject, error)
+	// CreateWebhook Set up a webhook
+	// (POST /admin/webhooks)
+	CreateWebhook(ctx context.Context, request CreateWebhookRequestObject) (CreateWebhookResponseObject, error)
+	// DeleteWebhook Delete a webhook
+	// (DELETE /admin/webhooks/{id})
+	DeleteWebhook(ctx context.Context, request DeleteWebhookRequestObject) (DeleteWebhookResponseObject, error)
+	// GetAdminWebhook Get a webhook
+	// (GET /admin/webhooks/{id})
+	GetAdminWebhook(ctx context.Context, request GetAdminWebhookRequestObject) (GetAdminWebhookResponseObject, error)
+	// UpdateWebhook Change a webhook
+	// (PATCH /admin/webhooks/{id})
+	UpdateWebhook(ctx context.Context, request UpdateWebhookRequestObject) (UpdateWebhookResponseObject, error)
+	// ListWebhookDeliveries List the deliveries of a webhook
+	// (GET /admin/webhooks/{id}/deliveries)
+	ListWebhookDeliveries(ctx context.Context, request ListWebhookDeliveriesRequestObject) (ListWebhookDeliveriesResponseObject, error)
+	// RedeliverWebhookDelivery Send a delivery of a webhook again
+	// (POST /admin/webhooks/{id}/deliveries/{delivery_id}/redeliver)
+	RedeliverWebhookDelivery(ctx context.Context, request RedeliverWebhookDeliveryRequestObject) (RedeliverWebhookDeliveryResponseObject, error)
+	// DisableWebhook Disable a webhook
+	// (POST /admin/webhooks/{id}/disable)
+	DisableWebhook(ctx context.Context, request DisableWebhookRequestObject) (DisableWebhookResponseObject, error)
+	// EnableWebhook Enable a webhook
+	// (POST /admin/webhooks/{id}/enable)
+	EnableWebhook(ctx context.Context, request EnableWebhookRequestObject) (EnableWebhookResponseObject, error)
+	// RotateWebhookSecret Give a webhook a new secret
+	// (POST /admin/webhooks/{id}/rotate_secret)
+	RotateWebhookSecret(ctx context.Context, request RotateWebhookSecretRequestObject) (RotateWebhookSecretResponseObject, error)
+	// TestWebhook Send a test message to a webhook
+	// (POST /admin/webhooks/{id}/test)
+	TestWebhook(ctx context.Context, request TestWebhookRequestObject) (TestWebhookResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -20605,6 +22399,304 @@ func (sh *strictHandler) SetAdminTheme(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetAdminThemeResponseObject); ok {
 		if err := validResponse.VisitSetAdminThemeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminWebhooks operation middleware
+func (sh *strictHandler) ListAdminWebhooks(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminWebhooksRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminWebhooks(ctx, request.(ListAdminWebhooksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminWebhooks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminWebhooksResponseObject); ok {
+		if err := validResponse.VisitListAdminWebhooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateWebhook operation middleware
+func (sh *strictHandler) CreateWebhook(w http.ResponseWriter, r *http.Request) {
+	var request CreateWebhookRequestObject
+
+	var body CreateWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateWebhook(ctx, request.(CreateWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateWebhookResponseObject); ok {
+		if err := validResponse.VisitCreateWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteWebhook operation middleware
+func (sh *strictHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request DeleteWebhookRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteWebhook(ctx, request.(DeleteWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteWebhookResponseObject); ok {
+		if err := validResponse.VisitDeleteWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminWebhook operation middleware
+func (sh *strictHandler) GetAdminWebhook(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request GetAdminWebhookRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminWebhook(ctx, request.(GetAdminWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminWebhookResponseObject); ok {
+		if err := validResponse.VisitGetAdminWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateWebhook operation middleware
+func (sh *strictHandler) UpdateWebhook(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request UpdateWebhookRequestObject
+
+	request.Id = id
+
+	var body UpdateWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateWebhook(ctx, request.(UpdateWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateWebhookResponseObject); ok {
+		if err := validResponse.VisitUpdateWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWebhookDeliveries operation middleware
+func (sh *strictHandler) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request, id WebhookId, params ListWebhookDeliveriesParams) {
+	var request ListWebhookDeliveriesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWebhookDeliveries(ctx, request.(ListWebhookDeliveriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWebhookDeliveries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWebhookDeliveriesResponseObject); ok {
+		if err := validResponse.VisitListWebhookDeliveriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RedeliverWebhookDelivery operation middleware
+func (sh *strictHandler) RedeliverWebhookDelivery(w http.ResponseWriter, r *http.Request, id WebhookId, deliveryId Id) {
+	var request RedeliverWebhookDeliveryRequestObject
+
+	request.Id = id
+	request.DeliveryId = deliveryId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RedeliverWebhookDelivery(ctx, request.(RedeliverWebhookDeliveryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RedeliverWebhookDelivery")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RedeliverWebhookDeliveryResponseObject); ok {
+		if err := validResponse.VisitRedeliverWebhookDeliveryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableWebhook operation middleware
+func (sh *strictHandler) DisableWebhook(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request DisableWebhookRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableWebhook(ctx, request.(DisableWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableWebhookResponseObject); ok {
+		if err := validResponse.VisitDisableWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableWebhook operation middleware
+func (sh *strictHandler) EnableWebhook(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request EnableWebhookRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableWebhook(ctx, request.(EnableWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableWebhookResponseObject); ok {
+		if err := validResponse.VisitEnableWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RotateWebhookSecret operation middleware
+func (sh *strictHandler) RotateWebhookSecret(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request RotateWebhookSecretRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RotateWebhookSecret(ctx, request.(RotateWebhookSecretRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RotateWebhookSecret")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RotateWebhookSecretResponseObject); ok {
+		if err := validResponse.VisitRotateWebhookSecretResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TestWebhook operation middleware
+func (sh *strictHandler) TestWebhook(w http.ResponseWriter, r *http.Request, id WebhookId) {
+	var request TestWebhookRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestWebhook(ctx, request.(TestWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestWebhookResponseObject); ok {
+		if err := validResponse.VisitTestWebhookResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1,0 +1,589 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package testkit
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
+	"github.com/best-friends/my/internal/app/uow"
+	appwebhook "github.com/best-friends/my/internal/app/webhook"
+	"github.com/best-friends/my/internal/domain/moderation"
+	"github.com/best-friends/my/internal/domain/webhook"
+)
+
+// WebhookHarness is what WebhookRepositoryContract needs from a database adapter: its unit of
+// work, the webhook repository, and the moderation repository, which keeps the audit log.
+type WebhookHarness struct {
+	UnitOfWork uow.UnitOfWork
+	Webhooks   appwebhook.Repository
+	Moderation appmoderation.Repository
+}
+
+// WebhookFactory returns a harness on a new, empty database whose UnitOfWork uses opts. The
+// factory registers the cleanup of everything it creates with t.Cleanup.
+type WebhookFactory func(t *testing.T, opts uow.Options) WebhookHarness
+
+// WebhookRepositoryContract verifies the webhook repository of a database adapter through the
+// webhook use cases (ADR-0060, FR-722): endpoints are created, revised, enabled, disabled, and
+// deleted with their audit log entries, which name the host and never the URL; subscribing needs
+// the permissions of the events; an event becomes a message and a delivery job for the enabled
+// endpoints that subscribe to it only; a delivery is signed with Standard Webhooks v1 under the
+// current secret (and the previous one for a day after a rotation), is not sent again after it
+// succeeded unless redelivered with the same webhook-id, is retried after a failure, and 410
+// Gone or a run of failures disables its endpoint as the system and emits EndpointDisabled; and
+// the messages are purged after webhook.Retention.
+func WebhookRepositoryContract(t *testing.T, newHarness WebhookFactory) {
+	t.Helper()
+	cases := []struct {
+		name string
+		run  func(t *testing.T, e *webhookEnv)
+	}{
+		{"ManagesEndpointsAndAudits", webhookManage},
+		{"ChecksThePermissionsOfTheEvents", webhookPermissions},
+		{"SendsEventsToTheSubscribedEndpoints", webhookSources},
+		{"DeliversSignedOnceAndRedelivers", webhookDeliver},
+		{"RetriesAndDisablesAGoneEndpoint", webhookGone},
+		{"DisablesAnEndpointThatKeepsFailing", webhookFailing},
+		{"SignsWithBothSecretsAfterARotation", webhookRotate},
+		{"PurgesOldMessages", webhookPurge},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) { tc.run(t, newWebhookEnv(t, newHarness)) })
+	}
+}
+
+type webhookEnv struct {
+	h        WebhookHarness
+	clock    *Clock
+	ids      *IDGenerator
+	svc      *appwebhook.Service
+	outbox   *recordingOutbox
+	http     *webhookHTTP
+	granted  map[string][]webhook.Permission
+	disabled []appwebhook.EndpointDisabled
+	mu       sync.Mutex
+}
+
+// webhookHTTP is a kernel.HTTPClient that answers with the next status code (200 when none is
+// queued), or with err, and keeps the requests.
+type webhookHTTP struct {
+	mu       sync.Mutex
+	statuses []int
+	headers  []http.Header
+	err      error
+	requests []*kernel.HTTPRequest
+}
+
+func (c *webhookHTTP) Do(_ context.Context, req *kernel.HTTPRequest) (*kernel.HTTPResponse, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.requests = append(c.requests, req)
+	if c.err != nil {
+		return nil, c.err
+	}
+	status, header := http.StatusOK, http.Header{}
+	if len(c.statuses) > 0 {
+		status, c.statuses = c.statuses[0], c.statuses[1:]
+	}
+	if len(c.headers) > 0 {
+		header, c.headers = c.headers[0], c.headers[1:]
+	}
+	return &kernel.HTTPResponse{StatusCode: status, Header: header, URL: req.URL, Body: io.NopCloser(strings.NewReader("ok"))}, nil
+}
+
+func (c *webhookHTTP) take() []*kernel.HTTPRequest {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	out := c.requests
+	c.requests = nil
+	return out
+}
+
+func newWebhookEnv(t *testing.T, newHarness WebhookFactory) *webhookEnv {
+	t.Helper()
+	projectors := &uow.Projectors{}
+	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
+	clock := NewClock(time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
+	ids := NewIDGenerator(clock)
+	e := &webhookEnv{h: h, clock: clock, ids: ids, outbox: &recordingOutbox{}, http: &webhookHTTP{}, granted: map[string][]webhook.Permission{}}
+	appmoderation.RegisterAuditProjector(projectors, h.Moderation)
+	appwebhook.RegisterProjectors(projectors, h.Webhooks)
+	e.svc = appwebhook.NewService(appwebhook.Deps{
+		UnitOfWork: h.UnitOfWork, Repository: h.Webhooks, Outbox: e.outbox, Sealer: kernel.NewSealer(NewKeyManager("webhook")),
+		HTTP: e.http, Clock: clock, IDs: ids,
+		Permissions: func(_ context.Context, userID string) ([]webhook.Permission, error) {
+			return e.granted[userID], nil
+		},
+	})
+	e.svc.RegisterSources(projectors)
+	projectors.Register(appwebhook.EventEndpointDisabled, func(_ context.Context, _ uow.Tx, ev uow.Event) error {
+		e.mu.Lock()
+		defer e.mu.Unlock()
+		e.disabled = append(e.disabled, ev.(appwebhook.EndpointDisabled))
+		return nil
+	})
+	return e
+}
+
+func (e *webhookEnv) create(t *testing.T, url string, events ...webhook.EventType) appwebhook.Created {
+	t.Helper()
+	c, err := e.svc.Create(t.Context(), webhook.EndpointSettings{URL: url, Description: "Chat", Events: events}, "")
+	if err != nil {
+		t.Fatalf("Create(%s): %v", url, err)
+	}
+	return c
+}
+
+// fileReport emits the ReportFiled of a new report, as the moderation module does.
+func (e *webhookEnv) fileReport(t *testing.T) moderation.Report {
+	t.Helper()
+	r := moderation.Report{
+		ID: e.ids.NewID(), ReporterAccountID: e.ids.NewID(), TargetAccountID: e.ids.NewID(),
+		Category: moderation.CategorySpam, Comment: "spam", FiledAt: e.clock.Now(),
+	}
+	err := e.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		return tx.Emit(t.Context(), appmoderation.ReportFiled{Report: r, FirstOpen: true})
+	})
+	if err != nil {
+		t.Fatalf("emit ReportFiled: %v", err)
+	}
+	return r
+}
+
+// deliveryJobs returns the deliveries of the webhook.deliver jobs enqueued since the last call.
+func (e *webhookEnv) deliveryJobs(t *testing.T) []string {
+	t.Helper()
+	var out []string
+	for _, j := range e.outbox.take() {
+		if j.Type != appwebhook.JobDeliver {
+			t.Errorf("job %s, want %s", j.Type, appwebhook.JobDeliver)
+			continue
+		}
+		var p struct {
+			DeliveryID string `json:"delivery_id"`
+		}
+		if err := json.Unmarshal(j.Payload, &p); err != nil || p.DeliveryID == "" || !strings.HasPrefix(j.IdempotencyKey, appwebhook.JobDeliver+":") {
+			t.Errorf("job %s: payload %s, key %q", j.Type, j.Payload, j.IdempotencyKey)
+		}
+		out = append(out, p.DeliveryID)
+	}
+	return out
+}
+
+func (e *webhookEnv) audit(t *testing.T, endpointID string) []moderation.AuditEntry {
+	t.Helper()
+	entries, err := e.h.Moderation.ListAuditEntries(t.Context(), appmoderation.AuditQuery{
+		TargetKind: moderation.AuditTargetWebhook, TargetID: endpointID,
+	}, 100)
+	if err != nil {
+		t.Fatalf("ListAuditEntries: %v", err)
+	}
+	return entries
+}
+
+func webhookManage(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	c := e.create(t, "https://hooks.example.com/services/T0/B0/secret-token?x=1", webhook.EventReportResolved, webhook.EventReportCreated)
+	if _, err := webhook.ParseSecret(c.Secret); err != nil || !strings.HasPrefix(c.Secret, webhook.SecretPrefix) {
+		t.Errorf("secret %q: %v", c.Secret, err)
+	}
+	got := c.Endpoint
+	if got.State != webhook.StateEnabled || got.StateReason != webhook.ReasonAdmin || got.Failures != nil ||
+		got.Settings.Description != "Chat" || len(got.Settings.Events) != 2 || got.Settings.Events[0] != webhook.EventReportCreated {
+		t.Errorf("created endpoint = %+v", got)
+	}
+	id := got.ID
+	updated, err := e.svc.Update(ctx, id, webhook.EndpointSettings{URL: "https://hooks.example.com/v2", Events: []webhook.EventType{webhook.EventStatusCreated}}, "")
+	if err != nil || updated.Settings.URL != "https://hooks.example.com/v2" || updated.Settings.Description != "" ||
+		len(updated.Settings.Events) != 1 || updated.RevisionID == got.RevisionID {
+		t.Errorf("Update = %+v, %v", updated, err)
+	}
+	// The same settings again record nothing.
+	if again, err := e.svc.Update(ctx, id, updated.Settings, ""); err != nil || again.RevisionID != updated.RevisionID {
+		t.Errorf("Update(same) = %+v, %v; want revision %s", again, err, updated.RevisionID)
+	}
+	if _, err := e.svc.Update(ctx, id, webhook.EndpointSettings{URL: "ftp://x.example", Events: []webhook.EventType{webhook.EventStatusCreated}}, ""); !errors.Is(err, webhook.ErrInvalidURL) {
+		t.Errorf("Update(ftp) = %v, want ErrInvalidURL", err)
+	}
+	if d, err := e.svc.Disable(ctx, id, ""); err != nil || d.State != webhook.StateDisabled {
+		t.Errorf("Disable = %+v, %v", d, err)
+	}
+	if d, err := e.svc.Disable(ctx, id, ""); err != nil || d.State != webhook.StateDisabled {
+		t.Errorf("Disable again = %+v, %v", d, err)
+	}
+	if d, err := e.svc.Enable(ctx, id, ""); err != nil || d.State != webhook.StateEnabled {
+		t.Errorf("Enable = %+v, %v", d, err)
+	}
+	other := e.create(t, "https://other.example/hook", webhook.EventStatusCreated)
+	list, err := e.svc.List(ctx)
+	if err != nil || len(list) != 2 || list[0].ID != other.Endpoint.ID {
+		t.Errorf("List = %+v, %v; want the newest first", list, err)
+	}
+	if err := e.svc.Delete(ctx, id, ""); err != nil {
+		t.Fatalf("Delete: %v", err)
+	}
+	if _, err := e.svc.Get(ctx, id); !errors.Is(err, appwebhook.ErrNotFound) {
+		t.Errorf("Get(deleted) = %v, want ErrNotFound", err)
+	}
+	if _, err := e.svc.Enable(ctx, id, ""); !errors.Is(err, appwebhook.ErrNotFound) {
+		t.Errorf("Enable(deleted) = %v, want ErrNotFound", err)
+	}
+	if list, _ := e.svc.List(ctx); len(list) != 1 {
+		t.Errorf("List after delete = %+v", list)
+	}
+	entries := e.audit(t, id)
+	want := []moderation.AuditAction{
+		moderation.AuditWebhookDeleted, moderation.AuditWebhookEnabled, moderation.AuditWebhookDisabled,
+		moderation.AuditWebhookUpdated, moderation.AuditWebhookCreated,
+	}
+	if len(entries) != len(want) {
+		t.Fatalf("audit = %+v, want %v", entries, want)
+	}
+	for i, en := range entries {
+		if en.Action != want[i] || en.ActorKind != moderation.AuditActorCLI || strings.Contains(en.TargetLabel, "secret-token") ||
+			!strings.Contains(en.TargetLabel, "hooks.example.com") {
+			t.Errorf("audit[%d] = %+v, want %s by the CLI labeled with the host only", i, en, want[i])
+		}
+	}
+}
+
+func webhookPermissions(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	user := e.ids.NewID()
+	e.granted[user] = []webhook.Permission{webhook.PermissionManageWebhooks, webhook.PermissionManageDomains}
+	settings := webhook.EndpointSettings{URL: "https://hooks.example.com/", Events: []webhook.EventType{
+		webhook.EventReportCreated, webhook.EventAccountCreated, webhook.EventDomainModerationActionCreated, webhook.EventStatusCreated,
+	}}
+	_, err := e.svc.Create(ctx, settings, user)
+	var missing *appwebhook.MissingPermissionError
+	if !errors.As(err, &missing) || len(missing.Missing) != 2 ||
+		missing.Missing[0] != webhook.PermissionManageAccounts || missing.Missing[1] != webhook.PermissionManageReports {
+		t.Fatalf("Create = %v, want the missing manage_accounts and manage_reports", err)
+	}
+	settings.Events = []webhook.EventType{webhook.EventDomainModerationActionLifted, webhook.EventStatusCreated}
+	c, err := e.svc.Create(ctx, settings, user)
+	if err != nil {
+		t.Fatalf("Create with the permissions held: %v", err)
+	}
+	settings.Events = []webhook.EventType{webhook.EventAppealCreated}
+	if _, err := e.svc.Update(ctx, c.Endpoint.ID, settings, user); !errors.As(err, &missing) {
+		t.Errorf("Update = %v, want a MissingPermissionError", err)
+	}
+	if entries := e.audit(t, c.Endpoint.ID); len(entries) != 1 || entries[0].ActorUserID != user {
+		t.Errorf("audit = %+v, want the creation by %s", entries, user)
+	}
+	for _, s := range []webhook.EndpointSettings{
+		{URL: "https://hooks.example.com/"},
+		{URL: "https://hooks.example.com/", Events: []webhook.EventType{webhook.EventTest}},
+		{URL: "https://user@hooks.example.com/", Events: []webhook.EventType{webhook.EventStatusCreated}},
+		{URL: "https://hooks.example.com/#x", Events: []webhook.EventType{webhook.EventStatusCreated}},
+		{URL: "/relative", Events: []webhook.EventType{webhook.EventStatusCreated}},
+		{URL: "https://hooks.example.com/", Description: strings.Repeat("x", webhook.MaxDescription+1), Events: []webhook.EventType{webhook.EventStatusCreated}},
+	} {
+		if _, err := e.svc.Create(ctx, s, ""); !appwebhook.IsValidation(err) {
+			t.Errorf("Create(%+v) = %v, want a validation error", s, err)
+		}
+	}
+}
+
+func webhookSources(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	// Nothing subscribes yet: nothing is written.
+	e.fileReport(t)
+	if jobs := e.deliveryJobs(t); len(jobs) != 0 {
+		t.Fatalf("jobs without an endpoint = %v", jobs)
+	}
+	reports := e.create(t, "https://reports.example/hook", webhook.EventReportCreated)
+	e.create(t, "https://statuses.example/hook", webhook.EventStatusCreated)
+	off := e.create(t, "https://off.example/hook", webhook.EventReportCreated)
+	if _, err := e.svc.Disable(ctx, off.Endpoint.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	r := e.fileReport(t)
+	jobs := e.deliveryJobs(t)
+	if len(jobs) != 1 {
+		t.Fatalf("jobs = %v, want one for the enabled endpoint that subscribes", jobs)
+	}
+	ds, err := e.svc.Deliveries(ctx, reports.Endpoint.ID, "", 10)
+	if err != nil || len(ds) != 1 || ds[0].Delivery.ID != jobs[0] || ds[0].EventType != webhook.EventReportCreated ||
+		ds[0].Status() != webhook.DeliveryPending || ds[0].Last != nil {
+		t.Fatalf("Deliveries = %+v, %v", ds, err)
+	}
+	if res := e.svc.Deliver(ctx, jobs[0], false); !res.IsDone() {
+		t.Fatalf("Deliver = %+v", res)
+	}
+	reqs := e.http.take()
+	if len(reqs) != 1 {
+		t.Fatalf("requests = %d", len(reqs))
+	}
+	var body struct {
+		Type      string          `json:"type"`
+		Timestamp string          `json:"timestamp"`
+		Data      json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(reqs[0].Body, &body); err != nil || body.Type != "report.created" || body.Timestamp == "" {
+		t.Fatalf("body %s: %v", reqs[0].Body, err)
+	}
+	var data map[string]any
+	if err := json.Unmarshal(body.Data, &data); err != nil || data["id"] != r.ID || data["target_account_id"] != r.TargetAccountID ||
+		data["state"] != "open" || data["category"] != "spam" {
+		t.Errorf("data = %s, want report %s", body.Data, r.ID)
+	}
+	if _, err := e.svc.Deliveries(ctx, e.ids.NewID(), "", 10); !errors.Is(err, appwebhook.ErrNotFound) {
+		t.Errorf("Deliveries(unknown) = %v, want ErrNotFound", err)
+	}
+}
+
+// signedBy checks the Standard Webhooks headers of a request against the secrets.
+func signedBy(t *testing.T, req *kernel.HTTPRequest, secrets ...string) string {
+	t.Helper()
+	id, ts := req.Header.Get(webhook.HeaderID), req.Header.Get(webhook.HeaderTimestamp)
+	sec, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil || id == "" || req.Method != http.MethodPost || req.Purpose != kernel.HTTPPurposeWebhook ||
+		req.Header.Get("Content-Type") != "application/json" {
+		t.Fatalf("request %s %s, headers %v", req.Method, req.URL, req.Header)
+	}
+	sigs := strings.Fields(req.Header.Get(webhook.HeaderSignature))
+	if len(sigs) != len(secrets) {
+		t.Errorf("signatures %v, want %d", sigs, len(secrets))
+	}
+	for _, s := range secrets {
+		b, err := webhook.ParseSecret(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !webhook.Verify(b, req.Header.Get(webhook.HeaderSignature), id, time.Unix(sec, 0), req.Body) {
+			t.Errorf("the signatures %v do not verify under %s", sigs, s)
+		}
+	}
+	return id
+}
+
+func webhookDeliver(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	c := e.create(t, "https://hooks.example.com/in", webhook.EventStatusCreated)
+	d, err := e.svc.Test(ctx, c.Endpoint.ID)
+	if err != nil || d.EventType != webhook.EventTest {
+		t.Fatalf("Test = %+v, %v", d, err)
+	}
+	jobs := e.deliveryJobs(t)
+	if len(jobs) != 1 || jobs[0] != d.Delivery.ID {
+		t.Fatalf("jobs = %v, want %s", jobs, d.Delivery.ID)
+	}
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsDone() {
+		t.Fatalf("Deliver = %+v", res)
+	}
+	reqs := e.http.take()
+	if len(reqs) != 1 || reqs[0].URL != "https://hooks.example.com/in" {
+		t.Fatalf("requests = %+v", reqs)
+	}
+	msgID := signedBy(t, reqs[0], c.Secret)
+	if !bytes.Contains(reqs[0].Body, []byte(`"type":"webhook.test"`)) || !bytes.Contains(reqs[0].Body, []byte(c.Endpoint.ID)) {
+		t.Errorf("body %s", reqs[0].Body)
+	}
+	got, err := e.svc.Deliveries(ctx, c.Endpoint.ID, "", 10)
+	if err != nil || len(got) != 1 || got[0].Status() != webhook.DeliverySucceeded || got[0].Attempts != 1 ||
+		got[0].Last == nil || got[0].Last.StatusCode != http.StatusOK || got[0].Last.Outcome != webhook.OutcomeSucceeded {
+		t.Fatalf("Deliveries = %+v, %v", got, err)
+	}
+	// The job again sends nothing; a redelivery sends the same message again.
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsDone() || len(e.http.take()) != 0 {
+		t.Errorf("Deliver again = %+v, want nothing sent", res)
+	}
+	if _, err := e.svc.Redeliver(ctx, c.Endpoint.ID, d.Delivery.ID); err != nil {
+		t.Fatalf("Redeliver: %v", err)
+	}
+	re := e.outbox.take()
+	if len(re) != 1 || re[0].IdempotencyKey == appwebhook.JobDeliver+":"+d.Delivery.ID {
+		t.Fatalf("redelivery jobs = %+v, want one with its own key", re)
+	}
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, true); !res.IsDone() {
+		t.Fatalf("Deliver(redeliver) = %+v", res)
+	}
+	reqs = e.http.take()
+	if len(reqs) != 1 || signedBy(t, reqs[0], c.Secret) != msgID {
+		t.Errorf("redelivery = %+v, want the same webhook-id %s", reqs, msgID)
+	}
+	if _, err := e.svc.Redeliver(ctx, c.Endpoint.ID, e.ids.NewID()); !errors.Is(err, appwebhook.ErrNotFound) {
+		t.Errorf("Redeliver(unknown) = %v, want ErrNotFound", err)
+	}
+	// A disabled endpoint receives nothing.
+	d2, err := e.svc.Test(ctx, c.Endpoint.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Disable(ctx, c.Endpoint.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+	if res := e.svc.Deliver(ctx, d2.Delivery.ID, false); !res.IsDone() || len(e.http.take()) != 0 {
+		t.Errorf("Deliver(disabled) = %+v, want nothing sent", res)
+	}
+	// A delivery that is gone (purged) is done.
+	if res := e.svc.Deliver(ctx, e.ids.NewID(), false); !res.IsDone() {
+		t.Errorf("Deliver(unknown) = %+v, want Done", res)
+	}
+}
+
+func webhookGone(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	c := e.create(t, "https://hooks.example.com/in", webhook.EventStatusCreated)
+	d, err := e.svc.Test(ctx, c.Endpoint.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.http.statuses = []int{http.StatusServiceUnavailable, http.StatusFound, http.StatusGone}
+	e.http.headers = []http.Header{{"Retry-After": []string{"120"}}}
+	res := e.svc.Deliver(ctx, d.Delivery.ID, false)
+	if !res.IsRetry() || res.After() != 2*time.Minute {
+		t.Errorf("Deliver(503, Retry-After 120) = %+v, want a retry after 2m", res)
+	}
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsRetry() || res.After() != 0 {
+		t.Errorf("Deliver(302) = %+v, want a retry on the policy's backoff", res)
+	}
+	got, err := e.svc.Get(ctx, c.Endpoint.ID)
+	if err != nil || got.Failures == nil || got.Failures.Consecutive != 2 || got.State != webhook.StateEnabled {
+		t.Fatalf("endpoint after two failures = %+v, %v", got, err)
+	}
+	e.http.err = errors.Join(kernel.ErrForbiddenDestination)
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsRetry() {
+		t.Errorf("Deliver(forbidden) = %+v, want a retry", res)
+	}
+	e.http.err = nil
+	ds, _ := e.svc.Deliveries(ctx, c.Endpoint.ID, "", 10)
+	if len(ds) != 1 || ds[0].Status() != webhook.DeliveryFailing || ds[0].Attempts != 3 || ds[0].Last.Outcome != webhook.OutcomeForbidden ||
+		ds[0].Last.StatusCode != 0 {
+		t.Errorf("Deliveries = %+v", ds)
+	}
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsDone() {
+		t.Errorf("Deliver(410) = %+v, want Done", res)
+	}
+	got, err = e.svc.Get(ctx, c.Endpoint.ID)
+	if err != nil || got.State != webhook.StateDisabled || got.StateReason != webhook.ReasonGone {
+		t.Fatalf("endpoint after 410 = %+v, %v", got, err)
+	}
+	if len(e.disabled) != 1 || e.disabled[0].EndpointID != c.Endpoint.ID || e.disabled[0].Reason != webhook.ReasonGone {
+		t.Errorf("EndpointDisabled = %+v", e.disabled)
+	}
+	entries := e.audit(t, c.Endpoint.ID)
+	if len(entries) != 2 || entries[0].Action != moderation.AuditWebhookDisabled || entries[0].ActorKind != moderation.AuditActorSystem {
+		t.Errorf("audit = %+v, want the disabling by the system", entries)
+	}
+}
+
+func webhookFailing(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	c := e.create(t, "https://hooks.example.com/in", webhook.EventStatusCreated)
+	e.http.err = errors.New("connection refused")
+	fail := func(n int) {
+		t.Helper()
+		for range n {
+			d, err := e.svc.Test(ctx, c.Endpoint.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsRetry() {
+				t.Fatalf("Deliver = %+v, want a retry", res)
+			}
+			e.clock.Advance(4 * time.Hour)
+		}
+	}
+	fail(10)
+	// A success ends the run.
+	e.http.err = nil
+	d, _ := e.svc.Test(ctx, c.Endpoint.ID)
+	if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsDone() {
+		t.Fatalf("Deliver = %+v", res)
+	}
+	if got, _ := e.svc.Get(ctx, c.Endpoint.ID); got.Failures != nil {
+		t.Fatalf("failures after a success = %+v", got.Failures)
+	}
+	e.http.err = errors.New("connection refused")
+	// 19 failures over 72 hours, then the 20th: still enabled until both hold.
+	fail(webhook.DisableAfterFailures - 1)
+	got, _ := e.svc.Get(ctx, c.Endpoint.ID)
+	if got.State != webhook.StateEnabled || got.Failures == nil || got.Failures.Consecutive != webhook.DisableAfterFailures-1 {
+		t.Fatalf("endpoint after 19 failures = %+v", got)
+	}
+	fail(1)
+	got, _ = e.svc.Get(ctx, c.Endpoint.ID)
+	if got.State != webhook.StateDisabled || got.StateReason != webhook.ReasonFailing {
+		t.Fatalf("endpoint after 20 failures over 72h = %+v", got)
+	}
+	if len(e.disabled) != 1 || e.disabled[0].Reason != webhook.ReasonFailing {
+		t.Errorf("EndpointDisabled = %+v", e.disabled)
+	}
+	// Enabling it again keeps the run until a success.
+	if _, err := e.svc.Enable(ctx, c.Endpoint.ID, ""); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func webhookRotate(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	c := e.create(t, "https://hooks.example.com/in", webhook.EventStatusCreated)
+	e.clock.Advance(time.Hour)
+	next, err := e.svc.RotateSecret(ctx, c.Endpoint.ID, "")
+	if err != nil || next == c.Secret {
+		t.Fatalf("RotateSecret = %q, %v", next, err)
+	}
+	send := func() *kernel.HTTPRequest {
+		t.Helper()
+		d, err := e.svc.Test(ctx, c.Endpoint.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res := e.svc.Deliver(ctx, d.Delivery.ID, false); !res.IsDone() {
+			t.Fatalf("Deliver = %+v", res)
+		}
+		reqs := e.http.take()
+		if len(reqs) != 1 {
+			t.Fatalf("requests = %d", len(reqs))
+		}
+		return reqs[0]
+	}
+	signedBy(t, send(), next, c.Secret)
+	e.clock.Advance(webhook.SecretOverlap)
+	signedBy(t, send(), next)
+	entries := e.audit(t, c.Endpoint.ID)
+	if len(entries) != 2 || entries[0].Action != moderation.AuditWebhookSecretRotated {
+		t.Errorf("audit = %+v", entries)
+	}
+}
+
+func webhookPurge(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	c := e.create(t, "https://hooks.example.com/in", webhook.EventStatusCreated)
+	old, _ := e.svc.Test(ctx, c.Endpoint.ID)
+	if res := e.svc.Deliver(ctx, old.Delivery.ID, false); !res.IsDone() {
+		t.Fatal(res)
+	}
+	e.clock.Advance(webhook.Retention - time.Hour)
+	recent, _ := e.svc.Test(ctx, c.Endpoint.ID)
+	e.clock.Advance(2 * time.Hour)
+	n, err := e.svc.Purge(ctx)
+	if err != nil || n != 1 {
+		t.Fatalf("Purge = %d, %v; want 1", n, err)
+	}
+	ds, _ := e.svc.Deliveries(ctx, c.Endpoint.ID, "", 10)
+	if len(ds) != 1 || ds[0].Delivery.ID != recent.Delivery.ID {
+		t.Errorf("Deliveries after the purge = %+v, want only %s", ds, recent.Delivery.ID)
+	}
+	if n, err := e.svc.Purge(ctx); err != nil || n != 0 {
+		t.Errorf("Purge again = %d, %v", n, err)
+	}
+	if res := e.svc.Deliver(ctx, old.Delivery.ID, true); !res.IsDone() {
+		t.Errorf("Deliver(purged) = %+v, want Done", res)
+	}
+}

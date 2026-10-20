@@ -68,7 +68,8 @@ tags:
   - name: admin-server
     description: |
       The administration of the server itself: its settings and texts, its rules, the roles and
-      granting them, the custom emoji, and the dead jobs of the job queue (ADR-0058). The
+      granting them, the custom emoji, the webhooks, and the dead jobs of the job queue
+      (ADR-0058). The
       operations need an `admin` scope and a permission of the user's roles in the server
       category; a user without it gets a 403 `/api/v1/problems/missing-permission`.
 paths:
@@ -3572,6 +3573,254 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: invites (#624) ---
+  # --- admin: webhooks (#666) ---
+  /admin/webhooks:
+    get:
+      operationId: listAdminWebhooks
+      summary: List the webhooks
+      description: |
+        The webhook endpoints of the instance that are not deleted, newest first (ADR-0060).
+        Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The webhooks.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWebhookList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createWebhook
+      summary: Set up a webhook
+      description: |
+        Sets up an endpoint, enabled, that receives the messages of the `events` it subscribes
+        to, signed with Standard Webhooks v1 (`docs/reference/webhooks.md`). The answer carries
+        its secret, which is shown only now. The user needs the permission of every event
+        besides `manage_webhooks` (`WebhookEventType`). A URL, a description, or events that
+        break a rule, or an event whose permission the user lacks, is a 422
+        `/api/v1/problems/invalid-webhook` whose `reason` says which. The URL may name any
+        destination: whether the server may reach it is decided on every delivery, which a
+        refused destination fails. The setup is recorded in the audit log under the
+        description and the host name of the URL. Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWebhookRequest"
+      responses:
+        "200":
+          description: The new webhook and its secret.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWebhookCreated"
+        "422":
+          $ref: "#/components/responses/WebhookProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}:
+    parameters:
+      - $ref: "#/components/parameters/WebhookId"
+    get:
+      operationId: getAdminWebhook
+      summary: Get a webhook
+      description: An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminWebhook"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateWebhook
+      summary: Change a webhook
+      description: |
+        Changes what the request names and keeps the rest; an empty `description` removes it.
+        The events need the permissions as for a new webhook, and a refused change is a 422
+        `/api/v1/problems/invalid-webhook`. A change is recorded in the audit log. An unknown
+        or deleted ID is a 404. Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWebhookRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminWebhook"
+        "422":
+          $ref: "#/components/responses/WebhookProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+    delete:
+      operationId: deleteWebhook
+      summary: Delete a webhook
+      description: |
+        Deletes the endpoint for good: it receives nothing more, and its deliveries are no
+        longer listed. The deletion is recorded in the audit log. An unknown or deleted ID is a
+        404. Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      responses:
+        "204":
+          description: The webhook is deleted.
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}/enable:
+    post:
+      operationId: enableWebhook
+      summary: Enable a webhook
+      description: |
+        The endpoint receives the messages of its events again; the messages of the time it was
+        disabled are not sent. Enabling an enabled webhook changes nothing. The change is
+        recorded in the audit log. An unknown or deleted ID is a 404. Needs the
+        `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminWebhook"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}/disable:
+    post:
+      operationId: disableWebhook
+      summary: Disable a webhook
+      description: |
+        The endpoint receives nothing until it is enabled again, also of the deliveries waiting
+        to be retried. Disabling a disabled webhook changes nothing. The change is recorded in
+        the audit log. An unknown or deleted ID is a 404. Needs the `manage_webhooks`
+        permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminWebhook"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}/rotate_secret:
+    post:
+      operationId: rotateWebhookSecret
+      summary: Give a webhook a new secret
+      description: |
+        Makes a new secret, shown only now, that signs every message from now on. For 24 hours
+        the previous secret signs them too (`webhook-signature` carries both), so that the
+        receiver can switch without losing a message. The rotation is recorded in the audit
+        log. An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+      responses:
+        "200":
+          description: The new secret.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWebhookSecret"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}/test:
+    post:
+      operationId: testWebhook
+      summary: Send a test message to a webhook
+      description: |
+        Sends a `webhook.test` message to the endpoint, whatever it subscribes to, and returns
+        its delivery, which the job queue sends soon. A disabled webhook receives nothing. It is
+        not recorded in the audit log. An unknown or deleted ID is a 404. Needs the
+        `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminWebhookDelivery"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}/deliveries:
+    get:
+      operationId: listWebhookDeliveries
+      summary: List the deliveries of a webhook
+      description: |
+        The messages sent to the endpoint in the last 14 days, newest first, with their
+        attempts. An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the deliveries.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWebhookDeliveryPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/webhooks/{id}/deliveries/{delivery_id}/redeliver:
+    post:
+      operationId: redeliverWebhookDelivery
+      summary: Send a delivery of a webhook again
+      description: |
+        Sends the message again with the same `webhook-id`, also after it succeeded or used up
+        its attempts; the job queue sends it soon. A disabled webhook receives nothing. It is
+        not recorded in the audit log. An unknown webhook or delivery is a 404. Needs the
+        `manage_webhooks` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/WebhookId"
+        - name: delivery_id
+          in: path
+          required: true
+          description: The ID of the delivery.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminWebhookDelivery"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: webhooks (#666) ---
 components:
   securitySchemes:
     oauth2:
@@ -3736,6 +3985,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: custom emoji (#621) ---
+    # --- admin: webhooks (#666) ---
+    WebhookId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the webhook.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: webhooks (#666) ---
     # --- admin: instance texts (#489) ---
     InstanceTextKey:
       name: key
@@ -3975,6 +4233,39 @@ components:
           schema:
             $ref: "#/components/schemas/CustomEmojiProblem"
     # --- end of admin: custom emoji (#621) ---
+    # --- admin: webhooks (#666) ---
+    AdminWebhook:
+      description: The webhook.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminWebhook"
+    AdminWebhookDelivery:
+      description: The delivery.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminWebhookDelivery"
+    WebhookProblem:
+      description: The webhook breaks a rule; nothing was changed.
+      headers:
+        Content-Language:
+          description: The locale of `title` and `detail`.
+          schema:
+            type: string
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/WebhookProblem"
+    # --- end of admin: webhooks (#666) ---
     # --- admin: roles (#348) ---
     AdminRoleList:
       description: The roles.
@@ -4102,6 +4393,8 @@ components:
           operation, has no two-factor authentication.
         - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
           says which.
+        - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
+          which.
         - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
           reason in `theme_errors` (`PUT /admin/theme`).
       type: object
@@ -5056,7 +5349,8 @@ components:
         with the `manage_reports` permission, `admin_sign_up` (a registration awaits
         approval; `account` is the new user's account) to those with `manage_accounts`, and
         `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
-        `manage_accounts`.
+        `manage_accounts`, and `admin_webhook_disabled` (the server disabled a webhook that
+        answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
       type: string
       enum:
         - follow
@@ -5074,6 +5368,7 @@ components:
         - relationships_severed
         - appeal_decided
         - admin_appeal
+        - admin_webhook_disabled
     # --- end notifications ---
     # --- statuses (#109): Status is shared with the other operations; MediaAttachment is in the media section ---
     CreateStatusRequest:
@@ -5881,7 +6176,11 @@ components:
         `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
         `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
         `custom_emoji_updated` (its category, aliases, or place in the picker),
-        `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
+        `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
+        `webhook_created`, `webhook_updated` (its URL, description, or events),
+        `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
+        endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
+        description and the host name of its URL, never the URL.
       type: string
       enum:
         - account_action_issued
@@ -5916,6 +6215,12 @@ components:
         - custom_emoji_enabled
         - custom_emoji_disabled
         - custom_emoji_deleted
+        - webhook_created
+        - webhook_updated
+        - webhook_deleted
+        - webhook_enabled
+        - webhook_disabled
+        - webhook_secret_rotated
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -5987,7 +6292,7 @@ components:
     AdminAuditTargetKind:
       description: The kind of what an audited operation acted on.
       type: string
-      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji]
+      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook]
     # --- end of admin: audit log (#330) ---
     # --- admin: domain actions and reports (#296) ---
     AdminDomainAction:
@@ -6425,7 +6730,8 @@ components:
         roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
         log. `manage_two_factor`: removing the two-factor authentication of a local user (only
         the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-        remote. The others guard no client API operation yet.
+        remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
+        operation yet.
       type: string
       enum:
         - manage_reports
@@ -6439,6 +6745,7 @@ components:
         - manage_jobs
         - manage_two_factor
         - manage_custom_emojis
+        - manage_webhooks
     # --- end of the viewer's permissions (#267) ---
     # --- admin: instance rules (#331) ---
     AdminRule:
@@ -6732,6 +7039,537 @@ components:
         - too_big
         - remote_emoji
     # --- end of admin: custom emoji (#621) ---
+    # --- admin: webhooks (#666) ---
+    WebhookEventType:
+      description: |
+        An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
+        `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
+        `registration.pending`, `account.*`, `moderation_action.*`, and `appeal.created`;
+        `manage_domains` for `domain_moderation_action.*`; `manage_custom_emojis` for
+        `custom_emoji.*`; and nothing more for `status.created`. `report.created`: a report,
+        local or from another server. `report.resolved`, `report.reopened`. `registration.pending`:
+        a registration awaits a moderator. `account.created`: a registration was approved, at
+        the sign-up or by a moderator. `account.updated`: a local account changed its profile.
+        `moderation_action.created`, `moderation_action.lifted`: an action on an account.
+        `appeal.created`. `domain_moderation_action.created`, `domain_moderation_action.lifted`.
+        `status.created`: a public post of a local account. `custom_emoji.created`,
+        `custom_emoji.updated` (its image, settings, aliases, or whether it is enabled), and
+        `custom_emoji.deleted`: an administrator's operation on a custom emoji.
+      type: string
+      enum:
+        - report.created
+        - report.resolved
+        - report.reopened
+        - registration.pending
+        - account.created
+        - account.updated
+        - moderation_action.created
+        - moderation_action.lifted
+        - appeal.created
+        - domain_moderation_action.created
+        - domain_moderation_action.lifted
+        - status.created
+        - custom_emoji.created
+        - custom_emoji.updated
+        - custom_emoji.deleted
+    WebhookMessageType:
+      description: |
+        The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+        `POST /admin/webhooks/{id}/test`.
+      type: string
+      enum:
+        - report.created
+        - report.resolved
+        - report.reopened
+        - registration.pending
+        - account.created
+        - account.updated
+        - moderation_action.created
+        - moderation_action.lifted
+        - appeal.created
+        - domain_moderation_action.created
+        - domain_moderation_action.lifted
+        - status.created
+        - custom_emoji.created
+        - custom_emoji.updated
+        - custom_emoji.deleted
+        - webhook.test
+    AdminWebhook:
+      description: |
+        A webhook endpoint (ADR-0060). Its secret is never shown again after it is made.
+      type: object
+      required: [id, url, events, state, state_reason, state_changed_at, created_at, updated_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        url:
+          description: Where the messages are posted.
+          type: string
+        description:
+          description: What the webhook is for; omitted for none.
+          type: string
+        events:
+          description: The events it subscribes to, in a stable order.
+          type: array
+          items:
+            $ref: "#/components/schemas/WebhookEventType"
+        state:
+          $ref: "#/components/schemas/AdminWebhookState"
+        state_reason:
+          $ref: "#/components/schemas/AdminWebhookStateReason"
+        state_changed_at:
+          type: string
+          format: date-time
+        failure:
+          $ref: "#/components/schemas/AdminWebhookFailure"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          description: When the URL, the description, or the events last changed.
+          type: string
+          format: date-time
+    AdminWebhookState:
+      description: Whether the webhook receives the messages of its events.
+      type: string
+      enum: [enabled, disabled]
+    AdminWebhookStateReason:
+      description: |
+        Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
+        server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
+        it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
+      type: string
+      enum: [admin, gone, failing]
+    AdminWebhookFailure:
+      description: |
+        The attempts that failed since the last success; omitted when the last attempt
+        succeeded. The server disables the webhook once they span 72 hours and number 20.
+      type: object
+      required: [consecutive_failures, first_failed_at]
+      properties:
+        consecutive_failures:
+          type: integer
+          minimum: 1
+        first_failed_at:
+          type: string
+          format: date-time
+    AdminWebhookList:
+      description: The webhooks, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminWebhook"
+    AdminWebhookCreated:
+      description: A new webhook and its secret.
+      type: object
+      required: [webhook, secret]
+      properties:
+        webhook:
+          $ref: "#/components/schemas/AdminWebhook"
+        secret:
+          description: |
+            The secret that signs the messages, `whsec_` and the base64 of 32 bytes, as the
+            Standard Webhooks libraries take it. It is shown only now.
+          type: string
+    AdminWebhookSecret:
+      description: A new secret of a webhook.
+      type: object
+      required: [secret]
+      properties:
+        secret:
+          description: The new secret, as in `AdminWebhookCreated`. It is shown only now.
+          type: string
+    CreateWebhookRequest:
+      description: A new webhook.
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          description: |
+            An absolute `https` (or `http`) URL of at most 2048 bytes, without user info or a
+            fragment. A destination on loopback or a private network is reached only when the
+            operator allows it (`webhook_allowed_destinations`).
+          type: string
+          maxLength: 2048
+        description:
+          description: What the webhook is for, up to 200 characters.
+          type: string
+          maxLength: 200
+        events:
+          description: The events to subscribe to, at least one.
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WebhookEventType"
+    UpdateWebhookRequest:
+      description: The changes to a webhook; what is omitted stays.
+      type: object
+      properties:
+        url:
+          type: string
+          maxLength: 2048
+        description:
+          description: The new description; empty removes it.
+          type: string
+          maxLength: 200
+        events:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/WebhookEventType"
+    AdminWebhookDelivery:
+      description: A message to a webhook and its attempts.
+      type: object
+      required: [id, message_id, event_type, status, attempts, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        message_id:
+          description: The `webhook-id` of the message, the same on every attempt.
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        event_type:
+          $ref: "#/components/schemas/WebhookMessageType"
+        status:
+          $ref: "#/components/schemas/AdminWebhookDeliveryStatus"
+        attempts:
+          description: How many times it was sent.
+          type: integer
+          minimum: 0
+        last_attempt:
+          $ref: "#/components/schemas/AdminWebhookAttempt"
+        created_at:
+          type: string
+          format: date-time
+    AdminWebhookDeliveryStatus:
+      description: |
+        `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
+        attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
+        sent again by hand after that.
+      type: string
+      enum: [pending, succeeded, failing]
+    AdminWebhookAttempt:
+      description: The last attempt of a delivery.
+      type: object
+      required: [outcome, duration_ms, attempted_at]
+      properties:
+        outcome:
+          $ref: "#/components/schemas/AdminWebhookAttemptOutcome"
+        status_code:
+          description: The status code of the answer; omitted without one.
+          type: integer
+        duration_ms:
+          type: integer
+          minimum: 0
+        attempted_at:
+          type: string
+          format: date-time
+    AdminWebhookAttemptOutcome:
+      description: |
+        `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
+        `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
+        `forbidden_destination`: the server may not reach the URL (a loopback or private address
+        that `webhook_allowed_destinations` does not list).
+      type: string
+      enum: [succeeded, http_error, timeout, connection_error, forbidden_destination]
+    AdminWebhookDeliveryPage:
+      description: A page of the deliveries of a webhook, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminWebhookDelivery"
+    WebhookProblem:
+      description: |
+        The problem of a webhook that breaks a rule (422, `/api/v1/problems/invalid-webhook`);
+        `reason` says which. Another 422 (a malformed request) has none.
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            reason:
+              $ref: "#/components/schemas/WebhookProblemReason"
+            missing_permissions:
+              description: The permissions that the events need and the user lacks, for `missing_permission`.
+              type: array
+              items:
+                $ref: "#/components/schemas/Permission"
+    WebhookProblemReason:
+      description: |
+        Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
+        bytes without user info or a fragment. `description`: longer than 200 characters or with
+        control characters. `events`: none, or one twice. `missing_permission`: the user lacks
+        the permission of an event (`missing_permissions`).
+      type: string
+      enum: [url, description, events, missing_permission]
+    WebhookMessage:
+      description: |
+        The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
+        `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
+        `webhook-signature`. `data` is the `Webhook*` schema of the type: `WebhookReport` for
+        `report.*`, `WebhookRegistration` for `registration.pending` and `account.created`,
+        `WebhookAccount` for `account.updated`, `WebhookAccountAction` for
+        `moderation_action.*`, `WebhookAppeal` for `appeal.created`, `WebhookDomainAction` for
+        `domain_moderation_action.*`, `WebhookStatus` for `status.created`,
+        `WebhookCustomEmoji` for `custom_emoji.*`, and `WebhookTest` for `webhook.test`. No
+        operation returns it; docs/reference/webhooks.md describes it.
+      type: object
+      required: [type, timestamp, data]
+      properties:
+        type:
+          $ref: "#/components/schemas/WebhookMessageType"
+        timestamp:
+          description: When the event happened.
+          type: string
+          format: date-time
+        data:
+          type: object
+    WebhookReport:
+      description: The report of a `report.*` message, named as in `AdminReport`.
+      type: object
+      required: [id, category, comment, forwarded, filed_at, state, state_changed_at, reporter_account_id, target_account_id, status_ids, rule_ids]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        uri:
+          description: The id of the Flag of a report from another server.
+          type: string
+        category:
+          type: string
+        comment:
+          type: string
+        forwarded:
+          type: boolean
+        filed_at:
+          type: string
+          format: date-time
+        state:
+          description: "`open` or `resolved`."
+          type: string
+        outcome:
+          description: How a resolved report was resolved.
+          type: string
+        state_changed_at:
+          type: string
+          format: date-time
+        reporter_account_id:
+          $ref: "#/components/schemas/Id"
+        target_account_id:
+          $ref: "#/components/schemas/Id"
+        status_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+        rule_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+    WebhookRegistration:
+      description: |
+        The registration of a `registration.pending` (state `pending`) or `account.created`
+        (state `approved`) message, named as in `AdminRegistration`.
+      type: object
+      required: [user_id, account_id, username, state, since]
+      properties:
+        user_id:
+          $ref: "#/components/schemas/Id"
+        account_id:
+          $ref: "#/components/schemas/Id"
+        username:
+          type: string
+        state:
+          type: string
+        since:
+          type: string
+          format: date-time
+    WebhookAccount:
+      description: The new profile of an `account.updated` message.
+      type: object
+      required: [id, display_name, note, locked, bot, discoverable, indexable, fields, updated_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        display_name:
+          type: string
+        note:
+          description: The profile text as sanitized HTML.
+          type: string
+        locked:
+          type: boolean
+        bot:
+          type: boolean
+        discoverable:
+          type: boolean
+        indexable:
+          type: boolean
+        fields:
+          type: array
+          items:
+            type: object
+            required: [name, value]
+            properties:
+              name:
+                type: string
+              value:
+                description: Sanitized HTML.
+                type: string
+        updated_at:
+          type: string
+          format: date-time
+    WebhookAccountAction:
+      description: The action of a `moderation_action.*` message, named as in `AdminAccountAction`.
+      type: object
+      required: [id, account_id, kind, reason_category, issuer, notify_target, state, issued_at, status_ids]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        account_id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          type: string
+        reason_category:
+          type: string
+        public_reason:
+          type: string
+        private_note:
+          type: string
+        report_id:
+          $ref: "#/components/schemas/Id"
+        issuer:
+          type: string
+        notify_target:
+          type: boolean
+        state:
+          description: "`active`, or `lifted` for `moderation_action.lifted`."
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+        lift_reason:
+          type: string
+        status_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+    WebhookAppeal:
+      description: The appeal of an `appeal.created` message, named as in `AdminAppeal`.
+      type: object
+      required: [id, account_id, action_id, text, state, submitted_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        account_id:
+          $ref: "#/components/schemas/Id"
+        action_id:
+          $ref: "#/components/schemas/Id"
+        text:
+          type: string
+        state:
+          type: string
+        submitted_at:
+          type: string
+          format: date-time
+    WebhookDomainAction:
+      description: The action of a `domain_moderation_action.*` message, named as in `AdminDomainAction`.
+      type: object
+      required: [id, domain, kind, obfuscate, state, issued_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        domain:
+          type: string
+        kind:
+          type: string
+        public_comment:
+          type: string
+        private_note:
+          type: string
+        obfuscate:
+          type: boolean
+        state:
+          description: "`active`, or `lifted` for `domain_moderation_action.lifted`."
+          type: string
+        issued_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        lifted_at:
+          type: string
+          format: date-time
+    WebhookStatus:
+      description: The post of a `status.created` message, always `public` and local.
+      type: object
+      required: [id, uri, account_id, visibility, spoiler_text, sensitive, language, content, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        uri:
+          type: string
+        account_id:
+          $ref: "#/components/schemas/Id"
+        visibility:
+          type: string
+        in_reply_to_uri:
+          type: string
+        spoiler_text:
+          type: string
+        sensitive:
+          type: boolean
+        language:
+          type: string
+        content:
+          description: Sanitized HTML.
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    WebhookCustomEmoji:
+      description: The emoji of a `custom_emoji.*` message, named as in `AdminCustomEmoji`.
+      type: object
+      required: [id, shortcode, local, operation, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        shortcode:
+          type: string
+        local:
+          type: boolean
+        domain:
+          type: string
+        uri:
+          type: string
+        operation:
+          description: |
+            The operation, named as in the audit log: `custom_emoji_created`,
+            `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
+            `custom_emoji_disabled`, or `custom_emoji_deleted`.
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    WebhookTest:
+      description: The data of a `webhook.test` message.
+      type: object
+      required: [endpoint_id]
+      properties:
+        endpoint_id:
+          $ref: "#/components/schemas/Id"
+    # --- end of admin: webhooks (#666) ---
     # --- admin: instance texts (#489) ---
     ThemeTokenValue:
       description: |

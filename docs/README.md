@@ -20,6 +20,7 @@
 ## リファレンス
 
 - [設定リファレンス](reference/configuration.md)（設定スキーマから生成）
+- [webhook リファレンス](reference/webhooks.md)（受け手が受け取るヘッダ・署名・イベント・本文）
 
 ## 運用
 
@@ -31,6 +32,7 @@
 - [鍵暗号化鍵（KEK）の管理](operations/key-management.md)
 - [サーバーの起動・停止とヘルスチェック](operations/running.md)
 - [リンクプレビュー（OGP / X Card / fediverse:creator）](operations/link-previews.md)
+- [サーバー単位の webhook](operations/webhooks.md)
 
 ## 開発プロセス
 

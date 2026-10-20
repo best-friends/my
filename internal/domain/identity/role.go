@@ -25,6 +25,9 @@ const (
 	// PermManageCustomEmojis: register, change, disable, and delete the custom emoji, local and
 	// remote (ADR-0051 §5). It is server administration (ADR-0058 §4).
 	PermManageCustomEmojis Permission = "manage_custom_emojis"
+	// PermManageWebhooks: set up the instance's webhooks, see their deliveries, and send them
+	// again (ADR-0060). It is server administration (ADR-0058 §4).
+	PermManageWebhooks Permission = "manage_webhooks"
 )
 
 // AllPermissions lists every permission.
@@ -32,7 +35,7 @@ func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
-		PermManageTwoFactor, PermManageCustomEmojis,
+		PermManageTwoFactor, PermManageCustomEmojis, PermManageWebhooks,
 	}
 }
 

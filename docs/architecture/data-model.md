@@ -196,6 +196,7 @@ flowchart LR
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
 | `federation` | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `remote_instances`, `instance_nodeinfo_observations`, `instance_availability_events` | `instance_health` |
 | `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_texts`, `instance_rule_retirements` | `instance_settings`, `instance_texts`, `instance_rule_heads` |
+| `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
 | 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `kv_entries` |
 
 ### 4.1 identity
@@ -278,7 +279,7 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `roles` | リソース | `id`, `key`（`string(64)`）, `position`（`int`）, `created_at` | 一意 `(key)` |
-| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_two_factor, manage_custom_emojis)`） | PK `(role_id, permission)` |
+| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_two_factor, manage_custom_emojis, manage_webhooks)`） | PK `(role_id, permission)` |
 | `user_role_grants` | イベント | `id`, `user_id`, `role_id`, `granted_by_user_id`（NULL 可 = CLI による付与。最初の管理者など）, `granted_at` | |
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
@@ -541,7 +542,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
+| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
 
 - 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベント（`moderation.audit_recorded`）を、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
   記録の ID はトランザクションの前に作り、再試行しても同じ行を書きます。何も変えなかった操作（解除済みの処分の解除など）は記録しません。
@@ -562,6 +563,10 @@ flowchart LR
   | `revealed_private_data` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | なし（元の記録を持たない操作） |
   | `two_factor_disabled` | `account` | `accounts.id` | ローカルアカウントのハンドル（`@alice`） | `totp_enrollment_revocations.enrollment_id` |
   | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
+  | `custom_emoji_created`, `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted` | `custom_emoji` | `custom_emojis.id` | `:shortcode:`（リモートは `:shortcode:@domain`） | `custom_emoji_images.id`（画像を記録した操作）。ほかはなし |
+  | `webhook_created`, `webhook_updated`, `webhook_deleted`, `webhook_enabled`, `webhook_disabled`, `webhook_secret_rotated` | `webhook` | `webhook_endpoints.id` | 説明と URL のホスト名（`Moderation chat (hooks.example.com)`）。URL は写さない | `webhook_endpoint_revisions.id` / `webhook_endpoint_state_changes.id` / `webhook_secrets.id` |
+
+  サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 一覧（`moderation.Service.GoneAuditTargets`）は、ページの行の対象が今もあるかを、対象の種類ごとに 1 回の問い合わせでまとめて確かめます。
@@ -927,7 +932,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, reaction, poll_closed, moderation_notice, appeal_decided, report_resolved, relationships_severed, admin_report, admin_sign_up, admin_appeal)`）, `source_account_id`（NULL 可。モデレーションの通知はインスタンス）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `report_id`（NULL 可）, `appeal_id`（NULL 可）, `severance_id`（NULL 可）, `subject_user_id`（NULL 可。`admin_sign_up` の登録者）, `reaction_emoji` / `reaction_custom_emoji_id`（NULL 可。`reaction` の絵文字で、Unicode 絵文字かカスタム絵文字のどちらか一方）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)`, `(status_id)`（保持期間の判定） |
+| `notifications` | イベント | `id`, `recipient_account_id`, `type`（`enum(follow, follow_request, follow_accepted, mention, boost, favourite, reaction, poll_closed, moderation_notice, appeal_decided, report_resolved, relationships_severed, admin_report, admin_sign_up, admin_appeal, admin_webhook_disabled)`）, `source_account_id`（NULL 可。モデレーションの通知はインスタンス）, `status_id`（NULL 可）, `moderation_action_id`（NULL 可）, `report_id`（NULL 可）, `appeal_id`（NULL 可）, `severance_id`（NULL 可）, `subject_user_id`（NULL 可。`admin_sign_up` の登録者）, `reaction_emoji` / `reaction_custom_emoji_id`（NULL 可。`reaction` の絵文字で、Unicode 絵文字かカスタム絵文字のどちらか一方）, `dedupe_key`, `created_at` | 一意 `(recipient_account_id, dedupe_key)`。インデックス `(recipient_account_id, id)`, `(recipient_account_id, type, id)`, `(status_id)`（保持期間の判定） |
 | `notification_dismissals` | イベント | `notification_id`（PK）, `dismissed_at` | |
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
@@ -977,6 +982,7 @@ flowchart LR
   | 通報の受け付け（同じ対象に未解決の通報が無いときだけ） | `admin_report` | ロールが `manage_reports` を持つ人 | `admin_report:<report_id>` |
   | 承認待ちの登録 | `admin_sign_up` | ロールが `manage_accounts` を持つ人 | `admin_sign_up:<user_id>` |
   | 異議申し立て | `admin_appeal` | ロールが `manage_accounts` を持つ人 | `admin_appeal:<appeal_id>` |
+  | サーバーによる webhook の無効化（`webhook.endpoint_disabled`、ADR-0060） | `admin_webhook_disabled` | ロールが `manage_webhooks` を持つ人 | `admin_webhook_disabled:<state_change_id>` |
 
   - 本人は `moderation_notice` から処分の種類・公開理由・対象の投稿・期限を見られ、異議申し立てに進めます（FR-715）。
     クライアント API は通知に処分を本人に見せる形（種類と理由のカテゴリは本人の UI 言語の表示名付き）で埋め込み、`GET /api/v1/moderation/actions` は本人への処分を通知の有無に関わらずすべて新しい順に返します。
@@ -987,6 +993,7 @@ flowchart LR
   - `admin_*` の受け取る人は、通知を作るトランザクションでロールの権限から求めます（`identity` の公開 API。ユーザーからローカルのアカウントへは `account` の公開 API で引く）。
     後から権限を失った人の通知は、一覧と未読数から読み取り時に除きます（閲覧者のロールが持たない権限の種類を除く）。権限が戻れば、また見えます。
   - `admin_*` の `source_account_id` は NULL で、ブロック・ミュートでは隠しません。`admin_report` は `report_id` を、`admin_sign_up` は `subject_user_id` を持ちます。
+    `admin_webhook_disabled` は対象の列を持たず、管理画面の webhook の一覧（無効にした理由が出る）に導きます。
   - `admin_report` は、通報を受け付けたトランザクションで対象にほかの未解決の通報が無いときだけ作り（`moderation.report_filed` の `FirstOpen`）、通報者と通報の対象には作りません。
   - `admin_sign_up` は `identity.registration_pending`（登録が `pending` で始まった）から作ります。
   - `user_preferences.email_moderator_notifications` が真の受け取る人には、新しく作った通知ごとに、同じトランザクションの outbox でメールのジョブ（`notification.moderator_email`、冪等キーは通知の ID）を積みます。
@@ -1099,6 +1106,33 @@ flowchart LR
   取得は、同じキーの他のジョブがリース中のとき、または自分より前に投入された同じキーのジョブが `jobs` に残っている（遅延中・リトライ待ちを含む）ときは、そのジョブを飛ばします。
   この判定はインデックス `(ordering_key, run_at)` で同じキーの行を引きます。
   PostgreSQL では同じキーのジョブを同時に取得する 2 つのトランザクションが互いのリースを見落とさないよう、取得はキーのトランザクション内 advisory lock を取ってから候補を再確認します。
+
+### 4.11 webhook
+
+サーバー単位の webhook（FR-722、[ADR-0060](../adr/0060-instance-webhooks.md)）。`internal/app/webhook` が所有します。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `webhook_endpoints` | リソース | `id`, `created_by_user_id`（NULL 可 = CLI）, `created_at` | |
+| `webhook_endpoint_revisions` | イベント（版） | `id`, `endpoint_id`, `url`（`string(2048)`）, `description`（`string(200)`。NULL 可 = なし）, `revised_by_user_id`（NULL 可 = CLI）, `revised_at` | インデックス `(endpoint_id, id DESC)` |
+| `webhook_endpoint_revision_events` | イベント（版の子） | `revision_id`, `event_type`（`enum`。購読できるイベント） | PK `(revision_id, event_type)`。インデックス `(event_type)` |
+| `webhook_secrets` | イベント | `id`, `endpoint_id`, `sealed_secret`（`bytes`。`kernel.Sealer` で封をした 32 バイト）, `created_by_user_id`（NULL 可）, `created_at` | インデックス `(endpoint_id, id DESC)` |
+| `webhook_endpoint_state_changes` | イベント | `id`, `endpoint_id`, `state`（`enum(enabled, disabled, deleted)`）, `reason`（`enum(admin, gone, failing)`）, `changed_by_user_id`（NULL 可。`reason = admin` のときだけ値を持てる）, `changed_at` | インデックス `(endpoint_id, id DESC)` |
+| `webhook_messages` | リソース | `id`（= `webhook-id`）, `event_type`（`enum`。購読できるイベントと `webhook.test`）, `body`（`bytes`。送る本文そのもの）, `created_at` | インデックス `(created_at)` |
+| `webhook_deliveries` | リソース | `id`, `message_id`, `endpoint_id`, `created_at` | 一意 `(message_id, endpoint_id)`。インデックス `(endpoint_id, id DESC)` |
+| `webhook_delivery_attempts` | イベント | `id`, `delivery_id`, `outcome`（`enum(succeeded, http_error, timeout, connection_error, forbidden_destination)`）, `status_code`（`succeeded` と `http_error` のときだけ。`CHECK`）, `duration_ms`, `attempted_at` | インデックス `(delivery_id, id)` |
+| `webhook_endpoint_heads` | 投影 | `endpoint_id`（PK）, `revision_id`, `state`, `secret_id` | インデックス `(state)` |
+| `webhook_endpoint_failures` | 投影 | `endpoint_id`（PK）, `first_failure_attempt_id`, `first_failed_at`, `consecutive_failures` | 行がある = 最後の成功の後に失敗が続いている |
+
+- 宛先の版・秘密・状態の変化は、どれも `webhook.endpoint_changed` を発行し、その射影が `webhook_endpoint_heads` を書きます。
+  試行は `webhook.attempt_recorded` を発行し、射影が失敗なら `webhook_endpoint_failures` の連続回数を足し、成功なら行を消します。
+  `first_failed_at` は最初の失敗の試行の時刻の写しで、その試行の行が 14 日で消えたあとも自動の無効化の判定（72 時間と 20 回）に使えるように持ちます。
+- 他のモジュールのドメインイベント（通報・登録・アカウント・処分・異議・ドメインの処分・公開投稿・カスタム絵文字）は、そのトランザクションの中で `webhook` の購読者が受け、
+  購読している有効な宛先があるときだけ `webhook_messages` と宛先ごとの `webhook_deliveries` を書いて、`webhook.deliver` ジョブを Outbox で投入します（冪等キーは配送の ID）。
+  宛先が無ければ何も書きません。`body` は送る JSON をそのまま持つ「解釈しない文書」（規約 4）です。
+- 削除は `state = deleted` の状態の変化で、行は消しません（監査ログと配送の履歴が指すため）。削除した宛先は一覧に出ず、何も受け取りません。
+- `webhook_messages` と、その配送・試行は、作成から 14 日（固定）で 1 時間ごとの消去ジョブ `webhook.purge` が消します（FR-803）。本文は通報のコメントなどの個人データを含みます。
+- `url` は Discord や Slack のように経路やクエリに秘密を含むことがあるので、ログと監査ログ（`target_label`）にはホスト名と説明だけを出します。
 
 ## 5. 状態とポリシー
 
@@ -1402,12 +1436,13 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-602 管理画面 | M | `user_roles`, `role_permissions`、モデレーション系 |
 | FR-701 通報 | M | `reports`, `report_statuses`, `report_rule_citations`, `report_states` |
 | FR-709〜711 通報の転送・対応・結果の通知 | S / M | `reports.forwarded`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `notifications`（`report_resolved`） |
-| FR-712 モデレーターへの通知 | M | `notifications`（`admin_report`, `admin_sign_up`, `admin_appeal`） |
+| FR-712 モデレーターへの通知 | M | `notifications`（`admin_report`, `admin_sign_up`, `admin_appeal`, `admin_webhook_disabled`） |
 | FR-714 アカウントの管理 | M | `session_origins`, `registration_origins`, `user_primary_emails`, `moderation_actions`, `reports` |
 | FR-716〜717 連合への伝播・切れた関係 | M / S | `outbox_events`, `follow_terminations`, `relationship_severances` |
 | FR-718 処分したドメインの公開 | S | `domain_moderation_actions`（`public_comment`, `obfuscate`）, `instance_settings`（`domain_actions_visibility`） |
 | FR-719 登録の拒否リスト | S | `signup_blocks`, `signup_block_lifts`, `registration_origins` |
 | FR-720 ロール | S | `user_role_grants`, `user_role_revocations`, `user_roles` |
+| FR-722 サーバー単位の webhook | S | §4.11 の `webhook_*`, `audit_log_entries`, `notifications`（`admin_webhook_disabled`） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
 | FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |
@@ -1415,7 +1450,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-704 監査ログ | M | `audit_log_entries` |
 | FR-705 インスタンス設定 | M | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules` とその版 |
 | FR-801 CLI | M | `dead_jobs`, §9 の再構築、管理者作成（`users`, `user_primary_emails`, `user_role_grants`） |
-| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 未添付の `media_files`, `kv_entries`, 期限切れの制限 |
+| FR-803 定期クリーンアップ | M | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activity_documents`, 保持期間を過ぎたリモートの投稿, `delivery_attempts`, `remote_media_cache`, 未添付の `media_files`, `kv_entries`, `webhook_messages` とその配送・試行, 期限切れの制限 |
 
 ## 11. 未決事項
 

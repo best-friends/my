@@ -52,6 +52,7 @@ import (
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/app/webhook"
 	domainaccount "github.com/best-friends/my/internal/domain/account"
 	domaincontent "github.com/best-friends/my/internal/domain/content"
 	domainidentity "github.com/best-friends/my/internal/domain/identity"
@@ -167,6 +168,8 @@ type App struct {
 	// Previews reads profiles and statuses as an anonymous visitor sees them, for the link
 	// previews of the web client's profile and post pages (ADR-0028).
 	Previews *content.Previews
+	// Webhooks sends the events of the other modules to the instance's webhooks (ADR-0060).
+	Webhooks *webhook.Service
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
 	// Projections rebuilds and verifies the projections (`my projection`, data-model §9).
@@ -307,6 +310,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		emojis       content.CustomEmojiRepository
 		feds         federationRepository
 		mods         moderation.Repository
+		hooks        webhook.Repository
 		retention    retentionRepositories
 		projections  projection.Store
 	)
@@ -326,6 +330,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
+		hooks = d.WebhookRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -349,6 +354,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
+		hooks = d.WebhookRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
 		projections = d.ProjectionStore()
 		if cfg.Queue == "db" {
@@ -590,6 +596,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
+	a.setUpWebhooks(hooks)
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
 		Repository: statuses, Accounts: a.Accounts, Restrictions: a.AccountPolicy.Content(), Media: a.Media,
@@ -669,7 +676,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Themes: a.Instance, ThemeStylesheetPath: web.ThemeStylesheetPath,
 		// The custom emoji of the picker and their administration (ADR-0051).
 		CustomEmojis: a.CustomEmojis,
-		RateLimiter:  a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+		// The instance's webhooks (ADR-0060).
+		Webhooks:    a.Webhooks,
+		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	}).Register(clientAPIRouter{a})
 	a.registerMetricsSnapshot()
 	return a, nil
@@ -947,7 +956,11 @@ func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
 // newHTTPClient returns the SSRF-guarded HTTPClient. http_allow_private_networks, which the
 // configuration accepts only in the development profile, turns the guard off with a warning.
 func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger, meter kernel.Meter) kernel.HTTPClient {
-	opts := httpclient.Options{UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host), Meter: meter}
+	opts := httpclient.Options{
+		UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host), Meter: meter,
+		// The webhooks alone may reach the internal destinations that the operator lists (ADR-0060).
+		Webhook: httpclient.WebhookDestinations{Hosts: cfg.WebhookAllowedHosts, Prefixes: cfg.WebhookAllowedPrefixes},
+	}
 	if cfg.HTTPAllowPrivateNetworks {
 		logger.Warn("http_allow_private_networks is on: outbound HTTP can reach loopback and private networks; never use it in production")
 		opts.AllowPrivateNetworks, opts.AllowHTTP, opts.AnyPort = true, true, true

@@ -94,7 +94,7 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `my.adapter.operation.duration` | Histogram・秒 | `my.adapter`（`queue.db` / `kv.db` / `kv.memory` / `kv.valkey` / `stream.<stream>` / `blob.fs`）、`my.operation`、`my.outcome`（`success` / `error`） |
 | `my.adapter.connections` | UpDownCounter | `my.adapter`（`valkey` の接続、`stream.<stream>` の受信） |
 | `my.adapter.reconnects` | Counter | `my.adapter` |
-| `http.client.request.duration` | Histogram・秒 | `my.http.purpose`（`json` / `html` / `image` / `video` / `human_check` / `web_push`）、`http.request.method`、`my.http.status_class`（`2xx` など）、`error.type`（`forbidden_destination` は SSRF ガードの拒否） |
+| `http.client.request.duration` | Histogram・秒 | `my.http.purpose`（`json` / `html` / `image` / `video` / `human_check` / `web_push` / `webhook`）、`http.request.method`、`my.http.status_class`（`2xx` など）、`error.type`（`forbidden_destination` は SSRF ガードの拒否） |
 | `http.client.open_connections` | UpDownCounter | なし |
 | `my.readiness.failures` | Counter | なし |
 

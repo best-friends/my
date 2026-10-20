@@ -2745,6 +2745,211 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the webhooks
+         * @description The webhook endpoints of the instance that are not deleted, newest first (ADR-0060).
+         *     Needs the `manage_webhooks` permission.
+         */
+        get: operations["listAdminWebhooks"];
+        put?: never;
+        /**
+         * Set up a webhook
+         * @description Sets up an endpoint, enabled, that receives the messages of the `events` it subscribes
+         *     to, signed with Standard Webhooks v1 (`docs/reference/webhooks.md`). The answer carries
+         *     its secret, which is shown only now. The user needs the permission of every event
+         *     besides `manage_webhooks` (`WebhookEventType`). A URL, a description, or events that
+         *     break a rule, or an event whose permission the user lacks, is a 422
+         *     `/api/v1/problems/invalid-webhook` whose `reason` says which. The URL may name any
+         *     destination: whether the server may reach it is decided on every delivery, which a
+         *     refused destination fails. The setup is recorded in the audit log under the
+         *     description and the host name of the URL. Needs the `manage_webhooks` permission.
+         */
+        post: operations["createWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get a webhook
+         * @description An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+         */
+        get: operations["getAdminWebhook"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a webhook
+         * @description Deletes the endpoint for good: it receives nothing more, and its deliveries are no
+         *     longer listed. The deletion is recorded in the audit log. An unknown or deleted ID is a
+         *     404. Needs the `manage_webhooks` permission.
+         */
+        delete: operations["deleteWebhook"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a webhook
+         * @description Changes what the request names and keeps the rest; an empty `description` removes it.
+         *     The events need the permissions as for a new webhook, and a refused change is a 422
+         *     `/api/v1/problems/invalid-webhook`. A change is recorded in the audit log. An unknown
+         *     or deleted ID is a 404. Needs the `manage_webhooks` permission.
+         */
+        patch: operations["updateWebhook"];
+        trace?: never;
+    };
+    "/admin/webhooks/{id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enable a webhook
+         * @description The endpoint receives the messages of its events again; the messages of the time it was
+         *     disabled are not sent. Enabling an enabled webhook changes nothing. The change is
+         *     recorded in the audit log. An unknown or deleted ID is a 404. Needs the
+         *     `manage_webhooks` permission.
+         */
+        post: operations["enableWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/{id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Disable a webhook
+         * @description The endpoint receives nothing until it is enabled again, also of the deliveries waiting
+         *     to be retried. Disabling a disabled webhook changes nothing. The change is recorded in
+         *     the audit log. An unknown or deleted ID is a 404. Needs the `manage_webhooks`
+         *     permission.
+         */
+        post: operations["disableWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/{id}/rotate_secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Give a webhook a new secret
+         * @description Makes a new secret, shown only now, that signs every message from now on. For 24 hours
+         *     the previous secret signs them too (`webhook-signature` carries both), so that the
+         *     receiver can switch without losing a message. The rotation is recorded in the audit
+         *     log. An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+         */
+        post: operations["rotateWebhookSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test message to a webhook
+         * @description Sends a `webhook.test` message to the endpoint, whatever it subscribes to, and returns
+         *     its delivery, which the job queue sends soon. A disabled webhook receives nothing. It is
+         *     not recorded in the audit log. An unknown or deleted ID is a 404. Needs the
+         *     `manage_webhooks` permission.
+         */
+        post: operations["testWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/{id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the deliveries of a webhook
+         * @description The messages sent to the endpoint in the last 14 days, newest first, with their
+         *     attempts. An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+         */
+        get: operations["listWebhookDeliveries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/webhooks/{id}/deliveries/{delivery_id}/redeliver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a delivery of a webhook again
+         * @description Sends the message again with the same `webhook-id`, also after it succeeded or used up
+         *     its attempts; the job queue sends it soon. A disabled webhook receives nothing. It is
+         *     not recorded in the audit log. An unknown webhook or delivery is a 404. Needs the
+         *     `manage_webhooks` permission.
+         */
+        post: operations["redeliverWebhookDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2813,6 +3018,8 @@ export interface components {
          *       operation, has no two-factor authentication.
          *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
          *       says which.
+         *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
+         *       which.
          *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
          *       reason in `theme_errors` (`PUT /admin/theme`).
          */
@@ -3507,10 +3714,11 @@ export interface components {
          *     with the `manage_reports` permission, `admin_sign_up` (a registration awaits
          *     approval; `account` is the new user's account) to those with `manage_accounts`, and
          *     `admin_appeal` (a user appealed an action; `appeal_id` is the appeal) to those with
-         *     `manage_accounts`.
+         *     `manage_accounts`, and `admin_webhook_disabled` (the server disabled a webhook that
+         *     answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal" | "admin_webhook_disabled";
         /** @description A new status. */
         CreateStatusRequest: {
             text: components["schemas"]["StatusText"];
@@ -4033,10 +4241,14 @@ export interface components {
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
          *     `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
          *     `custom_emoji_updated` (its category, aliases, or place in the picker),
-         *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`.
+         *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
+         *     `webhook_created`, `webhook_updated` (its URL, description, or events),
+         *     `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
+         *     endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
+         *     description and the host name of its URL, never the URL.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4092,7 +4304,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook";
         /** @description A moderation action on a remote domain and its subdomains (FR-702). */
         AdminDomainAction: {
             id: components["schemas"]["Id"];
@@ -4390,10 +4602,11 @@ export interface components {
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
          *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
          *     the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-         *     remote. The others guard no client API operation yet.
+         *     remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
+         *     operation yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis" | "manage_webhooks";
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
@@ -4580,6 +4793,323 @@ export interface components {
          * @enum {string}
          */
         CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji";
+        /**
+         * @description An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
+         *     `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
+         *     `registration.pending`, `account.*`, `moderation_action.*`, and `appeal.created`;
+         *     `manage_domains` for `domain_moderation_action.*`; `manage_custom_emojis` for
+         *     `custom_emoji.*`; and nothing more for `status.created`. `report.created`: a report,
+         *     local or from another server. `report.resolved`, `report.reopened`. `registration.pending`:
+         *     a registration awaits a moderator. `account.created`: a registration was approved, at
+         *     the sign-up or by a moderator. `account.updated`: a local account changed its profile.
+         *     `moderation_action.created`, `moderation_action.lifted`: an action on an account.
+         *     `appeal.created`. `domain_moderation_action.created`, `domain_moderation_action.lifted`.
+         *     `status.created`: a public post of a local account. `custom_emoji.created`,
+         *     `custom_emoji.updated` (its image, settings, aliases, or whether it is enabled), and
+         *     `custom_emoji.deleted`: an administrator's operation on a custom emoji.
+         * @enum {string}
+         */
+        WebhookEventType: "report.created" | "report.resolved" | "report.reopened" | "registration.pending" | "account.created" | "account.updated" | "moderation_action.created" | "moderation_action.lifted" | "appeal.created" | "domain_moderation_action.created" | "domain_moderation_action.lifted" | "status.created" | "custom_emoji.created" | "custom_emoji.updated" | "custom_emoji.deleted";
+        /**
+         * @description The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+         *     `POST /admin/webhooks/{id}/test`.
+         * @enum {string}
+         */
+        WebhookMessageType: "report.created" | "report.resolved" | "report.reopened" | "registration.pending" | "account.created" | "account.updated" | "moderation_action.created" | "moderation_action.lifted" | "appeal.created" | "domain_moderation_action.created" | "domain_moderation_action.lifted" | "status.created" | "custom_emoji.created" | "custom_emoji.updated" | "custom_emoji.deleted" | "webhook.test";
+        /** @description A webhook endpoint (ADR-0060). Its secret is never shown again after it is made. */
+        AdminWebhook: {
+            id: components["schemas"]["Id"];
+            /** @description Where the messages are posted. */
+            url: string;
+            /** @description What the webhook is for; omitted for none. */
+            description?: string;
+            /** @description The events it subscribes to, in a stable order. */
+            events: components["schemas"]["WebhookEventType"][];
+            state: components["schemas"]["AdminWebhookState"];
+            state_reason: components["schemas"]["AdminWebhookStateReason"];
+            /** Format: date-time */
+            state_changed_at: string;
+            failure?: components["schemas"]["AdminWebhookFailure"];
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the URL, the description, or the events last changed.
+             */
+            updated_at: string;
+        };
+        /**
+         * @description Whether the webhook receives the messages of its events.
+         * @enum {string}
+         */
+        AdminWebhookState: "enabled" | "disabled";
+        /**
+         * @description Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
+         *     server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
+         *     it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
+         * @enum {string}
+         */
+        AdminWebhookStateReason: "admin" | "gone" | "failing";
+        /**
+         * @description The attempts that failed since the last success; omitted when the last attempt
+         *     succeeded. The server disables the webhook once they span 72 hours and number 20.
+         */
+        AdminWebhookFailure: {
+            consecutive_failures: number;
+            /** Format: date-time */
+            first_failed_at: string;
+        };
+        /** @description The webhooks, newest first. */
+        AdminWebhookList: {
+            items: components["schemas"]["AdminWebhook"][];
+        };
+        /** @description A new webhook and its secret. */
+        AdminWebhookCreated: {
+            webhook: components["schemas"]["AdminWebhook"];
+            /**
+             * @description The secret that signs the messages, `whsec_` and the base64 of 32 bytes, as the
+             *     Standard Webhooks libraries take it. It is shown only now.
+             */
+            secret: string;
+        };
+        /** @description A new secret of a webhook. */
+        AdminWebhookSecret: {
+            /** @description The new secret, as in `AdminWebhookCreated`. It is shown only now. */
+            secret: string;
+        };
+        /** @description A new webhook. */
+        CreateWebhookRequest: {
+            /**
+             * @description An absolute `https` (or `http`) URL of at most 2048 bytes, without user info or a
+             *     fragment. A destination on loopback or a private network is reached only when the
+             *     operator allows it (`webhook_allowed_destinations`).
+             */
+            url: string;
+            /** @description What the webhook is for, up to 200 characters. */
+            description?: string;
+            /** @description The events to subscribe to, at least one. */
+            events: components["schemas"]["WebhookEventType"][];
+        };
+        /** @description The changes to a webhook; what is omitted stays. */
+        UpdateWebhookRequest: {
+            url?: string;
+            /** @description The new description; empty removes it. */
+            description?: string;
+            events?: components["schemas"]["WebhookEventType"][];
+        };
+        /** @description A message to a webhook and its attempts. */
+        AdminWebhookDelivery: {
+            id: components["schemas"]["Id"];
+            /** @description The `webhook-id` of the message, the same on every attempt. */
+            message_id: components["schemas"]["Id"];
+            event_type: components["schemas"]["WebhookMessageType"];
+            status: components["schemas"]["AdminWebhookDeliveryStatus"];
+            /** @description How many times it was sent. */
+            attempts: number;
+            last_attempt?: components["schemas"]["AdminWebhookAttempt"];
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
+         *     attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
+         *     sent again by hand after that.
+         * @enum {string}
+         */
+        AdminWebhookDeliveryStatus: "pending" | "succeeded" | "failing";
+        /** @description The last attempt of a delivery. */
+        AdminWebhookAttempt: {
+            outcome: components["schemas"]["AdminWebhookAttemptOutcome"];
+            /** @description The status code of the answer; omitted without one. */
+            status_code?: number;
+            duration_ms: number;
+            /** Format: date-time */
+            attempted_at: string;
+        };
+        /**
+         * @description `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
+         *     `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
+         *     `forbidden_destination`: the server may not reach the URL (a loopback or private address
+         *     that `webhook_allowed_destinations` does not list).
+         * @enum {string}
+         */
+        AdminWebhookAttemptOutcome: "succeeded" | "http_error" | "timeout" | "connection_error" | "forbidden_destination";
+        /** @description A page of the deliveries of a webhook, newest first. */
+        AdminWebhookDeliveryPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminWebhookDelivery"][];
+        };
+        /**
+         * @description The problem of a webhook that breaks a rule (422, `/api/v1/problems/invalid-webhook`);
+         *     `reason` says which. Another 422 (a malformed request) has none.
+         */
+        WebhookProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["WebhookProblemReason"];
+            /** @description The permissions that the events need and the user lacks, for `missing_permission`. */
+            missing_permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
+         *     bytes without user info or a fragment. `description`: longer than 200 characters or with
+         *     control characters. `events`: none, or one twice. `missing_permission`: the user lacks
+         *     the permission of an event (`missing_permissions`).
+         * @enum {string}
+         */
+        WebhookProblemReason: "url" | "description" | "events" | "missing_permission";
+        /**
+         * @description The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
+         *     `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
+         *     `webhook-signature`. `data` is the `Webhook*` schema of the type: `WebhookReport` for
+         *     `report.*`, `WebhookRegistration` for `registration.pending` and `account.created`,
+         *     `WebhookAccount` for `account.updated`, `WebhookAccountAction` for
+         *     `moderation_action.*`, `WebhookAppeal` for `appeal.created`, `WebhookDomainAction` for
+         *     `domain_moderation_action.*`, `WebhookStatus` for `status.created`,
+         *     `WebhookCustomEmoji` for `custom_emoji.*`, and `WebhookTest` for `webhook.test`. No
+         *     operation returns it; docs/reference/webhooks.md describes it.
+         */
+        WebhookMessage: {
+            type: components["schemas"]["WebhookMessageType"];
+            /**
+             * Format: date-time
+             * @description When the event happened.
+             */
+            timestamp: string;
+            data: Record<string, never>;
+        };
+        /** @description The report of a `report.*` message, named as in `AdminReport`. */
+        WebhookReport: {
+            id: components["schemas"]["Id"];
+            /** @description The id of the Flag of a report from another server. */
+            uri?: string;
+            category: string;
+            comment: string;
+            forwarded: boolean;
+            /** Format: date-time */
+            filed_at: string;
+            /** @description `open` or `resolved`. */
+            state: string;
+            /** @description How a resolved report was resolved. */
+            outcome?: string;
+            /** Format: date-time */
+            state_changed_at: string;
+            reporter_account_id: components["schemas"]["Id"];
+            target_account_id: components["schemas"]["Id"];
+            status_ids: components["schemas"]["Id"][];
+            rule_ids: components["schemas"]["Id"][];
+        };
+        /**
+         * @description The registration of a `registration.pending` (state `pending`) or `account.created`
+         *     (state `approved`) message, named as in `AdminRegistration`.
+         */
+        WebhookRegistration: {
+            user_id: components["schemas"]["Id"];
+            account_id: components["schemas"]["Id"];
+            username: string;
+            state: string;
+            /** Format: date-time */
+            since: string;
+        };
+        /** @description The new profile of an `account.updated` message. */
+        WebhookAccount: {
+            id: components["schemas"]["Id"];
+            display_name: string;
+            /** @description The profile text as sanitized HTML. */
+            note: string;
+            locked: boolean;
+            bot: boolean;
+            discoverable: boolean;
+            indexable: boolean;
+            fields: {
+                name: string;
+                /** @description Sanitized HTML. */
+                value: string;
+            }[];
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description The action of a `moderation_action.*` message, named as in `AdminAccountAction`. */
+        WebhookAccountAction: {
+            id: components["schemas"]["Id"];
+            account_id: components["schemas"]["Id"];
+            kind: string;
+            reason_category: string;
+            public_reason?: string;
+            private_note?: string;
+            report_id?: components["schemas"]["Id"];
+            issuer: string;
+            notify_target: boolean;
+            /** @description `active`, or `lifted` for `moderation_action.lifted`. */
+            state: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at?: string;
+            /** Format: date-time */
+            lifted_at?: string;
+            lift_reason?: string;
+            status_ids: components["schemas"]["Id"][];
+        };
+        /** @description The appeal of an `appeal.created` message, named as in `AdminAppeal`. */
+        WebhookAppeal: {
+            id: components["schemas"]["Id"];
+            account_id: components["schemas"]["Id"];
+            action_id: components["schemas"]["Id"];
+            text: string;
+            state: string;
+            /** Format: date-time */
+            submitted_at: string;
+        };
+        /** @description The action of a `domain_moderation_action.*` message, named as in `AdminDomainAction`. */
+        WebhookDomainAction: {
+            id: components["schemas"]["Id"];
+            domain: string;
+            kind: string;
+            public_comment?: string;
+            private_note?: string;
+            obfuscate: boolean;
+            /** @description `active`, or `lifted` for `domain_moderation_action.lifted`. */
+            state: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at?: string;
+            /** Format: date-time */
+            lifted_at?: string;
+        };
+        /** @description The post of a `status.created` message, always `public` and local. */
+        WebhookStatus: {
+            id: components["schemas"]["Id"];
+            uri: string;
+            account_id: components["schemas"]["Id"];
+            visibility: string;
+            in_reply_to_uri?: string;
+            spoiler_text: string;
+            sensitive: boolean;
+            language: string;
+            /** @description Sanitized HTML. */
+            content: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description The emoji of a `custom_emoji.*` message, named as in `AdminCustomEmoji`. */
+        WebhookCustomEmoji: {
+            id: components["schemas"]["Id"];
+            shortcode: string;
+            local: boolean;
+            domain?: string;
+            uri?: string;
+            /**
+             * @description The operation, named as in the audit log: `custom_emoji_created`,
+             *     `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
+             *     `custom_emoji_disabled`, or `custom_emoji_deleted`.
+             */
+            operation: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description The data of a `webhook.test` message. */
+        WebhookTest: {
+            endpoint_id: components["schemas"]["Id"];
+        };
         /**
          * @description The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
          *     and `dark` for a color token, `value` for the others.
@@ -5294,6 +5824,38 @@ export interface components {
                 "application/problem+json": components["schemas"]["CustomEmojiProblem"];
             };
         };
+        /** @description The webhook. */
+        AdminWebhook: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminWebhook"];
+            };
+        };
+        /** @description The delivery. */
+        AdminWebhookDelivery: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminWebhookDelivery"];
+            };
+        };
+        /** @description The webhook breaks a rule; nothing was changed. */
+        WebhookProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["WebhookProblem"];
+            };
+        };
         /** @description The roles. */
         AdminRoleList: {
             headers: {
@@ -5376,6 +5938,8 @@ export interface components {
         RuleId: components["schemas"]["Id"];
         /** @description The ID of the custom emoji. */
         CustomEmojiId: components["schemas"]["Id"];
+        /** @description The ID of the webhook. */
+        WebhookId: components["schemas"]["Id"];
         /** @description The key of the text. */
         InstanceTextKey: components["schemas"]["InstanceTextKey"];
         /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
@@ -8370,6 +8934,235 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminInvite"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAdminWebhooks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The webhooks. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebhookList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description The new webhook and its secret. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebhookCreated"];
+                };
+            };
+            422: components["responses"]["WebhookProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAdminWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminWebhook"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The webhook is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateWebhookRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminWebhook"];
+            422: components["responses"]["WebhookProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    enableWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminWebhook"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    disableWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminWebhook"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    rotateWebhookSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new secret. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebhookSecret"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    testWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminWebhookDelivery"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listWebhookDeliveries: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of the deliveries. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWebhookDeliveryPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    redeliverWebhookDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the webhook. */
+                id: components["parameters"]["WebhookId"];
+                /** @description The ID of the delivery. */
+                delivery_id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminWebhookDelivery"];
             default: components["responses"]["Problem"];
         };
     };

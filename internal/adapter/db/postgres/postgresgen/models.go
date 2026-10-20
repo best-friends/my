@@ -902,3 +902,30 @@ type UserToken struct {
 	ExpiresAt      time.Time
 	IssuedAt       time.Time
 }
+
+type WebhookEndpointFailure struct {
+	EndpointID            string
+	FirstFailureAttemptID string
+	FirstFailedAt         time.Time
+	ConsecutiveFailures   int64
+}
+
+type WebhookEndpointHead struct {
+	EndpointID string
+	RevisionID string
+	State      string
+	SecretID   string
+}
+
+type WebhookEndpointRevisionEvent struct {
+	RevisionID string
+	EventType  string
+}
+
+type WebhookSecret struct {
+	ID              string
+	EndpointID      string
+	SealedSecret    []byte
+	CreatedByUserID *string
+	CreatedAt       time.Time
+}

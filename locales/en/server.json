@@ -767,6 +767,14 @@
     "defaultMessage": "{name} must be an image that you uploaded and that has finished processing.",
     "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
   },
+  "errors.webhook.invalid": {
+    "defaultMessage": "The webhook cannot be saved.",
+    "description": "API error title for HTTP 422 when the settings of a webhook endpoint break a rule; the detail says which."
+  },
+  "errors.webhook.invalid_detail": {
+    "defaultMessage": "{reason, select, url {The URL must be an absolute http or https URL of at most 2048 bytes, without user info or a fragment.} description {The description must be at most 200 characters, without control characters.} events {Choose at least one event, each once.} missing_permission {You need the permissions of every event you choose.} other {The settings break a rule.}}",
+    "description": "API error detail for HTTP 422 when the settings of a webhook endpoint break a rule. {reason} is url, description, events, or missing_permission."
+  },
   "errors.wrong_password": {
     "defaultMessage": "The password is wrong.",
     "description": "API error title for HTTP 422 when the password the user typed to confirm an operation on their own account (such as deleting it) is not their current password."
@@ -799,6 +807,14 @@
     "defaultMessage": "A new sign-up awaits approval on {instance}",
     "description": "Subject of the email to a moderator who chose to get moderator notifications by email: a new user signed up and waits for a moderator to approve the registration. {instance} is the server's display name, or its domain name when it has none."
   },
+  "mail.admin_webhook_disabled.body": {
+    "defaultMessage": "The server {instance} turned off one of its webhooks: its endpoint kept failing, or answered that it is gone.\n\nOpen your notifications to see which one, and turn it on again once the endpoint works:\n\n{url}\n\nYou get this email because you chose to get moderator notifications by email. You can turn it off in your preferences.",
+    "description": "Plain-text body of the email to an administrator about a webhook endpoint that the server turned off. It never names the endpoint or its URL. {instance} is the server's display name, or its domain name when it has none; {url} the link to the notifications (keep it on its own line)."
+  },
+  "mail.admin_webhook_disabled.subject": {
+    "defaultMessage": "A webhook of {instance} was turned off",
+    "description": "Subject of the email to an administrator who chose to get moderator notifications by email: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none."
+  },
   "mail.verify_email.body": {
     "defaultMessage": "Welcome to {instance}.\n\nOpen this link to confirm your email address:\n\n{url}\n\n{hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email.",
     "description": "Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works."
@@ -818,6 +834,10 @@
   "push.admin_sign_up": {
     "defaultMessage": "A new sign-up awaits approval on {instance}",
     "description": "Web Push notification to a moderator: a new user signed up and waits for approval. It never names the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.admin_webhook_disabled": {
+    "defaultMessage": "A webhook of {instance} was turned off",
+    "description": "Web Push notification to an administrator: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none."
   },
   "push.appeal_decided": {
     "defaultMessage": "The moderators of {instance} decided your appeal",
