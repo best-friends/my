@@ -43,6 +43,7 @@ import { Route as ModerationSignupBlocksRouteImport } from './routes/moderation.
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
 import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
+import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
@@ -230,6 +231,11 @@ const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
   path: '/settings/account-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAutoDeleteRoute = SettingsAutoDeleteRouteImport.update({
+  id: '/settings/auto-delete',
+  path: '/settings/auto-delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsBlocksRoute = SettingsBlocksRouteImport.update({
   id: '/settings/blocks',
   path: '/settings/blocks',
@@ -336,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
@@ -386,6 +393,7 @@ export interface FileRoutesByTo {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
@@ -437,6 +445,7 @@ export interface FileRoutesById {
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
   '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
+  '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
   '/settings/mutes': typeof SettingsMutesRoute
@@ -489,6 +498,7 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
@@ -539,6 +549,7 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
@@ -589,6 +600,7 @@ export interface FileRouteTypes {
     | '/moderation/signup-blocks'
     | '/settings/account'
     | '/settings/account-status'
+    | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
     | '/settings/mutes'
@@ -640,6 +652,7 @@ export interface RootRouteChildren {
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
   SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
+  SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
@@ -899,6 +912,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAccountStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/auto-delete': {
+      id: '/settings/auto-delete'
+      path: '/settings/auto-delete'
+      fullPath: '/settings/auto-delete'
+      preLoaderRoute: typeof SettingsAutoDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/blocks': {
       id: '/settings/blocks'
       path: '/settings/blocks'
@@ -1032,6 +1052,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,
   SettingsAccountRoute: SettingsAccountRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
+  SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
   SettingsMutesRoute: SettingsMutesRoute,

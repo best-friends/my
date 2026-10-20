@@ -5799,6 +5799,122 @@
     "defaultMessage": "Sign in with a code from an authenticator app as well as your password",
     "description": "Description of the two-factor authentication item in the settings menu."
   },
+  "settings.auto_delete.title": {
+    "defaultMessage": "Delete old posts",
+    "description": "Heading and document title of the settings page of the automatic deletion of the user's own old posts, and its item in the settings menu."
+  },
+  "settings.auto_delete.summary": {
+    "defaultMessage": "Delete your posts automatically once they are old, except those you choose to keep",
+    "description": "Description of the automatic deletion item in the settings menu."
+  },
+  "settings.auto_delete.description": {
+    "defaultMessage": "Once a post of yours is older than the age you choose, it is deleted here and on the servers it was sent to, as if you had deleted it. Deleted posts cannot be restored. Your boosts are not deleted.",
+    "description": "Explanation at the top of the automatic deletion settings page."
+  },
+  "settings.auto_delete.enabled": {
+    "defaultMessage": "Delete old posts automatically",
+    "description": "Label of the switch that turns the automatic deletion of old posts on."
+  },
+  "settings.auto_delete.enabled.description": {
+    "defaultMessage": "The server checks every hour and deletes at most 100 posts each time, so many old posts take several hours to go.",
+    "description": "Help of the switch of the automatic deletion of old posts."
+  },
+  "settings.auto_delete.age": {
+    "defaultMessage": "Delete posts older than",
+    "description": "Label of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.description": {
+    "defaultMessage": "Counted from when each post was published.",
+    "description": "Help of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.age.days": {
+    "defaultMessage": "{count, plural, one {# day} other {# days}}",
+    "description": "An age of posts in days, an option of the select of the age after which posts are deleted."
+  },
+  "settings.auto_delete.keep": {
+    "defaultMessage": "Keep these posts",
+    "description": "Legend of the checkboxes of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.description": {
+    "defaultMessage": "Posts that match any checked item are never deleted automatically.",
+    "description": "Help of the exceptions that keep posts from the automatic deletion."
+  },
+  "settings.auto_delete.keep.pinned": {
+    "defaultMessage": "Pinned to your profile",
+    "description": "Exception of the automatic deletion: posts pinned to the profile."
+  },
+  "settings.auto_delete.keep.bookmarked": {
+    "defaultMessage": "Bookmarked by you",
+    "description": "Exception of the automatic deletion: posts the user bookmarked."
+  },
+  "settings.auto_delete.keep.favourited": {
+    "defaultMessage": "Favourited by you",
+    "description": "Exception of the automatic deletion: posts the user favourited."
+  },
+  "settings.auto_delete.keep.media": {
+    "defaultMessage": "With images or other media",
+    "description": "Exception of the automatic deletion: posts with media attachments."
+  },
+  "settings.auto_delete.keep.polls": {
+    "defaultMessage": "With a poll",
+    "description": "Exception of the automatic deletion: posts with a poll."
+  },
+  "settings.auto_delete.visibilities": {
+    "defaultMessage": "Keep posts with these visibilities",
+    "description": "Legend of the checkboxes of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.visibilities.description": {
+    "defaultMessage": "Posts with a checked visibility are never deleted automatically.",
+    "description": "Help of the visibilities whose posts the automatic deletion keeps."
+  },
+  "settings.auto_delete.min_boosts": {
+    "defaultMessage": "Keep posts boosted at least",
+    "description": "Label of the select of the number of boosts that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.min_favourites": {
+    "defaultMessage": "Keep posts favourited at least",
+    "description": "Label of the select of the number of favourites that keeps a post from the automatic deletion."
+  },
+  "settings.auto_delete.threshold.off": {
+    "defaultMessage": "Don't keep posts for this",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion that keeps no post for it."
+  },
+  "settings.auto_delete.threshold.count": {
+    "defaultMessage": "{count, plural, one {# time} other {# times}}",
+    "description": "Option of the boosts or favourites threshold of the automatic deletion: a number of boosts or favourites."
+  },
+  "settings.auto_delete.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the automatic deletion settings."
+  },
+  "settings.auto_delete.saved_on": {
+    "defaultMessage": "Saved. Posts older than {days, plural, one {# day} other {# days}} will be deleted, except those you keep.",
+    "description": "Status after the automatic deletion settings were saved turned on."
+  },
+  "settings.auto_delete.saved_off": {
+    "defaultMessage": "Saved. Your posts are not deleted automatically.",
+    "description": "Status after the automatic deletion settings were saved turned off."
+  },
+  "settings.auto_delete.save_failed": {
+    "defaultMessage": "The settings could not be saved: {reason}",
+    "description": "Error after saving the automatic deletion settings failed. {reason} is the localized reason."
+  },
+  "settings.auto_delete.unsaved.title": {
+    "defaultMessage": "Leave without saving?",
+    "description": "Title of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.description": {
+    "defaultMessage": "Your changes to the automatic deletion will be lost.",
+    "description": "Description of the dialog that asks before leaving the automatic deletion settings with unsaved changes."
+  },
+  "settings.auto_delete.unsaved.leave": {
+    "defaultMessage": "Discard changes",
+    "description": "Button that leaves the automatic deletion settings without saving."
+  },
+  "settings.auto_delete.unsaved.stay": {
+    "defaultMessage": "Keep editing",
+    "description": "Button that stays on the automatic deletion settings."
+  },
   "settings.two_factor.status.title": {
     "defaultMessage": "Current setting",
     "description": "Heading of the region of the two-factor authentication page that says whether it is on."
