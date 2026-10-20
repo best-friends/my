@@ -107,4 +107,6 @@ type Repository interface {
 	// DeleteMessagesBefore deletes up to limit messages created before t, with their deliveries
 	// and attempts, and returns how many messages it deleted.
 	DeleteMessagesBefore(ctx context.Context, tx uow.Tx, t time.Time, limit int) (int64, error)
+
+	ProjectionRepository
 }

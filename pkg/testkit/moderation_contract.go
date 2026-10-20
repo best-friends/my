@@ -76,6 +76,7 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 		{"FlagsTheFirstOpenReportAndCounts", moderationFirstOpenReport},
 		{"NotesReopensAndResolvesByAction", moderationNotesAndReopenings},
 		{"RebuildAgreesWithTheCommands", moderationProjectionEqualsRebuild},
+		{"ReadsInTheTransactionsOfItsEvents", moderationReadsInTransaction},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newModerationEnv(t, newHarness)) })
@@ -83,10 +84,11 @@ func ModerationContract(t *testing.T, newHarness ModerationFactory) {
 }
 
 type moderationEnv struct {
-	h      ModerationHarness
-	clock  *Clock
-	ids    *IDGenerator
-	actors *stubActors
+	h          ModerationHarness
+	projectors *uow.Projectors
+	clock      *Clock
+	ids        *IDGenerator
+	actors     *stubActors
 	// statuses and lifecycles stand in for the content and account modules.
 	statuses   *stubModerationStatuses
 	lifecycles *stubLifecycles
@@ -111,7 +113,7 @@ func newModerationEnv(t *testing.T, newHarness ModerationFactory) *moderationEnv
 	clock := NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC))
 	ids := NewIDGenerator(clock)
 	e := &moderationEnv{
-		h: h, clock: clock, ids: ids, actors: &stubActors{actors: map[string]appaccount.Actor{}}, events: &eventLog{},
+		h: h, projectors: projectors, clock: clock, ids: ids, actors: &stubActors{actors: map[string]appaccount.Actor{}}, events: &eventLog{},
 		statuses:   &stubModerationStatuses{live: map[string]appcontent.Status{}, deleted: map[string]string{}, marked: map[string][]string{}},
 		lifecycles: &stubLifecycles{due: map[string]time.Time{}},
 	}

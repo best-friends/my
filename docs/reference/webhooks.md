@@ -27,8 +27,9 @@ The body is:
 
 - `type` is one of the events below, or `webhook.test`.
 - `timestamp` is when the event happened, in RFC 3339 with milliseconds.
-- `data` names its fields as the admin API (`/api/v1/admin/...`) names them. Its schema for each type is the `Webhook*` schema
-  of `api/openapi.yaml`; `WebhookMessage` describes the body. A field without a value is left out.
+- `data` is what the admin API (`/api/v1/admin/...`) answers for the object of the event, as it is when the event happens:
+  the server presents it with the same code as the admin API, in the transaction of the event. Its schema for each type is in
+  the table below and in `api/openapi.yaml`, where `WebhookMessage` describes the body. A field without a value is left out.
 - v0 keeps no version of the body: `data` follows the admin API of `/api/v1`, which v0 may change (ADR-0012).
 
 The secret is `whsec_` and the base64 of 32 random bytes, as the Standard Webhooks libraries take it. It is shown once, when the
@@ -42,27 +43,30 @@ An endpoint subscribes to some of these events. Setting up the subscription need
 
 | `type` | When | `data` | Permission |
 | --- | --- | --- | --- |
-| `report.created` | A report is filed, locally or by another server (a `Flag`) | `WebhookReport` (state `open`) | `manage_reports` |
-| `report.resolved` | A report is resolved | `WebhookReport` (state `resolved`, with `outcome`) | `manage_reports` |
-| `report.reopened` | A resolved report is reopened | `WebhookReport` (state `open`) | `manage_reports` |
-| `registration.pending` | A registration awaits a moderator's approval | `WebhookRegistration` (state `pending`) | `manage_accounts` |
-| `account.created` | A registration is approved, at the sign-up or by a moderator, and the local account can be used | `WebhookRegistration` (state `approved`) | `manage_accounts` |
-| `account.updated` | A local account changes its profile | `WebhookAccount` | `manage_accounts` |
-| `moderation_action.created` | An action on an account | `WebhookAccountAction` (state `active`) | `manage_accounts` |
-| `moderation_action.lifted` | The lift of an action on an account | `WebhookAccountAction` (state `lifted`) | `manage_accounts` |
-| `appeal.created` | An account appeals an action | `WebhookAppeal` | `manage_accounts` |
-| `domain_moderation_action.created` | An action on a domain | `WebhookDomainAction` (state `active`) | `manage_domains` |
-| `domain_moderation_action.lifted` | The lift of an action on a domain | `WebhookDomainAction` (state `lifted`) | `manage_domains` |
+| `report.created` | A report is filed, locally or by another server (a `Flag`) | `AdminReport` (state `open`), as `GET /admin/reports` lists it | `manage_reports` |
+| `report.resolved` | A report is resolved | `AdminReport` (state `resolved`, with `outcome`) | `manage_reports` |
+| `report.reopened` | A resolved report is reopened | `AdminReport` (state `open`) | `manage_reports` |
+| `registration.pending` | A registration awaits a moderator's approval | `AdminRegistration` (state `pending`), with the email address and the reason | `manage_accounts` |
+| `account.created` | A registration is approved, at the sign-up or by a moderator, and the local account can be used | `AdminRegistration` (state `approved`) | `manage_accounts` |
+| `account.updated` | A local account changes its profile | `AdminAccount`, as `GET /admin/accounts` lists it, with the new profile | `manage_accounts` |
+| `moderation_action.created` | An action on an account | `AdminAccountAction` (state `active`) | `manage_accounts` |
+| `moderation_action.lifted` | The lift of an action on an account | `AdminAccountAction` (state `lifted`) | `manage_accounts` |
+| `appeal.created` | An account appeals an action | `AdminAppeal`, with the action | `manage_accounts` |
+| `domain_moderation_action.created` | An action on a domain | `AdminDomainAction` (state `active`) | `manage_domains` |
+| `domain_moderation_action.lifted` | The lift of an action on a domain | `AdminDomainAction` (state `lifted`) | `manage_domains` |
 | `status.created` | A local account posts publicly | `WebhookStatus` | none besides `manage_webhooks` |
-| `custom_emoji.created` | An administrator registers a custom emoji | `WebhookCustomEmoji` | `manage_custom_emojis` |
+| `custom_emoji.created` | An administrator registers a custom emoji | `WebhookCustomEmoji`: `AdminCustomEmoji` and the `operation` | `manage_custom_emojis` |
 | `custom_emoji.updated` | An administrator replaces the image of a custom emoji, changes its settings or aliases, or enables or disables it | `WebhookCustomEmoji` (`operation` says which) | `manage_custom_emojis` |
-| `custom_emoji.deleted` | An administrator deletes a custom emoji | `WebhookCustomEmoji` | `manage_custom_emojis` |
+| `custom_emoji.deleted` | An administrator deletes a custom emoji | `WebhookCustomEmoji`, the emoji as it was before the deletion | `manage_custom_emojis` |
 | `webhook.test` | An administrator sends a test message to the endpoint | `WebhookTest` | — (not subscribable) |
 
 - `status.created` is sent for `public` posts only: `unlisted`, `local`, `private`, and `direct` posts never leave the server
   this way, and neither do remote posts.
 - `account.updated` is sent for local accounts only, and not for the profile an account is created with.
 - `custom_emoji.*` follows the administrators' operations only, never the remote emoji that posts and profiles bring.
+- The `data` of the admin types embeds what the admin API embeds: the reporter's and the target's `Account` in `AdminReport`,
+  the account's `Account` in `AdminAccount`, the action in `AdminAppeal`, the image URLs in `AdminCustomEmoji`. A registration
+  carries the applicant's email address, and a report the reporter's comment: the messages are kept 14 days (below).
 - The permissions are checked when a webhook is set up or changed. A webhook keeps its events when the person who set it up later
   loses a permission; someone with `manage_webhooks` disables it when it should stop.
 

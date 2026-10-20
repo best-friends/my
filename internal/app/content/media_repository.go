@@ -16,6 +16,8 @@ import (
 // Methods that take a uow.Tx run inside that transaction; the others read committed data outside
 // any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
 type MediaRepository interface {
+	MediaTxReads
+
 	// InsertMediaFile inserts a media file.
 	InsertMediaFile(ctx context.Context, tx uow.Tx, m content.MediaFile) error
 	// InsertUploadedMedia inserts the upload subtype of a media file.
@@ -119,4 +121,13 @@ type OwnedUpload struct {
 type FileVariant struct {
 	File    content.MediaFile
 	Variant content.MediaVariant
+}
+
+// MediaTxReads are the reads of MediaRepository that run in a transaction tx, with what tx has written, for the
+// use cases that present what an event's transaction wrote (the data of the webhook messages,
+// ADR-0060). Each one reads as the method of the same name without Tx does.
+type MediaTxReads interface {
+	ListReadyVariantsTx(ctx context.Context, tx uow.Tx, ids []string) ([]FileVariant, error)
+	ListRemoteMediaTx(ctx context.Context, tx uow.Tx, ids []string) ([]content.RemoteMedia, error)
+	ListCurrentCustomEmojisTx(ctx context.Context, tx uow.Tx, ids []string) ([]content.CurrentCustomEmoji, error)
 }

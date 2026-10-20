@@ -52,6 +52,10 @@ type noMediaRejects struct{}
 
 func (noMediaRejects) RejectsMedia(context.Context, string) (bool, error) { return false, nil }
 
+func (noMediaRejects) RejectsMediaTx(context.Context, uow.Tx, string) (bool, error) {
+	return false, nil
+}
+
 // cacheEnv is a media proxy with the remote media cache on the harness's repository.
 type cacheEnv struct {
 	*mediaEnv

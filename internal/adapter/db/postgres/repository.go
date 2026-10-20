@@ -24,8 +24,25 @@ func queries(tx uow.Tx) (*postgresgen.Queries, error) {
 	return postgresgen.New(pgTx), nil
 }
 
-// reader returns the generated queries on the pool, for reads outside transactions.
-func (d *DB) reader() *postgresgen.Queries { return postgresgen.New(d.pool) }
+// reader returns the generated queries on the pool, for reads outside transactions, or on the
+// transaction of a copy that in made.
+func (d *DB) reader() *postgresgen.Queries {
+	if d.tx != nil {
+		return postgresgen.New(d.tx)
+	}
+	return postgresgen.New(d.pool)
+}
+
+// in returns a copy of d whose reads run in tx, for the repositories' read methods that take a
+// transaction (their ...Tx variants): they run the method that reads outside transactions on a
+// repository over the copy.
+func (d *DB) in(tx uow.Tx) (*DB, error) {
+	pgTx, err := txOf(tx)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{pool: d.pool, opts: d.opts, tx: pgTx}, nil
+}
 
 // Timestamps read back from timestamptz are in the session's time zone; the domain uses UTC.
 func utc(t time.Time) time.Time { return t.UTC() }

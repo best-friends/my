@@ -39,11 +39,16 @@ const maxAdminAccountParam = 320
 
 // newAdminAccounts presents accounts as the moderators see them, reading their images once.
 func (s *Server) newAdminAccounts(ctx context.Context, as []appidentity.AdminAccount) ([]AdminAccount, error) {
+	return s.newAdminAccountsWith(ctx, s.reads(), as)
+}
+
+// newAdminAccountsWith is newAdminAccounts through reads.
+func (s *Server) newAdminAccountsWith(ctx context.Context, reads presentReads, as []appidentity.AdminAccount) ([]AdminAccount, error) {
 	actors := make([]appaccount.Actor, len(as))
 	for i, a := range as {
 		actors[i] = a.Actor
 	}
-	presented, err := s.newAccounts(ctx, actors)
+	presented, err := s.newAccountsWith(ctx, reads, actors)
 	if err != nil {
 		return nil, err
 	}

@@ -558,7 +558,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpRetention(cfg, retention, statuses)
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
-		feeds: feeds, notifications: notifs, moderation: mods, identities: identities,
+		feeds: feeds, notifications: notifs, moderation: mods, identities: identities, webhooks: hooks,
 	})
 	if err := a.setUpStreams(ctx, cfg, opts.StreamBus); err != nil {
 		_ = a.Close()
@@ -651,7 +651,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	tokens.Register(surfaceRouter{a, surfaceOAuth})
 	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(surfaceRouter{a, surfaceMedia})
 	mediahttp.NewProxy(mediahttp.ProxyOptions{Media: a.MediaProxy, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(surfaceRouter{a, surfaceMedia})
-	clientapi.New(clientapi.Options{
+	api := clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
@@ -681,9 +681,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The custom emoji of the picker and their administration (ADR-0051).
 		CustomEmojis: a.CustomEmojis,
 		// The instance's webhooks (ADR-0060).
-		Webhooks:    a.Webhooks,
-		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
-	}).Register(clientAPIRouter{a})
+		Webhooks:     a.Webhooks,
+		WebhookReads: webhookReads{a},
+		RateLimiter:  a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+	})
+	api.Register(clientAPIRouter{a})
+	// The data of the webhook messages is the admin API's representation (ADR-0060).
+	a.Webhooks.SetPresenter(api)
 	a.registerMetricsSnapshot()
 	return a, nil
 }

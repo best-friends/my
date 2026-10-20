@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
 )
 
@@ -31,22 +32,32 @@ type CustomEmojiView struct {
 // out, as is every remote emoji when no proxy is configured. An emoji that is left out stays its
 // :shortcode: text in the clients.
 func (s *MediaService) CustomEmojis(ctx context.Context, ids []string) (map[string]CustomEmojiView, error) {
+	return s.customEmojis(ctx, s.reads(), ids)
+}
+
+// CustomEmojisTx returns the custom emoji with an ID in ids as CustomEmojis does, read in tx with
+// what tx has written (the data of the webhook messages, ADR-0060).
+func (s *MediaService) CustomEmojisTx(ctx context.Context, tx uow.Tx, ids []string) (map[string]CustomEmojiView, error) {
+	return s.customEmojis(ctx, s.readsIn(tx), ids)
+}
+
+func (s *MediaService) customEmojis(ctx context.Context, reads mediaReads, ids []string) (map[string]CustomEmojiView, error) {
 	ids = sortedSet(slices.DeleteFunc(slices.Clone(ids), func(id string) bool { return id == "" }))
 	if len(ids) == 0 {
 		return map[string]CustomEmojiView{}, nil
 	}
-	emojis, err := s.d.Repository.ListCurrentCustomEmojis(ctx, ids)
+	emojis, err := reads.ListCurrentCustomEmojis(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("content: the custom emoji %v: %w", ids, err)
 	}
 	emojis = slices.DeleteFunc(emojis, func(e content.CurrentCustomEmoji) bool { return !e.Settings.Enabled })
-	return s.customEmojiViews(ctx, emojis)
+	return s.customEmojiViews(ctx, reads, emojis)
 }
 
 // customEmojiViews presents emojis, enabled or not, as CustomEmojis does, keyed by ID.
-func (s *MediaService) customEmojiViews(ctx context.Context, emojis []content.CurrentCustomEmoji) (map[string]CustomEmojiView, error) {
+func (s *MediaService) customEmojiViews(ctx context.Context, reads mediaReads, emojis []content.CurrentCustomEmoji) (map[string]CustomEmojiView, error) {
 	out := map[string]CustomEmojiView{}
-	local, err := s.localEmojiImages(ctx, emojis)
+	local, err := s.localEmojiImages(ctx, reads, emojis)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +75,7 @@ func (s *MediaService) customEmojiViews(ctx context.Context, emojis []content.Cu
 	if s.d.Proxy == nil {
 		return out, nil
 	}
-	remote, err := s.remoteEmojiMedia(ctx, emojis)
+	remote, err := s.remoteEmojiMedia(ctx, reads, emojis)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +89,7 @@ func (s *MediaService) customEmojiViews(ctx context.Context, emojis []content.Cu
 		if err != nil || u.Hostname() == "" {
 			continue
 		}
-		rejected, err := s.d.Proxy.rejects(ctx, seen, e.Emoji.Domain, u.Hostname())
+		rejected, err := rejectsAny(ctx, reads.RejectsMedia, seen, e.Emoji.Domain, u.Hostname())
 		if err != nil {
 			return nil, err
 		}
@@ -98,7 +109,7 @@ func (s *MediaService) customEmojiViews(ctx context.Context, emojis []content.Cu
 
 // localEmojiImages returns the images of the local emoji among emojis whose processing
 // succeeded, keyed by media file ID.
-func (s *MediaService) localEmojiImages(ctx context.Context, emojis []content.CurrentCustomEmoji) (map[string]Image, error) {
+func (s *MediaService) localEmojiImages(ctx context.Context, reads mediaReads, emojis []content.CurrentCustomEmoji) (map[string]Image, error) {
 	var ids []string
 	for _, e := range emojis {
 		if e.Emoji.Local() {
@@ -110,7 +121,7 @@ func (s *MediaService) localEmojiImages(ctx context.Context, emojis []content.Cu
 		return out, nil
 	}
 	ids = sortedSet(ids)
-	variants, err := s.d.Repository.ListReadyVariants(ctx, ids)
+	variants, err := reads.ListReadyVariants(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("content: the images of the custom emoji: %w", err)
 	}
@@ -127,7 +138,7 @@ func (s *MediaService) localEmojiImages(ctx context.Context, emojis []content.Cu
 }
 
 // remoteEmojiMedia returns the remote media files of the remote emoji among emojis, keyed by ID.
-func (s *MediaService) remoteEmojiMedia(ctx context.Context, emojis []content.CurrentCustomEmoji) (map[string]content.RemoteMedia, error) {
+func (s *MediaService) remoteEmojiMedia(ctx context.Context, reads mediaReads, emojis []content.CurrentCustomEmoji) (map[string]content.RemoteMedia, error) {
 	var ids []string
 	for _, e := range emojis {
 		if !e.Emoji.Local() {
@@ -138,7 +149,7 @@ func (s *MediaService) remoteEmojiMedia(ctx context.Context, emojis []content.Cu
 	if len(ids) == 0 {
 		return out, nil
 	}
-	remote, err := s.d.Repository.ListRemoteMedia(ctx, sortedSet(ids))
+	remote, err := reads.ListRemoteMedia(ctx, sortedSet(ids))
 	if err != nil {
 		return nil, fmt.Errorf("content: the images of the custom emoji: %w", err)
 	}
@@ -180,11 +191,12 @@ func (s *MediaService) EmojiTags(ctx context.Context, ids []string) ([]EmojiTag,
 		return nil, fmt.Errorf("content: the custom emoji %v: %w", ids, err)
 	}
 	emojis = slices.DeleteFunc(emojis, func(e content.CurrentCustomEmoji) bool { return !e.Settings.Enabled })
-	local, err := s.localEmojiImages(ctx, emojis)
+	reads := s.reads()
+	local, err := s.localEmojiImages(ctx, reads, emojis)
 	if err != nil {
 		return nil, err
 	}
-	remote, err := s.remoteEmojiMedia(ctx, emojis)
+	remote, err := s.remoteEmojiMedia(ctx, reads, emojis)
 	if err != nil {
 		return nil, err
 	}

@@ -101,6 +101,8 @@ type AccountDomains interface {
 type MediaFetchPolicy interface {
 	// RejectsMedia reports whether the media of domain, or of a parent domain, are not fetched.
 	RejectsMedia(ctx context.Context, domain string) (bool, error)
+	// RejectsMediaTx answers as RejectsMedia does, read in tx with what tx has written.
+	RejectsMediaTx(ctx context.Context, tx uow.Tx, domain string) (bool, error)
 }
 
 // ProxyDeps are the ports a MediaProxy uses.
@@ -366,6 +368,11 @@ func (p *MediaProxy) keepSmall(ctx context.Context, m content.RemoteMedia, key s
 // a reject_media domain action), or "" when none is; "" domains are skipped. seen, when not nil,
 // keeps the answers by domain across calls, so that a page of media asks once per domain.
 func (p *MediaProxy) rejects(ctx context.Context, seen map[string]bool, domains ...string) (string, error) {
+	return rejectsAny(ctx, p.d.Policy.RejectsMedia, seen, domains...)
+}
+
+// rejectsAny is MediaProxy.rejects with the check of one domain.
+func rejectsAny(ctx context.Context, rejectsMedia func(ctx context.Context, domain string) (bool, error), seen map[string]bool, domains ...string) (string, error) {
 	for _, domain := range domains {
 		domain = strings.ToLower(domain)
 		if domain == "" {
@@ -374,7 +381,7 @@ func (p *MediaProxy) rejects(ctx context.Context, seen map[string]bool, domains 
 		rejected, ok := seen[domain]
 		if !ok {
 			var err error
-			if rejected, err = p.d.Policy.RejectsMedia(ctx, domain); err != nil {
+			if rejected, err = rejectsMedia(ctx, domain); err != nil {
 				return "", err
 			}
 			if seen != nil {

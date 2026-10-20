@@ -25,8 +25,25 @@ func queries(tx uow.Tx) (*sqlitegen.Queries, error) {
 	return sqlitegen.New(sqlTx), nil
 }
 
-// reader returns the generated queries on the connection pool, for reads outside transactions.
-func (d *DB) reader() *sqlitegen.Queries { return sqlitegen.New(d.db) }
+// reader returns the generated queries on the connection pool, for reads outside transactions,
+// or on the transaction of a copy that in made.
+func (d *DB) reader() *sqlitegen.Queries {
+	if d.tx != nil {
+		return sqlitegen.New(d.tx)
+	}
+	return sqlitegen.New(d.db)
+}
+
+// in returns a copy of d whose reads run in tx, for the repositories' read methods that take a
+// transaction (their ...Tx variants): they run the method that reads outside transactions on a
+// repository over the copy.
+func (d *DB) in(tx uow.Tx) (*DB, error) {
+	sqlTx, err := txOf(tx)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{db: d.db, opts: d.opts, tx: sqlTx}, nil
+}
 
 // Timestamps are stored as Unix milliseconds (data-model §1.2).
 func toMillis(t time.Time) int64 { return t.UnixMilli() }

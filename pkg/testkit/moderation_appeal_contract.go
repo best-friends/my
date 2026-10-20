@@ -41,6 +41,7 @@ func AppealContract(t *testing.T, newHarness ModerationFactory) {
 		{"OverturnLiftsTheAction", appealOverturn},
 		{"BanIsAppealedUntilTheDeletion", appealBan},
 		{"ListsAndCounts", appealLists},
+		{"ReadsAnAppealInATransaction", appealReadsInTransaction},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newAppealEnv(t, newHarness)) })
@@ -67,14 +68,15 @@ func (w *stubAppealWindow) AppealWindow(context.Context) (time.Duration, error) 
 }
 
 type appealEnv struct {
-	h        ModerationHarness
-	clock    *Clock
-	ids      *IDGenerator
-	svc      *appmoderation.Service
-	policy   *appmoderation.AccountPolicy
-	statuses *stubModerationStatuses
-	window   *stubAppealWindow
-	actors   *stubActors
+	h          ModerationHarness
+	projectors *uow.Projectors
+	clock      *Clock
+	ids        *IDGenerator
+	svc        *appmoderation.Service
+	policy     *appmoderation.AccountPolicy
+	statuses   *stubModerationStatuses
+	window     *stubAppealWindow
+	actors     *stubActors
 	// lifecycles stands in for the account module's deletions.
 	lifecycles *stubLifecycles
 	events     *eventLog
@@ -91,7 +93,7 @@ func newAppealEnv(t *testing.T, newHarness ModerationFactory) *appealEnv {
 	ids := NewIDGenerator(clock)
 	actors := &stubActors{actors: map[string]appaccount.Actor{}}
 	e := &appealEnv{
-		h: h, clock: clock, ids: ids, events: &eventLog{}, window: &stubAppealWindow{d: moderation.DefaultAppealWindow},
+		h: h, projectors: projectors, clock: clock, ids: ids, events: &eventLog{}, window: &stubAppealWindow{d: moderation.DefaultAppealWindow},
 		statuses: &stubModerationStatuses{live: map[string]appcontent.Status{}, deleted: map[string]string{}, marked: map[string][]string{}},
 		local:    ids.NewID(), other: ids.NewID(), moderator: ids.NewID(), actors: actors,
 		lifecycles: &stubLifecycles{due: map[string]time.Time{}, deleted: map[string]bool{}},

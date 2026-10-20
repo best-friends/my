@@ -31,6 +31,8 @@ const DefaultBusyTimeoutMillis = 5000
 type DB struct {
 	db   *sql.DB
 	opts uow.Options
+	// tx is the transaction that the reads of a copy made by in run in, nil for the pool.
+	tx *sql.Tx
 }
 
 var _ uow.UnitOfWork = (*DB)(nil)

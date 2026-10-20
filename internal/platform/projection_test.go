@@ -25,6 +25,7 @@ import (
 	domidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/moderation"
+	domwebhook "github.com/best-friends/my/internal/domain/webhook"
 	"github.com/best-friends/my/internal/platform"
 )
 
@@ -118,6 +119,7 @@ func fillProjections(t *testing.T, a *platform.App) {
 	}
 	fillRemotePoll(t, a, dave)
 	fillModeration(t, a, ids, dave, hello)
+	fillWebhooks(t, a)
 	fillIdentity(t, a, bob)
 }
 
@@ -146,6 +148,33 @@ func fillRemotePoll(t *testing.T, a *platform.App, dave string) {
 	})
 	if err != nil {
 		t.Fatalf("ReviseRemoteStatus: %v", err)
+	}
+}
+
+// fillWebhooks fills the webhook projections: an endpoint revised, with its secret rotated, and
+// a failed attempt, as the guard refuses its loopback destination.
+func fillWebhooks(t *testing.T, a *platform.App) {
+	t.Helper()
+	ctx := t.Context()
+	settings := domwebhook.EndpointSettings{URL: "https://127.0.0.1/hook", Events: []domwebhook.EventType{domwebhook.EventStatusCreated}}
+	c, err := a.Webhooks.Create(ctx, settings, "")
+	if err != nil {
+		t.Fatalf("Create the webhook = %v", err)
+	}
+	id := c.Endpoint.ID
+	settings.Description = "Chat"
+	if _, err := a.Webhooks.Update(ctx, id, settings, ""); err != nil {
+		t.Fatalf("Update the webhook = %v", err)
+	}
+	if _, err := a.Webhooks.RotateSecret(ctx, id, ""); err != nil {
+		t.Fatalf("RotateSecret = %v", err)
+	}
+	d, err := a.Webhooks.Test(ctx, id)
+	if err != nil {
+		t.Fatalf("Test the webhook = %v", err)
+	}
+	if res := a.Webhooks.Deliver(ctx, d.Delivery.ID, false); res.IsDone() {
+		t.Fatalf("Deliver to loopback = %+v, want a failure", res)
 	}
 }
 
@@ -350,6 +379,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 		"notification_exclusions", "notification_deleted_statuses", "poll_tallies",
 		"account_restrictions", "domain_restrictions", "report_states", "appeal_states", "status_sensitivity_overrides",
 		"feed_author_restrictions", "feed_domain_restrictions", "user_roles", "user_registration_states", "user_primary_emails",
+		"webhook_endpoint_heads", "webhook_endpoint_failures",
 	} {
 		if held[table] == 0 {
 			t.Errorf("%s holds no rows", table)
@@ -374,6 +404,8 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("DELETE FROM user_roles")
 	exec("UPDATE user_registration_states SET state = 'rejected' WHERE state = 'pending'")
 	exec("DELETE FROM user_primary_emails")
+	exec("DELETE FROM webhook_endpoint_heads")
+	exec("UPDATE webhook_endpoint_failures SET consecutive_failures = consecutive_failures + 3")
 
 	drifted := []string{}
 	for _, p := range svc.List() {
@@ -392,7 +424,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 		"account_restrictions", "appeal_states", "domain_restrictions", "feed_author_restrictions", "feed_domain_restrictions",
 		"feed_tag_entries", "follow_counters", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
 		"poll_tallies", "remote_account_heads", "report_states", "status_counters", "status_sensitivity_overrides",
-		"user_primary_emails", "user_registration_states", "user_roles",
+		"user_primary_emails", "user_registration_states", "user_roles", "webhook_endpoint_failures", "webhook_endpoint_heads",
 	}
 	if !slices.Equal(drifted, want) {
 		t.Fatalf("tables that verify reports = %v, want %v", drifted, want)

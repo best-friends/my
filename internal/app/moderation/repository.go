@@ -25,6 +25,8 @@ var (
 // Methods that take a uow.Tx run inside that transaction; the others read committed data outside
 // any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
 type Repository interface {
+	TxReads
+
 	// Events and resources, written by commands.
 
 	InsertAction(ctx context.Context, tx uow.Tx, a moderation.Action) error
@@ -143,4 +145,17 @@ type DomainActionQuery struct {
 	Kinds      []moderation.DomainActionKind // the kinds to keep; empty for every kind
 	InEffectAt *time.Time                    // nil for every action, ended ones included
 	Before     string                        // an action ID; "" for the first page
+}
+
+// TxReads are the reads of Repository that run in a transaction tx, with what tx has written, for the
+// use cases that present what an event's transaction wrote (the data of the webhook messages,
+// ADR-0060). Each one reads as the method of the same name without Tx does.
+type TxReads interface {
+	AccountRestrictionsInEffectTx(ctx context.Context, tx uow.Tx, accountID string, now time.Time) ([]moderation.Restriction, error)
+	DomainRestrictionsInEffectTx(ctx context.Context, tx uow.Tx, domains []string, now time.Time) ([]moderation.Restriction, error)
+	FindReportTx(ctx context.Context, tx uow.Tx, id string) (moderation.Report, error)
+	FindReportStatusTx(ctx context.Context, tx uow.Tx, reportID string) (moderation.ReportStatus, error)
+	FindActionRecordTx(ctx context.Context, tx uow.Tx, id string) (moderation.ActionRecord, error)
+	FindDomainActionRecordTx(ctx context.Context, tx uow.Tx, id string) (moderation.DomainActionRecord, error)
+	FindAppealTx(ctx context.Context, tx uow.Tx, id string) (moderation.AppealRecord, error)
 }

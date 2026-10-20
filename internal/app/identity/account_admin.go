@@ -80,6 +80,8 @@ func (e *AccountSearchError) Error() string { return "identity: invalid account 
 // implements it.
 type AccountRestrictions interface {
 	OwnRestrictions(ctx context.Context, accountID string) ([]appmoderation.Restriction, error)
+	// OwnRestrictionsTx answers as OwnRestrictions does, read in tx with what tx has written.
+	OwnRestrictionsTx(ctx context.Context, tx uow.Tx, accountID string) ([]appmoderation.Restriction, error)
 	RestrictedAccounts(ctx context.Context, r appmoderation.Restriction, before string, limit int) ([]string, error)
 }
 
@@ -461,14 +463,20 @@ func adminState(a AdminAccount) AdminAccountState {
 	return AdminAccountActive
 }
 
+// Account returns an account, local or remote, as moderators see it, without its details. It
+// fails with account.ErrNotFound for an unknown account.
+func (s *AccountAdmin) Account(ctx context.Context, accountID string) (AdminAccount, error) {
+	actor, err := s.d.Accounts.FindByID(ctx, accountID)
+	if err != nil {
+		return AdminAccount{}, err
+	}
+	return s.present(ctx, actor)
+}
+
 // Detail returns the details of an account, local or remote. It fails with account.ErrNotFound
 // for an unknown account.
 func (s *AccountAdmin) Detail(ctx context.Context, accountID string) (AdminAccountDetail, error) {
-	actor, err := s.d.Accounts.FindByID(ctx, accountID)
-	if err != nil {
-		return AdminAccountDetail{}, err
-	}
-	a, err := s.present(ctx, actor)
+	a, err := s.Account(ctx, accountID)
 	if err != nil {
 		return AdminAccountDetail{}, err
 	}

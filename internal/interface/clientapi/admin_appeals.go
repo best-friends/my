@@ -29,11 +29,16 @@ type AppealModeration interface {
 // newAdminAppeals presents appeals with their actions, with the accounts of their moderators
 // read once each.
 func (s *Server) newAdminAppeals(ctx context.Context, vs []appmoderation.AppealView) ([]AdminAppeal, error) {
+	return s.newAdminAppealsWith(ctx, s.reads(), vs)
+}
+
+// newAdminAppealsWith is newAdminAppeals through reads.
+func (s *Server) newAdminAppealsWith(ctx context.Context, reads presentReads, vs []appmoderation.AppealView) ([]AdminAppeal, error) {
 	actions := make([]appmoderation.AccountActionView, len(vs))
 	for i, v := range vs {
 		actions[i] = v.Action
 	}
-	presented, err := s.newAdminAccountActions(ctx, actions)
+	presented, err := s.newAdminAccountActionsWith(ctx, reads, actions)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +56,7 @@ func (s *Server) newAdminAppeals(ctx context.Context, vs []appmoderation.AppealV
 			if d.PublicReason != "" {
 				item.DecisionReason = &d.PublicReason
 			}
-			id, err := s.moderatorAccount(ctx, moderators, d.DecidedByUserID)
+			id, err := moderatorAccount(ctx, reads, moderators, d.DecidedByUserID)
 			if err != nil {
 				return nil, err
 			}
@@ -66,11 +71,11 @@ func (s *Server) newAdminAppeals(ctx context.Context, vs []appmoderation.AppealV
 
 // moderatorAccount returns the local account of the moderator userID, "" for none, through
 // seen, which keeps the accounts already read.
-func (s *Server) moderatorAccount(ctx context.Context, seen map[string]string, userID string) (string, error) {
-	if id, ok := seen[userID]; ok || userID == "" || s.o.UserAccounts == nil {
+func moderatorAccount(ctx context.Context, reads presentReads, seen map[string]string, userID string) (string, error) {
+	if id, ok := seen[userID]; ok || userID == "" {
 		return id, nil
 	}
-	la, err := s.o.UserAccounts.LocalAccountOfUser(ctx, userID)
+	la, err := reads.LocalAccountOfUser(ctx, userID)
 	if err != nil && !errors.Is(err, appaccount.ErrNotFound) {
 		return "", fmt.Errorf("clientapi: the account of user %s: %w", userID, err)
 	}

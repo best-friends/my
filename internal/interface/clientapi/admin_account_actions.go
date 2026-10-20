@@ -31,13 +31,18 @@ type AccountModeration interface {
 // newAdminAccountActions presents actions on accounts, with the accounts of their moderators
 // read once each.
 func (s *Server) newAdminAccountActions(ctx context.Context, vs []appmoderation.AccountActionView) ([]AdminAccountAction, error) {
+	return s.newAdminAccountActionsWith(ctx, s.reads(), vs)
+}
+
+// newAdminAccountActionsWith is newAdminAccountActions through reads.
+func (s *Server) newAdminAccountActionsWith(ctx context.Context, reads presentReads, vs []appmoderation.AccountActionView) ([]AdminAccountAction, error) {
 	moderators := map[string]string{}
 	for _, v := range vs {
 		u := v.Action.IssuedByUserID
-		if _, ok := moderators[u]; ok || u == "" || s.o.UserAccounts == nil {
+		if _, ok := moderators[u]; ok || u == "" {
 			continue
 		}
-		la, err := s.o.UserAccounts.LocalAccountOfUser(ctx, u)
+		la, err := reads.LocalAccountOfUser(ctx, u)
 		if err != nil && !errors.Is(err, appaccount.ErrNotFound) {
 			return nil, fmt.Errorf("clientapi: the account of user %s: %w", u, err)
 		}

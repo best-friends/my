@@ -28,6 +28,8 @@ var ErrShortcodeTaken = errors.New("content: a custom emoji has the shortcode")
 // testkit.CustomEmojiRepositoryContract. Lookups that find nothing return an error wrapping
 // ErrNotFound.
 type CustomEmojiRepository interface {
+	CustomEmojiTxReads
+
 	// InsertCustomEmoji inserts an emoji; it fails with an error wrapping ErrShortcodeTaken when
 	// an emoji of its domain has its shortcode.
 	InsertCustomEmoji(ctx context.Context, tx uow.Tx, e content.CustomEmoji) error
@@ -262,12 +264,30 @@ func (s *CustomEmojiService) List(ctx context.Context, q CustomEmojiQuery, limit
 	return s.present(ctx, records)
 }
 
+// GetTx returns a custom emoji as Get does, read in tx with what tx has written (the data of the
+// webhook messages, ADR-0060).
+func (s *CustomEmojiService) GetTx(ctx context.Context, tx uow.Tx, id string) (AdminCustomEmoji, error) {
+	r, err := s.d.Repository.FindCustomEmojiRecordTx(ctx, tx, id)
+	if err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	out, err := s.presentWith(ctx, s.d.Media.readsIn(tx), []content.CustomEmojiRecord{r})
+	if err != nil {
+		return AdminCustomEmoji{}, err
+	}
+	return out[0], nil
+}
+
 func (s *CustomEmojiService) present(ctx context.Context, records []content.CustomEmojiRecord) ([]AdminCustomEmoji, error) {
+	return s.presentWith(ctx, s.d.Media.reads(), records)
+}
+
+func (s *CustomEmojiService) presentWith(ctx context.Context, reads mediaReads, records []content.CustomEmojiRecord) ([]AdminCustomEmoji, error) {
 	current := make([]content.CurrentCustomEmoji, len(records))
 	for i, r := range records {
 		current[i] = r.CurrentCustomEmoji
 	}
-	views, err := s.d.Media.customEmojiViews(ctx, current)
+	views, err := s.d.Media.customEmojiViews(ctx, reads, current)
 	if err != nil {
 		return nil, err
 	}
@@ -403,11 +423,13 @@ func (s *CustomEmojiService) Delete(ctx context.Context, id, byUserID string) er
 		return &content.CustomEmojiError{Reason: content.EmojiRemote, Value: id}
 	}
 	event := s.event(CustomEmojiDeleted, r.Emoji, "", byUserID, s.d.Clock.Now())
+	// The event comes before the deletion, so that its projectors (the webhook messages) can
+	// still present the emoji as it was.
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.DeleteCustomEmoji(ctx, tx, id); err != nil {
+		if err := tx.Emit(ctx, event); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, event)
+		return s.d.Repository.DeleteCustomEmoji(ctx, tx, id)
 	})
 	if err != nil {
 		return fmt.Errorf("content: delete custom emoji %s: %w", id, err)
@@ -468,4 +490,11 @@ func (s *CustomEmojiService) LocalEmojiIDs(ctx context.Context, texts ...string)
 	}
 	slices.Sort(ids)
 	return ids, nil
+}
+
+// CustomEmojiTxReads are the reads of CustomEmojiRepository that run in a transaction tx, with what tx has written, for the
+// use cases that present what an event's transaction wrote (the data of the webhook messages,
+// ADR-0060). Each one reads as the method of the same name without Tx does.
+type CustomEmojiTxReads interface {
+	FindCustomEmojiRecordTx(ctx context.Context, tx uow.Tx, id string) (content.CustomEmojiRecord, error)
 }

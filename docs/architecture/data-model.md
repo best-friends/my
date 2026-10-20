@@ -1135,6 +1135,8 @@ flowchart LR
   `first_failed_at` は最初の失敗の試行の時刻の写しで、その試行の行が 14 日で消えたあとも自動の無効化の判定（72 時間と 20 回）に使えるように持ちます。
 - 他のモジュールのドメインイベント（通報・登録・アカウント・処分・異議・ドメインの処分・公開投稿・カスタム絵文字）は、そのトランザクションの中で `webhook` の購読者が受け、
   購読している有効な宛先があるときだけ `webhook_messages` と宛先ごとの `webhook_deliveries` を書いて、`webhook.deliver` ジョブを Outbox で投入します（冪等キーは配送の ID）。
+  本文の `data` は、同じ対象に管理 API が返す表現です。`webhook` の購読者はイベントのトランザクションを渡して、クライアント API が管理 API の表現を組み立てる関数
+  （`webhook.Presenter`）を呼びます。その読み取りは各モジュールの `uow.Tx` を受け取る読み取り（`...Tx`）を通るので、イベントのトランザクションが書いた行を見ます。
   宛先が無ければ何も書きません。`body` は送る JSON をそのまま持つ「解釈しない文書」（規約 4）です。
 - 削除は `state = deleted` の状態の変化で、行は消しません（監査ログと配送の履歴が指すため）。削除した宛先は一覧に出ず、何も受け取りません。
 - `webhook_messages` と、その配送・試行は、作成から 14 日（固定）で 1 時間ごとの消去ジョブ `webhook.purge` が消します（FR-803）。本文は通報のコメントなどの個人データを含みます。
@@ -1364,11 +1366,12 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `notification_exclusions` | `blocks` と取り消し（`block_edges`）、`mutes` | 同期 |
 | `notification_deleted_statuses` | `status_deletions` | 同期 |
 | `instance_settings` / `instance_texts` / `instance_rule_heads` | `instance_setting_revisions`、`instance_text_revisions`、`instance_rules` と `instance_rule_revisions`・`instance_rule_retirements` | 同期 |
+| `webhook_endpoint_heads` / `webhook_endpoint_failures` | `webhook_endpoint_revisions`・`webhook_endpoint_state_changes`・`webhook_secrets`、`webhook_delivery_attempts` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 
 - CLI: `my projection list` は投影と所有モジュールと表を示します。投影の名前は所有モジュールの再構築関数の単位です
   （`instance`、`account`、`identity`、`moderation`、`graph`、`content`、`status_sensitivity_overrides`、`boost_edges`、`feeds`、`feed_restrictions`、
-  `notification_exclusions`、`notification_deleted_statuses`）。
+  `notification_exclusions`、`notification_deleted_statuses`、`webhook`）。
   `<name>` には投影の名前か、その表の名前を渡します。省略するとすべての投影です。
   - `my projection verify [<name>]` は、1 つのトランザクションの中で現在の表を読み、所有モジュールの再構築関数を実行し、結果の表を読んでロールバックします。
     差分の行（現在の表にあって作り直した結果にない行、その逆）を表示し、差分があれば 1 で終了します。何も変えません。
@@ -1391,6 +1394,9 @@ ORDER BY e.id DESC LIMIT :limit + 1;
     `user_primary_emails` は利用者の最初のメールアドレスから作ります。アドレスは登録と管理者の作成で 1 つだけ加わるので、それが主アドレスです。
     主アドレスを切り替える操作を足すときは、切り替えをイベントとして記録し、再構築をそれに合わせます。
   - `poll_tallies` は投票ごとに最新の観測（ID の最も大きい `poll_tally_observations`）の票数です。
+  - `webhook_endpoint_heads` は宛先ごとに最新（ID の最も大きい）の版・状態の変化・秘密から作ります。
+    `webhook_endpoint_failures` は、宛先の最新の成功した試行より後の失敗した試行から、その最初の試行と件数で作ります。
+    試行は 14 日で消えるので、最初の失敗が消えた連続の行は作り直せません。再構築はその行を、残っている成功が連続を終えていないかぎり、表にあるまま残します。
   - `instance_health` は投影ではなく【現在値】で、再構築・検証の対象ではありません（§4.8）。失敗の日数を 0 に戻す署名付きの受信と probe の成功は、
     `unavailable` からの復帰でないかぎり記録せず（間引き）、`delivery_attempts` は 30 日で消えるので、イベントから作り直せません。
 - コントラクトテスト: 各 projector に「イベント列を与えて投影を作る」テストと、「インクリメンタル更新の結果 = 一括再構築の結果」の性質テストを書きます。

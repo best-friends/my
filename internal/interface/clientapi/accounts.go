@@ -104,6 +104,11 @@ func (s *Server) accountParts(ctx context.Context, actors ...appaccount.Actor) (
 // pages of linked (accounts that a response links to without showing them, such as mentions), and
 // the custom emoji with an ID in emojiIDs (those of the statuses of a response).
 func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccount.Actor, emojiIDs []string) (accountParts, error) {
+	return s.readAccountPartsWith(ctx, s.reads(), actors, linked, emojiIDs)
+}
+
+// readAccountPartsWith is readAccountParts through reads.
+func (s *Server) readAccountPartsWith(ctx context.Context, reads presentReads, actors, linked []appaccount.Actor, emojiIDs []string) (accountParts, error) {
 	var parts accountParts
 	var refs []appcontent.ImageRef
 	var remote []string
@@ -123,22 +128,22 @@ func (s *Server) readAccountParts(ctx context.Context, actors, linked []appaccou
 			remote = append(remote, a.Account.ID)
 		}
 	}
-	if s.o.Media != nil && len(refs) > 0 {
-		images, err := s.o.Media.Images(ctx, refs)
+	if len(refs) > 0 {
+		images, err := reads.Images(ctx, refs)
 		if err != nil {
 			return accountParts{}, fmt.Errorf("clientapi: the profile images: %w", err)
 		}
 		parts.images = images
 	}
-	if s.o.Media != nil && len(emojis) > 0 {
-		views, err := s.o.Media.CustomEmojis(ctx, emojis)
+	if len(emojis) > 0 {
+		views, err := reads.CustomEmojis(ctx, emojis)
 		if err != nil {
 			return accountParts{}, fmt.Errorf("clientapi: the custom emoji: %w", err)
 		}
 		parts.emojis = views
 	}
-	if s.o.RemoteProfiles != nil && len(remote) > 0 {
-		urls, err := s.o.RemoteProfiles.RemoteProfileURLs(ctx, remote)
+	if len(remote) > 0 {
+		urls, err := reads.RemoteProfileURLs(ctx, remote)
 		if err != nil {
 			return accountParts{}, fmt.Errorf("clientapi: the remote profile pages: %w", err)
 		}
@@ -186,7 +191,12 @@ func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 
 // newAccounts presents actors in order as the Account schema, reading their images together.
 func (s *Server) newAccounts(ctx context.Context, actors []appaccount.Actor) ([]Account, error) {
-	parts, err := s.accountParts(ctx, actors...)
+	return s.newAccountsWith(ctx, s.reads(), actors)
+}
+
+// newAccountsWith is newAccounts through reads.
+func (s *Server) newAccountsWith(ctx context.Context, reads presentReads, actors []appaccount.Actor) ([]Account, error) {
+	parts, err := s.readAccountPartsWith(ctx, reads, actors, nil, nil)
 	if err != nil {
 		return nil, err
 	}

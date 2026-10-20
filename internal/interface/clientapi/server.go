@@ -144,6 +144,9 @@ type Options struct {
 	// Webhooks runs the admin operations on the instance's webhooks (admin_webhooks.go); nil
 	// answers 404 to them.
 	Webhooks Webhooks
+	// WebhookReads are the reads in a transaction behind the data of the webhook messages
+	// (webhook_data.go); without them the presenter methods fail.
+	WebhookReads WebhookReads
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes
