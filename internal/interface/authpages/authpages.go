@@ -512,7 +512,7 @@ var returnToBase = &url.URL{Scheme: "https", Host: "return-to.invalid", Path: "/
 // but an absolute path, an empty path segment ("//", which a dot segment or a decoded "%2F"
 // could turn into "//host"), and a percent-encoded dot segment.
 func safeReturnTo(s string) string {
-	if s == "" || len(s) > maxReturnTo || s[0] != '/' || strings.ContainsFunc(s, unsafeReturnToRune) {
+	if len(s) > maxReturnTo || !onSitePath(s) || strings.ContainsFunc(s, unsafeReturnToRune) {
 		return ""
 	}
 	ref, err := url.Parse(s)
@@ -525,7 +525,7 @@ func safeReturnTo(s string) string {
 		return ""
 	}
 	path := u.EscapedPath()
-	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.Contains(u.Path, "//") ||
+	if !onSitePath(path) || strings.Contains(u.Path, "//") ||
 		strings.ContainsFunc(u.Path, unsafeReturnToRune) || hasDotSegment(u.Path) {
 		return ""
 	}
@@ -538,6 +538,12 @@ func safeReturnTo(s string) string {
 		return ""
 	}
 	return out
+}
+
+// onSitePath reports whether p starts like an absolute path on this site: one "/", not "//"
+// or "/\" (which browsers read as the start of another host).
+func onSitePath(p string) bool {
+	return strings.HasPrefix(p, "/") && !strings.HasPrefix(p, "//") && !strings.HasPrefix(p, "/\\")
 }
 
 // hasDotSegment reports whether the decoded path p still has a "." or ".." segment. Once
