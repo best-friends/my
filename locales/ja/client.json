@@ -16,11 +16,11 @@
     "description": "Explanation under the heading of the list of moderated servers on the server's information page."
   },
   "about.domains.kind.limit": {
-    "defaultMessage": "制限: 投稿を公開のタイムラインに出さない",
+    "defaultMessage": "制限：投稿を公開のタイムラインに出さない",
     "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
   },
   "about.domains.kind.suspend": {
-    "defaultMessage": "停止: 一切連合しない",
+    "defaultMessage": "停止：一切連合しない",
     "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
   },
   "about.domains.loading": {
