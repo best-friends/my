@@ -5,6 +5,7 @@ package testkit
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -75,6 +76,7 @@ func InboxContract(t *testing.T, newHarness InboxFactory) {
 		{"DropsAnUnknownActorsOwnDelete", inboxDropsUnknownSelfDelete},
 		{"MarksTheSignersServerAvailable", inboxMarksServerAvailable},
 		{"RecordsTombstonesOnce", inboxRecordsTombstonesOnce},
+		{"VerifiesIntegrityProofs", inboxVerifiesProofs},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -123,7 +125,7 @@ func newInboxEnv(t *testing.T, newHarness InboxFactory) *inboxEnv {
 			inboxAliceKey: inboxAlice, inboxRelayKey: inboxRelay,
 			// A key whose owner is on another host than the key speaks for no one.
 			"https://evil.example/key": inboxAlice,
-		}, unavailable: map[string]bool{}, calls: map[string]int{}},
+		}, ed: map[string]ed25519.PublicKey{}, unavailable: map[string]bool{}, calls: map[string]int{}},
 		accounts: &inboxAccounts{known: map[string]bool{inboxAlice: true}},
 		domains:  inboxDomains{"blocked.example": true},
 		health:   appfederation.NewHealth(appfederation.HealthDeps{UnitOfWork: h.UnitOfWork, Repository: h.Federation, Clock: clock}),
@@ -247,8 +249,10 @@ func (inboxVerifier) Verify(r *appfederation.SignedRequest, _ *appfederation.Sig
 
 // inboxKeys resolves the keys of owners and counts the calls per key ID.
 type inboxKeys struct {
-	mu          sync.Mutex
-	owners      map[string]string
+	mu     sync.Mutex
+	owners map[string]string
+	// ed holds the Ed25519 keys among owners; the others are inboxRSAKey.
+	ed          map[string]ed25519.PublicKey
 	unavailable map[string]bool
 	calls       map[string]int
 }
@@ -263,6 +267,9 @@ func (k *inboxKeys) ResolvePublicKey(_ context.Context, keyID string, _ bool) (a
 	owner, ok := k.owners[keyID]
 	if !ok {
 		return appfederation.PublicKey{}, fmt.Errorf("%w: %s", appfederation.ErrPublicKeyNotFound, keyID)
+	}
+	if pub, ok := k.ed[keyID]; ok {
+		return appfederation.PublicKey{KeyID: keyID, Owner: owner, Key: pub}, nil
 	}
 	return appfederation.PublicKey{KeyID: keyID, Owner: owner, Key: inboxRSAKey()}, nil
 }
@@ -625,5 +632,82 @@ func inboxRecordsTombstonesOnce(t *testing.T, e *inboxEnv) {
 	}
 	if ok, err := e.h.Inbox.RemoteObjectTombstoned(ctx, inboxAlice+"/notes/other"); err != nil || ok {
 		t.Errorf("RemoteObjectTombstoned(other) = %t, %v; want false", ok, err)
+	}
+}
+
+// inboxVerifiesProofs checks the integrity proofs of received activities (FEP-8b32): a proof
+// that verifies with the actor's key passes, one that does not or that names another actor's
+// key is refused, and one that cannot be checked is ignored, as is the proof of a relayed
+// activity, which is fetched again anyway.
+func inboxVerifiesProofs(t *testing.T, e *inboxEnv) {
+	in := e.inbox(kernel.Limit{}, kernel.Limit{})
+	aliceEd, bobEd := inboxAlice+"#ed25519-key", "https://remote.example/users/bob#ed25519-key"
+	alicePub, alicePriv, _ := ed25519.GenerateKey(rand.Reader)
+	bobPub, bobPriv, _ := ed25519.GenerateKey(rand.Reader)
+	e.keys.mu.Lock()
+	e.keys.owners[aliceEd], e.keys.ed[aliceEd] = inboxAlice, alicePub
+	e.keys.owners[bobEd], e.keys.ed[bobEd] = "https://remote.example/users/bob", bobPub
+	e.keys.mu.Unlock()
+	sign := func(body []byte, key ed25519.PrivateKey, keyID string) []byte {
+		t.Helper()
+		signed, err := federation.SignEdDSAJCS2022(body, key, keyID, e.clock.Now())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return signed
+	}
+	n := 0
+	create := func() (string, []byte) {
+		n++
+		id := fmt.Sprintf("%s/activities/proof-%d", inboxAlice, n)
+		return id, inboxCreate(t, id)
+	}
+
+	accepted := []struct {
+		name string
+		body func(id string, doc []byte) []byte
+		key  string
+	}{
+		{"a proof that verifies", func(_ string, doc []byte) []byte { return sign(doc, alicePriv, aliceEd) }, inboxAliceKey},
+		{"a proof of an unknown key", func(_ string, doc []byte) []byte {
+			return sign(doc, alicePriv, inboxAlice+"#unknown-key")
+		}, inboxAliceKey},
+		{"a proof of another cryptosuite", func(_ string, doc []byte) []byte {
+			return bytes.Replace(sign(doc, alicePriv, aliceEd), []byte(`"eddsa-jcs-2022"`), []byte(`"eddsa-rdfc-2022"`), 1)
+		}, inboxAliceKey},
+		{"a proof that names an RSA key", func(_ string, doc []byte) []byte { return sign(doc, alicePriv, inboxAliceKey) }, inboxAliceKey},
+		{"a relayed activity with a broken proof", func(_ string, doc []byte) []byte {
+			return bytes.Replace(sign(doc, alicePriv, aliceEd), []byte(`"hi"`), []byte(`"bye"`), 1)
+		}, inboxRelayKey},
+	}
+	for _, tt := range accepted {
+		id, doc := create()
+		got, err := e.receive(t, in, inboxPost{body: tt.body(id, doc), signature: tt.key + " yes"})
+		if err != nil || !got.Recorded {
+			t.Errorf("%s: Receive = %+v, %v; want recorded", tt.name, got, err)
+		}
+	}
+
+	refused := []struct {
+		name string
+		body func(doc []byte) []byte
+	}{
+		{"a proof of a changed document", func(doc []byte) []byte {
+			return bytes.Replace(sign(doc, alicePriv, aliceEd), []byte(`"hi"`), []byte(`"bye"`), 1)
+		}},
+		{"a proof of another actor's key", func(doc []byte) []byte { return sign(doc, bobPriv, bobEd) }},
+		{"a proof made with another key", func(doc []byte) []byte { return sign(doc, bobPriv, aliceEd) }},
+	}
+	for _, tt := range refused {
+		id, doc := create()
+		_, err := e.receive(t, in, inboxPost{body: tt.body(doc), signature: inboxAliceKey + " yes"})
+		var rej *appfederation.InboxRejection
+		if !errors.As(err, &rej) || rej.Status != http.StatusUnauthorized || rej.Reason() != appfederation.ReasonProofMismatch {
+			t.Errorf("%s: Receive = %v, want a 401 for the proof", tt.name, err)
+			continue
+		}
+		if _, err := e.h.Inbox.FindReceivedActivity(t.Context(), federation.IRI(id)); !errors.Is(err, appfederation.ErrNotFound) {
+			t.Errorf("%s: FindReceivedActivity = %v, want ErrNotFound", tt.name, err)
+		}
 	}
 }

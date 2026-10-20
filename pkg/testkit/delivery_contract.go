@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -37,6 +38,7 @@ type deliveryEnv struct {
 	*fedEnv
 	net       *deliveryNetwork
 	keys      *deliveryKeys
+	proofs    *deliveryProofs
 	breaker   *appfederation.CircuitBreaker
 	health    *appfederation.Health
 	deliverer *appfederation.Deliverer
@@ -54,17 +56,23 @@ func newDeliveryEnv(t *testing.T, e *fedEnv) *deliveryEnv {
 	}
 	d := &deliveryEnv{
 		fedEnv: e, net: &deliveryNetwork{routes: map[string]deliveryRoute{}, requests: map[string]int{}},
-		keys: &deliveryKeys{keys: map[string]appfederation.SigningKey{}}, breaker: appfederation.NewCircuitBreaker(),
+		keys:   &deliveryKeys{keys: map[string]appfederation.SigningKey{}},
+		proofs: &deliveryProofs{keys: map[string]appfederation.ProofKey{}}, breaker: appfederation.NewCircuitBreaker(),
 		meter: NewMeter(),
 	}
 	d.actor = e.local()
 	d.keys.keys[d.actor] = appfederation.SigningKey{KeyID: e.uri(d.actor) + "#main-key", PrivateKey: priv}
+	_, proof, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+	d.proofs.keys[d.actor] = appfederation.ProofKey{VerificationMethod: e.uri(d.actor) + "#ed25519-key", PrivateKey: proof}
 	appfederation.RegisterHealthProjectors(e.projectors, appfederation.HealthProjectorDeps{Repository: e.h.Federation, IDs: e.ids})
 	d.health = appfederation.NewHealth(appfederation.HealthDeps{UnitOfWork: e.h.UnitOfWork, Repository: e.h.Federation, Clock: e.clock})
 	d.deliverer = appfederation.NewDeliverer(appfederation.DeliverDeps{
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Federation,
 		Client: appfederation.NewSignedHTTPClient(d.net, deliverySigner{}, NewKeyValueStore(e.clock), e.clock),
-		Keys:   d.keys, Domains: e.domains, Breaker: d.breaker, Clock: e.clock, IDs: e.ids,
+		Keys:   d.keys, Proofs: d.proofs, Domains: e.domains, Breaker: d.breaker, Clock: e.clock, IDs: e.ids,
 		Logger: slog.New(slog.DiscardHandler), Meter: d.meter,
 	})
 	d.deliverer.RegisterJobs(e.handlers)
@@ -150,9 +158,31 @@ func (k *deliveryKeys) SigningKey(_ context.Context, accountID string) (appfeder
 	return key, nil
 }
 
+// deliveryProofs stands in for the account module's proof keys.
+type deliveryProofs struct {
+	mu   sync.Mutex
+	keys map[string]appfederation.ProofKey
+}
+
+func (k *deliveryProofs) ProofKey(_ context.Context, accountID string) (appfederation.ProofKey, error) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	key, ok := k.keys[accountID]
+	if !ok {
+		return appfederation.ProofKey{}, fmt.Errorf("proof key of %s: %w", accountID, appaccount.ErrNotFound)
+	}
+	return key, nil
+}
+
 // delivery records an outbound activity of type typ by the env's actor, its document, and one
 // delivery of it to https://host/inbox.
 func (d *deliveryEnv) delivery(t *testing.T, typ federation.ActivityType, host string) federation.Delivery {
+	t.Helper()
+	return d.deliveryOf(t, typ, host, "")
+}
+
+// deliveryOf is delivery with the members extra (`"name":value,...`) added to the document.
+func (d *deliveryEnv) deliveryOf(t *testing.T, typ federation.ActivityType, host, extra string) federation.Delivery {
 	t.Helper()
 	ctx := t.Context()
 	act := federation.OutboundActivity{
@@ -168,7 +198,10 @@ func (d *deliveryEnv) delivery(t *testing.T, typ federation.ActivityType, host s
 		if err := d.h.Federation.InsertOutboundActivity(ctx, tx, act); err != nil {
 			return err
 		}
-		doc := []byte(`{"id":"` + string(act.ActivityURI) + `","type":"` + string(typ) + `"}`)
+		if extra != "" {
+			extra = "," + extra
+		}
+		doc := []byte(`{"id":"` + string(act.ActivityURI) + `","type":"` + string(typ) + `","actor":"` + d.uri(d.actor) + `"` + extra + `}`)
 		if _, err := d.h.Federation.InsertOutboundDocument(ctx, tx, act.ID, doc, d.clock.Now()); err != nil {
 			return err
 		}
@@ -243,6 +276,92 @@ func (d *deliveryEnv) events(t *testing.T, domain string) []federation.Availabil
 	return out
 }
 
+// fedSignsIntegrityProofs checks the integrity proof of delivered documents (FEP-8b32): made
+// with the actor's Ed25519 key at the activity's time, the same on every attempt, and left out
+// of a document with a linked data signature and of an actor without a key.
+func fedSignsIntegrityProofs(t *testing.T, e *fedEnv) {
+	d := newDeliveryEnv(t, e)
+	var mu sync.Mutex
+	var bodies [][]byte
+	d.net.route("proof.example", func(r *kernel.HTTPRequest) (int, http.Header, string, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		bodies = append(bodies, r.Body)
+		return http.StatusAccepted, nil, "", nil
+	})
+	sent := func() []byte {
+		mu.Lock()
+		defer mu.Unlock()
+		return bodies[len(bodies)-1]
+	}
+	key := d.proofs.keys[d.actor]
+	pub := key.PrivateKey.Public().(ed25519.PublicKey)
+
+	created := d.clock.Now()
+	del := d.delivery(t, federation.ActivityCreate, "proof.example")
+	d.clock.Advance(time.Minute)
+	if res := d.deliver(t, del); !res.IsDone() {
+		t.Fatalf("deliver = %v", res.Err())
+	}
+	first := sent()
+	p, err := federation.ReadProof(first, d.clock.Now())
+	if err != nil {
+		t.Fatalf("ReadProof(%s) = %v", first, err)
+	}
+	if p.VerificationMethod != key.VerificationMethod || p.Created != federation.FormatTime(created) {
+		t.Errorf("proof = %+v, want %s created at %s", p, key.VerificationMethod, federation.FormatTime(created))
+	}
+	if err := p.Verify(first, pub); err != nil {
+		t.Errorf("Verify(%s) = %v", first, err)
+	}
+	if !bytes.Contains(first, []byte(federation.DataIntegrityContext)) {
+		t.Errorf("document %s has no data integrity context", first)
+	}
+	d.clock.Advance(time.Hour)
+	if res := d.deliver(t, del); !res.IsDone() {
+		t.Fatalf("deliver again = %v", res.Err())
+	}
+	if again := sent(); !bytes.Equal(again, first) {
+		t.Errorf("a second attempt sent\n%s\nthen\n%s", first, again)
+	}
+
+	signed := d.deliveryOf(t, federation.ActivityCreate, "proof.example", `"signature":{"type":"RsaSignature2017","signatureValue":"x"}`)
+	if res := d.deliver(t, signed); !res.IsDone() {
+		t.Fatalf("deliver = %v", res.Err())
+	}
+	if body := sent(); bytes.Contains(body, []byte(`"proof"`)) {
+		t.Errorf("a document with a linked data signature got a proof: %s", body)
+	}
+
+	d.proofs.mu.Lock()
+	delete(d.proofs.keys, d.actor)
+	d.proofs.mu.Unlock()
+	plain := d.delivery(t, federation.ActivityCreate, "proof.example")
+	if res := d.deliver(t, plain); !res.IsDone() {
+		t.Fatalf("deliver = %v", res.Err())
+	}
+	if body := sent(); bytes.Contains(body, []byte(`"proof"`)) {
+		t.Errorf("an actor without an Ed25519 key sent a proof: %s", body)
+	}
+}
+
+// sameWithoutProof reports whether the delivered body is the document once the proof and the
+// @context it adds are taken out.
+func sameWithoutProof(t *testing.T, body, document []byte) bool {
+	t.Helper()
+	strip := func(b []byte) []byte {
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal(b, &m); err != nil {
+			t.Fatalf("decode %s: %v", b, err)
+		}
+		delete(m, "proof")
+		delete(m, "@context")
+		out, _ := json.Marshal(m)
+		return out
+	}
+	return bytes.Equal(strip(body), strip(document))
+}
+
 func fedClassifiesResponses(t *testing.T, e *fedEnv) {
 	d := newDeliveryEnv(t, e)
 	forbidden := func(*kernel.HTTPRequest) (int, http.Header, string, error) {
@@ -313,7 +432,8 @@ func fedClassifiesResponses(t *testing.T, e *fedEnv) {
 	if n := d.net.count("s9.example"); n != 2 {
 		t.Errorf("requests after a 401 = %d, want 2 (double-knocking)", n)
 	}
-	// The body is the stored document, with the activity's Content-Type.
+	// The body is the stored document with its integrity proof (fedSignsIntegrityProofs), with
+	// the activity's Content-Type.
 	var got *kernel.HTTPRequest
 	d.net.route("body.example", func(r *kernel.HTTPRequest) (int, http.Header, string, error) {
 		got = r
@@ -323,11 +443,11 @@ func fedClassifiesResponses(t *testing.T, e *fedEnv) {
 	d.deliver(t, del)
 	doc, err := d.h.Federation.FindOutboundDocument(t.Context(), del.OutboundActivityID)
 	// The document reads back with the bytes it was built with, as every retry sends them.
-	want := []byte(`{"id":"https://` + contractHost + `/ap/activities/` + del.OutboundActivityID + `","type":"Create"}`)
+	want := []byte(`{"id":"https://` + contractHost + `/ap/activities/` + del.OutboundActivityID + `","type":"Create","actor":"` + d.uri(d.actor) + `"}`)
 	if !bytes.Equal(doc, want) {
 		t.Errorf("document = %s, want %s", doc, want)
 	}
-	if err != nil || got == nil || got.Method != http.MethodPost || !bytes.Equal(got.Body, doc) ||
+	if err != nil || got == nil || got.Method != http.MethodPost || !sameWithoutProof(t, got.Body, doc) ||
 		got.Header.Get("Content-Type") != "application/activity+json" || got.Header.Get("Signature") == "" {
 		t.Errorf("request = %+v (document %s, %v)", got, doc, err)
 	}

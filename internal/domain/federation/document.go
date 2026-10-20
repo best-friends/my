@@ -38,6 +38,14 @@ func LDContext() []any {
 	}
 }
 
+// ActorLDContext returns the JSON-LD context of a local actor's document and of the Update that
+// carries it: LDContext with the Controlled Identifiers context, which defines the
+// assertionMethod and Multikey of FEP-521a, after the security vocabulary.
+func ActorLDContext() []any {
+	c := LDContext()
+	return append(c[:2:2], append([]any{ControlledIdentifierContext}, c[2:]...)...)
+}
+
 // FormatTime formats t as the documents carry times: RFC 3339 in UTC, to the second, as
 // Mastodon publishes them.
 func FormatTime(t time.Time) string { return t.UTC().Truncate(time.Second).Format(time.RFC3339) }
@@ -224,9 +232,12 @@ type ActorDocument struct {
 	Indexable                 *bool              `json:"indexable,omitempty"`
 	Published                 string             `json:"published"`
 	PublicKey                 *PublicKeyDocument `json:"publicKey,omitempty"`
-	Tag                       []any              `json:"tag"`
-	Attachment                []PropertyValue    `json:"attachment"`
-	Endpoints                 map[string]IRI     `json:"endpoints"`
+	// AssertionMethod holds the Ed25519 key that signs the actor's integrity proofs (FEP-521a,
+	// FEP-8b32); it is left out when the actor has none.
+	AssertionMethod []MultikeyDocument `json:"assertionMethod,omitempty"`
+	Tag             []any              `json:"tag"`
+	Attachment      []PropertyValue    `json:"attachment"`
+	Endpoints       map[string]IRI     `json:"endpoints"`
 	// Icon and Image are the avatar and the header, left out when the actor has none.
 	Icon  *ImageDocument `json:"icon,omitempty"`
 	Image *ImageDocument `json:"image,omitempty"`

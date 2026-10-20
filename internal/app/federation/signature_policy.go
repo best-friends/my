@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/domain/federation"
 )
 
 // The acceptance window of ADR-0032 and ADR-0019 §7.
@@ -92,6 +93,8 @@ func (e *SignatureError) Reason() string {
 		return ReasonPublicKeyNotFound
 	case errors.Is(e.Err, ErrSignatureMismatch):
 		return ReasonSignatureMismatch
+	case errors.Is(e.Err, federation.ErrProofMismatch):
+		return ReasonProofMismatch
 	}
 	return ReasonSignaturePolicy
 }

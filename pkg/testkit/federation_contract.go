@@ -81,6 +81,7 @@ func FederationRepositoryContract(t *testing.T, newHarness FederationFactory) {
 		{"LeavesNonFollowersOutOfTheTagOfLocalStatuses", fedLeavesNonFollowersOutOfLocalTags},
 		{"DeliversTheStoredDeleteAfterThePurge", fedDeliversTheStoredDelete},
 		{"ClassifiesDeliveryResponses", fedClassifiesResponses},
+		{"SignsIntegrityProofs", fedSignsIntegrityProofs},
 		{"BreaksTheCircuitOfAHost", fedBreaksTheCircuit},
 		{"MarksServersUnavailableAndBack", fedMarksServersUnavailable},
 		{"BuriesExhaustedDeliveries", fedBuriesExhaustedDeliveries},
