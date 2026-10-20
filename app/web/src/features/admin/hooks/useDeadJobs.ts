@@ -6,8 +6,8 @@ import { useMutation, useMutationState, useQueryClient, useSuspenseInfiniteQuery
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { type DeadJob, deadJobsQueryOptions, removeRetriedDeadJob, retryDeadJobMutation } from "../api/admin";
-import { type PagedList, toPagedList } from "./pagedList";
+import { type DeadJob, deadJobsQueryOptions, removeRetriedDeadJob, retryDeadJobMutation } from "../api/deadJobs";
+import { type PagedList, toPagedList } from "../../moderation";
 
 /** The dead jobs, most recently failed first. */
 export function useDeadJobs(): PagedList<DeadJob> {

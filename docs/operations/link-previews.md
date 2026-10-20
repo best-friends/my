@@ -1,11 +1,11 @@
 # リンクプレビュー（OGP / X Card / fediverse:creator）
 
 運営者・開発者向けの説明と手動確認の手順です。設計は [ADR-0028](../adr/0028-html-shell-link-previews-and-pwa.md)、
-閲覧判定は [公開範囲の閲覧判定](../architecture/visibility.md)、URL は [ADR-0018](../adr/0018-federated-uris.md) です。
+閲覧判定は [公開範囲の閲覧判定](../architecture/visibility.md)、URL は [ADR-0018](../adr/0018-federated-uris.md) と [ADR-0053](../adr/0053-status-page-url.md) です。
 
 ## サーバーが返すもの
 
-プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
+プロフィール（`https://<host>/@alice`）と投稿（`https://<host>/@alice/status/<投稿 ID>`）の HTML は、`my serve` が Web クライアントの外枠に meta タグを埋め込んで返します。
 HTML のリクエストは常に未ログインとして扱うので、プレビューに出るのは未ログインでも見られるものだけです。
 
 | ページ | 応答 |
@@ -13,9 +13,9 @@ HTML のリクエストは常に未ログインとして扱うので、プレビ
 | `public` の投稿、有効なローカルアカウントのプロフィール | 200。meta タグ付きの外枠 |
 | `unlisted` の投稿 | 200。meta タグ付きの外枠に `<meta name="robots" content="noindex">` と `X-Robots-Tag: noindex` |
 | `local` / `private` / `direct` / 削除済み / 存在しない投稿、停止・削除されたアカウントや制限のあるアカウントのプロフィールと投稿 | 404。汎用の外枠と `X-Robots-Tag: noindex`。本文とヘッダーは理由によらず同じ |
-| `/@<旧ユーザー名>/<投稿 ID>` | 301。現在のユーザー名の URL へ |
+| `/@<旧ユーザー名>/status/<投稿 ID>` | 301。現在のユーザー名の URL へ |
 
-ActivityPub の `Accept` で来たリクエストには外枠を返さず、ActivityPub 側が答えます（プロフィールはアクターの `id` へのリダイレクト。ADR-0018）。どの応答にも `Vary: Accept` が付きます。
+ActivityPub の `Accept` で来たリクエストには外枠を返さず、ActivityPub 側が答えます（プロフィールはアクターの `id`、未ログインで見られる投稿はその `id` への 302。ADR-0018、ADR-0053）。どの応答にも `Vary: Accept` が付きます。
 
 ### meta タグ
 
@@ -70,14 +70,14 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 2. 各 URL の HTML を確認します。
 
    ```sh
-   curl -sS -D - -H 'Accept: text/html' https://<host>/@alice/<投稿 ID>
+   curl -sS -D - -H 'Accept: text/html' https://<host>/@alice/status/<投稿 ID>
    ```
 
    - 200 で、上表の meta タグがあること。`unlisted` は `noindex` が付くこと。
    - `private` の投稿と存在しない ID が、同じ本文の 404 で `X-Robots-Tag: noindex` を返すこと。
 
      ```sh
-     diff <(curl -sS https://<host>/@alice/<private の投稿 ID>) <(curl -sS https://<host>/@alice/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f)
+     diff <(curl -sS https://<host>/@alice/status/<private の投稿 ID>) <(curl -sS https://<host>/@alice/status/0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f)
      ```
 
    - 表示名の `<script>` が `&lt;script&gt;` とエスケープされていること。

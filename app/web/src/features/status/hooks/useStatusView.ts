@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4): the
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
-import { type ImageSources, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
+import { type CustomEmojiImage, type ImageSources, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useContentLinkClick } from "../../../lib/contentLinks";
 import { handleOf, isRemoteAcct } from "../../../lib/handle";
 import { hostOf } from "../../../lib/host";
@@ -12,12 +12,13 @@ import { imageSources } from "../../../lib/images";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
-  boostedBy: { name: string; href: string } | null;
+  boostedBy: { name: string; emojis: readonly CustomEmojiImage[]; href: string } | null;
   /**
    * The author's display name (the username when there is none), handle (`@alice` for a local account, `@bob@example.com` for a remote one),
-   * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback).
+   * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback),
+   * with the custom emoji of the name.
    */
-  author: { name: string; handle: string; href: string; avatar: ImageSources | undefined };
+  author: { name: string; emojis: readonly CustomEmojiImage[]; handle: string; href: string; avatar: ImageSources | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: TimeView;
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
@@ -33,6 +34,8 @@ export type StatusView = {
   html: SanitizedHtml;
   /** Opens the links of the body to this instance's pages through the router (the body's `onLinkClick`). */
   onLinkClick: (event: MouseEvent, link: HTMLAnchorElement) => void;
+  /** The custom emoji of the body and the content warning. */
+  emojis: readonly CustomEmojiImage[];
   /** The language of the post (BCP 47), or undefined when the server does not know it. */
   lang: string | undefined;
   /** The author's content warning, or null when there is none. */
@@ -74,9 +77,12 @@ export function useStatusView(status: Status): StatusView {
   const onLinkClick = useContentLinkClick();
   return {
     boostedBy:
-      status.boost === undefined ? null : { name: status.account.display_name || status.account.username, href: profilePath(status.account.acct) },
+      status.boost === undefined
+        ? null
+        : { name: status.account.display_name || status.account.username, emojis: status.account.emojis, href: profilePath(status.account.acct) },
     author: {
       name: post.account.display_name || post.account.username,
+      emojis: post.account.emojis,
       handle: handleOf(post.account.acct),
       href: profilePath(post.account.acct),
       avatar: imageSources(post.account.avatar),
@@ -88,6 +94,7 @@ export function useStatusView(status: Status): StatusView {
     // `content` is sanitized HTML (api/openapi.yaml, Status.content).
     html: serverSanitizedHtml(post.content),
     onLinkClick,
+    emojis: post.emojis,
     lang,
     contentWarning: post.spoiler_text === "" ? null : post.spoiler_text,
     media: mediaItems(post.media_attachments, lang),

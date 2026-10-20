@@ -14,6 +14,7 @@ const operator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -87,7 +88,7 @@ async function operatorServer(page: Page) {
   return actions;
 }
 
-const pages = ["/settings", "/admin/instances", `/admin/instances/${longDomain}`, "/admin/dead-jobs"] as const;
+const pages = ["/settings", "/moderation/instances", `/moderation/instances/${longDomain}`, "/admin/dead-jobs"] as const;
 
 for (const path of pages) {
   test.describe(`page ${path}`, () => {
@@ -111,7 +112,7 @@ for (const path of pages) {
 test.describe("remote servers", () => {
   test("lists the servers, opens one with its history, and resumes deliveries to it", async ({ page, makeAxeBuilder }) => {
     const actions = await operatorServer(page);
-    await page.goto("/admin/instances");
+    await page.goto("/moderation/instances");
     const main = page.getByRole("main");
 
     await expect(main).toMatchAriaSnapshot(`

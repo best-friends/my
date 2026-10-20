@@ -56,6 +56,8 @@ type Options struct {
 	Posting PostingPolicy
 	// Preferences reads and changes the viewer's preferences.
 	Preferences UserPreferences
+	// TwoFactor runs the viewer's two-factor authentication; nil answers its operations 404.
+	TwoFactor TwoFactorSettings
 	// Media runs the media use cases and presents profile images; nil serves no media
 	// operation (they fail with 500) and presents no images.
 	Media MediaFiles
@@ -116,6 +118,10 @@ type Options struct {
 	// (admin_appeals.go) and counts the pending ones for GET /admin/counts.
 	OwnAppeals       OwnAppeals
 	AppealModeration AppealModeration
+	// OwnAccount deletes the viewer's own account (own_account.go); nil refuses it with 404.
+	OwnAccount OwnAccount
+	// Exports runs the viewer's data exports (own_account.go); nil refuses them with 404.
+	Exports Exports
 	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.
@@ -132,6 +138,12 @@ type Options struct {
 	// of service and the privacy policy, for Instance.terms_url and Instance.privacy_policy_url;
 	// empty leaves the link out.
 	TermsPath, PrivacyPolicyPath string
+	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
+	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
+	Themes Themes
+	// ThemeStylesheetPath returns the path, on Origin, of a theme revision's stylesheet
+	// (web.ThemeStylesheetPath); nil leaves the stylesheet URLs and Instance.theme out.
+	ThemeStylesheetPath func(revisionID string) string
 	// Roles lists, grants, and revokes the roles of users for the admin operations
 	// (admin_roles.go).
 	Roles Roles

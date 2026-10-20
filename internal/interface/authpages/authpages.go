@@ -49,9 +49,12 @@ import (
 
 // Paths of the screens.
 const (
-	PathSignIn  = "/auth/sign_in"
-	PathSignOut = "/auth/sign_out"
-	PathSignUp  = "/auth/sign_up"
+	PathSignIn = "/auth/sign_in"
+	// PathSignInTwoFactor is the second step of a sign-in, which asks a user with two-factor
+	// authentication for a code (twofactor.go).
+	PathSignInTwoFactor = "/auth/sign_in/two_factor"
+	PathSignOut         = "/auth/sign_out"
+	PathSignUp          = "/auth/sign_up"
 	// PathVerifyEmail is the page that verification emails link to.
 	PathVerifyEmail = appidentity.PathVerifyEmail
 	// PathResendVerification sends a signed-in user a new verification email.
@@ -68,6 +71,8 @@ const (
 const (
 	CookieSession = "__Host-my_session"
 	CookieCSRF    = "__Host-my_csrf"
+	// CookieTwoFactor carries the challenge of a sign-in between its password and its code.
+	CookieTwoFactor = "__Host-my_2fa"
 )
 
 // contentSecurityPolicy allows the pages nothing but their own stylesheet, images, and forms.
@@ -104,6 +109,7 @@ const maxReturnTo = 2048
 // Identity is what the screens need from the identity module; *identity.Service implements it.
 type Identity interface {
 	SignIn(ctx context.Context, in appidentity.SignInInput) (appidentity.SignedIn, error)
+	CompleteSignIn(ctx context.Context, in appidentity.SecondFactorInput) (appidentity.SignedIn, error)
 	Authenticate(ctx context.Context, token string) (identity.Session, error)
 	SignOut(ctx context.Context, token string) error
 	SignUp(ctx context.Context, in appidentity.SignUpInput) (appidentity.SignedUp, error)
@@ -140,6 +146,9 @@ type Options struct {
 	// Stylesheet is the URL of the pages' stylesheet, the web build's server pages entry
 	// (web.Handler.Stylesheet); empty leaves the pages unstyled.
 	Stylesheet string
+	// ThemeStylesheet returns the URL of the instance theme's stylesheet, which the pages load
+	// after Stylesheet (ADR-0059), or "" when the theme changes nothing; nil loads none.
+	ThemeStylesheet func(ctx context.Context) string
 	// Logger logs unexpected errors; nil means slog.Default().
 	Logger *slog.Logger
 	// Moderation lists the actions that keep a signed-in user out of the app on the status
@@ -168,6 +177,7 @@ var templateFS embed.FS
 // Page templates, each rendered inside templates/layout.html.
 const (
 	pageSignIn      = "sign_in"
+	pageTwoFactor   = "two_factor"
 	pageSignedIn    = "signed_in"
 	pageError       = "error"
 	pageSignUp      = "sign_up"
@@ -184,7 +194,7 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument} {
+	for _, name := range []string{pageSignIn, pageTwoFactor, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/human_check.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
@@ -200,6 +210,8 @@ type Router interface {
 func (h *Handler) Register(r Router) {
 	r.Handle("GET "+PathSignIn, http.HandlerFunc(h.signInPage))
 	r.Handle("POST "+PathSignIn, h.cop.Handler(http.HandlerFunc(h.signIn)))
+	r.Handle("GET "+PathSignInTwoFactor, http.HandlerFunc(h.twoFactorPage))
+	r.Handle("POST "+PathSignInTwoFactor, h.cop.Handler(http.HandlerFunc(h.twoFactor)))
 	r.Handle("POST "+PathSignOut, h.cop.Handler(http.HandlerFunc(h.signOut)))
 	r.Handle("GET "+PathSignUp, http.HandlerFunc(h.signUpPage))
 	r.Handle("POST "+PathSignUp, h.cop.Handler(http.HandlerFunc(h.signUp)))
@@ -225,9 +237,11 @@ type page struct {
 	// InstanceName names the instance in the page's locale; "" leaves it out.
 	InstanceName string
 	Stylesheet   string
-	CSRFToken    string
-	ReturnTo     string
-	Email        string
+	// ThemeStylesheet is the instance theme's stylesheet; render fills it.
+	ThemeStylesheet string
+	CSRFToken       string
+	ReturnTo        string
+	Email           string
 	// Error is an alert about the whole form; Notice reports success.
 	Error  string
 	Notice string
@@ -289,6 +303,9 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 		p.InstanceName = h.o.InstanceName(r.Context(), p.Lang)
 	}
 	p.Documents = h.documentLinks(r, p.L)
+	if h.o.ThemeStylesheet != nil {
+		p.ThemeStylesheet = h.o.ThemeStylesheet(r.Context())
+	}
 	w.WriteHeader(status)
 	if err := h.pages[name].ExecuteTemplate(w, "layout", p); err != nil {
 		h.o.Logger.ErrorContext(r.Context(), "render auth page", slog.String("page", name), slog.Any("error", err))
@@ -388,13 +405,13 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		HumanCheckToken: h.humanCheckToken(r),
 	})
 	var limited *kernel.RateLimitedError
+	var secondFactor *appidentity.SecondFactorRequiredError
 	switch {
 	case errors.As(err, &limited):
-		w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(limited.RetryAfter.Seconds()))))
-		minutes := int(math.Ceil(limited.RetryAfter.Minutes()))
-		h.renderSignIn(w, r, http.StatusTooManyRequests, returnTo, email, func(l *i18n.Localizer) string {
-			return l.ServerAuthSignInRateLimited(minutes)
-		})
+		h.renderSignIn(w, r, http.StatusTooManyRequests, returnTo, email, rateLimitedMessage(w, limited))
+		return
+	case errors.As(err, &secondFactor):
+		h.askSecondFactor(w, r, secondFactor.Challenge, returnTo)
 		return
 	case errors.Is(err, appidentity.ErrInvalidCredentials):
 		h.renderSignIn(w, r, http.StatusUnprocessableEntity, returnTo, email, (*i18n.Localizer).ServerAuthSignInFailed)
@@ -406,6 +423,19 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		h.internalError(w, r, err)
 		return
 	}
+	h.signedIn(w, r, signedIn, returnTo)
+}
+
+// rateLimitedMessage sets the Retry-After of a refused sign-in and returns its message.
+func rateLimitedMessage(w http.ResponseWriter, limited *kernel.RateLimitedError) func(*i18n.Localizer) string {
+	w.Header().Set("Retry-After", strconv.Itoa(int(math.Ceil(limited.RetryAfter.Seconds()))))
+	minutes := int(math.Ceil(limited.RetryAfter.Minutes()))
+	return func(l *i18n.Localizer) string { return l.ServerAuthSignInRateLimited(minutes) }
+}
+
+// signedIn gives the browser the session of a completed sign-in and sends it on to returnTo,
+// or to the page that says why the account cannot be used yet.
+func (h *Handler) signedIn(w http.ResponseWriter, r *http.Request, signedIn appidentity.SignedIn, returnTo string) {
 	setSessionCookie(w, signedIn)
 	access, err := h.o.Identity.UserAccess(r.Context(), signedIn.Session.UserID)
 	if err != nil {

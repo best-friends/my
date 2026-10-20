@@ -5,6 +5,8 @@ package testkit
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -34,13 +36,15 @@ type RemoteInteractionHarness struct {
 // The factory registers the cleanup of everything it creates with t.Cleanup.
 type RemoteInteractionFactory func(t *testing.T, opts uow.Options) RemoteInteractionHarness
 
-// RemoteInteractionContract verifies the boosts and favourites across servers (federation.md
-// §3.4, §7.1) on a database adapter, through the inbox processor with the real Announce, Like,
-// EmojiReact, and Undo handlers, the real content, account, graph, timeline, notification, and
-// federation modules, and the outbound projectors and fan-out: the Announce, Like, Misskey
-// reaction, and Akkoma EmojiReact documents of the major implementations (the federation
-// fixtures) boost and favourite local posts with counters and notifications, and their Undo takes
-// them back; a remote post that a followed account boosts is stored, from the Announce when it
+// RemoteInteractionContract verifies the boosts, favourites, and emoji reactions across servers
+// (federation.md §3.4, §7.1, ADR-0052) on a database adapter, through the inbox processor with
+// the real Announce, Like, EmojiReact, and Undo handlers, the real content, account, graph,
+// timeline, notification, and federation modules, and the outbound projectors and fan-out: the
+// Announce and Like documents of the major implementations (the federation fixtures) boost and
+// favourite local posts with counters and notifications, and their Undo takes them back; the
+// Misskey reactions and the Akkoma EmojiReact documents (Unicode, the sender's custom emoji, and a
+// third server's) react to local posts, counted per emoji with notifications, and their Undo, by
+// the activity's IRI or by what it embeds, takes them back; a remote post that a followed account boosts is stored, from the Announce when it
 // embeds the post from the booster's origin and fetched again from its origin otherwise; a boost
 // takes the narrower of its addressing and the post's visibility; local-only posts and posts the
 // booster may not see or boost are not boosted, and local boosts of local-only posts do not
@@ -55,6 +59,8 @@ func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory
 		run  func(t *testing.T, e *remoteInteractionEnv)
 	}{
 		{"BoostsAndFavouritesLocalPostsFromFixtures", remoteInteractsWithLocalPosts},
+		{"ReactsToLocalPostsFromFixtures", remoteReactsToLocalPosts},
+		{"RefusesReactionsTheActorMayNotMake", remoteRefusesReactions},
 		{"BoostsRemotePostsOfFollowedBoosters", remoteBoostsRemotePosts},
 		{"RefusesBoostsTheBoosterMayNotMake", remoteRefusesBoosts},
 		{"SendsLikesAndUndoLikes", remoteSendsLikes},
@@ -84,7 +90,7 @@ func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) 
 	appcontent.RegisterInteractionProjectors(rs.projectors, ih.Interactions)
 	e.interactions = appcontent.NewInteractions(appcontent.InteractionDeps{
 		UnitOfWork: ih.UnitOfWork, Statuses: ih.Statuses, Interactions: ih.Interactions, Accounts: rs.accounts,
-		Relationships: rs.graph, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
+		Relationships: rs.graph, RecordRemoteEmojis: rs.content.RecordRemoteEmojis, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
 	})
 	appfederation.RegisterInteractionHandlers(rs.processor, appfederation.InteractionHandlersDeps{
 		Interactions: e.interactions, Statuses: rs.statuses,
@@ -264,17 +270,12 @@ func remoteInteractsWithLocalPosts(t *testing.T, e *remoteInteractionEnv) {
 			fixtureDocument(t, "mastodon", "circa-2018", "undo-like", at(mastodonPost)...),
 		},
 		{
-			"misskey reaction", "https://misskey.example/users/8x8yep20u2",
-			fixtureDocument(t, "misskey", "circa-2022", "like-reaction", at("https://remote.example/objects/89937a53-2692-4631-bb62-770091267391")...),
-			remoteActivity(t, "Undo", "https://misskey.example/likes/917ocsybgp/undo", "https://misskey.example/users/8x8yep20u2", map[string]any{
-				"type": "Like", "id": "https://misskey.example/likes/917ocsybgp", "actor": "https://misskey.example/users/8x8yep20u2", "object": post.URI,
+			// A Like whose content is no emoji is a favourite, as Misskey and Akkoma take it.
+			"content that is no emoji", "https://misskey.example/users/8x8yep20u2",
+			likeWithContent(t, "https://misskey.example/likes/plain", "https://misskey.example/users/8x8yep20u2", post.URI, "hello", ""),
+			remoteActivity(t, "Undo", "https://misskey.example/likes/plain/undo", "https://misskey.example/users/8x8yep20u2", map[string]any{
+				"type": "Like", "id": "https://misskey.example/likes/other", "actor": "https://misskey.example/users/8x8yep20u2", "object": post.URI,
 			}),
-		},
-		{
-			"akkoma EmojiReact", "https://example.org/users/akko",
-			fixtureDocument(t, "akkoma", "3.20", "emoji-react", at("https://remote.example/objects/9f0e93499d8314a9")...),
-			// Akkoma takes a reaction back by its IRI alone.
-			fixtureDocument(t, "akkoma", "3.20", "undo-emoji-react"),
 		},
 	} {
 		t.Run("Like/"+tc.name, func(t *testing.T) {
@@ -563,15 +564,19 @@ func (e *remoteInteractionEnv) sent(t *testing.T, statusID string) []remoteInter
 // favourite end up taken back and the counters at zero (NFR-REL-1).
 func remoteInteractionOrder(t *testing.T, newHarness RemoteInteractionFactory) {
 	const alice = "https://remote.example/users/alice"
-	for _, kind := range []string{"Announce", "Like"} {
+	for _, kind := range []string{"Announce", "Like", "EmojiReact"} {
 		t.Run(kind, func(t *testing.T) {
 			for _, seq := range inboxSequences(2) {
 				e := newRemoteInteractionEnv(t, newHarness)
 				post := e.localPost(t, e.user(t, "author"), content.VisibilityPublic)
 				aliceID := e.actor(t, alice)
 				act := alice + "/" + strings.ToLower(kind) + "s/1"
+				doc := remoteAddressed(t, kind, act, alice, post.URI)
+				if kind == "EmojiReact" {
+					doc = likeWithContent(t, act, alice, post.URI, "👍", "EmojiReact")
+				}
 				docs := [][]byte{
-					remoteAddressed(t, kind, act, alice, post.URI),
+					doc,
 					remoteActivity(t, "Undo", act+"#undo", alice, act),
 				}
 				uris := make([]federation.IRI, len(docs))
@@ -585,11 +590,216 @@ func remoteInteractionOrder(t *testing.T, newHarness RemoteInteractionFactory) {
 				}
 				boosts, favourites := e.counters(t, post.ID)
 				_, boosted := e.liveBoost(t, aliceID, post.ID)
+				if got := e.reactionCounts(t, post.ID); len(got) != 0 {
+					t.Errorf("order %v: reaction counts %v; want none", seq, got)
+				}
 				if boosted || e.favourited(t, aliceID, post.ID) || boosts != 0 || favourites != 0 {
 					t.Errorf("order %v: boosted %t, favourited %t, counters %d/%d; want everything taken back",
 						seq, boosted, e.favourited(t, aliceID, post.ID), boosts, favourites)
 				}
 			}
 		})
+	}
+}
+
+// likeWithContent returns a Like (or an activity of typ) of object by actor with content and,
+// unless it is "", _misskey_reaction.
+func likeWithContent(t *testing.T, id, actor, object, text, typ string) []byte {
+	t.Helper()
+	if typ == "" {
+		typ = "Like"
+	}
+	v := map[string]any{
+		"@context": "https://www.w3.org/ns/activitystreams", "id": id, "type": typ, "actor": actor, "object": object,
+		"content": text,
+	}
+	if typ == "Like" && text != "" && text != "hello" {
+		v["_misskey_reaction"] = text
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
+// reactionCounts returns the reaction counts of a status by the name of their emoji: the
+// Unicode emoji, or "shortcode@domain" of a custom emoji.
+func (e *remoteInteractionEnv) reactionCounts(t *testing.T, statusID string) map[string]int64 {
+	t.Helper()
+	counts, err := e.ih.Interactions.ListReactionCounts(t.Context(), statusID, content.MaxStatusReactions)
+	if err != nil {
+		t.Fatalf("ListReactionCounts: %v", err)
+	}
+	out := map[string]int64{}
+	for _, c := range counts {
+		out[e.emojiName(t, c.Emoji)] = c.Count
+	}
+	return out
+}
+
+// emojiName returns the Unicode emoji, or "shortcode@domain" of a custom emoji.
+func (e *remoteInteractionEnv) emojiName(t *testing.T, emoji content.ReactionEmoji) string {
+	t.Helper()
+	if emoji.CustomEmojiID == "" {
+		return emoji.Unicode
+	}
+	c, err := e.h.Statuses.FindCustomEmoji(t.Context(), emoji.CustomEmojiID)
+	if err != nil {
+		t.Fatalf("FindCustomEmoji: %v", err)
+	}
+	return c.Shortcode + "@" + c.Domain
+}
+
+// reactionsOf returns the names of the emoji that an account reacts to a status with.
+func (e *remoteInteractionEnv) reactionsOf(t *testing.T, accountID, statusID string) []string {
+	t.Helper()
+	rs, err := e.ih.Interactions.ListAccountStatusReactions(t.Context(), accountID, statusID)
+	if err != nil {
+		t.Fatalf("ListAccountStatusReactions: %v", err)
+	}
+	var out []string
+	for _, r := range rs {
+		out = append(out, e.emojiName(t, r.Emoji))
+	}
+	slices.Sort(out)
+	return out
+}
+
+// reactionNotifications returns the emoji of the reaction notifications that a local account
+// got from source, sorted.
+func (e *remoteInteractionEnv) reactionNotifications(t *testing.T, recipient, source string) []string {
+	t.Helper()
+	ns, err := e.notifications.List(t.Context(), recipient, appnotification.Query{Limit: appnotification.MaxPageLimit})
+	if err != nil {
+		t.Fatalf("List notifications: %v", err)
+	}
+	var out []string
+	for _, n := range ns {
+		if n.Type == notification.TypeReaction && n.SourceAccountID == source {
+			out = append(out, e.emojiName(t, content.ReactionEmoji{Unicode: n.ReactionEmoji, CustomEmojiID: n.ReactionCustomEmojiID}))
+		}
+	}
+	slices.Sort(out)
+	return out
+}
+
+func remoteReactsToLocalPosts(t *testing.T, e *remoteInteractionEnv) {
+	author := e.user(t, "author")
+	post := e.localPost(t, author, content.VisibilityPublic)
+	at := func(uri string) []string { return []string{uri, post.URI} }
+	check := func(t *testing.T, accountID string, want map[string]int64, mine ...string) {
+		t.Helper()
+		if got := e.reactionCounts(t, post.ID); !maps.Equal(got, want) {
+			t.Errorf("reaction counts = %v, want %v", got, want)
+		}
+		if got := e.reactionsOf(t, accountID, post.ID); !slices.Equal(got, mine) {
+			t.Errorf("reactions of the actor = %v, want %v", got, mine)
+		}
+		if _, favourites := e.counters(t, post.ID); favourites != 0 || e.favourited(t, accountID, post.ID) {
+			t.Errorf("favourites = %d, want reactions only", favourites)
+		}
+	}
+
+	t.Run("Misskey", func(t *testing.T) {
+		const actor = "https://misskey.example/users/asfo7no84zv70002"
+		fan := e.actor(t, actor)
+		like := fixtureDocument(t, "misskey", "2026.10", "like-reaction", at("https://remote.example/ap/objects/01a148e2-4400-7a88-ba6a-6710b1274540")...)
+		e.expect(t, like, appfederation.InboxHandled)
+		check(t, fan, map[string]int64{"👍": 1}, "👍")
+		if got := e.reactionNotifications(t, author, fan); !slices.Equal(got, []string{"👍"}) {
+			t.Errorf("reaction notifications = %v, want one", got)
+		}
+		// The same Like again changes nothing.
+		e.expect(t, like, appfederation.InboxHandled)
+		check(t, fan, map[string]int64{"👍": 1}, "👍")
+
+		// A custom emoji of the sender's server (circa 2022, with a colon-wrapped name).
+		const old = "https://misskey.example/users/8x8yep20u2"
+		oldFan := e.actor(t, old)
+		e.expect(t, fixtureDocument(t, "misskey", "circa-2022", "like-reaction", at("https://remote.example/objects/89937a53-2692-4631-bb62-770091267391")...), appfederation.InboxHandled)
+		check(t, oldFan, map[string]int64{"👍": 1, "hanapog@misskey.example": 1}, "hanapog@misskey.example")
+
+		// Misskey takes a reaction back with an Undo that embeds the Like.
+		e.expect(t, remoteActivity(t, "Undo", "https://misskey.example/likes/asfoaqef4zv7000t/undo", actor, map[string]any{
+			"type": "Like", "id": "https://misskey.example/likes/asfoaqef4zv7000t", "actor": actor, "object": post.URI,
+			"content": "👍", "_misskey_reaction": "👍",
+		}), appfederation.InboxHandled)
+		check(t, fan, map[string]int64{"hanapog@misskey.example": 1})
+		// An Undo whose id is unknown takes back the reaction that it embeds, by its post and emoji.
+		e.expect(t, remoteActivity(t, "Undo", "https://misskey.example/likes/unknown/undo", old, map[string]any{
+			"type": "Like", "id": "https://misskey.example/likes/unknown", "actor": old, "object": post.URI,
+			"content": ":hanapog:", "_misskey_reaction": ":hanapog:",
+			"tag": []any{map[string]any{
+				"id": "https://misskey.example/emojis/hanapog", "type": "Emoji", "name": ":hanapog:",
+				"icon": map[string]any{"type": "Image", "url": "https://misskey.example/files/webpublic-8f8a9768-7264-4171-88d6-2356aabeadcd"},
+			}},
+		}), appfederation.InboxHandled)
+		check(t, oldFan, map[string]int64{})
+	})
+
+	t.Run("Akkoma", func(t *testing.T) {
+		const actor = "https://example.org/users/akko"
+		fan := e.actor(t, actor)
+		object := at("https://remote.example/objects/9f0e93499d8314a9")
+		for _, name := range []string{"emoji-react", "emoji-react-custom", "emoji-react-remote"} {
+			e.expect(t, fixtureDocument(t, "akkoma", "3.20", name, object...), appfederation.InboxHandled)
+		}
+		// Unicode, its own server's emoji (an Emoji without an id), and a third server's.
+		mine := []string{"hug@other.example", "mouse@example.org", "🧡"}
+		check(t, fan, map[string]int64{"🧡": 1, "mouse@example.org": 1, "hug@other.example": 1}, mine...)
+		if got := e.reactionNotifications(t, author, fan); !slices.Equal(got, mine) {
+			t.Errorf("reaction notifications = %v, want one per emoji", got)
+		}
+		// Akkoma takes a reaction back by its IRI alone.
+		e.expect(t, fixtureDocument(t, "akkoma", "3.20", "undo-emoji-react"), appfederation.InboxHandled)
+		check(t, fan, map[string]int64{"mouse@example.org": 1, "hug@other.example": 1}, "hug@other.example", "mouse@example.org")
+		// Reacting again with the same emoji does not notify again.
+		e.expect(t, likeWithContent(t, actor+"#react/again", actor, post.URI, "🧡", "EmojiReact"), appfederation.InboxHandled)
+		if got := e.reactionNotifications(t, author, fan); !slices.Equal(got, mine) {
+			t.Errorf("reaction notifications after reacting again = %v, want %v", got, mine)
+		}
+	})
+
+	t.Run("Normalized", func(t *testing.T) {
+		// The text and emoji presentations of the same emoji count together.
+		other := e.localPost(t, author, content.VisibilityPublic)
+		for i, text := range []string{"\u2764", "\u2764\uFE0F"} {
+			actor := fmt.Sprintf("https://remote.example/users/heart%d", i)
+			e.actor(t, actor)
+			e.expect(t, likeWithContent(t, actor+"/likes/1", actor, other.URI, text, ""), appfederation.InboxHandled)
+		}
+		if got := e.reactionCounts(t, other.ID); !maps.Equal(got, map[string]int64{"\u2764\uFE0F": 2}) {
+			t.Errorf("reaction counts = %v, want two of the fully-qualified heart", got)
+		}
+	})
+}
+
+func remoteRefusesReactions(t *testing.T, e *remoteInteractionEnv) {
+	const alice = "https://remote.example/users/alice"
+	author := e.user(t, "author")
+	aliceID := e.actor(t, alice)
+	public := e.localPost(t, author, content.VisibilityPublic)
+	private := e.localPost(t, author, content.VisibilityPrivate)
+
+	// An EmojiReact with no emoji is dropped; a Like with no emoji is a favourite.
+	e.expect(t, likeWithContent(t, alice+"/react/1", alice, public.URI, "hello", "EmojiReact"), appfederation.InboxDropped)
+	// A custom emoji without its Emoji tag is no reaction.
+	e.expect(t, likeWithContent(t, alice+"/react/2", alice, public.URI, ":blobcat:", "EmojiReact"), appfederation.InboxDropped)
+	// Nor does a remote account react to a followers-only post it cannot see.
+	e.expect(t, likeWithContent(t, alice+"/react/3", alice, private.URI, "👍", "EmojiReact"), appfederation.InboxDropped)
+	for _, st := range []content.Status{public, private} {
+		if got := e.reactionsOf(t, aliceID, st.ID); len(got) != 0 {
+			t.Errorf("reactions to the %s post = %v, want none", st.Visibility, got)
+		}
+	}
+	// A blocked account's reaction is dropped.
+	ctx := t.Context()
+	if _, err := e.graph.Block(ctx, author, aliceID); err != nil {
+		t.Fatalf("Block: %v", err)
+	}
+	e.expect(t, likeWithContent(t, alice+"/react/4", alice, public.URI, "👍", "EmojiReact"), appfederation.InboxDropped)
+	if got := e.reactionCounts(t, public.ID); len(got) != 0 {
+		t.Errorf("reaction counts after a blocked account reacted = %v, want none", got)
 	}
 }

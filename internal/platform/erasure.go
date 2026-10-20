@@ -20,7 +20,7 @@ import (
 // notification rows, its uploads with their blobs, and its user's identity data; the account
 // module erases the profile and keys last. A retention hold stops it, and the statuses that the
 // moderation records need stay with their media files (ADR-0038). It comes after the content,
-// graph, timeline, notification, and media services and the blob store.
+// graph, timeline, notification, and media services, the blob store, and the data exports.
 func (a *App) setUpErasure(ids identity.Repository, accounts account.Repository, statuses content.Repository,
 	follows graph.Repository, feeds timeline.Repository, notifs notification.Repository, medias content.MediaRepository,
 ) error {
@@ -49,6 +49,8 @@ func (a *App) setUpErasure(ids identity.Repository, accounts account.Repository,
 			content.NewMediaEraser(content.MediaErasureDeps{
 				UnitOfWork: a.UnitOfWork, Repository: medias, Blobs: a.Blobs, Referrers: []content.MediaReferrer{a.Instance},
 			}),
+			// The user's data exports with their archives (FR-008).
+			a.Exports,
 			identity.NewEraser(a.UnitOfWork, identities),
 		},
 	}).RegisterJobs(a.Handlers, a.Scheduler)

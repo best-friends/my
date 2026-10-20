@@ -31,6 +31,7 @@ export const viewerFixture: Schemas["CredentialAccount"] = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -58,6 +59,7 @@ export function accountFixture(n: number, name: string, domain = "remote.example
     display_name: name,
     note: "",
     fields: [],
+    emojis: [],
     url: `https://${domain}/@${username}`,
     locked: false,
     bot: false,
@@ -181,9 +183,11 @@ function postFixture(account: Schemas["Account"], id: string, overrides: Partial
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
     ...overrides,
   };
 }
@@ -196,7 +200,7 @@ export function viewerStatusFixture(overrides: Partial<Schemas["Status"]> = {}):
 /** A post by Bob that mentions Alice. */
 export function statusFixture(id: string): Schemas["Status"] {
   return postFixture(otherAccountFixture, id, {
-    url: `https://my.example/@bob/${id}`,
+    url: `https://my.example/@bob/status/${id}`,
     content: '<p><a href="https://my.example/@alice">@alice</a> hello</p>',
     mentions: [{ id: viewerFixture.id, username: "alice", acct: "alice", url: viewerFixture.url }],
   });
@@ -205,7 +209,7 @@ export function statusFixture(id: string): Schemas["Status"] {
 /** A local post of another account, for the timelines. */
 export const timelineStatusFixture: Schemas["Status"] = postFixture(otherAccountFixture, "0192f0c4-7a8e-7000-8000-0000000000a1", {
   uri: "https://my.example/ap/statuses/0192f0c4-7a8e-7000-8000-0000000000a1",
-  url: "https://my.example/@bob/0192f0c4-7a8e-7000-8000-0000000000a1",
+  url: "https://my.example/@bob/status/0192f0c4-7a8e-7000-8000-0000000000a1",
   content: "<p>Hello from the local timeline!</p>",
 });
 

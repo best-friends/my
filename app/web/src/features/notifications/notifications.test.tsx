@@ -76,7 +76,7 @@ describe("the notifications page", () => {
     expect(articles[0]).toHaveAccessibleName(/^Unread: Bob mentioned you/);
     expect(articles[1]).toHaveAccessibleName(/^Bob followed you/);
     // The post the mention is about is quoted as its text, in one link to its page.
-    expect(within(articles[0] ?? feed).getByRole("link", { name: "@alice hello" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    expect(within(articles[0] ?? feed).getByRole("link", { name: "@alice hello" })).toHaveAttribute("href", "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b1");
     // The time is relative as in the timelines, with the full date and time as its tooltip.
     const time = within(articles[0] ?? feed).getByRole("time");
     expect(time).toHaveAttribute("datetime", "2026-10-16T09:00:00Z");
@@ -114,7 +114,7 @@ describe("the notifications page", () => {
     await user.click(within(feed).getByRole("link", { name: "@alice hello" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toHaveFocus();
-    expect(router.state.location.pathname).toBe("/@bob/0192f0c4-7a8e-7000-8000-0000000000b1");
+    expect(router.state.location.pathname).toBe("/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b1");
     expect(await screen.findByRole("region", { name: "Replies" })).toBeInTheDocument();
   });
 
@@ -274,11 +274,43 @@ describe("the notifications page", () => {
     expect(within(feed).getByRole("article", { name: /bob signed up and awaits approval/ })).toBeInTheDocument();
     // A post behind a content warning shows the warning only; its page asks to open it.
     const boost = within(feed).getByRole("article", { name: /bob boosted your post/ });
-    expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/0192f0c4-7a8e-7000-8000-0000000000b2");
+    expect(within(boost).getByRole("link", { name: "Content warning: spoilers" })).toHaveAttribute("href", "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b2");
     expect(within(boost).queryByText("the ending", { exact: false })).not.toBeInTheDocument();
     // The types without an actor link to no profile, only to where the user follows them up.
     expect(within(within(feed).getByRole("article", { name: /The moderators/ })).getAllByRole("link").map((link) => link.textContent)).toEqual(["View your account status"]);
     expect(within(within(feed).getByRole("article", { name: /A poll you took part in/ })).queryAllByRole("link")).toEqual([]);
+  });
+
+  test("says which emoji an account reacted with", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000b3");
+    const reaction = (id: string, emoji: NonNullable<Notification["reaction"]>): Notification => ({
+      id,
+      type: "reaction",
+      created_at: "2026-10-16T09:00:00Z",
+      account: otherAccountFixture,
+      status: post,
+      reaction: emoji,
+    });
+    const items: Notification[] = [
+      reaction("0192f0c4-7a8e-7000-8000-0000000000e2", { name: "👍" }),
+      reaction("0192f0c4-7a8e-7000-8000-0000000000e1", {
+        name: "blobcat@misskey.example",
+        shortcode: "blobcat",
+        domain: "misskey.example",
+        emoji: { shortcode: "blobcat", url: "https://my.example/media/proxy/blobcat", static_url: "https://my.example/media/proxy/blobcat" },
+      }),
+    ];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    // Each reaction is a row of its own, not grouped like the favourites.
+    expect(within(feed).getAllByRole("article")).toHaveLength(2);
+    expect(within(feed).getByRole("article", { name: /Bob reacted to your post with 👍/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /Bob reacted to your post with :blobcat:/ })).toBeInTheDocument();
   });
 
   test("says which suspension ended follows and how many the user lost", async () => {
@@ -399,17 +431,17 @@ describe("the notifications page", () => {
     expect(within(resolved).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/@bob"]);
     // A moderator's notifications lead to the report and to the registrations.
     const report = within(feed).getByRole("article", { name: /A new report awaits the moderators/ });
-    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/admin/reports/${reportId}`);
+    expect(within(report).getByRole("link", { name: "Open the report" })).toHaveAttribute("href", `/moderation/reports/${reportId}`);
     // The decision on an appeal says what was decided and why, and leads to the account status.
     const decided = within(feed).getByRole("article", { name: /The moderators decided your appeal/ });
     expect(decided).toHaveAccessibleDescription(/Limit: Spam.*Your appeal was granted, and the action was lifted\..*We were wrong\./);
     expect(within(decided).getByRole("link", { name: "View your account status" })).toHaveAttribute("href", "/settings/account-status");
     const appeal = within(feed).getByRole("article", { name: /A new appeal awaits the moderators/ });
-    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/admin/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
+    expect(within(appeal).getByRole("link", { name: "Open the appeal" })).toHaveAttribute("href", "/moderation/appeals/0192f0c4-7a8e-7000-8000-0000000000f4");
     const signUp = within(feed).getByRole("article", { name: /Bob signed up and awaits approval/ });
     await user.click(within(signUp).getByRole("link", { name: "Review registrations" }));
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe("/admin/registrations");
+      expect(router.state.location.pathname).toBe("/moderation/registrations");
     });
   });
 
@@ -478,7 +510,7 @@ describe("the notifications page", () => {
 
 describe("the favourites and the boosts of one post", () => {
   const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000b1");
-  const postPath = "/@bob/0192f0c4-7a8e-7000-8000-0000000000b1";
+  const postPath = "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000b1";
   const carol = accountFixture(3, "Carol");
   const dave = accountFixture(4, "Dave");
   /** A favourite of the post by `account`. */

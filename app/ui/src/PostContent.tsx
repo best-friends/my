@@ -11,9 +11,11 @@
 // The policy passes the HTML through unchanged. That is safe only because every HTML it receives comes
 // out of the server's sanitizer (the allowlist in the Go server); HTML from anywhere else, such as the
 // remote posts that federation brings (M3), must go through the same sanitizer on the server first.
-import type { ComponentPropsWithRef, RefCallback } from "react";
+import { type ComponentPropsWithRef, type RefCallback, use } from "react";
 import { mergeRefs } from "react-aria";
 import { tv } from "tailwind-variants";
+import { type CustomEmojiImage, insertCustomEmojis, noCustomEmojis } from "./CustomEmoji";
+import { AutoplayContext } from "./Picture";
 
 declare const sanitizedHtmlBrand: unique symbol;
 
@@ -82,6 +84,16 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
    * Opening a link in a new tab or window stays the browser's.
    */
   onLinkClick?: ((event: MouseEvent, link: HTMLAnchorElement) => void) | undefined;
+  /**
+   * The custom emoji the body uses (the API's `emojis`): each `:shortcode:` of one of them in the body's
+   * text is drawn as its image, made with the DOM API rather than HTML (ADR-0019 §2, ADR-0051 §4).
+   */
+  emojis?: readonly CustomEmojiImage[] | undefined;
+  /**
+   * Whether animated emoji may move when the user allows motion; false shows their still images. The default is the
+   * app's `AutoplayContext`.
+   */
+  emojiMotion?: boolean | undefined;
 };
 
 /**
@@ -106,16 +118,31 @@ function linkClickListener(onLinkClick: PostContentProps["onLinkClick"]): RefCal
 }
 
 /**
+ * Draws the custom emoji in the body. The body is HTML that React does not render, so the emoji go in
+ * after React set it, and come out again before React replaces it: the callback is made anew whenever
+ * the body or its emoji change, and React calls the cleanup of the previous one first.
+ */
+function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], allowMotion: boolean): RefCallback<HTMLDivElement> | undefined {
+  if (emojis.length === 0 || html === "") return undefined;
+  return (element) => {
+    if (element === null) return;
+    return insertCustomEmojis(element, emojis, allowMotion);
+  };
+}
+
+/**
  * The body of a post: server-sanitized HTML in a block whose direction follows its own text (`dir="auto"`)
  * and whose `lang` is the post's language when known (web-client.md Y10). Give it an `id` to describe a
- * PostCard by it, and `onLinkClick` to open the links of the body itself (the app opens the links to its
- * own pages through its router).
+ * PostCard by it, `onLinkClick` to open the links of the body itself (the app opens the links to its
+ * own pages through its router), and `emojis` to draw its custom emoji.
  */
-export function PostContent({ html, lang, onLinkClick, className, ref, ...props }: PostContentProps) {
+export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, className, ref, ...props }: PostContentProps) {
+  const autoplay = use(AutoplayContext);
+  const emojiMotion = motion ?? autoplay;
   return (
     <div
       {...props}
-      ref={mergeRefs(ref, linkClickListener(onLinkClick))}
+      ref={mergeRefs(ref, linkClickListener(onLinkClick), emojiDrawer(html, emojis, emojiMotion))}
       dir="auto"
       lang={lang}
       className={postContent({ className })}

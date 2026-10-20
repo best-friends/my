@@ -7,7 +7,7 @@
 import { Button, StatusMessage, TextField } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { useServerSettings } from "../hooks/useServerSettings";
-import { DetailSection, RequirePermission } from "./parts";
+import { DetailSection, RequirePermission } from "../../moderation";
 
 export function ServerSettings() {
   return (

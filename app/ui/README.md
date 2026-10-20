@@ -126,11 +126,13 @@ The utility is not named `text-*` because `tailwind-merge` would read that as a 
 
 ## Spacing, radius, shadow
 
-- Spacing is Tailwind's 0.25rem step (`p-1` = 0.25rem, `gap-4` = 1rem), limited to `0.5`, `1`, `2`, `3`, `4`, `6`, `8` and `10`.
+- Spacing is Tailwind's 0.25rem step (`p-1` = 0.25rem, `gap-4` = 1rem). Padding and gaps are limited to `0.5`, `1`, `1.5`, `2`, `3`, `4`, `6`, `8`
+  and `10`; margins and sizes hold geometry (a description aligned with a switch's label) rather than a role and may use other steps.
   Each role has one value:
 
   | Role | Value |
   | --- | --- |
+  | Inside a small control: a badge, a toggle button, a label over media | `px-1.5`, `gap-1.5` |
   | Icon and its text, a name and its handle | `gap-1` |
   | Controls in a row (actions of a post, buttons of a dialog) | `gap-2` |
   | Avatar and the content beside it; lines inside a card | `gap-3` |
@@ -142,6 +144,9 @@ The utility is not named `text-*` because `tailwind-merge` would read that as a 
 
 - Radius: `rounded-sm` (0.25rem), `rounded-md` (0.5rem), `rounded-lg` (0.75rem), `rounded-xl` (1rem), and `rounded-full`.
 - Shadow: `shadow-sm`, `shadow-md`, `shadow-lg`. In the dark theme raised surfaces are told apart by `surface-raised`, not by shadow.
+  Tailwind copies a `--shadow-*` value into its utilities, so the values live in `--elevation-sm|md|lg`, which the `--shadow-*` tokens refer to
+  and a server theme overrides.
+- Radius, shadow, duration, and easing utilities take tokens only: no arbitrary values (`rounded-[3px]`, `shadow-[…]`, `duration-[…]`).
 
 ## Focus
 
@@ -207,6 +212,35 @@ The kit gives every region of data the same four states
   (`position: sticky`) and pads itself for `env(safe-area-inset-top)`, so the app renders it before any element that
   already pads for that inset.
 
+## Server themes
+
+An administrator can override the tokens other than the palette for the whole server and add a custom CSS
+([ADR-0059](../../docs/adr/0059-design-tokens-and-instance-theme.md), [operations](../../docs/operations/instance-settings.md#テーマ)).
+The server serves them as one stylesheet at `/theme/{revision}.css`: a `:root` rule with the overrides, then the custom CSS, both outside
+any cascade layer, so they win over the `@layer theme` that Tailwind emits the defaults into and over the utilities. That works only while
+the utilities refer to the variables, so no token is declared in `@theme inline`.
+
+[scripts/theme-tokens.ts](scripts/theme-tokens.ts) (`make web-tokens-gen`) generates the list of the overridable tokens from `theme.css`, with
+each token's kind, defaults (colors resolved to `#rrggbb` per theme), and bounds from `tokenRules` in [src/tokens.ts](src/tokens.ts), and the
+contrast pairs: `src/themeTokens.gen.ts` for the theme editor and `internal/domain/instance/theme_tokens.gen.go` for the server, which checks
+every theme against them. A token that matches no rule (and is not in `fixedTokens`) fails the generator.
+
+| Tokens | Kind | Override |
+| --- | --- | --- |
+| `color-*` | color | `#rrggbb` per theme (`#rrggbbaa` for `color-overlay`); every contrast pair must keep AA in both themes |
+| `font-sans`, `font-mono` | font family | Family names, quoted or plain, comma-separated (at most 30) |
+| `text-*` | length | `0` or rem / px, 0.625rem to 3rem |
+| `text-*--line-height` | number | 1 to 2.5 |
+| `spacing` | length | 0.125rem to 0.5rem (half to twice the default step) |
+| `radius-*` | length | 0 to 2rem |
+| `elevation-*` | shadow | `none` or up to 4 `[inset] <x> <y> [<blur> [<spread>]] <#color>` layers, lengths within 4rem |
+| `transition-duration-*`, `default-transition-duration` | duration | ms / s, 0 to 1000ms |
+| `ease-*`, `default-transition-timing-function` | easing | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, or `cubic-bezier()` with x in 0..1 |
+
+The quality gates (axe, screenshots, horizontal scroll) check the default theme only. A theme's color tokens keep AA because the server
+checks them; the other overrides and the custom CSS can still break layout, tap targets, or right-to-left text, which is the administrator's
+responsibility. `themeContrast` computes what the server checks, with the same formulas as [src/color.ts](src/color.ts) and the Go domain.
+
 ## The token check
 
 `make web-tokens` runs [scripts/check-tokens.ts](scripts/check-tokens.ts). It fails when:
@@ -214,7 +248,10 @@ The kit gives every region of data the same four states
 - a pair in `tokens.ts` is below AA in either theme, a background in a pair is translucent, or a semantic color is in no pair and not decorative;
 - a palette color is outside the sRGB gamut, or a semantic color is not `oklch()`, hex, a `var(--palette-*)` or `light-dark()` of those;
 - a source file Tailwind scans for `src/storybook.css` or `app/web/src/index.css` uses a default-palette color (`text-gray-500`),
-  an arbitrary color (`bg-[#fff]`, `text-(--palette-gray-50)`, `[color:red]`), or motion outside `motion-safe:`.
+  an arbitrary color (`bg-[#fff]`, `text-(--palette-gray-50)`, `[color:red]`), motion outside `motion-safe:`, an arbitrary radius, shadow,
+  duration, or easing (`rounded-[3px]`), or a padding or gap step outside the list under "Spacing, radius, shadow";
+- the generated list of the overridable tokens (`src/themeTokens.gen.ts`, `internal/domain/instance/theme_tokens.gen.go`) differs from what
+  `make web-tokens-gen` writes from `theme.css` and `tokens.ts`, or `theme.css` uses `@theme inline`.
 
 Other unknown class names produce no CSS; catching those is the job of the Tailwind lint rules ([D9](../../docs/architecture/web-client.md#6-レスポンシブとスタイル)).
 

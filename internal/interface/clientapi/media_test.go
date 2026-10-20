@@ -153,6 +153,12 @@ func processedVariants(id string) clientapi.MediaVariants {
 
 func (f *fakeMedia) url(v content.MediaVariant) string { return "https://social.example/" + v.BlobKey }
 
+// CustomEmojis knows no custom emoji: the platform tests present them through the real media
+// service.
+func (f *fakeMedia) CustomEmojis(context.Context, []string) (map[string]appcontent.CustomEmojiView, error) {
+	return map[string]appcontent.CustomEmojiView{}, nil
+}
+
 // Image presents the variants of a processed file as the real service does.
 func (f *fakeMedia) Image(m appcontent.Media) (appcontent.Image, bool) {
 	if !m.Ready() {

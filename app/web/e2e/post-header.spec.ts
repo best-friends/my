@@ -30,9 +30,11 @@ function status(n: number, account: Account, overrides: Partial<Status> = {}): S
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
     ...overrides,
   };
 }

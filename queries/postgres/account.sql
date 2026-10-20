@@ -15,6 +15,9 @@ INSERT INTO account_profile_revisions (
 -- name: InsertProfileField :exec
 INSERT INTO account_profile_fields (revision_id, position, name, value_html) VALUES ($1, $2, $3, $4);
 
+-- name: InsertProfileRevisionEmoji :exec
+INSERT INTO account_profile_revision_emojis (revision_id, emoji_id) VALUES ($1, $2);
+
 -- name: InsertAccountKey :exec
 INSERT INTO account_keys (id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7);
 
@@ -140,6 +143,9 @@ FROM account_profile_revisions WHERE id = $1;
 -- name: ListProfileFields :many
 SELECT revision_id, position, name, value_html FROM account_profile_fields
 WHERE revision_id = $1 ORDER BY position;
+
+-- name: ListProfileRevisionEmojis :many
+SELECT emoji_id FROM account_profile_revision_emojis WHERE revision_id = $1 ORDER BY emoji_id;
 
 -- name: ListAccountKeys :many
 SELECT id, account_id, key_id, algorithm, public_key_pem, fingerprint, created_at FROM account_keys

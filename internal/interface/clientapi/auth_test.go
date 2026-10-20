@@ -199,7 +199,7 @@ func TestVerifyAccountCredentials(t *testing.T) {
 		followers, following := 2, 1
 		want := clientapi.Account{
 			Id: aliceAccountID, Username: "alice", Acct: "alice", DisplayName: "Alice", Note: "<p>hi</p>",
-			Fields: []clientapi.ProfileField{}, Url: "https://social.example/@alice", Locked: true, CreatedAt: createdAt,
+			Fields: []clientapi.ProfileField{}, Emojis: []clientapi.CustomEmoji{}, Url: "https://social.example/@alice", Locked: true, CreatedAt: createdAt,
 			FollowersCount: &followers, FollowingCount: &following,
 		}
 		if !reflect.DeepEqual(got, want) {

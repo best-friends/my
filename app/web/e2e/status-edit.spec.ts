@@ -31,6 +31,7 @@ const alice: Status["account"] = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -40,13 +41,14 @@ const alice: Status["account"] = {
 const postId = "0192f0c4-7a8e-7000-8000-0000000000e1";
 const hourAgo = (hours: number) => new Date(Date.now() - hours * 60 * 60_000).toISOString();
 
-const original: StatusEdit = { content: "<p>The walk starts at nine.</p>", spoiler_text: "", sensitive: false, created_at: hourAgo(3), media_attachments: [] };
+const original: StatusEdit = { content: "<p>The walk starts at nine.</p>", spoiler_text: "", sensitive: false, created_at: hourAgo(3), media_attachments: [], emojis: [] };
 const latest: StatusEdit = {
   content: "<p>The walk starts at ten, at the bridge: https://example.com/a/very/long/path/that/must/wrap/somewhere/before/it/scrolls/the/page/sideways</p>",
   spoiler_text: "Plans",
   sensitive: false,
   created_at: hourAgo(2),
   media_attachments: [],
+  emojis: [],
 };
 const revisions: StatusEdit[] = [original, latest];
 
@@ -54,7 +56,7 @@ const revisions: StatusEdit[] = [original, latest];
 const post: Status = {
   id: postId,
   uri: `https://my.example/ap/statuses/${postId}`,
-  url: `https://my.example/@alice/${postId}`,
+  url: `https://my.example/@alice/status/${postId}`,
   account: alice,
   content: latest.content,
   spoiler_text: latest.spoiler_text,
@@ -66,9 +68,11 @@ const post: Status = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
   favourited: false,
   boosted: false,
   bookmarked: false,
@@ -108,7 +112,7 @@ async function serveApi(page: Page): Promise<void> {
 
 test("the history of an edited post lists its revisions, newest first", async ({ page, makeAxeBuilder }) => {
   await serveApi(page);
-  await page.goto(`/@alice/${postId}`);
+  await page.goto(`/@alice/status/${postId}`);
   const article = page.getByRole("main").getByRole("article");
   await article.getByRole("link", { name: message("status.edited") }).click();
 
@@ -144,7 +148,7 @@ test("the history of an edited post lists its revisions, newest first", async ({
 
 test("the viewer edits their post in a dialog, and the post shows the edit", async ({ page, makeAxeBuilder }) => {
   await serveApi(page);
-  await page.goto(`/@alice/${postId}`);
+  await page.goto(`/@alice/status/${postId}`);
   const article = page.getByRole("main").getByRole("article");
   await article.getByRole("button", { name: message("status.action.more") }).click();
   await page.getByRole("menuitem", { name: message("status.action.edit") }).click();

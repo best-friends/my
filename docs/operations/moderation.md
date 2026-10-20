@@ -7,6 +7,21 @@
 管理 API はロールの権限を要します。アカウントの管理と処分と異議申し立ては `manage_accounts`、ドメイン単位の処分は `manage_domains`、通報は `manage_reports` です。
 CLI はサーバーと同じ設定（`-config` か環境変数）で DB に直接つなぎ、操作者の利用者を記録しません（`issued_by_user_id` などは NULL、[監査ログ](#監査ログ)の操作者は `cli`）。
 
+## Web クライアントのモデレーションとサーバー管理
+
+Web クライアントは、スタッフの画面を 2 つに分けます（[ADR-0058](../adr/0058-moderation-admin-separation.md)）。
+ナビゲーションには、ロールが各区分の権限のどれかを持つ人にだけ「モデレーション」と「管理」が出ます。どの画面も、権限のない人には理由だけを出し、サーバーも要求を断ります。
+
+| 区分 | 権限 | 画面 |
+| --- | --- | --- |
+| モデレーション（`/moderation`） | `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit` | 通報（`/moderation/reports`）・異議申し立て（`/moderation/appeals`）・アカウント（`/moderation/accounts`）・登録の審査（`/moderation/registrations`）・登録の拒否リスト（`/moderation/signup-blocks`）・ドメインへの処分（`/moderation/domain-actions`）・連合先（`/moderation/instances`）・監査ログ（`/moderation/audit-log`） |
+| サーバー管理（`/admin`） | `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs` | サーバーの設定（`/admin/settings`）・規約とポリシー（`/admin/documents`）・dead job（`/admin/dead-jobs`） |
+
+- 「モデレーション」のバッジは、未解決の通報・承認待ちの登録・審査待ちの異議申し立ての合計です（[モデレーターへの通知と未対応の件数](#モデレーターへの通知と未対応の件数)）。「管理」には件数を出しません。
+- 組み込みの `moderator` は `manage_reports`・`manage_accounts`・`view_audit` だけを持ち、「管理」は出ません。ドメインへの処分と連合先の画面（`manage_domains`）も出ないので、
+  モデレーターに任せるときは、その権限を持つロールを作って与えます（[ロールの付与と剥奪](admin-cli.md#ロールの付与と剥奪)）。
+- 管理 API の経路は区分によらず `/api/v1/admin/...` のままで、スコープも `admin:read` / `admin:write` の 1 組です。区分は API リファレンスのタグ（`admin-moderation`・`admin-server`）で分かれます。
+
 ## アカウントへの処分
 
 処分は記録したトランザクションで制限の投影（`account_restrictions`）に反映され、次の要求から効きます（[データモデル §5.2](../architecture/data-model.md#52-処分の種類と制限能力の剥奪)）。
@@ -106,6 +121,11 @@ my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
 - `GET /api/v1/admin/accounts/{id}` は、状態・制限と、ローカルのアカウントでは登録の申請と審査・メールの確認・ロール、新しい順に 20 件までの処分と通報を返します。
 - `POST /api/v1/admin/accounts/{id}/reveal` は、ローカルのアカウントのメールアドレス、登録とログイン（新しい順に 20 件）の IP アドレスと User-Agent、同じ IP アドレスを使ったほかのアカウント（IP アドレスごとに 20 件まで）を返します。
   呼ぶたびに監査ログに `revealed_private_data` を記録し、記録できたときだけ返します。IP アドレスは保持期間（既定 180 日）を過ぎると消えるので、それより前のログイン元は表示できません。
+- `GET /api/v1/admin/accounts/{id}` の `two_factor_enabled` は、ローカルのアカウントの利用者が二要素認証（TOTP、FR-005）を使っているかを示します。
+  認証アプリとリカバリーコードを両方なくした利用者は、`POST /api/v1/admin/accounts/{id}/two_factor/disable` で二要素認証を外すとパスワードだけでログインできます。
+  外せるのは権限 `manage_two_factor` を持つ利用者で、既定では組み込みの管理者のロールだけが持ちます（モデレーターは状態を見られますが、外せません。ADR-0058 のサーバー管理）。
+  外すと監査ログに `two_factor_disabled` を記録します。本人であることは、メールなど別の経路で確かめてから外してください。
+  ほかに管理者のいない管理者自身がなくしたときは、運営者が CLI の `my admin account disable-two-factor @alice` で外します（監査ログの操作者は CLI）。
 - 検索は 1 ページを埋めるのに 400 アカウントまで読みます。条件に合うアカウントが少ないと、短いページや空のページにも `next_cursor` が付くので、続けて読みます。
 
 ## ドメイン単位の処分
@@ -216,7 +236,7 @@ my admin report reopen <report id>
 
 | 対象の種類 | 操作 |
 | --- | --- |
-| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し）・`revealed_private_data`（IP アドレスとメールアドレスの表示） |
+| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し）・`revealed_private_data`（IP アドレスとメールアドレスの表示）・`two_factor_disabled`（二要素認証の解除） |
 | `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
 | `report` | `report_assigned`・`report_unassigned`・`report_resolved`・`report_reopened`・`report_note_added`（通報の担当・担当の解除・解決・再開・メモ） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |

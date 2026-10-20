@@ -88,7 +88,7 @@ afterEach(() => {
 describe("a post's page", () => {
   test("shows the post between the posts it replies to and its replies, each under a heading", async () => {
     serveThread();
-    await renderApp({ path: `/@bob/${postId}` });
+    await renderApp({ path: `/@bob/status/${postId}` });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post" })).toBeInTheDocument();
     const article = await findFocusedPost();
@@ -120,12 +120,12 @@ describe("a post's page", () => {
 
     const feed = await screen.findByRole("feed", { name: "Local timeline" });
     const time = within(feed).getByRole("link", { name: "3 hr. ago" });
-    expect(time).toHaveAttribute("href", `/@bob/${postId}`);
+    expect(time).toHaveAttribute("href", `/@bob/status/${postId}`);
     const scrolled = vi.spyOn(Element.prototype, "scrollIntoView");
     await user.click(time);
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Post" });
-    expect(router.state.location.pathname).toBe(`/@bob/${postId}`);
+    expect(router.state.location.pathname).toBe(`/@bob/status/${postId}`);
     expect(await screen.findByRole("region", { name: "Earlier in the thread" })).toBeInTheDocument();
     // The post comes into view once the posts above it are there; focus stays on the page's heading.
     const article = await findFocusedPost();
@@ -159,7 +159,7 @@ describe("a post's page", () => {
 
   test("does not scroll a post that replies to nothing", async () => {
     const scrolled = vi.spyOn(Element.prototype, "scrollIntoView");
-    await renderApp({ path: `/@bob/${postId}` });
+    await renderApp({ path: `/@bob/status/${postId}` });
 
     expect(await screen.findByText("No replies yet.")).toBeInTheDocument();
     expect(scrolled).not.toHaveBeenCalled();
@@ -169,7 +169,7 @@ describe("a post's page", () => {
     signedIn();
     const own: Status = viewerStatusFixture({ id: "0192f0c4-7a8e-7000-8000-0000000000e2", content: "<p>Mine</p>" });
     serveThread(own);
-    await renderApp({ path: `/@alice/${own.id}` });
+    await renderApp({ path: `/@alice/status/${own.id}` });
 
     const article = await screen.findByRole("article", { description: "Mine" });
     // The actions show once the viewer is known.
@@ -186,7 +186,7 @@ describe("a post's page", () => {
         fail ? problem(503, "about:blank", "Service Unavailable") : HttpResponse.json({ ancestors: [], descendants: [reply] }),
       ),
     );
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
 
     expect(await screen.findByText("Could not load the replies: Service Unavailable")).toBeInTheDocument();
     expect(await findFocusedPost()).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe("a post's page", () => {
     const context = deferred();
     serveThread();
     server.use(http.get(`${apiBase}/statuses/:id/context`, () => context.response));
-    await renderApp({ path: `/@bob/${postId}` });
+    await renderApp({ path: `/@bob/status/${postId}` });
 
     expect(await findFocusedPost()).toBeInTheDocument();
     const replies = screen.getByRole("region", { name: "Replies" });
@@ -214,7 +214,7 @@ describe("a post's page", () => {
   });
 
   test("says so when there are no replies", async () => {
-    await renderApp({ path: `/@bob/${postId}` });
+    await renderApp({ path: `/@bob/status/${postId}` });
 
     expect(await screen.findByText("No replies yet.")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Earlier in the thread" })).not.toBeInTheDocument();
@@ -222,7 +222,7 @@ describe("a post's page", () => {
 
   test("says that a post that does not exist, or that the viewer may not see, is not found", async () => {
     serveThread();
-    await renderApp({ path: "/@bob/0192f0c4-7a8e-7000-8000-0000000000ff" });
+    await renderApp({ path: "/@bob/status/0192f0c4-7a8e-7000-8000-0000000000ff" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Post not found" })).toBeInTheDocument();
     expect(screen.getByText("This post does not exist, or you cannot see it.")).toBeInTheDocument();
@@ -230,7 +230,7 @@ describe("a post's page", () => {
 
   test("offers no actions while signed out", async () => {
     serveThread();
-    await renderApp({ path: `/@bob/${postId}` });
+    await renderApp({ path: `/@bob/status/${postId}` });
 
     const article = await findFocusedPost();
     expect(within(article).queryByRole("button", { name: "Favourite" })).not.toBeInTheDocument();
@@ -254,7 +254,7 @@ describe("the actions on a post", () => {
         return HttpResponse.json({ ...post, favourited: false, favourites_count: 2 });
       }),
     );
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const article = await findFocusedPost();
     const favourite = await within(article).findByRole("button", { name: "Favourite", pressed: false });
     expect(favourite).toHaveAccessibleDescription("2");
@@ -280,7 +280,7 @@ describe("the actions on a post", () => {
     signedIn();
     serveThread();
     server.use(http.post(`${apiBase}/statuses/:id/boost`, () => problem(503, "about:blank", "Service Unavailable")));
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const boost = await within(await findFocusedPost()).findByRole("button", { name: "Boost", pressed: false });
 
     await user.click(boost);
@@ -306,7 +306,7 @@ describe("the actions on a post", () => {
         return problem(503, "about:blank", "Service Unavailable");
       }),
     );
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
     const bookmark = await within(await findFocusedPost()).findByRole("button", { name: "Bookmark", pressed: false });
 
     await user.click(bookmark);
@@ -349,7 +349,7 @@ describe("the actions on a post", () => {
   test("copy the post's address", async () => {
     signedIn();
     serveThread();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
 
     await user.click(await within(await findFocusedPost()).findByRole("button", { name: "More actions" }));
     await user.click(await screen.findByRole("menuitem", { name: "Copy link" }));
@@ -362,7 +362,7 @@ describe("the actions on a post", () => {
   test("reply: the form names the post, in the sheet even though the page floats no new-post button", async () => {
     signedIn();
     serveThread();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
 
     const replyButton = await within(await findFocusedPost()).findByRole("button", { name: "Reply" });
     expect(screen.queryByRole("button", { name: "Write a post" })).not.toBeInTheDocument();
@@ -379,7 +379,7 @@ describe("deleting a post", () => {
   test("is offered for the viewer's own posts only", async () => {
     signedIn();
     serveThread();
-    const { user } = await renderApp({ path: `/@bob/${postId}` });
+    const { user } = await renderApp({ path: `/@bob/status/${postId}` });
 
     await user.click(await within(await findFocusedPost()).findByRole("button", { name: "More actions" }));
 
@@ -397,7 +397,7 @@ describe("deleting a post", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    const { user, router } = await renderApp({ path: `/@alice/${own.id}` });
+    const { user, router } = await renderApp({ path: `/@alice/status/${own.id}` });
     const article = await screen.findByRole("article", { description: "My post" });
 
     await user.click(await within(article).findByRole("button", { name: "More actions" }));
@@ -419,7 +419,7 @@ describe("deleting a post", () => {
     signedIn();
     serveThread(own);
     server.use(http.delete(`${apiBase}/statuses/:id`, () => problem(503, "about:blank", "Service Unavailable")));
-    const { user } = await renderApp({ path: `/@alice/${own.id}` });
+    const { user } = await renderApp({ path: `/@alice/status/${own.id}` });
 
     await user.click(await within(await screen.findByRole("article", { description: "My post" })).findByRole("button", { name: "More actions" }));
     await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
@@ -455,7 +455,7 @@ describe("a post of another server", () => {
   test("shows the author's full handle, its content warning, its proxied pictures, and a link to its page there", async () => {
     signedIn();
     serveThread(remote);
-    const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
+    const { user } = await renderApp({ path: `/@${remote.account.acct}/status/${remote.id}` });
 
     const article = await screen.findByRole("article", { name: /^Opened post Carol @carol@remote\.example / });
     // The handle is cut on the domain's side when it does not fit; the link is named by all of it.
@@ -485,9 +485,32 @@ describe("a post of another server", () => {
     expect(within(article).getByText("No description", { selector: "span" })).toBeVisible();
   });
 
+  test("draws the custom emoji of its author's name, its content warning and its text, read as their shortcodes", async () => {
+    signedIn();
+    const blobcat = { shortcode: "blobcat", url: "https://my.example/media/proxy/e1/full", static_url: "https://my.example/media/proxy/e1/full" };
+    const withEmoji: Status = {
+      ...remote,
+      account: { ...remote.account, display_name: "Carol :blobcat:", emojis: [blobcat] },
+      spoiler_text: "Cats :blobcat:",
+      content: "<p>Hello :blobcat: and :unknown:</p>",
+      emojis: [blobcat],
+    };
+    serveThread(withEmoji);
+    const { user } = await renderApp({ path: `/@${remote.account.acct}/status/${remote.id}` });
+
+    const article = await screen.findByRole("article", { name: /^Opened post Carol :blobcat: @carol@remote\.example / });
+    expect(within(article).getByRole("link", { name: "Carol :blobcat: @carol@remote.example" })).toBeInTheDocument();
+    await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
+    const emoji = within(article).getAllByRole("img", { name: ":blobcat:" });
+    // The name, the content warning, and the text; the unknown shortcode stays text.
+    expect(emoji).toHaveLength(3);
+    for (const image of emoji) expect(image).toHaveAttribute("src", blobcat.static_url);
+    expect(within(article).getByText(/and :unknown:/)).toBeVisible();
+  });
+
   test("is the only kind of post with a link to another server", async () => {
     serveThread();
-    await renderApp({ path: `/@bob/${postId}` });
+    await renderApp({ path: `/@bob/status/${postId}` });
 
     const article = await findFocusedPost();
     expect(within(article).queryByRole("link", { name: /^Open the original/ })).not.toBeInTheDocument();

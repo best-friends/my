@@ -753,6 +753,62 @@ func (l *Localizer) ServerAuthStatusVerifyEmail(email string) string {
 	return l.format("server:auth.status.verify_email", map[string]any{"email": email})
 }
 
+// ServerAuthTwoFactorCodeLabel formats "server:auth.two_factor.code_label". Label of the code field on the second step of signing in, which takes a six-digit code of an authenticator app or a recovery code.
+//
+//	en: Authentication code
+func (l *Localizer) ServerAuthTwoFactorCodeLabel() string {
+	return l.format("server:auth.two_factor.code_label", nil)
+}
+
+// ServerAuthTwoFactorExpired formats "server:auth.two_factor.expired". Error on the sign-in form when the second step (the authentication code) was not completed within five minutes or was already used.
+//
+//	en: The sign-in took too long. Sign in again.
+func (l *Localizer) ServerAuthTwoFactorExpired() string {
+	return l.format("server:auth.two_factor.expired", nil)
+}
+
+// ServerAuthTwoFactorInvalid formats "server:auth.two_factor.invalid". Error on the second step of signing in when the authentication code or recovery code is wrong or was used before.
+//
+//	en: The code is incorrect or was already used.
+func (l *Localizer) ServerAuthTwoFactorInvalid() string {
+	return l.format("server:auth.two_factor.invalid", nil)
+}
+
+// ServerAuthTwoFactorMissing formats "server:auth.two_factor.missing". Error when the authentication code form was submitted empty.
+//
+//	en: Enter the code.
+func (l *Localizer) ServerAuthTwoFactorMissing() string {
+	return l.format("server:auth.two_factor.missing", nil)
+}
+
+// ServerAuthTwoFactorPrompt formats "server:auth.two_factor.prompt". Text above the code field on the second step of signing in, for users who turned on two-factor authentication.
+//
+//	en: Enter the six-digit code that your authenticator app shows. If you cannot use the app, enter one of your recovery codes instead.
+func (l *Localizer) ServerAuthTwoFactorPrompt() string {
+	return l.format("server:auth.two_factor.prompt", nil)
+}
+
+// ServerAuthTwoFactorRestartLink formats "server:auth.two_factor.restart_link". Link from the second step of signing in back to the sign-in form, to start over.
+//
+//	en: Sign in again
+func (l *Localizer) ServerAuthTwoFactorRestartLink() string {
+	return l.format("server:auth.two_factor.restart_link", nil)
+}
+
+// ServerAuthTwoFactorSubmit formats "server:auth.two_factor.submit". Button that submits the authentication code on the second step of signing in.
+//
+//	en: Verify
+func (l *Localizer) ServerAuthTwoFactorSubmit() string {
+	return l.format("server:auth.two_factor.submit", nil)
+}
+
+// ServerAuthTwoFactorTitle formats "server:auth.two_factor.title". Title and heading of the second step of signing in, which asks for an authentication code.
+//
+//	en: Two-factor authentication
+func (l *Localizer) ServerAuthTwoFactorTitle() string {
+	return l.format("server:auth.two_factor.title", nil)
+}
+
 // ServerAuthVerifyEmailDone formats "server:auth.verify_email.done". Body of the page after the email address was confirmed.
 //
 //	en: Thank you. Your email address is confirmed.
@@ -879,6 +935,20 @@ func (l *Localizer) ServerErrorsConflict() string {
 	return l.format("server:errors.conflict", nil)
 }
 
+// ServerErrorsExportInProgress formats "server:errors.export.in_progress". API error title for HTTP 409 when the user asks for an archive of their data while another one is still being built.
+//
+//	en: An archive of your data is already being prepared. Wait until it is ready.
+func (l *Localizer) ServerErrorsExportInProgress() string {
+	return l.format("server:errors.export.in_progress", nil)
+}
+
+// ServerErrorsExportNotReady formats "server:errors.export.not_ready". API error title for HTTP 409 when the user downloads an archive of their data that is still being built, failed, or has expired.
+//
+//	en: This archive cannot be downloaded.
+func (l *Localizer) ServerErrorsExportNotReady() string {
+	return l.format("server:errors.export.not_ready", nil)
+}
+
 // ServerErrorsForbidden formats "server:errors.forbidden". API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post.
 //
 //	en: You are not allowed to do this.
@@ -919,6 +989,13 @@ func (l *Localizer) ServerErrorsInternal() string {
 //	en: The parameter {name} has an invalid value.
 func (l *Localizer) ServerErrorsInvalidParameter(name string) string {
 	return l.format("server:errors.invalid_parameter", map[string]any{"name": name})
+}
+
+// ServerErrorsInvalidTheme formats "server:errors.invalid_theme". API error title for HTTP 422 when an administrator saves an instance theme that breaks a rule (a token value of the wrong shape or out of range, too little contrast, or too long a custom CSS); theme_errors lists the reasons.
+//
+//	en: The theme cannot be saved.
+func (l *Localizer) ServerErrorsInvalidTheme() string {
+	return l.format("server:errors.invalid_theme", nil)
 }
 
 // ServerErrorsInvalidToken formats "server:errors.invalid_token". API error title for HTTP 401 when the access token is malformed, unknown, expired, or revoked.
@@ -1208,6 +1285,34 @@ func (l *Localizer) ServerErrorsTooMany(max int, name string) string {
 	return l.format("server:errors.too_many", map[string]any{"max": max, "name": name})
 }
 
+// ServerErrorsTwoFactorCodeInvalid formats "server:errors.two_factor.code_invalid". Title of the HTTP 422 API error when a two-factor authentication code (six digits from an authenticator app, or a recovery code) is wrong, was used before, or is not a code.
+//
+//	en: The code is incorrect or was already used.
+func (l *Localizer) ServerErrorsTwoFactorCodeInvalid() string {
+	return l.format("server:errors.two_factor.code_invalid", nil)
+}
+
+// ServerErrorsTwoFactorEnabled formats "server:errors.two_factor.enabled". Title of the HTTP 409 API error when the user starts setting up two-factor authentication while it is already on.
+//
+//	en: Two-factor authentication is already enabled.
+func (l *Localizer) ServerErrorsTwoFactorEnabled() string {
+	return l.format("server:errors.two_factor.enabled", nil)
+}
+
+// ServerErrorsTwoFactorNotEnabled formats "server:errors.two_factor.not_enabled". Title of the HTTP 409 API error when an operation needs two-factor authentication on an account that does not have it.
+//
+//	en: Two-factor authentication is not enabled.
+func (l *Localizer) ServerErrorsTwoFactorNotEnabled() string {
+	return l.format("server:errors.two_factor.not_enabled", nil)
+}
+
+// ServerErrorsTwoFactorSetupExpired formats "server:errors.two_factor.setup_expired". Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup.
+//
+//	en: The setup of the authenticator app expired. Start again.
+func (l *Localizer) ServerErrorsTwoFactorSetupExpired() string {
+	return l.format("server:errors.two_factor.setup_expired", nil)
+}
+
 // ServerErrorsUnauthenticated formats "server:errors.unauthenticated". API error title for HTTP 401 when the request carries no access token and the operation needs one.
 //
 //	en: Sign in to do this.
@@ -1234,6 +1339,13 @@ func (l *Localizer) ServerErrorsUnsupportedMediaType() string {
 //	en: {name} must be an image that you uploaded and that has finished processing.
 func (l *Localizer) ServerErrorsUnusableImage(name string) string {
 	return l.format("server:errors.unusable_image", map[string]any{"name": name})
+}
+
+// ServerErrorsWrongPassword formats "server:errors.wrong_password". API error title for HTTP 422 when the password the user typed to confirm an operation on their own account (such as deleting it) is not their current password.
+//
+//	en: The password is wrong.
+func (l *Localizer) ServerErrorsWrongPassword() string {
+	return l.format("server:errors.wrong_password", nil)
 }
 
 // ServerHealthUnavailable formats "server:health.unavailable". Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable.
@@ -1430,6 +1542,13 @@ func (l *Localizer) ServerPushModerationNotice(instance string) string {
 //	en: You have a new notification on {instance}
 func (l *Localizer) ServerPushOther(instance string) string {
 	return l.format("server:push.other", map[string]any{"instance": instance})
+}
+
+// ServerPushReaction formats "server:push.reaction". Web Push notification. {name} is the display name, or the @handle, of the account that reacted to the user's post with an emoji.
+//
+//	en: {name} reacted to your post
+func (l *Localizer) ServerPushReaction(name string) string {
+	return l.format("server:push.reaction", map[string]any{"name": name})
 }
 
 // ServerPushRelationshipsSevered formats "server:push.relationships_severed". Web Push notification: the moderators suspended a server or an account, which ended follows between it and the user. {instance} is the server's display name, or its domain name when it has none.

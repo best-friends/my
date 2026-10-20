@@ -23,9 +23,10 @@ const (
 	RestrictVisibilityCeilingPrivate = moderation.RestrictVisibilityCeilingPrivate
 )
 
-// The audited operation of the account management and its target.
+// The audited operations of the account management and their target.
 const (
 	AuditRevealedPrivateData = moderation.AuditRevealedPrivateData
+	AuditTwoFactorDisabled   = moderation.AuditTwoFactorDisabled
 	AuditTargetAccount       = moderation.AuditTargetAccount
 )
 

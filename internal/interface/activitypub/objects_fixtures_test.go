@@ -21,7 +21,7 @@ const (
 	missingStatusID  = "0192f3b0-2c3d-7e4f-8a00-1122334455ff"
 	followerDomain   = "follower.example"
 	strangerDomain   = "stranger.example"
-	statusPagePrefix = "https://" + host + "/@alice/"
+	statusPagePrefix = "https://" + host + "/@alice/status/"
 	outboxNext       = "0192f3b0-2c3d-7e4f-8a00-112233445600"
 )
 
@@ -84,6 +84,17 @@ func (f *fakeObjects) Status(_ context.Context, req appfederation.Requester, id 
 
 func (f *fakeObjects) StatusActivity(_ context.Context, req appfederation.Requester, id string) (appfederation.Object, error) {
 	return f.find(req, id, "/activity")
+}
+
+// PageStatusURI finds the statuses that an anonymous visitor may see and that are not deleted.
+func (f *fakeObjects) PageStatusURI(_ context.Context, id string) (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	if id != publicStatusID {
+		return "", fmt.Errorf("status %s: %w", id, appfederation.ErrNotFound)
+	}
+	return "https://" + host + "/ap/objects/" + id, nil
 }
 
 func (f *fakeObjects) OutboxTotal(context.Context, string) (int64, error) {

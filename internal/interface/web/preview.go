@@ -21,7 +21,7 @@ import (
 	"github.com/best-friends/my/internal/i18n"
 )
 
-// This file serves the shells of profile pages (/@alice) and post pages (/@alice/{id}) with
+// This file serves the shells of profile pages (/@alice) and post pages (/@alice/status/{id}) with
 // the meta tags of link previews: OGP, the X card, and fediverse:creator (ADR-0028).
 
 // Previews is what the shells of profile and post pages read: profiles and statuses as an
@@ -84,25 +84,27 @@ type previewRoute struct {
 	// name is the path's username; for a post page, it only makes the URL readable.
 	name     string
 	statusID string // "" for a profile page
-	// invalid is true for a profile page path that cannot name a local account.
+	// invalid is true for a path that cannot name a local account or status.
 	invalid bool
 }
 
-// parsePreviewRoute parses /@{name} and /@{name}/{uuid}. A name with the account domain or
-// the host (/@alice@example.org) is a local one; a name with another domain is a remote
-// account's page, which has no preview, and paths under a profile other than a status ID are
-// other pages of the web client.
+// parsePreviewRoute parses /@{name} and /@{name}/status/{id}. A name with the account domain
+// or the host (/@alice@example.org) is a local one; a name with another domain is a remote
+// account's page, which has no preview. Under a profile, the first segment is one of the
+// reserved words of the web client's pages (ADR-0053): only status is the server's, and the
+// other paths are pages of the web client.
 func (h *Handler) parsePreviewRoute(p string) (previewRoute, bool) {
 	rest, ok := strings.CutPrefix(p, "/@")
 	if !ok || rest == "" {
 		return previewRoute{}, false
 	}
-	name, statusID, nested := strings.Cut(rest, "/")
+	name, sub, nested := strings.Cut(rest, "/")
 	if nested {
-		if !uuidPattern.MatchString(statusID) {
+		word, statusID, ok := strings.Cut(sub, "/")
+		if !ok || word != content.StatusPageSegment || strings.Contains(statusID, "/") {
 			return previewRoute{}, false
 		}
-		return previewRoute{name: name, statusID: statusID}, true
+		return previewRoute{name: name, statusID: statusID, invalid: !uuidPattern.MatchString(statusID)}, true
 	}
 	if user, domain, ok := strings.Cut(name, "@"); ok {
 		if !strings.EqualFold(domain, h.o.AccountDomain) && !strings.EqualFold(domain, h.o.Host) {
@@ -134,7 +136,7 @@ func (h *Handler) servePreview(w http.ResponseWriter, r *http.Request, route pre
 		if s, err = h.o.Previews.Status(ctx, route.statusID); err == nil {
 			if s.Author.Username() != route.name {
 				// The page is found by the status ID; the URL with the current username is the
-				// canonical one (ADR-0018).
+				// canonical one (ADR-0053).
 				h.shellHeaders(w.Header())
 				http.Redirect(w, r, content.StatusURL(h.o.Host, s.Author.Username(), s.Post.Status.ID), http.StatusMovedPermanently)
 				return
@@ -321,8 +323,12 @@ func (h *Handler) previewLanguage(ctx context.Context, lang string) string {
 func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMeta, version []string) (document, error) {
 	locale := h.instanceLocale(ctx)
 	name := h.instanceName(ctx, locale)
+	theme, err := h.currentTheme(ctx)
+	if err != nil {
+		return document{}, err
+	}
 	d, err := renderShell(shellData{
-		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, ThemeColor: h.o.ThemeColor,
+		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, Theme: theme,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, HasThemeScript: h.hasThemeScript, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config:  h.runtimeConfig(locale, name),
 		Preview: &meta,
@@ -330,7 +336,7 @@ func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMe
 	if err != nil {
 		return document{}, err
 	}
-	key := append([]string{h.previewVersion, lang, locale, name}, version...)
+	key := append([]string{h.previewVersion, lang, locale, name, theme.Stylesheet, theme.Light, theme.Dark}, version...)
 	d.etag = etag([]byte(strings.Join(key, "\x00")))
 	d.noIndex = meta.NoIndex
 	return d, nil

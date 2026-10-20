@@ -7,9 +7,9 @@ import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 
 /**
- * The administration page that the navigation's admin entry opens: the links to the admin screens that the
- * viewer's roles allow, with what awaits the moderators on them (FR-712). The loader reads the viewer's account,
- * whose permissions decide the links.
+ * The server administration page that the navigation's Administration entry opens (ADR-0058): the links to the
+ * server administration screens that the viewer's roles allow. The loader reads the viewer's account, whose
+ * permissions decide the links.
  */
 export const Route = createFileRoute("/admin/")({
   staticData: { title: "client:admin.menu.title" },

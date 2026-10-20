@@ -45,7 +45,7 @@ func (s *Server) newCredentialAccount(ctx context.Context, userID string, a appa
 	}
 	out := CredentialAccount{
 		Id: base.Id, Username: base.Username, Acct: base.Acct, DisplayName: base.DisplayName, Note: base.Note,
-		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt, Fields: base.Fields,
+		Url: base.Url, Locked: base.Locked, Bot: base.Bot, CreatedAt: base.CreatedAt, Fields: base.Fields, Emojis: base.Emojis,
 		Avatar: base.Avatar, Header: base.Header,
 		FollowersCount: base.FollowersCount, FollowingCount: base.FollowingCount,
 		Source: AccountSource{Fields: []AccountFieldSource{}}, Posting: posting, Permissions: permissions,

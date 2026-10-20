@@ -6,6 +6,8 @@
 /* @my/ui ships source only, so scan it for the utilities its components use (ADR-0026). */
 @source "../../ui/src";
 @source not "../../ui/src/**/*.stories.tsx";
+/* The generated token list holds token names, which look like classes but are not. */
+@source not "../../ui/src/themeTokens.gen.ts";
 
 /* A short screen below md, such as a phone in landscape or a 320 × 225 viewport at 400% zoom: the tab bar
    and the floating new-post button shrink so that the fixed elements stay within half the screen's height.

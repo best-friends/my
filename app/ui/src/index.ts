@@ -53,6 +53,7 @@ export { DescriptionItem, DescriptionList, type DescriptionItemProps, type Descr
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
 export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
 export { AutoplayContext, type ImageCandidate, type ImageSources, Picture, type PictureProps } from "./Picture";
+export { QrCode, type QrCodeProps } from "./QrCode";
 export { RegionError, type RegionErrorProps } from "./RegionError";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { AccountRowSkeleton, NotificationRowSkeleton, PostSkeleton, type SkeletonRowProps } from "./SkeletonRows";
@@ -75,6 +76,7 @@ export {
   LanguageIcon,
   LocalIcon,
   MenuIcon,
+  ModerationIcon,
   MoreIcon,
   NotificationsIcon,
   PlusIcon,
@@ -91,8 +93,14 @@ export {
 
 // Timeline.
 export { ContentWarning, type ContentWarningProps } from "./ContentWarning";
+export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, type EmojiTextProps } from "./CustomEmoji";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
 export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
 export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";
 export { PostContent, serverSanitizedHtml, type PostContentProps, type SanitizedHtml } from "./PostContent";
+
+// The design tokens a server theme may override (ADR-0059), and the contrast of their colors under a theme.
+export type { TokenKind } from "./tokens";
+export { themeTokens, type ThemeToken } from "./themeTokens.gen";
+export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./themeContrast";

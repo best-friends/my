@@ -18,6 +18,7 @@ const bob = {
   display_name: "Bob",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@bob",
   locked: false,
   bot: false,

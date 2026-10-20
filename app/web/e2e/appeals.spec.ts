@@ -21,6 +21,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -142,10 +143,10 @@ async function moderatorServer(page: Page) {
   return decisions;
 }
 
-test.describe("page /admin/appeals", () => {
+test.describe("page /moderation/appeals", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
-    await page.goto("/admin/appeals");
+    await page.goto("/moderation/appeals");
     await expect(page.getByRole("main").getByText(appellant.display_name).first()).toBeVisible();
   });
 
@@ -161,7 +162,7 @@ test.describe("page /admin/appeals", () => {
 test.describe("appeals", () => {
   test("opens an appeal from the list by keyboard and overturns it after confirming, which lifts its action", async ({ page, makeAxeBuilder }) => {
     const decisions = await moderatorServer(page);
-    await page.goto("/admin/appeals");
+    await page.goto("/moderation/appeals");
     const main = page.getByRole("main");
     const panel = main.getByRole("tabpanel");
     await expect(panel.getByRole("listitem").first().getByText(appellant.display_name)).toBeVisible();
@@ -184,7 +185,7 @@ test.describe("appeals", () => {
     const first = panel.getByRole("listitem").first().getByRole("link");
     await first.focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(new RegExp(`/admin/appeals/${appealId}$`));
+    await expect(page).toHaveURL(new RegExp(`/moderation/appeals/${appealId}$`));
     const regions = main.getByRole("region");
     await expect(regions).toHaveCount(3);
     await expect(regions.first().getByText(appellant.display_name)).toBeVisible();
@@ -230,10 +231,10 @@ test.describe("appeals", () => {
 
     // Back on the list, the appeal is gone from those awaiting review as soon as the list shows, though the
     // server answers the lists slowly now: the list is not shown from a cache older than the decision.
-    await main.locator('a[href="/admin/appeals"]').click();
-    await expect(page).toHaveURL(/\/admin\/appeals$/);
-    await expect(panel.locator(`a[href="/admin/appeals/${otherAppealId}"]`)).toBeVisible();
-    expect(await panel.locator(`a[href="/admin/appeals/${appealId}"]`).count()).toBe(0);
-    await expect(panel.locator('a[href^="/admin/appeals/"]')).toHaveCount(1);
+    await main.locator('a[href="/moderation/appeals"]').click();
+    await expect(page).toHaveURL(/\/moderation\/appeals$/);
+    await expect(panel.locator(`a[href="/moderation/appeals/${otherAppealId}"]`)).toBeVisible();
+    expect(await panel.locator(`a[href="/moderation/appeals/${appealId}"]`).count()).toBe(0);
+    await expect(panel.locator('a[href^="/moderation/appeals/"]')).toHaveCount(1);
   });
 });

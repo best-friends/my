@@ -166,7 +166,7 @@ func newTimelineEnv(t *testing.T) *timelineEnv {
 		views: &fakeViews{
 			statuses: map[string]appcontent.StatusView{postID: {
 				Status: content.Status{
-					ID: postID, URI: "https://social.example/ap/statuses/" + postID, URL: "https://social.example/@alice/" + postID,
+					ID: postID, URI: "https://social.example/ap/statuses/" + postID,
 					AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic,
 					InReplyToURI: "https://social.example/ap/statuses/" + parentID, PublishedAt: publishedAt,
 				},
@@ -246,7 +246,7 @@ func TestHomeTimelineRendersPostsAndBoosts(t *testing.T) {
 
 	if post.Id != postID || post.Account.Username != "alice" || post.Content != "<p>ja</p>" || post.SpoilerText != "cw" ||
 		!post.Sensitive || post.Visibility != clientapi.VisibilityPublic || post.Language != "ja" ||
-		deref(post.Url) != "https://social.example/@alice/"+postID || !post.CreatedAt.Equal(publishedAt) ||
+		deref(post.Url) != "https://social.example/@alice/status/"+postID || !post.CreatedAt.Equal(publishedAt) ||
 		post.EditedAt == nil || !post.EditedAt.Equal(publishedAt.Add(time.Hour)) ||
 		post.RepliesCount != 1 || post.BoostsCount != 2 || post.FavouritesCount != 3 || post.Boost != nil {
 		t.Errorf("post = %+v", post)
@@ -288,7 +288,7 @@ func TestLinksUseTheOrigin(t *testing.T) {
 		t.Fatalf("items = %+v, want the boost and the post", page.Items)
 	}
 	post := page.Items[1]
-	if deref(post.Url) != "http://social.example/@alice/"+postID || post.Uri != "https://social.example/ap/statuses/"+postID {
+	if deref(post.Url) != "http://social.example/@alice/status/"+postID || post.Uri != "https://social.example/ap/statuses/"+postID {
 		t.Errorf("post url, uri = %q, %q", deref(post.Url), post.Uri)
 	}
 	if post.Account.Url != "http://social.example/@alice" || post.Account.Uri != aliceActor.Account.URI {

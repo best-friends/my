@@ -208,6 +208,7 @@ func sweepRequests(doc *openapi3.T) []sweepRequest {
 			"/@" + esc + "@example.test",
 			"/@alice@" + esc,
 			"/@alice/" + esc,
+			"/@alice/status/" + esc,
 			"/@" + esc + "/x",
 			"/media/" + esc,
 			"/media/proxy/" + esc + "/original",

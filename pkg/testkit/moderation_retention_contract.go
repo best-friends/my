@@ -3,6 +3,7 @@
 package testkit
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -479,5 +480,28 @@ func retentionExports(t *testing.T, e *retentionModEnv) {
 	}
 	if _, err := e.svc.ExportRecords(ctx, e.ids.NewID()); !errors.Is(err, appmoderation.ErrAccountNotFound) {
 		t.Errorf("ExportRecords(unknown) = %v, want ErrAccountNotFound", err)
+	}
+
+	// The account's own data export has the action as the account sees it, its appeal, and its
+	// own report, without the private notes or the reports about it (ADR-0038).
+	var own bytes.Buffer
+	if err := e.svc.WriteOwnRecords(ctx, e.local, &own); err != nil {
+		t.Fatalf("WriteOwnRecords = %v", err)
+	}
+	var ox appmoderation.OwnRecordExport
+	if err := json.Unmarshal(own.Bytes(), &ox); err != nil {
+		t.Fatal(err)
+	}
+	if ox.AccountID != e.local || len(ox.Actions) != 1 || ox.Actions[0].ID != a.ID || ox.Actions[0].PublicReason != "spam" ||
+		ox.Actions[0].Appeal == nil || ox.Actions[0].Appeal.DecisionReason != "it was spam" || ox.Actions[0].Appeal.DecidedAt == nil {
+		t.Errorf("own actions = %+v; want the action with its decided appeal", ox.Actions)
+	}
+	if len(ox.ReportsFiled) != 1 || ox.ReportsFiled[0].ID != filed.ID {
+		t.Errorf("own reports filed = %+v; want the account's own report", ox.ReportsFiled)
+	}
+	for _, secret := range []string{a.PrivateNote, "the moderators' note on the report", e.reporter, e.moderator, r.ID} {
+		if strings.Contains(own.String(), secret) {
+			t.Errorf("own export contains %q: %s", secret, own.String())
+		}
 	}
 }

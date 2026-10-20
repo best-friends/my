@@ -70,24 +70,30 @@ func TestLinkPreviews(t *testing.T) {
 	}
 	ids["missing"] = "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f"
 	h := app.Handler()
-	get := func(path string) *httptest.ResponseRecorder {
+	getAs := func(path, accept string) *httptest.ResponseRecorder {
 		req := httptest.NewRequestWithContext(ctx, http.MethodGet, "https://"+cfg.Host+path, nil)
-		req.Header.Set("Accept", acceptBrowser)
+		req.Header.Set("Accept", accept)
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
 		return rec
 	}
+	get := func(path string) *httptest.ResponseRecorder { return getAs(path, acceptBrowser) }
 
 	for _, vis := range []string{"public", "unlisted"} {
-		rec := get("/@alice/" + ids[vis])
+		rec := get("/@alice/status/" + ids[vis])
 		body := rec.Body.String()
-		if rec.Code != http.StatusOK || !strings.Contains(body, `<meta property="og:url" content="https://`+cfg.Host+`/@alice/`+ids[vis]+`">`) ||
+		if rec.Code != http.StatusOK || !strings.Contains(body, `<meta property="og:url" content="https://`+cfg.Host+`/@alice/status/`+ids[vis]+`">`) ||
 			!strings.Contains(body, `<meta property="og:description" content="a `+vis+` post &lt;b&gt;@bob&lt;/b&gt;">`) ||
 			!strings.Contains(body, `<html lang="ja" dir="ltr">`) || !strings.Contains(body, `<meta name="fediverse:creator" content="@alice@`) {
 			t.Errorf("%s post = %d:\n%s", vis, rec.Code, body)
 		}
 		if noindex := rec.Header().Get("X-Robots-Tag") == "noindex"; noindex != (vis == "unlisted") {
 			t.Errorf("%s post: X-Robots-Tag = %q", vis, rec.Header().Get("X-Robots-Tag"))
+		}
+		// A remote server resolving the page's URL (FR-305) is redirected to the post's id (ADR-0053).
+		want := "https://" + cfg.Host + "/ap/objects/" + ids[vis]
+		if rec := getAs("/@alice/status/"+ids[vis], acceptMastodon); rec.Code != http.StatusFound || rec.Header().Get("Location") != want {
+			t.Errorf("%s post, ActivityPub = %d %q, want 302 %q", vis, rec.Code, rec.Header().Get("Location"), want)
 		}
 	}
 	if rec := get("/@alice"); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `<meta property="og:type" content="profile">`) {
@@ -97,14 +103,20 @@ func TestLinkPreviews(t *testing.T) {
 	generic := get("/home")
 	var hidden []*httptest.ResponseRecorder
 	for _, path := range []string{
-		"/@alice/" + ids["local"], "/@alice/" + ids["private"], "/@alice/" + ids["direct"], "/@alice/" + ids["deleted"],
-		"/@alice/" + ids["missing"], "/@bob/" + ids["inactive author"], "/@bob", "/@nobody",
+		"/@alice/status/" + ids["local"], "/@alice/status/" + ids["private"], "/@alice/status/" + ids["direct"], "/@alice/status/" + ids["deleted"],
+		"/@alice/status/" + ids["missing"], "/@bob/status/" + ids["inactive author"], "/@bob", "/@nobody",
 	} {
 		rec := get(path)
 		if rec.Code != http.StatusNotFound || rec.Header().Get("X-Robots-Tag") != "noindex" || rec.Body.String() != generic.Body.String() {
 			t.Errorf("GET %s = %d %v, want the generic shell with 404 and noindex:\n%s", path, rec.Code, rec.Header(), rec.Body)
 		}
 		hidden = append(hidden, rec)
+		if strings.Contains(path, "/status/") {
+			// The page is anonymous: what an anonymous visitor may not see is no redirect either (ADR-0017).
+			if rec := getAs(path, acceptMastodon); rec.Code != http.StatusNotFound || rec.Header().Get("Location") != "" {
+				t.Errorf("GET %s, ActivityPub = %d %q, want 404", path, rec.Code, rec.Header().Get("Location"))
+			}
+		}
 	}
 	for i, rec := range hidden[1:] {
 		if a, b := rec.Header(), hidden[0].Header(); len(a) != len(b) || a.Get("Cache-Control") != b.Get("Cache-Control") ||
