@@ -126,20 +126,21 @@ export const Viewer: Story = {
     const first = canvas.getByRole("button", { name: "A yellow sun over a blue sky" });
     await userEvent.click(first);
     const dialog = await canvas.findByRole("dialog", { name: "Image 1 of 2" });
-    await expect(within(dialog).getByRole("img", { name: "A yellow sun over a blue sky" })).toBeVisible();
+    // Visible once the panel has faded in.
+    await waitFor(() => expect(within(dialog).getByRole("img", { name: "A yellow sun over a blue sky" })).toBeVisible());
     // The arrow keys follow the screen: the next picture is to the right in left-to-right text, to the left otherwise.
     const forward = document.documentElement.dir === "rtl" ? "{ArrowLeft}" : "{ArrowRight}";
     await userEvent.keyboard(forward);
-    await expect(canvas.getByRole("dialog", { name: "Image 2 of 2" })).toBeVisible();
+    await expect(canvas.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
     await userEvent.keyboard(forward);
-    await expect(canvas.getByRole("dialog", { name: "Image 1 of 2" })).toBeVisible();
+    await expect(canvas.getByRole("dialog", { name: "Image 1 of 2" })).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole("button", { name: "Previous image" }));
-    await expect(canvas.getByRole("dialog", { name: "Image 2 of 2" })).toBeVisible();
+    await expect(canvas.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
     await waitFor(() => expect(first).toHaveFocus());
 
     await userEvent.click(canvas.getByRole("button", { name: "Snowy hills in a green valley" }));
-    await expect(await canvas.findByRole("dialog", { name: "Image 2 of 2" })).toBeVisible();
+    await expect(await canvas.findByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
   },
 };

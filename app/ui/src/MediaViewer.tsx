@@ -16,7 +16,7 @@ const mediaViewer = tv({
     // Wider than any other dialog: a picture uses the room of the screen, up to its own size.
     panel: "max-w-[min(100%,80rem)]",
     body: "flex flex-col items-center gap-3",
-    figure: "m-0 flex max-w-full flex-col items-center gap-2",
+    figure: "m-0 flex w-full flex-col items-center gap-2",
     // At most its own size, and scaled down to the panel's width and to the height the screen leaves it.
     image: "block size-auto max-h-[calc(85svh-9rem)] max-w-full rounded-md object-contain",
     caption: "max-w-prose text-sm align-match-parent whitespace-pre-line text-fg-muted",
