@@ -781,6 +781,20 @@ type Status struct {
 	PublishedAt     int64
 }
 
+type StatusAutoDeletePolicy struct {
+	AccountID         string
+	Enabled           int64
+	MinAgeDays        int64
+	KeepPinned        int64
+	KeepBookmarked    int64
+	KeepFavourited    int64
+	KeepMedia         int64
+	KeepPolls         int64
+	KeepMinBoosts     int64
+	KeepMinFavourites int64
+	UpdatedAt         int64
+}
+
 type StatusCounter struct {
 	StatusID        string
 	RepliesCount    int64

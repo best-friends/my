@@ -2952,6 +2952,64 @@ export interface MessageArgs {
   "client:settings.account.summary": {};
   /** Your account */
   "client:settings.account.title": {};
+  /** Delete posts older than */
+  "client:settings.auto_delete.age": {};
+  /** {count, plural, one {# day} other {# days}} */
+  "client:settings.auto_delete.age.days": { count: number };
+  /** Counted from when each post was published. */
+  "client:settings.auto_delete.age.description": {};
+  /** Once a post of yours is older than the age you choose, it is deleted here and on the servers it was sent to, as if you had deleted it. Deleted posts cannot be restored. Your boosts are not deleted. */
+  "client:settings.auto_delete.description": {};
+  /** Delete old posts automatically */
+  "client:settings.auto_delete.enabled": {};
+  /** The server checks every hour and deletes at most 100 posts each time, so many old posts take several hours to go. */
+  "client:settings.auto_delete.enabled.description": {};
+  /** Keep these posts */
+  "client:settings.auto_delete.keep": {};
+  /** Bookmarked by you */
+  "client:settings.auto_delete.keep.bookmarked": {};
+  /** Posts that match any checked item are never deleted automatically. */
+  "client:settings.auto_delete.keep.description": {};
+  /** Favourited by you */
+  "client:settings.auto_delete.keep.favourited": {};
+  /** With images or other media */
+  "client:settings.auto_delete.keep.media": {};
+  /** Pinned to your profile */
+  "client:settings.auto_delete.keep.pinned": {};
+  /** With a poll */
+  "client:settings.auto_delete.keep.polls": {};
+  /** Keep posts boosted at least */
+  "client:settings.auto_delete.min_boosts": {};
+  /** Keep posts favourited at least */
+  "client:settings.auto_delete.min_favourites": {};
+  /** Save */
+  "client:settings.auto_delete.save": {};
+  /** The settings could not be saved: {reason} */
+  "client:settings.auto_delete.save_failed": { reason: string };
+  /** Saved. Your posts are not deleted automatically. */
+  "client:settings.auto_delete.saved_off": {};
+  /** Saved. Posts older than {days, plural, one {# day} other {# days}} will be deleted, except those you keep. */
+  "client:settings.auto_delete.saved_on": { days: number };
+  /** Delete your posts automatically once they are old, except those you choose to keep */
+  "client:settings.auto_delete.summary": {};
+  /** {count, plural, one {# time} other {# times}} */
+  "client:settings.auto_delete.threshold.count": { count: number };
+  /** Don't keep posts for this */
+  "client:settings.auto_delete.threshold.off": {};
+  /** Delete old posts */
+  "client:settings.auto_delete.title": {};
+  /** Your changes to the automatic deletion will be lost. */
+  "client:settings.auto_delete.unsaved.description": {};
+  /** Discard changes */
+  "client:settings.auto_delete.unsaved.leave": {};
+  /** Keep editing */
+  "client:settings.auto_delete.unsaved.stay": {};
+  /** Leave without saving? */
+  "client:settings.auto_delete.unsaved.title": {};
+  /** Keep posts with these visibilities */
+  "client:settings.auto_delete.visibilities": {};
+  /** Posts with a checked visibility are never deleted automatically. */
+  "client:settings.auto_delete.visibilities.description": {};
   /** Animated images (GIF) move by themselves; off, they move only while you point at or touch them. Either way they stay still when your device asks for reduced motion. Kept on this browser. */
   "client:settings.autoplay.description": {};
   /** Play animations automatically */

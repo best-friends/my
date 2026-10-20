@@ -8,6 +8,7 @@ const pages: readonly { href: string; label: ClientMessageKey; description: Clie
   { href: "/settings/profile", label: "client:settings.profile.title", description: "client:settings.profile.summary" },
   { href: "/settings/preferences", label: "client:settings.preferences.title", description: "client:settings.preferences.summary" },
   { href: "/settings/two-factor", label: "client:settings.two_factor.title", description: "client:settings.two_factor.summary" },
+  { href: "/settings/auto-delete", label: "client:settings.auto_delete.title", description: "client:settings.auto_delete.summary" },
   { href: "/settings/follow-requests", label: "client:settings.follow_requests.title", description: "client:settings.follow_requests.summary" },
   { href: "/settings/blocks", label: "client:settings.blocks.title", description: "client:settings.blocks.summary" },
   { href: "/settings/mutes", label: "client:settings.mutes.title", description: "client:settings.mutes.summary" },

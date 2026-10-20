@@ -134,6 +134,36 @@ export interface paths {
         patch: operations["updatePreferences"];
         trace?: never;
     };
+    "/preferences/auto_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated user's automatic deletion of old posts
+         * @description The policy that deletes the user's own posts some days after their publication (FR-118).
+         *     A user who has never saved one gets the default policy, which is disabled.
+         */
+        get: operations["getAutoDeletePolicy"];
+        /**
+         * Replace the authenticated user's automatic deletion of old posts
+         * @description Replaces the whole policy. Once it is enabled, an hourly job deletes the user's posts
+         *     published more than `min_age_days` days ago, unless an exception keeps them, as the user
+         *     would delete them: each deletion is sent to the servers the post went to. A run deletes
+         *     at most 100 posts of a user, so a policy that finds more spreads their deletion over the
+         *     following hours. Boosts are not deleted. A 422 problem names the property that is invalid
+         *     in `detail`.
+         */
+        put: operations["updateAutoDeletePolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/delete": {
         parameters: {
             query?: never;
@@ -4116,6 +4146,33 @@ export interface components {
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
         };
+        /**
+         * @description The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+         *     deleted once it was published more than `min_age_days` days ago, unless one of the
+         *     exceptions (the `keep_` properties) keeps it.
+         */
+        AutoDeletePolicy: {
+            /** @description Whether old posts are deleted. */
+            enabled: boolean;
+            /** @description How many days after its publication a post is deleted. */
+            min_age_days: number;
+            /** @description Keep the posts pinned to the profile. */
+            keep_pinned: boolean;
+            /** @description Keep the posts that the user bookmarked. */
+            keep_bookmarked: boolean;
+            /** @description Keep the posts that the user favourited. */
+            keep_favourited: boolean;
+            /** @description Keep the posts with media attachments. */
+            keep_media: boolean;
+            /** @description Keep the posts with a poll. */
+            keep_polls: boolean;
+            /** @description Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility. */
+            keep_visibilities: components["schemas"]["Visibility"][];
+            /** @description Keep the posts boosted at least this many times; 0 keeps none for their boosts. */
+            keep_min_boosts: number;
+            /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
+            keep_min_favourites: number;
+        };
         /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
         TwoFactor: {
             /** @description Whether signing in asks for a code after the password. */
@@ -6057,6 +6114,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAutoDeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The policy. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoDeletePolicy"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateAutoDeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutoDeletePolicy"];
+            };
+        };
+        responses: {
+            /** @description The policy as saved. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoDeletePolicy"];
                 };
             };
             default: components["responses"]["Problem"];
