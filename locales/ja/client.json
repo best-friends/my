@@ -4523,6 +4523,10 @@
     "defaultMessage": "削除",
     "description": "Menu item, on the user's own post, that asks to delete it."
   },
+  "status.action.edit": {
+    "defaultMessage": "編集",
+    "description": "Item of a post's More actions menu, for the user's own posts: opens the dialog that edits the post."
+  },
   "status.action.failed": {
     "defaultMessage": "変更を保存できませんでした：{reason}",
     "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
@@ -4579,6 +4583,50 @@
     "defaultMessage": "この投稿を削除しますか？",
     "description": "Heading of the dialog that asks the user to confirm deleting their post."
   },
+  "status.edit.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the dialog that edits the user's post: closes it without saving."
+  },
+  "status.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close (x) button of the dialog that edits the user's post."
+  },
+  "status.edit.done": {
+    "defaultMessage": "投稿を編集しました",
+    "description": "Toast after the user's post was edited and saved."
+  },
+  "status.edit.failed": {
+    "defaultMessage": "編集を保存できませんでした：{reason}",
+    "description": "Shown in the dialog that edits the user's post when saving failed. {reason} is the error message, a full sentence."
+  },
+  "status.edit.fixed": {
+    "defaultMessage": "公開範囲と返信先は変わりません。",
+    "description": "Note in the dialog that edits the user's post: an edit cannot change these."
+  },
+  "status.edit.load_failed": {
+    "defaultMessage": "編集する投稿を読み込めませんでした：{reason}",
+    "description": "Shown in the dialog that edits the user's post when its text failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.edit.loading": {
+    "defaultMessage": "投稿を読み込んでいます",
+    "description": "Accessible name of the spinner while the dialog that edits the user's post loads its text."
+  },
+  "status.edit.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the post to edit again after it failed."
+  },
+  "status.edit.save": {
+    "defaultMessage": "保存する",
+    "description": "Submit button of the dialog that edits the user's post."
+  },
+  "status.edit.title": {
+    "defaultMessage": "投稿を編集",
+    "description": "Heading of the dialog that edits the user's post, and the name of its form."
+  },
+  "status.edited": {
+    "defaultMessage": "編集済み",
+    "description": "Link under an edited post to its edit history."
+  },
   "status.favourite.off": {
     "defaultMessage": "お気に入りから外しました",
     "description": "Read out by screen readers after the user removed a post from their favourites."
@@ -4598,6 +4646,46 @@
   "status.focused.label": {
     "defaultMessage": "開いている投稿",
     "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
+  },
+  "status.history.back": {
+    "defaultMessage": "投稿に戻る",
+    "description": "Link from a post's edit history to the post's page."
+  },
+  "status.history.change.media": {
+    "defaultMessage": "添付",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the attached media or their descriptions."
+  },
+  "status.history.change.sensitive": {
+    "defaultMessage": "センシティブの指定",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: whether the media are marked sensitive."
+  },
+  "status.history.change.text": {
+    "defaultMessage": "本文",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the text of the post."
+  },
+  "status.history.change.warning": {
+    "defaultMessage": "CW",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the content warning."
+  },
+  "status.history.changes": {
+    "defaultMessage": "変更：{changes}",
+    "description": "What a revision of a post changed from the one before. {changes} is a list of the changes, like text, content warning."
+  },
+  "status.history.current": {
+    "defaultMessage": "現在の版",
+    "description": "Label of the revision that is the post's content now, in the edit history."
+  },
+  "status.history.list": {
+    "defaultMessage": "版の一覧",
+    "description": "Accessible name of the list of the revisions of a post."
+  },
+  "status.history.original": {
+    "defaultMessage": "最初の投稿",
+    "description": "Label of the revision that is the post as first written, in the edit history."
+  },
+  "status.history.title": {
+    "defaultMessage": "編集履歴",
+    "description": "Heading and title of the page that lists the revisions of a post."
   },
   "status.link.copied": {
     "defaultMessage": "リンクをコピーしました",

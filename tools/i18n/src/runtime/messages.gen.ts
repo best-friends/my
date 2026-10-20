@@ -2264,6 +2264,8 @@ export interface MessageArgs {
   "client:status.action.copy_link": {};
   /** Delete */
   "client:status.action.delete": {};
+  /** Edit */
+  "client:status.action.edit": {};
   /** Could not save the change: {reason} */
   "client:status.action.failed": { reason: string };
   /** Favourite */
@@ -2292,6 +2294,28 @@ export interface MessageArgs {
   "client:status.delete.failed": { reason: string };
   /** Delete this post? */
   "client:status.delete.title": {};
+  /** Cancel */
+  "client:status.edit.cancel": {};
+  /** Close */
+  "client:status.edit.close": {};
+  /** Post edited */
+  "client:status.edit.done": {};
+  /** Could not save the edit: {reason} */
+  "client:status.edit.failed": { reason: string };
+  /** The visibility and the post it replies to stay as they are. */
+  "client:status.edit.fixed": {};
+  /** Could not load the post to edit: {reason} */
+  "client:status.edit.load_failed": { reason: string };
+  /** Loading the post */
+  "client:status.edit.loading": {};
+  /** Try again */
+  "client:status.edit.retry": {};
+  /** Save */
+  "client:status.edit.save": {};
+  /** Edit post */
+  "client:status.edit.title": {};
+  /** Edited */
+  "client:status.edited": {};
   /** Removed from favourites */
   "client:status.favourite.off": {};
   /** Added to favourites */
@@ -2302,6 +2326,26 @@ export interface MessageArgs {
   "client:status.focused.favourites": { count: number };
   /** Opened post */
   "client:status.focused.label": {};
+  /** Back to the post */
+  "client:status.history.back": {};
+  /** media */
+  "client:status.history.change.media": {};
+  /** sensitive media */
+  "client:status.history.change.sensitive": {};
+  /** text */
+  "client:status.history.change.text": {};
+  /** content warning */
+  "client:status.history.change.warning": {};
+  /** Changed: {changes} */
+  "client:status.history.changes": { changes: string };
+  /** Current version */
+  "client:status.history.current": {};
+  /** Versions */
+  "client:status.history.list": {};
+  /** Original post */
+  "client:status.history.original": {};
+  /** Edit history */
+  "client:status.history.title": {};
   /** Link copied */
   "client:status.link.copied": {};
   /** Could not copy the link. */

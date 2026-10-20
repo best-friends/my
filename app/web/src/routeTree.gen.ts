@@ -42,6 +42,7 @@ import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
+import { Route as AtChar123acctChar125IdHistoryRouteImport } from './routes/@{$acct}_.$id_.history'
 import { Route as AdminAccountsIdRouteImport } from './routes/admin.accounts_.$id'
 import { Route as AdminAppealsIdRouteImport } from './routes/admin.appeals_.$id'
 import { Route as AdminInstancesDomainRouteImport } from './routes/admin.instances_.$domain'
@@ -214,6 +215,12 @@ const TagsTagRoute = TagsTagRouteImport.update({
   path: '/tags/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125IdHistoryRoute =
+  AtChar123acctChar125IdHistoryRouteImport.update({
+    id: '/@{$acct}_/$id_/history',
+    path: '/@{$acct}/$id/history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminAccountsIdRoute = AdminAccountsIdRouteImport.update({
   id: '/admin/accounts_/$id',
   path: '/admin/accounts/$id',
@@ -269,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
   '/admin/accounts/$id': typeof AdminAccountsIdRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -308,6 +316,7 @@ export interface FileRoutesByTo {
   '/tags/$tag': typeof TagsTagRoute
   '/admin': typeof AdminIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
   '/admin/accounts/$id': typeof AdminAccountsIdRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -348,6 +357,7 @@ export interface FileRoutesById {
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}_/$id_/history': typeof AtChar123acctChar125IdHistoryRoute
   '/admin/accounts_/$id': typeof AdminAccountsIdRoute
   '/admin/appeals_/$id': typeof AdminAppealsIdRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
@@ -389,6 +399,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin/'
     | '/settings/'
+    | '/@{$acct}/$id/history'
     | '/admin/accounts/$id'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin'
     | '/settings'
+    | '/@{$acct}/$id/history'
     | '/admin/accounts/$id'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -467,6 +479,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin/'
     | '/settings/'
+    | '/@{$acct}_/$id_/history'
     | '/admin/accounts_/$id'
     | '/admin/appeals_/$id'
     | '/admin/instances_/$domain'
@@ -507,6 +520,7 @@ export interface RootRouteChildren {
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  AtChar123acctChar125IdHistoryRoute: typeof AtChar123acctChar125IdHistoryRoute
   AdminAccountsIdRoute: typeof AdminAccountsIdRoute
   AdminAppealsIdRoute: typeof AdminAppealsIdRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
@@ -746,6 +760,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/$id_/history': {
+      id: '/@{$acct}_/$id_/history'
+      path: '/@{$acct}/$id/history'
+      fullPath: '/@{$acct}/$id/history'
+      preLoaderRoute: typeof AtChar123acctChar125IdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/accounts_/$id': {
       id: '/admin/accounts_/$id'
       path: '/admin/accounts/$id'
@@ -811,6 +832,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  AtChar123acctChar125IdHistoryRoute: AtChar123acctChar125IdHistoryRoute,
   AdminAccountsIdRoute: AdminAccountsIdRoute,
   AdminAppealsIdRoute: AdminAppealsIdRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
