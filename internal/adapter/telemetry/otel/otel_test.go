@@ -51,6 +51,13 @@ func TestPrometheusExposition(t *testing.T) {
 	u := m.UpDownCounter(kernel.Instrument{Name: "http.server.active_requests", Unit: "{request}", Description: "Active.", LabelKeys: []string{"my.surface"}})
 	m.Gauge(kernel.Instrument{Name: "my.queue.dead", Unit: "{job}", Description: "Dead jobs."},
 		func(_ context.Context, o kernel.GaugeObserver) error { o.Observe(7, kernel.Labels{}); return nil })
+	m.ObservableCounter(kernel.Instrument{Name: "process.cpu.time", Unit: "s", Description: "CPU time.", LabelKeys: []string{"cpu.mode"}},
+		func(_ context.Context, o kernel.GaugeObserver) error {
+			o.Observe(1.5, kernel.NewLabels("cpu.mode", "user"))
+			return nil
+		})
+	m.ObservableCounter(kernel.Instrument{Name: "my.db.client.connection.waits", Unit: "{request}", Description: "Waits."},
+		func(_ context.Context, o kernel.GaugeObserver) error { o.Observe(4, kernel.Labels{}); return nil })
 
 	ctx := t.Context()
 	h.Record(ctx, 0.02, kernel.NewLabels("http.route", "/api/v1/statuses/{id}", "my.surface", "client_api"))
@@ -64,6 +71,10 @@ func TestPrometheusExposition(t *testing.T) {
 		`my_inbox_activities_total{my_outcome="accepted"} 2`,
 		`http_server_active_requests{my_surface="client_api"} 1`,
 		`my_queue_dead 7`,
+		"# TYPE process_cpu_time_seconds_total counter",
+		`process_cpu_time_seconds_total{cpu_mode="user"} 1.5`,
+		"# TYPE my_db_client_connection_waits_total counter",
+		"\nmy_db_client_connection_waits_total 4",
 		`service_version="1.2.3"`,
 		`my_role="web"`,
 	} {

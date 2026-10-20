@@ -12,8 +12,8 @@ import (
 
 // MeterContract verifies a kernel.Meter adapter: it declares every kind of instrument, records
 // from many goroutines inside and outside units of work (Begin), survives a label that the
-// instrument did not declare, a measurement after its unit of work ended, and a gauge function
-// that fails, all without a panic or a data race. What the adapter exports is checked by its own
+// instrument did not declare, a measurement after its unit of work ended, and a gauge or
+// observable counter function that fails, all without a panic or a data race. What the adapter exports is checked by its own
 // tests, since every exporter has its own format.
 func MeterContract(t *testing.T, newMeter func(t *testing.T) kernel.Meter) {
 	t.Helper()
@@ -28,6 +28,11 @@ func MeterContract(t *testing.T, newMeter func(t *testing.T) kernel.Meter) {
 		m.Gauge(kernel.Instrument{Name: "my.contract.level", Unit: "{job}", Description: "Level.", LabelKeys: keys},
 			func(_ context.Context, o kernel.GaugeObserver) error {
 				o.Observe(3, kernel.NewLabels("my.outcome", "success"))
+				return nil
+			})
+		m.ObservableCounter(kernel.Instrument{Name: "my.contract.cpu", Unit: "s", Description: "CPU.", LabelKeys: keys},
+			func(_ context.Context, o kernel.GaugeObserver) error {
+				o.Observe(1.5, kernel.NewLabels("my.outcome", "success"))
 				return nil
 			})
 		l := kernel.NewLabels("my.outcome", "success", "my.surface", "client_api")
@@ -50,6 +55,7 @@ func MeterContract(t *testing.T, newMeter func(t *testing.T) kernel.Meter) {
 			})
 		}
 		wg.Wait()
+		collect(t, m)
 	})
 	t.Run("SurvivesProgrammingErrors", func(t *testing.T) {
 		m := newMeter(t)
@@ -57,6 +63,8 @@ func MeterContract(t *testing.T, newMeter func(t *testing.T) kernel.Meter) {
 		c := m.Counter(i)
 		h := m.Histogram(kernel.Instrument{Name: "my.contract.latency", Unit: "s", Description: "Latency."})
 		m.Gauge(kernel.Instrument{Name: "my.contract.failing", Unit: "1", Description: "Fails."},
+			func(context.Context, kernel.GaugeObserver) error { return context.Canceled })
+		m.ObservableCounter(kernel.Instrument{Name: "my.contract.failing_total", Unit: "1", Description: "Fails."},
 			func(context.Context, kernel.GaugeObserver) error { return context.Canceled })
 		ctx, end := m.Begin(t.Context())
 		c.Add(ctx, 1, kernel.NewLabels("my.undeclared", "x"))
@@ -66,5 +74,18 @@ func MeterContract(t *testing.T, newMeter func(t *testing.T) kernel.Meter) {
 		// After its unit of work ended, a context still records.
 		c.Add(ctx, 1, kernel.NewLabels("my.outcome", "success"))
 		h.Record(ctx, 0.1, kernel.Labels{})
+		collect(t, m)
 	})
+}
+
+// collect asks a Meter whose exporter does not collect (kernel.GaugeWriter) to write its
+// gauges and observable counters, twice, as the periodic job does; the errors of the
+// functions are theirs, not the adapter's.
+func collect(t *testing.T, m kernel.Meter) {
+	t.Helper()
+	if w, ok := m.(kernel.GaugeWriter); ok {
+		for range 2 {
+			_ = w.WriteGauges(t.Context())
+		}
+	}
 }

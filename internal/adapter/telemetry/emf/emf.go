@@ -9,9 +9,11 @@
 // or a job) are written when it ends: one line per distinct label set, holding every metric
 // recorded with those labels (a counter's sum, a histogram's values). A measurement outside a
 // unit of work is written at once. UpDownCounters record nothing, since they are values of one
-// process that the platform's own metrics stand in for (Lambda's concurrency). Gauges are not
-// collected: WriteGauges (kernel.GaugeWriter) writes them when the periodic job of the metrics
-// snapshot asks (ADR-0055 §4).
+// process that the platform's own metrics stand in for (Lambda's concurrency). Gauges and
+// observable counters are not collected: WriteGauges (kernel.GaugeWriter) writes them when the
+// periodic job of the metrics snapshot asks (ADR-0055 §4). EMF has no counter of totals, so an
+// observable counter is written as its increase since the previous write, which the Sum
+// statistic of CloudWatch adds up as it does the counters.
 package emf
 
 import (
@@ -53,11 +55,16 @@ type Meter struct {
 
 	gaugesMu sync.Mutex
 	gauges   []gauge
+	// totals are the totals of the observable counters at the previous WriteGauges, by name
+	// and label set.
+	totals map[string]float64
 }
 
 type gauge struct {
 	i kernel.Instrument
 	f kernel.GaugeFunc
+	// counter reports totals, written as their increase.
+	counter bool
 }
 
 var (
@@ -105,17 +112,28 @@ func (m *Meter) Gauge(i kernel.Instrument, f kernel.GaugeFunc) {
 	m.gauges = append(m.gauges, gauge{i: i, f: f})
 }
 
-// WriteGauges implements kernel.GaugeWriter: it calls the gauge functions and writes their
-// values, one line per distinct label set, and returns the errors of the functions.
+// ObservableCounter implements kernel.Meter. EMF has no collection: WriteGauges calls f and
+// writes the increase of each total since the previous call.
+func (m *Meter) ObservableCounter(i kernel.Instrument, f kernel.GaugeFunc) {
+	m.gaugesMu.Lock()
+	defer m.gaugesMu.Unlock()
+	m.gauges = append(m.gauges, gauge{i: i, f: f, counter: true})
+}
+
+// WriteGauges implements kernel.GaugeWriter: it calls the functions of the gauges and the
+// observable counters and writes their values, one line per distinct label set, and returns
+// the errors of the functions. Calls are serialized, so that each increase is written once.
 func (m *Meter) WriteGauges(ctx context.Context) error {
 	m.gaugesMu.Lock()
-	gauges := slices.Clone(m.gauges)
-	m.gaugesMu.Unlock()
+	defer m.gaugesMu.Unlock()
+	if m.totals == nil {
+		m.totals = map[string]float64{}
+	}
 	b := &batch{}
 	bctx := context.WithValue(ctx, batchKey{}, b)
 	var errs []error
-	for _, g := range gauges {
-		errs = append(errs, g.f(ctx, gaugeObserver{m: m, ctx: bctx, i: g.i}))
+	for _, g := range m.gauges {
+		errs = append(errs, g.f(ctx, gaugeObserver{m: m, ctx: bctx, g: g}))
 	}
 	m.flush(b)
 	return errors.Join(errs...)
@@ -124,11 +142,34 @@ func (m *Meter) WriteGauges(ctx context.Context) error {
 type gaugeObserver struct {
 	m   *Meter
 	ctx context.Context
-	i   kernel.Instrument
+	g   gauge
 }
 
+// Observe records v; for an observable counter, the increase of v over the previous total of
+// the label set (all of v the first time, or after the total went back to 0 when its source
+// restarted). The caller holds gaugesMu.
 func (o gaugeObserver) Observe(v float64, l kernel.Labels) {
-	o.m.record(o.ctx, o.i, kindValues, v, 0, l)
+	if o.g.counter {
+		key := seriesKey(o.g.i, l)
+		prev, seen := o.m.totals[key]
+		o.m.totals[key] = v
+		if seen && v >= prev {
+			v -= prev
+		}
+	}
+	o.m.record(o.ctx, o.g.i, kindValues, v, 0, l)
+}
+
+// seriesKey identifies the series of i with the declared labels of l.
+func seriesKey(i kernel.Instrument, l kernel.Labels) string {
+	var sb strings.Builder
+	sb.WriteString(i.Name)
+	for _, key := range i.LabelKeys {
+		if value, ok := l.Get(key); ok {
+			sb.WriteString("\x00" + key + "=" + value)
+		}
+	}
+	return sb.String()
 }
 
 type batchKey struct{}

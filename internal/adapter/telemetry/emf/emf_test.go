@@ -27,6 +27,12 @@ func (b *buffer) Write(p []byte) (int, error) {
 	return b.buf.Write(p)
 }
 
+func (b *buffer) reset() {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.buf.Reset()
+}
+
 func (b *buffer) lines(t *testing.T) []map[string]any {
 	t.Helper()
 	b.mu.Lock()

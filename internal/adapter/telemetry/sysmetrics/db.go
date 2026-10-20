@@ -17,7 +17,7 @@ const (
 
 // The connection pool metrics of ADR-0056 §1, named after the OpenTelemetry semantic
 // conventions. The pools keep their waits as totals since they opened, so WaitTime, Waits, and
-// Timeouts are gauges of totals, not histograms or counters.
+// Timeouts are observable counters of those totals, not histograms.
 var (
 	DBConnectionCount = kernel.Instrument{
 		Name: "db.client.connection.count", Unit: "{connection}",
@@ -59,7 +59,7 @@ type PoolStats struct {
 }
 
 // RegisterPool reports the connection pool named pool (such as main) from stats, which the
-// gauges call when the exporter collects, so that queries are not measured one by one (ADR-0056 §1).
+// gauges and the observable counters call when the exporter collects, so that queries are not measured one by one (ADR-0056 §1).
 func RegisterPool(m kernel.Meter, pool string, stats func() PoolStats) {
 	if kernel.IsNop(m) {
 		return
@@ -79,15 +79,15 @@ func RegisterPool(m kernel.Meter, pool string, stats func() PoolStats) {
 		}
 		return nil
 	})
-	m.Gauge(DBConnectionWaitTime, func(_ context.Context, o kernel.GaugeObserver) error {
+	m.ObservableCounter(DBConnectionWaitTime, func(_ context.Context, o kernel.GaugeObserver) error {
 		o.Observe(read().WaitTime.Seconds(), l)
 		return nil
 	})
-	m.Gauge(DBConnectionWaits, func(_ context.Context, o kernel.GaugeObserver) error {
+	m.ObservableCounter(DBConnectionWaits, func(_ context.Context, o kernel.GaugeObserver) error {
 		o.Observe(float64(read().Waits), l)
 		return nil
 	})
-	m.Gauge(DBConnectionTimeouts, func(_ context.Context, o kernel.GaugeObserver) error {
+	m.ObservableCounter(DBConnectionTimeouts, func(_ context.Context, o kernel.GaugeObserver) error {
 		if s := read(); s.Timeouts != nil {
 			o.Observe(float64(*s.Timeouts), l)
 		}
