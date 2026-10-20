@@ -247,6 +247,18 @@ linters:
             - github.com/best-friends/my/internal/app/stream
             - github.com/best-friends/my/internal/app/kernel
             - github.com/best-friends/my/internal/app/queue
+        # app/metrics keeps the snapshot of the instance-wide gauges (ADR-0055 §4) in the
+        # KeyValueStore and computes it through the queue's BacklogReader and a function that the
+        # composition root takes from the modules; it depends only on kernel and queue.
+        app-metrics:
+          list-mode: strict
+          files:
+            - "**/internal/app/metrics/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/app/metrics
+            - github.com/best-friends/my/internal/app/kernel
+            - github.com/best-friends/my/internal/app/queue
         # app/blob (BlobStore) and app/media (MediaProcessor) hold ports shared by every module that
         # keeps files and by their adapters; like kernel, they depend on nothing in the repository.
         app-blob:

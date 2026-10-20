@@ -17,6 +17,8 @@ import (
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/metrics"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -219,4 +221,40 @@ func (a *App) registerBusinessMetrics(r *uow.Projectors) {
 		created.Add(ctx, 1, kernel.NewLabels("my.visibility", string(st.Visibility)))
 		lag.Record(ctx, max(a.Clock.Now().Sub(st.PublishedAt), 0).Seconds(), kernel.Labels{})
 	})
+}
+
+// registerMetricsSnapshot reports the instance-wide gauges from the snapshot that the processes
+// share in the key-value store, and registers its periodic job (ADR-0055 §4), unless the Meter
+// records nothing.
+func (a *App) registerMetricsSnapshot() {
+	if kernel.IsNop(a.Meter) {
+		return
+	}
+	backlog, _ := a.source.(queue.BacklogReader)
+	a.MetricsSnapshot = metrics.NewService(metrics.Deps{
+		KV: a.KV, Clock: a.Clock, Logger: a.Logger, Backlog: backlog, Totals: a.instanceTotals,
+		KnownJobType: func(t string) bool { _, _, ok := a.Handlers.Lookup(t); return ok },
+	})
+	a.MetricsSnapshot.RegisterGauges(a.Meter)
+	a.MetricsSnapshot.RegisterJobs(a.Handlers, a.Scheduler, a.Meter)
+}
+
+// instanceTotals computes the counts and sizes of the metrics snapshot: the local users and
+// posts as NodeInfo reports them, and the bytes of the media files.
+func (a *App) instanceTotals(ctx context.Context) (metrics.Totals, error) {
+	users, err := a.Accounts.CountLocalUsers(ctx)
+	if err != nil {
+		return metrics.Totals{}, err
+	}
+	statuses, err := a.Content.LocalPostCount(ctx)
+	if err != nil {
+		return metrics.Totals{}, err
+	}
+	t := metrics.Totals{Users: int64(users), Statuses: statuses}
+	if a.Media != nil {
+		if t.MediaLocalBytes, t.MediaRemoteCacheBytes, err = a.Media.StoredBytes(ctx); err != nil {
+			return metrics.Totals{}, err
+		}
+	}
+	return t, nil
 }

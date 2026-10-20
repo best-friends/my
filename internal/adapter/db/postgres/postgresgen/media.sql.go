@@ -476,6 +476,29 @@ func (q *Queries) ListUnattachedUploads(ctx context.Context, arg ListUnattachedU
 	return items, nil
 }
 
+const sumLocalMediaSize = `-- name: SumLocalMediaSize :one
+SELECT CAST(COALESCE(SUM(s.file_size), 0) AS BIGINT) FROM (
+  SELECT v.file_size FROM media_files m
+  JOIN media_processing_results r ON r.id = (
+    SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
+  JOIN media_variants v ON v.result_id = r.id
+  WHERE m.origin = 'upload'
+  UNION ALL
+  SELECT u.file_size FROM uploaded_media u
+  WHERE NOT EXISTS (SELECT 1 FROM media_processing_results p WHERE p.media_id = u.media_id)
+) AS s
+`
+
+// SumLocalMediaSize returns the bytes that the local uploads keep: the variants of the current
+// (newest) processing result of each upload, and the originals of the uploads that wait for
+// their first processing (ADR-0055 section 3, my.media.stored_bytes).
+func (q *Queries) SumLocalMediaSize(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, sumLocalMediaSize)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const upsertMediaDescription = `-- name: UpsertMediaDescription :exec
 INSERT INTO media_descriptions (media_id, description) VALUES ($1, $2)
 ON CONFLICT (media_id) DO UPDATE SET description = excluded.description

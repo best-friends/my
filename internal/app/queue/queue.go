@@ -180,3 +180,20 @@ var (
 	// Such a job is retried, in case a newer worker that knows the type picks it up.
 	ErrNoHandler = errors.New("queue: no handler registered for job type")
 )
+
+// Backlog is the state of the jobs of a queue at one time, for the queue gauges of the
+// metrics snapshot (ADR-0055 §3, §4).
+type Backlog struct {
+	// Ready counts the due jobs that no worker holds, by job type.
+	Ready map[string]int64
+	// OldestReadyAt is the earliest due time among the ready jobs; zero when none is ready.
+	OldestReadyAt time.Time
+	// Dead counts the dead jobs, as DeadJobs lists them.
+	Dead int64
+}
+
+// BacklogReader reads the backlog of a queue that the server can count: the database queue.
+// The queues of the platforms (Cloud Tasks, SQS) have metrics of their own.
+type BacklogReader interface {
+	Backlog(ctx context.Context, now time.Time) (Backlog, error)
+}
