@@ -34,6 +34,7 @@ const administrator = {
   created_at: "2026-10-01T00:00:00Z",
   discoverable: true,
   indexable: true,
+  ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
   permissions: ["manage_settings"],
@@ -58,6 +59,10 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "authorized_fetch", kind: "bool", default: "false" },
     { key: "domain_actions_visibility", kind: "enum", default: "none", choices: ["none", "users", "all"] },
     { key: "domain_actions_rationale_visibility", kind: "enum", default: "none", choices: ["none", "users", "all"] },
+    { key: "search_indexing", kind: "enum", default: "deny", choices: ["allow", "deny"] },
+    { key: "ai_usage", kind: "enum", default: "deny", choices: ["allow", "deny_training", "deny"] },
+    { key: "indexable_default", kind: "bool", default: "false" },
+    { key: "security_contact", kind: "uri", default: "" },
   ];
   return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
 }

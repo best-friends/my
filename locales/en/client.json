@@ -55,6 +55,30 @@
     "defaultMessage": "Moderated servers",
     "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
   },
+  "about.crawlers.title": {
+    "defaultMessage": "Search engines and AI",
+    "description": "Heading of the section of the server's information page that says what the server states to search engines and AI crawlers."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "{setting, select, allow {Search engines may index the profiles and public posts of the accounts that allow it.} other {This server asks search engines not to index any of its pages.}}",
+    "description": "What the server states to search engines, by the server setting search_indexing (allow or deny)."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "{setting, select, allow {This server reserves nothing against AI: AI may train on and use its pages, except those of the accounts that opt out.} deny_training {This server reserves its pages against the training of AI models. AI search and assistants may still use them, except the pages of the accounts that opt out.} other {This server reserves its pages against the training of AI models and against their use by AI search, assistants and agents.}}",
+    "description": "What the server states to AI crawlers, by the server setting ai_usage (allow, deny_training, or deny)."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "The server states this in its robots.txt (with a list of known AI crawlers), in the robots meta tag and the X-Robots-Tag, Content-Usage and tdm-reservation headers of its pages, and in /.well-known/tdmrep.json. These are requests: well-known crawlers say they follow some of them, but nothing technically stops a crawler that does not.",
+    "description": "How the server states its search and AI settings: the machine-readable means it uses."
+  },
+  "about.crawlers.accounts": {
+    "defaultMessage": "Each account can also keep its profile and posts out of search engines, or deny AI, for its own pages on this server. An account cannot allow what the server denies. Media files and copies of posts on other servers do not carry an account's choice.",
+    "description": "That each account can narrow the server's statement for its own pages, but never widen it."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "What such a statement means in law depends on the country. In the EU, it is meant as a machine-readable reservation of rights against text and data mining under Article 4(3) of the Directive on Copyright in the Digital Single Market. In Japan, Article 30-4 of the Copyright Act allows many uses for data analysis without permission, so the statement may not bind them legally; many operators still follow such statements voluntarily. This page is not legal advice.",
+    "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
+  },
   "about.rules.title": {
     "defaultMessage": "Rules",
     "description": "Heading of the section of the server's information page with the server's rules."
@@ -3075,6 +3099,78 @@
     "defaultMessage": "Everyone who may read the list sees the comments.",
     "description": "Description of showing the comments of the domain actions to everyone."
   },
+  "admin.settings.crawlers.title": {
+    "defaultMessage": "Search engines and AI",
+    "description": "Heading of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.description": {
+    "defaultMessage": "What the server states to search engines and AI crawlers. Until they are set, the server denies both. The server makes its robots.txt from these settings and a bundled list of known AI crawlers, and states them on every page. Each account can deny more for its own pages, never less.",
+    "description": "Explanation of the section of the server settings about search engines and AI crawlers."
+  },
+  "admin.settings.crawlers.search": {
+    "defaultMessage": "Search engines",
+    "description": "Label of the radio group of whether search engines may index the server's pages (search_indexing)."
+  },
+  "admin.settings.crawlers.search.allow": {
+    "defaultMessage": "Allow indexing",
+    "description": "Choice that lets search engines index the pages of the accounts that allow it."
+  },
+  "admin.settings.crawlers.search.allow.description": {
+    "defaultMessage": "Search engines may index the profiles and public posts of the accounts that allow it. Other pages stay out of their index.",
+    "description": "Description of letting search engines index pages."
+  },
+  "admin.settings.crawlers.search.deny": {
+    "defaultMessage": "Deny indexing",
+    "description": "Choice that asks search engines not to index any page."
+  },
+  "admin.settings.crawlers.search.deny.description": {
+    "defaultMessage": "Every page asks search engines not to index it (noindex). Link previews keep working.",
+    "description": "Description of asking search engines not to index any page."
+  },
+  "admin.settings.crawlers.indexable_default": {
+    "defaultMessage": "New accounts allow search indexing",
+    "description": "Label of the checkbox of whether new accounts allow search indexing (indexable_default)."
+  },
+  "admin.settings.crawlers.indexable_default.description": {
+    "defaultMessage": "The setting that accounts registered from now on start with. Existing accounts keep their own choice.",
+    "description": "Help text of the indexable default checkbox."
+  },
+  "admin.settings.crawlers.ai": {
+    "defaultMessage": "AI",
+    "description": "Label of the radio group of what the server states to AI crawlers (ai_usage)."
+  },
+  "admin.settings.crawlers.ai.allow": {
+    "defaultMessage": "Allow",
+    "description": "Choice that reserves nothing against AI."
+  },
+  "admin.settings.crawlers.ai.allow.description": {
+    "defaultMessage": "The server reserves nothing against AI. Accounts may still deny it for their own pages.",
+    "description": "Description of reserving nothing against AI."
+  },
+  "admin.settings.crawlers.ai.deny_training": {
+    "defaultMessage": "Deny training",
+    "description": "Choice that denies the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny_training.description": {
+    "defaultMessage": "The crawlers that collect data to train AI models are denied. AI search and assistants that people ask to read a page are not.",
+    "description": "Description of denying the training of AI models only."
+  },
+  "admin.settings.crawlers.ai.deny": {
+    "defaultMessage": "Deny training and use",
+    "description": "Choice that denies both the training and the use by AI."
+  },
+  "admin.settings.crawlers.ai.deny.description": {
+    "defaultMessage": "AI crawlers are denied, including AI search, assistants and agents that people ask to read a page.",
+    "description": "Description of denying both the training and the use by AI."
+  },
+  "admin.settings.crawlers.security_contact": {
+    "defaultMessage": "Security contact",
+    "description": "Label of the field of the address to report vulnerabilities to (security_contact)."
+  },
+  "admin.settings.crawlers.security_contact.description": {
+    "defaultMessage": "Where to report vulnerabilities: an https: or mailto: address, such as mailto:security@example.com. The server serves /.well-known/security.txt only while it is set.",
+    "description": "Help text of the security contact field."
+  },
   "admin.settings.domain_actions.comments.none": {
     "defaultMessage": "The comments are not shown.",
     "description": "Description of not showing the comments of the domain actions."
@@ -5610,6 +5706,34 @@
   "settings.profile.bot.description": {
     "defaultMessage": "The account posts automatically, and others see that it may not be watched.",
     "description": "Help text of the 'This is a bot' checkbox."
+  },
+  "settings.profile.crawlers": {
+    "defaultMessage": "Search engines and AI",
+    "description": "Heading of the part of the profile form about search engines and AI."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "Show my profile and public posts in search",
+    "description": "Label of the checkbox that lets the profile and public posts appear in search."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "Search on this server and, when the server allows it, search engines may index them. Other servers that follow this choice see it too.",
+    "description": "Help text of the indexable checkbox."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "This server asks search engines not to index any page, so they do not index yours even if you allow it.",
+    "description": "Note shown when the server denies search engines, so the user's choice does not reach them."
+  },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "Deny AI training and use",
+    "description": "Label of the checkbox that denies AI training on and use of the user's pages."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "Your profile and post pages on this server ask AI not to train on or use them. Media files and the copies of your posts on other servers do not carry it.",
+    "description": "Help text of the AI opt-out checkbox, with its limits."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "{usage, select, deny_training {This server already denies AI training on every page; this also denies the use by AI search and assistants.} other {This server already denies AI training and use on every page.}}",
+    "description": "Note shown when the server already denies AI training (deny_training) or both training and use (deny)."
   },
   "settings.profile.characters_left": {
     "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",

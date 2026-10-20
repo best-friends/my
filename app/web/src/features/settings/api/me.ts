@@ -14,13 +14,15 @@ export type Visibility = Schemas["Visibility"];
 export type CredentialAccount = Schemas["CredentialAccount"];
 export type ProfileChange = Schemas["UpdateCredentialsRequest"];
 export type Permission = Schemas["Permission"];
+export type SearchIndexing = Schemas["SearchIndexing"];
+export type AIUsage = Schemas["AIUsage"];
 
 /** The signed-in user's preferences (GET /preferences). */
 export function preferencesQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/preferences");
 }
 
-/** The instance (GET /instance), for `sends_email`; the app shell reads the same query on every page. */
+/** The instance (GET /instance), for `sends_email` and what it states to crawlers; the app shell reads the same query on every page. */
 export function instanceQueryOptions(api: Api) {
   return api.query.queryOptions("get", "/instance");
 }

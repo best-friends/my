@@ -23,6 +23,7 @@ const viewer = {
   created_at: "2026-10-01T00:00:00Z",
   discoverable: true,
   indexable: true,
+  ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
   permissions: [],
@@ -64,7 +65,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     switch (`${request.method()} ${path}`) {
       case "GET /instance":
-        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [] });
+        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
       case "GET /accounts/verify_credentials":
         return json(route, { ...viewer, permissions });
       case "GET /preferences":
