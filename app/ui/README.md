@@ -237,8 +237,8 @@ every theme against them. A token that matches no rule (and is not in `fixedToke
 | `transition-duration-*`, `default-transition-duration` | duration | ms / s, 0 to 1000ms |
 | `ease-*`, `default-transition-timing-function` | easing | `linear`, `ease`, `ease-in`, `ease-out`, `ease-in-out`, or `cubic-bezier()` with x in 0..1 |
 
-The quality gates (axe, screenshots, horizontal scroll) check the default theme, and the kit's stories also run under one sample theme
-(see "Stories"). A theme's color tokens keep AA because the server checks them; the other overrides and the custom CSS can still break layout, tap targets, or right-to-left text, which is the administrator's
+The quality gates (axe, screenshots, horizontal scroll) check the default theme; one story shows representative components under a
+sample theme (see "Stories"). A theme's color tokens keep AA because the server checks them; the other overrides and the custom CSS can still break layout, tap targets, or right-to-left text, which is the administrator's
 responsibility. `themeContrast` computes what the server checks, with the same formulas as [src/color.ts](src/color.ts) and the Go domain.
 
 ## The token check
@@ -349,19 +349,20 @@ its toolbar switches the locale (`lang` / `dir` on `<html>` and React Aria's `I1
 theme: the default tokens, or the sample server theme of [.storybook/sampleTheme.ts](.storybook/sampleTheme.ts) (teal accents on warm
 surfaces, a looser spacing step, and rounder corners). The preview renders the sample's overrides as the server renders a theme's stylesheet
 (a `:root` rule outside any cascade layer, colors as `light-dark()`) and adopts it as a constructed stylesheet, as the Tauri app applies a
-theme (ADR-0059 §6).
+theme (ADR-0059 §6). [src/ThemeSample.stories.tsx](src/ThemeSample.stories.tsx) (`Foundations/Theme sample`) fixes the sample theme
+for its own story, which shows buttons, a toggle, a card with form controls, links, muted text and badges, so its screenshots catch a
+component that stops following the overrides; every other story is tested with the default tokens only.
 [src/Tokens.stories.tsx](src/Tokens.stories.tsx) shows the color pairs, the type scale in English, Japanese and Arabic, radius,
 shadow and the focus ring. [src/storybook.css](src/storybook.css) is the Storybook preview stylesheet.
 
 Stories are also the kit's browser tests ([vitest.config.ts](vitest.config.ts)). `make ui-test` runs each story in Chromium in
-`en` and `ar-XB`, light and dark, and in `en` with the sample theme, light and dark (six projects); a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
+`en` and `ar-XB`, light and dark (four projects); a story fails on any axe violation or when it differs from its screenshots at 320, 640 and
 1024 px container widths. The screenshots are taken with `prefers-reduced-motion: reduce` emulated, and a story fails when
 anything in it still animates then; stories render and run their `play` functions (which find elements by role, with
 `storybook/test`) without it. The screenshots in `src/__screenshots__/` come only from the pinned Playwright image: regenerate
 them with `make ui-snapshots-update`, and compare like CI with `make ui-test-docker` (both need Docker).
 A story's `play` function also tests behaviour in the real browser (focus trap and return, Esc, arrow keys in RTL, announcements that
-keep focus); it runs before axe and the screenshots, in every project. A screenshot's name ends in its locale, theme and width
-(`<story>-en-dark-640`), with `-sample` before the width under the sample theme. The overlay components' jsdom tests cover the same
+keep focus); it runs before axe and the screenshots, in every project. The overlay components' jsdom tests cover the same
 behaviour in `make check`. Overlays portal into the story frame, which has layout
 containment, so a modal covers the frame and appears in its screenshots.
 The test procedure is in [web-client.md §7](../../docs/architecture/web-client.md#7-テスト).

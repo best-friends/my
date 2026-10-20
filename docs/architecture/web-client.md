@@ -191,8 +191,9 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - `@my/ui` のストーリーは `app/ui/src/*.stories.tsx` に置く（CSF 3、`satisfies Meta`）。Storybook は `make storybook` で開く（`app/ui/.storybook`）。
   - ツールバーでロケール（`en` / `ja` / `en-XA` / `ar-XB`）とテーマ（ライト / ダーク）とサーバー単位のテーマ（既定 / 見本）を切り替える。ロケールは `<html>` の `lang` / `dir` と React Aria の `I18nProvider` に、テーマは `<html>` の `data-theme` に反映する。
     見本のテーマ（`.storybook/sampleTheme.ts`、ADR-0059）は、サーバーのスタイルシートと同じ `@layer` の外の `:root` の規則にして、構築できるスタイルシートで当てる。
+    `Foundations/Theme sample`（`src/ThemeSample.stories.tsx`）だけが見本のテーマを固定し、代表的な部品のスクリーンショットを残す。ほかのストーリーは既定のトークンで検査する。
   - ストーリーは `make ui-test` で実ブラウザのテストになる（`app/ui/vitest.config.ts`、Storybook の Vitest アドオンと Vitest のブラウザモード、Playwright の Chromium）。
-    - プロジェクトは方向 × テーマの 4 つ（`en` / `ar-XB` × ライト / ダーク）と、見本のテーマの 2 つ（`en` × ライト / ダーク）の 6 つ。すべてのストーリーを 6 つすべてで動かす。
+    - プロジェクトは方向 × テーマの 4 つ（`en` / `ar-XB` × ライト / ダーク）。すべてのストーリーを 4 つすべてで動かす。
     - axe の違反が 1 つでもあれば失敗する（`parameters.a11y.test: 'error'`、Y1 のタグ）。
     - `@my/ui` の部品の振る舞いのテスト（フォーカスの閉じ込めと復帰、Esc、矢印キー）は、ストーリーの `play` 関数に `storybook/test` の `expect` と文脈の `userEvent` / `canvas` で書く。
       すべてのプロジェクトで動くので、RTL の矢印キーは `document.documentElement.dir` で向きを決めて同じ `play` で検査する。

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Visual snapshots of every story (ADR-0027) not tagged `no-screenshot`. After a story has rendered and passed axe, its frame
-// is captured at each container width; the project fixes the direction, the theme and the instance theme
-// (../vitest.config.ts).
+// is captured at each container width; the project fixes the direction and theme (../vitest.config.ts).
 // Baselines live in src/__screenshots__/ and are generated only in the pinned Playwright image
 // (`make ui-snapshots-update`), because fonts and anti-aliasing differ between machines.
 // The capture runs with prefers-reduced-motion: reduce, and first checks that nothing in the frame
@@ -39,9 +38,7 @@ afterEach(async (context) => {
   if (story.tags.includes("no-screenshot")) return;
   const frame = document.querySelector<HTMLElement>("[data-story-frame]");
   if (frame === null) throw new Error(`story ${story.id} rendered no [data-story-frame]; is the preview decorator missing?`);
-  const { locale, theme, instanceTheme } = story.globals;
-  // The default theme keeps the names without a suffix; a server theme adds its name.
-  const suffix = typeof instanceTheme === "string" && instanceTheme !== "default" ? `-${instanceTheme}` : "";
+  const { locale, theme } = story.globals;
   await emulateReducedMotion(true);
   try {
     // Transitions already in flight (such as the color change when the preview applies the theme)
@@ -62,7 +59,7 @@ afterEach(async (context) => {
       // the 1200 px that the Storybook addon sets; the container width is what the components answer to.
       const bottom = Math.ceil(frame.getBoundingClientRect().bottom + window.scrollY);
       await page.viewport(viewportWidth, Math.max(viewportHeight, bottom + 16));
-      await expect.element(page.elementLocator(frame)).toMatchScreenshot(`${story.id}-${String(locale)}-${String(theme)}${suffix}-${width}`);
+      await expect.element(page.elementLocator(frame)).toMatchScreenshot(`${story.id}-${String(locale)}-${String(theme)}-${width}`);
     }
   } finally {
     frame.style.inlineSize = "";
