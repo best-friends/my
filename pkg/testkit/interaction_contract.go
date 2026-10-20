@@ -143,6 +143,19 @@ func interactionRestrictions(t *testing.T, e *interactionEnv) {
 			t.Errorf("Bookmark under %+v = %v, want allowed", tc.r, err)
 		}
 	}
+	// A remote account under the interact restriction neither favourites nor reacts (FR-708).
+	remote := e.account(false, account.StateActive)
+	e.restrictions.set(remote, appcontent.Restrictions{Interact: true})
+	_, err := e.svc.RecordRemoteFavourite(ctx, appcontent.RemoteFavouriteInput{URI: "https://remote.example/likes/1", AccountID: remote, StatusID: st.ID})
+	if !errors.Is(err, appcontent.ErrInteractionRestricted) {
+		t.Errorf("RecordRemoteFavourite under the interact restriction = %v", err)
+	}
+	_, err = e.svc.RecordRemoteReaction(ctx, appcontent.RemoteReactionInput{
+		URI: "https://remote.example/likes/2", AccountID: remote, StatusID: st.ID, Emoji: appcontent.RemoteReactionEmoji{Unicode: "👍"},
+	})
+	if !errors.Is(err, appcontent.ErrInteractionRestricted) {
+		t.Errorf("RecordRemoteReaction under the interact restriction = %v", err)
+	}
 	e.restrictions.set(actor, appcontent.Restrictions{})
 	if _, err := e.svc.Boost(ctx, actor, st.ID); err != nil {
 		t.Errorf("Boost after the restrictions ended = %v", err)
