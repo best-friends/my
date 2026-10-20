@@ -768,6 +768,8 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain, WebOrigin: a.Config.WebOrigin,
 		// The instance's display name, read per request; the host when it has none.
 		InstanceName: a.instanceName,
+		// The landing page's link preview describes the instance by its summary, read per request.
+		InstanceDescription: a.instanceSummary,
 		// The HTML is the same for every visitor, so only the instance default applies.
 		DefaultLocale: func(ctx context.Context) string { return a.Locales.Locale(ctx, "") },
 		// Profile and post pages carry link previews of what an anonymous visitor may see.

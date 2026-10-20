@@ -40,13 +40,13 @@ type shellData struct {
 	// Config is a struct, not a string: html/template encodes it as JSON in the data block and
 	// escapes what could end the script element.
 	Config runtimeConfig
-	// Preview holds the link preview meta tags of a profile or a post page, nil for the
-	// generic shell.
+	// Preview holds the link preview meta tags of the landing page, a profile, or a post page,
+	// nil for the generic shell.
 	Preview *previewMeta
 }
 
-// shellTemplate is the shell of the SPA: the generic shell, or with Preview the shell of a
-// profile or a post page. html/template escapes every value for its context; nothing is
+// shellTemplate is the shell of the SPA: the generic shell, or with Preview the shell of the
+// landing page, a profile, or a post page. html/template escapes every value for its context; nothing is
 // marked as safe HTML, and user data never becomes template.HTML (ADR-0028).
 var shellTemplate = template.Must(template.New("shell").Parse(shellSource))
 
@@ -87,9 +87,13 @@ const shellSource = `<!doctype html>
 <meta property="profile:username" content="{{.Username}}">
 {{- end}}
 <meta name="twitter:card" content="{{.Card}}">
+{{- if .Creator}}
 <meta name="fediverse:creator" content="{{.Creator}}">
+{{- end}}
 <link rel="canonical" href="{{.URL}}">
+{{- if .ActivityPubID}}
 <link rel="alternate" type="application/activity+json" href="{{.ActivityPubID}}">
+{{- end}}
 {{- end}}
 <meta name="theme-color" media="(prefers-color-scheme: light)" content="{{.Theme.Light}}">
 <meta name="theme-color" media="(prefers-color-scheme: dark)" content="{{.Theme.Dark}}">

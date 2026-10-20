@@ -2382,6 +2382,34 @@ export interface MessageArgs {
   "client:emoji.picker.uncategorized": {};
   /** Home */
   "client:home.title": {};
+  /** About this server */
+  "client:landing.about.title": {};
+  /** No posts yet */
+  "client:landing.posts.empty": {};
+  /** Couldn't load the recent posts */
+  "client:landing.posts.failed": {};
+  /** See the local timeline */
+  "client:landing.posts.more": {};
+  /** Recent posts */
+  "client:landing.posts.title": {};
+  /** Moderators review each new account before it can be used. */
+  "client:landing.registrations.approval": {};
+  /** This server is not accepting new accounts. */
+  "client:landing.registrations.closed": {};
+  /** Only people with an invite can create an account. */
+  "client:landing.registrations.invite": {};
+  /** Rules */
+  "client:landing.rules.title": {};
+  /** Sign in */
+  "client:landing.sign_in": {};
+  /** Apply for an account */
+  "client:landing.sign_up.approval": {};
+  /** Create an account with an invite */
+  "client:landing.sign_up.invite": {};
+  /** Create an account */
+  "client:landing.sign_up.open": {};
+  /** Welcome to {instance} */
+  "client:landing.title": { instance: string };
   /** This server does not show the public posts of its accounts in one timeline. */
   "client:local.disabled.body": {};
   /** The local timeline is off */

@@ -173,7 +173,7 @@ func TestShellCSP(t *testing.T) {
 			t.Errorf("script %q would need a nonce or a remote origin under %q", s[0], csp)
 		}
 	}
-	if strings.Contains(body, " style=") || strings.Contains(body, "<style") || strings.Contains(body, " on") {
+	if strings.Contains(body, " style=") || strings.Contains(body, "<style") || regexp.MustCompile(` on[a-z]+=`).MatchString(body) {
 		t.Errorf("shell has inline styles or event handlers:\n%s", body)
 	}
 }

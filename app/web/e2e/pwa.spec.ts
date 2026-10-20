@@ -83,7 +83,7 @@ test("lets the server decide every page online: its status and its link preview 
   expect(missing?.status()).toBe(404);
   await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
 
-  // No page is stored: only the generic shell at /, from the precache, is ever replayed.
+  // No page is stored: only the generic shell at /home, from the precache, is ever replayed.
   const pages = (await cachedURLs(page)).map((url) => new URL(url).pathname).filter((path) => !path.startsWith("/assets/"));
   expect(pages.filter((path) => path.startsWith("/@"))).toEqual([]);
 });

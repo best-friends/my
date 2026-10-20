@@ -4759,6 +4759,62 @@
     "defaultMessage": "[Ħǿǿḿḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "landing.about.title": {
+    "defaultMessage": "[Ȧƀǿǿŭŭŧ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.empty": {
+    "defaultMessage": "[Ƞǿǿ ƥǿǿşŧş ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓƞ'ŧ ŀǿǿȧȧḓ ŧħḗḗ řḗḗƈḗḗƞŧ ƥǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.more": {
+    "defaultMessage": "[Şḗḗḗḗ ŧħḗḗ ŀǿǿƈȧȧŀ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.posts.title": {
+    "defaultMessage": "[Řḗḗƈḗḗƞŧ ƥǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.registrations.approval": {
+    "defaultMessage": "[Ḿǿǿḓḗḗřȧȧŧǿǿřş řḗḗṽīḗḗẇ ḗḗȧȧƈħ ƞḗḗẇ ȧȧƈƈǿǿŭŭƞŧ ƀḗḗƒǿǿřḗḗ īŧ ƈȧȧƞ ƀḗḗ ŭŭşḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.registrations.closed": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř īş ƞǿǿŧ ȧȧƈƈḗḗƥŧīƞɠ ƞḗḗẇ ȧȧƈƈǿǿŭŭƞŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.registrations.invite": {
+    "defaultMessage": "[Ǿƞŀẏ ƥḗḗǿǿƥŀḗḗ ẇīŧħ ȧȧƞ īƞṽīŧḗḗ ƈȧȧƞ ƈřḗḗȧȧŧḗḗ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.rules.title": {
+    "defaultMessage": "[Řŭŭŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_up.approval": {
+    "defaultMessage": "[Ȧƥƥŀẏ ƒǿǿř ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_up.invite": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ ẇīŧħ ȧȧƞ īƞṽīŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.sign_up.open": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "landing.title": {
+    "defaultMessage": "[Ẇḗḗŀƈǿǿḿḗḗ ŧǿǿ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "local.disabled.body": {
     "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şħǿǿẇ ŧħḗḗ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ īŧş ȧȧƈƈǿǿŭŭƞŧş īƞ ǿǿƞḗḗ ŧīḿḗḗŀīƞḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."

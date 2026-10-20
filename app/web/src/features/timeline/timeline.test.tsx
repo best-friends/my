@@ -297,11 +297,10 @@ describe("the hashtag timeline", () => {
 });
 
 describe("the home timeline", () => {
-  test("is where the root address leads, and offers to sign in without a session", async () => {
-    const { router } = await renderApp({ path: "/" });
+  test("offers to sign in without a session", async () => {
+    await renderApp({ path: "/home" });
 
     expect(await screen.findByRole("heading", { level: 2, name: "You are not signed in" })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/home");
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?return_to=%2Fhome");
   });
 

@@ -5,4 +5,5 @@ export { AccountSection } from "./components/AccountSection";
 export { SignInFailure } from "./components/SignInFailure";
 export { SignInPanel } from "./components/SignInPanel";
 export { viewerQueryOptions } from "./api/viewer";
+export { useSignIn } from "./hooks/useSignIn";
 export { useViewer } from "./hooks/useViewer";

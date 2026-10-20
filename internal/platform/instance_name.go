@@ -26,3 +26,19 @@ func (a *App) instanceName(ctx context.Context, locale string) string {
 	}
 	return t.Body
 }
+
+// instanceSummary returns the instance's one-paragraph summary (the short_description text) for
+// a reader of locale along the locale fallback chain, or "" when no locale of the chain has one.
+// The link preview of the landing page shows it. Like instanceName, it is read per call, and a
+// failure to read it is logged and leaves the summary out.
+func (a *App) instanceSummary(ctx context.Context, locale string) string {
+	t, ok, err := a.Instance.Text(ctx, instance.TextShortDescription, locale)
+	if err != nil {
+		a.Logger.WarnContext(ctx, "read the instance summary", slog.Any("error", err))
+		return ""
+	}
+	if !ok {
+		return ""
+	}
+	return t.Body
+}

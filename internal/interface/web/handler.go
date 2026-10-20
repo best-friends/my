@@ -46,6 +46,10 @@ type Options struct {
 	// called per request, so that a change of the name applies without a restart. Handles and
 	// URLs always use the domains.
 	InstanceName func(ctx context.Context, locale string) string
+	// InstanceDescription returns the instance's one-paragraph summary for readers of locale, as
+	// plain text, which the link preview of the landing page (/) shows; nil or "" leaves the
+	// preview without a description. It is called per request, like InstanceName.
+	InstanceDescription func(ctx context.Context, locale string) string
 	// DefaultLocale returns the instance's current default locale, for <html lang dir>, the
 	// runtime config, and the manifest; nil means the source locale. It is read per request so
 	// that a change of the setting applies without a restart. The HTML never depends on
@@ -377,7 +381,8 @@ func (h *Handler) Register(r Router) {
 
 // ServeHTTP serves a GET request for an SPA route: a file at the root of the build when one
 // has the requested name, the server's 404 under the paths of other endpoints, the shell with
-// link preview meta tags at profile and post pages, and the generic shell otherwise.
+// link preview meta tags at the landing page (/) and at profile and post pages, and the generic
+// shell otherwise.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path
 	if (r.Method != http.MethodGet && r.Method != http.MethodHead) || reserved(p) {
@@ -394,6 +399,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			h.serveFile(w, r, name, cacheRevalidate)
 			return
 		}
+	}
+	if p == "/" {
+		h.serveLanding(w, r)
+		return
 	}
 	if h.o.Previews != nil {
 		if route, ok := h.parsePreviewRoute(p); ok {

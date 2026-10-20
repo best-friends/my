@@ -11,8 +11,11 @@ export const mediaCacheName = `${cachePrefix}-media`;
 /** The runtime cache of the instance theme's stylesheets (ADR-0059). */
 export const themeCacheName = `${cachePrefix}-theme`;
 
-/** The path of the generic HTML shell the worker precaches and returns for navigations it cannot fetch. */
-export const shellPath = "/";
+/**
+ * The path of the generic HTML shell the worker precaches and returns for navigations it cannot fetch: a page
+ * with no link preview of its own (the shell of / previews the instance, ADR-0028).
+ */
+export const shellPath = "/home";
 
 /** Activates a waiting worker; workbox-window's messageSkipWaiting() sends it. */
 export const skipWaitingMessage = { type: "SKIP_WAITING" } as const;

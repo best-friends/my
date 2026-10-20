@@ -47,7 +47,7 @@ describe("the unread badge", () => {
   test("is absent when everything is read and while signed out", async () => {
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-000000000001", unread_count: 3 });
 
-    await renderApp({ path: "/" });
+    await renderApp({ path: "/home" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
     expect(notificationsLink()).toHaveAccessibleName("Notifications");

@@ -50,7 +50,7 @@ function routerWithBrokenPage(failures: number) {
 }
 
 test("a page that fails shows the error inside the layout under the page's heading, focused and titled, and recovers on retry", async () => {
-  const { user, router } = await renderApp({ createRouter: routerWithBrokenPage(1) });
+  const { user, router } = await renderApp({ path: "/", createRouter: routerWithBrokenPage(1) });
   await screen.findByRole("heading", { level: 1, name: "Home" });
 
   await act(() => router.navigate({ href: "/broken" }));
