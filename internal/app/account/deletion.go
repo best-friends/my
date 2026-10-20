@@ -90,6 +90,42 @@ func (s *Service) CancelDeletionByModeration(ctx context.Context, tx uow.Tx, acc
 	return true, tx.Emit(ctx, LifecycleEventRecorded{Event: e})
 }
 
+// DeleteBySelf deletes a local account at its owner's request (FR-008): a deleted lifecycle event
+// initiated by the account itself, recorded at once without a waiting period, which hides the
+// account and its statuses, ends its user's sessions and tokens, and sends the Delete of the
+// actor (federation.md §7.1) in the same transaction. Its data is erased ErasureDelay later
+// (data-model §8). An account that is deleted already fails with ErrAlreadyDeleted, and a
+// remote account with ErrNotLocal. The state is read with a lock where the database takes one,
+// so that a concurrent deletion records one event only.
+func (s *Service) DeleteBySelf(ctx context.Context, accountID string) error {
+	a, err := s.d.Repository.FindAccount(ctx, accountID)
+	if err != nil {
+		return err
+	}
+	if !a.IsLocal() || a.ActorType == account.ActorApplication {
+		return fmt.Errorf("account %s: %w", accountID, ErrNotLocal)
+	}
+	id := s.d.IDs.NewID()
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		st, err := s.d.Repository.LifecycleState(ctx, tx, accountID)
+		switch {
+		case errors.Is(err, ErrNotFound):
+		case err != nil:
+			return err
+		case st.State == account.StateDeleted:
+			return fmt.Errorf("account %s: %w", accountID, ErrAlreadyDeleted)
+		}
+		e := account.LifecycleEvent{
+			ID: id, AccountID: accountID, Kind: account.LifecycleDeleted, InitiatedBy: account.InitiatedBySelf,
+			OccurredAt: kernel.Normalize(s.d.Clock.Now()),
+		}
+		if err := s.d.Repository.InsertLifecycleEvent(ctx, tx, e); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, LifecycleEventRecorded{Event: e})
+	})
+}
+
 // RegisterDeletionJobs registers the JobExecuteDeletions handler and its hourly schedule.
 func (s *Service) RegisterDeletionJobs(reg *queue.JobHandlerRegistry, sched *queue.Scheduler) {
 	reg.Register(JobExecuteDeletions, func(ctx context.Context, _ queue.Job) queue.Result {

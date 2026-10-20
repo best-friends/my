@@ -3983,6 +3983,110 @@
     "defaultMessage": "ログインしていません。",
     "description": "Text in the account section of the settings page when nobody is signed in."
   },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button in the dialog that closes it without deleting the account."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "アカウントを削除",
+    "description": "Button in the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "確認のためパスワードを入力してください。アカウントはすぐに削除され、ログアウトします。元に戻すことはできません。",
+    "description": "Description of the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "アカウントを削除しますか？",
+    "description": "Title of the dialog that asks the user to confirm deleting their account."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "アカウント・投稿・プロフィールはすぐに見えなくなり、ほかのサーバーにも削除を依頼します。元に戻すことはできず、ユーザー名は再び使えません。データを残したい場合は先にダウンロードしてください。",
+    "description": "Explains what deleting the account does, above the button that starts it."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "アカウントを削除…",
+    "description": "Button that opens the dialog that deletes the user's account."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "パスワード",
+    "description": "Label of the field in which the user types their password to confirm deleting the account."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "パスワードを入力してください。",
+    "description": "Error under the password field when the user confirms the deletion without typing the password."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "アカウントの削除",
+    "description": "Heading of the section of the account page about deleting the account."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error in the deletion dialog when the password the user typed is not their current password."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
+    "description": "Explains the archive of the user's data, above the button that asks for one."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "ダウンロード",
+    "description": "Button that downloads an archive of the user's data."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "{date} のアーカイブをダウンロード",
+    "description": "Accessible name of the button that downloads one archive. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "アーカイブはありません",
+    "description": "Shown when the user has no archive of their data."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "ダウンロード期限",
+    "description": "Label of the date until which an archive of the user's data can be downloaded."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "{date} のアーカイブ",
+    "description": "Heading of one archive of the user's data. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "アーカイブを作成",
+    "description": "Button that asks the server to prepare an archive of the user's data."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "アーカイブを作成しています。完了すると下に表示されます。",
+    "description": "Announced after the user asked for an archive of their data."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "サイズ",
+    "description": "Label of the file size of an archive of the user's data."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the state of an archive of the user's data (being prepared, ready, failed)."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "失敗しました。もう一度作成してください。",
+    "description": "State of an archive of the user's data that the server could not prepare; the user can ask for another."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "作成中",
+    "description": "State of an archive of the user's data that the server is still preparing."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "ダウンロードできます",
+    "description": "State of an archive of the user's data that can be downloaded."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "データのダウンロード",
+    "description": "Heading of the section of the account page about archives of the user's data."
+  },
+  "settings.account.summary": {
+    "defaultMessage": "データのダウンロードとアカウントの削除",
+    "description": "Description of the account page in the list of settings pages."
+  },
+  "settings.account.title": {
+    "defaultMessage": "アカウント",
+    "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
+  },
   "settings.back": {
     "defaultMessage": "設定に戻る",
     "description": "Link under the heading of a settings page that opens the list of settings pages."

@@ -343,8 +343,14 @@ flowchart LR
 
 | テーブル | 分類 | カラム |
 | --- | --- | --- |
-| `data_exports` | リソース | `id`, `user_id`, `requested_at` |
-| `data_export_results` | イベント | `export_id`（PK）, `outcome`（`enum(ready, failed)`）, `blob_key`（NULL 可）, `file_size`（NULL 可）, `expires_at`（NULL 可）, `completed_at` |
+| `data_exports` | リソース | `id`, `user_id`, `requested_at`。インデックス `(user_id, id DESC)` |
+| `data_export_results` | イベント | `export_id`（PK）, `outcome`（`enum(ready, failed)`）, `blob_key`（NULL 可。`ready` のときだけ値を持つ）, `file_size`（NULL 可。同じ）, `expires_at`, `completed_at`。インデックス `(expires_at)` |
+
+- 本人のデータのアーカイブ（FR-008）です。要求（`POST /api/v1/exports`）が `data_exports` の行とジョブ `identity.build_export` を同じトランザクションで積みます。作成中（結果のない行）の要求があるあいだは、次の要求を受け付けません（`409`）。
+- ジョブは ZIP のアーカイブを Blob の非公開のキー `exports/{user_id}/{export_id}.zip` に書き、`ready` の結果を記録します。中身は `actor.json`（Actor）、`outbox.json`（本人の削除されていない投稿すべてを、公開範囲に関わらず `Create` の `OrderedCollection` にしたもの。ブーストは含めない）、`moderation.json`（本人への処分と異議申し立て、本人が出した通報。非公開のメモと通報者は含めない。ADR-0038）です。
+  結果のある行は作り直さないので、再実行してよい。5 回失敗すると `failed` を記録します。
+- 状態は結果から求めます: 結果がなければ作成中、`expires_at` を過ぎていれば期限切れ、それ以外は `outcome` のとおり。`expires_at` は結果の記録から 7 日です（`identity.ExportTTL`）。
+- 1 時間ごとのジョブ `identity.expire_exports` が、期限を過ぎたアーカイブ（`ready` は Blob を先に消す）と行を消します。アカウントの消去（§8）も、本人の要求と Blob をすべて消します。
 
 ### 4.2 account
 
@@ -417,6 +423,8 @@ flowchart LR
   - BAN のように処分が削除を伴う場合は、処分が `deletion_scheduled` イベントを `initiated_by = moderator` で発生させます（`moderation_action_id` で根拠を辿れる）。BAN への異議申し立てを覆すと、`deletion_cancelled`（`initiated_by = moderator`、同じ `moderation_action_id`）で取り消します（`account.Service.CancelDeletionByModeration`）。
     期日は処分から 30 日後（`moderation.BanDeletionDelay`）で、処分と同じトランザクションで記録します（`account.Service.ScheduleDeletionByModeration`）。
     削除済みのアカウントと、それより早い期日の削除がすでに予定されているアカウントには記録しません。
+- 本人による削除（FR-008、`POST /api/v1/accounts/delete`）は、現在のパスワードを確かめてから、猶予を置かずに `deleted`（`initiated_by = self`）を記録します（`account.Service.DeleteBySelf`）。
+  本人による削除の予約はログインできない（§4.1）ので、予約しても本人には取り消せないためです。データの消去は、ほかの削除と同じく `deleted` から 7 日後です（下記）。削除済みのアカウントには記録しません。
 - 期日を過ぎた `deletion_scheduled` は、1 時間ごとのジョブ `account.execute_deletions` が `deleted`（`initiated_by = system`）にします（`account.Service.ExecuteDueDeletions`）。
   1 回で 100 件まで、アカウントごとに短いトランザクションで、状態を読み直してから記録するので、再実行しても二重に削除しません。
   `deleted` は既存の購読者を通して、アカウントと投稿を表示から外し、`Delete`（Actor）を送ります（[federation.md §7.1](federation.md)）。
@@ -1220,7 +1228,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
+| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | リモート投稿の保持期間（FR-803） | `status_deletions`（`origin = retention`） | `statuses`・版と子テーブル・投票・投影の行・リモートのアカウントのブースト（§4.4 リモート投稿の保持期間） | `status_deletions`（取得し直しは拒まない）、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留め・通知 |

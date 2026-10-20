@@ -1709,6 +1709,32 @@ CREATE TABLE registration_origins (
 CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
 
+-- ---------------------------------------------------------------------------------------------
+-- identity: the exports of a user's data (data-model.md §4.1, FR-008).
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a user's request for an archive of their data.
+CREATE TABLE data_exports (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  requested_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX data_exports_user_id_id ON data_exports (user_id, id DESC);
+
+-- Event (child of an export): the end of its build. A ready archive is the private blob under
+-- blob_key; both outcomes are removed at expires_at.
+CREATE TABLE data_export_results (
+  export_id TEXT NOT NULL PRIMARY KEY,
+  outcome TEXT NOT NULL CHECK (outcome IN ('ready', 'failed')),
+  blob_key TEXT,
+  file_size INTEGER CHECK (file_size >= 0),
+  expires_at INTEGER NOT NULL,
+  completed_at INTEGER NOT NULL,
+  CHECK ((outcome = 'ready') = (blob_key IS NOT NULL)),
+  CHECK ((outcome = 'ready') = (file_size IS NOT NULL))
+) STRICT;
+CREATE INDEX data_export_results_expires_at ON data_export_results (expires_at);
+
 -- moderation: the audit log (data-model §4.3, ADR-0037). Owned by internal/app/moderation.
 -- ---------------------------------------------------------------------------------------------
 

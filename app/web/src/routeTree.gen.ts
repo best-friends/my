@@ -35,6 +35,7 @@ import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminSignupBlocksRouteImport } from './routes/admin.signup-blocks'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
@@ -179,6 +180,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAccountRoute = SettingsAccountRouteImport.update({
+  id: '/settings/account',
+  path: '/settings/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
   id: '/settings/account-status',
   path: '/settings/account-status',
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login/callback': typeof LoginCallbackRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/signup-blocks': typeof AdminSignupBlocksRoute
   '/login_/callback': typeof LoginCallbackRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/signup-blocks'
     | '/login/callback'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/signup-blocks'
     | '/login/callback'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/signup-blocks'
     | '/login_/callback'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -498,6 +510,7 @@ export interface RootRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminSignupBlocksRoute: typeof AdminSignupBlocksRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
+  SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
@@ -697,6 +710,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/account': {
+      id: '/settings/account'
+      path: '/settings/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof SettingsAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/account-status': {
       id: '/settings/account-status'
       path: '/settings/account-status'
@@ -802,6 +822,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminSignupBlocksRoute: AdminSignupBlocksRoute,
   LoginCallbackRoute: LoginCallbackRoute,
+  SettingsAccountRoute: SettingsAccountRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,

@@ -78,6 +78,20 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
         return json(route, { mutes: [{ account: bob, notifications: true }] });
       case "GET /follow_requests":
         return json(route, { accounts: [bob] });
+      case "GET /exports":
+        return json(route, {
+          items: [
+            { id: "0192f0c4-7a8e-7000-8000-0000000008e2", state: "pending", requested_at: "2026-10-17T10:00:00Z" },
+            {
+              id: "0192f0c4-7a8e-7000-8000-0000000008e1",
+              state: "ready",
+              requested_at: "2026-10-16T09:30:00Z",
+              completed_at: "2026-10-16T09:35:00Z",
+              expires_at: "2026-10-23T09:35:00Z",
+              file_size: 2_500_000,
+            },
+          ],
+        });
       default:
         return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
     }
@@ -93,7 +107,7 @@ function projectLocale(): string {
   return test.info().project.use.locale ?? "en";
 }
 
-const pages = ["/settings", "/settings/profile", "/settings/preferences", "/settings/follow-requests", "/settings/blocks", "/settings/mutes"] as const;
+const pages = ["/settings", "/settings/profile", "/settings/preferences", "/settings/follow-requests", "/settings/blocks", "/settings/mutes", "/settings/account"] as const;
 
 for (const path of pages) {
   test.describe(`page ${path}`, () => {
