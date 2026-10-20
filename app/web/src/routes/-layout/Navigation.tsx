@@ -5,8 +5,9 @@
 //
 // Below md the tab bar holds Home, Timelines, Notifications, Search and Menu, so that every label fits a fifth
 // of a 320 px screen. Timelines opens the local timeline (or the federated one where the local one is off),
-// whose page has both as tabs; Menu is a button that opens a sheet with the profile, the settings and the color
-// theme. From md the rail holds Home, Local, Federated, Notifications, Search, Profile and Settings instead. Both are one list
+// whose page has both as tabs; Menu is a button that opens a sheet with the profile, the bookmarks, the settings and
+// the color theme. From md the rail holds Home, Local, Federated, Notifications, Search, Profile, Bookmarks and Settings
+// instead. Both are one list
 // in one order, and each item hides at the widths where it does not belong (display: none, so it leaves the
 // accessibility tree too).
 //
@@ -30,6 +31,7 @@ import {
   AdminIcon,
   Avatar,
   Badge,
+  BookmarkIcon,
   Button,
   DialogTrigger,
   FederatedIcon,
@@ -58,7 +60,7 @@ import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { followListPath, profilePath } from "../../lib/paths";
 
-type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/settings" | "/admin";
+type Section = "/home" | "/timelines" | "/local" | "/public" | "/search" | "/notifications" | "/profile" | "/bookmarks" | "/settings" | "/admin";
 
 type NavigationItem = {
   section: Section;
@@ -80,6 +82,7 @@ const items: readonly NavigationItem[] = [
   { section: "/notifications", label: "client:shell.nav.notifications", icon: <NotificationsIcon />, shows: "always" },
   { section: "/search", label: "client:shell.nav.search", icon: <SearchIcon />, shows: "always" },
   { section: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon />, shows: "rail" },
+  { section: "/bookmarks", label: "client:shell.nav.bookmarks", icon: <BookmarkIcon />, shows: "rail" },
   { section: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon />, shows: "rail" },
   { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", admin: true },
 ];

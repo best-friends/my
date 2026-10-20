@@ -2975,6 +2975,10 @@
     "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ħȧȧƞḓŀḗḗ ŧħḗḗ řḗḗɋŭŭḗḗşŧ (ḗḗřřǿǿř {status}). Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "bookmarks.title": {
+    "defaultMessage": "[Ɓǿǿǿǿķḿȧȧřķş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.close": {
     "defaultMessage": "[Ƈŀǿǿşḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4407,6 +4411,10 @@
     "defaultMessage": "[Ȧḓḿīƞīşŧřȧȧŧīǿǿƞ, {count,plural,one{# ƥḗḗƞḓīƞɠ} other{# ƥḗḗƞḓīƞɠ}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.bookmarks": {
+    "defaultMessage": "[Ɓǿǿǿǿķḿȧȧřķş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.home": {
     "defaultMessage": "[Ħǿǿḿḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4749,6 +4757,14 @@
   },
   "timeline.empty.account.heading": {
     "defaultMessage": "[Ƞǿǿ ƥǿǿşŧş ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.bookmarks.description": {
+    "defaultMessage": "[Ƥǿǿşŧş ẏǿǿŭŭ ƀǿǿǿǿķḿȧȧřķ ȧȧƥƥḗḗȧȧř ħḗḗřḗḗ. Ǿƞŀẏ ẏǿǿŭŭ ƈȧȧƞ şḗḗḗḗ ẏǿǿŭŭř ƀǿǿǿǿķḿȧȧřķş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.bookmarks.heading": {
+    "defaultMessage": "[Ƞǿǿ ƀǿǿǿǿķḿȧȧřķş ẏḗḗŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.empty.home.action": {
