@@ -233,7 +233,7 @@ describe("the new-post form", () => {
 
   test("counts against the instance's limit and refuses text that is too long", async () => {
     signedIn();
-    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, limits: { max_post_characters: 10 } })));
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, limits: { max_post_characters: 10, require_media_description: false } })));
     const { user } = await renderApp();
     const sheet = await openSheet(user);
 
@@ -491,6 +491,43 @@ describe("images", () => {
 
     expect(await findToast("Posted.")).toBeInTheDocument();
     expect(sent[0]?.body["media"]).toEqual([{ id: uploadedMediaId }]);
+  });
+
+  test("does not post images without descriptions when the server requires them", async () => {
+    signedIn();
+    await stubImageApis();
+    server.use(
+      http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, limits: { ...instanceFixture.limits, require_media_description: true } })),
+      // The server's requirement wins over the preference's question.
+      http.get(`${apiBase}/preferences`, () => HttpResponse.json({ ...preferencesFixture, require_media_description: true })),
+    );
+    const sent = recordPosts();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Look");
+    await user.upload(fileInput(), new File(["png"], "chart.png", { type: "image/png" }));
+    const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
+    expect(description).toBeRequired();
+    expect(description).toHaveAccessibleDescription(/This server requires a description of every image\./);
+    const post = within(sheet).getByRole("button", { name: "Post" });
+    await waitFor(() => {
+      expect(post).toBeEnabled();
+    });
+
+    await user.type(description, "   ");
+    await user.click(post);
+    await waitFor(() => {
+      expect(description).toHaveFocus();
+    });
+    expect(description).toBeInvalid();
+    expect(description).toHaveAccessibleDescription(/Add a description of this image\./);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(sent).toHaveLength(0);
+
+    await user.type(description, "A bar chart");
+    await user.click(post);
+    expect(await findToast("Posted.")).toBeInTheDocument();
+    expect(sent[0]?.body["media"]).toEqual([{ id: uploadedMediaId, description: "A bar chart" }]);
   });
 });
 

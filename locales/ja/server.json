@@ -703,6 +703,10 @@
     "defaultMessage": "添付したファイルは処理中か、処理できませんでした。",
     "description": "Detail of the HTTP 422 API error when a post attaches a media file whose processing has not finished or failed."
   },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "このサーバーでは、すべての画像に説明（代替テキスト）が必要です。投稿する前に、それぞれの画像に説明を付けてください。",
+    "description": "Detail of the HTTP 422 API error when an attached image has no alternative text while the server requires one for every image (the instance setting require_media_description)."
+  },
   "errors.status.not_author": {
     "defaultMessage": "この投稿を変更できるのは投稿者だけです。",
     "description": "Detail of the HTTP 403 API error when a user tries to edit or delete another account's post."

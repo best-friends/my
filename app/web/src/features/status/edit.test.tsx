@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { mediaFixture, statusFixture, statusPage, viewerStatusFixture } from "../../test/fixtures";
+import { instanceFixture, mediaFixture, statusFixture, statusPage, viewerStatusFixture } from "../../test/fixtures";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -177,6 +177,38 @@ describe("editing a post", () => {
     await user.clear(text);
 
     expect(within(dialog).getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+
+  test("does not save an image without a description when the server requires one", async () => {
+    signedIn();
+    serveOwnPost();
+    const sent: EditStatusRequest[] = [];
+    server.use(
+      http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, limits: { ...instanceFixture.limits, require_media_description: true } })),
+      http.put(`${apiBase}/statuses/:id`, async ({ request }) => {
+        sent.push((await request.json()) as EditStatusRequest);
+        return HttpResponse.json({ ...own, edited_at: "2026-10-16T12:00:00Z" });
+      }),
+    );
+    const { user } = await renderApp({ path: "/local" });
+
+    const dialog = await openEditor(user, "My first words");
+    const description = await within(dialog).findByRole("textbox", { name: "Description of image 1" });
+    expect(description).toBeRequired();
+    expect(description).toHaveAccessibleDescription(/This server requires a description of every image\./);
+    await user.clear(description);
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(description).toHaveFocus();
+    });
+    expect(description).toBeInvalid();
+    expect(sent).toHaveLength(0);
+
+    await user.type(description, "A dog");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(await findToast("Post edited")).toBeInTheDocument();
+    expect(sent[0]?.media).toEqual([{ id: "0192f0c4-7a8e-7000-8000-0000000000f1", description: "A dog" }]);
   });
 });
 

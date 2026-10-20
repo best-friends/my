@@ -526,13 +526,14 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
-		Restrictions:    a.AccountPolicy.Content(),
-		Media:           medias,
-		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
-		Sanitizer:       newHTMLSanitizer(),
-		RemoteMedia:     remoteMediaRecorder{a}, // reads a.Media, built by setMedia
-		MaxStatusLength: a.Instance.MaxStatusLength,
-		DefaultLanguage: a.defaultPostLanguage,
+		Restrictions:            a.AccountPolicy.Content(),
+		Media:                   medias,
+		RemoteMentions:          remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
+		Sanitizer:               newHTMLSanitizer(),
+		RemoteMedia:             remoteMediaRecorder{a}, // reads a.Media, built by setMedia
+		MaxStatusLength:         a.Instance.MaxStatusLength,
+		RequireMediaDescription: a.Instance.RequireMediaDescription,
+		DefaultLanguage:         a.defaultPostLanguage,
 		// Reads a.CustomEmojis, built by setMedia.
 		LocalEmojis: func(ctx context.Context, texts ...string) ([]string, error) {
 			return a.CustomEmojis.LocalEmojiIDs(ctx, texts...)

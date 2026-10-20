@@ -611,7 +611,7 @@ CREATE TABLE instance_setting_revisions (
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
     'retention_moderation_actions', 'retention_audit_log',
-    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact'
+    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",

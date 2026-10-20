@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server's policies (FR-001, FR-202, FR-408, FR-409, FR-718, FR-725, ADR-0009, ADR-0057): who may sign up, the
-// default language, the public timelines, the federation, who may read the list of the domain actions, and what the
-// server states to search engines and AI crawlers. They are
+// The server's policies (FR-001, FR-105, FR-202, FR-408, FR-409, FR-718, FR-725, ADR-0009, ADR-0057): who may sign
+// up, the default language, the public timelines, whether images need a description, the federation, who may read the
+// list of the domain actions, and what the server states to search engines and AI crawlers. They are
 // instance settings that used to change only from the CLI (`my instance set`); the form sends the ones that
 // changed together, all or none, and each change goes to the audit log (FR-704).
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -18,6 +18,7 @@ const policyKeys = [
   "default_locale",
   "local_timeline_enabled",
   "federated_timeline_enabled",
+  "require_media_description",
   "authorized_fetch",
   "remote_media_policy",
   "remote_media_cache_ttl",

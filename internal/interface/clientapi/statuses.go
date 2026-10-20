@@ -142,6 +142,8 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return unprocessable(l.ServerErrorsStatusMediaNotReady())
 	case errors.Is(err, appcontent.ErrInvalidMediaDescription):
 		return unprocessable(l.ServerErrorsStatusInvalidMediaDescription(appcontent.MaxMediaDescription))
+	case errors.Is(err, appcontent.ErrMissingMediaDescription):
+		return unprocessable(l.ServerErrorsStatusMissingMediaDescription())
 	case errors.Is(err, content.ErrNotBoostable):
 		return unprocessable(l.ServerErrorsStatusNotBoostable())
 	case errors.Is(err, content.ErrNotPinnable):

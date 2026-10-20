@@ -46,7 +46,15 @@ function EditStatusContent({ status, close }: EditStatusContentProps) {
         </div>
       );
     case "ready":
-      return <EditStatusForm status={status} source={source.source} maxCharacters={source.maxCharacters} close={close} />;
+      return (
+        <EditStatusForm
+          status={status}
+          source={source.source}
+          maxCharacters={source.maxCharacters}
+          isDescriptionRequired={source.isDescriptionRequired}
+          close={close}
+        />
+      );
   }
 }
 
@@ -54,10 +62,12 @@ type EditStatusFormProps = {
   status: Status;
   source: StatusSource;
   maxCharacters: number;
+  /** Whether the server requires a description of every image (`limits.require_media_description`). */
+  isDescriptionRequired: boolean;
   close: () => void;
 };
 
-function EditStatusForm({ status, source, maxCharacters, close }: EditStatusFormProps) {
+function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, close }: EditStatusFormProps) {
   const t = useT();
   const formatRemaining = useFormatRemaining();
   const errorId = useId();
@@ -92,7 +102,7 @@ function EditStatusForm({ status, source, maxCharacters, close }: EditStatusForm
         formatRemaining={formatRemaining}
         autoFocus
       />
-      <AttachmentList items={form.attachments} onDescribe={form.describe} requireDescriptions={false} />
+      <AttachmentList items={form.attachments} onDescribe={form.describe} requireDescriptions={false} isDescriptionRequired={isDescriptionRequired} />
       {form.attachments.length > 0 && (
         <Checkbox
           isSelected={form.sensitive}

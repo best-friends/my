@@ -715,6 +715,10 @@
     "defaultMessage": "[Ȧƞ ȧȧŧŧȧȧƈħḗḗḓ ƒīŀḗḗ īş şŧīŀŀ ƀḗḗīƞɠ ƥřǿǿƈḗḗşşḗḗḓ ǿǿř ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ƥřǿǿƈḗḗşşḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ (ȧȧŀŧ ŧḗḗẋŧ) ƒǿǿř ḗḗṽḗḗřẏ īḿȧȧɠḗḗ. Ȧḓḓ ǿǿƞḗḗ ŧǿǿ ḗḗȧȧƈħ īḿȧȧɠḗḗ ƀḗḗƒǿǿřḗḗ ƥǿǿşŧīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.not_author": {
     "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ȧȧŭŭŧħǿǿř ƈȧȧƞ ƈħȧȧƞɠḗḗ ŧħīş ƥǿǿşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
