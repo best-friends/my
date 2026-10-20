@@ -41,6 +41,19 @@ const (
 // holds as many open streams as the server allows.
 const ProblemTypeTooManyStreams = "/api/v1/problems/too-many-streams"
 
+// StreamConnections is the my.stream.connections metric (ADR-0055 §3): the open streams of
+// this process, by the kind of stream. The streaming endpoint has one kind, user: the viewer's
+// home timeline and notifications.
+var StreamConnections = kernel.Instrument{
+	Name: "my.stream.connections", Unit: "{connection}", Description: "Open streams (Server-Sent Events) of this process, by kind.",
+	LabelKeys: []string{labelStreamKind},
+}
+
+const (
+	labelStreamKind = "my.stream.kind"
+	streamKindUser  = "user"
+)
+
 // streamingPattern is the http.ServeMux pattern of the streaming endpoint.
 const streamingPattern = "GET " + BasePath + "/streaming"
 
@@ -113,6 +126,9 @@ func (s *Server) serveStreaming(w http.ResponseWriter, r *http.Request) {
 		s.responseError(w, r, err)
 		return
 	}
+	kind := kernel.NewLabels(labelStreamKind, streamKindUser)
+	s.streams.Add(ctx, 1, kind)
+	defer s.streams.Add(context.WithoutCancel(ctx), -1, kind)
 	h := w.Header()
 	h.Set("Content-Type", "text/event-stream")
 	h.Set("Cache-Control", cacheNoStore)

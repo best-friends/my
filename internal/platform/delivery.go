@@ -18,7 +18,7 @@ func (a *App) setUpDelivery(repo federation.Repository) {
 		Client:  federation.NewSignedHTTPClient(a.HTTPClient, httpsig.New(), a.KV, a.Clock),
 		Keys:    federation.AccountSigningKeys{Accounts: a.Accounts},
 		Domains: a.ModerationPolicy,
-		Clock:   a.Clock, IDs: a.IDs, Logger: a.Logger,
+		Clock:   a.Clock, IDs: a.IDs, Logger: a.Logger, Meter: a.Meter,
 	})
 	a.Deliverer.RegisterJobs(a.Handlers)
 	federation.NewProber(federation.ProbeDeps{

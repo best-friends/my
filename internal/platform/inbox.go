@@ -22,7 +22,7 @@ func (a *App) setUpInbox(repo federation.InboxRepository) {
 		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
 		Accounts:   a.Accounts,
 		Domains:    a.ModerationPolicy,
-		Health:     a.InstanceHealth, RateLimiter: a.RateLimiter, Clock: a.Clock, Logger: a.Logger,
+		Health:     a.InstanceHealth, RateLimiter: a.RateLimiter, Clock: a.Clock, Logger: a.Logger, Meter: a.Meter,
 	})
 	a.setUpInboxProcessor(repo)
 }

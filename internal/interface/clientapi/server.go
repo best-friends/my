@@ -162,11 +162,16 @@ type Options struct {
 	RequestID func(ctx context.Context) string
 	// Logger logs unexpected errors; nil means slog.Default().
 	Logger *slog.Logger
+	// Meter records my.stream.connections (ADR-0055 §3); nil records nothing. The HTTP
+	// metrics of every operation are recorded around the Router.
+	Meter kernel.Meter
 }
 
 // Server implements the generated StrictServerInterface by calling application use cases.
 type Server struct {
 	o Options
+	// streams counts the open streams.
+	streams kernel.UpDownCounter
 }
 
 var _ StrictServerInterface = (*Server)(nil)
@@ -188,7 +193,7 @@ func New(o Options) *Server {
 	if o.Authenticator == nil {
 		o.Authenticator = noTokens{}
 	}
-	return &Server{o: o}
+	return &Server{o: o, streams: kernel.MeterOrNop(o.Meter).UpDownCounter(StreamConnections)}
 }
 
 // Router registers handlers for http.ServeMux patterns.
