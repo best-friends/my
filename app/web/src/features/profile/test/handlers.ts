@@ -2,8 +2,8 @@
 // The default MSW handlers of the profile feature (web-client.md §7): GET /accounts/lookup finds Alice (the
 // viewer) and Bob with their follow counts, and remoteAccountFixture; the viewer has no relationship with
 // anyone; each change (follow, block, mute and their removal) returns the relationship after it; an
-// account's posts are the timeline fixture (the remote account's, remoteStatusFixture), and each follow
-// list holds the other local account.
+// account's posts are the timeline fixture (the remote account's, remoteStatusFixture) and it pinned none,
+// and each follow list holds the other local account.
 import { http, HttpResponse } from "msw";
 import {
   otherAccountFixture,
@@ -49,8 +49,10 @@ export const handlers = [
     const after = relationshipAfter[String(params["action"])];
     return after === undefined ? problem(404, "about:blank", "Not Found") : HttpResponse.json(relationshipFixture(String(params["id"]), after));
   }),
-  http.get(`${apiBase}/accounts/:id/statuses`, ({ params }) =>
-    HttpResponse.json(statusPage([params["id"] === remoteAccountFixture.id ? remoteStatusFixture : timelineStatusFixture])),
+  http.get(`${apiBase}/accounts/:id/statuses`, ({ params, request }) =>
+    new URL(request.url).searchParams.get("pinned") === "true"
+      ? HttpResponse.json(statusPage([]))
+      : HttpResponse.json(statusPage([params["id"] === remoteAccountFixture.id ? remoteStatusFixture : timelineStatusFixture])),
   ),
   http.get(`${apiBase}/accounts/:id/followers`, ({ params }) => HttpResponse.json(followList(String(params["id"])))),
   http.get(`${apiBase}/accounts/:id/following`, ({ params }) => HttpResponse.json(followList(String(params["id"])))),

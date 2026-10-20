@@ -4783,6 +4783,34 @@
     "defaultMessage": "{host} で元の投稿を開く",
     "description": "Accessible name of the link on a post of another server to its page on that server; the link shows only {host}, that server's host name, for example 'mastodon.social'."
   },
+  "status.pin.action": {
+    "defaultMessage": "プロフィールに固定",
+    "description": "Menu item, on the user's own post, that pins it to the top of their profile."
+  },
+  "status.pin.done": {
+    "defaultMessage": "投稿をプロフィールに固定しました",
+    "description": "Toast after the user pinned their post to their profile."
+  },
+  "status.pin.failed": {
+    "defaultMessage": "投稿を固定できませんでした：{reason}",
+    "description": "Toast when pinning the user's post failed, for example because they already pinned as many posts as allowed. {reason} is the error message, a full sentence."
+  },
+  "status.pin.label": {
+    "defaultMessage": "固定された投稿",
+    "description": "Line above a post at the top of a profile that the account pinned there."
+  },
+  "status.unpin.action": {
+    "defaultMessage": "プロフィールへの固定を外す",
+    "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."
+  },
+  "status.unpin.done": {
+    "defaultMessage": "投稿の固定を外しました",
+    "description": "Toast after the user unpinned their post from their profile."
+  },
+  "status.unpin.failed": {
+    "defaultMessage": "投稿の固定を外せませんでした：{reason}",
+    "description": "Toast when unpinning the user's post failed. {reason} is the error message, a full sentence."
+  },
   "status.thread.ancestors": {
     "defaultMessage": "スレッドの前の投稿",
     "description": "Heading above the posts that the post of the page replies to, oldest first."
