@@ -46,10 +46,11 @@ CI（`.github/workflows/`）は、どこで何を検査するかを次のよう�
 | Merge Queue | `ci.yml` | マージグループ（PR を `main` と先に並んだ PR に重ねたもの）で、変更したコンテキストの検査をもう一度回す。ファイルごとに決まる検査（markdownlint・Go と npm の依存ライセンス・shellcheck・CSS の `100vh`・デザイントークン・Playwright のイメージの版）と、ストーリーテスト・スモークテスト・arm64 のビルドは飛ばす。`check` が通ればキューがマージする |
 | `main` への push | `main.yml` | Web の E2E（幅 × ロケールの部分集合を 4 シャード）、ドキュメント以外を変えたらスモークテスト、`app/ui` を変えたらストーリーテスト、DB のアダプタ・クエリ・スキーマなどを変えたら本物の PostgreSQL でのテスト（`postgres-contract.yml`）。PR と Merge Queue が使う Go と Bun のキャッシュもここで作る。`make check` のコンテキストは回し直さない |
 | nightly（03:00 JST） | `nightly.yml` | Web の E2E の全マトリクス（8 シャード）、ライブの相互運用テスト（`federation-live.yml`）、本物の PostgreSQL でのテスト、スモークテストと linux/arm64 のイメージのビルド |
+| `main` への push・週 1 回（月曜 06:00 JST） | `codeql.yml` | CodeQL のコードスキャン（Go・JavaScript / TypeScript・GitHub Actions）。外から来た値が SQL・HTML・パス・リダイレクト先などに届く流れを追い、結果は Security タブに出る。ADR-0047 の main と nightly の層に足したもので、PR と Merge Queue では回さず、`check` にも入らない |
 
 - PR では Web の E2E は自動では回りません。Web クライアントに触れる PR は、手元で `make web-e2e` を回すか、PR のブランチに対して
   `gh workflow run web-e2e.yml -R best-friends/my --ref <branch>`（全マトリクスは `-f matrix=full` を足す。Actions タブからも実行できる）で回します。
-- `ctx-<context>.yml`・`nightly.yml`・`federation-live.yml` も `workflow_dispatch` で手で回せます。
+- `ctx-<context>.yml`・`nightly.yml`・`federation-live.yml`・`codeql.yml` も `workflow_dispatch` で手で回せます。
 
 ## スキーマの変更
 
