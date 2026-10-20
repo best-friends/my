@@ -2,9 +2,11 @@
 // The layout keeps the one event stream of the app open (web-client.md S10, FR-207) and routes its events
 // to the features that own the cached data: new home entries wait behind the home timeline's "N new
 // posts" button (or join its cache while no page shows it), notifications update the unread badge, and a moderator's notifications of a new report or
-// registration read the Moderation entry's counts again. After a reconnect, all of them read again what the
+// registration read the Moderation entry's counts again, and the server's announcements join, change, or leave
+// the list above the home timeline. After a reconnect, all of them read again what the
 // gap may have missed, since the server replays nothing (client-api.md §5).
 import { useQueryClient } from "@tanstack/react-query";
+import { catchUpAnnouncements, receiveAnnouncement, removeAnnouncement } from "../../features/announcements";
 import { refreshAdminCounts } from "../../features/moderation";
 import { catchUpNotifications, receiveNotification } from "../../features/notifications";
 import { catchUpHome, receiveHomeStatus } from "../../features/timeline";
@@ -24,6 +26,12 @@ export function useLiveUpdates(): void {
           receiveNotification(queryClient, api, event.notification);
           refreshAdminCounts(queryClient, api, event.notification.type);
           break;
+        case "announcement":
+          receiveAnnouncement(queryClient, api, event.announcement);
+          break;
+        case "announcement_removed":
+          removeAnnouncement(queryClient, api, event.id);
+          break;
       }
     },
     onReconnect: () => {
@@ -32,6 +40,7 @@ export function useLiveUpdates(): void {
         console.warn("the home timeline could not be read after reconnecting", error);
       });
       catchUpNotifications(queryClient, api);
+      catchUpAnnouncements(queryClient, api);
       refreshAdminCounts(queryClient, api);
     },
   });

@@ -28,6 +28,9 @@ const (
 	// PermManageWebhooks: set up the instance's webhooks, see their deliveries, and send them
 	// again (ADR-0060). It is server administration (ADR-0058 §4).
 	PermManageWebhooks Permission = "manage_webhooks"
+	// PermManageAnnouncements: write, publish, and withdraw the server-wide announcements
+	// (FR-726). It is server administration (ADR-0058 §4).
+	PermManageAnnouncements Permission = "manage_announcements"
 )
 
 // AllPermissions lists every permission.
@@ -35,7 +38,7 @@ func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
-		PermManageTwoFactor, PermManageCustomEmojis, PermManageWebhooks,
+		PermManageTwoFactor, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
 	}
 }
 

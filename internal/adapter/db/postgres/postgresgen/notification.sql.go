@@ -42,6 +42,9 @@ WHERE n.recipient_account_id = $1
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
       AND (x.expires_at IS NULL OR x.expires_at > $4::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_domain_exclusions dx
+    WHERE dx.viewer_account_id = n.recipient_account_id
+      AND (dx.domain = n.source_domain OR right(n.source_domain, length(dx.domain) + 1) = '.' || dx.domain))
   AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 `
 
@@ -76,6 +79,15 @@ func (q *Queries) DeleteAllNotificationDeletedStatuses(ctx context.Context) erro
 	return err
 }
 
+const deleteAllNotificationDomainExclusions = `-- name: DeleteAllNotificationDomainExclusions :exec
+DELETE FROM notification_domain_exclusions
+`
+
+func (q *Queries) DeleteAllNotificationDomainExclusions(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, deleteAllNotificationDomainExclusions)
+	return err
+}
+
 const deleteAllNotificationExclusions = `-- name: DeleteAllNotificationExclusions :exec
 
 DELETE FROM notification_exclusions
@@ -84,6 +96,20 @@ DELETE FROM notification_exclusions
 // Rebuilding the projections (data-model section 9).
 func (q *Queries) DeleteAllNotificationExclusions(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, deleteAllNotificationExclusions)
+	return err
+}
+
+const deleteNotificationDomainExclusion = `-- name: DeleteNotificationDomainExclusion :exec
+DELETE FROM notification_domain_exclusions WHERE viewer_account_id = $1 AND domain = $2
+`
+
+type DeleteNotificationDomainExclusionParams struct {
+	ViewerAccountID string
+	Domain          string
+}
+
+func (q *Queries) DeleteNotificationDomainExclusion(ctx context.Context, arg DeleteNotificationDomainExclusionParams) error {
+	_, err := q.db.Exec(ctx, deleteNotificationDomainExclusion, arg.ViewerAccountID, arg.Domain)
 	return err
 }
 
@@ -102,8 +128,28 @@ func (q *Queries) DeleteNotificationExclusion(ctx context.Context, arg DeleteNot
 	return err
 }
 
+const domainExcluded = `-- name: DomainExcluded :one
+SELECT EXISTS (SELECT 1 FROM notification_domain_exclusions dx
+  WHERE dx.viewer_account_id = $1
+    AND (dx.domain = $2::text OR right($2::text, length(dx.domain) + 1) = '.' || dx.domain))
+`
+
+type DomainExcludedParams struct {
+	ViewerAccountID string
+	Domain          string
+}
+
+// DomainExcluded reports whether a domain exclusion of the viewer covers domain: its own or
+// that of one of its parent domains.
+func (q *Queries) DomainExcluded(ctx context.Context, arg DomainExcludedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, domainExcluded, arg.ViewerAccountID, arg.Domain)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getNotification = `-- name: GetNotification :one
-SELECT id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at
+SELECT id, recipient_account_id, type, source_account_id, source_domain, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at
 FROM notifications WHERE id = $1
 `
 
@@ -115,6 +161,7 @@ func (q *Queries) GetNotification(ctx context.Context, id string) (Notification,
 		&i.RecipientAccountID,
 		&i.Type,
 		&i.SourceAccountID,
+		&i.SourceDomain,
 		&i.StatusID,
 		&i.ModerationActionID,
 		&i.ReportID,
@@ -145,8 +192,8 @@ func (q *Queries) GetNotificationReadMarker(ctx context.Context, accountID strin
 const insertNotification = `-- name: InsertNotification :execrows
 
 
-INSERT INTO notifications (id, recipient_account_id, type, source_account_id, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+INSERT INTO notifications (id, recipient_account_id, type, source_account_id, source_domain, status_id, moderation_action_id, report_id, subject_user_id, severance_id, appeal_id, reaction_emoji, reaction_custom_emoji_id, dedupe_key, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 ON CONFLICT (recipient_account_id, dedupe_key) DO NOTHING
 `
 
@@ -155,6 +202,7 @@ type InsertNotificationParams struct {
 	RecipientAccountID    string
 	Type                  string
 	SourceAccountID       *string
+	SourceDomain          *string
 	StatusID              *string
 	ModerationActionID    *string
 	ReportID              *string
@@ -177,6 +225,7 @@ func (q *Queries) InsertNotification(ctx context.Context, arg InsertNotification
 		arg.RecipientAccountID,
 		arg.Type,
 		arg.SourceAccountID,
+		arg.SourceDomain,
 		arg.StatusID,
 		arg.ModerationActionID,
 		arg.ReportID,
@@ -226,8 +275,25 @@ func (q *Queries) InsertNotificationDismissal(ctx context.Context, arg InsertNot
 	return result.RowsAffected(), nil
 }
 
+const insertNotificationDomainExclusion = `-- name: InsertNotificationDomainExclusion :exec
+
+INSERT INTO notification_domain_exclusions (viewer_account_id, domain) VALUES ($1, $2)
+ON CONFLICT (viewer_account_id, domain) DO NOTHING
+`
+
+type InsertNotificationDomainExclusionParams struct {
+	ViewerAccountID string
+	Domain          string
+}
+
+// Domain exclusions (projection of the graph's domain mutes).
+func (q *Queries) InsertNotificationDomainExclusion(ctx context.Context, arg InsertNotificationDomainExclusionParams) error {
+	_, err := q.db.Exec(ctx, insertNotificationDomainExclusion, arg.ViewerAccountID, arg.Domain)
+	return err
+}
+
 const listNotifications = `-- name: ListNotifications :many
-SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.status_id, n.moderation_action_id, n.report_id,
+SELECT n.id, n.recipient_account_id, n.type, n.source_account_id, n.source_domain, n.status_id, n.moderation_action_id, n.report_id,
   n.subject_user_id, n.severance_id, n.appeal_id, n.reaction_emoji, n.reaction_custom_emoji_id, n.dedupe_key, n.created_at
 FROM notifications n
 WHERE n.recipient_account_id = $1
@@ -238,6 +304,9 @@ WHERE n.recipient_account_id = $1
   AND NOT EXISTS (SELECT 1 FROM notification_exclusions x
     WHERE x.viewer_account_id = n.recipient_account_id AND x.target_account_id = n.source_account_id
       AND (x.expires_at IS NULL OR x.expires_at > $6::timestamptz))
+  AND NOT EXISTS (SELECT 1 FROM notification_domain_exclusions dx
+    WHERE dx.viewer_account_id = n.recipient_account_id
+      AND (dx.domain = n.source_domain OR right(n.source_domain, length(dx.domain) + 1) = '.' || dx.domain))
   AND NOT EXISTS (SELECT 1 FROM notification_deleted_statuses s WHERE s.status_id = n.status_id)
 ORDER BY n.id DESC
 LIMIT $7
@@ -278,6 +347,7 @@ func (q *Queries) ListNotifications(ctx context.Context, arg ListNotificationsPa
 			&i.RecipientAccountID,
 			&i.Type,
 			&i.SourceAccountID,
+			&i.SourceDomain,
 			&i.StatusID,
 			&i.ModerationActionID,
 			&i.ReportID,

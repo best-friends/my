@@ -55,6 +55,13 @@ ON CONFLICT (viewer_account_id, target_account_id, reason) DO UPDATE SET expires
 -- name: DeleteFeedExclusion :exec
 DELETE FROM feed_exclusions WHERE viewer_account_id = ? AND target_account_id = ? AND reason = ?;
 
+-- name: InsertFeedDomainMute :exec
+INSERT INTO feed_domain_mutes (viewer_account_id, domain) VALUES (?, ?)
+ON CONFLICT (viewer_account_id, domain) DO NOTHING;
+
+-- name: DeleteFeedDomainMute :exec
+DELETE FROM feed_domain_mutes WHERE viewer_account_id = ? AND domain = ?;
+
 -- name: UpsertFeedAuthorRestriction :exec
 INSERT INTO feed_author_restrictions (account_id, restriction, effective_until) VALUES (?, ?, ?)
 ON CONFLICT (account_id, restriction) DO UPDATE SET effective_until = excluded.effective_until;
@@ -86,6 +93,9 @@ DELETE FROM feed_follow_edges;
 -- name: DeleteAllFeedExclusions :exec
 DELETE FROM feed_exclusions;
 
+-- name: DeleteAllFeedDomainMutes :exec
+DELETE FROM feed_domain_mutes;
+
 -- Projection contents, for verifying the projections -----------------------------------------
 
 -- name: ListAllFeedEntries :many
@@ -106,6 +116,9 @@ ORDER BY follower_account_id, followee_account_id;
 -- name: ListAllFeedExclusions :many
 SELECT viewer_account_id, target_account_id, reason, expires_at FROM feed_exclusions
 ORDER BY viewer_account_id, target_account_id, reason;
+
+-- name: ListAllFeedDomainMutes :many
+SELECT viewer_account_id, domain FROM feed_domain_mutes ORDER BY viewer_account_id, domain;
 
 -- Timelines (data-model 6) ----------------------------------------------------------------------
 -- A list argument is a JSON array of strings, read with json_each: the SQLite engine of sqlc
@@ -148,6 +161,10 @@ WHERE e.author_account_id IN (
       AND (dr.domain IN (e.author_domain, e.original_author_domain)
         OR substr(e.author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain
         OR substr(e.original_author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = sqlc.arg(viewer) AND e.kind = 'boost' AND e.author_account_id <> sqlc.arg(viewer)
+      AND (dm.domain = e.original_author_domain OR substr(e.original_author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain))
   AND (CAST(sqlc.arg(all_languages) AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(sqlc.arg(languages) AS TEXT))))
 ORDER BY e.id DESC
 LIMIT sqlc.arg(page_limit);
@@ -198,6 +215,10 @@ WHERE e.kind = 'post' AND e.visibility = 'public'
     SELECT 1 FROM feed_exclusions x
     WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = e.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > CAST(sqlc.arg(now) AS INTEGER)))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = sqlc.arg(viewer)
+      AND (dm.domain = e.author_domain OR substr(e.author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain))
   AND (CAST(sqlc.arg(all_languages) AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(sqlc.arg(languages) AS TEXT))))
 ORDER BY e.id DESC
 LIMIT sqlc.arg(page_limit);
@@ -227,6 +248,10 @@ WHERE t.tag_id = sqlc.arg(tag_id) AND t.visibility IN ('public', 'local')
     SELECT 1 FROM feed_exclusions x
     WHERE x.viewer_account_id = sqlc.arg(viewer) AND x.target_account_id = t.author_account_id
       AND (x.expires_at IS NULL OR x.expires_at > CAST(sqlc.arg(now) AS INTEGER)))
+  AND NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = sqlc.arg(viewer)
+      AND (dm.domain = e.author_domain OR substr(e.author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain))
   AND (CAST(sqlc.arg(all_languages) AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(sqlc.arg(languages) AS TEXT))))
 ORDER BY t.entry_id DESC
 LIMIT sqlc.arg(page_limit);
@@ -265,6 +290,10 @@ WHERE e.author_account_id = sqlc.arg(author)
         AND (dr.effective_until IS NULL OR dr.effective_until > CAST(sqlc.arg(now) AS INTEGER))
         AND (dr.domain = e.original_author_domain
           OR substr(e.original_author_domain, -(length(dr.domain) + 1)) = '.' || dr.domain))))
+  AND (e.original_author_account_id = e.author_account_id OR NOT EXISTS (
+    SELECT 1 FROM feed_domain_mutes dm
+    WHERE dm.viewer_account_id = sqlc.arg(viewer)
+      AND (dm.domain = e.original_author_domain OR substr(e.original_author_domain, -(length(dm.domain) + 1)) = '.' || dm.domain)))
   AND (CAST(sqlc.arg(all_languages) AS INTEGER) = 1 OR e.language = 'und' OR e.language IN (SELECT value FROM json_each(CAST(sqlc.arg(languages) AS TEXT))))
   AND (CAST(sqlc.arg(exclude_replies) AS INTEGER) = 0 OR e.is_reply = 0)
   AND (CAST(sqlc.arg(exclude_boosts) AS INTEGER) = 0 OR e.kind = 'post')

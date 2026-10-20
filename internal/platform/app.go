@@ -459,7 +459,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Media: instanceMedia{a},
 		// The contact_account setting names a local account.
 		Accounts: instanceAccounts{a},
-		// The terms of service and the privacy policy are Markdown (#489).
+		// The terms of service, the privacy policy (#489), and the announcements (FR-726) are Markdown.
 		Documents: markdown.New(),
 	})
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
@@ -531,13 +531,14 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	content.RegisterProjectors(a.Projectors, statuses)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
-		Restrictions:    a.AccountPolicy.Content(),
-		Media:           medias,
-		RemoteMentions:  remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
-		Sanitizer:       newHTMLSanitizer(),
-		RemoteMedia:     remoteMediaRecorder{a}, // reads a.Media, built by setMedia
-		MaxStatusLength: a.Instance.MaxStatusLength,
-		DefaultLanguage: a.defaultPostLanguage,
+		Restrictions:            a.AccountPolicy.Content(),
+		Media:                   medias,
+		RemoteMentions:          remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
+		Sanitizer:               newHTMLSanitizer(),
+		RemoteMedia:             remoteMediaRecorder{a}, // reads a.Media, built by setMedia
+		MaxStatusLength:         a.Instance.MaxStatusLength,
+		RequireMediaDescription: a.Instance.RequireMediaDescription,
+		DefaultLanguage:         a.defaultPostLanguage,
 		// Reads a.CustomEmojis, built by setMedia.
 		LocalEmojis: func(ctx context.Context, texts ...string) ([]string, error) {
 			return a.CustomEmojis.LocalEmojiIDs(ctx, texts...)
@@ -585,6 +586,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
+	instance.RegisterCommitHooks(a.Projectors, a.Streams)
 	a.registerBusinessMetrics(a.Projectors)
 	fedOutbox := a.setUpFederation(cfg, feds)
 
@@ -617,7 +619,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpInbox(feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
-		Restrictions: a.AccountPolicy.Content(), Media: a.Media, LinkCards: a.LinkCards,
+		Restrictions: a.AccountPolicy.Content(), Media: a.Media, Clock: a.Clock, LinkCards: a.LinkCards,
 	})
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
@@ -687,11 +689,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation, Severances: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
 		AccountAdmin: a.AccountAdmin, AccountReports: a.Moderation,
-		AuditLog:     a.Moderation,
-		Rules:        a.Instance,
-		Roles:        a.Identity,
-		Reports:      a.LocalReports,
-		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
+		AuditLog: a.Moderation,
+		Rules:    a.Instance,
+		// The server-wide announcements (FR-726).
+		Announcements: a.Instance,
+		Roles:         a.Identity,
+		Reports:       a.LocalReports,
+		ReportCounts:  a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
 		OwnAccount: a.Identity, Exports: a.Exports, Imports: a.Imports,
 		// The instance texts and the public pages of the documents among them (#489).

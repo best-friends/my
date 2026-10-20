@@ -77,6 +77,11 @@ DELETE FROM poll_tally_observations WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
   WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
 
+-- name: PurgePollVotes :exec
+DELETE FROM poll_votes WHERE poll_id IN (
+  SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
+  WHERE r.status_id = ANY(sqlc.arg(ids)::text[]));
+
 -- name: PurgePollTallies :exec
 DELETE FROM poll_tallies WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id

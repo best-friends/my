@@ -12,6 +12,7 @@ const pages: readonly { href: string; label: ClientMessageKey; description: Clie
   { href: "/settings/follow-requests", label: "client:settings.follow_requests.title", description: "client:settings.follow_requests.summary" },
   { href: "/settings/blocks", label: "client:settings.blocks.title", description: "client:settings.blocks.summary" },
   { href: "/settings/mutes", label: "client:settings.mutes.title", description: "client:settings.mutes.summary" },
+  { href: "/settings/domain-mutes", label: "client:settings.domain_mutes.title", description: "client:settings.domain_mutes.summary" },
   { href: "/settings/import-export", label: "client:settings.import_export.title", description: "client:settings.import_export.summary" },
   { href: "/settings/account-status", label: "client:account_status.title", description: "client:account_status.summary" },
   { href: "/settings/account", label: "client:settings.account.title", description: "client:settings.account.summary" },

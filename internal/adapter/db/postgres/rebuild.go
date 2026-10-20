@@ -18,7 +18,10 @@ func (r *NotificationRepository) DeleteAllExclusions(ctx context.Context, tx uow
 	if err != nil {
 		return err
 	}
-	return wrap(q.DeleteAllNotificationExclusions(ctx), "empty notification exclusions")
+	if err := q.DeleteAllNotificationExclusions(ctx); err != nil {
+		return wrap(err, "empty notification exclusions")
+	}
+	return wrap(q.DeleteAllNotificationDomainExclusions(ctx), "empty notification domain exclusions")
 }
 
 // DeleteAllDeletedStatuses implements notification.Repository.

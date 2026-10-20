@@ -14,7 +14,8 @@ import (
 // rebuild their projections without reading this module's tables: for each live follow ordered
 // by follow ID, a Followed when it is active or a FollowRequested when it is pending, with its
 // current preferences; then a Blocked for each block in force, ordered by block ID; then a Muted
-// for each mute, expired ones included, ordered by account and target. Rejected and terminated
+// for each mute, expired ones included, ordered by account and target; then a DomainMuted for
+// each domain mute, ordered by account and domain. Rejected and terminated
 // follows and retracted blocks emit nothing, so a projection that applies these events to empty
 // tables ends where incremental updating did.
 func ReplayEvents(ctx context.Context, tx uow.Tx, repo Repository, emit func(uow.Event) error) error {
@@ -57,6 +58,15 @@ func ReplayEvents(ctx context.Context, tx uow.Tx, repo Repository, emit func(uow
 	}
 	for _, m := range mutes {
 		if err := emit(Muted{Mute: m}); err != nil {
+			return err
+		}
+	}
+	domains, err := repo.ListAllDomainMutes(ctx, tx)
+	if err != nil {
+		return err
+	}
+	for _, m := range domains {
+		if err := emit(DomainMuted{Mute: m}); err != nil {
 			return err
 		}
 	}

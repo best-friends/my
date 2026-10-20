@@ -224,6 +224,28 @@ func (r *TimelineRepository) DeleteDomainRestriction(ctx context.Context, tx uow
 	}), "delete feed domain restriction")
 }
 
+// InsertDomainMute implements timeline.Repository.
+func (r *TimelineRepository) InsertDomainMute(ctx context.Context, tx uow.Tx, m apptimeline.DomainMute) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertFeedDomainMute(ctx, sqlitegen.InsertFeedDomainMuteParams{
+		ViewerAccountID: m.ViewerAccountID, Domain: m.Domain,
+	}), "insert feed domain mute")
+}
+
+// DeleteDomainMute implements timeline.Repository.
+func (r *TimelineRepository) DeleteDomainMute(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.DeleteFeedDomainMute(ctx, sqlitegen.DeleteFeedDomainMuteParams{
+		ViewerAccountID: viewerAccountID, Domain: domain,
+	}), "delete feed domain mute")
+}
+
 // DeleteProjection implements timeline.Repository.
 func (r *TimelineRepository) DeleteProjection(ctx context.Context, tx uow.Tx) error {
 	q, err := queries(tx)
@@ -232,7 +254,7 @@ func (r *TimelineRepository) DeleteProjection(ctx context.Context, tx uow.Tx) er
 	}
 	for _, del := range []func(context.Context) error{
 		q.DeleteAllFeedEntries, q.DeleteAllFeedDirectRecipients, q.DeleteAllFeedTagEntries,
-		q.DeleteAllFeedFollowEdges, q.DeleteAllFeedExclusions,
+		q.DeleteAllFeedFollowEdges, q.DeleteAllFeedExclusions, q.DeleteAllFeedDomainMutes,
 	} {
 		if err := del(ctx); err != nil {
 			return wrap(err, "empty the feed projections")
@@ -424,6 +446,13 @@ func (r *TimelineRepository) Snapshot(ctx context.Context) (apptimeline.Projecti
 			ViewerAccountID: row.ViewerAccountID, TargetAccountID: row.TargetAccountID,
 			Reason: timeline.ExclusionReason(row.Reason), ExpiresAt: fromNullMillis(row.ExpiresAt),
 		})
+	}
+	domainMutes, err := q.ListAllFeedDomainMutes(ctx)
+	if err != nil {
+		return p, wrap(err, "list feed domain mutes")
+	}
+	for _, row := range domainMutes {
+		p.DomainMutes = append(p.DomainMutes, apptimeline.DomainMute{ViewerAccountID: row.ViewerAccountID, Domain: row.Domain})
 	}
 	return p, nil
 }

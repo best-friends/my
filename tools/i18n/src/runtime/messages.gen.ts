@@ -578,6 +578,96 @@ export interface MessageArgs {
   "client:admin.accounts.summary": {};
   /** Accounts */
   "client:admin.accounts.title": {};
+  /** Cancel */
+  "client:admin.announcements.cancel": {};
+  /** The announcement could not be changed: {reason} */
+  "client:admin.announcements.change_failed": { reason: string };
+  /** Save as a draft */
+  "client:admin.announcements.create_draft": {};
+  /** The announcement could not be written: {reason} */
+  "client:admin.announcements.create_failed": { reason: string };
+  /** Publish the announcement */
+  "client:admin.announcements.create_published": {};
+  /** Announcements show above the home timeline of everyone on this server, who can mark them as read. The audit log records every change. */
+  "client:admin.announcements.description": {};
+  /** Saved the announcement as a draft. The audit log records the change. */
+  "client:admin.announcements.drafted": {};
+  /** Show for */
+  "client:admin.announcements.duration": {};
+  /** From when you write it. It stops showing after that. */
+  "client:admin.announcements.duration.description": {};
+  /** Edit */
+  "client:admin.announcements.edit": {};
+  /** Edit: {announcement} */
+  "client:admin.announcements.edit_one": { announcement: string };
+  /** Close */
+  "client:admin.announcements.edit.close": {};
+  /** Edit the announcement */
+  "client:admin.announcements.edit.title": {};
+  /** No announcements */
+  "client:admin.announcements.empty": {};
+  /** Announcements you write appear here. */
+  "client:admin.announcements.empty.description": {};
+  /** Shows until */
+  "client:admin.announcements.ends_at": {};
+  /** {announcement} ({state}) */
+  "client:admin.announcements.heading": { announcement: string; state: string };
+  /** All announcements */
+  "client:admin.announcements.list.title": {};
+  /** Write an announcement */
+  "client:admin.announcements.new.title": {};
+  /** Publish */
+  "client:admin.announcements.publish": {};
+  /** Publish now */
+  "client:admin.announcements.publish_now": {};
+  /** Without it, the announcement stays a draft that only the administrators see. */
+  "client:admin.announcements.publish_now.description": {};
+  /** Publish: {announcement} */
+  "client:admin.announcements.publish_one": { announcement: string };
+  /** Published the announcement. The audit log records the change. */
+  "client:admin.announcements.published": {};
+  /** Published */
+  "client:admin.announcements.published_at": {};
+  /** Published {announcement}. The audit log records the change. */
+  "client:admin.announcements.published_one": { announcement: string };
+  /** Save */
+  "client:admin.announcements.save": {};
+  /** Shows from */
+  "client:admin.announcements.starts_at": {};
+  /** State */
+  "client:admin.announcements.state": {};
+  /** Draft */
+  "client:admin.announcements.state.draft": {};
+  /** Published */
+  "client:admin.announcements.state.published": {};
+  /** Withdrawn */
+  "client:admin.announcements.state.withdrawn": {};
+  /** Tell everyone on this server about maintenance and changes. */
+  "client:admin.announcements.summary": {};
+  /** Text */
+  "client:admin.announcements.text": {};
+  /** Write the announcement. */
+  "client:admin.announcements.text_required": {};
+  /** Markdown: paragraphs, emphasis, lists, quotes, code and links. Raw HTML is removed. */
+  "client:admin.announcements.text.description": {};
+  /** Announcements */
+  "client:admin.announcements.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.announcements.too_long": { max: string };
+  /** Until withdrawn */
+  "client:admin.announcements.until_withdrawn": {};
+  /** Changed {announcement}. The audit log records the change. */
+  "client:admin.announcements.updated": { announcement: string };
+  /** Withdraw */
+  "client:admin.announcements.withdraw": {};
+  /** Withdraw: {announcement} */
+  "client:admin.announcements.withdraw_one": { announcement: string };
+  /** Nobody sees the announcement again, and it cannot be published or changed any more. */
+  "client:admin.announcements.withdraw.description": {};
+  /** Withdraw {announcement}? */
+  "client:admin.announcements.withdraw.title": { announcement: string };
+  /** Withdrew {announcement}. The audit log records the change. */
+  "client:admin.announcements.withdrawn": { announcement: string };
   /** Account */
   "client:admin.appeal.account": {};
   /** Open the account in the admin screens */
@@ -682,6 +772,14 @@ export interface MessageArgs {
   "client:admin.audit_log.action.account_action_lifted": {};
   /** Account deletion cancelled */
   "client:admin.audit_log.action.account_deletion_cancelled": {};
+  /** Announcement written */
+  "client:admin.audit_log.action.announcement_created": {};
+  /** Announcement published */
+  "client:admin.audit_log.action.announcement_published": {};
+  /** Announcement changed */
+  "client:admin.audit_log.action.announcement_updated": {};
+  /** Announcement withdrawn */
+  "client:admin.audit_log.action.announcement_withdrawn": {};
   /** Appeal overturned */
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
@@ -702,6 +800,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.domain_action_issued": {};
   /** Domain action lifted */
   "client:admin.audit_log.action.domain_action_lifted": {};
+  /** Invite created */
+  "client:admin.audit_log.action.invite_created": {};
+  /** Invite revoked */
+  "client:admin.audit_log.action.invite_revoked": {};
   /** Registration approved */
   "client:admin.audit_log.action.registration_approved": {};
   /** Registration rejected */
@@ -816,12 +918,16 @@ export interface MessageArgs {
   "client:admin.audit_log.summary": {};
   /** Account */
   "client:admin.audit_log.target_kind.account": {};
+  /** Announcement */
+  "client:admin.audit_log.target_kind.announcement": {};
   /** Appeal */
   "client:admin.audit_log.target_kind.appeal": {};
   /** Custom emoji */
   "client:admin.audit_log.target_kind.custom_emoji": {};
   /** Domain */
   "client:admin.audit_log.target_kind.domain": {};
+  /** Invite */
+  "client:admin.audit_log.target_kind.invite": {};
   /** Report */
   "client:admin.audit_log.target_kind.report": {};
   /** Role */
@@ -1738,6 +1844,8 @@ export interface MessageArgs {
   "client:admin.roles.outranked": { role: string };
   /** Accounts and registrations */
   "client:admin.roles.permission.manage_accounts": {};
+  /** Announcements */
+  "client:admin.roles.permission.manage_announcements": {};
   /** Custom emoji */
   "client:admin.roles.permission.manage_custom_emojis": {};
   /** Other servers */
@@ -2018,6 +2126,12 @@ export interface MessageArgs {
   "client:admin.settings.policies.saved": {};
   /** The settings are already saved. */
   "client:admin.settings.policies.unchanged": {};
+  /** Require a description of every image */
+  "client:admin.settings.posts.require_media_description": {};
+  /** Posts and edits with an image without a description (alt text) are refused, so that people who cannot see the images can follow every post. */
+  "client:admin.settings.posts.require_media_description.description": {};
+  /** Posts */
+  "client:admin.settings.posts.title": {};
   /** With approval */
   "client:admin.settings.registration.approval": {};
   /** Anyone may sign up with a reason; the account works once a moderator approves it. */
@@ -2528,6 +2642,20 @@ export interface MessageArgs {
   "client:admin.webhooks.url": {};
   /** Where the messages are posted, an https URL. A destination on this server's own network works only when the operator allows it in the configuration. */
   "client:admin.webhooks.url.description": {};
+  /** Announcement of {date} */
+  "client:announcements.heading": { date: string };
+  /** Mark as read */
+  "client:announcements.mark_read": {};
+  /** The announcement could not be marked as read: {reason} */
+  "client:announcements.mark_read_failed": { reason: string };
+  /** Announcements */
+  "client:announcements.title": {};
+  /** Unread */
+  "client:announcements.unread": {};
+  /** {count, plural, one {# unread} other {# unread}} */
+  "client:announcements.unread_count": { count: number };
+  /** Shown until {date} */
+  "client:announcements.until": { date: string };
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
@@ -2552,8 +2680,12 @@ export interface MessageArgs {
   "client:compose.media.description.hint": {};
   /** Description of image {position} */
   "client:compose.media.description.label": { position: string };
+  /** Add a description of this image. This server requires one for every image. */
+  "client:compose.media.description.missing": {};
   /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
   "client:compose.media.description.required": {};
+  /** Describe the image for people who cannot see it. This server requires a description of every image. */
+  "client:compose.media.description.server_required": {};
   /** Could not attach the image: {reason} */
   "client:compose.media.failed": { reason: string };
   /** The server could not process this image. */
@@ -3246,6 +3378,36 @@ export interface MessageArgs {
   "client:settings.default_visibility.description": {};
   /** Who sees your posts by default */
   "client:settings.default_visibility.label": {};
+  /** Muting a domain hides the posts of its accounts, and of its subdomains' accounts, from your timelines other than home, their boosts from your home timeline, and their notifications. The accounts you follow stay on your home timeline. Only you are affected, and the server is not told. */
+  "client:settings.domain_mutes.description": {};
+  /** Domain */
+  "client:settings.domain_mutes.domain": {};
+  /** The domain of the server, such as mastodon.example. Its subdomains are muted too. */
+  "client:settings.domain_mutes.domain.description": {};
+  /** Enter a domain. */
+  "client:settings.domain_mutes.domain.required": {};
+  /** You do not mute any domain */
+  "client:settings.domain_mutes.empty": {};
+  /** Domains you mute */
+  "client:settings.domain_mutes.list.title": {};
+  /** Mute */
+  "client:settings.domain_mutes.mute": {};
+  /** Could not mute the domain: {reason} */
+  "client:settings.domain_mutes.mute_failed": { reason: string };
+  /** You muted {domain}. */
+  "client:settings.domain_mutes.muted": { domain: string };
+  /** Mute a domain */
+  "client:settings.domain_mutes.new.title": {};
+  /** Muted on {date} */
+  "client:settings.domain_mutes.since": { date: string };
+  /** Servers whose posts and notifications you do not see */
+  "client:settings.domain_mutes.summary": {};
+  /** Muted domains */
+  "client:settings.domain_mutes.title": {};
+  /** Unmute */
+  "client:settings.domain_mutes.unmute": {};
+  /** You unmuted {domain}. */
+  "client:settings.domain_mutes.unmuted": { domain: string };
   /** Accept */
   "client:settings.follow_requests.accept": {};
   /** {name} now follows you. */
@@ -3342,6 +3504,8 @@ export interface MessageArgs {
   "client:settings.import_export.kind.blocks": {};
   /** Bookmarks */
   "client:settings.import_export.kind.bookmarks": {};
+  /** Muted domains */
+  "client:settings.import_export.kind.domain_mutes": {};
   /** Follows */
   "client:settings.import_export.kind.following": {};
   /** Muted accounts */
@@ -3842,6 +4006,34 @@ export interface MessageArgs {
   "client:status.pin.failed": { reason: string };
   /** Pinned post */
   "client:status.pin.label": {};
+  /** Choose one or more options. */
+  "client:status.poll.choose_many": {};
+  /** Choose one option. */
+  "client:status.poll.choose_one": {};
+  /** Closed */
+  "client:status.poll.closed": {};
+  /** Ends {time} */
+  "client:status.poll.ends": { time: string };
+  /** Poll */
+  "client:status.poll.label": {};
+  /** Poll options */
+  "client:status.poll.options": {};
+  /** Your vote */
+  "client:status.poll.own_vote": {};
+  /** Counts as {host} last reported them */
+  "client:status.poll.remote_counts": { host: string };
+  /** Poll results */
+  "client:status.poll.results": {};
+  /** Vote */
+  "client:status.poll.vote": {};
+  /** Could not vote: {reason} */
+  "client:status.poll.vote_failed": { reason: string };
+  /** Vote sent */
+  "client:status.poll.voted": {};
+  /** {count, plural, one {# person} other {# people}} */
+  "client:status.poll.voters": { count: number };
+  /** {count, plural, one {# vote} other {# votes}} */
+  "client:status.poll.votes": { count: number };
   /** Reaction removed */
   "client:status.reaction.off": {};
   /** Reacted with {emoji} */
@@ -3964,7 +4156,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_favourites": {};
   /** Read your follows and follow requests */
   "server:auth.authorize.scope.read_follows": {};
-  /** Read the accounts you mute */
+  /** Read the accounts and domains you mute */
   "server:auth.authorize.scope.read_mutes": {};
   /** Read your notifications */
   "server:auth.authorize.scope.read_notifications": {};
@@ -3986,7 +4178,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_follows": {};
   /** Upload images and edit their descriptions */
   "server:auth.authorize.scope.write_media": {};
-  /** Mute and unmute accounts */
+  /** Mute and unmute accounts and domains */
   "server:auth.authorize.scope.write_mutes": {};
   /** Mark notifications as read and dismiss them */
   "server:auth.authorize.scope.write_notifications": {};
@@ -4198,6 +4390,8 @@ export interface MessageArgs {
   "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
+  /** You already mute the most domains allowed. Unmute one first. */
+  "server:errors.domain_mutes.too_many": {};
   /** An archive of your data is already being prepared. Wait until it is ready. */
   "server:errors.export.in_progress": {};
   /** This archive cannot be downloaded. */
@@ -4288,6 +4482,8 @@ export interface MessageArgs {
   "server:errors.status.media_not_found": {};
   /** An attached file is still being processed or could not be processed. */
   "server:errors.status.media_not_ready": {};
+  /** This server requires a description (alt text) for every image. Add one to each image before posting. */
+  "server:errors.status.missing_media_description": {};
   /** Only the author can change this post. */
   "server:errors.status.not_author": {};
   /** This post cannot be boosted. */
@@ -4296,6 +4492,16 @@ export interface MessageArgs {
   "server:errors.status.not_pinnable": {};
   /** {max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}} */
   "server:errors.status.pin_limit": { max: number };
+  /** You have already voted in this poll. */
+  "server:errors.status.poll_already_voted": {};
+  /** The poll was changed by an edit of the post. Reload it and vote again. */
+  "server:errors.status.poll_changed": {};
+  /** This poll has ended. */
+  "server:errors.status.poll_closed": {};
+  /** Choose one of the poll's options, or several only when the poll allows it. */
+  "server:errors.status.poll_invalid_choices": {};
+  /** This post has no poll. */
+  "server:errors.status.poll_missing": {};
   /** Your account may not post right now. */
   "server:errors.status.posting_restricted": {};
   /** The post you are replying to was not found. */

@@ -69,6 +69,9 @@ const (
 	// SettingLinkCardsEnabled is whether statuses show the cards of their links, fetched from
 	// the linked pages (FR-117, ADR-0062).
 	SettingLinkCardsEnabled SettingKey = "link_cards_enabled"
+	// SettingRequireMediaDescription makes every media file attached to a local post need an
+	// alt text (FR-105).
+	SettingRequireMediaDescription SettingKey = "require_media_description"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -298,6 +301,10 @@ var definitions = []Definition{
 	{
 		Key: SettingSecurityContact, Kind: KindURI, Default: "",
 		Doc: "Where to report vulnerabilities, an https: or mailto: URI; /.well-known/security.txt is served only when it is set (RFC 9116, ADR-0057).",
+	},
+	{
+		Key: SettingRequireMediaDescription, Kind: KindBool, Default: "false",
+		Doc: "Whether every media file attached to a local post needs an alt text; posts and edits without one are rejected (FR-105).",
 	},
 	{
 		Key: SettingLinkCardsEnabled, Kind: KindBool, Default: "true",
@@ -667,6 +674,11 @@ func (s Settings) LinkCardsEnabled() bool { return s.boolValue(SettingLinkCardsE
 func (s Settings) SecurityContact() string {
 	v, _ := s.Value(SettingSecurityContact)
 	return v
+}
+
+// RequireMediaDescription returns the value of SettingRequireMediaDescription.
+func (s Settings) RequireMediaDescription() bool {
+	return s.boolValue(SettingRequireMediaDescription)
 }
 
 // CrawlerPolicy returns what the instance states to crawlers on its own (ADR-0057).

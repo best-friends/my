@@ -17,8 +17,10 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appidentity "github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/domain/moderation"
 )
 
 // RegistrationRepositoryContract verifies the registration persistence of a database adapter's
@@ -540,6 +542,11 @@ func registrationRateLimit(t *testing.T, e *accountEnv) {
 
 func registrationInvites(t *testing.T, e *accountEnv) {
 	ctx := t.Context()
+	rec := &auditRecorder{}
+	e.projectors.Register(appmoderation.EventAuditRecorded, func(_ context.Context, _ uow.Tx, ev uow.Event) error {
+		rec.add(ev.(appmoderation.AuditRecorded).Entry)
+		return nil
+	})
 	r := e.registration(identity.RegistrationInvite, true)
 	a, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: 5})
 	if err != nil {
@@ -594,6 +601,36 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 	}
 	if _, err := r.RevokeInviteByID(ctx, "no-such-invite", "admin"); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("RevokeInviteByID(unknown) = %v, want ErrNotFound", err)
+	}
+
+	// Each creation and revocation is audited once, by the user or the CLI; revoking a revoked
+	// invite again changes nothing and is not. The label never holds the whole code.
+	type audited struct {
+		action moderation.AuditAction
+		invite identity.Invite
+		actor  moderation.AuditActorKind
+		user   string
+	}
+	want := []audited{
+		{moderation.AuditInviteCreated, a, moderation.AuditActorCLI, ""},
+		{moderation.AuditInviteCreated, b, moderation.AuditActorUser, "admin"},
+		{moderation.AuditInviteRevoked, a, moderation.AuditActorUser, "admin"},
+		{moderation.AuditInviteRevoked, b, moderation.AuditActorUser, "admin"},
+	}
+	entries := rec.all()
+	if len(entries) != len(want) {
+		t.Fatalf("audit entries = %+v, want %d", entries, len(want))
+	}
+	for i, w := range want {
+		g := entries[i]
+		if g.Action != w.action || g.TargetKind != moderation.AuditTargetInvite || g.TargetID != w.invite.ID ||
+			g.SourceEventID != w.invite.ID || g.ActorKind != w.actor || g.ActorUserID != w.user ||
+			g.TargetLabel != w.invite.Code[:4]+"…" {
+			t.Errorf("audit entry %d = %+v, want %s of %s", i, g, w.action, w.invite.ID)
+		}
+		if err := g.Validate(); err != nil {
+			t.Errorf("audit entry %d: %v", i, err)
+		}
 	}
 }
 

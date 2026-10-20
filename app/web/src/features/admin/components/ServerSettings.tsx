@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server settings screen below its heading (manage_settings, FR-705): the instance's name and descriptions in
-// each language of the app, how to reach its operators and its thumbnail (#663), then its policies (who may sign up, the default language, the public timelines, the
+// each language of the app, how to reach its operators and its thumbnail (#663), then its policies (who may sign up, the default language, the public timelines, whether images need a description, the
 // federation, and who may read the list of the domain actions) in one form saved together. The name stands in for
 // the domain where the instance is named to people; the domain stays in handles and links. The browser keeps a
 // form from being sent while a field is invalid (React Aria's native validation: the error is under its field and
@@ -309,6 +309,14 @@ function PoliciesForm() {
           setting="federated_timeline_enabled"
           label={t("client:admin.settings.timelines.federated")}
           description={t("client:admin.settings.timelines.federated.description")}
+        />
+      </DetailSection>
+      <DetailSection title={t("client:admin.settings.posts.title")}>
+        <PolicyCheckbox
+          form={form}
+          setting="require_media_description"
+          label={t("client:admin.settings.posts.require_media_description")}
+          description={t("client:admin.settings.posts.require_media_description.description")}
         />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.federation.title")}>

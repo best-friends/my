@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -269,8 +270,14 @@ func webhookManage(t *testing.T, e *webhookEnv) {
 	if err != nil || len(list) != 2 || list[0].ID != other.Endpoint.ID {
 		t.Errorf("List = %+v, %v; want the newest first", list, err)
 	}
+	if got, err := e.svc.ExistingIDs(ctx, []string{other.Endpoint.ID, id}); err != nil || !slices.Equal(got, sorted(id, other.Endpoint.ID)) {
+		t.Errorf("ExistingIDs = %v, %v; want both", got, err)
+	}
 	if err := e.svc.Delete(ctx, id, ""); err != nil {
 		t.Fatalf("Delete: %v", err)
+	}
+	if got, err := e.svc.ExistingIDs(ctx, []string{other.Endpoint.ID, id}); err != nil || !slices.Equal(got, []string{other.Endpoint.ID}) {
+		t.Errorf("ExistingIDs after delete = %v, %v; want the other endpoint", got, err)
 	}
 	if _, err := e.svc.Get(ctx, id); !errors.Is(err, appwebhook.ErrNotFound) {
 		t.Errorf("Get(deleted) = %v, want ErrNotFound", err)

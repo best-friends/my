@@ -247,6 +247,22 @@ describe("the server's policies", () => {
     expect(settings.patches).toHaveLength(1);
   });
 
+  test("requires a description of every image", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const posts = await screen.findByRole("region", { name: "Posts" });
+    const required = within(posts).getByRole("checkbox", { name: "Require a description of every image" });
+    expect(required).not.toBeChecked();
+    expect(required).toHaveAccessibleDescription(/Posts and edits with an image without a description \(alt text\) are refused/);
+
+    await user.click(required);
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { require_media_description: "true" } }]);
+    expect(required).toBeChecked();
+  });
+
   test("sends what the server states to search engines and AI, and its security contact", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });

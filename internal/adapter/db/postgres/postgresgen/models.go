@@ -18,6 +18,12 @@ type Account struct {
 	CreatedAt time.Time
 }
 
+type AccountDomainMute struct {
+	AccountID string
+	Domain    string
+	CreatedAt time.Time
+}
+
 type AccountHandle struct {
 	AccountID          string
 	Username           string
@@ -86,6 +92,21 @@ type AccountRestriction struct {
 	Restriction    string
 	SourceActionID string
 	EffectiveUntil *time.Time
+}
+
+type AnnouncementHead struct {
+	AnnouncementID string
+	RevisionID     string
+	State          string
+	PublishedAt    *time.Time
+}
+
+type AnnouncementStateChange struct {
+	ID              string
+	AnnouncementID  string
+	State           string
+	ChangedByUserID *string
+	ChangedAt       time.Time
 }
 
 type AuditLogEntry struct {
@@ -234,6 +255,11 @@ type FeedAuthorRestriction struct {
 type FeedDirectRecipient struct {
 	EntryID            string
 	RecipientAccountID string
+}
+
+type FeedDomainMute struct {
+	ViewerAccountID string
+	Domain          string
 }
 
 type FeedDomainRestriction struct {
@@ -506,6 +532,7 @@ type Notification struct {
 	RecipientAccountID    string
 	Type                  string
 	SourceAccountID       *string
+	SourceDomain          *string
 	StatusID              *string
 	ModerationActionID    *string
 	ReportID              *string
@@ -601,6 +628,15 @@ type PollTallyObservationCount struct {
 	ObservationID string
 	Position      int32
 	Votes         int64
+}
+
+type PollVote struct {
+	ID        string
+	PollID    string
+	AccountID string
+	Position  int32
+	Uri       *string
+	VotedAt   time.Time
 }
 
 type PushSubscription struct {

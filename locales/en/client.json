@@ -1151,6 +1151,186 @@
     "defaultMessage": "Accounts",
     "description": "Title of the admin screen that searches the local and remote accounts, and of its link in the administration menu."
   },
+  "admin.announcements.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that leaves a dialog of the announcements screen without changing anything."
+  },
+  "admin.announcements.change_failed": {
+    "defaultMessage": "The announcement could not be changed: {reason}",
+    "description": "Error after a change of an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_draft": {
+    "defaultMessage": "Save as a draft",
+    "description": "Button that writes a new announcement as a draft."
+  },
+  "admin.announcements.create_failed": {
+    "defaultMessage": "The announcement could not be written: {reason}",
+    "description": "Error after writing an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_published": {
+    "defaultMessage": "Publish the announcement",
+    "description": "Button that writes a new announcement and publishes it."
+  },
+  "admin.announcements.description": {
+    "defaultMessage": "Announcements show above the home timeline of everyone on this server, who can mark them as read. The audit log records every change.",
+    "description": "Explanation at the top of the announcements screen."
+  },
+  "admin.announcements.drafted": {
+    "defaultMessage": "Saved the announcement as a draft. The audit log records the change.",
+    "description": "Status after a new announcement was saved as a draft."
+  },
+  "admin.announcements.duration": {
+    "defaultMessage": "Show for",
+    "description": "Label of how long a new announcement shows."
+  },
+  "admin.announcements.duration.description": {
+    "defaultMessage": "From when you write it. It stops showing after that.",
+    "description": "Description of how long a new announcement shows."
+  },
+  "admin.announcements.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the button that closes the dialog that edits an announcement."
+  },
+  "admin.announcements.edit.title": {
+    "defaultMessage": "Edit the announcement",
+    "description": "Title of the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit_one": {
+    "defaultMessage": "Edit: {announcement}",
+    "description": "Accessible name of the button that edits an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.empty": {
+    "defaultMessage": "No announcements",
+    "description": "Heading of the list of announcements when there are none."
+  },
+  "admin.announcements.empty.description": {
+    "defaultMessage": "Announcements you write appear here.",
+    "description": "Description of the list of announcements when there are none."
+  },
+  "admin.announcements.ends_at": {
+    "defaultMessage": "Shows until",
+    "description": "Term of when an announcement stops showing."
+  },
+  "admin.announcements.heading": {
+    "defaultMessage": "{announcement} ({state})",
+    "description": "Heading of an announcement in the list. {announcement} is the first line of its text; {state} its state (draft, published, withdrawn)."
+  },
+  "admin.announcements.list.title": {
+    "defaultMessage": "All announcements",
+    "description": "Heading of the list of announcements, newest first."
+  },
+  "admin.announcements.new.title": {
+    "defaultMessage": "Write an announcement",
+    "description": "Heading of the form of a new announcement."
+  },
+  "admin.announcements.publish": {
+    "defaultMessage": "Publish",
+    "description": "Button that publishes a draft announcement."
+  },
+  "admin.announcements.publish_now": {
+    "defaultMessage": "Publish now",
+    "description": "Checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_now.description": {
+    "defaultMessage": "Without it, the announcement stays a draft that only the administrators see.",
+    "description": "Description of the checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_one": {
+    "defaultMessage": "Publish: {announcement}",
+    "description": "Accessible name of the button that publishes an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.published": {
+    "defaultMessage": "Published the announcement. The audit log records the change.",
+    "description": "Status after a new announcement was published."
+  },
+  "admin.announcements.published_at": {
+    "defaultMessage": "Published",
+    "description": "Term of when an announcement was published."
+  },
+  "admin.announcements.published_one": {
+    "defaultMessage": "Published {announcement}. The audit log records the change.",
+    "description": "Status after a draft announcement was published. {announcement} is the first line of its text."
+  },
+  "admin.announcements.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the text of an announcement."
+  },
+  "admin.announcements.starts_at": {
+    "defaultMessage": "Shows from",
+    "description": "Term of when an announcement starts to show."
+  },
+  "admin.announcements.state": {
+    "defaultMessage": "State",
+    "description": "Term of the state of an announcement."
+  },
+  "admin.announcements.state.draft": {
+    "defaultMessage": "Draft",
+    "description": "State of an announcement that no user sees yet."
+  },
+  "admin.announcements.state.published": {
+    "defaultMessage": "Published",
+    "description": "State of an announcement that the users see."
+  },
+  "admin.announcements.state.withdrawn": {
+    "defaultMessage": "Withdrawn",
+    "description": "State of an announcement taken down for good."
+  },
+  "admin.announcements.summary": {
+    "defaultMessage": "Tell everyone on this server about maintenance and changes.",
+    "description": "Description of the announcements screen in the administration menu."
+  },
+  "admin.announcements.text": {
+    "defaultMessage": "Text",
+    "description": "Label of the text of an announcement."
+  },
+  "admin.announcements.text.description": {
+    "defaultMessage": "Markdown: paragraphs, emphasis, lists, quotes, code and links. Raw HTML is removed.",
+    "description": "Description of the text field of an announcement: which Markdown it takes."
+  },
+  "admin.announcements.text_required": {
+    "defaultMessage": "Write the announcement.",
+    "description": "Error of an announcement without text."
+  },
+  "admin.announcements.title": {
+    "defaultMessage": "Announcements",
+    "description": "Title of the announcements screen, in the administration menu and as its heading."
+  },
+  "admin.announcements.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of the text of an announcement longer than its limit. {max} is the limit."
+  },
+  "admin.announcements.until_withdrawn": {
+    "defaultMessage": "Until withdrawn",
+    "description": "Choice of an announcement that shows until it is withdrawn, and the end of such an announcement."
+  },
+  "admin.announcements.updated": {
+    "defaultMessage": "Changed {announcement}. The audit log records the change.",
+    "description": "Status after the text of an announcement was changed. {announcement} is the first line of its new text."
+  },
+  "admin.announcements.withdraw": {
+    "defaultMessage": "Withdraw",
+    "description": "Button that withdraws an announcement, and the confirming button of its dialog."
+  },
+  "admin.announcements.withdraw.description": {
+    "defaultMessage": "Nobody sees the announcement again, and it cannot be published or changed any more.",
+    "description": "Description of the dialog that confirms withdrawing an announcement."
+  },
+  "admin.announcements.withdraw.title": {
+    "defaultMessage": "Withdraw {announcement}?",
+    "description": "Title of the dialog that confirms withdrawing an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdraw_one": {
+    "defaultMessage": "Withdraw: {announcement}",
+    "description": "Accessible name of the button that withdraws an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdrawn": {
+    "defaultMessage": "Withdrew {announcement}. The audit log records the change.",
+    "description": "Status after an announcement was withdrawn. {announcement} is the first line of its text."
+  },
   "admin.appeal.account": {
     "defaultMessage": "Account",
     "description": "Term of the account that appealed, which the action is on."
@@ -1359,6 +1539,22 @@
     "defaultMessage": "Account deletion cancelled",
     "description": "Heading of an audit log entry: overturning a user's appeal of a ban cancelled the scheduled deletion of their account."
   },
+  "admin.audit_log.action.announcement_created": {
+    "defaultMessage": "Announcement written",
+    "description": "Kind of an audited operation: an administrator wrote an announcement."
+  },
+  "admin.audit_log.action.announcement_published": {
+    "defaultMessage": "Announcement published",
+    "description": "Kind of an audited operation: an administrator published an announcement."
+  },
+  "admin.audit_log.action.announcement_updated": {
+    "defaultMessage": "Announcement changed",
+    "description": "Kind of an audited operation: an administrator changed the text or window of an announcement."
+  },
+  "admin.audit_log.action.announcement_withdrawn": {
+    "defaultMessage": "Announcement withdrawn",
+    "description": "Kind of an audited operation: an administrator withdrew an announcement."
+  },
   "admin.audit_log.action.appeal_overturned": {
     "defaultMessage": "Appeal overturned",
     "description": "Heading of an audit log entry: a moderator granted a user's appeal and lifted the action it appealed."
@@ -1482,6 +1678,14 @@
   "admin.audit_log.action.webhook_secret_rotated": {
     "defaultMessage": "Webhook secret renewed",
     "description": "Kind of an audited operation: an administrator gave a webhook a new secret."
+  },
+  "admin.audit_log.action.invite_created": {
+    "defaultMessage": "Invite created",
+    "description": "Kind of an audited operation: a moderator or an administrator created an invite code."
+  },
+  "admin.audit_log.action.invite_revoked": {
+    "defaultMessage": "Invite revoked",
+    "description": "Kind of an audited operation: a moderator or an administrator revoked an invite code."
   },
   "admin.audit_log.action.webhook_updated": {
     "defaultMessage": "Webhook changed",
@@ -1642,6 +1846,10 @@
   "admin.audit_log.target_kind.webhook": {
     "defaultMessage": "Webhook",
     "description": "Kind of target of an audited operation: a webhook, shown by its description and host name."
+  },
+  "admin.audit_log.target_kind.invite": {
+    "defaultMessage": "Invite",
+    "description": "Kind of target of an audited operation: an invite, shown by the first characters of its code."
   },
   "admin.audit_log.title": {
     "defaultMessage": "Audit log",
@@ -3163,6 +3371,10 @@
     "defaultMessage": "Accounts and registrations",
     "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
   },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "Announcements",
+    "description": "Name of the permission manage_announcements: the server's announcements to every local user."
+  },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "Custom emoji",
     "description": "Name of the permission manage_custom_emojis: the custom emoji."
@@ -3826,6 +4038,18 @@
   "admin.settings.timelines.title": {
     "defaultMessage": "Timelines",
     "description": "Heading of the section of the public timelines on the server settings screen."
+  },
+  "admin.settings.posts.title": {
+    "defaultMessage": "Posts",
+    "description": "Heading of the section of the server settings about posts."
+  },
+  "admin.settings.posts.require_media_description": {
+    "defaultMessage": "Require a description of every image",
+    "description": "Checkbox of the instance setting require_media_description: whether every image attached to a post needs an alternative text."
+  },
+  "admin.settings.posts.require_media_description.description": {
+    "defaultMessage": "Posts and edits with an image without a description (alt text) are refused, so that people who cannot see the images can follow every post.",
+    "description": "Description of the checkbox that requires a description of every image."
   },
   "admin.settings.title": {
     "defaultMessage": "Server settings",
@@ -4794,6 +5018,14 @@
   "compose.media.description.required": {
     "defaultMessage": "Describe the image for people who cannot see it. Your settings ask for a description of every image.",
     "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
+  },
+  "compose.media.description.server_required": {
+    "defaultMessage": "Describe the image for people who cannot see it. This server requires a description of every image.",
+    "description": "Help text under the alternative text field of an attached image when the server requires a description of every image (the instance setting require_media_description)."
+  },
+  "compose.media.description.missing": {
+    "defaultMessage": "Add a description of this image. This server requires one for every image.",
+    "description": "Error of the alternative text field of an attached image that has no description while the server requires one for every image."
   },
   "compose.media.failed": {
     "defaultMessage": "Could not attach the image: {reason}",
@@ -7279,6 +7511,62 @@
     "defaultMessage": "Pinned post",
     "description": "Line above a post at the top of a profile that the account pinned there."
   },
+  "status.poll.choose_many": {
+    "defaultMessage": "Choose one or more options.",
+    "description": "Hint above the options of a poll that lets the user choose several of them."
+  },
+  "status.poll.choose_one": {
+    "defaultMessage": "Choose one option.",
+    "description": "Hint under the options of a poll that lets the user choose one of them."
+  },
+  "status.poll.closed": {
+    "defaultMessage": "Closed",
+    "description": "Under a poll whose end has passed: it takes no more votes and shows its results."
+  },
+  "status.poll.ends": {
+    "defaultMessage": "Ends {time}",
+    "description": "Under a poll: when it ends. {time} is a relative time ahead, such as \"in 3 hr.\" or \"in 2 days\"."
+  },
+  "status.poll.label": {
+    "defaultMessage": "Poll",
+    "description": "Accessible name of the poll of a post: its options or results and how many voted."
+  },
+  "status.poll.options": {
+    "defaultMessage": "Poll options",
+    "description": "Accessible name of the group of radio buttons or checkboxes the user chooses from to vote in a poll."
+  },
+  "status.poll.own_vote": {
+    "defaultMessage": "Your vote",
+    "description": "After an option in the results of a poll that the user voted for."
+  },
+  "status.poll.remote_counts": {
+    "defaultMessage": "Counts as {host} last reported them",
+    "description": "Under the results of a poll of a post from another server: the counts are those that server sent last, and a vote of the user shows in them once it sends them again. {host} is that server's host name."
+  },
+  "status.poll.results": {
+    "defaultMessage": "Poll results",
+    "description": "Accessible name of the list of the options of a poll with their share of the votes."
+  },
+  "status.poll.vote": {
+    "defaultMessage": "Vote",
+    "description": "Button under the options of a poll that sends the user's choice."
+  },
+  "status.poll.vote_failed": {
+    "defaultMessage": "Could not vote: {reason}",
+    "description": "Toast when the user's vote in a poll failed, for example because the poll has ended. {reason} is the error message, a full sentence."
+  },
+  "status.poll.voted": {
+    "defaultMessage": "Vote sent",
+    "description": "Toast after the user voted in a poll."
+  },
+  "status.poll.voters": {
+    "defaultMessage": "{count, plural, one {# person} other {# people}}",
+    "description": "Under a poll: how many accounts voted."
+  },
+  "status.poll.votes": {
+    "defaultMessage": "{count, plural, one {# vote} other {# votes}}",
+    "description": "Under a poll whose number of voters is unknown: how many votes it has, one per chosen option."
+  },
   "status.unpin.action": {
     "defaultMessage": "Unpin from profile",
     "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."
@@ -7474,6 +7762,10 @@
   "admin.audit_log.action.custom_emoji_deleted": {
     "defaultMessage": "Custom emoji deleted",
     "description": "Kind of an audited operation: an administrator deleted a custom emoji of this server."
+  },
+  "admin.audit_log.target_kind.announcement": {
+    "defaultMessage": "Announcement",
+    "description": "Kind of target of an audited operation: an announcement, shown by the first line of its text."
   },
   "admin.audit_log.target_kind.custom_emoji": {
     "defaultMessage": "Custom emoji",
@@ -7759,6 +8051,34 @@
     "defaultMessage": "{emoji} is enabled.",
     "description": "Status after enabling a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
   },
+  "announcements.heading": {
+    "defaultMessage": "Announcement of {date}",
+    "description": "Heading of one announcement of the server. {date} is the day it started to show, formatted."
+  },
+  "announcements.mark_read": {
+    "defaultMessage": "Mark as read",
+    "description": "Button that marks an announcement read."
+  },
+  "announcements.mark_read_failed": {
+    "defaultMessage": "The announcement could not be marked as read: {reason}",
+    "description": "Error after marking an announcement read failed. {reason} is why."
+  },
+  "announcements.title": {
+    "defaultMessage": "Announcements",
+    "description": "Heading of the server's announcements above the home timeline."
+  },
+  "announcements.unread": {
+    "defaultMessage": "Unread",
+    "description": "Marker of an announcement that the user has not read, next to its heading."
+  },
+  "announcements.unread_count": {
+    "defaultMessage": "{count, plural, one {# unread} other {# unread}}",
+    "description": "The number of unread announcements on the badge next to the heading of the announcements, for example '2 unread'."
+  },
+  "announcements.until": {
+    "defaultMessage": "Shown until {date}",
+    "description": "When an announcement stops showing. {date} is the date and time, formatted."
+  },
   "emoji.picker.button": {
     "defaultMessage": "Add emoji",
     "description": "Accessible name and tooltip of the icon button of the post form that opens the custom emoji picker."
@@ -7858,5 +8178,69 @@
   "status.reaction.off": {
     "defaultMessage": "Reaction removed",
     "description": "Read out by screen readers after the user took back their emoji reaction to a post."
+  },
+  "settings.domain_mutes.title": {
+    "defaultMessage": "Muted domains",
+    "description": "Heading and document title of the settings page with the domains the user mutes."
+  },
+  "settings.domain_mutes.summary": {
+    "defaultMessage": "Servers whose posts and notifications you do not see",
+    "description": "Description of the muted domains page in the list of settings pages."
+  },
+  "settings.domain_mutes.description": {
+    "defaultMessage": "Muting a domain hides the posts of its accounts, and of its subdomains' accounts, from your timelines other than home, their boosts from your home timeline, and their notifications. The accounts you follow stay on your home timeline. Only you are affected, and the server is not told.",
+    "description": "Explains what muting a domain does, at the top of the muted domains page."
+  },
+  "settings.domain_mutes.new.title": {
+    "defaultMessage": "Mute a domain",
+    "description": "Heading of the section of the muted domains page with the form that mutes a domain."
+  },
+  "settings.domain_mutes.list.title": {
+    "defaultMessage": "Domains you mute",
+    "description": "Heading of the section of the muted domains page that lists them."
+  },
+  "settings.domain_mutes.domain": {
+    "defaultMessage": "Domain",
+    "description": "Label of the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.description": {
+    "defaultMessage": "The domain of the server, such as mastodon.example. Its subdomains are muted too.",
+    "description": "Help under the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.required": {
+    "defaultMessage": "Enter a domain.",
+    "description": "Error under the domain field when the user mutes without entering a domain."
+  },
+  "settings.domain_mutes.mute": {
+    "defaultMessage": "Mute",
+    "description": "Button that mutes the domain entered in the field."
+  },
+  "settings.domain_mutes.mute_failed": {
+    "defaultMessage": "Could not mute the domain: {reason}",
+    "description": "Shown under the form when muting a domain fails. {reason} is the server's explanation."
+  },
+  "settings.domain_mutes.muted": {
+    "defaultMessage": "You muted {domain}.",
+    "description": "Shown under the form after a domain was muted. {domain} is the domain."
+  },
+  "settings.domain_mutes.empty": {
+    "defaultMessage": "You do not mute any domain",
+    "description": "Shown when the user mutes no domain."
+  },
+  "settings.domain_mutes.since": {
+    "defaultMessage": "Muted on {date}",
+    "description": "When the domain was muted, under a muted domain. {date} is a formatted date and time."
+  },
+  "settings.domain_mutes.unmute": {
+    "defaultMessage": "Unmute",
+    "description": "Button that unmutes a domain."
+  },
+  "settings.domain_mutes.unmuted": {
+    "defaultMessage": "You unmuted {domain}.",
+    "description": "Announced after a domain was unmuted. {domain} is the domain."
+  },
+  "settings.import_export.kind.domain_mutes": {
+    "defaultMessage": "Muted domains",
+    "description": "Name of the list of domains the user mutes, as one kind of CSV file to export or import."
   }
 }

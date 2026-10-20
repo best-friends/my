@@ -54,6 +54,7 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "default_locale", kind: "locale", default: "en" },
     { key: "local_timeline_enabled", kind: "bool", default: "true" },
     { key: "federated_timeline_enabled", kind: "bool", default: "true" },
+    { key: "require_media_description", kind: "bool", default: "false" },
     { key: "remote_media_policy", kind: "enum", default: "none", choices: ["none", "avatars", "all"] },
     { key: "remote_media_cache_ttl", kind: "int", default: "86400", minimum: 60, maximum: 31536000 },
     { key: "authorized_fetch", kind: "bool", default: "false" },
@@ -91,7 +92,7 @@ async function administratorServer(page: Page) {
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
         registrations: { mode: "approval" },
-        limits: { max_post_characters: 500 },
+        limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         rules: [],
       });

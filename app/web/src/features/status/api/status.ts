@@ -29,6 +29,9 @@ export type StatusEdit = components["schemas"]["StatusEdit"];
 /** The emoji of a reaction: a Unicode emoji, or a custom emoji with its image (ADR-0052). */
 export type ReactionEmoji = components["schemas"]["ReactionEmoji"];
 
+/** The poll of a post (FR-112). */
+export type Poll = components["schemas"]["Poll"];
+
 /** The actions that the viewer turns on and off on a post. */
 export type Relation = "boost" | "favourite" | "bookmark";
 
@@ -254,6 +257,38 @@ export async function cachePinAnswer(api: Api, queryClient: QueryClient, id: str
   const pinned = answer.pinned === true;
   updateCachedStatuses(queryClient, forPost(id, (status) => (status.pinned === pinned ? status : { ...status, pinned })));
   await queryClient.invalidateQueries({ queryKey: pinnedStatusesQueryOptions(api, viewerId).queryKey });
+}
+
+/**
+ * Votes for the options at `choices` in the poll `pollId` of post `id` (POST /statuses/{id}/poll/votes, FR-112);
+ * returns the post after it. A second vote is refused (422), so a retry after a lost answer changes nothing.
+ */
+export async function votePoll(api: Api, id: string, pollId: string, choices: readonly number[]): Promise<Status> {
+  const { data, error } = await api.fetch.POST("/statuses/{id}/poll/votes", {
+    params: { path: { id } },
+    body: { poll_id: pollId, choices: [...choices] },
+  });
+  // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
+  if (data === undefined) throw new ApiError(error);
+  return data;
+}
+
+/**
+ * Puts the server's answer to a vote in the poll of post `id` into the cache (web-client.md S1): every copy of the
+ * post takes the poll of the answer, with the viewer's vote, where it is.
+ */
+export function cacheVoteAnswer(queryClient: QueryClient, id: string, answer: Status): void {
+  const { poll } = answer.boost ?? answer;
+  if (poll === undefined) return;
+  updateCachedStatuses(queryClient, forPost(id, (status) => ({ ...status, poll })));
+}
+
+/**
+ * Marks post `id` stale after the server refused a vote, so that the post on screen is read again: its poll may
+ * have ended, been replaced by an edit, or have the viewer's vote from another device.
+ */
+export async function refreshAfterRefusedVote(api: Api, queryClient: QueryClient, id: string): Promise<void> {
+  await queryClient.invalidateQueries({ queryKey: statusQueryOptions(api, id).queryKey, exact: true });
 }
 
 /** Deletes the viewer's post `id` (DELETE /statuses/{id}). */

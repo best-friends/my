@@ -33,7 +33,7 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - プロパティ名とパス・クエリのパラメータ名は snake_case です（lint で強制）。
 - タグはモジュール単位（`instance`、`statuses`、`accounts` など）で付けます。スタッフの操作（`/admin/...`）だけは、モジュールではなく区分（[ADR-0058](../adr/0058-moderation-admin-separation.md)）で
   `admin-moderation`（通報・異議申し立て・アカウントと処分・登録・登録の拒否・招待・ドメインへの処分・連合先・監査ログ・`/admin/counts`）と
-  `admin-server`（インスタンス設定と文章・ルール・テーマ・ロールとその付与・カスタム絵文字・webhook・dead job）に分けます。操作のタグは、その操作が要る権限の区分（`identity.Permission.Category`）に合わせます。
+  `admin-server`（インスタンス設定と文章・ルール・テーマ・ロールとその付与・カスタム絵文字・webhook・お知らせ・dead job）に分けます。操作のタグは、その操作が要る権限の区分（`identity.Permission.Category`）に合わせます。
 
 ### 2.2 ID とページング
 
@@ -216,15 +216,16 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 
 ## 5. ストリーミング
 
-`GET /api/v1/streaming`（`streamEvents`）は Server-Sent Events のストリームで、閲覧者のホームの新着と新しい通知を送ります（FR-207）。
+`GET /api/v1/streaming`（`streamEvents`）は Server-Sent Events のストリームで、閲覧者のホームの新着と新しい通知、サーバーのお知らせ（FR-726）を送ります（FR-207）。
 strict server は SSE を返せないので、`oapi-codegen.yaml` の `exclude-operation-ids` で生成から除き、`streaming.go` に手で書きます（ADR-0029）。
 それでも spec には `text/event-stream` の操作として書き、`security.gen.go` の表と `guard`（認証・レート制限・スコープ `read:statuses` と `read:notifications`）を通します。
 
 - クライアントは `fetch` のストリームで読み、`Authorization: Bearer` を送ります（`EventSource` はヘッダを送れません）。
-- イベントは `update`（`data` は `Status`）と `notification`（`data` は `Notification`）です。`id` は付けず、`Last-Event-ID` での再開はしません。
-  切れたら再接続し、ホームと通知を読み直します。
+- イベントは `update`（`data` は `Status`）、`notification`（`data` は `Notification`）、`announcement`（公開した・公開中に変えたお知らせ。`data` は `Announcement`）、
+  `announcement_removed`（見えなくなったお知らせ。`data` は `{"id": …}`）です。`id` は付けず、`Last-Event-ID` での再開はしません。
+  切れたら再接続し、ホームと通知とお知らせを読み直します。期間の始まりが後のお知らせは、始まった時にはイベントを送らないので、クライアントはお知らせを読み直したときに知ります。
 - 接続の流れは [overview §4.4](overview.md#44-リアルタイム更新sse) のとおりです。ハンドラは `stream.Subscriber` で購読し、知らせを受けるたびにユースケース
-  （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotifications` で詰め替えます。
+  （`HomeEntries.HomeEntry`、`Notifications.List`、`Announcements.ShownAnnouncement`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotifications` で詰め替えます。
 - 開くと `: connected` を、その後 30 秒ごと（`Options.StreamHeartbeat`）に `: heartbeat` のコメント行を送ります。ハートビートのたびにアクセストークンを照合し直し、無効なら閉じます。
 - 接続数の上限は、アカウントごとに 8、プロセス全体で 1,000 です（`stream.HubOptions`）。上限はプロセスごとに数えるので、プロセス間のブローカー（設定 `stream`）を使う構成では、全体では「上限 × web のプロセス数」まで開けます。
   アカウントの上限を超えると 429（`/api/v1/problems/too-many-streams`）です。

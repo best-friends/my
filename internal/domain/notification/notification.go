@@ -70,6 +70,9 @@ type Notification struct {
 	RecipientAccountID string
 	Type               Type
 	SourceAccountID    string // "" for moderation_notice, report_resolved, relationships_severed, and the admin types, which come from the instance
+	// SourceDomain is the domain of a remote source account, which the recipient's domain mutes
+	// match (FR-304); "" for a local source or none.
+	SourceDomain       string
 	StatusID           string // "" unless the notification is about a status
 	ModerationActionID string // "" unless the notification is a moderation_notice
 	ReportID           string // "" unless the notification is a report_resolved or an admin_report

@@ -270,9 +270,15 @@ my admin report reopen <report id>
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
-| `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪） |
+| `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪）・`role_created`・`role_updated`・`role_deleted`（ロールの作成・変更・削除） |
 | `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted`、`ban` なら `account_deletion_cancelled` も記録する） |
 | `signup_block` | `signup_block_added`・`signup_block_lifted`（登録の拒否の追加・解除） |
+| `custom_emoji` | `custom_emoji_created`・`custom_emoji_image_replaced`・`custom_emoji_updated`・`custom_emoji_enabled`・`custom_emoji_disabled`・`custom_emoji_deleted`（カスタム絵文字の登録・画像の差し替え・変更・有効化・無効化・削除） |
+| `webhook` | `webhook_created`・`webhook_updated`・`webhook_deleted`・`webhook_enabled`・`webhook_disabled`・`webhook_secret_rotated`（webhook の設定・変更・削除・有効化・無効化・秘密の作り直し） |
+| `announcement` | `announcement_created`・`announcement_updated`・`announcement_published`・`announcement_withdrawn`（お知らせの作成・変更・公開・取り下げ） |
+| `invite` | `invite_created`・`invite_revoked`（招待の作成・失効。対象の名前はコードの先頭 4 文字） |
+
+一覧は、対象が今もあるかを示します。保持期間を過ぎて消えたアカウント・通報・異議申し立て・登録の拒否と、削除されたロール・カスタム絵文字・webhook は、記録時の名前だけを出し、画面へのリンクを出しません。
 
 ```sh
 my admin audit list

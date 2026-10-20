@@ -312,6 +312,33 @@ func (q *Queries) InsertWebhookSecret(ctx context.Context, arg InsertWebhookSecr
 	return err
 }
 
+const listExistingWebhookEndpointIDs = `-- name: ListExistingWebhookEndpointIDs :many
+SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id = ANY($1::text[]) AND state <> 'deleted'
+ORDER BY endpoint_id
+`
+
+// ListExistingWebhookEndpointIDs returns, in ID order, the endpoints among ids that are not
+// deleted (the audit log).
+func (q *Queries) ListExistingWebhookEndpointIDs(ctx context.Context, ids []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listExistingWebhookEndpointIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var endpoint_id string
+		if err := rows.Scan(&endpoint_id); err != nil {
+			return nil, err
+		}
+		items = append(items, endpoint_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSubscribedWebhookEndpoints = `-- name: ListSubscribedWebhookEndpoints :many
 SELECT h.endpoint_id FROM webhook_endpoint_heads h
 JOIN webhook_endpoint_revision_events v ON v.revision_id = h.revision_id

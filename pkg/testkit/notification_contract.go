@@ -66,6 +66,7 @@ func NotificationContract(t *testing.T, newHarness NotificationFactory) {
 		{"AgreesOnConcurrentProjections", notificationConcurrent},
 		{"HidesBlockedAndMutedSources", notificationHides},
 		{"HidesLaterBlocksAndMutes", notificationHidesLater},
+		{"HidesMutedDomains", notificationHidesMutedDomains},
 		{"LimitsUnsolicitedReach", notificationUnsolicitedReach},
 		{"LeavesOutDeletedStatuses", notificationDeletedStatuses},
 		{"ListsWithTypesAndPages", notificationLists},
@@ -627,6 +628,53 @@ func notificationHidesLater(t *testing.T, e *notificationEnv) {
 	checkSummaries(t, e, carol, fromDave)
 	checkSummaries(t, e, dave, fromCarol)
 	e.checkUnread(t, carol, 1)
+}
+
+func notificationHidesMutedDomains(t *testing.T, e *notificationEnv) {
+	ctx := t.Context()
+	alice := e.user(t, "alice")
+	remote := func(domain string) string {
+		t.Helper()
+		a := account.Account{
+			ID: e.ids.NewID(), URI: "https://" + domain + "/users/" + e.ids.NewID(), Domain: domain,
+			ActorType: account.ActorPerson, CreatedAt: e.clock.Now(),
+		}
+		if err := e.nh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error { return e.nh.Accounts.InsertAccount(ctx, tx, a) }); err != nil {
+			t.Fatalf("InsertAccount(%s) = %v", domain, err)
+		}
+		return a.ID
+	}
+	sub, other := remote("social.remote.example"), remote("other.example")
+	statusID := e.post(t, alice, "hello").Status.ID
+	e.project(t, e.favourited(sub, alice, statusID), e.favourited(other, alice, statusID))
+	fromSub := summary{Type: notification.TypeFavourite, Source: sub, StatusID: statusID}
+	fromOther := summary{Type: notification.TypeFavourite, Source: other, StatusID: statusID}
+	checkSummaries(t, e, alice, fromOther, fromSub)
+	e.checkUnread(t, alice, 2)
+
+	// A mute of a parent domain hides what came before from its subdomains, and keeps new
+	// notifications from them from being created at all.
+	if _, err := e.graph.MuteDomain(ctx, alice, "remote.example"); err != nil {
+		t.Fatalf("MuteDomain = %v", err)
+	}
+	checkSummaries(t, e, alice, fromOther)
+	e.checkUnread(t, alice, 1)
+	e.clock.Advance(time.Second)
+	again := e.favourited(sub, alice, e.post(t, alice, "again").Status.ID)
+	e.project(t, again)
+	checkSummaries(t, e, alice, fromOther)
+
+	// Rebuilding the exclusions keeps the domain exclusion.
+	if err := appnotification.RebuildExclusions(ctx, e.nh.UnitOfWork, e.nh.Notifications, appnotification.GraphSource(e.nh.Graph)); err != nil {
+		t.Fatalf("RebuildExclusions = %v", err)
+	}
+	checkSummaries(t, e, alice, fromOther)
+
+	if err := e.graph.UnmuteDomain(ctx, alice, "remote.example"); err != nil {
+		t.Fatalf("UnmuteDomain = %v", err)
+	}
+	checkSummaries(t, e, alice, fromOther, fromSub)
+	e.checkUnread(t, alice, 2)
 }
 
 func notificationDeletedStatuses(t *testing.T, e *notificationEnv) {

@@ -44,7 +44,8 @@ type TimelineFactory func(t *testing.T, opts uow.Options) TimelineHarness
 // and its widening), the local and hashtag timelines (local and anonymous viewers, discovery
 // restrictions of accounts and domains, projected from the moderation module's events), the
 // profile timeline (the visibilities each relation
-// allows), blocks and mutes (with expiry) everywhere, the language filter, keyset paging,
+// allows), blocks and mutes (with expiry) everywhere, domain mutes (off the timelines other than
+// home, with the boosts of their posts off home), the language filter, keyset paging,
 // deletions of statuses and of accounts (local and remote), and the property that incrementally updated projections equal a rebuild from the
 // events the content and graph modules replay.
 func TimelineContract(t *testing.T, newHarness TimelineFactory) {
@@ -57,6 +58,7 @@ func TimelineContract(t *testing.T, newHarness TimelineFactory) {
 		{"HomeShowsBoostsUnlessHidden", timelineHomeBoosts},
 		{"HomeWidensTheReadWindow", timelineHomeWindow},
 		{"ExcludesBlocksAndMutes", timelineExclusions},
+		{"ExcludesMutedDomains", timelineDomainMutes},
 		{"LocalTimeline", timelineLocal},
 		{"PublicTimeline", timelinePublic},
 		{"HashtagTimeline", timelineHashtag},
@@ -415,6 +417,72 @@ func timelineExclusions(t *testing.T, e *timelineEnv) {
 	e.restrict(t, dave, timeline.RestrictProfileView)
 	e.home(t, alice)
 	local(alice, carols.ID)
+}
+
+func timelineDomainMutes(t *testing.T, e *timelineEnv) {
+	ctx := t.Context()
+	alice, bob := e.account(true), e.account(true)
+	followed, other := e.account(false), e.account(false)
+	e.follow(t, alice, bob)
+	e.follow(t, alice, followed)
+	// A follow of a remote account is active once its server accepts it.
+	err := e.graph.AcceptRemote(ctx, appgraph.RemoteResponse{FolloweeID: followed, FollowerID: alice, ActivityURI: "https://remote.example/accept"})
+	if err != nil {
+		t.Fatalf("AcceptRemote: %v", err)
+	}
+	cats := e.tag(t, "cats")
+	near := e.post(t, bob, content.VisibilityPublic, postOpts{tags: []string{cats}})
+	farFollowed := e.public(t, followed)
+	far := e.post(t, other, content.VisibilityPublic, postOpts{tags: []string{cats}})
+	bobBoostsFar := e.boost(t, bob, far)
+	q := apptimeline.Query{Limit: apptimeline.MaxLimit}
+	var p apptimeline.Page
+	check := func(want map[string][]string) {
+		t.Helper()
+		e.home(t, alice, want["home"]...)
+		p, err := e.svc.Public(ctx, viewerOf(alice), q)
+		expectPage(t, "Public", p, err, want["public"]...)
+		p, err = e.svc.Hashtag(ctx, viewerOf(alice), cats, q)
+		expectPage(t, "Hashtag", p, err, want["tag"]...)
+		p, err = e.svc.Profile(ctx, viewerOf(alice), bob, apptimeline.ProfileFilter{}, q)
+		expectPage(t, "Profile of bob", p, err, want["bob"]...)
+		p, err = e.svc.Profile(ctx, viewerOf(alice), other, apptimeline.ProfileFilter{}, q)
+		expectPage(t, "Profile of other", p, err, want["other"]...)
+	}
+	unmuted := map[string][]string{
+		"home":   {near.ID, farFollowed.ID, bobBoostsFar.ID},
+		"public": {near.ID, farFollowed.ID, far.ID},
+		"tag":    {near.ID, far.ID},
+		"bob":    {near.ID, bobBoostsFar.ID},
+		"other":  {far.ID},
+	}
+	check(unmuted)
+
+	// A mute of a parent domain covers the remote accounts' domain. The followed account's posts
+	// stay on home, but no boost of a post of the domain does; the account's own profile still
+	// lists its posts.
+	if _, err := e.graph.MuteDomain(ctx, alice, "example"); err != nil {
+		t.Fatalf("MuteDomain: %v", err)
+	}
+	check(map[string][]string{
+		"home":   {near.ID, farFollowed.ID},
+		"public": {near.ID},
+		"tag":    {near.ID},
+		"bob":    {near.ID},
+		"other":  {far.ID},
+	})
+	// Other viewers are not affected.
+	p, err = e.svc.Public(ctx, viewerOf(bob), q)
+	expectPage(t, "Public of bob", p, err, near.ID, farFollowed.ID, far.ID)
+
+	// A mute of an unrelated domain hides nothing more, and a domain only ends with a label.
+	if _, err := e.graph.MuteDomain(ctx, alice, "ote.example"); err != nil {
+		t.Fatalf("MuteDomain: %v", err)
+	}
+	if err := e.graph.UnmuteDomain(ctx, alice, "example"); err != nil {
+		t.Fatalf("UnmuteDomain: %v", err)
+	}
+	check(unmuted)
 }
 
 func timelineLocal(t *testing.T, e *timelineEnv) {
@@ -801,6 +869,11 @@ func timelineProjectionEqualsRebuild(t *testing.T, e *timelineEnv) {
 				default:
 					_, _ = e.graph.Unmute(ctx, a, b)
 				}
+			}
+			if rng.IntN(2) == 0 {
+				_, _ = e.graph.MuteDomain(ctx, a, timelineRemoteDomain)
+			} else {
+				_ = e.graph.UnmuteDomain(ctx, a, timelineRemoteDomain)
 			}
 		}
 	}
