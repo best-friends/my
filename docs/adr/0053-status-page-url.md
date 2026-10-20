@@ -1,6 +1,6 @@
 # ADR-0053: 投稿の表示用 URL を `/@{username}/status/{id}` にし、プロフィールの下を予約語の名前空間にする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #643
@@ -67,9 +67,7 @@ M4 で投稿の詳細（FR-106 スレッド表示）とプロフィールの下�
 
 ## Decision（決定）
 
-> Proposed の間は推奨案。
-
-**選択肢 1 を推奨する。** 投稿の表示用 URL を `/@{username}/status/{id}` にし、`/@{username}/` の下の第 1 区間をサーバーが決める固定の語（予約語）だけにする。
+**選択肢 1 を採用する。** 投稿の表示用 URL を `/@{username}/status/{id}` にし、`/@{username}/` の下の第 1 区間をサーバーが決める固定の語（予約語）だけにする。
 
 ### 投稿の表示用 URL
 
@@ -96,8 +94,8 @@ M4 で投稿の詳細（FR-106 スレッド表示）とプロフィールの下�
 
 - `/@{acct}/` の直下の第 1 区間は、次の規則の固定の語だけにする。可変の値（ID、タグ名など）を第 1 区間に置かない。
   可変の値は語の下（`/@{acct}/status/{id}`、`/@{acct}/tagged/{tag}` など）に置く。
-- 語は小文字の ASCII 英字・数字・ハイフン（`[a-z][a-z0-9-]*`）。単数か複数かは、そのページが 1 件を指すか一覧かで決める。
-- 予約語の一覧（現在のページと、決定者が挙げた将来のページ）:
+- 語は小文字の ASCII 英字・数字・ハイフン・アンダースコア（`[a-z][a-z0-9_-]*`）。単数か複数かは、そのページが 1 件を指すか一覧かで決める。
+- 予約語の一覧（現在のページと、将来のページ）:
 
   | 語 | ページ | 状態 |
   | --- | --- | --- |
@@ -106,6 +104,9 @@ M4 で投稿の詳細（FR-106 スレッド表示）とプロフィールの下�
   | `following` | フォロー一覧 | 実装済み |
   | `media` | メディア付きの投稿 | 予約 |
   | `favorite` | お気に入り | 予約 |
+  | `with_replies` | 返信を含む投稿 | 予約 |
+  | `tagged` | ハッシュタグで絞った投稿（`tagged/{tag}`） | 予約 |
+  | `featured` | ピン留めした投稿 | 予約 |
 
 - 一覧の置き場所: Web クライアントの経路のファイル（`app/web/src/routes/@{$acct}_.*.tsx`）が実体で、
   語を足すときは [docs/architecture/web-client.md](../architecture/web-client.md) の経路の説明に一覧を書く（#653 で節を足す）。
@@ -120,7 +121,7 @@ M4 で投稿の詳細（FR-106 スレッド表示）とプロフィールの下�
 
 ### ADR-0018・ADR-0028 のうち、この ADR が置き換える部分
 
-この ADR が Accepted になったら、次の部分を置き換える（両 ADR のファイルの扱いは決定者が決める）。
+次の部分を置き換える（両 ADR のファイルの扱いは決定者が決める）。
 
 - ADR-0018「URI 一覧」の行「投稿（HTML、`url`）」: `https://{host}/@{username}/{uuid}` を `https://{host}/@{username}/status/{uuid}` にする。
 - ADR-0018「HTML と AP JSON の振り分け」の 2 つの規則:
@@ -144,15 +145,15 @@ ADR-0018 の `id` の形式、`/ap/` 名前空間、プロフィールの URL（
 - 悪い影響・トレードオフ
   - URL が `/status` の 7 文字だけ長くなる。
   - 既に配った `url` と外部に貼られたリンクが切れる。連合先の「元のページを開く」が 404 になる。
-  - Mastodon とは URL の形が違う。Mastodon の形を前提に URL から `id` を推測する処理は当たらない（要検証。Mastodon の `ResolveURLService` は取得が 404 のときに推測した `uri` で保存済みの投稿を探すが、取得が成功すれば推測は使わない）。
+  - Mastodon とは URL の形が違う。Mastodon の `ResolveURLService` は取得が 404 のときだけ URL の形から `uri` を推測するので、取得が成功する新しい URL ではこの推測に頼らない。
 - 後続の作業（Issue 化する）
   - #653: `StatusURL`・外枠の経路と 301・AP の `Accept` での 302・Web クライアントの経路とリンクの生成・`statuses.url` をリモートだけにする変更、
     docs（[docs/architecture/web-client.md](../architecture/web-client.md)、[docs/operations/link-previews.md](../operations/link-previews.md)、[docs/operations/running.md](../operations/running.md)）の更新
-  - お気に入り・メディアのプロフィールのページ（FR-204 の派生）を足すときに、予約語の一覧を更新する
+  - 予約した語のページ（FR-204 の派生）を足すときに、web-client.md の一覧の状態を更新する
 
 ## Pros and Cons of the Options（詳細比較）
 
-### 1. `/@{username}/status/{id}`（推奨）
+### 1. `/@{username}/status/{id}`（採用）
 
 - 良い: 判断基準 1・3・4 を満たす。X と同じ語順で読みやすい。
 - 悪い: 既存の URL が切れる。Mastodon と形が違う。
@@ -175,9 +176,7 @@ ADR-0018 の `id` の形式、`/ap/` 名前空間、プロフィールの URL（
 
 ## Open Questions / 要検証
 
-- 古い `/@{username}/{uuid}` から新しい URL への 301 を v0 の間だけ持つか。推奨案は持たない（ADR-0012）。公開済みのインスタンスがあるなら、UUIDv7 の区間だけを照合する 1 つの分岐で済む
-- 予約語の一覧に、決定者が挙げた `media`・`favorite` 以外（`with_replies`、`tagged/{tag}`、`featured` など）を今から予約するか
-- Mastodon・Misskey・GoToSocial・Akkoma が、受け取った `Update(Note)` の `url` の変化で保存済みの `url` を更新するか（要検証。更新するなら、改名時の `Update` で連合先のリンクも直せる）
+- 無し。連合先が `Update(Note)` で保存済みの `url` を更新するかは、外部のサーバーと接続していない現時点では検証しない
 
 ### 出典（2026-10-20 確認）
 
