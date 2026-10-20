@@ -1,6 +1,6 @@
 # ADR-0054: メディアの派生と動画・音声の扱い
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #644
@@ -55,13 +55,11 @@ main の現状:
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: A2（S / M の WebP は spike で確かめてから。だめなら A1）+ V1 + R2。**
+**A2（S / M の WebP は spike で確かめてから。だめなら A1）+ V1 + R2 にする。**
 
 ### 1. 画像の派生の段と大きさ
 
-派生は用途ごとに次の箱に**縦横比を保って収める**（切り抜かない。表示側が `object-fit: cover` と焦点で切る）。箱より小さい元画像は拡大しない。
+派生は用途ごとに次の箱に作る。アイコンは**正方形に切り抜いて**から箱に縮め、切り抜く位置は焦点（`media_focus`、なければ中央）に合わせる。それ以外は**縦横比を保って収め**（切り抜かない。表示側が `object-fit: cover` と焦点で切る）。箱より小さい元画像は拡大しない。
 
 | 用途 | S | M | L |
 | --- | --- | --- | --- |
@@ -71,7 +69,7 @@ main の現状:
 | カスタム絵文字 | 64×64 | 128×128 | 256×256 |
 
 - 投稿画像の S と L は main の `thumbnail` / `full` と同じ面積（Mastodon の `small` / `original` と同じ。[media_attachment.rb](https://github.com/mastodon/mastodon/blob/main/app/models/media_attachment.rb)）。M は 1080p の画面で全面に出す大きさ。
-- アイコン L とヘッダー M は Mastodon の 400×400 / 1500×500 に合わせる（[avatar.rb](https://github.com/mastodon/mastodon/blob/main/app/models/concerns/account/avatar.rb)、[header.rb](https://github.com/mastodon/mastodon/blob/main/app/models/concerns/account/header.rb)。2026-10-20 確認）。S / M はタイムラインの 48 px と 96 px を 2 倍の解像度で埋める大きさ。
+- アイコン L とヘッダー M は Mastodon の 400×400 / 1500×500 に合わせる。アイコンを正方形に切り抜くのも Mastodon と同じ（`400x400#`）（[avatar.rb](https://github.com/mastodon/mastodon/blob/main/app/models/concerns/account/avatar.rb)、[header.rb](https://github.com/mastodon/mastodon/blob/main/app/models/concerns/account/header.rb)。2026-10-20 確認）。S / M はタイムラインの 48 px と 96 px を 2 倍の解像度で埋める大きさ。
 - カスタム絵文字の受け付けの上限と登録の手順は ADR-0051（#618）が決め、この表は派生の箱だけを決める。
 - 用途ごとの箱は `media.Sizes` に持たせ、upload の API が用途（`attachment` / `avatar` / `header` / `emoji`）を受け取る。用途を変えて使うときは、その用途で処理し直す（新しい処理結果）。
 - 原本は保存しない（いまと同じ。位置情報を残さないため）。L が保存する最大のもの。
@@ -79,8 +77,8 @@ main の現状:
 ### 2. 形式と画質
 
 - **L**: JPEG（不透明、品質 85）/ PNG（透過）。連合先がどこでも表示できる形式にする（Driver 3）。
-- **S / M**: WebP（lossy、品質 80、透過は alpha 付き）。純 Go のエンコーダ [`github.com/deepteams/webp`](https://pkg.go.dev/github.com/deepteams/webp)（MIT、cgo なし、lossy / alpha / アニメーションに対応と記載。2026-10-20 確認）を候補とし、
-  **spike で画質・速度・メモリ・ファズ（壊れた出力を作らないこと）と主要ブラウザでの表示を確かめてから採用する**。spike が通らなければ S / M も JPEG / PNG にし（A1）、他の決定は変えない。
+- **S / M**: WebP（lossy、品質 80、透過は alpha 付き）。純 Go のエンコーダ [`github.com/deepteams/webp`](https://pkg.go.dev/github.com/deepteams/webp)（MIT、cgo なし、lossy / alpha / アニメーションに対応と記載。2026-10-20 確認）を使う。
+  **spike で画質・速度・メモリ・ファズ（壊れた出力を作らないこと）、アニメーション WebP の読み書き、主要ブラウザでの表示を確かめてから採用する**。採用する版は、その時点でリリースから 2 週間を過ぎたもの。spike が通らなければ S / M も JPEG / PNG にし（A1）、他の決定は変えない。
   WebP は主要ブラウザすべてで表示できる（Safari 14 以降。要検証）。
 - AVIF は出力しない。純 Go のエンコーダがなく、A3 の WASM は 1 枚あたりの CPU が重い（要検証）。入力としての AVIF / HEIC も `media/native` は受け付けない（Mastodon も安全のため止めている。[media_attachment.rb](https://github.com/mastodon/mastodon/blob/main/app/models/media_attachment.rb)）。ADR-0019 §8 の許可リストは上限で、アダプタはその一部だけを受け付けてよい。
 - blurhash は S から作る（いまと同じ）。
@@ -126,9 +124,9 @@ main の現状:
 - **ポスター**: Web クライアントが upload のときに `<video>` と `<canvas>` で 1 フレームを取り出し、画像として一緒に送る（Mastodon の API の `thumbnail` と同じ考え方）。サーバーはそれを §1 の投稿画像として処理して静止版の S / M / L と blurhash を作る。
   音声は、利用者が選んだ画像か、ファイルに埋め込まれたカバー画像（ID3 の `APIC`、MP4 の `covr`）をポスターにする。ポスターがなければ、クライアントは「プレビューなし」と表示する（federation.md §9 といまと同じ）。
 - 波形は作らない（AAC / Opus を純 Go で復号できないため）。
-- 配信（Blob の直接配信、`internal/interface/media`、メディアプロキシ）は `Range` を扱う（Safari は `Range` なしでは動画を再生しない。要検証）。
+- Safari での再生は配信の挙動に任せる。`Range` のない配信（いまのメディアプロキシ）や Safari が扱わない WebM の codec で再生できない場合も、この ADR では対応を足さず、そのままにする。
 
-V2 / V3 の外部の `ffmpeg` や WASM 版はこの ADR では入れない。H.264 以外しか送れない端末や、Mastodon との再生の問題が実測で多いときは、`MediaProcessor` のアダプタとして別の ADR で足す。
+V2 / V3 の外部の `ffmpeg` や WASM 版はこの ADR では入れない。動画対応の拡張（V2 などのトランスコードのアダプタ）は今後の予定とし、入れるときに別の ADR で、HEVC の受け付けと Safari での再生の範囲もあわせて決め直す。
 
 ### 7. リモートのメディア（R2）
 
@@ -138,15 +136,15 @@ V2 / V3 の外部の `ffmpeg` や WASM 版はこの ADR では入れない。H.2
 - 動画・音声・`gifv` は派生させない。ポスターはリモートの `Document` の `icon` を別のリモートの画像として記録し、`small` で返す。
 - M / L は作らない。`full` を返す。
 
-### この推奨を覆す条件
+### 見直す条件
 
 - WebP の spike が通らない → S / M も JPEG / PNG（A1）。
-- 純 Go の remux が主要な端末（iPhone・Android の標準カメラ）の動画で壊れる、または Mastodon が再生できない動画が多い → V2 を任意のアダプタとして足す ADR を起こす。
+- 純 Go の remux が主要な端末（iPhone・Android の標準カメラ）の動画で壊れる、または Mastodon が再生できない動画が多い → 予定している動画対応の拡張（V2 など）の ADR を前倒しで起こす。
 - プロキシの縮小が 1 vCPU の構成で重すぎる → R1 に戻し、クライアントの `full` の縮小表示だけにする。
 
 ### ADR-0005 のうち置き換える部分
 
-この ADR が Accepted になると、[ADR-0005](0005-blob-storage-and-media.md) の次の部分を置き換える。BlobStore ポートとリモートメディアのキャッシュの方針（既定でキャッシュしない、TTL 付きのキャッシュ、プロキシ）はそのまま残る。
+この ADR は [ADR-0005](0005-blob-storage-and-media.md) の次の部分を置き換える。BlobStore ポートとリモートメディアのキャッシュの方針（既定でキャッシュしない、TTL 付きのキャッシュ、プロキシ）はそのまま残る。
 
 - 「MediaProcessor ポート」の責務「画像の EXIF 除去・リサイズ・サムネイル・blurhash 生成・形式検証」→ §1〜§3 の S / M / L とアニメーションの静止版・動く版、§6 の動画・音声の検証とメタデータの除去（remux）を加えた責務。
 - 「リモートメディア方針」のうち、プロキシが中継だけをすること → §7 の `small` の派生。
@@ -160,7 +158,8 @@ V2 / V3 の外部の `ffmpeg` や WASM 版はこの ADR では入れない。H.2
   - 動画・音声を cgo も外部コマンドもなしで受け付けられ、位置情報を落とせる。#629 を進められる。
 - 悪い影響・トレードオフ
   - 保存量は静止画で L の約 1.3 倍、アニメーションでは 6 つ分に増える。
-  - トランスコードしないので、HEVC の動画（iPhone の既定の「高効率」）は受け付けない。iOS の Safari が upload のときに H.264 に変換するかは要検証で、変換しなければ利用者に設定の変更を案内する必要がある。
+  - トランスコードしないので、HEVC の動画（iPhone の既定の「高効率」）は受け付けない。iOS の Safari が upload のときに H.264 に変換しなければ、利用者に設定の変更を案内する必要がある。
+  - Safari で再生できない動画（`Range` のないプロキシ経由、WebM の一部の codec）が残る。
   - 純 Go の WebP エンコーダは利用者が少なく、保守が止まる危険がある。出力だけに使い、外れても A1 に戻せるようにする。
   - container の remux を自前で持つので、MP4 / WebM のテストとファズが必要。
   - プロキシの `small` はリクエストのたびに画像を復号するので、CDN のキャッシュに当たらないと CPU を使う。
@@ -168,7 +167,8 @@ V2 / V3 の外部の `ffmpeg` や WASM 版はこの ADR では入れない。H.2
   - #654: S / M / L とアニメーションの静止版・動く版の保存（§1〜§5）。`media_variants` のスキーマ、`MediaVariants` と Account の API、Web の `srcset` / `<picture>`、data-model.md と federation.md の更新を含む。
   - spike: 純 Go の WebP エンコーダ（静止・アニメーション）とアニメーション WebP のデコード（ADR-0022 に従い spike ブランチ）。
   - #629: 動画・音声の添付（§6）。MP4 / WebM / MP3 / Ogg の解析・remux とファズ、ポスターの upload、`Range` の配信。
-  - メディアプロキシの `small` と `Range`（§6・§7）。
+  - メディアプロキシの `small`（§7）。
+  - 動画対応の拡張（V2 などのトランスコードのアダプタ、HEVC の受け付け、Safari での再生の範囲）の計画。予定だけを Issue にし、着手は別の ADR で決める。
   - 設定を変えたときの全メディアの処理し直しのコマンドと、古い処理結果の Blob の掃除。
 
 ## Pros and Cons of the Options（詳細比較・任意）
@@ -194,8 +194,5 @@ V2 / V3 の外部の `ffmpeg` や WASM 版はこの ADR では入れない。H.2
 
 ## Open Questions / 要検証
 
-- 派生の大きさの表（§1）でよいか。特にアイコンを切り抜かずに収めること、ヘッダー L の 3000×1000、カスタム絵文字の 3 段（ADR-0051 #618 と合わせる）。
-- 動画・音声の既定の上限（100 MiB、動画 5 分、音声 10 分）と、HEVC を受け付けないこと。iOS の Safari の upload で HEVC が H.264 に変換されるか。
-- spike: `github.com/deepteams/webp` の画質・速度・メモリ・ファズ、アニメーション WebP の読み書き。採用する版はその時点でリリースから 2 週間を過ぎたもの。
-- Safari が `Range` のない動画を再生しないこと、WebM（VP9 / AV1）の Safari での再生の範囲。
 - Mastodon・Misskey・GoToSocial・Akkoma が、`Document` の `icon`（ポスター）と `duration` を読むか、こちらが送る WebM・MOV 由来の MP4 を再生できるか（federation-live で確かめる）。
+- iOS の Safari が upload のときに HEVC の動画を H.264 に変換するか。動画対応の拡張の ADR で使う。
