@@ -4,6 +4,7 @@ import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ariaSnapshot } from "../test/aria-snapshot";
 import { MediaGrid, type MediaItem } from "./MediaGrid";
+import { AutoplayContext } from "./Picture";
 
 const items: readonly MediaItem[] = [
   { id: "a", src: "/a.png", alt: "A cat on a sofa", lang: "en" },
@@ -62,5 +63,59 @@ describe("MediaGrid", () => {
     expect(blurs()).toHaveLength(1);
     fireEvent.load(screen.getByRole("img", { name: "A cat on a sofa" }));
     expect(blurs()).toHaveLength(0);
+  });
+
+  it("plays videos and audio files with controls, never by themselves, named by their descriptions", () => {
+    const playables: readonly MediaItem[] = [
+      { id: "v", src: "/poster.png", playback: { kind: "video", url: "/clip.mp4" }, alt: "A cat jumps" },
+      { id: "a", src: "/cover.png", playback: { kind: "audio", url: "/song.mp3" }, alt: "A song" },
+      { id: "n", src: undefined, playback: { kind: "audio", url: "/talk.ogg" }, alt: null },
+    ];
+    const { container } = render(<MediaGrid items={playables} noDescriptionLabel="No description" revealLabel="Show sensitive media" />);
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> and <audio> have no ARIA role.
+    const [video, ...audios] = Array.from(container.querySelectorAll("video, audio"));
+    expect(video).toHaveAttribute("src", "/clip.mp4");
+    expect(video).toHaveAttribute("poster", "/poster.png");
+    expect(video).toHaveAttribute("controls");
+    expect(video).not.toHaveAttribute("autoplay");
+    expect(video).toHaveAccessibleName("A cat jumps");
+    expect(audios.map((audio) => [audio.getAttribute("src"), audio.hasAttribute("controls"), audio.hasAttribute("autoplay")])).toEqual([
+      ["/song.mp3", true, false],
+      ["/talk.ogg", true, false],
+    ]);
+    expect(audios[0]).toHaveAccessibleName("A song");
+    expect(audios[1]).toHaveAccessibleName("No description");
+    // The poster of an audio file is decorative: its player carries the description.
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- a decorative image has no role.
+    expect(container.querySelector('img[src="/cover.png"]')).toHaveAttribute("alt", "");
+  });
+
+  it("loops a gifv by itself only while animations play and motion is not reduced", () => {
+    const gifv: readonly MediaItem[] = [{ id: "g", src: "/still.png", playback: { kind: "gifv", url: "/loop.mp4" }, alt: "A dancing cat" }];
+    const props = { items: gifv, noDescriptionLabel: "No description", revealLabel: "Show sensitive media" };
+    const { container, rerender } = render(<MediaGrid {...props} />);
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- a <video> has no ARIA role.
+    const video = () => container.querySelector("video");
+    expect(video()).toHaveAttribute("autoplay");
+    expect(video()).toHaveAttribute("loop");
+    expect(video()).not.toHaveAttribute("controls");
+
+    rerender(
+      <AutoplayContext value={false}>
+        <MediaGrid {...props} />
+      </AutoplayContext>,
+    );
+    expect(video()).not.toHaveAttribute("autoplay");
+    expect(video()).toHaveAttribute("controls");
+
+    const matchMedia = vi.fn((query: string) => ({ matches: query === "(prefers-reduced-motion: reduce)", addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    vi.stubGlobal("matchMedia", matchMedia);
+    try {
+      rerender(<MediaGrid key="reduced" {...props} />);
+      expect(video()).not.toHaveAttribute("autoplay");
+      expect(video()).toHaveAttribute("controls");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -877,6 +877,9 @@ func (a *App) setMedia(cfg *config.Config, repo content.MediaRepository, emojis 
 		Limits: media.Limits{
 			MaxBytes: cfg.MediaMaxImageBytes, MaxSide: cfg.MediaMaxImageSide, MaxPixels: cfg.MediaMaxImagePixels,
 		},
+		AVLimits: media.AVLimits{
+			MaxBytes: cfg.MediaMaxAVBytes, MaxVideoDuration: cfg.MediaMaxVideoDuration, MaxAudioDuration: cfg.MediaMaxAudioDuration,
+		},
 		UnattachedTTL: cfg.MediaUnattachedTTL,
 		// Avatars and headers refer to media files from the account module.
 		Referrers: []content.MediaReferrer{a.Accounts, a.Instance},

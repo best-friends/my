@@ -5596,47 +5596,47 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.add": {
-    "defaultMessage": "‮∀pp ıɯɐƃǝs‬",
+    "defaultMessage": "‮∀pp ıɯɐƃǝs, ʌıpǝo, oɹ ɐnpıo‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.count": {
-    "defaultMessage": "‮{count,plural,one{# ıɯɐƃǝ ɐʇʇɐɔɥǝp} other{# ıɯɐƃǝs ɐʇʇɐɔɥǝp}}‬",
+    "defaultMessage": "‮{count,plural,one{# ɟıʅǝ ɐʇʇɐɔɥǝp} other{# ɟıʅǝs ɐʇʇɐɔɥǝp}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.hint": {
-    "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ.‬",
+    "defaultMessage": "‮ᗡǝsɔɹıqǝ ıʇ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ oɹ ɥǝɐɹ ıʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.label": {
-    "defaultMessage": "‮ᗡǝsɔɹıdʇıou oɟ ıɯɐƃǝ {position}‬",
+    "defaultMessage": "‮ᗡǝsɔɹıdʇıou oɟ ɐʇʇɐɔɥɯǝuʇ {position}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.missing": {
-    "defaultMessage": "‮∀pp ɐ pǝsɔɹıdʇıou oɟ ʇɥıs ıɯɐƃǝ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ouǝ ɟoɹ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮∀pp ɐ pǝsɔɹıdʇıou oɟ ʇɥıs ɐʇʇɐɔɥɯǝuʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ouǝ ɟoɹ ǝʌǝɹʎ ɐʇʇɐɔɥɯǝuʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.required": {
-    "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ. ⅄onɹ sǝʇʇıuƃs ɐsʞ ɟoɹ ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮ᗡǝsɔɹıqǝ ıʇ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ oɹ ɥǝɐɹ ıʇ. ⅄onɹ sǝʇʇıuƃs ɐsʞ ɟoɹ ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ɐʇʇɐɔɥɯǝuʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.description.server_required": {
-    "defaultMessage": "‮ᗡǝsɔɹıqǝ ʇɥǝ ıɯɐƃǝ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ ıʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮ᗡǝsɔɹıqǝ ıʇ ɟoɹ dǝodʅǝ ʍɥo ɔɐuuoʇ sǝǝ oɹ ɥǝɐɹ ıʇ. ⊥ɥıs sǝɹʌǝɹ ɹǝbnıɹǝs ɐ pǝsɔɹıdʇıou oɟ ǝʌǝɹʎ ɐʇʇɐɔɥɯǝuʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.failed": {
-    "defaultMessage": "‮Ↄonʅp uoʇ ɐʇʇɐɔɥ ʇɥǝ ıɯɐƃǝ: {reason}‬",
+    "defaultMessage": "‮Ↄonʅp uoʇ ɐʇʇɐɔɥ ʇɥǝ ɟıʅǝ: {reason}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.failed_processing": {
-    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ɔonʅp uoʇ dɹoɔǝss ʇɥıs ıɯɐƃǝ.‬",
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ ɔonʅp uoʇ dɹoɔǝss ʇɥıs ɟıʅǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.hint": {
-    "defaultMessage": "‮∩d ʇo {max,plural,other{# ıɯɐƃǝs}}: ſԀƎ⅁, ԀN⅁, ⅁IℲ oɹ MǝqԀ. ⅂oɔɐʇıou ɐup oʇɥǝɹ ɯǝʇɐpɐʇɐ ɐɹǝ ɹǝɯoʌǝp qǝɟoɹǝ ndʅoɐp.‬",
+    "defaultMessage": "‮∩d ʇo {max,plural,other{# ɟıʅǝs}}: ſԀƎ⅁, ԀN⅁, ⅁IℲ, oɹ MǝqԀ ıɯɐƃǝs, WԀ4 oɹ MǝqW ʌıpǝo, oɹ WԀ3, Oƃƃ, oɹ W4∀ ɐnpıo. ⅂oɔɐʇıou ɐup oʇɥǝɹ ɯǝʇɐpɐʇɐ ɐɹǝ ɹǝɯoʌǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.list": {
-    "defaultMessage": "‮∀ʇʇɐɔɥǝp ıɯɐƃǝs‬",
+    "defaultMessage": "‮∀ʇʇɐɔɥǝp ɯǝpıɐ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.processing": {
@@ -5644,15 +5644,15 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.remove": {
-    "defaultMessage": "‮ᴚǝɯoʌǝ ıɯɐƃǝ {position}‬",
+    "defaultMessage": "‮ᴚǝɯoʌǝ ɐʇʇɐɔɥɯǝuʇ {position}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.too_many": {
-    "defaultMessage": "‮∀ dosʇ ɔɐu ɥɐʌǝ ɐʇ ɯosʇ {max,plural,other{# ıɯɐƃǝs}}. ⊥ɥǝ ɹǝsʇ ʍǝɹǝ uoʇ ɐppǝp.‬",
+    "defaultMessage": "‮∀ dosʇ ɔɐu ɥɐʌǝ ɐʇ ɯosʇ {max,plural,other{# ɟıʅǝs}}. ⊥ɥǝ ɹǝsʇ ʍǝɹǝ uoʇ ɐppǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.unsupported": {
-    "defaultMessage": "‮{name} ıs uoʇ ɐ ſԀƎ⅁, ԀN⅁, ⅁IℲ oɹ MǝqԀ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮{name} ıs uoʇ ɐ ſԀƎ⅁, ԀN⅁, ⅁IℲ, oɹ MǝqԀ ıɯɐƃǝ, ɐu WԀ4 oɹ MǝqW ʌıpǝo, oɹ ɐu WԀ3, Oƃƃ, oɹ W4∀ ɐnpıo ɟıʅǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "compose.media.uploading": {

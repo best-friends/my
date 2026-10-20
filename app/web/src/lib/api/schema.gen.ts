@@ -872,14 +872,22 @@ export interface paths {
         /**
          * Upload a media file
          * @description Uploads an image to attach to a post or to use as an avatar, a header, or a custom
-         *     emoji (`purpose`). The server checks the format from the content (JPEG, PNG, GIF, or
-         *     WebP, the last two animated or not; the declared type must match it) and the size and
-         *     dimension limits before it accepts the file, then processes it in the background: it
+         *     emoji (`purpose`), or a video or audio file to attach to a post. The server checks the
+         *     format from the content (images: JPEG, PNG, GIF, or WebP, the last two animated or not;
+         *     video: MP4, QuickTime, or WebM of H.264, VP8, VP9, or AV1; audio: MP3, Ogg, M4A, or WebM
+         *     of AAC, Opus, Vorbis, or MP3; the declared type must match it) and the size, dimension,
+         *     and duration limits before it accepts the file, then processes it in the background: it
          *     removes the metadata (such as the location) by re-encoding the image into small,
          *     medium, and large variants for its purpose, still and, for an animation, moving ones,
-         *     and makes a blurhash. The answer is 202 with the file in its current `state`, usually
-         *     `processing`; poll `getMedia` until it is `ready` or `failed`. A file used for another
-         *     purpose later is processed again for it.
+         *     and makes a blurhash. A video or audio file is not re-encoded: the server writes its
+         *     streams again without metadata, and makes the variants and the blurhash of its
+         *     `thumbnail`, or of the cover image in the file. The answer is 202 with the file in its
+         *     current `state`, usually `processing`; poll `getMedia` until it is `ready` or
+         *     `failed`. A file used for another purpose later is processed again for it.
+         *
+         *     The size limits of images and of video and audio files differ, and the limits of video
+         *     and audio files are set by the operator (`media_max_av_bytes`,
+         *     `media_max_video_duration`, `media_max_audio_duration` in the server configuration).
          *
          *     A body larger than the size limit is refused with a 413 before it is read. Uploads
          *     count against a limit per account besides the API-wide one. Only the uploader can
@@ -3569,11 +3577,14 @@ export interface components {
          *     - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
          *       instance accepts.
          *     - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-         *       accepted format, or its declared type does not match its content.
+         *       accepted format or codec (such as HEVC video), or its declared type does not match its
+         *       content.
          *     - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-         *       many pixels or frames.
-         *     - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
-         *       of its format.
+         *       many pixels or frames; or the video has too many pixels or frames per second.
+         *     - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+         *       instance accepts.
+         *     - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+         *       its format.
          *     - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
          *       no longer be changed on its own.
          *     - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
@@ -3981,7 +3992,9 @@ export interface components {
         MediaAttachment: {
             id: components["schemas"]["Id"];
             /**
-             * @description The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+             * @description The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+             *     a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+             *     an animated image: muted, looped, without controls.
              * @enum {string}
              */
             type: "image" | "gifv" | "video" | "audio" | "unknown";
@@ -4000,12 +4013,14 @@ export interface components {
             /**
              * Format: uri
              * @description Where the file is served on this instance; for an upload, `variants.large.url`, or
-             *     `variants.animated.large.url` for an animation.
+             *     `variants.animated.large.url` for an animation, and the file itself for a video or
+             *     audio file.
              */
             url?: string;
             /**
              * Format: uri
-             * @description Where its preview is served; for an upload, `variants.small.url` (still).
+             * @description Where its preview is served; for an upload, `variants.small.url` (still). A video or
+             *     audio file without a poster has none.
              */
             preview_url?: string;
             /**
@@ -4031,6 +4046,11 @@ export interface components {
             /** @description The height of the original image in pixels, after its EXIF orientation; absent until the file is ready, and for a remote file whose server declared none. */
             height?: number;
             focus: components["schemas"]["MediaFocus"];
+            /**
+             * Format: double
+             * @description The length of a video or audio file in seconds; absent for an image and until the file is ready.
+             */
+            duration?: number;
         };
         /** @description The changes to a media file; a property left out keeps its value. */
         MediaUpdate: {
@@ -4057,6 +4077,13 @@ export interface components {
              * @enum {string}
              */
             purpose: "attachment" | "avatar" | "header" | "emoji";
+            /**
+             * Format: binary
+             * @description The poster of a video or audio file: an image that it shows before it plays, which
+             *     the client takes from the file. Its declared type is ignored; it must be an image
+             *     within the image limits. It is ignored for an image.
+             */
+            thumbnail?: string;
         };
         /**
          * @description A rendition of a media file, without metadata. Its URL never serves other content, so
@@ -4085,7 +4112,8 @@ export interface components {
         /**
          * @description The renditions of a ready media file within the sizes of its purpose (see
          *     `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-         *     still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+         *     still: for an animation, its first frame, and for a video or audio file, its poster
+         *     (absent without one). Clients pick one by its width (`srcset`), and
          *     show `animated` instead only when the user lets animations play and does not prefer
          *     reduced motion.
          */

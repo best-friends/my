@@ -129,8 +129,9 @@ func statusNote(st appcontent.Status, rev appcontent.Revision, author appaccount
 }
 
 // attachmentOf returns the attachment document of a processed media file: the URL, type, and
-// size of its large variant, moving for an animation (ADR-0054 §5), its alternative text,
-// blurhash, and focal point.
+// size of its large variant, moving for an animation (ADR-0054 §5), or of the video or audio
+// file with its poster's large variant as icon and its length as duration; its alternative
+// text, blurhash, and focal point.
 func attachmentOf(m appcontent.MediaView) federation.AttachmentDocument {
 	large := m.Image.Primary()
 	a := federation.AttachmentDocument{
@@ -142,6 +143,13 @@ func attachmentOf(m appcontent.MediaView) federation.AttachmentDocument {
 		if a.Width == 0 || a.Height == 0 {
 			a.Width, a.Height = r.Width, r.Height
 		}
+		if r.DurationMS > 0 {
+			a.Duration = federation.FormatDuration(time.Duration(r.DurationMS) * time.Millisecond)
+		}
+	}
+	if m.Image.Media != nil && m.Image.HasStill() {
+		poster := m.Image.Still.Large
+		a.Icon = &federation.ImageDocument{Type: federation.ImageType, MediaType: poster.ContentType, URL: poster.URL}
 	}
 	if f := m.Media.Focus; f != nil && (f.X != 0 || f.Y != 0) {
 		a.FocalPoint = []float64{f.X, f.Y}

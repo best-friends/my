@@ -17,16 +17,26 @@ type ImageVariants struct {
 }
 
 // Image is a media file as clients load it: its still renditions, and for an animation also
-// its moving ones (ADR-0054 §3, §5).
+// its moving ones (ADR-0054 §3, §5). For a video or audio file, Media is the file itself and
+// the still renditions are those of its poster, all empty when it has none (§6).
 type Image struct {
 	Still ImageVariants
 	// Animated are the moving renditions, nil for a still image.
 	Animated *ImageVariants
+	// Media is the video or audio file, nil for an image.
+	Media *ImageVariant
 }
 
-// Primary returns the rendition served as the file itself, the large one: moving for an
-// animation, still otherwise.
+// HasStill reports whether the image has still renditions: always for an image, and for a video
+// or audio file when it has a poster.
+func (i Image) HasStill() bool { return i.Still.Large.URL != "" }
+
+// Primary returns the rendition served as the file itself: the video or audio file, or the
+// large image, moving for an animation and still otherwise.
 func (i Image) Primary() ImageVariant {
+	if i.Media != nil {
+		return *i.Media
+	}
 	if i.Animated != nil {
 		return i.Animated.Large
 	}

@@ -56,6 +56,10 @@ type Config struct {
 	MediaMaxImageSide   int
 	MediaMaxImagePixels int64
 	MediaUnattachedTTL  time.Duration
+	// Limits of video and audio uploads (ADR-0054 §6).
+	MediaMaxAVBytes       int64
+	MediaMaxVideoDuration time.Duration
+	MediaMaxAudioDuration time.Duration
 	// CustomEmojiMaxBytes bounds the image of a local custom emoji as uploaded.
 	CustomEmojiMaxBytes int64
 	// RemoteCustomEmojiMaxBytes bounds the image of a remote custom emoji that the media proxy
@@ -156,6 +160,9 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int("media_max_image_side", c.MediaMaxImageSide),
 		slog.Int64("media_max_image_pixels", c.MediaMaxImagePixels),
 		slog.Duration("media_unattached_ttl", c.MediaUnattachedTTL),
+		slog.Int64("media_max_av_bytes", c.MediaMaxAVBytes),
+		slog.Duration("media_max_video_duration", c.MediaMaxVideoDuration),
+		slog.Duration("media_max_audio_duration", c.MediaMaxAudioDuration),
 		slog.Int64("custom_emoji_max_bytes", c.CustomEmojiMaxBytes),
 		slog.Int64("remote_custom_emoji_max_bytes", c.RemoteCustomEmojiMaxBytes),
 		slog.Int64("remote_media_cache_max_bytes", c.RemoteMediaCacheMaxBytes),

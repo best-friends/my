@@ -4484,7 +4484,8 @@ type MediaAttachment struct {
 	// Meta What the server knows about the media file.
 	Meta MediaMeta `json:"meta"`
 
-	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still).
+	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still). A video or
+	// audio file without a poster has none.
 	PreviewUrl *string `json:"preview_url,omitempty"`
 
 	// RemoteUrl The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
@@ -4494,16 +4495,20 @@ type MediaAttachment struct {
 	// then `ready`, or `failed` when the content could not be processed.
 	State MediaAttachmentState `json:"state"`
 
-	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+	// Type The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+	// a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+	// an animated image: muted, looped, without controls.
 	Type MediaAttachmentType `json:"type"`
 
 	// Url Where the file is served on this instance; for an upload, `variants.large.url`, or
-	// `variants.animated.large.url` for an animation.
+	// `variants.animated.large.url` for an animation, and the file itself for a video or
+	// audio file.
 	Url *string `json:"url,omitempty"`
 
 	// Variants The renditions of a ready media file within the sizes of its purpose (see
 	// `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-	// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+	// still: for an animation, its first frame, and for a video or audio file, its poster
+	// (absent without one). Clients pick one by its width (`srcset`), and
 	// show `animated` instead only when the user lets animations play and does not prefer
 	// reduced motion.
 	Variants *MediaVariants `json:"variants,omitempty"`
@@ -4513,7 +4518,9 @@ type MediaAttachment struct {
 // then `ready`, or `failed` when the content could not be processed.
 type MediaAttachmentState string
 
-// MediaAttachmentType The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+// MediaAttachmentType The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+// a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+// an animated image: muted, looped, without controls.
 type MediaAttachmentType string
 
 // MediaFocus The focal point that previews keep in view when they crop the image, from -1.0 (left,
@@ -4525,6 +4532,9 @@ type MediaFocus struct {
 
 // MediaMeta What the server knows about the media file.
 type MediaMeta struct {
+	// Duration The length of a video or audio file in seconds; absent for an image and until the file is ready.
+	Duration *float64 `json:"duration,omitempty"`
+
 	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
 	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
 	Focus MediaFocus `json:"focus"`
@@ -4560,6 +4570,11 @@ type MediaUpload struct {
 	// (within 750 × 250, 1500 × 500, and 3000 × 1000), or a custom `emoji` (within 64,
 	// 128, and 256 pixels).
 	Purpose *MediaUploadPurpose `json:"purpose,omitempty"`
+
+	// Thumbnail The poster of a video or audio file: an image that it shows before it plays, which
+	// the client takes from the file. Its declared type is ignored; it must be an image
+	// within the image limits. It is ignored for an image.
+	Thumbnail *openapi_types.File `json:"thumbnail,omitempty"`
 }
 
 // MediaUploadPurpose What the file is for, which picks the sizes of its variants: an `attachment` of a
@@ -4592,7 +4607,8 @@ type MediaVariant struct {
 
 // MediaVariants The renditions of a ready media file within the sizes of its purpose (see
 // `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+// still: for an animation, its first frame, and for a video or audio file, its poster
+// (absent without one). Clients pick one by its width (`srcset`), and
 // show `animated` instead only when the user lets animations play and does not prefer
 // reduced motion.
 type MediaVariants struct {
@@ -5014,11 +5030,14 @@ type PreviewDomainBlockImportRequest struct {
 //   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
 //     instance accepts.
 //   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-//     accepted format, or its declared type does not match its content.
+//     accepted format or codec (such as HEVC video), or its declared type does not match its
+//     content.
 //   - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-//     many pixels or frames.
-//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
-//     of its format.
+//     many pixels or frames; or the video has too many pixels or frames per second.
+//   - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+//     instance accepts.
+//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+//     its format.
 //   - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
 //     no longer be changed on its own.
 //   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
