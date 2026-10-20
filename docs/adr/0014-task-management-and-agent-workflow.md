@@ -47,7 +47,7 @@
 
 ### Milestone と Project
 
-- Milestone = 期間ではなく到達状態（M0〜M5、[ビジョン](../requirements/00-vision.md) 参照）。
+- Milestone = 期間ではなく到達状態（M0〜M6、[ビジョン](../requirements/00-vision.md) 参照）。
 - GitHub Project（v2）でボード管理: Status（Backlog / Ready / In progress / In review / Done）、Priority、Area、Milestone。
 
 ## Consequences
