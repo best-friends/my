@@ -455,6 +455,7 @@ describe("an account's admin page", () => {
     const requests = recordAccountRequests();
     let detail: Detail = { ...bobDetail, two_factor_enabled: true };
     server.use(
+      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_two_factor"]),
       http.get(`${apiBase}/admin/accounts/:id`, () => HttpResponse.json(detail)),
       http.post(`${apiBase}/admin/accounts/:id/two_factor/disable`, () => {
         detail = { ...detail, two_factor_enabled: false };
@@ -476,6 +477,15 @@ describe("an account's admin page", () => {
       expect(within(twoFactor).getByRole("heading", { level: 2 })).toHaveFocus();
     });
     expect(requests.filter((request) => request.includes("two_factor"))).toEqual([`POST /admin/accounts/${bobDetail.id}/two_factor/disable`]);
+  });
+
+  test("a moderator sees the two-factor authentication but cannot remove it", async () => {
+    accountServer({ ...bobDetail, two_factor_enabled: true });
+    await renderApp({ path: `/admin/accounts/${bobDetail.id}` });
+
+    const twoFactor = await screen.findByRole("region", { name: "Two-factor authentication" });
+    expect(within(twoFactor).getByText("On: signing in asks for a code from an authenticator app.")).toBeInTheDocument();
+    expect(within(twoFactor).queryByRole("button", { name: "Remove two-factor authentication" })).not.toBeInTheDocument();
   });
 
   test("a remote account has no two-factor authentication region", async () => {

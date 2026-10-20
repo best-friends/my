@@ -108,6 +108,7 @@ my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
   呼ぶたびに監査ログに `revealed_private_data` を記録し、記録できたときだけ返します。IP アドレスは保持期間（既定 180 日）を過ぎると消えるので、それより前のログイン元は表示できません。
 - `GET /api/v1/admin/accounts/{id}` の `two_factor_enabled` は、ローカルのアカウントの利用者が二要素認証（TOTP、FR-005）を使っているかを示します。
   認証アプリとリカバリーコードを両方なくした利用者は、`POST /api/v1/admin/accounts/{id}/two_factor/disable` で二要素認証を外すとパスワードだけでログインできます。
+  外せるのは権限 `manage_two_factor` を持つ利用者で、既定では組み込みの管理者のロールだけが持ちます（モデレーターは状態を見られますが、外せません。ADR-0058 のサーバー管理）。
   外すと監査ログに `two_factor_disabled` を記録します。本人であることは、メールなど別の経路で確かめてから外してください。
   ほかに管理者のいない管理者自身がなくしたときは、運営者が CLI の `my admin account disable-two-factor @alice` で外します（監査ログの操作者は CLI）。
 - 検索は 1 ページを埋めるのに 400 アカウントまで読みます。条件に合うアカウントが少ないと、短いページや空のページにも `next_cursor` が付くので、続けて読みます。

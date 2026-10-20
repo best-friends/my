@@ -32,6 +32,8 @@ type fakeAccountAdmin struct {
 	// twoFactorRemovals the removals ("account by user").
 	twoFactor         map[string]bool
 	twoFactorRemovals []string
+	// perms are the permissions of the env's users.
+	perms fakePermissions
 }
 
 func (f *fakeAccountAdmin) present(a appaccount.Actor) appidentity.AdminAccount {
@@ -141,6 +143,7 @@ func newAccountAdminEnv(t *testing.T) (*authEnv, *fakeAccountAdmin, *fakeAccount
 			Lifecycle: account.InitialLifecycleState(bobAccountID),
 		}
 		admin.accounts, mod.accounts = accounts, accounts
+		admin.perms = o.Permissions.(fakePermissions)
 		o.AccountAdmin, o.AccountReports, o.AccountModeration = admin, admin, mod
 	})
 	admin.reports = reports.reports
@@ -153,7 +156,6 @@ func TestAccountAdminOperationsNeedAPermission(t *testing.T) {
 		{http.MethodGet, "/admin/accounts"},
 		{http.MethodGet, "/admin/accounts/" + aliceAccountID},
 		{http.MethodPost, "/admin/accounts/" + aliceAccountID + "/reveal"},
-		{http.MethodPost, "/admin/accounts/" + aliceAccountID + "/two_factor/disable"},
 	} {
 		res := e.send(t, op.method, op.path, "bob-admin", "")
 		if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
@@ -282,7 +284,17 @@ func TestRevealAdminAccount(t *testing.T) {
 func TestDisableAdminAccountTwoFactor(t *testing.T) {
 	e, admin, _ := newAccountAdminEnv(t)
 	path := func(id string) string { return "/admin/accounts/" + id + "/two_factor/disable" }
-	res := e.send(t, http.MethodPost, path(aliceAccountID), "admin-read", "")
+	// A moderator's manage_accounts is not enough: removing 2FA is the administrators' (ADR-0058).
+	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
+	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
+		p.Detail == nil || !strings.Contains(*p.Detail, "manage_two_factor") {
+		t.Errorf("by a moderator = %d %+v, want 403 for manage_two_factor", res.StatusCode, p)
+	}
+	if len(admin.twoFactorRemovals) != 0 {
+		t.Fatalf("a refused removal ran: %v", admin.twoFactorRemovals)
+	}
+	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin-read", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {
 		t.Errorf("with admin:read = %d %+v, want 403 insufficient scope", res.StatusCode, p)
 	}

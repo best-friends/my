@@ -88,7 +88,8 @@ CREATE TABLE role_permissions (
   role_id TEXT NOT NULL,
   permission TEXT NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
-    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs'
+    'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
+    'manage_two_factor'
   )),
   PRIMARY KEY (role_id, permission)
 ) STRICT;

@@ -200,11 +200,13 @@ function TwoFactorSection({ id, enabled, handle }: { id: string; enabled: boolea
   // The button goes away with the removal: focus moves to the region's heading.
   const focusHeading = useFocusAfterChange(headingRef, enabled);
   const remove = useRemoveTwoFactor(id, handle, focusHeading);
+  // Removing it is server administration (ADR-0058): moderators see the state but not the button.
+  const canRemove = useHasPermission("manage_two_factor");
   return (
     <DetailSection title={t("client:admin.account.two_factor.title")} headingRef={headingRef}>
       <StatusMessage tone="success">{remove.status}</StatusMessage>
       <p>{enabled ? t("client:admin.account.two_factor.on") : t("client:admin.account.two_factor.off")}</p>
-      {enabled && (
+      {enabled && canRemove && (
         <div className="flex flex-col items-start gap-3">
           <p className="text-sm text-fg-muted">{t("client:admin.account.two_factor.remove.description")}</p>
           <Button onPress={remove.open} isPending={remove.isPending}>

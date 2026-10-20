@@ -831,15 +831,16 @@ func (e NotificationType) Valid() bool {
 
 // Defines values for Permission.
 const (
-	PermissionManageAccounts Permission = "manage_accounts"
-	PermissionManageDomains  Permission = "manage_domains"
-	PermissionManageInvites  Permission = "manage_invites"
-	PermissionManageJobs     Permission = "manage_jobs"
-	PermissionManageReports  Permission = "manage_reports"
-	PermissionManageRoles    Permission = "manage_roles"
-	PermissionManageRules    Permission = "manage_rules"
-	PermissionManageSettings Permission = "manage_settings"
-	PermissionViewAudit      Permission = "view_audit"
+	PermissionManageAccounts  Permission = "manage_accounts"
+	PermissionManageDomains   Permission = "manage_domains"
+	PermissionManageInvites   Permission = "manage_invites"
+	PermissionManageJobs      Permission = "manage_jobs"
+	PermissionManageReports   Permission = "manage_reports"
+	PermissionManageRoles     Permission = "manage_roles"
+	PermissionManageRules     Permission = "manage_rules"
+	PermissionManageSettings  Permission = "manage_settings"
+	PermissionManageTwoFactor Permission = "manage_two_factor"
+	PermissionViewAudit       Permission = "view_audit"
 )
 
 // Valid indicates whether the value is a known member of the Permission enum.
@@ -860,6 +861,8 @@ func (e Permission) Valid() bool {
 	case PermissionManageRules:
 		return true
 	case PermissionManageSettings:
+		return true
+	case PermissionManageTwoFactor:
 		return true
 	case PermissionViewAudit:
 		return true
@@ -2855,7 +2858,8 @@ type PageInfo struct {
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
 // `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-// log. The others guard no client API operation yet.
+// log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+// the built-in admin role by default). The others guard no client API operation yet.
 type Permission string
 
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The

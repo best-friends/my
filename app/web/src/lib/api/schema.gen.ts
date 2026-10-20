@@ -2004,7 +2004,7 @@ export interface paths {
          *     recorded in the audit log as `two_factor_disabled`. A remote account or the instance
          *     actor is a 422 naming `id`, an account without two-factor authentication a 409
          *     `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
-         *     `manage_accounts` permission.
+         *     `manage_two_factor` permission, which only the built-in admin role has by default.
          */
         post: operations["disableAdminAccountTwoFactor"];
         delete?: never;
@@ -3822,10 +3822,11 @@ export interface components {
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
          *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-         *     log. The others guard no client API operation yet.
+         *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+         *     the built-in admin role by default). The others guard no client API operation yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor";
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.

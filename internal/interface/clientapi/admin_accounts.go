@@ -190,7 +190,7 @@ func (s *Server) GetAdminAccount(ctx context.Context, req GetAdminAccountRequest
 
 // DisableAdminAccountTwoFactor serves POST /api/v1/admin/accounts/{id}/two_factor/disable.
 func (s *Server) DisableAdminAccountTwoFactor(ctx context.Context, req DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error) {
-	if p, err := s.requirePermission(ctx, identity.PermManageAccounts); err != nil {
+	if p, err := s.requirePermission(ctx, identity.PermManageTwoFactor); err != nil {
 		return nil, err
 	} else if p != nil {
 		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(*p), nil

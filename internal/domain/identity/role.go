@@ -19,6 +19,9 @@ const (
 	PermViewAudit      Permission = "view_audit"
 	// PermManageJobs: read and requeue the dead jobs of the job queue.
 	PermManageJobs Permission = "manage_jobs"
+	// PermManageTwoFactor: remove the two-factor authentication of a local user (FR-005). It is
+	// server administration (ADR-0058 §4): only the built-in admin role has it by default.
+	PermManageTwoFactor Permission = "manage_two_factor"
 )
 
 // AllPermissions lists every permission.
@@ -26,6 +29,7 @@ func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
+		PermManageTwoFactor,
 	}
 }
 
