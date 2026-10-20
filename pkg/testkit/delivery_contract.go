@@ -40,6 +40,8 @@ type deliveryEnv struct {
 	breaker   *appfederation.CircuitBreaker
 	health    *appfederation.Health
 	deliverer *appfederation.Deliverer
+	// meter records the delivery metrics (ADR-0055 §3).
+	meter *Meter
 	// actor is a local account with a signing key.
 	actor string
 }
@@ -53,6 +55,7 @@ func newDeliveryEnv(t *testing.T, e *fedEnv) *deliveryEnv {
 	d := &deliveryEnv{
 		fedEnv: e, net: &deliveryNetwork{routes: map[string]deliveryRoute{}, requests: map[string]int{}},
 		keys: &deliveryKeys{keys: map[string]appfederation.SigningKey{}}, breaker: appfederation.NewCircuitBreaker(),
+		meter: NewMeter(),
 	}
 	d.actor = e.local()
 	d.keys.keys[d.actor] = appfederation.SigningKey{KeyID: e.uri(d.actor) + "#main-key", PrivateKey: priv}
@@ -62,7 +65,7 @@ func newDeliveryEnv(t *testing.T, e *fedEnv) *deliveryEnv {
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Federation,
 		Client: appfederation.NewSignedHTTPClient(d.net, deliverySigner{}, NewKeyValueStore(e.clock), e.clock),
 		Keys:   d.keys, Domains: e.domains, Breaker: d.breaker, Clock: e.clock, IDs: e.ids,
-		Logger: slog.New(slog.DiscardHandler),
+		Logger: slog.New(slog.DiscardHandler), Meter: d.meter,
 	})
 	d.deliverer.RegisterJobs(e.handlers)
 	return d
@@ -290,6 +293,21 @@ func fedClassifiesResponses(t *testing.T, e *fedEnv) {
 		if sent := tc.status != 0; sent != (a.Scheme != "") || (sent && a.Error != "") || (!sent && a.Error == "") {
 			t.Errorf("%s: attempt = %+v, want a scheme with a response and an error without", tc.name, a)
 		}
+	}
+	// my.delivery.attempts counts them by outcome: a 410 is gone, other refusals failed.
+	for outcome, want := range map[string]float64{
+		appfederation.DeliveryOutcomeSuccess: 2, appfederation.DeliveryOutcomeRetry: 5,
+		appfederation.DeliveryOutcomeGone: 1, appfederation.DeliveryOutcomeFailed: 8,
+	} {
+		if got := d.meter.Sum(appfederation.DeliveryAttempts.Name, map[string]string{appfederation.LabelOutcome: outcome}); got != want {
+			t.Errorf("%s{%s} = %v, want %v", appfederation.DeliveryAttempts.Name, outcome, got, want)
+		}
+	}
+	if got := len(d.meter.Measurements(appfederation.DeliveryDuration.Name, nil)); got != len(cases) {
+		t.Errorf("%s has %d values, want %d", appfederation.DeliveryDuration.Name, got, len(cases))
+	}
+	if err := d.meter.Err(); err != nil {
+		t.Error(err)
 	}
 	// A 401 is answered only after the request was sent again with the other scheme.
 	if n := d.net.count("s9.example"); n != 2 {

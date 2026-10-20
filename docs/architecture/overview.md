@@ -114,7 +114,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `Clock` / `IdGenerator` | 時刻（UTC・ミリ秒）・ID 生成（テスト容易性のため注入） | system（システム時計 / `uuid.NewV7()`） | [0003](../adr/0003-database-abstraction.md) |
 | `KeyManager` | 秘密（アクター秘密鍵など）を包む DEK の wrap / unwrap。暗号化は `kernel.Sealer` が行う | local（設定の KEK） | [0019](../adr/0019-security-baseline.md) |
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
-| `Logger` / `Tracer` | 観測性 | JSON stdout / OTel 任意 | — |
+| `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは持たない | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
 
 ## 4. 主要フロー
 
@@ -223,6 +223,7 @@ internal/
     stream/pubsub/   # stream.Bus と stream.Sweeper の Google Cloud Pub/Sub（プロセスごとの subscription。ADR-0050）
     valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
     mail/{none,smtp,ses}/
+    telemetry/{none,otel,emf}/ # kernel.Meter の実装（ADR-0055）。OpenTelemetry と Prometheus のライブラリはここだけが import する
     captcha/siteverify/ # HumanVerifier の実装（Turnstile / hCaptcha / reCAPTCHA v2 のプリセット。ADR-0042）
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
     keymanager/local/ # KeyManager の実装（設定の KEK。KMS アダプタは後続）

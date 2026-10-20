@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net"
@@ -101,6 +102,8 @@ type App struct {
 	Mailer kernel.Mailer
 	// HTTPClient sends every outbound HTTP request through the SSRF guard (ADR-0019 §1).
 	HTTPClient kernel.HTTPClient
+	// Meter is the metrics adapter that cfg.MetricsExporter selects (ADR-0055).
+	Meter kernel.Meter
 	// HumanVerifier checks the CAPTCHA token of the sign-in and registration forms, and
 	// HumanCheckWidget is what those pages render for it; both are nil when captcha is none
 	// (ADR-0042).
@@ -191,6 +194,12 @@ type App struct {
 	// closeStreams closes Streams within its context, once.
 	closeStreams func(ctx context.Context) error
 	routes       []route
+	// http records the HTTP server metrics; nil when Meter records nothing.
+	http *httpMetrics
+	// metricsHandler serves the Prometheus scrape on metrics_listen; nil unless
+	// metrics_exporter = prometheus. closeMeter flushes and stops the exporter.
+	metricsHandler http.Handler
+	closeMeter     func(ctx context.Context) error
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
 	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
@@ -200,6 +209,8 @@ type App struct {
 type route struct {
 	pattern string
 	handler http.Handler
+	// surface is the my.surface label of the HTTP metrics (ADR-0055 §3).
+	surface string
 }
 
 // AppOptions configure NewApp.
@@ -222,6 +233,12 @@ type AppOptions struct {
 	// StreamBus, when set, carries the signals of the streams between processes instead of the
 	// broker that cfg.Stream selects. Tests only, to share an in-memory broker between Apps.
 	StreamBus stream.Bus
+	// MetricsWriter receives the EMF lines of metrics_exporter = emf; the default is standard
+	// output, which the logs (on standard error) do not share.
+	MetricsWriter io.Writer
+	// Meter, when set, records the metrics instead of the adapter that cfg.MetricsExporter
+	// selects. Tests only, to inspect the measurements with testkit.Meter.
+	Meter kernel.Meter
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -249,7 +266,14 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Handlers:   &queue.JobHandlerRegistry{},
 	}
 
+	if opts.Version == "" {
+		opts.Version = "dev"
+	}
+	if err := a.setUpMeter(ctx, cfg, opts); err != nil {
+		return nil, err
+	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
+		_ = a.Close()
 		return nil, err
 	}
 	a.Sealer = kernel.NewSealer(a.KeyManager)
@@ -317,7 +341,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
 	}
 
-	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger}
+	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger, Meter: a.Meter}
 	switch cfg.Queue {
 	case "db":
 		// Set with the database above.
@@ -378,9 +402,6 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
 		_ = a.Close()
 		return nil, err
-	}
-	if opts.Version == "" {
-		opts.Version = "dev"
 	}
 	a.HTTPClient = opts.HTTPClient
 	if a.HTTPClient == nil {
@@ -485,6 +506,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
+	a.registerBusinessMetrics(a.Projectors)
 	fedOutbox := a.setUpFederation(cfg, feds)
 
 	a.setUpDelivery(feds)
@@ -534,7 +556,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		HTML: a.page, Problem: a.writeStatusProblem, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
 		LocalPosts:  a.Content.LocalPostCount,
-	}).Register(a)
+	}).Register(surfaceRouter{a, surfaceActivityPub})
 	// The sign-in screens load the stylesheet the web build makes for them (ADR-0030).
 	authpages.New(authpages.Options{
 		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
@@ -547,15 +569,15 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			return cfg.Host
 		},
 		HumanCheck: a.HumanCheckWidget,
-	}).Register(a)
+	}).Register(surfaceRouter{a, surfaceOAuth})
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
 		_ = a.Close()
 		return nil, err
 	}
-	tokens.Register(a)
-	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
-	mediahttp.NewProxy(mediahttp.ProxyOptions{Media: a.MediaProxy, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(a)
+	tokens.Register(surfaceRouter{a, surfaceOAuth})
+	mediahttp.New(mediahttp.Options{Blobs: a.Blobs, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(surfaceRouter{a, surfaceMedia})
+	mediahttp.NewProxy(mediahttp.ProxyOptions{Media: a.MediaProxy, Problem: a.writeStatusProblem, Logger: a.Logger}).Register(surfaceRouter{a, surfaceMedia})
 	clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
@@ -578,8 +600,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
-		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger,
-	}).Register(a)
+		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+	}).Register(clientAPIRouter{a})
 	return a, nil
 }
 
@@ -674,7 +696,7 @@ func (a *App) setUpWeb(opts AppOptions) error {
 	if err != nil {
 		return err
 	}
-	h.Register(a)
+	h.Register(surfaceRouter{a, surfaceWeb})
 	a.webStylesheet = h.Stylesheet()
 	a.page = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// The same URL may be an ActivityPub document, so every answer depends on Accept.
@@ -897,10 +919,12 @@ func (a *App) valkeyClient(ctx context.Context) (valkey.Client, error) {
 	return a.valkey, nil
 }
 
-// Handle registers h for pattern (an http.ServeMux pattern) on the HTTP server of the web role.
-// Call it before Serve.
-func (a *App) Handle(pattern string, h http.Handler) {
-	a.routes = append(a.routes, route{pattern: pattern, handler: h})
+// Handle registers h for pattern (an http.ServeMux pattern) on the HTTP server of the web role,
+// as a route of the web surface. Call it before Serve.
+func (a *App) Handle(pattern string, h http.Handler) { a.handle(pattern, h, surfaceWeb) }
+
+func (a *App) handle(pattern string, h http.Handler, surface string) {
+	a.routes = append(a.routes, route{pattern: pattern, handler: h, surface: surface})
 }
 
 // Close releases the database connections.
@@ -915,6 +939,12 @@ func (a *App) Close() error {
 	}
 	if a.valkey != nil {
 		a.valkey.Close()
+	}
+	if a.closeMeter != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), meterCloseTimeout)
+		_ = a.closeMeter(ctx) // the last measurements are lost when the collector is down
+		cancel()
+		a.closeMeter = nil
 	}
 	if a.closer == nil {
 		return nil
