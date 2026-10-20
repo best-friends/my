@@ -1,9 +1,9 @@
-name: AWS emulator contract
+name: Stream contract
 
-# The tests of the Amazon SNS / SQS adapters (AWS_TEST_PACKAGES in the Makefile) on the Floci emulator container as well
-# as on the in-memory fake of pkg/testkit/awstest (ADR-0050 §5). Called by main.yml on the pushes to main that touch a
-# path they depend on and by nightly.yml; pull requests and merge groups run the same tests on the fake only in
-# ctx-go.yml's go-test job.
+# The stream.Bus contracts of internal/adapter/stream on broker containers (the valkey/valkey container of
+# pkg/testkit/valkeytest) instead of the in-process fakes (miniredis) that pull requests and merge groups run in
+# ctx-go.yml's go-test job (ADR-0050 §5). Called by main.yml on the pushes to main that touch a path they depend on
+# and by nightly.yml.
 
 on:
   workflow_call:
@@ -16,7 +16,7 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  aws-contract:
+  stream-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -35,7 +35,7 @@ jobs:
           restore-keys: |
             go-test-${{ runner.os }}-${{ hashFiles('go.sum', 'tools/go.sum') }}-
             go-test-${{ runner.os }}-
-      # testcontainers-go starts the emulator on the runner's Docker; TEST_AWS_REQUIRED makes a missing Docker fail the
-      # job instead of skipping the tests.
-      - name: make go-test-aws
-        run: make go-test-aws
+      # testcontainers-go starts the brokers on the runner's Docker; the target makes a missing Docker fail the job
+      # instead of skipping the tests.
+      - name: make go-test-stream
+        run: make go-test-stream

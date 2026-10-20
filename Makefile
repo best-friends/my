@@ -16,7 +16,7 @@ NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES),BlueOak-1.0.0,MIT-0
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: help check lint-docs lint-shell adr-index adr-index-check adr-new build \
-	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-build go-licenses \
+	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-test-stream go-build go-licenses \
 	i18n-install i18n-gen i18n-check
 
 help: ## Show available targets
@@ -135,17 +135,13 @@ go-test: ## Run Go tests (PostgreSQL tests on pgmem, ADR-0041)
 	go test ./...
 
 # The packages whose tests use PostgreSQL through pkg/testkit/pgtest.
-POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/platform/
+POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/db/ ./internal/adapter/queue/db/ ./internal/adapter/stream/postgres/ ./internal/platform/
 
 go-test-postgres: ## Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI on main and nightly)
 	TEST_POSTGRES=container TEST_POSTGRES_REQUIRED=1 go test -count=1 $(POSTGRES_TEST_PACKAGES)
 
-# The packages whose tests use the AWS emulator through pkg/testkit/awstest.
-AWS_TEST_PACKAGES := ./internal/adapter/stream/sns/
-
-.PHONY: go-test-aws
-go-test-aws: ## Run the SNS / SQS tests on the AWS emulator container too, not only the in-memory fake (needs Docker; CI on main and nightly)
-	TEST_AWS=container TEST_AWS_REQUIRED=1 go test -count=1 $(AWS_TEST_PACKAGES)
+go-test-stream: ## Run the stream.Bus contracts on broker containers instead of the in-process fakes (Valkey; Floci for SNS / SQS) (needs Docker; CI on main and nightly)
+	TEST_STREAM=container TEST_VALKEY_REQUIRED=1 TEST_AWS=container TEST_AWS_REQUIRED=1 go test -count=1 ./internal/adapter/stream/...
 
 go-build: ## Build all packages statically (CGO_ENABLED=0)
 	CGO_ENABLED=0 go build ./...

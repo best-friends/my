@@ -7,7 +7,7 @@
 //
 //   - TEST_AWS_ENDPOINT: an emulator that is already running, as a URL (http://localhost:4566).
 //   - TEST_AWS=container: a container of TEST_AWS_IMAGE (default DefaultImage) started with
-//     testcontainers-go on the first Emulator call (make go-test-aws).
+//     testcontainers-go on the first Emulator call (make go-test-stream).
 //   - Without either, Emulator skips the test.
 //   - TEST_AWS_REQUIRED: when non-empty, an emulator that cannot start because Docker is
 //     unavailable fails the tests instead of skipping them. CI sets it.
@@ -94,7 +94,7 @@ func startEmulator() {
 		return
 	}
 	if os.Getenv(EnvMode) != "container" {
-		emulator.skip = fmt.Sprintf("no AWS emulator: set %s=container (make go-test-aws) or %s", EnvMode, EnvEndpoint)
+		emulator.skip = fmt.Sprintf("no AWS emulator: set %s=container (make go-test-stream) or %s", EnvMode, EnvEndpoint)
 		return
 	}
 	if err := exec.Command("docker", "info").Run(); err != nil {

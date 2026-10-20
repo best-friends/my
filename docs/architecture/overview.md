@@ -209,6 +209,7 @@ internal/
     blob/{fs,s3}/
     media/{native,vips,none}/
     kv/{db,memory,valkey}/
+    stream/valkey/   # stream.Bus の Valkey Pub/Sub（1 チャネルに PUBLISH、listener は専用の接続で SUBSCRIBE。ADR-0050）
     valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
     mail/{none,smtp,ses}/
     captcha/siteverify/ # HumanVerifier の実装（Turnstile / hCaptcha / reCAPTCHA v2 のプリセット。ADR-0042）

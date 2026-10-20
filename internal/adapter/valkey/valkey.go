@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package valkey connects to a Valkey server (or another server that speaks the Redis protocol)
-// for the adapters that keep their data there, such as the key-value store of
-// internal/adapter/kv/valkey. The adapters share one connection setting (valkey_url,
+// for the adapters that use it: the key-value store of internal/adapter/kv/valkey and the
+// stream bus of internal/adapter/stream/valkey. The adapters share one connection setting (valkey_url,
 // valkey_tls_ca_file, valkey_key_prefix) and may share one Client.
 //
 // The client is valkey-go (Apache-2.0), which is pure Go. It finds out by itself whether the
