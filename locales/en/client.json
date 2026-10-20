@@ -1964,12 +1964,12 @@
     "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
   },
   "admin.documents.body": {
-    "defaultMessage": "Text in {language}",
-    "description": "Label of the text area of a document in the selected language. {language} is the language's name."
+    "defaultMessage": "Text",
+    "description": "Label of the text area of a document."
   },
   "admin.documents.body.description": {
-    "defaultMessage": "Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Save it empty to remove the text in this language.",
-    "description": "Description of the text area of a document: the Markdown it takes, and how to remove the text."
+    "defaultMessage": "Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Write it once, in any language: everyone reads the same text, whatever the language of their app. Save it empty to remove the text.",
+    "description": "Description of the text area of a document: the Markdown it takes, that one text serves every language, and how to remove the text."
   },
   "admin.documents.characters_left": {
     "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
@@ -1988,40 +1988,24 @@
     "description": "Button of the dialog that removes a document in a language."
   },
   "admin.documents.confirm_remove.description": {
-    "defaultMessage": "People who read this language get the text in another language, or no page when no language has one. You can write it again later.",
-    "description": "Body of the dialog that asks before removing a document in a language."
+    "defaultMessage": "The page and its links are hidden until the text is written again.",
+    "description": "Description of the question before removing a document's text."
   },
   "admin.documents.confirm_remove.privacy_policy": {
-    "defaultMessage": "Remove the privacy policy in {language}?",
-    "description": "Title of the dialog that asks before removing the privacy policy in a language."
+    "defaultMessage": "Remove the privacy policy?",
+    "description": "Title of the question before removing the privacy policy."
   },
   "admin.documents.confirm_remove.terms": {
-    "defaultMessage": "Remove the terms of service in {language}?",
-    "description": "Title of the dialog that asks before removing the terms of service in a language."
-  },
-  "admin.documents.languages": {
-    "defaultMessage": "Written in",
-    "description": "Term of the languages that a document is written in, on the terms and policies screen."
-  },
-  "admin.documents.languages.none": {
-    "defaultMessage": "No language yet, so the page and its links are hidden",
-    "description": "Value of 'Written in' when a document has no text in any language: no page shows it and no link leads to it."
-  },
-  "admin.documents.locale": {
-    "defaultMessage": "Language",
-    "description": "Label of the select of the language whose texts the terms and policies screen edits."
-  },
-  "admin.documents.locale.description": {
-    "defaultMessage": "Each language has its own text. People read the text in their language, or else in the server's default language or English.",
-    "description": "Description of the language select on the terms and policies screen."
+    "defaultMessage": "Remove the terms of service?",
+    "description": "Title of the question before removing the terms of service."
   },
   "admin.documents.privacy_policy": {
     "defaultMessage": "Privacy policy",
     "description": "Heading of the section of the privacy policy on the terms and policies screen."
   },
   "admin.documents.removed": {
-    "defaultMessage": "The text in {language} is removed. The audit log records the change.",
-    "description": "Status message after a document's text in a language is removed."
+    "defaultMessage": "The text is removed. The audit log records the change.",
+    "description": "Status after a document's text was removed."
   },
   "admin.documents.save": {
     "defaultMessage": "Save",
@@ -2032,16 +2016,16 @@
     "description": "Error under a document's form when saving failed."
   },
   "admin.documents.saved": {
-    "defaultMessage": "The text in {language} is saved. The audit log records the change.",
-    "description": "Status message after a document's text is saved. {language} is the language's name."
+    "defaultMessage": "The text is saved. The audit log records the change.",
+    "description": "Status after a document's text was saved."
   },
   "admin.documents.saved_at": {
-    "defaultMessage": "Last saved in {language}",
-    "description": "Term of when the text in the selected language was last saved, on the terms and policies screen."
+    "defaultMessage": "Last saved",
+    "description": "Term of when the text of a document was last saved, on the terms and policies screen."
   },
   "admin.documents.saved_at.never": {
-    "defaultMessage": "Not written yet",
-    "description": "Value of 'Last saved in {language}' when the document has no text in that language."
+    "defaultMessage": "Not written yet, so the page and its links are hidden",
+    "description": "Value of the last save of a document that has no text."
   },
   "admin.documents.summary": {
     "defaultMessage": "The terms of service and the privacy policy that anyone can read and that people agree to when they sign up.",
@@ -3748,8 +3732,8 @@
     "description": "Error when changing, moving or retiring a rule failed. {reason} is why."
   },
   "admin.rules.description": {
-    "defaultMessage": "The about page and the report form show each rule in the reader's language. Each rule has a text of one line and an optional hint in each language. A retired rule leaves the list, and the reports that cite it keep it.",
-    "description": "Explanation at the top of the rules screen."
+    "defaultMessage": "The about page and the report form show the rules. Each rule has a text of one line and an optional hint, written once in any language: everyone sees them as they are, whatever the language of their app. A retired rule leaves the list, and the reports that cite it keep it.",
+    "description": "Description of the rules screen."
   },
   "admin.rules.edit": {
     "defaultMessage": "Edit",
@@ -3777,11 +3761,11 @@
   },
   "admin.rules.heading": {
     "defaultMessage": "Rule {place}: {rule}",
-    "description": "Heading of a rule in the list. {place} is its place, from 1; {rule} its text in the reader's language."
+    "description": "Heading of a rule in the list. {place} is its place, from 1; {rule} its text."
   },
   "admin.rules.hint": {
-    "defaultMessage": "Hint in {language}",
-    "description": "Label of the optional hint of a rule in one language. {language} is the language's name."
+    "defaultMessage": "Hint",
+    "description": "Label of the optional hint of a rule."
   },
   "admin.rules.list.title": {
     "defaultMessage": "Rules in effect",
@@ -3812,8 +3796,8 @@
     "description": "Heading of the form of a new rule."
   },
   "admin.rules.no_text": {
-    "defaultMessage": "Enter the rule in at least one language.",
-    "description": "Error when a rule has no text in any language."
+    "defaultMessage": "Enter the rule.",
+    "description": "Error of a rule's text left empty or blank."
   },
   "admin.rules.retire": {
     "defaultMessage": "Retire",
@@ -3844,16 +3828,12 @@
     "description": "Description of the rules screen in the administration menu."
   },
   "admin.rules.text": {
-    "defaultMessage": "Rule in {language}",
-    "description": "Label of the text of a rule in one language. {language} is the language's name."
+    "defaultMessage": "Rule",
+    "description": "Label of the text of a rule."
   },
   "admin.rules.text.description": {
     "defaultMessage": "One line of at most {max} characters.",
     "description": "Help of the text of a rule. {max} is the limit."
-  },
-  "admin.rules.text_required": {
-    "defaultMessage": "Enter the rule, or empty its hint too.",
-    "description": "Error of a rule's text left empty or blank while its hint is filled in."
   },
   "admin.rules.title": {
     "defaultMessage": "Rules",
@@ -3928,8 +3908,8 @@
     "description": "Heading of the part of the form with the image that represents the server."
   },
   "admin.settings.contact.thumbnail.alt": {
-    "defaultMessage": "Description of the image in {language}",
-    "description": "Label of the field of the thumbnail's alt text in one language. {language} is the language's name in the app's language."
+    "defaultMessage": "Description of the image",
+    "description": "Label of the alt text of the server's thumbnail."
   },
   "admin.settings.contact.thumbnail.choose": {
     "defaultMessage": "Choose an image",
@@ -3956,12 +3936,12 @@
     "description": "Status after pressing the save button of the contact and thumbnail without changing anything."
   },
   "admin.settings.descriptions.description": {
-    "defaultMessage": "The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language.",
-    "description": "Explanation above the fields of the server's descriptions on the server settings screen."
+    "defaultMessage": "The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Write them once, in any language: everyone sees them as they are, whatever the language of their app.",
+    "description": "Description of the server's descriptions."
   },
   "admin.settings.descriptions.full": {
-    "defaultMessage": "Description in {language}",
-    "description": "Label of the field of the server's full description in one language. {language} is the language's name in the app's language."
+    "defaultMessage": "Description",
+    "description": "Label of the server's full description."
   },
   "admin.settings.descriptions.save": {
     "defaultMessage": "Save the descriptions",
@@ -3976,8 +3956,8 @@
     "description": "Status after the server's descriptions were saved."
   },
   "admin.settings.descriptions.short": {
-    "defaultMessage": "Short description in {language}",
-    "description": "Label of the field of the server's short description in one language. {language} is the language's name in the app's language."
+    "defaultMessage": "Short description",
+    "description": "Label of the server's short description."
   },
   "admin.settings.descriptions.title": {
     "defaultMessage": "Descriptions",
@@ -4136,7 +4116,7 @@
     "description": "Label of the select of the server's default language."
   },
   "admin.settings.language.description": {
-    "defaultMessage": "The language of new accounts, of visitors whose language the app does not have, and of the server's texts missing in a language.",
+    "defaultMessage": "The language of new accounts and of visitors whose language the app does not have.",
     "description": "Help of the server's default language."
   },
   "admin.settings.language.title": {
@@ -4148,12 +4128,12 @@
     "description": "Error of a field of the server's name that holds only spaces."
   },
   "admin.settings.name.description": {
-    "defaultMessage": "People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Each language has its own name. A language without one shows the name in the server's default language, and with no name at all the domain shows. Handles and links always use the domain.",
+    "defaultMessage": "People see the name in place of the domain {domain} where the app names this server: the sidebar, the browser tab, the sign-in pages, emails and link previews. Write it once, in any language: everyone sees the same name, whatever the language of their app. Without a name, the domain shows. Handles and links always use the domain.",
     "description": "Explanation above the fields of the server's name on the server settings screen. {domain} is the server's domain name."
   },
   "admin.settings.name.field": {
-    "defaultMessage": "Name in {language}",
-    "description": "Label of the field of the server's name in one language. {language} is the language's name in the app's language, such as English or Japanese."
+    "defaultMessage": "Name",
+    "description": "Label of the server's name."
   },
   "admin.settings.name.save": {
     "defaultMessage": "Save",
@@ -4176,7 +4156,7 @@
     "description": "Error of a field of the server's name whose text is longer than its limit. {max} is the limit."
   },
   "admin.settings.name.unchanged": {
-    "defaultMessage": "The names are already saved.",
+    "defaultMessage": "The name is already saved.",
     "description": "Status after pressing Save on the server settings screen without changing a name."
   },
   "admin.settings.policies.save": {

@@ -649,26 +649,23 @@ CREATE TABLE instance_settings (
   value TEXT NOT NULL
 ) STRICT;
 
--- Event (revision): one version of a localized text. An empty body clears the text in that
--- locale. revised_by_user_id is NULL for a change from the CLI.
+-- Event (revision): one version of an instance text, one value shown in every locale. An empty
+-- body clears the text. revised_by_user_id is NULL for a change from the CLI.
 CREATE TABLE instance_text_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
     'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt'
   )),
-  locale TEXT NOT NULL,
   body TEXT NOT NULL,
   revised_by_user_id TEXT,
   revised_at INTEGER NOT NULL
 ) STRICT;
-CREATE INDEX instance_text_revisions_key_locale_id ON instance_text_revisions (key, locale, id DESC);
+CREATE INDEX instance_text_revisions_key_id ON instance_text_revisions (key, id DESC);
 
--- Projection: the current revision of each text in each locale.
+-- Projection: the current revision of each text.
 CREATE TABLE instance_texts (
-  key TEXT NOT NULL,
-  locale TEXT NOT NULL,
-  revision_id TEXT NOT NULL,
-  PRIMARY KEY (key, locale)
+  key TEXT NOT NULL PRIMARY KEY,
+  revision_id TEXT NOT NULL
 ) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
@@ -725,25 +722,19 @@ CREATE TABLE instance_rules (
   created_at INTEGER NOT NULL
 ) STRICT;
 
--- Event (revision): one version of a rule, with its position and texts. revised_by_user_id is
--- NULL for a change from the CLI.
+-- Event (revision): one version of a rule, with its position, its text, and its hint (an optional
+-- explanation, empty for none), one value shown in every locale. revised_by_user_id is NULL for a
+-- change from the CLI.
 CREATE TABLE instance_rule_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   rule_id TEXT NOT NULL,
   position INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  hint TEXT NOT NULL,
   revised_by_user_id TEXT,
   revised_at INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX instance_rule_revisions_rule_id_id ON instance_rule_revisions (rule_id, id DESC);
-
--- Event (child of a revision): the text of a rule revision in one locale. An empty hint means none.
-CREATE TABLE instance_rule_texts (
-  rule_revision_id TEXT NOT NULL,
-  locale TEXT NOT NULL,
-  text TEXT NOT NULL,
-  hint TEXT NOT NULL,
-  PRIMARY KEY (rule_revision_id, locale)
-) STRICT;
 
 -- Event: the retirement of a rule. retired_by_user_id is NULL for the CLI.
 CREATE TABLE instance_rule_retirements (

@@ -56,10 +56,8 @@ func TestInstanceContactAndThumbnail(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("SetSettings: %v", err)
 	}
-	for locale, body := range map[string]string{"en": "The beach", "ja": "海辺"} {
-		if _, err := app.Instance.SetText(ctx, appinstance.SetTextInput{Key: instance.TextThumbnailAlt, Locale: locale, Body: body}); err != nil {
-			t.Fatalf("SetText(thumbnail_alt, %s): %v", locale, err)
-		}
+	if _, err := app.Instance.SetText(ctx, appinstance.SetTextInput{Key: instance.TextThumbnailAlt, Body: "海辺"}); err != nil {
+		t.Fatalf("SetText(thumbnail_alt): %v", err)
 	}
 	processed, err := app.Media.Media(ctx, m.File.ID)
 	if err != nil || !processed.Ready() {
@@ -88,7 +86,7 @@ func TestInstanceContactAndThumbnail(t *testing.T) {
 		t.Errorf("GET /instance contact = %+v, want admin and admin@example.com", c)
 	}
 	if th := inst.Thumbnail; th == nil || th.Url != thumbnailURL || th.Width != 1600 || th.Height != 900 || th.Alt == nil || *th.Alt != "海辺" {
-		t.Errorf("GET /instance thumbnail = %+v, want %s in ja", th, thumbnailURL)
+		t.Errorf("GET /instance thumbnail = %+v, want %s with its alt text", th, thumbnailURL)
 	}
 
 	var nodeInfo struct {
@@ -104,8 +102,7 @@ func TestInstanceContactAndThumbnail(t *testing.T) {
 		len(meta.StaffAccounts) != 1 || meta.StaffAccounts[0] != account.ActorURI(cfg.Host, reg.AccountID) {
 		t.Errorf("NodeInfo maintainer = %+v, staff %q", meta.Maintainer, meta.StaffAccounts)
 	}
-	// NodeInfo is in the instance's default locale, en.
-	if meta.Thumbnail.URL != thumbnailURL || meta.Thumbnail.Alt != "The beach" {
-		t.Errorf("NodeInfo thumbnail = %+v, want %s in en", meta.Thumbnail, thumbnailURL)
+	if meta.Thumbnail.URL != thumbnailURL || meta.Thumbnail.Alt != "海辺" {
+		t.Errorf("NodeInfo thumbnail = %+v, want %s with its alt text", meta.Thumbnail, thumbnailURL)
 	}
 }

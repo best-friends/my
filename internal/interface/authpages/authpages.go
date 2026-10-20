@@ -149,10 +149,10 @@ type Options struct {
 	FormActionOrigins []string
 	// Locales resolves the locale of the screens (ADR-0009 §2).
 	Locales *i18n.Resolver
-	// InstanceName returns the name of the instance for readers of locale: its display name, or
+	// InstanceName returns the name of the instance: its display name, or
 	// its domain when it has none. The pages show it above their card and in their title; nil
 	// leaves it out.
-	InstanceName func(ctx context.Context, locale string) string
+	InstanceName func(ctx context.Context) string
 	// Stylesheet is the URL of the pages' stylesheet, the web build's server pages entry
 	// (web.Handler.Stylesheet); empty leaves the pages unstyled.
 	Stylesheet string
@@ -342,7 +342,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	hd.Set("Cache-Control", cache)
 	hd.Add("Vary", "Accept-Language, Cookie")
 	if h.o.InstanceName != nil {
-		p.InstanceName = h.o.InstanceName(r.Context(), p.Lang)
+		p.InstanceName = h.o.InstanceName(r.Context())
 	}
 	p.Documents = h.documentLinks(r, p.L)
 	if h.o.ThemeStylesheet != nil {

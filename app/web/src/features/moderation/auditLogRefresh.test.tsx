@@ -204,10 +204,10 @@ const writes: Write[] = [
   {
     action: "text_changed",
     method: "put",
-    path: "/admin/instance_texts/:key/:locale",
+    path: "/admin/instance_texts/:key",
     page: "/admin/settings",
     write: async (user) => {
-      await user.type(await screen.findByRole("textbox", { name: "Name in English" }), "Example Social");
+      await user.type(await screen.findByRole("textbox", { name: "Name" }), "Example Social");
       await user.click(screen.getByRole("button", { name: "Save" }));
       expect(await screen.findByText("Saved the name.")).toBeInTheDocument();
     },
@@ -229,7 +229,7 @@ const writes: Write[] = [
     path: "/admin/rules",
     page: "/admin/rules",
     write: async (user) => {
-      await user.type(await screen.findByRole("textbox", { name: "Rule in English" }), "Be kind");
+      await user.type(await screen.findByRole("textbox", { name: "Rule" }), "Be kind");
       await user.click(screen.getByRole("button", { name: "Add the rule" }));
       expect(await screen.findByText(/^Added the rule/)).toBeInTheDocument();
     },

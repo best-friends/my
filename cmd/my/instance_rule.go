@@ -45,14 +45,13 @@ func runInstanceRule(args []string, stdout, stderr io.Writer) int {
 	fs.SetOutput(stderr)
 	fs.Usage = func() { instanceRuleUsage(stderr) }
 	file := fs.String("config", "", "TOML config file (default: $"+config.EnvConfigFile+")")
-	var locale, hint string
+	var hint string
 	all := false
 	switch sub {
 	case "list":
 		fs.BoolVar(&all, "all", false, "also list the retired rules")
 	case "add", "edit":
-		fs.StringVar(&locale, "locale", "", "locale of the text (default: the default_locale setting)")
-		fs.StringVar(&hint, "hint", "", "explanation of the rule in that locale (edit keeps the current one unless given)")
+		fs.StringVar(&hint, "hint", "", "explanation of the rule (edit keeps the current one unless given)")
 	}
 	if err := fs.Parse(args[1:]); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -95,15 +94,9 @@ func runInstanceRule(args []string, stdout, stderr io.Writer) int {
 	case "list":
 		err = cmd.listRules(ctx, all)
 	case "add":
-		if locale, err = cmd.textLocale(ctx, locale); err == nil {
-			rule, err = cmd.svc.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: locale, Text: pos[0], Hint: hint}}})
-		}
+		rule, err = cmd.svc.AddRule(ctx, appinstance.AddRuleInput{Text: pos[0], Hint: hint})
 	case "edit":
-		if locale, err = cmd.textLocale(ctx, locale); err == nil {
-			rule, err = cmd.svc.SetRuleText(ctx, appinstance.SetRuleTextInput{
-				RuleID: pos[0], Locale: locale, Text: pos[1], Hint: hint, KeepHint: !hintSet,
-			})
-		}
+		rule, err = cmd.svc.ReviseRule(ctx, appinstance.ReviseRuleInput{RuleID: pos[0], Text: pos[1], Hint: hint, KeepHint: !hintSet})
 	case "move":
 		rule, err = cmd.svc.MoveRule(ctx, appinstance.MoveRuleInput{RuleID: pos[0], Position: position})
 	case "retire":
@@ -131,15 +124,13 @@ func (c instanceCommand) listRules(ctx context.Context, all bool) error {
 		return err
 	}
 	tw := tabwriter.NewWriter(c.stdout, 0, 4, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "RULE\tPOSITION\tSTATE\tLOCALE\tTEXT\tHINT")
+	_, _ = fmt.Fprintln(tw, "RULE\tPOSITION\tSTATE\tTEXT\tHINT")
 	for _, r := range rules {
 		state := "in effect"
 		if r.Retired() {
 			state = "retired"
 		}
-		for _, t := range r.Revision.Texts {
-			_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\t%s\n", r.ID, r.Revision.Position, state, t.Locale, preview(t.Text), preview(t.Hint))
-		}
+		_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\n", r.ID, r.Revision.Position, state, preview(r.Revision.Text), preview(r.Revision.Hint))
 	}
 	return tw.Flush()
 }
@@ -147,19 +138,18 @@ func (c instanceCommand) listRules(ctx context.Context, all bool) error {
 func instanceRuleUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage:
   my instance rule list [-all] [-config <file>]
-  my instance rule add [-locale <tag>] [-hint <text>] [-config <file>] <text>
-  my instance rule edit [-locale <tag>] [-hint <text>] [-config <file>] <rule> <text>
+  my instance rule add [-hint <text>] [-config <file>] <text>
+  my instance rule edit [-hint <text>] [-config <file>] <rule> <text>
   my instance rule move [-config <file>] <rule> <position>
   my instance rule retire [-config <file>] <rule>
 
 Manages the instance rules (docs/operations/instance-settings.md), which
 GET /api/v1/instance lists and reports cite. A rule has one line of text and an
-optional hint per locale; -locale selects it, defaulting to the default_locale
-setting. Every change is kept as a revision, and a rule keeps its ID for life.
+optional hint, written in any language and shown as they are in every locale.
+Every change is kept as a revision, and a rule keeps its ID for life.
 
-add appends a rule after the rules in effect. edit changes the text of a rule
-in one locale, or adds the locale; an empty text removes the locale, and the
-hint stays unless -hint is given. move puts a rule at a position among the
+add appends a rule after the rules in effect. edit changes the text of a rule;
+the hint stays unless -hint is given. move puts a rule at a position among the
 rules in effect, from 1, and numbers them again. retire removes a rule from the
 rules in effect for good; reports that cite it still refer to it. list shows
 the rules in effect, and with -all the retired ones after them.

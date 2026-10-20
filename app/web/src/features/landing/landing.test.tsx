@@ -27,7 +27,7 @@ describe("the landing page", () => {
     serveInstance({
       short_description: "A small server for gardeners.",
       description: "We grow vegetables.\n\nEveryone is welcome.",
-      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", hint: "No insults.", lang: "en" }],
+      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", hint: "No insults." }],
       terms_url: "http://localhost:3000/auth/terms",
       privacy_policy_url: "http://localhost:3000/auth/privacy",
     });
@@ -43,7 +43,7 @@ describe("the landing page", () => {
 
     const rules = screen.getByRole("region", { name: "Rules" });
     const rule = within(rules).getByRole("listitem");
-    expect(rule).toHaveAttribute("lang", "en");
+    expect(rule).toHaveAttribute("lang", "");
     expect(rule).toHaveTextContent("Be kindNo insults.");
 
     const posts = screen.getByRole("region", { name: "Recent posts" });
@@ -62,7 +62,7 @@ describe("the landing page", () => {
   test("orders its sections as the information page does, with the links to it and to the source code last", async () => {
     serveInstance({
       description: "We grow vegetables.",
-      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", lang: "en" }],
+      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind" }],
       terms_url: "http://localhost:3000/auth/terms",
       privacy_policy_url: "http://localhost:3000/auth/privacy",
     });

@@ -213,7 +213,7 @@ var definitions = []Definition{
 	},
 	{
 		Key: SettingDefaultLocale, Kind: KindLocale, Default: "en",
-		Doc: "Initial UI locale of new users, and the locale for visitors whose preferences match no catalog and for instance texts missing in theirs (ADR-0009).",
+		Doc: "Initial UI locale of new users, and the locale for visitors whose preferences match no catalog (ADR-0009).",
 	},
 	{
 		Key: SettingLocalTimelineEnabled, Kind: KindBool, Default: "true",

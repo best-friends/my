@@ -263,14 +263,15 @@ const relay: Schemas["AdminRelay"] = {
 
 const instance = { domain: longDomain, state: "unavailable", since: "2026-10-10T08:00:00Z", failure_days: 7, last_failure_day: "2026-10-10" };
 
-/** A rule in English with a long hint and in Arabic, which reads right to left, as GET /admin/rules lists it. */
+/**
+ * A rule written in Arabic, which reads right to left, with a long hint in English, as GET /admin/rules lists it: the
+ * administrator writes each once, in any language.
+ */
 const rule: Schemas["AdminRule"] = {
   id: "0192f0c4-7a8e-7000-8000-0000000000f2",
   position: 1,
-  texts: [
-    { locale: "ar", text: "كن لطيفا" },
-    { locale: "en", text: "Be kind to the people of every server", hint: "No harassment, no slurs, and no piling on someone who is having a bad day." },
-  ],
+  text: "كن لطيفا",
+  hint: "No harassment, no slurs, and no piling on someone who is having a bad day.",
   created_at: "2026-10-16T00:00:00Z",
   revised_at: "2026-10-16T00:00:00Z",
 };
@@ -413,7 +414,7 @@ async function moderatorServer(page: Page) {
       return json(route, { items: [{ id: "0192f0c4-7a8e-7000-8000-0000000000e1", kind: "marked_unavailable", reason: "failure_days", occurred_at: "2026-10-10T08:00:00Z" }] });
     }
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
-    if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, ...instanceNames] });
+    if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, instanceName] });
     if (key === "GET /admin/theme") return json(route, adminTheme);
     if (key === "GET /admin/settings") return json(route, instanceSettings);
     if (key === "GET /admin/rules") return json(route, { items: [rule] });
@@ -431,13 +432,10 @@ async function moderatorServer(page: Page) {
   return issued;
 }
 
-/** The terms of service in English, as GET /admin/instance_texts lists them. */
-const documentText: Schemas["AdminInstanceText"] = { key: "terms", locale: "en", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" };
-/** The server's names: in English, and in Arabic (a language without a catalog), which reads right to left. */
-const instanceNames: Schemas["AdminInstanceText"][] = [
-  { key: "name", locale: "ar", body: "مثال", revised_at: "2026-10-16T00:00:00Z" },
-  { key: "name", locale: "en", body: "my example", revised_at: "2026-10-16T00:00:00Z" },
-];
+/** The terms of service, as GET /admin/instance_texts lists them. */
+const documentText: Schemas["AdminInstanceText"] = { key: "terms", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" };
+/** The server's name, written in Arabic (a language without a catalog), which reads right to left in every project. */
+const instanceName: Schemas["AdminInstanceText"] = { key: "name", body: "مثال", revised_at: "2026-10-16T00:00:00Z" };
 
 /** The server's theme, as GET /admin/theme answers: a color, a radius, and a custom CSS. */
 const adminTheme: Schemas["AdminTheme"] = {
@@ -477,10 +475,10 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.webhooks_.$id": { path: `/admin/webhooks/${webhook.id}`, ready: webhookDelivery.message_id },
   "admin.announcements": { path: "/admin/announcements", ready: "the status page" },
   "admin.relays": { path: "/admin/relays", ready: relay.inbox_url },
-  "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
+  "admin.documents": { path: "/admin/documents", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },
-  "admin.rules": { path: "/admin/rules", ready: rule.texts[1]?.hint ?? "" },
+  "admin.rules": { path: "/admin/rules", ready: rule.hint ?? "" },
   "admin.roles": { path: "/admin/roles", ready: roles[2]?.key ?? "" },
   "moderation.invites": { path: "/moderation/invites", ready: invite.code },
 };

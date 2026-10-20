@@ -362,13 +362,6 @@ type InstanceRuleHead struct {
 	Position   int64
 }
 
-type InstanceRuleText struct {
-	RuleRevisionID string
-	Locale         string
-	Text           string
-	Hint           string
-}
-
 type InstanceSetting struct {
 	Key        string
 	RevisionID string
@@ -385,14 +378,12 @@ type InstanceSettingRevision struct {
 
 type InstanceText struct {
 	Key        string
-	Locale     string
 	RevisionID string
 }
 
 type InstanceTextRevision struct {
 	ID              string
 	Key             string
-	Locale          string
 	Body            string
 	RevisedByUserID sql.NullString
 	RevisedAt       int64

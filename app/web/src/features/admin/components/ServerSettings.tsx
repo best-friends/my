@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server settings screen below its heading (manage_settings, FR-705): the instance's name and descriptions in
-// each language of the app, how to reach its operators and its thumbnail (#663), then its policies (who may sign up, the default language, the public timelines, whether images need a description, the
-// federation, and who may read the list of the domain actions) in one form saved together. The name stands in for
+// The server settings screen below its heading (manage_settings, FR-705): the instance's name and descriptions, how
+// to reach its operators and its thumbnail (#663), then its policies (who may sign up, the default language, the
+// public timelines, whether images need a description, the federation, and who may read the list of the domain
+// actions) in one form saved together. The name, the descriptions and the thumbnail's alt text hold one value each,
+// written in any language and shown as it is in every language; the labels are the app's. The name stands in for
 // the domain where the instance is named to people; the domain stays in handles and links. The browser keeps a
 // form from being sent while a field is invalid (React Aria's native validation: the error is under its field and
 // linked to it, and focus moves to the first invalid field). What a save did stays on the page in a StatusMessage
@@ -37,16 +39,13 @@ function NameForm() {
     <DetailSection title={t("client:admin.settings.name.title")}>
       <p className="text-fg-muted">{t("client:admin.settings.name.description", { domain: form.domain })}</p>
       <form onSubmit={form.submit} className="flex flex-col gap-4">
-        {form.fields.map((field) => (
-          <TextField
-            key={field.locale}
-            label={t("client:admin.settings.name.field", { language: field.language })}
-            value={field.value}
-            onChange={field.onChange}
-            // Only an invalid name sets isInvalid: React Aria ignores `validate` once isInvalid is given at all.
-            {...(field.error === undefined ? {} : { isInvalid: true, errorMessage: field.error })}
-          />
-        ))}
+        <TextField
+          label={t("client:admin.settings.name.field")}
+          value={form.field.value}
+          onChange={form.field.onChange}
+          // Only an invalid name sets isInvalid: React Aria ignores `validate` once isInvalid is given at all.
+          {...(form.field.error === undefined ? {} : { isInvalid: true, errorMessage: form.field.error })}
+        />
         {form.saveError !== undefined && (
           <p role="alert" className="text-danger">
             {t("client:admin.settings.name.save_failed", { reason: form.saveError })}
@@ -88,12 +87,8 @@ function DescriptionsForm() {
     <DetailSection title={t("client:admin.settings.descriptions.title")}>
       <p className="text-fg-muted">{t("client:admin.settings.descriptions.description")}</p>
       <form onSubmit={form.submit} className="flex flex-col gap-6">
-        {form.languages.map((language) => (
-          <div key={language.locale} className="flex flex-col gap-4">
-            <DescriptionInput field={language.short} label={t("client:admin.settings.descriptions.short", { language: language.language })} />
-            <DescriptionInput field={language.full} label={t("client:admin.settings.descriptions.full", { language: language.language })} />
-          </div>
-        ))}
+        <DescriptionInput field={form.short} label={t("client:admin.settings.descriptions.short")} />
+        <DescriptionInput field={form.full} label={t("client:admin.settings.descriptions.full")} />
         {form.saveError !== undefined && (
           <p role="alert" className="text-danger">
             {t("client:admin.settings.descriptions.save_failed", { reason: form.saveError })}
@@ -141,7 +136,7 @@ function ContactForm() {
           </h3>
           <p className="text-sm text-fg-muted">{t("client:admin.settings.contact.thumbnail.description")}</p>
           {form.thumbnail.url !== undefined && (
-            // A preview of the image chosen in the form; the alt texts below describe it.
+            // A preview of the image chosen in the form; the alt text below describes it.
             <img src={form.thumbnail.url} alt="" className="aspect-video w-full max-w-md rounded-md bg-surface-sunken object-cover" />
           )}
           <div className="flex flex-wrap gap-2">
@@ -171,20 +166,17 @@ function ContactForm() {
               {form.thumbnail.error}
             </p>
           )}
-          {form.altFields.map((field) => (
-            <TextArea
-              key={field.locale}
-              label={t("client:admin.settings.contact.thumbnail.alt", { language: field.language })}
-              value={field.value}
-              onChange={field.onChange}
-              rows={2}
-              characterLimit={thumbnailAltLimit}
-              formatRemaining={(remaining) =>
-                remaining < 0 ? t("client:admin.settings.characters_over", { count: -remaining }) : t("client:admin.settings.characters_left", { count: remaining })
-              }
-              errorMessage={t("client:admin.settings.name.too_long", { max: String(thumbnailAltLimit) })}
-            />
-          ))}
+          <TextArea
+            label={t("client:admin.settings.contact.thumbnail.alt")}
+            value={form.alt.value}
+            onChange={form.alt.onChange}
+            rows={2}
+            characterLimit={thumbnailAltLimit}
+            formatRemaining={(remaining) =>
+              remaining < 0 ? t("client:admin.settings.characters_over", { count: -remaining }) : t("client:admin.settings.characters_left", { count: remaining })
+            }
+            errorMessage={t("client:admin.settings.name.too_long", { max: String(thumbnailAltLimit) })}
+          />
         </section>
         {form.saveError !== undefined && (
           <p role="alert" className="text-danger">

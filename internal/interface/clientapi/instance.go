@@ -16,16 +16,15 @@ import (
 type InstanceInfo interface {
 	// Settings returns the current value of every setting, defaults included.
 	Settings(ctx context.Context) (instance.Settings, error)
-	// Text returns the text of key for a reader of locale along the locale fallback chain,
-	// and false when no locale of the chain has it.
-	Text(ctx context.Context, key instance.TextKey, locale string) (instance.Text, bool, error)
+	// Text returns the text of key, the same in every locale, and false when there is none.
+	Text(ctx context.Context, key instance.TextKey) (instance.Text, bool, error)
 }
 
 // InstanceImage is a processed image of the instance, as GET /instance presents it.
 type InstanceImage struct {
 	URL           string
 	Width, Height int
-	// Alt is the alt text in the reader's locale, "" for none.
+	// Alt is the alt text, "" for none.
 	Alt string
 }
 
@@ -37,13 +36,12 @@ const cachePublic = "public, max-age=60"
 // depend on the viewer's locale.
 const cachePrivate = "private, max-age=60"
 
-// GetInstance serves GET /api/v1/instance. The texts and rules are in the locale of the request
-// (ADR-0009 §2): the response varies with Accept-Language (localize) for anonymous requests
-// and is private for authenticated ones, whose locale is the user's.
+// GetInstance serves GET /api/v1/instance. The administrators' texts and rules hold one value
+// each, the same in every locale. Like every response, it varies with Accept-Language (localize)
+// for anonymous requests and is private for authenticated ones.
 func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (GetInstanceResponseObject, error) {
 	var settings instance.Settings
 	out := Instance{Domain: s.o.Host, Name: s.o.Host, Version: s.o.SoftwareVersion, SourceUrl: s.o.SourceURL}
-	locale := s.Localizer(ctx).RequestedLocale()
 	if s.o.Instance != nil {
 		var err error
 		if settings, err = s.o.Instance.Settings(ctx); err != nil {
@@ -57,7 +55,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 			{instance.TextShortDescription, func(v string) { out.ShortDescription = &v }},
 			{instance.TextDescription, func(v string) { out.Description = &v }},
 		} {
-			text, ok, err := s.o.Instance.Text(ctx, t.key, locale)
+			text, ok, err := s.o.Instance.Text(ctx, t.key)
 			if err != nil {
 				return nil, fmt.Errorf("clientapi: instance text %s: %w", t.key, err)
 			}
@@ -65,7 +63,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 				t.set(text.Body)
 			}
 		}
-		if err := s.documentURLs(ctx, &out, locale); err != nil {
+		if err := s.documentURLs(ctx, &out); err != nil {
 			return nil, err
 		}
 	}
@@ -78,7 +76,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	if key := s.pushServerKey(); key != "" {
 		out.PushServerKey = &key
 	}
-	rules, err := s.instanceRules(ctx, locale)
+	rules, err := s.instanceRules(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +87,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	if out.Contact, err = s.instanceContact(ctx, settings); err != nil {
 		return nil, err
 	}
-	if out.Thumbnail, err = s.instanceThumbnail(ctx, locale); err != nil {
+	if out.Thumbnail, err = s.instanceThumbnail(ctx); err != nil {
 		return nil, err
 	}
 
@@ -130,11 +128,11 @@ func (s *Server) instanceContact(ctx context.Context, settings instance.Settings
 }
 
 // instanceThumbnail presents the thumbnail setting, nil when there is none or it cannot be shown.
-func (s *Server) instanceThumbnail(ctx context.Context, locale string) (*InstanceThumbnail, error) {
+func (s *Server) instanceThumbnail(ctx context.Context) (*InstanceThumbnail, error) {
 	if s.o.InstanceThumbnail == nil {
 		return nil, nil
 	}
-	img, err := s.o.InstanceThumbnail(ctx, locale)
+	img, err := s.o.InstanceThumbnail(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: instance thumbnail: %w", err)
 	}

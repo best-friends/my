@@ -89,7 +89,7 @@ func TestResolverReadsInstanceDefaultPerRequest(t *testing.T) {
 }
 
 // TestResolverRequestedLocale checks that a Localizer keeps the preference that chose its
-// locale, region and script included, for the content that operators write per locale.
+// locale, region and script included.
 func TestResolverRequestedLocale(t *testing.T) {
 	b := load(t)
 	tests := []struct {

@@ -69,8 +69,8 @@ function status(id: string, content: string, overrides: Partial<Status> = {}): S
 const post = status("0192f0c4-7a8e-7000-8000-0000000000c1", "<p>Buy now: https://shop.example/a/very/long/path/that/must/wrap/somewhere/before/it/scrolls/the/page</p>");
 const older = status("0192f0c4-7a8e-7000-8000-0000000000c0", "<p>Another offer</p>", { spoiler_text: "Ads", created_at: new Date(Date.now() - 2 * 60 * 60_000).toISOString() });
 const rules = [
-  { id: "0192f0c4-7a8e-7000-8000-0000000007a1", text: "Be kind to each other", lang: "en" },
-  { id: "0192f0c4-7a8e-7000-8000-0000000007a2", text: "No advertising", hint: "Posts that sell something without being asked.", lang: "en" },
+  { id: "0192f0c4-7a8e-7000-8000-0000000007a1", text: "Be kind to each other" },
+  { id: "0192f0c4-7a8e-7000-8000-0000000007a2", text: "No advertising", hint: "Posts that sell something without being asked." },
 ];
 
 /** Answers the client API as Alice's session, and records the reports she files. */

@@ -265,7 +265,7 @@ function ReportSummary({ report }: { report: ReportDetail }) {
                       {t("client:admin.report.rules.retired")}
                     </li>
                   ) : (
-                    <li key={rule.id} lang={rule.lang}>
+                    <li key={rule.id} lang="" dir="auto">
                       {rule.text}
                     </li>
                   ),

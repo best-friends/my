@@ -30,6 +30,31 @@ func (q *Queries) DeleteAllInstanceTexts(ctx context.Context) error {
 	return err
 }
 
+const getCurrentInstanceText = `-- name: GetCurrentInstanceText :one
+SELECT t.key, t.revision_id, r.body, r.revised_at
+FROM instance_texts t JOIN instance_text_revisions r ON r.id = t.revision_id
+WHERE t.key = $1
+`
+
+type GetCurrentInstanceTextRow struct {
+	Key        string
+	RevisionID string
+	Body       string
+	RevisedAt  time.Time
+}
+
+func (q *Queries) GetCurrentInstanceText(ctx context.Context, key string) (GetCurrentInstanceTextRow, error) {
+	row := q.db.QueryRow(ctx, getCurrentInstanceText, key)
+	var i GetCurrentInstanceTextRow
+	err := row.Scan(
+		&i.Key,
+		&i.RevisionID,
+		&i.Body,
+		&i.RevisedAt,
+	)
+	return i, err
+}
+
 const getInstanceSetting = `-- name: GetInstanceSetting :one
 SELECT key, revision_id, value FROM instance_settings WHERE key = $1
 `
@@ -42,18 +67,13 @@ func (q *Queries) GetInstanceSetting(ctx context.Context, key string) (InstanceS
 }
 
 const getInstanceText = `-- name: GetInstanceText :one
-SELECT key, locale, revision_id FROM instance_texts WHERE key = $1 AND locale = $2
+SELECT key, revision_id FROM instance_texts WHERE key = $1
 `
 
-type GetInstanceTextParams struct {
-	Key    string
-	Locale string
-}
-
-func (q *Queries) GetInstanceText(ctx context.Context, arg GetInstanceTextParams) (InstanceText, error) {
-	row := q.db.QueryRow(ctx, getInstanceText, arg.Key, arg.Locale)
+func (q *Queries) GetInstanceText(ctx context.Context, key string) (InstanceText, error) {
+	row := q.db.QueryRow(ctx, getInstanceText, key)
 	var i InstanceText
-	err := row.Scan(&i.Key, &i.Locale, &i.RevisionID)
+	err := row.Scan(&i.Key, &i.RevisionID)
 	return i, err
 }
 
@@ -83,13 +103,12 @@ func (q *Queries) InsertInstanceSettingRevision(ctx context.Context, arg InsertI
 }
 
 const insertInstanceTextRevision = `-- name: InsertInstanceTextRevision :exec
-INSERT INTO instance_text_revisions (id, key, locale, body, revised_by_user_id, revised_at) VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO instance_text_revisions (id, key, body, revised_by_user_id, revised_at) VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertInstanceTextRevisionParams struct {
 	ID              string
 	Key             string
-	Locale          string
 	Body            string
 	RevisedByUserID *string
 	RevisedAt       time.Time
@@ -99,7 +118,6 @@ func (q *Queries) InsertInstanceTextRevision(ctx context.Context, arg InsertInst
 	_, err := q.db.Exec(ctx, insertInstanceTextRevision,
 		arg.ID,
 		arg.Key,
-		arg.Locale,
 		arg.Body,
 		arg.RevisedByUserID,
 		arg.RevisedAt,
@@ -126,14 +144,13 @@ func (q *Queries) IsInstanceSettingValueUsed(ctx context.Context, arg IsInstance
 }
 
 const listAllCurrentInstanceTexts = `-- name: ListAllCurrentInstanceTexts :many
-SELECT t.key, t.locale, t.revision_id, r.body, r.revised_at
+SELECT t.key, t.revision_id, r.body, r.revised_at
 FROM instance_texts t JOIN instance_text_revisions r ON r.id = t.revision_id
-ORDER BY t.key, t.locale
+ORDER BY t.key
 `
 
 type ListAllCurrentInstanceTextsRow struct {
 	Key        string
-	Locale     string
 	RevisionID string
 	Body       string
 	RevisedAt  time.Time
@@ -150,47 +167,6 @@ func (q *Queries) ListAllCurrentInstanceTexts(ctx context.Context) ([]ListAllCur
 		var i ListAllCurrentInstanceTextsRow
 		if err := rows.Scan(
 			&i.Key,
-			&i.Locale,
-			&i.RevisionID,
-			&i.Body,
-			&i.RevisedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listCurrentInstanceTexts = `-- name: ListCurrentInstanceTexts :many
-SELECT t.key, t.locale, t.revision_id, r.body, r.revised_at
-FROM instance_texts t JOIN instance_text_revisions r ON r.id = t.revision_id
-WHERE t.key = $1 ORDER BY t.locale
-`
-
-type ListCurrentInstanceTextsRow struct {
-	Key        string
-	Locale     string
-	RevisionID string
-	Body       string
-	RevisedAt  time.Time
-}
-
-func (q *Queries) ListCurrentInstanceTexts(ctx context.Context, key string) ([]ListCurrentInstanceTextsRow, error) {
-	rows, err := q.db.Query(ctx, listCurrentInstanceTexts, key)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListCurrentInstanceTextsRow{}
-	for rows.Next() {
-		var i ListCurrentInstanceTextsRow
-		if err := rows.Scan(
-			&i.Key,
-			&i.Locale,
 			&i.RevisionID,
 			&i.Body,
 			&i.RevisedAt,
@@ -296,18 +272,17 @@ func (q *Queries) ListInstanceSettings(ctx context.Context) ([]InstanceSetting, 
 }
 
 const listInstanceTextHistory = `-- name: ListInstanceTextHistory :many
-SELECT id, key, locale, body, revised_by_user_id, revised_at FROM instance_text_revisions
-WHERE key = $1 AND locale = $2 ORDER BY id DESC LIMIT $3
+SELECT id, key, body, revised_by_user_id, revised_at FROM instance_text_revisions
+WHERE key = $1 ORDER BY id DESC LIMIT $2
 `
 
 type ListInstanceTextHistoryParams struct {
-	Key    string
-	Locale string
-	Limit  int32
+	Key   string
+	Limit int32
 }
 
 func (q *Queries) ListInstanceTextHistory(ctx context.Context, arg ListInstanceTextHistoryParams) ([]InstanceTextRevision, error) {
-	rows, err := q.db.Query(ctx, listInstanceTextHistory, arg.Key, arg.Locale, arg.Limit)
+	rows, err := q.db.Query(ctx, listInstanceTextHistory, arg.Key, arg.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -318,7 +293,6 @@ func (q *Queries) ListInstanceTextHistory(ctx context.Context, arg ListInstanceT
 		if err := rows.Scan(
 			&i.ID,
 			&i.Key,
-			&i.Locale,
 			&i.Body,
 			&i.RevisedByUserID,
 			&i.RevisedAt,
@@ -334,13 +308,12 @@ func (q *Queries) ListInstanceTextHistory(ctx context.Context, arg ListInstanceT
 }
 
 const listInstanceTextRevisionHeads = `-- name: ListInstanceTextRevisionHeads :many
-SELECT key, locale, id FROM instance_text_revisions ORDER BY id
+SELECT key, id FROM instance_text_revisions ORDER BY id
 `
 
 type ListInstanceTextRevisionHeadsRow struct {
-	Key    string
-	Locale string
-	ID     string
+	Key string
+	ID  string
 }
 
 func (q *Queries) ListInstanceTextRevisionHeads(ctx context.Context) ([]ListInstanceTextRevisionHeadsRow, error) {
@@ -352,7 +325,7 @@ func (q *Queries) ListInstanceTextRevisionHeads(ctx context.Context) ([]ListInst
 	items := []ListInstanceTextRevisionHeadsRow{}
 	for rows.Next() {
 		var i ListInstanceTextRevisionHeadsRow
-		if err := rows.Scan(&i.Key, &i.Locale, &i.ID); err != nil {
+		if err := rows.Scan(&i.Key, &i.ID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -380,17 +353,16 @@ func (q *Queries) UpsertInstanceSetting(ctx context.Context, arg UpsertInstanceS
 }
 
 const upsertInstanceText = `-- name: UpsertInstanceText :exec
-INSERT INTO instance_texts (key, locale, revision_id) VALUES ($1, $2, $3)
-ON CONFLICT (key, locale) DO UPDATE SET revision_id = excluded.revision_id
+INSERT INTO instance_texts (key, revision_id) VALUES ($1, $2)
+ON CONFLICT (key) DO UPDATE SET revision_id = excluded.revision_id
 `
 
 type UpsertInstanceTextParams struct {
 	Key        string
-	Locale     string
 	RevisionID string
 }
 
 func (q *Queries) UpsertInstanceText(ctx context.Context, arg UpsertInstanceTextParams) error {
-	_, err := q.db.Exec(ctx, upsertInstanceText, arg.Key, arg.Locale, arg.RevisionID)
+	_, err := q.db.Exec(ctx, upsertInstanceText, arg.Key, arg.RevisionID)
 	return err
 }

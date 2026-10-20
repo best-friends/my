@@ -1,33 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server's rules (FR-705, manage_rules): the rules in effect in order, each in every language it is written
-// in; the texts of a new or changed rule in each language of the app; moving a rule up or down among the others;
-// and retiring one, which reports keep citing. Every change goes to the audit log.
+// The server's rules (FR-705, manage_rules): the rules in effect in order; the text and the hint of a new or
+// changed rule, written once in any language and shown as they are in every language; moving a rule up or down
+// among the others; and retiring one, which reports keep citing. Every change goes to the audit log.
 import { useMutation, useMutationState, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
-import { useLocale, useT } from "../../../lib/i18n";
+import { useT } from "../../../lib/i18n";
 import {
   createRuleMutation,
   moveRuleMutation,
   refreshRules,
   retireRuleMutation,
   type Rule,
+  type RuleInput,
   ruleHintLimit,
   ruleTextLimit,
-  type RuleTextInput,
   rulesQueryOptions,
   updateRuleMutation,
 } from "../api/rules";
-import { characterCount, editedLocales, languageName } from "./languages";
-
-/** A rule's text for a reader of `locale`: in that locale, else in its language, else the first one. */
-export function ruleText(rule: Rule, locale: string): { text: string; locale: string } {
-  const language = locale.split("-")[0];
-  const text =
-    rule.texts.find((item) => item.locale === locale) ?? rule.texts.find((item) => item.locale.split("-")[0] === language) ?? rule.texts[0];
-  return { text: text?.text ?? "", locale: text?.locale ?? locale };
-}
+import { characterCount } from "./languages";
 
 /** The rules in effect, in order. */
 export function useRuleList(): Rule[] {
@@ -35,14 +27,8 @@ export function useRuleList(): Rule[] {
   return useSuspenseQuery(rulesQueryOptions(api)).data.items;
 }
 
-/** The text and hint of a rule in one language, as typed. */
-type DraftText = { text: string; hint: string };
-
-/** The fields of a rule in one language. */
-export type RuleLanguageFields = {
-  locale: string;
-  /** The language's name in the app's language. */
-  language: string;
+/** The fields of a rule: its text and its hint, as typed. */
+export type RuleFields = {
   text: string;
   hint: string;
   changeText: (text: string) => void;
@@ -53,61 +39,47 @@ export type RuleLanguageFields = {
   hintError: string | undefined;
 };
 
-/**
- * The texts of a rule in each language of the app and each language `rule` is written in. A language whose text
- * and hint are both empty is left out of the rule; one with a hint needs a text.
- */
+/** The text and the hint of a rule, from `rule` when it is given. The text is needed; the hint is optional. */
 export function useRuleDraft(rule?: Rule) {
   const t = useT();
-  const displayLocale = useLocale();
-  const initial = Object.fromEntries((rule?.texts ?? []).map((item): [string, DraftText] => [item.locale, { text: item.text, hint: item.hint ?? "" }]));
-  const [drafts, setDrafts] = useState<Readonly<Record<string, DraftText>>>(initial);
-  const [noText, setNoText] = useState(false);
-  const locales = editedLocales(Object.keys(initial));
-  const draftOf = (locale: string): DraftText => drafts[locale] ?? { text: "", hint: "" };
+  const [text, setText] = useState(rule?.text ?? "");
+  const [hint, setHint] = useState(rule?.hint ?? "");
+  // An empty text says why only once the form is sent, not while the field is still empty for the first time.
+  const [submitted, setSubmitted] = useState(false);
 
-  const textErrorOf = ({ text, hint }: DraftText): string | undefined => {
+  const textError = (() => {
     if (characterCount(text) > ruleTextLimit) return t("client:admin.rules.too_long", { max: String(ruleTextLimit) });
-    if (text.trim() === "" && (text !== "" || hint !== "")) return t("client:admin.rules.text_required");
+    if (text.trim() === "" && (submitted || text !== "")) return t("client:admin.rules.no_text");
     return undefined;
-  };
-  const hintErrorOf = ({ hint }: DraftText): string | undefined =>
-    characterCount(hint) > ruleHintLimit ? t("client:admin.rules.too_long", { max: String(ruleHintLimit) }) : undefined;
+  })();
+  const hintError = characterCount(hint) > ruleHintLimit ? t("client:admin.rules.too_long", { max: String(ruleHintLimit) }) : undefined;
 
-  const fields: RuleLanguageFields[] = locales.map((locale) => {
-    const draft = draftOf(locale);
-    return {
-      locale,
-      language: languageName(locale, displayLocale),
-      text: draft.text,
-      hint: draft.hint,
-      changeText: (text) => {
-        setNoText(false);
-        setDrafts({ ...drafts, [locale]: { ...draft, text } });
-      },
-      changeHint: (hint) => {
-        setDrafts({ ...drafts, [locale]: { ...draft, hint } });
-      },
-      textError: textErrorOf(draft),
-      hintError: hintErrorOf(draft),
-    };
-  });
+  const fields: RuleFields = {
+    text,
+    hint,
+    changeText: (next) => {
+      setText(next);
+    },
+    changeHint: (next) => {
+      setHint(next);
+    },
+    textError,
+    hintError,
+  };
 
   return {
     fields,
-    /** Why the rule cannot be saved as a whole: it has no text in any language. */
-    error: noText ? t("client:admin.rules.no_text") : undefined,
-    /** The texts to send, or null when a field is invalid (it shows why) or no language has a text. */
-    texts: (): RuleTextInput[] | null => {
-      if (fields.some((field) => field.textError !== undefined || field.hintError !== undefined)) return null;
-      const texts = fields.filter((field) => field.text.trim() !== "").map((field) => ({ locale: field.locale, text: field.text.trim(), ...(field.hint.trim() === "" ? {} : { hint: field.hint.trim() }) }));
-      setNoText(texts.length === 0);
-      return texts.length === 0 ? null : texts;
+    /** What to send, or null when a field is invalid (it shows why). */
+    input: (): RuleInput | null => {
+      setSubmitted(true);
+      if (text.trim() === "" || textError !== undefined || hintError !== undefined) return null;
+      return { text: text.trim(), ...(hint.trim() === "" ? {} : { hint: hint.trim() }) };
     },
-    /** Empties every field, for the next rule. */
+    /** Empties the fields, for the next rule. */
     reset: () => {
-      setDrafts({});
-      setNoText(false);
+      setText("");
+      setHint("");
+      setSubmitted(false);
     },
   };
 }
@@ -135,8 +107,8 @@ export function useNewRuleForm() {
     submit: (event: SyntheticEvent<HTMLFormElement>) => {
       event.preventDefault();
       if (create.isPending) return;
-      const texts = draft.texts();
-      if (texts !== null) create.mutate(texts);
+      const input = draft.input();
+      if (input !== null) create.mutate(input);
     },
     isPending: create.isPending,
     /** Why adding failed, localized; the draft stays. */
@@ -147,8 +119,8 @@ export function useNewRuleForm() {
 
 /** What the list of rules does to a rule. */
 export type RuleActions = {
-  /** Replaces the rule's texts; resolves whether that worked (the dialog stays open with the error if not). */
-  update: (rule: Rule, texts: RuleTextInput[]) => Promise<boolean>;
+  /** Replaces the rule's text and hint; resolves whether that worked (the dialog stays open with the error if not). */
+  update: (rule: Rule, input: RuleInput) => Promise<boolean>;
   /** Moves the rule to a place among the rules in effect, from 1. */
   move: (rule: Rule, position: number) => void;
   /** Retires the rule; resolves whether that worked. */
@@ -167,9 +139,8 @@ export function useRuleActions(onDone: (rule: Rule, status: string, change: "upd
   const api = useApi();
   const t = useT();
   const queryClient = useQueryClient();
-  const displayLocale = useLocale();
   const [error, setError] = useState<string | undefined>(undefined);
-  const nameOf = (rule: Rule) => ruleText(rule, displayLocale).text;
+  const nameOf = (rule: Rule) => rule.text;
   const update = useMutation({ ...updateRuleMutation(api) });
   const retire = useMutation({ ...retireRuleMutation(api) });
   const moveOptions = moveRuleMutation(api);
@@ -191,10 +162,10 @@ export function useRuleActions(onDone: (rule: Rule, status: string, change: "upd
     select: (pending) => (pending.state.variables as { id: string }).id,
   });
   return {
-    update: async (rule, texts) => {
+    update: async (rule, input) => {
       setError(undefined);
       try {
-        const saved = await update.mutateAsync({ id: rule.id, texts });
+        const saved = await update.mutateAsync({ id: rule.id, input });
         await refreshRules(queryClient);
         onDone(saved, t("client:admin.rules.updated", { rule: nameOf(saved) }), "updated");
         return true;

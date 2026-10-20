@@ -138,7 +138,7 @@ func TestClientAPIFallbackProblems(t *testing.T) {
 }
 
 // TestClientAPIInstanceSettings checks that GET /api/v1/instance reports the instance settings
-// and the texts of the request's locale, read per request.
+// and texts, read per request.
 func TestClientAPIInstanceSettings(t *testing.T) {
 	t.Parallel()
 	app := newClientAPIApp(t)
@@ -151,9 +151,9 @@ func TestClientAPIInstanceSettings(t *testing.T) {
 		}
 	}
 	for _, in := range []appinstance.SetTextInput{
-		{Key: instance.TextName, Locale: "en", Body: "Example"},
-		{Key: instance.TextName, Locale: "ja", Body: "例"},
-		{Key: instance.TextDescription, Locale: "en", Body: "About us"},
+		{Key: instance.TextName, Body: "Example"},
+		{Key: instance.TextName, Body: "例"},
+		{Key: instance.TextDescription, Body: "About us"},
 	} {
 		if _, err := app.Instance.SetText(ctx, in); err != nil {
 			t.Fatal(err)
@@ -169,23 +169,21 @@ func TestClientAPIInstanceSettings(t *testing.T) {
 	}
 	if got.Name != "例" || got.Description == nil || *got.Description != "About us" || got.ShortDescription != nil ||
 		got.Limits.MaxPostCharacters != 1000 || got.Registrations.Mode != clientapi.InstanceRegistrationsModeOpen {
-		t.Errorf("instance = %+v (description %v), want the stored settings and the ja name", got, got.Description)
+		t.Errorf("instance = %+v (description %v), want the stored settings and the latest name", got, got.Description)
 	}
 }
 
 // TestClientAPIInstanceRules checks that GET /api/v1/instance lists the rules in effect from
-// the database, in the request's locale, without the retired ones.
+// the database, without the retired ones.
 func TestClientAPIInstanceRules(t *testing.T) {
 	t.Parallel()
 	app := newClientAPIApp(t)
 	ctx := t.Context()
-	kind, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{
-		{Locale: "en", Text: "Be kind"}, {Locale: "ja", Text: "親切に", Hint: "嫌がらせ禁止"},
-	}})
+	kind, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Text: "親切に", Hint: "嫌がらせ禁止"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	old, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Old"}}})
+	old, err := app.Instance.AddRule(ctx, appinstance.AddRuleInput{Text: "Old"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,8 +198,8 @@ func TestClientAPIInstanceRules(t *testing.T) {
 	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 		t.Fatal(err)
 	}
-	if len(got.Rules) != 1 || got.Rules[0].Id != kind.ID || got.Rules[0].Text != "親切に" || got.Rules[0].Lang != "ja" ||
+	if len(got.Rules) != 1 || got.Rules[0].Id != kind.ID || got.Rules[0].Text != "親切に" ||
 		got.Rules[0].Hint == nil || *got.Rules[0].Hint != "嫌がらせ禁止" {
-		t.Errorf("rules = %+v, want the ja text of the rule in effect", got.Rules)
+		t.Errorf("rules = %+v, want the rule in effect", got.Rules)
 	}
 }

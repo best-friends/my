@@ -51,16 +51,16 @@ func TestInstanceSetGetList(t *testing.T) {
 	}
 
 	mustInstance(t, "", "set", "name", "Example")
-	mustInstance(t, "", "set", "-locale", "ja", "name", "例")
-	mustInstance(t, "説明文\n2 行目\n", "set", "-locale", "ja", "description", "-")
+	if got := mustInstance(t, "", "set", "name", "例"); !strings.HasPrefix(got, "set name (revision ") {
+		t.Errorf("set name stdout = %q", got)
+	}
+	mustInstance(t, "説明文\n2 行目\n", "set", "description", "-")
 	for _, tc := range []struct {
 		args []string
 		want string
 	}{
-		{[]string{"get", "name"}, "Example\n"},
-		{[]string{"get", "-locale", "ja-JP", "name"}, "例\n"},
-		{[]string{"get", "-locale", "fr", "name"}, "Example\n"},
-		{[]string{"get", "-locale", "ja", "description"}, "説明文\n2 行目\n"},
+		{[]string{"get", "name"}, "例\n"},
+		{[]string{"get", "description"}, "説明文\n2 行目\n"},
 	} {
 		if got := mustInstance(t, "", tc.args...); got != tc.want {
 			t.Errorf("%q = %q, want %q", tc.args, got, tc.want)
@@ -69,7 +69,7 @@ func TestInstanceSetGetList(t *testing.T) {
 
 	// The columns are as wide as the longest key, so compare with single spaces.
 	list := strings.Join(strings.Fields(mustInstance(t, "", "list")), " ")
-	for _, want := range []string{"registration_mode closed set", "max_status_length 500 default", `name ja`, `"例"`} {
+	for _, want := range []string{"registration_mode closed set", "max_status_length 500 default", `name `, `"例"`} {
 		if !strings.Contains(list, want) {
 			t.Errorf("list = %q, missing %q", list, want)
 		}
@@ -87,10 +87,10 @@ func TestInstanceRejectsBadInput(t *testing.T) {
 		{[]string{"frobnicate"}, 2, "unknown subcommand"},
 		{[]string{"get"}, 2, "want 1 argument"},
 		{[]string{"get", "no_such_key"}, 2, `unknown key "no_such_key"`},
-		{[]string{"set", "-locale", "ja", "registration_mode", "open"}, 2, "-locale applies only to text keys"},
+		{[]string{"set", "-locale", "ja", "name", "x"}, 2, "flag provided but not defined: -locale"},
 		{[]string{"set", "max_status_length", "0"}, 1, "outside 1..100000"},
 		{[]string{"set", "registration_mode", "everyone"}, 1, "not one of open, approval, invite, closed"},
-		{[]string{"get", "terms"}, 1, "not set in any locale"},
+		{[]string{"get", "terms"}, 1, "terms is not set"},
 	} {
 		code, _, stderr := runInstanceCmd(t, "", tc.args...)
 		if code != tc.code || !strings.Contains(stderr, tc.want) {
@@ -123,7 +123,7 @@ func TestInstancePreviewImage(t *testing.T) {
 	if got := mustInstance(t, "", "get", "preview_image"); got != m[1]+"\n" {
 		t.Errorf("get preview_image after setting the ID = %q, want %s", got, m[1])
 	}
-	mustInstance(t, "", "set", "-locale", "ja", "preview_image_alt", "マスコット")
+	mustInstance(t, "", "set", "preview_image_alt", "マスコット")
 
 	for _, tc := range []struct {
 		args []string

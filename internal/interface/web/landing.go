@@ -37,14 +37,14 @@ func (h *Handler) serveInstancePage(w http.ResponseWriter, r *http.Request, path
 // "About {name}".
 func (h *Handler) renderInstancePage(ctx context.Context, path string) (document, error) {
 	lang := h.instanceLocale(ctx)
-	name := h.instanceName(ctx, lang)
+	name := h.instanceName(ctx)
 	title := name
 	if path == pathAbout {
 		title = h.o.Messages.Localizer(lang).ServerPreviewAboutTitle(name)
 	}
 	summary := ""
 	if h.o.InstanceDescription != nil {
-		summary = description(strings.TrimSpace(h.o.InstanceDescription(ctx, lang)))
+		summary = description(strings.TrimSpace(h.o.InstanceDescription(ctx)))
 	}
 	img, err := h.instanceImage(ctx, lang)
 	if err != nil {

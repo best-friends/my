@@ -13,7 +13,6 @@ import (
 	"slices"
 	"testing"
 
-	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
@@ -76,10 +75,10 @@ func TestGetInstance(t *testing.T) {
 	}
 }
 
-// fakeInstance holds settings and texts by key and locale.
+// fakeInstance holds settings and texts by key.
 type fakeInstance struct {
 	settings []instance.CurrentSetting
-	texts    map[instance.TextKey]map[string]string
+	texts    map[instance.TextKey]string
 	err      error
 }
 
@@ -87,13 +86,9 @@ func (f *fakeInstance) Settings(context.Context) (instance.Settings, error) {
 	return instance.NewSettings(f.settings), f.err
 }
 
-func (f *fakeInstance) Text(_ context.Context, key instance.TextKey, locale string) (instance.Text, bool, error) {
-	var texts []instance.Text
-	for l, body := range f.texts[key] {
-		texts = append(texts, instance.Text{Key: key, Locale: l, Body: body})
-	}
-	t, ok := instance.PickText(texts, appinstance.TextFallbackChain(locale, "en"))
-	return t, ok, nil
+func (f *fakeInstance) Text(_ context.Context, key instance.TextKey) (instance.Text, bool, error) {
+	body := f.texts[key]
+	return instance.Text{Key: key, Body: body}, body != "", nil
 }
 
 func TestGetInstanceFromSettings(t *testing.T) {
@@ -103,19 +98,20 @@ func TestGetInstanceFromSettings(t *testing.T) {
 			{Key: instance.SettingRegistrationMode, RevisionID: "r2", Value: "invite"},
 			{Key: instance.SettingFederatedTimelineEnabled, RevisionID: "r3", Value: "false"},
 		},
-		texts: map[instance.TextKey]map[string]string{
-			instance.TextName:             {"en": "Example Social", "ja": "例のソーシャル"},
-			instance.TextShortDescription: {"en": "A small instance."},
+		texts: map[instance.TextKey]string{
+			instance.TextName:             "例のソーシャル",
+			instance.TextShortDescription: "A small instance.",
 		},
 	}
 	e := newAuthEnv(t, func(o *clientapi.Options) { o.Instance, o.SendsEmail = fake, true })
 	for _, tt := range []struct {
 		name, acceptLanguage, token, wantName, wantCache string
 	}{
-		{"anonymous en", "en", "", "Example Social", "public, max-age=60"},
+		// The texts are the same in every locale.
+		{"anonymous en", "en", "", "例のソーシャル", "public, max-age=60"},
 		{"anonymous ja", "ja-JP,ja;q=0.9", "", "例のソーシャル", "public, max-age=60"},
-		{"anonymous fr falls back to the default", "fr", "", "Example Social", "public, max-age=60"},
-		// alice's locale is ja, whatever Accept-Language says, so the answer is private.
+		{"anonymous fr", "fr", "", "例のソーシャル", "public, max-age=60"},
+		// alice's locale decides the locale of the answer, so it is private.
 		{"user locale", "en", "read", "例のソーシャル", "private, max-age=60"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -156,11 +152,9 @@ func TestGetInstanceContactAndThumbnail(t *testing.T) {
 		{Key: instance.SettingContactAccount, RevisionID: "r1", Value: "alice"},
 		{Key: instance.SettingContactEmail, RevisionID: "r2", Value: "admin@social.example"},
 	}}
-	var thumbnailLocale string
 	e := newAuthEnv(t, func(o *clientapi.Options) {
 		o.Instance = fake
-		o.InstanceThumbnail = func(_ context.Context, locale string) (*clientapi.InstanceImage, error) {
-			thumbnailLocale = locale
+		o.InstanceThumbnail = func(context.Context) (*clientapi.InstanceImage, error) {
 			return &clientapi.InstanceImage{URL: "https://social.example/media/beach.webp", Width: 1600, Height: 900, Alt: "The beach"}, nil
 		}
 	})
@@ -185,9 +179,6 @@ func TestGetInstanceContactAndThumbnail(t *testing.T) {
 	if want := (clientapi.InstanceThumbnail{Url: "https://social.example/media/beach.webp", Width: 1600, Height: 900, Alt: &alt}); got.Thumbnail == nil || !reflect.DeepEqual(*got.Thumbnail, want) {
 		t.Errorf("thumbnail = %+v, want %+v", got.Thumbnail, want)
 	}
-	if thumbnailLocale != "ja" {
-		t.Errorf("thumbnail read in %q, want the request's locale ja", thumbnailLocale)
-	}
 
 	fake.settings = []instance.CurrentSetting{{Key: instance.SettingContactAccount, RevisionID: "r3", Value: "nobody"}}
 	if got := get(t); got.Contact != nil {
@@ -195,41 +186,28 @@ func TestGetInstanceContactAndThumbnail(t *testing.T) {
 	}
 }
 
-// TestGetInstanceReadsRegionalTexts checks that the texts and rules follow the locale the
-// request asked for, region included (ja-JP -> ja -> default -> en), rather than the locale of
-// the messages: ja-JP has no catalog of its own, yet a text written for it reaches its readers.
-func TestGetInstanceReadsRegionalTexts(t *testing.T) {
-	fake := &fakeInstance{texts: map[instance.TextKey]map[string]string{
-		instance.TextName: {"en": "Example Social", "ja": "例のソーシャル", "ja-JP": "日本の例のソーシャル"},
-	}}
+// TestGetInstanceTextsAreTheSameInEveryLocale checks that the administrators' texts and rules,
+// one value each, reach readers of every locale as they are.
+func TestGetInstanceTextsAreTheSameInEveryLocale(t *testing.T) {
+	fake := &fakeInstance{texts: map[instance.TextKey]string{instance.TextName: "例のソーシャル"}}
+	hint := "No harassment."
 	rules := &fakeRules{rules: []instance.Rule{{
-		ID: "01890a5d-ac96-774b-bcce-b302099a6001",
-		Revision: instance.RuleRevision{Position: 1, Texts: []instance.RuleText{
-			{Locale: "en", Text: "Be kind"}, {Locale: "ja", Text: "親切に"}, {Locale: "ja-JP", Text: "日本では親切に"},
-		}},
+		ID:       "01890a5d-ac96-774b-bcce-b302099a6001",
+		Revision: instance.RuleRevision{Position: 1, Text: "Be kind", Hint: hint},
 	}}}
 	e := newAuthEnv(t, func(o *clientapi.Options) { o.Instance, o.Rules = fake, rules })
-	for _, tt := range []struct {
-		acceptLanguage, wantName, wantRule, wantRuleLang string
-	}{
-		{"ja-JP", "日本の例のソーシャル", "日本では親切に", "ja-JP"},
-		{"ja-jp,en;q=0.5", "日本の例のソーシャル", "日本では親切に", "ja-JP"},
-		{"ja", "例のソーシャル", "親切に", "ja"},
-		{"ja-XX", "例のソーシャル", "親切に", "ja"},
-		{"en-GB", "Example Social", "Be kind", "en"},
-		{"fr-CA", "Example Social", "Be kind", "en"},
-	} {
-		res := e.get(t, "/instance", map[string]string{"Accept-Language": tt.acceptLanguage})
+	for _, acceptLanguage := range []string{"ja-JP", "ja", "en-GB", "fr-CA", "ar"} {
+		res := e.get(t, "/instance", map[string]string{"Accept-Language": acceptLanguage})
 		if res.StatusCode != http.StatusOK {
-			t.Fatalf("Accept-Language %s: status = %d, want 200", tt.acceptLanguage, res.StatusCode)
+			t.Fatalf("Accept-Language %s: status = %d, want 200", acceptLanguage, res.StatusCode)
 		}
 		var got clientapi.Instance
 		if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
 			t.Fatal(err)
 		}
-		if got.Name != tt.wantName || len(got.Rules) != 1 || got.Rules[0].Text != tt.wantRule || got.Rules[0].Lang != tt.wantRuleLang {
-			t.Errorf("Accept-Language %s: name %q, rules %+v, want %q and %q in %s",
-				tt.acceptLanguage, got.Name, got.Rules, tt.wantName, tt.wantRule, tt.wantRuleLang)
+		want := []clientapi.InstanceRule{{Id: rules.rules[0].ID, Text: "Be kind", Hint: &hint}}
+		if got.Name != "例のソーシャル" || !reflect.DeepEqual(got.Rules, want) {
+			t.Errorf("Accept-Language %s: name %q, rules %+v, want the same name and rules in every locale", acceptLanguage, got.Name, got.Rules)
 		}
 	}
 }

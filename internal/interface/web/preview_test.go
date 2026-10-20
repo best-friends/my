@@ -161,23 +161,23 @@ func TestProfilePreview(t *testing.T) {
 	}
 }
 
-// TestPreviewSiteName checks that a preview names the instance in the preview's language, the
-// runtime config in the default locale, and that the handle keeps the account domain.
+// TestPreviewSiteName checks that a preview and the runtime config name the instance by its
+// name, the same in every locale, and that the handle keeps the account domain.
 func TestPreviewSiteName(t *testing.T) {
-	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
+	name := "例のサーバー"
 	p := &fakePreviews{profiles: map[string]appcontent.ProfilePreview{"alice": alice("Alice", "")}}
-	mux := previewHandler(t, p, web.Options{InstanceName: func(_ context.Context, locale string) string { return names[locale] }})
+	mux := previewHandler(t, p, web.Options{InstanceName: func(context.Context) string { return name }})
 	rec := get(mux, "/@alice", nil)
 	body := rec.Body.String()
 	got := metas(t, body)
-	if got["og:site_name"] != "例のサーバー" || got["fediverse:creator"] != "@alice@example.org" || !strings.Contains(body, `"instanceName":"Example Social"`) {
+	if got["og:site_name"] != "例のサーバー" || got["fediverse:creator"] != "@alice@example.org" || !strings.Contains(body, `"instanceName":"例のサーバー"`) {
 		t.Errorf("site name %q, creator %q:\n%s", got["og:site_name"], got["fediverse:creator"], body)
 	}
 	// A new name is a new version of the page.
-	names["ja"] = ""
+	name = ""
 	again := get(mux, "/@alice", nil)
 	if got := metas(t, again.Body.String()); got["og:site_name"] != "social.example" || again.Header().Get("ETag") == rec.Header().Get("ETag") {
-		t.Errorf("without a ja name: site name %q, ETag %q (was %q); want the host and a new ETag", got["og:site_name"], again.Header().Get("ETag"), rec.Header().Get("ETag"))
+		t.Errorf("without a name: site name %q, ETag %q (was %q); want the host and a new ETag", got["og:site_name"], again.Header().Get("ETag"), rec.Header().Get("ETag"))
 	}
 }
 
@@ -270,12 +270,8 @@ func TestPreviewImageOrder(t *testing.T) {
 			a.Header, a.Avatar = tt.header, tt.avatar
 			s := status(a, content.VisibilityPublic, "<p>hi</p>")
 			s.Image = tt.attached
-			var gotLang string
 			mux := previewHandler(t, &fakePreviews{statuses: map[string]appcontent.StatusPreview{statusID: s}}, web.Options{
-				DefaultImage: func(_ context.Context, lang string) (*web.Image, error) {
-					gotLang = lang
-					return tt.def, nil
-				},
+				DefaultImage: func(context.Context) (*web.Image, error) { return tt.def, nil },
 			})
 			got := metas(t, get(mux, "/@alice/status/"+statusID, nil).Body.String())
 			if got["og:image"] != tt.want || got["og:image:alt"] != tt.alt || got["twitter:card"] != tt.card {
@@ -283,9 +279,6 @@ func TestPreviewImageOrder(t *testing.T) {
 			}
 			if tt.want == builtIn && (got["og:image:width"] != "1200" || got["og:image:height"] != "630") {
 				t.Errorf("built-in image size = %sx%s", got["og:image:width"], got["og:image:height"])
-			}
-			if tt.def != nil && tt.want == tt.def.URL && gotLang != "en" {
-				t.Errorf("DefaultImage got language %q, want the post's en", gotLang)
 			}
 		})
 	}
@@ -319,7 +312,7 @@ func TestInstanceImageIsReadPerRequest(t *testing.T) {
 	a := alice("Alice", "")
 	var current *web.Image
 	mux := previewHandler(t, &fakePreviews{profiles: map[string]appcontent.ProfilePreview{"alice": a}}, web.Options{
-		DefaultImage: func(context.Context, string) (*web.Image, error) { return current, nil },
+		DefaultImage: func(context.Context) (*web.Image, error) { return current, nil },
 	})
 	first := get(mux, "/@alice", nil)
 	current = &web.Image{URL: "https://social.example/media/new/full.png", Width: 1200, Height: 630, Alt: "新しい画像"}
@@ -335,7 +328,7 @@ func TestInstanceImageIsReadPerRequest(t *testing.T) {
 	}
 
 	failing := previewHandler(t, &fakePreviews{profiles: map[string]appcontent.ProfilePreview{"alice": a}}, web.Options{
-		DefaultImage: func(context.Context, string) (*web.Image, error) { return nil, errors.New("database down") },
+		DefaultImage: func(context.Context) (*web.Image, error) { return nil, errors.New("database down") },
 	})
 	if rec := get(failing, "/@alice", nil); rec.Code != http.StatusInternalServerError {
 		t.Errorf("a failing DefaultImage = %d, want 500", rec.Code)

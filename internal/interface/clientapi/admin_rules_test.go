@@ -15,12 +15,11 @@ import (
 	appinstance "github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/instance"
-	"github.com/best-friends/my/internal/i18n"
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
 // fakeRules keeps rules with the semantics of appinstance.Service: rules in effect by
-// position, then retired ones; the instance's default locale is en.
+// position, then retired ones.
 type fakeRules struct {
 	rules []instance.Rule
 	now   time.Time
@@ -40,18 +39,6 @@ func (f *fakeRules) find(id string) (int, error) {
 	return i, nil
 }
 
-func canonical(texts []instance.RuleText) ([]instance.RuleText, error) {
-	out := slices.Clone(texts)
-	for i := range out {
-		out[i].Locale = i18n.Canonicalize(out[i].Locale)
-	}
-	if err := instance.ValidateRuleTexts(out); err != nil {
-		return nil, err
-	}
-	instance.SortRuleTexts(out)
-	return out, nil
-}
-
 func (f *fakeRules) inEffect() []instance.Rule {
 	var out []instance.Rule
 	for _, r := range f.rules {
@@ -61,15 +48,6 @@ func (f *fakeRules) inEffect() []instance.Rule {
 	}
 	slices.SortStableFunc(out, func(a, b instance.Rule) int { return a.Revision.Position - b.Revision.Position })
 	return out
-}
-
-func (f *fakeRules) LocalizedRules(_ context.Context, locale string) ([]appinstance.LocalizedRule, error) {
-	var out []appinstance.LocalizedRule
-	for _, r := range f.inEffect() {
-		t, _ := instance.PickRuleText(r.Revision.Texts, appinstance.TextFallbackChain(locale, "en"))
-		out = append(out, appinstance.LocalizedRule{ID: r.ID, Text: t})
-	}
-	return out, nil
 }
 
 func (f *fakeRules) Rules(_ context.Context, includeRetired bool) ([]instance.Rule, error) {
@@ -93,8 +71,7 @@ func (f *fakeRules) Rule(_ context.Context, id string) (instance.Rule, error) {
 }
 
 func (f *fakeRules) AddRule(_ context.Context, in appinstance.AddRuleInput) (instance.Rule, error) {
-	texts, err := canonical(in.Texts)
-	if err != nil {
+	if err := instance.ValidateRuleText(in.Text, in.Hint); err != nil {
 		return instance.Rule{}, err
 	}
 	if len(f.inEffect()) >= instance.MaxRules {
@@ -102,15 +79,14 @@ func (f *fakeRules) AddRule(_ context.Context, in appinstance.AddRuleInput) (ins
 	}
 	id := f.id()
 	r := instance.Rule{ID: id, CreatedAt: f.now, Revision: instance.RuleRevision{
-		ID: f.id(), RuleID: id, Position: len(f.inEffect()) + 1, Texts: texts, RevisedByUserID: in.CreatedByUserID, RevisedAt: f.now,
+		ID: f.id(), RuleID: id, Position: len(f.inEffect()) + 1, Text: in.Text, Hint: in.Hint, RevisedByUserID: in.CreatedByUserID, RevisedAt: f.now,
 	}}
 	f.rules = append(f.rules, r)
 	return r, nil
 }
 
 func (f *fakeRules) ReviseRule(_ context.Context, in appinstance.ReviseRuleInput) (instance.Rule, error) {
-	texts, err := canonical(in.Texts)
-	if err != nil {
+	if err := instance.ValidateRuleText(in.Text, in.Hint); err != nil {
 		return instance.Rule{}, err
 	}
 	i, err := f.find(in.RuleID)
@@ -120,7 +96,11 @@ func (f *fakeRules) ReviseRule(_ context.Context, in appinstance.ReviseRuleInput
 	if f.rules[i].Retired() {
 		return instance.Rule{}, instance.ErrRuleRetired
 	}
-	f.rules[i].Revision.ID, f.rules[i].Revision.Texts, f.rules[i].Revision.RevisedByUserID = f.id(), texts, in.RevisedByUserID
+	rev := &f.rules[i].Revision
+	rev.ID, rev.Text, rev.RevisedByUserID = f.id(), in.Text, in.RevisedByUserID
+	if !in.KeepHint {
+		rev.Hint = in.Hint
+	}
 	return f.rules[i], nil
 }
 
@@ -175,9 +155,9 @@ func TestInstanceRuleOperationsNeedAPermission(t *testing.T) {
 	const id = "01890a5d-ac96-774b-bcce-b302099a6999"
 	for _, op := range []struct{ method, path, body string }{
 		{http.MethodGet, "/admin/rules", ""},
-		{http.MethodPost, "/admin/rules", `{"texts":[{"locale":"en","text":"Be kind"}]}`},
+		{http.MethodPost, "/admin/rules", `{"text":"Be kind"}`},
 		{http.MethodGet, "/admin/rules/" + id, ""},
-		{http.MethodPatch, "/admin/rules/" + id, `{"texts":[{"locale":"en","text":"Be kind"}]}`},
+		{http.MethodPatch, "/admin/rules/" + id, `{"text":"Be kind"}`},
 		{http.MethodPost, "/admin/rules/" + id + "/move", `{"position":1}`},
 		{http.MethodPost, "/admin/rules/" + id + "/retire", ""},
 	} {
@@ -190,7 +170,7 @@ func TestInstanceRuleOperationsNeedAPermission(t *testing.T) {
 	if len(f.rules) != 0 {
 		t.Error("a refused operation added a rule")
 	}
-	res := e.send(t, http.MethodPost, "/admin/rules", "admin-read", `{"texts":[{"locale":"en","text":"Be kind"}]}`)
+	res := e.send(t, http.MethodPost, "/admin/rules", "admin-read", `{"text":"Be kind"}`)
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {
 		t.Errorf("create with admin:read = %d %+v, want 403 insufficient-scope", res.StatusCode, p)
 	}
@@ -198,14 +178,10 @@ func TestInstanceRuleOperationsNeedAPermission(t *testing.T) {
 
 func TestManageInstanceRules(t *testing.T) {
 	e, f := newRulesEnv(t)
-	res := e.sendJSON(t, http.MethodPost, "/admin/rules", "admin",
-		`{"texts":[{"locale":"ja_jp","text":"親切に"},{"locale":"en","text":"Be kind","hint":"No harassment."}]}`)
+	res := e.sendJSON(t, http.MethodPost, "/admin/rules", "admin", `{"text":"Be kind","hint":"No harassment."}`)
 	kind := decodeJSON[clientapi.AdminRule](t, res)
 	hint := "No harassment."
-	want := clientapi.AdminRule{
-		Id: kind.Id, Position: 1, CreatedAt: adminNow, RevisedAt: adminNow,
-		Texts: []clientapi.AdminRuleText{{Locale: "en", Text: "Be kind", Hint: &hint}, {Locale: "ja-JP", Text: "親切に"}},
-	}
+	want := clientapi.AdminRule{Id: kind.Id, Position: 1, CreatedAt: adminNow, RevisedAt: adminNow, Text: "Be kind", Hint: &hint}
 	if res.StatusCode != http.StatusOK || !reflect.DeepEqual(kind, want) {
 		t.Fatalf("create = %d %+v, want %+v", res.StatusCode, kind, want)
 	}
@@ -215,14 +191,13 @@ func TestManageInstanceRules(t *testing.T) {
 	if r := f.rules[0]; r.Revision.RevisedByUserID != "user-"+aliceAccountID {
 		t.Errorf("created by %q, want alice's user", r.Revision.RevisedByUserID)
 	}
-	spam := decodeJSON[clientapi.AdminRule](t, e.sendJSON(t, http.MethodPost, "/admin/rules", "admin", `{"texts":[{"locale":"en","text":"No spam"}]}`))
+	spam := decodeJSON[clientapi.AdminRule](t, e.sendJSON(t, http.MethodPost, "/admin/rules", "admin", `{"text":"No spam"}`))
 
-	// Revising keeps the ID and replaces every text.
-	res = e.sendJSON(t, http.MethodPatch, "/admin/rules/"+kind.Id, "admin", `{"texts":[{"locale":"en","text":"Be very kind"},{"locale":"ja","text":"とても親切に"}]}`)
+	// Revising keeps the ID and replaces the text and the hint.
+	res = e.sendJSON(t, http.MethodPatch, "/admin/rules/"+kind.Id, "admin", `{"text":"とても親切に"}`)
 	revised := decodeJSON[clientapi.AdminRule](t, res)
-	if res.StatusCode != http.StatusOK || revised.Id != kind.Id ||
-		!reflect.DeepEqual(revised.Texts, []clientapi.AdminRuleText{{Locale: "en", Text: "Be very kind"}, {Locale: "ja", Text: "とても親切に"}}) {
-		t.Errorf("revise = %d %+v; want the same rule with the new texts", res.StatusCode, revised)
+	if res.StatusCode != http.StatusOK || revised.Id != kind.Id || revised.Text != "とても親切に" || revised.Hint != nil {
+		t.Errorf("revise = %d %+v; want the same rule with the new text and no hint", res.StatusCode, revised)
 	}
 
 	res = e.sendJSON(t, http.MethodPost, "/admin/rules/"+spam.Id+"/move", "admin", `{"position":1}`)
@@ -230,7 +205,7 @@ func TestManageInstanceRules(t *testing.T) {
 		t.Errorf("move = %d %+v, want the spam rule first", res.StatusCode, moved)
 	}
 
-	// The public instance lists the rules in effect in the reader's locale.
+	// The public instance lists the rules in effect, the same in every locale.
 	instanceRules := func(header map[string]string) []clientapi.InstanceRule {
 		t.Helper()
 		res := e.get(t, "/instance", header)
@@ -239,16 +214,15 @@ func TestManageInstanceRules(t *testing.T) {
 		}
 		return decodeJSON[clientapi.Instance](t, res).Rules
 	}
-	want2 := []clientapi.InstanceRule{{Id: spam.Id, Text: "No spam", Lang: "en"}, {Id: kind.Id, Text: "とても親切に", Lang: "ja"}}
-	if got := instanceRules(map[string]string{"Accept-Language": "ja-JP"}); !reflect.DeepEqual(got, want2) {
-		t.Errorf("rules for ja-JP = %+v, want %+v", got, want2)
-	}
-	// alice's locale is ja.
-	if got := instanceRules(map[string]string{"Accept-Language": "fr", "Authorization": "Bearer read"}); !reflect.DeepEqual(got, want2) {
-		t.Errorf("rules for alice = %+v, want %+v", got, want2)
-	}
-	if got := instanceRules(map[string]string{"Accept-Language": "fr"}); len(got) != 2 || got[1].Text != "Be very kind" || got[1].Lang != "en" {
-		t.Errorf("rules for fr = %+v, want the en texts", got)
+	want2 := []clientapi.InstanceRule{{Id: spam.Id, Text: "No spam"}, {Id: kind.Id, Text: "とても親切に"}}
+	for _, header := range []map[string]string{
+		{"Accept-Language": "ja-JP"},
+		{"Accept-Language": "fr", "Authorization": "Bearer read"}, // alice's locale is ja
+		{"Accept-Language": "fr"},
+	} {
+		if got := instanceRules(header); !reflect.DeepEqual(got, want2) {
+			t.Errorf("rules for %v = %+v, want %+v", header, got, want2)
+		}
 	}
 
 	res = e.send(t, http.MethodPost, "/admin/rules/"+kind.Id+"/retire", "admin", "")
@@ -284,8 +258,8 @@ func TestManageInstanceRules(t *testing.T) {
 
 func TestInstanceRuleProblems(t *testing.T) {
 	e, f := newRulesEnv(t)
-	r, _ := f.AddRule(t.Context(), appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Be kind"}}})
-	retired, _ := f.AddRule(t.Context(), appinstance.AddRuleInput{Texts: []instance.RuleText{{Locale: "en", Text: "Old"}}})
+	r, _ := f.AddRule(t.Context(), appinstance.AddRuleInput{Text: "Be kind"})
+	retired, _ := f.AddRule(t.Context(), appinstance.AddRuleInput{Text: "Old"})
 	_, _ = f.RetireRule(t.Context(), retired.ID, "")
 	const unknown = "01890a5d-ac96-774b-bcce-b302099a6999"
 	for _, tc := range []struct {
@@ -294,15 +268,15 @@ func TestInstanceRuleProblems(t *testing.T) {
 		// detail is the property that the detail names (in alice's locale, ja).
 		detail string
 	}{
-		{"too long", http.MethodPost, "/admin/rules", `{"texts":[{"locale":"en","text":"` + strings.Repeat("a", 301) + `"}],"x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, "texts[0].text"},
-		{"line break", http.MethodPost, "/admin/rules", `{"texts":[{"locale":"en","text":"a\nb"}]}`, http.StatusUnprocessableEntity, "texts[0].text"},
-		{"duplicate locale", http.MethodPatch, "/admin/rules/" + r.ID, `{"texts":[{"locale":"ja_jp","text":"a"},{"locale":"ja-JP","text":"b"}]}`, http.StatusUnprocessableEntity, "texts[1].locale"},
-		{"no texts", http.MethodPatch, "/admin/rules/" + r.ID, `{"texts":[],"x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, "texts"},
+		{"too long", http.MethodPost, "/admin/rules", `{"text":"` + strings.Repeat("a", 301) + `","x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, "text"},
+		{"line break", http.MethodPost, "/admin/rules", `{"text":"a\nb"}`, http.StatusUnprocessableEntity, "text"},
+		{"blank", http.MethodPatch, "/admin/rules/" + r.ID, `{"text":"   "}`, http.StatusUnprocessableEntity, "text"},
+		{"hint too long", http.MethodPatch, "/admin/rules/" + r.ID, `{"text":"a","hint":"` + strings.Repeat("a", 1001) + `","x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, "hint"},
 		{"position 0", http.MethodPost, "/admin/rules/" + r.ID + "/move", `{"position":0,"x":"invalid-on-purpose"}`, http.StatusUnprocessableEntity, "position"},
-		{"revise retired", http.MethodPatch, "/admin/rules/" + retired.ID, `{"texts":[{"locale":"en","text":"x"}]}`, http.StatusConflict, ""},
+		{"revise retired", http.MethodPatch, "/admin/rules/" + retired.ID, `{"text":"x"}`, http.StatusConflict, ""},
 		{"move retired", http.MethodPost, "/admin/rules/" + retired.ID + "/move", `{"position":1}`, http.StatusConflict, ""},
 		{"get unknown", http.MethodGet, "/admin/rules/" + unknown, "", http.StatusNotFound, ""},
-		{"revise unknown", http.MethodPatch, "/admin/rules/" + unknown, `{"texts":[{"locale":"en","text":"x"}]}`, http.StatusNotFound, ""},
+		{"revise unknown", http.MethodPatch, "/admin/rules/" + unknown, `{"text":"x"}`, http.StatusNotFound, ""},
 		{"retire unknown", http.MethodPost, "/admin/rules/" + unknown + "/retire", "", http.StatusNotFound, ""},
 	} {
 		var res *http.Response

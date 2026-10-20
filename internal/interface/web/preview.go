@@ -249,7 +249,7 @@ func (h *Handler) authorMeta(ctx context.Context, lang string, p appcontent.Prof
 	}
 	handle := username + "@" + h.o.AccountDomain
 	meta := previewMeta{
-		SiteName: h.instanceName(ctx, lang),
+		SiteName: h.instanceName(ctx),
 		Title:    h.o.Messages.Localizer(lang).ServerPreviewTitle(handle, displayName(p)),
 		Locale:   ogLocale(lang),
 		Creator:  "@" + handle,
@@ -289,7 +289,7 @@ func (h *Handler) instanceImage(ctx context.Context, lang string) (*Image, error
 	if h.o.DefaultImage == nil {
 		return h.builtInImage(l.ServerPreviewBuiltinImageAlt()), nil
 	}
-	img, err := h.o.DefaultImage(ctx, lang)
+	img, err := h.o.DefaultImage(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +298,7 @@ func (h *Handler) instanceImage(ctx context.Context, lang string) (*Image, error
 	}
 	out := *img
 	if out.Alt == "" {
-		out.Alt = l.ServerPreviewDefaultImageAlt(h.instanceName(ctx, lang))
+		out.Alt = l.ServerPreviewDefaultImageAlt(h.instanceName(ctx))
 	}
 	return &out, nil
 }
@@ -356,7 +356,7 @@ func (h *Handler) ownerPolicy(ctx context.Context, p appcontent.ProfilePreview) 
 // the runtime config keeps the instance's default locale.
 func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMeta, policy instance.CrawlerPolicy, version []string) (document, error) {
 	locale := h.instanceLocale(ctx)
-	name := h.instanceName(ctx, locale)
+	name := h.instanceName(ctx)
 	theme, err := h.currentTheme(ctx)
 	if err != nil {
 		return document{}, err

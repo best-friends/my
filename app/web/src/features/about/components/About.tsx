@@ -22,8 +22,8 @@ export function About() {
     <div className="flex flex-col gap-8">
       {about.thumbnail !== undefined && <ServerThumbnail thumbnail={about.thumbnail} />}
       {about.summary !== "" && (
-        // The administrator's text, in any language (web-client.md Y10).
-        <p dir="auto" className="text-lg">
+        // The administrator's text, in a language the app does not know: lang="" rather than the app's (web-client.md Y10).
+        <p dir="auto" lang="" className="text-lg">
           {about.summary}
         </p>
       )}
@@ -60,7 +60,7 @@ function Description({ paragraphs }: { paragraphs: readonly string[] }) {
     <Section title={t("client:about.description.title")}>
       {paragraphs.map((paragraph) => (
         // Paragraphs of one text have no IDs; the text itself is the key (two equal paragraphs are not expected).
-        <p key={paragraph} dir="auto" className="whitespace-pre-line">
+        <p key={paragraph} dir="auto" lang="" className="whitespace-pre-line">
           {paragraph}
         </p>
       ))}
@@ -74,7 +74,7 @@ function Rules({ rules }: { rules: ReturnType<typeof useAbout>["rules"] }) {
     <Section title={t("client:about.rules.title")}>
       <ol className="flex list-decimal flex-col gap-2 ps-6">
         {rules.map((rule) => (
-          <li key={rule.id} lang={rule.lang} dir="auto">
+          <li key={rule.id} lang="" dir="auto">
             <p className="font-medium">{rule.text}</p>
             {rule.hint !== undefined && <p className="text-sm text-fg-muted">{rule.hint}</p>}
           </li>

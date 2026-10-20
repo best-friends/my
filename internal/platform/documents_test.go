@@ -21,7 +21,7 @@ func TestDocumentPages(t *testing.T) {
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		_, err := a.Instance.SetText(t.Context(), appinstance.SetTextInput{
-			Key: instance.TextTerms, Locale: "ja", Body: "# 第1条\n\n**親切に**。<script>alert(1)</script>\n\n[ヘルプ](javascript:alert(1))",
+			Key: instance.TextTerms, Body: "# 第1条\n\n**親切に**。<script>alert(1)</script>\n\n[ヘルプ](javascript:alert(1))",
 		})
 		if err != nil {
 			t.Fatalf("SetText: %v", err)
@@ -34,7 +34,7 @@ func TestDocumentPages(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET terms = %d\n%s", resp.StatusCode, body)
 	}
-	for _, want := range []string{`<h1>利用規約</h1>`, `<div class="document" lang="ja" dir="auto">`, `<h2>第1条</h2>`, `<strong>親切に</strong>`} {
+	for _, want := range []string{`<h1>利用規約</h1>`, `<div class="document" lang="" dir="auto">`, `<h2>第1条</h2>`, `<strong>親切に</strong>`} {
 		if !strings.Contains(body, want) {
 			t.Errorf("terms page lacks %s:\n%s", want, body)
 		}
@@ -47,9 +47,10 @@ func TestDocumentPages(t *testing.T) {
 	if resp, _ := c.do(http.MethodGet, authpages.PathPrivacyPolicy, nil, ja); resp.StatusCode != http.StatusNotFound {
 		t.Errorf("GET privacy without a policy = %d, want 404", resp.StatusCode)
 	}
-	// An en reader finds no terms: they exist only in ja, and the default locale is en.
-	if resp, _ := c.do(http.MethodGet, authpages.PathTerms, nil, map[string]string{"Accept-Language": "en"}); resp.StatusCode != http.StatusNotFound {
-		t.Errorf("GET terms in en = %d, want 404", resp.StatusCode)
+	// A reader of another locale finds the same terms.
+	if resp, body := c.do(http.MethodGet, authpages.PathTerms, nil, map[string]string{"Accept-Language": "en"}); resp.StatusCode != http.StatusOK ||
+		!strings.Contains(body, `<h2>第1条</h2>`) {
+		t.Errorf("GET terms in en = %d, want the same terms:\n%s", resp.StatusCode, body)
 	}
 
 	if _, body := c.do(http.MethodGet, authpages.PathSignUp, nil, ja); !strings.Contains(body, `id="sign-up-agreement"`) ||

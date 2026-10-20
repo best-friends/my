@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The server settings screen in every width × locale project (ADR-0027): an administrator names the server in
-// a language, and the tab title and the sidebar call the server by that name instead of its domain at once, and
+// The server settings screen in every width × locale project (ADR-0027): an administrator names the server once,
+// in any language, and the tab title and the sidebar call the server by that name instead of its domain at once, and
 // changes the registration mode with the keyboard, each step passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
 // a signed-in administrator with page.route; names change with the locale, so the structure is checked by role,
 // by the names in the project's locale catalog and by what the server sends.
@@ -70,12 +70,12 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
 }
 
 /**
- * Plays the API of a signed-in administrator; GET /instance names the server by its English name. Returns the
- * changes of the names (`<locale> <name>`) and of the settings (`<key>=<value>`).
+ * Plays the API of a signed-in administrator; GET /instance names the server by its name, the same in every
+ * locale. Returns the changes of the name (`name <name>`) and of the settings (`<key>=<value>`).
  */
 async function administratorServer(page: Page) {
   const locale = test.info().project.use.locale ?? "en";
-  const names = new Map<string, string>([["en", "my example"]]);
+  let name: string | undefined = "my example";
   const settings: Record<string, string> = {};
   const changes: string[] = [];
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
@@ -88,7 +88,7 @@ async function administratorServer(page: Page) {
     if (key === "GET /instance") {
       return json(route, {
         domain: "my.example",
-        name: names.get("en") ?? "my.example",
+        name: name ?? "my.example",
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
         registrations: { mode: "approval" },
@@ -102,7 +102,7 @@ async function administratorServer(page: Page) {
       return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, timeline_languages: [] });
     }
     if (key === "GET /admin/instance_texts") {
-      return json(route, { items: [...names].map(([textLocale, body]) => ({ key: "name", locale: textLocale, body, revised_at: "2026-10-16T00:00:00Z" })) });
+      return json(route, { items: name === undefined ? [] : [{ key: "name", body: name, revised_at: "2026-10-16T00:00:00Z" }] });
     }
     if (key === "GET /admin/settings") return json(route, instanceSettings(settings));
     if (key === "PATCH /admin/settings") {
@@ -113,14 +113,11 @@ async function administratorServer(page: Page) {
       }
       return json(route, instanceSettings(settings));
     }
-    const set = /^PUT \/admin\/instance_texts\/name\/([^/]+)$/.exec(key);
-    if (set) {
-      const textLocale = decodeURIComponent(set[1] ?? "");
+    if (key === "PUT /admin/instance_texts/name") {
       const { body } = (request.postDataJSON() ?? {}) as { body: string };
-      changes.push(`${textLocale} ${body}`);
-      if (body === "") names.delete(textLocale);
-      else names.set(textLocale, body);
-      return json(route, { key: "name", locale: textLocale, body, revised_at: "2026-10-17T00:00:00Z" });
+      changes.push(`name ${body}`);
+      name = body === "" ? undefined : body;
+      return json(route, { key: "name", body, revised_at: "2026-10-17T00:00:00Z" });
     }
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
@@ -144,30 +141,29 @@ test.describe("page /admin/settings", () => {
 });
 
 test.describe("server settings", () => {
-  test("names the server in English, and the tab title and the sidebar call it by the new name", async ({ page, makeAxeBuilder }) => {
+  test("names the server, and the tab title and the sidebar call it by the new name", async ({ page, makeAxeBuilder }) => {
     const changes = await administratorServer(page);
     await page.goto("/admin/settings");
     const main = page.getByRole("main");
-    const english = main.getByRole("textbox").first();
-    await expect(english).toHaveValue("my example");
+    const field = main.getByRole("textbox").first();
+    await expect(field).toHaveValue("my example");
     await expect(page).toHaveTitle(/my example/);
-    const name = main.getByRole("region", { name: message("admin.settings.name.title"), exact: true });
-    await expect(name).toMatchAriaSnapshot(`
+    const section = main.getByRole("region", { name: message("admin.settings.name.title"), exact: true });
+    // One field: the name is the same in every language.
+    await expect(section).toMatchAriaSnapshot(`
       - region:
         - heading [level=2]
         - paragraph: /my\\.example/
         - text: /.+/
         - textbox: my example
-        - text: /.+/
-        - textbox
         - button
         - status
     `);
 
-    await english.fill(longName);
-    await name.getByRole("button").click();
-    await expect(name.getByRole("status")).not.toBeEmpty();
-    expect(changes).toEqual([`en ${longName}`]);
+    await field.fill(longName);
+    await section.getByRole("button").click();
+    await expect(section.getByRole("status")).not.toBeEmpty();
+    expect(changes).toEqual([`name ${longName}`]);
     await expect(page).toHaveTitle(new RegExp(longName));
     if ((page.viewportSize()?.width ?? 0) >= 1024) {
       // The sidebar shows the server's name above the list from lg on.

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"slices"
 	"testing"
 	"time"
 
@@ -16,22 +15,18 @@ import (
 	"github.com/best-friends/my/internal/interface/authpages"
 )
 
-// fakeDocuments holds documents by key; the locale of a reader does not matter. err fails every
-// read.
+// fakeDocuments holds documents by key. err fails every read.
 type fakeDocuments struct {
-	docs    map[instance.TextKey]appinstance.Document
-	err     error
-	locales []string // the reader locales asked for
+	docs map[instance.TextKey]appinstance.Document
+	err  error
 }
 
-func (f *fakeDocuments) Document(_ context.Context, key instance.TextKey, locale string) (appinstance.Document, bool, error) {
-	f.locales = append(f.locales, locale)
+func (f *fakeDocuments) Document(_ context.Context, key instance.TextKey) (appinstance.Document, bool, error) {
 	d, ok := f.docs[key]
 	return d, ok, f.err
 }
 
-func (f *fakeDocuments) HasDocument(_ context.Context, key instance.TextKey, locale string) (bool, error) {
-	f.locales = append(f.locales, locale)
+func (f *fakeDocuments) HasDocument(_ context.Context, key instance.TextKey) (bool, error) {
 	_, ok := f.docs[key]
 	return ok, f.err
 }
@@ -51,9 +46,9 @@ var revised = time.Date(2026, 10, 1, 23, 30, 0, 0, time.FixedZone("JST", 9*60*60
 
 func TestDocumentPages(t *testing.T) {
 	docs := &fakeDocuments{docs: map[instance.TextKey]appinstance.Document{
-		instance.TextTerms: {Key: instance.TextTerms, Locale: "ja", HTML: "<h2>第1条</h2>\n<p>守ること</p>", RevisedAt: revised},
+		instance.TextTerms: {Key: instance.TextTerms, HTML: "<h2>第1条</h2>\n<p>守ること</p>", RevisedAt: revised},
 		instance.TextPrivacyPolicy: {
-			Key: instance.TextPrivacyPolicy, Locale: "en", HTML: "<p>We keep <strong>little</strong>.</p>", RevisedAt: revised,
+			Key: instance.TextPrivacyPolicy, HTML: "<p>We keep <strong>little</strong>.</p>", RevisedAt: revised,
 		},
 	}}
 	b := newBrowser(t, newDocumentServer(t, newFakeIdentity(), docs))
@@ -70,34 +65,25 @@ func TestDocumentPages(t *testing.T) {
 		`<title>利用規約</title>`,
 		`<h1>利用規約</h1>`,
 		`<p class="hint">最終更新日：2026-10-01</p>`, // the UTC date
-		"<div class=\"document\" lang=\"ja\" dir=\"auto\">\n<h2>第1条</h2>\n<p>守ること</p>\n</div>",
+		"<div class=\"document\" lang=\"\" dir=\"auto\">\n<h2>第1条</h2>\n<p>守ること</p>\n</div>",
 		`<footer class="footer">`,
 		`<nav aria-label="規約とポリシー">`,
 		`<li><a href="/auth/terms">利用規約</a></li>`,
 		`<li><a href="/auth/privacy">プライバシーポリシー</a></li>`,
 	)
 	wantLacks(t, body, "<script", "style=", "<form")
-	if docs.locales[0] != "ja" {
-		t.Errorf("read the document for %q, want the page's locale ja", docs.locales[0])
-	}
-
-	// The text's locale goes on the document, the page's on <html>.
-	w = b.do(http.MethodGet, authpages.PathPrivacyPolicy, nil, map[string]string{"Accept-Language": "ja"})
-	wantContains(t, w.Body.String(), `<html lang="ja"`, `<h1>プライバシーポリシー</h1>`, `<div class="document" lang="en" dir="auto">`,
-		"<p>We keep <strong>little</strong>.</p>")
-
-	// A reader of ja-JP reads the page in ja, but the documents for ja-JP first (ja-JP -> ja).
-	docs.locales = nil
-	w = b.do(http.MethodGet, authpages.PathTerms, nil, map[string]string{"Accept-Language": "ja-JP"})
-	if w.Header().Get("Content-Language") != "ja" || len(docs.locales) == 0 || slices.ContainsFunc(docs.locales, func(l string) bool { return l != "ja-JP" }) {
-		t.Errorf("Accept-Language ja-JP: Content-Language %q, documents read for %v, want ja and only ja-JP",
-			w.Header().Get("Content-Language"), docs.locales)
+	// The page's locale goes on <html>; the document, one text for every locale in a language
+	// the server does not know, is marked as of an unknown language (lang="").
+	for _, lang := range []string{"ja", "en"} {
+		w = b.do(http.MethodGet, authpages.PathPrivacyPolicy, nil, map[string]string{"Accept-Language": lang})
+		wantContains(t, w.Body.String(), `<html lang="`+lang+`"`, `<div class="document" lang="" dir="auto">`,
+			"<p>We keep <strong>little</strong>.</p>")
 	}
 }
 
 func TestMissingDocumentsAreNotFoundAndNotLinked(t *testing.T) {
 	docs := &fakeDocuments{docs: map[instance.TextKey]appinstance.Document{
-		instance.TextPrivacyPolicy: {Key: instance.TextPrivacyPolicy, Locale: "en", HTML: "<p>p</p>", RevisedAt: revised},
+		instance.TextPrivacyPolicy: {Key: instance.TextPrivacyPolicy, HTML: "<p>p</p>", RevisedAt: revised},
 	}}
 	b := newBrowser(t, newDocumentServer(t, newFakeIdentity(), docs))
 	w := b.do(http.MethodGet, authpages.PathTerms, nil, nil)
@@ -127,7 +113,7 @@ func TestMissingDocumentsAreNotFoundAndNotLinked(t *testing.T) {
 
 func TestSignUpAsksToAgreeToTheDocuments(t *testing.T) {
 	docs := &fakeDocuments{docs: map[instance.TextKey]appinstance.Document{
-		instance.TextTerms: {Key: instance.TextTerms, Locale: "en", HTML: "<p>t</p>", RevisedAt: revised},
+		instance.TextTerms: {Key: instance.TextTerms, HTML: "<p>t</p>", RevisedAt: revised},
 	}}
 	b := newBrowser(t, newDocumentServer(t, newFakeIdentity(), docs))
 	body := b.do(http.MethodGet, authpages.PathSignUp, nil, map[string]string{"Accept-Language": "ja"}).Body.String()

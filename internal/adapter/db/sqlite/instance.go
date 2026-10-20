@@ -86,23 +86,23 @@ func (r *InstanceRepository) InsertTextRevision(ctx context.Context, tx uow.Tx, 
 		return err
 	}
 	err = q.InsertInstanceTextRevision(ctx, sqlitegen.InsertInstanceTextRevisionParams{
-		ID: rev.ID, Key: string(rev.Key), Locale: rev.Locale, Body: rev.Body,
+		ID: rev.ID, Key: string(rev.Key), Body: rev.Body,
 		RevisedByUserID: toNullString(rev.RevisedByUserID), RevisedAt: toMillis(rev.RevisedAt),
 	})
 	return wrap(err, "insert instance text revision")
 }
 
 // CurrentText implements instance.Repository.
-func (r *InstanceRepository) CurrentText(ctx context.Context, tx uow.Tx, key instance.TextKey, locale string) (instance.CurrentText, error) {
+func (r *InstanceRepository) CurrentText(ctx context.Context, tx uow.Tx, key instance.TextKey) (instance.CurrentText, error) {
 	q, err := queries(tx)
 	if err != nil {
 		return instance.CurrentText{}, err
 	}
-	row, err := q.GetInstanceText(ctx, sqlitegen.GetInstanceTextParams{Key: string(key), Locale: locale})
+	row, err := q.GetInstanceText(ctx, string(key))
 	if err != nil {
-		return instance.CurrentText{}, notFound(err, appinstance.ErrNotFound, "instance text "+string(key)+" in "+locale)
+		return instance.CurrentText{}, notFound(err, appinstance.ErrNotFound, "instance text "+string(key))
 	}
-	return instance.CurrentText{Key: instance.TextKey(row.Key), Locale: row.Locale, RevisionID: row.RevisionID}, nil
+	return instance.CurrentText{Key: instance.TextKey(row.Key), RevisionID: row.RevisionID}, nil
 }
 
 // UpsertCurrentText implements instance.Repository.
@@ -111,7 +111,7 @@ func (r *InstanceRepository) UpsertCurrentText(ctx context.Context, tx uow.Tx, c
 	if err != nil {
 		return err
 	}
-	err = q.UpsertInstanceText(ctx, sqlitegen.UpsertInstanceTextParams{Key: string(c.Key), Locale: c.Locale, RevisionID: c.RevisionID})
+	err = q.UpsertInstanceText(ctx, sqlitegen.UpsertInstanceTextParams{Key: string(c.Key), RevisionID: c.RevisionID})
 	return wrap(err, "upsert instance text")
 }
 
@@ -136,7 +136,7 @@ func (r *InstanceRepository) ListTextRevisionHeads(ctx context.Context, tx uow.T
 	}
 	out := make([]instance.CurrentText, len(rows))
 	for i, row := range rows {
-		out[i] = instance.CurrentText{Key: instance.TextKey(row.Key), Locale: row.Locale, RevisionID: row.ID}
+		out[i] = instance.CurrentText{Key: instance.TextKey(row.Key), RevisionID: row.ID}
 	}
 	return out, nil
 }
@@ -163,17 +163,13 @@ func (r *InstanceRepository) ListSettingHistory(ctx context.Context, key instanc
 	return settingRevisions(rows), nil
 }
 
-// ListCurrentTexts implements instance.Repository.
-func (r *InstanceRepository) ListCurrentTexts(ctx context.Context, key instance.TextKey) ([]instance.Text, error) {
-	rows, err := r.db.reader().ListCurrentInstanceTexts(ctx, string(key))
+// FindCurrentText implements instance.Repository.
+func (r *InstanceRepository) FindCurrentText(ctx context.Context, key instance.TextKey) (instance.Text, error) {
+	row, err := r.db.reader().GetCurrentInstanceText(ctx, string(key))
 	if err != nil {
-		return nil, wrap(err, "list instance texts")
+		return instance.Text{}, notFound(err, appinstance.ErrNotFound, "instance text "+string(key))
 	}
-	out := make([]instance.Text, len(rows))
-	for i, row := range rows {
-		out[i] = currentText(sqlitegen.ListAllCurrentInstanceTextsRow(row))
-	}
-	return out, nil
+	return currentText(sqlitegen.ListAllCurrentInstanceTextsRow(row)), nil
 }
 
 // ListAllCurrentTexts implements instance.Repository.
@@ -190,9 +186,9 @@ func (r *InstanceRepository) ListAllCurrentTexts(ctx context.Context) ([]instanc
 }
 
 // ListTextHistory implements instance.Repository.
-func (r *InstanceRepository) ListTextHistory(ctx context.Context, key instance.TextKey, locale string, limit int) ([]instance.TextRevision, error) {
+func (r *InstanceRepository) ListTextHistory(ctx context.Context, key instance.TextKey, limit int) ([]instance.TextRevision, error) {
 	rows, err := r.db.reader().ListInstanceTextHistory(ctx, sqlitegen.ListInstanceTextHistoryParams{
-		Key: string(key), Locale: locale, Limit: int64(limit),
+		Key: string(key), Limit: int64(limit),
 	})
 	if err != nil {
 		return nil, wrap(err, "list instance text history")
@@ -200,7 +196,7 @@ func (r *InstanceRepository) ListTextHistory(ctx context.Context, key instance.T
 	out := make([]instance.TextRevision, len(rows))
 	for i, row := range rows {
 		out[i] = instance.TextRevision{
-			ID: row.ID, Key: instance.TextKey(row.Key), Locale: row.Locale, Body: row.Body,
+			ID: row.ID, Key: instance.TextKey(row.Key), Body: row.Body,
 			RevisedByUserID: row.RevisedByUserID.String, RevisedAt: fromMillis(row.RevisedAt),
 		}
 	}
@@ -213,7 +209,7 @@ func currentSetting(row sqlitegen.InstanceSetting) instance.CurrentSetting {
 
 func currentText(row sqlitegen.ListAllCurrentInstanceTextsRow) instance.Text {
 	return instance.Text{
-		Key: instance.TextKey(row.Key), Locale: row.Locale, Body: row.Body,
+		Key: instance.TextKey(row.Key), Body: row.Body,
 		RevisionID: row.RevisionID, RevisedAt: fromMillis(row.RevisedAt),
 	}
 }

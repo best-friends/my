@@ -14,10 +14,10 @@ import (
 )
 
 // The instance's documents: the terms of service and the privacy policy that administrators
-// write in Markdown (instance texts terms and privacy_policy). Their public pages need no
-// session and no JavaScript; the registration page asks applicants to agree to them, and every
-// page links to them in its footer. A document that no locale of the reader's fallback chain
-// has is a 404, and no page links to it.
+// write in Markdown (instance texts terms and privacy_policy), once, in any language: every
+// locale shows the same text. Their public pages need no session and no JavaScript; the
+// registration page asks applicants to agree to them, and every page links to them in its
+// footer. A document that the instance has not published is a 404, and no page links to it.
 
 // Paths of the document pages.
 const (
@@ -31,11 +31,11 @@ const cacheDocument = "public, max-age=60"
 
 // Documents reads the instance's documents; *appinstance.Service implements it.
 type Documents interface {
-	// Document returns the document key rendered for a reader of locale, and false when no
-	// locale of the reader's fallback chain has it.
-	Document(ctx context.Context, key instance.TextKey, locale string) (appinstance.Document, bool, error)
+	// Document returns the document key rendered, and false when the instance has not published
+	// it.
+	Document(ctx context.Context, key instance.TextKey) (appinstance.Document, bool, error)
 	// HasDocument reports whether Document would find the document.
-	HasDocument(ctx context.Context, key instance.TextKey, locale string) (bool, error)
+	HasDocument(ctx context.Context, key instance.TextKey) (bool, error)
 }
 
 // documentPages are the document pages: the text key, the path, the title, and the message of
@@ -52,8 +52,6 @@ var documentPages = []struct {
 
 // documentView is a document on its page.
 type documentView struct {
-	// Lang is the locale of the text, which may differ from the page's.
-	Lang string
 	HTML template.HTML
 	// Updated is the date of the revision, in UTC, as YYYY-MM-DD.
 	Updated string
@@ -73,7 +71,7 @@ func (h *Handler) documentPage(i int) http.HandlerFunc {
 		ok := false
 		if h.o.Documents != nil {
 			var err error
-			doc, ok, err = h.o.Documents.Document(r.Context(), d.key, p.L.RequestedLocale())
+			doc, ok, err = h.o.Documents.Document(r.Context(), d.key)
 			if err != nil {
 				h.internalError(w, r, err)
 				return
@@ -84,7 +82,6 @@ func (h *Handler) documentPage(i int) http.HandlerFunc {
 			return
 		}
 		p.Document = &documentView{
-			Lang: doc.Locale,
 			// The renderer sanitizes the HTML (instance.DocumentRenderer).
 			HTML:    template.HTML(doc.HTML), //nolint:gosec // G203: sanitized by the document allowlist
 			Updated: doc.RevisedAt.UTC().Format("2006-01-02"),
@@ -94,7 +91,8 @@ func (h *Handler) documentPage(i int) http.HandlerFunc {
 	}
 }
 
-// documentLinks returns the links to the documents that a reader of the page's locale finds.
+// documentLinks returns the links to the documents that the instance has published, titled in
+// the page's locale.
 // A failure to read them is logged and leaves them out, so that it never breaks a page.
 func (h *Handler) documentLinks(r *http.Request, l *i18n.Localizer) []documentLink {
 	if h.o.Documents == nil {
@@ -102,7 +100,7 @@ func (h *Handler) documentLinks(r *http.Request, l *i18n.Localizer) []documentLi
 	}
 	var out []documentLink
 	for _, d := range documentPages {
-		ok, err := h.o.Documents.HasDocument(r.Context(), d.key, l.RequestedLocale())
+		ok, err := h.o.Documents.HasDocument(r.Context(), d.key)
 		if err != nil {
 			h.o.Logger.WarnContext(r.Context(), "read an instance document", slog.String("key", string(d.key)), slog.Any("error", err))
 			continue

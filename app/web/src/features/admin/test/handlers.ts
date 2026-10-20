@@ -7,8 +7,8 @@ import type { Schemas } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
 
 /** An instance text as the server answers it, saved at 2026-10-17T00:00:00Z. */
-export function instanceTextFixture(key: Schemas["InstanceTextKey"], locale: string, body: string): Schemas["AdminInstanceText"] {
-  return { key, locale, body, revised_at: "2026-10-17T00:00:00Z" };
+export function instanceTextFixture(key: Schemas["InstanceTextKey"], body: string): Schemas["AdminInstanceText"] {
+  return { key, body, revised_at: "2026-10-17T00:00:00Z" };
 }
 
 /** A local custom emoji as the admin API answers it, registered at 2026-10-20T00:00:00Z, with `overrides`. */
@@ -129,15 +129,12 @@ export function instanceSettingsFixture(stored: Readonly<Partial<Record<Schemas[
   };
 }
 
-/** A rule in English and Japanese at `position`, created at 2026-10-16, as the admin API answers it; `overrides` replace its fields. */
+/** A rule at `position`, created at 2026-10-16, as the admin API answers it; `overrides` replace its fields. */
 export function ruleFixture(id: string, position: number, overrides: Partial<Schemas["AdminRule"]> = {}): Schemas["AdminRule"] {
   return {
     id,
     position,
-    texts: [
-      { locale: "en", text: `Rule ${String(position)}` },
-      { locale: "ja", text: `ルール${String(position)}` },
-    ],
+    text: `Rule ${String(position)}`,
     created_at: "2026-10-16T00:00:00Z",
     revised_at: "2026-10-16T00:00:00Z",
     ...overrides,
@@ -182,9 +179,9 @@ export const handlers = [
   http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds listInstanceTexts, setInstanceText: no texts; a new text is recorded as sent, at 2026-10-17T00:00:00Z.
   http.get(`${apiBase}/admin/instance_texts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
-  http.put(`${apiBase}/admin/instance_texts/:key/:locale`, async ({ request, params }) => {
+  http.put(`${apiBase}/admin/instance_texts/:key`, async ({ request, params }) => {
     const body = (await request.clone().json()) as Schemas["SetInstanceTextRequest"];
-    return withViewer(request, () => HttpResponse.json(instanceTextFixture(String(params["key"]) as Schemas["InstanceTextKey"], String(params["locale"]), body.body)));
+    return withViewer(request, () => HttpResponse.json(instanceTextFixture(String(params["key"]) as Schemas["InstanceTextKey"], body.body)));
   }),
   // operationIds listInstanceSettings, updateInstanceSettings: every setting at its default; a change is answered
   // with the values sent.
@@ -198,12 +195,12 @@ export const handlers = [
   http.get(`${apiBase}/admin/rules`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminRuleList"]))),
   http.post(`${apiBase}/admin/rules`, async ({ request }) => {
     const body = (await request.clone().json()) as Schemas["InstanceRuleInput"];
-    return withViewer(request, () => HttpResponse.json(ruleFixture(createdRuleId, 1, { texts: body.texts })));
+    return withViewer(request, () => HttpResponse.json(ruleFixture(createdRuleId, 1, body)));
   }),
   http.get(`${apiBase}/admin/rules/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(ruleFixture(String(params["id"]), 1)))),
   http.patch(`${apiBase}/admin/rules/:id`, async ({ request, params }) => {
     const body = (await request.clone().json()) as Schemas["InstanceRuleInput"];
-    return withViewer(request, () => HttpResponse.json(ruleFixture(String(params["id"]), 1, { texts: body.texts, revised_at: "2026-10-17T00:00:00Z" })));
+    return withViewer(request, () => HttpResponse.json(ruleFixture(String(params["id"]), 1, { ...body, revised_at: "2026-10-17T00:00:00Z" })));
   }),
   http.post(`${apiBase}/admin/rules/:id/move`, async ({ request, params }) => {
     const body = (await request.clone().json()) as Schemas["MoveInstanceRuleRequest"];

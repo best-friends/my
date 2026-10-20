@@ -14,11 +14,11 @@ import (
 )
 
 // The instance rules (FR-705): the admin operations that manage them (manage_rules), and the
-// rules in effect that GET /instance lists in the reader's locale.
+// rules in effect that GET /instance lists. A rule's text and hint hold one value each, shown
+// as they are in every locale.
 
 // InstanceRules runs the use cases of the instance rules. *appinstance.Service implements it.
 type InstanceRules interface {
-	LocalizedRules(ctx context.Context, locale string) ([]appinstance.LocalizedRule, error)
 	Rules(ctx context.Context, includeRetired bool) ([]instance.Rule, error)
 	Rule(ctx context.Context, id string) (instance.Rule, error)
 	AddRule(ctx context.Context, in appinstance.AddRuleInput) (instance.Rule, error)
@@ -27,37 +27,26 @@ type InstanceRules interface {
 	RetireRule(ctx context.Context, ruleID, retiredByUserID string) (instance.Rule, error)
 }
 
-// instanceRules returns the rules in effect for a reader of locale; none without Options.Rules.
-func (s *Server) instanceRules(ctx context.Context, locale string) ([]InstanceRule, error) {
+// instanceRules returns the rules in effect; none without Options.Rules.
+func (s *Server) instanceRules(ctx context.Context) ([]InstanceRule, error) {
 	out := []InstanceRule{}
 	if s.o.Rules == nil {
 		return out, nil
 	}
-	rules, err := s.o.Rules.LocalizedRules(ctx, locale)
+	rules, err := s.o.Rules.Rules(ctx, false)
 	if err != nil {
 		return nil, fmt.Errorf("clientapi: instance rules: %w", err)
 	}
 	for _, r := range rules {
-		ir := InstanceRule{Id: r.ID, Text: r.Text.Text, Lang: r.Text.Locale}
-		if r.Text.Hint != "" {
-			ir.Hint = &r.Text.Hint
-		}
-		out = append(out, ir)
+		out = append(out, InstanceRule{Id: r.ID, Text: r.Revision.Text, Hint: optionalString(r.Revision.Hint)})
 	}
 	return out, nil
 }
 
 func newAdminRule(r instance.Rule) AdminRule {
 	out := AdminRule{
-		Id: r.ID, Position: r.Revision.Position, Texts: make([]AdminRuleText, 0, len(r.Revision.Texts)),
+		Id: r.ID, Position: r.Revision.Position, Text: r.Revision.Text, Hint: optionalString(r.Revision.Hint),
 		CreatedAt: r.CreatedAt.UTC(), RevisedAt: r.Revision.RevisedAt.UTC(),
-	}
-	for _, t := range r.Revision.Texts {
-		at := AdminRuleText{Locale: t.Locale, Text: t.Text}
-		if t.Hint != "" {
-			at.Hint = &t.Hint
-		}
-		out.Texts = append(out.Texts, at)
 	}
 	if r.Retirement != nil {
 		t := r.Retirement.RetiredAt.UTC()
@@ -71,15 +60,12 @@ func adminRuleResponse(r instance.Rule) AdminRuleJSONResponse {
 	return AdminRuleJSONResponse{Body: newAdminRule(r), Headers: AdminRuleResponseHeaders{CacheControl: &cache}}
 }
 
-func ruleTextsInput(in []InstanceRuleTextInput) []instance.RuleText {
-	out := make([]instance.RuleText, len(in))
-	for i, t := range in {
-		out[i] = instance.RuleText{Locale: t.Locale, Text: t.Text}
-		if t.Hint != nil {
-			out[i].Hint = *t.Hint
-		}
+// ruleHint returns the hint of in, "" when it has none.
+func ruleHint(in InstanceRuleInput) string {
+	if in.Hint == nil {
+		return ""
 	}
-	return out
+	return *in.Hint
 }
 
 // ruleProblem maps the errors of the rule use cases to problems: 404 for an unknown rule, 409
@@ -97,16 +83,10 @@ func (s *Server) ruleProblem(ctx context.Context, err error) (problem, bool) {
 		return s.problem(ctx, http.StatusConflict, ProblemTypeBlank, l.ServerErrorsConflict(), ""), true
 	case errors.Is(err, instance.ErrTooManyRules):
 		return unprocessable(l.ServerErrorsTooMany(instance.MaxRules, "rules"))
-	case errors.As(err, &te) && te.Index < 0 && te.Max > 0:
-		return unprocessable(l.ServerErrorsTooMany(te.Max, "texts"))
-	case errors.As(err, &te) && te.Index < 0:
-		return unprocessable(l.ServerErrorsInvalidValue("texts"))
+	case errors.As(err, &te) && te.Max > 0:
+		return unprocessable(l.ServerErrorsTooLong(te.Max, te.Field))
 	case errors.As(err, &te):
-		name := fmt.Sprintf("texts[%d].%s", te.Index, te.Field)
-		if te.Max > 0 {
-			return unprocessable(l.ServerErrorsTooLong(te.Max, name))
-		}
-		return unprocessable(l.ServerErrorsInvalidValue(name))
+		return unprocessable(l.ServerErrorsInvalidValue(te.Field))
 	case errors.Is(err, instance.ErrInvalidValue):
 		return unprocessable(l.ServerErrorsInvalidValue("position"))
 	}
@@ -144,9 +124,9 @@ func (s *Server) CreateInstanceRule(ctx context.Context, req CreateInstanceRuleR
 		return nil, err
 	}
 	if req.Body == nil {
-		return CreateInstanceRuledefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "texts")), nil
+		return CreateInstanceRuledefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "text")), nil
 	}
-	r, err := s.o.Rules.AddRule(ctx, appinstance.AddRuleInput{Texts: ruleTextsInput(req.Body.Texts), CreatedByUserID: v.UserID})
+	r, err := s.o.Rules.AddRule(ctx, appinstance.AddRuleInput{Text: req.Body.Text, Hint: ruleHint(*req.Body), CreatedByUserID: v.UserID})
 	if p, ok := s.ruleProblem(ctx, err); ok {
 		return CreateInstanceRuledefaultApplicationProblemPlusJSONResponse(p), nil
 	}
@@ -185,9 +165,9 @@ func (s *Server) UpdateInstanceRule(ctx context.Context, req UpdateInstanceRuleR
 		return nil, err
 	}
 	if req.Body == nil {
-		return UpdateInstanceRuledefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "texts")), nil
+		return UpdateInstanceRuledefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "text")), nil
 	}
-	r, err := s.o.Rules.ReviseRule(ctx, appinstance.ReviseRuleInput{RuleID: req.Id, Texts: ruleTextsInput(req.Body.Texts), RevisedByUserID: v.UserID})
+	r, err := s.o.Rules.ReviseRule(ctx, appinstance.ReviseRuleInput{RuleID: req.Id, Text: req.Body.Text, Hint: ruleHint(*req.Body), RevisedByUserID: v.UserID})
 	if p, ok := s.ruleProblem(ctx, err); ok {
 		return UpdateInstanceRuledefaultApplicationProblemPlusJSONResponse(p), nil
 	}

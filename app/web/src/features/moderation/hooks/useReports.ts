@@ -108,7 +108,7 @@ export function useAccountById(id: string): AccountById {
 }
 
 /** A rule a report cites: its text from the instance, or null when the instance no longer has it (retired). */
-export type CitedRule = { id: string; text: string; lang: string } | { id: string; text: null };
+export type CitedRule = { id: string; text: string } | { id: string; text: null };
 
 /** The rules that a report cites, in its order; null while the instance loads. */
 export function useCitedRules(ruleIds: readonly string[]): CitedRule[] | null {
@@ -119,7 +119,7 @@ export function useCitedRules(ruleIds: readonly string[]): CitedRule[] | null {
   const rules = instance.data.rules;
   return ruleIds.map((id) => {
     const rule = rules.find((item) => item.id === id);
-    return rule === undefined ? { id, text: null } : { id, text: rule.text, lang: rule.lang };
+    return rule === undefined ? { id, text: null } : { id, text: rule.text };
   });
 }
 

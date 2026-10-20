@@ -10,7 +10,6 @@ package sqlitegen
 import (
 	"context"
 	"database/sql"
-	"strings"
 )
 
 const deleteAllInstanceRuleHeads = `-- name: DeleteAllInstanceRuleHeads :exec
@@ -32,7 +31,7 @@ func (q *Queries) DeleteInstanceRuleHead(ctx context.Context, ruleID string) err
 }
 
 const getInstanceRule = `-- name: GetInstanceRule :one
-SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.revised_by_user_id, v.revised_at,
+SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.text, v.hint, v.revised_by_user_id, v.revised_at,
   t.retired_by_user_id, t.retired_at
 FROM instance_rules r
 JOIN instance_rule_revisions v ON v.id = (SELECT MAX(x.id) FROM instance_rule_revisions x WHERE x.rule_id = r.id)
@@ -45,6 +44,8 @@ type GetInstanceRuleRow struct {
 	CreatedAt       int64
 	RevisionID      string
 	Position        int64
+	Text            string
+	Hint            string
 	RevisedByUserID sql.NullString
 	RevisedAt       int64
 	RetiredByUserID sql.NullString
@@ -60,6 +61,8 @@ func (q *Queries) GetInstanceRule(ctx context.Context, id string) (GetInstanceRu
 		&i.CreatedAt,
 		&i.RevisionID,
 		&i.Position,
+		&i.Text,
+		&i.Hint,
 		&i.RevisedByUserID,
 		&i.RevisedAt,
 		&i.RetiredByUserID,
@@ -116,13 +119,15 @@ func (q *Queries) InsertInstanceRuleRetirement(ctx context.Context, arg InsertIn
 }
 
 const insertInstanceRuleRevision = `-- name: InsertInstanceRuleRevision :exec
-INSERT INTO instance_rule_revisions (id, rule_id, position, revised_by_user_id, revised_at) VALUES (?, ?, ?, ?, ?)
+INSERT INTO instance_rule_revisions (id, rule_id, position, text, hint, revised_by_user_id, revised_at) VALUES (?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertInstanceRuleRevisionParams struct {
 	ID              string
 	RuleID          string
 	Position        int64
+	Text            string
+	Hint            string
 	RevisedByUserID sql.NullString
 	RevisedAt       int64
 }
@@ -132,35 +137,16 @@ func (q *Queries) InsertInstanceRuleRevision(ctx context.Context, arg InsertInst
 		arg.ID,
 		arg.RuleID,
 		arg.Position,
+		arg.Text,
+		arg.Hint,
 		arg.RevisedByUserID,
 		arg.RevisedAt,
 	)
 	return err
 }
 
-const insertInstanceRuleText = `-- name: InsertInstanceRuleText :exec
-INSERT INTO instance_rule_texts (rule_revision_id, locale, text, hint) VALUES (?, ?, ?, ?)
-`
-
-type InsertInstanceRuleTextParams struct {
-	RuleRevisionID string
-	Locale         string
-	Text           string
-	Hint           string
-}
-
-func (q *Queries) InsertInstanceRuleText(ctx context.Context, arg InsertInstanceRuleTextParams) error {
-	_, err := q.db.ExecContext(ctx, insertInstanceRuleText,
-		arg.RuleRevisionID,
-		arg.Locale,
-		arg.Text,
-		arg.Hint,
-	)
-	return err
-}
-
 const listAllInstanceRules = `-- name: ListAllInstanceRules :many
-SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.revised_by_user_id, v.revised_at,
+SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.text, v.hint, v.revised_by_user_id, v.revised_at,
   t.retired_by_user_id, t.retired_at
 FROM instance_rules r
 JOIN instance_rule_revisions v ON v.id = (SELECT MAX(x.id) FROM instance_rule_revisions x WHERE x.rule_id = r.id)
@@ -173,6 +159,8 @@ type ListAllInstanceRulesRow struct {
 	CreatedAt       int64
 	RevisionID      string
 	Position        int64
+	Text            string
+	Hint            string
 	RevisedByUserID sql.NullString
 	RevisedAt       int64
 	RetiredByUserID sql.NullString
@@ -194,6 +182,8 @@ func (q *Queries) ListAllInstanceRules(ctx context.Context) ([]ListAllInstanceRu
 			&i.CreatedAt,
 			&i.RevisionID,
 			&i.Position,
+			&i.Text,
+			&i.Hint,
 			&i.RevisedByUserID,
 			&i.RevisedAt,
 			&i.RetiredByUserID,
@@ -272,52 +262,8 @@ func (q *Queries) ListInstanceRuleRevisionHeads(ctx context.Context) ([]ListInst
 	return items, nil
 }
 
-const listInstanceRuleTexts = `-- name: ListInstanceRuleTexts :many
-SELECT rule_revision_id, locale, text, hint FROM instance_rule_texts
-WHERE rule_revision_id IN (/*SLICE:revision_ids*/?)
-ORDER BY rule_revision_id, locale
-`
-
-func (q *Queries) ListInstanceRuleTexts(ctx context.Context, revisionIds []string) ([]InstanceRuleText, error) {
-	query := listInstanceRuleTexts
-	var queryParams []interface{}
-	if len(revisionIds) > 0 {
-		for _, v := range revisionIds {
-			queryParams = append(queryParams, v)
-		}
-		query = strings.Replace(query, "/*SLICE:revision_ids*/?", strings.Repeat(",?", len(revisionIds))[1:], 1)
-	} else {
-		query = strings.Replace(query, "/*SLICE:revision_ids*/?", "NULL", 1)
-	}
-	rows, err := q.db.QueryContext(ctx, query, queryParams...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []InstanceRuleText{}
-	for rows.Next() {
-		var i InstanceRuleText
-		if err := rows.Scan(
-			&i.RuleRevisionID,
-			&i.Locale,
-			&i.Text,
-			&i.Hint,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listInstanceRulesInEffect = `-- name: ListInstanceRulesInEffect :many
-SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.revised_by_user_id, v.revised_at
+SELECT r.id, r.created_at, v.id AS revision_id, v.position, v.text, v.hint, v.revised_by_user_id, v.revised_at
 FROM instance_rule_heads h
 JOIN instance_rules r ON r.id = h.rule_id
 JOIN instance_rule_revisions v ON v.id = h.revision_id
@@ -329,6 +275,8 @@ type ListInstanceRulesInEffectRow struct {
 	CreatedAt       int64
 	RevisionID      string
 	Position        int64
+	Text            string
+	Hint            string
 	RevisedByUserID sql.NullString
 	RevisedAt       int64
 }
@@ -348,6 +296,8 @@ func (q *Queries) ListInstanceRulesInEffect(ctx context.Context) ([]ListInstance
 			&i.CreatedAt,
 			&i.RevisionID,
 			&i.Position,
+			&i.Text,
+			&i.Hint,
 			&i.RevisedByUserID,
 			&i.RevisedAt,
 		); err != nil {

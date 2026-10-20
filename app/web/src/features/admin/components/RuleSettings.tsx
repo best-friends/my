@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The rules screen below its heading (manage_rules, FR-705): the form of a new rule, then the rules in effect in
-// order. A rule has a text (one line) and an optional hint in each language; the about page and the report form
-// show it in the reader's language. "Move up" and "Move down" reorder the rules with the keyboard as well as the
-// pointer (no dragging); focus then moves to the moved rule's heading. Editing opens a dialog with the texts of
-// every language; retiring cannot be undone, so it asks first (an alert dialog). What a change did stays on the
+// order. A rule has a text (one line) and an optional hint, written once in any language; the about page and the
+// report form show them as they are in every language. "Move up" and "Move down" reorder the rules with the keyboard
+// as well as the pointer (no dragging); focus then moves to the moved rule's heading. Editing opens a dialog with the
+// text and the hint; retiring cannot be undone, so it asks first (an alert dialog). What a change did stays on the
 // page in a StatusMessage above the list; a failure stays there too (role="alert", web-client.md E2).
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, EmptyState, StatusMessage, TextArea, TextField } from "@my/ui";
+import { Button, ConfirmDialog, Dialog, DialogTrigger, EmptyState, StatusMessage, TextArea, TextField } from "@my/ui";
 import { useRef, useState } from "react";
-import { useLocale, useT } from "../../../lib/i18n";
+import { useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval, useFocusHeadingAfterMove } from "../../../lib/useFocusAfterRemoval";
 import { DetailSection, RequirePermission } from "../../moderation";
 import { type Rule, ruleHintLimit, ruleTextLimit } from "../api/rules";
-import { languageName } from "../hooks/languages";
-import { type RuleActions, type RuleLanguageFields, ruleText, useNewRuleForm, useRuleActions, useRuleDraft, useRuleList } from "../hooks/useRules";
+import { type RuleActions, type RuleFields, useNewRuleForm, useRuleActions, useRuleDraft, useRuleList } from "../hooks/useRules";
 
 export function RuleSettings() {
   const t = useT();
@@ -31,36 +30,32 @@ export function RuleSettings() {
   );
 }
 
-/** The text and hint fields of a rule in each language. */
-function RuleTextFields({ fields, autoFocus = false }: { fields: readonly RuleLanguageFields[]; autoFocus?: boolean }) {
+/** The text and hint fields of a rule. */
+function RuleTextFields({ fields, autoFocus = false }: { fields: RuleFields; autoFocus?: boolean }) {
   const t = useT();
   return (
-    <>
-      {fields.map((field, index) => (
-        <div key={field.locale} className="flex flex-col gap-3">
-          <TextField
-            label={t("client:admin.rules.text", { language: field.language })}
-            description={t("client:admin.rules.text.description", { max: String(ruleTextLimit) })}
-            value={field.text}
-            onChange={field.changeText}
-            autoComplete="off"
-            autoFocus={autoFocus && index === 0}
-            {...(field.textError === undefined ? {} : { isInvalid: true, errorMessage: field.textError })}
-          />
-          <TextArea
-            label={t("client:admin.rules.hint", { language: field.language })}
-            value={field.hint}
-            onChange={field.changeHint}
-            rows={2}
-            characterLimit={ruleHintLimit}
-            formatRemaining={(remaining) =>
-              remaining < 0 ? t("client:admin.settings.characters_over", { count: -remaining }) : t("client:admin.settings.characters_left", { count: remaining })
-            }
-            {...(field.hintError === undefined ? {} : { isInvalid: true, errorMessage: field.hintError })}
-          />
-        </div>
-      ))}
-    </>
+    <div className="flex flex-col gap-3">
+      <TextField
+        label={t("client:admin.rules.text")}
+        description={t("client:admin.rules.text.description", { max: String(ruleTextLimit) })}
+        value={fields.text}
+        onChange={fields.changeText}
+        autoComplete="off"
+        autoFocus={autoFocus}
+        {...(fields.textError === undefined ? {} : { isInvalid: true, errorMessage: fields.textError })}
+      />
+      <TextArea
+        label={t("client:admin.rules.hint")}
+        value={fields.hint}
+        onChange={fields.changeHint}
+        rows={2}
+        characterLimit={ruleHintLimit}
+        formatRemaining={(remaining) =>
+          remaining < 0 ? t("client:admin.settings.characters_over", { count: -remaining }) : t("client:admin.settings.characters_left", { count: remaining })
+        }
+        {...(fields.hintError === undefined ? {} : { isInvalid: true, errorMessage: fields.hintError })}
+      />
+    </div>
   );
 }
 
@@ -70,11 +65,6 @@ function NewRuleForm() {
   return (
     <form onSubmit={form.submit} className="flex flex-col gap-6">
       <RuleTextFields fields={form.draft.fields} />
-      {form.draft.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {form.draft.error}
-        </p>
-      )}
       {form.error !== undefined && (
         <p role="alert" className="text-danger">
           {t("client:admin.rules.add_failed", { reason: form.error })}
@@ -130,8 +120,7 @@ function RuleList() {
 
 function RuleRow({ rule, place, count, actions }: { rule: Rule; place: number; count: number; actions: RuleActions }) {
   const t = useT();
-  const displayLocale = useLocale();
-  const name = ruleText(rule, displayLocale).text;
+  const name = rule.text;
   const isMoving = actions.movingIds.includes(rule.id);
   return (
     <div className="flex flex-col gap-3">
@@ -139,21 +128,12 @@ function RuleRow({ rule, place, count, actions }: { rule: Rule; place: number; c
         {/* The rule is written by an administrator in any language: U+2068 FIRST STRONG ISOLATE … U+2069 POP DIRECTIONAL ISOLATE. */}
         {t("client:admin.rules.heading", { place: String(place), rule: `\u2068${name}\u2069` })}
       </h3>
-      <DescriptionList>
-        {rule.texts.map((text) => (
-          <DescriptionItem key={text.locale} term={languageName(text.locale, displayLocale)}>
-            {/* Written by an administrator, in the language of its locale. */}
-            <span dir="auto" lang={text.locale} className="block wrap-anywhere">
-              {text.text}
-            </span>
-            {text.hint !== undefined && (
-              <span dir="auto" lang={text.locale} className="block text-fg-muted wrap-anywhere whitespace-pre-wrap">
-                {text.hint}
-              </span>
-            )}
-          </DescriptionItem>
-        ))}
-      </DescriptionList>
+      {rule.hint !== undefined && (
+        // Written by an administrator in a language the app does not know: lang="" rather than the app's (Y10).
+        <p dir="auto" lang="" className="text-fg-muted wrap-anywhere whitespace-pre-wrap">
+          {rule.hint}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         {/* The first rule cannot move up nor the last down: those buttons stay out rather than doing nothing. */}
         {place > 1 && (
@@ -189,7 +169,7 @@ function RuleRow({ rule, place, count, actions }: { rule: Rule; place: number; c
 
 type RuleActionProps = { rule: Rule; name: string; actions: RuleActions };
 
-/** The texts of a rule in a dialog; it closes once they are saved, and keeps a failure inside. */
+/** The text and the hint of a rule in a dialog; it closes once they are saved, and keeps a failure inside. */
 function EditRule({ rule, name, actions }: RuleActionProps) {
   const t = useT();
   return (
@@ -213,11 +193,12 @@ function EditRuleForm({ rule, actions, close }: { rule: Rule; actions: RuleActio
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        const texts = draft.texts();
-        if (texts === null || isSaving) return;
+        if (isSaving) return;
+        const input = draft.input();
+        if (input === null) return;
         setIsSaving(true);
         setFailed(false);
-        void actions.update(rule, texts).then((saved) => {
+        void actions.update(rule, input).then((saved) => {
           setIsSaving(false);
           if (saved) close();
           else setFailed(true);
@@ -226,11 +207,6 @@ function EditRuleForm({ rule, actions, close }: { rule: Rule; actions: RuleActio
       className="flex flex-col gap-4"
     >
       <RuleTextFields fields={draft.fields} autoFocus />
-      {draft.error !== undefined && (
-        <p role="alert" className="text-danger">
-          {draft.error}
-        </p>
-      )}
       {failed && actions.error !== undefined && (
         <p role="alert" className="text-danger">
           {t("client:admin.rules.change_failed", { reason: actions.error })}

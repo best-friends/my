@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The rules screen through the whole app (web-client.md T4): an administrator with manage_rules adds a rule in each
-// language, edits it in a dialog, moves rules up and down with the keyboard-reachable buttons (focus follows the
+// The rules screen through the whole app (web-client.md T4): an administrator with manage_rules adds a rule (one text
+// and an optional hint, written in any language), edits it in a dialog, moves rules up and down with the keyboard-reachable buttons (focus follows the
 // moved rule), and retires one after an alert dialog; a viewer without the permission sees why; with MSW playing
 // the API.
 import { screen, waitFor, within } from "@testing-library/react";
@@ -36,15 +36,15 @@ function rulesServer(initial: readonly Rule[]) {
     http.get(`${apiBase}/admin/rules`, () => HttpResponse.json({ items: rules })),
     http.post(`${apiBase}/admin/rules`, async ({ request }) => {
       await record(request);
-      const { texts } = (await request.json()) as Schemas["InstanceRuleInput"];
-      const rule = ruleFixture("0199f0e0-0000-7000-8000-0000000000f9", rules.length + 1, { texts });
+      const input = (await request.json()) as Schemas["InstanceRuleInput"];
+      const rule = ruleFixture("0199f0e0-0000-7000-8000-0000000000f9", rules.length + 1, input);
       rules = [...rules, rule];
       return HttpResponse.json(rule);
     }),
     http.patch(`${apiBase}/admin/rules/:id`, async ({ request, params }) => {
       await record(request);
-      const { texts } = (await request.json()) as Schemas["InstanceRuleInput"];
-      rules = rules.map((rule) => (rule.id === params["id"] ? { ...rule, texts } : rule));
+      const { text, hint } = (await request.json()) as Schemas["InstanceRuleInput"];
+      rules = rules.map((rule) => (rule.id === params["id"] ? { id: rule.id, position: rule.position, created_at: rule.created_at, revised_at: rule.revised_at, text, ...(hint === undefined ? {} : { hint }) } : rule));
       return HttpResponse.json(rules.find((rule) => rule.id === params["id"]));
     }),
     http.post(`${apiBase}/admin/rules/:id/move`, async ({ request, params }) => {
@@ -66,20 +66,15 @@ function rulesServer(initial: readonly Rule[]) {
   return { writes };
 }
 
-const first = ruleFixture("0199f0e0-0000-7000-8000-0000000000a1", 1, {
-  texts: [
-    { locale: "en", text: "Be kind", hint: "No harassment." },
-    { locale: "ja", text: "親切に" },
-  ],
-});
-const second = ruleFixture("0199f0e0-0000-7000-8000-0000000000a2", 2, { texts: [{ locale: "en", text: "No spam" }] });
+const first = ruleFixture("0199f0e0-0000-7000-8000-0000000000a1", 1, { text: "Be kind", hint: "No harassment." });
+const second = ruleFixture("0199f0e0-0000-7000-8000-0000000000a2", 2, { text: "No spam" });
 
 describe("the rules", () => {
   beforeEach(() => {
     server.use(signedInHandler, operatorHandler(["manage_rules"]));
   });
 
-  test("lists the rules in order with their texts in every language", async () => {
+  test("lists the rules in order with their hints", async () => {
     rulesServer([first, second]);
     await renderApp({ path: "/admin/rules" });
 
@@ -87,38 +82,28 @@ describe("the rules", () => {
     const list = screen.getByRole("region", { name: "Rules in effect" });
     const headings = within(list).getAllByRole("heading", { level: 3 });
     expect(headings.map((heading) => heading.textContent)).toEqual([`Rule 1: ${isolated("Be kind")}`, `Rule 2: ${isolated("No spam")}`]);
-    expect(within(list).getByText("親切に")).toHaveAttribute("lang", "ja");
-    expect(within(list).getByText("No harassment.")).toHaveAttribute("dir", "auto");
+    // The administrator's hint, in a language the app does not know.
+    const hint = within(list).getByText("No harassment.");
+    expect(hint).toHaveAttribute("dir", "auto");
+    expect(hint).toHaveAttribute("lang", "");
     // The first rule cannot move up nor the last down.
     expect(within(list).queryByRole("button", { name: "Move up: Be kind" })).not.toBeInTheDocument();
     expect(within(list).queryByRole("button", { name: "Move down: No spam" })).not.toBeInTheDocument();
   });
 
-  test("adds a rule in each language with a hint", async () => {
+  test("adds a rule with a hint, one field each", async () => {
     const rules = rulesServer([first]);
     const { user } = await renderApp({ path: "/admin/rules" });
     const form = await screen.findByRole("region", { name: "Add a rule" });
 
-    await user.type(within(form).getByRole("textbox", { name: "Rule in English" }), "Credit artists");
-    await user.type(within(form).getByRole("textbox", { name: "Hint in English" }), "Link the source.");
-    await user.type(within(form).getByRole("textbox", { name: "Rule in Japanese" }), "作者を明記する");
+    await user.type(within(form).getByRole("textbox", { name: "Rule" }), "作者を明記する");
+    await user.type(within(form).getByRole("textbox", { name: "Hint" }), "Link the source.");
     await user.click(within(form).getByRole("button", { name: "Add the rule" }));
 
     expect(await within(form).findByText("Added the rule after the others. The audit log records the change.")).toBeInTheDocument();
-    expect(rules.writes).toEqual([
-      {
-        method: "POST",
-        path: "/admin/rules",
-        body: {
-          texts: [
-            { locale: "en", text: "Credit artists", hint: "Link the source." },
-            { locale: "ja", text: "作者を明記する" },
-          ],
-        },
-      },
-    ]);
-    expect(within(screen.getByRole("region", { name: "Rules in effect" })).getByRole("heading", { name: `Rule 2: ${isolated("Credit artists")}` })).toBeInTheDocument();
-    expect(within(form).getByRole("textbox", { name: "Rule in English" })).toHaveValue("");
+    expect(rules.writes).toEqual([{ method: "POST", path: "/admin/rules", body: { text: "作者を明記する", hint: "Link the source." } }]);
+    expect(within(screen.getByRole("region", { name: "Rules in effect" })).getByRole("heading", { name: `Rule 2: ${isolated("作者を明記する")}` })).toBeInTheDocument();
+    expect(within(form).getByRole("textbox", { name: "Rule" })).toHaveValue("");
   });
 
   test("asks for a rule's text before sending it", async () => {
@@ -128,11 +113,11 @@ describe("the rules", () => {
     expect(screen.getByText("No rules yet")).toBeInTheDocument();
 
     await user.click(within(form).getByRole("button", { name: "Add the rule" }));
-    expect(await within(form).findByText("Enter the rule in at least one language.")).toHaveAttribute("role", "alert");
+    expect(await within(form).findByRole("textbox", { name: "Rule" })).toHaveAccessibleDescription(/Enter the rule\./);
 
-    await user.type(within(form).getByRole("textbox", { name: "Hint in English" }), "Only a hint");
+    await user.type(within(form).getByRole("textbox", { name: "Hint" }), "Only a hint");
     await user.click(within(form).getByRole("button", { name: "Add the rule" }));
-    expect(within(form).getByRole("textbox", { name: "Rule in English" })).toHaveAccessibleDescription(/Enter the rule, or empty its hint too\./);
+    expect(within(form).getByRole("textbox", { name: "Rule" })).toHaveAccessibleDescription(/Enter the rule\./);
     expect(rules.writes).toEqual([]);
   });
 
@@ -149,21 +134,21 @@ describe("the rules", () => {
     expect(rules.writes).toEqual([{ method: "POST", path: `/admin/rules/${first.id}/move`, body: { position: 2 } }]);
   });
 
-  test("edits a rule's texts in a dialog", async () => {
+  test("edits a rule's text in a dialog", async () => {
     const rules = rulesServer([first, second]);
     const { user } = await renderApp({ path: "/admin/rules" });
     await user.click(await screen.findByRole("button", { name: "Edit: No spam" }));
     const dialog = await screen.findByRole("dialog", { name: "Edit the rule" });
-    const english = within(dialog).getByRole("textbox", { name: "Rule in English" });
-    expect(english).toHaveValue("No spam");
+    const text = within(dialog).getByRole("textbox", { name: "Rule" });
+    expect(text).toHaveValue("No spam");
 
-    await user.clear(english);
-    await user.type(english, "No spam or ads");
+    await user.clear(text);
+    await user.type(text, "No spam or ads");
     await user.click(within(dialog).getByRole("button", { name: "Save" }));
 
     expect(await screen.findByText("Saved “No spam or ads”. The audit log records the change.")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(rules.writes).toEqual([{ method: "PATCH", path: `/admin/rules/${second.id}`, body: { texts: [{ locale: "en", text: "No spam or ads" }] } }]);
+    expect(rules.writes).toEqual([{ method: "PATCH", path: `/admin/rules/${second.id}`, body: { text: "No spam or ads" } }]);
   });
 
   test("retires a rule after asking", async () => {

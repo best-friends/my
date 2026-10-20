@@ -1,64 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The terms and policies screen (#489), for manage_settings: a language, and the terms of service and the
-// privacy policy in it, each a form of its own (an `h2` section) with a Markdown text area, what is saved, and
-// a link to its public page. Removing a saved text asks first (the APG alert dialog pattern, web-client.md G22).
-import { Button, ConfirmDialog, DescriptionItem, DescriptionList, ExternalLink, Select, SelectItem, StatusMessage, TextArea } from "@my/ui";
-import { useIntl } from "react-intl";
+// The terms and policies screen (#489), for manage_settings: the terms of service and the privacy policy, each a
+// form of its own (an `h2` section) with a Markdown text area, when it was saved, and a link to its public page. Each
+// is one text, written in any language, that every language shows. Removing a saved text asks first (the APG alert
+// dialog pattern, web-client.md G22).
+import { Button, ConfirmDialog, DescriptionItem, DescriptionList, ExternalLink, StatusMessage, TextArea } from "@my/ui";
 import { useT } from "../../../lib/i18n";
 import { useUnsavedChangesGuard } from "../../settings";
 import { documentTextLimit } from "../api/documents";
 import { type DocumentEditor, useDocumentSettings } from "../hooks/useDocumentSettings";
 import { DateTime, DetailSection, RequirePermission } from "../../moderation";
 
-export type DocumentSettingsProps = {
-  /** The language from the URL; undefined chooses the display language. */
-  locale: string | undefined;
-  /** Chooses another language: the route puts it into the URL. */
-  onLocaleChange: (locale: string) => void;
-};
-
-export function DocumentSettings(props: DocumentSettingsProps) {
+export function DocumentSettings() {
   return (
     <RequirePermission permission="manage_settings">
-      <DocumentSettingsForms {...props} />
+      <DocumentSettingsForms />
     </RequirePermission>
   );
 }
 
-function DocumentSettingsForms({ locale, onLocaleChange }: DocumentSettingsProps) {
+function DocumentSettingsForms() {
   const t = useT();
-  const settings = useDocumentSettings(locale);
+  const settings = useDocumentSettings();
   return (
     <div className="flex flex-col gap-8">
-      <Select
-        label={t("client:admin.documents.locale")}
-        description={t("client:admin.documents.locale.description")}
-        value={settings.locale}
-        onChange={(key) => {
-          if (typeof key === "string") onLocaleChange(key);
-        }}
-        items={settings.languages}
-      >
-        {(language) => (
-          <SelectItem id={language.id} textValue={language.name}>
-            {language.name}
-          </SelectItem>
-        )}
-      </Select>
       <DetailSection title={t("client:admin.documents.terms")}>
         <DocumentForm
           editor={settings.terms}
-          languageName={settings.languageName}
           viewLabel={t("client:admin.documents.view_terms")}
-          confirmTitle={t("client:admin.documents.confirm_remove.terms", { language: settings.languageName })}
+          confirmTitle={t("client:admin.documents.confirm_remove.terms")}
         />
       </DetailSection>
       <DetailSection title={t("client:admin.documents.privacy_policy")}>
         <DocumentForm
           editor={settings.privacyPolicy}
-          languageName={settings.languageName}
           viewLabel={t("client:admin.documents.view_privacy_policy")}
-          confirmTitle={t("client:admin.documents.confirm_remove.privacy_policy", { language: settings.languageName })}
+          confirmTitle={t("client:admin.documents.confirm_remove.privacy_policy")}
         />
       </DetailSection>
       <UnsavedChangesDialog hasChanges={settings.hasChanges} />
@@ -68,28 +44,22 @@ function DocumentSettingsForms({ locale, onLocaleChange }: DocumentSettingsProps
 
 type DocumentFormProps = {
   editor: DocumentEditor;
-  /** The name of the selected language. */
-  languageName: string;
   /** The name of the link to the document's public page. */
   viewLabel: string;
-  /** The question before removing the text in the selected language. */
+  /** The question before removing the text. */
   confirmTitle: string;
 };
 
-/** One document: what is saved, the text in the selected language, saving it, and its public page. */
-function DocumentForm({ editor, languageName, viewLabel, confirmTitle }: DocumentFormProps) {
+/** One document: when it was saved, its text, saving it, and its public page. */
+function DocumentForm({ editor, viewLabel, confirmTitle }: DocumentFormProps) {
   const t = useT();
-  const intl = useIntl();
   const formatRemaining = (remaining: number) =>
     remaining < 0 ? t("client:admin.documents.characters_over", { count: -remaining }) : t("client:admin.documents.characters_left", { count: remaining });
   const failed = editor.error === undefined ? undefined : t("client:admin.documents.save_failed", { reason: editor.error });
   return (
     <>
       <DescriptionList>
-        <DescriptionItem term={t("client:admin.documents.languages")}>
-          {editor.languages.length === 0 ? t("client:admin.documents.languages.none") : intl.formatList(editor.languages, { type: "conjunction" })}
-        </DescriptionItem>
-        <DescriptionItem term={t("client:admin.documents.saved_at", { language: languageName })}>
+        <DescriptionItem term={t("client:admin.documents.saved_at")}>
           {editor.savedAt === undefined ? t("client:admin.documents.saved_at.never") : <DateTime value={editor.savedAt} />}
         </DescriptionItem>
       </DescriptionList>
@@ -102,7 +72,7 @@ function DocumentForm({ editor, languageName, viewLabel, confirmTitle }: Documen
       )}
       <form onSubmit={editor.submit} className="flex flex-col gap-4">
         <TextArea
-          label={t("client:admin.documents.body", { language: languageName })}
+          label={t("client:admin.documents.body")}
           description={t("client:admin.documents.body.description")}
           value={editor.value}
           onChange={editor.change}

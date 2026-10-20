@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the rules screen (FR-705, manage_rules, web-client.md S1): the rules in effect in
-// every locale (GET /admin/rules), adding one, changing its texts, moving it among the others and retiring it.
-// GET /instance lists the rules in the reader's locale (the about page, the report form), and every change goes
-// to the audit log.
+// The queries and mutations of the rules screen (FR-705, manage_rules, web-client.md S1): the rules in effect (GET
+// /admin/rules), adding one, changing its text and hint, moving it among the others and retiring it. A rule's text
+// and hint hold one value each, which every locale shows. GET /instance lists the rules (the about page, the
+// report form), and every change goes to the audit log.
 import type { QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -12,9 +12,9 @@ import { refreshAuditLog } from "../../moderation";
 type Schemas = components["schemas"];
 
 export type Rule = Schemas["AdminRule"];
-export type RuleTextInput = Schemas["InstanceRuleTextInput"];
+export type RuleInput = Schemas["InstanceRuleInput"];
 
-/** The most characters of a rule's text and of its hint (InstanceRuleTextInput). */
+/** The most characters of a rule's text and of its hint (InstanceRuleInput). */
 export const ruleTextLimit = 300;
 export const ruleHintLimit = 1000;
 
@@ -27,8 +27,8 @@ export function rulesQueryOptions(api: Api) {
 export function createRuleMutation(api: Api) {
   return {
     mutationKey: ["post", "/admin/rules"] as const,
-    mutationFn: async (texts: RuleTextInput[]): Promise<Rule> => {
-      const { data, error } = await api.fetch.POST("/admin/rules", { body: { texts } });
+    mutationFn: async (input: RuleInput): Promise<Rule> => {
+      const { data, error } = await api.fetch.POST("/admin/rules", { body: input });
       // The middleware throws an ApiError for every error status; this narrows the type.
       if (data === undefined) throw new ApiError(error);
       return data;
@@ -36,12 +36,12 @@ export function createRuleMutation(api: Api) {
   };
 }
 
-/** Replaces the texts of a rule (PATCH /admin/rules/{id}), as the options of useMutation. */
+/** Replaces the text and the hint of a rule (PATCH /admin/rules/{id}), as the options of useMutation. */
 export function updateRuleMutation(api: Api) {
   return {
     mutationKey: ["patch", "/admin/rules/{id}"] as const,
-    mutationFn: async ({ id, texts }: { id: string; texts: RuleTextInput[] }): Promise<Rule> => {
-      const { data, error } = await api.fetch.PATCH("/admin/rules/{id}", { params: { path: { id } }, body: { texts } });
+    mutationFn: async ({ id, input }: { id: string; input: RuleInput }): Promise<Rule> => {
+      const { data, error } = await api.fetch.PATCH("/admin/rules/{id}", { params: { path: { id } }, body: input });
       // The middleware throws an ApiError for every error status; this narrows the type.
       if (data === undefined) throw new ApiError(error);
       return data;

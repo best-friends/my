@@ -10,7 +10,8 @@ import (
 	"unicode/utf8"
 )
 
-// TextKey names a localized instance text (data-model §4.9, instance_text_revisions.key).
+// TextKey names an instance text (data-model §4.9, instance_text_revisions.key). A text holds
+// one value, written by an administrator in any language and shown as it is in every locale.
 type TextKey string
 
 // Text keys. Adding one means adding its definition below and its value to the CHECK
@@ -61,9 +62,8 @@ func LookupText(key TextKey) (TextDefinition, error) {
 	return TextDefinition{}, fmt.Errorf("text %q: %w", key, ErrUnknownKey)
 }
 
-// Validate checks body against d. An empty body is valid: it clears the text in its locale,
-// so lookups fall back to the next locale of the chain. A SingleLine text of only spaces is
-// not: it would name the instance with nothing visible (TextName).
+// Validate checks body against d. An empty body is valid: it clears the text. A SingleLine
+// text of only spaces is not: it would name the instance with nothing visible (TextName).
 func (d TextDefinition) Validate(body string) error {
 	invalid := func(why string) error { return fmt.Errorf("text %s: %s: %w", d.Key, why, ErrInvalidValue) }
 	switch {
@@ -81,59 +81,33 @@ func (d TextDefinition) Validate(body string) error {
 	return nil
 }
 
-// ValidateLocale checks the shape of a canonical BCP 47 tag used as a text's locale.
-func ValidateLocale(locale string) error {
-	if !wellFormedTag(locale) {
-		return fmt.Errorf("locale %q is not a BCP 47 language tag: %w", locale, ErrInvalidValue)
-	}
-	return nil
-}
-
-// TextRevision is one version of a text in one locale (instance_text_revisions). The
-// revision with the greatest ID is the current text of its key and locale; an empty Body
-// means the text is cleared in that locale.
+// TextRevision is one version of a text (instance_text_revisions). The revision with the
+// greatest ID is the current text of its key; an empty Body means the text is cleared.
 type TextRevision struct {
-	ID     string
-	Key    TextKey
-	Locale string
-	Body   string
+	ID   string
+	Key  TextKey
+	Body string
 	// RevisedByUserID is the user who made the change, or "" for a change from the CLI.
 	RevisedByUserID string
 	RevisedAt       time.Time
 }
 
-// CurrentText points at the current revision of a text in one locale (the instance_texts
-// projection).
+// CurrentText points at the current revision of a text (the instance_texts projection).
 type CurrentText struct {
 	Key        TextKey
-	Locale     string
 	RevisionID string
 }
 
 // Supersedes reports whether r should replace the current text c, which is the zero value
-// when the key has no text in r's locale yet.
+// when the key has no text yet.
 func (r TextRevision) Supersedes(c CurrentText) bool {
 	return c.RevisionID == "" || r.ID > c.RevisionID
 }
 
-// Text is the current, non-empty text of a key in one locale.
+// Text is the current text of a key.
 type Text struct {
 	Key        TextKey
-	Locale     string
 	Body       string
 	RevisionID string
 	RevisedAt  time.Time
-}
-
-// PickText returns the text whose locale comes first in chain, among texts of one key.
-// It reports false when no text matches a locale of the chain.
-func PickText(texts []Text, chain []string) (Text, bool) {
-	for _, l := range chain {
-		for _, t := range texts {
-			if t.Locale == l && t.Body != "" {
-				return t, true
-			}
-		}
-	}
-	return Text{}, false
 }

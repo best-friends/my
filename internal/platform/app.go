@@ -653,7 +653,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	ap := activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
-		InstanceName: func(ctx context.Context) string { return a.instanceName(ctx, "") },
+		InstanceName: a.instanceName,
 		Metadata:     a.nodeMetadata,
 		// Sign-ups that wait for a moderator's approval are open, as Mastodon reports them.
 		OpenRegistrations: func(ctx context.Context) (bool, error) {
@@ -676,8 +676,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Identity: a.Identity, OAuth: a.Identity, Issuer: cfg.ServerOrigin(), FormActionOrigins: []string{cfg.WebOrigin},
 		Locales: a.Locales, Stylesheet: a.webStylesheet, Logger: a.Logger,
 		Moderation: a.Moderation, UserLocales: a.Identity, Documents: a.Instance,
-		InstanceName: func(ctx context.Context, locale string) string {
-			if name := a.instanceName(ctx, locale); name != "" {
+		InstanceName: func(ctx context.Context) string {
+			if name := a.instanceName(ctx); name != "" {
 				return name
 			}
 			return cfg.Host
@@ -995,11 +995,10 @@ func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, e
 	return p.DefaultPostLanguage, nil
 }
 
-// previewImage returns the instance's link preview image (the preview_image setting) for a
-// preview in language lang, or nil when it is unset or its media file is not a processed
+// previewImage returns the instance's link preview image (the preview_image setting), or nil when it is unset or its media file is not a processed
 // image, which leaves the web client's built-in image.
-func (a *App) previewImage(ctx context.Context, lang string) (*web.Image, error) {
-	setting, err := a.Instance.PreviewImage(ctx, lang)
+func (a *App) previewImage(ctx context.Context) (*web.Image, error) {
+	setting, err := a.Instance.PreviewImage(ctx)
 	if err != nil || setting.MediaID == "" {
 		return nil, err
 	}

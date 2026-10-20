@@ -2324,7 +2324,7 @@ export interface paths {
         };
         /**
          * List the instance rules
-         * @description Every rule in every locale (FR-705): the rules in effect by position, followed, when
+         * @description Every rule (FR-705): the rules in effect by position, followed, when
          *     `include_retired` is set, by the retired ones. The list is not paginated; at most 100
          *     rules are in effect. Needs the `manage_rules` permission.
          */
@@ -2333,10 +2333,9 @@ export interface paths {
         /**
          * Add an instance rule
          * @description Adds a rule after the rules in effect. A text that is blank, longer than 300
-         *     characters, or on more than one line, a hint longer than 1,000 characters, a locale
-         *     that is not a BCP 47 tag or appears twice (after canonicalization: `ja_jp` is `ja-JP`),
-         *     no texts, or more than 50 is a 422 naming the property (`texts[0].text`). With 100
-         *     rules in effect it is a 422 naming `rules`. Needs the `manage_rules` permission.
+         *     characters, or on more than one line, or a hint longer than 1,000 characters, is a 422
+         *     naming the property (`text`, `hint`). With 100 rules in effect it is a 422 naming
+         *     `rules`. Needs the `manage_rules` permission.
          */
         post: operations["createInstanceRule"];
         delete?: never;
@@ -2364,9 +2363,9 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Revise the texts of an instance rule
-         * @description Records a revision whose texts replace every text of the rule; the rule keeps its ID
-         *     and position. The texts are checked as for a new rule (422). A retired rule is a 409
+         * Revise the text of an instance rule
+         * @description Records a revision whose text and hint replace those of the rule; the rule keeps its ID
+         *     and position. They are checked as for a new rule (422). A retired rule is a 409
          *     and an unknown ID a 404. Needs the `manage_rules` permission.
          */
         patch: operations["updateInstanceRule"];
@@ -2697,10 +2696,10 @@ export interface paths {
         };
         /**
          * List the instance texts
-         * @description The current text of every key in every locale that has one (FR-705): the name, the
-         *     descriptions, the terms of service, the privacy policy, and the alternative text of the
-         *     preview image, by key and locale. Cleared texts are not listed. The list is not
-         *     paginated. Needs the `manage_settings` permission.
+         * @description The current text of every key that has one (FR-705): the name, the descriptions, the
+         *     terms of service, the privacy policy, and the alternative texts of the preview image and
+         *     the thumbnail, by key. Each holds one value, shown as it is in every locale. Cleared
+         *     texts are not listed. The list is not paginated. Needs the `manage_settings` permission.
          */
         get: operations["listInstanceTexts"];
         put?: never;
@@ -2711,7 +2710,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/instance_texts/{key}/{locale}": {
+    "/admin/instance_texts/{key}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2720,19 +2719,17 @@ export interface paths {
         };
         get?: never;
         /**
-         * Set an instance text in one locale
-         * @description Records a revision of the text of `key` in `locale`, which becomes its current text; an
-         *     empty `body` clears the text in that locale, so that readers get the next locale of
-         *     their fallback chain. The revision and the change are kept (`instance_text_revisions`,
-         *     the audit log's `text_changed`). The locale is canonicalized (`ja_jp` is `ja-JP`).
-         *     The terms of service and the privacy policy are Markdown, which the server renders and
+         * Set an instance text
+         * @description Records a revision of the text of `key`, which becomes its current text in every locale:
+         *     the administrator writes it once, in any language, and readers of every locale see the
+         *     same value. An empty `body` clears the text. The revision and the change are kept
+         *     (`instance_text_revisions`, the audit log's `text_changed`). The terms of service and the privacy policy are Markdown, which the server renders and
          *     sanitizes on their public pages (`Instance.terms_url`, `Instance.privacy_policy_url`);
          *     the other texts are plain text. The display name (`name`) names the instance to people
          *     in place of its domain: the web client's navigation and tab title, the server-rendered
          *     pages, emails, link previews, the Web App Manifest, and NodeInfo's `metadata.nodeName`;
-         *     where no locale of the chain has a name, the domain names it, and handles and URLs always
-         *     use the domain. An unknown key is a 404. A locale that is not a BCP 47
-         *     tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
+         *     without a name, the domain names it, and handles and URLs always use the domain. An
+         *     unknown key is a 404. A body longer than the key allows (100 characters for
          *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt` and `thumbnail_alt`, 20,000 for
          *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
          *     or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
@@ -3886,19 +3883,18 @@ export interface components {
              *     `putPushSubscription`. Omitted when the instance sends no Web Push.
              */
             push_server_key?: string;
-            /** @description The rules in effect, in order, each in the locale of the request. */
+            /** @description The rules in effect, in order. */
             rules: components["schemas"]["InstanceRule"][];
             /**
              * Format: uri
              * @description The public page of the instance's terms of service, which needs no sign-in; omitted
-             *     when no locale of the request's fallback chain has them, so that clients do not
-             *     link to it.
+             *     when the instance has none, so that clients do not link to it.
              */
             terms_url?: string;
             /**
              * Format: uri
              * @description The public page of the instance's privacy policy, which needs no sign-in; omitted
-             *     when no locale of the request's fallback chain has it.
+             *     when the instance has none.
              */
             privacy_policy_url?: string;
             theme?: components["schemas"]["InstanceTheme"];
@@ -3929,10 +3925,7 @@ export interface components {
             url: string;
             width: number;
             height: number;
-            /**
-             * @description The alt text (the instance text `thumbnail_alt`) in the locale of the request;
-             *     omitted when no locale of the request's fallback chain has one.
-             */
+            /** @description The alt text (the instance text `thumbnail_alt`); omitted when there is none. */
             alt?: string;
         };
         /**
@@ -3982,9 +3975,8 @@ export interface components {
             federated: boolean;
         };
         /**
-         * @description A rule of the instance (FR-705), in the first locale of the request's fallback chain
-         *     that the rule has (the request's locale and its parents, the instance's default locale
-         *     and its parents, then `en`), or else in its first locale. Reports cite it by `id`.
+         * @description A rule of the instance (FR-705). Its text and hint hold one value each, written in any
+         *     language and the same in every locale. Reports cite it by `id`.
          */
         InstanceRule: {
             id: components["schemas"]["Id"];
@@ -3992,8 +3984,6 @@ export interface components {
             text: string;
             /** @description An explanation of the rule, as plain text; omitted when there is none. */
             hint?: string;
-            /** @description The BCP 47 tag of the locale of `text` and `hint`, for the `lang` attribute. */
-            lang: string;
         };
         /** @description A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718). */
         InstanceDomainAction: {
@@ -5490,7 +5480,7 @@ export interface components {
          *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
          *     `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
-         *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
+         *     (an instance setting), `text_changed` (an instance text). On a `rule`:
          *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
          *     `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
          *     `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
@@ -5876,8 +5866,8 @@ export interface components {
          */
         Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
         /**
-         * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
-         *     across revisions, so reports keep citing it.
+         * @description A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
+         *     citing it.
          */
         AdminRule: {
             id: components["schemas"]["Id"];
@@ -5886,8 +5876,10 @@ export interface components {
              *     leaves a gap until the next move.
              */
             position: number;
-            /** @description The texts by locale. */
-            texts: components["schemas"]["AdminRuleText"][];
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted when there is none. */
+            hint?: string;
             /** Format: date-time */
             created_at: string;
             /**
@@ -5905,24 +5897,11 @@ export interface components {
         AdminRuleList: {
             items: components["schemas"]["AdminRule"][];
         };
-        /** @description The text of a rule in one locale. */
-        AdminRuleText: {
-            /** @description The BCP 47 tag of the locale, canonical (`ja-JP`). */
-            locale: string;
-            /** @description The rule, on one line, as plain text. */
-            text: string;
-            /** @description An explanation of the rule, as plain text; omitted when there is none. */
-            hint?: string;
-        };
-        /** @description The texts of a rule. */
+        /**
+         * @description The text and the hint of a rule, written once in any language and shown as they are in
+         *     every locale; they replace the earlier ones.
+         */
         InstanceRuleInput: {
-            /** @description The rule in each locale, at least one; they replace every earlier text. */
-            texts: components["schemas"]["InstanceRuleTextInput"][];
-        };
-        /** @description The text of a rule in one locale. */
-        InstanceRuleTextInput: {
-            /** @description A BCP 47 tag; it is canonicalized (`ja_jp` becomes `ja-JP`). */
-            locale: string;
             /** @description The rule, on one line, as plain text. */
             text: string;
             /** @description An explanation of the rule, as plain text; omitted or empty for none. */
@@ -6535,11 +6514,9 @@ export interface components {
         ThemeProblem: components["schemas"]["Problem"] & {
             theme_errors?: components["schemas"]["ThemeError"][];
         };
-        /** @description The current text of a key in one locale. */
+        /** @description The current text of a key, the same in every locale. */
         AdminInstanceText: {
             key: components["schemas"]["InstanceTextKey"];
-            /** @description The BCP 47 tag of the locale, canonical (`ja-JP`). */
-            locale: string;
             /**
              * @description The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
              *     Empty only in the answer to clearing it.
@@ -6551,20 +6528,20 @@ export interface components {
              */
             revised_at: string;
         };
-        /** @description The current instance texts, by key and locale. */
+        /** @description The current instance texts, by key. */
         AdminInstanceTextList: {
             items: components["schemas"]["AdminInstanceText"][];
         };
         /**
          * @description The key of an instance text: the name (one line), the short and full descriptions,
-         *     the terms of service and the privacy policy (Markdown), and the alternative text of the
-         *     preview image.
+         *     the terms of service and the privacy policy (Markdown), and the alternative texts of the
+         *     preview image and the thumbnail.
          * @enum {string}
          */
         InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt";
-        /** @description A new revision of an instance text in one locale. */
+        /** @description A new revision of an instance text. */
         SetInstanceTextRequest: {
-            /** @description The text; empty clears it in the locale. */
+            /** @description The text, in any language; empty clears it. */
             body: string;
         };
         /** @description What awaits the moderators; a count whose permission the user lacks is omitted. */
@@ -7464,8 +7441,6 @@ export interface components {
         RelayId: components["schemas"]["Id"];
         /** @description The key of the text. */
         InstanceTextKey: components["schemas"]["InstanceTextKey"];
-        /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
-        InstanceTextLocale: string;
         /** @description The key of the role, such as `moderator`. */
         RoleKey: string;
         /** @description The ID of the user who signed up. */
@@ -7494,10 +7469,10 @@ export interface operations {
         requestBody?: never;
         responses: {
             /**
-             * @description The instance. Its texts are in the locale of the request (the user's locale,
-             *     then `Accept-Language`, then the instance's default locale), falling back along
-             *     the locale chain to the instance's default locale. Like every response of the
-             *     API, it varies with `Accept-Language`.
+             * @description The instance. The texts that its administrators write (the name, the descriptions,
+             *     the rules, the alternative text of the thumbnail) hold one value each, which is the
+             *     same in every locale. Like every response of the API, it varies with
+             *     `Accept-Language`.
              */
             200: {
                 headers: {
@@ -10485,8 +10460,6 @@ export interface operations {
             path: {
                 /** @description The key of the text. */
                 key: components["parameters"]["InstanceTextKey"];
-                /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
-                locale: components["parameters"]["InstanceTextLocale"];
             };
             cookie?: never;
         };
