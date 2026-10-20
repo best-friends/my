@@ -105,11 +105,12 @@ func TestRelayDocuments(t *testing.T) {
 		return m
 	}
 	f := doc(federation.RelayFollowDocument("https://my.example/ap/activities/1", instance, mastodon, at))
-	if f["type"] != "Follow" || f["object"] != string(federation.PublicIRI) || f["actor"] != instance {
-		t.Errorf("Mastodon Follow = %v, want a Follow of Public", f)
+	if f["type"] != "Follow" || f["object"] != string(federation.PublicIRI) || f["actor"] != instance || len(f["to"].([]any)) != 0 {
+		t.Errorf("Mastodon Follow = %v, want a Follow of Public addressed to no one", f)
 	}
-	if f := doc(federation.RelayFollowDocument("https://my.example/ap/activities/1", instance, lite, at)); f["object"] != "https://relay.example/actor" {
-		t.Errorf("LitePub Follow = %v, want a Follow of the relay actor", f)
+	if f := doc(federation.RelayFollowDocument("https://my.example/ap/activities/1", instance, lite, at)); f["object"] != "https://relay.example/actor" ||
+		len(f["to"].([]any)) != 1 || f["to"].([]any)[0] != "https://relay.example/actor" {
+		t.Errorf("LitePub Follow = %v, want a Follow of the relay actor addressed to it", f)
 	}
 	u := doc(federation.RelayUndoDocument("https://my.example/ap/activities/2", "https://my.example/ap/activities/1", instance, mastodon, time.Time{}, at))
 	inner, _ := u["object"].(map[string]any)

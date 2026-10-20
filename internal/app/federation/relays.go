@@ -663,9 +663,15 @@ func (r *Relays) isRelayActor(ctx context.Context, rl federation.Relay, in *Inbo
 	return federation.IRI(inbox.InboxURL) == rl.InboxURL || federation.IRI(inbox.SharedInboxURL) == rl.InboxURL, nil
 }
 
+// errRelayAnswerPending reports the Follow of a LitePub relay's actor that arrived before the
+// relay's Accept of the instance's Follow: the relay sends both at once, so the Follow is
+// processed again (Retry) until the Accept is.
+var errRelayAnswerPending = errors.New("federation: the relay's Follow came before its Accept")
+
 // ReceiveFollow answers a Follow of the instance actor: the actor of an accepted relay gets an
 // Accept (a LitePub relay follows back the instances it accepts), anyone else a Reject. Neither
-// is recorded as a follow.
+// is recorded as a follow. The Follow of the actor of a pending LitePub relay waits for the
+// relay's Accept.
 func (r *Relays) ReceiveFollow(ctx context.Context, in *InboxActivity, instance appaccount.Actor) error {
 	t, objectID := federation.ActivityReject, in.Actor.Account.ID
 	rec, err := r.d.Repository.FindAcceptedRelayByActor(ctx, in.Activity.Actor)
@@ -674,6 +680,16 @@ func (r *Relays) ReceiveFollow(ctx context.Context, in *InboxActivity, instance 
 		t, objectID = federation.ActivityAccept, rec.Relay.ID
 	case !errors.Is(err, ErrNotFound):
 		return err
+	default:
+		all, err := r.d.Repository.ListRelays(ctx)
+		if err != nil {
+			return err
+		}
+		for _, rec := range all {
+			if rec.Relay.Protocol == federation.RelayLitePub && rec.Relay.URL == in.Activity.Actor && rec.Status.State == federation.RelayPending {
+				return fmt.Errorf("%w: relay %s", errRelayAnswerPending, rec.Relay.ID)
+			}
+		}
 	}
 	inbox, err := r.d.Inboxes.RemoteInbox(ctx, in.Actor.Account.ID)
 	if errors.Is(err, appaccount.ErrNotFound) {

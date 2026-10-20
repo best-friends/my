@@ -240,11 +240,16 @@ func RelayFollowObject(r Relay) IRI {
 }
 
 // RelayFollowDocument returns the Follow of the instance actor that joins relay r, with the id
-// follow. A Mastodon-style relay is addressed by nothing but the Public collection it follows;
-// a LitePub one by its actor.
+// follow. The Follow of a Mastodon-style relay is addressed to no one, as Mastodon sends it:
+// Activity-Relay takes an activity addressed to the Public collection for one to relay, and
+// ignores a Follow among them. The Follow of a LitePub relay is addressed to its actor.
 func RelayFollowDocument(follow, instanceActor IRI, r Relay, at time.Time) ActivityDocument {
 	object := RelayFollowObject(r)
-	return NewActivityDocument(follow, ActivityFollow, instanceActor, at, Audience{To: []IRI{object}}, object)
+	var aud Audience
+	if r.Protocol == RelayLitePub {
+		aud.To = []IRI{object}
+	}
+	return NewActivityDocument(follow, ActivityFollow, instanceActor, at, aud, object)
 }
 
 // RelayUndoDocument returns the Undo of the instance actor with the id undo that leaves relay r,
