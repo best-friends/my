@@ -3198,6 +3198,8 @@ export interface MessageArgs {
   "client:timeline.new_posts": { count: number };
   /** Could not load the new posts: {reason} */
   "client:timeline.new_posts.failed": { reason: string };
+  /** You are offline. These are the posts as of {time}. */
+  "client:timeline.offline.home": { time: string };
   /** Try again */
   "client:timeline.retry": {};
   /** Sign in */

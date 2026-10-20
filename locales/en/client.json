@@ -5983,6 +5983,10 @@
     "defaultMessage": "Could not load the new posts: {reason}",
     "description": "Message read out when pressing the new posts button failed to load them. {reason} is the error message, a full sentence."
   },
+  "timeline.offline.home": {
+    "defaultMessage": "You are offline. These are the posts as of {time}.",
+    "description": "Notice above the home timeline while the device is offline or the server cannot be reached: the posts shown are the ones loaded last, kept on this device. {time} is the date and time they were loaded, already formatted."
+  },
   "timeline.retry": {
     "defaultMessage": "Try again",
     "description": "Button at the end of a timeline that tries again to load older posts after a failure."

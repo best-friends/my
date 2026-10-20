@@ -6,8 +6,10 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { instanceFixture } from "./test/fixtures";
-import { resumableSession } from "./test/msw/http";
+import { timelineQueryOptions } from "./features/timeline";
+import { homeTimelineKey } from "./lib/storage";
+import { instanceFixture, statusPage, timelineStatusFixture } from "./test/fixtures";
+import { apiBase, resumableSession, withViewer } from "./test/msw/http";
 import { server } from "./test/msw/server";
 import { renderApp } from "./test/render";
 
@@ -18,17 +20,17 @@ let offline = false;
 /** Whether the server is out of reach while the browser still says it is online. */
 let unreachable = false;
 
+/** Offline, no request gets a response. `server.use()` puts it before the handlers already in use. */
+const noResponseOffline = http.all("*", () => {
+  if (offline || unreachable) return HttpResponse.error();
+  return undefined;
+});
+
 beforeEach(() => {
   offline = false;
   unreachable = false;
   vi.spyOn(navigator, "onLine", "get").mockImplementation(() => !offline);
-  // Before every other handler: offline, no request gets a response.
-  server.use(
-    http.all("*", () => {
-      if (offline || unreachable) return HttpResponse.error();
-      return undefined;
-    }),
-  );
+  server.use(noResponseOffline);
 });
 
 afterEach(() => {
@@ -171,5 +173,135 @@ describe("offline", () => {
     expect(within(navigation).getByRole("link", { name: "Local" })).toBeInTheDocument();
     // The instance fixture serves both; the navigation does not guess.
     expect(instanceFixture.timelines.federated).toBe(true);
+  });
+});
+
+describe("the home timeline offline (FR-604)", () => {
+  const savedNotice = /^You are offline\. These are the posts as of .+\.$/;
+  const newer = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b1", content: "<p>A newer post</p>" };
+
+  /** Asserts the posts of the home feed by their text, newest first. */
+  async function expectHomePosts(...texts: string[]) {
+    const feed = await screen.findByRole("feed", { name: "Home" });
+    const articles = within(feed).getAllByRole("article");
+    expect(articles).toHaveLength(texts.length);
+    texts.forEach((text, i) => {
+      expect(articles[i]).toHaveTextContent(text);
+    });
+  }
+
+  test("a reload offline shows the posts loaded last, says so, and loads the timeline back online", async () => {
+    server.use(resumableSession());
+    const view = await renderApp({ path: "/home" });
+    await expectHomePosts("Hello from the local timeline!");
+    expect(homeTimelineKey.read()?.items.map((item) => item["id"])).toEqual([timelineStatusFixture.id]);
+    view.unmount();
+
+    // A reload offline: the session cannot be resumed, and the timeline cannot be fetched.
+    offline = true;
+    server.use(http.get(`${apiBase}/timelines/home`, ({ request }) => withViewer(request, () => HttpResponse.json(statusPage([newer, timelineStatusFixture])))));
+    // Before the session's and the timeline's handlers.
+    server.use(noResponseOffline);
+    await renderApp({ path: "/home" });
+    await expectHomePosts("Hello from the local timeline!");
+    expect(screen.getByText(savedNotice)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+    expectOfflineBar(true);
+
+    // Back online, the session resumes and the timeline loads from the server.
+    goOnline();
+    await waitFor(() => {
+      expect(screen.queryByText(savedNotice)).not.toBeInTheDocument();
+    });
+    await waitFor(async () => {
+      await expectHomePosts("A newer post", "Hello from the local timeline!");
+    });
+  });
+
+  test("never keeps followers-only or direct posts, nor boosts of them, nor a post edited into one", async () => {
+    const followers = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b2", content: "<p>For followers</p>", visibility: "private" as const };
+    const direct = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b3", content: "<p>Direct</p>", visibility: "direct" as const };
+    const boostOfFollowers = { ...timelineStatusFixture, id: "0192f0c4-7a8e-7000-8000-0000000000b4", content: "", boost: followers };
+    server.use(
+      resumableSession(),
+      http.get(`${apiBase}/timelines/home`, ({ request }) =>
+        withViewer(request, () => HttpResponse.json(statusPage([newer, followers, direct, boostOfFollowers, timelineStatusFixture]))),
+      ),
+    );
+    const view = await renderApp({ path: "/home" });
+    const feed = await screen.findByRole("feed", { name: "Home" });
+    expect(within(feed).getAllByRole("article")).toHaveLength(5);
+    expect(homeTimelineKey.read()?.items.map((item) => item["id"])).toEqual([newer.id, timelineStatusFixture.id]);
+
+    // An edit narrows a post's audience: the cached post is rewritten, and the kept timeline loses it.
+    act(() => {
+      view.queryClient.setQueryData(timelineQueryOptions(view.api, { kind: "home" }).queryKey, (data) =>
+        data === undefined
+          ? data
+          : { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.map((item) => (item.id === newer.id ? { ...item, visibility: "private" as const } : item)) })) },
+      );
+    });
+    expect(homeTimelineKey.read()?.items.map((item) => item["id"])).toEqual([timelineStatusFixture.id]);
+    view.unmount();
+
+    // A reload offline shows what was kept.
+    offline = true;
+    server.use(noResponseOffline);
+    await renderApp({ path: "/home" });
+    await expectHomePosts("Hello from the local timeline!");
+  });
+
+  test("the signed-in timeline says that it shows the posts loaded last while offline", async () => {
+    server.use(resumableSession());
+    await renderApp({ path: "/home" });
+    await screen.findByRole("feed", { name: "Home" });
+    expect(screen.queryByText(savedNotice)).not.toBeInTheDocument();
+
+    goOffline();
+    expect(screen.getByText(savedNotice)).toBeInTheDocument();
+
+    goOnline();
+    expect(screen.queryByText(savedNotice)).not.toBeInTheDocument();
+  });
+
+  test("opened offline when the posts are no longer cached, it shows the ones kept on the browser", async () => {
+    server.use(resumableSession());
+    const { router, queryClient } = await renderApp({ path: "/home" });
+    await screen.findByRole("feed", { name: "Home" });
+    await act(() => router.navigate({ href: "/local" }));
+    await screen.findByRole("feed", { name: "Local timeline" });
+
+    goOffline();
+    act(() => {
+      queryClient.removeQueries({ queryKey: ["get", "/timelines/home"] });
+    });
+    await act(() => router.navigate({ href: "/home" }));
+    await expectHomePosts("Hello from the local timeline!");
+    expect(screen.getByText(savedNotice)).toBeInTheDocument();
+  });
+
+  test("a reload offline without kept posts offers to sign in", async () => {
+    offline = true;
+    await renderApp({ path: "/home" });
+    expect(await screen.findByRole("link", { name: "Sign in" })).toBeInTheDocument();
+    expect(screen.queryByRole("feed", { name: "Home" })).not.toBeInTheDocument();
+  });
+
+  test("the kept posts go when the session ends, and when the server says that there is no session", async () => {
+    server.use(resumableSession());
+    const view = await renderApp({ path: "/home" });
+    await screen.findByRole("feed", { name: "Home" });
+    expect(homeTimelineKey.read()).not.toBeNull();
+
+    await act(() => view.session.signOut());
+    expect(homeTimelineKey.read()).toBeNull();
+    view.unmount();
+
+    // Kept by a session that has expired since: the server answers that there is none.
+    homeTimelineKey.write({ loadedAt: Date.now(), items: [timelineStatusFixture], nextCursor: null });
+    server.resetHandlers();
+    await renderApp({ path: "/home" });
+    expect(await screen.findByRole("link", { name: "Sign in" })).toBeInTheDocument();
+    expect(homeTimelineKey.read()).toBeNull();
   });
 });

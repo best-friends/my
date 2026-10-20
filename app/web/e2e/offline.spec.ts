@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Going offline and back in every width × locale project (web-client.md G17, ADR-0027): the app's one offline bar
 // comes and goes as a polite live region, a page opened offline says why it cannot load instead of loading
-// forever, and back online it loads by itself. `vite preview` has no API, so the spec answers GET /instance and
+// forever, and back online it loads by itself; the home timeline says offline that it shows the posts loaded last
+// (FR-604). `vite preview` has no API, so the spec answers GET /instance and
 // the timelines with `page.route`. `context.setOffline` takes the network away; a route still answers then, so the
 // spec's routes fail their requests while offline, as the network would.
 // Texts come from the project's catalog, so the spec finds the same elements in every locale.
@@ -154,4 +155,42 @@ test("a page opened offline says why it cannot load, and loads back online", asy
   await setOffline(context, false);
   await expect(offlineBar(page)).toHaveCount(0);
   await expect(page.getByRole("feed").getByRole("article")).toHaveCount(1);
+});
+
+test("the home timeline says that it shows the posts loaded last while offline (FR-604)", async ({ page, context, makeAxeBuilder }) => {
+  // A signed-in session. Registered after serveApi's routes, so Playwright asks this one first; it leaves the
+  // instance and the public timelines to them.
+  const json = (route: Route, body: unknown, status = 200) =>
+    offline
+      ? route.abort("internetdisconnected")
+      : route.fulfill({ status, contentType: status < 400 ? "application/json" : "application/problem+json", body: JSON.stringify(body) });
+  await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow" }));
+  await page.route("**/api/v1/**", (route) => {
+    const path = new URL(route.request().url()).pathname.replace(/^\/api\/v1/, "");
+    if (path === "/instance" || path.startsWith("/timelines/local") || path.startsWith("/timelines/public")) return route.fallback();
+    if (path.startsWith("/timelines/home")) return json(route, { items: [post] } satisfies StatusPage);
+    if (path === "/accounts/verify_credentials") return json(route, { ...bob, source: { note: "", fields: [] }, permissions: [] });
+    if (path === "/preferences") {
+      const locale = test.info().project.use.locale ?? "en";
+      return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "en", require_media_description: false, timeline_languages: [] });
+    }
+    return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
+  });
+  await page.goto("/home");
+  const feed = page.getByRole("feed");
+  await expect(feed.getByRole("article")).toHaveCount(1);
+  // The notice's text before the time it was loaded, in the project's locale.
+  const notice = page.getByRole("main").getByText(message("timeline.offline.home").split("{time}")[0]?.trim() ?? "", { exact: false });
+  await expect(notice).toHaveCount(0);
+
+  await setOffline(context, true);
+  await expect(offlineBar(page)).toBeVisible();
+  await expect(notice).toBeVisible();
+  await expect(feed.getByRole("article")).toHaveCount(1);
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+
+  await setOffline(context, false);
+  await expect(notice).toHaveCount(0);
+  await expect(feed.getByRole("article")).toHaveCount(1);
 });
