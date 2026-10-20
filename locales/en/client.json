@@ -5139,6 +5139,54 @@
     "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
     "description": "Counter under a text field when the text is longer than allowed. {count} is how many characters are over."
   },
+  "compose.poll.toggle": {
+    "defaultMessage": "Add a poll",
+    "description": "Toggle button (an icon) that adds a poll to the new post, or removes it. A post with a poll attaches no files."
+  },
+  "compose.poll.legend": {
+    "defaultMessage": "Poll",
+    "description": "Name of the group of fields of the poll of the new post: its options, how long it lasts, and its settings."
+  },
+  "compose.poll.option": {
+    "defaultMessage": "Option {number}",
+    "description": "Label of a text field of the poll of the new post: one option the readers can vote for. {number} is its position, from 1."
+  },
+  "compose.poll.option.remove": {
+    "defaultMessage": "Remove option {number}",
+    "description": "Button (an icon) that removes an option of the poll of the new post. {number} is its position, from 1."
+  },
+  "compose.poll.option.add": {
+    "defaultMessage": "Add an option",
+    "description": "Button that adds an empty option to the poll of the new post."
+  },
+  "compose.poll.duplicate": {
+    "defaultMessage": "Each option must be different.",
+    "description": "Error under the options of the poll of the new post when two of them are the same."
+  },
+  "compose.poll.duration": {
+    "defaultMessage": "Duration",
+    "description": "Label of the select of how long the poll of the new post takes votes."
+  },
+  "compose.poll.duration.minutes": {
+    "defaultMessage": "{count, plural, one {# minute} other {# minutes}}",
+    "description": "Option of how long a poll takes votes. {count} is a number of minutes."
+  },
+  "compose.poll.duration.hours": {
+    "defaultMessage": "{count, plural, one {# hour} other {# hours}}",
+    "description": "Option of how long a poll takes votes. {count} is a number of hours."
+  },
+  "compose.poll.duration.days": {
+    "defaultMessage": "{count, plural, one {# day} other {# days}}",
+    "description": "Option of how long a poll takes votes. {count} is a number of days."
+  },
+  "compose.poll.multiple": {
+    "defaultMessage": "Allow choosing several options",
+    "description": "Checkbox of the poll of the new post: a vote may choose several options."
+  },
+  "compose.poll.hide_totals": {
+    "defaultMessage": "Hide the votes until the poll ends",
+    "description": "Checkbox of the poll of the new post: nobody sees the votes of each option until the poll ends."
+  },
   "compose.posted": {
     "defaultMessage": "Posted.",
     "description": "Notice after a post was published."
@@ -7546,6 +7594,10 @@
   "status.poll.ends": {
     "defaultMessage": "Ends {time}",
     "description": "Under a poll: when it ends. {time} is a relative time ahead, such as \"in 3 hr.\" or \"in 2 days\"."
+  },
+  "status.poll.hidden": {
+    "defaultMessage": "The votes of each option are shown when the poll ends.",
+    "description": "Under a poll whose author hides the votes of each option until it ends, in place of the shares of the votes."
   },
   "status.poll.label": {
     "defaultMessage": "Poll",

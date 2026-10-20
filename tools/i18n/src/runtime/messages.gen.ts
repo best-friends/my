@@ -2742,6 +2742,30 @@ export interface MessageArgs {
   "client:compose.outbox.unsent": {};
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:compose.over": { count: number };
+  /** Each option must be different. */
+  "client:compose.poll.duplicate": {};
+  /** Duration */
+  "client:compose.poll.duration": {};
+  /** {count, plural, one {# day} other {# days}} */
+  "client:compose.poll.duration.days": { count: number };
+  /** {count, plural, one {# hour} other {# hours}} */
+  "client:compose.poll.duration.hours": { count: number };
+  /** {count, plural, one {# minute} other {# minutes}} */
+  "client:compose.poll.duration.minutes": { count: number };
+  /** Hide the votes until the poll ends */
+  "client:compose.poll.hide_totals": {};
+  /** Poll */
+  "client:compose.poll.legend": {};
+  /** Allow choosing several options */
+  "client:compose.poll.multiple": {};
+  /** Option {number} */
+  "client:compose.poll.option": { number: string };
+  /** Add an option */
+  "client:compose.poll.option.add": {};
+  /** Remove option {number} */
+  "client:compose.poll.option.remove": { number: string };
+  /** Add a poll */
+  "client:compose.poll.toggle": {};
   /** Posted. */
   "client:compose.posted": {};
   /** {count, plural, one {# character left} other {# characters left}} */
@@ -4026,6 +4050,8 @@ export interface MessageArgs {
   "client:status.poll.closed": {};
   /** Ends {time} */
   "client:status.poll.ends": { time: string };
+  /** The votes of each option are shown when the poll ends. */
+  "client:status.poll.hidden": {};
   /** Poll */
   "client:status.poll.label": {};
   /** Poll options */

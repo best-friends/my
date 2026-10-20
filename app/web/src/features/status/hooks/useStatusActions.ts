@@ -57,7 +57,7 @@ export type StatusActions = {
    * failure is already shown.
    */
   delete: (() => Promise<boolean>) | null;
-  /** Whether the viewer can edit the post: their own posts only (FR-109). */
+  /** Whether the viewer can edit the post: their own posts without a poll only (FR-109, FR-112: its votes belong to the poll as posted). */
   canEdit: boolean;
   /** Whether the post is being deleted. */
   isDeleting: boolean;
@@ -201,7 +201,7 @@ export function useStatusActions(status: Status): StatusActions | null {
       );
     },
     delete: isAuthor ? () => remove.mutateAsync().then(() => true, () => false) : null,
-    canEdit: isAuthor,
+    canEdit: isAuthor && post.poll === undefined,
     isDeleting: remove.isPending,
     canReport: !isAuthor,
     pin:

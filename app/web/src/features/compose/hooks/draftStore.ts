@@ -8,6 +8,7 @@
 // key, and the end of the session removes it (it is the user's own data). Files picked but not yet uploaded live only in memory (their object URLs end with the page).
 import type { StorageKey, StoredCompose } from "../../../lib/storage";
 import type { CreateStatusRequest, Visibility } from "../api/compose";
+import type { PollDraft } from "./poll";
 
 /** One image of the draft. */
 export type AttachmentDraft = {
@@ -34,6 +35,8 @@ export type Draft = {
   language: string | null;
   replyToId: string | null;
   attachments: readonly AttachmentDraft[];
+  /** The poll of the post (FR-112), or null for none. A post with a poll attaches no media. */
+  poll: PollDraft | null;
   /**
    * The Idempotency-Key of the last attempt to post this draft. It is kept while the draft is unchanged,
    * so sending it again cannot post it twice, and dropped by any edit.
@@ -60,12 +63,15 @@ const emptyDraft: Draft = {
   language: null,
   replyToId: null,
   attachments: [],
+  poll: null,
   idempotencyKey: null,
 };
 
 /** Whether the draft has nothing the user would miss. */
 export function isEmptyDraft(draft: Draft): boolean {
-  return draft.text.trim() === "" && draft.spoilerText.trim() === "" && draft.attachments.length === 0 && draft.replyToId === null;
+  return (
+    draft.text.trim() === "" && draft.spoilerText.trim() === "" && draft.attachments.length === 0 && draft.poll === null && draft.replyToId === null
+  );
 }
 
 /** The part of the state that is saved: uploads in progress and failed ones cannot be resumed. */

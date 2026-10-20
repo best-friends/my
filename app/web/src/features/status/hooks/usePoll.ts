@@ -21,10 +21,11 @@ export type PollOptionView = {
   /** The option's index in the poll, which a vote names. */
   index: number;
   title: string;
-  votes: number;
-  /** The share of the votes, from 0 to 1, and as the locale writes a percentage. */
+  /** The votes, or null while the poll hides them until it ends. */
+  votes: number | null;
+  /** The share of the votes, from 0 to 1, and as the locale writes a percentage; null while the votes are hidden. */
   ratio: number;
-  share: string;
+  share: string | null;
   /** Whether the viewer voted for it. */
   ownChoice: boolean;
 };
@@ -54,6 +55,8 @@ export type PollView = {
   total: string;
   /** When the poll ends, or null when it has no end. */
   ends: DeadlineView | null;
+  /** Whether the poll hides the votes of each option until it ends (its author chose so). */
+  hidden: boolean;
   /** Whether the poll has ended. */
   closed: boolean;
   /** For a poll of another server, its host: the counts are those it last reported. */
@@ -99,13 +102,14 @@ export function usePoll(status: Status, canVote: boolean): PollView | null {
   // A multiple-choice poll shares out its voters when it knows them, as the other implementations show it.
   const base = poll.multiple && poll.voters_count !== undefined ? poll.voters_count : poll.votes_count;
   const options = poll.options.map((option, index): PollOptionView => {
-    const ratio = base > 0 ? Math.min(1, option.votes_count / base) : 0;
+    const votes = option.votes_count ?? null;
+    const ratio = votes !== null && base > 0 ? Math.min(1, votes / base) : 0;
     return {
       index,
       title: option.title,
-      votes: option.votes_count,
+      votes,
       ratio,
-      share: intl.formatNumber(ratio, { style: "percent", maximumFractionDigits: 0 }),
+      share: votes === null ? null : intl.formatNumber(ratio, { style: "percent", maximumFractionDigits: 0 }),
       ownChoice: own.has(index),
     };
   });
@@ -121,6 +125,8 @@ export function usePoll(status: Status, canVote: boolean): PollView | null {
         ? t("client:status.poll.votes", { count: poll.votes_count })
         : t("client:status.poll.voters", { count: poll.voters_count }),
     ends,
+    // The server leaves out the votes of the options while the poll hides them (PollOption.votes_count).
+    hidden: options.some((option) => option.votes === null),
     closed,
     remoteHost: isRemoteAcct(post.account.acct) ? hostOf(statusShareUrl(post), post.account.domain) : null,
     form: mayVote ? pollForm(poll, selected, setChoice, vote.mutate, vote.isPending) : null,

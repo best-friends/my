@@ -138,7 +138,60 @@ describe("the new-post form", () => {
     expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add images, video, or audio");
     expect(images).toHaveAccessibleDescription(/^Up to 4 files/);
     await user.tab();
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add a poll");
+    await user.tab();
     expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add a content warning");
+  });
+
+  test("posts a poll, and attaches no files to a post with one (FR-112)", async () => {
+    signedIn();
+    const sent = recordPosts();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Which one?");
+
+    const toggle = within(sheet).getByRole("button", { name: "Add a poll" });
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+    // A post with a poll attaches no files.
+    expect(within(sheet).getByRole("button", { name: "Add images, video, or audio" })).toBeDisabled();
+    const poll = within(sheet).getByRole("group", { name: "Poll" });
+    // Two empty options: the post waits for them.
+    const post = within(sheet).getByRole("button", { name: "Post" });
+    expect(post).toBeDisabled();
+    await user.type(within(poll).getByRole("textbox", { name: "Option 1" }), "Tea");
+    await user.type(within(poll).getByRole("textbox", { name: "Option 2" }), "tea ");
+    expect(post).toBeEnabled();
+    await user.clear(within(poll).getByRole("textbox", { name: "Option 2" }));
+    await user.type(within(poll).getByRole("textbox", { name: "Option 2" }), "Tea ");
+    expect(within(poll).getByText("Each option must be different.")).toBeInTheDocument();
+    expect(post).toBeDisabled();
+    await user.clear(within(poll).getByRole("textbox", { name: "Option 2" }));
+    await user.type(within(poll).getByRole("textbox", { name: "Option 2" }), "Coffee");
+
+    // Options up to four; each beyond two can be removed.
+    await user.click(within(poll).getByRole("button", { name: "Add an option" }));
+    await user.type(within(poll).getByRole("textbox", { name: "Option 3" }), "Water");
+    await user.click(within(poll).getByRole("button", { name: "Add an option" }));
+    expect(within(poll).queryByRole("button", { name: "Add an option" })).not.toBeInTheDocument();
+    await user.click(within(poll).getByRole("button", { name: "Remove option 4" }));
+    expect(within(poll).getAllByRole("textbox")).toHaveLength(3);
+
+    await user.click(within(poll).getByRole("button", { name: /Duration/ }));
+    await user.click(await screen.findByRole("option", { name: "3 days" }));
+    await user.click(within(poll).getByRole("checkbox", { name: "Allow choosing several options" }));
+    await user.click(within(poll).getByRole("checkbox", { name: "Hide the votes until the poll ends" }));
+    await user.click(post);
+
+    expect(await findToast("Posted.")).toBeInTheDocument();
+    expect(sent.map((s) => s.body)).toEqual([
+      {
+        text: "Which one?",
+        visibility: "public",
+        language: "en",
+        poll: { options: ["Tea", "Coffee", "Water"], expires_in: 3 * 24 * 3600, multiple: true, hide_totals: true },
+      },
+    ]);
   });
 
   test("opens the sheet with focus on the text, never on the dialog itself, while the form's data is slow", async () => {

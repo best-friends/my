@@ -126,8 +126,9 @@ type RecorderDeps struct {
 //     (registerFavouriteProjectors).
 //   - content.reacted / unreacted of a remote status: Like with the emoji and Undo Like
 //     (registerReactionProjectors).
-//   - content.poll_voted of a remote poll: a Create of a Note per choice
-//     (registerPollVoteProjectors).
+//   - content.poll_voted of a remote poll: a Create of a Note per choice; content.poll_voted
+//     and content.poll_closed of a local poll: JobPollUpdate, which records the Update of the
+//     poll's status (registerPollVoteProjectors).
 //
 // Other activities (Block) are added here, one projector each, with the use cases that send
 // them.

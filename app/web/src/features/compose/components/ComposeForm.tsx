@@ -9,6 +9,7 @@ import { useFormatRemaining } from "../hooks/useFormatRemaining";
 import { AttachmentList } from "./AttachmentList";
 import { ComposeTools } from "./ComposeTools";
 import { Outbox } from "./Outbox";
+import { PollEditor } from "./PollEditor";
 import { ReplyContext } from "./ReplyContext";
 
 export type ComposeFormProps = {
@@ -84,6 +85,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           requireDescriptions={form.requireDescriptions}
           isDescriptionRequired={form.isDescriptionRequired}
         />
+        {form.poll.draft !== null && <PollEditor poll={form.poll} draft={form.poll.draft} />}
         {attachments.items.length > 0 && (
           <p className="text-sm text-fg-muted">{t("client:compose.media.hint", { max: maxAttachments })}</p>
         )}

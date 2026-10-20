@@ -226,6 +226,8 @@ type CreateInput struct {
 // ones, and remote ones resolved before the transaction), hashtags, and URLs linked; attached media must be the author's own processed uploads
 // (ErrMediaNotFound, ErrMediaNotReady); the visibility is capped by the author's visibility ceiling
 // (data-model §5.4) and stored as capped. A reply must target a status the author may see.
+// A poll (FR-112) must keep the limits of content.NewPoll (content.ErrInvalidPoll) and comes
+// without media (ErrPollWithMedia); it is posted with a tally observation of no votes.
 //
 // Retrying with an IdempotencyKey that the author already used returns the status posted with it
 // and changes nothing; when that status is deleted, it fails with ErrAlreadyDeleted. A key that

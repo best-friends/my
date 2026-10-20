@@ -5479,6 +5479,54 @@
     "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.poll.duplicate": {
+    "defaultMessage": "‮Ǝɐɔɥ odʇıou ɯnsʇ qǝ pıɟɟǝɹǝuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration": {
+    "defaultMessage": "‮ᗡnɹɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration.days": {
+    "defaultMessage": "‮{count,plural,one{# pɐʎ} other{# pɐʎs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration.hours": {
+    "defaultMessage": "‮{count,plural,one{# ɥonɹ} other{# ɥonɹs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.duration.minutes": {
+    "defaultMessage": "‮{count,plural,one{# ɯıunʇǝ} other{# ɯıunʇǝs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.hide_totals": {
+    "defaultMessage": "‮Hıpǝ ʇɥǝ ʌoʇǝs nuʇıʅ ʇɥǝ doʅʅ ǝups‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.legend": {
+    "defaultMessage": "‮Ԁoʅʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.multiple": {
+    "defaultMessage": "‮∀ʅʅoʍ ɔɥoosıuƃ sǝʌǝɹɐʅ odʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.option": {
+    "defaultMessage": "‮Odʇıou {number}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.option.add": {
+    "defaultMessage": "‮∀pp ɐu odʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.option.remove": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ odʇıou {number}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.poll.toggle": {
+    "defaultMessage": "‮∀pp ɐ doʅʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.posted": {
     "defaultMessage": "‮Ԁosʇǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8045,6 +8093,10 @@
   },
   "status.poll.ends": {
     "defaultMessage": "‮Ǝups {time}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.hidden": {
+    "defaultMessage": "‮⊥ɥǝ ʌoʇǝs oɟ ǝɐɔɥ odʇıou ɐɹǝ sɥoʍu ʍɥǝu ʇɥǝ doʅʅ ǝups.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.poll.label": {
