@@ -2,7 +2,9 @@
 // The settings pages in every width × locale project (ADR-0027): the display language switches the whole app
 // and <html lang dir> at once, form errors are tied to their fields, and the pages pass axe without
 // scrolling sideways. `vite preview` has no API, so each test plays a signed-in user's server with
-// page.route; names change with the locale, so elements are found by role, structure and autocomplete tokens.
+// page.route; names change with the locale, so elements are found by role, structure, autocomplete tokens and,
+// where a role is not unique, by their names in the project's catalog.
+import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, localeDir, test } from "./fixtures";
 
@@ -112,6 +114,21 @@ function projectLocale(): string {
   return test.info().project.use.locale ?? "en";
 }
 
+type Catalog = Record<string, { defaultMessage: string }>;
+
+/** The client message `key` in the project's locale. */
+function message(key: string): string {
+  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${projectLocale()}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const text = catalog[key]?.defaultMessage;
+  if (text === undefined) throw new Error(`no message ${key} in ${projectLocale()}`);
+  return text;
+}
+
+/** The switch that also sends the moderator notifications by email. */
+function moderatorEmailSwitch(page: Page) {
+  return page.getByRole("main").getByRole("switch", { name: message("settings.moderator_notifications.email") });
+}
+
 const pages = [
   "/settings",
   "/settings/profile",
@@ -171,7 +188,8 @@ test.describe("display language", () => {
     await expect(page.locator("html")).toHaveAttribute("dir", localeDir(locale));
     const before = await heading.textContent();
 
-    // The form: the display language and time zone selects, the theme and visibility radio groups and the languages group.
+    // The form: the display language and time zone selects, the theme radio group, the autoplay switch, the
+    // visibility radio group and the languages group.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
       - link
@@ -182,6 +200,7 @@ test.describe("display language", () => {
         - radio [checked]
         - radio
         - radio
+      - switch
       - radiogroup:
         - radio [checked]
         - radio
@@ -192,7 +211,7 @@ test.describe("display language", () => {
         - list
     `);
     // A viewer without moderator permissions has no moderator notifications to switch.
-    await expect(page.getByRole("main").getByRole("switch")).toHaveCount(0);
+    await expect(moderatorEmailSwitch(page)).toHaveCount(0);
 
     // The names of the display languages are in their own language, whatever the page's locale.
     const target = locale === "ja" ? { locale: "en", name: "English" } : { locale: "ja", name: "日本語" };
@@ -302,7 +321,7 @@ test.describe("moderator notifications by email", () => {
   test("a moderator switches them on, and they stay on after a reload", async ({ page, makeAxeBuilder }) => {
     const changes = await signedInServer(page, projectLocale(), { permissions: ["manage_reports"] });
     await page.goto("/settings/preferences");
-    const toggle = page.getByRole("main").getByRole("switch");
+    const toggle = moderatorEmailSwitch(page);
     await expect(toggle).not.toBeChecked();
     // The section of the moderator notifications follows the languages group, under its own heading.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
@@ -322,7 +341,7 @@ test.describe("moderator notifications by email", () => {
     await expect.poll(() => changes).toEqual([{ email_moderator_notifications: true }]);
 
     await page.reload();
-    await expect(page.getByRole("main").getByRole("switch")).toBeChecked();
+    await expect(moderatorEmailSwitch(page)).toBeChecked();
   });
 
   test("says why there is no switch when the server sends no email", async ({ page, makeAxeBuilder }) => {
