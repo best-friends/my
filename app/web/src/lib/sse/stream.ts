@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The connection to GET /api/v1/streaming (client-api.md §5): the viewer's new home entries (`update`)
-// and notifications (`notification`) as Server-Sent Events. It is read with the API client's fetch, so
+// The connection to GET /api/v1/streaming (client-api.md §5): the viewer's new home entries (`update`),
+// notifications (`notification`) and the server's announcements (`announcement`, `announcement_removed`) as
+// Server-Sent Events. It is read with the API client's fetch, so
 // the request carries the session's Bearer token and a 401 refreshes the token once through the
 // session's serialized refresh (lib/api/client.ts), which EventSource could not do.
 //
@@ -13,9 +14,14 @@ import { readEventStream } from "./parse";
 
 type Status = components["schemas"]["Status"];
 type Notification = components["schemas"]["Notification"];
+type Announcement = components["schemas"]["Announcement"];
 
 /** An event of the stream, with its data parsed. */
-export type StreamEvent = { type: "update"; status: Status } | { type: "notification"; notification: Notification };
+export type StreamEvent =
+  | { type: "update"; status: Status }
+  | { type: "notification"; notification: Notification }
+  | { type: "announcement"; announcement: Announcement }
+  | { type: "announcement_removed"; id: string };
 
 export type StreamCallbacks = {
   /** A stream opened; `reconnected` is false for the first one and true for every later one. */
@@ -58,13 +64,17 @@ function isObjectWithId(value: unknown): value is { id: string } {
   return typeof value === "object" && value !== null && typeof (value as Record<string, unknown>)["id"] === "string";
 }
 
+/** The events this client reads. */
+const knownEvents: ReadonlySet<string> = new Set(["update", "notification", "announcement", "announcement_removed"]);
+
 /**
  * The event `name` with JSON `data`, or null for an event this client does not know or data it cannot
  * read: a newer server may send more events, and a broken one is skipped rather than ending the stream.
- * The data is the server's Status or Notification (api/openapi.yaml); the types are the generated ones (S9).
+ * The data is the server's Status, Notification or Announcement, or an announcement's ID (api/openapi.yaml);
+ * the types are the generated ones (S9).
  */
 export function parseStreamEvent(name: string, data: string): StreamEvent | null {
-  if (name !== "update" && name !== "notification") return null;
+  if (!knownEvents.has(name)) return null;
   let value: unknown;
   try {
     value = JSON.parse(data);
@@ -72,7 +82,16 @@ export function parseStreamEvent(name: string, data: string): StreamEvent | null
     return null;
   }
   if (!isObjectWithId(value)) return null;
-  return name === "update" ? { type: "update", status: value as Status } : { type: "notification", notification: value as Notification };
+  switch (name) {
+    case "update":
+      return { type: "update", status: value as Status };
+    case "notification":
+      return { type: "notification", notification: value as Notification };
+    case "announcement":
+      return { type: "announcement", announcement: value as Announcement };
+    default:
+      return { type: "announcement_removed", id: value.id };
+  }
 }
 
 /** Whether `signal` has aborted by now: it may abort while the stream is awaited, which narrowing cannot see. */

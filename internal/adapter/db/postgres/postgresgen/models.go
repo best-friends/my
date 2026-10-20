@@ -88,6 +88,21 @@ type AccountRestriction struct {
 	EffectiveUntil *time.Time
 }
 
+type AnnouncementHead struct {
+	AnnouncementID string
+	RevisionID     string
+	State          string
+	PublishedAt    *time.Time
+}
+
+type AnnouncementStateChange struct {
+	ID              string
+	AnnouncementID  string
+	State           string
+	ChangedByUserID *string
+	ChangedAt       time.Time
+}
+
 type AuditLogEntry struct {
 	ID            string
 	ActorKind     string

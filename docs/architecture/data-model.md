@@ -195,7 +195,7 @@ flowchart LR
 | `timeline` | なし | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
 | `federation` | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `remote_instances`, `instance_nodeinfo_observations`, `instance_availability_events` | `instance_health` |
-| `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_texts`, `instance_rule_retirements` | `instance_settings`, `instance_texts`, `instance_rule_heads` |
+| `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_texts`, `instance_rule_retirements`, `announcements`, `announcement_revisions`, `announcement_state_changes` | `instance_settings`, `instance_texts`, `instance_rule_heads`, `announcement_heads`, `announcement_reads` |
 | `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
 | 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `kv_entries` |
 
@@ -280,7 +280,7 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `roles` | リソース | `id`, `key`（`string(64)`）, `position`（`int`）, `created_at` | 一意 `(key)` |
-| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_two_factor, manage_custom_emojis, manage_webhooks)`） | PK `(role_id, permission)` |
+| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_two_factor, manage_custom_emojis, manage_webhooks, manage_announcements)`） | PK `(role_id, permission)` |
 | `user_role_grants` | イベント | `id`, `user_id`, `role_id`, `granted_by_user_id`（NULL 可 = CLI による付与。最初の管理者など）, `granted_at` | |
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
@@ -572,7 +572,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
+| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
 
 - 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベント（`moderation.audit_recorded`）を、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
   記録の ID はトランザクションの前に作り、再試行しても同じ行を書きます。何も変えなかった操作（解除済みの処分の解除など）は記録しません。
@@ -596,12 +596,13 @@ flowchart LR
   | `signup_block_added`, `signup_block_lifted` | `signup_block` | `signup_blocks.id` | 種類と値（`email_domain spam.example`） | `signup_blocks.id`（解除の行もこの ID が PK） |
   | `custom_emoji_created`, `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted` | `custom_emoji` | `custom_emojis.id` | `:shortcode:`（リモートは `:shortcode:@domain`） | `custom_emoji_images.id`（画像を記録した操作）。ほかはなし |
   | `webhook_created`, `webhook_updated`, `webhook_deleted`, `webhook_enabled`, `webhook_disabled`, `webhook_secret_rotated` | `webhook` | `webhook_endpoints.id` | 説明と URL のホスト名（`Moderation chat (hooks.example.com)`）。URL は写さない | `webhook_endpoint_revisions.id` / `webhook_endpoint_state_changes.id` / `webhook_secrets.id` |
+  | `announcement_created`, `announcement_updated`, `announcement_published`, `announcement_withdrawn` | `announcement` | `announcements.id` | 本文の最初の行（80 文字まで） | `announcement_revisions.id` / `announcement_state_changes.id` |
 
   サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 一覧（`moderation.Service.GoneAuditTargets`）は、ページの行の対象が今もあるかを、対象の種類ごとに 1 回の問い合わせでまとめて確かめます。
-  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象のうち、ドメイン・利用者・設定・ルールは消えず、ロール・カスタム絵文字・webhook は削除されても今は問い合わせません。
+  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象のうち、ドメイン・利用者・設定・ルール・お知らせは消えず、ロール・カスタム絵文字・webhook は削除されても今は問い合わせません。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
 - 更新・削除の API と CLI はありません。保持期間（ADR-0038、既定 730 日）を過ぎた行だけを消去ジョブが消します。
 
@@ -1110,6 +1111,11 @@ flowchart LR
 | `instance_theme_revisions` | イベント（版） | `id`, `custom_css`（`string`。空 = なし。64 KiB まで）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | トークンもカスタム CSS も無い版はテーマを既定に戻す |
 | `instance_theme_tokens` | イベント（版の子） | `theme_revision_id`, `token`（`enum`。上書きできるトークンの生成した一覧）, `scheme`（`enum(light, dark, all)`。色はライトとダーク、ほかは `all`）, `value` | PK `(theme_revision_id, token, scheme)` |
 | `instance_theme` | 投影 | `id`（PK。常に 1）, `revision_id` | テーマを保存したことがあれば 1 行 |
+| `announcements` | リソース | `id`, `created_at` | サーバーのローカルの利用者全員へのお知らせ（FR-726） |
+| `announcement_revisions` | イベント（版） | `id`, `announcement_id`, `body`（`string(5000)`。Markdown）, `starts_at`（NULL 可 = 公開した時から）, `ends_at`（NULL 可 = 取り下げるまで）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(announcement_id, id DESC)`。CHECK `ends_at > starts_at`（両方あるとき） |
+| `announcement_state_changes` | イベント | `id`, `announcement_id`, `state`（`enum(published, withdrawn)`）, `changed_by_user_id`（NULL 可 = CLI による変更）, `changed_at` | インデックス `(announcement_id, id DESC)` |
+| `announcement_heads` | 投影 | `announcement_id`（PK）, `revision_id`, `state`（`enum(draft, published, withdrawn)`）, `published_at`（最後に公開した時刻） | CHECK `(state = 'draft') = (published_at IS NULL)`。インデックス `(state)` |
+| `announcement_reads` | 現在値 | `user_id`, `announcement_id`, `read_at` | PK `(user_id, announcement_id)`。既読の履歴には意味がない（ADR-0020 規約 5） |
 
 - 設定値は 1 キー 1 スカラーにします。複合的な設定はキーを分けます（JSON にしない）。
   キー・型・既定値・検証は `internal/domain/instance` に定義し、`key` の `CHECK` と一緒に増やします。一度も設定していないキーは既定値として読みます。
@@ -1133,6 +1139,11 @@ flowchart LR
 - テーマ（[ADR-0059](../adr/0059-design-tokens-and-instance-theme.md)）は版ごとにテーマ全体（上書きしたトークンとカスタム CSS）を記録し、`instance_theme` が `id` の最大の版を指します。
   `instance_theme_tokens.token` の `CHECK` は、`app/ui/src/theme.css` から生成したトークンの一覧（`internal/domain/instance/theme_tokens.gen.go`）と同じで、`schema` のテストが食い違いを検出します。
   値は保存の前にドメインが種類ごとの形・範囲と色の組のコントラストを検査し、検査済みの値だけからスタイルシートを組み立てます。版の内容は変わらないので、過去の版のスタイルシートの URL も同じ内容を返し続けます。
+- お知らせ（FR-726）は、`manage_announcements` を持つ人が下書きとして作り、公開し、取り下げます。本文と表示の期間（`starts_at`・`ends_at`）を変えるたびに版を記録し、`announcement_heads` が `id` の最大の版と、状態の変化の最後の結果を指します。
+  - 取り下げは取り消せません。取り下げたお知らせは変更も再公開もできず、新しいお知らせを作り直します。下書きのまま取り下げることもでき、そのときの `published_at` は取り下げた時刻です。
+  - 利用者に見えるのは、公開中で今が期間の中にあるお知らせです。期間の始まりと公開の遅いほう（`ShowsFrom`）の新しい順に並べます。
+  - 本文は文書と同じく版に Markdown のまま記録し、読むたびに HTML にしてサニタイズします（`instance.DocumentRenderer`、ADR-0019）。
+  - 既読は `announcement_reads` の行の有無で表し、アカウントの消去（§8）で消えます。
 
 ### 4.10 基盤（アダプタ所有）
 
@@ -1377,7 +1388,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `reactions` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
+| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、お知らせの既読（`announcement_reads`）、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | 投稿の自動削除（FR-118） | `status_deletions`（`origin = auto_delete`） | 投稿の削除と同じ | 投稿の削除と同じ |
@@ -1386,7 +1397,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 - `Delete`（Actor）は、`active` なフォロワーの inbox と、既知の shared inbox（削除されていないリモートの Actor の `remote_account_heads.shared_inbox_url`）に送ります。
 - 消去は「イベントを記録 → 投影から即時に除外 → 消去ジョブが一定件数ずつ物理削除」の順です。表示から消えるのは即時、物理削除は非同期です。
 - アカウント削除の消去は、1 時間ごとのジョブ `account.erase_deleted` が、`deleted` から 7 日を過ぎた、保全（§4.3）の無いローカルのアカウントに行います。
-  - モジュールごとの消去（`content` の投稿と操作 → `graph` → `timeline` → `notification` → `content` のメディア → `identity` → `account`）を、1 文あたり 100 行（投稿は 100 件）・1 回のジョブで 50 トランザクションまで行い、使い切ったらカーソル（アカウントの ID）を持った次のジョブが続けます。どれも再実行してよい。
+  - モジュールごとの消去（`content` の投稿と操作 → `graph` → `timeline` → `notification` → `instance` のお知らせの既読 → `content` のメディア → `identity` → `account`）を、1 文あたり 100 行（投稿は 100 件）・1 回のジョブで 50 トランザクションまで行い、使い切ったらカーソル（アカウントの ID）を持った次のジョブが続けます。どれも再実行してよい。
   - 削除されていない投稿には `status_deletions`（`origin = account_deletion`）を記録して `content.status_deleted` を発行し（投影・`feed_*` から外れる）、同じトランザクションで行を消します。投稿ごとの `Delete` は送りません（`Delete`（Actor）が代わりを務める）。
   - 有効なフォローは `follow_terminations`（`account_deleted`）で終わらせ、相手の `follow_counters` から引いてから消します。相手のサーバーには何も送りません。
   - 通報か投稿単位の処分が指す投稿（`moderation` の `StatusRetained`）は、削除だけを記録して行を残し、その記録が消えた後の回で消します。それまで `account_erasures` は記録せず、毎回そのアカウントを調べ直します。
@@ -1414,7 +1425,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `poll_tallies` | `poll_tally_observations`, `poll_tally_observation_counts` | 同期 |
 | `notification_exclusions` | `blocks` と取り消し（`block_edges`）、`mutes` | 同期 |
 | `notification_deleted_statuses` | `status_deletions` | 同期 |
-| `instance_settings` / `instance_texts` / `instance_rule_heads` | `instance_setting_revisions`、`instance_text_revisions`、`instance_rules` と `instance_rule_revisions`・`instance_rule_retirements` | 同期 |
+| `instance_settings` / `instance_texts` / `instance_rule_heads` / `instance_theme` / `announcement_heads` | `instance_setting_revisions`、`instance_text_revisions`、`instance_rules` と `instance_rule_revisions`・`instance_rule_retirements`、`instance_theme_revisions`、`announcement_revisions`・`announcement_state_changes` | 同期 |
 | `webhook_endpoint_heads` / `webhook_endpoint_failures` | `webhook_endpoint_revisions`・`webhook_endpoint_state_changes`・`webhook_secrets`、`webhook_delivery_attempts` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 

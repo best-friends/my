@@ -81,7 +81,7 @@ func (h *Hub) Subscribe(ctx context.Context, accountID string) (Subscription, er
 }
 
 // Publish implements Publisher. A signal of KindNotifications goes to the subscriptions of its
-// account, one of KindHomeEntry to every subscription.
+// account, one of KindHomeEntry or KindAnnouncement to every subscription.
 func (h *Hub) Publish(e Event) {
 	h.mu.Lock()
 	defer h.mu.Unlock()

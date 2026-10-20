@@ -244,11 +244,36 @@ func (e AdminAccountState) Valid() bool {
 	}
 }
 
+// Defines values for AdminAnnouncementState.
+const (
+	AdminAnnouncementStateDraft     AdminAnnouncementState = "draft"
+	AdminAnnouncementStatePublished AdminAnnouncementState = "published"
+	AdminAnnouncementStateWithdrawn AdminAnnouncementState = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the AdminAnnouncementState enum.
+func (e AdminAnnouncementState) Valid() bool {
+	switch e {
+	case AdminAnnouncementStateDraft:
+		return true
+	case AdminAnnouncementStatePublished:
+		return true
+	case AdminAnnouncementStateWithdrawn:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAuditAction.
 const (
 	AdminAuditActionAccountActionIssued      AdminAuditAction = "account_action_issued"
 	AdminAuditActionAccountActionLifted      AdminAuditAction = "account_action_lifted"
 	AdminAuditActionAccountDeletionCancelled AdminAuditAction = "account_deletion_cancelled"
+	AdminAuditActionAnnouncementCreated      AdminAuditAction = "announcement_created"
+	AdminAuditActionAnnouncementPublished    AdminAuditAction = "announcement_published"
+	AdminAuditActionAnnouncementUpdated      AdminAuditAction = "announcement_updated"
+	AdminAuditActionAnnouncementWithdrawn    AdminAuditAction = "announcement_withdrawn"
 	AdminAuditActionAppealOverturned         AdminAuditAction = "appeal_overturned"
 	AdminAuditActionAppealUpheld             AdminAuditAction = "appeal_upheld"
 	AdminAuditActionCustomEmojiCreated       AdminAuditAction = "custom_emoji_created"
@@ -297,6 +322,14 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAccountActionLifted:
 		return true
 	case AdminAuditActionAccountDeletionCancelled:
+		return true
+	case AdminAuditActionAnnouncementCreated:
+		return true
+	case AdminAuditActionAnnouncementPublished:
+		return true
+	case AdminAuditActionAnnouncementUpdated:
+		return true
+	case AdminAuditActionAnnouncementWithdrawn:
 		return true
 	case AdminAuditActionAppealOverturned:
 		return true
@@ -405,24 +438,27 @@ func (e AdminAuditActorKind) Valid() bool {
 
 // Defines values for AdminAuditTargetKind.
 const (
-	AdminAuditTargetKindAccount     AdminAuditTargetKind = "account"
-	AdminAuditTargetKindAppeal      AdminAuditTargetKind = "appeal"
-	AdminAuditTargetKindCustomEmoji AdminAuditTargetKind = "custom_emoji"
-	AdminAuditTargetKindDomain      AdminAuditTargetKind = "domain"
-	AdminAuditTargetKindReport      AdminAuditTargetKind = "report"
-	AdminAuditTargetKindRole        AdminAuditTargetKind = "role"
-	AdminAuditTargetKindRule        AdminAuditTargetKind = "rule"
-	AdminAuditTargetKindSetting     AdminAuditTargetKind = "setting"
-	AdminAuditTargetKindSignupBlock AdminAuditTargetKind = "signup_block"
-	AdminAuditTargetKindStatus      AdminAuditTargetKind = "status"
-	AdminAuditTargetKindUser        AdminAuditTargetKind = "user"
-	AdminAuditTargetKindWebhook     AdminAuditTargetKind = "webhook"
+	AdminAuditTargetKindAccount      AdminAuditTargetKind = "account"
+	AdminAuditTargetKindAnnouncement AdminAuditTargetKind = "announcement"
+	AdminAuditTargetKindAppeal       AdminAuditTargetKind = "appeal"
+	AdminAuditTargetKindCustomEmoji  AdminAuditTargetKind = "custom_emoji"
+	AdminAuditTargetKindDomain       AdminAuditTargetKind = "domain"
+	AdminAuditTargetKindReport       AdminAuditTargetKind = "report"
+	AdminAuditTargetKindRole         AdminAuditTargetKind = "role"
+	AdminAuditTargetKindRule         AdminAuditTargetKind = "rule"
+	AdminAuditTargetKindSetting      AdminAuditTargetKind = "setting"
+	AdminAuditTargetKindSignupBlock  AdminAuditTargetKind = "signup_block"
+	AdminAuditTargetKindStatus       AdminAuditTargetKind = "status"
+	AdminAuditTargetKindUser         AdminAuditTargetKind = "user"
+	AdminAuditTargetKindWebhook      AdminAuditTargetKind = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditTargetKind enum.
 func (e AdminAuditTargetKind) Valid() bool {
 	switch e {
 	case AdminAuditTargetKindAccount:
+		return true
+	case AdminAuditTargetKindAnnouncement:
 		return true
 	case AdminAuditTargetKindAppeal:
 		return true
@@ -1356,24 +1392,27 @@ func (e NotificationType) Valid() bool {
 
 // Defines values for Permission.
 const (
-	PermissionManageAccounts     Permission = "manage_accounts"
-	PermissionManageCustomEmojis Permission = "manage_custom_emojis"
-	PermissionManageDomains      Permission = "manage_domains"
-	PermissionManageInvites      Permission = "manage_invites"
-	PermissionManageJobs         Permission = "manage_jobs"
-	PermissionManageReports      Permission = "manage_reports"
-	PermissionManageRoles        Permission = "manage_roles"
-	PermissionManageRules        Permission = "manage_rules"
-	PermissionManageSettings     Permission = "manage_settings"
-	PermissionManageTwoFactor    Permission = "manage_two_factor"
-	PermissionManageWebhooks     Permission = "manage_webhooks"
-	PermissionViewAudit          Permission = "view_audit"
+	PermissionManageAccounts      Permission = "manage_accounts"
+	PermissionManageAnnouncements Permission = "manage_announcements"
+	PermissionManageCustomEmojis  Permission = "manage_custom_emojis"
+	PermissionManageDomains       Permission = "manage_domains"
+	PermissionManageInvites       Permission = "manage_invites"
+	PermissionManageJobs          Permission = "manage_jobs"
+	PermissionManageReports       Permission = "manage_reports"
+	PermissionManageRoles         Permission = "manage_roles"
+	PermissionManageRules         Permission = "manage_rules"
+	PermissionManageSettings      Permission = "manage_settings"
+	PermissionManageTwoFactor     Permission = "manage_two_factor"
+	PermissionManageWebhooks      Permission = "manage_webhooks"
+	PermissionViewAudit           Permission = "view_audit"
 )
 
 // Valid indicates whether the value is a known member of the Permission enum.
 func (e Permission) Valid() bool {
 	switch e {
 	case PermissionManageAccounts:
+		return true
+	case PermissionManageAnnouncements:
 		return true
 	case PermissionManageCustomEmojis:
 		return true
@@ -2149,6 +2188,73 @@ type AdminAccountSignIn struct {
 // `active`.
 type AdminAccountState string
 
+// AdminAnnouncement An announcement with its Markdown text and its state.
+type AdminAnnouncement struct {
+	// Content The text as the users get it, an HTML fragment (`Announcement.content`).
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// EndsAt When it stops showing; omitted to show it until it is withdrawn.
+	EndsAt *time.Time `json:"ends_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// PublishedAt When it was last published; omitted for a draft.
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+
+	// StartsAt When it starts to show once published; omitted to show it from its publication.
+	StartsAt *time.Time `json:"starts_at,omitempty"`
+
+	// State `draft`: no user sees it. `published`: every local user sees it within its window.
+	// `withdrawn`: taken down for good.
+	State AdminAnnouncementState `json:"state"`
+
+	// Text The text, in Markdown.
+	Text string `json:"text"`
+
+	// UpdatedAt When its text or window last changed.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AdminAnnouncementCreateRequest A new announcement, with its text and its window.
+type AdminAnnouncementCreateRequest struct {
+	// EndsAt When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+	EndsAt *time.Time `json:"ends_at,omitempty"`
+
+	// Publish Publish it at once instead of keeping it a draft.
+	Publish *bool `json:"publish,omitempty"`
+
+	// StartsAt When it starts to show once published; omitted to show it from its publication.
+	StartsAt *time.Time `json:"starts_at,omitempty"`
+
+	// Text The text, in Markdown.
+	Text string `json:"text"`
+}
+
+// AdminAnnouncementInput The text and the window of an announcement.
+type AdminAnnouncementInput struct {
+	// EndsAt When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+	EndsAt *time.Time `json:"ends_at,omitempty"`
+
+	// StartsAt When it starts to show once published; omitted to show it from its publication.
+	StartsAt *time.Time `json:"starts_at,omitempty"`
+
+	// Text The text, in Markdown.
+	Text string `json:"text"`
+}
+
+// AdminAnnouncementList The announcements, newest first.
+type AdminAnnouncementList struct {
+	Items []AdminAnnouncement `json:"items"`
+}
+
+// AdminAnnouncementState `draft`: no user sees it. `published`: every local user sees it within its window.
+// `withdrawn`: taken down for good.
+type AdminAnnouncementState string
+
 // AdminAppeal A local user's appeal of an action on their account, as the moderators see it, with the
 // action.
 type AdminAppeal struct {
@@ -2213,7 +2319,10 @@ type AdminAppealPage struct {
 // `webhook_created`, `webhook_updated` (its URL, description, or events),
 // `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
 // endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-// description and the host name of its URL, never the URL.
+// description and the host name of its URL, never the URL. On an `announcement`:
+// `announcement_created`, `announcement_updated` (its text or window),
+// `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+// text.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -2246,7 +2355,10 @@ type AdminAuditEntry struct {
 	// `webhook_created`, `webhook_updated` (its URL, description, or events),
 	// `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
 	// endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-	// description and the host name of its URL, never the URL.
+	// description and the host name of its URL, never the URL. On an `announcement`:
+	// `announcement_created`, `announcement_updated` (its text or window),
+	// `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+	// text.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -3132,6 +3244,35 @@ type AdminWebhookState string
 // server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
 // it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
 type AdminWebhookStateReason string
+
+// Announcement An announcement of the server to every local user (FR-726), as the user sees it.
+type Announcement struct {
+	// Content The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
+	// headings from `h2`, and `http`, `https`, and `mailto` links).
+	Content string `json:"content"`
+
+	// EndsAt When it stops showing; omitted when it shows until it is withdrawn.
+	EndsAt *time.Time `json:"ends_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// PublishedAt When it started to show to the users, its publication or the start of its window.
+	PublishedAt time.Time `json:"published_at"`
+
+	// Read Whether the user has marked it read.
+	Read bool `json:"read"`
+
+	// UpdatedAt When its text or window last changed.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AnnouncementList The announcements.
+type AnnouncementList struct {
+	Items []Announcement `json:"items"`
+}
 
 // AppealModerationActionRequest An appeal of an action on the user's own account.
 type AppealModerationActionRequest struct {
@@ -4457,8 +4598,9 @@ type PageInfo struct {
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
 // log. `manage_two_factor`: removing the two-factor authentication of a local user (only
 // the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-// remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
-// operation yet.
+// remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
+// server's announcements to every local user. The others guard no client API operation
+// yet.
 type Permission string
 
 // PickerCustomEmoji A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
@@ -5559,6 +5701,11 @@ type AccountId = Id
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AdminAccountId = Id
 
+// AnnouncementId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type AnnouncementId = Id
+
 // AppealId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -6047,6 +6194,12 @@ type LiftAccountActionJSONRequestBody = LiftAccountActionRequest
 // CreateAccountActionJSONRequestBody defines body for CreateAccountAction for application/json ContentType.
 type CreateAccountActionJSONRequestBody = CreateAccountActionRequest
 
+// CreateAdminAnnouncementJSONRequestBody defines body for CreateAdminAnnouncement for application/json ContentType.
+type CreateAdminAnnouncementJSONRequestBody = AdminAnnouncementCreateRequest
+
+// UpdateAdminAnnouncementJSONRequestBody defines body for UpdateAdminAnnouncement for application/json ContentType.
+type UpdateAdminAnnouncementJSONRequestBody = AdminAnnouncementInput
+
 // OverturnAppealJSONRequestBody defines body for OverturnAppeal for application/json ContentType.
 type OverturnAppealJSONRequestBody = DecideAppealRequest
 
@@ -6253,6 +6406,24 @@ type ServerInterface interface {
 	// DisableAdminAccountTwoFactor Remove the two-factor authentication of a local account
 	// (POST /admin/accounts/{id}/two_factor/disable)
 	DisableAdminAccountTwoFactor(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// ListAdminAnnouncements List the announcements
+	// (GET /admin/announcements)
+	ListAdminAnnouncements(w http.ResponseWriter, r *http.Request)
+	// CreateAdminAnnouncement Write an announcement
+	// (POST /admin/announcements)
+	CreateAdminAnnouncement(w http.ResponseWriter, r *http.Request)
+	// GetAdminAnnouncement Get an announcement
+	// (GET /admin/announcements/{id})
+	GetAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId)
+	// UpdateAdminAnnouncement Revise an announcement
+	// (PUT /admin/announcements/{id})
+	UpdateAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId)
+	// PublishAdminAnnouncement Publish an announcement
+	// (POST /admin/announcements/{id}/publish)
+	PublishAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId)
+	// WithdrawAdminAnnouncement Withdraw an announcement
+	// (POST /admin/announcements/{id}/withdraw)
+	WithdrawAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(w http.ResponseWriter, r *http.Request, params ListAppealsParams)
@@ -6463,6 +6634,12 @@ type ServerInterface interface {
 	// TestWebhook Send a test message to a webhook
 	// (POST /admin/webhooks/{id}/test)
 	TestWebhook(w http.ResponseWriter, r *http.Request, id WebhookId)
+	// ListAnnouncements List the announcements
+	// (GET /announcements)
+	ListAnnouncements(w http.ResponseWriter, r *http.Request)
+	// MarkAnnouncementRead Mark an announcement read
+	// (POST /announcements/{id}/read)
+	MarkAnnouncementRead(w http.ResponseWriter, r *http.Request, id AnnouncementId)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -7638,6 +7815,138 @@ func (siw *ServerInterfaceWrapper) DisableAdminAccountTwoFactor(w http.ResponseW
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DisableAdminAccountTwoFactor(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminAnnouncements operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminAnnouncements(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminAnnouncements(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAdminAnnouncement operation middleware
+func (siw *ServerInterfaceWrapper) CreateAdminAnnouncement(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAdminAnnouncement(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminAnnouncement operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminAnnouncement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnnouncementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminAnnouncement(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAdminAnnouncement operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAdminAnnouncement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnnouncementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAdminAnnouncement(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishAdminAnnouncement operation middleware
+func (siw *ServerInterfaceWrapper) PublishAdminAnnouncement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnnouncementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishAdminAnnouncement(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// WithdrawAdminAnnouncement operation middleware
+func (siw *ServerInterfaceWrapper) WithdrawAdminAnnouncement(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnnouncementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.WithdrawAdminAnnouncement(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9704,6 +10013,46 @@ func (siw *ServerInterfaceWrapper) TestWebhook(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// ListAnnouncements operation middleware
+func (siw *ServerInterfaceWrapper) ListAnnouncements(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAnnouncements(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MarkAnnouncementRead operation middleware
+func (siw *ServerInterfaceWrapper) MarkAnnouncementRead(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AnnouncementId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MarkAnnouncementRead(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBlocks operation middleware
 func (siw *ServerInterfaceWrapper) ListBlocks(w http.ResponseWriter, r *http.Request) {
 
@@ -11543,6 +11892,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/tag/{hashtag}", wrapper.GetHashtagTimeline)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/reports", wrapper.ListOwnReports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/reports", wrapper.CreateReport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/announcements", wrapper.ListAnnouncements)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/announcements/{id}/read", wrapper.MarkAnnouncementRead)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/dead_jobs", wrapper.ListDeadJobs)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/dead_jobs/{id}/retry", wrapper.RetryDeadJob)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances", wrapper.ListInstanceHealth)
@@ -11571,6 +11922,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/rules/{id}", wrapper.UpdateInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/announcements", wrapper.ListAdminAnnouncements)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/announcements", wrapper.CreateAdminAnnouncement)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/announcements/{id}", wrapper.GetAdminAnnouncement)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/announcements/{id}", wrapper.UpdateAdminAnnouncement)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/announcements/{id}/publish", wrapper.PublishAdminAnnouncement)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/announcements/{id}/withdraw", wrapper.WithdrawAdminAnnouncement)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/theme", wrapper.GetAdminTheme)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/theme", wrapper.SetAdminTheme)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/custom_emojis", wrapper.ListAdminCustomEmojis)
@@ -11662,6 +12019,15 @@ type AdminAccountActionJSONResponse struct {
 	Body AdminAccountAction
 
 	Headers AdminAccountActionResponseHeaders
+}
+
+type AdminAnnouncementResponseHeaders struct {
+	CacheControl *string
+}
+type AdminAnnouncementJSONResponse struct {
+	Body AdminAnnouncement
+
+	Headers AdminAnnouncementResponseHeaders
 }
 
 type AdminAppealResponseHeaders struct {
@@ -13370,6 +13736,343 @@ type DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse struc
 }
 
 func (response DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse) VisitDisableAdminAccountTwoFactorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminAnnouncementsRequestObject struct {
+}
+
+type ListAdminAnnouncementsResponseObject interface {
+	VisitListAdminAnnouncementsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminAnnouncements200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminAnnouncements200JSONResponse struct {
+	Body    AdminAnnouncementList
+	Headers ListAdminAnnouncements200ResponseHeaders
+}
+
+func (response ListAdminAnnouncements200JSONResponse) VisitListAdminAnnouncementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminAnnouncementsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminAnnouncementsdefaultApplicationProblemPlusJSONResponse) VisitListAdminAnnouncementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAdminAnnouncementRequestObject struct {
+	Body *CreateAdminAnnouncementJSONRequestBody
+}
+
+type CreateAdminAnnouncementResponseObject interface {
+	VisitCreateAdminAnnouncementResponse(w http.ResponseWriter) error
+}
+
+type CreateAdminAnnouncement200JSONResponse struct{ AdminAnnouncementJSONResponse }
+
+func (response CreateAdminAnnouncement200JSONResponse) VisitCreateAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAdminAnnouncementdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateAdminAnnouncementdefaultApplicationProblemPlusJSONResponse) VisitCreateAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAnnouncementRequestObject struct {
+	Id AnnouncementId `json:"id"`
+}
+
+type GetAdminAnnouncementResponseObject interface {
+	VisitGetAdminAnnouncementResponse(w http.ResponseWriter) error
+}
+
+type GetAdminAnnouncement200JSONResponse struct{ AdminAnnouncementJSONResponse }
+
+func (response GetAdminAnnouncement200JSONResponse) VisitGetAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminAnnouncementdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminAnnouncementdefaultApplicationProblemPlusJSONResponse) VisitGetAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAdminAnnouncementRequestObject struct {
+	Id   AnnouncementId `json:"id"`
+	Body *UpdateAdminAnnouncementJSONRequestBody
+}
+
+type UpdateAdminAnnouncementResponseObject interface {
+	VisitUpdateAdminAnnouncementResponse(w http.ResponseWriter) error
+}
+
+type UpdateAdminAnnouncement200JSONResponse struct{ AdminAnnouncementJSONResponse }
+
+func (response UpdateAdminAnnouncement200JSONResponse) VisitUpdateAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAdminAnnouncementdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateAdminAnnouncementdefaultApplicationProblemPlusJSONResponse) VisitUpdateAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishAdminAnnouncementRequestObject struct {
+	Id AnnouncementId `json:"id"`
+}
+
+type PublishAdminAnnouncementResponseObject interface {
+	VisitPublishAdminAnnouncementResponse(w http.ResponseWriter) error
+}
+
+type PublishAdminAnnouncement200JSONResponse struct{ AdminAnnouncementJSONResponse }
+
+func (response PublishAdminAnnouncement200JSONResponse) VisitPublishAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishAdminAnnouncementdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response PublishAdminAnnouncementdefaultApplicationProblemPlusJSONResponse) VisitPublishAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WithdrawAdminAnnouncementRequestObject struct {
+	Id AnnouncementId `json:"id"`
+}
+
+type WithdrawAdminAnnouncementResponseObject interface {
+	VisitWithdrawAdminAnnouncementResponse(w http.ResponseWriter) error
+}
+
+type WithdrawAdminAnnouncement200JSONResponse struct{ AdminAnnouncementJSONResponse }
+
+func (response WithdrawAdminAnnouncement200JSONResponse) VisitWithdrawAdminAnnouncementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WithdrawAdminAnnouncementdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response WithdrawAdminAnnouncementdefaultApplicationProblemPlusJSONResponse) VisitWithdrawAdminAnnouncementResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -17620,6 +18323,129 @@ func (response TestWebhookdefaultApplicationProblemPlusJSONResponse) VisitTestWe
 	return err
 }
 
+type ListAnnouncementsRequestObject struct {
+}
+
+type ListAnnouncementsResponseObject interface {
+	VisitListAnnouncementsResponse(w http.ResponseWriter) error
+}
+
+type ListAnnouncements200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAnnouncements200JSONResponse struct {
+	Body    AnnouncementList
+	Headers ListAnnouncements200ResponseHeaders
+}
+
+func (response ListAnnouncements200JSONResponse) VisitListAnnouncementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnnouncementsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAnnouncementsdefaultApplicationProblemPlusJSONResponse) VisitListAnnouncementsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkAnnouncementReadRequestObject struct {
+	Id AnnouncementId `json:"id"`
+}
+
+type MarkAnnouncementReadResponseObject interface {
+	VisitMarkAnnouncementReadResponse(w http.ResponseWriter) error
+}
+
+type MarkAnnouncementRead200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type MarkAnnouncementRead200JSONResponse struct {
+	Body    Announcement
+	Headers MarkAnnouncementRead200ResponseHeaders
+}
+
+func (response MarkAnnouncementRead200JSONResponse) VisitMarkAnnouncementReadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkAnnouncementReaddefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response MarkAnnouncementReaddefaultApplicationProblemPlusJSONResponse) VisitMarkAnnouncementReadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListBlocksRequestObject struct {
 	Params ListBlocksParams
 }
@@ -21322,6 +22148,24 @@ type StrictServerInterface interface {
 	// DisableAdminAccountTwoFactor Remove the two-factor authentication of a local account
 	// (POST /admin/accounts/{id}/two_factor/disable)
 	DisableAdminAccountTwoFactor(ctx context.Context, request DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error)
+	// ListAdminAnnouncements List the announcements
+	// (GET /admin/announcements)
+	ListAdminAnnouncements(ctx context.Context, request ListAdminAnnouncementsRequestObject) (ListAdminAnnouncementsResponseObject, error)
+	// CreateAdminAnnouncement Write an announcement
+	// (POST /admin/announcements)
+	CreateAdminAnnouncement(ctx context.Context, request CreateAdminAnnouncementRequestObject) (CreateAdminAnnouncementResponseObject, error)
+	// GetAdminAnnouncement Get an announcement
+	// (GET /admin/announcements/{id})
+	GetAdminAnnouncement(ctx context.Context, request GetAdminAnnouncementRequestObject) (GetAdminAnnouncementResponseObject, error)
+	// UpdateAdminAnnouncement Revise an announcement
+	// (PUT /admin/announcements/{id})
+	UpdateAdminAnnouncement(ctx context.Context, request UpdateAdminAnnouncementRequestObject) (UpdateAdminAnnouncementResponseObject, error)
+	// PublishAdminAnnouncement Publish an announcement
+	// (POST /admin/announcements/{id}/publish)
+	PublishAdminAnnouncement(ctx context.Context, request PublishAdminAnnouncementRequestObject) (PublishAdminAnnouncementResponseObject, error)
+	// WithdrawAdminAnnouncement Withdraw an announcement
+	// (POST /admin/announcements/{id}/withdraw)
+	WithdrawAdminAnnouncement(ctx context.Context, request WithdrawAdminAnnouncementRequestObject) (WithdrawAdminAnnouncementResponseObject, error)
 	// ListAppeals List the appeals of moderation actions
 	// (GET /admin/appeals)
 	ListAppeals(ctx context.Context, request ListAppealsRequestObject) (ListAppealsResponseObject, error)
@@ -21532,6 +22376,12 @@ type StrictServerInterface interface {
 	// TestWebhook Send a test message to a webhook
 	// (POST /admin/webhooks/{id}/test)
 	TestWebhook(ctx context.Context, request TestWebhookRequestObject) (TestWebhookResponseObject, error)
+	// ListAnnouncements List the announcements
+	// (GET /announcements)
+	ListAnnouncements(ctx context.Context, request ListAnnouncementsRequestObject) (ListAnnouncementsResponseObject, error)
+	// MarkAnnouncementRead Mark an announcement read
+	// (POST /announcements/{id}/read)
+	MarkAnnouncementRead(ctx context.Context, request MarkAnnouncementReadRequestObject) (MarkAnnouncementReadResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -22502,6 +23352,172 @@ func (sh *strictHandler) DisableAdminAccountTwoFactor(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DisableAdminAccountTwoFactorResponseObject); ok {
 		if err := validResponse.VisitDisableAdminAccountTwoFactorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminAnnouncements operation middleware
+func (sh *strictHandler) ListAdminAnnouncements(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminAnnouncementsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminAnnouncements(ctx, request.(ListAdminAnnouncementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminAnnouncements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminAnnouncementsResponseObject); ok {
+		if err := validResponse.VisitListAdminAnnouncementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAdminAnnouncement operation middleware
+func (sh *strictHandler) CreateAdminAnnouncement(w http.ResponseWriter, r *http.Request) {
+	var request CreateAdminAnnouncementRequestObject
+
+	var body CreateAdminAnnouncementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAdminAnnouncement(ctx, request.(CreateAdminAnnouncementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAdminAnnouncement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAdminAnnouncementResponseObject); ok {
+		if err := validResponse.VisitCreateAdminAnnouncementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminAnnouncement operation middleware
+func (sh *strictHandler) GetAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId) {
+	var request GetAdminAnnouncementRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminAnnouncement(ctx, request.(GetAdminAnnouncementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminAnnouncement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminAnnouncementResponseObject); ok {
+		if err := validResponse.VisitGetAdminAnnouncementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAdminAnnouncement operation middleware
+func (sh *strictHandler) UpdateAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId) {
+	var request UpdateAdminAnnouncementRequestObject
+
+	request.Id = id
+
+	var body UpdateAdminAnnouncementJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAdminAnnouncement(ctx, request.(UpdateAdminAnnouncementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAdminAnnouncement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAdminAnnouncementResponseObject); ok {
+		if err := validResponse.VisitUpdateAdminAnnouncementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishAdminAnnouncement operation middleware
+func (sh *strictHandler) PublishAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId) {
+	var request PublishAdminAnnouncementRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishAdminAnnouncement(ctx, request.(PublishAdminAnnouncementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishAdminAnnouncement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishAdminAnnouncementResponseObject); ok {
+		if err := validResponse.VisitPublishAdminAnnouncementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// WithdrawAdminAnnouncement operation middleware
+func (sh *strictHandler) WithdrawAdminAnnouncement(w http.ResponseWriter, r *http.Request, id AnnouncementId) {
+	var request WithdrawAdminAnnouncementRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.WithdrawAdminAnnouncement(ctx, request.(WithdrawAdminAnnouncementRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "WithdrawAdminAnnouncement")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(WithdrawAdminAnnouncementResponseObject); ok {
+		if err := validResponse.VisitWithdrawAdminAnnouncementResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -24475,6 +25491,56 @@ func (sh *strictHandler) TestWebhook(w http.ResponseWriter, r *http.Request, id 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(TestWebhookResponseObject); ok {
 		if err := validResponse.VisitTestWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAnnouncements operation middleware
+func (sh *strictHandler) ListAnnouncements(w http.ResponseWriter, r *http.Request) {
+	var request ListAnnouncementsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAnnouncements(ctx, request.(ListAnnouncementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAnnouncements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAnnouncementsResponseObject); ok {
+		if err := validResponse.VisitListAnnouncementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MarkAnnouncementRead operation middleware
+func (sh *strictHandler) MarkAnnouncementRead(w http.ResponseWriter, r *http.Request, id AnnouncementId) {
+	var request MarkAnnouncementReadRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MarkAnnouncementRead(ctx, request.(MarkAnnouncementReadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MarkAnnouncementRead")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MarkAnnouncementReadResponseObject); ok {
+		if err := validResponse.VisitMarkAnnouncementReadResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

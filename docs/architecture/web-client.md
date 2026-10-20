@@ -327,7 +327,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     区画は WAI-ARIA APG の並べ替えのできるリスト（listbox の Rearrangeable の例）の考え方に従う。各項目は、表示するかのチェックボックスと、1 つ上・1 つ下へ動かすアイコンのボタン（名前とツールチップは「ホームを上へ移動」）を持ち、どれもふつうのタブ移動で届く。
     動かすとフォーカスは動かした項目の同じボタン（端に着いて押せなくなったときはもう一方のボタン）に残り、新しい位置を `useAnnouncer` で知らせる（「ホームを 8 項目中 2 番目に移動しました」）。各項目の説明は、電話でタブバーとメニューのどちらに出るか・隠していること・サーバーが提供していないことを言う。
     スタッフの画面は「モデレーション」と「サーバー管理」の 2 つの区分に分ける（[ADR-0058](../adr/0058-moderation-admin-separation.md)、§14）。ロールがモデレーションの画面の権限（`manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`）のどれかを持つ閲覧者には「モデレーション」（`/moderation`）を、
-    サーバー管理の画面の権限（`manage_settings`・`manage_rules`・`manage_custom_emojis`・`manage_webhooks`・`manage_roles`・`manage_jobs`）のどれかを持つ閲覧者には「管理」（`/admin`）を、設定の後にこの順で足す。どちらも、その区分に閲覧者の使える画面があるときだけ出すので、組み込みのモデレーターには「管理」が出ない。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
+    サーバー管理の画面の権限（`manage_settings`・`manage_rules`・`manage_custom_emojis`・`manage_announcements`・`manage_webhooks`・`manage_roles`・`manage_jobs`）のどれかを持つ閲覧者には「管理」（`/admin`）を、設定の後にこの順で足す。どちらも、その区分に閲覧者の使える画面があるときだけ出すので、組み込みのモデレーターには「管理」が出ない。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
     jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
   - `lg` からのサイドバーは、リストの上にサーバーの名前（下の「サーバーの名前」）を、リストの下（`nav` の末尾）にサインインしているアカウントのアバター・表示名・ハンドルを出す。
     アカウントはそのプロフィールへのリンクで、名前は表示名とハンドル（それぞれ 1 行に省略、G7）、説明（`aria-describedby`）は「サインインしているアカウント」にする。
@@ -439,6 +439,13 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
     待つ投稿が読み込み済みの投稿とつながらないとき（再接続で 1 ページ分の新着が見つかった、または 200 件を超えた）は、押したときに最初のページだけを取り直す。
     タイムラインは、ウィンドウのフォーカスやオンライン復帰では取り直さない（取り直すと先頭に投稿が差し込まれる）。
   - `notification` は読み取り位置（`/notifications/marker`）の未読数を 1 つ増やし、通知の一覧を古いことにする。表示中の一覧は変わらない。
+  - `announcement` はお知らせの一覧（`GET /announcements` のキャッシュ）の同じ ID のお知らせを置き換えるか、表示の始まりの順に加え、`announcement_removed` は一覧から外す。キャッシュがなければ何もしない（次に開いたときに読む）。
+    再接続したらお知らせの一覧に無効化の印を付ける。
+- **お知らせ**（`features/announcements`、FR-726）: ホームのタイムラインの見出しの下（このブラウザに残した投稿を出している間は出さない）に、サーバーが今見せているお知らせ（`GET /announcements`）を、見出し（`h2`「お知らせ」）のある区画（`section`）に新しい順で出す。
+  お知らせがないときと、読み込み中・読み込めないときは何も出さない（タイムラインが本体で、お知らせは添え物）。
+  - 各お知らせは `article` で、見出し（`h3`）は表示の始まりの日付。未読のお知らせは見出しの中に「未読」の印を文字で出し（色だけで示さない、WCAG 1.4.1）、区画の見出しの `Badge` が未読の件数を出す。
+  - 本文は管理者の Markdown をサーバーが HTML にしてサニタイズしたもので、`PostContent`（A8）で出す。掲載の終わりがあれば本文の下に出す。
+  - 未読のお知らせは「既読にする」（`POST /announcements/{id}/read`、説明は見出し）を持つ。押すと応答でキャッシュを書き換え、ボタンが消えたらフォーカスをそのお知らせの見出しに移す（`useFocusHeadingAfterLift`）。失敗は区画の中に `role="alert"` で出す。
 - **ログアウト**（設定画面の「ログアウト」）: アクセストークンを `POST /oauth/revoke` で失効させ（サーバーはトークン系列ごと失効させ、Cookie を消し、その系列を認可した認可サーバーの画面のセッションも終わらせる）、メモリのトークンを消して他のタブに伝え、`/login` を開く。
   サーバーに届かなかったときも、このタブはログアウトし、セッションが残り得ることをトーストで知らせる。
   画面のセッションが終わるので、続けて「ログインに進む」を押すとパスワードを聞かれる（共用端末で次の人がそのままログインできない）。
@@ -595,12 +602,12 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 - **モデレーション**（`/moderation/*`、`features/moderation`）: 通報・異議申し立ての審査・アカウント・登録の審査・登録の拒否リスト・招待・ドメインへの処分・連合先のサーバーの状態（[federation.md §7.3](federation.md)）・監査ログ。
   `features/moderation` は、利用者が自分への処分を確かめる画面（§18）も受け持ち、サーバー管理の画面が使う共通の部品（下の「共通の部品」）と権限の型・一覧のページングも `index.ts` から出す。
-- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・ルール・テーマ・規約とポリシー・カスタム絵文字・webhook・ロール・dead job。これから足すサーバー管理の画面（お知らせ・リレー）は、
+- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・ルール・テーマ・規約とポリシー・カスタム絵文字・お知らせ・webhook・ロール・dead job。これから足すサーバー管理の画面（リレー）は、
   `routes/admin.<画面>.tsx` のルートと、`features/admin/components/AdminMenu.tsx` の一覧の 1 行を足してここに置く。
 
 API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の管理の操作、タグ `admin-moderation` / `admin-server`）、Web の経路とは一致しない。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がロールの画面とアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_webhooks` が webhook の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がロールの画面とアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_announcements` がお知らせの画面、`manage_webhooks` が webhook の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -650,6 +657,12 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     このサーバーの絵文字は「編集する」（カテゴリ・別名・ピッカーに出すか・有効にするかのダイアログ。保存したら閉じ、失敗はダイアログの中に出す）・「画像を差し替える」（`FileTrigger` で選ぶとすぐに送る）・「削除する」（元に戻せないので `ConfirmDialog` で確かめる）、ほかのサーバーの絵文字は「無効にする」「有効にする」を持つ。
     ボタンのアクセシブルネームは絵文字（`:shortcode:`、ほかのサーバーは `@domain` を付け、U+2066 / U+2069 で囲む）を含める。変えた絵文字は応答で行を置き換え、消した絵文字は一覧から除いてフォーカスを次の行のボタンに移す（`lib/useFocusAfterRemoval.ts`）。
     結果は一覧の上の `StatusMessage` に出し、失敗は同じ場所（`role="alert"`）に出す。どの変更も、ピッカーの絵文字と監査ログに無効化の印を付ける。
+- **お知らせ**（`/admin/announcements`、`manage_announcements`、FR-726）: 「お知らせを書く」と「すべてのお知らせ」の 2 つの区画（`h2` の `section`）。変更はすべて監査ログに残り、一覧・利用者のお知らせ・監査ログに無効化の印を付ける。
+  - **書く**: 本文（Markdown、5,000 文字まで、`TextArea` の文字数）・掲載する期間（`DurationSelect`。1・3・7・14・30 日と「取り下げるまで」。送った時から数え、`ends_at` にする）・「すぐに公開する」（`Checkbox`、既定で選ぶ。外すと下書き）のフォーム。
+    送信のボタンの名前は、公開するか下書きかで変える。本文が空か長すぎるときは送らずに項目のエラーを出す。結果はフォームの `StatusMessage` に出し、本文を空にする。
+  - **一覧**: 新しい順。各お知らせは見出し（本文の最初の行を U+2068 / U+2069 で囲んだものと状態）・利用者が見る形の本文（`PostContent`）・状態・公開日時・掲載の開始と終了の説明リストにする。
+    下書きは「公開する」、取り下げていないお知らせは「編集」（本文のダイアログ。期間は変えない）と「取り下げる」（元に戻せないので `ConfirmDialog` で確かめる）を持ち、ボタンのアクセシブルネームはお知らせの最初の行を含める。
+    変更の後はフォーカスをそのお知らせの見出しに移し、結果を一覧の上の `StatusMessage` に、失敗を同じ場所（`role="alert"`）に出す。掲載の開始を後にするお知らせは API（`starts_at`）で書く。
 - **webhook**（`/admin/webhooks`・`/admin/webhooks/{id}`、`manage_webhooks`、FR-722、[ADR-0060](../adr/0060-instance-webhooks.md)）: 「webhook を設定する」と「このサーバーの webhook」の 2 つの区画（`h2` の `section`）。
   - **設定**: URL（必須、2048 バイトまで）・説明（200 文字まで）・イベント（`role="group"` の中の `Checkbox`、イベントの種類ごとに 1 つ）のフォーム。`POST /admin/webhooks` で送り、サーバーの拒否（422 `invalid-webhook`）は `reason` の項目（URL・説明・イベント）にサーバーの `detail` を出し、`missing_permission` では足りない権限（`missing_permissions`）も並べて、入力を残す。
     成功したら入力を空にし、一覧と監査ログに無効化の印を付けてから、結果をフォームの `StatusMessage` に、秘密（`whsec_…`、`dir="ltr"`）を二度と表示しない旨とコピーのボタン（結果はトースト）と一緒にフォームの下に出す。秘密はキャッシュにも保存にも置かず、次の操作で消える。
