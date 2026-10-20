@@ -4,5 +4,5 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["vite/client"]
   },
-  "include": ["src", "test", ".storybook/preview.tsx", ".storybook/vitest.setup.ts"]
+  "include": ["src", "test", ".storybook/preview.tsx", ".storybook/sampleTheme.ts", ".storybook/vitest.setup.ts"]
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
+import { spacing } from "./storySpacing";
 import { Badge } from "./Badge";
 import { ExternalLinkIcon, HomeIcon, NotificationsIcon } from "./Icons";
 import { Link } from "./Link";
@@ -69,8 +70,8 @@ export const Navigation: Story = {
   play: async ({ canvas }) => {
     for (const link of canvas.getAllByRole("link")) {
       const icon = link.querySelector("svg")?.getBoundingClientRect();
-      await expect(icon?.width).toBe(24);
-      await expect(icon?.height).toBe(24);
+      await expect(icon?.width).toBeCloseTo(spacing(6), 1);
+      await expect(icon?.height).toBeCloseTo(spacing(6), 1);
     }
   },
 };

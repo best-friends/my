@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The Storybook preview of @my/ui (ADR-0027): the token stylesheet, the locale and theme toolbars,
-// and the accessibility gate that fails a story test on any axe violation.
+// The Storybook preview of @my/ui (ADR-0027): the token stylesheet, the locale, theme and instance theme
+// toolbars, and the accessibility gate that fails a story test on any axe violation.
 import type { Decorator, Preview } from "@storybook/react-vite";
 import { type ReactNode, useEffect, useState } from "react";
 import { UNSAFE_PortalProvider } from "react-aria";
 import { I18nProvider } from "react-aria-components";
 import "../src/storybook.css";
+import { sampleTheme, themeStylesheet } from "./sampleTheme";
 
 /**
  * The locales the client ships: the source locale, Japanese and the two pseudo-locales (ADR-0009).
@@ -22,6 +23,14 @@ type Locale = keyof typeof locales;
 const themes = ["light", "dark"] as const;
 type Theme = (typeof themes)[number];
 
+/** The server themes (ADR-0059): none, or the sample overrides of ./sampleTheme.ts. */
+const instanceThemes = ["default", "sample"] as const;
+type InstanceTheme = (typeof instanceThemes)[number];
+
+function isInstanceTheme(value: unknown): value is InstanceTheme {
+  return instanceThemes.some((instanceTheme) => instanceTheme === value);
+}
+
 function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && Object.hasOwn(locales, value);
 }
@@ -30,17 +39,19 @@ function isTheme(value: unknown): value is Theme {
   return themes.some((theme) => theme === value);
 }
 
-type PreviewRootProps = { locale: Locale; theme: Theme; children: ReactNode };
+type PreviewRootProps = { locale: Locale; theme: Theme; instanceTheme: InstanceTheme; children: ReactNode };
 
 /**
  * Applies the globals the way the app does: lang, dir and data-theme on <html> (app/ui/README.md) and
- * the React Aria locale. The frame is a size container, so components answer to its width
+ * the React Aria locale. A server theme is applied the way the Tauri app applies one (ADR-0059 §6): its
+ * stylesheet as a constructed stylesheet, which, like the server's stylesheet, is outside any cascade layer.
+ * The frame is a size container, so components answer to its width
  * (web-client.md D2); the visual tests set its inline size.
  * Overlays (dialogs, popovers, toasts) are portalled into the frame instead of <body>, so its screenshots
  * show them. Layout containment makes the frame the containing block of fixed-position descendants too,
  * so a modal covers the frame rather than the page.
  */
-function PreviewRoot({ locale, theme, children }: PreviewRootProps) {
+function PreviewRoot({ locale, theme, instanceTheme, children }: PreviewRootProps) {
   const { dir } = locales[locale];
   const [frame, setFrame] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -49,6 +60,15 @@ function PreviewRoot({ locale, theme, children }: PreviewRootProps) {
     root.dir = dir;
     root.dataset["theme"] = theme;
   }, [locale, dir, theme]);
+  useEffect(() => {
+    if (instanceTheme === "default") return;
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(themeStylesheet(sampleTheme));
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+    return () => {
+      document.adoptedStyleSheets = document.adoptedStyleSheets.filter((adopted) => adopted !== sheet);
+    };
+  }, [instanceTheme]);
   return (
     <I18nProvider locale={locale}>
       <div ref={setFrame} className="contain-layout @container" data-story-frame="">
@@ -60,7 +80,11 @@ function PreviewRoot({ locale, theme, children }: PreviewRootProps) {
 }
 
 const withGlobals: Decorator = (Story, { globals }) => (
-  <PreviewRoot locale={isLocale(globals["locale"]) ? globals["locale"] : "en"} theme={isTheme(globals["theme"]) ? globals["theme"] : "light"}>
+  <PreviewRoot
+    locale={isLocale(globals["locale"]) ? globals["locale"] : "en"}
+    theme={isTheme(globals["theme"]) ? globals["theme"] : "light"}
+    instanceTheme={isInstanceTheme(globals["instanceTheme"]) ? globals["instanceTheme"] : "default"}
+  >
     <Story />
   </PreviewRoot>
 );
@@ -89,8 +113,20 @@ const preview: Preview = {
         dynamicTitle: true,
       },
     },
+    instanceTheme: {
+      description: "Instance theme: a server's token overrides (ADR-0059)",
+      toolbar: {
+        title: "Instance theme",
+        icon: "paintbrush",
+        items: [
+          { value: "default", title: "Default tokens" },
+          { value: "sample", title: "Sample overrides" },
+        ],
+        dynamicTitle: true,
+      },
+    },
   },
-  initialGlobals: { locale: "en", theme: "light" },
+  initialGlobals: { locale: "en", theme: "light", instanceTheme: "default" },
   parameters: {
     layout: "padded",
     // The theme paints the page (body uses --color-surface); Storybook's backgrounds would hide it.
