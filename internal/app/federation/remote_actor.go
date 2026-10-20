@@ -169,6 +169,9 @@ func (r *RemoteActors) store(ctx context.Context, actor *federation.Actor, raw [
 		if stored, err = r.d.Accounts.UpsertRemoteActor(ctx, tx, in); err != nil {
 			return err
 		}
+		if err := enqueueFetchFeaturedTx(ctx, tx, r.d.Outbox, stored.ID, actor.ID, actor.Featured); err != nil {
+			return err
+		}
 		return r.seeInstance(ctx, tx, in.Domain)
 	})
 	if err != nil {

@@ -233,6 +233,41 @@ describe("a status card", () => {
     expect(within(article).getByRole("img", { name: "No description" })).toHaveAttribute("src", "https://my.example/media/thumb.webp");
   });
 
+  test("shows the card of a post's link as one link, behind the content warning with the body", async () => {
+    const linked = status(1, {
+      spoiler_text: "News",
+      sensitive: true,
+      card: {
+        url: "https://news.example/articles/sunrise",
+        title: "The sun rose again",
+        description: "Observers report a sunrise.",
+        site_name: "Example News",
+        language: "en",
+        author_name: "Alice Example",
+        published_at: "2026-10-02T09:00:00Z",
+        image: { url: "https://my.example/media/proxy/card/small?sig=x", width: 1200, height: 630, description: "A sunrise" },
+      },
+    });
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([linked]))));
+    const { user } = await renderApp({ path: "/local" });
+
+    const article = await screen.findByRole("article", { name: /^Bob @bob/ });
+    expect(within(article).queryByRole("link", { name: "The sun rose again" })).not.toBeInTheDocument();
+
+    await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
+
+    const link = within(article).getByRole("link", { name: "The sun rose again" });
+    expect(link).toHaveAttribute("href", "https://news.example/articles/sunrise");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    expect(within(article).getByText("Observers report a sunrise.")).toHaveAttribute("lang", "en");
+    expect(within(article).getByText("By Alice Example · Oct 2, 2026")).toBeVisible();
+    // The post is sensitive: the card's image waits for its own toggle.
+    expect(within(article).queryByRole("img", { name: "A sunrise" })).not.toBeInTheDocument();
+    await user.click(within(article).getByRole("button", { name: "Show sensitive media", pressed: false }));
+    expect(within(article).getByRole("img", { name: "A sunrise" })).toHaveAttribute("src", "https://my.example/media/proxy/card/small?sig=x");
+  });
+
   test("moves an animated picture only without reduced motion, and not at all with autoplay off", async () => {
     const variant = (name: string, width: number) => ({ url: `https://my.example/media/${name}`, width, height: width / 2 });
     const dancing = status(1, {

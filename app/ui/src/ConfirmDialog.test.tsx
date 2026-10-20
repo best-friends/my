@@ -42,6 +42,33 @@ describe("ConfirmDialog", () => {
     });
   });
 
+  it("closes on a press on the scrim without confirming", async () => {
+    const user = userEvent.setup();
+    const onConfirm = vi.fn();
+    render(<Suspend onConfirm={onConfirm} />);
+    await user.click(screen.getByRole("button", { name: "Suspend example.com" }));
+    // eslint-disable-next-line testing-library/no-node-access -- the scrim has no role; it is the dialog's grandparent
+    const scrim = (await screen.findByRole("alertdialog")).parentElement?.parentElement;
+    if (scrim == null) throw new Error("no scrim");
+    await user.click(scrim);
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("stays open on a press on the scrim when it has fields, which the press would lose", async () => {
+    const user = userEvent.setup();
+    render(<Suspend onConfirm={vi.fn()} withFields />);
+    await user.click(screen.getByRole("button", { name: "Suspend example.com" }));
+    const dialog = await screen.findByRole("alertdialog");
+    // eslint-disable-next-line testing-library/no-node-access -- the scrim has no role; it is the dialog's grandparent
+    const scrim = dialog.parentElement?.parentElement;
+    if (scrim == null) throw new Error("no scrim");
+    await user.click(scrim);
+    expect(dialog).toBeInTheDocument();
+  });
+
   it("closes on Esc without confirming and returns focus to the trigger", async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();

@@ -79,7 +79,10 @@ type StatusHandlersDeps struct {
 	Profiles      OutboxAccounts
 	Relationships Relationships
 	Restrictions  AccountPolicy
-	Clock         kernel.Clock
+	// Pins mirrors the featured collections of remote accounts (JobFetchFeatured, ADR-0044);
+	// without Pins (or Profiles), featured collections are not fetched.
+	Pins  RemotePins
+	Clock kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger

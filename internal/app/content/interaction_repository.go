@@ -95,6 +95,8 @@ type InteractionRepository interface {
 	// a concurrent transaction takes the free slot first.
 	InsertPin(ctx context.Context, tx uow.Tx, p content.Pin) (bool, error)
 	DeletePin(ctx context.Context, tx uow.Tx, accountID, statusID string) (bool, error)
+	// DeletePinsOf removes every pin of an account and returns how many it removed.
+	DeletePinsOf(ctx context.Context, tx uow.Tx, accountID string) (int64, error)
 	// HasPin reports whether an account pins a status.
 	HasPin(ctx context.Context, tx uow.Tx, accountID, statusID string) (bool, error)
 	// CountPins returns the number of statuses an account pins.

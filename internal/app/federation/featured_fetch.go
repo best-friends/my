@@ -1,0 +1,139 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package federation
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"log/slog"
+
+	"github.com/best-friends/my/internal/app/queue"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/domain/federation"
+)
+
+// Fetching the pinned posts of a remote account, its featured collection, when the account is
+// fetched or refreshed (federation.md §6.2, ADR-0044).
+const (
+	// JobFetchFeatured fetches the featured collection of a remote account and makes its pins
+	// those the collection lists.
+	JobFetchFeatured = "federation.fetch_featured"
+	// FeaturedMaxPosts bounds the pins that one fetch takes (content.MaxPins, the pins of a
+	// local account), and FeaturedMaxDocuments the documents it fetches: the collection, its
+	// first page, and the posts.
+	FeaturedMaxPosts     = 5
+	FeaturedMaxDocuments = FeaturedMaxPosts + 2
+)
+
+// RemotePins replaces the pins of a remote account. *appcontent.Interactions implements it.
+type RemotePins interface {
+	// ReplaceRemotePins makes the account's pins the statuses statusIDs, the newest pin first.
+	ReplaceRemotePins(ctx context.Context, accountID string, statusIDs []string) error
+}
+
+// fetchFeaturedPayload is the payload of JobFetchFeatured.
+type fetchFeaturedPayload struct {
+	AccountID string `json:"account_id"`
+}
+
+// enqueueFetchFeaturedTx enqueues in tx the JobFetchFeatured of the remote account accountID,
+// whose actor document was just stored, when the document declares a featured collection of the
+// actor's origin. One job of an account is pending at a time.
+func enqueueFetchFeaturedTx(ctx context.Context, tx uow.Tx, outbox queue.Outbox, accountID string, actor, featured federation.IRI) error {
+	if outbox == nil || featured == "" || !federation.SameOrigin(featured, actor) {
+		return nil
+	}
+	payload, err := json.Marshal(fetchFeaturedPayload{AccountID: accountID})
+	if err != nil {
+		return err
+	}
+	return outbox.EnqueueTx(ctx, tx, queue.NewJob{Type: JobFetchFeatured, Payload: payload, IdempotencyKey: "fetch_featured:" + accountID})
+}
+
+// handleFetchFeatured is the queue.Handler of JobFetchFeatured. A collection that cannot be
+// fetched ends the job and leaves the pins as they are; the failures of the stores retry it.
+func (h *StatusHandlers) handleFetchFeatured(ctx context.Context, j queue.Job) queue.Result {
+	var p fetchFeaturedPayload
+	if err := json.Unmarshal(j.Payload, &p); err != nil {
+		return queue.Fail(fmt.Errorf("federation: fetch_featured payload %s: %w", j.Payload, err))
+	}
+	if p.AccountID == "" {
+		return queue.Fail(fmt.Errorf("federation: fetch_featured payload %s has no account_id", j.Payload))
+	}
+	pinned, err := h.fetchFeatured(ctx, p.AccountID)
+	switch {
+	case err == nil:
+		h.d.Logger.InfoContext(ctx, "remote featured collection fetched", slog.String("account_id", p.AccountID), slog.Int("pinned", pinned))
+		return queue.Done()
+	case isFetchError(err), errors.Is(err, ErrNotTaken):
+		h.d.Logger.InfoContext(ctx, "remote featured collection not fetched", slog.String("account_id", p.AccountID), slog.Any("reason", err))
+		return queue.Done()
+	}
+	return queue.Retry(0, err)
+}
+
+// fetchFeatured does the work of one JobFetchFeatured: it reads the first page of the account's
+// featured collection and makes the account's pins the first FeaturedMaxPosts posts of the
+// account that it lists, storing those that are not stored. A document that no longer declares a
+// featured collection, or an empty one, removes the pins. It returns how many posts are pinned.
+func (h *StatusHandlers) fetchFeatured(ctx context.Context, accountID string) (int, error) {
+	if h.d.Pins == nil || h.d.Profiles == nil {
+		return 0, nil
+	}
+	actor, featured, ok, err := h.remoteCollectionOf(ctx, accountID, h.d.Profiles.RemoteFeaturedURL)
+	if err != nil || !ok {
+		return 0, err
+	}
+	var ids []string
+	if featured != "" {
+		author := federation.IRI(actor.Account.URI)
+		budget := newFetchBudget(FeaturedMaxDocuments)
+		page, err := h.collectionPage(ctx, budget, author, federation.IRI(featured))
+		if err != nil {
+			return 0, err
+		}
+		if ids, err = h.featuredPosts(ctx, budget, author, page); err != nil {
+			return 0, err
+		}
+	}
+	if err := h.d.Pins.ReplaceRemotePins(ctx, accountID, ids); err != nil {
+		return 0, err
+	}
+	return len(ids), nil
+}
+
+// featuredPosts returns the IDs of the statuses of the first FeaturedMaxPosts posts of author
+// that page lists, in its order, storing those that are not stored: the embedded posts
+// attributed to author and addressed to Public, and the posts that page refers to by an IRI of
+// author's origin. Activities and the posts that cannot be taken are left out.
+func (h *StatusHandlers) featuredPosts(ctx context.Context, b *fetchBudget, author federation.IRI, page *federation.Collection) ([]string, error) {
+	if page == nil {
+		return nil, nil
+	}
+	var ids []string
+	for _, item := range page.Items {
+		if len(ids) == FeaturedMaxPosts {
+			break
+		}
+		if item.ID == "" {
+			continue
+		}
+		if doc := item.Trusted(); doc != nil {
+			if doc.Object == nil || doc.Object.AttributedTo != author || !addressedToPublic(doc.Object.Audience) {
+				continue
+			}
+		}
+		st, _, err := h.collectionPost(ctx, b, author, item)
+		switch {
+		case err == nil:
+			ids = append(ids, st.ID)
+		case isFetchError(err), errors.Is(err, ErrNotTaken):
+			h.d.Logger.InfoContext(ctx, "remote featured post not taken", slog.String("uri", string(item.ID)), slog.Any("reason", err))
+		default:
+			return ids, err
+		}
+	}
+	return ids, nil
+}

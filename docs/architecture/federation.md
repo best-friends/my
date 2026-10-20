@@ -181,7 +181,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Like` | ローカルの投稿 | `_misskey_reaction`、無ければ `content` が `EmojiReact` と同じ規則で絵文字なら `content.RecordRemoteReaction`（Misskey のリアクション、FEP-c0e0）。それ以外は `content.RecordRemoteFavourite`（お気に入り）。主体が閲覧できない投稿（`ContextObjectFetch`）は捨てる |
 | `Block` | ローカルの Actor | `graph.ReceiveBlock`。両方向のフォローを終了し、相手の投稿を閲覧者から隠す（`feed_exclusions`）。対象がローカルの利用者の Actor でなければ捨てる |
 | `Flag` | ローカルの Actor / 投稿 | `moderation.FileRemoteReport`（`reports.uri`）。送信者のドメインに `report_intake` の制限があれば捨てる。通報の対象は `object` の最初のローカルの Actor、無ければ最初のローカルの投稿の作者で、その作者の投稿を `report_statuses` に残す。ローカルの対象が無ければ捨てる |
-| `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C） |
+| `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C）。現在は受け取っても何もせず、ピン留めは Actor の取り直しのときに同期する（§6.2） |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
 - ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、お気に入りと絵文字リアクションの `Like` / `Undo Like` を送ります（`Like` の枠の付け替えでは、外したものの `Undo` が新しい `Like` の前に記録され、同じ inbox へその順に届く。§7.2 の順序キー）。
@@ -262,6 +262,11 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - 検索の解決は `federation.Resolver.Resolve` です。ハンドル（`@user@host` / `user@host`）は `ResolveHandle` に渡します。
   URL は、正規化した IRI で保存済みのアカウント・投稿を引き、無ければ文書を 1 回だけ取得して、Actor なら保存してから `ResolveURL` と同じくハンドルを確かめ、投稿なら §6.3 の取得した投稿として取り込みます（ADR-0034 の「URL の検索で解決した」）。投稿の返信先は受信時と同じく 1 段だけ取得します。
   自サーバーの URL は取得せず、保存済みのものだけを返します。それ以外（コレクションなど）と取得できないものは `ErrUnresolvable` です。
+- ピン留め（`featured`、[ADR-0044](../adr/0044-remote-profile-recent-posts.md)）: Actor の文書を保存するとき（取得・取り直し・Actor 自身の `Update`）、文書が Actor と同じオリジンの `featured` を宣言していれば、保存のトランザクションでジョブ `federation.fetch_featured`（ペイロードは `account_id`、冪等キー `fetch_featured:<account_id>`）を `queue.Outbox` に投入します。
+  - ジョブ（`StatusHandlers`）は、実行時にもアカウントの条件（有効なリモート・`federation` の制限なし・同じオリジンの `featured`）を確かめ直し、コレクションの項目か、無ければ `first` のページ（同じオリジンのものだけ。2 ページ目はたどらない）を読みます。
+  - 項目の順に、埋め込みなら `attributedTo` がそのアカウントで宛先に `as:Public` を含む投稿、IRI ならアカウントと同じオリジンの投稿を 5 件（`FeaturedMaxPosts`）まで選び、保存済みでなければ §6.3 の outbox と同じく取得した投稿として取り込みます（返信先は取得しない）。1 回の文書はコレクション・ページ・投稿の合わせて 7 件（`FeaturedMaxDocuments`）までです。
+  - 選んだ投稿で `content.Interactions.ReplaceRemotePins` がそのアカウントの `status_pins` を置き換えます（コレクションの順、新しいピン留めが先）。空のコレクションと `featured` を宣言しなくなった文書はピン留めを消し、コレクションが取得できなければピン留めを残してジョブを完了にします。ストアの失敗は `Retry` です。
+  - `GET /api/v1/accounts/{id}/statuses?pinned=true` はローカルと同じく `status_pins` を返すので、リモートのアカウントのプロフィールの先頭にも固定した投稿が出ます。コントラクトテストは `testkit.RemoteStatusContract` で、Mastodon・Misskey・GoToSocial の `featured.json` を取り込みます。
 - 取得から 24 時間を過ぎた Actor は、次に使われたとき（署名の検証・表示・配送）に非同期で取り直します（ジョブ `federation.refresh_actor`、冪等キー `refresh_actor:<account_id>`）。ローカルのアカウントがフォローしている Actor は、定期ジョブ `federation.refresh_actors`（1 時間ごと）が `remote_account_heads (last_fetched_at)` の古い順に 200 件ずつ読み、フォローされているものを取り直します（ADR-0034）。カーソル（`last_fetched_at` と `account_id`）を持った次のジョブが続きを読みます。
 
 ### 6.3 投稿
@@ -471,6 +476,39 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
   判定はポート `content.MediaFetchPolicy` を通します。実装は `moderation.FederationPolicy` です（§11）。
   `media_sensitive` の制限（`force_sensitive`）は表示のときに添付をセンシティブにします。
 - サムネイル・blurhash がない動画は、クライアントが「プレビューなし」として表示します。
+
+### 9.1 リンクのカード
+
+投稿の本文にあるリンクの先のページから、題名・説明・画像を取り出してカードにします（FR-117、[ADR-0062](../adr/0062-link-preview-cards.md)）。
+自サーバーのページに付ける OGP / X Card の meta（ADR-0028 の「プレビュー」）とは別の仕組みです。実装は `content.LinkCards`（`internal/app/content/link_card*.go`）です。
+
+- **契機**: 投稿の作成・編集のイベント（ローカルとリモートの両方。リモートは `Create` / `Update` の取り込み）の投影が、現在の版から URL を選んで `status_link_cards` に書き、
+  そのカードがない・取得から 14 日を過ぎているときに、ジョブ `content.fetch_link_card`（引数は投稿の ID）を同じトランザクションで outbox に積みます。リモートの投稿のジョブは 0〜60 秒のランダムな遅延を付けます。
+  ジョブは実行時に `status_link_cards` の現在の URL を読むので、編集で URL が変わっても古い URL は取りません。公開範囲によらず取得します。
+- **選ぶ URL**: 本文の最初の `http` / `https` のリンクで、メンション・ハッシュタグ・自サーバーのホスト（`host`・`account_domain`・`web_origin` のホスト）のものを除きます。
+  ローカルの投稿は `ParseText` の区分で、リモートの投稿はサニタイズ済み HTML の `a` の `class`（`mention`, `hashtag`, `u-url`）・`rel="tag"`・`@` や `#` で始まるリンクの文字で、メンションとハッシュタグを見分けます。
+  添付か投票のある投稿はカードを持ちません。URL は `content.NormalizeLinkURL`（スキームとホストを小文字に、既定のポート・フラグメント・利用者情報を除く。クエリはそのまま）で正規化し、カードはこの URL ごとに共有します。
+- **取得**: `HTTPClient` に `HTTPPurposeHTML` で `GET` を送ります（`Accept: text/html, application/xhtml+xml`、`Accept-Language` はインスタンスの `default_locale`。Cookie と `Referer` は送りません）。
+  SSRF ガード・リダイレクト・本文 1 MiB・30 秒は §1.1 と ADR-0019 §1 のとおりで、`https` 以外の URL は取得しません。状態コード 200 で `text/html` / `application/xhtml+xml` の応答だけを読みます。
+- **解析**: `golang.org/x/net/html` のトークナイザで `<head>` だけを読み（`</head>` か `<body>` で止める）、文字コードは `golang.org/x/net/html/charset` で UTF-8 にします。
+  題名は `og:title` → `twitter:title` → JSON-LD の `headline` → `<title>`、説明は `og:description` → `twitter:description` → JSON-LD の `description` → `<meta name="description">`、
+  サイト名は `og:site_name` → JSON-LD の `publisher.name` → ホスト、作者は `article:author`（URL でないもの）→ `<meta name="author">` → JSON-LD の `author.name`、
+  公開日時は `article:published_time` → JSON-LD の `datePublished`（RFC 3339 のもの）、画像は `og:image:secure_url` → `og:image` → `twitter:image`、言語は `<html lang>` です。
+  JSON-LD は `<script type="application/ld+json">`（64 KiB まで）を JSON として読み、最上位か `@graph` の `NewsArticle` / `Article` / `BlogPosting` / `WebPage` の最初のものだけを使います。`@context` は取得しません。
+  値はプレーンテキストにして、題名 200・説明 500・サイト名 100・作者 100・画像の代替テキスト 1,500 の書記素で切ります。`og:url` は応答の最終 URL と同じオリジンのときだけカードの URL にします。
+  題名のないページはカードにしません。oEmbed・`twitter:player`・`og:video` の埋め込みは扱いません。
+- **失敗と同時取得**: 取得・解釈の失敗は URL の SHA-256 をキーに KV（名前空間 `content.link_card_failure`）へ 24 時間記録し、その間は取りません。
+  取得の前に URL ごとのロック（`content.link_card_lock`、60 秒）を取り、取得中なら 60 秒後に再試行します。
+- **画像**: カードのホストと画像のホストのどちらにも `media_fetch` の制限がなければ、画像を `HTTPPurposeImage` で 1 回だけ取得し、中身で形式を判定して（§9 の許可リストのうち画像。SVG は拒否）、
+  `media.Processor` で寸法と blurhash を求め、`media_files`（`origin = remote`、所有者なし）と `link_card_media` に記録します。本体は保存しません。同じ URL の画像は最初の記録を使います。
+  クライアント API はメディアプロキシの `small`（添付と同じ S の箱の静止画）の URL だけを返し、プロキシは `link_card_media` を添付の画像と同じ規則で中継・キャッシュします。
+- **`fediverse:creator`**: 最初の `<meta name="fediverse:creator">` を `RemoteActors.VerifyCreator` で WebFinger から解決し（10 秒まで）、Actor の文書を取り直して、
+  その `attributionDomains` がカードの URL のホストかその親ドメインを含むときだけ、カードの作者のアカウントにします。ローカルのアカウントは検証しません。
+- **処分**: カードの URL のホスト（要求の URL と最終 URL）に `federation` の制限（`suspend`）があれば、取得せず、既存のカードも出しません。
+  `media_fetch` の制限（`reject_media`）がカード・画像のホストにあれば、画像を取得せず、既存の画像も出しません。投稿がセンシティブか、作者に `media_sensitive` の制限があれば、画像はセンシティブとして表示します。
+  カードは連合しません。
+- **保持**: 1 日 1 回のジョブ `content.cleanup_link_cards` が、どの投稿からも参照されず取得から 14 日を過ぎたカードと、どのカードも使わない画像（`link_card_media` と `media_files`）を消します（FR-803）。
+- インスタンス設定 `link_cards_enabled`（既定 `true`）が偽のとき、ジョブは何もせず、API はカードを返しません。
 
 ## 10. コレクションとオブジェクトの GET
 

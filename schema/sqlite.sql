@@ -604,7 +604,7 @@ CREATE TABLE instance_setting_revisions (
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
     'retention_moderation_actions', 'retention_audit_log',
-    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description'
+    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description', 'link_cards_enabled'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
@@ -1162,9 +1162,10 @@ CREATE INDEX bookmarks_account_id_id ON bookmarks (account_id, id);
 -- The retention purge keeps a bookmarked remote status (ADR-0034).
 CREATE INDEX bookmarks_status_id ON bookmarks (status_id);
 
--- Current value: a status its author pinned to the profile (the Featured collection). Each pin
--- holds one of the account's slots 1..5 (content.MaxPins), so the unique slot index caps the pins
--- of an account even under concurrent inserts.
+-- Current value: a status its author pinned to the profile (the Featured collection): a local
+-- account's own pins, or a remote account's pins mirrored from its featured collection
+-- (ADR-0044). Each pin holds one of the account's slots 1..5 (content.MaxPins), so the unique
+-- slot index caps the pins of an account even under concurrent inserts.
 CREATE TABLE status_pins (
   account_id TEXT NOT NULL,
   status_id TEXT NOT NULL,
@@ -1543,6 +1544,51 @@ CREATE TABLE remote_media_cache (
 ) STRICT;
 CREATE INDEX remote_media_cache_expires_at ON remote_media_cache (expires_at);
 CREATE INDEX remote_media_cache_last_accessed_at ON remote_media_cache (last_accessed_at);
+
+-- Current value (cache): the link card of a URL (ADR-0062), read from the page's head and shared
+-- by every status that links the URL. url is the requested URL, normalized; card_url is where the
+-- card links (the final URL, or its og:url of the same origin). A fetch upserts the row;
+-- content.cleanup_link_cards deletes the rows that no status refers to 14 days after their fetch.
+-- author_name is empty when the page names no author.
+CREATE TABLE link_cards (
+  url TEXT NOT NULL PRIMARY KEY,
+  card_url TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  site_name TEXT NOT NULL,
+  author_name TEXT NOT NULL,
+  published_at INTEGER,
+  image_media_id TEXT,
+  creator_account_id TEXT,
+  language TEXT,
+  fetched_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX link_cards_fetched_at ON link_cards (fetched_at);
+CREATE INDEX link_cards_image_media_id ON link_cards (image_media_id);
+
+-- Resource (subtype of media_files): the image of link cards (ADR-0062 §3), fetched once to
+-- check its format and read its size and blurhash; the file itself is not kept. Its owner is the
+-- card's URL, not an account: media_files.owner_account_id is empty. The media proxy serves it.
+-- description is the og:image:alt, empty for none.
+CREATE TABLE link_card_media (
+  media_id TEXT NOT NULL PRIMARY KEY,
+  remote_url TEXT NOT NULL,
+  content_type TEXT NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  blurhash TEXT NOT NULL,
+  description TEXT NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX link_card_media_remote_url ON link_card_media (remote_url);
+
+-- Projection: the URL whose card each status shows (ADR-0062 §1), chosen from the current
+-- revision of a status that is not deleted. The status shows no card while link_cards has no
+-- row of the URL.
+CREATE TABLE status_link_cards (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  url TEXT NOT NULL
+) STRICT;
+CREATE INDEX status_link_cards_url ON status_link_cards (url);
 
 -- ---------------------------------------------------------------------------------------------
 -- federation: inbox, delivery, and remote instances (data-model §4.8,

@@ -102,6 +102,7 @@ export { ContentWarning, type ContentWarningProps } from "./ContentWarning";
 export { CustomEmoji, EmojiText, type CustomEmojiImage, type CustomEmojiProps, type EmojiTextProps } from "./CustomEmoji";
 export { EmojiPicker, type EmojiPickerLabels, type EmojiPickerProps, type PickerEmoji } from "./EmojiPicker";
 export { Feed, FeedArticle, type FeedArticleProps, type FeedProps } from "./Feed";
+export { LinkCard, type LinkCardImage, type LinkCardProps } from "./LinkCard";
 export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
 export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";

@@ -114,6 +114,11 @@ SELECT EXISTS (SELECT 1 FROM status_pins WHERE account_id = $1 AND status_id = $
 -- name: DeleteStatusPin :execrows
 DELETE FROM status_pins WHERE account_id = $1 AND status_id = $2;
 
+-- name: DeleteStatusPinsOf :execrows
+-- DeleteStatusPinsOf removes every pin of an account: the mirror of a remote account's featured
+-- collection is replaced as a whole.
+DELETE FROM status_pins WHERE account_id = $1;
+
 -- name: CountStatusPins :one
 SELECT COUNT(*) FROM status_pins WHERE account_id = $1;
 

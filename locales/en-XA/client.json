@@ -4191,6 +4191,14 @@
     "defaultMessage": "[Ǿŧħḗḗř şḗḗřṽḗḗřş ŧħḗḗƞ řḗḗȧȧḓ ƥǿǿşŧş ȧȧƞḓ ƈǿǿŀŀḗḗƈŧīǿǿƞş ǿǿƞŀẏ ẇīŧħ ȧȧ ṽḗḗřīƒīḗḗḓ şīɠƞȧȧŧŭŭřḗḗ, şǿǿ ŧħȧȧŧ şŭŭşƥḗḗƞḓḗḗḓ şḗḗřṽḗḗřş ƈȧȧƞƞǿǿŧ řḗḗȧȧḓ ŧħḗḗḿ. Şǿǿḿḗḗ şǿǿƒŧẇȧȧřḗḗ ƈȧȧƞƞǿǿŧ řḗḗȧȧḓ ŧħḗḗḿ ȧȧƞẏḿǿǿřḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.federation.link_cards": {
+    "defaultMessage": "[Şħǿǿẇ ŧħḗḗ ƈȧȧřḓş ǿǿƒ ŀīƞķş īƞ ƥǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.federation.link_cards.description": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƒḗḗŧƈħḗḗş ŧħḗḗ ƥȧȧɠḗḗ ǿǿƒ ŧħḗḗ ƒīřşŧ ŀīƞķ īƞ ḗḗȧȧƈħ ƥǿǿşŧ, ẇħǿǿḗḗṽḗḗř ƈȧȧƞ şḗḗḗḗ ŧħḗḗ ƥǿǿşŧ, ȧȧƞḓ şħǿǿẇş īŧş ŧīŧŀḗḗ, ḓḗḗşƈřīƥŧīǿǿƞ, ȧȧƞḓ īḿȧȧɠḗḗ ŭŭƞḓḗḗř īŧ. Ŧħḗḗ ŀīƞķḗḗḓ şīŧḗḗş ŀḗḗȧȧřƞ ẇħḗḗƞ ŧħḗḗ ŀīƞķ ẇȧȧş ƥǿǿşŧḗḗḓ, ƀŭŭŧ ƞǿǿŧ ƀẏ ẇħǿǿḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.federation.title": {
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6203,6 +6211,10 @@
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "reaction.list.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "reaction.list.empty": {
     "defaultMessage": "[Ƞǿǿƀǿǿḓẏ ħȧȧş řḗḗȧȧƈŧḗḗḓ ẏḗḗŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8137,6 +8149,26 @@
   },
   "timeline.boosted_by": {
     "defaultMessage": "[{name} ƀǿǿǿǿşŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.card.account": {
+    "defaultMessage": "[{name} ({handle})]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.card.author": {
+    "defaultMessage": "[Ɓẏ {author}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.card.author_published": {
+    "defaultMessage": "[Ɓẏ {author} · {date}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.card.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şħǿǿẇ ŧħḗḗ ƥřḗḗṽīḗḗẇ ǿǿƒ ŧħīş ŀīƞķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.card.published": {
+    "defaultMessage": "[Ƥŭŭƀŀīşħḗḗḓ {date}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.content_warning.toggle": {
