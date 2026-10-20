@@ -4,7 +4,7 @@ import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { EmojiPickerButton } from "../../emoji";
 import { acceptedImageTypes } from "../api/media";
-import { characterCount, type FieldDraft, type ImageControl, profileLimits, useProfileForm } from "../hooks/useProfileForm";
+import { characterCount, type FieldDraft, type ImageControl, profileLimits, type ServerCrawlerPolicy, useProfileForm } from "../hooks/useProfileForm";
 import { useUnsavedChangesGuard } from "../hooks/useUnsavedChangesGuard";
 
 /**
@@ -84,6 +84,7 @@ export function ProfileForm() {
             {t("client:settings.profile.bot")}
           </Checkbox>
         </div>
+        <CrawlerSettings indexable={form.indexable} aiOptOut={form.aiOptOut} serverPolicy={form.serverPolicy} />
         {form.saveError !== undefined && (
           <p role="alert" className="text-danger">
             {form.saveError}
@@ -120,6 +121,38 @@ function UnsavedChangesDialog({ hasChanges }: { hasChanges: boolean }) {
       cancelLabel={t("client:settings.profile.unsaved.stay")}
       onConfirm={guard.leave}
     />
+  );
+}
+
+type CrawlerSettingsProps = {
+  indexable: ReturnType<typeof useProfileForm>["indexable"];
+  aiOptOut: ReturnType<typeof useProfileForm>["aiOptOut"];
+  serverPolicy: ServerCrawlerPolicy;
+};
+
+/**
+ * Whether search engines may index the profile and public posts, and whether AI may train on or use them (FR-412,
+ * ADR-0057). The server's own statement wins where it is stricter, so the section says when it denies already.
+ */
+function CrawlerSettings({ indexable, aiOptOut, serverPolicy }: CrawlerSettingsProps) {
+  const t = useT();
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <h2 id={headingId} className="text-sm font-medium text-fg">
+        {t("client:settings.profile.crawlers")}
+      </h2>
+      <Checkbox {...indexable} description={t("client:settings.profile.indexable.description")}>
+        {t("client:settings.profile.indexable")}
+      </Checkbox>
+      {serverPolicy?.searchIndexing === "deny" && <p className="text-sm text-fg-muted">{t("client:settings.profile.indexable.server_denies")}</p>}
+      <Checkbox {...aiOptOut} description={t("client:settings.profile.ai_opt_out.description")}>
+        {t("client:settings.profile.ai_opt_out")}
+      </Checkbox>
+      {serverPolicy !== undefined && serverPolicy.aiUsage !== "allow" && (
+        <p className="text-sm text-fg-muted">{t("client:settings.profile.ai_opt_out.server_denies", { usage: serverPolicy.aiUsage })}</p>
+      )}
+    </section>
   );
 }
 

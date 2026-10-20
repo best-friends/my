@@ -4423,7 +4423,7 @@ components:
     Instance:
       description: Public information about the instance.
       type: object
-      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules]
+      required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage]
       properties:
         domain:
           description: The domain that serves the instance.
@@ -4482,6 +4482,26 @@ components:
           format: uri
         theme:
           $ref: "#/components/schemas/InstanceTheme"
+        search_indexing:
+          $ref: "#/components/schemas/SearchIndexing"
+        ai_usage:
+          $ref: "#/components/schemas/AIUsage"
+    SearchIndexing:
+      description: |
+        Whether the instance lets search engines index its pages (the instance setting
+        `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+        that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+        the reverse.
+      type: string
+      enum: [allow, deny]
+    AIUsage:
+      description: |
+        What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+        `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+        and no use by AI search, assistants, and agents. An account can opt out of what the
+        instance allows (`ai_opt_out`), never the reverse.
+      type: string
+      enum: [allow, deny_training, deny]
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -5820,13 +5840,22 @@ components:
       allOf:
         - $ref: "#/components/schemas/Account"
         - type: object
-          required: [discoverable, indexable, source, posting, permissions]
+          required: [discoverable, indexable, ai_opt_out, source, posting, permissions]
           properties:
             discoverable:
               description: Whether the account may be suggested to others and listed in directories.
               type: boolean
             indexable:
-              description: Whether the account's public posts may be indexed for search.
+              description: |
+                Whether the account's profile and public posts may be indexed for search: by this
+                instance's search and, when the instance's `search_indexing` is `allow`, by search
+                engines (FR-412, ADR-0057). New accounts take the instance's default.
+              type: boolean
+            ai_opt_out:
+              description: |
+                Whether the account's pages state that AI may neither train on nor use them
+                (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+                pages of this instance only; other servers and the media files do not carry it.
               type: boolean
             source:
               $ref: "#/components/schemas/AccountSource"
@@ -5875,7 +5904,10 @@ components:
           description: Whether the account may be suggested to others and listed in directories.
           type: boolean
         indexable:
-          description: Whether the account's public posts may be indexed for search.
+          description: Whether the account's profile and public posts may be indexed for search (FR-412).
+          type: boolean
+        ai_opt_out:
+          description: Whether the account's pages state that AI may neither train on nor use them (FR-412).
           type: boolean
     Preferences:
       description: The authenticated user's preferences.
@@ -8140,13 +8172,18 @@ components:
         - retention_reports
         - retention_moderation_actions
         - retention_audit_log
+        - search_indexing
+        - ai_usage
+        - indexable_default
+        - security_contact
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
         `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-        `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+        `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
+        `https:` or `mailto:` URI, or empty for none.
       type: string
-      enum: [bool, int, enum, locale, media]
+      enum: [bool, int, enum, locale, media, uri]
     UpdateInstanceSettingsRequest:
       description: New values of some instance settings, saved together.
       type: object

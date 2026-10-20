@@ -3087,7 +3087,25 @@ export interface components {
              */
             privacy_policy_url?: string;
             theme?: components["schemas"]["InstanceTheme"];
+            search_indexing: components["schemas"]["SearchIndexing"];
+            ai_usage: components["schemas"]["AIUsage"];
         };
+        /**
+         * @description Whether the instance lets search engines index its pages (the instance setting
+         *     `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+         *     that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+         *     the reverse.
+         * @enum {string}
+         */
+        SearchIndexing: "allow" | "deny";
+        /**
+         * @description What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+         *     `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+         *     and no use by AI search, assistants, and agents. An account can opt out of what the
+         *     instance allows (`ai_opt_out`), never the reverse.
+         * @enum {string}
+         */
+        AIUsage: "allow" | "deny_training" | "deny";
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
             /**
@@ -4008,8 +4026,18 @@ export interface components {
         CredentialAccount: components["schemas"]["Account"] & {
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable: boolean;
-            /** @description Whether the account's public posts may be indexed for search. */
+            /**
+             * @description Whether the account's profile and public posts may be indexed for search: by this
+             *     instance's search and, when the instance's `search_indexing` is `allow`, by search
+             *     engines (FR-412, ADR-0057). New accounts take the instance's default.
+             */
             indexable: boolean;
+            /**
+             * @description Whether the account's pages state that AI may neither train on nor use them
+             *     (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+             *     pages of this instance only; other servers and the media files do not carry it.
+             */
+            ai_opt_out: boolean;
             source: components["schemas"]["AccountSource"];
             posting: components["schemas"]["PostingLimits"];
             /**
@@ -4043,8 +4071,10 @@ export interface components {
             bot?: boolean;
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable?: boolean;
-            /** @description Whether the account's public posts may be indexed for search. */
+            /** @description Whether the account's profile and public posts may be indexed for search (FR-412). */
             indexable?: boolean;
+            /** @description Whether the account's pages state that AI may neither train on nor use them (FR-412). */
+            ai_opt_out?: boolean;
         };
         /** @description The authenticated user's preferences. */
         Preferences: {
@@ -5488,14 +5518,15 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `uri`: an
+         *     `https:` or `mailto:` URI, or empty for none.
          * @enum {string}
          */
-        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media";
+        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "uri";
         /** @description New values of some instance settings, saved together. */
         UpdateInstanceSettingsRequest: {
             /** @description The new value of each setting to change, by key, as a string. */

@@ -22,6 +22,7 @@ const viewer = {
   created_at: "2026-10-01T00:00:00Z",
   discoverable: true,
   indexable: true,
+  ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
   permissions: [],

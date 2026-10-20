@@ -4,6 +4,7 @@ package instance_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -270,5 +271,66 @@ func TestParseMedia(t *testing.T) {
 	var zero instance.Settings
 	if zero.PreviewImageMediaID() != "" {
 		t.Errorf("default preview image = %q", zero.PreviewImageMediaID())
+	}
+}
+
+func TestParseSecurityContact(t *testing.T) {
+	d, err := instance.Lookup(instance.SettingSecurityContact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, raw := range []string{"", "mailto:security@social.example", "https://social.example/security"} {
+		if got, err := d.Parse(raw); err != nil || got != raw {
+			t.Errorf("Parse(%q) = %q, %v; want itself", raw, got, err)
+		}
+	}
+	for _, raw := range []string{
+		"security@social.example", "http://social.example/security", "https:///security", "mailto:nobody",
+		"https://user@social.example/", "https://social.example/a b", "javascript:alert(1)", "https://social.example/\n",
+		"https://social.example/" + strings.Repeat("a", instance.MaxURILength),
+	} {
+		if got, err := d.Parse(raw); !errors.Is(err, instance.ErrInvalidValue) {
+			t.Errorf("Parse(%q) = %q, %v; want ErrInvalidValue", raw, got, err)
+		}
+	}
+}
+
+// TestCrawlerPolicy checks ADR-0057: unset settings deny, and an owner only narrows the
+// instance's policy.
+func TestCrawlerPolicy(t *testing.T) {
+	var zero instance.Settings
+	if p := zero.CrawlerPolicy(); p != instance.DenyAll || p.IndexAllowed() || !p.DeniesTraining() || !p.DeniesAIUse() || zero.IndexableDefault() {
+		t.Errorf("unset policy = %+v, indexable default %v; want everything denied", p, zero.IndexableDefault())
+	}
+	if (instance.CrawlerPolicy{}).IndexAllowed() || !(instance.CrawlerPolicy{}).DeniesAIUse() {
+		t.Errorf("the zero CrawlerPolicy allows something")
+	}
+	allow := instance.CrawlerPolicy{Search: instance.SearchAllow, AI: instance.AIAllow}
+	training := instance.CrawlerPolicy{Search: instance.SearchAllow, AI: instance.AIDenyTraining}
+	for _, tc := range []struct {
+		policy              instance.CrawlerPolicy
+		indexable, aiOptOut bool
+		want                instance.CrawlerPolicy
+	}{
+		{allow, true, false, allow},
+		{allow, false, false, instance.CrawlerPolicy{Search: instance.SearchDeny, AI: instance.AIAllow}},
+		{allow, true, true, instance.CrawlerPolicy{Search: instance.SearchAllow, AI: instance.AIDeny}},
+		{training, true, false, training},
+		// An owner cannot allow what the instance denies.
+		{instance.DenyAll, true, false, instance.DenyAll},
+	} {
+		if got := tc.policy.ForOwner(tc.indexable, tc.aiOptOut); got != tc.want {
+			t.Errorf("%+v.ForOwner(%v, %v) = %+v, want %+v", tc.policy, tc.indexable, tc.aiOptOut, got, tc.want)
+		}
+	}
+	if !training.DeniesTraining() || training.DeniesAIUse() || allow.DeniesTraining() || allow.DeniesAIUse() {
+		t.Errorf("deny_training or allow states the wrong reservations")
+	}
+	s := instance.NewSettings([]instance.CurrentSetting{
+		{Key: instance.SettingSearchIndexing, Value: "allow"}, {Key: instance.SettingAIUsage, Value: "deny_training"},
+		{Key: instance.SettingIndexableDefault, Value: "true"},
+	})
+	if s.CrawlerPolicy() != training || !s.IndexableDefault() {
+		t.Errorf("stored policy = %+v, indexable default %v", s.CrawlerPolicy(), s.IndexableDefault())
 	}
 }

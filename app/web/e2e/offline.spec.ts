@@ -71,6 +71,8 @@ const instance: Instance = {
   limits: { max_post_characters: 500 },
   timelines: { local: true, federated: true },
   sends_email: false,
+  search_indexing: "deny",
+  ai_usage: "deny",
   rules: [],
 };
 

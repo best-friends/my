@@ -288,7 +288,7 @@ func TestNormalizeActor(t *testing.T) {
 		"summary":"<p>bio</p>","url":"https://a.example/@alice","inbox":"https://a.example/u/alice/inbox","outbox":"https://a.example/u/alice/outbox",
 		"followers":"https://a.example/u/alice/followers","following":"https://a.example/u/alice/following","featured":"https://a.example/u/alice/featured",
 		"endpoints":{"sharedInbox":"https://a.example/inbox"},"icon":{"type":"Image","url":"https://a.example/a.png"},"image":"https://a.example/h.png",
-		"manuallyApprovesFollowers":true,"discoverable":true,"published":"2020-01-01T00:00:00Z","isCat":true,
+		"manuallyApprovesFollowers":true,"discoverable":true,"indexable":true,"published":"2020-01-01T00:00:00Z","isCat":true,
 		"publicKey":{"id":"https://a.example/u/alice#main-key","owner":"https://a.example/u/alice","publicKeyPem":"-----BEGIN PUBLIC KEY-----"},
 		"attachment":[{"type":"PropertyValue","name":"Site","value":"<a href=\"https://alice.example\">alice.example</a>"}],
 		"tag":[{"type":"Emoji","name":":blob:","icon":{"url":"https://a.example/e.png"}}]}`)
@@ -301,7 +301,7 @@ func TestNormalizeActor(t *testing.T) {
 		URL: "https://a.example/@alice", Inbox: "https://a.example/u/alice/inbox", Outbox: "https://a.example/u/alice/outbox",
 		SharedInbox: "https://a.example/inbox", Followers: "https://a.example/u/alice/followers", Following: "https://a.example/u/alice/following",
 		Featured: "https://a.example/u/alice/featured", Icon: "https://a.example/a.png", Image: "https://a.example/h.png",
-		ManuallyApprovesFollowers: true, Discoverable: true, Published: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
+		ManuallyApprovesFollowers: true, Discoverable: true, Indexable: true, Published: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC),
 		PublicKeys: []federation.PublicKey{{ID: "https://a.example/u/alice#main-key", Owner: "https://a.example/u/alice", PEM: "-----BEGIN PUBLIC KEY-----"}},
 		Fields:     []federation.Field{{Name: "Site", Value: `<a href="https://alice.example">alice.example</a>`}},
 		Emojis:     []federation.Emoji{{Shortcode: "blob", IconURL: "https://a.example/e.png"}},

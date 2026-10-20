@@ -11,6 +11,11 @@ export type About = {
   /** The paragraphs of the full description (plain text, split at blank lines); empty when there is none. */
   description: readonly string[];
   rules: Instance["rules"];
+  /**
+   * What the instance states to search engines and AI crawlers (FR-725, ADR-0057); undefined while the instance
+   * has not loaded.
+   */
+  crawlers: { searchIndexing: Instance["search_indexing"]; aiUsage: Instance["ai_usage"] } | undefined;
 };
 
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
@@ -34,6 +39,7 @@ export function useAbout(): About {
     summary: instance?.short_description?.trim() ?? "",
     description: paragraphs(instance?.description),
     rules: instance?.rules ?? [],
+    crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
   };
 }
 

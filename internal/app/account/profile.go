@@ -30,6 +30,7 @@ type ProfileUpdate struct {
 	Bot           *bool
 	Discoverable  *bool
 	Indexable     *bool
+	AIOptOut      *bool
 }
 
 // UpdateProfile records a new revision of a local account's profile: the current revision
@@ -75,7 +76,7 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, in Profil
 
 	next := ProfileInput{
 		DisplayName: text.DisplayName, NoteHTML: cur.NoteHTML,
-		Locked: cur.Locked, Bot: cur.Bot, Discoverable: cur.Discoverable, Indexable: cur.Indexable,
+		Locked: cur.Locked, Bot: cur.Bot, Discoverable: cur.Discoverable, Indexable: cur.Indexable, AIOptOut: cur.AIOptOut,
 		AvatarMediaID: cur.AvatarMediaID, HeaderMediaID: cur.HeaderMediaID,
 		Fields: cur.Fields, Source: &account.ProfileSource{Note: text.Note, FieldValues: src.FieldValues},
 	}
@@ -107,7 +108,7 @@ func (s *Service) UpdateProfile(ctx context.Context, accountID string, in Profil
 	for _, b := range []struct {
 		dst *bool
 		src *bool
-	}{{&next.Locked, in.Locked}, {&next.Bot, in.Bot}, {&next.Discoverable, in.Discoverable}, {&next.Indexable, in.Indexable}} {
+	}{{&next.Locked, in.Locked}, {&next.Bot, in.Bot}, {&next.Discoverable, in.Discoverable}, {&next.Indexable, in.Indexable}, {&next.AIOptOut, in.AIOptOut}} {
 		if b.src != nil {
 			*b.dst = *b.src
 		}
