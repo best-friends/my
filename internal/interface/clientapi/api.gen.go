@@ -4040,7 +4040,7 @@ type Instance struct {
 	// ShortDescription A one-paragraph summary of the instance, as plain text; omitted when there is none.
 	ShortDescription *string `json:"short_description,omitempty"`
 
-	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13).
+	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
 	SourceUrl string `json:"source_url"`
 
 	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted

@@ -3508,7 +3508,7 @@ export interface components {
             version: string;
             /**
              * Format: uri
-             * @description Where users get the source code of the running server (AGPL-3.0 section 13).
+             * @description Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
              */
             source_url: string;
             limits: components["schemas"]["InstanceLimits"];

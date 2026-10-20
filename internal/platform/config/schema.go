@@ -95,7 +95,7 @@ var schema = []field{
 	},
 	{
 		key:   "source_url",
-		doc:   "Where users get the source code of the running server, as an `https` URL. NodeInfo publishes it as `software.repository` (AGPL-3.0 section 13, ADR-0011); point it at your own repository when you run a modified version.",
+		doc:   "Where users get the source code of the running server, as an `https` URL or a `mailto:` address to request it from. AGPL-3.0 section 13 (ADR-0011) requires offering the source to everyone who uses the server over the network; `GET /instance`, the information page (`/about`), the landing page, and NodeInfo (`metadata.sourceCode`, and `software.repository` for an `https` URL) publish it. Point it at your own source when you run a fork or a modified version (docs/operations/running.md).",
 		def:   DefaultSourceURL,
 		check: checkSourceURL,
 		set:   func(c *Config, v string) { c.SourceURL = v },
@@ -673,10 +673,27 @@ func validLabel(l string) bool {
 	return true
 }
 
+// checkSourceURL accepts an absolute https URL or a mailto: URI with an address, the two ways of offering the source
+// that AGPL-3.0 section 13 leaves to the operator.
 func checkSourceURL(v string) error {
+	const msg = "must be an absolute https URL without user info or fragment, or a mailto: URI with an email address"
 	u, err := url.Parse(v)
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
-		return errors.New("must be an absolute https URL without user info or fragment")
+	if err != nil || u.Fragment != "" {
+		return errors.New(msg)
+	}
+	switch u.Scheme {
+	case "https":
+		if u.Host == "" || u.User != nil {
+			return errors.New(msg)
+		}
+	case "mailto":
+		// mailto:alice@example.org[?subject=...]: the address is the opaque part, without "//".
+		to, err := url.PathUnescape(u.Opaque)
+		if err != nil || u.Host != "" || !strings.Contains(to, "@") {
+			return errors.New(msg)
+		}
+	default:
+		return errors.New(msg)
 	}
 	return nil
 }
