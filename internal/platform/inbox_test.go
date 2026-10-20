@@ -19,6 +19,7 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/federation"
 	"github.com/best-friends/my/internal/platform"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // TestInbox checks that the composition root serves the inboxes on the real HTTP signature
@@ -33,7 +34,8 @@ func TestInbox(t *testing.T) {
 	}
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	var aliceID string
-	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
+	meter := testkit.NewMeter()
+	s := startApp(t, cfg, platform.AppOptions{Meter: meter}, platform.ServeOptions{}, func(a *platform.App) {
 		ctx := t.Context()
 		if _, _, ok := a.Handlers.Lookup(appfederation.JobInbox); !ok {
 			t.Errorf("no handler of %s is registered", appfederation.JobInbox)
@@ -119,6 +121,22 @@ func TestInbox(t *testing.T) {
 				t.Errorf("401 without Accept-Signature: %v", resp.Header)
 			}
 		})
+	}
+
+	// my.inbox.activities counts what the inbox did with each POST it read (ADR-0055 §3); the
+	// refusals of the HTTP handler (404, 415, 413) never reach it.
+	for labels, want := range map[[2]string]float64{
+		{"Follow", appfederation.InboxOutcomeAccepted}:  1,
+		{"Follow", appfederation.InboxOutcomeDuplicate}: 2,
+		{"other", appfederation.InboxOutcomeRejected}:   1,
+	} {
+		match := map[string]string{appfederation.LabelActivityType: labels[0], appfederation.LabelOutcome: labels[1]}
+		if got := meter.Sum(appfederation.InboxActivities.Name, match); got != want {
+			t.Errorf("%s%v = %v, want %v", appfederation.InboxActivities.Name, match, got, want)
+		}
+	}
+	if err := meter.Err(); err != nil {
+		t.Error(err)
 	}
 }
 

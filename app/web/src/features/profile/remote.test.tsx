@@ -57,7 +57,9 @@ function fetchServer(reread: () => Response) {
     state.open = resolve;
   });
   server.use(
-    http.get(`${apiBase}/accounts/${remoteAccountFixture.id}/statuses`, async () => {
+    http.get(`${apiBase}/accounts/${remoteAccountFixture.id}/statuses`, async ({ request }) => {
+      // Carol pinned nothing that this server knows of.
+      if (new URL(request.url).searchParams.get("pinned") === "true") return HttpResponse.json(statusPage([]));
       state.requests += 1;
       if (state.requests === 1) return HttpResponse.json({ ...statusPage([remoteStatusFixture]), remote_fetch_started: true });
       await gate;
