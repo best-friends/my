@@ -47,7 +47,9 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // the origin of each sign-in and its purge after the configured retention, except for held
 // users), two-factor authentication with TOTP (enrolling from a sealed setup token, a second
 // sign-in step that takes a code once or a recovery code once, rate-limited wrong codes,
-// regenerating recovery codes, and disabling), the OAuth 2.0
+// regenerating recovery codes, and disabling), passkeys (registering after the password with the
+// earlier ones excluded, listing, removing, a sign-in challenge that works once, the code of TOTP
+// after a passkey, rate-limited failures, and the limits on registrations), the OAuth 2.0
 // authorization server (registering the web client, exact redirect URIs, PKCE S256 only,
 // one-time codes, refresh token rotation that revokes the whole family on reuse, revocation),
 // and the property that the account module's synchronous projections equal a rebuild from their events.
@@ -93,6 +95,11 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"TOTPRecoveryCodesWorkOnce", totpRecoveryCodesWorkOnce},
 		{"RateLimitsWrongTOTPCodes", totpRateLimitsWrongCodes},
 		{"RegeneratesRecoveryCodesAndDisablesTOTP", totpRegeneratesAndDisables},
+		{"RegistersListsAndRemovesPasskeys", passkeyRegistersListsAndRemoves},
+		{"LimitsPasskeyRegistrations", passkeyLimitsRegistrations},
+		{"SignsInWithAPasskey", passkeySignsIn},
+		{"RejectsRemovedPasskeysAndInactiveAccounts", passkeyRejectsRemovedAndInactive},
+		{"RateLimitsFailedPasskeySignIns", passkeyRateLimitsFailedSignIns},
 		{"RegistersTheWebClient", oauthRegistersTheWebClient},
 		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},
 		{"ExchangesCodesWithPKCE", oauthExchangesCodesWithPKCE},
@@ -200,6 +207,7 @@ func (e *accountEnv) newIdentityWith(change func(*appidentity.Deps)) *appidentit
 		RateLimiter: e.limiter,
 		Sealer:      e.sealer,
 		KV:          e.kv,
+		Passkeys:    FakePasskeys{},
 		WebClient:   contractWebClient,
 		BaseURL:     "https://" + contractHost,
 	}

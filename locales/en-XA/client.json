@@ -7155,6 +7155,134 @@
     "defaultMessage": "[Ƞǿǿŧ ǿǿƒƒḗḗřḗḗḓ ƀẏ ŧħīş şḗḗřṽḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "[Ƞǿǿ ƥȧȧşşķḗḗẏ ẇȧȧş ȧȧḓḓḗḗḓ: ŧħḗḗ ƀřǿǿẇşḗḗř'ş ƥřǿǿḿƥŧ ẇȧȧş ƈŀǿǿşḗḗḓ ǿǿř ŧīḿḗḗḓ ǿǿŭŭŧ. Ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "[Ƞȧȧḿḗḗ ŧħḗḗ ƥȧȧşşķḗḗẏ şǿǿ ŧħȧȧŧ ẏǿǿŭŭ ƈȧȧƞ ŧḗḗŀŀ īŧ ȧȧƥȧȧřŧ, ȧȧƞḓ ḗḗƞŧḗḗř ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ ŧǿǿ ƈǿǿƞƒīřḿ. Ẏǿǿŭŭř ƀřǿǿẇşḗḗř ŧħḗḗƞ ȧȧşķş ẇħḗḗřḗḗ ŧǿǿ şȧȧṽḗḗ ŧħḗḗ ƥȧȧşşķḗḗẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "[Ŧħīş ḓḗḗṽīƈḗḗ ǿǿř ƥȧȧşşẇǿǿřḓ ḿȧȧƞȧȧɠḗḗř ȧȧŀřḗḗȧȧḓẏ ħȧȧş ȧȧ ƥȧȧşşķḗḗẏ ƒǿǿř ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "[Ȧḓḓīƞɠ ŧħḗḗ ƥȧȧşşķḗḗẏ ŧǿǿǿǿķ ŧǿǿǿǿ ŀǿǿƞɠ. Ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ȧȧḓḓ ŧħḗḗ ƥȧȧşşķḗḗẏ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ṽḗḗřīƒīḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ ẇīŧħ ȧȧƞǿǿŧħḗḗř ḓḗḗṽīƈḗḗ ǿǿř ƥȧȧşşẇǿǿřḓ ḿȧȧƞȧȧɠḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "[Ŧǿǿǿǿ ḿȧȧƞẏ īƞƈǿǿřřḗḗƈŧ ƥȧȧşşẇǿǿřḓş: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "[Ȧḓḓ ƥȧȧşşķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "[Ȧḓḓ ȧȧ ƥȧȧşşķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧş ḿȧȧƞẏ ƥȧȧşşķḗḗẏş ȧȧş ȧȧŀŀǿǿẇḗḗḓ. Řḗḗḿǿǿṽḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ ƀřǿǿẇşḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƈřḗḗȧȧŧḗḗ ȧȧ ƥȧȧşşķḗḗẏ ƒǿǿř ŧħīş şīŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşẇǿǿřḓ īş ẇřǿǿƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ “{name}” ẇȧȧş ȧȧḓḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "[Ȧḓḓḗḗḓ {date}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "[Ȧ ƥȧȧşşķḗḗẏ şīɠƞş ẏǿǿŭŭ īƞ ẇīŧħ ŧħḗḗ ƒīƞɠḗḗřƥřīƞŧ, ƒȧȧƈḗḗ, ǿǿř ƤĪȠ ŧħȧȧŧ ŭŭƞŀǿǿƈķş ẏǿǿŭŭř ḓḗḗṽīƈḗḗ ǿǿř ƥȧȧşşẇǿǿřḓ ḿȧȧƞȧȧɠḗḗř, īƞşŧḗḗȧȧḓ ǿǿƒ ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ. Īƒ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ īş ǿǿƞ, şīɠƞīƞɠ īƞ şŧīŀŀ ȧȧşķş ƒǿǿř īŧş ƈǿǿḓḗḗ. Ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ ķḗḗḗḗƥş ẇǿǿřķīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "[Ƞǿǿ ƥȧȧşşķḗḗẏş ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƥȧȧşşķḗḗẏş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "[Ƞȧȧḿḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "[Şŭŭƈħ ȧȧş ŧħḗḗ ḓḗḗṽīƈḗḗ ǿǿř ƥȧȧşşẇǿǿřḓ ḿȧȧƞȧȧɠḗḗř ŧħȧȧŧ ķḗḗḗḗƥş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧ ƞȧȧḿḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "[Ƈŭŭřřḗḗƞŧ ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "[Ȧḓḓīƞɠ ȧȧ ẇȧȧẏ ŧǿǿ şīɠƞ īƞ ƞḗḗḗḗḓş ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "[Ḗƞŧḗḗř ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "[Ẏǿǿŭŭ ẇīŀŀ ƞǿǿ ŀǿǿƞɠḗḗř ƀḗḗ ȧȧƀŀḗḗ ŧǿǿ şīɠƞ īƞ ẇīŧħ īŧ. Ḓḗḗŀḗḗŧḗḗ īŧ ƒřǿǿḿ ẏǿǿŭŭř ḓḗḗṽīƈḗḗ ǿǿř ƥȧȧşşẇǿǿřḓ ḿȧȧƞȧȧɠḗḗř ŧǿǿǿǿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗḿǿǿṽḗḗ ŧħḗḗ ƥȧȧşşķḗḗẏ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ ƥȧȧşşķḗḗẏ “{name}”?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ “{name}” ẇȧȧş řḗḗḿǿǿṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.summary": {
+    "defaultMessage": "[Şīɠƞ īƞ ẇīŧħ ẏǿǿŭŭř ḓḗḗṽīƈḗḗ'ş şƈřḗḗḗḗƞ ŀǿǿƈķ īƞşŧḗḗȧȧḓ ǿǿƒ ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.title": {
+    "defaultMessage": "[Ƥȧȧşşķḗḗẏş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "[Ŧħīş ƀřǿǿẇşḗḗř ƈȧȧƞƞǿǿŧ ƈřḗḗȧȧŧḗḗ ƥȧȧşşķḗḗẏş. Ǿƥḗḗƞ ŧħīş ƥȧȧɠḗḗ īƞ ȧȧ ƀřǿǿẇşḗḗř ŧħȧȧŧ şŭŭƥƥǿǿřŧş ŧħḗḗḿ ŧǿǿ ȧȧḓḓ ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.preferences.autosave": {
     "defaultMessage": "[Ƈħȧȧƞɠḗḗş ȧȧřḗḗ şȧȧṽḗḗḓ ȧȧş şǿǿǿǿƞ ȧȧş ẏǿǿŭŭ ḿȧȧķḗḗ ŧħḗḗḿ.]",
     "description": "Generated from en by tools/i18n; do not edit."

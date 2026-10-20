@@ -87,6 +87,13 @@ DELETE FROM totp_enrollment_revocations WHERE enrollment_id IN (
 -- name: EraseTOTPEnrollments :exec
 DELETE FROM totp_enrollments WHERE user_id = sqlc.arg(user_id);
 
+-- name: ErasePasskeyCredentialRevocations :exec
+DELETE FROM passkey_credential_revocations WHERE passkey_id IN (
+  SELECT c.id FROM passkey_credentials c WHERE c.user_id = sqlc.arg(user_id));
+
+-- name: ErasePasskeyCredentials :exec
+DELETE FROM passkey_credentials WHERE user_id = sqlc.arg(user_id);
+
 -- name: EraseUserTokenRedemptions :exec
 DELETE FROM user_token_redemptions WHERE token_id IN (
   SELECT t.id FROM user_tokens t WHERE t.user_id = sqlc.arg(user_id));

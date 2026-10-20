@@ -213,7 +213,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 
 ## 8. サーバーが描画する画面
 
-ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。
+ログイン（二要素認証を使う利用者に認証コードを求める 2 段目の画面 `/auth/sign_in/two_factor` を含む）・登録・メール確認・アカウントの状態・OAuth の認可同意の画面と、利用規約・プライバシーポリシーの公開ページ（`/auth/terms`・`/auth/privacy`）は、Go の `html/template`（`internal/interface/authpages`）が描画し、JavaScript なしで動く（ADR-0030）。CAPTCHA を有効にしたときだけ、ログインと登録の画面はサービスのウィジェットのスクリプトを読み、そのページの CSP にサービスのオリジンを足す（ADR-0042）。ログインの画面は、Web クライアントのビルドが作るスクリプト（`src/server-pages/passkey-sign-in.ts`、CSP は `script-src 'self'`）を読み、パスキーに対応したブラウザでだけ「パスキーでログイン」のボタンを出す（FR-004）。ボタンのフォームは JavaScript がないと隠れたままで、メールアドレスとパスワードのフォームはスクリプトなしで動く。
 
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
@@ -284,6 +284,11 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   ドメインをミュートするフォーム（`TextField` とブラウザの制約検証）、ミュートしているドメインの一覧（ドメインの順、「さらに表示」）の 3 つ。`POST /domain_mutes` が正規化したドメインを `StatusMessage` に出し、断られたらサーバーの `detail` を `role="alert"` で出して入力を残す。
   各行はドメインを U ラベルで（A ラベルと違えば A ラベルも、どちらも `dir="ltr"`）出し、「ミュートを解除」（アクセシブルネームにドメインを含める）で `DELETE /domain_mutes/{domain}` を送る。解除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。
   ミュートと解除は投稿の一覧と通知（未読数を含む）を古くする（S1）。ミュートは一覧も取り直す（ドメインの順に入る）。
+- **パスキー**（`/settings/passkeys`、設定のメニューの「パスキー」、FR-004、`features/settings` の `PasskeySettings`）: パスキーが何をするか（パスワードの代わりになり、二要素認証のコードは引き続き求められる）の説明、
+  パスキーを追加するフォーム（名前と現在のパスワードの `TextField`）、登録済みのパスキーの一覧（古い順）の 3 つ。追加は `POST /passkeys/registration` がパスワードを確かめてから、ブラウザの `navigator.credentials.create()` を開き、
+  その答えを `POST /passkeys` へ送る（`lib/webauthn` が JSON とブラウザのオブジェクトを変換する）。間違ったパスワードはその欄のエラー、閉じられた確認や検証できなかったパスキーなどは `role="alert"` で出す。
+  パスキーに対応していないブラウザではフォームの代わりにその旨を出す。各行は名前（`dir="auto"`）と追加した日時を出し、「削除」（アクセシブルネームに名前を含める）を `ConfirmDialog`（`danger`）で確かめてから `DELETE /passkeys/{id}` を送る。
+  削除した行は一覧から消し、フォーカスを次の行のボタンへ移す（`useFocusAfterRemoval`）。パスキーでのログインはサーバーのログインの画面が行う（§8）。
 - **プロバイダ**（`App.tsx`）: 外側から、ランタイム設定、表示のロケール、i18n（`react-intl` と React Aria の `I18nProvider`）、QueryClient（`lib/query`）、セッションと API クライアント（`lib/auth/SessionProvider`、§10）、`AnnouncerProvider` / `ToastProvider`、React Aria の `RouterProvider`、ルーターの順に置く。
 - **文言**（`lib/i18n`）: クライアントの文言は `locales/<locale>/client.json` にあり、ロケールごとに別のチャンクで読み込む。足りない文言は `ja-JP` → `ja` → `en` の順に補う。
   ID の型は `tools/i18n` が生成する `MessageArgs` から作る（`ClientMessageKey`）。文字列にするときは `useT()` の `t("client:…", 引数)` を使い、ID と引数の型を検査する。

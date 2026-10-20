@@ -7103,6 +7103,134 @@
     "defaultMessage": "無効にする",
     "description": "Button that turns two-factor authentication off."
   },
+  "settings.passkeys.title": {
+    "defaultMessage": "パスキー",
+    "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
+  },
+  "settings.passkeys.summary": {
+    "defaultMessage": "パスワードの代わりに、端末の画面ロックでログインします",
+    "description": "Description of the passkeys page in the settings menu."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "パスキーを使うと、パスワードの代わりに、端末やパスワードマネージャーのロックを解除する指紋・顔・PIN でログインできます。二要素認証を有効にしている場合は、パスキーでログインしたあとにも認証コードを求められます。パスワードは引き続き使えます。",
+    "description": "Explanation at the top of the passkeys settings page."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "パスキーを追加",
+    "description": "Heading of the form that adds a passkey on the passkeys settings page."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "見分けられるようにパスキーに名前を付け、確認のためにパスワードを入力してください。続いて、ブラウザがパスキーの保存先を尋ねます。",
+    "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "名前",
+    "description": "Label of the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "保存する端末やパスワードマネージャーの名前など。",
+    "description": "Hint under the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "名前を入力してください。",
+    "description": "Error of the empty name field of a new passkey."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "現在のパスワード",
+    "description": "Label of the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "ログインの方法を追加するには、パスワードが必要です。",
+    "description": "Hint under the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "パスワードを入力してください。",
+    "description": "Error of the empty password field when adding a passkey."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "パスキーを追加",
+    "description": "Button that adds a passkey: it checks the password and opens the browser's prompt."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error of the password field when the server refused the password that confirms adding a passkey."
+  },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "パスキーは追加されませんでした。ブラウザの確認が閉じられたか、時間切れになりました。もう一度お試しください。",
+    "description": "Alert when the user dismissed the browser's passkey prompt or it timed out."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "この端末またはパスワードマネージャーには、このアカウントのパスキーがすでにあります。",
+    "description": "Alert when the authenticator already holds a passkey of the account."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "ブラウザがこのサイトのパスキーを作成できませんでした。",
+    "description": "Alert when the browser refused to create a passkey for another reason (unsupported, or the site's address does not allow it)."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "パスキーを確認できませんでした。別の端末やパスワードマネージャーでお試しください。",
+    "description": "Alert when the server could not verify the new passkey (for example, the device has no screen lock)."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "パスキーの追加に時間がかかりすぎました。もう一度お試しください。",
+    "description": "Alert when the passkey was created after the registration expired (5 minutes)."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "登録できるパスキーの数の上限に達しています。先にどれかを削除してください。",
+    "description": "Alert when the user already has the most passkeys allowed (20)."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "間違ったパスワードが多すぎます：{reason}",
+    "description": "Alert when too many wrong passwords were entered to add a passkey. {reason} is the server's message, which says when to try again."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "パスキーを追加できませんでした：{reason}",
+    "description": "Alert when adding a passkey failed for another reason. {reason} is the error's message."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "パスキー「{name}」を追加しました。",
+    "description": "Status after a passkey was added. {name} is the name the user gave it."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "このブラウザではパスキーを作成できません。追加するには、パスキーに対応したブラウザでこのページを開いてください。",
+    "description": "Note instead of the form that adds a passkey, in a browser without passkey support."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "登録済みのパスキー",
+    "description": "Heading of the list of the user's passkeys."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "パスキーはまだありません",
+    "description": "Empty state of the list of the user's passkeys."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "{date} に追加",
+    "description": "When a passkey was added, under its name. {date} is a formatted date and time."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "削除",
+    "description": "Button that removes a passkey, and the confirm button of its dialog."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "パスキー「{name}」を削除しますか？",
+    "description": "Title of the dialog that confirms removing a passkey. {name} is its name."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "このパスキーではログインできなくなります。端末やパスワードマネージャーからも削除してください。",
+    "description": "Explanation in the dialog that confirms removing a passkey."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the dialog without removing the passkey."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "パスキーを削除できませんでした：{reason}",
+    "description": "Alert in the dialog when removing a passkey failed. {reason} is the error's message."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "パスキー「{name}」を削除しました。",
+    "description": "Announcement after a passkey was removed. {name} is its name."
+  },
   "settings.visibility.direct": {
     "defaultMessage": "メンションした相手",
     "description": "Visibility option: only the mentioned accounts."

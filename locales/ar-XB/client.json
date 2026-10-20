@@ -7155,6 +7155,134 @@
     "defaultMessage": "‮Noʇ oɟɟǝɹǝp qʎ ʇɥıs sǝɹʌǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "‮No dɐssʞǝʎ ʍɐs ɐppǝp: ʇɥǝ qɹoʍsǝɹ's dɹoɯdʇ ʍɐs ɔʅosǝp oɹ ʇıɯǝp onʇ. ⊥ɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "‮Nɐɯǝ ʇɥǝ dɐssʞǝʎ so ʇɥɐʇ ʎon ɔɐu ʇǝʅʅ ıʇ ɐdɐɹʇ, ɐup ǝuʇǝɹ ʎonɹ dɐssʍoɹp ʇo ɔouɟıɹɯ. ⅄onɹ qɹoʍsǝɹ ʇɥǝu ɐsʞs ʍɥǝɹǝ ʇo sɐʌǝ ʇɥǝ dɐssʞǝʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "‮⊥ɥıs pǝʌıɔǝ oɹ dɐssʍoɹp ɯɐuɐƃǝɹ ɐʅɹǝɐpʎ ɥɐs ɐ dɐssʞǝʎ ɟoɹ ʎonɹ ɐɔɔonuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "‮∀ppıuƃ ʇɥǝ dɐssʞǝʎ ʇooʞ ʇoo ʅouƃ. ⊥ɹʎ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɐpp ʇɥǝ dɐssʞǝʎ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʞǝʎ ɔonʅp uoʇ qǝ ʌǝɹıɟıǝp. ⊥ɹʎ ɐƃɐıu ʍıʇɥ ɐuoʇɥǝɹ pǝʌıɔǝ oɹ dɐssʍoɹp ɯɐuɐƃǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "‮⊥oo ɯɐuʎ ıuɔoɹɹǝɔʇ dɐssʍoɹps: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "‮∀pp dɐssʞǝʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "‮∀pp ɐ dɐssʞǝʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ ɐs ɯɐuʎ dɐssʞǝʎs ɐs ɐʅʅoʍǝp. ᴚǝɯoʌǝ ouǝ ɟıɹsʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "‮⊥ɥǝ qɹoʍsǝɹ ɔonʅp uoʇ ɔɹǝɐʇǝ ɐ dɐssʞǝʎ ɟoɹ ʇɥıs sıʇǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp ıs ʍɹouƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʞǝʎ “{name}” ʍɐs ɐppǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "‮∀ppǝp {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "‮∀ dɐssʞǝʎ sıƃus ʎon ıu ʍıʇɥ ʇɥǝ ɟıuƃǝɹdɹıuʇ, ɟɐɔǝ, oɹ ԀIN ʇɥɐʇ nuʅoɔʞs ʎonɹ pǝʌıɔǝ oɹ dɐssʍoɹp ɯɐuɐƃǝɹ, ıusʇǝɐp oɟ ʎonɹ dɐssʍoɹp. Iɟ ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou ıs ou, sıƃuıuƃ ıu sʇıʅʅ ɐsʞs ɟoɹ ıʇs ɔopǝ. ⅄onɹ dɐssʍoɹp ʞǝǝds ʍoɹʞıuƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "‮No dɐssʞǝʎs ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "‮⅄onɹ dɐssʞǝʎs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "‮Nɐɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "‮Snɔɥ ɐs ʇɥǝ pǝʌıɔǝ oɹ dɐssʍoɹp ɯɐuɐƃǝɹ ʇɥɐʇ ʞǝǝds ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ uɐɯǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "‮Ↄnɹɹǝuʇ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "‮∀ppıuƃ ɐ ʍɐʎ ʇo sıƃu ıu uǝǝps ʎonɹ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʎonɹ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "‮⅄on ʍıʅʅ uo ʅouƃǝɹ qǝ ɐqʅǝ ʇo sıƃu ıu ʍıʇɥ ıʇ. ᗡǝʅǝʇǝ ıʇ ɟɹoɯ ʎonɹ pǝʌıɔǝ oɹ dɐssʍoɹp ɯɐuɐƃǝɹ ʇoo.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɯoʌǝ ʇɥǝ dɐssʞǝʎ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ ʇɥǝ dɐssʞǝʎ “{name}”?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʞǝʎ “{name}” ʍɐs ɹǝɯoʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.summary": {
+    "defaultMessage": "‮Sıƃu ıu ʍıʇɥ ʎonɹ pǝʌıɔǝ's sɔɹǝǝu ʅoɔʞ ıusʇǝɐp oɟ ʎonɹ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.title": {
+    "defaultMessage": "‮Ԁɐssʞǝʎs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "‮⊥ɥıs qɹoʍsǝɹ ɔɐuuoʇ ɔɹǝɐʇǝ dɐssʞǝʎs. Odǝu ʇɥıs dɐƃǝ ıu ɐ qɹoʍsǝɹ ʇɥɐʇ snddoɹʇs ʇɥǝɯ ʇo ɐpp ouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.preferences.autosave": {
     "defaultMessage": "‮Ↄɥɐuƃǝs ɐɹǝ sɐʌǝp ɐs soou ɐs ʎon ɯɐʞǝ ʇɥǝɯ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

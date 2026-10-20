@@ -207,6 +207,22 @@
     "defaultMessage": "Enter your email address and password.",
     "description": "Error when the sign-in form was submitted with an empty field."
   },
+  "auth.sign_in.passkey": {
+    "defaultMessage": "Sign in with a passkey",
+    "description": "Button on the sign-in page that signs in with a passkey (WebAuthn) instead of the email address and password. Shown only in browsers that support passkeys."
+  },
+  "auth.sign_in.passkey_cancelled": {
+    "defaultMessage": "The passkey was not used. Try again, or sign in with your email address and password.",
+    "description": "Alert on the sign-in page when the browser's passkey prompt was dismissed or failed before anything was sent to the server."
+  },
+  "auth.sign_in.passkey_expired": {
+    "defaultMessage": "The sign-in with a passkey took too long. Try again.",
+    "description": "Alert on the sign-in page when the passkey sign-in was answered after it expired (5 minutes) or was already used."
+  },
+  "auth.sign_in.passkey_failed": {
+    "defaultMessage": "The passkey could not be verified. Try another passkey, or sign in with your email address and password.",
+    "description": "Alert on the sign-in page when the server could not verify the passkey (unknown or removed passkey, wrong signature) or its account cannot sign in."
+  },
   "auth.sign_in.password_label": {
     "defaultMessage": "Password",
     "description": "Label of the password field on the sign-in form."
@@ -798,6 +814,18 @@
   "errors.two_factor.setup_expired": {
     "defaultMessage": "The setup of the authenticator app expired. Start again.",
     "description": "Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup."
+  },
+  "errors.passkey.invalid": {
+    "defaultMessage": "The passkey could not be verified.",
+    "description": "Title of the HTTP 422 API error when the browser's answer to a passkey registration does not verify (another site, no screen lock or biometrics, or a passkey that is registered already)."
+  },
+  "errors.passkey.registration_expired": {
+    "defaultMessage": "The registration of the passkey expired. Start again.",
+    "description": "Title of the HTTP 422 API error when the user finishes a passkey registration after it expired (5 minutes) or with an unknown registration."
+  },
+  "errors.passkey.too_many": {
+    "defaultMessage": "You have as many passkeys as allowed. Remove one first.",
+    "description": "Title of the HTTP 409 API error when the user registers a passkey while having the most passkeys allowed (20)."
   },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",

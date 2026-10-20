@@ -229,6 +229,8 @@ type App struct {
 	page http.Handler
 	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
 	webStylesheet string
+	// webPasskeyScript is the URL of the sign-in page's passkey script from the web build, empty without one.
+	webPasskeyScript string
 }
 
 type route struct {
@@ -475,6 +477,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	passkeys, err := newPasskeys(cfg)
+	if err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// The user step is the locale of the client API request's authenticated viewer.
 	a.Locales = &i18n.Resolver{Bundle: a.Messages, UserLocale: a.viewerLocale, InstanceDefault: a.instanceDefaultLocale}
 	// Moderation needs only the account module; the modules below read its restrictions.
@@ -487,6 +494,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Logins: a.AccountPolicy, RateLimiter: a.RateLimiter,
 		// TOTP secrets are sealed like actor keys (ADR-0019 §6); sign-in challenges live in the KV store.
 		Sealer: a.Sealer, KV: a.KV,
+		// Passkeys sign in instead of the password (FR-004); their ceremonies' state is sealed too.
+		Passkeys: passkeys,
 		// nil for captcha = none; sign-in and sign-up check the CAPTCHA token otherwise (ADR-0042).
 		HumanVerifier: a.HumanVerifier, Logger: a.Logger,
 		// The default locale and the registration mode are instance settings in the database,
@@ -666,6 +675,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		},
 		HumanCheck:      a.HumanCheckWidget,
 		ThemeStylesheet: a.themeStylesheet,
+		// A passkey signs in instead of the password where the browser has one (FR-004).
+		Passkeys: a.Identity, PasskeyScript: a.webPasskeyScript,
 	}).Register(surfaceRouter{a, surfaceOAuth})
 	tokens, err := oauth.New(oauth.Options{Identity: a.Identity, WebOrigin: cfg.WebOrigin, Logger: a.Logger})
 	if err != nil {
@@ -678,7 +689,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	api := clientapi.New(clientapi.Options{
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
-		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Media: a.Media,
+		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, AutoDelete: a.AutoDelete, TwoFactor: a.Identity, Passkeys: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph, InstanceThumbnail: a.instanceThumbnail,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,
@@ -820,6 +831,7 @@ func (a *App) setUpWeb(opts AppOptions) error {
 	}
 	h.Register(surfaceRouter{a, surfaceWeb})
 	a.webStylesheet = h.Stylesheet()
+	a.webPasskeyScript = h.PasskeySignInScript()
 	// The ActivityPub handler wraps it for the requests that ask for ActivityPub (activitypub.Handler.Pages).
 	a.page = h
 	return nil
