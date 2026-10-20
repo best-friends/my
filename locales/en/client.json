@@ -8167,6 +8167,10 @@
     "defaultMessage": "Who reacted",
     "description": "Title of the dialog that lists the accounts that reacted to a post, each with its emoji."
   },
+  "reaction.list.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the × button that closes the dialog of the accounts that reacted to a post."
+  },
   "reaction.list.loading": {
     "defaultMessage": "Loading the reactions",
     "description": "Shown in the dialog of the accounts that reacted to a post while the first page loads."

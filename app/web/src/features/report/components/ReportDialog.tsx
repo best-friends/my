@@ -60,7 +60,7 @@ const stepHeadings: Readonly<Record<ReportStep, ClientMessageKey>> = {
 export function ReportDialog({ account, status, isOpen, onOpenChange }: ReportDialogProps) {
   const t = useT();
   return (
-    <Dialog title={t("client:report.title", { name: isolatedName(account) })} closeLabel={t("client:report.close")} isOpen={isOpen} onOpenChange={onOpenChange}>
+    <Dialog title={t("client:report.title", { name: isolatedName(account) })} closeLabel={t("client:report.close")} isDismissable={false} isOpen={isOpen} onOpenChange={onOpenChange}>
       {/* The steps mount with the dialog's content, so closing the dialog drops the draft. */}
       {({ close }) => <ReportSteps account={account} status={status} close={close} />}
     </Dialog>

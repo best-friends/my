@@ -197,7 +197,7 @@ function EditRule({ rule, name, actions }: RuleActionProps) {
       <Button size="sm" aria-label={t("client:admin.rules.edit_rule", { rule: name })}>
         {t("client:admin.rules.edit")}
       </Button>
-      <Dialog title={t("client:admin.rules.edit.title")} closeLabel={t("client:admin.rules.edit.close")} size="md">
+      <Dialog title={t("client:admin.rules.edit.title")} closeLabel={t("client:admin.rules.edit.close")} isDismissable={false} size="md">
         {({ close }) => <EditRuleForm rule={rule} actions={actions} close={close} />}
       </Dialog>
     </DialogTrigger>

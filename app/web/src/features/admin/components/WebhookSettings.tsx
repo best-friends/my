@@ -187,7 +187,7 @@ function EditWebhook({ webhook, actions, isPending }: RowActionProps) {
       <Button size="sm" isDisabled={isPending} aria-label={t("client:admin.webhooks.edit_webhook", { name })}>
         {t("client:admin.webhooks.edit")}
       </Button>
-      <Dialog title={t("client:admin.webhooks.edit.title", { name })} closeLabel={t("client:admin.webhooks.edit.close")} size="md">
+      <Dialog title={t("client:admin.webhooks.edit.title", { name })} closeLabel={t("client:admin.webhooks.edit.close")} isDismissable={false} size="md">
         {({ close }) => <EditWebhookForm webhook={webhook} actions={actions} close={close} />}
       </Dialog>
     </DialogTrigger>
