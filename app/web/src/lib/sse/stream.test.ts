@@ -8,6 +8,12 @@ describe("parseStreamEvent", () => {
     expect(parseStreamEvent("notification", '{"id":"n1","type":"follow"}')).toEqual({ type: "notification", notification: { id: "n1", type: "follow" } });
   });
 
+  test("reads the announcement events of the client API", () => {
+    expect(parseStreamEvent("announcement", '{"id":"a1","read":false}')).toEqual({ type: "announcement", announcement: { id: "a1", read: false } });
+    expect(parseStreamEvent("announcement_removed", '{"id":"a1"}')).toEqual({ type: "announcement_removed", id: "a1" });
+    expect(parseStreamEvent("announcement_removed", "{}")).toBeNull();
+  });
+
   test("skips events it does not know and data it cannot read", () => {
     expect(parseStreamEvent("message", '{"id":"s1"}')).toBeNull();
     expect(parseStreamEvent("update", "{not json")).toBeNull();

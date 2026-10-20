@@ -35,9 +35,10 @@ func (TextRevised) EventType() string { return EventTextRevised }
 
 // RegisterProjectors registers the instance module's synchronous projectors (data-model §9):
 // instance_settings from setting revisions, instance_texts from text revisions,
-// instance_rule_heads from rule revisions and retirements, and instance_theme from theme
-// revisions. Each applies the same rule as RebuildProjections (the revision with the greatest ID
-// wins; a retired rule has no head).
+// instance_rule_heads from rule revisions and retirements, instance_theme from theme revisions,
+// and announcement_heads from announcement revisions and state changes. Each applies the same
+// rule as RebuildProjections (the revision with the greatest ID wins; a retired rule has no
+// head; a withdrawn announcement stays withdrawn).
 func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	r.Register(EventSettingRevised, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		rev := e.(SettingRevised).Revision
@@ -63,6 +64,7 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 	})
 	registerRuleProjectors(r, repo)
 	registerThemeProjectors(r, repo)
+	registerAnnouncementProjectors(r, repo)
 }
 
 // RebuildProjections empties the instance module's projections and derives them again from
@@ -76,6 +78,7 @@ func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) 
 		{"instance_texts", func(tx uow.Tx) error { return rebuildTexts(ctx, tx, repo) }},
 		{"instance_rule_heads", func(tx uow.Tx) error { return rebuildRuleHeads(ctx, tx, repo) }},
 		{"instance_theme", func(tx uow.Tx) error { return rebuildThemeHead(ctx, tx, repo) }},
+		{"announcement_heads", func(tx uow.Tx) error { return rebuildAnnouncementHeads(ctx, tx, repo) }},
 	}
 	for _, s := range steps {
 		if err := u.Tx(ctx, s.fn); err != nil {
