@@ -3987,6 +3987,14 @@
     "defaultMessage": "You are not signed in.",
     "description": "Text in the account section of the settings page when nobody is signed in."
   },
+  "settings.autoplay.description": {
+    "defaultMessage": "Animated images (GIF) move by themselves; off, they move only while you point at or touch them. Either way they stay still when your device asks for reduced motion. Kept on this browser.",
+    "description": "Help text of the switch that turns the autoplay of animated images on or off."
+  },
+  "settings.autoplay.label": {
+    "defaultMessage": "Play animations automatically",
+    "description": "Label of the switch on the preferences page that turns the autoplay of animated images on or off."
+  },
   "settings.back": {
     "defaultMessage": "Back to settings",
     "description": "Link under the heading of a settings page that opens the list of settings pages."

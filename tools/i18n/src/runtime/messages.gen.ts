@@ -1996,6 +1996,10 @@ export interface MessageArgs {
   "client:session.sign_out.failed": {};
   /** You are not signed in. */
   "client:session.signed_out": {};
+  /** Animated images (GIF) move by themselves; off, they move only while you point at or touch them. Either way they stay still when your device asks for reduced motion. Kept on this browser. */
+  "client:settings.autoplay.description": {};
+  /** Play animations automatically */
+  "client:settings.autoplay.label": {};
   /** Back to settings */
   "client:settings.back": {};
   /** You have not blocked anyone */

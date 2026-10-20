@@ -3987,6 +3987,14 @@
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ şīɠƞḗḗḓ īƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.autoplay.description": {
+    "defaultMessage": "[Ȧƞīḿȧȧŧḗḗḓ īḿȧȧɠḗḗş (ƓĪƑ) ḿǿǿṽḗḗ ƀẏ ŧħḗḗḿşḗḗŀṽḗḗş; ǿǿƒƒ, ŧħḗḗẏ ḿǿǿṽḗḗ ǿǿƞŀẏ ẇħīŀḗḗ ẏǿǿŭŭ ƥǿǿīƞŧ ȧȧŧ ǿǿř ŧǿǿŭŭƈħ ŧħḗḗḿ. Ḗīŧħḗḗř ẇȧȧẏ ŧħḗḗẏ şŧȧȧẏ şŧīŀŀ ẇħḗḗƞ ẏǿǿŭŭř ḓḗḗṽīƈḗḗ ȧȧşķş ƒǿǿř řḗḗḓŭŭƈḗḗḓ ḿǿǿŧīǿǿƞ. Ķḗḗƥŧ ǿǿƞ ŧħīş ƀřǿǿẇşḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.autoplay.label": {
+    "defaultMessage": "[Ƥŀȧȧẏ ȧȧƞīḿȧȧŧīǿǿƞş ȧȧŭŭŧǿǿḿȧȧŧīƈȧȧŀŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.back": {
     "defaultMessage": "[Ɓȧȧƈķ ŧǿǿ şḗḗŧŧīƞɠş]",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -3,6 +3,7 @@ import { type ComponentPropsWithRef, useState } from "react";
 import { ToggleButton } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { HideMediaIcon } from "./Icons";
+import { type ImageSources, Picture } from "./Picture";
 import { VisuallyHidden } from "./VisuallyHidden";
 
 const mediaGrid = tv({
@@ -36,6 +37,8 @@ export type MediaItem = {
   id: string;
   /** The image URL (the preview size). */
   src: string;
+  /** The renditions of the image, used instead of `src`: the one that fits the cell, still unless `Picture` lets it move. */
+  sources?: ImageSources | undefined;
   /**
    * The author's description of the image, or `null` when there is none. It is required so that a missing
    * description is always a decision the caller made; a remote image without one gets the "no description" badge.
@@ -97,8 +100,10 @@ export function MediaGrid({
         <div key={item.id} className={slots.cell()}>
           {revealed && (
             <>
-              <img
-                src={item.src}
+              <Picture
+                sources={item.sources ?? { still: [{ url: item.src }] }}
+                // A post is at most about 40rem wide; two or more pictures share it in two columns.
+                sizes={count === 1 ? "(min-width: 40rem) 40rem, 100vw" : "(min-width: 40rem) 20rem, 50vw"}
                 alt={item.alt ?? noDescriptionLabel}
                 // The description is user content (web-client.md Y10); the fallback is the app's own text.
                 {...(item.alt !== null && { dir: "auto", lang: item.lang })}

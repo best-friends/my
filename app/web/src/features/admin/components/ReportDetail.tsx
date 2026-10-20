@@ -41,6 +41,7 @@ import {
 import { AccountActionForm } from "./AccountActionForm";
 import { DateTime, RecordList, RequirePermission, useFocusAfterChange } from "./parts";
 import { AccountLabel, AssigneeName } from "./reportParts";
+import { imageSources } from "../../../lib/images";
 
 export function ReportDetailView({ id }: { id: string }) {
   return (
@@ -84,7 +85,7 @@ function ReportPage({ id }: { id: string }) {
         ) : (
           <div className="flex flex-col gap-3">
             <div className="flex min-w-0 items-center gap-3">
-              <Avatar src={target.avatar?.small.url} name={target.display_name === "" ? target.username : target.display_name} decorative />
+              <Avatar sources={imageSources(target.avatar)} name={target.display_name === "" ? target.username : target.display_name} decorative />
               <AccountLabel account={target} />
             </div>
             <ul className="flex flex-wrap gap-x-4 gap-y-1">

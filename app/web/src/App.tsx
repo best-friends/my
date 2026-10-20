@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The app's providers, outermost first: the runtime config, the locale store and i18n in its current locale
 // (react-intl and React Aria's locale), the TanStack Query cache, the session and the API client, the live
-// regions and toasts of @my/ui (with the prompt for a new version of the app), React Aria's router binding,
-// and the router with every page.
-import { AnnouncerProvider, Center, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
+// regions and toasts of @my/ui (with the prompt for a new version of the app), whether animations play by
+// themselves (lib/autoplay), React Aria's router binding, and the router with every page.
+import { AnnouncerProvider, AutoplayContext, Center, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { type AnyRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { SessionProvider } from "./lib/auth/SessionProvider";
+import { useAutoplay } from "./lib/autoplay";
 import { ConfigProvider, type RuntimeConfig } from "./lib/config";
 import { type I18n, MessagesProvider, useT } from "./lib/i18n";
 import { AppLocaleProvider, useDisplaySettings } from "./lib/locale";
@@ -22,6 +23,7 @@ export type AppProps = AppServices & {
 };
 
 export function App({ config, locale, queryClient, api, session, leaveApp, router }: AppProps) {
+  const autoplay = useAutoplay();
   /**
    * Every @my/ui Link (and Menu item, Tab) with a same-origin href navigates through the router instead
    * of loading a new document. An in-page target (the skip link's "#main") gets focus instead, as the
@@ -49,9 +51,11 @@ export function App({ config, locale, queryClient, api, session, leaveApp, route
               <AnnouncerProvider>
                 <Toasts>
                   <UpdatePrompt />
-                  <AriaRouterProvider navigate={navigate}>
-                    <RouterProvider router={router} />
-                  </AriaRouterProvider>
+                  <AutoplayContext value={autoplay}>
+                    <AriaRouterProvider navigate={navigate}>
+                      <RouterProvider router={router} />
+                    </AriaRouterProvider>
+                  </AutoplayContext>
                 </Toasts>
               </AnnouncerProvider>
             </SessionProvider>

@@ -9,6 +9,7 @@ import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { Account } from "../api/relationships";
 import { type AccountAction, type AccountList, useBlocks, useFollowRequests, useMutes } from "../hooks/useAccountLists";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
+import { imageSources } from "../../../lib/images";
 
 export function BlockedAccounts() {
   const t = useT();
@@ -132,7 +133,7 @@ function AccountRow({ account, details, children }: AccountRowProps) {
   return (
     <div className="flex flex-col gap-3 @md:flex-row @md:items-center">
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar src={account.avatar?.small.url} name={name} decorative />
+        <Avatar sources={imageSources(account.avatar)} name={name} decorative />
         <p className="flex min-w-0 flex-col">
           {/* The user's own text, in any language, lined up with the other rows (web-client.md Y10, G9). */}
           <span dir="auto" className="truncate font-semibold align-match-parent">

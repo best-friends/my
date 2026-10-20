@@ -466,7 +466,9 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   どちらのリンクも外部へのリンクのアイコン（`@my/ui` の `ExternalLinkIcon`）を付け、`rel="noreferrer"` で開く。
   タブの最初のページが `remote_fetch_started` を返したら（client-api.md）、一覧の上に「元のサーバーから最近の投稿を取得しています」を出して `useAnnouncer` の polite の領域で 1 回知らせ（Y7。表示はページと同時に現れるので、それ自体はライブリージョンにしない）、
   4 秒後にそのアカウントの投稿の一覧に無効化の印を付けて表示中のタブを 1 回だけ取り直し、取り直しの成否にかかわらずキャッシュの最初のページから `remote_fetch_started` を外して表示を消す（`timeline/hooks/useRemoteFetch`）。失敗は知らせない。
-  画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
+  画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。
+  アップロードの画像・アバター・ヘッダーは `variants` を `@my/ui` の `Picture`（`lib/images` の `imageSources`）に渡し、表示する大きさに合う版をブラウザーが `srcset` / `sizes` で選ぶ。
+  アニメーションの動く版は `<source media="(prefers-reduced-motion: no-preference)">` にだけ置き、設定「アニメーションを自動で再生する」（このブラウザーの localStorage `my:display:autoplay`、`lib/autoplay`、既定はオン）がオフなら、ポインタを重ねるか触れている間だけ動く版にする（ADR-0054 §3）。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
 - **楽観的更新**（S8）: 同じ投稿がタイムラインのページ・ブースト・スレッド・投稿の query に同時にあるので、`api/cache.ts` がキャッシュの答えを形（`Status`・`items`・`pages`・`ancestors` / `descendants`）で見分け、すべての写しを書き換える。
   トグルは押した時点で状態と数を変え、失敗したらその 1 回分だけ戻してトーストで理由を知らせる。同じ投稿の同じ操作は TanStack Query の mutation の `scope` で 1 つずつ順に送り、最後に押したものが残る。
   成功の応答の数（他の人の操作を含む）は、その操作の最後の要求の応答からだけ取り込む。結果は `useAnnouncer` で知らせる。

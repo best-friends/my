@@ -31,6 +31,7 @@ import {
 import { accountName } from "../hooks/useReports";
 import { DateTime, DetailSection, DomainName, RecordList, RequirePermission } from "./parts";
 import { AccountLabel } from "./reportParts";
+import { imageSources } from "../../../lib/images";
 
 export type AccountSearchProps = {
   /** The search, from the URL. */
@@ -233,7 +234,7 @@ function AccountRow({ account }: { account: AdminAccount }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex min-w-0 items-center gap-3">
-        <Avatar src={account.account.avatar?.small.url} name={accountName(account.account)} decorative />
+        <Avatar sources={imageSources(account.account.avatar)} name={accountName(account.account)} decorative />
         <h3 className="min-w-0 font-semibold">
           <Link href={`/admin/accounts/${encodeURIComponent(account.id)}`} variant="standalone">
             <AccountLabel account={account.account} />

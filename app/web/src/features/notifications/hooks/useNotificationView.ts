@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4):
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
+import type { ImageSources } from "@my/ui";
 import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
 import { accountStatusPath, adminAppealPath, adminReportPath, followListPath, profilePath } from "../../../lib/paths";
@@ -9,9 +10,10 @@ import { useViewer } from "../../session";
 import { statusPath } from "../../status";
 import type { ModerationAction, Notification, NotificationAccount, NotificationStatus, NotificationType } from "../api/notifications";
 import type { NotificationGroup } from "./groupNotifications";
+import { imageSources } from "../../../lib/images";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
-export type NotificationActor = { name: string; href: string; avatar: string | undefined };
+export type NotificationActor = { name: string; href: string; avatar: ImageSources | undefined };
 
 /** A link from a row to the page where the user follows up what it tells. */
 type NotificationLink = { href: string; label: ClientMessageKey };
@@ -99,7 +101,7 @@ const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey
 };
 
 function actorOf(account: NotificationAccount): NotificationActor {
-  return { name: account.display_name || account.username, href: profilePath(account.acct), avatar: account.avatar?.small.url };
+  return { name: account.display_name || account.username, href: profilePath(account.acct), avatar: imageSources(account.avatar) };
 }
 
 /**
