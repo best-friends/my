@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The queries and mutations of the status feature (web-client.md S1, FR-106 to FR-108, FR-113): one post,
-// the thread around it, and the viewer's actions on it. Keys follow openapi-react-query's
+// The queries and mutations of the status feature (web-client.md S1, FR-106 to FR-109, FR-113): one post,
+// the thread around it, its edit history, and the viewer's actions on it (editing their own post among them). Keys follow openapi-react-query's
 // `[method, path, init]`, so the post's key is the one the compose and notifications features use too.
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -14,6 +14,15 @@ export type Status = components["schemas"]["Status"];
 /** One attachment of a status. */
 export type MediaAttachment = components["schemas"]["MediaAttachment"];
 
+/** The new content of an edited post (PUT /statuses/{id}). */
+export type EditStatusRequest = components["schemas"]["EditStatusRequest"];
+
+/** What the author typed, for editing a post (GET /statuses/{id}/source). */
+export type StatusSource = components["schemas"]["StatusSource"];
+
+/** One revision of a post (GET /statuses/{id}/history). */
+export type StatusEdit = components["schemas"]["StatusEdit"];
+
 /** The actions that the viewer turns on and off on a post. */
 export type Relation = "boost" | "favourite" | "bookmark";
 
@@ -25,6 +34,43 @@ export function statusQueryOptions(api: Api, id: string) {
 /** The thread around a post (GET /statuses/{id}/context). */
 export function statusContextQueryOptions(api: Api, id: string) {
   return api.query.queryOptions("get", "/statuses/{id}/context", { params: { path: { id } } });
+}
+
+/** Every revision of a post, oldest first; the last one is the current content (GET /statuses/{id}/history). */
+export function statusHistoryQueryOptions(api: Api, id: string) {
+  return api.query.queryOptions("get", "/statuses/{id}/history", { params: { path: { id } } });
+}
+
+/**
+ * What the viewer typed for their post `id`, for editing it (GET /statuses/{id}/source). It is read again
+ * every time the edit dialog opens (`staleTime: 0`), so that an edit starts from the latest text. A failure
+ * shows at once with a button to try again, instead of after seconds of silent retries.
+ */
+export function statusSourceQueryOptions(api: Api, id: string) {
+  return api.query.queryOptions("get", "/statuses/{id}/source", { params: { path: { id } } }, { staleTime: 0, gcTime: 0, retry: false });
+}
+
+/** The instance, for the most characters a post may have (`limits.max_post_characters`). */
+export function instanceQueryOptions(api: Api) {
+  return api.query.queryOptions("get", "/instance");
+}
+
+/** Replaces the content of the viewer's post `id` (PUT /statuses/{id}); returns the edited post. */
+export async function editStatus(api: Api, id: string, body: EditStatusRequest): Promise<Status> {
+  const { data, error } = await api.fetch.PUT("/statuses/{id}", { params: { path: { id } }, body });
+  // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
+  if (data === undefined) throw new ApiError(error);
+  return data;
+}
+
+/**
+ * Puts the server's answer to an edit into the cache (web-client.md S1, ADR-0045): every cached copy of the
+ * post, in a list or inside a boost, becomes the edited post, where it is, so that no list on screen moves
+ * (Y7). The history has one more revision: it is marked stale, and fetched again if it is on screen.
+ */
+export async function cacheEditedStatus(api: Api, queryClient: QueryClient, edited: Status): Promise<void> {
+  updateCachedStatuses(queryClient, forPost(edited.id, () => edited));
+  await queryClient.invalidateQueries({ queryKey: statusHistoryQueryOptions(api, edited.id).queryKey, exact: true });
 }
 
 /**
@@ -116,6 +162,11 @@ export function cacheDeletedStatus(api: Api, queryClient: QueryClient, post: Sta
  */
 export function statusPath(status: Pick<Status, "id" | "account">): string {
   return `/@${status.account.acct}/${status.id}`;
+}
+
+/** The web client's address of a post's edit history: `/@{acct}/{id}/history`. */
+export function statusHistoryPath(status: Pick<Status, "id" | "account">): string {
+  return `${statusPath(status)}/history`;
 }
 
 /** The address to share for a post: its HTML page, or its ActivityPub ID when it has none. */
