@@ -250,13 +250,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+         * Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
          * @description Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
          *     Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
          *     (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
          *     `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
-         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
-         *     `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect),
+         *     `domain_mutes` is `blocked_domains.csv` (one domain per line, the domains the user
+         *     mutes, which Mastodon imports as blocked domains), and `bookmarks` is `bookmarks.csv`
+         *     (one post URI per line, the posts the user may still see).
          *     Addresses are `username@domain`, with the account domain for this server's accounts;
          *     remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
          *     are accepted every hour.
@@ -285,7 +287,7 @@ export interface paths {
         get: operations["listDataImports"];
         put?: never;
         /**
-         * Import a CSV file of follows, blocks, mutes, or bookmarks
+         * Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
          * @description Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
          *     entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
          *     `overwrite` also removes what the user has of `kind` that the file does not list. The
@@ -803,6 +805,56 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/domain_mutes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the domains that the viewer mutes
+         * @description In the order of the domains.
+         */
+        get: operations["listDomainMutes"];
+        put?: never;
+        /**
+         * Mute a domain
+         * @description Hides the posts of a remote domain and of its subdomains from the viewer's timelines
+         *     other than home, their boosts from home, and their notifications (FR-304). The accounts
+         *     of the domain that the viewer follows stay on the home timeline. Nothing is sent to the
+         *     domain. Muting a domain that the viewer already mutes changes nothing. The domain is
+         *     normalized (IDNA A-labels in lower case, without a trailing dot); one that is not a
+         *     valid remote domain, or this server's own, is a 422 naming `domain`. A viewer mutes at
+         *     most 1000 domains; one more is a 422 `/api/v1/problems/too-many-domain-mutes`.
+         */
+        post: operations["muteDomain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/domain_mutes/{domain}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unmute a domain
+         * @description The domain is normalized as in `muteDomain`. Without a mute it changes nothing.
+         */
+        delete: operations["unmuteDomain"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1516,6 +1568,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the announcements
+         * @description The server's announcements that every local user sees now (FR-726): published, and
+         *     within their window. The ones whose `published_at` is the latest come first, each with
+         *     whether the user has read it. The list is not paginated.
+         */
+        get: operations["listAnnouncements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/announcements/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an announcement read
+         * @description Records that the user read the announcement; marking it again changes nothing. An
+         *     announcement that the users do not see now (a draft, a withdrawn one, one outside its
+         *     window, an unknown ID) is a 404.
+         */
+        post: operations["markAnnouncementRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/streaming": {
         parameters: {
             query?: never;
@@ -1526,7 +1622,7 @@ export interface paths {
         /**
          * Stream real-time updates
          * @description A Server-Sent Events stream (`text/event-stream`) of the authenticated user's new home
-         *     timeline entries and notifications, from the moment it opens. Read it with `fetch` and
+         *     timeline entries, notifications, and announcements, from the moment it opens. Read it with `fetch` and
          *     send the access token in `Authorization`, like every other operation (`EventSource`
          *     cannot send it).
          *
@@ -1535,11 +1631,16 @@ export interface paths {
          *     - `update`: a new post or boost in the home timeline, as it would appear there (the
          *       viewer's follows, timeline languages, blocks, and mutes apply). `data` is a `Status`.
          *     - `notification`: a new notification. `data` is a `Notification`.
+         *     - `announcement`: an announcement that the users see was published or changed. `data`
+         *       is an `Announcement`.
+         *     - `announcement_removed`: an announcement no longer shows (it was withdrawn, or its
+         *       window changed). `data` is `{"id": "<announcement id>"}`.
          *
          *     A comment line (`: heartbeat`) arrives every 30 seconds. The server ends the stream when
          *     the access token stops being valid, when the client does not keep up, and when it shuts
          *     down; nothing is replayed, so after reconnecting read the home timeline and the
-         *     notifications again for what was missed. A user may hold a limited number of streams
+         *     notifications again for what was missed. Announcements whose window starts later
+         *     arrive with no event: list the announcements again from time to time. A user may hold a limited number of streams
          *     open at once; past it the answer is 429 with type
          *     `/api/v1/problems/too-many-streams`. While the server cannot receive updates (its
          *     broker is not ready, or it is shutting down) the answer is 503 with `Retry-After`; try
@@ -2128,6 +2229,107 @@ export interface paths {
          *     Needs the `manage_rules` permission.
          */
         post: operations["retireInstanceRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/announcements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the announcements
+         * @description Every announcement, drafts and withdrawn ones included, newest first (FR-726). The
+         *     list is not paginated. Needs the `manage_announcements` permission.
+         */
+        get: operations["listAdminAnnouncements"];
+        put?: never;
+        /**
+         * Write an announcement
+         * @description Writes an announcement to every local user, a draft unless `publish` is set. The text
+         *     is Markdown; the users get it as sanitized HTML. A blank text or one longer than 5,000
+         *     characters is a 422 naming `text`, and a window that ends when or before it starts a
+         *     422 naming `ends_at`. Recorded in the audit log. Needs the `manage_announcements`
+         *     permission.
+         */
+        post: operations["createAdminAnnouncement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/announcements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an announcement
+         * @description An unknown ID is a 404. Needs the `manage_announcements` permission.
+         */
+        get: operations["getAdminAnnouncement"];
+        /**
+         * Revise an announcement
+         * @description Replaces the text and the window of a draft or a published announcement, which keeps
+         *     its state; an omitted `starts_at` or `ends_at` leaves that side of the window open. The
+         *     input is checked as for a new announcement (422). A withdrawn announcement is a 409 and
+         *     an unknown ID a 404. Recorded in the audit log. Needs the `manage_announcements`
+         *     permission.
+         */
+        put: operations["updateAdminAnnouncement"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/announcements/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish an announcement
+         * @description Publishes a draft to every local user, within its window. Publishing a published
+         *     announcement changes nothing. A withdrawn announcement is a 409 and an unknown ID a 404.
+         *     Recorded in the audit log. Needs the `manage_announcements` permission.
+         */
+        post: operations["publishAdminAnnouncement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/announcements/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Withdraw an announcement
+         * @description Withdraws an announcement for good: no user sees it again, and it can no longer change
+         *     or be published. Withdrawing a withdrawn announcement changes nothing. An unknown ID is
+         *     a 404. Recorded in the audit log. Needs the `manage_announcements` permission.
+         */
+        post: operations["withdrawAdminAnnouncement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3300,6 +3502,8 @@ export interface components {
          *       which.
          *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
          *       reason in `theme_errors` (`PUT /admin/theme`).
+         *     - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+         *       allowed. Unmute one first.
          */
         Problem: {
             /**
@@ -3574,6 +3778,25 @@ export interface components {
              * @description When the mute ends; left out for a mute until unmuted.
              */
             expires_at?: string;
+        };
+        /** @description The domain to mute. */
+        MuteDomainRequest: {
+            /** @description A remote domain, such as `mastodon.example`; its subdomains are muted too. */
+            domain: string;
+        };
+        /** @description A domain that the viewer mutes, with its subdomains. */
+        DomainMute: {
+            /** @description The domain, in IDNA A-labels. */
+            domain: string;
+            /**
+             * Format: date-time
+             * @description When the viewer muted the domain.
+             */
+            created_at: string;
+        };
+        /** @description A page of domain mutes. */
+        DomainMutePage: components["schemas"]["PageInfo"] & {
+            domain_mutes: components["schemas"]["DomainMute"][];
         };
         /** @description One metadata field of a profile. */
         ProfileField: {
@@ -3890,11 +4113,13 @@ export interface components {
         };
         /**
          * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-         *     accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+         *     accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+         *     domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+         *     `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
          *     posts the user bookmarked).
          * @enum {string}
          */
-        DataImportKind: "following" | "blocks" | "mutes" | "bookmarks";
+        DataImportKind: "following" | "blocks" | "mutes" | "domain_mutes" | "bookmarks";
         /**
          * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
          *     what the user has that the file does not list.
@@ -3929,8 +4154,9 @@ export interface components {
             /** @description The line as written. */
             value: string;
             /**
-             * @description `invalid`: the line names no account address (or for bookmarks, no post URL).
-             *     `duplicate`: an earlier line names the same account or post.
+             * @description `invalid`: the line names no account address (for bookmarks, no post URL; for
+             *     domain mutes, no domain).
+             *     `duplicate`: an earlier line names the same account, post, or domain.
              * @enum {string}
              */
             reason: "invalid" | "duplicate";
@@ -3956,7 +4182,8 @@ export interface components {
             processed: number;
             /**
              * @description How many of them could not be carried out: an account or post that cannot be found
-             *     or acted on, or a follow that a block stops.
+             *     or acted on, a follow that a block stops, or a domain that cannot be muted (this
+             *     server's own, or one beyond the most muted domains allowed).
              */
             failed: number;
         };
@@ -4732,10 +4959,14 @@ export interface components {
          *     `webhook_created`, `webhook_updated` (its URL, description, or events),
          *     `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
          *     endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-         *     description and the host name of its URL, never the URL.
+         *     description and the host name of its URL, never the URL. On an `announcement`:
+         *     `announcement_created`, `announcement_updated` (its text or window),
+         *     `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+         *     text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+         *     characters of its code, never the whole code.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4757,8 +4988,9 @@ export interface components {
             action: components["schemas"]["AdminAuditAction"];
             target_kind: components["schemas"]["AdminAuditTargetKind"];
             /**
-             * @description The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
-             *     domain of a domain action, or the key of a setting or a text.
+             * @description The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+             *     sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+             *     or the key of a setting or a text.
              */
             target_id: string;
             /**
@@ -4769,9 +5001,9 @@ export interface components {
             target_label: string;
             /**
              * @description Whether the target is still there to look at. It is `false` for an account, a report,
-             *     an appeal, or a sign-up block that is gone (erased past its retention), which only
-             *     `target_label` names now. It is `true` for the other kinds of targets: a role, a
-             *     custom emoji, or a webhook that was deleted is not looked up yet.
+             *     an appeal, or a sign-up block that is gone (erased past its retention), and for a
+             *     role, a custom emoji, or a webhook that was deleted, which only `target_label` names
+             *     now. It is `true` for the other kinds of targets, which are never removed.
              */
             target_exists: boolean;
             /**
@@ -4791,7 +5023,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite";
         /** @description A moderation action on a remote domain and its subdomains (FR-702). */
         AdminDomainAction: {
             id: components["schemas"]["Id"];
@@ -5089,11 +5321,12 @@ export interface components {
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
          *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
          *     the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-         *     remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
-         *     operation yet.
+         *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
+         *     server's announcements to every local user. The others guard no client API operation
+         *     yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis" | "manage_webhooks";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
         /**
          * @description A rule of the instance (FR-705) with its texts in every locale. Its ID stays the same
          *     across revisions, so reports keep citing it.
@@ -5151,6 +5384,112 @@ export interface components {
         MoveInstanceRuleRequest: {
             /** @description The place among the rules in effect, from 1. */
             position: number;
+        };
+        /** @description An announcement of the server to every local user (FR-726), as the user sees it. */
+        Announcement: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
+             *     headings from `h2`, and `http`, `https`, and `mailto` links).
+             */
+            content: string;
+            /**
+             * Format: date-time
+             * @description When it started to show to the users, its publication or the start of its window.
+             */
+            published_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing; omitted when it shows until it is withdrawn.
+             */
+            ends_at?: string;
+            /**
+             * Format: date-time
+             * @description When its text or window last changed.
+             */
+            updated_at: string;
+            /** @description Whether the user has marked it read. */
+            read: boolean;
+        };
+        /** @description The announcements. */
+        AnnouncementList: {
+            items: components["schemas"]["Announcement"][];
+        };
+        /**
+         * @description `draft`: no user sees it. `published`: every local user sees it within its window.
+         *     `withdrawn`: taken down for good.
+         * @enum {string}
+         */
+        AdminAnnouncementState: "draft" | "published" | "withdrawn";
+        /** @description An announcement with its Markdown text and its state. */
+        AdminAnnouncement: {
+            id: components["schemas"]["Id"];
+            /** @description The text, in Markdown. */
+            text: string;
+            /** @description The text as the users get it, an HTML fragment (`Announcement.content`). */
+            content: string;
+            state: components["schemas"]["AdminAnnouncementState"];
+            /**
+             * Format: date-time
+             * @description When it starts to show once published; omitted to show it from its publication.
+             */
+            starts_at?: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing; omitted to show it until it is withdrawn.
+             */
+            ends_at?: string;
+            /**
+             * Format: date-time
+             * @description When it was last published; omitted for a draft.
+             */
+            published_at?: string;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When its text or window last changed.
+             */
+            updated_at: string;
+        };
+        /** @description The announcements, newest first. */
+        AdminAnnouncementList: {
+            items: components["schemas"]["AdminAnnouncement"][];
+        };
+        /** @description The text and the window of an announcement. */
+        AdminAnnouncementInput: {
+            /** @description The text, in Markdown. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description When it starts to show once published; omitted to show it from its publication.
+             */
+            starts_at?: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+             */
+            ends_at?: string;
+        };
+        /** @description A new announcement, with its text and its window. */
+        AdminAnnouncementCreateRequest: {
+            /** @description The text, in Markdown. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description When it starts to show once published; omitted to show it from its publication.
+             */
+            starts_at?: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+             */
+            ends_at?: string;
+            /**
+             * @description Publish it at once instead of keeping it a draft.
+             * @default false
+             */
+            publish: boolean;
         };
         /**
          * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
@@ -6296,6 +6635,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminRule"];
             };
         };
+        /** @description The announcement. */
+        AdminAnnouncement: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminAnnouncement"];
+            };
+        };
         /** @description The custom emoji. */
         AdminCustomEmoji: {
             headers: {
@@ -6452,6 +6801,8 @@ export interface components {
         AdminAccountId: components["schemas"]["Id"];
         /** @description The ID of the rule. */
         RuleId: components["schemas"]["Id"];
+        /** @description The ID of the announcement. */
+        AnnouncementId: components["schemas"]["Id"];
         /** @description The ID of the custom emoji. */
         CustomEmojiId: components["schemas"]["Id"];
         /** @description The ID of the webhook. */
@@ -7327,6 +7678,81 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MutePage"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDomainMutes: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of domain mutes. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainMutePage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    muteDomain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MuteDomainRequest"];
+            };
+        };
+        responses: {
+            /** @description The domain mute. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainMute"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    unmuteDomain: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The muted domain, such as `mastodon.example`. */
+                domain: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The domain is not muted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };
@@ -8223,6 +8649,53 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    listAnnouncements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The announcements. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnouncementList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    markAnnouncementRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the announcement. */
+                id: components["parameters"]["AnnouncementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The announcement, read. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Announcement"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     streamEvents: {
         parameters: {
             query?: never;
@@ -8838,6 +9311,113 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAdminAnnouncements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The announcements. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAnnouncementList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createAdminAnnouncement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminAnnouncementCreateRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminAnnouncement"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAdminAnnouncement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the announcement. */
+                id: components["parameters"]["AnnouncementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminAnnouncement"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateAdminAnnouncement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the announcement. */
+                id: components["parameters"]["AnnouncementId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminAnnouncementInput"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminAnnouncement"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    publishAdminAnnouncement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the announcement. */
+                id: components["parameters"]["AnnouncementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminAnnouncement"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    withdrawAdminAnnouncement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the announcement. */
+                id: components["parameters"]["AnnouncementId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminAnnouncement"];
             default: components["responses"]["Problem"];
         };
     };

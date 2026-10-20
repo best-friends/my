@@ -372,8 +372,14 @@ func emojiDeletesLocal(t *testing.T, e *emojiEnv) {
 	ctx := t.Context()
 	cat := e.create(t, "blobcat")
 	e.takeEvents()
+	if ids, err := e.service.ExistingIDs(ctx, []string{cat.Emoji.ID}); err != nil || !slices.Equal(ids, []string{cat.Emoji.ID}) {
+		t.Errorf("ExistingIDs = %v, %v; want the emoji", ids, err)
+	}
 	if err := e.service.Delete(ctx, cat.Emoji.ID, emojiAdminUser); err != nil {
 		t.Fatal(err)
+	}
+	if ids, err := e.service.ExistingIDs(ctx, []string{cat.Emoji.ID}); err != nil || len(ids) != 0 {
+		t.Errorf("ExistingIDs after the deletion = %v, %v; want none", ids, err)
 	}
 	if ev := e.takeEvents(); !slices.Equal(ev, []string{appcontent.CustomEmojiDeleted}) {
 		t.Errorf("events = %v", ev)

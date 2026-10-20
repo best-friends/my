@@ -25,6 +25,8 @@ import (
 type RoleRepository interface {
 	// ListRoles returns every role with its permissions, highest position first.
 	ListRoles(ctx context.Context) ([]RoleWithPermissions, error)
+	// ExistingRoleIDs returns, in ID order, the roles among ids that exist.
+	ExistingRoleIDs(ctx context.Context, ids []string) ([]string, error)
 	// LockRole returns inside tx the role with key, so that the changes to one role run one
 	// after another (SELECT ... FOR UPDATE where the database needs it).
 	LockRole(ctx context.Context, tx uow.Tx, key string) (identity.Role, error)
@@ -63,6 +65,12 @@ var ErrLastAdmin = identity.ErrLastAdmin
 // Roles returns every role with its permissions, highest position first.
 func (s *Service) Roles(ctx context.Context) ([]RoleWithPermissions, error) {
 	return s.d.Repository.ListRoles(ctx)
+}
+
+// ExistingRoleIDs returns, in ID order, the roles among ids that exist (not deleted), in one
+// lookup.
+func (s *Service) ExistingRoleIDs(ctx context.Context, ids []string) ([]string, error) {
+	return s.d.Repository.ExistingRoleIDs(ctx, ids)
 }
 
 // UserRoles returns the roles that a user holds now, highest position first.

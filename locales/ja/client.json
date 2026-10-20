@@ -1151,6 +1151,186 @@
     "defaultMessage": "アカウント",
     "description": "Title of the admin screen that searches the local and remote accounts, and of its link in the administration menu."
   },
+  "admin.announcements.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that leaves a dialog of the announcements screen without changing anything."
+  },
+  "admin.announcements.change_failed": {
+    "defaultMessage": "お知らせを変更できませんでした：{reason}",
+    "description": "Error after a change of an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_draft": {
+    "defaultMessage": "下書きとして保存する",
+    "description": "Button that writes a new announcement as a draft."
+  },
+  "admin.announcements.create_failed": {
+    "defaultMessage": "お知らせを書けませんでした：{reason}",
+    "description": "Error after writing an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_published": {
+    "defaultMessage": "お知らせを公開する",
+    "description": "Button that writes a new announcement and publishes it."
+  },
+  "admin.announcements.description": {
+    "defaultMessage": "お知らせは、このサーバーの全員のホームのタイムラインの上に出て、それぞれが既読にできます。変更はすべて監査ログに残ります。",
+    "description": "Explanation at the top of the announcements screen."
+  },
+  "admin.announcements.drafted": {
+    "defaultMessage": "お知らせを下書きとして保存しました。変更は監査ログに残ります。",
+    "description": "Status after a new announcement was saved as a draft."
+  },
+  "admin.announcements.duration": {
+    "defaultMessage": "掲載する期間",
+    "description": "Label of how long a new announcement shows."
+  },
+  "admin.announcements.duration.description": {
+    "defaultMessage": "書いた時から数えます。過ぎると表示されなくなります。",
+    "description": "Description of how long a new announcement shows."
+  },
+  "admin.announcements.edit": {
+    "defaultMessage": "編集",
+    "description": "Button that opens the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the button that closes the dialog that edits an announcement."
+  },
+  "admin.announcements.edit.title": {
+    "defaultMessage": "お知らせを編集",
+    "description": "Title of the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit_one": {
+    "defaultMessage": "編集：{announcement}",
+    "description": "Accessible name of the button that edits an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.empty": {
+    "defaultMessage": "お知らせはありません",
+    "description": "Heading of the list of announcements when there are none."
+  },
+  "admin.announcements.empty.description": {
+    "defaultMessage": "書いたお知らせがここに並びます。",
+    "description": "Description of the list of announcements when there are none."
+  },
+  "admin.announcements.ends_at": {
+    "defaultMessage": "掲載の終了",
+    "description": "Term of when an announcement stops showing."
+  },
+  "admin.announcements.heading": {
+    "defaultMessage": "{announcement}（{state}）",
+    "description": "Heading of an announcement in the list. {announcement} is the first line of its text; {state} its state (draft, published, withdrawn)."
+  },
+  "admin.announcements.list.title": {
+    "defaultMessage": "すべてのお知らせ",
+    "description": "Heading of the list of announcements, newest first."
+  },
+  "admin.announcements.new.title": {
+    "defaultMessage": "お知らせを書く",
+    "description": "Heading of the form of a new announcement."
+  },
+  "admin.announcements.publish": {
+    "defaultMessage": "公開する",
+    "description": "Button that publishes a draft announcement."
+  },
+  "admin.announcements.publish_now": {
+    "defaultMessage": "すぐに公開する",
+    "description": "Checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_now.description": {
+    "defaultMessage": "外すと、管理者だけが見られる下書きになります。",
+    "description": "Description of the checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_one": {
+    "defaultMessage": "公開する：{announcement}",
+    "description": "Accessible name of the button that publishes an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.published": {
+    "defaultMessage": "お知らせを公開しました。変更は監査ログに残ります。",
+    "description": "Status after a new announcement was published."
+  },
+  "admin.announcements.published_at": {
+    "defaultMessage": "公開日時",
+    "description": "Term of when an announcement was published."
+  },
+  "admin.announcements.published_one": {
+    "defaultMessage": "{announcement}を公開しました。変更は監査ログに残ります。",
+    "description": "Status after a draft announcement was published. {announcement} is the first line of its text."
+  },
+  "admin.announcements.save": {
+    "defaultMessage": "保存",
+    "description": "Button that saves the text of an announcement."
+  },
+  "admin.announcements.starts_at": {
+    "defaultMessage": "掲載の開始",
+    "description": "Term of when an announcement starts to show."
+  },
+  "admin.announcements.state": {
+    "defaultMessage": "状態",
+    "description": "Term of the state of an announcement."
+  },
+  "admin.announcements.state.draft": {
+    "defaultMessage": "下書き",
+    "description": "State of an announcement that no user sees yet."
+  },
+  "admin.announcements.state.published": {
+    "defaultMessage": "公開中",
+    "description": "State of an announcement that the users see."
+  },
+  "admin.announcements.state.withdrawn": {
+    "defaultMessage": "取り下げ済み",
+    "description": "State of an announcement taken down for good."
+  },
+  "admin.announcements.summary": {
+    "defaultMessage": "メンテナンスや変更を、このサーバーの全員に知らせる。",
+    "description": "Description of the announcements screen in the administration menu."
+  },
+  "admin.announcements.text": {
+    "defaultMessage": "本文",
+    "description": "Label of the text of an announcement."
+  },
+  "admin.announcements.text.description": {
+    "defaultMessage": "Markdown で書きます（段落・強調・リスト・引用・コード・リンク）。HTML は取り除かれます。",
+    "description": "Description of the text field of an announcement: which Markdown it takes."
+  },
+  "admin.announcements.text_required": {
+    "defaultMessage": "本文を入力してください。",
+    "description": "Error of an announcement without text."
+  },
+  "admin.announcements.title": {
+    "defaultMessage": "お知らせ",
+    "description": "Title of the announcements screen, in the administration menu and as its heading."
+  },
+  "admin.announcements.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of the text of an announcement longer than its limit. {max} is the limit."
+  },
+  "admin.announcements.until_withdrawn": {
+    "defaultMessage": "取り下げるまで",
+    "description": "Choice of an announcement that shows until it is withdrawn, and the end of such an announcement."
+  },
+  "admin.announcements.updated": {
+    "defaultMessage": "{announcement}を変更しました。変更は監査ログに残ります。",
+    "description": "Status after the text of an announcement was changed. {announcement} is the first line of its new text."
+  },
+  "admin.announcements.withdraw": {
+    "defaultMessage": "取り下げる",
+    "description": "Button that withdraws an announcement, and the confirming button of its dialog."
+  },
+  "admin.announcements.withdraw.description": {
+    "defaultMessage": "お知らせは誰にも表示されなくなり、再び公開することも変更することもできません。",
+    "description": "Description of the dialog that confirms withdrawing an announcement."
+  },
+  "admin.announcements.withdraw.title": {
+    "defaultMessage": "{announcement}を取り下げますか？",
+    "description": "Title of the dialog that confirms withdrawing an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdraw_one": {
+    "defaultMessage": "取り下げる：{announcement}",
+    "description": "Accessible name of the button that withdraws an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdrawn": {
+    "defaultMessage": "{announcement}を取り下げました。変更は監査ログに残ります。",
+    "description": "Status after an announcement was withdrawn. {announcement} is the first line of its text."
+  },
   "admin.appeal.account": {
     "defaultMessage": "アカウント",
     "description": "Term of the account that appealed, which the action is on."
@@ -1359,6 +1539,22 @@
     "defaultMessage": "アカウントの削除の取り消し",
     "description": "Heading of an audit log entry: overturning a user's appeal of a ban cancelled the scheduled deletion of their account."
   },
+  "admin.audit_log.action.announcement_created": {
+    "defaultMessage": "お知らせの作成",
+    "description": "Kind of an audited operation: an administrator wrote an announcement."
+  },
+  "admin.audit_log.action.announcement_published": {
+    "defaultMessage": "お知らせの公開",
+    "description": "Kind of an audited operation: an administrator published an announcement."
+  },
+  "admin.audit_log.action.announcement_updated": {
+    "defaultMessage": "お知らせの変更",
+    "description": "Kind of an audited operation: an administrator changed the text or window of an announcement."
+  },
+  "admin.audit_log.action.announcement_withdrawn": {
+    "defaultMessage": "お知らせの取り下げ",
+    "description": "Kind of an audited operation: an administrator withdrew an announcement."
+  },
   "admin.audit_log.action.appeal_overturned": {
     "defaultMessage": "異議申し立ての容認（処分の解除）",
     "description": "Heading of an audit log entry: a moderator granted a user's appeal and lifted the action it appealed."
@@ -1482,6 +1678,14 @@
   "admin.audit_log.action.webhook_secret_rotated": {
     "defaultMessage": "webhook の秘密の作り直し",
     "description": "Kind of an audited operation: an administrator gave a webhook a new secret."
+  },
+  "admin.audit_log.action.invite_created": {
+    "defaultMessage": "招待の作成",
+    "description": "Kind of an audited operation: a moderator or an administrator created an invite code."
+  },
+  "admin.audit_log.action.invite_revoked": {
+    "defaultMessage": "招待の失効",
+    "description": "Kind of an audited operation: a moderator or an administrator revoked an invite code."
   },
   "admin.audit_log.action.webhook_updated": {
     "defaultMessage": "webhook の変更",
@@ -1642,6 +1846,10 @@
   "admin.audit_log.target_kind.webhook": {
     "defaultMessage": "Webhook",
     "description": "Kind of target of an audited operation: a webhook, shown by its description and host name."
+  },
+  "admin.audit_log.target_kind.invite": {
+    "defaultMessage": "招待",
+    "description": "Kind of target of an audited operation: an invite, shown by the first characters of its code."
   },
   "admin.audit_log.title": {
     "defaultMessage": "監査ログ",
@@ -3162,6 +3370,10 @@
   "admin.roles.permission.manage_accounts": {
     "defaultMessage": "アカウントと登録",
     "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
+  },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "お知らせ",
+    "description": "Name of the permission manage_announcements: the server's announcements to every local user."
   },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "カスタム絵文字",
@@ -7503,6 +7715,10 @@
     "defaultMessage": "カスタム絵文字の削除",
     "description": "Kind of an audited operation: an administrator deleted a custom emoji of this server."
   },
+  "admin.audit_log.target_kind.announcement": {
+    "defaultMessage": "お知らせ",
+    "description": "Kind of target of an audited operation: an announcement, shown by the first line of its text."
+  },
   "admin.audit_log.target_kind.custom_emoji": {
     "defaultMessage": "カスタム絵文字",
     "description": "Kind of target of an audited operation: a custom emoji, shown as :shortcode:."
@@ -7787,6 +8003,34 @@
     "defaultMessage": "{emoji} を有効にしました。",
     "description": "Status after enabling a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
   },
+  "announcements.heading": {
+    "defaultMessage": "{date}のお知らせ",
+    "description": "Heading of one announcement of the server. {date} is the day it started to show, formatted."
+  },
+  "announcements.mark_read": {
+    "defaultMessage": "既読にする",
+    "description": "Button that marks an announcement read."
+  },
+  "announcements.mark_read_failed": {
+    "defaultMessage": "お知らせを既読にできませんでした：{reason}",
+    "description": "Error after marking an announcement read failed. {reason} is why."
+  },
+  "announcements.title": {
+    "defaultMessage": "お知らせ",
+    "description": "Heading of the server's announcements above the home timeline."
+  },
+  "announcements.unread": {
+    "defaultMessage": "未読",
+    "description": "Marker of an announcement that the user has not read, next to its heading."
+  },
+  "announcements.unread_count": {
+    "defaultMessage": "{count, plural, other {未読 # 件}}",
+    "description": "The number of unread announcements on the badge next to the heading of the announcements, for example '2 unread'."
+  },
+  "announcements.until": {
+    "defaultMessage": "{date}まで掲載",
+    "description": "When an announcement stops showing. {date} is the date and time, formatted."
+  },
   "emoji.picker.button": {
     "defaultMessage": "絵文字を入れる",
     "description": "Accessible name and tooltip of the icon button of the post form that opens the custom emoji picker."
@@ -7886,5 +8130,69 @@
   "status.reaction.off": {
     "defaultMessage": "リアクションを取り消しました",
     "description": "Read out by screen readers after the user took back their emoji reaction to a post."
+  },
+  "settings.domain_mutes.title": {
+    "defaultMessage": "ミュートしたドメイン",
+    "description": "Heading and document title of the settings page with the domains the user mutes."
+  },
+  "settings.domain_mutes.summary": {
+    "defaultMessage": "投稿と通知を表示しないサーバー",
+    "description": "Description of the muted domains page in the list of settings pages."
+  },
+  "settings.domain_mutes.description": {
+    "defaultMessage": "ドメインをミュートすると、そのドメインとサブドメインのアカウントの投稿をホーム以外のタイムラインから、そのブーストをホームから、その通知を隠します。フォローしているアカウントはホームに残ります。変わるのはあなたの表示だけで、相手のサーバーには伝わりません。",
+    "description": "Explains what muting a domain does, at the top of the muted domains page."
+  },
+  "settings.domain_mutes.new.title": {
+    "defaultMessage": "ドメインをミュートする",
+    "description": "Heading of the section of the muted domains page with the form that mutes a domain."
+  },
+  "settings.domain_mutes.list.title": {
+    "defaultMessage": "ミュートしているドメイン",
+    "description": "Heading of the section of the muted domains page that lists them."
+  },
+  "settings.domain_mutes.domain": {
+    "defaultMessage": "ドメイン",
+    "description": "Label of the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.description": {
+    "defaultMessage": "mastodon.example のようなサーバーのドメインです。サブドメインもミュートします。",
+    "description": "Help under the field for the domain to mute."
+  },
+  "settings.domain_mutes.domain.required": {
+    "defaultMessage": "ドメインを入力してください。",
+    "description": "Error under the domain field when the user mutes without entering a domain."
+  },
+  "settings.domain_mutes.mute": {
+    "defaultMessage": "ミュートする",
+    "description": "Button that mutes the domain entered in the field."
+  },
+  "settings.domain_mutes.mute_failed": {
+    "defaultMessage": "ドメインをミュートできませんでした：{reason}",
+    "description": "Shown under the form when muting a domain fails. {reason} is the server's explanation."
+  },
+  "settings.domain_mutes.muted": {
+    "defaultMessage": "{domain} をミュートしました。",
+    "description": "Shown under the form after a domain was muted. {domain} is the domain."
+  },
+  "settings.domain_mutes.empty": {
+    "defaultMessage": "ミュートしているドメインはありません",
+    "description": "Shown when the user mutes no domain."
+  },
+  "settings.domain_mutes.since": {
+    "defaultMessage": "{date} にミュート",
+    "description": "When the domain was muted, under a muted domain. {date} is a formatted date and time."
+  },
+  "settings.domain_mutes.unmute": {
+    "defaultMessage": "ミュートを解除",
+    "description": "Button that unmutes a domain."
+  },
+  "settings.domain_mutes.unmuted": {
+    "defaultMessage": "{domain} のミュートを解除しました。",
+    "description": "Announced after a domain was unmuted. {domain} is the domain."
+  },
+  "settings.import_export.kind.domain_mutes": {
+    "defaultMessage": "ミュートしたドメイン",
+    "description": "Name of the list of domains the user mutes, as one kind of CSV file to export or import."
   }
 }

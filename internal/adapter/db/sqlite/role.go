@@ -161,3 +161,19 @@ func (r *IdentityRepository) DeleteRole(ctx context.Context, tx uow.Tx, roleID s
 	}
 	return wrap(q.DeleteRole(ctx, roleID), "delete role")
 }
+
+// ExistingRoleIDs implements identity.RoleRepository.
+func (r *IdentityRepository) ExistingRoleIDs(ctx context.Context, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	out, err := r.db.reader().ListExistingRoleIDs(ctx, list)
+	if err != nil {
+		return nil, wrap(err, "list existing roles")
+	}
+	return out, nil
+}

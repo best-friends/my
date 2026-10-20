@@ -72,6 +72,11 @@ type Created struct {
 	Secret   string
 }
 
+// ExistingIDs returns, in ID order, the endpoints among ids that are not deleted, in one lookup.
+func (s *Service) ExistingIDs(ctx context.Context, ids []string) ([]string, error) {
+	return s.d.Repository.ExistingEndpointIDs(ctx, ids)
+}
+
 // List returns the endpoints that are not deleted, newest first.
 func (s *Service) List(ctx context.Context) ([]webhook.Endpoint, error) {
 	return s.d.Repository.ListEndpoints(ctx)

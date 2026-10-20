@@ -106,3 +106,31 @@ LIMIT sqlc.arg(page_limit);
 -- name: ListAllMutes :many
 SELECT account_id, target_account_id, hide_notifications, expires_at, created_at
 FROM mutes ORDER BY account_id, target_account_id;
+
+-- Domain mutes (current value, FR-304).
+
+-- InsertDomainMute inserts nothing when the account already mutes the domain.
+-- name: InsertDomainMute :execrows
+INSERT INTO account_domain_mutes (account_id, domain, created_at) VALUES ($1, $2, $3)
+ON CONFLICT (account_id, domain) DO NOTHING;
+
+-- DeleteDomainMute deletes the domain mute and reports, by the rows it deleted, whether there
+-- was one.
+-- name: DeleteDomainMute :execrows
+DELETE FROM account_domain_mutes WHERE account_id = $1 AND domain = $2;
+
+-- name: CountDomainMutes :one
+SELECT COUNT(*) FROM account_domain_mutes WHERE account_id = $1;
+
+-- ListDomainMutesPage pages the domain mutes of an account in the order of their domains; an
+-- empty before_domain starts at the first.
+-- name: ListDomainMutesPage :many
+SELECT account_id, domain, created_at FROM account_domain_mutes
+WHERE account_id = sqlc.arg(account_id) AND (sqlc.arg(before_domain)::text = '' OR domain > sqlc.arg(before_domain)::text)
+ORDER BY domain
+LIMIT sqlc.arg(page_limit);
+
+-- ListAllDomainMutes returns every domain mute, ordered by account and domain, as the source of
+-- other modules' projections.
+-- name: ListAllDomainMutes :many
+SELECT account_id, domain, created_at FROM account_domain_mutes ORDER BY account_id, domain;

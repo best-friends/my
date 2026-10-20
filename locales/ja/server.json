@@ -64,7 +64,7 @@
     "description": "Permission (OAuth scope read:follows) listed on the authorization page."
   },
   "auth.authorize.scope.read_mutes": {
-    "defaultMessage": "ミュートしているアカウントの読み取り",
+    "defaultMessage": "ミュートしているアカウントとドメインの読み取り",
     "description": "Permission (OAuth scope read:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.read_notifications": {
@@ -108,7 +108,7 @@
     "description": "Permission (OAuth scope write:media) listed on the authorization page."
   },
   "auth.authorize.scope.write_mutes": {
-    "defaultMessage": "アカウントのミュートと解除",
+    "defaultMessage": "アカウントとドメインのミュートと解除",
     "description": "Permission (OAuth scope write:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.write_notifications": {
@@ -962,5 +962,9 @@
   "errors.invalid_custom_emoji_detail": {
     "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} other {カスタム絵文字が規則に合いません。}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
+  },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "ミュートできるドメインの数の上限に達しています。先にどれかのミュートを解除してください。",
+    "description": "API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains."
   }
 }

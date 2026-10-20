@@ -80,6 +80,8 @@ type Repository interface {
 	FindEndpoint(ctx context.Context, id string) (webhook.Endpoint, error)
 	// ListEndpoints returns the endpoints that are not deleted, newest first.
 	ListEndpoints(ctx context.Context) ([]webhook.Endpoint, error)
+	// ExistingEndpointIDs returns, in ID order, the endpoints among ids that are not deleted.
+	ExistingEndpointIDs(ctx context.Context, ids []string) ([]string, error)
 	// SubscribedEndpoints returns in tx, in ID order, the enabled endpoints whose current revision
 	// subscribes to event.
 	SubscribedEndpoints(ctx context.Context, tx uow.Tx, event webhook.EventType) ([]string, error)

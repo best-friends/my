@@ -256,7 +256,11 @@ func (r *GraphRepository) EraseMutesOf(ctx context.Context, tx uow.Tx, accountID
 		return 0, wrap(err, "erase mutes")
 	}
 	of, err := q.EraseMutesOf(ctx, sqlitegen.EraseMutesOfParams{AccountID: accountID, Lim: int64(limit)})
-	return max(by, of), wrap(err, "erase mutes")
+	if err != nil {
+		return 0, wrap(err, "erase mutes")
+	}
+	domains, err := q.EraseDomainMutesBy(ctx, sqlitegen.EraseDomainMutesByParams{AccountID: accountID, Lim: int64(limit)})
+	return max(by, of, domains), wrap(err, "erase domain mutes")
 }
 
 // EraseCountersOf implements graph.ErasureRepository.
@@ -306,6 +310,9 @@ func (r *TimelineRepository) EraseFeedsOf(ctx context.Context, tx uow.Tx, accoun
 		func(ctx context.Context, a string, n int64) (int64, error) {
 			return q.EraseFeedExclusionsAsTarget(ctx, sqlitegen.EraseFeedExclusionsAsTargetParams{AccountID: a, Lim: n})
 		},
+		func(ctx context.Context, a string, n int64) (int64, error) {
+			return q.EraseFeedDomainMutesOf(ctx, sqlitegen.EraseFeedDomainMutesOfParams{AccountID: a, Lim: n})
+		},
 	} {
 		n, err := step(ctx, accountID, lim)
 		if err != nil {
@@ -353,7 +360,11 @@ func (r *NotificationRepository) EraseNotificationsOf(ctx context.Context, tx uo
 	if err != nil {
 		return 0, wrap(err, "erase notification exclusions")
 	}
-	return max(most, viewer, target), nil
+	domains, err := q.EraseNotificationDomainExclusionsOf(ctx, sqlitegen.EraseNotificationDomainExclusionsOfParams{AccountID: accountID, Lim: lim})
+	if err != nil {
+		return 0, wrap(err, "erase notification domain exclusions")
+	}
+	return max(most, viewer, target, domains), nil
 }
 
 // EraseStatusNotifications implements notification.ErasureRepository.

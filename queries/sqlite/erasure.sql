@@ -325,6 +325,11 @@ DELETE FROM mutes WHERE mutes.target_account_id = sqlc.arg(account_id) AND mutes
   SELECT m.account_id FROM mutes m WHERE m.target_account_id = sqlc.arg(account_id)
   ORDER BY m.account_id LIMIT sqlc.arg(lim));
 
+-- name: EraseDomainMutesBy :execrows
+DELETE FROM account_domain_mutes WHERE account_domain_mutes.account_id = sqlc.arg(account_id) AND account_domain_mutes.domain IN (
+  SELECT m.domain FROM account_domain_mutes m WHERE m.account_id = sqlc.arg(account_id)
+  ORDER BY m.domain LIMIT sqlc.arg(lim));
+
 -- name: EraseFollowCounters :exec
 DELETE FROM follow_counters WHERE account_id = sqlc.arg(account_id);
 
@@ -370,6 +375,11 @@ DELETE FROM feed_exclusions WHERE feed_exclusions.target_account_id = sqlc.arg(a
   SELECT x.viewer_account_id FROM feed_exclusions x WHERE x.target_account_id = sqlc.arg(account_id)
   ORDER BY x.viewer_account_id LIMIT sqlc.arg(lim));
 
+-- name: EraseFeedDomainMutesOf :execrows
+DELETE FROM feed_domain_mutes WHERE feed_domain_mutes.viewer_account_id = sqlc.arg(account_id) AND feed_domain_mutes.domain IN (
+  SELECT m.domain FROM feed_domain_mutes m WHERE m.viewer_account_id = sqlc.arg(account_id)
+  ORDER BY m.domain LIMIT sqlc.arg(lim));
+
 -- notification ------------------------------------------------------------------------------------
 
 -- name: EraseNotificationDismissalsOfStatuses :exec
@@ -409,3 +419,8 @@ DELETE FROM notification_exclusions WHERE notification_exclusions.viewer_account
 DELETE FROM notification_exclusions WHERE notification_exclusions.target_account_id = sqlc.arg(account_id) AND notification_exclusions.viewer_account_id IN (
   SELECT x.viewer_account_id FROM notification_exclusions x WHERE x.target_account_id = sqlc.arg(account_id)
   ORDER BY x.viewer_account_id LIMIT sqlc.arg(lim));
+
+-- name: EraseNotificationDomainExclusionsOf :execrows
+DELETE FROM notification_domain_exclusions WHERE notification_domain_exclusions.viewer_account_id = sqlc.arg(account_id) AND notification_domain_exclusions.domain IN (
+  SELECT x.domain FROM notification_domain_exclusions x WHERE x.viewer_account_id = sqlc.arg(account_id)
+  ORDER BY x.domain LIMIT sqlc.arg(lim));

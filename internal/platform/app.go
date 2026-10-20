@@ -454,7 +454,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Media: instanceMedia{a},
 		// The contact_account setting names a local account.
 		Accounts: instanceAccounts{a},
-		// The terms of service and the privacy policy are Markdown (#489).
+		// The terms of service, the privacy policy (#489), and the announcements (FR-726) are Markdown.
 		Documents: markdown.New(),
 	})
 	if a.Mailer, err = newMailer(cfg, a.Logger); err != nil {
@@ -580,6 +580,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
+	instance.RegisterCommitHooks(a.Projectors, a.Streams)
 	a.registerBusinessMetrics(a.Projectors)
 	fedOutbox := a.setUpFederation(cfg, feds)
 
@@ -681,11 +682,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation, Severances: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
 		AccountAdmin: a.AccountAdmin, AccountReports: a.Moderation,
-		AuditLog:     a.Moderation,
-		Rules:        a.Instance,
-		Roles:        a.Identity,
-		Reports:      a.LocalReports,
-		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
+		AuditLog: a.Moderation,
+		Rules:    a.Instance,
+		// The server-wide announcements (FR-726).
+		Announcements: a.Instance,
+		Roles:         a.Identity,
+		Reports:       a.LocalReports,
+		ReportCounts:  a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
 		OwnAccount: a.Identity, Exports: a.Exports, Imports: a.Imports,
 		// The instance texts and the public pages of the documents among them (#489).

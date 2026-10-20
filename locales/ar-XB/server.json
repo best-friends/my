@@ -64,7 +64,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.read_mutes": {
-    "defaultMessage": "‮ᴚǝɐp ʇɥǝ ɐɔɔonuʇs ʎon ɯnʇǝ‬",
+    "defaultMessage": "‮ᴚǝɐp ʇɥǝ ɐɔɔonuʇs ɐup poɯɐıus ʎon ɯnʇǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.read_notifications": {
@@ -108,7 +108,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_mutes": {
-    "defaultMessage": "‮Wnʇǝ ɐup nuɯnʇǝ ɐɔɔonuʇs‬",
+    "defaultMessage": "‮Wnʇǝ ɐup nuɯnʇǝ ɐɔɔonuʇs ɐup poɯɐıus‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_notifications": {
@@ -529,6 +529,10 @@
   },
   "errors.conflict": {
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ɔouɟʅıɔʇs ʍıʇɥ ʇɥǝ ɔnɹɹǝuʇ sʇɐʇǝ oɟ ʇɥǝ ɹǝsonɹɔǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "‮⅄on ɐʅɹǝɐpʎ ɯnʇǝ ʇɥǝ ɯosʇ poɯɐıus ɐʅʅoʍǝp. ∩uɯnʇǝ ouǝ ɟıɹsʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.export.in_progress": {
