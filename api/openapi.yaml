@@ -1685,6 +1685,33 @@ paths:
           $ref: "#/components/responses/StatusAfterAction"
         default:
           $ref: "#/components/responses/Problem"
+  /statuses/{id}/poll/votes:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    post:
+      operationId: voteInPoll
+      summary: Vote in the poll of a status
+      description: |
+        Votes for one or more choices of the poll of a status (FR-112). `poll_id` names the poll
+        the user saw: a poll that an edit of the status replaced is a 409. A status without a
+        poll, a poll that has ended, a second vote, or choices the poll does not take (none, an
+        unknown one, the same one twice, or several in a single-choice poll) is a 422. A vote in
+        a poll of another server is sent to that server, whose counts in `poll` include it once
+        the server reports them again.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteInPollRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
   /statuses/{id}/reaction:
     parameters:
       - $ref: "#/components/parameters/StatusId"
@@ -6104,6 +6131,83 @@ components:
         pinned:
           description: Whether the status is pinned to the author's profile; given only to the author.
           type: boolean
+        poll:
+          $ref: "#/components/schemas/Poll"
+    Poll:
+      description: |
+        The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
+        another server are those its server last reported. `voted` and `own_votes` describe the
+        authenticated user's vote and are omitted for anonymous requests.
+      type: object
+      required: [id, multiple, expired, votes_count, options]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        expires_at:
+          description: When the poll ends; omitted when it has no end.
+          type: string
+          format: date-time
+        expired:
+          description: Whether the poll has ended. An ended poll takes no votes and shows its results.
+          type: boolean
+        multiple:
+          description: Whether a vote may choose several options.
+          type: boolean
+        votes_count:
+          description: The number of votes, one per chosen option.
+          type: integer
+          minimum: 0
+        voters_count:
+          description: |
+            The number of accounts that voted; omitted when it is unknown (a multiple-choice poll
+            of another server that does not report it).
+          type: integer
+          minimum: 0
+        options:
+          description: The options, in order; a vote names them by their index in this list.
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/PollOption"
+        voted:
+          description: Whether the authenticated user voted in the poll.
+          type: boolean
+        own_votes:
+          description: The indexes of the options the authenticated user voted for, in order.
+          type: array
+          items:
+            type: integer
+            minimum: 0
+    PollOption:
+      description: One option of a poll.
+      type: object
+      required: [title, votes_count]
+      properties:
+        title:
+          description: The option as plain text.
+          type: string
+        votes_count:
+          description: The number of votes for the option.
+          type: integer
+          minimum: 0
+    VoteInPollRequest:
+      description: A vote in the poll of a status.
+      type: object
+      required: [poll_id, choices]
+      properties:
+        poll_id:
+          $ref: "#/components/schemas/Id"
+        choices:
+          description: The indexes of the chosen options in `Poll.options`; one for a single-choice poll.
+          type: array
+          minItems: 1
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: integer
+            minimum: 0
+            maximum: 19
     ReactionEmoji:
       description: |
         The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom

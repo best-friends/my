@@ -749,7 +749,7 @@ flowchart LR
   通知は `notification` の公開 API（`StatusNotified`）で、同じトランザクションの中で調べます。
 - 設定 `remote_status_max_retention`（既定は上限なし）を設定すると、公開からその期間を過ぎたリモートの投稿は、参照があっても対象です。
 - 通報か投稿単位の処分が指す投稿（`report_statuses`・`moderation_action_statuses`）と、効いている保全（§4.3）のある作者の投稿は、最大の期間を過ぎても対象にしません（ADR-0038）。判定は `moderation` の公開 API（`StatusRetained`）で行い、その記録が消えた後の回で対象になります。
-- 対象の投稿ごとに `status_deletions`（`origin = retention`）を記録して `content.status_deleted` を発行し（投影・`feed_*` から外れ、通知は隠れる）、同じトランザクションで投稿の行・版と子テーブル・投票（選択肢・観測・集計）・リモートのアカウントのブーストを物理削除します。
+- 対象の投稿ごとに `status_deletions`（`origin = retention`）を記録して `content.status_deleted` を発行し（投影・`feed_*` から外れ、通知は隠れる）、同じトランザクションで投稿の行・版と子テーブル・投票（選択肢・回答・観測・集計）・リモートのアカウントのブーストを物理削除します。
   `status_deletions`、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留めは残し、読み取りでは対象の投稿を削除済みとして扱います（一覧から外れる）。
 - 1 トランザクションで消すのは 100 件まで、1 回のジョブで 10 トランザクションまでです。続きはカーソル（投稿の `id`）を持った次のジョブが読みます。
   リモートの投稿の `id` は公開日時の UUIDv7（§1.3）なので、走査は主キーの範囲（期限の UUIDv7 の下限より前）で止まります。
@@ -858,7 +858,7 @@ flowchart LR
 | `custom_emoji_aliases` | 現在値 | `emoji_id`, `alias`（shortcode と同じ文字種） | PK `(emoji_id, alias)`。ローカルだけ。ピッカーの検索に使う |
 | `polls` | イベント（版の子） | `id`, `revision_id`, `multiple`（`bool`）, `closes_at`（NULL 可） | 一意 `(revision_id)`。投票を作り直す編集は新しい版の新しい投票になる |
 | `poll_options` | イベント（子） | `poll_id`, `position`, `title` | PK `(poll_id, position)` |
-| `poll_votes` | イベント | `id`, `poll_id`, `account_id`, `position`, `uri`（NULL 可）, `voted_at` | 一意 `(poll_id, account_id, position)`, `(uri)` |
+| `poll_votes` | イベント | `id`, `poll_id`, `account_id`, `position`, `uri`（NULL 可）, `voted_at` | 一意 `(poll_id, account_id, position)`, `(uri)`。インデックス `(account_id)`（消去）。複数選択の回答は選択肢ごとに 1 行 |
 | `poll_tally_observations` | イベント | `id`, `poll_id`, `voters_count`（NULL 可）, `observed_at` | リモートの投票の集計値（`Update` で届く） |
 | `poll_tally_observation_counts` | イベント（子） | `observation_id`, `position`, `votes` | PK `(observation_id, position)` |
 | `poll_tallies` | 投影 | `poll_id`, `position`, `votes`, `voters_count`（NULL 可。投票者数の分からない複数選択のリモートの投票） | PK `(poll_id, position)`。ローカルは `poll_votes` から、リモートは最新の観測から |
@@ -874,6 +874,8 @@ flowchart LR
   `content` の参照は削除の文の中で調べ直します。実行中に届いた文書が消した絵文字を参照したときは、読み取りが参照を飛ばし、次にその絵文字が届いたときに記録し直します。
   1 回のジョブは 100 件ずつ 10 回まで読み、続きはカーソル（絵文字の `id`）を持った次のジョブが読みます。リモートのメディアのキャッシュの複製は期限で消えます。
 - リモートの投票で `votersCount` が無いときは、単一選択なら票数の合計を投票者数にし、複数選択なら（誰も投票していなければ 0、それ以外は）NULL にします。
+- 投票への回答（FR-112）: ローカルのアカウントは、閲覧できる削除されていない投稿の現在版の投票に、締め切り（`closes_at`）の前に 1 回だけ回答します（`content.Interactions.VotePoll`。交流の禁止 `interact` の対象）。選んだ選択肢ごとに `poll_votes` を 1 行書き、同じトランザクションで既に回答した行が無いことを確かめます。回答は取り消しません。
+  リモートの投票への回答は、行ごとに `uri`（`https://{host}/ap/objects/{id}`）を持ち、ドメインイベント `content.poll_voted` で `federation` が選択肢ごとの `Note` を投票の作者に送ります（[federation.md §7.1](federation.md#71-記録)）。リモートの投票の票数は相手が送る集計（`poll_tallies`）のままで、回答は相手が次に送る `Update` の集計に入ります。
 - タグのモデレーション（使用禁止・トレンド除外）は、v0 では持ちません。必要になったら `tag_moderation_actions` を同じ型で追加します。
 
 #### 利用者ごとの関係【現在値】
@@ -1070,7 +1072,7 @@ flowchart LR
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
 | `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。`uri` は `actor_uri` と同じオリジンのものだけ（[federation §3.3](federation.md#33-順序と冪等性)）。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除）、`(activity_uri)`（`remote_follow_tombstones` を使い終えたかの判定） |
 | `remote_follow_tombstones` | イベント | `activity_uri`（PK。`Undo`）, `actor_uri`（フォローした人）, `object_uri`（埋め込みの `Follow` の `object`）, `received_at` | 未知の `Follow` への `Undo` を、埋め込みの `Follow` の 2 人の組で記録する。後から届いた同じ組の最初の `Follow` を捨て、その URI を同じ `activity_uri` で `remote_object_tombstones` に記録する（その行があれば使い終えた tombstone）。インデックス `(actor_uri, object_uri, received_at)`、`(received_at)`（30 日で削除） |
-| `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`（`favourite` は投稿の ID）, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
+| `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report, poll_vote)`）, `object_id`（`favourite` と `poll_vote` は投稿の ID）, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
 | `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` と `Like` / `Undo Like` は記録のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
 | `deliveries` | イベント | `id`, `outbound_activity_id`, `inbox_url`（shared inbox に集約済み）, `domain`, `created_at` | 一意 `(outbound_activity_id, inbox_url)` |
 | `delivery_attempts` | イベント | `id`, `delivery_id`, `outcome`（`enum(succeeded, retryable_failure, permanent_failure, skipped)`）, `signature_scheme`（`enum(rfc9421, cavage)`、NULL 可 = 応答が無い）, `http_status`（`int`、NULL 可）, `error`（`text`、NULL 可）, `attempted_at` | インデックス `(delivery_id, id)`。保持期間（30 日）後に削除（NFR-OPS-3） |
@@ -1377,7 +1379,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `reactions` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
+| アカウント削除（FR-008） | `account_lifecycle_events`（本人による削除は `deleted`、BAN は `deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）・投稿の自動削除の設定、データエクスポート（要求と結果・アーカイブの Blob）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・リアクション・ブックマーク・ピン留めを含む）、本人のお気に入り・リアクション・ブックマーク・ピン留め・ブースト（件数から引く）・投票への回答、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | 投稿の自動削除（FR-118） | `status_deletions`（`origin = auto_delete`） | 投稿の削除と同じ | 投稿の削除と同じ |

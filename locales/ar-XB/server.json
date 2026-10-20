@@ -727,6 +727,26 @@
     "defaultMessage": "‮{max,plural,one{⅄on ɔɐu dıu ɐʇ ɯosʇ # dosʇ.} other{⅄on ɔɐu dıu ɐʇ ɯosʇ # dosʇs.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ ɐʅɹǝɐpʎ ʌoʇǝp ıu ʇɥıs doʅʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "‮⊥ɥǝ doʅʅ ʍɐs ɔɥɐuƃǝp qʎ ɐu ǝpıʇ oɟ ʇɥǝ dosʇ. ᴚǝʅoɐp ıʇ ɐup ʌoʇǝ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "‮⊥ɥıs doʅʅ ɥɐs ǝupǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "‮Ↄɥoosǝ ouǝ oɟ ʇɥǝ doʅʅ's odʇıous, oɹ sǝʌǝɹɐʅ ouʅʎ ʍɥǝu ʇɥǝ doʅʅ ɐʅʅoʍs ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "‮⊥ɥıs dosʇ ɥɐs uo doʅʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.posting_restricted": {
     "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɯɐʎ uoʇ dosʇ ɹıƃɥʇ uoʍ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

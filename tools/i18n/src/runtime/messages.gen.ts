@@ -3838,6 +3838,34 @@ export interface MessageArgs {
   "client:status.pin.failed": { reason: string };
   /** Pinned post */
   "client:status.pin.label": {};
+  /** Choose one or more options. */
+  "client:status.poll.choose_many": {};
+  /** Choose one option. */
+  "client:status.poll.choose_one": {};
+  /** Closed */
+  "client:status.poll.closed": {};
+  /** Ends {time} */
+  "client:status.poll.ends": { time: string };
+  /** Poll */
+  "client:status.poll.label": {};
+  /** Poll options */
+  "client:status.poll.options": {};
+  /** Your vote */
+  "client:status.poll.own_vote": {};
+  /** Counts as {host} last reported them */
+  "client:status.poll.remote_counts": { host: string };
+  /** Poll results */
+  "client:status.poll.results": {};
+  /** Vote */
+  "client:status.poll.vote": {};
+  /** Could not vote: {reason} */
+  "client:status.poll.vote_failed": { reason: string };
+  /** Vote sent */
+  "client:status.poll.voted": {};
+  /** {count, plural, one {# person} other {# people}} */
+  "client:status.poll.voters": { count: number };
+  /** {count, plural, one {# vote} other {# votes}} */
+  "client:status.poll.votes": { count: number };
   /** Reaction removed */
   "client:status.reaction.off": {};
   /** Reacted with {emoji} */
@@ -4282,6 +4310,16 @@ export interface MessageArgs {
   "server:errors.status.not_pinnable": {};
   /** {max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}} */
   "server:errors.status.pin_limit": { max: number };
+  /** You have already voted in this poll. */
+  "server:errors.status.poll_already_voted": {};
+  /** The poll was changed by an edit of the post. Reload it and vote again. */
+  "server:errors.status.poll_changed": {};
+  /** This poll has ended. */
+  "server:errors.status.poll_closed": {};
+  /** Choose one of the poll's options, or several only when the poll allows it. */
+  "server:errors.status.poll_invalid_choices": {};
+  /** This post has no poll. */
+  "server:errors.status.poll_missing": {};
   /** Your account may not post right now. */
   "server:errors.status.posting_restricted": {};
   /** The post you are replying to was not found. */

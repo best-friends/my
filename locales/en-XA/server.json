@@ -727,6 +727,26 @@
     "defaultMessage": "[{max,plural,one{Ẏǿǿŭŭ ƈȧȧƞ ƥīƞ ȧȧŧ ḿǿǿşŧ # ƥǿǿşŧ.} other{Ẏǿǿŭŭ ƈȧȧƞ ƥīƞ ȧȧŧ ḿǿǿşŧ # ƥǿǿşŧş.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧŀřḗḗȧȧḓẏ ṽǿǿŧḗḗḓ īƞ ŧħīş ƥǿǿŀŀ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿŀŀ ẇȧȧş ƈħȧȧƞɠḗḗḓ ƀẏ ȧȧƞ ḗḗḓīŧ ǿǿƒ ŧħḗḗ ƥǿǿşŧ. Řḗḗŀǿǿȧȧḓ īŧ ȧȧƞḓ ṽǿǿŧḗḗ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "[Ŧħīş ƥǿǿŀŀ ħȧȧş ḗḗƞḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿƒ ŧħḗḗ ƥǿǿŀŀ'ş ǿǿƥŧīǿǿƞş, ǿǿř şḗḗṽḗḗřȧȧŀ ǿǿƞŀẏ ẇħḗḗƞ ŧħḗḗ ƥǿǿŀŀ ȧȧŀŀǿǿẇş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "[Ŧħīş ƥǿǿşŧ ħȧȧş ƞǿǿ ƥǿǿŀŀ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.posting_restricted": {
     "defaultMessage": "[Ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ḿȧȧẏ ƞǿǿŧ ƥǿǿşŧ řīɠħŧ ƞǿǿẇ.]",
     "description": "Generated from en by tools/i18n; do not edit."

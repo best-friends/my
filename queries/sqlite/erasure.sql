@@ -223,6 +223,12 @@ DELETE FROM bookmarks WHERE bookmarks.account_id = sqlc.arg(account_id) AND book
   SELECT b.status_id FROM bookmarks b WHERE b.account_id = sqlc.arg(account_id)
   ORDER BY b.status_id LIMIT sqlc.arg(lim));
 
+-- The account's votes in polls, the oldest lim of them.
+
+-- name: ErasePollVotesBy :execrows
+DELETE FROM poll_votes WHERE poll_votes.id IN (
+  SELECT v.id FROM poll_votes v WHERE v.account_id = sqlc.arg(account_id) ORDER BY v.id LIMIT sqlc.arg(lim));
+
 -- name: ErasePinsBy :execrows
 DELETE FROM status_pins WHERE account_id = sqlc.arg(account_id);
 

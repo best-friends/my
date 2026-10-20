@@ -177,4 +177,14 @@ type Repository interface {
 	// FindPollTallies returns the tallies of a poll ordered by position; a poll without an
 	// observation has none.
 	FindPollTallies(ctx context.Context, pollID string) ([]content.PollTally, error)
+
+	// Votes in polls (FR-112).
+
+	// InsertPollVote inserts v and reports true, or reports false when the account voted for
+	// its choice in the poll, or a vote has its URI, already.
+	InsertPollVote(ctx context.Context, tx uow.Tx, v content.PollVote) (bool, error)
+	// ListPollVotes returns the votes of accountID in pollID ordered by position.
+	ListPollVotes(ctx context.Context, pollID, accountID string) ([]content.PollVote, error)
+	// ListPollVotesTx is ListPollVotes in tx.
+	ListPollVotesTx(ctx context.Context, tx uow.Tx, pollID, accountID string) ([]content.PollVote, error)
 }

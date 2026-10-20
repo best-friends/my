@@ -685,6 +685,26 @@ func (q *Queries) ErasePinsOfStatuses(ctx context.Context, ids []string) error {
 	return err
 }
 
+const erasePollVotesBy = `-- name: ErasePollVotesBy :execrows
+
+DELETE FROM poll_votes WHERE poll_votes.id IN (
+  SELECT v.id FROM poll_votes v WHERE v.account_id = $1 ORDER BY v.id LIMIT $2)
+`
+
+type ErasePollVotesByParams struct {
+	AccountID string
+	Lim       int32
+}
+
+// The account's votes in polls, the oldest lim of them.
+func (q *Queries) ErasePollVotesBy(ctx context.Context, arg ErasePollVotesByParams) (int64, error) {
+	result, err := q.db.Exec(ctx, erasePollVotesBy, arg.AccountID, arg.Lim)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const erasePrivateKeys = `-- name: ErasePrivateKeys :exec
 DELETE FROM local_account_private_keys WHERE account_key_id IN (
   SELECT k.id FROM account_keys k WHERE k.account_id = $1)

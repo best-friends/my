@@ -242,7 +242,8 @@ const (
 	phaseBoostedAuthor phase = "boosted_author"
 	// phaseBlocked is the remote account a block is about, in one batch.
 	phaseBlocked phase = "blocked"
-	// phaseStatusAuthor is the author of a favourited status, in one batch.
+	// phaseStatusAuthor is the author of a favourited status or of a poll voted in, in one
+	// batch.
 	phaseStatusAuthor phase = "status_author"
 	// phaseCounterpart is the other account of a follow, in one batch.
 	phaseCounterpart phase = "counterpart"
@@ -302,6 +303,7 @@ type subject struct {
 //     federation.md §11.1).
 //   - Follow, Accept, Reject, and Undo Follow: the other account of the follow.
 //   - Like and Undo Like: the author of the favourited status.
+//   - Create of a vote: the author of the poll's status.
 //   - Flag: the reported account.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
@@ -316,7 +318,7 @@ func (s subject) phases() []phase {
 		return []phase{phaseFollowers}
 	case federation.OutboundFollow:
 		return []phase{phaseCounterpart}
-	case federation.OutboundFavourite:
+	case federation.OutboundFavourite, federation.OutboundPollVote:
 		return []phase{phaseStatusAuthor}
 	case federation.OutboundStatus:
 		if s.act.Type == federation.ActivityCreate {
@@ -350,7 +352,7 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 		s.sharedInboxes = p.SharedInboxes
 		return f.accountSubject(ctx, s)
 	}
-	if act.ObjectKind == federation.OutboundFavourite {
+	if act.ObjectKind == federation.OutboundFavourite || act.ObjectKind == federation.OutboundPollVote {
 		return f.favouriteSubject(ctx, s)
 	}
 	var err error

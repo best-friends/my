@@ -7271,6 +7271,62 @@
     "defaultMessage": "Pinned post",
     "description": "Line above a post at the top of a profile that the account pinned there."
   },
+  "status.poll.choose_many": {
+    "defaultMessage": "Choose one or more options.",
+    "description": "Hint above the options of a poll that lets the user choose several of them."
+  },
+  "status.poll.choose_one": {
+    "defaultMessage": "Choose one option.",
+    "description": "Hint under the options of a poll that lets the user choose one of them."
+  },
+  "status.poll.closed": {
+    "defaultMessage": "Closed",
+    "description": "Under a poll whose end has passed: it takes no more votes and shows its results."
+  },
+  "status.poll.ends": {
+    "defaultMessage": "Ends {time}",
+    "description": "Under a poll: when it ends. {time} is a relative time ahead, such as \"in 3 hr.\" or \"in 2 days\"."
+  },
+  "status.poll.label": {
+    "defaultMessage": "Poll",
+    "description": "Accessible name of the poll of a post: its options or results and how many voted."
+  },
+  "status.poll.options": {
+    "defaultMessage": "Poll options",
+    "description": "Accessible name of the group of radio buttons or checkboxes the user chooses from to vote in a poll."
+  },
+  "status.poll.own_vote": {
+    "defaultMessage": "Your vote",
+    "description": "After an option in the results of a poll that the user voted for."
+  },
+  "status.poll.remote_counts": {
+    "defaultMessage": "Counts as {host} last reported them",
+    "description": "Under the results of a poll of a post from another server: the counts are those that server sent last, and a vote of the user shows in them once it sends them again. {host} is that server's host name."
+  },
+  "status.poll.results": {
+    "defaultMessage": "Poll results",
+    "description": "Accessible name of the list of the options of a poll with their share of the votes."
+  },
+  "status.poll.vote": {
+    "defaultMessage": "Vote",
+    "description": "Button under the options of a poll that sends the user's choice."
+  },
+  "status.poll.vote_failed": {
+    "defaultMessage": "Could not vote: {reason}",
+    "description": "Toast when the user's vote in a poll failed, for example because the poll has ended. {reason} is the error message, a full sentence."
+  },
+  "status.poll.voted": {
+    "defaultMessage": "Vote sent",
+    "description": "Toast after the user voted in a poll."
+  },
+  "status.poll.voters": {
+    "defaultMessage": "{count, plural, one {# person} other {# people}}",
+    "description": "Under a poll: how many accounts voted."
+  },
+  "status.poll.votes": {
+    "defaultMessage": "{count, plural, one {# vote} other {# votes}}",
+    "description": "Under a poll whose number of voters is unknown: how many votes it has, one per chosen option."
+  },
   "status.unpin.action": {
     "defaultMessage": "Unpin from profile",
     "description": "Menu item, on the user's own pinned post, that removes it from the top of their profile."

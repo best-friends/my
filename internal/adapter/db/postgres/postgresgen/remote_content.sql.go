@@ -396,6 +396,38 @@ func (q *Queries) InsertPollTallyObservationCount(ctx context.Context, arg Inser
 	return err
 }
 
+const insertPollVote = `-- name: InsertPollVote :execrows
+INSERT INTO poll_votes (id, poll_id, account_id, position, uri, voted_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT DO NOTHING
+`
+
+type InsertPollVoteParams struct {
+	ID        string
+	PollID    string
+	AccountID string
+	Position  int32
+	Uri       *string
+	VotedAt   time.Time
+}
+
+// InsertPollVote inserts a vote unless the account voted for the choice, or the vote's URI is
+// recorded, already.
+func (q *Queries) InsertPollVote(ctx context.Context, arg InsertPollVoteParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertPollVote,
+		arg.ID,
+		arg.PollID,
+		arg.AccountID,
+		arg.Position,
+		arg.Uri,
+		arg.VotedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const insertRemoteMedia = `-- name: InsertRemoteMedia :execrows
 INSERT INTO remote_media (
   media_id, owner_account_id, remote_url, declared_content_type, declared_media_type, purpose, width, height,
@@ -683,6 +715,43 @@ func (q *Queries) ListPollTallyObservationCounts(ctx context.Context, observatio
 	for rows.Next() {
 		var i PollTallyObservationCount
 		if err := rows.Scan(&i.ObservationID, &i.Position, &i.Votes); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPollVotesOfAccount = `-- name: ListPollVotesOfAccount :many
+SELECT id, poll_id, account_id, position, uri, voted_at FROM poll_votes
+WHERE poll_id = $1 AND account_id = $2 ORDER BY position
+`
+
+type ListPollVotesOfAccountParams struct {
+	PollID    string
+	AccountID string
+}
+
+func (q *Queries) ListPollVotesOfAccount(ctx context.Context, arg ListPollVotesOfAccountParams) ([]PollVote, error) {
+	rows, err := q.db.Query(ctx, listPollVotesOfAccount, arg.PollID, arg.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []PollVote{}
+	for rows.Next() {
+		var i PollVote
+		if err := rows.Scan(
+			&i.ID,
+			&i.PollID,
+			&i.AccountID,
+			&i.Position,
+			&i.Uri,
+			&i.VotedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

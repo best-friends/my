@@ -41,3 +41,35 @@ export function useTimeView(dateTime: string): TimeView {
     absolute: intl.formatDate(then, { dateStyle: "full", timeStyle: "short" }),
   };
 }
+
+/**
+ * The time from `now` forward to `then`, in the largest unit that fits ("in 5 min.", "in 3 hr.", "in 2 days");
+ * a time already past is "now".
+ */
+function timeUntil(intl: IntlShape, then: number, now: number): string {
+  const left = Math.max(0, then - now);
+  if (left < minute) return intl.formatRelativeTime(0, "second", { numeric: "auto" });
+  if (left < hour) return intl.formatRelativeTime(Math.ceil(left / minute), "minute", { style: "short" });
+  if (left < day) return intl.formatRelativeTime(Math.floor(left / hour), "hour", { style: "short" });
+  return intl.formatRelativeTime(Math.floor(left / day), "day", { style: "short" });
+}
+
+/** A moment ahead, such as the end of a poll: its view relative to now, and whether it has passed. */
+export type DeadlineView = TimeView & { passed: boolean };
+
+/**
+ * Returns how a list shows the moment ahead `dateTime` (ISO 8601), or null without one; it renders again as the
+ * clock ticks.
+ */
+export function useDeadlineView(dateTime: string | undefined): DeadlineView | null {
+  const intl = useIntl();
+  const now = useNow();
+  if (dateTime === undefined) return null;
+  const then = Date.parse(dateTime);
+  return {
+    dateTime,
+    relative: timeUntil(intl, then, now),
+    absolute: intl.formatDate(then, { dateStyle: "full", timeStyle: "short" }),
+    passed: then <= now,
+  };
+}

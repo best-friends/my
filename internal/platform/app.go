@@ -611,7 +611,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpInbox(feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
-		Restrictions: a.AccountPolicy.Content(), Media: a.Media,
+		Restrictions: a.AccountPolicy.Content(), Media: a.Media, Clock: a.Clock,
 	})
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)

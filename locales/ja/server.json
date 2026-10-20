@@ -719,6 +719,26 @@
     "defaultMessage": "{max, plural, other {固定できる投稿は # 件までです。}}",
     "description": "Detail of the HTTP 422 API error when a user pins more posts than allowed. {max} is the maximum number of pinned posts."
   },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "この投票にはすでに回答しています。",
+    "description": "Detail of the HTTP 422 API error when a user votes in a poll a second time."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "投稿の編集で投票が変わりました。読み込み直してから回答してください。",
+    "description": "Detail of the HTTP 409 API error when a user votes in a poll that an edit of the post replaced."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "この投票は締め切られました。",
+    "description": "Detail of the HTTP 422 API error when a user votes in a poll whose end has passed."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "投票の選択肢から選んでください。複数選べるのは複数選択の投票だけです。",
+    "description": "Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "この投稿には投票がありません。",
+    "description": "Detail of the HTTP 422 API error when a user votes on a post that has no poll."
+  },
   "errors.status.posting_restricted": {
     "defaultMessage": "現在、あなたのアカウントは投稿できません。",
     "description": "Detail of the HTTP 403 API error when a moderator restricted the account from posting."

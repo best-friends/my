@@ -26,12 +26,15 @@ const (
 	OutboundBlock     OutboundObjectKind = "block"
 	OutboundAccount   OutboundObjectKind = "account"
 	OutboundReport    OutboundObjectKind = "report"
+	// OutboundPollVote is a local account's vote in a remote poll: the Create of the Note that
+	// carries one choice, about the poll's status (ObjectID).
+	OutboundPollVote OutboundObjectKind = "poll_vote"
 )
 
 // Valid reports whether k is one of the outbound object kinds.
 func (k OutboundObjectKind) Valid() bool {
 	switch k {
-	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport:
+	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundPollVote:
 		return true
 	}
 	return false

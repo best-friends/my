@@ -131,6 +131,17 @@ SELECT id, revision_id, multiple, closes_at FROM polls WHERE revision_id = @revi
 -- name: ListPollOptions :many
 SELECT poll_id, position, title FROM poll_options WHERE poll_id = @poll_id ORDER BY position;
 
+-- InsertPollVote inserts a vote unless the account voted for the choice, or the vote's URI is
+-- recorded, already.
+-- name: InsertPollVote :execrows
+INSERT INTO poll_votes (id, poll_id, account_id, position, uri, voted_at)
+VALUES (@id, @poll_id, @account_id, @position, @uri, @voted_at)
+ON CONFLICT DO NOTHING;
+
+-- name: ListPollVotesOfAccount :many
+SELECT id, poll_id, account_id, position, uri, voted_at FROM poll_votes
+WHERE poll_id = @poll_id AND account_id = @account_id ORDER BY position;
+
 -- name: InsertPollTallyObservation :exec
 INSERT INTO poll_tally_observations (id, poll_id, voters_count, observed_at)
 VALUES (@id, @poll_id, @voters_count, @observed_at);
