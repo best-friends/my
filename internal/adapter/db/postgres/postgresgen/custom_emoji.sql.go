@@ -62,10 +62,11 @@ DELETE FROM custom_emojis
 WHERE custom_emojis.id = $1 AND custom_emojis.domain <> ''
   AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = $1)
   AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = $1)
+  AND NOT EXISTS (SELECT 1 FROM custom_emoji_settings s WHERE s.emoji_id = $1 AND NOT s.enabled)
 `
 
 // DeleteUnreferencedRemoteEmoji deletes the row of a remote custom emoji while no status
-// revision and no reaction refers to it.
+// revision and no reaction refers to it and it is not disabled.
 func (q *Queries) DeleteUnreferencedRemoteEmoji(ctx context.Context, id string) (int64, error) {
 	result, err := q.db.Exec(ctx, deleteUnreferencedRemoteEmoji, id)
 	if err != nil {
@@ -355,6 +356,7 @@ SELECT e.id FROM custom_emojis e
 WHERE e.domain <> '' AND e.id > CAST($1 AS TEXT)
   AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = e.id)
   AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = e.id)
+  AND NOT EXISTS (SELECT 1 FROM custom_emoji_settings s WHERE s.emoji_id = e.id AND NOT s.enabled)
 ORDER BY e.id
 LIMIT $2
 `
@@ -365,7 +367,9 @@ type ListUnreferencedRemoteEmojisParams struct {
 }
 
 // ListUnreferencedRemoteEmojis returns, in ID order after the cursor, the IDs of the remote custom
-// emoji that no status revision and no reaction refers to (the purge of ADR-0051).
+// emoji that no status revision and no reaction refers to and that the administrators have not
+// disabled (the purge of ADR-0051; a disabled emoji stays, so that it stays disabled when it
+// arrives again).
 func (q *Queries) ListUnreferencedRemoteEmojis(ctx context.Context, arg ListUnreferencedRemoteEmojisParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, listUnreferencedRemoteEmojis, arg.After, arg.RowLimit)
 	if err != nil {
