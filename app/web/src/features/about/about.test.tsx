@@ -53,6 +53,29 @@ describe("the information page", () => {
     ]);
   });
 
+  test("puts the terms and policies right after the rules, and the operators and the source code last", async () => {
+    serveInstance({
+      description: "We grow vegetables.",
+      rules: [{ id: "0192f0c4-7a8e-7000-8000-0000000000r1", text: "Be kind", lang: "en" }],
+      contact: { email: "admin@my.example" },
+      terms_url: "http://localhost:3000/auth/terms",
+      privacy_policy_url: "http://localhost:3000/auth/privacy",
+    });
+    await renderApp({ path: "/about" });
+
+    await screen.findByRole("region", { name: "Moderated servers" });
+    const main = screen.getByRole("main");
+    expect(within(main).getAllByRole("region").map((region) => within(region).getByRole("heading", { level: 2 }).textContent)).toEqual([
+      "Description",
+      "Rules",
+      "Terms and policies",
+      "Moderated servers",
+      "Search engines and AI",
+      "Contact",
+      "Source code",
+    ]);
+  });
+
   test("shows the server's thumbnail and how to reach its operators", async () => {
     serveInstance({
       thumbnail: { url: "https://my.example/media/beach/r/large.webp", width: 1600, height: 900, alt: "A beach at dawn" },
