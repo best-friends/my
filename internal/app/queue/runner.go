@@ -205,7 +205,8 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 	}
 	mctx, end := r.metrics.meter.Begin(ctx)
 	defer end()
-	r.metrics.waited(mctx, jobType, now.Sub(j.RunAt))
+	wait := max(now.Sub(j.RunAt), 0)
+	r.metrics.waited(mctx, jobType, wait)
 	started := time.Now() // the monotonic clock: Clock.Now has millisecond precision
 	var res Result
 	if found {
@@ -215,25 +216,64 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 	}
 
 	done := r.opts.Clock.Now()
+	ran := func(outcome string) {
+		d := time.Since(started)
+		r.metrics.ran(mctx, jobType, outcome, d)
+		r.logRun(mctx, j, jobType, outcome, res.Err(), d, wait)
+	}
 	switch {
 	case res.IsDone():
-		r.metrics.ran(mctx, jobType, OutcomeSuccess, time.Since(started))
+		ran(OutcomeSuccess)
 		return true, r.src.Complete(recordCtx, r.opts.Worker, j)
 	case res.IsFail():
-		r.metrics.ran(mctx, jobType, OutcomeDead, time.Since(started))
+		ran(OutcomeDead)
 		return true, r.src.Bury(recordCtx, r.opts.Worker, j, errorText(res.Err(), "failed"), done)
 	case j.Attempt >= policy.MaxAttempts:
-		r.metrics.ran(mctx, jobType, OutcomeDead, time.Since(started))
+		ran(OutcomeDead)
 		return true, r.src.Bury(recordCtx, r.opts.Worker, j, errorText(res.Err(), "retried")+
 			fmt.Sprintf(" (gave up after %d attempts)", j.Attempt), done)
 	default:
-		r.metrics.ran(mctx, jobType, OutcomeRetry, time.Since(started))
+		ran(OutcomeRetry)
 		after := res.After()
 		if after <= 0 {
 			after = policy.Backoff(j.Attempt, r.opts.Random)
 		}
 		return true, r.src.Release(recordCtx, r.opts.Worker, j, j.Attempt, done.Add(after), errorText(res.Err(), "retried"))
 	}
+}
+
+// Keys of the job log that are not labels of the job metrics (ADR-0055 §5).
+const (
+	logJobID    = "job_id"
+	logAttempt  = "attempt"
+	logDuration = "duration_seconds"
+	logWait     = "wait_seconds"
+)
+
+// logRun writes the one line of a job run (ADR-0055 §5): the labels of my.job.duration under
+// the same names and values, its duration and the my.job.wait in seconds, so that a log-based
+// metric counts the runs as the metrics do, and the job's ID and attempt for NFR-OPS-1. A
+// success is info, a retry a warning, and a dead job an error.
+func (r *PullRunner) logRun(ctx context.Context, j Job, jobType, outcome string, err error, d, wait time.Duration) {
+	level := slog.LevelInfo
+	switch outcome {
+	case OutcomeRetry:
+		level = slog.LevelWarn
+	case OutcomeDead:
+		level = slog.LevelError
+	}
+	attrs := []slog.Attr{
+		slog.String(LabelJobType, jobType),
+		slog.String(LabelOutcome, outcome),
+		slog.Float64(logDuration, d.Seconds()),
+		slog.Float64(logWait, wait.Seconds()),
+		slog.String(logJobID, j.ID),
+		slog.Int(logAttempt, j.Attempt),
+	}
+	if err != nil {
+		attrs = append(attrs, slog.String("error", err.Error()))
+	}
+	r.opts.Logger.LogAttrs(ctx, level, "job", attrs...)
 }
 
 // call runs h with a context bounded by the lease, turning a panic into a retry.

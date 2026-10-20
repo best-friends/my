@@ -21,9 +21,19 @@ Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../
 | `web` | すべてのルート | 動かさない |
 | `worker` | ヘルスチェックだけ（プラットフォームのプローブ用） | 動かす |
 
-ログは標準エラーに JSON Lines で出る。HTTP リクエストごとに 1 行のアクセスログ（メソッド・パス・ステータス・サイズ・所要時間）を出し、
-クエリ文字列は記録しない。リクエスト中のログには `request_id` が付き、同じ ID をレスポンスの `X-Request-Id` で返す。
+ログは標準エラーに JSON Lines で出る。リクエスト中のログには `request_id` が付き、同じ ID をレスポンスの `X-Request-Id` で返す。
 リクエストの `X-Request-Id` が 128 文字以内の英数字と `-_.:` だけなら、ロードバランサが振った ID としてそのまま使う。
+
+HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を出す。その行は下の [指標](#指標メトリクス) のラベルを同じ名前と値で持つので（[ADR-0055](../adr/0055-service-observability.md) §5）、
+`metrics_exporter = none` の Cloud Run では、この行から Cloud Logging のログベースの指標（カウンタと分布）を作れる。
+
+| 行（`msg`） | 項目 |
+| --- | --- |
+| `http request`（`INFO`。ヘルスチェックは `DEBUG`） | `http.request.method`、`http.route`、`my.surface`、`http.response.status_code`（数値）は `http.server.request.duration` のラベルと同じ値。`duration_seconds`（秒の数値）、`url.path`（クエリ文字列を除いたパス）、`http.response.body.size`、`request_id`。`http.route` と `my.surface` は、ルートに届かなかったリクエスト（ヘルスチェック、ルートの前で断ったもの）にはなく、指標も数えない |
+| `job`（成功は `INFO`、`retry` は `WARN`、`dead` は `ERROR`） | `my.job.type`、`my.outcome` は `my.job.duration` のラベルと同じ値。`duration_seconds`（`my.job.duration`）、`wait_seconds`（`my.job.wait`）、`job_id`、`attempt`、失敗のときの `error` |
+
+項目名は `.` を含む 1 つのキーで、入れ子ではない。Cloud Logging のフィルタと抽出では引用符で囲む（例: `jsonPayload."http.route"`、分布の値は `EXTRACT(jsonPayload.duration_seconds)`）。
+ラベルに使う項目の値は有限の集合だけで（ADR-0055 §6）、`url.path`・`request_id`・`job_id` はラベルにしない。
 
 ## 指標（メトリクス）
 

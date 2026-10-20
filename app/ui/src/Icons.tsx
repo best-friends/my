@@ -15,11 +15,11 @@ import {
   PiArrowBendUpLeft,
   PiArrowLeft,
   PiArrowSquareOut,
+  PiArrowDown,
   PiArrowUp,
   PiBell,
   PiBookmarkSimple,
   PiBookmarkSimpleFill,
-  PiCards,
   PiCaretRight,
   PiDotsThreeBold,
   PiEye,
@@ -75,6 +75,9 @@ export const iconTable = {
   BackIcon: { off: glyph(PiArrowLeft, "PiArrowLeft"), directional: true },
   ExternalLinkIcon: { off: glyph(PiArrowSquareOut, "PiArrowSquareOut"), directional: true },
   SubmenuIcon: { off: glyph(PiCaretRight, "PiCaretRight"), directional: true },
+  // Up and down are the order of a list in any writing direction, so they do not mirror.
+  MoveUpIcon: { off: glyph(PiArrowUp, "PiArrowUp") },
+  MoveDownIcon: { off: glyph(PiArrowDown, "PiArrowDown") },
   // Posts.
   ReplyIcon: { off: glyph(PiArrowBendUpLeft, "PiArrowBendUpLeft"), directional: true },
   // Up is where the new items wait (above the feed) in any writing direction, so it does not mirror.
@@ -96,7 +99,6 @@ export const iconTable = {
   EmojiIcon: { off: glyph(PiSmiley, "PiSmiley") },
   // Navigation.
   HomeIcon: { off: glyph(PiHouse, "PiHouse") },
-  TimelinesIcon: { off: glyph(PiCards, "PiCards") },
   LocalIcon: { off: glyph(PiTextAlignLeft, "PiTextAlignLeft") },
   FederatedIcon: { off: glyph(PiGlobe, "PiGlobe") },
   SearchIcon: { off: glyph(PiMagnifyingGlass, "PiMagnifyingGlass") },
@@ -143,6 +145,16 @@ export function ExternalLinkIcon() {
 /** A caret to the end of the line, after the label of a menu item that opens a submenu. It flips in right-to-left text. */
 export function SubmenuIcon() {
   return renderIcon(iconTable.SubmenuIcon);
+}
+
+/** An arrow up, for a button that moves an item one place up in a list. */
+export function MoveUpIcon() {
+  return renderIcon(iconTable.MoveUpIcon);
+}
+
+/** An arrow down, for a button that moves an item one place down in a list. */
+export function MoveDownIcon() {
+  return renderIcon(iconTable.MoveDownIcon);
 }
 
 // Posts.
@@ -214,11 +226,6 @@ export function HomeIcon() {
 /** Lines of text, for the local timeline. */
 export function LocalIcon() {
   return renderIcon(iconTable.LocalIcon);
-}
-
-/** A stack of cards, for the screen with the local and federated timelines. */
-export function TimelinesIcon() {
-  return renderIcon(iconTable.TimelinesIcon);
 }
 
 /** A globe, for the federated timeline. */

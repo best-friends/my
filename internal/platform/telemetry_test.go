@@ -218,3 +218,57 @@ func TestEMFMetricsSnapshot(t *testing.T) {
 		t.Errorf("no EMF line of the snapshot:\n%s", lines.String())
 	}
 }
+
+// TestAccessLogMetricLabels checks that the access log carries the labels of
+// http.server.request.duration under the same names and values (ADR-0055 §5), with no metrics
+// exporter, as on Cloud Run where log-based metrics count the lines.
+func TestAccessLogMetricLabels(t *testing.T) {
+	t.Parallel()
+	s := start(t, loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)}), platform.ServeOptions{}, nil)
+	if resp, _ := s.do(t, http.MethodGet, "/api/v1/instance?token=secret", nil); resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET /api/v1/instance = %d", resp.StatusCode)
+	}
+	s.do(t, http.MethodGet, "/ap/nope", nil)
+	s.do(t, http.MethodGet, platform.PathLiveness, nil)
+
+	lines := map[string]map[string]any{}
+	for line := range strings.Lines(s.logs.String()) {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Fatalf("line %q: %v", line, err)
+		}
+		if path, ok := m["url.path"].(string); ok && m["msg"] == "http request" {
+			lines[path] = m
+		}
+	}
+	for path, want := range map[string]map[string]any{
+		"/api/v1/instance": {
+			"http.request.method": "GET", "http.route": "/api/v1/instance", "my.surface": "client_api", "http.response.status_code": 200.0,
+		},
+		"/ap/nope":            {"http.request.method": "GET", "http.route": "other", "my.surface": "web", "http.response.status_code": 404.0},
+		platform.PathLiveness: {"http.request.method": "GET", "http.response.status_code": 200.0},
+	} {
+		m, ok := lines[path]
+		if !ok {
+			t.Errorf("no access log line of %s:\n%s", path, s.logs.String())
+			continue
+		}
+		for k, v := range want {
+			if m[k] != v {
+				t.Errorf("%s: %s = %v, want %v", path, k, m[k], v)
+			}
+		}
+		if _, ok := m["duration_seconds"].(float64); !ok {
+			t.Errorf("%s: duration_seconds = %v, want a number", path, m["duration_seconds"])
+		}
+		if _, ok := m["request_id"].(string); !ok {
+			t.Errorf("%s: no request_id", path)
+		}
+	}
+	if m := lines[platform.PathLiveness]; m != nil && (m["http.route"] != nil || m["my.surface"] != nil) {
+		t.Errorf("the health check has a route: %v", m)
+	}
+	if strings.Contains(s.logs.String(), "secret") {
+		t.Errorf("the access log has the query string:\n%s", s.logs.String())
+	}
+}

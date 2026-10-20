@@ -95,8 +95,7 @@ func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
 		}
 		q.jobs[j.ID] = &entry{job: j, visibleAt: queue.NextVisible(now, j.RunAt, q.opts.MaxDelay)}
 	}
-	r := q.runner
-	if r == nil {
+	if q.runner == nil {
 		q.mu.Unlock()
 		return nil
 	}
@@ -106,12 +105,51 @@ func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
 		return nil
 	}
 	q.mu.Unlock()
+	return q.RunDue(ctx)
+}
+
+// RunDue runs the due jobs with the runner of RunSynchronously, like an Enqueue of no job: it
+// waits for a drain that another goroutine runs, and a handler's Enqueue joins it. It does
+// nothing before RunSynchronously.
+func (q *Queue) RunDue(ctx context.Context) error {
+	q.mu.Lock()
+	r := q.runner
+	q.mu.Unlock()
+	if r == nil {
+		return nil
+	}
 	q.drainMu.Lock()
 	defer q.drainMu.Unlock()
 	q.mu.Lock()
 	q.draining = true
 	q.mu.Unlock()
 	return q.drain(context.WithValue(ctx, drainKey{q}, true), r)
+}
+
+// RunUntil runs the due jobs with RunDue every interval (queue.DefaultPollInterval when not
+// positive) until stop is closed or ctx ends, then returns nil: it runs the jobs that become
+// due with no Enqueue after them, such as retries. Use it instead of the runner's own RunUntil,
+// which would claim the jobs of an Enqueue outside its drain and let that Enqueue return before
+// they ran. A pass in progress when stop is closed runs to its end.
+func (q *Queue) RunUntil(ctx context.Context, stop <-chan struct{}, interval time.Duration) error {
+	if interval <= 0 {
+		interval = queue.DefaultPollInterval
+	}
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-stop:
+			return nil
+		case <-timer.C:
+		}
+		// The runner records the errors of single jobs; those of the queue itself are those
+		// of its claims, which the next pass retries.
+		_ = q.RunDue(ctx)
+		timer.Reset(interval)
+	}
 }
 
 // drain runs due jobs until a pass ends with no new enqueue in between.

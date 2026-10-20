@@ -157,11 +157,8 @@ func methodLabel(m string) string {
 }
 
 // begin starts measuring a request whose route problemFallback has found: it counts the request
-// as active and tells the access log its route. It returns the function that ends it.
+// as active. It returns the function that ends it.
 func (m *httpMetrics) begin(r *http.Request, t routeTarget) func() {
-	if rr, ok := r.Context().Value(requestRouteKey{}).(*requestRoute); ok {
-		rr.route, rr.surface = t.route, t.surface
-	}
 	l := kernel.NewLabels(labelSurface, t.surface)
 	m.active.Add(r.Context(), 1, l)
 	return func() { m.active.Add(context.WithoutCancel(r.Context()), -1, l) }

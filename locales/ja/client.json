@@ -4971,6 +4971,50 @@
     "defaultMessage": "{date} まで",
     "description": "When a mute ends, under the muted account. {date} is a formatted date and time."
   },
+  "settings.navigation.description": {
+    "defaultMessage": "ナビゲーションに出す項目とその順番を選びます。電話では、表示する項目の{count, plural, other {最初の # つ}}がタブバーに、残りがメニューに入ります。設定は常に表示します。このブラウザーに保存します。",
+    "description": "Help text of the navigation section. {count} is how many shown items the bottom tab bar of phones holds (5); the name of the Settings item is shell.nav.settings."
+  },
+  "settings.navigation.hidden": {
+    "defaultMessage": "表示しない",
+    "description": "Help text under an item of the navigation section whose checkbox is off: it is not in the navigation."
+  },
+  "settings.navigation.in_menu": {
+    "defaultMessage": "電話ではメニューに表示",
+    "description": "Help text under an item of the navigation section: the item is shown in the menu (the sheet opened by the Menu button) on phones, and in the side rail on larger screens."
+  },
+  "settings.navigation.in_tab_bar": {
+    "defaultMessage": "電話ではタブバーに表示",
+    "description": "Help text under an item of the navigation section: the item is shown in the bottom tab bar on phones."
+  },
+  "settings.navigation.move_down": {
+    "defaultMessage": "{name}を下へ移動",
+    "description": "Accessible name and tooltip of the icon button that moves an item of the navigation one place down (later). {name} is the item's label (shell.nav.*)."
+  },
+  "settings.navigation.move_up": {
+    "defaultMessage": "{name}を上へ移動",
+    "description": "Accessible name and tooltip of the icon button that moves an item of the navigation one place up (earlier). {name} is the item's label (shell.nav.*)."
+  },
+  "settings.navigation.moved": {
+    "defaultMessage": "{name}を {count, number} 項目中 {position, number} 番目に移動しました",
+    "description": "Announced to screen readers after an item of the navigation moved. {name} is the item's label, {position} its new place counted from 1, {count} the number of items."
+  },
+  "settings.navigation.reset": {
+    "defaultMessage": "初期状態に戻す",
+    "description": "Button of the navigation section that puts back the default items and order."
+  },
+  "settings.navigation.reset_done": {
+    "defaultMessage": "ナビゲーションを初期状態に戻しました",
+    "description": "Announced to screen readers after the navigation went back to the default items and order."
+  },
+  "settings.navigation.title": {
+    "defaultMessage": "ナビゲーション",
+    "description": "Heading of the section of the preferences page where the user chooses the items of the navigation and their order."
+  },
+  "settings.navigation.unavailable": {
+    "defaultMessage": "このサーバーでは提供されていません",
+    "description": "Help text under the local or federated timeline item of the navigation section when this server has turned that timeline off, so it does not show whatever is chosen."
+  },
   "settings.preferences.autosave": {
     "defaultMessage": "変更はすぐに保存されます。",
     "description": "Text at the top of the preferences page."
@@ -5497,7 +5541,7 @@
   },
   "shell.nav.local": {
     "defaultMessage": "ローカル",
-    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
+    "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
   },
   "shell.nav.menu": {
     "defaultMessage": "メニュー",
@@ -5529,7 +5573,7 @@
   },
   "shell.nav.public": {
     "defaultMessage": "連合",
-    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in the side rail of tablets. On phones the same timeline is a tab of the Timelines screen instead."
+    "description": "Navigation item that opens the federated timeline (public posts of this server and of other servers). Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
   },
   "shell.nav.search": {
     "defaultMessage": "検索",
@@ -5538,10 +5582,6 @@
   "shell.nav.settings": {
     "defaultMessage": "設定",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
-  },
-  "shell.nav.timelines": {
-    "defaultMessage": "タイムライン",
-    "description": "Item of the bottom tab bar on phones that opens the screen with the local and federated timelines as tabs. Keep it short: it is shown under an icon in a bar of five items on a 320 px screen."
   },
   "shell.nav.viewer": {
     "defaultMessage": "サインインしているアカウント",
@@ -5958,18 +5998,6 @@
   "timeline.signed_out.heading": {
     "defaultMessage": "ログインしていません",
     "description": "Heading on the home page when nobody is signed in, shown instead of the home timeline."
-  },
-  "timeline.tabs.label": {
-    "defaultMessage": "タイムライン",
-    "description": "Accessible name of the tabs that switch between the local and the federated timeline."
-  },
-  "timeline.tabs.local": {
-    "defaultMessage": "ローカル",
-    "description": "Tab that opens the local timeline (public posts of this server's accounts)."
-  },
-  "timeline.tabs.public": {
-    "defaultMessage": "連合",
-    "description": "Tab that opens the federated timeline (public posts of this server and of the other servers it knows)."
   },
   "admin.audit_log.action.custom_emoji_created": {
     "defaultMessage": "カスタム絵文字の登録",

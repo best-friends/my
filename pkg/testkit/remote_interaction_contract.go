@@ -51,7 +51,10 @@ type RemoteInteractionFactory func(t *testing.T, opts uow.Options) RemoteInterac
 // booster may not see or boost are not boosted, and local boosts of local-only posts do not
 // federate (ADR-0017); a local favourite of a remote post sends a Like, and its removal an Undo
 // Like, to the post's author, both read back as the activity they are; and the final rows do not
-// depend on the order or repetition of the activities (NFR-REL-1). The actors and the fetches are
+// depend on the order or repetition of the activities (NFR-REL-1); switching the Like slot
+// between favourites and reactions delivers the Undo of what was in it before the next Like to
+// each inbox, also while an earlier delivery retries (ADR-0004 ordering keys), so that an inbox
+// of one reaction per account ends with what the sender has. The actors and the fetches are
 // in-memory stand-ins.
 func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory) {
 	t.Helper()
@@ -71,6 +74,7 @@ func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteInteractionEnv(t, newHarness)) })
 	}
 	t.Run("OrderAndDuplicates", func(t *testing.T) { remoteInteractionOrder(t, newHarness) })
+	t.Run("DeliversSlotSwitchesInOrder", func(t *testing.T) { remoteSlotSwitchOrder(t, newHarness) })
 }
 
 type remoteInteractionEnv struct {

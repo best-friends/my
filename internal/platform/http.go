@@ -175,19 +175,22 @@ func (a *App) writeStatusProblem(w http.ResponseWriter, r *http.Request, status 
 }
 
 // problemFallback serves mux, replacing its plain-text 404 and 405 responses with problem
-// documents, or the 404 of a GET request with page when there is one. With the HTTP metrics, it
-// counts the request as active under the surface of its route (targets, by pattern), or of the
-// web for the requests that no route serves, and passes the route to the access log; the health
-// checks are not measured.
+// documents, or the 404 of a GET request with page when there is one. It passes the route of the
+// request to the access log (targets, by pattern, or other on the web for the requests that no
+// route serves) and, with the HTTP metrics, counts the request as active under its surface; the
+// health checks have no route and are not measured.
 func (a *App) problemFallback(mux *http.ServeMux, page http.Handler, targets map[string]routeTarget) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h, pattern := mux.Handler(r)
-		if a.http != nil {
-			t, ok := targets[pattern]
-			if !ok {
-				t = routeTarget{route: routeOther, surface: surfaceWeb}
+		t, ok := targets[pattern]
+		if !ok {
+			t = routeTarget{route: routeOther, surface: surfaceWeb}
+		}
+		if pattern == "" || ok {
+			if rr, found := r.Context().Value(requestRouteKey{}).(*requestRoute); found {
+				rr.route, rr.surface = t.route, t.surface
 			}
-			if pattern == "" || ok {
+			if a.http != nil {
 				defer a.http.begin(r, t)()
 			}
 		}
@@ -368,37 +371,55 @@ func validRequestID(id string) bool {
 
 // accessLog logs one line per request. It logs the path without the query string, which may
 // carry tokens, and logs the health checks at debug level, since probes call them constantly.
-// With the HTTP metrics, it also records the request's http.server.request.duration in a unit
-// of work of the Meter (ADR-0055 §3), under the route that problemFallback found.
+// The line carries the labels of http.server.request.duration under the same names and values,
+// and its duration in seconds (ADR-0055 §5), so that a log-based metric counts the requests as
+// the metric does: http.route and my.surface are those that problemFallback found, and are absent
+// when the request reached no route (the health checks, the requests refused before routing),
+// which the metric does not measure either. With the HTTP metrics, it also records the request's
+// http.server.request.duration in a unit of work of the Meter (ADR-0055 §3).
 func (a *App) accessLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
+		rr := &requestRoute{}
+		ctx := r.Context()
 		if a.http != nil {
-			ctx, end := a.Meter.Begin(r.Context())
+			var end func()
+			ctx, end = a.Meter.Begin(ctx)
 			defer end()
-			rr := &requestRoute{}
-			r = r.WithContext(context.WithValue(ctx, requestRouteKey{}, rr))
 			defer func() {
 				if rr.route != "" {
 					a.http.record(ctx, r, rr, rw.status, time.Since(start))
 				}
 			}()
 		}
+		r = r.WithContext(context.WithValue(ctx, requestRouteKey{}, rr))
 		next.ServeHTTP(rw, r)
 		level := slog.LevelInfo
 		if r.URL.Path == PathLiveness || r.URL.Path == PathReadiness {
 			level = slog.LevelDebug
 		}
-		a.Logger.LogAttrs(r.Context(), level, "http request",
-			slog.String("method", r.Method),
-			slog.String("path", r.URL.Path),
-			slog.Int("status", rw.status),
-			slog.Int64("bytes", rw.bytes),
-			slog.Duration("duration", time.Since(start)),
+		attrs := make([]slog.Attr, 0, 7)
+		attrs = append(attrs, slog.String(labelMethod, methodLabel(r.Method)), slog.String(logPath, r.URL.Path))
+		if rr.route != "" {
+			attrs = append(attrs, slog.String(labelRoute, rr.route), slog.String(labelSurface, rr.surface))
+		}
+		attrs = append(attrs,
+			slog.Int(labelStatus, rw.status),
+			slog.Int64(logResponseBytes, rw.bytes),
+			slog.Float64(logDuration, time.Since(start).Seconds()),
 		)
+		a.Logger.LogAttrs(r.Context(), level, "http request", attrs...)
 	})
 }
+
+// Keys of the access log that are not labels of the HTTP metrics, named after the
+// OpenTelemetry semantic conventions where they have one (ADR-0055 §5).
+const (
+	logPath          = "url.path"
+	logResponseBytes = "http.response.body.size"
+	logDuration      = "duration_seconds"
+)
 
 // responseWriter records the status and size of a response.
 type responseWriter struct {

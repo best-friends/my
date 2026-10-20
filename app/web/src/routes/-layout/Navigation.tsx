@@ -3,12 +3,13 @@
 // edge of phones, a side rail of icons with short labels on tablets (md), and a sidebar with full labels on
 // desktops (lg). The link to the current section has aria-current="page".
 //
-// Below md the tab bar holds Home, Local, Federated, Notifications, Search and Menu: the local and the federated
-// timeline are items of their own at every width, never tabs of one screen. Menu is a button that opens a sheet
-// with the profile, the bookmarks, the settings and the color theme. From md the rail holds Home, Local,
-// Federated, Notifications, Search, Profile, Bookmarks and Settings instead. Both are one list in one order, and
-// each item hides at the widths where it does not belong (display: none, so it leaves the accessibility tree
-// too).
+// The user chooses the items and their order in the preferences (features/settings, kept on this browser); by
+// default they are Home, Local, Federated, Notifications, Search, Profile, Bookmarks and Settings. The local and
+// the federated timeline are items of their own at every width, never tabs of one screen. From md the rail holds
+// every shown item. Below md the tab bar holds the first five shown items (tabBarLimit) and Menu, a button that
+// opens a sheet with the other shown items, the color theme and the server's documents. Both are one list in one
+// order, and each item hides at the widths where it does not belong (display: none, so it leaves the
+// accessibility tree too).
 //
 // The notifications item shows the number of unread notifications as a badge on the icon's corner. The
 // badge's digits are hidden from assistive technology; the link is named with the count instead
@@ -16,38 +17,20 @@
 //
 // The staff's screens are two areas (ADR-0058). A viewer whose roles have a permission of a moderation screen
 // also has Moderation, and one with a permission of a server administration screen has Administration, in that
-// order after Settings in the rail and the sidebar and in the menu's sheet; a moderator never sees
+// order after the user's items in the rail and the sidebar and in the menu's sheet; a moderator never sees
 // Administration. While open reports, registrations or appeals await the moderators (FR-712), Moderation shows
 // their number as a badge the same way ("Moderation, 3 pending"), and so does the tab bar's Menu button, which
 // leads there ("Menu, 3 pending in moderation"): the count is in the names and drawn as digits, never shown by
 // color alone (WCAG 1.4.1). Administration has no count.
 //
-// The local and federated timelines appear in the tab bar, the rail and the sidebar only while the instance
-// serves them (FR-202), so the tab bar has four to six items.
+// The local and federated timelines appear only while the instance serves them (FR-202). An item the server does
+// not offer keeps its place among the first five, so that the tab bar does not change while GET /instance loads:
+// it has up to five items and Menu.
 //
 // The sidebar (lg) also says where and who the user is: the server's name above the list and, below it, the
 // signed-in account (avatar, display name and handle) as a link to its profile. Both are outside the list, so
 // the list's links stay the same and in the same order at every width, and narrower layouts hide both.
-import {
-  AdminIcon,
-  Avatar,
-  Badge,
-  BookmarkIcon,
-  Button,
-  DialogTrigger,
-  FederatedIcon,
-  HomeIcon,
-  Link,
-  LocalIcon,
-  MenuIcon,
-  ModerationIcon,
-  NotificationsIcon,
-  PostCardAuthor,
-  ProfileIcon,
-  SearchIcon,
-  SettingsIcon,
-  Sheet,
-} from "@my/ui";
+import { AdminIcon, Avatar, Badge, Button, DialogTrigger, Link, MenuIcon, ModerationIcon, PostCardAuthor, Sheet } from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
@@ -55,7 +38,14 @@ import { DocumentLinks } from "../../features/documents";
 import { useModerationEntry } from "../../features/moderation";
 import { useUnreadNotificationCount } from "../../features/notifications";
 import { useViewer } from "../../features/session";
-import { ThemeRadioGroup } from "../../features/settings";
+import {
+  type NavigationEntryId,
+  navigationEntryIcons,
+  navigationEntryLabels,
+  tabBarLimit,
+  ThemeRadioGroup,
+  useNavigationEntries,
+} from "../../features/settings";
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { handleOf } from "../../lib/handle";
 import { useInstanceName } from "../../lib/instanceName";
@@ -69,7 +59,7 @@ type NavigationItem = {
   section: Section;
   label: ClientMessageKey;
   icon: ReactNode;
-  /** Where the item shows: everywhere, only in the phones' tab bar, or only in the rail and sidebar from md. */
+  /** Where the item shows: everywhere, only in the phones' tab bar, or only in the rail and sidebar from md (and the menu's sheet below md). */
   shows: "always" | "tab-bar" | "rail";
   /** The timeline the item opens, offered only while the instance serves it. */
   timeline?: keyof TimelineAvailability;
@@ -77,21 +67,23 @@ type NavigationItem = {
   staff?: "moderation" | "admin";
 };
 
-const items: readonly NavigationItem[] = [
-  { section: "/home", label: "client:shell.nav.home", icon: <HomeIcon />, shows: "always" },
-  { section: "/local", label: "client:shell.nav.local", icon: <LocalIcon />, shows: "always", timeline: "local" },
-  { section: "/public", label: "client:shell.nav.public", icon: <FederatedIcon />, shows: "always", timeline: "federated" },
-  { section: "/notifications", label: "client:shell.nav.notifications", icon: <NotificationsIcon />, shows: "always" },
-  { section: "/search", label: "client:shell.nav.search", icon: <SearchIcon />, shows: "always" },
-  { section: "/profile", label: "client:shell.nav.profile", icon: <ProfileIcon />, shows: "rail" },
-  { section: "/bookmarks", label: "client:shell.nav.bookmarks", icon: <BookmarkIcon />, shows: "rail" },
-  { section: "/settings", label: "client:shell.nav.settings", icon: <SettingsIcon />, shows: "rail" },
+/** The page and the timeline of each item that the user arranges. */
+const entryTargets: Record<NavigationEntryId, { section: Section; timeline?: keyof TimelineAvailability }> = {
+  home: { section: "/home" },
+  local: { section: "/local", timeline: "local" },
+  public: { section: "/public", timeline: "federated" },
+  notifications: { section: "/notifications" },
+  search: { section: "/search" },
+  profile: { section: "/profile" },
+  bookmarks: { section: "/bookmarks" },
+  settings: { section: "/settings" },
+};
+
+/** The staff's areas, after the user's items in the rail and in the menu's sheet, never in the tab bar. */
+const staffItems: readonly NavigationItem[] = [
   { section: "/moderation", label: "client:shell.nav.moderation", icon: <ModerationIcon />, shows: "rail", staff: "moderation" },
   { section: "/admin", label: "client:shell.nav.admin", icon: <AdminIcon />, shows: "rail", staff: "admin" },
 ];
-
-/** The items of the menu sheet: those of the rail that are not in the tab bar (and the staff's areas only for their viewers). */
-const menuItems = items.filter((item) => item.shows === "rail");
 
 /**
  * The list item's classes for where the item shows (the tab bar is below md, the rail from md). In the tab bar
@@ -153,7 +145,18 @@ export function Navigation() {
   const viewer = useViewer();
   const ownAcct = viewer.status === "signed-in" ? viewer.account.acct : null;
   const timelines = useTimelineAvailability();
-  const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
+  // The user's shown items in their order, the first ones in the tab bar, then the staff's areas.
+  const userItems = useNavigationEntries()
+    .filter((entry) => entry.shown)
+    .map(
+      (entry, index): NavigationItem => ({
+        ...entryTargets[entry.id],
+        label: navigationEntryLabels[entry.id],
+        icon: navigationEntryIcons[entry.id],
+        shows: index < tabBarLimit ? "always" : "rail",
+      }),
+    );
+  const shown = [...userItems, ...staffItems].filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
   const badgeOf = (section: Section): ItemBadge => {
     if (section === "/notifications" && unread > 0) {
       return { count: unread, badgeLabel: t("client:notifications.unread_count", { count: unread }), name: t("client:shell.nav.notifications_unread", { count: unread }) };
@@ -196,7 +199,7 @@ export function Navigation() {
           );
         })}
         <li className={shownAt["tab-bar"]}>
-          <NavigationMenu items={menuItems.filter(staffAvailable)} current={current} badgeOf={badgeOf} />
+          <NavigationMenu items={shown.filter((item) => item.shows === "rail")} current={current} badgeOf={badgeOf} />
         </li>
       </ul>
       <ViewerLink />
