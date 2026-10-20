@@ -1,4 +1,68 @@
 {
+  "about.description.title": {
+    "defaultMessage": "説明",
+    "description": "Heading of the section of the server's information page with the server's description."
+  },
+  "about.domains.empty": {
+    "defaultMessage": "制限しているサーバーはありません",
+    "description": "Shown in place of the list of moderated servers when there are none."
+  },
+  "about.domains.failed": {
+    "defaultMessage": "制限しているサーバーを読み込めませんでした",
+    "description": "Heading shown in place of the list of moderated servers when it could not be loaded."
+  },
+  "about.domains.intro": {
+    "defaultMessage": "このサーバーは、次のサーバーとの連合を制限または停止しています。",
+    "description": "Explanation under the heading of the list of moderated servers on the server's information page."
+  },
+  "about.domains.kind.limit": {
+    "defaultMessage": "制限：投稿を公開のタイムラインに出さない",
+    "description": "Next to a server in the list of moderated servers: its posts stay off the public timelines and its accounts reach only their followers."
+  },
+  "about.domains.kind.suspend": {
+    "defaultMessage": "停止：一切連合しない",
+    "description": "Next to a server in the list of moderated servers: this server does not federate with it at all."
+  },
+  "about.domains.loading": {
+    "defaultMessage": "制限しているサーバーを読み込んでいます",
+    "description": "Accessible name of the progress indicator while the list of moderated servers loads."
+  },
+  "about.domains.more": {
+    "defaultMessage": "さらに表示",
+    "description": "Button under the list of moderated servers that loads more of them."
+  },
+  "about.domains.more_failed": {
+    "defaultMessage": "続きを読み込めませんでした",
+    "description": "Shown under the list of moderated servers when its next page could not be loaded."
+  },
+  "about.domains.obfuscated": {
+    "defaultMessage": "一部のサーバーの名前は * で伏せています。",
+    "description": "Note above the list of moderated servers when the moderators hid part of some servers' names."
+  },
+  "about.domains.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the list of moderated servers after a failure."
+  },
+  "about.domains.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Link after the note that only signed-in users can see the list of moderated servers; it opens the sign-in screen."
+  },
+  "about.domains.signed_in_only": {
+    "defaultMessage": "この一覧は、ログインした利用者だけが見られます。",
+    "description": "Shown in place of the list of moderated servers to a visitor who is not signed in, when the server shows it to signed-in users only."
+  },
+  "about.domains.title": {
+    "defaultMessage": "制限しているサーバー",
+    "description": "Heading of the section of the server's information page that lists the other servers whose federation this server limits or suspends."
+  },
+  "about.rules.title": {
+    "defaultMessage": "ルール",
+    "description": "Heading of the section of the server's information page with the server's rules."
+  },
+  "about.title": {
+    "defaultMessage": "{instance} について",
+    "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
+  },
   "account_status.active.empty": {
     "defaultMessage": "アカウントに効いている処分はありません",
     "description": "Shown when no moderation action is in effect on the user's account."
@@ -5978,6 +6042,10 @@
   "shell.about.domain": {
     "defaultMessage": "このサーバーのアカウントは @{domain} で終わります。",
     "description": "In the side column about this server: the domain of the handles of local accounts, for example 'Accounts here end with @example.com.'."
+  },
+  "shell.about.more": {
+    "defaultMessage": "このサーバーについて詳しく",
+    "description": "Link to the server's information page: in the side column about this server, in the menu sheet, and on the landing page."
   },
   "shell.about.title": {
     "defaultMessage": "このサーバーについて",

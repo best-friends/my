@@ -43,7 +43,7 @@ describe("the navigation's staff entries", () => {
     expect(within(navigation()).queryByRole("link", { name: /^Administration/ })).not.toBeInTheDocument();
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings", "More about this server"]);
     expect(requests).toEqual([]);
   });
 
@@ -62,7 +62,7 @@ describe("the navigation's staff entries", () => {
 
     await user.click(menu);
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/profile", "/bookmarks", "/settings", "/moderation"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/profile", "/bookmarks", "/settings", "/moderation", "/about"]);
     await user.click(within(sheet).getByRole("link", { name: "Moderation, 3 pending" }));
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Moderation" });
