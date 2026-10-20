@@ -1583,6 +1583,10 @@
     "defaultMessage": "[Ȧƥƥḗḗȧȧŀ ŭŭƥħḗḗŀḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.custom_emoji_copied": {
+    "defaultMessage": "[Ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƈǿǿƥīḗḗḓ ƒřǿǿḿ ȧȧƞǿǿŧħḗḗř şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.custom_emoji_created": {
     "defaultMessage": "[Ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī řḗḗɠīşŧḗḗřḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1933,6 +1937,34 @@
   },
   "admin.custom_emojis.change_failed": {
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ ŧħḗḗ ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copied": {
+    "defaultMessage": "[{emoji} īş ƈǿǿƥīḗḗḓ ȧȧş {copy}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copy": {
+    "defaultMessage": "[Ƈǿǿƥẏ ŧǿǿ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copy.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copy.description": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ƒḗḗŧƈħḗḗş ŧħḗḗ īḿȧȧɠḗḗ ȧȧƞḓ řḗḗɠīşŧḗḗřş īŧ ȧȧş īŧş ǿǿẇƞ ḗḗḿǿǿĵī, şħǿǿẇƞ īƞ ŧħḗḗ ƥīƈķḗḗř. Ŧħḗḗ īḿȧȧɠḗḗ şħřīƞķş ŧǿǿ 256 ƥīẋḗḗŀş ȧȧŧ ḿǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copy.submit": {
+    "defaultMessage": "[Ƈǿǿƥẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copy.title": {
+    "defaultMessage": "[Ƈǿǿƥẏ {emoji} ŧǿǿ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.custom_emojis.copy_emoji": {
+    "defaultMessage": "[Ƈǿǿƥẏ {emoji} ŧǿǿ ŧħīş şḗḗřṽḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.custom_emojis.create_failed": {
@@ -6159,10 +6191,6 @@
     "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ ƒǿǿŀŀǿǿẇ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "profile.signed_out.description": {
-    "defaultMessage": "[Şīɠƞ īƞ ŧǿǿ şḗḗḗḗ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "profile.tab.no_boosts": {
     "defaultMessage": "[Ẇīŧħǿǿŭŭŧ ƀǿǿǿǿşŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7831,6 +7859,10 @@
     "defaultMessage": "[Ḿḗḗƞŭŭ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.about": {
+    "defaultMessage": "[Ȧƀǿǿŭŭŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.admin": {
     "defaultMessage": "[Ȧḓḿīƞīşŧřȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7889,6 +7921,14 @@
   },
   "shell.nav.settings": {
     "defaultMessage": "[Şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.sign_in": {
+    "defaultMessage": "[Şīɠƞ īƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.sign_up": {
+    "defaultMessage": "[Şīɠƞ ŭŭƥ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.nav.viewer": {

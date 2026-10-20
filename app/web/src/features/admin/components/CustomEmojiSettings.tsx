@@ -3,7 +3,7 @@
 // with an image file, then the emoji of this server or of other servers (tabs kept in the URL by the route,
 // web-client.md S3), newest first, with a search. A local emoji's settings change in a dialog, its image is replaced
 // by choosing another file, and deleting it asks first in an alert dialog (it cannot be undone); a remote emoji is
-// only enabled or disabled. What a change did stays above the list in a StatusMessage (role="status"), and a
+// enabled or disabled, or copied into one of this server under a shortcode chosen in a dialog. What a change did stays above the list in a StatusMessage (role="status"), and a
 // failure stays there too (role="alert").
 import {
   Button,
@@ -332,16 +332,19 @@ function CustomEmojiRow({ emoji, actions }: { emoji: AdminCustomEmoji; actions: 
             <DeleteCustomEmoji emoji={emoji} actions={actions} isPending={isPending} />
           </>
         ) : (
-          <Button
-            size="sm"
-            isPending={isPending}
-            aria-label={t(emoji.enabled ? "client:admin.custom_emojis.disable_emoji" : "client:admin.custom_emojis.enable_emoji", { emoji: name })}
-            onPress={() => {
-              actions.setEnabled(emoji, !emoji.enabled);
-            }}
-          >
-            {t(emoji.enabled ? "client:admin.custom_emojis.disable" : "client:admin.custom_emojis.enable")}
-          </Button>
+          <>
+            <Button
+              size="sm"
+              isPending={isPending}
+              aria-label={t(emoji.enabled ? "client:admin.custom_emojis.disable_emoji" : "client:admin.custom_emojis.enable_emoji", { emoji: name })}
+              onPress={() => {
+                actions.setEnabled(emoji, !emoji.enabled);
+              }}
+            >
+              {t(emoji.enabled ? "client:admin.custom_emojis.disable" : "client:admin.custom_emojis.enable")}
+            </Button>
+            <CopyCustomEmoji emoji={emoji} actions={actions} isPending={isPending} />
+          </>
         )}
       </div>
     </div>
@@ -420,6 +423,69 @@ function EditCustomEmojiForm({ emoji, actions, close }: { emoji: AdminCustomEmoj
         <Button onPress={close}>{t("client:admin.custom_emojis.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
           {t("client:admin.custom_emojis.save")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** Copying a remote emoji into one of this server, under a shortcode chosen in a dialog; it closes once copied. */
+function CopyCustomEmoji({ emoji, actions, isPending }: RowActionProps) {
+  const t = useT();
+  const name = emojiInText(emoji);
+  return (
+    <DialogTrigger>
+      <Button size="sm" isDisabled={isPending} aria-label={t("client:admin.custom_emojis.copy_emoji", { emoji: name })}>
+        {t("client:admin.custom_emojis.copy")}
+      </Button>
+      <Dialog title={t("client:admin.custom_emojis.copy.title", { emoji: name })} closeLabel={t("client:admin.custom_emojis.copy.close")} size="md">
+        {({ close }) => <CopyCustomEmojiForm emoji={emoji} actions={actions} close={close} />}
+      </Dialog>
+    </DialogTrigger>
+  );
+}
+
+function CopyCustomEmojiForm({ emoji, actions, close }: { emoji: AdminCustomEmoji; actions: CustomEmojiActions; close: () => void }) {
+  const t = useT();
+  // A remote shortcode that a local one may not have (longer, or with other characters) is to be chosen anew.
+  const [shortcode, setShortcode] = useState(() => (new RegExp(`^${shortcodePattern}$`, "u").test(emoji.shortcode) ? emoji.shortcode : ""));
+  const [isCopying, setIsCopying] = useState(false);
+  const [error, setError] = useState(false);
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsCopying(true);
+    setError(false);
+    void actions.copy(emoji, shortcode.trim()).then((copied) => {
+      setIsCopying(false);
+      if (copied) close();
+      else setError(true);
+    });
+  };
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <p className="text-sm text-fg-muted">{t("client:admin.custom_emojis.copy.description")}</p>
+      <TextField
+        label={t("client:admin.custom_emojis.shortcode")}
+        description={t("client:admin.custom_emojis.shortcode.description")}
+        value={shortcode}
+        onChange={setShortcode}
+        isRequired
+        pattern={shortcodePattern}
+        maxLength={30}
+        autoComplete="off"
+        spellCheck="false"
+        errorMessage={t("client:admin.custom_emojis.shortcode.invalid")}
+        autoFocus
+      />
+      {error && actions.error !== undefined && (
+        <p role="alert" className="text-danger">
+          {t("client:admin.custom_emojis.change_failed", { reason: actions.error })}
+        </p>
+      )}
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button onPress={close}>{t("client:admin.custom_emojis.cancel")}</Button>
+        <Button type="submit" variant="primary" isPending={isCopying}>
+          {t("client:admin.custom_emojis.copy.submit")}
         </Button>
       </div>
     </form>

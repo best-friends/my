@@ -38,6 +38,8 @@ type CustomEmojiFactory func(t *testing.T, opts uow.Options) CustomEmojiHarness
 // out of the picker, the views, the Emoji tags, and the emoji of local texts; new images as new
 // revisions; local emoji deleted with their rows while their images become unattached uploads;
 // remote emoji that can only be enabled and disabled, whose image changes only with its URL;
+// remote emoji copied into local ones through the media proxy, and copies refused without a
+// trace when the image cannot be fetched or does not qualify;
 // the administrators' list with its filters
 // and pages; and every operation audited by an event in its transaction.
 func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) {
@@ -55,6 +57,8 @@ func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) 
 		{"ReplacesRemoteImagesByURL", emojiReplacesRemoteImagesByURL},
 		{"ListsAndFiltersEmoji", emojiLists},
 		{"ReadsAnEmojiInATransaction", emojiReadsInTransaction},
+		{"CopiesRemoteEmoji", emojiCopiesRemote},
+		{"RefusesCopiesWithoutATrace", emojiRefusesCopies},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newEmojiEnv(t, newHarness)) })
@@ -75,6 +79,7 @@ type emojiEnv struct {
 	clock      *Clock
 	ids        *IDGenerator
 	blobs      *MemoryBlobStore
+	net        *emojiNet
 	media      *appcontent.MediaService
 	service    *appcontent.CustomEmojiService
 
@@ -88,16 +93,31 @@ func newEmojiEnv(t *testing.T, newHarness CustomEmojiFactory) *emojiEnv {
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	appcontent.RegisterProjectors(projectors, h.Statuses)
 	clock := NewClock(time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
-	e := &emojiEnv{h: h, projectors: projectors, clock: clock, ids: NewIDGenerator(clock), blobs: NewMemoryBlobStore(clock)}
+	e := &emojiEnv{
+		h: h, projectors: projectors, clock: clock, ids: NewIDGenerator(clock), blobs: NewMemoryBlobStore(clock),
+		net: &emojiNet{bodies: map[string][]byte{}, rejected: map[string]bool{}},
+	}
 	// The events are kept once their transaction commits, as the audit log keeps its entries.
 	projectors.OnCommit(appcontent.EventCustomEmojiAdministered, func(_ context.Context, ev uow.Event) {
 		e.mu.Lock()
 		defer e.mu.Unlock()
 		e.events = append(e.events, ev.(appcontent.CustomEmojiAdministered))
 	})
+	// The media proxy fetches the images of remote emoji from e.net, and keeps no copy.
+	proxy, err := appcontent.NewMediaProxy(appcontent.ProxyDeps{
+		Repository: h.Media, HTTP: e.net, Accounts: remoteDomains{}, Policy: e.net,
+		Settings: func(context.Context) (appcontent.ProxySettings, error) {
+			return appcontent.ProxySettings{Policy: appcontent.RemoteMediaCacheNone, CacheTTL: time.Hour}, nil
+		},
+		UnitOfWork: h.UnitOfWork, Clock: clock, Keys: [][]byte{bytes.Repeat([]byte("k"), 32)}, BaseURL: "https://social.example",
+		Processor: FakeMediaProcessor{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	e.media = appcontent.NewMediaService(appcontent.MediaDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Media, Blobs: e.blobs, Processor: FakeMediaProcessor{},
-		Jobs: &recordingJobs{}, Clock: clock, IDs: e.ids, Limits: media.Limits{MaxBytes: 1 << 20},
+		Jobs: &recordingJobs{}, Clock: clock, IDs: e.ids, Limits: media.Limits{MaxBytes: 1 << 20}, Proxy: proxy,
 	})
 	e.service = appcontent.NewCustomEmojiService(appcontent.CustomEmojiDeps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Emojis, Media: e.media, Clock: clock, IDs: e.ids, MaxBytes: 64 << 10,

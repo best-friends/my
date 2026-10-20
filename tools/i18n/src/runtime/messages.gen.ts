@@ -794,6 +794,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
   "client:admin.audit_log.action.appeal_upheld": {};
+  /** Custom emoji copied from another server */
+  "client:admin.audit_log.action.custom_emoji_copied": {};
   /** Custom emoji registered */
   "client:admin.audit_log.action.custom_emoji_created": {};
   /** Custom emoji deleted */
@@ -970,6 +972,20 @@ export interface MessageArgs {
   "client:admin.custom_emojis.category.description": { max: string };
   /** Could not change the custom emoji: {reason} */
   "client:admin.custom_emojis.change_failed": { reason: string };
+  /** {emoji} is copied as {copy}. */
+  "client:admin.custom_emojis.copied": { copy: string; emoji: string };
+  /** Copy to this server */
+  "client:admin.custom_emojis.copy": {};
+  /** Copy {emoji} to this server */
+  "client:admin.custom_emojis.copy_emoji": { emoji: string };
+  /** Close */
+  "client:admin.custom_emojis.copy.close": {};
+  /** This server fetches the image and registers it as its own emoji, shown in the picker. The image shrinks to 256 pixels at most. */
+  "client:admin.custom_emojis.copy.description": {};
+  /** Copy */
+  "client:admin.custom_emojis.copy.submit": {};
+  /** Copy {emoji} to this server */
+  "client:admin.custom_emojis.copy.title": { emoji: string };
   /** Could not register the custom emoji: {reason} */
   "client:admin.custom_emojis.create_failed": { reason: string };
   /** {emoji} is registered. */
@@ -3082,8 +3098,6 @@ export interface MessageArgs {
   "client:profile.remote.original": { host: string };
   /** Sign in to follow */
   "client:profile.sign_in_to_follow": {};
-  /** Sign in to see your profile. */
-  "client:profile.signed_out.description": {};
   /** Without boosts */
   "client:profile.tab.no_boosts": {};
   /** Posts */
@@ -3918,6 +3932,8 @@ export interface MessageArgs {
   "client:shell.menu.close": {};
   /** Menu */
   "client:shell.menu.title": {};
+  /** About */
+  "client:shell.nav.about": {};
   /** Administration */
   "client:shell.nav.admin": {};
   /** Bookmarks */
@@ -3948,6 +3964,10 @@ export interface MessageArgs {
   "client:shell.nav.search": {};
   /** Settings */
   "client:shell.nav.settings": {};
+  /** Sign in */
+  "client:shell.nav.sign_in": {};
+  /** Sign up */
+  "client:shell.nav.sign_up": {};
   /** The account you are signed in with */
   "client:shell.nav.viewer": {};
   /** There is no page at this address. */
@@ -4496,8 +4516,8 @@ export interface MessageArgs {
   "server:errors.internal": {};
   /** The custom emoji cannot be saved. */
   "server:errors.invalid_custom_emoji": {};
-  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}} */
-  "server:errors.invalid_custom_emoji_detail": { reason: "invalid_alias" | "invalid_category" | "invalid_shortcode" | "media_not_found" | "media_not_ready" | "remote_emoji" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
+  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} other {The custom emoji breaks a rule.}} */
+  "server:errors.invalid_custom_emoji_detail": { reason: "fetch_failed" | "invalid_alias" | "invalid_category" | "invalid_shortcode" | "local_emoji" | "media_not_found" | "media_not_ready" | "remote_emoji" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
   /** The theme cannot be saved. */

@@ -10,6 +10,7 @@ import {
   TimelineSkeleton,
   timelineQueryOptions,
 } from "../features/timeline";
+import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useSessionUnreachable } from "../lib/auth/SessionProvider";
 import { NetworkError } from "../lib/errors";
 import { useT } from "../lib/i18n";
@@ -20,16 +21,19 @@ import { PageHeading } from "./-layout/PageHeading";
 export const Route = createFileRoute("/home")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
   staticData: { title: "client:home.title", hideHeading: true, composeButton: true },
+  // The home timeline needs a session; without one the browser goes to sign in first, and comes back here
+  // (web-client.md §10). While the server cannot be reached to resume it (a page opened offline), the page opens
+  // and shows the posts kept on this browser (FR-604, web-client.md §11); once the server answers that there is
+  // no session, they are forgotten.
+  beforeLoad: async (args) => {
+    await args.context.session.restore();
+    if (args.context.session.status === "signed-in" || args.context.session.unreachable) return;
+    forgetSavedHomeTimeline();
+    await requireSignIn(args);
+  },
   loader: async ({ context: { queryClient, api, session } }) => {
-    // The home timeline needs a session; without one the page offers to sign in instead. While the server
-    // cannot be reached to resume it (a page opened offline), the page shows the posts kept on this browser
-    // (FR-604, web-client.md §11); once the server answers that there is no session, they are forgotten.
-    await session.restore();
-    if (session.status !== "signed-in") {
-      if (session.unreachable) return { saved: restoreSavedHomeTimeline(queryClient, api) };
-      forgetSavedHomeTimeline();
-      return { saved: false };
-    }
+    // Past the guard without a session: the server cannot be reached to resume it.
+    if (session.status !== "signed-in") return { saved: restoreSavedHomeTimeline(queryClient, api) };
     try {
       // Cached pages that no write has marked stale are shown at once (and refetched in the background once
       // old); marked or missing ones are fetched and waited for (web-client.md S7).

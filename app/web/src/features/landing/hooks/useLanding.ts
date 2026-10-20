@@ -36,6 +36,17 @@ export type Landing = {
   sourceUrl: string | undefined;
 };
 
+/**
+ * The address of the server's registration page while the server takes new accounts (any mode but `closed`), for the
+ * navigation of people who are not signed in; undefined while the instance loads, when it cannot, and when closed.
+ */
+export function useSignUpHref(): string | undefined {
+  const api = useApi();
+  const { apiOrigin } = useConfig();
+  const { data: mode } = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader, select: (instance) => instance.registrations.mode });
+  return mode === undefined || mode === "closed" ? undefined : new URL(signUpPath, apiOrigin).href;
+}
+
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
 function paragraphs(text: string | undefined): string[] {
   if (text === undefined) return [];

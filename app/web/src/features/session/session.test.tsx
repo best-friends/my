@@ -157,14 +157,11 @@ describe("signing in and out", () => {
     expect(document.cookie).toBe("");
   });
 
-  test("the settings page offers to sign in when no session resumes", async () => {
-    const { user } = await renderApp({ path: "/settings" });
-
-    const account = await screen.findByRole("region", { name: "Account" });
-    expect(await within(account).findByText("You are not signed in.")).toBeInTheDocument();
-    await user.click(within(account).getByRole("link", { name: "Sign in" }));
+  test("the settings page sends to sign in when no session resumes", async () => {
+    const { router } = await renderApp({ path: "/settings" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+    expect(router.state.location.search).toEqual({ return_to: "/settings" });
   });
 });
 
