@@ -507,6 +507,20 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.RemoteStatusMaxRetention, _ = time.ParseDuration(v) },
 	},
 	{
+		key:   "relay_status_retention",
+		doc:   "How long a remote post that only a relay brought in is kept after its publication when nothing on this instance refers to it and no local account follows its author; the hourly purge then deletes it (ADR-0061). A Go duration such as `168h` (7 days).",
+		def:   "168h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.RelayStatusRetention, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "relay_ingest_hourly_limit",
+		doc:   "How many activities each relay may bring in per hour (ADR-0061). The ones over it are dropped before their posts are fetched, and counted in `my.relay.activities` and on the relays screen. It bounds the fetches, rows, and jobs that a relay costs.",
+		def:   "1000",
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.RelayIngestHourlyLimit, _ = strconv.Atoi(v) },
+	},
+	{
 		key:   "dead_job_retention",
 		doc:   "How long a dead job (a job that failed for good or used up its attempts, ADR-0004) is kept after it failed, for an operator to inspect and requeue it; the hourly purge then deletes it (FR-803). A Go duration such as `720h` (30 days).",
 		def:   "720h",

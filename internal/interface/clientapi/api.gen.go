@@ -289,6 +289,12 @@ const (
 	AdminAuditActionInviteRevoked            AdminAuditAction = "invite_revoked"
 	AdminAuditActionRegistrationApproved     AdminAuditAction = "registration_approved"
 	AdminAuditActionRegistrationRejected     AdminAuditAction = "registration_rejected"
+	AdminAuditActionRelayAccepted            AdminAuditAction = "relay_accepted"
+	AdminAuditActionRelayAdded               AdminAuditAction = "relay_added"
+	AdminAuditActionRelayFollowed            AdminAuditAction = "relay_followed"
+	AdminAuditActionRelayRejected            AdminAuditAction = "relay_rejected"
+	AdminAuditActionRelayRemoved             AdminAuditAction = "relay_removed"
+	AdminAuditActionRelayUnfollowed          AdminAuditAction = "relay_unfollowed"
 	AdminAuditActionReportAssigned           AdminAuditAction = "report_assigned"
 	AdminAuditActionReportNoteAdded          AdminAuditAction = "report_note_added"
 	AdminAuditActionReportReopened           AdminAuditAction = "report_reopened"
@@ -363,6 +369,18 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionRegistrationApproved:
 		return true
 	case AdminAuditActionRegistrationRejected:
+		return true
+	case AdminAuditActionRelayAccepted:
+		return true
+	case AdminAuditActionRelayAdded:
+		return true
+	case AdminAuditActionRelayFollowed:
+		return true
+	case AdminAuditActionRelayRejected:
+		return true
+	case AdminAuditActionRelayRemoved:
+		return true
+	case AdminAuditActionRelayUnfollowed:
 		return true
 	case AdminAuditActionReportAssigned:
 		return true
@@ -453,6 +471,7 @@ const (
 	AdminAuditTargetKindCustomEmoji  AdminAuditTargetKind = "custom_emoji"
 	AdminAuditTargetKindDomain       AdminAuditTargetKind = "domain"
 	AdminAuditTargetKindInvite       AdminAuditTargetKind = "invite"
+	AdminAuditTargetKindRelay        AdminAuditTargetKind = "relay"
 	AdminAuditTargetKindReport       AdminAuditTargetKind = "report"
 	AdminAuditTargetKindRole         AdminAuditTargetKind = "role"
 	AdminAuditTargetKindRule         AdminAuditTargetKind = "rule"
@@ -477,6 +496,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindDomain:
 		return true
 	case AdminAuditTargetKindInvite:
+		return true
+	case AdminAuditTargetKindRelay:
 		return true
 	case AdminAuditTargetKindReport:
 		return true
@@ -1507,6 +1528,75 @@ func (e RelationshipSeveranceKind) Valid() bool {
 	}
 }
 
+// Defines values for RelayProblemReason.
+const (
+	RelayProblemReasonDomainSuspended RelayProblemReason = "domain_suspended"
+	RelayProblemReasonExists          RelayProblemReason = "exists"
+	RelayProblemReasonNotActor        RelayProblemReason = "not_actor"
+	RelayProblemReasonState           RelayProblemReason = "state"
+	RelayProblemReasonUrl             RelayProblemReason = "url"
+)
+
+// Valid indicates whether the value is a known member of the RelayProblemReason enum.
+func (e RelayProblemReason) Valid() bool {
+	switch e {
+	case RelayProblemReasonDomainSuspended:
+		return true
+	case RelayProblemReasonExists:
+		return true
+	case RelayProblemReasonNotActor:
+		return true
+	case RelayProblemReasonState:
+		return true
+	case RelayProblemReasonUrl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RelayProtocol.
+const (
+	RelayProtocolLitepub  RelayProtocol = "litepub"
+	RelayProtocolMastodon RelayProtocol = "mastodon"
+)
+
+// Valid indicates whether the value is a known member of the RelayProtocol enum.
+func (e RelayProtocol) Valid() bool {
+	switch e {
+	case RelayProtocolLitepub:
+		return true
+	case RelayProtocolMastodon:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RelayState.
+const (
+	RelayStateAccepted RelayState = "accepted"
+	RelayStateLeft     RelayState = "left"
+	RelayStatePending  RelayState = "pending"
+	RelayStateRejected RelayState = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the RelayState enum.
+func (e RelayState) Valid() bool {
+	switch e {
+	case RelayStateAccepted:
+		return true
+	case RelayStateLeft:
+		return true
+	case RelayStatePending:
+		return true
+	case RelayStateRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ReportCategory.
 const (
 	ReportCategoryLegal     ReportCategory = "legal"
@@ -2351,7 +2441,9 @@ type AdminAppealPage struct {
 // `announcement_created`, `announcement_updated` (its text or window),
 // `announcement_published`, `announcement_withdrawn`; the label is the first line of its
 // text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
-// characters of its code, never the whole code.
+// characters of its code, never the whole code. On a `relay`: `relay_added`,
+// `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
+// `relay_rejected` (by the `remote` relay); the label is its URL.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -2389,7 +2481,9 @@ type AdminAuditEntry struct {
 	// `announcement_created`, `announcement_updated` (its text or window),
 	// `announcement_published`, `announcement_withdrawn`; the label is the first line of its
 	// text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
-	// characters of its code, never the whole code.
+	// characters of its code, never the whole code. On a `relay`: `relay_added`,
+	// `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
+	// `relay_rejected` (by the `remote` relay); the label is its URL.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -2417,8 +2511,8 @@ type AdminAuditEntry struct {
 
 	// TargetExists Whether the target is still there to look at. It is `false` for an account, a report,
 	// an appeal, or a sign-up block that is gone (erased past its retention), and for a
-	// role, a custom emoji, or a webhook that was deleted, which only `target_label` names
-	// now. It is `true` for the other kinds of targets, which are never removed.
+	// role, a custom emoji, a webhook, or a relay that was deleted, which only `target_label`
+	// names now. It is `true` for the other kinds of targets, which are never removed.
 	TargetExists bool `json:"target_exists"`
 
 	// TargetId The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
@@ -2768,6 +2862,54 @@ type AdminRegistrationPage struct {
 
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminRelay A relay that the instance joins or joined (ADR-0061).
+type AdminRelay struct {
+	// ActorUri The relay's actor, which accepted the `Follow`; omitted unless `accepted`.
+	ActorUri  *string   `json:"actor_uri,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// DomainSuspended Whether a domain action suspends its server: nothing goes to it or comes from it
+	// while it does, whatever `state` says.
+	DomainSuspended bool `json:"domain_suspended"`
+
+	// DroppedLastDay The activities it brought in during the last 24 hours that were dropped over the
+	// hourly limit (`relay_ingest_hourly_limit`).
+	DroppedLastDay int `json:"dropped_last_day"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// InboxUrl Where the public posts are delivered.
+	InboxUrl string `json:"inbox_url"`
+
+	// Protocol How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
+	// collection. `litepub`: at its actor, by a `Follow` of the actor.
+	Protocol RelayProtocol `json:"protocol"`
+
+	// Receive Whether the public posts it relays are taken in; `false` only sends.
+	Receive bool `json:"receive"`
+
+	// State Where the membership of a relay stands. `pending`: the `Follow` is sent and not
+	// answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
+	// `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
+	// instance sent the `Undo` of its `Follow`.
+	State          RelayState `json:"state"`
+	StateChangedAt time.Time  `json:"state_changed_at"`
+
+	// TakenLastDay The activities it brought in during the last 24 hours that were taken in.
+	TakenLastDay int `json:"taken_last_day"`
+
+	// Url The URL it was registered with, its inbox or its actor.
+	Url string `json:"url"`
+}
+
+// AdminRelayList The relays, in registration order.
+type AdminRelayList struct {
+	Items []AdminRelay `json:"items"`
 }
 
 // AdminReport A report of an account to the moderators (FR-701).
@@ -3449,6 +3591,19 @@ type CreatePasskeyRequest struct {
 
 	// RegistrationToken The `registration_token` of `POST /passkeys/registration`.
 	RegistrationToken string `json:"registration_token"`
+}
+
+// CreateRelayRequest A relay to register and join.
+type CreateRelayRequest struct {
+	// Protocol How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
+	// collection. `litepub`: at its actor, by a `Follow` of the actor.
+	Protocol *RelayProtocol `json:"protocol,omitempty"`
+
+	// Receive Whether to take in the public posts it relays; `true` when omitted.
+	Receive *bool `json:"receive,omitempty"`
+
+	// Url The relay's inbox (`mastodon`) or actor (`litepub`), an https URL.
+	Url string `json:"url"`
 }
 
 // CreateReportNoteRequest A note to add to a report.
@@ -4995,6 +5150,8 @@ type PreviewDomainBlockImportRequest struct {
 //     says which.
 //   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
 //     which.
+//   - `/api/v1/problems/invalid-relay` (422): a relay cannot be registered, joined, left, or
+//     deleted; `reason` says why.
 //   - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
 //     reason in `theme_errors` (`PUT /admin/theme`).
 //   - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
@@ -5172,6 +5329,51 @@ type RelationshipSeverance struct {
 
 // RelationshipSeveranceKind defines model for RelationshipSeverance.Kind.
 type RelationshipSeveranceKind string
+
+// RelayProblem The problem of a relay operation that breaks a rule (422,
+// `/api/v1/problems/invalid-relay`); `reason` says which. Another 422 (a malformed
+// request) has none.
+type RelayProblem struct {
+	// Detail An explanation of this occurrence, localized from `Accept-Language`.
+	Detail *string `json:"detail,omitempty"`
+
+	// Reason Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
+	// `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
+	// suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
+	// inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
+	// `accepted` relay, leaving or deleting one that is not).
+	Reason *RelayProblemReason `json:"reason,omitempty"`
+
+	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Status The HTTP status code.
+	Status int `json:"status"`
+
+	// Title A short summary of the problem type, localized from `Accept-Language`.
+	Title string `json:"title"`
+
+	// Type A URI that identifies the problem type, stable for clients to branch on.
+	// It is `about:blank` when the problem means no more than its HTTP status.
+	Type string `json:"type"`
+}
+
+// RelayProblemReason Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
+// `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
+// suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
+// inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
+// `accepted` relay, leaving or deleting one that is not).
+type RelayProblemReason string
+
+// RelayProtocol How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
+// collection. `litepub`: at its actor, by a `Follow` of the actor.
+type RelayProtocol string
+
+// RelayState Where the membership of a relay stands. `pending`: the `Follow` is sent and not
+// answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
+// `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
+// instance sent the `Undo` of its `Follow`.
+type RelayState string
 
 // ReplaceCustomEmojiImageRequest The new image of a local custom emoji.
 type ReplaceCustomEmojiImageRequest struct {
@@ -6035,6 +6237,11 @@ type Limit = int
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type RegistrationUserId = Id
 
+// RelayId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type RelayId = Id
+
 // ReportId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -6540,6 +6747,9 @@ type ApproveRegistrationJSONRequestBody = RegistrationDecisionRequest
 // RejectRegistrationJSONRequestBody defines body for RejectRegistration for application/json ContentType.
 type RejectRegistrationJSONRequestBody = RegistrationDecisionRequest
 
+// CreateRelayJSONRequestBody defines body for CreateRelay for application/json ContentType.
+type CreateRelayJSONRequestBody = CreateRelayRequest
+
 // AddReportNoteJSONRequestBody defines body for AddReportNote for application/json ContentType.
 type AddReportNoteJSONRequestBody = CreateReportNoteRequest
 
@@ -6842,6 +7052,21 @@ type ServerInterface interface {
 	// RejectRegistration Reject a registration
 	// (POST /admin/registrations/{user_id}/reject)
 	RejectRegistration(w http.ResponseWriter, r *http.Request, userId RegistrationUserId)
+	// ListAdminRelays List the relays
+	// (GET /admin/relays)
+	ListAdminRelays(w http.ResponseWriter, r *http.Request)
+	// CreateRelay Register a relay and join it
+	// (POST /admin/relays)
+	CreateRelay(w http.ResponseWriter, r *http.Request)
+	// DeleteRelay Delete a relay
+	// (DELETE /admin/relays/{id})
+	DeleteRelay(w http.ResponseWriter, r *http.Request, id RelayId)
+	// FollowRelay Join a relay again
+	// (POST /admin/relays/{id}/follow)
+	FollowRelay(w http.ResponseWriter, r *http.Request, id RelayId)
+	// UnfollowRelay Leave a relay
+	// (POST /admin/relays/{id}/unfollow)
+	UnfollowRelay(w http.ResponseWriter, r *http.Request, id RelayId)
 	// ListReports List the reports
 	// (GET /admin/reports)
 	ListReports(w http.ResponseWriter, r *http.Request, params ListReportsParams)
@@ -9419,6 +9644,112 @@ func (siw *ServerInterfaceWrapper) RejectRegistration(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RejectRegistration(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminRelays operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminRelays(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminRelays(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRelay operation middleware
+func (siw *ServerInterfaceWrapper) CreateRelay(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRelay(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRelay operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRelay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RelayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRelay(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// FollowRelay operation middleware
+func (siw *ServerInterfaceWrapper) FollowRelay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RelayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FollowRelay(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UnfollowRelay operation middleware
+func (siw *ServerInterfaceWrapper) UnfollowRelay(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id RelayId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnfollowRelay(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -12539,6 +12870,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/test", wrapper.TestWebhook)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/webhooks/{id}/deliveries", wrapper.ListWebhookDeliveries)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/webhooks/{id}/deliveries/{delivery_id}/redeliver", wrapper.RedeliverWebhookDelivery)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/relays", wrapper.ListAdminRelays)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/relays", wrapper.CreateRelay)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/relays/{id}", wrapper.DeleteRelay)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/relays/{id}/follow", wrapper.FollowRelay)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/relays/{id}/unfollow", wrapper.UnfollowRelay)
 
 	return m
 }
@@ -12640,6 +12976,15 @@ type AdminRegistrationJSONResponse struct {
 	Body AdminRegistration
 
 	Headers AdminRegistrationResponseHeaders
+}
+
+type AdminRelayResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRelayJSONResponse struct {
+	Body AdminRelay
+
+	Headers AdminRelayResponseHeaders
 }
 
 type AdminReportDetailResponseHeaders struct {
@@ -12752,6 +13097,16 @@ type RelationshipJSONResponse struct {
 	Body Relationship
 
 	Headers RelationshipResponseHeaders
+}
+
+type RelayProblemResponseHeaders struct {
+	CacheControl    *string
+	ContentLanguage *string
+}
+type RelayProblemApplicationProblemPlusJSONResponse struct {
+	Body RelayProblem
+
+	Headers RelayProblemResponseHeaders
 }
 
 type RoleProblemResponseHeaders struct {
@@ -16717,6 +17072,366 @@ type RejectRegistrationdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response RejectRegistrationdefaultApplicationProblemPlusJSONResponse) VisitRejectRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminRelaysRequestObject struct {
+}
+
+type ListAdminRelaysResponseObject interface {
+	VisitListAdminRelaysResponse(w http.ResponseWriter) error
+}
+
+type ListAdminRelays200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminRelays200JSONResponse struct {
+	Body    AdminRelayList
+	Headers ListAdminRelays200ResponseHeaders
+}
+
+func (response ListAdminRelays200JSONResponse) VisitListAdminRelaysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminRelaysdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminRelaysdefaultApplicationProblemPlusJSONResponse) VisitListAdminRelaysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRelayRequestObject struct {
+	Body *CreateRelayJSONRequestBody
+}
+
+type CreateRelayResponseObject interface {
+	VisitCreateRelayResponse(w http.ResponseWriter) error
+}
+
+type CreateRelay200JSONResponse struct{ AdminRelayJSONResponse }
+
+func (response CreateRelay200JSONResponse) VisitCreateRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRelay422ApplicationProblemPlusJSONResponse struct {
+	RelayProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRelay422ApplicationProblemPlusJSONResponse) VisitCreateRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRelaydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateRelaydefaultApplicationProblemPlusJSONResponse) VisitCreateRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRelayRequestObject struct {
+	Id RelayId `json:"id"`
+}
+
+type DeleteRelayResponseObject interface {
+	VisitDeleteRelayResponse(w http.ResponseWriter) error
+}
+
+type DeleteRelay204Response struct {
+}
+
+func (response DeleteRelay204Response) VisitDeleteRelayResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteRelay422ApplicationProblemPlusJSONResponse struct {
+	RelayProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteRelay422ApplicationProblemPlusJSONResponse) VisitDeleteRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRelaydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteRelaydefaultApplicationProblemPlusJSONResponse) VisitDeleteRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FollowRelayRequestObject struct {
+	Id RelayId `json:"id"`
+}
+
+type FollowRelayResponseObject interface {
+	VisitFollowRelayResponse(w http.ResponseWriter) error
+}
+
+type FollowRelay200JSONResponse struct{ AdminRelayJSONResponse }
+
+func (response FollowRelay200JSONResponse) VisitFollowRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FollowRelay422ApplicationProblemPlusJSONResponse struct {
+	RelayProblemApplicationProblemPlusJSONResponse
+}
+
+func (response FollowRelay422ApplicationProblemPlusJSONResponse) VisitFollowRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FollowRelaydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response FollowRelaydefaultApplicationProblemPlusJSONResponse) VisitFollowRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnfollowRelayRequestObject struct {
+	Id RelayId `json:"id"`
+}
+
+type UnfollowRelayResponseObject interface {
+	VisitUnfollowRelayResponse(w http.ResponseWriter) error
+}
+
+type UnfollowRelay200JSONResponse struct{ AdminRelayJSONResponse }
+
+func (response UnfollowRelay200JSONResponse) VisitUnfollowRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnfollowRelay422ApplicationProblemPlusJSONResponse struct {
+	RelayProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UnfollowRelay422ApplicationProblemPlusJSONResponse) VisitUnfollowRelayResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnfollowRelaydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnfollowRelaydefaultApplicationProblemPlusJSONResponse) VisitUnfollowRelayResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -23351,6 +24066,21 @@ type StrictServerInterface interface {
 	// RejectRegistration Reject a registration
 	// (POST /admin/registrations/{user_id}/reject)
 	RejectRegistration(ctx context.Context, request RejectRegistrationRequestObject) (RejectRegistrationResponseObject, error)
+	// ListAdminRelays List the relays
+	// (GET /admin/relays)
+	ListAdminRelays(ctx context.Context, request ListAdminRelaysRequestObject) (ListAdminRelaysResponseObject, error)
+	// CreateRelay Register a relay and join it
+	// (POST /admin/relays)
+	CreateRelay(ctx context.Context, request CreateRelayRequestObject) (CreateRelayResponseObject, error)
+	// DeleteRelay Delete a relay
+	// (DELETE /admin/relays/{id})
+	DeleteRelay(ctx context.Context, request DeleteRelayRequestObject) (DeleteRelayResponseObject, error)
+	// FollowRelay Join a relay again
+	// (POST /admin/relays/{id}/follow)
+	FollowRelay(ctx context.Context, request FollowRelayRequestObject) (FollowRelayResponseObject, error)
+	// UnfollowRelay Leave a relay
+	// (POST /admin/relays/{id}/unfollow)
+	UnfollowRelay(ctx context.Context, request UnfollowRelayRequestObject) (UnfollowRelayResponseObject, error)
 	// ListReports List the reports
 	// (GET /admin/reports)
 	ListReports(ctx context.Context, request ListReportsRequestObject) (ListReportsResponseObject, error)
@@ -25604,6 +26334,139 @@ func (sh *strictHandler) RejectRegistration(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RejectRegistrationResponseObject); ok {
 		if err := validResponse.VisitRejectRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminRelays operation middleware
+func (sh *strictHandler) ListAdminRelays(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminRelaysRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminRelays(ctx, request.(ListAdminRelaysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminRelays")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminRelaysResponseObject); ok {
+		if err := validResponse.VisitListAdminRelaysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRelay operation middleware
+func (sh *strictHandler) CreateRelay(w http.ResponseWriter, r *http.Request) {
+	var request CreateRelayRequestObject
+
+	var body CreateRelayJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRelay(ctx, request.(CreateRelayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRelay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRelayResponseObject); ok {
+		if err := validResponse.VisitCreateRelayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteRelay operation middleware
+func (sh *strictHandler) DeleteRelay(w http.ResponseWriter, r *http.Request, id RelayId) {
+	var request DeleteRelayRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteRelay(ctx, request.(DeleteRelayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteRelay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteRelayResponseObject); ok {
+		if err := validResponse.VisitDeleteRelayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// FollowRelay operation middleware
+func (sh *strictHandler) FollowRelay(w http.ResponseWriter, r *http.Request, id RelayId) {
+	var request FollowRelayRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.FollowRelay(ctx, request.(FollowRelayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "FollowRelay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(FollowRelayResponseObject); ok {
+		if err := validResponse.VisitFollowRelayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnfollowRelay operation middleware
+func (sh *strictHandler) UnfollowRelay(w http.ResponseWriter, r *http.Request, id RelayId) {
+	var request UnfollowRelayRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnfollowRelay(ctx, request.(UnfollowRelayRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnfollowRelay")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnfollowRelayResponseObject); ok {
+		if err := validResponse.VisitUnfollowRelayResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

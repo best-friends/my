@@ -23,6 +23,8 @@ func (a *App) setUpInbox(repo federation.InboxRepository) {
 		Accounts:   a.Accounts,
 		Domains:    a.ModerationPolicy,
 		Health:     a.InstanceHealth, RateLimiter: a.RateLimiter, Clock: a.Clock, Logger: a.Logger, Meter: a.Meter,
+		// The activities that accepted relays sign carry the relay (ADR-0061).
+		Relays: a.Relays,
 	})
 	a.setUpInboxProcessor(repo)
 }
@@ -34,7 +36,9 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 	a.InboxProcessor = federation.NewInboxProcessor(federation.InboxProcessorDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Actors: a.RemoteActors, Fetcher: a.RemoteActors,
 		Domains: a.ModerationPolicy, Accounts: a.ModerationPolicy,
-		Clock: a.Clock, Logger: a.Logger,
+		// What relays bring in passes their gate before it is fetched (ADR-0061).
+		Relays: a.Relays,
+		Clock:  a.Clock, Logger: a.Logger,
 	})
 	federation.RegisterModerationHandlers(a.InboxProcessor, federation.ModerationHandlerDeps{
 		Blocks: a.Graph, Reports: a.Moderation, Policy: a.ModerationPolicy,
@@ -44,5 +48,5 @@ func (a *App) setUpInboxProcessor(repo federation.InboxRepository) {
 	a.InboxProcessor.RegisterJobs(a.Handlers)
 	a.registerStatusHandlers(repo)
 	// The handlers of each activity type (federation.md §3.4).
-	federation.RegisterFollowHandlers(a.InboxProcessor, federation.FollowHandlerDeps{Graph: a.Graph, Accounts: a.Accounts})
+	federation.RegisterFollowHandlers(a.InboxProcessor, federation.FollowHandlerDeps{Graph: a.Graph, Accounts: a.Accounts, Relays: a.Relays})
 }

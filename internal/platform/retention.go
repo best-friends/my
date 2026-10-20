@@ -23,7 +23,8 @@ type retentionRepositories struct {
 }
 
 // setUpRetention registers the purges of federated data and their schedules (ADR-0034, FR-803):
-// the remote statuses past remote_status_retention (or remote_status_max_retention), the inbox
+// the remote statuses past remote_status_retention (or remote_status_max_retention), the ones
+// that only relays brought in past relay_status_retention (ADR-0061), the inbox
 // and delivery records, the past profiles of unrelated remote accounts, and the remote custom
 // emoji that nothing refers to any more (ADR-0051 §1). The statuses that the moderation records
 // need stay (ADR-0038). It also sets up the users' automatic deletion of their own old posts
@@ -34,6 +35,12 @@ func (a *App) setUpRetention(cfg *config.Config, repos retentionRepositories, st
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Retention: repos.statuses, Notifications: a.Notifications,
 		Evidence: a.Moderation,
 		Jobs:     a.Jobs, Clock: a.Clock, Period: cfg.RemoteStatusRetention, MaxPeriod: cfg.RemoteStatusMaxRetention,
+	}).RegisterJobs(a.Handlers, a.Scheduler)
+	// The posts that only relays brought in (ADR-0061).
+	content.NewRelayedRetention(content.RelayedRetentionDeps{
+		UnitOfWork: a.UnitOfWork, Repository: statuses, Retention: repos.statuses, Notifications: a.Notifications,
+		Evidence: a.Moderation, Follows: followedAuthors{a},
+		Jobs: a.Jobs, Clock: a.Clock, Period: cfg.RelayStatusRetention,
 	}).RegisterJobs(a.Handlers, a.Scheduler)
 	federation.NewPurger(federation.PurgeDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repos.purges, Clock: a.Clock,
