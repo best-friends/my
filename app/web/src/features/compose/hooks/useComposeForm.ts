@@ -70,6 +70,11 @@ export type ReadyComposeForm = {
   attachments: Attachments;
   /** Whether the post must describe its images before it is sent without asking (the preference). */
   requireDescriptions: boolean;
+  /**
+   * Whether the server requires a description of every image (`limits.require_media_description`, FR-105): the form
+   * is not sent while an image has none, and the preference's question never comes up.
+   */
+  isDescriptionRequired: boolean;
   canSubmit: boolean;
   /** Sends the draft, or asks first when images lack a description that the preferences ask for. */
   submit: () => void;
@@ -191,7 +196,7 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   }
   if (instance.data === undefined || preferences.data === undefined || visibility === undefined) return { status: "loading" };
 
-  const { max_post_characters: maxCharacters } = instance.data.limits;
+  const { max_post_characters: maxCharacters, require_media_description: isDescriptionRequired } = instance.data.limits;
   const { default_post_language: preferredLanguage, require_media_description: requireDescriptions } = preferences.data;
   const replyTo: ReplyTarget =
     draft.replyToId === null
@@ -244,9 +249,13 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
     },
     attachments,
     requireDescriptions,
+    isDescriptionRequired,
     canSubmit,
     submit: () => {
       if (!canSubmit) return;
+      // The browser's validation of the required description fields keeps the form from being sent first; the server
+      // would refuse the post anyway.
+      if (isDescriptionRequired && missing > 0) return;
       if (requireDescriptions && missing > 0) {
         setIsConfirming(true);
         return;

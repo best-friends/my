@@ -118,7 +118,7 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadFollows() string {
 
 // ServerAuthAuthorizeScopeReadMutes formats "server:auth.authorize.scope.read_mutes". Permission (OAuth scope read:mutes) listed on the authorization page.
 //
-//	en: Read the accounts you mute
+//	en: Read the accounts and domains you mute
 func (l *Localizer) ServerAuthAuthorizeScopeReadMutes() string {
 	return l.format("server:auth.authorize.scope.read_mutes", nil)
 }
@@ -195,7 +195,7 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteMedia() string {
 
 // ServerAuthAuthorizeScopeWriteMutes formats "server:auth.authorize.scope.write_mutes". Permission (OAuth scope write:mutes) listed on the authorization page.
 //
-//	en: Mute and unmute accounts
+//	en: Mute and unmute accounts and domains
 func (l *Localizer) ServerAuthAuthorizeScopeWriteMutes() string {
 	return l.format("server:auth.authorize.scope.write_mutes", nil)
 }
@@ -935,6 +935,13 @@ func (l *Localizer) ServerErrorsConflict() string {
 	return l.format("server:errors.conflict", nil)
 }
 
+// ServerErrorsDomainMutesTooMany formats "server:errors.domain_mutes.too_many". API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains.
+//
+//	en: You already mute the most domains allowed. Unmute one first.
+func (l *Localizer) ServerErrorsDomainMutesTooMany() string {
+	return l.format("server:errors.domain_mutes.too_many", nil)
+}
+
 // ServerErrorsExportInProgress formats "server:errors.export.in_progress". API error title for HTTP 409 when the user asks for an archive of their data while another one is still being built.
 //
 //	en: An archive of your data is already being prepared. Wait until it is ready.
@@ -1264,6 +1271,13 @@ func (l *Localizer) ServerErrorsStatusMediaNotReady() string {
 	return l.format("server:errors.status.media_not_ready", nil)
 }
 
+// ServerErrorsStatusMissingMediaDescription formats "server:errors.status.missing_media_description". Detail of the HTTP 422 API error when an attached image has no alternative text while the server requires one for every image (the instance setting require_media_description).
+//
+//	en: This server requires a description (alt text) for every image. Add one to each image before posting.
+func (l *Localizer) ServerErrorsStatusMissingMediaDescription() string {
+	return l.format("server:errors.status.missing_media_description", nil)
+}
+
 // ServerErrorsStatusNotAuthor formats "server:errors.status.not_author". Detail of the HTTP 403 API error when a user tries to edit or delete another account's post.
 //
 //	en: Only the author can change this post.
@@ -1290,6 +1304,41 @@ func (l *Localizer) ServerErrorsStatusNotPinnable() string {
 //	en: {max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}}
 func (l *Localizer) ServerErrorsStatusPinLimit(max int) string {
 	return l.format("server:errors.status.pin_limit", map[string]any{"max": max})
+}
+
+// ServerErrorsStatusPollAlreadyVoted formats "server:errors.status.poll_already_voted". Detail of the HTTP 422 API error when a user votes in a poll a second time.
+//
+//	en: You have already voted in this poll.
+func (l *Localizer) ServerErrorsStatusPollAlreadyVoted() string {
+	return l.format("server:errors.status.poll_already_voted", nil)
+}
+
+// ServerErrorsStatusPollChanged formats "server:errors.status.poll_changed". Detail of the HTTP 409 API error when a user votes in a poll that an edit of the post replaced.
+//
+//	en: The poll was changed by an edit of the post. Reload it and vote again.
+func (l *Localizer) ServerErrorsStatusPollChanged() string {
+	return l.format("server:errors.status.poll_changed", nil)
+}
+
+// ServerErrorsStatusPollClosed formats "server:errors.status.poll_closed". Detail of the HTTP 422 API error when a user votes in a poll whose end has passed.
+//
+//	en: This poll has ended.
+func (l *Localizer) ServerErrorsStatusPollClosed() string {
+	return l.format("server:errors.status.poll_closed", nil)
+}
+
+// ServerErrorsStatusPollInvalidChoices formats "server:errors.status.poll_invalid_choices". Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll.
+//
+//	en: Choose one of the poll's options, or several only when the poll allows it.
+func (l *Localizer) ServerErrorsStatusPollInvalidChoices() string {
+	return l.format("server:errors.status.poll_invalid_choices", nil)
+}
+
+// ServerErrorsStatusPollMissing formats "server:errors.status.poll_missing". Detail of the HTTP 422 API error when a user votes on a post that has no poll.
+//
+//	en: This post has no poll.
+func (l *Localizer) ServerErrorsStatusPollMissing() string {
+	return l.format("server:errors.status.poll_missing", nil)
 }
 
 // ServerErrorsStatusPostingRestricted formats "server:errors.status.posting_restricted". Detail of the HTTP 403 API error when a moderator restricted the account from posting.

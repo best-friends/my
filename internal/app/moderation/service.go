@@ -211,6 +211,19 @@ type Deps struct {
 	// Evidence presents the statuses of a report to the moderators (ReportStatuses); nil
 	// presents none.
 	Evidence Evidence
+	// AuditTargets tells which roles, custom emoji, and webhooks named by the audit log still
+	// exist (GoneAuditTargets); nil reports none of them gone.
+	AuditTargets AuditTargets
+}
+
+// AuditTargets looks up the targets of the audit log that other modules own and delete: roles
+// (identity), custom emoji (content), and webhooks (webhook). Those modules emit the audit log
+// entries, so this module reaches them through this port.
+type AuditTargets interface {
+	// ExistingAuditTargets returns, in ID order, the targets among ids of kind that exist; kind
+	// is moderation.AuditTargetRole, AuditTargetCustomEmoji, AuditTargetWebhook, or
+	// AuditTargetRelay.
+	ExistingAuditTargets(ctx context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error)
 }
 
 // Service runs the moderation module's use cases: actions on domains and accounts, their lifts,

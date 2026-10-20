@@ -165,9 +165,9 @@ func handleOf(a appaccount.Actor, accountDomain string) string {
 
 // document builds the body of act (federation.md §7.4): the activity envelope with its context
 // and addressing around the object. The object of a Create or Update is the status's Note as of
-// the revision the activity presents. The Delete of a status, and the Like and Undo Like of a
-// favourite, have no document here: their projectors store them with the event (deleteDocument,
-// likeDocument), so document returns nil.
+// the revision the activity presents. The Delete of a status, the Like and Undo Like of a
+// favourite, and the Create of a vote have no document here: their projectors store them with
+// the event (deleteDocument, likeDocument, registerPollVoteProjectors), so document returns nil.
 func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, s subject) ([]byte, error) {
 	if act.ObjectKind == federation.OutboundBlock {
 		return f.blockDocument(ctx, act, s)
@@ -188,7 +188,8 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		}
 		return accountDocument(f.d.Host, act, s.actor, images, s.suspended)
 	}
-	if act.ObjectKind == federation.OutboundFavourite || act.ObjectKind == federation.OutboundRelay ||
+	if act.ObjectKind == federation.OutboundFavourite || act.ObjectKind == federation.OutboundPollVote ||
+		act.ObjectKind == federation.OutboundRelay ||
 		(act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete) {
 		return nil, nil
 	}

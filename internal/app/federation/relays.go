@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -202,6 +203,21 @@ func (r *Relays) List(ctx context.Context) ([]RelayView, error) {
 			return nil, err
 		}
 		out = append(out, v)
+	}
+	return out, nil
+}
+
+// ExistingIDs returns, in ID order, the relays among ids that are registered, for the audit log.
+func (r *Relays) ExistingIDs(ctx context.Context, ids []string) ([]string, error) {
+	all, err := r.d.Repository.ListRelays(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, rec := range all {
+		if slices.Contains(ids, rec.Relay.ID) {
+			out = append(out, rec.Relay.ID)
+		}
 	}
 	return out, nil
 }

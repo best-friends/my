@@ -30,7 +30,7 @@ func (r *NotificationRepository) InsertNotification(ctx context.Context, tx uow.
 	}
 	rows, err := q.InsertNotification(ctx, sqlitegen.InsertNotificationParams{
 		ID: n.ID, RecipientAccountID: n.RecipientAccountID, Type: string(n.Type),
-		SourceAccountID: toNullString(n.SourceAccountID), StatusID: toNullString(n.StatusID),
+		SourceAccountID: toNullString(n.SourceAccountID), SourceDomain: toNullString(n.SourceDomain), StatusID: toNullString(n.StatusID),
 		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID),
 		SubjectUserID: toNullString(n.SubjectUserID), SeveranceID: toNullString(n.SeveranceID), AppealID: toNullString(n.AppealID),
 		ReactionEmoji: toNullString(n.ReactionEmoji), ReactionCustomEmojiID: toNullString(n.ReactionCustomEmojiID), DedupeKey: n.DedupeKey, CreatedAt: toMillis(n.CreatedAt),
@@ -106,6 +106,38 @@ func (r *NotificationRepository) DeleteExclusion(ctx context.Context, tx uow.Tx,
 	}), "delete notification exclusion")
 }
 
+// InsertDomainExclusion implements notification.Repository.
+func (r *NotificationRepository) InsertDomainExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.InsertNotificationDomainExclusion(ctx, sqlitegen.InsertNotificationDomainExclusionParams{
+		ViewerAccountID: viewerAccountID, Domain: domain,
+	}), "insert notification domain exclusion")
+}
+
+// DeleteDomainExclusion implements notification.Repository.
+func (r *NotificationRepository) DeleteDomainExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	return wrap(q.DeleteNotificationDomainExclusion(ctx, sqlitegen.DeleteNotificationDomainExclusionParams{
+		ViewerAccountID: viewerAccountID, Domain: domain,
+	}), "delete notification domain exclusion")
+}
+
+// DomainExcluded implements notification.Repository.
+func (r *NotificationRepository) DomainExcluded(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	excluded, err := q.DomainExcluded(ctx, sqlitegen.DomainExcludedParams{ViewerAccountID: viewerAccountID, Domain: domain})
+	return excluded, wrap(err, "check notification domain exclusion")
+}
+
 // InsertDeletedStatus implements notification.Repository.
 func (r *NotificationRepository) InsertDeletedStatus(ctx context.Context, tx uow.Tx, statusID string) error {
 	q, err := queries(tx)
@@ -150,7 +182,7 @@ func (r *NotificationRepository) FindReadMarker(ctx context.Context, accountID s
 func notificationFrom(row sqlitegen.Notification) notification.Notification {
 	return notification.Notification{
 		ID: row.ID, RecipientAccountID: row.RecipientAccountID, Type: notification.Type(row.Type),
-		SourceAccountID: row.SourceAccountID.String, StatusID: row.StatusID.String,
+		SourceAccountID: row.SourceAccountID.String, SourceDomain: row.SourceDomain.String, StatusID: row.StatusID.String,
 		ModerationActionID: row.ModerationActionID.String, ReportID: row.ReportID.String,
 		SubjectUserID: row.SubjectUserID.String, SeveranceID: row.SeveranceID.String, AppealID: row.AppealID.String,
 		ReactionEmoji: row.ReactionEmoji.String, ReactionCustomEmojiID: row.ReactionCustomEmojiID.String, DedupeKey: row.DedupeKey, CreatedAt: fromMillis(row.CreatedAt),

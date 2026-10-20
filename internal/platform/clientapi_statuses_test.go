@@ -15,7 +15,9 @@ import (
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/identity"
+	appinstance "github.com/best-friends/my/internal/app/instance"
 	domain "github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
 	"github.com/best-friends/my/internal/platform"
@@ -302,5 +304,57 @@ func TestStatusesThroughTheAPI(t *testing.T) {
 	}
 	if res := c.do("alice", http.MethodDelete, "/statuses/"+root.Id, nil, nil); res.StatusCode != http.StatusNotFound {
 		t.Errorf("second DELETE = %d, want 404", res.StatusCode)
+	}
+}
+
+// TestRequiredMediaDescriptionThroughTheAPI checks the instance setting require_media_description
+// (FR-105): GET /instance reports it, and while it is on a post or an edit with an image without
+// alt text is a 422 that says why, and one whose images have alt text succeeds.
+func TestRequiredMediaDescriptionThroughTheAPI(t *testing.T) {
+	t.Parallel()
+	c := newStatusesClient(t, "alice")
+	ctx := t.Context()
+	upload := func() string {
+		t.Helper()
+		m, err := c.app.Media.Upload(ctx, appcontent.UploadInput{OwnerAccountID: c.ids["alice"], Content: bytes.NewReader(testkit.FixturePNG(64, 48, false))})
+		if err != nil {
+			t.Fatalf("Upload: %v", err)
+		}
+		c.app.Media.Process(ctx, m.File.ID, "")
+		return m.File.ID
+	}
+	required := func() bool {
+		t.Helper()
+		var info clientapi.Instance
+		if res := c.do("", http.MethodGet, "/instance", nil, &info); res.StatusCode != http.StatusOK {
+			t.Fatalf("GET /instance = %d", res.StatusCode)
+		}
+		return info.Limits.RequireMediaDescription
+	}
+	if required() {
+		t.Error("require_media_description is on by default")
+	}
+	first := upload()
+	root := c.post("alice", map[string]any{"text": "pic", "visibility": "public", "media": []map[string]any{{"id": first}}})
+
+	if _, err := c.app.Instance.SetSetting(ctx, appinstance.SetSettingInput{Key: instance.SettingRequireMediaDescription, Value: "true"}); err != nil {
+		t.Fatal(err)
+	}
+	if !required() {
+		t.Error("GET /instance does not report require_media_description")
+	}
+	for _, req := range []struct{ method, path string }{{http.MethodPost, "/statuses"}, {http.MethodPut, "/statuses/" + root.Id}} {
+		res := c.do("alice", req.method, req.path, map[string]any{"text": "pic", "visibility": "public", "media": []map[string]any{{"id": first, "description": " "}}}, nil)
+		var p clientapi.Problem
+		if err := json.NewDecoder(res.Body).Decode(&p); err != nil {
+			t.Fatal(err)
+		}
+		if res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, "alt text") {
+			t.Errorf("%s %s without alt text = %d %+v, want a 422 that asks for alt text", req.method, req.path, res.StatusCode, p)
+		}
+	}
+	described := c.post("alice", map[string]any{"text": "pic", "visibility": "public", "media": []map[string]any{{"id": upload(), "description": "a picture"}}})
+	if len(described.MediaAttachments) != 1 {
+		t.Errorf("post with alt text = %+v", described)
 	}
 }

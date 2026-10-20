@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the settings feature (web-client.md §7): the user's own profile and
-// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes and follow requests, the archives of the user's
+// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes, muted domains, and follow requests, the archives of the user's
 // data, the CSV exports and imports, and deleting the account. Unblocking and unmuting are the account
 // actions of the profile feature's handlers.
 import { http, HttpResponse } from "msw";
@@ -70,6 +70,15 @@ export const handlers = [
   // operationIds listBlocks, listMutes, listFollowRequests, acceptFollowRequest, rejectFollowRequest: empty lists by default.
   http.get(`${apiBase}/blocks`, ({ request }) => withViewer(request, () => HttpResponse.json({ accounts: [] }))),
   http.get(`${apiBase}/mutes`, ({ request }) => withViewer(request, () => HttpResponse.json({ mutes: [] }))),
+  // operationIds listDomainMutes, muteDomain, unmuteDomain: no muted domains by default; muting answers the domain in lower case.
+  http.get(`${apiBase}/domain_mutes`, ({ request }) => withViewer(request, () => HttpResponse.json({ domain_mutes: [] }))),
+  http.post(`${apiBase}/domain_mutes`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["MuteDomainRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json({ domain: body.domain.toLowerCase(), created_at: "2026-10-21T09:30:00Z" } satisfies Schemas["DomainMute"]),
+    );
+  }),
+  http.delete(`${apiBase}/domain_mutes/:domain`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   http.get(`${apiBase}/follow_requests`, ({ request }) => withViewer(request, () => HttpResponse.json({ accounts: [] }))),
   http.post(`${apiBase}/follow_requests/:id/authorize`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json({ ...relationshipFixture(String(params["id"])), followed_by: true })),

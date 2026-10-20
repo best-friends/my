@@ -150,11 +150,14 @@ func likeDocument(act federation.OutboundActivity, host string, f appcontent.Fav
 	return federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, federation.Audience{}, like.Embedded()).Marshal()
 }
 
-// favouriteSubject loads the remote status of a Like or Undo Like, whose author receives it.
+// favouriteSubject loads the remote status of a Like or Undo Like, or of the Create of a vote in
+// its poll, whose author receives it.
 func (f *FanOut) favouriteSubject(ctx context.Context, s subject) (subject, error) {
 	act := s.act
-	if act.Type != federation.ActivityLike && act.Type != federation.ActivityUndo {
-		return subject{}, fmt.Errorf("%w: %s of a favourite", federation.ErrInvalidOutbound, act.Type)
+	switch {
+	case act.ObjectKind == federation.OutboundPollVote && act.Type != federation.ActivityCreate,
+		act.ObjectKind == federation.OutboundFavourite && act.Type != federation.ActivityLike && act.Type != federation.ActivityUndo:
+		return subject{}, fmt.Errorf("%w: %s of a %s", federation.ErrInvalidOutbound, act.Type, act.ObjectKind)
 	}
 	st, err := f.d.Statuses.FindStatus(ctx, act.ObjectID)
 	switch {
@@ -163,7 +166,7 @@ func (f *FanOut) favouriteSubject(ctx context.Context, s subject) (subject, erro
 	case err != nil:
 		return subject{}, err
 	case st.IsLocal:
-		return subject{}, fmt.Errorf("%w: %s of the favourite of a local status %s", federation.ErrInvalidOutbound, act.Type, st.ID)
+		return subject{}, fmt.Errorf("%w: %s of the %s of a local status %s", federation.ErrInvalidOutbound, act.Type, act.ObjectKind, st.ID)
 	}
 	s.status = st
 	s.mentioned = []string{st.AuthorAccountID}

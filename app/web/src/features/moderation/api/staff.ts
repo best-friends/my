@@ -277,6 +277,12 @@ export const auditActions = [
   "webhook_enabled",
   "webhook_disabled",
   "webhook_secret_rotated",
+  "announcement_created",
+  "announcement_updated",
+  "announcement_published",
+  "announcement_withdrawn",
+  "invite_created",
+  "invite_revoked",
   "relay_added",
   "relay_followed",
   "relay_unfollowed",
@@ -299,6 +305,8 @@ export const auditTargetKinds = [
   "signup_block",
   "custom_emoji",
   "webhook",
+  "announcement",
+  "invite",
   "relay",
 ] as const satisfies readonly AuditTargetKind[];
 

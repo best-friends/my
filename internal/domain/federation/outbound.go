@@ -26,6 +26,9 @@ const (
 	OutboundBlock     OutboundObjectKind = "block"
 	OutboundAccount   OutboundObjectKind = "account"
 	OutboundReport    OutboundObjectKind = "report"
+	// OutboundPollVote is a local account's vote in a remote poll: the Create of the Note that
+	// carries one choice, about the poll's status (ObjectID).
+	OutboundPollVote OutboundObjectKind = "poll_vote"
 	// OutboundRelay is the membership of a relay (ADR-0061): the Follow and Undo that join and
 	// leave it, and the Accept or Reject of a Follow of the instance actor. Its object is the
 	// relay, or the remote actor whose Follow of the instance actor is rejected.
@@ -35,7 +38,7 @@ const (
 // Valid reports whether k is one of the outbound object kinds.
 func (k OutboundObjectKind) Valid() bool {
 	switch k {
-	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundRelay:
+	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundPollVote, OutboundRelay:
 		return true
 	}
 	return false

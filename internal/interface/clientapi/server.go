@@ -30,7 +30,7 @@ type Options struct {
 	Origin string
 	// SoftwareVersion is the server version.
 	SoftwareVersion string
-	// SourceURL is where users get the server's source code (ADR-0011).
+	// SourceURL is where users get the server's source code, an https URL or a mailto: address (ADR-0011).
 	SourceURL string
 	// Instance reads the instance settings and texts; nil reads every setting as its default
 	// and no text.
@@ -137,6 +137,10 @@ type Options struct {
 	ProfileRestrictions ProfileRestrictions
 	// AuditLog lists the audit log for the admin operations (admin_audit.go).
 	AuditLog AuditLog
+	// Announcements runs the server-wide announcements (announcements.go): the users' list and
+	// reads, the admin operations, and the announcements of the streams; nil lists none, answers
+	// 404 to the others, and streams none.
+	Announcements Announcements
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules

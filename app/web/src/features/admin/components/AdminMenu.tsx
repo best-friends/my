@@ -7,8 +7,7 @@ import { type StaffPage, StaffMenuSection, StaffPages, useShownStaffPages } from
 
 /**
  * The server administration screens, in the order of the menu, with the permission each needs. A new screen
- * (the announcements) adds a line here and its route
- * `routes/admin.<screen>.tsx`.
+ * adds a line here and its route `routes/admin.<screen>.tsx`.
  */
 const adminPages: readonly StaffPage[] = [
   { href: "/admin/settings", permission: "manage_settings", label: "client:admin.settings.title", description: "client:admin.settings.summary" },
@@ -20,6 +19,12 @@ const adminPages: readonly StaffPage[] = [
     permission: "manage_custom_emojis",
     label: "client:admin.custom_emojis.title",
     description: "client:admin.custom_emojis.summary",
+  },
+  {
+    href: "/admin/announcements",
+    permission: "manage_announcements",
+    label: "client:admin.announcements.title",
+    description: "client:admin.announcements.summary",
   },
   { href: "/admin/webhooks", permission: "manage_webhooks", label: "client:admin.webhooks.title", description: "client:admin.webhooks.summary" },
   { href: "/admin/relays", permission: "manage_settings", label: "client:admin.relays.title", description: "client:admin.relays.summary" },

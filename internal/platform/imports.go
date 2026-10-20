@@ -19,8 +19,8 @@ import (
 	domidentity "github.com/best-friends/my/internal/domain/identity"
 )
 
-// setUpImports builds the CSV exports and imports of the users' follows, blocks, mutes, and
-// bookmarks (FR-008) and registers their jobs. The targets read the services that are built
+// setUpImports builds the CSV exports and imports of the users' follows, blocks, mutes,
+// bookmarks, and muted domains (FR-008, FR-304) and registers their jobs. The targets read the services that are built
 // later (the status reader, the resolver of remote posts) only when an export or a job runs.
 func (a *App) setUpImports(repo identity.Repository) {
 	outbox := a.Outbox
@@ -30,7 +30,8 @@ func (a *App) setUpImports(repo identity.Repository) {
 	}
 	a.Imports = identity.NewImports(identity.ImportDeps{
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox, Targets: importTargets{a},
-		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain, Clock: a.Clock, IDs: a.IDs, Logger: a.Logger,
+		Host: a.Config.Host, AccountDomain: a.Config.AccountDomain, CanonicalDomain: federation.CanonicalHost,
+		Clock: a.Clock, IDs: a.IDs, Logger: a.Logger,
 	})
 	a.Imports.RegisterJobs(a.Handlers, a.Scheduler)
 }
@@ -48,7 +49,8 @@ func (t importTargets) accountDomain() string {
 }
 
 // List implements identity.ImportTargets: the active follows, the blocks, the mutes in effect,
-// and the bookmarks of statuses the account may still see, newest first. Accounts without an
+// and the bookmarks of statuses the account may still see, newest first, and the muted domains
+// in the order of their domains. Accounts without an
 // address (a remote actor whose handle is unconfirmed) are left out.
 func (t importTargets) List(ctx context.Context, accountID string, kind domidentity.ImportKind) ([]identity.ImportTarget, error) {
 	var out []identity.ImportTarget
@@ -118,6 +120,20 @@ func (t importTargets) List(ctx context.Context, accountID string, kind domident
 			}
 			p.Before = graph.MuteCursorOf(mutes[len(mutes)-1])
 		}
+	case domidentity.ImportDomainMutes:
+		for p := (graph.DomainMutePage{Limit: graph.MaxPageLimit}); ; {
+			mutes, err := t.a.Graph.DomainMutes(ctx, accountID, p)
+			if err != nil {
+				return nil, err
+			}
+			for _, m := range mutes {
+				out = append(out, identity.ImportTarget{ID: m.Domain, Row: domidentity.ExportRow{Target: m.Domain}})
+			}
+			if len(mutes) < p.Limit {
+				return out, nil
+			}
+			p.After = mutes[len(mutes)-1].Domain
+		}
 	case domidentity.ImportBookmarks:
 		for before := ""; ; {
 			page, err := t.a.Statuses.Bookmarks(ctx, accountID, before, graph.MaxPageLimit)
@@ -160,6 +176,14 @@ func (t importTargets) Add(ctx context.Context, accountID string, kind domidenti
 			return err
 		}
 		return itemError(t.a.Interactions.Bookmark(ctx, accountID, res.Status.ID))
+	}
+	if kind == domidentity.ImportDomainMutes {
+		domain, err := federation.CanonicalHost(item.Target)
+		if err != nil {
+			return &identity.ImportItemError{Failure: domidentity.ImportFailureUnresolvable, Err: err}
+		}
+		_, err = t.a.Graph.MuteDomain(ctx, accountID, domain)
+		return itemError(err)
 	}
 	target, err := t.resolve(ctx, item.Target)
 	if err != nil {
@@ -219,6 +243,10 @@ func itemError(err error) error {
 		return nil
 	case errors.Is(err, domgraph.ErrSelfFollow), errors.Is(err, domgraph.ErrSelfBlock), errors.Is(err, domgraph.ErrSelfMute):
 		failure = domidentity.ImportFailureSelf
+	case errors.Is(err, domgraph.ErrInvalidDomain):
+		failure = domidentity.ImportFailureUnresolvable
+	case errors.Is(err, domgraph.ErrTooManyDomainMutes):
+		failure = domidentity.ImportFailureLimit
 	case errors.Is(err, graph.ErrBlocked):
 		failure = domidentity.ImportFailureBlocked
 	case errors.Is(err, graph.ErrInteractionRestricted), errors.Is(err, content.ErrInteractionRestricted):
@@ -244,6 +272,8 @@ func (t importTargets) Remove(ctx context.Context, accountID string, kind domide
 		_, err = t.a.Graph.Unmute(ctx, accountID, targetID)
 	case domidentity.ImportBookmarks:
 		err = t.a.Interactions.Unbookmark(ctx, accountID, targetID)
+	case domidentity.ImportDomainMutes:
+		err = t.a.Graph.UnmuteDomain(ctx, accountID, targetID)
 	default:
 		return fmt.Errorf("platform: unknown import kind %q", kind)
 	}

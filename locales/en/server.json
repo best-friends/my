@@ -64,7 +64,7 @@
     "description": "Permission (OAuth scope read:follows) listed on the authorization page."
   },
   "auth.authorize.scope.read_mutes": {
-    "defaultMessage": "Read the accounts you mute",
+    "defaultMessage": "Read the accounts and domains you mute",
     "description": "Permission (OAuth scope read:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.read_notifications": {
@@ -108,7 +108,7 @@
     "description": "Permission (OAuth scope write:media) listed on the authorization page."
   },
   "auth.authorize.scope.write_mutes": {
-    "defaultMessage": "Mute and unmute accounts",
+    "defaultMessage": "Mute and unmute accounts and domains",
     "description": "Permission (OAuth scope write:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.write_notifications": {
@@ -711,6 +711,10 @@
     "defaultMessage": "An attached file is still being processed or could not be processed.",
     "description": "Detail of the HTTP 422 API error when a post attaches a media file whose processing has not finished or failed."
   },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "This server requires a description (alt text) for every image. Add one to each image before posting.",
+    "description": "Detail of the HTTP 422 API error when an attached image has no alternative text while the server requires one for every image (the instance setting require_media_description)."
+  },
   "errors.status.not_author": {
     "defaultMessage": "Only the author can change this post.",
     "description": "Detail of the HTTP 403 API error when a user tries to edit or delete another account's post."
@@ -726,6 +730,26 @@
   "errors.status.pin_limit": {
     "defaultMessage": "{max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}}",
     "description": "Detail of the HTTP 422 API error when a user pins more posts than allowed. {max} is the maximum number of pinned posts."
+  },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "You have already voted in this poll.",
+    "description": "Detail of the HTTP 422 API error when a user votes in a poll a second time."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "The poll was changed by an edit of the post. Reload it and vote again.",
+    "description": "Detail of the HTTP 409 API error when a user votes in a poll that an edit of the post replaced."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "This poll has ended.",
+    "description": "Detail of the HTTP 422 API error when a user votes in a poll whose end has passed."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "Choose one of the poll's options, or several only when the poll allows it.",
+    "description": "Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "This post has no poll.",
+    "description": "Detail of the HTTP 422 API error when a user votes on a post that has no poll."
   },
   "errors.status.posting_restricted": {
     "defaultMessage": "Your account may not post right now.",
@@ -950,5 +974,9 @@
   "errors.invalid_custom_emoji_detail": {
     "defaultMessage": "{reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
+  },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "You already mute the most domains allowed. Unmute one first.",
+    "description": "API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains."
   }
 }

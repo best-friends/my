@@ -152,6 +152,9 @@ func (f *fakeStatuses) Unbookmark(_ context.Context, a, id string) error {
 }
 func (f *fakeStatuses) Pin(_ context.Context, a, id string) error   { return f.do("pin", a, id) }
 func (f *fakeStatuses) Unpin(_ context.Context, a, id string) error { return f.do("unpin", a, id) }
+func (f *fakeStatuses) VotePoll(_ context.Context, a, id, pollID string, choices []int) ([]content.PollVote, error) {
+	return nil, f.do(fmt.Sprintf("vote:%s:%v", pollID, choices), a, id)
+}
 
 // sampleView is a status of alice with every optional part: a reply, an edit, media, a
 // mention, a tag, and the viewer's relation.

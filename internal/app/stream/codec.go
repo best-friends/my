@@ -22,19 +22,24 @@ var (
 
 // signal is the wire format of a signal on a Bus (ADR-0050 §1):
 // {"v":1,"o":"<process id>","k":"home_entry","e":"<entry id>"} or
-// {"v":1,"o":"<process id>","k":"notifications","a":"<account id>"}.
+// {"v":1,"o":"<process id>","k":"notifications","a":"<account id>"} or
+// {"v":1,"o":"<process id>","k":"announcement","n":"<announcement id>"}.
 type signal struct {
 	Version   int    `json:"v"`
 	Origin    string `json:"o"`
 	Kind      Kind   `json:"k"`
 	AccountID string `json:"a,omitempty"`
 	EntryID   string `json:"e,omitempty"`
+	// AnnouncementID is the "n" of an announcement signal.
+	AnnouncementID string `json:"n,omitempty"`
 }
 
 // encodeSignal encodes e as published by the process origin. It fails for a payload over
 // MaxPayloadSize, which no ID of the server reaches.
 func encodeSignal(origin string, e Event) ([]byte, error) {
-	b, err := json.Marshal(signal{Version: signalVersion, Origin: origin, Kind: e.Kind, AccountID: e.AccountID, EntryID: e.EntryID})
+	b, err := json.Marshal(signal{
+		Version: signalVersion, Origin: origin, Kind: e.Kind, AccountID: e.AccountID, EntryID: e.EntryID, AnnouncementID: e.AnnouncementID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +65,8 @@ func decodeSignal(payload []byte) (origin string, e Event, err error) {
 		return s.Origin, Event{Kind: KindHomeEntry, EntryID: s.EntryID}, nil
 	case s.Kind == KindNotifications && s.AccountID != "":
 		return s.Origin, Event{Kind: KindNotifications, AccountID: s.AccountID}, nil
+	case s.Kind == KindAnnouncement && s.AnnouncementID != "":
+		return s.Origin, Event{Kind: KindAnnouncement, AnnouncementID: s.AnnouncementID}, nil
 	}
 	return "", Event{}, fmt.Errorf("%w: kind %q", errMalformedSignal, s.Kind)
 }

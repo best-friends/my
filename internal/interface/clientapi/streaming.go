@@ -69,8 +69,9 @@ func (s *Server) registerStreaming(r Router) {
 }
 
 // serveStreaming serves GET /api/v1/streaming: a Server-Sent Events stream of the viewer's new
-// home timeline entries (event update, data a Status) and notifications (event notification,
-// data a Notification). The stream subscribes to the signals of stream.Subscriber and reads
+// home timeline entries (event update, data a Status), notifications (event notification,
+// data a Notification), and announcements (event announcement, data an Announcement, and event
+// announcement_removed, data its ID). The stream subscribes to the signals of stream.Subscriber and reads
 // each change back through the use cases, as the viewer would see it in the home timeline or
 // the notification list. It ends when the client goes, the subscription ends (the broker shuts
 // down, the client fell behind, or the broker may have missed signals), a write times out, or
@@ -193,8 +194,31 @@ func (st *streamState) handle(ctx context.Context, e stream.Event) error {
 		return st.homeEntry(ctx, e.EntryID)
 	case stream.KindNotifications:
 		return st.notifications(ctx)
+	case stream.KindAnnouncement:
+		return st.announcement(ctx, e.AnnouncementID)
 	}
 	return nil
+}
+
+// announcementRemoved is the data of an announcement_removed event.
+type announcementRemoved struct {
+	ID string `json:"id"`
+}
+
+// announcement sends the announcement id as the viewer sees it (event announcement), or, when
+// the users no longer see it, its removal (event announcement_removed).
+func (st *streamState) announcement(ctx context.Context, id string) error {
+	if st.s.o.Announcements == nil {
+		return nil
+	}
+	a, ok, err := st.s.o.Announcements.ShownAnnouncement(ctx, st.viewer.UserID, id)
+	if err != nil {
+		return fmt.Errorf("announcement %s: %w", id, err)
+	}
+	if !ok {
+		return st.event("announcement_removed", announcementRemoved{ID: id})
+	}
+	return st.event("announcement", newAnnouncement(a))
 }
 
 // homeEntry sends the entry id when the viewer's home timeline lists it and the stream has not

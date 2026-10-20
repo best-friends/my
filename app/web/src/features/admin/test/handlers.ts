@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the server administration feature (web-client.md §7): the dead jobs, the settings, the rules, the
-// server's texts, the custom emoji, the webhooks and the relays, none by default. The default viewer has no permissions, so the screens' tests start with
+// server's texts, the custom emoji, the webhooks, the announcements, and the relays, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";
@@ -77,6 +77,22 @@ export function relayFixture(id: string, overrides: Partial<Schemas["AdminRelay"
   };
 }
 
+/** An announcement as the admin API answers it, written at 2026-10-21T00:00:00Z as a draft, with `overrides`. */
+export function adminAnnouncementFixture(id: string, overrides: Partial<Schemas["AdminAnnouncement"]> = {}): Schemas["AdminAnnouncement"] {
+  return {
+    id,
+    text: "Maintenance on **Sunday**.",
+    content: "<p>Maintenance on <strong>Sunday</strong>.</p>",
+    state: "draft",
+    created_at: "2026-10-21T00:00:00Z",
+    updated_at: "2026-10-21T00:00:00Z",
+    ...overrides,
+  };
+}
+
+/** The ID the default handlers give a new announcement. */
+const createdAnnouncementId = "0199f0e0-0000-7000-8000-00000000a665";
+
 /** The secret the default handlers give a new webhook and a rotation. */
 export const webhookSecret = "whsec_c2VjcmV0c2VjcmV0c2VjcmV0c2VjcmV0c2VjcmU=";
 
@@ -99,6 +115,7 @@ const settingDefaults: readonly Omit<Schemas["AdminSetting"], "value" | "stored"
   { key: "ai_usage", kind: "enum", default: "deny", choices: ["allow", "deny_training", "deny"] },
   { key: "indexable_default", kind: "bool", default: "false" },
   { key: "security_contact", kind: "uri", default: "" },
+  { key: "require_media_description", kind: "bool", default: "false" },
 ];
 
 /** The instance settings as GET /admin/settings answers them, with the `stored` values set and the others at their defaults. */
@@ -267,4 +284,28 @@ export const handlers = [
     return withViewer(request, () => HttpResponse.json(left));
   }),
   http.delete(`${apiBase}/admin/relays/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationIds listAdminAnnouncements, createAdminAnnouncement, getAdminAnnouncement, updateAdminAnnouncement,
+  // publishAdminAnnouncement, withdrawAdminAnnouncement: no announcements; a new or changed one is answered as sent.
+  http.get(`${apiBase}/admin/announcements`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminAnnouncementList"])),
+  ),
+  http.post(`${apiBase}/admin/announcements`, async ({ request }) => {
+    const { publish, ...body } = (await request.clone().json()) as Schemas["AdminAnnouncementCreateRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(adminAnnouncementFixture(createdAnnouncementId, { ...body, state: publish ? "published" : "draft" })),
+    );
+  }),
+  http.get(`${apiBase}/admin/announcements/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(adminAnnouncementFixture(String(params["id"]))))),
+  http.put(`${apiBase}/admin/announcements/:id`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["AdminAnnouncementInput"];
+    return withViewer(request, () => HttpResponse.json(adminAnnouncementFixture(String(params["id"]), body)));
+  }),
+  http.post(`${apiBase}/admin/announcements/:id/publish`, ({ request, params }) =>
+    withViewer(request, () =>
+      HttpResponse.json(adminAnnouncementFixture(String(params["id"]), { state: "published", published_at: "2026-10-21T00:00:00Z" })),
+    ),
+  ),
+  http.post(`${apiBase}/admin/announcements/:id/withdraw`, ({ request, params }) =>
+    withViewer(request, () => HttpResponse.json(adminAnnouncementFixture(String(params["id"]), { state: "withdrawn" }))),
+  ),
 ];

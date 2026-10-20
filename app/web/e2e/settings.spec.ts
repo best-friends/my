@@ -77,7 +77,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     switch (`${request.method()} ${path}`) {
       case "GET /instance":
-        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
+        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
       case "GET /accounts/verify_credentials":
         return json(route, { ...viewer, permissions });
       case "GET /preferences":
@@ -92,6 +92,14 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
         return json(route, { accounts: [bob] });
       case "GET /mutes":
         return json(route, { mutes: [{ account: bob, notifications: true }] });
+      case "GET /domain_mutes":
+        // A long domain, and one in IDNA A-labels that the page shows with its U-labels too.
+        return json(route, {
+          domain_mutes: [
+            { domain: "a-very-long-subdomain-name-for-the-narrowest-screens.spam.example", created_at: "2026-10-17T10:00:00Z" },
+            { domain: "xn--r8jz45g.xn--zckzah", created_at: "2026-10-18T10:00:00Z" },
+          ],
+        });
       case "GET /follow_requests":
         return json(route, { accounts: [bob] });
       case "GET /exports":
@@ -181,6 +189,7 @@ const pages = [
   "/settings/follow-requests",
   "/settings/blocks",
   "/settings/mutes",
+  "/settings/domain-mutes",
   "/settings/two-factor",
   "/settings/auto-delete",
   "/settings/account",

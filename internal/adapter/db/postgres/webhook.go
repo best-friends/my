@@ -374,3 +374,15 @@ func derefInt(n *int64) int64 {
 	}
 	return *n
 }
+
+// ExistingEndpointIDs implements appwebhook.Repository.
+func (r *WebhookRepository) ExistingEndpointIDs(ctx context.Context, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	out, err := r.db.reader().ListExistingWebhookEndpointIDs(ctx, ids)
+	if err != nil {
+		return nil, wrap(err, "list existing webhook endpoints")
+	}
+	return out, nil
+}

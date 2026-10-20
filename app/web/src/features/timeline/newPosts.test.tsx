@@ -191,6 +191,7 @@ describe("the event stream", () => {
       http.get(`${apiBase}/accounts/verify_credentials`, () => HttpResponse.json(viewerFixture)),
       http.get(`${apiBase}/notifications/marker`, () => HttpResponse.json({ unread_count: 0 })),
       http.get(`${apiBase}/preferences`, () => HttpResponse.json(preferencesFixture)),
+      http.get(`${apiBase}/announcements`, () => HttpResponse.json({ items: [] })),
       http.get(`${apiBase}/streaming`, ({ request }) => {
         const token = request.headers.get("Authorization");
         tokens.push(token ?? "");

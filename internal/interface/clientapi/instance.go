@@ -70,7 +70,7 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 		}
 	}
 	out.Registrations = InstanceRegistrations{Mode: InstanceRegistrationsMode(settings.RegistrationMode())}
-	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength()}
+	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength(), RequireMediaDescription: settings.RequireMediaDescription()}
 	out.Timelines = InstanceTimelines{Local: settings.LocalTimelineEnabled(), Federated: settings.FederatedTimelineEnabled()}
 	out.SendsEmail = s.o.SendsEmail
 	// What the instance states to search engines and AI crawlers (FR-725, ADR-0057).

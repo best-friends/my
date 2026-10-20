@@ -70,7 +70,7 @@ async function administratorServer(page: Page) {
         version: "0.0.0",
         source_url: "https://github.com/best-friends/my",
         registrations: { mode: "approval" },
-        limits: { max_post_characters: 500 },
+        limits: { max_post_characters: 500, require_media_description: false },
         timelines: { local: true, federated: true },
         rules: [],
       });
