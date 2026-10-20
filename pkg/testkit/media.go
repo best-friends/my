@@ -40,6 +40,12 @@ func (FakeMediaProcessor) Inspect(ctx context.Context, data []byte, limits media
 	return media.Probe{Format: f, Width: 4, Height: 3, Frames: 1}, nil
 }
 
+// Preview implements media.Processor: the small still variant of Process.
+func (p FakeMediaProcessor) Preview(ctx context.Context, data []byte, limits media.Limits, sizes media.Sizes, req media.Request) (media.Variant, error) {
+	out, err := p.Process(ctx, data, limits, sizes, req)
+	return out.Still.Small, err
+}
+
 // Process implements media.Processor. A GIF also gets moving variants, as an animation would.
 func (p FakeMediaProcessor) Process(ctx context.Context, data []byte, limits media.Limits, _ media.Sizes, req media.Request) (media.Output, error) {
 	probe, err := p.Inspect(ctx, data, limits)

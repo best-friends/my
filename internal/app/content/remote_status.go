@@ -352,7 +352,7 @@ func (s *Service) remoteEmojis(ctx context.Context, tx uow.Tx, in RemoteStatusIn
 			continue
 		}
 		m, err := s.d.RemoteMedia.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
-			OwnerAccountID: in.AuthorAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage,
+			OwnerAccountID: in.AuthorAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeEmoji,
 		})
 		if err != nil {
 			return nil, err
@@ -404,7 +404,8 @@ func (s *Service) remoteAttachments(ctx context.Context, tx uow.Tx, in RemoteSta
 		}
 		m, err := s.d.RemoteMedia.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
 			OwnerAccountID: in.AuthorAccountID, RemoteURL: a.URL, DeclaredContentType: a.ContentType, DeclaredMediaType: content.DeclaredMediaType(a.Type, a.ContentType),
-			Width: max(a.Width, 0), Height: max(a.Height, 0), Blurhash: a.Blurhash, Focus: focus, Description: description,
+			Purpose: content.PurposeAttachment,
+			Width:   max(a.Width, 0), Height: max(a.Height, 0), Blurhash: a.Blurhash, Focus: focus, Description: description,
 		})
 		if err != nil {
 			return nil, err

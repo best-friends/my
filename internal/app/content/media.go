@@ -515,15 +515,24 @@ func (s *MediaService) image(variants []content.MediaVariant) (Image, bool) {
 	return img, true
 }
 
-// RemoteImage returns the image of a remote media file: its media proxy URL in every size, with
-// the declared dimensions on the large and medium ones (federation.md §9); false when no proxy
-// is configured.
+// RemoteImage returns the image of a remote media file through the media proxy (federation.md
+// §9): the file itself as the medium and large variants, with the declared dimensions, and, for
+// a file that may be an image, the proxy's small still variant as the small one (ADR-0054 §7);
+// false when no proxy is configured.
 func (s *MediaService) RemoteImage(m content.RemoteMedia) (Image, bool) {
 	if s.d.Proxy == nil {
 		return Image{}, false
 	}
 	full := ImageVariant{URL: s.d.Proxy.URL(m.MediaID, ProxyFull), Width: m.Width, Height: m.Height}
-	return Image{Still: ImageVariants{Small: full, Medium: full, Large: full}}, true
+	small := full
+	switch m.DeclaredMediaType {
+	case content.MediaTypeVideo, content.MediaTypeGIFV, content.MediaTypeAudio:
+	default:
+		if s.d.Proxy.d.Processor != nil {
+			small = ImageVariant{URL: s.d.Proxy.URL(m.MediaID, ProxySmall)}
+		}
+	}
+	return Image{Still: ImageVariants{Small: small, Medium: full, Large: full}}, true
 }
 
 // ErrNotOwner reports a change to a media file of another account.

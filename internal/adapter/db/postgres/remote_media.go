@@ -32,7 +32,7 @@ func (r *MediaRepository) InsertRemoteMedia(ctx context.Context, tx uow.Tx, m co
 	}
 	n, err := q.InsertRemoteMedia(ctx, postgresgen.InsertRemoteMediaParams{
 		MediaID: m.MediaID, OwnerAccountID: m.OwnerAccountID, RemoteUrl: m.RemoteURL,
-		DeclaredContentType: toNullString(m.DeclaredContentType), DeclaredMediaType: string(m.DeclaredMediaType),
+		DeclaredContentType: toNullString(m.DeclaredContentType), DeclaredMediaType: string(m.DeclaredMediaType), Purpose: string(m.Purpose),
 		Width: width, Height: height, Blurhash: toNullString(m.Blurhash),
 		FocusX: fx, FocusY: fy, Description: toNullString(m.Description),
 	})
@@ -80,7 +80,7 @@ func (r *MediaRepository) ListRemoteMedia(ctx context.Context, ids []string) ([]
 func remoteMedia(row postgresgen.RemoteMedium) content.RemoteMedia {
 	m := content.RemoteMedia{
 		MediaID: row.MediaID, OwnerAccountID: row.OwnerAccountID, RemoteURL: row.RemoteUrl,
-		DeclaredContentType: fromNullString(row.DeclaredContentType), DeclaredMediaType: content.MediaType(row.DeclaredMediaType),
+		DeclaredContentType: fromNullString(row.DeclaredContentType), DeclaredMediaType: content.MediaType(row.DeclaredMediaType), Purpose: content.MediaPurpose(row.Purpose),
 		Width: fromNullInt32(row.Width), Height: fromNullInt32(row.Height), Blurhash: fromNullString(row.Blurhash),
 		Description: fromNullString(row.Description),
 	}

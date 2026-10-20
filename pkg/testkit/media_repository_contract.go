@@ -65,6 +65,7 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"ErasesDeletedAccountsUploads", mediaErasesDeletedAccounts},
 		{"RecordsRemoteMediaOnce", mediaRecordsRemoteMedia},
 		{"CachesRemoteMediaUnderThePolicy", mediaCachesRemoteMedia},
+		{"CachesTheSmallVariantOfRemoteMedia", mediaCachesSmallRemoteVariants},
 		{"CleansUpTheRemoteMediaCache", mediaCleansUpRemoteMediaCache},
 	}
 	for _, tc := range cases {

@@ -41,7 +41,7 @@ type Deps struct {
 	// RecordRemoteImage records the avatar or header image of a remote actor at url inside tx
 	// and returns its media file ID (the content module); nil keeps remote profiles without
 	// images.
-	RecordRemoteImage func(ctx context.Context, tx uow.Tx, accountID, url string) (string, error)
+	RecordRemoteImage func(ctx context.Context, tx uow.Tx, accountID, url string, prop account.ProfileProperty) (string, error)
 }
 
 // ErrUnusableImage reports an avatar or header that is not a processed image of the account.

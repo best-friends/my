@@ -629,6 +629,7 @@ type RemoteMedium struct {
 	RemoteUrl           string
 	DeclaredContentType *string
 	DeclaredMediaType   string
+	Purpose             string
 	Width               *int32
 	Height              *int32
 	Blurhash            *string

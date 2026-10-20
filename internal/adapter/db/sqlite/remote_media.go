@@ -24,7 +24,7 @@ func (r *MediaRepository) InsertRemoteMedia(ctx context.Context, tx uow.Tx, m co
 	}
 	n, err := q.InsertRemoteMedia(ctx, sqlitegen.InsertRemoteMediaParams{
 		MediaID: m.MediaID, OwnerAccountID: m.OwnerAccountID, RemoteUrl: m.RemoteURL,
-		DeclaredContentType: toNullString(m.DeclaredContentType), DeclaredMediaType: string(m.DeclaredMediaType),
+		DeclaredContentType: toNullString(m.DeclaredContentType), DeclaredMediaType: string(m.DeclaredMediaType), Purpose: string(m.Purpose),
 		Width: toNullInt(m.Width), Height: toNullInt(m.Height), Blurhash: toNullString(m.Blurhash),
 		FocusX: fx, FocusY: fy, Description: toNullString(m.Description),
 	})
@@ -76,7 +76,7 @@ func (r *MediaRepository) ListRemoteMedia(ctx context.Context, ids []string) ([]
 func remoteMedia(row sqlitegen.RemoteMedium) content.RemoteMedia {
 	m := content.RemoteMedia{
 		MediaID: row.MediaID, OwnerAccountID: row.OwnerAccountID, RemoteURL: row.RemoteUrl,
-		DeclaredContentType: row.DeclaredContentType.String, DeclaredMediaType: content.MediaType(row.DeclaredMediaType),
+		DeclaredContentType: row.DeclaredContentType.String, DeclaredMediaType: content.MediaType(row.DeclaredMediaType), Purpose: content.MediaPurpose(row.Purpose),
 		Width: int(row.Width.Int64), Height: int(row.Height.Int64), Blurhash: row.Blurhash.String,
 		Description: row.Description.String,
 	}

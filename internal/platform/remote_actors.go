@@ -13,6 +13,7 @@ import (
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
+	domainaccount "github.com/best-friends/my/internal/domain/account"
 	domaincontent "github.com/best-friends/my/internal/domain/content"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -28,11 +29,15 @@ type federationRepository interface {
 // newHTMLSanitizer returns the sanitizer of remote HTML (ADR-0019 §2).
 func newHTMLSanitizer() kernel.HTMLSanitizer { return htmlsanitizer.New() }
 
-// recordRemoteImage records the avatar or header of a remote actor as a remote media file of the
-// actor, which the media proxy serves (federation.md §9).
-func (a *App) recordRemoteImage(ctx context.Context, tx uow.Tx, accountID, url string) (string, error) {
+// recordRemoteImage records the avatar or header (prop) of a remote actor as a remote media file
+// of the actor, which the media proxy serves (federation.md §9).
+func (a *App) recordRemoteImage(ctx context.Context, tx uow.Tx, accountID, url string, prop domainaccount.ProfileProperty) (string, error) {
+	purpose := domaincontent.PurposeAvatar
+	if prop == domainaccount.PropertyHeader {
+		purpose = domaincontent.PurposeHeader
+	}
 	m, err := a.Media.RecordRemoteMedia(ctx, tx, content.RemoteMediaInput{
-		OwnerAccountID: accountID, RemoteURL: url, DeclaredMediaType: domaincontent.MediaTypeImage,
+		OwnerAccountID: accountID, RemoteURL: url, DeclaredMediaType: domaincontent.MediaTypeImage, Purpose: purpose,
 	})
 	return m.MediaID, err
 }

@@ -300,6 +300,10 @@ type Processor interface {
 	// in sizes. The same input and request give the same output, so that processing is safe
 	// to repeat.
 	Process(ctx context.Context, data []byte, limits Limits, sizes Sizes, req Request) (Output, error)
+	// Preview inspects data as Inspect does and makes only the variant that Process makes as
+	// Output.Still.Small, decoding no more than the first frame. The media proxy makes it of
+	// remote files (ADR-0054 §7).
+	Preview(ctx context.Context, data []byte, limits Limits, sizes Sizes, req Request) (Variant, error)
 }
 
 // Rejected reports whether err means the content is not acceptable (as opposed to a failure

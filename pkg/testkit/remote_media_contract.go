@@ -13,13 +13,14 @@ import (
 )
 
 // mediaRecordsRemoteMedia checks RecordRemoteMedia and FindRemoteMedia: a remote file is
-// recorded once per owner and URL with every declared value, an upload is not a remote file,
+// recorded once per owner and URL with every declared value and its purpose (an attachment
+// unless told otherwise), an upload is not a remote file,
 // and an unknown ID is not found.
 func mediaRecordsRemoteMedia(t *testing.T, e *mediaEnv) {
 	ctx := t.Context()
 	in := appcontent.RemoteMediaInput{
 		OwnerAccountID: mediaOwner, RemoteURL: "https://remote.example/files/a.png",
-		DeclaredContentType: "image/png", DeclaredMediaType: content.MediaTypeImage,
+		DeclaredContentType: "image/png", DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeHeader,
 		Width: 640, Height: 480, Blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
 		Focus: &content.MediaFocus{X: -0.5, Y: 0.25}, Description: "a cat",
 	}
@@ -37,7 +38,7 @@ func mediaRecordsRemoteMedia(t *testing.T, e *mediaEnv) {
 		return m
 	}
 	first := record(in)
-	if first.MediaID == "" || first.Focus == nil || first.Focus.MediaID != first.MediaID {
+	if first.MediaID == "" || first.Focus == nil || first.Focus.MediaID != first.MediaID || first.Purpose != content.PurposeHeader {
 		t.Fatalf("RecordRemoteMedia = %+v", first)
 	}
 	found, err := e.h.Media.FindRemoteMedia(ctx, first.MediaID)
@@ -62,7 +63,7 @@ func mediaRecordsRemoteMedia(t *testing.T, e *mediaEnv) {
 	got, err := e.h.Media.FindRemoteMedia(ctx, bare.MediaID)
 	want := content.RemoteMedia{
 		MediaID: bare.MediaID, OwnerAccountID: mediaOwner, RemoteURL: "https://remote.example/files/b",
-		DeclaredMediaType: content.MediaTypeUnknown,
+		DeclaredMediaType: content.MediaTypeUnknown, Purpose: content.PurposeAttachment,
 	}
 	if err != nil || !reflect.DeepEqual(got, want) {
 		t.Errorf("FindRemoteMedia(undeclared) = %+v, %v; want %+v", got, err, want)

@@ -215,10 +215,10 @@ func (s *Service) reviseRemoteProfile(ctx context.Context, tx uow.Tx, accountID,
 		})
 	}
 	var err error
-	if rev.AvatarMediaID, err = s.remoteImage(ctx, tx, accountID, in.AvatarURL); err != nil {
+	if rev.AvatarMediaID, err = s.remoteImage(ctx, tx, accountID, in.AvatarURL, account.PropertyAvatar); err != nil {
 		return err
 	}
-	if rev.HeaderMediaID, err = s.remoteImage(ctx, tx, accountID, in.HeaderURL); err != nil {
+	if rev.HeaderMediaID, err = s.remoteImage(ctx, tx, accountID, in.HeaderURL, account.PropertyHeader); err != nil {
 		return err
 	}
 	cur, err := s.d.Repository.CurrentProfile(ctx, tx, accountID)
@@ -244,11 +244,11 @@ func sanitizeOptional(sanitize func(string) string, html string) string {
 	return sanitize(html)
 }
 
-func (s *Service) remoteImage(ctx context.Context, tx uow.Tx, accountID, url string) (string, error) {
+func (s *Service) remoteImage(ctx context.Context, tx uow.Tx, accountID, url string, prop account.ProfileProperty) (string, error) {
 	if url == "" || s.d.RecordRemoteImage == nil {
 		return "", nil
 	}
-	id, err := s.d.RecordRemoteImage(ctx, tx, accountID, url)
+	id, err := s.d.RecordRemoteImage(ctx, tx, accountID, url, prop)
 	if err != nil {
 		return "", fmt.Errorf("account: record remote image %s: %w", url, err)
 	}

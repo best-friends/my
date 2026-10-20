@@ -5,6 +5,7 @@ package native
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"image/gif"
@@ -56,22 +57,35 @@ func (p *Processor) Inspect(ctx context.Context, data []byte, limits media.Limit
 	return inspect(data, limits.WithDefaults())
 }
 
-// Process implements media.Processor. It waits for a free slot of Options.Concurrency, then
-// decodes in a goroutine; when ctx ends first, it returns ctx's error at once and the decode
-// finishes in the background, still holding its slot.
+// Process implements media.Processor.
 func (p *Processor) Process(ctx context.Context, data []byte, limits media.Limits, sizes media.Sizes, req media.Request) (media.Output, error) {
-	limits, sizes = limits.WithDefaults(), sizes.WithDefaults()
-	probe, err := p.Inspect(ctx, data, limits)
+	sizes = sizes.WithDefaults()
+	return run(ctx, p, data, limits, func(probe media.Probe) (media.Output, error) { return process(data, probe, sizes, req) })
+}
+
+// Preview implements media.Processor: it decodes only the first frame, and scales it only to
+// the small box.
+func (p *Processor) Preview(ctx context.Context, data []byte, limits media.Limits, sizes media.Sizes, req media.Request) (media.Variant, error) {
+	sizes = sizes.WithDefaults()
+	return run(ctx, p, data, limits, func(probe media.Probe) (media.Variant, error) { return preview(data, probe, sizes, req) })
+}
+
+// run inspects data, then waits for a free slot of Options.Concurrency and calls fn in a
+// goroutine; when ctx ends first, it returns ctx's error at once and fn finishes in the
+// background, still holding its slot. A panic of fn is ErrCorrupt.
+func run[T any](ctx context.Context, p *Processor, data []byte, limits media.Limits, fn func(media.Probe) (T, error)) (T, error) {
+	var zero T
+	probe, err := p.Inspect(ctx, data, limits.WithDefaults())
 	if err != nil {
-		return media.Output{}, err
+		return zero, err
 	}
 	select {
 	case p.sem <- struct{}{}:
 	case <-ctx.Done():
-		return media.Output{}, ctx.Err()
+		return zero, ctx.Err()
 	}
 	type result struct {
-		out media.Output
+		out T
 		err error
 	}
 	done := make(chan result, 1)
@@ -82,15 +96,64 @@ func (p *Processor) Process(ctx context.Context, data []byte, limits media.Limit
 				done <- result{err: fmt.Errorf("%w: decoder panicked: %v", media.ErrCorrupt, r)}
 			}
 		}()
-		out, err := process(data, probe, sizes, req)
+		out, err := fn(probe)
 		done <- result{out: out, err: err}
 	}()
 	select {
 	case r := <-done:
 		return r.out, r.err
 	case <-ctx.Done():
-		return media.Output{}, ctx.Err()
+		return zero, ctx.Err()
 	}
+}
+
+// preview makes the small still variant of data: of an animation, its first frame.
+func preview(data []byte, probe media.Probe, sizes media.Sizes, req media.Request) (media.Variant, error) {
+	var (
+		img *image.NRGBA
+		err error
+	)
+	switch {
+	case probe.Format == media.FormatGIF:
+		img, err = firstGIFFrame(data)
+	case probe.Format == media.FormatWebP && webpAnimated(data):
+		var src animationSource
+		if src, err = webpSource(data); err == nil {
+			img, err = firstFrame(src)
+		}
+	default:
+		var still image.Image
+		if still, err = decodeStill(data, probe.Format); err == nil {
+			img = toNRGBA(still)
+			if probe.Format == media.FormatJPEG {
+				img = orient(img, exifOrientation(data))
+			}
+		}
+	}
+	if err != nil {
+		return media.Variant{}, err
+	}
+	t := plan(img.Rect.Dx(), img.Rect.Dy(), sizes.For(req.Purpose).Small, req.FocusX, req.FocusY)
+	return encodeWebP(render(img, t, draw.CatmullRom))
+}
+
+// firstGIFFrame decodes only the first frame of a GIF and draws it on the logical screen.
+func firstGIFFrame(data []byte) (*image.NRGBA, error) {
+	cfg, err := gif.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", media.ErrCorrupt, err)
+	}
+	frame, err := gif.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", media.ErrCorrupt, err)
+	}
+	w, h := cfg.Width, cfg.Height
+	if w <= 0 || h <= 0 {
+		w, h = frame.Bounds().Max.X, frame.Bounds().Max.Y
+	}
+	img := image.NewNRGBA(image.Rect(0, 0, w, h))
+	draw.Draw(img, frame.Bounds(), frame, frame.Bounds().Min, draw.Over)
+	return img, nil
 }
 
 func process(data []byte, probe media.Probe, sizes media.Sizes, req media.Request) (media.Output, error) {
@@ -129,20 +192,30 @@ func process(data []byte, probe media.Probe, sizes media.Sizes, req media.Reques
 
 // firstFrameOutput makes the still variants of an animation of one frame.
 func firstFrameOutput(src animationSource, boxes media.Boxes, req media.Request) (media.Output, error) {
-	var first *image.NRGBA
-	err := src.each(func(f frame) error {
-		if first == nil {
-			first = cloneNRGBA(f.canvas)
-		}
-		return nil
-	})
+	first, err := firstFrame(src)
 	if err != nil {
 		return media.Output{}, err
 	}
-	if first == nil {
-		return media.Output{}, fmt.Errorf("%w: no frames", media.ErrCorrupt)
-	}
 	return stillOutput(first, boxes, req)
+}
+
+// errFirstFrame stops an animation after its first frame.
+var errFirstFrame = errors.New("media/native: first frame")
+
+// firstFrame returns a copy of the first composited frame of src, without decoding the others.
+func firstFrame(src animationSource) (*image.NRGBA, error) {
+	var first *image.NRGBA
+	err := src.each(func(f frame) error {
+		first = cloneNRGBA(f.canvas)
+		return errFirstFrame
+	})
+	if err != nil && !errors.Is(err, errFirstFrame) {
+		return nil, err
+	}
+	if first == nil {
+		return nil, fmt.Errorf("%w: no frames", media.ErrCorrupt)
+	}
+	return first, nil
 }
 
 // stillOutput makes the variants of a still image.

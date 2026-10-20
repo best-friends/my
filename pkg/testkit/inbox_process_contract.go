@@ -900,7 +900,7 @@ func wireOwnActor(t *testing.T, e *inboxProcessEnv) {
 		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Accounts, Clock: e.clock, IDs: ids,
 		Sealer: kernel.NewSealer(NewKeyManager("inbox")), Host: contractHost, GenerateKey: cachedKey,
 		Sanitizer:         remoteSanitizer{},
-		RecordRemoteImage: func(context.Context, uow.Tx, string, string) (string, error) { return "", nil },
+		RecordRemoteImage: func(context.Context, uow.Tx, string, string, account.ProfileProperty) (string, error) { return "", nil },
 	})
 	net := &remoteNet{routes: map[string]remoteResponse{}}
 	kv := NewKeyValueStore(e.clock)
