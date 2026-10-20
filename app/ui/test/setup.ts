@@ -3,6 +3,7 @@
 // matchers and DOM cleanup. The kit makes no requests, so there is no MSW server here.
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
+import { destroyAnnouncer } from "react-aria/private/live-announcer/LiveAnnouncer";
 import { afterEach } from "vitest";
 
 // findBy and waitFor give up after this long, as in app/web/src/test/setup.ts (web-client.md T7): the wait
@@ -18,4 +19,7 @@ Object.defineProperty(HTMLCanvasElement.prototype, "getContext", { configurable:
 
 afterEach(() => {
   cleanup();
+  // React Aria's live announcer delays an announcement made outside act by a 100 ms timer, which can fire once
+  // jsdom is gone; destroying the announcer makes the timer do nothing (as in app/web/src/test/setup.ts).
+  destroyAnnouncer();
 });
