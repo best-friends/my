@@ -389,7 +389,7 @@ flowchart LR
 | `account_profile_revisions` | イベント | `id`, `account_id`, `seq`, `display_name`, `note_html`, `locked`, `bot`, `discoverable`, `indexable`（`bool`）, `avatar_media_id` / `header_media_id`（NULL 可）, `revised_at` | 一意 `(account_id, seq)` |
 | `account_profile_revision_sources` | イベント（部分型） | `revision_id`（PK）, `note_source` | ローカルのみ。入力されたままの自己紹介 |
 | `account_profile_fields` | イベント（版の子） | `revision_id`, `position`（`int`）, `name`, `value_html` | PK `(revision_id, position)`（FR-006） |
-| `account_profile_revision_emojis` | イベント（版の子） | `revision_id`, `emoji_id` | PK `(revision_id, emoji_id)`。表示名・自己紹介・補足情報のカスタム絵文字（ADR-0051）。`emoji_id` は `content` の `custom_emojis` の行で、`content` の公開 API で得る |
+| `account_profile_revision_emojis` | イベント（版の子） | `revision_id`, `emoji_id` | PK `(revision_id, emoji_id)`。インデックス `(emoji_id)`（リモートの絵文字の消去）。表示名・自己紹介・補足情報のカスタム絵文字（ADR-0051）。`emoji_id` は `content` の `custom_emojis` の行で、`content` の公開 API で得る |
 | `account_profile_field_sources` | イベント（部分型） | `revision_id`, `position`, `value_source` | PK `(revision_id, position)`。ローカルのみ。入力されたままの補足情報の値 |
 | `account_profile_field_verifications` | イベント | `revision_id`, `position`, `verified_at` | PK `(revision_id, position)`。`rel="me"` リンクの検証結果 |
 | `remote_profile_revisions` | イベント（部分型） | `revision_id`（PK）, `snapshot_id`, `html_policy_version`（`int`） | リモートのみ。版を作った取得と、`note_html` / `value_html` をサニタイズしたポリシーの版（ADR-0019 §2） |
@@ -623,7 +623,7 @@ flowchart LR
 | `status_revision_attachments` | イベント（版の子） | `revision_id`, `position`（`int`、0〜3）, `media_id`, `description`（`text`、NULL 可） | PK `(revision_id, position)`。代替テキストは版ごと（編集で直せる）。ローカルの投稿・編集が添付できるのは、投稿者の `uploaded_media` で最新の `media_processing_results` が `ready` のものだけ（content のユースケースが検査する） |
 | `status_revision_mentions` | イベント（版の子） | `revision_id`, `account_id` | PK `(revision_id, account_id)` |
 | `status_revision_tags` | イベント（版の子） | `revision_id`, `tag_id` | PK `(revision_id, tag_id)` |
-| `status_revision_emojis` | イベント（版の子） | `revision_id`, `emoji_id` | PK `(revision_id, emoji_id)` |
+| `status_revision_emojis` | イベント（版の子） | `revision_id`, `emoji_id` | PK `(revision_id, emoji_id)`。インデックス `(emoji_id)`（リモートの絵文字の消去） |
 | `remote_status_revisions` | イベント（部分型） | `revision_id`（PK）, `activity_uri`（NULL 可。版を運んだ `Create` / `Update`。取得で作った版は NULL）, `html_policy_version`（`int`） | リモートのみ。本文をサニタイズしたポリシーの版（ADR-0019 §2）。版の `revised_at` は AP の `updated`（無ければ `published`） |
 | `status_deletions` | イベント | `status_id`（PK）, `uri`, `author_account_id`, `origin`（`enum(author, moderation, remote, account_deletion, retention)`）, `moderation_action_id`（NULL 可）, `deleted_at` | 部分一意 `(uri) WHERE origin <> 'retention'`、インデックス `(uri)`。tombstone を兼ねる（遅れて届いた `Create` / `Update` で復活させない。GET には `410 Gone`） |
 
@@ -752,7 +752,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `reactions` | リソース | `id`, `account_id`, `status_id`, `emoji_key`（Unicode 絵文字なら fully-qualified の形の絵文字、カスタム絵文字なら `custom_emojis.id`）, `custom_emoji_id`（NULL 可。Unicode 絵文字なら NULL）, `uri`（`Like` / `EmojiReact` の IRI）, `created_at` | 一意 `(account_id, status_id, emoji_key)`, `(uri)`。インデックス `(status_id, emoji_key, id)`（絵文字で絞った一覧）, `(status_id, id)`（一覧）。CHECK `custom_emoji_id IS NULL OR custom_emoji_id = emoji_key` |
+| `reactions` | リソース | `id`, `account_id`, `status_id`, `emoji_key`（Unicode 絵文字なら fully-qualified の形の絵文字、カスタム絵文字なら `custom_emojis.id`）, `custom_emoji_id`（NULL 可。Unicode 絵文字なら NULL）, `uri`（`Like` / `EmojiReact` の IRI）, `created_at` | 一意 `(account_id, status_id, emoji_key)`, `(uri)`。インデックス `(status_id, emoji_key, id)`（絵文字で絞った一覧）, `(status_id, id)`（一覧）, `(custom_emoji_id)`（リモートの絵文字の消去）。CHECK `custom_emoji_id IS NULL OR custom_emoji_id = emoji_key` |
 | `status_reaction_counts` | 投影 | `status_id`, `emoji_key`, `custom_emoji_id`（NULL 可）, `count`（`bigint`、1 以上） | PK `(status_id, emoji_key)`。インデックス `(status_id, count DESC, emoji_key)`（多い順の上位 20） |
 
 - 絵文字リアクション（FR-116、ADR-0052）は、お気に入りとは別の資源です。1 人が 1 投稿に絵文字ごとに 1 つ付けられ、取り消すと行を消して `content.unreacted` を発行します（取り消した後の付け直しは新しい行）。
@@ -814,6 +814,11 @@ flowchart LR
   `:shortcode:`（前後が英数字と `:` でないもの）から有効なローカルの絵文字だけを版の `status_revision_emojis` / `account_profile_revision_emojis` に記録します。
   無効にした絵文字は表示・連合・ピッカーから外れ、削除は `custom_emojis`・`custom_emoji_images`・設定・別名の行を同じトランザクションで消します（過去の版の参照は残し、読み取りで飛ばします）。
   絵文字の画像のアップロードは、版が添付していなくても未使用のアップロードの掃除と、アカウントの消去で消しません。削除した絵文字の画像は未使用のアップロードになり、掃除が Blob ごと消します。
+- リモートの絵文字の消去（ADR-0051 §1、FR-803）: 1 日ごとのジョブ `content.purge_remote_emojis` が、どの投稿の版（`status_revision_emojis`）・プロフィールの版（`account_profile_revision_emojis`、`account` の公開 API `IsEmojiReferenced`）・
+  リアクション（`reactions.custom_emoji_id`）からも参照されないリモートの絵文字を消します。無効にしたかどうかは問いません。保持期間（下の「リモート投稿の保持期間」）とプロフィールの整理で版が消えた後に絵文字を残さないためです。
+  絵文字ごとに短いトランザクションで、`custom_emojis`・`custom_emoji_images`・設定・別名の行と、画像の `remote_media` / `media_files`（ほかの絵文字の画像・添付・プロフィールのアバターとヘッダーが使っていないもの）を消します。
+  `content` の参照は削除の文の中で調べ直します。実行中に届いた文書が消した絵文字を参照したときは、読み取りが参照を飛ばし、次にその絵文字が届いたときに記録し直します。
+  1 回のジョブは 100 件ずつ 10 回まで読み、続きはカーソル（絵文字の `id`）を持った次のジョブが読みます。リモートのメディアのキャッシュの複製は期限で消えます。
 - リモートの投票で `votersCount` が無いときは、単一選択なら票数の合計を投票者数にし、複数選択なら（誰も投票していなければ 0、それ以外は）NULL にします。
 - タグのモデレーション（使用禁止・トレンド除外）は、v0 では持ちません。必要になったら `tag_moderation_actions` を同じ型で追加します。
 

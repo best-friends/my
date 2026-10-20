@@ -128,6 +128,9 @@ type ProxyDeps struct {
 	// DefaultRemoteMediaCacheMaxSize. The cleanup deletes the least recently accessed copies
 	// over it.
 	MaxCacheSize int64
+	// EmojiMaxBytes bounds the images of remote custom emoji (remote_custom_emoji_max_bytes,
+	// ADR-0051 §2); zero means content.DefaultRemoteCustomEmojiMaxBytes.
+	EmojiMaxBytes int64
 	// Keys are the HMAC-SHA256 keys of the proxy URLs' signatures. The first signs; every one
 	// verifies, so that URLs signed before a key rotation keep working while the old key is kept.
 	Keys [][]byte
@@ -144,7 +147,8 @@ type ProxyDeps struct {
 // instance has recorded, never an arbitrary URL. The file is fetched through the SSRF-guarded
 // HTTPClient, its format is detected from its content (ADR-0019 §8: SVG and anything outside
 // the allow list is refused), and its size is bounded: 16 MiB for images and 100 MiB for video
-// and audio (ADR-0019 §1). A CDN in front of the instance caches the responses for
+// and audio (ADR-0019 §1). The image of a custom emoji is further bounded by
+// remote_custom_emoji_max_bytes and limited to PNG, GIF, and WebP (ADR-0051 §2). A CDN in front of the instance caches the responses for
 // remote_media_cache_ttl. Under the remote_media_policy none the instance keeps no copy; under
 // avatars and all it also keeps one in blob storage for remote_media_cache_ttl
 // (remote_media_cache.go).
@@ -167,6 +171,9 @@ func NewMediaProxy(d ProxyDeps) (*MediaProxy, error) {
 	}
 	if d.MaxCacheSize <= 0 {
 		d.MaxCacheSize = DefaultRemoteMediaCacheMaxSize
+	}
+	if d.EmojiMaxBytes <= 0 {
+		d.EmojiMaxBytes = content.DefaultRemoteCustomEmojiMaxBytes
 	}
 	d.BaseURL = strings.TrimSuffix(d.BaseURL, "/")
 	d.Sizes = d.Sizes.WithDefaults()
@@ -461,7 +468,7 @@ func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia) (*fetched
 	}
 	head = head[:n]
 	contentType, kind := content.SniffRemoteMedia(head)
-	if contentType == "" {
+	if contentType == "" || isEmojiImage(m) && !content.CustomEmojiFormat(contentType) {
 		return nil, fmt.Errorf("proxy media %s: unsupported format: %w", m.MediaID, ErrNotFound)
 	}
 	limitPurpose := kernel.HTTPPurposeVideo
@@ -469,6 +476,9 @@ func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia) (*fetched
 		limitPurpose = kernel.HTTPPurposeImage
 	}
 	limits, _ := kernel.DefaultHTTPLimits(limitPurpose)
+	if isEmojiImage(m) {
+		limits.MaxBodyBytes = min(limits.MaxBodyBytes, p.d.EmojiMaxBytes)
+	}
 
 	length := int64(-1)
 	if cl := resp.Header.Get("Content-Length"); cl != "" && resp.Header.Get("Content-Encoding") == "" {
@@ -484,6 +494,21 @@ func (p *MediaProxy) fetch(ctx context.Context, m content.RemoteMedia) (*fetched
 		contentType: contentType, kind: kind, length: length,
 		body: &limitedBody{r: io.MultiReader(bytes.NewReader(head), resp.Body), c: resp.Body, left: limits.MaxBodyBytes},
 	}, nil
+}
+
+// isEmojiImage reports whether m is the image of a custom emoji (recorded for an Emoji tag),
+// which the proxy serves only in the formats and within the size of ADR-0051 §2.
+func isEmojiImage(m content.RemoteMedia) bool { return m.Purpose == content.PurposeEmoji }
+
+// checkEmojiCopy refuses the copy pm of the image of a custom emoji that the limits of
+// ADR-0051 §2 no longer allow: one kept before remote_custom_emoji_max_bytes was lowered. It
+// closes pm when it refuses it.
+func (p *MediaProxy) checkEmojiCopy(m content.RemoteMedia, pm *ProxiedMedia) error {
+	if !isEmojiImage(m) || content.CustomEmojiFormat(pm.ContentType) && pm.Length <= p.d.EmojiMaxBytes {
+		return nil
+	}
+	_ = pm.Body.Close()
+	return fmt.Errorf("proxy media %s: a copy of %d bytes of %s: %w", m.MediaID, pm.Length, pm.ContentType, ErrNotFound)
 }
 
 // limitedBody reads at most left bytes and fails with kernel.ErrResponseTooLarge past them.

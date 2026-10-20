@@ -48,6 +48,49 @@ func (q *Queries) DeleteCustomEmojiSettings(ctx context.Context, emojiID string)
 	return err
 }
 
+const deleteRemoteMediaFile = `-- name: DeleteRemoteMediaFile :exec
+DELETE FROM media_files WHERE media_files.id = $1 AND media_files.origin = 'remote'
+`
+
+func (q *Queries) DeleteRemoteMediaFile(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteRemoteMediaFile, id)
+	return err
+}
+
+const deleteUnreferencedRemoteEmoji = `-- name: DeleteUnreferencedRemoteEmoji :execrows
+DELETE FROM custom_emojis
+WHERE custom_emojis.id = $1 AND custom_emojis.domain <> ''
+  AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = $1)
+  AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = $1)
+`
+
+// DeleteUnreferencedRemoteEmoji deletes the row of a remote custom emoji while no status
+// revision and no reaction refers to it.
+func (q *Queries) DeleteUnreferencedRemoteEmoji(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteUnreferencedRemoteEmoji, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteUnreferencedRemoteMedia = `-- name: DeleteUnreferencedRemoteMedia :execrows
+DELETE FROM remote_media
+WHERE remote_media.media_id = $1
+  AND NOT EXISTS (SELECT 1 FROM custom_emoji_images c WHERE c.media_id = $1)
+  AND NOT EXISTS (SELECT 1 FROM status_revision_attachments a WHERE a.media_id = $1)
+`
+
+// DeleteUnreferencedRemoteMedia deletes the remote subtype of a remote media file while no
+// custom emoji image and no attachment uses it.
+func (q *Queries) DeleteUnreferencedRemoteMedia(ctx context.Context, mediaID string) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteUnreferencedRemoteMedia, mediaID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getCustomEmojiSettings = `-- name: GetCustomEmojiSettings :one
 SELECT emoji_id, enabled, visible_in_picker, category FROM custom_emoji_settings WHERE emoji_id = $1
 `
@@ -215,6 +258,30 @@ func (q *Queries) ListCustomEmojiAliases(ctx context.Context, emojiIds []string)
 	return items, nil
 }
 
+const listCustomEmojiImageMediaIDs = `-- name: ListCustomEmojiImageMediaIDs :many
+SELECT DISTINCT media_id FROM custom_emoji_images WHERE emoji_id = $1 ORDER BY media_id
+`
+
+func (q *Queries) ListCustomEmojiImageMediaIDs(ctx context.Context, emojiID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCustomEmojiImageMediaIDs, emojiID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var media_id string
+		if err := rows.Scan(&media_id); err != nil {
+			return nil, err
+		}
+		items = append(items, media_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLocalCustomEmojis = `-- name: ListLocalCustomEmojis :many
 SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
   i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,
@@ -276,6 +343,42 @@ func (q *Queries) ListLocalCustomEmojis(ctx context.Context, arg ListLocalCustom
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listUnreferencedRemoteEmojis = `-- name: ListUnreferencedRemoteEmojis :many
+SELECT e.id FROM custom_emojis e
+WHERE e.domain <> '' AND e.id > CAST($1 AS TEXT)
+  AND NOT EXISTS (SELECT 1 FROM status_revision_emojis r WHERE r.emoji_id = e.id)
+  AND NOT EXISTS (SELECT 1 FROM reactions x WHERE x.custom_emoji_id = e.id)
+ORDER BY e.id
+LIMIT $2
+`
+
+type ListUnreferencedRemoteEmojisParams struct {
+	After    string
+	RowLimit int32
+}
+
+// ListUnreferencedRemoteEmojis returns, in ID order after the cursor, the IDs of the remote custom
+// emoji that no status revision and no reaction refers to (the purge of ADR-0051).
+func (q *Queries) ListUnreferencedRemoteEmojis(ctx context.Context, arg ListUnreferencedRemoteEmojisParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listUnreferencedRemoteEmojis, arg.After, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

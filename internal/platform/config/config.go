@@ -58,6 +58,9 @@ type Config struct {
 	MediaUnattachedTTL  time.Duration
 	// CustomEmojiMaxBytes bounds the image of a local custom emoji as uploaded.
 	CustomEmojiMaxBytes int64
+	// RemoteCustomEmojiMaxBytes bounds the image of a remote custom emoji that the media proxy
+	// serves.
+	RemoteCustomEmojiMaxBytes int64
 	// RemoteMediaCacheMaxBytes bounds the total size of the remote media cache.
 	RemoteMediaCacheMaxBytes int64
 	KV                       string
@@ -146,6 +149,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int64("media_max_image_pixels", c.MediaMaxImagePixels),
 		slog.Duration("media_unattached_ttl", c.MediaUnattachedTTL),
 		slog.Int64("custom_emoji_max_bytes", c.CustomEmojiMaxBytes),
+		slog.Int64("remote_custom_emoji_max_bytes", c.RemoteCustomEmojiMaxBytes),
 		slog.Int64("remote_media_cache_max_bytes", c.RemoteMediaCacheMaxBytes),
 		slog.String("kv", c.KV),
 		slog.String("valkey_url", redact(c.ValkeyURL != "")),

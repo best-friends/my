@@ -162,6 +162,9 @@ SELECT EXISTS (
   WHERE avatar_media_id = sqlc.arg(media_id) OR header_media_id = sqlc.arg(media_id)
 );
 
+-- name: IsEmojiReferencedByProfiles :one
+SELECT EXISTS (SELECT 1 FROM account_profile_revision_emojis WHERE emoji_id = sqlc.arg(emoji_id));
+
 -- name: InsertProfileRevisionSource :exec
 INSERT INTO account_profile_revision_sources (revision_id, note_source) VALUES (?, ?);
 

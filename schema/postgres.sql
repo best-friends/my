@@ -190,6 +190,8 @@ CREATE TABLE account_profile_revision_emojis (
   emoji_id text COLLATE "C" NOT NULL,
   PRIMARY KEY (revision_id, emoji_id)
 );
+-- The purge of unreferenced remote custom emoji looks up the references to an emoji.
+CREATE INDEX account_profile_revision_emojis_emoji_id ON account_profile_revision_emojis (emoji_id);
 
 -- Projection: the current profile revision of each account.
 CREATE TABLE account_profile_heads (
@@ -329,6 +331,8 @@ CREATE TABLE status_revision_emojis (
   emoji_id text COLLATE "C" NOT NULL,
   PRIMARY KEY (revision_id, emoji_id)
 );
+-- The purge of unreferenced remote custom emoji looks up the references to an emoji.
+CREATE INDEX status_revision_emojis_emoji_id ON status_revision_emojis (emoji_id);
 
 -- Event: the deletion of a status. It outlives the purge as the tombstone of the URI.
 CREATE TABLE status_deletions (
@@ -1071,6 +1075,8 @@ CREATE UNIQUE INDEX reactions_account_id_status_id_emoji_key ON reactions (accou
 CREATE UNIQUE INDEX reactions_uri ON reactions (uri);
 CREATE INDEX reactions_status_id_emoji_key_id ON reactions (status_id, emoji_key, id);
 CREATE INDEX reactions_status_id_id ON reactions (status_id, id);
+-- The purge of unreferenced remote custom emoji looks up the reactions with an emoji.
+CREATE INDEX reactions_custom_emoji_id ON reactions (custom_emoji_id);
 
 -- Projection: the reactions to each status that is not deleted, per emoji (ADR-0052 §1). A row
 -- goes when its count reaches zero.

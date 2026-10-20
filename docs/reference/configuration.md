@@ -54,6 +54,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`media_max_image_pixels`](#media_max_image_pixels) | `MY_MEDIA_MAX_IMAGE_PIXELS` | `33177600` | no | no |
 | [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
 | [`custom_emoji_max_bytes`](#custom_emoji_max_bytes) | `MY_CUSTOM_EMOJI_MAX_BYTES` | `262144` | no | no |
+| [`remote_custom_emoji_max_bytes`](#remote_custom_emoji_max_bytes) | `MY_REMOTE_CUSTOM_EMOJI_MAX_BYTES` | `1048576` | no | no |
 | [`remote_media_cache_max_bytes`](#remote_media_cache_max_bytes) | `MY_REMOTE_MEDIA_CACHE_MAX_BYTES` | `1073741824` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
 | [`valkey_url`](#valkey_url) | `MY_VALKEY_URL` | none | when `kv = valkey` or `stream = valkey` | yes |
@@ -276,6 +277,14 @@ Largest image in bytes that a local custom emoji may be registered with (ADR-005
 
 - Environment variable: `MY_CUSTOM_EMOJI_MAX_BYTES`
 - Default: `262144`
+- Required: no
+
+### `remote_custom_emoji_max_bytes`
+
+Largest image in bytes of a remote custom emoji that the media proxy serves (ADR-0051 §2); the proxy answers 404 for a larger one, and for one that is not a PNG, a GIF, or a WebP.
+
+- Environment variable: `MY_REMOTE_CUSTOM_EMOJI_MAX_BYTES`
+- Default: `1048576`
 - Required: no
 
 ### `remote_media_cache_max_bytes`
