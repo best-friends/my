@@ -220,7 +220,7 @@ strict server は SSE を返せないので、`oapi-codegen.yaml` の `exclude-o
 - 接続の流れは [overview §4.4](overview.md#44-リアルタイム更新sse) のとおりです。ハンドラは `stream.Subscriber` で購読し、知らせを受けるたびにユースケース
   （`HomeEntries.HomeEntry`、`Notifications.List`）で閲覧者に見せる形に読み直して、`Server.statuses` と `Server.newNotifications` で詰め替えます。
 - 開くと `: connected` を、その後 30 秒ごと（`Options.StreamHeartbeat`）に `: heartbeat` のコメント行を送ります。ハートビートのたびにアクセストークンを照合し直し、無効なら閉じます。
-- 接続数の上限は、アカウントごとに 8、プロセス全体で 1,000 です（`stream.HubOptions`）。上限はプロセスごとに数えます。
+- 接続数の上限は、アカウントごとに 8、プロセス全体で 1,000 です（`stream.HubOptions`）。上限はプロセスごとに数えるので、プロセス間のブローカー（設定 `stream`）を使う構成では、全体では「上限 × web のプロセス数」まで開けます。
   アカウントの上限を超えると 429（`/api/v1/problems/too-many-streams`）です。
 - ブローカーが購読を受けられないとき（`stream.ErrUnavailable`: `stream.Relay` の listener が 10 秒以内に準備できない、または開始に失敗した）と
   シャットダウン中（`stream.ErrClosed`）は、503 と `Retry-After`（5 秒）を返します。購読は listener の準備を待つので、プロセスで最初のストリームは開くのが遅れることがあります。
@@ -228,5 +228,5 @@ strict server は SSE を返せないので、`oapi-codegen.yaml` の `exclude-o
   通知は「前回送ったものより新しい一覧」を読み直すので、重複しても同じ通知を 2 度送りません。
 - 後始末: クライアントの切断・書き込みのタイムアウト（10 秒）・購読の終了で、ハンドラは戻って購読を閉じます。
   読みきれずにバッファ（64 件）が溢れた購読と、知らせを取りこぼしたかもしれない購読（`Relay` の listener が `Broken` になった）はブローカーが閉じます。サーバーの読み取りタイムアウトは接続ごとに外し、
-  シャットダウンの開始時に `Hub.Close` がすべての購読を閉じるので、グレースフルシャットダウンはストリームを待ちません。
+  シャットダウンの開始時にブローカー（`Hub` か `Relay`）を閉じてすべての購読を閉じるので、グレースフルシャットダウンはストリームを待ちません。
 - テストは、実際の HTTP サーバーでストリームを読み、状態と見出しを `apitest.Spec.ValidateResponse` で、各イベントの `data` を `ValidateSchema` で spec と照合します。

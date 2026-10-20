@@ -274,6 +274,60 @@
 - 候補: Google Cloud は Memorystore for Valkey、AWS は ElastiCache for Valkey（サーバーレスを含む）、Self-hosted は `valkey/valkey` のコンテナ。
   どれも常時課金で、ほぼ $0 の構成には入らない（料金は要検証。M4 で計測する）。
 
+## ストリーム（プロセス間の知らせ）
+
+リアルタイム更新（`GET /api/v1/streaming`）の知らせをプロセスの間で運ぶブローカーは、設定 `stream` で選ぶ（[ADR-0050](../adr/0050-stream-pubsub-across-processes.md)、[overview §4.4](overview.md#44-リアルタイム更新sse)）。
+設定は推測せず、既定は `hub`（プロセスの中だけ）。`role` が `all` 以外のプロセスが `hub` で起動すると、警告をログに出す。
+どのブローカーも、ストリームを開いていないプロセスは送るだけで購読しない（scale to zero を壊さない）。
+
+| ターゲット | `stream` | 設定 | 追加の固定費 |
+| --- | --- | --- | --- |
+| Self-hosted（SQLite、または 1 プロセスの `role = all`） | `hub` | なし | なし |
+| Self-hosted（PostgreSQL で複数プロセス・レプリカ） | `postgres`（`db = postgres` のときだけ）。`kv = valkey` で Valkey を動かしているなら `valkey` も可 | `database_url` がトランザクションモードのプーラー（PgBouncer の transaction pooling、Neon のプール接続、Supabase の 6543 番）を通るときは、直接の接続先を `stream_postgres_url` に | なし（`LISTEN` の接続が 1 プロセスに 1 本） |
+| Google Cloud（Cloud Run） | `pubsub` | `stream_pubsub_topic`（`projects/<p>/topics/<t>`）、`stream_pubsub_subscription_prefix` | なし（無料枠の中なら $0） |
+| AWS（Lambda） | `sns` | `stream_sns_topic_arn`、`stream_sqs_queue_prefix`。認証とリージョン以外の設定は AWS SDK の既定の連鎖（実行ロール） | なし（無料枠の中なら $0） |
+
+- **トピック** は各ブローカーとも 1 インスタンスに 1 つで、デプロイのテンプレートが作る（標準トピック）。プロセスごとのキュー・subscription はサーバーが作り、消す。
+  消し損ねた分は、定期ジョブ `stream.sweep`（15 分ごと）が、KV の生存の印のないプロセスのものを消す。`stream_sqs_queue_prefix` と `stream_pubsub_subscription_prefix` は、そのインスタンスだけが使う値にする
+- **Neon**: アイドルの `LISTEN` の接続はコンピュートを起こし続けないが、scale to zero でリスナーは切られる。ストリームのないプロセスは listen しないので、切られるのはストリームがないときだけ
+- **Aurora DSQL**: `LISTEN` / `NOTIFY` を使えるかを公式の文書で確認できない（サポートする SQL の一覧にない）ので、`postgres` は使わない
+- 未決（ADR-0050 の Open Questions）: Lambda でストリームを既定で有効にするか（下記の実行時間）と、`db = postgres` で `stream` の既定を `postgres` にするか。決まるまでは、どのターゲットも `stream` を明示的に設定する
+
+### コスト（2026-10-19 確認）
+
+- SNS（us-east-1）: API リクエストは月 100 万まで無料、以降 $0.50 / 100 万（64 KB ごとに 1 リクエスト）。SQS への配信は課金されない。知らせ 1 件は SNS 1 リクエスト
+- SQS（us-east-1）: 月 100 万リクエスト無料、以降 $0.40 / 100 万。空の受信も 1 リクエストで、listen 中のプロセス 1 つで約 129,600 回 / 月（20 秒のロングポーリング）。常時開いたストリーム約 7 本分までが無料枠
+- Lambda: SSE の接続 1 本が実行環境 1 つを最大 15 分（関数のタイムアウト）占有する。ブローカーとは別に、実行時間がストリームの本数 × 時間で増える（512 MB で 1 本を 1 か月開き続けると約 131 万 GB 秒で、無料枠 40 万 GB 秒を超える）
+- Pub/Sub: スループット $40 / TiB、毎月 10 GiB まで無料（リクエストごとに最低 1 KB で数える）。subscription 3 つなら知らせ約 268 万件 / 月までが無料枠で、以降 100 万件ごとに約 $0.15。保持を 1 日以下にするので保存料はかからない。subscription の作成・削除は無料
+- Cloud Run（リクエストベース課金）: CPU はリクエストの処理中だけ割り当てられる。SSE のストリームはリクエストなので、「ストリームがある間だけ受ける」形になる。subscription はインスタンスにつき 1 つ
+- Valkey: ElastiCache Serverless for Valkey は最小 100 MB の課金で約 $6.13 / 月（$0.084 / GB 時間、us-east-1）、Memorystore for Valkey は最小の shared-core-nano でも約 $23 / 月（$0.0318 / 時間）。クラウドの既定にはしない
+
+### 権限
+
+- AWS（実行ロール）:
+  - トピックに `sns:Publish`、`sns:Subscribe`（条件 `sns:Protocol` = `sqs`、`sns:Endpoint` をキューの ARN の接頭辞 `arn:aws:sqs:<region>:<account>:<stream_sqs_queue_prefix>-*` に限る）、`sns:Unsubscribe`、`sns:ListSubscriptionsByTopic`（sweep）
+  - キュー `arn:aws:sqs:<region>:<account>:<stream_sqs_queue_prefix>-*` に `sqs:CreateQueue`、`sqs:TagQueue`、`sqs:SetQueueAttributes`、`sqs:GetQueueAttributes`、`sqs:ReceiveMessage`、`sqs:DeleteMessage`、`sqs:DeleteQueue`
+  - `*` に `sqs:ListQueues`（sweep）
+  - キューはトピックのアカウントとリージョンに作る
+- Google Cloud（サービスアカウントのカスタムロール。`roles/pubsub.editor` は広すぎる）:
+  - トピックに `pubsub.topics.publish`、`pubsub.topics.attachSubscription`
+  - プロジェクトに `pubsub.subscriptions.create`、`pubsub.subscriptions.list`（sweep）、`pubsub.subscriptions.consume`、`pubsub.subscriptions.delete`（subscription の名前は前もって決まらないので、プロジェクトに付ける）
+
+出典（2026-10-19 確認）:
+[SNS pricing](https://aws.amazon.com/sns/pricing/) /
+[SQS pricing](https://aws.amazon.com/sqs/pricing/) /
+[SNS → SQS subscription](https://docs.aws.amazon.com/sns/latest/dg/subscribe-sqs-queue-to-sns-topic.html) /
+[SNS API permissions](https://docs.aws.amazon.com/sns/latest/dg/sns-access-policy-language-api-permissions-reference.html) /
+[Lambda pricing](https://aws.amazon.com/lambda/pricing/) /
+[Pub/Sub pricing](https://cloud.google.com/pubsub/pricing) /
+[Pub/Sub access control](https://docs.cloud.google.com/pubsub/docs/access-control) /
+[Pub/Sub subscription properties](https://docs.cloud.google.com/pubsub/docs/subscription-properties) /
+[Cloud Run billing settings](https://docs.cloud.google.com/run/docs/configuring/billing-settings) /
+[Neon: LISTEN / NOTIFY](https://neon.com/guides/pub-sub-listen-notify) /
+[Aurora DSQL supported SQL](https://docs.aws.amazon.com/aurora-dsql/latest/userguide/working-with-postgresql-compatibility-supported-sql-features.html) /
+[ElastiCache pricing](https://aws.amazon.com/elasticache/pricing/) /
+[Memorystore for Valkey pricing](https://cloud.google.com/memorystore/valkey/pricing)
+
 ## 信頼するプロキシとクライアント IP
 
 ログイン・登録・匿名のクライアント API・Inbox のレート制限は、クライアント IP（IPv6 は `/64`）ごとに数える（ADR-0019 §5）。
