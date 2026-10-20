@@ -9,6 +9,7 @@ import { instanceFixture } from "../../test/fixtures";
 import { apiBase, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
+import { newTabName, visibleText } from "../../test/links";
 
 const termsUrl = "http://localhost:3000/auth/terms";
 const privacyUrl = "http://localhost:3000/auth/privacy";
@@ -18,25 +19,25 @@ function publish(documents: { terms_url?: string; privacy_policy_url?: string })
 }
 
 describe("the links to the server's documents", () => {
-  test("are on the sign-in page and load the server's page in place of the app", async () => {
+  test("are on the sign-in page and open the server's page in a new tab", async () => {
     publish({ terms_url: termsUrl, privacy_policy_url: privacyUrl });
-    const { user, leftTo, router } = await renderApp({ path: "/login" });
+    await renderApp({ path: "/login" });
 
     const links = await screen.findByRole("navigation", { name: "Terms and policies" });
-    expect(within(links).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
+    expect(within(links).getAllByRole("link").map((link) => [visibleText(link), link.getAttribute("href")])).toEqual([
       ["Terms of service", termsUrl],
       ["Privacy policy", privacyUrl],
     ]);
-    await user.click(within(links).getByRole("link", { name: "Privacy policy" }));
-    expect(leftTo.map(String)).toEqual([privacyUrl]);
-    expect(router.state.location.pathname).toBe("/login");
+    const privacy = within(links).getByRole("link", { name: newTabName("Privacy policy") });
+    expect(privacy).toHaveAttribute("target", "_blank");
+    expect(privacy).toHaveAttribute("rel", "noopener noreferrer");
   });
 
   test("leave out a document the server does not publish, and are not there without any", async () => {
     publish({ privacy_policy_url: privacyUrl });
     const view = await renderApp({ path: "/login" });
     const links = await screen.findByRole("navigation", { name: "Terms and policies" });
-    expect(within(links).getAllByRole("link").map((link) => link.textContent)).toEqual(["Privacy policy"]);
+    expect(within(links).getAllByRole("link").map(visibleText)).toEqual(["Privacy policy"]);
     view.unmount();
 
     publish({});
@@ -55,7 +56,7 @@ describe("the links to the server's documents", () => {
 
     const section = await screen.findByRole("region", { name: "Terms and policies" });
     const links = within(section).getByRole("navigation", { name: "Terms and policies" });
-    expect(within(links).getByRole("link", { name: "Terms of service" })).toHaveAttribute("href", termsUrl);
+    expect(within(links).getByRole("link", { name: newTabName("Terms of service") })).toHaveAttribute("href", termsUrl);
   });
 
   test("are in the menu sheet under its items", async () => {
@@ -67,6 +68,6 @@ describe("the links to the server's documents", () => {
     await user.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
     const links = within(sheet).getByRole("navigation", { name: "Terms and policies" });
-    expect(within(links).getAllByRole("link").map((link) => link.textContent)).toEqual(["Terms of service", "Privacy policy"]);
+    expect(within(links).getAllByRole("link").map(visibleText)).toEqual(["Terms of service", "Privacy policy"]);
   });
 });

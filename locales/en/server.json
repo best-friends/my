@@ -255,6 +255,10 @@
     "defaultMessage": "Set a new password",
     "description": "Title and heading of the page that a password reset link opens."
   },
+  "auth.link.new_tab": {
+    "defaultMessage": "(opens in a new tab)",
+    "description": "Text that only assistive technology reads, after the name of a link on the sign-in and registration pages that opens in a new browser tab (the CAPTCHA service's privacy policy and terms, the server's terms on the registration form). Keep the brackets so that it reads apart from the link's name."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "Email address",
     "description": "Label of the email address field on the sign-in form."

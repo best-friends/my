@@ -227,6 +227,10 @@
     "defaultMessage": "‮⊥ɥǝ ɔɥǝɔʞ ʇɥɐʇ ʎon ɐɹǝ uoʇ ɐ qoʇ ıs uoʇ ɐʌɐıʅɐqʅǝ ɹıƃɥʇ uoʍ. ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.link.new_tab": {
+    "defaultMessage": "‮(odǝus ıu ɐ uǝʍ ʇɐq)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.reset_password.done": {
     "defaultMessage": "‮⅄onɹ dɐssʍoɹp ıs ɔɥɐuƃǝp, ɐup ǝʌǝɹʎ sǝssıou ʇɥɐʇ nsǝp ʇɥǝ oʅp ouǝ ıs sıƃuǝp onʇ. Sıƃu ıu ʍıʇɥ ʇɥǝ uǝʍ dɐssʍoɹp.‬",
     "description": "Generated from en by tools/i18n; do not edit."

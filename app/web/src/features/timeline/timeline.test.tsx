@@ -9,6 +9,7 @@ import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http
 import { imageFixture, longDomainAccountFixture, longNameAccountFixture, rtlNameAccountFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
 import { autoplayKey } from "../../lib/storage";
+import { newTabName } from "../../test/links";
 import { renderApp } from "../../test/render";
 
 /** A status like the fixture, with its own ID and text. */
@@ -256,7 +257,7 @@ describe("a status card", () => {
 
     await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
 
-    const link = within(article).getByRole("link", { name: "The sun rose again" });
+    const link = within(article).getByRole("link", { name: newTabName("The sun rose again") });
     expect(link).toHaveAttribute("href", "https://news.example/articles/sunrise");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer nofollow");

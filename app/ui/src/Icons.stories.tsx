@@ -110,7 +110,7 @@ export const InControls: Story = {
         <Icons.ReplyIcon />
         Reply
       </Button>
-      <Link href="https://example.com/" variant="standalone" className="gap-1">
+      <Link href="#example" variant="standalone" className="gap-1">
         example.com
         <Icons.ExternalLinkIcon />
       </Link>

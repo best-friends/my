@@ -2,14 +2,16 @@
 // The app's providers, outermost first: the runtime config, the locale store and i18n in its current locale
 // (react-intl and React Aria's locale), the TanStack Query cache, the session and the API client, the live
 // regions and toasts of @my/ui (with the prompt for a new version of the app), whether animations play by
-// themselves (lib/autoplay), React Aria's router binding, and the router with every page.
-import { AnnouncerProvider, AutoplayContext, Center, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
+// themselves (lib/autoplay), how links leave the app (ExternalLinks), React Aria's router binding, and the router
+// with every page.
+import { AnnouncerProvider, AutoplayContext, Center, ExternalLinkContext, I18nProvider as AriaI18nProvider, RouterProvider as AriaRouterProvider, ToastProvider } from "@my/ui";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { type AnyRouter, RouterProvider } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { SessionProvider } from "./lib/auth/SessionProvider";
 import { useAutoplay } from "./lib/autoplay";
-import { ConfigProvider, type RuntimeConfig } from "./lib/config";
+import { ConfigProvider, type RuntimeConfig, useConfig } from "./lib/config";
+import { contentLinkPath } from "./lib/contentLinks";
 import { type I18n, MessagesProvider, useT } from "./lib/i18n";
 import { AppLocaleProvider, useDisplaySettings } from "./lib/locale";
 import { isServerPath } from "./lib/paths";
@@ -52,9 +54,11 @@ export function App({ config, locale, queryClient, api, session, leaveApp, route
                 <Toasts>
                   <UpdatePrompt />
                   <AutoplayContext value={autoplay}>
-                    <AriaRouterProvider navigate={navigate}>
-                      <RouterProvider router={router} />
-                    </AriaRouterProvider>
+                    <ExternalLinks>
+                      <AriaRouterProvider navigate={navigate}>
+                        <RouterProvider router={router} />
+                      </AriaRouterProvider>
+                    </ExternalLinks>
                   </AutoplayContext>
                 </Toasts>
               </AnnouncerProvider>
@@ -84,6 +88,26 @@ export function AppI18nProvider({ i18n, timeZone, children }: AppI18nProviderPro
     <MessagesProvider i18n={i18n} timeZone={timeZone}>
       <AriaI18nProvider locale={i18n.locale}>{children}</AriaI18nProvider>
     </MessagesProvider>
+  );
+}
+
+/**
+ * How the links of @my/ui leave the app (web-client.md Y12): every ExternalLink, and every link of a post body or a
+ * profile (PostContent) but those to the app's own pages (lib/contentLinks.ts), opens in a new tab and reads
+ * "(opens in a new tab)" to assistive technology.
+ */
+export function ExternalLinks({ children }: { children: ReactNode }) {
+  const t = useT();
+  const { apiOrigin } = useConfig();
+  return (
+    <ExternalLinkContext
+      value={{
+        newTabLabel: t("client:shell.link.new_tab"),
+        isAppLink: (url) => contentLinkPath(url.href, apiOrigin) !== null,
+      }}
+    >
+      {children}
+    </ExternalLinkContext>
   );
 }
 

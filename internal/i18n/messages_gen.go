@@ -403,6 +403,13 @@ func (l *Localizer) ServerAuthHumanCheckUnavailable() string {
 	return l.format("server:auth.human_check.unavailable", nil)
 }
 
+// ServerAuthLinkNewTab formats "server:auth.link.new_tab". Text that only assistive technology reads, after the name of a link on the sign-in and registration pages that opens in a new browser tab (the CAPTCHA service's privacy policy and terms, the server's terms on the registration form). Keep the brackets so that it reads apart from the link's name.
+//
+//	en: (opens in a new tab)
+func (l *Localizer) ServerAuthLinkNewTab() string {
+	return l.format("server:auth.link.new_tab", nil)
+}
+
 // ServerAuthResetPasswordDone formats "server:auth.reset_password.done". Body of the page after a new password was set from a reset link.
 //
 //	en: Your password is changed, and every session that used the old one is signed out. Sign in with the new password.

@@ -133,8 +133,11 @@ func TestSignUpAsksToAgreeToTheDocuments(t *testing.T) {
 	body := b.do(http.MethodGet, authpages.PathSignUp, nil, map[string]string{"Accept-Language": "ja"}).Body.String()
 	wantContains(t, body,
 		`<p id="sign-up-agreement">アカウントを作成すると、このサーバーの次の文書に同意したことになります。</p>`,
-		`<li><a href="/auth/terms">利用規約</a></li>`,
+		// The form keeps what was typed: the agreement's links open in a new tab, which assistive technology reads.
+		`<li><a href="/auth/terms" target="_blank" rel="noopener noreferrer">利用規約<span class="visually-hidden"> （新しいタブで開きます）</span></a></li>`,
 		`<button class="button" type="submit" aria-describedby="sign-up-agreement">`,
+		// The footer's links lead from page to page of the server in the same tab.
+		`<li><a href="/auth/terms">利用規約</a></li>`,
 	)
 	wantLacks(t, body, "/auth/privacy")
 	// The sign-in page links to them in the footer only.
