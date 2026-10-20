@@ -2,7 +2,7 @@
 // The settings feature (FR-005, FR-006, FR-007, FR-008, FR-208, FR-302, FR-303): the profile editor, the preferences, two-factor
 // authentication, the lists of blocked and muted accounts and of follow requests, the archives of the user's data and deleting
 // the account, displaying the app in the user's locale
-// and time zone, and the color theme of this browser. Routes and other features use it through this file only (web-client.md A3).
+// and time zone, the color theme of this browser, and the arrangement of the navigation's items on this browser. Routes and other features use it through this file only (web-client.md A3).
 export { dataExportsQueryOptions } from "./api/account";
 export { credentialsQueryOptions, preferencesQueryOptions } from "./api/me";
 export { blocksQueryOptions, followRequestsQueryOptions, mutesQueryOptions } from "./api/relationships";
@@ -12,6 +12,14 @@ export { PreferencesForm } from "./components/PreferencesForm";
 export { ProfileForm } from "./components/ProfileForm";
 export { SettingsMenu } from "./components/SettingsMenu";
 export { ThemeRadioGroup } from "./components/ThemeRadioGroup";
+// The navigation's items as the user arranges them on this browser, which the app's navigation follows.
+export { navigationEntryIcons } from "./components/navigationEntryIcons";
+export {
+  type NavigationEntryId,
+  navigationEntryLabels,
+  tabBarLimit,
+  useNavigationEntries,
+} from "./hooks/useNavigationSettings";
 // Two-factor authentication with an authenticator app (FR-005).
 export { twoFactorQueryOptions } from "./api/twoFactor";
 export { TwoFactorSettings } from "./components/TwoFactorSettings";
