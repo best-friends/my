@@ -35,6 +35,10 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 項目名は `.` を含む 1 つのキーで、入れ子ではない。Cloud Logging のフィルタと抽出では引用符で囲む（例: `jsonPayload."http.route"`、分布の値は `EXTRACT(jsonPayload.duration_seconds)`）。
 ラベルに使う項目の値は有限の集合だけで（ADR-0055 §6）、`url.path`・`request_id`・`job_id` はラベルにしない。
 
+`metrics_exporter = emf` では、この 2 つの行がそのまま EMF の行になる（ADR-0055 §5）。`http request` の行は `http.server.request.duration`、`job` の行は `my.job.duration` と `my.job.wait` の値（指標の名前のキー）と `_aws` の指示を持ち、
+`service.name`・`service.version`・`my.role` も付く。この 3 つの指標は別の行には出さない。`metrics_emf_dimensions` に選んだ項目は、EMF の決まりに従って文字列で書く（例: `http.response.status_code` を次元にすると `"200"`）。
+ログは標準エラー、そのほかの EMF の行は標準出力に出る。Lambda はどちらも CloudWatch Logs に送るので、どちらの行からも指標が取り出される。
+
 ## 指標（メトリクス）
 
 設定 `metrics_exporter`（既定 `none`）でサービスの指標を出す（[ADR-0055](../adr/0055-service-observability.md)、設定は [configuration.md](../reference/configuration.md)）。
@@ -44,7 +48,7 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `none` | 出さない。計測はほぼ費用がない | Cloud Run（基盤の指標とログベースの指標で代える） |
 | `prometheus` | `metrics_listen`（既定 `127.0.0.1:9464`）の `GET /metrics`。公開の `listen` とは別のリスナーで、認証はない。どの `role` でも出す | Self-hosted（Prometheus 互換のサーバー・KEDA が scrape する） |
 | `otlp` | OTLP/HTTP で OpenTelemetry Collector へ送る。宛先は `OTEL_EXPORTER_OTLP_ENDPOINT` など OTel の標準の環境変数 | コレクターを動かせる構成 |
-| `emf` | 標準出力に CloudWatch Embedded Metric Format の JSON 行。リクエスト・ジョブの終わりに、ラベルの組ごとに 1 行 | AWS Lambda |
+| `emf` | CloudWatch Embedded Metric Format の JSON 行。リクエストとジョブの指標は終わりのログの行（上記）に載せ、そのほかはリクエスト・ジョブの終わりに、ラベルの組ごとに 1 行を標準出力に書く | AWS Lambda |
 
 出す指標は次のとおり。Prometheus では名前の `.` が `_` になり、単位の接尾辞（`_seconds`、Counter の `_total`）が付く。
 
