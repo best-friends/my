@@ -169,6 +169,16 @@ type CustomEmojiSetting struct {
 	Category        sql.NullString
 }
 
+type DataImportItem struct {
+	ImportID          string
+	Position          int64
+	Action            string
+	Target            string
+	ShowBoosts        int64
+	Notify            int64
+	HideNotifications int64
+}
+
 type Delivery struct {
 	ID                 string
 	OutboundActivityID string

@@ -58,6 +58,7 @@ type Repository interface {
 	RegistrationRepository
 	OriginRepository
 	ExportRepository
+	ImportRepository
 	RoleRepository
 	AccountAdminRepository
 	ProjectionRepository

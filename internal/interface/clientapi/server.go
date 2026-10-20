@@ -122,6 +122,9 @@ type Options struct {
 	OwnAccount OwnAccount
 	// Exports runs the viewer's data exports (own_account.go); nil refuses them with 404.
 	Exports Exports
+	// Imports writes the viewer's CSV exports and runs the CSV imports (data_import.go); nil
+	// refuses them with 404.
+	Imports Imports
 	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.

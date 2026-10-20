@@ -5676,7 +5676,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.account.export.description": {
-    "defaultMessage": "‮⅁ǝʇ ɐ ZIԀ ɐɹɔɥıʌǝ oɟ ʎonɹ dosʇs ıu ∀ɔʇıʌıʇʎSʇɹǝɐɯs ɟoɹɯɐʇ, ʎonɹ dɹoɟıʅǝ, ɐup ʇɥǝ ɯopǝɹɐʇıou ɐɔʇıous ou ʎonɹ ɐɔɔonuʇ. Iʇ ʇɐʞǝs ɐ ʍɥıʅǝ ʇo dɹǝdɐɹǝ, ɐup ʎon ɔɐu poʍuʅoɐp ıʇ ɟoɹ 7 pɐʎs.‬",
+    "defaultMessage": "‮⅁ǝʇ ɐ ZIԀ ɐɹɔɥıʌǝ oɟ ʎonɹ dosʇs ıu ∀ɔʇıʌıʇʎSʇɹǝɐɯs ɟoɹɯɐʇ, ʎonɹ dɹoɟıʅǝ, ʇɥǝ ɯopǝɹɐʇıou ɐɔʇıous ou ʎonɹ ɐɔɔonuʇ, ɐup ʎonɹ ɟoʅʅoʍs, qʅoɔʞs, ɯnʇǝs, ɐup qooʞɯɐɹʞs ɐs ↃSɅ ɟıʅǝs. Iʇ ʇɐʞǝs ɐ ʍɥıʅǝ ʇo dɹǝdɐɹǝ, ɐup ʎon ɔɐu poʍuʅoɐp ıʇ ɟoɹ 7 pɐʎs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.account.export.download": {
@@ -5805,6 +5805,186 @@
   },
   "settings.follow_requests.title": {
     "defaultMessage": "‮Ⅎoʅʅoʍ ɹǝbnǝsʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.export.description": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp ↃSɅ ɟıʅǝs ıu ʇɥǝ ɟoɹɯɐʇ Wɐsʇopou nsǝs. Wɐsʇopou ɐup oʇɥǝɹ sǝɹʌǝɹs ʇɥɐʇ ɹǝɐp ʇɥıs ɟoɹɯɐʇ ɔɐu ıɯdoɹʇ ʇɥǝɯ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.export.download": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.export.download_of": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp {kind} ɐs ↃSɅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.export.title": {
+    "defaultMessage": "‮Ǝxdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.empty": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ uo ıɯdoɹʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ qǝ ıɯdoɹʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.item": {
+    "defaultMessage": "‮{kind}, {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.mode": {
+    "defaultMessage": "‮Wǝʇɥop‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.progress": {
+    "defaultMessage": "‮Ԁɹoƃɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.progress_value": {
+    "defaultMessage": "‮{processed, number} oɟ {total, number}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.state.finished": {
+    "defaultMessage": "‮Ⅎıuısɥǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.state.in_progress": {
+    "defaultMessage": "‮Iu dɹoƃɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.history.title": {
+    "defaultMessage": "‮ᴚǝɔǝuʇ ıɯdoɹʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.choose": {
+    "defaultMessage": "‮Ↄɥoosǝ ɐ ↃSɅ ɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.chosen": {
+    "defaultMessage": "‮Ↄɥosǝu ɟıʅǝ: {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.description": {
+    "defaultMessage": "‮Iɯdoɹʇ ɐ ↃSɅ ɟıʅǝ ǝxdoɹʇǝp ɟɹoɯ Wɐsʇopou oɹ ɟɹoɯ ʇɥıs sǝɹʌǝɹ. ∀ɔɔonuʇs ɐup dosʇs ou oʇɥǝɹ sǝɹʌǝɹs ɐɹǝ ʅooʞǝp nd ıu ʇɥǝ qɐɔʞƃɹonup, ʍɥıɔɥ ɔɐu ʇɐʞǝ ɐ ʍɥıʅǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.file": {
+    "defaultMessage": "‮ↃSɅ ɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.file_too_large": {
+    "defaultMessage": "‮⊥ɥǝ ɟıʅǝ ıs ʇoo ʅɐɹƃǝ ʇo ıɯdoɹʇ. Sdʅıʇ ıʇ ıuʇo sɯɐʅʅǝɹ ɟıʅǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.file_unreadable": {
+    "defaultMessage": "‮⊥ɥǝ ɟıʅǝ ɔɐuuoʇ qǝ ɹǝɐp. Ↄɥoosǝ ıʇ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.kind": {
+    "defaultMessage": "‮Mɥɐʇ ʇo ıɯdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.mode": {
+    "defaultMessage": "‮Hoʍ ʇo ıɯdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.mode.merge": {
+    "defaultMessage": "‮Wǝɹƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.mode.merge.description": {
+    "defaultMessage": "‮Ӽǝǝd ʍɥɐʇ ʎon ɥɐʌǝ ɐup ɐpp ʍɥɐʇ ʇɥǝ ɟıʅǝ ʅısʇs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.mode.overwrite": {
+    "defaultMessage": "‮Oʌǝɹʍɹıʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.mode.overwrite.description": {
+    "defaultMessage": "‮Wɐʞǝ ıʇ ǝxɐɔʇʅʎ ʍɥɐʇ ʇɥǝ ɟıʅǝ ʅısʇs. ∀uʎʇɥıuƃ ʇɥǝ ɟıʅǝ poǝs uoʇ ʅısʇ ıs ɹǝɯoʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.no_file": {
+    "defaultMessage": "‮No ɟıʅǝ ɔɥosǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview": {
+    "defaultMessage": "‮Ↄɥǝɔʞ ʇɥǝ ɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.entries": {
+    "defaultMessage": "‮Ǝuʇɹıǝs ıu ʇɥǝ ɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.present": {
+    "defaultMessage": "‮∀ʅɹǝɐpʎ ou ʎonɹ ʅısʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.removals": {
+    "defaultMessage": "‮⊥o qǝ ɹǝɯoʌǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.skip.duplicate": {
+    "defaultMessage": "‮ᴚǝdǝɐʇs ɐu ǝɐɹʅıǝɹ ʅıuǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.skip.invalid": {
+    "defaultMessage": "‮Noʇ ɐu ɐɔɔonuʇ ɐppɹǝss oɹ ɐ dosʇ ∩ᴚ⅂‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.skipped": {
+    "defaultMessage": "‮Sʞıddǝp ʅıuǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.skipped_line": {
+    "defaultMessage": "‮⅂ıuǝ {line, number}: {value}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.preview.title": {
+    "defaultMessage": "‮Mɥɐʇ ʇɥǝ ıɯdoɹʇ poǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.start": {
+    "defaultMessage": "‮Sʇɐɹʇ ʇɥǝ ıɯdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.started": {
+    "defaultMessage": "‮⊥ɥǝ ıɯdoɹʇ ɥɐs sʇɐɹʇǝp ʍıʇɥ {total,plural,one{# ǝuʇɹʎ} other{# ǝuʇɹıǝs}}. Iʇs dɹoƃɹǝss ɐddǝɐɹs qǝʅoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.import.title": {
+    "defaultMessage": "‮Iɯdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.kind.blocks": {
+    "defaultMessage": "‮Ԑʅoɔʞǝp ɐɔɔonuʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.kind.bookmarks": {
+    "defaultMessage": "‮Ԑooʞɯɐɹʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.kind.following": {
+    "defaultMessage": "‮Ⅎoʅʅoʍs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.kind.mutes": {
+    "defaultMessage": "‮Wnʇǝp ɐɔɔonuʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.summary": {
+    "defaultMessage": "‮Woʌǝ ʎonɹ ɟoʅʅoʍs, qʅoɔʞs, ɯnʇǝs, ɐup qooʞɯɐɹʞs ʇo oɹ ɟɹoɯ ɐuoʇɥǝɹ sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.import_export.title": {
+    "defaultMessage": "‮Iɯdoɹʇ ɐup ǝxdoɹʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.list.action": {

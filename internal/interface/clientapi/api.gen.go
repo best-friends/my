@@ -850,6 +850,84 @@ func (e DataExportState) Valid() bool {
 	}
 }
 
+// Defines values for DataImportState.
+const (
+	DataImportStateFinished   DataImportState = "finished"
+	DataImportStateInProgress DataImportState = "in_progress"
+)
+
+// Valid indicates whether the value is a known member of the DataImportState enum.
+func (e DataImportState) Valid() bool {
+	switch e {
+	case DataImportStateFinished:
+		return true
+	case DataImportStateInProgress:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataImportKind.
+const (
+	DataImportKindBlocks    DataImportKind = "blocks"
+	DataImportKindBookmarks DataImportKind = "bookmarks"
+	DataImportKindFollowing DataImportKind = "following"
+	DataImportKindMutes     DataImportKind = "mutes"
+)
+
+// Valid indicates whether the value is a known member of the DataImportKind enum.
+func (e DataImportKind) Valid() bool {
+	switch e {
+	case DataImportKindBlocks:
+		return true
+	case DataImportKindBookmarks:
+		return true
+	case DataImportKindFollowing:
+		return true
+	case DataImportKindMutes:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataImportMode.
+const (
+	DataImportModeMerge     DataImportMode = "merge"
+	DataImportModeOverwrite DataImportMode = "overwrite"
+)
+
+// Valid indicates whether the value is a known member of the DataImportMode enum.
+func (e DataImportMode) Valid() bool {
+	switch e {
+	case DataImportModeMerge:
+		return true
+	case DataImportModeOverwrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataImportSkippedReason.
+const (
+	DataImportSkippedReasonDuplicate DataImportSkippedReason = "duplicate"
+	DataImportSkippedReasonInvalid   DataImportSkippedReason = "invalid"
+)
+
+// Valid indicates whether the value is a known member of the DataImportSkippedReason enum.
+func (e DataImportSkippedReason) Valid() bool {
+	switch e {
+	case DataImportSkippedReasonDuplicate:
+		return true
+	case DataImportSkippedReasonInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -3245,6 +3323,104 @@ type DataExportList struct {
 	Items []DataExport `json:"items"`
 }
 
+// DataImport An import of a CSV file, with its progress.
+type DataImport struct {
+	// CreatedAt When the import started.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Failed How many of them could not be carried out: an account or post that cannot be found
+	// or acted on, or a follow that a block stops.
+	Failed int `json:"failed"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Kind What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+	// accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+	// posts the user bookmarked).
+	Kind DataImportKind `json:"kind"`
+
+	// Mode `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+	// what the user has that the file does not list.
+	Mode DataImportMode `json:"mode"`
+
+	// Processed How many of them are done, including the failed ones.
+	Processed int `json:"processed"`
+
+	// State `in_progress` until every entry and removal is done, then `finished`.
+	State DataImportState `json:"state"`
+
+	// Total The number of entries to add and things to remove.
+	Total int `json:"total"`
+}
+
+// DataImportState `in_progress` until every entry and removal is done, then `finished`.
+type DataImportState string
+
+// DataImportKind What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+// accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+// posts the user bookmarked).
+type DataImportKind string
+
+// DataImportList The user's latest imports, newest first.
+type DataImportList struct {
+	Items []DataImport `json:"items"`
+}
+
+// DataImportMode `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+// what the user has that the file does not list.
+type DataImportMode string
+
+// DataImportPreview What an import of a CSV file would do.
+type DataImportPreview struct {
+	// Entries The number of entries of the file, each of which the import adds.
+	Entries int `json:"entries"`
+
+	// Present How many of the entries the user has already.
+	Present int `json:"present"`
+
+	// Removals How many things the user has of the kind that the file does not list, which an
+	// `overwrite` removes; 0 for a `merge`.
+	Removals int `json:"removals"`
+
+	// Skipped The lines that are not entries, in line order.
+	Skipped []DataImportSkipped `json:"skipped"`
+}
+
+// DataImportRequest A CSV file to import, and how.
+type DataImportRequest struct {
+	// Kind What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+	// accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+	// posts the user bookmarked).
+	Kind DataImportKind `json:"kind"`
+
+	// Mode `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+	// what the user has that the file does not list.
+	Mode DataImportMode `json:"mode"`
+
+	// Text The content of the CSV file, in UTF-8.
+	Text string `json:"text"`
+}
+
+// DataImportSkipped A line of a CSV file that is not an entry.
+type DataImportSkipped struct {
+	// Line The line of the file, from 1.
+	Line int `json:"line"`
+
+	// Reason `invalid`: the line names no account address (or for bookmarks, no post URL).
+	// `duplicate`: an earlier line names the same account or post.
+	Reason DataImportSkippedReason `json:"reason"`
+
+	// Value The line as written.
+	Value string `json:"value"`
+}
+
+// DataImportSkippedReason `invalid`: the line names no account address (or for bookmarks, no post URL).
+// `duplicate`: an earlier line names the same account or post.
+type DataImportSkippedReason string
+
 // DecideAppealRequest The moderators' explanation of a decision on an appeal.
 type DecideAppealRequest struct {
 	// PublicReason Shown to the user who appealed, as plain text.
@@ -4043,6 +4219,8 @@ type Preferences struct {
 //     built. Wait for it to end.
 //   - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
 //     it is being built, failed, or expired.
+//   - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+//     carried out. Wait for it to finish.
 //   - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
 //     already used, or is not a code.
 //   - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -5515,6 +5693,12 @@ type CreateWebhookJSONRequestBody = CreateWebhookRequest
 // UpdateWebhookJSONRequestBody defines body for UpdateWebhook for application/json ContentType.
 type UpdateWebhookJSONRequestBody = UpdateWebhookRequest
 
+// StartDataImportJSONRequestBody defines body for StartDataImport for application/json ContentType.
+type StartDataImportJSONRequestBody = DataImportRequest
+
+// PreviewDataImportJSONRequestBody defines body for PreviewDataImport for application/json ContentType.
+type PreviewDataImportJSONRequestBody = DataImportRequest
+
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
 
@@ -5835,6 +6019,9 @@ type ServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams)
+	// ExportCsv Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+	// (GET /csv_exports/{kind})
+	ExportCsv(w http.ResponseWriter, r *http.Request, kind DataImportKind)
 	// ListCustomEmojis List the custom emoji of the picker
 	// (GET /custom_emojis)
 	ListCustomEmojis(w http.ResponseWriter, r *http.Request)
@@ -5856,6 +6043,15 @@ type ServerInterface interface {
 	// RejectFollowRequest Reject a follow request
 	// (POST /follow_requests/{id}/reject)
 	RejectFollowRequest(w http.ResponseWriter, r *http.Request, id AccountId)
+	// ListDataImports List the authenticated user's imports
+	// (GET /imports)
+	ListDataImports(w http.ResponseWriter, r *http.Request)
+	// StartDataImport Import a CSV file of follows, blocks, mutes, or bookmarks
+	// (POST /imports)
+	StartDataImport(w http.ResponseWriter, r *http.Request)
+	// PreviewDataImport Preview an import of a CSV file
+	// (POST /imports/preview)
+	PreviewDataImport(w http.ResponseWriter, r *http.Request)
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
@@ -9036,6 +9232,32 @@ func (siw *ServerInterfaceWrapper) ListBookmarks(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ExportCsv operation middleware
+func (siw *ServerInterfaceWrapper) ExportCsv(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kind" -------------
+	var kind DataImportKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", r.PathValue("kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportCsv(w, r, kind)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomEmojis operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomEmojis(w http.ResponseWriter, r *http.Request) {
 
@@ -9193,6 +9415,48 @@ func (siw *ServerInterfaceWrapper) RejectFollowRequest(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RejectFollowRequest(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDataImports operation middleware
+func (siw *ServerInterfaceWrapper) ListDataImports(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDataImports(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartDataImport operation middleware
+func (siw *ServerInterfaceWrapper) StartDataImport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartDataImport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewDataImport operation middleware
+func (siw *ServerInterfaceWrapper) PreviewDataImport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewDataImport(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10621,6 +10885,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports", wrapper.ListDataExports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/exports", wrapper.RequestDataExport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports/{id}/archive", wrapper.DownloadDataExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/csv_exports/{kind}", wrapper.ExportCsv)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/imports", wrapper.ListDataImports)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/imports", wrapper.StartDataImport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/imports/preview", wrapper.PreviewDataImport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/two_factor", wrapper.GetTwoFactor)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/setup", wrapper.SetUpTotp)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp", wrapper.EnableTotp)
@@ -16434,6 +16702,76 @@ func (response ListBookmarksdefaultApplicationProblemPlusJSONResponse) VisitList
 	return err
 }
 
+type ExportCsvRequestObject struct {
+	Kind DataImportKind `json:"kind"`
+}
+
+type ExportCsvResponseObject interface {
+	VisitExportCsvResponse(w http.ResponseWriter) error
+}
+
+type ExportCsv200ResponseHeaders struct {
+	CacheControl       *string
+	ContentDisposition *string
+}
+
+type ExportCsv200TextcsvResponse struct {
+	Body          io.Reader
+	Headers       ExportCsv200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportCsv200TextcsvResponse) VisitExportCsvResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportCsvdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ExportCsvdefaultApplicationProblemPlusJSONResponse) VisitExportCsvResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListCustomEmojisRequestObject struct {
 }
 
@@ -16829,6 +17167,191 @@ type RejectFollowRequestdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response RejectFollowRequestdefaultApplicationProblemPlusJSONResponse) VisitRejectFollowRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDataImportsRequestObject struct {
+}
+
+type ListDataImportsResponseObject interface {
+	VisitListDataImportsResponse(w http.ResponseWriter) error
+}
+
+type ListDataImports200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListDataImports200JSONResponse struct {
+	Body    DataImportList
+	Headers ListDataImports200ResponseHeaders
+}
+
+func (response ListDataImports200JSONResponse) VisitListDataImportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDataImportsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListDataImportsdefaultApplicationProblemPlusJSONResponse) VisitListDataImportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartDataImportRequestObject struct {
+	Body *StartDataImportJSONRequestBody
+}
+
+type StartDataImportResponseObject interface {
+	VisitStartDataImportResponse(w http.ResponseWriter) error
+}
+
+type StartDataImport202ResponseHeaders struct {
+	CacheControl *string
+}
+
+type StartDataImport202JSONResponse struct {
+	Body    DataImport
+	Headers StartDataImport202ResponseHeaders
+}
+
+func (response StartDataImport202JSONResponse) VisitStartDataImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartDataImportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response StartDataImportdefaultApplicationProblemPlusJSONResponse) VisitStartDataImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewDataImportRequestObject struct {
+	Body *PreviewDataImportJSONRequestBody
+}
+
+type PreviewDataImportResponseObject interface {
+	VisitPreviewDataImportResponse(w http.ResponseWriter) error
+}
+
+type PreviewDataImport200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type PreviewDataImport200JSONResponse struct {
+	Body    DataImportPreview
+	Headers PreviewDataImport200ResponseHeaders
+}
+
+func (response PreviewDataImport200JSONResponse) VisitPreviewDataImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewDataImportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response PreviewDataImportdefaultApplicationProblemPlusJSONResponse) VisitPreviewDataImportResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -19839,6 +20362,9 @@ type StrictServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(ctx context.Context, request ListBookmarksRequestObject) (ListBookmarksResponseObject, error)
+	// ExportCsv Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+	// (GET /csv_exports/{kind})
+	ExportCsv(ctx context.Context, request ExportCsvRequestObject) (ExportCsvResponseObject, error)
 	// ListCustomEmojis List the custom emoji of the picker
 	// (GET /custom_emojis)
 	ListCustomEmojis(ctx context.Context, request ListCustomEmojisRequestObject) (ListCustomEmojisResponseObject, error)
@@ -19860,6 +20386,15 @@ type StrictServerInterface interface {
 	// RejectFollowRequest Reject a follow request
 	// (POST /follow_requests/{id}/reject)
 	RejectFollowRequest(ctx context.Context, request RejectFollowRequestRequestObject) (RejectFollowRequestResponseObject, error)
+	// ListDataImports List the authenticated user's imports
+	// (GET /imports)
+	ListDataImports(ctx context.Context, request ListDataImportsRequestObject) (ListDataImportsResponseObject, error)
+	// StartDataImport Import a CSV file of follows, blocks, mutes, or bookmarks
+	// (POST /imports)
+	StartDataImport(ctx context.Context, request StartDataImportRequestObject) (StartDataImportResponseObject, error)
+	// PreviewDataImport Preview an import of a CSV file
+	// (POST /imports/preview)
+	PreviewDataImport(ctx context.Context, request PreviewDataImportRequestObject) (PreviewDataImportResponseObject, error)
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
@@ -22641,6 +23176,32 @@ func (sh *strictHandler) ListBookmarks(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// ExportCsv operation middleware
+func (sh *strictHandler) ExportCsv(w http.ResponseWriter, r *http.Request, kind DataImportKind) {
+	var request ExportCsvRequestObject
+
+	request.Kind = kind
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportCsv(ctx, request.(ExportCsvRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportCsv")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportCsvResponseObject); ok {
+		if err := validResponse.VisitExportCsvResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListCustomEmojis operation middleware
 func (sh *strictHandler) ListCustomEmojis(w http.ResponseWriter, r *http.Request) {
 	var request ListCustomEmojisRequestObject
@@ -22810,6 +23371,92 @@ func (sh *strictHandler) RejectFollowRequest(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RejectFollowRequestResponseObject); ok {
 		if err := validResponse.VisitRejectFollowRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDataImports operation middleware
+func (sh *strictHandler) ListDataImports(w http.ResponseWriter, r *http.Request) {
+	var request ListDataImportsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDataImports(ctx, request.(ListDataImportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDataImports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDataImportsResponseObject); ok {
+		if err := validResponse.VisitListDataImportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartDataImport operation middleware
+func (sh *strictHandler) StartDataImport(w http.ResponseWriter, r *http.Request) {
+	var request StartDataImportRequestObject
+
+	var body StartDataImportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartDataImport(ctx, request.(StartDataImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartDataImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartDataImportResponseObject); ok {
+		if err := validResponse.VisitStartDataImportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewDataImport operation middleware
+func (sh *strictHandler) PreviewDataImport(w http.ResponseWriter, r *http.Request) {
+	var request PreviewDataImportRequestObject
+
+	var body PreviewDataImportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewDataImport(ctx, request.(PreviewDataImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewDataImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewDataImportResponseObject); ok {
+		if err := validResponse.VisitPreviewDataImportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
