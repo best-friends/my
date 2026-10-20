@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The main navigation through the whole app (web-client.md T4, ADR-0039): the phones' tab bar with Timelines and
-// Menu, the menu's sheet, and the Timelines screen's tabs. jsdom applies no styles, so the items that only the
-// tab bar or only the rail shows are all in the document; e2e/shell.spec.ts checks which ones each width shows.
+// The main navigation through the whole app (web-client.md T4, ADR-0039): the local and the federated timeline as
+// items of their own, the phones' tab bar with Menu, and the menu's sheet. jsdom applies no styles, so the items
+// that only the tab bar or only the rail shows are all in the document; e2e/shell.spec.ts checks which ones each
+// width shows.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
@@ -20,97 +21,71 @@ function navigation() {
   return screen.getByRole("navigation", { name: "Main" });
 }
 
-describe("the tab bar's Timelines", () => {
-  test("opens the local timeline, whose page has the federated one as its other tab", async () => {
+describe("the timelines' items", () => {
+  test("open the local and the federated timeline as two screens, each the current item on its own, with no tabs", async () => {
     const { user } = await renderApp({ path: "/home" });
     await screen.findByRole("heading", { level: 1, name: "Home" });
 
-    const timelines = within(navigation()).getByRole("link", { name: "Timelines" });
-    expect(timelines).toHaveAttribute("href", "/local");
-    expect(timelines).not.toHaveAttribute("aria-current");
-    await user.click(timelines);
+    const local = within(navigation()).getByRole("link", { name: "Local" });
+    expect(local).toHaveAttribute("href", "/local");
+    expect(local).not.toHaveAttribute("aria-current");
+    await user.click(local);
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Local timeline" });
     await waitFor(() => {
       expect(heading).toHaveFocus();
     });
-    expect(within(navigation()).getByRole("link", { name: "Timelines" })).toHaveAttribute("aria-current", "page");
-    const tabs = screen.getByRole("tablist", { name: "Timelines" });
-    const local = within(tabs).getByRole("tab", { name: "Local" });
-    expect(local).toHaveAttribute("aria-selected", "true");
-    expect(local).toHaveAttribute("href", "/local");
-    expect(screen.getByRole("tabpanel", { name: "Local" })).toContainElement(screen.getByRole("feed", { name: "Local timeline" }));
+    expect(within(navigation()).getByRole("link", { name: "Local" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("feed", { name: "Local timeline" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
 
-    const federated = await within(tabs).findByRole("tab", { name: "Federated" });
+    const federated = await within(navigation()).findByRole("link", { name: "Federated" });
     expect(federated).toHaveAttribute("href", "/public");
+    expect(federated).not.toHaveAttribute("aria-current");
     await user.click(federated);
 
     expect(await screen.findByRole("feed", { name: "Federated timeline" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Federated" })).toHaveAttribute("aria-selected", "true");
-    // Timelines stays the current item of the tab bar on either tab.
-    expect(within(navigation()).getByRole("link", { name: "Timelines" })).toHaveAttribute("aria-current", "page");
+    expect(within(navigation()).getByRole("link", { name: "Federated" })).toHaveAttribute("aria-current", "page");
+    expect(within(navigation()).getByRole("link", { name: "Local" })).not.toHaveAttribute("aria-current");
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
   });
 
-  test("moves between the tabs with the arrow keys and opens one with Enter", async () => {
-    const { user, router } = await renderApp({ path: "/local" });
-    const local = await screen.findByRole("tab", { name: "Local" });
-    const federated = await screen.findByRole("tab", { name: "Federated" });
-
-    local.focus();
-    await user.keyboard("{ArrowRight}");
-    expect(federated).toHaveFocus();
-    // Manual activation: focus alone opens nothing.
-    expect(router.state.location.pathname).toBe("/local");
-
-    await user.keyboard("{Enter}");
-    expect(await screen.findByRole("feed", { name: "Federated timeline" })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/public");
-  });
-
-  test("keeps its place when the server serves no federated timeline, which leaves the local tab alone", async () => {
-    let answered = false;
-    server.use(
-      http.get(`${apiBase}/instance`, () => {
-        answered = true;
-        return HttpResponse.json({ ...instanceFixture, timelines: { local: true, federated: false } });
-      }),
-    );
-    await renderApp({ path: "/local" });
-    await screen.findByRole("feed", { name: "Local timeline" });
-    await waitFor(() => {
-      expect(answered).toBe(true);
-    });
-
-    expect(within(navigation()).getByRole("link", { name: "Timelines" })).toHaveAttribute("href", "/local");
-    expect(within(screen.getByRole("tablist", { name: "Timelines" })).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Local"]);
-  });
-
-  test("opens the federated timeline when the server serves only that one", async () => {
-    server.use(instanceWith({ local: false, federated: true }));
+  test("leave out both timelines when the server serves neither", async () => {
+    server.use(instanceWith({ local: false, federated: false }));
     await renderApp({ path: "/home" });
-    await screen.findByRole("heading", { level: 1, name: "Home" });
-
-    await waitFor(() => {
-      expect(within(navigation()).getByRole("link", { name: "Timelines" })).toHaveAttribute("href", "/public");
-    });
-  });
-
-  test("stays in the tab bar when the server serves neither, and its page says the local timeline is off", async () => {
-    server.use(
-      instanceWith({ local: false, federated: false }),
-      http.get(`${apiBase}/timelines/local`, () => problem(404, "about:blank", "Not Found")),
-    );
-    const { user } = await renderApp({ path: "/home" });
     await screen.findByRole("heading", { level: 1, name: "Home" });
     await waitFor(() => {
       expect(within(navigation()).queryByRole("link", { name: "Local" })).not.toBeInTheDocument();
     });
+    expect(within(navigation()).queryByRole("link", { name: "Federated" })).not.toBeInTheDocument();
+    expect(within(navigation()).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/home",
+      "/notifications",
+      "/search",
+      "/profile",
+      "/bookmarks",
+      "/settings",
+    ]);
+  });
 
-    await user.click(within(navigation()).getByRole("link", { name: "Timelines" }));
+  test("say that the local timeline is off when its address is a 404", async () => {
+    server.use(
+      instanceWith({ local: false, federated: false }),
+      http.get(`${apiBase}/timelines/local`, () => problem(404, "about:blank", "Not Found")),
+    );
+    await renderApp({ path: "/local" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "The local timeline is off" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to the home timeline" })).toHaveAttribute("href", "/home");
     expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
+  test("are in Japanese in the ja locale", async () => {
+    await renderApp({ path: "/home", locale: "ja" });
+    await screen.findByRole("heading", { level: 1, name: "ホーム" });
+    const nav = screen.getByRole("navigation", { name: "メイン" });
+    expect(within(nav).getByRole("link", { name: "ローカル" })).toHaveAttribute("href", "/local");
+    expect(await within(nav).findByRole("link", { name: "連合" })).toHaveAttribute("href", "/public");
   });
 });
 
@@ -211,8 +186,6 @@ describe("the tab bar's Menu", () => {
     const { user } = await renderApp({ path: "/home", locale: "ja" });
     await screen.findByRole("heading", { level: 1, name: "ホーム" });
     const nav = screen.getByRole("navigation", { name: "メイン" });
-    expect(within(nav).getByRole("link", { name: "タイムライン" })).toBeInTheDocument();
-
     await user.click(within(nav).getByRole("button", { name: "メニュー" }));
     const sheet = await screen.findByRole("dialog", { name: "メニュー" });
     expect(within(sheet).getByRole("button", { name: "閉じる" })).toBeInTheDocument();
@@ -242,7 +215,6 @@ describe("the sidebar's server and viewer", () => {
     await within(list).findByRole("link", { name: "Federated" });
     expect(within(list).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/home",
-      "/local",
       "/local",
       "/public",
       "/notifications",

@@ -2,7 +2,7 @@
 import { Link } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useId } from "react";
-import { TimelineFeed, TimelineSkeleton, TimelineTabs, timelineQueryOptions } from "../features/timeline";
+import { TimelineFeed, TimelineSkeleton, timelineQueryOptions } from "../features/timeline";
 import { ApiError } from "../lib/errors";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
@@ -10,7 +10,7 @@ import { RouteError } from "./-layout/RouteStates";
 
 /**
  * The local timeline (FR-202): the public posts of this server's accounts, and their local posts for a signed-in
- * user. It is the Timelines screen of the phones' tab bar, with the federated timeline as its other tab (ADR-0039).
+ * user. The navigation offers it, at every width, as an item of its own while the instance serves it.
  */
 export const Route = createFileRoute("/local")({
   // A feed to add to: the shell floats the new-post button over this page (web-client.md G4).
@@ -31,9 +31,7 @@ function LocalPage() {
   return (
     <>
       <PageHeading id={headingId}>{t("client:local.title")}</PageHeading>
-      <TimelineTabs current="local">
-        <TimelineFeed timeline={{ kind: "local" }} aria-labelledby={headingId} />
-      </TimelineTabs>
+      <TimelineFeed timeline={{ kind: "local" }} aria-labelledby={headingId} />
     </>
   );
 }
@@ -43,17 +41,14 @@ function LocalPending() {
   return (
     <>
       <PageHeading>{t("client:local.title")}</PageHeading>
-      <TimelineTabs current="local">
-        <TimelineSkeleton />
-      </TimelineTabs>
+      <TimelineSkeleton />
     </>
   );
 }
 
 /**
  * A 404 is the instance setting that turns the local timeline off (api/openapi.yaml, getLocalTimeline), reached
- * from an old link, a bookmark, or the tab bar's Timelines on a server that serves neither public timeline: it
- * says so instead of offering to try again.
+ * from an old link or bookmark: it says so instead of offering to try again.
  */
 function LocalError(props: ErrorComponentProps) {
   const t = useT();
