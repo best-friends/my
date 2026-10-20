@@ -46,6 +46,25 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | S8 | 楽観的更新は、まず保留中の mutation の `variables` を表示する方式にする。複数の画面に反映が要るときだけ、キャッシュを書き換えて失敗時に戻す | レビュー |
 | S9 | API の型は OpenAPI からの生成物だけを使う。同じ型を手で書かない | 生成物の差分検査（ADR-0029） |
 | S10 | SSE の購読は `lib/sse` の 1 つの Effect だけが行い、受け取った内容を Query のキャッシュに書き込む | レビュー |
+| S11 | ブラウザの保存（localStorage・sessionStorage）は `lib/storage` で宣言したキーだけを通して読み書きする。新しく残すものは、そこにキーを宣言してから使う（下の「ブラウザの保存」） | `lib/storage` とテストの外で `restrict/storage`（`localStorage`・`sessionStorage` の参照） |
+
+### ブラウザの保存
+
+`lib/storage.ts` が、アプリがブラウザに残すものをすべて宣言する。キーごとに、置き場所（localStorage か sessionStorage）・値の型とその検査（Zod）・保存形式の版・何も残っていないときの既定値・利用者のデータか（セッションが終わると消すか）を決める。
+宣言したキーのオブジェクトの `read()` / `write()` / `remove()` で読み書きし、React からは `useStorage(key)`（`useSyncExternalStore`）で読む。
+値は `{"v":<版>,"value":<値>}` の JSON で残す。JSON でないもの・版の違うもの・検査を通らないものは、何もないのと同じく既定値として読む。既定値を書くとキーを消す。
+同じタブでの書き込みはそのキーの購読者に、ほかのタブでの書き込みは `storage` イベントで伝わる。ストレージが使えない（ブロックされている、容量が足りない）ときは、書いた値をそのページの間だけメモリに置き、ページの動きは変えない。
+セッションが終わると、`clearUserStorage()` が利用者のデータと宣言したキーを両方のストレージから消す（§10）。
+
+| キー | 置き場所 | 内容 | 利用者のデータ |
+| --- | --- | --- | --- |
+| `my:display:theme` | localStorage | 表示のテーマ（§9）。`public/theme.js` も同じキーと形式を読む | いいえ |
+| `my:display:locale` | localStorage | 最後に表示したロケール（§9） | いいえ |
+| `my:display:autoplay` | localStorage | アニメーションの自動再生（§13） | いいえ |
+| `my:instance:timelines` | localStorage | インスタンスが提供する公開タイムライン（§9） | いいえ |
+| `my:user:compose:<アカウント ID>` | sessionStorage | 投稿の下書きと送信中の投稿（§12） | はい |
+| `my:oauth-pending` | sessionStorage | 進行中のサインインの verifier・`state`・戻り先（§10） | いいえ |
+| `my:preload-error-reloaded-at` | sessionStorage | チャンクの読み込みに失敗して再読み込みした時刻（§11） | いいえ |
 
 ## 3. 構成と責務分離
 
@@ -369,11 +388,11 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   - 認可コードの交換も同じロックの中で行い、起動時の再開と競合しない。
   - サインイン・サインアウト・セッションの終了（更新が 4xx で断られた）も BroadcastChannel で他のタブに伝える。
   - 利用者が変わったとき（サインイン、またはセッションのあったタブでの終了）、`lib/auth/userData.ts` が Query のキャッシュをすべて消す。セッションが終わったときは、`lib/pwa` の `clearCaches()` で Cache Storage もすべて消す（§11）。
-    セッションが終わったときは、sessionStorage の `my:user:` で始まるキー（利用者が入力したもの。投稿の下書き、§12）も消す。サインインでは消さない（キーにアカウントの ID を含める）。
+    セッションが終わったときは、`lib/storage` で利用者のデータと宣言したキー（利用者が入力したもの。投稿の下書き、§12）も消す（§2「ブラウザの保存」）。サインインでは消さない（キーにアカウントの ID を含める）。
   - 状態（`unknown` / `signed-in` / `signed-out`）は `useSessionStatus()` で読む。サーバーのデータである閲覧者のアカウントは Context に置かず、`features/session` の `useViewer()` が Query で取る（S2、S6）。
 - **ログイン**（`lib/auth/signIn.ts`、Authorization Code + PKCE）: `/login` のボタンが、新しい verifier（32 バイトの乱数）と `state` を作り、S256 の challenge を付けてサーバーの認可画面（`/oauth/authorize`）にページごと遷移する。
   scope は指定せず、Web クライアントに登録されたすべてのスコープを受け取る。
-  - verifier・`state`・戻り先は、往復の間だけ sessionStorage（このタブだけ）に置き、コールバックが読んだ時点で消す。どれも資格情報ではない（コードは 1 回限り・短命で、verifier に結び付く）。
+  - verifier・`state`・戻り先は、往復の間だけ sessionStorage（このタブだけ。`my:oauth-pending`）に置き、コールバックが読んだ時点で消す。どれも資格情報ではない（コードは 1 回限り・短命で、verifier に結び付く）。
   - コールバック（`/login/callback`、`routes/login_.callback.tsx`）は `beforeLoad` で `state` を照合し、コードを交換してから、戻り先に `replace` で遷移する。コードは履歴にもアドレスバーにも残らない。
     失敗（拒否・`state` の不一致・交換の失敗・通信の失敗）は、そのルートの `errorComponent` が理由とやり直しのリンクを出す。
   - 戻り先（`return_to`）は、1 つの `/` で始まるパスだけを受け付ける（`//example.com` や `javascript:` は捨てる）。
@@ -496,6 +515,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   画像は `preview_url` で表示する。アップロードでは `small` の静止版、リモートの添付ではメディアプロキシの URL で、リモートの添付は `variants` を持たない。
   アップロードの画像・アバター・ヘッダーは `variants` を `@my/ui` の `Picture`（`lib/images` の `imageSources`）に渡し、表示する大きさに合う版をブラウザーが `srcset` / `sizes` で選ぶ。
   アニメーションの動く版は `<source media="(prefers-reduced-motion: no-preference)">` にだけ置き、設定「アニメーションを自動で再生する」（このブラウザーの localStorage `my:display:autoplay`、`lib/autoplay`、既定はオン）がオフなら、ポインタを重ねるか触れている間だけ動く版にする（ADR-0054 §3）。説明のない画像には「説明なし」のバッジが付く（Y9）。CW はローカルの投稿と同じ disclosure で出す。
+  センシティブな画像を隠している間と、画像の読み込み中は、添付の `blurhash` のぼかし（`@my/ui` の `Blurhash`。自前の復号器が 32 × 32 ピクセルに復号して `<canvas>` に描き、飾りとして `aria-hidden`）をそのマスに出し、読み込み終えたら外す。`blurhash` のない添付と復号できないものは、マスの地の面（`bg-surface-sunken`）が代わりになる。
 - **楽観的更新**（S8）: 同じ投稿がタイムラインのページ・ブースト・スレッド・投稿の query に同時にあるので、`api/cache.ts` がキャッシュの答えを形（`Status`・`items`・`pages`・`ancestors` / `descendants`）で見分け、すべての写しを書き換える。
   トグルは押した時点で状態と数を変え、失敗したらその 1 回分だけ戻してトーストで理由を知らせる。同じ投稿の同じ操作は TanStack Query の mutation の `scope` で 1 つずつ順に送り、最後に押したものが残る。
   成功の応答の数（他の人の操作を含む）は、その操作の最後の要求の応答からだけ取り込む。結果は `useAnnouncer` で知らせる。

@@ -40,6 +40,7 @@ type store interface {
 	insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) error
 	listOutbox(ctx context.Context, tx uow.Tx, limit int) ([]queue.Job, error)
 	deleteOutbox(ctx context.Context, tx uow.Tx, id string) error
+	backlog(ctx context.Context, tx uow.Tx, now time.Time) (queue.Backlog, error)
 }
 
 // Queue is the database job queue.
@@ -50,10 +51,11 @@ type Queue struct {
 }
 
 var (
-	_ queue.JobQueue = (*Queue)(nil)
-	_ queue.Outbox   = (*Queue)(nil)
-	_ queue.Source   = (*Queue)(nil)
-	_ queue.DeadJobs = (*Queue)(nil)
+	_ queue.JobQueue      = (*Queue)(nil)
+	_ queue.Outbox        = (*Queue)(nil)
+	_ queue.Source        = (*Queue)(nil)
+	_ queue.DeadJobs      = (*Queue)(nil)
+	_ queue.BacklogReader = (*Queue)(nil)
 )
 
 // NewSQLite returns the queue kept in the SQLite database d.
@@ -200,4 +202,18 @@ func (q *Queue) RequeueDeadJob(ctx context.Context, id string) error {
 		return fmt.Errorf("queue/db: requeue dead job: %w", err)
 	}
 	return err
+}
+
+// Backlog implements queue.BacklogReader.
+func (q *Queue) Backlog(ctx context.Context, now time.Time) (queue.Backlog, error) {
+	var b queue.Backlog
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		b, err = q.st.backlog(ctx, tx, kernel.Normalize(now))
+		return err
+	})
+	if err != nil {
+		return queue.Backlog{}, fmt.Errorf("queue/db: backlog: %w", err)
+	}
+	return b, nil
 }

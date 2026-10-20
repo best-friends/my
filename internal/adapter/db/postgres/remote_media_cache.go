@@ -84,6 +84,12 @@ func (r *MediaRepository) RemoteMediaCacheSize(ctx context.Context) (int64, erro
 	return n, wrap(err, "sum remote media cache size")
 }
 
+// LocalMediaSize implements content.MediaRepository.
+func (r *MediaRepository) LocalMediaSize(ctx context.Context) (int64, error) {
+	n, err := r.db.reader().SumLocalMediaSize(ctx)
+	return n, wrap(err, "sum local media size")
+}
+
 // IsCustomEmojiImage implements content.MediaRepository.
 func (r *MediaRepository) IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error) {
 	ok, err := r.db.reader().IsCustomEmojiImage(ctx, mediaID)

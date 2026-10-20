@@ -23,7 +23,7 @@ describe("reloadOnPreloadError", () => {
   function fakeWindow() {
     const target = new EventTarget();
     const reload = vi.fn();
-    const window = Object.assign(target, { sessionStorage: globalThis.sessionStorage, location: { reload } });
+    const window = Object.assign(target, { location: { reload } });
     return { window: window as unknown as Window, reload };
   }
 

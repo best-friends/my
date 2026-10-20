@@ -75,6 +75,7 @@ Remote servers ──AP──►│                               │
   | `internal/app/blob`, `internal/app/media` | 標準ライブラリだけ（`BlobStore` / `MediaProcessor` ポート） |
   | `internal/app/stream` | 標準ライブラリ、`internal/app/kernel`（生存の印の KV）、`internal/app/queue`（後始末の定期ジョブ）（リアルタイム更新の `Publisher` / `Subscriber` / `Bus` / `Sweeper` ポート、プロセス内ブローカー、プロセス間の中継） |
   | `internal/app/projection` | 標準ライブラリ、`internal/app/uow`、`internal/app/queue`（投影の再構築と検証。各モジュールの再構築関数は composition root が渡す） |
+  | `internal/app/metrics` | 標準ライブラリ、`internal/app/kernel`（KV と `Meter`）、`internal/app/queue`（キューの滞留と定期ジョブ）（インスタンス全体の指標のスナップショット、ADR-0055 §4。件数と容量を数える関数は composition root が渡す） |
   | `internal/i18n` | 標準ライブラリ、`locales`（埋め込みカタログ）、MessageFormat エンジンだけ（`app` と `interface` から使う末端のライブラリ） |
   | `internal/interface/*` | `app` と `domain`（`adapter` / `platform` は不可。`pkg/testkit` はテストからだけ可） |
   | `internal/adapter/*` | `app` のポートと `domain`（`interface` と `platform` は不可） |
@@ -114,7 +115,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `Clock` / `IdGenerator` | 時刻（UTC・ミリ秒）・ID 生成（テスト容易性のため注入） | system（システム時計 / `uuid.NewV7()`） | [0003](../adr/0003-database-abstraction.md) |
 | `KeyManager` | 秘密（アクター秘密鍵など）を包む DEK の wrap / unwrap。暗号化は `kernel.Sealer` が行う | local（設定の KEK） | [0019](../adr/0019-security-baseline.md) |
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
-| `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは持たない | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
+| `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format。Gauge は収集されないので、定期ジョブが `GaugeWriter` で書かせる）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは持たない | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
 
 ## 4. 主要フロー
 
@@ -204,6 +205,7 @@ internal/
   app/media/         # MediaProcessor ポート、形式の判定、上限の既定値
   app/stream/        # リアルタイム更新の Publisher / Subscriber / Bus / Sweeper ポート、プロセス内ブローカー Hub、プロセス間の中継 Relay、定期ジョブ stream.sweep
   app/projection/    # 投影の再構築と検証（my projection、定期ジョブ projection.verify）と、表を列に依存せず読み書きする Store ポート
+  app/metrics/       # インスタンス全体の指標のスナップショット（KV の名前空間 metrics、定期ジョブ metrics.snapshot。ADR-0055 §4）
   interface/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）。スタッフの操作（/admin/*、ADR-0058）の入口もここだけ
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo

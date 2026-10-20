@@ -110,3 +110,18 @@ JOIN media_variants v ON v.result_id = r.id
 WHERE m.id = ANY(sqlc.arg(ids)::text[])
   AND r.outcome = 'ready'
 ORDER BY m.id, v.size, v.motion;
+
+-- SumLocalMediaSize returns the bytes that the local uploads keep: the variants of the current
+-- (newest) processing result of each upload, and the originals of the uploads that wait for
+-- their first processing (ADR-0055 section 3, my.media.stored_bytes).
+-- name: SumLocalMediaSize :one
+SELECT CAST(COALESCE(SUM(s.file_size), 0) AS BIGINT) FROM (
+  SELECT v.file_size FROM media_files m
+  JOIN media_processing_results r ON r.id = (
+    SELECT c.id FROM media_processing_results c WHERE c.media_id = m.id ORDER BY c.id DESC LIMIT 1)
+  JOIN media_variants v ON v.result_id = r.id
+  WHERE m.origin = 'upload'
+  UNION ALL
+  SELECT u.file_size FROM uploaded_media u
+  WHERE NOT EXISTS (SELECT 1 FROM media_processing_results p WHERE p.media_id = u.media_id)
+) AS s;

@@ -43,6 +43,7 @@ import (
 	"github.com/best-friends/my/internal/app/instance"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/media"
+	"github.com/best-friends/my/internal/app/metrics"
 	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/projection"
@@ -105,6 +106,9 @@ type App struct {
 	HTTPClient kernel.HTTPClient
 	// Meter is the metrics adapter that cfg.MetricsExporter selects (ADR-0055).
 	Meter kernel.Meter
+	// MetricsSnapshot reports the instance-wide gauges (ADR-0055 §4); nil when Meter records
+	// nothing.
+	MetricsSnapshot *metrics.Service
 	// HumanVerifier checks the CAPTCHA token of the sign-in and registration forms, and
 	// HumanCheckWidget is what those pages render for it; both are nil when captcha is none
 	// (ADR-0042).
@@ -643,6 +647,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		CustomEmojis: a.CustomEmojis,
 		RateLimiter:  a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	}).Register(clientAPIRouter{a})
+	a.registerMetricsSnapshot()
 	return a, nil
 }
 

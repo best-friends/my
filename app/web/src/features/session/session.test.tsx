@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { apiBase, oauthError, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { preferencesFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
+import { localeKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 const origin = window.location.origin;
@@ -150,7 +151,7 @@ describe("signing in and out", () => {
     // localStorage holds only the instance's public timelines, which the navigation keeps for an offline start, and
     // the locale the app was last displayed in, which the next start begins in.
     expect(Object.keys(localStorage).toSorted()).toEqual(["my:display:locale", "my:instance:timelines"]);
-    expect(localStorage.getItem("my:display:locale")).toBe("en");
+    expect(localeKey.read()).toBe("en");
     expect(sessionStorage).toHaveLength(0);
     expect(idb.open).not.toHaveBeenCalled();
     expect(document.cookie).toBe("");

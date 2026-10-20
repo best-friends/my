@@ -95,3 +95,16 @@ LIMIT $1;
 
 -- name: DeleteOutboxEvent :exec
 DELETE FROM outbox_events WHERE id = $1;
+
+-- CountReadyJobs counts the due, unleased jobs of each type, with the earliest run_at among
+-- them, for the queue gauges of the metrics snapshot (ADR-0055 section 4). It counts the jobs
+-- that their ordering key holds back too.
+-- name: CountReadyJobs :many
+SELECT type, COUNT(*) AS ready, CAST(MIN(run_at) AS timestamptz) AS oldest_run_at
+FROM jobs
+WHERE run_at <= sqlc.arg(now) AND (locked_until IS NULL OR locked_until <= sqlc.arg(now))
+GROUP BY type
+ORDER BY type;
+
+-- name: CountDeadJobs :one
+SELECT COUNT(*) FROM dead_jobs;

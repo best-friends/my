@@ -27,13 +27,20 @@ type Meter interface {
 	UpDownCounter(i Instrument) UpDownCounter
 	Histogram(i Instrument) Histogram
 	// Gauge registers f, which reports the current values of i whenever the exporter collects.
-	// Exporters that do not collect (emf) never call it.
+	// Exporters that do not collect (emf) call it only when asked through GaugeWriter.
 	Gauge(i Instrument, f GaugeFunc)
 	// Begin starts a unit of work, an HTTP request or a job, and returns its context and the
 	// function that ends it. An exporter that writes one record per unit of work (emf) collects
 	// the measurements made with that context and writes them when end is called; the others
 	// return ctx and a function that does nothing. Call end exactly once.
 	Begin(ctx context.Context) (_ context.Context, end func())
+}
+
+// GaugeWriter is implemented by a Meter whose exporter does not collect (emf): WriteGauges
+// calls the functions of the gauges once and writes what they report, so that a periodic job
+// exports the gauges of the metrics snapshot (ADR-0055 §4).
+type GaugeWriter interface {
+	WriteGauges(ctx context.Context) error
 }
 
 // Instrument declares a metric (ADR-0055 §3).

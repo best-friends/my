@@ -2,6 +2,7 @@
 import { type ComponentPropsWithRef, useState } from "react";
 import { ToggleButton } from "react-aria-components";
 import { tv } from "tailwind-variants";
+import { Blurhash } from "./Blurhash";
 import { HideMediaIcon } from "./Icons";
 import { type ImageSources, Picture } from "./Picture";
 import { VisuallyHidden } from "./VisuallyHidden";
@@ -10,7 +11,9 @@ const mediaGrid = tv({
   slots: {
     base: "relative grid aspect-video w-full gap-1 overflow-hidden rounded-lg",
     cell: "relative min-h-0 min-w-0 overflow-hidden bg-surface-sunken",
-    image: "size-full object-cover",
+    // Above the blur, which is positioned: the image covers it as it loads.
+    image: "relative size-full object-cover",
+    blur: "absolute inset-0",
     badge: "absolute inset-e-1.5 bottom-1.5 rounded-sm bg-surface-raised px-1.5 py-0.5 text-xs font-semibold text-fg shadow-sm",
     toggle: "absolute cursor-default rounded-md bg-surface-raised font-medium text-fg select-none data-focus-visible:focus-ring data-hovered:bg-surface-sunken motion-safe:transition-colors",
   },
@@ -46,6 +49,11 @@ export type MediaItem = {
   alt: string | null;
   /** The language of the description, when known. */
   lang?: string | undefined;
+  /**
+   * The blurhash of the image, drawn while it is concealed or loading. Without one, the cell's plain surface
+   * stands in for it.
+   */
+  blurhash?: string | undefined;
 };
 
 export type MediaGridProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
@@ -71,11 +79,51 @@ export type MediaGridProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
   onRevealedChange?: (isRevealed: boolean) => void;
 };
 
+type MediaCellProps = { item: MediaItem; revealed: boolean; count: 1 | 2 | 3 | 4; noDescriptionLabel: string };
+
+/**
+ * One cell of the grid: the blur of the picture (its blurhash) while it is concealed or loading, and once shown,
+ * the picture over it. The blur goes once the picture has loaded, so that a transparent picture shows the surface
+ * behind it, and stays should the picture fail to load.
+ */
+function MediaCell({ item, revealed, count, noDescriptionLabel }: MediaCellProps) {
+  const [loaded, setLoaded] = useState(false);
+  const slots = mediaGrid({ count, revealed });
+  return (
+    <div className={slots.cell()}>
+      {item.blurhash !== undefined && !(revealed && loaded) && <Blurhash hash={item.blurhash} className={slots.blur()} />}
+      {revealed && (
+        <>
+          <Picture
+            sources={item.sources ?? { still: [{ url: item.src }] }}
+            // A post is at most about 40rem wide; two or more pictures share it in two columns.
+            sizes={count === 1 ? "(min-width: 40rem) 40rem, 100vw" : "(min-width: 40rem) 20rem, 50vw"}
+            alt={item.alt ?? noDescriptionLabel}
+            // The description is user content (web-client.md Y10); the fallback is the app's own text.
+            {...(item.alt !== null && { dir: "auto", lang: item.lang })}
+            loading="lazy"
+            decoding="async"
+            onLoad={() => {
+              setLoaded(true);
+            }}
+            className={slots.image()}
+          />
+          {item.alt === null && (
+            <span aria-hidden="true" className={slots.badge()}>
+              {noDescriptionLabel}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /**
  * The pictures of a post in a 16:9 grid of one to four cells. A picture without a description is named
  * by `noDescriptionLabel` and carries a visible badge saying so (web-client.md Y9). Sensitive media are
  * concealed behind a toggle button (`aria-pressed`): while concealed, the images are neither loaded nor
- * exposed, and the button keeps its place in the tab order and its focus when it is pressed.
+ * exposed and each cell shows the blur of its picture, and the button keeps its place in the tab order and its focus when it is pressed.
  */
 export function MediaGrid({
   items,
@@ -97,28 +145,7 @@ export function MediaGrid({
   return (
     <div {...props} className={slots.base({ className })}>
       {shown.map((item) => (
-        <div key={item.id} className={slots.cell()}>
-          {revealed && (
-            <>
-              <Picture
-                sources={item.sources ?? { still: [{ url: item.src }] }}
-                // A post is at most about 40rem wide; two or more pictures share it in two columns.
-                sizes={count === 1 ? "(min-width: 40rem) 40rem, 100vw" : "(min-width: 40rem) 20rem, 50vw"}
-                alt={item.alt ?? noDescriptionLabel}
-                // The description is user content (web-client.md Y10); the fallback is the app's own text.
-                {...(item.alt !== null && { dir: "auto", lang: item.lang })}
-                loading="lazy"
-                decoding="async"
-                className={slots.image()}
-              />
-              {item.alt === null && (
-                <span aria-hidden="true" className={slots.badge()}>
-                  {noDescriptionLabel}
-                </span>
-              )}
-            </>
-          )}
-        </div>
+        <MediaCell key={item.id} item={item} revealed={revealed} count={count} noDescriptionLabel={noDescriptionLabel} />
       ))}
       {sensitive && (
         <ToggleButton

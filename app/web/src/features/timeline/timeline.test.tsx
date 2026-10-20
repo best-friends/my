@@ -8,6 +8,7 @@ import type { Status } from "./api/timelines";
 import { apiBase, oauthPaths, problem, tokenResponse } from "../../test/msw/http";
 import { imageFixture, longDomainAccountFixture, longNameAccountFixture, rtlNameAccountFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
+import { autoplayKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 /** A status like the fixture, with its own ID and text. */
@@ -207,6 +208,7 @@ describe("a status card", () => {
           },
           url: "https://my.example/media/full.jpg",
           preview_url: "https://my.example/media/thumb.webp",
+          blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
         },
       ],
     });
@@ -223,6 +225,9 @@ describe("a status card", () => {
     expect(within(article).getByText("Post 1")).toBeVisible();
     const reveal = within(article).getByRole("button", { name: "Show sensitive media", pressed: false });
     expect(within(article).queryByRole("img")).not.toBeInTheDocument();
+    // The blur of the picture (its blurhash) covers it while it is concealed, hidden from screen readers.
+    // eslint-disable-next-line testing-library/no-node-access -- the decorative canvas has no role.
+    expect(article.querySelector("canvas")).toHaveAttribute("aria-hidden", "true");
     await user.click(reveal);
     // No description: the picture is named so, and not skipped.
     expect(within(article).getByRole("img", { name: "No description" })).toHaveAttribute("src", "https://my.example/media/thumb.webp");
@@ -257,7 +262,7 @@ describe("a status card", () => {
     expect(picture.parentElement?.querySelector("source")).toHaveAttribute("media", "(prefers-reduced-motion: no-preference)");
     unmount();
 
-    localStorage.setItem("my:display:autoplay", "off");
+    autoplayKey.write(false);
     await renderApp({ path: "/local" });
     const still = await screen.findByRole("img", { name: "A dance" });
     // eslint-disable-next-line testing-library/no-node-access -- <picture> and <source> have no role.
