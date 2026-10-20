@@ -188,7 +188,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
@@ -237,6 +237,17 @@ flowchart LR
 - `code_hash` は、正規化したリカバリーコード（80 ビットの乱数）の SHA-256 です。
 - リカバリーコードを作り直すときは、同じ秘密を新しい登録に移し、古い登録に失効のイベントを記録します。管理者が二要素認証を外すときも失効のイベントを記録し、監査ログに `two_factor_disabled` を残します。
 - 使った TOTP のコードの時間ステップと、パスワードの後で 2 段目を待つサインインのチャレンジ（5 分）は、DB ではなく `KeyValueStore` の名前空間 `two_factor` に置きます。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `passkey_credentials` | リソース | `id`, `user_id`, `credential_id`（`bytes`）, `public_key`（`bytes`。COSE_Key）, `backup_eligible`（`bool`）, `name`, `created_at` | 一意 `(credential_id)`、インデックス `(user_id, id)` |
+| `passkey_credential_revocations` | イベント | `passkey_id`（PK）, `revoked_at` | 有効なパスキー = 失効イベントの無いパスキー |
+
+- パスキー（FR-004）は WebAuthn の発見可能な資格情報（discoverable credential）で、パスワードの代わりにログインに使います。ユーザーハンドルは利用者の `id` です。登録とログインはどちらも利用者の検証（端末の PIN や生体認証）を求め、アテステーションは求めません。
+- パスキーはパスワードの代わりになるだけで、二要素認証の 2 段目は省きません。TOTP を有効にした利用者は、パスキーでのログインの後にも認証コードを入力します。
+- 登録には現在のパスワードの確認が要ります（失敗は利用者ごとに 1 時間 5 回まで、`passkey.password`）。1 人の利用者が持てるパスキーは 20 個までです。削除したパスキーの行は残すので、同じ資格情報 ID を登録し直すことはできません。
+- 署名カウンターは保存しません。同期されるパスキーは常に 0 を返すので、複製の検出に使えないからです。
+- 登録とログインの途中の状態（チャレンジ、5 分）は、`kernel.Sealer` で封をしてブラウザに持たせ、DB にも KV にも置きません。ログインのチャレンジは 1 回だけ使えるように、使ったことを `KeyValueStore` の名前空間 `passkey` に有効期限まで記録します。ログインの失敗は、パスワードの失敗と同じクライアントのログイン失敗の上限（`login.ip`）に数えます。
 
 #### 登録審査
 
@@ -1532,6 +1543,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-001 登録モード | M | `instance_settings`（`registration_mode`）, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions` |
 | FR-002 メール + パスワード | M | `user_email_addresses`, `user_email_verifications`, `user_primary_emails`, `password_credentials`, `user_tokens` |
 | FR-003 OAuth 2.0 + PKCE | M | `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_access_tokens`, `sessions` |
+| FR-004 パスキー | C | `passkey_credentials`, `passkey_credential_revocations` |
 | FR-005 TOTP | S | `totp_enrollments`, `totp_recovery_codes`, `totp_recovery_code_uses` |
 | FR-006 プロフィール | M | `account_profile_revisions`, `account_profile_fields`, `account_profile_heads` |
 | FR-007 言語・タイムゾーン | M | `user_preferences`, `user_time_zones` |

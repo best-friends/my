@@ -44,6 +44,8 @@ tags:
     description: The authenticated user's preferences.
   - name: two_factor
     description: The authenticated user's two-factor authentication.
+  - name: passkeys
+    description: The authenticated user's passkeys, which sign in instead of the password.
   - name: moderation
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
@@ -687,6 +689,111 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of two-factor authentication (#628) ---
+  # --- passkeys (#639) ---
+  /passkeys:
+    get:
+      operationId: listPasskeys
+      summary: List the authenticated user's passkeys
+      description: The passkeys that sign the user in, oldest first; there are at most 20.
+      tags: [passkeys]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The passkeys.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createPasskey
+      summary: Register a passkey with the browser's response to a registration
+      description: |
+        Verifies `credential`, the browser's answer to the `options` of
+        `POST /passkeys/registration`, and stores the passkey under the name given there. From
+        then on the passkey signs in on the server's sign-in page instead of the password; a
+        user with two-factor authentication still enters a code after it. A response that does
+        not verify (another origin, no user verification, a credential that is registered
+        already) is a 422 `/api/v1/problems/invalid-passkey`, an expired or unknown
+        `registration_token` a 422 `/api/v1/problems/passkey-registration-expired`, and a user
+        with 20 passkeys a 409 `/api/v1/problems/too-many-passkeys`.
+      tags: [passkeys]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePasskeyRequest"
+      responses:
+        "201":
+          description: The new passkey.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Passkey"
+        default:
+          $ref: "#/components/responses/Problem"
+  /passkeys/registration:
+    post:
+      operationId: beginPasskeyRegistration
+      summary: Start the registration of a passkey
+      description: |
+        Checks the user's current `password` and returns the options of a WebAuthn
+        registration (a discoverable credential with user verification, no attestation) for the
+        browser's `navigator.credentials.create()`, with a `registration_token` that carries
+        them and `name` to `POST /passkeys` for 5 minutes. Nothing is stored until then. A
+        wrong password is a 422 `/api/v1/problems/wrong-password`, and at most 5 wrong
+        passwords per user are accepted every hour; a user with 20 passkeys gets a 409
+        `/api/v1/problems/too-many-passkeys`.
+      tags: [passkeys]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasskeyRegistrationRequest"
+      responses:
+        "200":
+          description: The options of the registration.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasskeyRegistration"
+        default:
+          $ref: "#/components/responses/Problem"
+  /passkeys/{id}:
+    delete:
+      operationId: deletePasskey
+      summary: Remove a passkey
+      description: The passkey no longer signs in. An unknown or removed passkey is a 404.
+      tags: [passkeys]
+      security:
+        - oauth2: ["write:accounts"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the passkey.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The passkey is removed.
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of passkeys (#639) ---
   # --- Accounts and relationships (#108): accounts, follows, follow requests, blocks, mutes ---
   /accounts/lookup:
     get:
@@ -5251,6 +5358,12 @@ components:
           authentication.
         - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
           operation, has no two-factor authentication.
+        - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+          registration does not verify, or the passkey is registered already.
+        - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+          unknown or expired. Start a new one.
+        - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+          allowed. Remove one first.
         - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
           says which.
         - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -7314,6 +7427,80 @@ components:
           description: The six-digit code that the app shows now.
           type: string
           maxLength: 64
+    # --- passkeys (#639) ---
+    Passkey:
+      description: A passkey that signs the authenticated user in instead of the password.
+      type: object
+      required: [id, name, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        name:
+          description: What the user calls the passkey, such as the device it is on.
+          type: string
+        created_at:
+          description: When the passkey was registered.
+          type: string
+          format: date-time
+    PasskeyList:
+      description: The authenticated user's passkeys, oldest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/Passkey"
+    PasskeyRegistrationRequest:
+      description: The name of a new passkey and the user's password that confirms it.
+      type: object
+      required: [name, password]
+      properties:
+        name:
+          description: What the user calls the passkey; spaces around it are dropped.
+          type: string
+          minLength: 1
+          maxLength: 64
+        password:
+          description: The user's current password.
+          type: string
+          minLength: 1
+          maxLength: 1024
+    PasskeyRegistration:
+      description: The start of a passkey registration.
+      type: object
+      required: [options, registration_token, expires_at]
+      properties:
+        options:
+          description: |
+            The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+            values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+          type: object
+          additionalProperties: true
+        registration_token:
+          description: An opaque token that carries the registration to `POST /passkeys`.
+          type: string
+        expires_at:
+          description: When `registration_token` stops working.
+          type: string
+          format: date-time
+    CreatePasskeyRequest:
+      description: The browser's answer to a passkey registration.
+      type: object
+      required: [registration_token, credential]
+      properties:
+        registration_token:
+          description: The `registration_token` of `POST /passkeys/registration`.
+          type: string
+          maxLength: 4096
+        credential:
+          description: |
+            The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+            `PublicKeyCredential.toJSON()` returns for the new credential.
+          type: object
+          additionalProperties: true
+    # --- end of passkeys (#639) ---
     TwoFactorCodeRequest:
       description: A code that confirms an operation on two-factor authentication.
       type: object

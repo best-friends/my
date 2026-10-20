@@ -441,6 +441,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's passkeys
+         * @description The passkeys that sign the user in, oldest first; there are at most 20.
+         */
+        get: operations["listPasskeys"];
+        put?: never;
+        /**
+         * Register a passkey with the browser's response to a registration
+         * @description Verifies `credential`, the browser's answer to the `options` of
+         *     `POST /passkeys/registration`, and stores the passkey under the name given there. From
+         *     then on the passkey signs in on the server's sign-in page instead of the password; a
+         *     user with two-factor authentication still enters a code after it. A response that does
+         *     not verify (another origin, no user verification, a credential that is registered
+         *     already) is a 422 `/api/v1/problems/invalid-passkey`, an expired or unknown
+         *     `registration_token` a 422 `/api/v1/problems/passkey-registration-expired`, and a user
+         *     with 20 passkeys a 409 `/api/v1/problems/too-many-passkeys`.
+         */
+        post: operations["createPasskey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/passkeys/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the registration of a passkey
+         * @description Checks the user's current `password` and returns the options of a WebAuthn
+         *     registration (a discoverable credential with user verification, no attestation) for the
+         *     browser's `navigator.credentials.create()`, with a `registration_token` that carries
+         *     them and `name` to `POST /passkeys` for 5 minutes. Nothing is stored until then. A
+         *     wrong password is a 422 `/api/v1/problems/wrong-password`, and at most 5 wrong
+         *     passwords per user are accepted every hour; a user with 20 passkeys gets a 409
+         *     `/api/v1/problems/too-many-passkeys`.
+         */
+        post: operations["beginPasskeyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/passkeys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a passkey
+         * @description The passkey no longer signs in. An unknown or removed passkey is a 404.
+         */
+        delete: operations["deletePasskey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/lookup": {
         parameters: {
             query?: never;
@@ -3614,6 +3691,12 @@ export interface components {
          *       authentication.
          *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
          *       operation, has no two-factor authentication.
+         *     - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+         *       registration does not verify, or the passkey is registered already.
+         *     - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+         *       unknown or expired. Start a new one.
+         *     - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+         *       allowed. Remove one first.
          *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
          *       says which.
          *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -5048,6 +5131,57 @@ export interface components {
             setup_token: string;
             /** @description The six-digit code that the app shows now. */
             code: string;
+        };
+        /** @description A passkey that signs the authenticated user in instead of the password. */
+        Passkey: {
+            id: components["schemas"]["Id"];
+            /** @description What the user calls the passkey, such as the device it is on. */
+            name: string;
+            /**
+             * Format: date-time
+             * @description When the passkey was registered.
+             */
+            created_at: string;
+        };
+        /** @description The authenticated user's passkeys, oldest first. */
+        PasskeyList: {
+            items: components["schemas"]["Passkey"][];
+        };
+        /** @description The name of a new passkey and the user's password that confirms it. */
+        PasskeyRegistrationRequest: {
+            /** @description What the user calls the passkey; spaces around it are dropped. */
+            name: string;
+            /** @description The user's current password. */
+            password: string;
+        };
+        /** @description The start of a passkey registration. */
+        PasskeyRegistration: {
+            /**
+             * @description The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+             *     values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+             */
+            options: {
+                [key: string]: unknown;
+            };
+            /** @description An opaque token that carries the registration to `POST /passkeys`. */
+            registration_token: string;
+            /**
+             * Format: date-time
+             * @description When `registration_token` stops working.
+             */
+            expires_at: string;
+        };
+        /** @description The browser's answer to a passkey registration. */
+        CreatePasskeyRequest: {
+            /** @description The `registration_token` of `POST /passkeys/registration`. */
+            registration_token: string;
+            /**
+             * @description The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+             *     `PublicKeyCredential.toJSON()` returns for the new credential.
+             */
+            credential: {
+                [key: string]: unknown;
+            };
         };
         /** @description A code that confirms an operation on two-factor authentication. */
         TwoFactorCodeRequest: {
@@ -7668,6 +7802,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecoveryCodes"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listPasskeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The passkeys. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createPasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePasskeyRequest"];
+            };
+        };
+        responses: {
+            /** @description The new passkey. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    beginPasskeyRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyRegistrationRequest"];
+            };
+        };
+        responses: {
+            /** @description The options of the registration. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyRegistration"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deletePasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the passkey. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The passkey is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

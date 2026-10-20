@@ -42,6 +42,9 @@ type Deps struct {
 	// challenges and used TOTP steps; two-factor authentication needs both.
 	Sealer *kernel.Sealer
 	KV     kernel.KeyValueStore
+	// Passkeys runs the WebAuthn ceremonies of passkeys (FR-004), which also need the Sealer,
+	// the KV store, and the RateLimiter; nil turns passkeys off.
+	Passkeys PasskeyCeremonies
 	// HumanVerifier checks the CAPTCHA token of every sign-in and sign-up (ADR-0042 §3); nil,
 	// as with the captcha setting none, checks nothing.
 	HumanVerifier kernel.HumanVerifier

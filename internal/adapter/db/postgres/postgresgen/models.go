@@ -590,6 +590,16 @@ type OutboundActivity struct {
 	CreatedAt      time.Time
 }
 
+type PasskeyCredential struct {
+	ID             string
+	UserID         string
+	CredentialID   []byte
+	PublicKey      []byte
+	BackupEligible bool
+	Name           string
+	CreatedAt      time.Time
+}
+
 type PasswordCredential struct {
 	ID           string
 	UserID       string

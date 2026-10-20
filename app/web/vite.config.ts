@@ -24,11 +24,13 @@ export default defineConfig({
     // Emit every asset as a file: the CSP of ADR-0019 §9 has no data: source.
     assetsInlineLimit: 0,
     rolldownOptions: {
-      // The SPA, and the stylesheet of the pages the Go server renders without JavaScript
-      // (src/server-pages.css, ADR-0030). Go finds both by these manifest keys.
+      // The SPA, the stylesheet of the pages the Go server renders without JavaScript
+      // (src/server-pages.css, ADR-0030), and the script of the sign-in page's passkey button, which
+      // the page works without (src/server-pages/passkey-sign-in.ts). Go finds them by these manifest keys.
       input: {
         index: fileURLToPath(new URL("index.html", import.meta.url)),
         "server-pages": fileURLToPath(new URL("src/server-pages.css", import.meta.url)),
+        "server-pages-passkey": fileURLToPath(new URL("src/server-pages/passkey-sign-in.ts", import.meta.url)),
       },
     },
   },
@@ -73,8 +75,8 @@ export default defineConfig({
         rollupFormat: "iife",
         globPatterns: ["**/*.{js,css,svg,png,woff2}"],
         // index.html is the stand-in shell of `vite preview` (the worker precaches the server's shell at /
-        // instead), and the stylesheet of the server-rendered pages is never loaded by the app.
-        globIgnores: ["index.html", "sw.js", "assets/server-pages-*.css"],
+        // instead), and the stylesheet and the passkey script of the server-rendered pages are never loaded by the app.
+        globIgnores: ["index.html", "sw.js", "assets/server-pages-*.css", "assets/server-pages-passkey-*.js"],
       },
     }),
   ],

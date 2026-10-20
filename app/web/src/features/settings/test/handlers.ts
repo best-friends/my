@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the settings feature (web-client.md §7): the user's own profile and
-// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes, muted domains, and follow requests, the archives of the user's
+// preferences, the automatic deletion of old posts, passkeys, two-factor authentication, the lists of blocks, mutes, muted domains, and follow requests, the archives of the user's
 // data, the CSV exports and imports, and deleting the account. Unblocking and unmuting are the account
 // actions of the profile feature's handlers.
 import { http, HttpResponse } from "msw";
@@ -46,6 +46,8 @@ export const handlers = [
     const body = (await request.clone().json()) as Schemas["AutoDeletePolicy"];
     return withViewer(request, () => HttpResponse.json(body));
   }),
+  // operationId listPasskeys: no passkeys; the tests that add or remove one play the server themselves.
+  http.get(`${apiBase}/passkeys`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   // operationIds getTwoFactor, setUpTotp, enableTotp, regenerateRecoveryCodes, disableTotp.
   http.get(`${apiBase}/two_factor`, ({ request }) => withViewer(request, () => HttpResponse.json(twoFactorOffFixture))),
   http.post(`${apiBase}/two_factor/totp/setup`, ({ request }) => withViewer(request, () => HttpResponse.json(totpSetupFixture))),

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The settings feature (FR-005, FR-006, FR-007, FR-008, FR-118, FR-208, FR-302, FR-303): the profile editor, the preferences, two-factor
+// The settings feature (FR-004, FR-005, FR-006, FR-007, FR-008, FR-118, FR-208, FR-302, FR-303): the profile editor, the preferences, passkeys, two-factor
 // authentication, the automatic deletion of old posts, the lists of blocked and muted accounts and of follow requests, the archives of the user's data and deleting
 // the account, the follows, blocks, mutes, and bookmarks as Mastodon's CSV files, displaying the app in the user's locale
 // and time zone, the color theme of this browser, and the arrangement of the navigation's items on this browser. Routes and other features use it through this file only (web-client.md A3).
@@ -31,6 +31,9 @@ export { AutoDeleteSettings } from "./components/AutoDeleteSettings";
 // Two-factor authentication with an authenticator app (FR-005).
 export { twoFactorQueryOptions } from "./api/twoFactor";
 export { TwoFactorSettings } from "./components/TwoFactorSettings";
+// Passkeys, which sign in instead of the password (FR-004).
+export { passkeysQueryOptions } from "./api/passkeys";
+export { PasskeySettings } from "./components/PasskeySettings";
 export { useUserDisplaySettings } from "./hooks/useUserDisplaySettings";
 // Uploading an image and waiting for the server to process it, which the admin screen of custom emoji shares.
 export { acceptedImageTypes, type MediaAttachment, MediaProcessingError, uploadImage } from "./api/media";
