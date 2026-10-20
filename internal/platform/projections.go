@@ -15,6 +15,7 @@ import (
 	"github.com/best-friends/my/internal/app/projection"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/app/webhook"
 )
 
 // projectionRepositories are the repositories whose modules' rebuild functions the projections
@@ -29,6 +30,7 @@ type projectionRepositories struct {
 	notifications notification.Repository
 	moderation    moderation.Repository
 	identities    identity.Repository
+	webhooks      webhook.Repository
 }
 
 // setUpProjections builds the service of `my projection` and registers the projection.verify
@@ -125,6 +127,13 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				Tables: []string{"notification_deleted_statuses"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return notification.RebuildDeletedStatuses(ctx, u, r.notifications, a.Content)
+				},
+			},
+			{
+				Name: "webhook", Module: "webhook",
+				Tables: []string{"webhook_endpoint_heads", "webhook_endpoint_failures"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return webhook.RebuildProjections(ctx, u, r.webhooks)
 				},
 			},
 		},

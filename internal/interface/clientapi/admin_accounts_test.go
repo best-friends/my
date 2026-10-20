@@ -66,6 +66,14 @@ func (f *fakeAccountAdmin) Search(_ context.Context, q appidentity.AccountSearch
 	return out, next, nil
 }
 
+func (f *fakeAccountAdmin) Account(_ context.Context, id string) (appidentity.AdminAccount, error) {
+	a, ok := f.accounts[id]
+	if !ok {
+		return appidentity.AdminAccount{}, appaccount.ErrNotFound
+	}
+	return f.present(a), nil
+}
+
 func (f *fakeAccountAdmin) Detail(_ context.Context, id string) (appidentity.AdminAccountDetail, error) {
 	a, ok := f.accounts[id]
 	if !ok {

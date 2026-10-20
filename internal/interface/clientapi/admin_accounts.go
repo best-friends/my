@@ -23,6 +23,7 @@ import (
 // AccountAdmin runs the moderators' account management. *appidentity.AccountAdmin implements it.
 type AccountAdmin interface {
 	Search(ctx context.Context, q appidentity.AccountSearch, limit int) ([]appidentity.AdminAccount, string, error)
+	Account(ctx context.Context, accountID string) (appidentity.AdminAccount, error)
 	Detail(ctx context.Context, accountID string) (appidentity.AdminAccountDetail, error)
 	Reveal(ctx context.Context, accountID, byUserID string) (appidentity.PrivateData, error)
 	DisableTwoFactor(ctx context.Context, accountID, byUserID string) error

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -16,11 +17,14 @@ import (
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/identity"
+	appinstance "github.com/best-friends/my/internal/app/instance"
 	domcontent "github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/webhook"
 	"github.com/best-friends/my/internal/interface/clientapi"
 	"github.com/best-friends/my/internal/interface/clientapi/apitest"
 	"github.com/best-friends/my/internal/platform"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // webhookReceiver is an endpoint on loopback that answers with the next queued status code
@@ -244,4 +248,214 @@ func TestWebhooks(t *testing.T) {
 	if code := api(adminToken, http.MethodGet, "/admin/webhooks", nil, &list); code != http.StatusOK || len(list.Items) != 0 {
 		t.Errorf("GET /admin/webhooks after the deletion = %d %+v", code, list)
 	}
+}
+
+// TestWebhookData checks through the composition root on SQLite with the inline queue that the
+// data of the webhook messages is what the admin API answers for the same object right after
+// the event (ADR-0060): a report as it is filed and resolved, an action on an account as it is
+// issued and lifted, an appeal with its action, an action on a domain, and a local account
+// whose profile changes, a registration that awaits a moderator, and a custom emoji as it is
+// created and deleted.
+func TestWebhookData(t *testing.T) {
+	t.Parallel()
+	recv := &webhookReceiver{}
+	srv := httptest.NewServer(recv)
+	t.Cleanup(srv.Close)
+	cfg := loadConfig(t, map[string]string{
+		"MY_DATABASE_URL": newDatabase(t, true), "MY_WEB_ORIGIN": webOrigin, "MY_QUEUE": "inline",
+		"MY_WEBHOOK_ALLOWED_DESTINATIONS": "127.0.0.1",
+	})
+	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
+	if err != nil {
+		t.Fatalf("NewApp: %v", err)
+	}
+	t.Cleanup(func() { _ = app.Close() })
+	h, spec, ctx := app.Handler(), apitest.Load(t), t.Context()
+	admin, err := app.Identity.CreateAdmin(ctx, identity.CreateAdminInput{
+		Username: "alice", Email: "alice@example.com", Password: "correct horse battery staple",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	adminToken := issueAccessToken(t, app, admin.User.ID, "read write admin")
+	bob, err := app.Identity.RegisterLocalUser(ctx, identity.RegisterInput{Username: "bob", Password: "correct horse battery staple"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bobToken := issueAccessToken(t, app, bob.User.ID, "read write")
+
+	api := func(token, method, path string, body any, out any) {
+		t.Helper()
+		var r io.Reader
+		if body != nil {
+			b, _ := json.Marshal(body)
+			r = bytes.NewReader(b)
+		}
+		req := httptest.NewRequest(method, clientapi.BasePath+path, r)
+		req.Header.Set("Authorization", "Bearer "+token)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		res := spec.Serve(t, h, req)
+		if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusNoContent {
+			t.Fatalf("%s %s = %d", method, path, res.StatusCode)
+		}
+		if out != nil {
+			if err := json.NewDecoder(res.Body).Decode(out); err != nil {
+				t.Fatalf("%s %s: %v", method, path, err)
+			}
+		}
+	}
+	api(adminToken, http.MethodPost, "/admin/webhooks", map[string]any{
+		"url": srv.URL + "/hook", "events": []string{
+			"report.created", "report.resolved", "moderation_action.created", "moderation_action.lifted",
+			"appeal.created", "domain_moderation_action.created", "account.updated", "registration.pending",
+			"custom_emoji.created", "custom_emoji.deleted",
+		},
+	}, nil)
+	// message returns the data of the one message received since the last call, of type want.
+	message := func(want string) map[string]any {
+		t.Helper()
+		_, bodies := recv.take()
+		if len(bodies) != 1 {
+			t.Fatalf("received %d messages, want one %s", len(bodies), want)
+		}
+		var msg struct {
+			Type string         `json:"type"`
+			Data map[string]any `json:"data"`
+		}
+		if err := json.Unmarshal(bodies[0], &msg); err != nil || msg.Type != want {
+			t.Fatalf("body %s, want type %s: %v", bodies[0], want, err)
+		}
+		return msg.Data
+	}
+	// same checks that the data of a message is the admin API's representation.
+	same := func(name string, data, want map[string]any) {
+		t.Helper()
+		if !reflect.DeepEqual(data, want) {
+			got, _ := json.Marshal(data)
+			exp, _ := json.Marshal(want)
+			t.Errorf("the data of %s = %s, want the admin API's %s", name, got, exp)
+		}
+	}
+
+	// A report, filed and resolved, is AdminReport, with the accounts it embeds.
+	var report struct {
+		ID string `json:"id"`
+	}
+	api(bobToken, http.MethodPost, "/reports", map[string]any{"account_id": admin.AccountID, "category": "spam", "comment": "rude"}, &report)
+	data := message("report.created")
+	var reports struct {
+		Items []map[string]any `json:"items"`
+	}
+	api(adminToken, http.MethodGet, "/admin/reports", nil, &reports)
+	if len(reports.Items) != 1 {
+		t.Fatalf("GET /admin/reports = %+v", reports)
+	}
+	same("report.created", data, reports.Items[0])
+	if acct, ok := data["reporter_account"].(map[string]any); !ok || acct["username"] != "bob" {
+		t.Errorf("report.created reporter_account = %v", data["reporter_account"])
+	}
+	api(adminToken, http.MethodPost, "/admin/reports/"+report.ID+"/resolve", map[string]any{"outcome": "dismissed"}, nil)
+	data = message("report.resolved")
+	api(adminToken, http.MethodGet, "/admin/reports", nil, &reports)
+	same("report.resolved", data, reports.Items[0])
+	if data["state"] != "resolved" || data["outcome"] != "dismissed" {
+		t.Errorf("report.resolved = %v", data)
+	}
+
+	// An action on an account, issued and lifted, is AdminAccountAction with its moderator.
+	var action map[string]any
+	api(adminToken, http.MethodPost, "/admin/accounts/"+bob.AccountID+"/actions", map[string]any{"kind": "warn", "public_reason": "be kind"}, &action)
+	same("moderation_action.created", message("moderation_action.created"), action)
+	if action["issued_by_account_id"] != admin.AccountID {
+		t.Errorf("the action = %v, want issued by %s", action, admin.AccountID)
+	}
+	actionID, _ := action["id"].(string)
+
+	// An appeal is AdminAppeal, with its action.
+	var appealed struct {
+		Appeal struct {
+			ID string `json:"id"`
+		} `json:"appeal"`
+	}
+	api(bobToken, http.MethodPost, "/moderation/actions/"+actionID+"/appeal", map[string]any{"text": "I was kind"}, &appealed)
+	data = message("appeal.created")
+	var appeal map[string]any
+	api(adminToken, http.MethodGet, "/admin/appeals/"+appealed.Appeal.ID, nil, &appeal)
+	same("appeal.created", data, appeal)
+
+	api(adminToken, http.MethodPost, "/admin/account_actions/"+actionID+"/lift", map[string]any{"reason": "appealed"}, &action)
+	same("moderation_action.lifted", message("moderation_action.lifted"), action)
+
+	// An action on a domain is AdminDomainAction.
+	var domainAction map[string]any
+	api(adminToken, http.MethodPost, "/admin/domain_actions", map[string]any{"domain": "spam.example", "kind": "suspend", "private_note": "spam"}, &domainAction)
+	same("domain_moderation_action.created", message("domain_moderation_action.created"), domainAction)
+
+	// A change of a local profile is AdminAccount, with the new profile.
+	api(bobToken, http.MethodPatch, "/accounts/update_credentials", map[string]any{"display_name": "Bobby"}, nil)
+	data = message("account.updated")
+	var accounts struct {
+		Items []map[string]any `json:"items"`
+	}
+	api(adminToken, http.MethodGet, "/admin/accounts?username=bob", nil, &accounts)
+	if len(accounts.Items) != 1 {
+		t.Fatalf("GET /admin/accounts?username=bob = %+v", accounts)
+	}
+	same("account.updated", data, accounts.Items[0])
+	if acct, ok := data["account"].(map[string]any); !ok || acct["display_name"] != "Bobby" {
+		t.Errorf("account.updated account = %v", data["account"])
+	}
+
+	// A registration that awaits a moderator is AdminRegistration, with the email address.
+	if _, err := app.Instance.SetSetting(ctx, appinstance.SetSettingInput{
+		Key: instance.SettingRegistrationMode, Value: string(instance.RegistrationApproval),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := app.Identity.SignUp(ctx, identity.SignUpInput{
+		Username: "dave", Email: "dave@example.com", Password: "correct horse battery staple", Reason: "I like ducks.",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	data = message("registration.pending")
+	var registrations struct {
+		Items []map[string]any `json:"items"`
+	}
+	api(adminToken, http.MethodGet, "/admin/registrations", nil, &registrations)
+	if len(registrations.Items) != 1 {
+		t.Fatalf("GET /admin/registrations = %+v", registrations)
+	}
+	same("registration.pending", data, registrations.Items[0])
+	if data["email"] != "dave@example.com" {
+		t.Errorf("registration.pending = %v", data)
+	}
+
+	// A custom emoji is AdminCustomEmoji with the operation, and its deletion presents it as it was.
+	m, err := app.Media.Upload(ctx, appcontent.UploadInput{
+		OwnerAccountID: admin.AccountID, Content: bytes.NewReader(testkit.FixturePNG(32, 32, true)), Purpose: domcontent.PurposeEmoji,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res := app.Media.Process(ctx, m.File.ID, domcontent.PurposeEmoji); !res.IsDone() {
+		t.Fatalf("Process = %+v", res)
+	}
+	var emoji map[string]any
+	api(adminToken, http.MethodPost, "/admin/custom_emojis", map[string]any{"shortcode": "blobcat", "media_id": m.File.ID, "aliases": []string{"neko"}}, &emoji)
+	data = message("custom_emoji.created")
+	if data["operation"] != "custom_emoji_created" || data["url"] == nil {
+		t.Errorf("custom_emoji.created = %v", data)
+	}
+	delete(data, "operation")
+	same("custom_emoji.created", data, emoji)
+	emojiID, _ := emoji["id"].(string)
+	api(adminToken, http.MethodDelete, "/admin/custom_emojis/"+emojiID, nil, nil)
+	data = message("custom_emoji.deleted")
+	if data["operation"] != "custom_emoji_deleted" {
+		t.Errorf("custom_emoji.deleted = %v", data)
+	}
+	delete(data, "operation")
+	same("custom_emoji.deleted", data, emoji)
 }

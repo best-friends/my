@@ -4958,13 +4958,14 @@ export interface components {
         /**
          * @description The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
          *     `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
-         *     `webhook-signature`. `data` is the `Webhook*` schema of the type: `WebhookReport` for
-         *     `report.*`, `WebhookRegistration` for `registration.pending` and `account.created`,
-         *     `WebhookAccount` for `account.updated`, `WebhookAccountAction` for
-         *     `moderation_action.*`, `WebhookAppeal` for `appeal.created`, `WebhookDomainAction` for
-         *     `domain_moderation_action.*`, `WebhookStatus` for `status.created`,
-         *     `WebhookCustomEmoji` for `custom_emoji.*`, and `WebhookTest` for `webhook.test`. No
-         *     operation returns it; docs/reference/webhooks.md describes it.
+         *     `webhook-signature`. `data` is what the admin API answers for the object of the event,
+         *     presented in the transaction of the event: `AdminReport` for `report.*`,
+         *     `AdminRegistration` for `registration.pending` and `account.created`, `AdminAccount`
+         *     for `account.updated`, `AdminAccountAction` for `moderation_action.*`, `AdminAppeal`
+         *     for `appeal.created`, `AdminDomainAction` for `domain_moderation_action.*`,
+         *     `WebhookCustomEmoji` for `custom_emoji.*`, `WebhookStatus` for `status.created`, and
+         *     `WebhookTest` for `webhook.test`. No operation returns it; docs/reference/webhooks.md
+         *     describes it.
          */
         WebhookMessage: {
             type: components["schemas"]["WebhookMessageType"];
@@ -4974,106 +4975,6 @@ export interface components {
              */
             timestamp: string;
             data: Record<string, never>;
-        };
-        /** @description The report of a `report.*` message, named as in `AdminReport`. */
-        WebhookReport: {
-            id: components["schemas"]["Id"];
-            /** @description The id of the Flag of a report from another server. */
-            uri?: string;
-            category: string;
-            comment: string;
-            forwarded: boolean;
-            /** Format: date-time */
-            filed_at: string;
-            /** @description `open` or `resolved`. */
-            state: string;
-            /** @description How a resolved report was resolved. */
-            outcome?: string;
-            /** Format: date-time */
-            state_changed_at: string;
-            reporter_account_id: components["schemas"]["Id"];
-            target_account_id: components["schemas"]["Id"];
-            status_ids: components["schemas"]["Id"][];
-            rule_ids: components["schemas"]["Id"][];
-        };
-        /**
-         * @description The registration of a `registration.pending` (state `pending`) or `account.created`
-         *     (state `approved`) message, named as in `AdminRegistration`.
-         */
-        WebhookRegistration: {
-            user_id: components["schemas"]["Id"];
-            account_id: components["schemas"]["Id"];
-            username: string;
-            state: string;
-            /** Format: date-time */
-            since: string;
-        };
-        /** @description The new profile of an `account.updated` message. */
-        WebhookAccount: {
-            id: components["schemas"]["Id"];
-            display_name: string;
-            /** @description The profile text as sanitized HTML. */
-            note: string;
-            locked: boolean;
-            bot: boolean;
-            discoverable: boolean;
-            indexable: boolean;
-            fields: {
-                name: string;
-                /** @description Sanitized HTML. */
-                value: string;
-            }[];
-            /** Format: date-time */
-            updated_at: string;
-        };
-        /** @description The action of a `moderation_action.*` message, named as in `AdminAccountAction`. */
-        WebhookAccountAction: {
-            id: components["schemas"]["Id"];
-            account_id: components["schemas"]["Id"];
-            kind: string;
-            reason_category: string;
-            public_reason?: string;
-            private_note?: string;
-            report_id?: components["schemas"]["Id"];
-            issuer: string;
-            notify_target: boolean;
-            /** @description `active`, or `lifted` for `moderation_action.lifted`. */
-            state: string;
-            /** Format: date-time */
-            issued_at: string;
-            /** Format: date-time */
-            expires_at?: string;
-            /** Format: date-time */
-            lifted_at?: string;
-            lift_reason?: string;
-            status_ids: components["schemas"]["Id"][];
-        };
-        /** @description The appeal of an `appeal.created` message, named as in `AdminAppeal`. */
-        WebhookAppeal: {
-            id: components["schemas"]["Id"];
-            account_id: components["schemas"]["Id"];
-            action_id: components["schemas"]["Id"];
-            text: string;
-            state: string;
-            /** Format: date-time */
-            submitted_at: string;
-        };
-        /** @description The action of a `domain_moderation_action.*` message, named as in `AdminDomainAction`. */
-        WebhookDomainAction: {
-            id: components["schemas"]["Id"];
-            domain: string;
-            kind: string;
-            public_comment?: string;
-            private_note?: string;
-            obfuscate: boolean;
-            /** @description `active`, or `lifted` for `domain_moderation_action.lifted`. */
-            state: string;
-            /** Format: date-time */
-            issued_at: string;
-            /** Format: date-time */
-            expires_at?: string;
-            /** Format: date-time */
-            lifted_at?: string;
         };
         /** @description The post of a `status.created` message, always `public` and local. */
         WebhookStatus: {
@@ -5090,21 +4991,17 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
-        /** @description The emoji of a `custom_emoji.*` message, named as in `AdminCustomEmoji`. */
-        WebhookCustomEmoji: {
-            id: components["schemas"]["Id"];
-            shortcode: string;
-            local: boolean;
-            domain?: string;
-            uri?: string;
+        /**
+         * @description The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
+         *     `custom_emoji.deleted` message presents the emoji as it was before the deletion.
+         */
+        WebhookCustomEmoji: components["schemas"]["AdminCustomEmoji"] & {
             /**
              * @description The operation, named as in the audit log: `custom_emoji_created`,
              *     `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
              *     `custom_emoji_disabled`, or `custom_emoji_deleted`.
              */
             operation: string;
-            /** Format: date-time */
-            created_at: string;
         };
         /** @description The data of a `webhook.test` message. */
         WebhookTest: {

@@ -403,11 +403,13 @@ func (s *CustomEmojiService) Delete(ctx context.Context, id, byUserID string) er
 		return &content.CustomEmojiError{Reason: content.EmojiRemote, Value: id}
 	}
 	event := s.event(CustomEmojiDeleted, r.Emoji, "", byUserID, s.d.Clock.Now())
+	// The event comes before the deletion, so that its projectors (the webhook messages) can
+	// still present the emoji as it was.
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.DeleteCustomEmoji(ctx, tx, id); err != nil {
+		if err := tx.Emit(ctx, event); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, event)
+		return s.d.Repository.DeleteCustomEmoji(ctx, tx, id)
 	})
 	if err != nil {
 		return fmt.Errorf("content: delete custom emoji %s: %w", id, err)

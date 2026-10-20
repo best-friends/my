@@ -91,6 +91,8 @@ Remote servers ──AP──►│                               │
 全モジュールが使う `Clock` / `IdGenerator`（Go 名 `IDGenerator`）と `KeyManager` は `internal/app/kernel` に置き、ドメインには `time.Time` と ID 文字列を値で渡す。
 `UnitOfWork` も全モジュールと全 DB アダプタが共有するので `internal/app/uow` に置く。リポジトリポートは各モジュールの `app` に置き、
 DB アダプタの実装は受け取った `uow.Tx` から自分のトランザクションを取り出す。
+`uow.Tx` を取らない読み取りは、文脈が `uow.ReadingIn` でトランザクションを持つときだけそのトランザクションの中で行う。
+同期の購読者が他のモジュールの読み取りのユースケースを、書きかけの行を見せて呼ぶため（webhook の `data`、ADR-0060）。
 ジョブキューのポート（`JobQueue` / `Outbox` / `JobHandlerRegistry` / `JobRunner`）も全モジュールと全キューアダプタが共有するので `internal/app/queue` に置く。
 ここにはリトライ方針（指数バックオフ + ジッタ）と、キューアダプタの `queue.Source` を駆動する pull runner、プロセス内の `Scheduler` も置く。
 `Scheduler` は定期ジョブを周期ごとの冪等キー付きで enqueue するだけで、worker と all のロールで動く。

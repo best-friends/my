@@ -4791,120 +4791,56 @@ type UpdateWebhookRequest struct {
 // accounts.
 type Visibility string
 
-// WebhookAccount The new profile of an `account.updated` message.
-type WebhookAccount struct {
-	Bot          bool   `json:"bot"`
-	Discoverable bool   `json:"discoverable"`
-	DisplayName  string `json:"display_name"`
-	Fields       []struct {
-		Name string `json:"name"`
-
-		// Value Sanitized HTML.
-		Value string `json:"value"`
-	} `json:"fields"`
-
-	// Id The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id        Id   `json:"id"`
-	Indexable bool `json:"indexable"`
-	Locked    bool `json:"locked"`
-
-	// Note The profile text as sanitized HTML.
-	Note      string    `json:"note"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// WebhookAccountAction The action of a `moderation_action.*` message, named as in `AdminAccountAction`.
-type WebhookAccountAction struct {
-	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	AccountId Id         `json:"account_id"`
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-
-	// Id The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id             Id         `json:"id"`
-	IssuedAt       time.Time  `json:"issued_at"`
-	Issuer         string     `json:"issuer"`
-	Kind           string     `json:"kind"`
-	LiftReason     *string    `json:"lift_reason,omitempty"`
-	LiftedAt       *time.Time `json:"lifted_at,omitempty"`
-	NotifyTarget   bool       `json:"notify_target"`
-	PrivateNote    *string    `json:"private_note,omitempty"`
-	PublicReason   *string    `json:"public_reason,omitempty"`
-	ReasonCategory string     `json:"reason_category"`
-
-	// ReportId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	ReportId *Id `json:"report_id,omitempty"`
-
-	// State `active`, or `lifted` for `moderation_action.lifted`.
-	State     string `json:"state"`
-	StatusIds []Id   `json:"status_ids"`
-}
-
-// WebhookAppeal The appeal of an `appeal.created` message, named as in `AdminAppeal`.
-type WebhookAppeal struct {
-	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	AccountId Id `json:"account_id"`
-
-	// ActionId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	ActionId Id `json:"action_id"`
-
-	// Id The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id          Id        `json:"id"`
-	State       string    `json:"state"`
-	SubmittedAt time.Time `json:"submitted_at"`
-	Text        string    `json:"text"`
-}
-
-// WebhookCustomEmoji The emoji of a `custom_emoji.*` message, named as in `AdminCustomEmoji`.
+// WebhookCustomEmoji The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
+// `custom_emoji.deleted` message presents the emoji as it was before the deletion.
 type WebhookCustomEmoji struct {
+	// Aliases The other names of a local emoji that the picker finds it by.
+	Aliases []string `json:"aliases"`
+
+	// Category The category of a local emoji in the picker; absent for none.
+	Category *string `json:"category,omitempty"`
+
+	// CreatedAt When the emoji was registered or first seen.
 	CreatedAt time.Time `json:"created_at"`
-	Domain    *string   `json:"domain,omitempty"`
+
+	// Domain The domain of a remote emoji; absent for a local one.
+	Domain *string `json:"domain,omitempty"`
+
+	// Enabled Whether the emoji is shown; a disabled one stays `:shortcode:` text.
+	Enabled bool `json:"enabled"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id    Id   `json:"id"`
+	Id Id `json:"id"`
+
+	// Local Whether the emoji is of this instance.
 	Local bool `json:"local"`
 
 	// Operation The operation, named as in the audit log: `custom_emoji_created`,
 	// `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
 	// `custom_emoji_disabled`, or `custom_emoji_deleted`.
-	Operation string  `json:"operation"`
-	Shortcode string  `json:"shortcode"`
-	Uri       *string `json:"uri,omitempty"`
-}
+	Operation string `json:"operation"`
 
-// WebhookDomainAction The action of a `domain_moderation_action.*` message, named as in `AdminDomainAction`.
-type WebhookDomainAction struct {
-	Domain    string     `json:"domain"`
-	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	// Shortcode The shortcode, without the colons around it.
+	Shortcode string `json:"shortcode"`
 
-	// Id The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id            Id         `json:"id"`
-	IssuedAt      time.Time  `json:"issued_at"`
-	Kind          string     `json:"kind"`
-	LiftedAt      *time.Time `json:"lifted_at,omitempty"`
-	Obfuscate     bool       `json:"obfuscate"`
-	PrivateNote   *string    `json:"private_note,omitempty"`
-	PublicComment *string    `json:"public_comment,omitempty"`
+	// StaticUrl The URL of a still image of the emoji; absent with `url`.
+	StaticUrl *string `json:"static_url,omitempty"`
 
-	// State `active`, or `lifted` for `domain_moderation_action.lifted`.
-	State string `json:"state"`
+	// UpdatedAt When its current image was set, its ActivityPub `updated`.
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Uri The ActivityPub `id` of the emoji: `https://{host}/ap/emojis/{id}` for a local one,
+	// and the recorded one for a remote one; absent when a remote emoji has none.
+	Uri *string `json:"uri,omitempty"`
+
+	// Url The URL of the image, animated when the emoji is; absent when the image cannot be
+	// shown (such as a remote one from a domain whose media the instance rejects).
+	Url *string `json:"url,omitempty"`
+
+	// VisibleInPicker Whether the picker offers the local emoji; always `true` for a remote one.
+	VisibleInPicker bool `json:"visible_in_picker"`
 }
 
 // WebhookEventType An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
@@ -4924,13 +4860,14 @@ type WebhookEventType string
 
 // WebhookMessage The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
 // `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
-// `webhook-signature`. `data` is the `Webhook*` schema of the type: `WebhookReport` for
-// `report.*`, `WebhookRegistration` for `registration.pending` and `account.created`,
-// `WebhookAccount` for `account.updated`, `WebhookAccountAction` for
-// `moderation_action.*`, `WebhookAppeal` for `appeal.created`, `WebhookDomainAction` for
-// `domain_moderation_action.*`, `WebhookStatus` for `status.created`,
-// `WebhookCustomEmoji` for `custom_emoji.*`, and `WebhookTest` for `webhook.test`. No
-// operation returns it; docs/reference/webhooks.md describes it.
+// `webhook-signature`. `data` is what the admin API answers for the object of the event,
+// presented in the transaction of the event: `AdminReport` for `report.*`,
+// `AdminRegistration` for `registration.pending` and `account.created`, `AdminAccount`
+// for `account.updated`, `AdminAccountAction` for `moderation_action.*`, `AdminAppeal`
+// for `appeal.created`, `AdminDomainAction` for `domain_moderation_action.*`,
+// `WebhookCustomEmoji` for `custom_emoji.*`, `WebhookStatus` for `status.created`, and
+// `WebhookTest` for `webhook.test`. No operation returns it; docs/reference/webhooks.md
+// describes it.
 type WebhookMessage struct {
 	Data map[string]interface{} `json:"data"`
 
@@ -4980,58 +4917,6 @@ type WebhookProblem struct {
 // control characters. `events`: none, or one twice. `missing_permission`: the user lacks
 // the permission of an event (`missing_permissions`).
 type WebhookProblemReason string
-
-// WebhookRegistration The registration of a `registration.pending` (state `pending`) or `account.created`
-// (state `approved`) message, named as in `AdminRegistration`.
-type WebhookRegistration struct {
-	// AccountId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	AccountId Id        `json:"account_id"`
-	Since     time.Time `json:"since"`
-	State     string    `json:"state"`
-
-	// UserId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	UserId   Id     `json:"user_id"`
-	Username string `json:"username"`
-}
-
-// WebhookReport The report of a `report.*` message, named as in `AdminReport`.
-type WebhookReport struct {
-	Category  string    `json:"category"`
-	Comment   string    `json:"comment"`
-	FiledAt   time.Time `json:"filed_at"`
-	Forwarded bool      `json:"forwarded"`
-
-	// Id The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id Id `json:"id"`
-
-	// Outcome How a resolved report was resolved.
-	Outcome *string `json:"outcome,omitempty"`
-
-	// ReporterAccountId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	ReporterAccountId Id   `json:"reporter_account_id"`
-	RuleIds           []Id `json:"rule_ids"`
-
-	// State `open` or `resolved`.
-	State          string    `json:"state"`
-	StateChangedAt time.Time `json:"state_changed_at"`
-	StatusIds      []Id      `json:"status_ids"`
-
-	// TargetAccountId The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	TargetAccountId Id `json:"target_account_id"`
-
-	// Uri The id of the Flag of a report from another server.
-	Uri *string `json:"uri,omitempty"`
-}
 
 // WebhookStatus The post of a `status.created` message, always `public` and local.
 type WebhookStatus struct {

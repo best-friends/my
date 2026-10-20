@@ -3,6 +3,7 @@
 package postgres
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -24,8 +25,34 @@ func queries(tx uow.Tx) (*postgresgen.Queries, error) {
 	return postgresgen.New(pgTx), nil
 }
 
-// reader returns the generated queries on the pool, for reads outside transactions.
-func (d *DB) reader() *postgresgen.Queries { return postgresgen.New(d.pool) }
+// reader returns the generated queries for reads outside transactions: on the pool, or in the
+// transaction that the context of a query reads in (uow.ReadingIn).
+func (d *DB) reader() *postgresgen.Queries { return postgresgen.New(readConn{d.pool}) }
+
+// readConn runs a query in the PostgreSQL transaction that its context reads in, and on the pool
+// otherwise.
+type readConn struct{ pool postgresgen.DBTX }
+
+func (c readConn) conn(ctx context.Context) postgresgen.DBTX {
+	if tx, ok := uow.ReadingTx(ctx); ok {
+		if t, ok := tx.(*Tx); ok {
+			return t.tx
+		}
+	}
+	return c.pool
+}
+
+func (c readConn) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	return c.conn(ctx).Exec(ctx, sql, args...)
+}
+
+func (c readConn) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	return c.conn(ctx).Query(ctx, sql, args...)
+}
+
+func (c readConn) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+	return c.conn(ctx).QueryRow(ctx, sql, args...)
+}
 
 // Timestamps read back from timestamptz are in the session's time zone; the domain uses UTC.
 func utc(t time.Time) time.Time { return t.UTC() }

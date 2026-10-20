@@ -54,6 +54,8 @@ type Deps struct {
 // Service runs the use cases of the webhooks.
 type Service struct {
 	d Deps
+	// presenter presents the data of the messages (SetPresenter).
+	presenter Presenter
 }
 
 // NewService returns a Service.

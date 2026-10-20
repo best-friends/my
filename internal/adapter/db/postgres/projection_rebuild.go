@@ -140,6 +140,18 @@ func (r *IdentityRepository) RebuildPrimaryEmails(ctx context.Context, tx uow.Tx
 	return execAll(ctx, tx, "rebuild primary emails", (*postgresgen.Queries).DeleteAllUserPrimaryEmails, (*postgresgen.Queries).RebuildUserPrimaryEmails)
 }
 
+// RebuildHeads implements webhook.Repository.
+func (r *WebhookRepository) RebuildHeads(ctx context.Context, tx uow.Tx) error {
+	return execAll(ctx, tx, "rebuild webhook endpoint heads",
+		(*postgresgen.Queries).DeleteAllWebhookEndpointHeads, (*postgresgen.Queries).RebuildWebhookEndpointHeads)
+}
+
+// RebuildFailures implements webhook.Repository.
+func (r *WebhookRepository) RebuildFailures(ctx context.Context, tx uow.Tx) error {
+	return execAll(ctx, tx, "rebuild webhook endpoint failures",
+		(*postgresgen.Queries).DeleteDerivableWebhookEndpointFailures, (*postgresgen.Queries).RebuildWebhookEndpointFailures)
+}
+
 // DeleteAllSensitivityOverrides implements content.Repository.
 func (r *StatusRepository) DeleteAllSensitivityOverrides(ctx context.Context, tx uow.Tx) error {
 	return execAll(ctx, tx, "empty status sensitivity overrides", (*postgresgen.Queries).DeleteAllStatusSensitivityOverrides)

@@ -58,6 +58,7 @@ func WebhookRepositoryContract(t *testing.T, newHarness WebhookFactory) {
 		{"DisablesAnEndpointThatKeepsFailing", webhookFailing},
 		{"SignsWithBothSecretsAfterARotation", webhookRotate},
 		{"PurgesOldMessages", webhookPurge},
+		{"RebuildsItsProjections", webhookRebuild},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newWebhookEnv(t, newHarness)) })
@@ -74,6 +75,43 @@ type webhookEnv struct {
 	granted  map[string][]webhook.Permission
 	disabled []appwebhook.EndpointDisabled
 	mu       sync.Mutex
+}
+
+// webhookPresenter presents every object as its kind and ID, and whether its context reads in
+// the transaction of the event.
+type webhookPresenter struct{}
+
+func (webhookPresenter) present(ctx context.Context, kind, id string) (any, error) {
+	_, inTx := uow.ReadingTx(ctx)
+	return map[string]any{"kind": kind, "id": id, "in_transaction": inTx}, nil
+}
+
+func (p webhookPresenter) WebhookReport(ctx context.Context, id string) (any, error) {
+	return p.present(ctx, "report", id)
+}
+
+func (p webhookPresenter) WebhookRegistration(ctx context.Context, userID string) (any, error) {
+	return p.present(ctx, "registration", userID)
+}
+
+func (p webhookPresenter) WebhookAccount(ctx context.Context, id string) (any, error) {
+	return p.present(ctx, "account", id)
+}
+
+func (p webhookPresenter) WebhookAccountAction(ctx context.Context, id string) (any, error) {
+	return p.present(ctx, "account_action", id)
+}
+
+func (p webhookPresenter) WebhookAppeal(ctx context.Context, id string) (any, error) {
+	return p.present(ctx, "appeal", id)
+}
+
+func (p webhookPresenter) WebhookDomainAction(ctx context.Context, id string) (any, error) {
+	return p.present(ctx, "domain_action", id)
+}
+
+func (p webhookPresenter) WebhookCustomEmoji(ctx context.Context, id string) (any, error) {
+	return p.present(ctx, "custom_emoji", id)
 }
 
 // webhookHTTP is a kernel.HTTPClient that answers with the next status code (200 when none is
@@ -128,6 +166,7 @@ func newWebhookEnv(t *testing.T, newHarness WebhookFactory) *webhookEnv {
 		},
 	})
 	e.svc.RegisterSources(projectors)
+	e.svc.SetPresenter(webhookPresenter{})
 	projectors.Register(appwebhook.EventEndpointDisabled, func(_ context.Context, _ uow.Tx, ev uow.Event) error {
 		e.mu.Lock()
 		defer e.mu.Unlock()
@@ -337,9 +376,8 @@ func webhookSources(t *testing.T, e *webhookEnv) {
 		t.Fatalf("body %s: %v", reqs[0].Body, err)
 	}
 	var data map[string]any
-	if err := json.Unmarshal(body.Data, &data); err != nil || data["id"] != r.ID || data["target_account_id"] != r.TargetAccountID ||
-		data["state"] != "open" || data["category"] != "spam" {
-		t.Errorf("data = %s, want report %s", body.Data, r.ID)
+	if err := json.Unmarshal(body.Data, &data); err != nil || data["kind"] != "report" || data["id"] != r.ID || data["in_transaction"] != true {
+		t.Errorf("data = %s, want report %s presented in the transaction of the event", body.Data, r.ID)
 	}
 	if _, err := e.svc.Deliveries(ctx, e.ids.NewID(), "", 10); !errors.Is(err, appwebhook.ErrNotFound) {
 		t.Errorf("Deliveries(unknown) = %v, want ErrNotFound", err)
@@ -585,5 +623,130 @@ func webhookPurge(t *testing.T, e *webhookEnv) {
 	}
 	if res := e.svc.Deliver(ctx, old.Delivery.ID, true); !res.IsDone() {
 		t.Errorf("Deliver(purged) = %+v, want Done", res)
+	}
+}
+
+// webhookRebuild checks that rebuilding the projections derives what the projectors wrote:
+// heads after revisions, rotations, state changes, and a deletion, and runs of failures after
+// failures, a success, and a purge that removed the first failure of a run, which stays.
+func webhookRebuild(t *testing.T, e *webhookEnv) {
+	ctx := t.Context()
+	revised := e.create(t, "https://hooks.example.com/a", webhook.EventStatusCreated).Endpoint.ID
+	if _, err := e.svc.Update(ctx, revised, webhook.EndpointSettings{URL: "https://hooks.example.com/a2", Events: []webhook.EventType{webhook.EventReportCreated}}, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.RotateSecret(ctx, revised, ""); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Disable(ctx, revised, ""); err != nil {
+		t.Fatal(err)
+	}
+	deleted := e.create(t, "https://hooks.example.com/d", webhook.EventStatusCreated).Endpoint.ID
+	if err := e.svc.Delete(ctx, deleted, ""); err != nil {
+		t.Fatal(err)
+	}
+	attempt := func(id string, ok bool) {
+		t.Helper()
+		e.http.err = nil
+		if !ok {
+			e.http.err = errors.New("connection refused")
+		}
+		d, err := e.svc.Test(ctx, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		e.svc.Deliver(ctx, d.Delivery.ID, false)
+		e.clock.Advance(time.Minute)
+	}
+	recovered := e.create(t, "https://hooks.example.com/r", webhook.EventStatusCreated).Endpoint.ID
+	failing := e.create(t, "https://hooks.example.com/f", webhook.EventStatusCreated).Endpoint.ID
+	purged := e.create(t, "https://hooks.example.com/p", webhook.EventStatusCreated).Endpoint.ID
+	healthy := e.create(t, "https://hooks.example.com/h", webhook.EventStatusCreated).Endpoint.ID
+	// The purge removes the first failures of purged, whose run goes on.
+	attempt(purged, false)
+	attempt(purged, false)
+	e.clock.Advance(webhook.Retention)
+	attempt(purged, false)
+	if n, err := e.svc.Purge(ctx); err != nil || n != 2 {
+		t.Fatalf("Purge = %d, %v; want 2", n, err)
+	}
+	attempt(recovered, false)
+	attempt(recovered, true)
+	attempt(failing, false)
+	attempt(failing, true)
+	attempt(failing, false)
+	attempt(failing, false)
+	attempt(healthy, true)
+	endpoints := []string{revised, deleted, recovered, failing, purged, healthy}
+
+	type state struct {
+		Head     appwebhook.Head
+		Failures *webhook.Failures
+	}
+	read := func() map[string]state {
+		t.Helper()
+		out := map[string]state{}
+		err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			for _, id := range endpoints {
+				h, err := e.h.Webhooks.HeadForUpdate(ctx, tx, id)
+				if err != nil {
+					return err
+				}
+				f, err := e.h.Webhooks.Failures(ctx, tx, id)
+				if err != nil {
+					return err
+				}
+				out[id] = state{Head: h, Failures: f}
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatalf("read the projections: %v", err)
+		}
+		return out
+	}
+	want := read()
+	if f := want[failing].Failures; f == nil || f.Consecutive != 2 {
+		t.Errorf("failures of the failing endpoint = %+v, want 2", f)
+	}
+	if f := want[purged].Failures; f == nil || f.Consecutive != 3 {
+		t.Errorf("failures of the purged endpoint = %+v, want 3", f)
+	}
+	if want[recovered].Failures != nil || want[healthy].Failures != nil || want[deleted].Head.State != webhook.StateDeleted {
+		t.Errorf("projections = %+v", want)
+	}
+	// Spoil the projections, then rebuild them.
+	ds, err := e.svc.Deliveries(ctx, healthy, "", 1)
+	if err != nil || len(ds) != 1 || ds[0].Last == nil {
+		t.Fatalf("Deliveries(healthy) = %+v, %v", ds, err)
+	}
+	success := ds[0]
+	err = e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		stale := want[revised].Head
+		stale.State = webhook.StateEnabled
+		if err := e.h.Webhooks.UpsertHead(ctx, tx, stale); err != nil {
+			return err
+		}
+		if err := e.h.Webhooks.DeleteFailures(ctx, tx, failing); err != nil {
+			return err
+		}
+		return e.h.Webhooks.UpsertFailures(ctx, tx, healthy, webhook.Failures{
+			FirstFailureAttemptID: success.Last.ID, FirstFailureAt: success.Last.AttemptedAt, Consecutive: 1,
+		})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := appwebhook.RebuildProjections(ctx, e.h.UnitOfWork, e.h.Webhooks); err != nil {
+		t.Fatalf("RebuildProjections = %v", err)
+	}
+	got := read()
+	for _, id := range endpoints {
+		g, w := got[id], want[id]
+		if g.Head != w.Head || (g.Failures == nil) != (w.Failures == nil) ||
+			(g.Failures != nil && (g.Failures.FirstFailureAttemptID != w.Failures.FirstFailureAttemptID ||
+				!g.Failures.FirstFailureAt.Equal(w.Failures.FirstFailureAt) || g.Failures.Consecutive != w.Failures.Consecutive)) {
+			t.Errorf("rebuilt %s = %+v %+v, want %+v %+v", id, g.Head, g.Failures, w.Head, w.Failures)
+		}
 	}
 }

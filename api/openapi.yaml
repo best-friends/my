@@ -7313,13 +7313,14 @@ components:
       description: |
         The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
         `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
-        `webhook-signature`. `data` is the `Webhook*` schema of the type: `WebhookReport` for
-        `report.*`, `WebhookRegistration` for `registration.pending` and `account.created`,
-        `WebhookAccount` for `account.updated`, `WebhookAccountAction` for
-        `moderation_action.*`, `WebhookAppeal` for `appeal.created`, `WebhookDomainAction` for
-        `domain_moderation_action.*`, `WebhookStatus` for `status.created`,
-        `WebhookCustomEmoji` for `custom_emoji.*`, and `WebhookTest` for `webhook.test`. No
-        operation returns it; docs/reference/webhooks.md describes it.
+        `webhook-signature`. `data` is what the admin API answers for the object of the event,
+        presented in the transaction of the event: `AdminReport` for `report.*`,
+        `AdminRegistration` for `registration.pending` and `account.created`, `AdminAccount`
+        for `account.updated`, `AdminAccountAction` for `moderation_action.*`, `AdminAppeal`
+        for `appeal.created`, `AdminDomainAction` for `domain_moderation_action.*`,
+        `WebhookCustomEmoji` for `custom_emoji.*`, `WebhookStatus` for `status.created`, and
+        `WebhookTest` for `webhook.test`. No operation returns it; docs/reference/webhooks.md
+        describes it.
       type: object
       required: [type, timestamp, data]
       properties:
@@ -7331,186 +7332,6 @@ components:
           format: date-time
         data:
           type: object
-    WebhookReport:
-      description: The report of a `report.*` message, named as in `AdminReport`.
-      type: object
-      required: [id, category, comment, forwarded, filed_at, state, state_changed_at, reporter_account_id, target_account_id, status_ids, rule_ids]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        uri:
-          description: The id of the Flag of a report from another server.
-          type: string
-        category:
-          type: string
-        comment:
-          type: string
-        forwarded:
-          type: boolean
-        filed_at:
-          type: string
-          format: date-time
-        state:
-          description: "`open` or `resolved`."
-          type: string
-        outcome:
-          description: How a resolved report was resolved.
-          type: string
-        state_changed_at:
-          type: string
-          format: date-time
-        reporter_account_id:
-          $ref: "#/components/schemas/Id"
-        target_account_id:
-          $ref: "#/components/schemas/Id"
-        status_ids:
-          type: array
-          items:
-            $ref: "#/components/schemas/Id"
-        rule_ids:
-          type: array
-          items:
-            $ref: "#/components/schemas/Id"
-    WebhookRegistration:
-      description: |
-        The registration of a `registration.pending` (state `pending`) or `account.created`
-        (state `approved`) message, named as in `AdminRegistration`.
-      type: object
-      required: [user_id, account_id, username, state, since]
-      properties:
-        user_id:
-          $ref: "#/components/schemas/Id"
-        account_id:
-          $ref: "#/components/schemas/Id"
-        username:
-          type: string
-        state:
-          type: string
-        since:
-          type: string
-          format: date-time
-    WebhookAccount:
-      description: The new profile of an `account.updated` message.
-      type: object
-      required: [id, display_name, note, locked, bot, discoverable, indexable, fields, updated_at]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        display_name:
-          type: string
-        note:
-          description: The profile text as sanitized HTML.
-          type: string
-        locked:
-          type: boolean
-        bot:
-          type: boolean
-        discoverable:
-          type: boolean
-        indexable:
-          type: boolean
-        fields:
-          type: array
-          items:
-            type: object
-            required: [name, value]
-            properties:
-              name:
-                type: string
-              value:
-                description: Sanitized HTML.
-                type: string
-        updated_at:
-          type: string
-          format: date-time
-    WebhookAccountAction:
-      description: The action of a `moderation_action.*` message, named as in `AdminAccountAction`.
-      type: object
-      required: [id, account_id, kind, reason_category, issuer, notify_target, state, issued_at, status_ids]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        account_id:
-          $ref: "#/components/schemas/Id"
-        kind:
-          type: string
-        reason_category:
-          type: string
-        public_reason:
-          type: string
-        private_note:
-          type: string
-        report_id:
-          $ref: "#/components/schemas/Id"
-        issuer:
-          type: string
-        notify_target:
-          type: boolean
-        state:
-          description: "`active`, or `lifted` for `moderation_action.lifted`."
-          type: string
-        issued_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        lifted_at:
-          type: string
-          format: date-time
-        lift_reason:
-          type: string
-        status_ids:
-          type: array
-          items:
-            $ref: "#/components/schemas/Id"
-    WebhookAppeal:
-      description: The appeal of an `appeal.created` message, named as in `AdminAppeal`.
-      type: object
-      required: [id, account_id, action_id, text, state, submitted_at]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        account_id:
-          $ref: "#/components/schemas/Id"
-        action_id:
-          $ref: "#/components/schemas/Id"
-        text:
-          type: string
-        state:
-          type: string
-        submitted_at:
-          type: string
-          format: date-time
-    WebhookDomainAction:
-      description: The action of a `domain_moderation_action.*` message, named as in `AdminDomainAction`.
-      type: object
-      required: [id, domain, kind, obfuscate, state, issued_at]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        domain:
-          type: string
-        kind:
-          type: string
-        public_comment:
-          type: string
-        private_note:
-          type: string
-        obfuscate:
-          type: boolean
-        state:
-          description: "`active`, or `lifted` for `domain_moderation_action.lifted`."
-          type: string
-        issued_at:
-          type: string
-          format: date-time
-        expires_at:
-          type: string
-          format: date-time
-        lifted_at:
-          type: string
-          format: date-time
     WebhookStatus:
       description: The post of a `status.created` message, always `public` and local.
       type: object
@@ -7539,29 +7360,20 @@ components:
           type: string
           format: date-time
     WebhookCustomEmoji:
-      description: The emoji of a `custom_emoji.*` message, named as in `AdminCustomEmoji`.
-      type: object
-      required: [id, shortcode, local, operation, created_at]
-      properties:
-        id:
-          $ref: "#/components/schemas/Id"
-        shortcode:
-          type: string
-        local:
-          type: boolean
-        domain:
-          type: string
-        uri:
-          type: string
-        operation:
-          description: |
-            The operation, named as in the audit log: `custom_emoji_created`,
-            `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
-            `custom_emoji_disabled`, or `custom_emoji_deleted`.
-          type: string
-        created_at:
-          type: string
-          format: date-time
+      description: |
+        The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
+        `custom_emoji.deleted` message presents the emoji as it was before the deletion.
+      allOf:
+        - $ref: "#/components/schemas/AdminCustomEmoji"
+        - type: object
+          required: [operation]
+          properties:
+            operation:
+              description: |
+                The operation, named as in the audit log: `custom_emoji_created`,
+                `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
+                `custom_emoji_disabled`, or `custom_emoji_deleted`.
+              type: string
     WebhookTest:
       description: The data of a `webhook.test` message.
       type: object
