@@ -124,15 +124,15 @@ func listRoles(ctx context.Context, app *platform.App, w io.Writer, username str
 		for _, r := range held {
 			ids[r.ID] = true
 		}
-		_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tPERMISSIONS")
+		_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tMODERATION\tSERVER")
 		for _, r := range roles {
 			if ids[r.ID] {
-				_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\n", r.Key, r.Position, permissionList(r.Permissions))
+				_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\n", r.Key, r.Position, permissionList(r.Permissions, identity.CategoryModeration), permissionList(r.Permissions, identity.CategoryServer))
 			}
 		}
 		return tw.Flush()
 	}
-	_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tPERMISSIONS\tHOLDERS")
+	_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tMODERATION\tSERVER\tHOLDERS")
 	for _, r := range roles {
 		holders, err := app.Identity.RoleHolders(ctx, r.Key)
 		if err != nil {
@@ -154,15 +154,19 @@ func listRoles(ctx context.Context, app *platform.App, w io.Writer, username str
 		if list == "" {
 			list = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\n", r.Key, r.Position, permissionList(r.Permissions), list)
+		_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\n", r.Key, r.Position,
+			permissionList(r.Permissions, identity.CategoryModeration), permissionList(r.Permissions, identity.CategoryServer), list)
 	}
 	return tw.Flush()
 }
 
-func permissionList(perms []identity.Permission) string {
-	out := make([]string, len(perms))
-	for i, p := range perms {
-		out[i] = string(p)
+// permissionList joins the permissions of perms in category (ADR-0058), or "-" for none.
+func permissionList(perms []identity.Permission, category identity.PermissionCategory) string {
+	out := make([]string, 0, len(perms))
+	for _, p := range perms {
+		if p.Category() == category {
+			out = append(out, string(p))
+		}
 	}
 	if len(out) == 0 {
 		return "-"
@@ -177,7 +181,8 @@ func adminRoleUsage(w io.Writer) {
   my admin role revoke [-config <file>] <username> <role>
 
 The roles of local users (FR-720). list shows every role, highest position
-first, with the permissions it grants and the users who hold it, or with -user
+first, with the permissions it grants (moderation and server administration
+apart) and the users who hold it, or with -user
 the roles of one user. grant and revoke change one role of one user; the
 change applies from the user's next request and is recorded in the audit log
 (my admin audit list -target-kind role). Granting a role the user holds, or

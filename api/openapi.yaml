@@ -54,10 +54,19 @@ tags:
     description: Reports of accounts and posts to the moderators.
   - name: streaming
     description: Real-time updates of the home timeline and the notifications.
-  - name: admin
+  - name: admin-moderation
     description: |
-      Instance administration. The operations need an `admin` scope and a permission of the
-      user's roles; a user without it gets a 403 `/api/v1/problems/missing-permission`.
+      The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
+      sign-up blocks, domain actions, the health of remote servers, the audit log, and the counts
+      of what awaits the moderators (ADR-0058). The operations need an `admin` scope and a
+      permission of the user's roles in the moderation category; a user without it gets a 403
+      `/api/v1/problems/missing-permission`.
+  - name: admin-server
+    description: |
+      The administration of the server itself: its settings and texts, its rules, the roles and
+      granting them, and the dead jobs of the job queue (ADR-0058). The operations need an `admin`
+      scope and a permission of the user's roles in the server category; a user without it gets a
+      403 `/api/v1/problems/missing-permission`.
 paths:
   /instance:
     get:
@@ -1422,7 +1431,7 @@ paths:
         The jobs of the job queue that failed for good (their handler gave up, or they used up
         their attempts), most recently failed first. Needs the `manage_jobs` permission; a user
         without it gets a 403 `/api/v1/problems/missing-permission`.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1448,7 +1457,7 @@ paths:
         Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
         the dead jobs. When a pending job has the same idempotency key, that job stands in for
         it. An unknown ID, or one already retried, is a 404. Needs the `manage_jobs` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1473,7 +1482,7 @@ paths:
         has no failures. Unavailable servers are sent only `Follow`, `Accept`, and `Reject`
         until a delivery succeeds, they send a signed request, the daily probe reaches them, or
         an operator marks them available. Needs the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1504,7 +1513,7 @@ paths:
       description: |
         The health of the server; one without failures is `available`, without `since`. Needs
         the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1521,7 +1530,7 @@ paths:
       description: |
         Why and when the server was marked unavailable or available again, newest first. Needs
         the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1549,7 +1558,7 @@ paths:
         again with the reason `operator`, so that deliveries to it resume. A server that is
         already available without failures stays as it is. Needs the `manage_domains`
         permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1572,7 +1581,7 @@ paths:
         stay with the operation itself (`source_event_id`). The audit log cannot be changed or
         deleted through the API. An unknown `action` or `target_kind`, or a `target_id`
         without its `target_kind`, is a 400. Needs the `view_audit` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1627,7 +1636,7 @@ paths:
       description: |
         The actions that moderators took on remote domains (FR-702), newest first, lifted and
         expired ones included unless `active` is set. Needs the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1675,7 +1684,7 @@ paths:
         dot); one that is not a valid domain is a 422 naming `domain`. A `public_comment` or
         `private_note` that is too long or contains U+0000 is a 422 naming it. Needs the
         `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -1694,7 +1703,7 @@ paths:
       operationId: getDomainAction
       summary: Get a moderation action on a domain
       description: An unknown ID is a 404. Needs the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1712,7 +1721,7 @@ paths:
         Ends the action's restrictions at once; those of other actions on the domain stay.
         Lifting a lifted action changes nothing. An unknown ID is a 404. Needs the
         `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1729,7 +1738,7 @@ paths:
       description: |
         The reports in the moderators' queue (FR-701), newest first. Needs the `manage_reports`
         permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1760,7 +1769,7 @@ paths:
       description: |
         The report as a moderator opens it, with the posts it points at whatever their
         visibility. An unknown ID is a 404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1777,7 +1786,7 @@ paths:
       description: |
         Makes the authenticated user the moderator who handles the report. An unknown ID is a
         404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1794,7 +1803,7 @@ paths:
       description: |
         Removes the moderator who handles the report, whoever it is. An unknown ID is a 404.
         Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1811,7 +1820,7 @@ paths:
       description: |
         Resolves an open report with an outcome. Resolving a resolved report changes nothing
         and keeps its outcome. An unknown ID is a 404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1837,7 +1846,7 @@ paths:
         Adds an internal note to the report (FR-710). Notes are shown to the moderators only,
         never to the target or the reporter, and cannot be edited or removed. An unknown ID is
         a 404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1861,7 +1870,7 @@ paths:
         Puts a resolved report back in the queue as `open`, keeping its assignee. Resolving it
         again does not notify the reporter again. An open report is a 409, an unknown ID a
         404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1881,7 +1890,7 @@ paths:
         The actions that moderators took on an account (FR-703), newest first, lifted and
         expired ones included unless `active` is set. An unknown account is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1931,7 +1940,7 @@ paths:
         `expires_in` on a `ban` or an action on posts is a 422 naming `expires_in`. A text that
         is too long or contains U+0000 is a 422 naming it. An unknown account is a 404. Needs
         the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1952,7 +1961,7 @@ paths:
       operationId: getAccountAction
       summary: Get a moderation action on an account
       description: An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1973,7 +1982,7 @@ paths:
         they were. Lifting a lifted action changes nothing and keeps its first reason. A `ban`
         is never lifted: a 422 naming `id`. A `reason` that is too long or contains U+0000 is a
         422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1999,7 +2008,7 @@ paths:
         Every rule in every locale (FR-705): the rules in effect by position, followed, when
         `include_retired` is set, by the retired ones. The list is not paginated; at most 100
         rules are in effect. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2031,7 +2040,7 @@ paths:
         that is not a BCP 47 tag or appears twice (after canonicalization: `ja_jp` is `ja-JP`),
         no texts, or more than 50 is a 422 naming the property (`texts[0].text`). With 100
         rules in effect it is a 422 naming `rules`. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -2052,7 +2061,7 @@ paths:
       description: |
         A rule, retired or not; reports cite rules by ID. An unknown ID is a 404. Needs the
         `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2069,7 +2078,7 @@ paths:
         Records a revision whose texts replace every text of the rule; the rule keeps its ID
         and position. The texts are checked as for a new rule (422). A retired rule is a 409
         and an unknown ID a 404. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2093,7 +2102,7 @@ paths:
         Moves the rule to a place among the rules in effect and numbers them 1, 2, ... in their
         new order; a place after the last rule moves it last. A `position` below 1 is a 422, a
         retired rule a 409, and an unknown ID a 404. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2117,7 +2126,7 @@ paths:
         Removes the rule from the rules in effect, at once and for good; reports that cite it
         still refer to it. Retiring a retired rule changes nothing. An unknown ID is a 404.
         Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2138,7 +2147,7 @@ paths:
         descriptions, the terms of service, the privacy policy, and the alternative text of the
         preview image, by key and locale. Cleared texts are not listed. The list is not
         paginated. Needs the `manage_settings` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       responses:
@@ -2174,7 +2183,7 @@ paths:
         `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
         or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
         permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2209,7 +2218,7 @@ paths:
         that await approval and appeals that await a decision (with the `manage_accounts`
         permission), for the badges of the admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
         user without either gets an empty object.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       responses:
@@ -2243,7 +2252,7 @@ paths:
         `email_domain` with an `@` inside, more than one of `email`, `email_domain`, and `ip`,
         or a parameter longer than 320 characters is a 400 naming it. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2328,7 +2337,7 @@ paths:
         verified, and its roles, with its newest 20 actions and reports. The email address and
         the IP addresses are not included; `POST .../reveal` shows them. An unknown account is
         a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2357,7 +2366,7 @@ paths:
         of the sign-in and registration origins only (ADR-0038). A remote account or the
         instance actor is a 422 naming `id`. An unknown account is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2385,7 +2394,7 @@ paths:
         (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
         (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
         `manage_roles` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       responses:
@@ -2400,7 +2409,7 @@ paths:
       description: |
         The roles that the user of a local account holds, highest position first. An unknown
         account, or one that is not local, is a 404. Needs the `manage_roles` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2421,7 +2430,7 @@ paths:
         of the viewer is a 403. An unknown account, one that is not local, or an unknown role
         is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
         permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2443,7 +2452,7 @@ paths:
         only holder is a 409. An unknown account, one that is not local, or an unknown role
         is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
         permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2463,7 +2472,7 @@ paths:
       description: |
         The appeals that local users made of the actions on their accounts (FR-707), newest
         first, each with its action. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2492,7 +2501,7 @@ paths:
       operationId: getAppeal
       summary: Get an appeal of a moderation action
       description: An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2517,7 +2526,7 @@ paths:
         `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
         U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2544,7 +2553,7 @@ paths:
         `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
         U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2569,7 +2578,7 @@ paths:
       description: |
         The sign-ups that wait for a moderator's decision (FR-721), with the reasons their
         applicants gave, longest waiting first. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2596,7 +2605,7 @@ paths:
         for the moderators; the decision is audited. Deciding a decided registration changes
         nothing and keeps its decision. A user without a registration is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2620,7 +2629,7 @@ paths:
         for the moderators; the decision is audited. Deciding a decided registration changes
         nothing and keeps its decision. A user without a registration is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2644,7 +2653,7 @@ paths:
       description: |
         The blocks on sign-ups from the registration page (FR-719), newest first, lifted and
         expired ones included unless `active` is set. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2688,7 +2697,7 @@ paths:
         CIDR prefix (a single address is a prefix of its full length). A value that is not
         valid for its kind, or a `comment` that is too long or contains U+0000, is a 422.
         Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -2707,7 +2716,7 @@ paths:
       operationId: getSignupBlock
       summary: Get a sign-up block
       description: An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2724,7 +2733,7 @@ paths:
       description: |
         The block stops matching sign-ups at once; the lift is audited. Lifting a lifted block
         changes nothing. An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2753,7 +2762,7 @@ paths:
         ones before it; sending the list again skips them as `already_blocked`. More than
         10,000 values, an invalid kind or severity, or a `comment` that is too long or contains
         U+0000 is a 422 that adds nothing. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       requestBody:

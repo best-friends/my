@@ -205,11 +205,10 @@ internal/
   app/stream/        # リアルタイム更新の Publisher / Subscriber / Bus / Sweeper ポート、プロセス内ブローカー Hub、プロセス間の中継 Relay、定期ジョブ stream.sweep
   app/projection/    # 投影の再構築と検証（my projection、定期ジョブ projection.verify）と、表を列に依存せず読み書きする Store ポート
   interface/
-    clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）
+    clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）。スタッフの操作（/admin/*、ADR-0058）の入口もここだけ
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     media/           # 公開メディア（Blob のキー media/...）の配信 /media/
     authpages/       # ログイン・ログアウト・登録・メール確認の画面と、利用規約・プライバシーポリシーの公開ページ（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042）
-    admin/
     web/             # Web クライアントの HTML の外枠（プロフィールと投稿のリンクプレビューを含む）・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
     db/{sqlite,libsql,postgres}/

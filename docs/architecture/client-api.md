@@ -31,7 +31,9 @@ spec は分割せず `api/openapi.yaml` の 1 ファイルに書きます。バ�
 - パスは `/api/v1/...` です。spec の `servers` が `/api/v1` なので、`paths` には `/api/v1` を除いた部分（`/instance`）を書きます。
 - `operationId` は lowerCamelCase の動詞句（`getInstance`、`createStatus`）です。Go のメソッド名（`GetInstance`）と TS の操作名になります。
 - プロパティ名とパス・クエリのパラメータ名は snake_case です（lint で強制）。
-- タグはモジュール単位（`instance`、`statuses`、`accounts` など）で付けます。
+- タグはモジュール単位（`instance`、`statuses`、`accounts` など）で付けます。スタッフの操作（`/admin/...`）だけは、モジュールではなく区分（[ADR-0058](../adr/0058-moderation-admin-separation.md)）で
+  `admin-moderation`（通報・異議申し立て・アカウントと処分・登録・登録の拒否・ドメインへの処分・連合先・監査ログ・`/admin/counts`）と
+  `admin-server`（設定と文章・ルール・ロールとその付与・dead job）に分けます。操作のタグは、その操作が要る権限の区分（`identity.Permission.Category`）に合わせます。
 
 ### 2.2 ID とページング
 
@@ -185,9 +187,10 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
 | `security: [{oauth2: [read:accounts]}]` | トークンが必須で、列挙したスコープをすべて要する |
 | `security: [{}, {oauth2: [read:statuses]}]` | 匿名でも使える。トークンが送られたら列挙したスコープを要する |
 
-管理の操作（タグ `admin`、`/admin/...`）は、スコープ（`admin:read` / `admin:write`）に加えて、利用者のロールが操作の権限（`manage_domains`、`manage_jobs` など。[data-model §4.1](data-model.md)）を持つことを要します。
+管理の操作（タグ `admin-moderation` / `admin-server`、`/admin/...`）は、スコープ（`admin:read` / `admin:write`）に加えて、利用者のロールが操作の権限（`manage_domains`、`manage_jobs` など。[data-model §4.1](data-model.md)）を持つことを要します。
 ハンドラが最初に `Server.requirePermission` で `Options.Permissions`（`identity.Service.HasPermission`）に問い合わせ、持たなければ 403 にします。
 権限は spec の `security` に書けないので、操作の `description` に書きます。
+経路とスコープは区分で分けません（[ADR-0058](../adr/0058-moderation-admin-separation.md)）。新しい操作は区分によらず `/admin/<資源>` に置き、タグで区分を示します。
 クライアントが管理の画面を出し分けられるように、`GET /accounts/verify_credentials` の `CredentialAccount.permissions` が利用者のロールの権限を返します（`identity.Service.Permissions`。ロールがなければ空）。画面を隠すのは案内のためだけで、守るのは各操作の検査です。
 
 応答:
