@@ -2326,17 +2326,63 @@ export interface paths {
         /**
          * List the roles
          * @description The roles of the instance, highest position first, with the permissions they grant
-         *     (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
-         *     (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
-         *     `manage_roles` permission.
+         *     (FR-720). Every instance has `admin` (position 1000, every permission, never changed)
+         *     and `moderator` (position 100 with `manage_reports`, `manage_accounts`, and
+         *     `view_audit` until an administrator changes them). Needs the `manage_roles` permission.
          */
         get: operations["listRoles"];
         put?: never;
-        post?: never;
+        /**
+         * Create a role
+         * @description Creates a role with a key, a position below `admin` (0 to 999), and permissions; the
+         *     audit log records `role_created`. A position above every role of the viewer is a 403.
+         *     A key, position, or permissions that break a rule, a key that another role has
+         *     (`admin` and `moderator` included), or a permission that the viewer's roles do not
+         *     grant is a 422 `/api/v1/problems/invalid-role` whose `reason` says which. Needs the
+         *     `manage_roles` permission.
+         */
+        post: operations["createRole"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/admin/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a role
+         * @description Deletes a role that nobody holds; the audit log records `role_deleted`. `admin` and
+         *     `moderator` are never deleted (a 422 `builtin`), and a role that users hold is a 422
+         *     `held`: revoke it from them first. A role above every role of the viewer is a 403. An
+         *     unknown role is a 404. Needs the `manage_roles` permission.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a role
+         * @description Changes the position, the permissions, or both of a role; the change applies to its
+         *     holders from their next request, and the audit log records `role_updated`. A request
+         *     that changes nothing records nothing. The key never changes. `admin` is never changed
+         *     (a 422 `builtin`); `moderator` takes a new position and permissions like any other
+         *     role. A role, or a new position, above every role of the viewer is a 403. A position or
+         *     permissions that break a rule, or adding or removing a permission that the viewer's
+         *     roles do not grant, is a 422 `/api/v1/problems/invalid-role` whose `reason` says
+         *     which. An unknown role is a 404. Needs the `manage_roles` permission.
+         */
+        patch: operations["updateRole"];
         trace?: never;
     };
     "/admin/accounts/{id}/roles": {
@@ -4234,8 +4280,10 @@ export interface components {
          *     `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
          *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
-         *     user): `role_granted`, `role_revoked`. On an `appeal`:
+         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+         *     `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+         *     `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+         *     an `appeal`:
          *     `appeal_upheld`, `appeal_overturned` (which also records the action's
          *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
@@ -4248,7 +4296,7 @@ export interface components {
          *     description and the host name of its URL, never the URL.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4283,8 +4331,8 @@ export interface components {
             /**
              * @description Whether the target is still there to look at. It is `false` for an account, a report,
              *     an appeal, or a sign-up block that is gone (erased past its retention), which only
-             *     `target_label` names now. It is `true` for the other kinds of targets, which are
-             *     never erased.
+             *     `target_label` names now. It is `true` for the other kinds of targets: a role, a
+             *     custom emoji, or a webhook that was deleted is not looked up yet.
              */
             target_exists: boolean;
             /**
@@ -5247,7 +5295,8 @@ export interface components {
         };
         /**
          * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
-         *     a user may grant and revoke only the roles at or below their highest one.
+         *     a user may grant, revoke, create, change, and delete only the roles at or below their
+         *     highest one, and give or take only the permissions they hold.
          */
         AdminRole: {
             id: components["schemas"]["Id"];
@@ -5261,6 +5310,41 @@ export interface components {
         AdminRoleList: {
             items: components["schemas"]["AdminRole"][];
         };
+        /** @description A new role. */
+        CreateRoleRequest: {
+            /** @description The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`. */
+            key: string;
+            /** @description The rank of the role, from 0 to 999 (below `admin`). */
+            position: number;
+            /** @description The permissions that the role grants, each once. */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description The changes to a role; what is omitted stays. */
+        UpdateRoleRequest: {
+            /** @description The new rank of the role, from 0 to 999. */
+            position?: number;
+            /** @description The new permissions of the role, each once; empty removes them all. */
+            permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
+         *     `reason` says which. Another 422 (a malformed request) has none.
+         */
+        RoleProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["RoleProblemReason"];
+            /** @description The permissions that the change needs and the viewer lacks, for `missing_permission`. */
+            missing_permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+         *     and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+         *     `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+         *     and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+         *     `missing_permission`: the change adds or removes permissions that the viewer's roles
+         *     do not grant (`missing_permissions`).
+         * @enum {string}
+         */
+        RoleProblemReason: "key" | "key_taken" | "position" | "permissions" | "builtin" | "held" | "missing_permission";
         /** @description A user's registration as the moderators review it (FR-721). */
         AdminRegistration: {
             user_id: components["schemas"]["Id"];
@@ -5761,6 +5845,28 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["AdminRoleList"];
+            };
+        };
+        /** @description The role. */
+        AdminRole: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRole"];
+            };
+        };
+        /** @description The role change breaks a rule; nothing was changed. */
+        RoleProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["RoleProblem"];
             };
         };
         /** @description The registration. */
@@ -8431,6 +8537,68 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRole"];
+            422: components["responses"]["RoleProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The role is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            422: components["responses"]["RoleProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRole"];
+            422: components["responses"]["RoleProblem"];
             default: components["responses"]["Problem"];
         };
     };

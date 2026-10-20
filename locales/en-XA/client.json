@@ -1331,12 +1331,24 @@
     "defaultMessage": "[Ƥřīṽȧȧŧḗḗ ḓȧȧŧȧȧ şħǿǿẇƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.role_created": {
+    "defaultMessage": "[Řǿǿŀḗḗ ƈřḗḗȧȧŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.role_deleted": {
+    "defaultMessage": "[Řǿǿŀḗḗ ḓḗḗŀḗḗŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "[Řǿǿŀḗḗ ɠřȧȧƞŧḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.action.role_revoked": {
     "defaultMessage": "[Řǿǿŀḗḗ řḗḗṽǿǿķḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.role_updated": {
+    "defaultMessage": "[Řǿǿŀḗḗ ƈħȧȧƞɠḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.action.rule_added": {
@@ -3117,6 +3129,210 @@
   },
   "admin.reports.title": {
     "defaultMessage": "[Řḗḗƥǿǿřŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.builtin.admin": {
+    "defaultMessage": "[Ɓŭŭīŀŧ-īƞ řǿǿŀḗḗ ẇīŧħ ḗḗṽḗḗřẏ ƥḗḗřḿīşşīǿǿƞ. Īŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ǿǿř ḓḗḗŀḗḗŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.builtin.moderator": {
+    "defaultMessage": "[Ɓŭŭīŀŧ-īƞ řǿǿŀḗḗ. Īŧş ƥǿǿşīŧīǿǿƞ ȧȧƞḓ ƥḗḗřḿīşşīǿǿƞş ƈȧȧƞ ƀḗḗ ƈħȧȧƞɠḗḗḓ, ƀŭŭŧ īŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.cancel": {
+    "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.category.moderation": {
+    "defaultMessage": "[Ḿǿǿḓḗḗřȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.category.server": {
+    "defaultMessage": "[Şḗḗřṽḗḗř ȧȧḓḿīƞīşŧřȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.created": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗḓ ŧħḗḗ řǿǿŀḗḗ {role}. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.delete": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.delete.description": {
+    "defaultMessage": "[Ŧħīş ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭƞḓǿǿƞḗḗ. Ȧ řǿǿŀḗḗ ŧħȧȧŧ şǿǿḿḗḗǿǿƞḗḗ ħǿǿŀḓş ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ: řḗḗṽǿǿķḗḗ īŧ ƒřǿǿḿ ŧħḗḗḿ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.delete.title": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗ ŧħḗḗ řǿǿŀḗḗ {role}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.delete_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ḓḗḗŀḗḗŧḗḗ ŧħḗḗ řǿǿŀḗḗ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.delete_role": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗ {role}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.deleted": {
+    "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗḓ ŧħḗḗ řǿǿŀḗḗ {role}. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.edit": {
+    "defaultMessage": "[Ḗḓīŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.edit.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.edit.title": {
+    "defaultMessage": "[Ḗḓīŧ ŧħḗḗ řǿǿŀḗḗ {role}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.edit_role": {
+    "defaultMessage": "[Ḗḓīŧ {role}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.failed.outranked": {
+    "defaultMessage": "[Ŧħīş řǿǿŀḗḗ īş ƞǿǿẇ ȧȧƀǿǿṽḗḗ ẏǿǿŭŭř ħīɠħḗḗşŧ řǿǿŀḗḗ, şǿǿ ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ƈħȧȧƞɠḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.key": {
+    "defaultMessage": "[Ķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.key.description": {
+    "defaultMessage": "[Ŭƥ ŧǿǿ {max} ŀǿǿẇḗḗřƈȧȧşḗḗ ŀḗḗŧŧḗḗřş, ḓīɠīŧş, ŭŭƞḓḗḗřşƈǿǿřḗḗş, ǿǿř ħẏƥħḗḗƞş. Īŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ŀȧȧŧḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.key.invalid": {
+    "defaultMessage": "[Ḗƞŧḗḗř ŭŭƥ ŧǿǿ {max} ŀǿǿẇḗḗřƈȧȧşḗḗ ŀḗḗŧŧḗḗřş, ḓīɠīŧş, ŭŭƞḓḗḗřşƈǿǿřḗḗş, ǿǿř ħẏƥħḗḗƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.list.title": {
+    "defaultMessage": "[Řǿǿŀḗḗş ǿǿƒ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.missing_permissions": {
+    "defaultMessage": "[Ƥḗḗřḿīşşīǿǿƞş ẏǿǿŭŭř řǿǿŀḗḗş ḓǿǿ ƞǿǿŧ ɠřȧȧƞŧ: {permissions}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.new.accounts": {
+    "defaultMessage": "[Ƒīƞḓ ȧȧƈƈǿǿŭŭƞŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.new.description": {
+    "defaultMessage": "[Ȧ ƞḗḗẇ řǿǿŀḗḗ īş ħḗḗŀḓ ƀẏ ƞǿǿƀǿǿḓẏ. Ɠřȧȧƞŧ īŧ ǿǿƞ ŧħḗḗ ȧȧḓḿīƞ ƥȧȧɠḗḗ ǿǿƒ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.new.no_role": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħǿǿŀḓ ƞǿǿ řǿǿŀḗḗ, şǿǿ ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ƈřḗḗȧȧŧḗḗ ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.new.title": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗ ȧȧ řǿǿŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.outranked": {
+    "defaultMessage": "[Ȧƀǿǿṽḗḗ ẏǿǿŭŭř ħīɠħḗḗşŧ řǿǿŀḗḗ, {role}, şǿǿ ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ ƈħȧȧƞɠḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_accounts": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧş ȧȧƞḓ řḗḗɠīşŧřȧȧŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_custom_emojis": {
+    "defaultMessage": "[Ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_domains": {
+    "defaultMessage": "[Ǿŧħḗḗř şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_invites": {
+    "defaultMessage": "[Īƞṽīŧḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_jobs": {
+    "defaultMessage": "[Ƒȧȧīŀḗḗḓ ĵǿǿƀş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_reports": {
+    "defaultMessage": "[Řḗḗƥǿǿřŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_roles": {
+    "defaultMessage": "[Řǿǿŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_rules": {
+    "defaultMessage": "[Şḗḗřṽḗḗř řŭŭŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_settings": {
+    "defaultMessage": "[Şḗḗřṽḗḗř şḗḗŧŧīƞɠş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_two_factor": {
+    "defaultMessage": "[Řḗḗḿǿǿṽīƞɠ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_webhooks": {
+    "defaultMessage": "[Ẇḗḗƀħǿǿǿǿķş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.view_audit": {
+    "defaultMessage": "[Ȧŭŭḓīŧ ŀǿǿɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permissions.description": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ŧħḗḗ řǿǿŀḗḗ ɠřȧȧƞŧş. Ẏǿǿŭŭ ƈȧȧƞ ɠīṽḗḗ ǿǿř ŧȧȧķḗḗ ǿǿƞŀẏ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ẏǿǿŭŭř ǿǿẇƞ řǿǿŀḗḗş ɠřȧȧƞŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permissions.none": {
+    "defaultMessage": "[Ƞǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permissions.separator": {
+    "defaultMessage": "[, ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.position": {
+    "defaultMessage": "[Ƥǿǿşīŧīǿǿƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.position.description": {
+    "defaultMessage": "[Ȧ ẇħǿǿŀḗḗ ƞŭŭḿƀḗḗř ƒřǿǿḿ 0 ŧǿǿ {max}. Ȧ ħīɠħḗḗř ƥǿǿşīŧīǿǿƞ ǿǿŭŭŧřȧȧƞķş ȧȧ ŀǿǿẇḗḗř ǿǿƞḗḗ; ẏǿǿŭŭ ƈȧȧƞ ḿȧȧƞȧȧɠḗḗ ǿǿƞŀẏ řǿǿŀḗḗş ȧȧŧ ǿǿř ƀḗḗŀǿǿẇ ẏǿǿŭŭř ǿǿẇƞ ħīɠħḗḗşŧ řǿǿŀḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.position.invalid": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧ ẇħǿǿŀḗḗ ƞŭŭḿƀḗḗř ƒřǿǿḿ 0 ŧǿǿ {max}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.save": {
+    "defaultMessage": "[Şȧȧṽḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.save_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şȧȧṽḗḗ ŧħḗḗ řǿǿŀḗḗ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.submit": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗ řǿǿŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.summary": {
+    "defaultMessage": "[Ƈřḗḗȧȧŧḗḗ řǿǿŀḗḗş, ȧȧƞḓ ƈħǿǿǿǿşḗḗ ŧħḗḗīř ƥǿǿşīŧīǿǿƞş ȧȧƞḓ ƥḗḗřḿīşşīǿǿƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.title": {
+    "defaultMessage": "[Řǿǿŀḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.updated": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗḓ ŧħḗḗ řǿǿŀḗḗ {role}. Īŧş ħǿǿŀḓḗḗřş ɠḗḗŧ ŧħḗḗ ƈħȧȧƞɠḗḗ ƒřǿǿḿ ŧħḗḗīř ƞḗḗẋŧ řḗḗɋŭŭḗḗşŧ. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş īŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.rules.add": {

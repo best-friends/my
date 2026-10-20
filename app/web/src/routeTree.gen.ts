@@ -25,6 +25,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
+import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminThemeRouteImport } from './routes/admin.theme'
@@ -138,6 +139,11 @@ const AdminDeadJobsRoute = AdminDeadJobsRouteImport.update({
 const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
   id: '/admin/documents',
   path: '/admin/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/admin/roles',
+  path: '/admin/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRulesRoute = AdminRulesRouteImport.update({
@@ -320,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
@@ -370,6 +377,7 @@ export interface FileRoutesByTo {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
@@ -421,6 +429,7 @@ export interface FileRoutesById {
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
@@ -523,6 +533,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
@@ -573,6 +584,7 @@ export interface FileRouteTypes {
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
@@ -624,6 +636,7 @@ export interface RootRouteChildren {
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
+  AdminRolesRoute: typeof AdminRolesRoute
   AdminRulesRoute: typeof AdminRulesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminThemeRoute: typeof AdminThemeRoute
@@ -771,6 +784,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/documents'
       fullPath: '/admin/documents'
       preLoaderRoute: typeof AdminDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/roles': {
+      id: '/admin/roles'
+      path: '/admin/roles'
+      fullPath: '/admin/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/rules': {
@@ -1016,6 +1036,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
+  AdminRolesRoute: AdminRolesRoute,
   AdminRulesRoute: AdminRulesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminThemeRoute: AdminThemeRoute,
