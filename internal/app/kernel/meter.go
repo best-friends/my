@@ -5,6 +5,7 @@ package kernel
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 )
 
@@ -48,6 +49,30 @@ type Meter interface {
 // report, so that a periodic job exports the gauges of the metrics snapshot (ADR-0055 §4).
 type GaugeWriter interface {
 	WriteGauges(ctx context.Context) error
+}
+
+// LineMeter is implemented by a Meter whose exporter writes the measurements as log lines
+// (emf): the one log line that ends a unit of work (ADR-0055 §5) carries the measurements of
+// that unit that the line describes, so that they are not written again on lines of their own.
+type LineMeter interface {
+	// Line returns attrs, the attributes of the log line of the unit of work that ctx belongs
+	// to, with the measurements of instruments made with ctx whose labels are the line's
+	// attributes of the same keys and values, and takes those measurements out of the unit, so
+	// that its end does not write them. It returns attrs alone outside a unit of work.
+	Line(ctx context.Context, attrs []slog.Attr, instruments ...Instrument) []slog.Attr
+}
+
+// LogUnit writes the log line that ends a unit of work of m (an HTTP request or a job,
+// ADR-0055 §5) with logger: when m is a LineMeter and logger writes the line at level, the line
+// also carries the measurements of instruments that it describes (LineMeter.Line).
+func LogUnit(ctx context.Context, logger *slog.Logger, level slog.Level, msg string, m Meter, attrs []slog.Attr, instruments ...Instrument) {
+	if !logger.Enabled(ctx, level) {
+		return // the measurements stay in the unit, which writes them at its end
+	}
+	if lm, ok := m.(LineMeter); ok {
+		attrs = lm.Line(ctx, attrs, instruments...)
+	}
+	logger.LogAttrs(ctx, level, msg, attrs...)
 }
 
 // Instrument declares a metric (ADR-0055 §3).

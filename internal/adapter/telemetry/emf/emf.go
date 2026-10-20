@@ -7,7 +7,10 @@
 //
 // The measurements made with the context of a unit of work (kernel.Meter.Begin: an HTTP request
 // or a job) are written when it ends: one line per distinct label set, holding every metric
-// recorded with those labels (a counter's sum, a histogram's values). A measurement outside a
+// recorded with those labels (a counter's sum, a histogram's values). The unit's own log line
+// (the access log, the job log, ADR-0055 §5) takes the measurements that it describes first
+// (kernel.LineMeter): it gets the _aws directive and the values, so that one line is both the
+// log and the metrics, and the end of the unit writes only the others. A measurement outside a
 // unit of work is written at once. UpDownCounters record nothing, since they are values of one
 // process that the platform's own metrics stand in for (Lambda's concurrency). Gauges and
 // observable counters are not collected: WriteGauges (kernel.GaugeWriter) writes them when the
@@ -21,6 +24,8 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"sync"
@@ -70,6 +75,7 @@ type gauge struct {
 var (
 	_ kernel.Meter       = (*Meter)(nil)
 	_ kernel.GaugeWriter = (*Meter)(nil)
+	_ kernel.LineMeter   = (*Meter)(nil)
 )
 
 // New returns the Meter on opts. Writer and Clock are required.
@@ -290,6 +296,118 @@ func (m *Meter) flush(b *batch) {
 	}
 }
 
+// Line implements kernel.LineMeter: it adds to attrs the measurements of instruments in the
+// unit of work of ctx whose labels, for every label key the instrument declares, are those of
+// the line (a key absent from both, or the same value), with one _aws directive per label set
+// and the properties of the meter that the line lacks. The values of the attributes that
+// become dimensions are written as strings, which EMF requires.
+func (m *Meter) Line(ctx context.Context, attrs []slog.Attr, instruments ...kernel.Instrument) []slog.Attr {
+	b, _ := ctx.Value(batchKey{}).(*batch)
+	if b == nil || len(instruments) == 0 {
+		return attrs
+	}
+	fields := make(map[string]string, len(attrs))
+	for _, a := range attrs {
+		fields[a.Key] = a.Value.Resolve().String()
+	}
+	taken := b.take(fields, instruments)
+	if len(taken) == 0 {
+		return attrs
+	}
+
+	out := slices.Clone(attrs)
+	for _, k := range slices.Sorted(maps.Keys(m.opts.Properties)) {
+		if _, ok := fields[k]; !ok {
+			out = append(out, slog.String(k, m.opts.Properties[k]))
+		}
+	}
+	directives := make([]directive, 0, len(taken))
+	dimensions := map[string]bool{}
+	for _, g := range taken {
+		dims := m.dimensions(g.labels)
+		for _, k := range dims {
+			dimensions[k] = true
+		}
+		d := directive{Namespace: m.opts.Namespace, Dimensions: [][]string{dims}}
+		for _, ms := range g.metrics {
+			d.Metrics = append(d.Metrics, metricDef{Name: ms.name, Unit: Unit(ms.unit)})
+			out = append(out, slog.Any(ms.name, ms.value()))
+		}
+		directives = append(directives, d)
+	}
+	for i, a := range out {
+		if dimensions[a.Key] && a.Value.Kind() != slog.KindString {
+			out[i] = slog.String(a.Key, a.Value.Resolve().String())
+		}
+	}
+	return append(out, slog.Any("_aws", document{Timestamp: m.opts.Clock.Now().UnixMilli(), CloudWatchMetrics: directives}))
+}
+
+// take takes out of b the measurements of instruments that the line of fields describes, by
+// label set.
+func (b *batch) take(fields map[string]string, instruments []kernel.Instrument) []*group {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.ended {
+		return nil
+	}
+	var taken []*group
+	for _, g := range b.groups {
+		var ms []*measure
+		g.metrics = slices.DeleteFunc(g.metrics, func(x *measure) bool {
+			i := slices.IndexFunc(instruments, func(i kernel.Instrument) bool { return i.Name == x.name })
+			if i < 0 || !describes(fields, instruments[i], g.labels) {
+				return false
+			}
+			ms = append(ms, x)
+			return true
+		})
+		if len(ms) > 0 {
+			taken = append(taken, &group{labels: g.labels, metrics: ms})
+		}
+	}
+	return taken
+}
+
+// describes reports whether the line of fields describes the measurements of i with labels:
+// for every label key of i, the line has the label's value, or neither has the key.
+func describes(fields map[string]string, i kernel.Instrument, labels []label) bool {
+	for _, key := range i.LabelKeys {
+		v, onLine := fields[key]
+		j := slices.IndexFunc(labels, func(l label) bool { return l.key == key })
+		if onLine != (j >= 0) || onLine && labels[j].value != v {
+			return false
+		}
+	}
+	return true
+}
+
+// dimensions returns the dimensions of the metrics with labels: those of Options.Dimensions
+// that are one of the labels or a property, as on a line of their own (write), whatever else
+// the log line carries.
+func (m *Meter) dimensions(labels []label) []string {
+	dims := []string{}
+	for _, d := range m.opts.Dimensions {
+		_, property := m.opts.Properties[d]
+		if property || slices.ContainsFunc(labels, func(l label) bool { return l.key == d }) {
+			dims = append(dims, d)
+		}
+	}
+	return dims
+}
+
+// value is the value of ms on a line: a counter's sum, a histogram's value or values.
+func (ms *measure) value() any {
+	switch len(ms.values) {
+	case 0:
+		return ms.sum
+	case 1:
+		return ms.values[0]
+	default:
+		return ms.values
+	}
+}
+
 type document struct {
 	Timestamp         int64       `json:"Timestamp"`
 	CloudWatchMetrics []directive `json:"CloudWatchMetrics"`
@@ -327,14 +445,7 @@ func (m *Meter) write(g *group) {
 	defs := make([]metricDef, 0, len(g.metrics))
 	for _, ms := range g.metrics {
 		defs = append(defs, metricDef{Name: ms.name, Unit: Unit(ms.unit)})
-		switch len(ms.values) {
-		case 0:
-			line[ms.name] = ms.sum
-		case 1:
-			line[ms.name] = ms.values[0]
-		default:
-			line[ms.name] = ms.values
-		}
+		line[ms.name] = ms.value()
 	}
 	line["_aws"] = document{
 		Timestamp: m.opts.Clock.Now().UnixMilli(),

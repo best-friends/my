@@ -376,25 +376,32 @@ func validRequestID(id string) bool {
 // the metric does: http.route and my.surface are those that problemFallback found, and are absent
 // when the request reached no route (the health checks, the requests refused before routing),
 // which the metric does not measure either. With the HTTP metrics, it also records the request's
-// http.server.request.duration in a unit of work of the Meter (ADR-0055 §3).
+// http.server.request.duration in a unit of work of the Meter (ADR-0055 §3), which the line
+// carries with metrics_exporter = emf (§5).
 func (a *App) accessLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 		rr := &requestRoute{}
 		ctx := r.Context()
+		recorded := false
 		if a.http != nil {
 			var end func()
 			ctx, end = a.Meter.Begin(ctx)
 			defer end()
-			defer func() {
-				if rr.route != "" {
+			defer func() { // a handler that panics with http.ErrAbortHandler writes no log line
+				if !recorded && rr.route != "" {
 					a.http.record(ctx, r, rr, rw.status, time.Since(start))
 				}
 			}()
 		}
 		r = r.WithContext(context.WithValue(ctx, requestRouteKey{}, rr))
 		next.ServeHTTP(rw, r)
+		d := time.Since(start)
+		if a.http != nil && rr.route != "" {
+			a.http.record(ctx, r, rr, rw.status, d)
+		}
+		recorded = true
 		level := slog.LevelInfo
 		if r.URL.Path == PathLiveness || r.URL.Path == PathReadiness {
 			level = slog.LevelDebug
@@ -407,9 +414,9 @@ func (a *App) accessLog(next http.Handler) http.Handler {
 		attrs = append(attrs,
 			slog.Int(labelStatus, rw.status),
 			slog.Int64(logResponseBytes, rw.bytes),
-			slog.Float64(logDuration, time.Since(start).Seconds()),
+			slog.Float64(logDuration, d.Seconds()),
 		)
-		a.Logger.LogAttrs(r.Context(), level, "http request", attrs...)
+		kernel.LogUnit(r.Context(), a.Logger, level, "http request", a.Meter, attrs, HTTPRequestDuration)
 	})
 }
 

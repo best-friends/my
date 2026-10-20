@@ -584,7 +584,7 @@ Where the service metrics go (ADR-0055 §2): the request, federation, delivery, 
 | `none` | yes | No metrics; measuring costs next to nothing. On Cloud Run the platform's metrics and log-based metrics stand in for them. |
 | `prometheus` | yes | The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances. |
 | `otlp` | yes | OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds). |
-| `emf` | yes | CloudWatch Embedded Metric Format lines on standard output, one per label set at the end of each request and job, which CloudWatch Logs turns into metrics; for AWS Lambda. Requests in progress and open streams are not written. |
+| `emf` | yes | CloudWatch Embedded Metric Format lines, which CloudWatch Logs turns into metrics; for AWS Lambda. The log line that ends each request and job carries its duration metrics, and the other measurements are written on standard output, one line per label set, at the end of each request and job. Requests in progress and open streams are not written. |
 
 ### `metrics_listen`
 

@@ -5,6 +5,7 @@ package emf_test
 import (
 	"bytes"
 	"encoding/json"
+	"log/slog"
 	"strings"
 	"sync"
 	"testing"
@@ -155,4 +156,89 @@ func TestUnit(t *testing.T) {
 			t.Errorf("Unit(%q) = %q, want %q", in, got, want)
 		}
 	}
+}
+
+// TestLineCarriesTheMeasurementsItDescribes checks that the log line of a unit of work takes the
+// measurements whose labels it carries (ADR-0055 §5), and that the end writes only the others.
+func TestLineCarriesTheMeasurementsItDescribes(t *testing.T) {
+	var w buffer
+	m := newMeter(&w)
+	route := kernel.Instrument{
+		Name: "http.server.request.duration", Unit: "s", LabelKeys: []string{"http.route", "http.response.status_code", "my.surface"},
+	}
+	h := m.Histogram(route)
+	c := m.Counter(kernel.Instrument{Name: "my.statuses.created", Unit: "{status}", LabelKeys: []string{"my.visibility"}})
+
+	ctx, end := m.Begin(t.Context())
+	h.Record(ctx, 0.5, kernel.NewLabels("http.route", "/api/v1/statuses", "http.response.status_code", "200", "my.surface", "client_api"))
+	h.Record(ctx, 0.25, kernel.NewLabels("http.route", "/api/v1/statuses", "http.response.status_code", "500", "my.surface", "client_api"))
+	c.Add(ctx, 1, kernel.NewLabels("my.visibility", "public"))
+
+	line := []slog.Attr{
+		slog.String("http.route", "/api/v1/statuses"), slog.Int("http.response.status_code", 200),
+		slog.String("my.surface", "client_api"), slog.String("url.path", "/api/v1/statuses"),
+	}
+	got := attrMap(m.Line(ctx, line, route))
+	if got["http.server.request.duration"] != 0.5 {
+		t.Errorf("value on the line = %v, want 0.5 (the measurement of the line's labels only)", got["http.server.request.duration"])
+	}
+	if got["my.role"] != "web" || got["service.name"] != "my" {
+		t.Errorf("properties = %v", got)
+	}
+	if got["http.response.status_code"] != int64(200) {
+		t.Errorf("a field that is no dimension changed: %#v", got["http.response.status_code"])
+	}
+	if aws, _ := json.Marshal(got["_aws"].(map[string]any)["CloudWatchMetrics"]); string(aws) !=
+		`[{"Dimensions":[["my.surface","my.role"]],"Metrics":[{"Name":"http.server.request.duration","Unit":"Seconds"}],"Namespace":"my"}]` {
+		t.Errorf("directives = %s", aws)
+	}
+	// Taken measurements are not taken twice.
+	if again := m.Line(ctx, line, route); len(again) != len(line) {
+		t.Errorf("a second Line added %v", again[len(line):])
+	}
+	end()
+
+	lines := w.lines(t)
+	if len(lines) != 2 {
+		t.Fatalf("the end wrote %d lines, want 2 (the 500 and the counter): %v", len(lines), lines)
+	}
+	for _, l := range lines {
+		if l["http.response.status_code"] == "200" {
+			t.Errorf("the measurement of the line was written again: %v", l)
+		}
+	}
+	// Outside a unit of work, the line is unchanged.
+	if out := m.Line(t.Context(), line, route); len(out) != len(line) {
+		t.Errorf("Line outside a unit of work = %v", out)
+	}
+}
+
+// TestLineWritesDimensionsAsStrings checks that a field of the line that becomes a dimension is
+// a string, as EMF requires.
+func TestLineWritesDimensionsAsStrings(t *testing.T) {
+	m := emf.New(emf.Options{Writer: &buffer{}, Dimensions: []string{"http.response.status_code"}, Clock: testkit.NewClock(start)})
+	i := kernel.Instrument{Name: "http.server.request.duration", Unit: "s", LabelKeys: []string{"http.response.status_code"}}
+	ctx, end := m.Begin(t.Context())
+	defer end()
+	m.Histogram(i).Record(ctx, 0.1, kernel.NewLabels("http.response.status_code", "404"))
+	got := attrMap(m.Line(ctx, []slog.Attr{slog.Int("http.response.status_code", 404)}, i))
+	if got["http.response.status_code"] != "404" {
+		t.Errorf("http.response.status_code = %#v, want \"404\"", got["http.response.status_code"])
+	}
+}
+
+// attrMap returns the values of attrs by key, with the _aws directive as decoded JSON.
+func attrMap(attrs []slog.Attr) map[string]any {
+	out := map[string]any{}
+	for _, a := range attrs {
+		if a.Key == "_aws" {
+			b, _ := json.Marshal(a.Value.Any())
+			var d map[string]any
+			_ = json.Unmarshal(b, &d)
+			out[a.Key] = d
+			continue
+		}
+		out[a.Key] = a.Value.Any()
+	}
+	return out
 }

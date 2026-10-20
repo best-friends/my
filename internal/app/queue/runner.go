@@ -252,8 +252,9 @@ const (
 
 // logRun writes the one line of a job run (ADR-0055 §5): the labels of my.job.duration under
 // the same names and values, its duration and the my.job.wait in seconds, so that a log-based
-// metric counts the runs as the metrics do, and the job's ID and attempt for NFR-OPS-1. A
-// success is info, a retry a warning, and a dead job an error.
+// metric counts the runs as the metrics do, and the job's ID and attempt for NFR-OPS-1. With
+// metrics_exporter = emf, the line also carries those two metrics. A success is info, a retry a
+// warning, and a dead job an error.
 func (r *PullRunner) logRun(ctx context.Context, j Job, jobType, outcome string, err error, d, wait time.Duration) {
 	level := slog.LevelInfo
 	switch outcome {
@@ -273,7 +274,7 @@ func (r *PullRunner) logRun(ctx context.Context, j Job, jobType, outcome string,
 	if err != nil {
 		attrs = append(attrs, slog.String("error", err.Error()))
 	}
-	r.opts.Logger.LogAttrs(ctx, level, "job", attrs...)
+	kernel.LogUnit(ctx, r.opts.Logger, level, "job", r.metrics.meter, attrs, JobDuration, JobWait)
 }
 
 // call runs h with a context bounded by the lease, turning a panic into a retry.

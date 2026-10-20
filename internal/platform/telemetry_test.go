@@ -104,32 +104,99 @@ func TestPrometheusMetrics(t *testing.T) {
 	}
 }
 
-// TestEMFMetrics writes one EMF line for a request.
+// TestEMFMetrics checks that, with metrics_exporter = emf, the access log line of a request and
+// the log line of a job carry their metrics as EMF (ADR-0055 §5): one line per request and per
+// job, and no metric line of their own.
 func TestEMFMetrics(t *testing.T) {
 	t.Parallel()
 	cfg := loadConfig(t, map[string]string{
-		"MY_DATABASE_URL": newDatabase(t, true), "MY_METRICS_EXPORTER": "emf", "MY_METRICS_EMF_DIMENSIONS": "my.surface",
+		"MY_DATABASE_URL": newDatabase(t, true), "MY_METRICS_EXPORTER": "emf",
+		"MY_METRICS_EMF_DIMENSIONS": "my.surface, http.response.status_code, my.job.type",
 	})
-	var lines syncBuffer
-	s := startApp(t, cfg, platform.AppOptions{MetricsWriter: &lines}, platform.ServeOptions{}, nil)
+	var metricLines syncBuffer
+	s := startApp(t, cfg, platform.AppOptions{MetricsWriter: &metricLines}, platform.ServeOptions{}, func(a *platform.App) {
+		a.Handlers.Register("test.metrics", func(context.Context, queue.Job) queue.Result { return queue.Done() })
+	})
 	if resp, _ := s.do(t, http.MethodGet, "/api/v1/instance", nil); resp.StatusCode != http.StatusOK {
 		t.Fatalf("GET /api/v1/instance = %d", resp.StatusCode)
 	}
-	var found bool
-	for line := range strings.Lines(lines.String()) {
-		var m map[string]any
-		if err := json.Unmarshal([]byte(line), &m); err != nil {
-			t.Fatalf("line %q: %v", line, err)
+	if err := s.app.Jobs.Enqueue(t.Context(), queue.NewJob{Type: "test.metrics"}); err != nil {
+		t.Fatal(err)
+	}
+
+	parse := func(b *syncBuffer) []map[string]any {
+		var out []map[string]any
+		for line := range strings.Lines(b.String()) {
+			var m map[string]any
+			if err := json.Unmarshal([]byte(line), &m); err != nil {
+				t.Fatalf("line %q: %v", line, err)
+			}
+			out = append(out, m)
 		}
-		if m["http.route"] == "/api/v1/instance" {
-			found = true
-			if _, ok := m["http.server.request.duration"].(float64); !ok || m["my.surface"] != "client_api" || m["_aws"] == nil {
-				t.Errorf("EMF line = %v", m)
+		return out
+	}
+	var requests, jobs []map[string]any
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		requests, jobs = nil, nil
+		for _, m := range parse(s.logs) {
+			switch {
+			case m["msg"] == "http request" && m["url.path"] == "/api/v1/instance":
+				requests = append(requests, m)
+			case m["msg"] == "job" && m["my.job.type"] == "test.metrics":
+				jobs = append(jobs, m)
 			}
 		}
+		if len(requests) > 0 && len(jobs) > 0 || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
-	if !found {
-		t.Errorf("no EMF line for the request:\n%s", lines.String())
+	if len(requests) != 1 || len(jobs) != 1 {
+		t.Fatalf("%d access log lines and %d job lines, want 1 each:\n%s", len(requests), len(jobs), s.logs.String())
+	}
+
+	directives := func(m map[string]any) map[string]string {
+		aws, _ := m["_aws"].(map[string]any)
+		cw, _ := aws["CloudWatchMetrics"].([]any)
+		out := map[string]string{}
+		for _, d := range cw {
+			d := d.(map[string]any)
+			dims, _ := json.Marshal(d["Dimensions"])
+			for _, metric := range d["Metrics"].([]any) {
+				out[metric.(map[string]any)["Name"].(string)] = string(dims)
+			}
+		}
+		return out
+	}
+	req := requests[0]
+	if _, ok := req["http.server.request.duration"].(float64); !ok || req["http.route"] != "/api/v1/instance" || req["my.role"] != "all" {
+		t.Errorf("access log line = %v", req)
+	}
+	// EMF dimensions are strings.
+	if req["http.response.status_code"] != "200" {
+		t.Errorf("http.response.status_code = %#v, want \"200\"", req["http.response.status_code"])
+	}
+	if got := directives(req); got["http.server.request.duration"] != `[["my.surface","http.response.status_code"]]` {
+		t.Errorf("directives of the access log line = %v", got)
+	}
+	job := jobs[0]
+	_, hasDuration := job["my.job.duration"].(float64)
+	_, hasWait := job["my.job.wait"].(float64)
+	if !hasDuration || !hasWait {
+		t.Errorf("job line = %v", job)
+	}
+	if got := directives(job); got["my.job.duration"] != `[["my.job.type"]]` || got["my.job.wait"] != `[["my.job.type"]]` {
+		t.Errorf("directives of the job line = %v", got)
+	}
+
+	// The metrics of the log lines are not written again on lines of their own.
+	for _, m := range parse(&metricLines) {
+		for _, name := range []string{"http.server.request.duration", "my.job.duration", "my.job.wait"} {
+			if _, ok := m[name]; ok {
+				t.Errorf("%s is also written on a line of its own: %v", name, m)
+			}
+		}
 	}
 }
 
