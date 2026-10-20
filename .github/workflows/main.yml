@@ -75,9 +75,11 @@ jobs:
             if grep -qx "$c" <<< "$contexts"; then echo "$c=true"; else echo "$c=false"; fi >> "$GITHUB_OUTPUT"
           done
           # The images hold everything but the docs: any context other than docs runs the smoke test.
-          if grep -vx docs <<< "$contexts" | grep -q .; then echo smoke=true; else echo smoke=false; fi >> "$GITHUB_OUTPUT"
-          echo "postgres=$postgres" >> "$GITHUB_OUTPUT"
-          echo "stream=$stream" >> "$GITHUB_OUTPUT"
+          {
+            if grep -vx docs <<< "$contexts" | grep -q .; then echo smoke=true; else echo smoke=false; fi
+            echo "postgres=$postgres"
+            echo "stream=$stream"
+          } >> "$GITHUB_OUTPUT"
 
   # The Go caches that ctx-go.yml (go, go-test), ctx-api.yml, and postgres-contract.yml restore. Each is keyed by the
   # commit, so the newest main commit's cache is the one a restore-keys prefix finds. They are built without running
