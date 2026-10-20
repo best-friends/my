@@ -99,7 +99,7 @@ async function userServer(page: Page) {
       const active = url.searchParams.get("active") === "true";
       return json(route, { items: active ? actions.filter((action) => action.state === "active") : actions });
     }
-    const appeal = /^POST \/admin\/actions\/([^/]+)\/appeal$/.exec(key);
+    const appeal = /^POST \/moderation\/actions\/([^/]+)\/appeal$/.exec(key);
     if (appeal) {
       const [, id] = appeal;
       const body = (request.postDataJSON() ?? {}) as { text?: string };
