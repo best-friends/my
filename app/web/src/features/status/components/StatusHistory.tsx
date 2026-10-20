@@ -3,6 +3,7 @@ import { ContentWarning, EmojiText, Link, MediaGrid, PostContent } from "@my/ui"
 import { useId } from "react";
 import { type PlainClientMessageKey, useLocale, useT } from "../../../lib/i18n";
 import { type RevisionChange, type RevisionView, type StatusHistoryView, useStatusHistory } from "../hooks/useStatusHistory";
+import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
 
 export type StatusHistoryProps = {
   /** The ID of the post; the route loader has fetched it and its history. */
@@ -52,6 +53,7 @@ function Revision({ revision, history }: RevisionProps) {
   const t = useT();
   const locale = useLocale();
   const headingId = useId();
+  const viewerLabels = useMediaViewerLabels();
   const kind = kindLabels[revision.kind];
   const changes =
     revision.changes.length === 0
@@ -67,6 +69,7 @@ function Revision({ revision, history }: RevisionProps) {
         sensitive={revision.sensitive}
         noDescriptionLabel={t("client:timeline.media.no_description")}
         revealLabel={t("client:timeline.media.reveal")}
+        viewerLabels={viewerLabels}
       />
     ) : null;
   return (

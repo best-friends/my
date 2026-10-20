@@ -8643,6 +8643,22 @@
     "defaultMessage": "‮Sɥoʍ sǝusıʇıʌǝ ɯǝpıɐ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "timeline.media.viewer.close": {
+    "defaultMessage": "‮Ↄʅosǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.next": {
+    "defaultMessage": "‮Nǝxʇ ıɯɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.previous": {
+    "defaultMessage": "‮Ԁɹǝʌıons ıɯɐƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.media.viewer.title": {
+    "defaultMessage": "‮Iɯɐƃǝ {position, number} oɟ {count, number}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "timeline.new_posts": {
     "defaultMessage": "‮{count,plural,one{# uǝʍ dosʇ} other{# uǝʍ dosʇs}}‬",
     "description": "Generated from en by tools/i18n; do not edit."

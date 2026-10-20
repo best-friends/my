@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { type ComponentPropsWithRef, use, useState, useSyncExternalStore } from "react";
-import { ToggleButton } from "react-aria-components";
+import { Button, ToggleButton } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { Blurhash } from "./Blurhash";
 import { HideMediaIcon } from "./Icons";
+import { MediaViewer, type MediaViewerLabels } from "./MediaViewer";
 import { AutoplayContext, type ImageSources, Picture } from "./Picture";
 import { VisuallyHidden } from "./VisuallyHidden";
 
@@ -13,6 +14,11 @@ const mediaGrid = tv({
     cell: "relative min-h-0 min-w-0 overflow-hidden bg-surface-sunken",
     // Above the blur, which is positioned: the image covers it as it loads.
     image: "relative size-full object-cover",
+    // A picture that opens the viewer: the whole cell is its button, with the focus ring inside the cell's clip.
+    open: [
+      "relative block size-full cursor-zoom-in outline-none",
+      "data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-focus",
+    ],
     // A video keeps its whole frame in the cell, letterboxed on the cell's surface.
     video: "relative size-full object-contain",
     audio: "absolute inset-x-2 bottom-2 w-[calc(100%-1rem)]",
@@ -66,6 +72,11 @@ export type MediaItem = {
    * stands in for it.
    */
   blurhash?: string | undefined;
+  /**
+   * The picture at its original size, which the viewer shows when the picture is pressed; without it, or without
+   * `viewerLabels`, the picture does not open.
+   */
+  original?: { sources: ImageSources; width?: number | undefined; height?: number | undefined } | undefined;
 };
 
 export type MediaGridProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
@@ -89,9 +100,21 @@ export type MediaGridProps = Omit<ComponentPropsWithRef<"div">, "children"> & {
   /** Whether sensitive media are shown at first (uncontrolled). */
   defaultRevealed?: boolean;
   onRevealedChange?: (isRevealed: boolean) => void;
+  /**
+   * The texts of the viewer that opens a picture at its original size when it is pressed. Without them the
+   * pictures do not open.
+   */
+  viewerLabels?: MediaViewerLabels | undefined;
 };
 
-type MediaCellProps = { item: MediaItem; revealed: boolean; count: 1 | 2 | 3 | 4; noDescriptionLabel: string };
+type MediaCellProps = {
+  item: MediaItem;
+  revealed: boolean;
+  count: 1 | 2 | 3 | 4;
+  noDescriptionLabel: string;
+  /** Opens the viewer at this picture; undefined when the picture does not open. */
+  onOpen?: (() => void) | undefined;
+};
 
 const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
 
@@ -182,28 +205,38 @@ function PlaybackCell({ item, playback, revealed, count, noDescriptionLabel }: M
  * the picture over it. The blur goes once the picture has loaded, so that a transparent picture shows the surface
  * behind it, and stays should the picture fail to load.
  */
-function MediaCell({ item, revealed, count, noDescriptionLabel }: MediaCellProps) {
+function MediaCell({ item, revealed, count, noDescriptionLabel, onOpen }: MediaCellProps) {
   const [loaded, setLoaded] = useState(false);
   const slots = mediaGrid({ count, revealed });
+  const picture = (
+    <Picture
+      sources={item.sources ?? { still: [{ url: item.src ?? "" }] }}
+      // A post is at most about 40rem wide; two or more pictures share it in two columns.
+      sizes={count === 1 ? "(min-width: 40rem) 40rem, 100vw" : "(min-width: 40rem) 20rem, 50vw"}
+      alt={item.alt ?? noDescriptionLabel}
+      // The description is user content (web-client.md Y10); the fallback is the app's own text.
+      {...(item.alt !== null && { dir: "auto", lang: item.lang })}
+      loading="lazy"
+      decoding="async"
+      onLoad={() => {
+        setLoaded(true);
+      }}
+      className={slots.image()}
+    />
+  );
   return (
     <div className={slots.cell()}>
       {item.blurhash !== undefined && !(revealed && loaded) && <Blurhash hash={item.blurhash} className={slots.blur()} />}
       {revealed && (
         <>
-          <Picture
-            sources={item.sources ?? { still: [{ url: item.src ?? "" }] }}
-            // A post is at most about 40rem wide; two or more pictures share it in two columns.
-            sizes={count === 1 ? "(min-width: 40rem) 40rem, 100vw" : "(min-width: 40rem) 20rem, 50vw"}
-            alt={item.alt ?? noDescriptionLabel}
-            // The description is user content (web-client.md Y10); the fallback is the app's own text.
-            {...(item.alt !== null && { dir: "auto", lang: item.lang })}
-            loading="lazy"
-            decoding="async"
-            onLoad={() => {
-              setLoaded(true);
-            }}
-            className={slots.image()}
-          />
+          {onOpen === undefined ? (
+            picture
+          ) : (
+            // Named by the picture inside it; `aria-haspopup` says that it opens a dialog.
+            <Button aria-haspopup="dialog" onPress={onOpen} className={slots.open()}>
+              {picture}
+            </Button>
+          )}
           {item.alt === null && (
             <span aria-hidden="true" className={slots.badge()}>
               {noDescriptionLabel}
@@ -221,6 +254,8 @@ function MediaCell({ item, revealed, count, noDescriptionLabel }: MediaCellProps
  * named by `noDescriptionLabel` and carries a visible badge saying so (web-client.md Y9). Sensitive media are
  * concealed behind a toggle button (`aria-pressed`): while concealed, the images are neither loaded nor
  * exposed and each cell shows the blur of its picture, and the button keeps its place in the tab order and its focus when it is pressed.
+ * With `viewerLabels`, each shown picture that has an `original` is a button that opens it at its original size in a
+ * modal viewer (`MediaViewer`), which steps through the post's other pictures; a concealed picture does not open.
  */
 export function MediaGrid({
   items,
@@ -230,20 +265,38 @@ export function MediaGrid({
   isRevealed,
   defaultRevealed = false,
   onRevealedChange,
+  viewerLabels,
   className,
   ...props
 }: MediaGridProps) {
   const [uncontrolled, setUncontrolled] = useState(defaultRevealed);
+  // The picture the viewer shows; it stays set while the viewer closes, so the closing panel keeps its picture.
+  const [viewer, setViewer] = useState<{ isOpen: boolean; index: number }>({ isOpen: false, index: 0 });
   const revealed = !sensitive || (isRevealed ?? uncontrolled);
   const shown = items.slice(0, 4);
   const count = Math.min(4, Math.max(1, shown.length)) as 1 | 2 | 3 | 4;
   const slots = mediaGrid({ count, revealed });
+  // The viewer steps through the shown pictures that have an original.
+  const viewable = viewerLabels === undefined ? [] : shown.flatMap((item) => (item.original === undefined || item.playback !== undefined ? [] : [{ ...item.original, id: item.id, alt: item.alt, lang: item.lang }]));
+  const openerOf = (index: number) =>
+    index < 0
+      ? undefined
+      : () => {
+          setViewer({ isOpen: true, index });
+        };
 
   return (
     <div {...props} className={slots.base({ className })}>
       {shown.map((item) =>
         item.playback === undefined ? (
-          <MediaCell key={item.id} item={item} revealed={revealed} count={count} noDescriptionLabel={noDescriptionLabel} />
+          <MediaCell
+            key={item.id}
+            item={item}
+            revealed={revealed}
+            count={count}
+            noDescriptionLabel={noDescriptionLabel}
+            onOpen={openerOf(viewable.findIndex((viewed) => viewed.id === item.id))}
+          />
         ) : (
           <PlaybackCell key={item.id} item={item} playback={item.playback} revealed={revealed} count={count} noDescriptionLabel={noDescriptionLabel} />
         ),
@@ -266,6 +319,21 @@ export function MediaGrid({
             revealLabel
           )}
         </ToggleButton>
+      )}
+      {viewerLabels !== undefined && viewable.length > 0 && (
+        <MediaViewer
+          items={viewable}
+          index={Math.min(viewer.index, viewable.length - 1)}
+          isOpen={viewer.isOpen && revealed}
+          onIndexChange={(index) => {
+            setViewer({ isOpen: true, index });
+          }}
+          onOpenChange={(isOpen) => {
+            setViewer((current) => ({ ...current, isOpen }));
+          }}
+          labels={viewerLabels}
+          noDescriptionLabel={noDescriptionLabel}
+        />
       )}
     </div>
   );

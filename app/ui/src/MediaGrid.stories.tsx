@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn } from "storybook/test";
+import { expect, fn, waitFor, within } from "storybook/test";
 import { MediaGrid, type MediaItem } from "./MediaGrid";
 
 /** A placeholder picture as an SVG data URL, so stories load no network images. */
@@ -99,6 +99,51 @@ export const SensitiveRevealed: Story = {
   args: { items: pictures.slice(0, 3), sensitive: true, defaultRevealed: true },
 };
 
+/**
+ * Pressing a picture opens it at its original size in the viewer (a modal dialog), whose buttons and arrow keys step
+ * through the post's pictures, going round at either end. Esc closes it and returns focus to the picture; the story
+ * opens it again on the second picture for the screenshots.
+ */
+export const Viewer: Story = {
+  args: {
+    items: pictures.slice(0, 2).map((item) => ({ ...item, original: { sources: { still: [{ url: item.src ?? "" }] }, width: 1600, height: 900 } })),
+    viewerLabels: {
+      title: (position, count) => `Image ${String(position)} of ${String(count)}`,
+      close: "Close",
+      previous: "Previous image",
+      next: "Next image",
+    },
+  },
+  // The viewer covers the story frame, so give it room.
+  decorators: [
+    (Story) => (
+      <div className="min-h-136">
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvas, userEvent }) => {
+    const first = canvas.getByRole("button", { name: "A yellow sun over a blue sky" });
+    await userEvent.click(first);
+    const dialog = await canvas.findByRole("dialog", { name: "Image 1 of 2" });
+    // Visible once the panel has faded in.
+    await waitFor(() => expect(within(dialog).getByRole("img", { name: "A yellow sun over a blue sky" })).toBeVisible());
+    // The arrow keys follow the screen: the next picture is to the right in left-to-right text, to the left otherwise.
+    const forward = document.documentElement.dir === "rtl" ? "{ArrowLeft}" : "{ArrowRight}";
+    await userEvent.keyboard(forward);
+    await expect(canvas.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
+    await userEvent.keyboard(forward);
+    await expect(canvas.getByRole("dialog", { name: "Image 1 of 2" })).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Previous image" }));
+    await expect(canvas.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(canvas.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(first).toHaveFocus());
+
+    await userEvent.click(canvas.getByRole("button", { name: "Snowy hills in a green valley" }));
+    await expect(await canvas.findByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
+  },
+};
 /** A one-second VP8 video of one blue frame and a one-second silent Opus file, so stories load no network media. */
 const videoFile =
   "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAIpEU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEfTbuMU6uEHFO7a1OsggIT7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNTguNDUuMTAwV0GNTGF2ZjU4LjQ1LjEwMESJiECPQAAAAAAAFlSua8KuAQAAAAAAADnXgQFzxYiPgJbYbBAl7pyBACK1nIN1bmSGhVZfVlA4g4EBI+ODhDuaygDgAQAAAAAAAAawgaC6gVoSVMNnQJlzcwEAAAAAAAAnY8CAZ8gBAAAAAAAAGkWjh0VOQ09ERVJEh41MYXZmNTguNDUuMTAwc3MBAAAAAAAAXmPAi2PFiI+AlthsECXuZ8gBAAAAAAAAIUWjh0VOQ09ERVJEh5RMYXZjNTguOTEuMTAwIGxpYnZweGfIokWjiERVUkFUSU9ORIeUMDA6MDA6MDEuMDAwMDAwMDAwAAAfQ7Z10OeBAKPLgQAAgLAFAJ0BKqAAWgABhwiFhYiZhIgIAgJ1qgIGeZak569GXiOevRl4jnr0ZeI569GXiOevRl4jlAD+7gpnySPVzHQfit9QM0gAHFO7a5G7j7OBALeK94EB8YIBvvCBAw==";

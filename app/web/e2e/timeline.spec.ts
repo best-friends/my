@@ -152,8 +152,10 @@ test.describe("the local timeline", () => {
           - link:
             - time
           - paragraph
-          - img "A blue square"
-          - img
+          - button "A blue square":
+            - img "A blue square"
+          - button:
+            - img
         - article:
           - link /Bob/
           - link:
@@ -208,6 +210,30 @@ test.describe("the local timeline", () => {
     await expect(articles.nth(1)).toBeFocused();
     await page.keyboard.press("PageUp");
     await expect(articles.first()).toBeFocused();
+  });
+
+  test("opens a picture at its original size in a viewer, by pointer or by keyboard alone", async ({ page, makeAxeBuilder }) => {
+    const article = page.getByRole("feed").getByRole("article").nth(3);
+    const square = article.getByRole("button", { name: "A blue square" });
+    await square.click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("img", { name: "A blue square" })).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+    // A press on the scrim, outside the panel, closes it, and the focus goes back to the picture.
+    await page.mouse.click(2, 2);
+    await expect(dialog).toBeHidden();
+    await expect(square).toBeFocused();
+
+    // The keyboard alone: Enter opens it, the arrow key steps to the other picture (round from either end), Esc closes it.
+    await page.keyboard.press("Enter");
+    await expect(dialog.getByRole("img", { name: "A blue square" })).toBeVisible();
+    await page.keyboard.press("ArrowRight");
+    await expect(dialog.getByRole("img", { name: "A blue square" })).toHaveCount(0);
+    await expect(dialog.getByRole("img")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(square).toBeFocused();
   });
 });
 
