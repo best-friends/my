@@ -445,6 +445,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Repository: instances, Clock: a.Clock, IDs: a.IDs,
 		// The preview_image setting refers to a media file, which setMedia sets up later.
 		Media: instanceMedia{a},
+		// The contact_account setting names a local account.
+		Accounts: instanceAccounts{a},
 		// The terms of service and the privacy policy are Markdown (#489).
 		Documents: markdown.New(),
 	})
@@ -613,6 +615,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	ap := activitypub.New(activitypub.Options{
 		Host: cfg.Host, AccountDomain: cfg.AccountDomain, SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL,
 		InstanceName: func(ctx context.Context) string { return a.instanceName(ctx, "") },
+		Metadata:     a.nodeMetadata,
 		// Sign-ups that wait for a moderator's approval are open, as Mastodon reports them.
 		OpenRegistrations: func(ctx context.Context) (bool, error) {
 			mode, err := a.Instance.RegistrationMode(ctx)
@@ -655,7 +658,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Host: cfg.Host, Origin: cfg.ServerOrigin(), SoftwareVersion: opts.Version, SourceURL: cfg.SourceURL, Instance: a.Instance,
 		SendsEmail:    sendsEmail(cfg),
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, TwoFactor: a.Identity, Media: a.Media,
-		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
+		AccountDomain: cfg.AccountDomain, Graph: a.Graph, InstanceThumbnail: a.instanceThumbnail,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
 		Notifications: a.Notifications, Push: a.Push,
 		Statuses: a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses, Outboxes: a.RemoteStatuses,

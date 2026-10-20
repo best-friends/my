@@ -4,6 +4,8 @@ package instance_test
 
 import (
 	"errors"
+	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -264,11 +266,60 @@ func TestParseMedia(t *testing.T) {
 			t.Errorf("Parse(%q) = %q, %v; want ErrInvalidValue", raw, got, err)
 		}
 	}
-	if keys := instance.MediaKeys(); len(keys) != 1 || keys[0] != instance.SettingPreviewImage {
+	if keys := instance.MediaKeys(); !slices.Equal(keys, []instance.SettingKey{instance.SettingPreviewImage, instance.SettingThumbnail}) {
 		t.Errorf("MediaKeys() = %v", keys)
 	}
 	var zero instance.Settings
 	if zero.PreviewImageMediaID() != "" {
 		t.Errorf("default preview image = %q", zero.PreviewImageMediaID())
+	}
+}
+
+func TestParseContact(t *testing.T) {
+	account, err := instance.Lookup(instance.SettingContactAccount)
+	if err != nil {
+		t.Fatal(err)
+	}
+	email, err := instance.Lookup(instance.SettingContactEmail)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		d        instance.Definition
+		raw      string
+		want     string
+		accepted bool
+	}{
+		{account, "", "", true},
+		{account, "Admin_1", "admin_1", true},
+		{account, "admin@example.com", "", false},
+		{account, "@admin", "", false},
+		{account, strings.Repeat("a", 31), "", false},
+		{email, "", "", true},
+		{email, "admin@example.com", "admin@example.com", true},
+		{email, "Admin <admin@example.com>", "", false},
+		{email, " admin@example.com", "", false},
+		{email, "admin", "", false},
+		{email, strings.Repeat("a", 310) + "@example.com", "", false},
+	} {
+		got, err := tc.d.Parse(tc.raw)
+		if tc.accepted && (err != nil || got != tc.want) {
+			t.Errorf("Parse(%s, %q) = %q, %v; want %q", tc.d.Key, tc.raw, got, err, tc.want)
+		}
+		if !tc.accepted && !errors.Is(err, instance.ErrInvalidValue) {
+			t.Errorf("Parse(%s, %q) = %q, %v; want ErrInvalidValue", tc.d.Key, tc.raw, got, err)
+		}
+	}
+	settings := instance.NewSettings([]instance.CurrentSetting{
+		{Key: instance.SettingContactAccount, Value: "admin"},
+		{Key: instance.SettingContactEmail, Value: "admin@example.com"},
+		{Key: instance.SettingThumbnail, Value: "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f"},
+	})
+	if settings.ContactAccount() != "admin" || settings.ContactEmail() != "admin@example.com" || settings.ThumbnailMediaID() != "0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f" {
+		t.Errorf("contact = %q, %q, thumbnail %q", settings.ContactAccount(), settings.ContactEmail(), settings.ThumbnailMediaID())
+	}
+	var zero instance.Settings
+	if zero.ContactAccount() != "" || zero.ContactEmail() != "" || zero.ThumbnailMediaID() != "" {
+		t.Error("the contact and the thumbnail are not empty by default")
 	}
 }

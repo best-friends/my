@@ -204,7 +204,13 @@ func newServer(t *testing.T, accountDomain string) *server {
 		InstanceName:      func(context.Context) string { return "Example Social" },
 		OpenRegistrations: func(context.Context) (bool, error) { return true, nil },
 		LocalPosts:        func(context.Context) (int64, error) { return 42, nil },
-		Accounts:          s.accounts, Objects: s.objects, Graph: s.graph, Inbox: s.inbox, Problem: problem,
+		Metadata: func(context.Context) (activitypub.NodeMetadata, error) {
+			return activitypub.NodeMetadata{
+				Description: "A server for examples.", ContactActorURI: account.ActorURI(host, aliceID), ContactName: "Alice",
+				ContactEmail: "admin@example.com", ThumbnailURL: "https://" + host + "/media/thumbnail.webp", ThumbnailAlt: "The beach",
+			}, nil
+		},
+		Accounts: s.accounts, Objects: s.objects, Graph: s.graph, Inbox: s.inbox, Problem: problem,
 		Suspensions: s.suspended, Images: profileImages,
 	}).Register(s.mux)
 	return s
