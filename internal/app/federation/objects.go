@@ -93,6 +93,8 @@ type ObjectsDeps struct {
 	Graph    ObjectGraph
 	Timeline ProfileTimeline
 	Reader   StatusReader
+	// Images reads the avatars and headers of the actors that archives export; nil exports none.
+	Images ProfileImages
 	// Signatures verifies the signatures of GET requests; nil treats every request as unsigned.
 	Signatures *SignatureVerifier
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
@@ -228,7 +230,7 @@ type Object struct {
 	// Public reports that an anonymous request gets the same answer, so that it may be cached
 	// publicly (ADR-0018).
 	Public bool
-	// URL is the HTML page of the status.
+	// URL is the HTML page of the status, "" when Gone.
 	URL string
 }
 
@@ -237,6 +239,36 @@ type Object struct {
 // its existence does not leak (ADR-0018). A deleted status that req could see is Gone.
 func (o *Objects) Status(ctx context.Context, req Requester, statusID string) (Object, error) {
 	return o.object(ctx, req, statusID, false)
+}
+
+// PageStatusURI returns the ActivityPub id of a local status for a request of its HTML page that
+// asks for ActivityPub, which is redirected to the id (ADR-0053). The page is anonymous, so the
+// status must be one that an anonymous visitor may see; a status that is missing, remote,
+// deleted, or hidden fails with an error wrapping ErrNotFound alike (ADR-0017). The fetch of the
+// id then decides for the signed requester as Status does.
+func (o *Objects) PageStatusURI(ctx context.Context, statusID string) (string, error) {
+	st, rev, deleted, err := o.d.Statuses.ObjectStatus(ctx, statusID)
+	if errors.Is(err, appcontent.ErrNotFound) {
+		return "", fmt.Errorf("status %s: %w", statusID, ErrNotFound)
+	}
+	if err != nil {
+		return "", err
+	}
+	if !st.IsLocal || deleted {
+		return "", fmt.Errorf("status %s: %w", statusID, ErrNotFound)
+	}
+	restrictions, err := o.d.Statuses.AuthorRestrictions(ctx, st.AuthorAccountID)
+	if err != nil {
+		return "", err
+	}
+	ok, err := o.canView(ctx, Requester{}, st, rev, restrictions)
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", fmt.Errorf("status %s: %w", statusID, ErrNotFound)
+	}
+	return st.URI, nil
 }
 
 // StatusActivity returns the Create of a local status for req (GET /ap/objects/{id}/activity),
@@ -267,7 +299,7 @@ func (o *Objects) object(ctx context.Context, req Requester, statusID string, ac
 	if !ok {
 		return Object{}, fmt.Errorf("status %s: %w", statusID, ErrNotFound)
 	}
-	out := Object{Gone: deleted, URL: st.URL, Public: req.Anonymous()}
+	out := Object{Gone: deleted, Public: req.Anonymous()}
 	if !out.Public {
 		if out.Public, err = o.canView(ctx, Requester{}, st, rev, restrictions); err != nil {
 			return Object{}, err
@@ -287,10 +319,11 @@ func (o *Objects) object(ctx context.Context, req Requester, statusID string, ac
 	}
 	actor := federation.IRI(author.Account.URI)
 	vis := appcontent.EffectiveVisibility(st.Visibility, restrictions)
-	note, err := o.notes.note(ctx, st, rev, actor, vis, updatedOf(rev))
+	note, err := o.notes.note(ctx, st, rev, author, vis, updatedOf(rev))
 	if err != nil {
 		return Object{}, err
 	}
+	out.URL = note.URL
 	if activity {
 		out.Document, err = createOf(st, actor, note).Marshal()
 	} else {
@@ -414,7 +447,7 @@ func (o *Objects) Featured(ctx context.Context, accountID string) ([]federation.
 // no mention is left out of tag (ADR-0035 is about local statuses).
 func (o *Objects) viewNote(v appcontent.StatusView) federation.NoteDocument {
 	parts := appcontent.RevisionParts{Attachments: v.Attachments, Mentions: v.Mentions, Tags: v.Tags}
-	return statusNote(v.Status, v.Revision, federation.IRI(v.Author.Account.URI), v.Status.Visibility, parts,
+	return statusNote(v.Status, v.Revision, v.Author, v.Status.Visibility, parts,
 		updatedOf(v.Revision), o.d.Host, o.d.AccountDomain)
 }
 

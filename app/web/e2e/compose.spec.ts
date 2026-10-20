@@ -50,6 +50,7 @@ const carol = {
   display_name: "Carol",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://remote.example/@carol",
   locked: false,
   bot: false,
@@ -63,6 +64,7 @@ const account = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -123,9 +125,11 @@ async function serveApi(page: Page): Promise<Posted[]> {
         media_attachments: [],
         mentions: [],
         tags: [],
+        emojis: [],
         replies_count: 0,
         boosts_count: 0,
         favourites_count: 0,
+        reactions: [],
       });
     }
     // Carol is found only by resolving her handle, as the server resolves the mentions of a post.
@@ -283,9 +287,11 @@ async function serveHomeTimeline(page: Page): Promise<void> {
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   });
   // Registered after serveApi's route, so Playwright asks this one first.
   await page.route("**/api/v1/timelines/home*", (route) => route.fulfill({ json: { items: Array.from({ length: 6 }, (_, i) => post(i + 1)) } }));

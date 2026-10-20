@@ -42,6 +42,10 @@ type Deps struct {
 	// and returns its media file ID (the content module); nil keeps remote profiles without
 	// images.
 	RecordRemoteImage func(ctx context.Context, tx uow.Tx, accountID, url string, prop account.ProfileProperty) (string, error)
+	// RecordRemoteEmojis records the custom emoji of a remote profile inside tx, as the emoji of
+	// domain with their images owned by the account, and returns their IDs, sorted (the content
+	// module, ADR-0051 §3); nil keeps remote profiles without custom emoji.
+	RecordRemoteEmojis func(ctx context.Context, tx uow.Tx, accountID, domain string, emojis []RemoteEmojiInput) ([]string, error)
 }
 
 // ErrUnusableImage reports an avatar or header that is not a processed image of the account.

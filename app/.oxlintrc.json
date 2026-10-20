@@ -860,11 +860,12 @@
     // - ContentWarning: the disclosure chevron, which turns over while the content is shown.
     // - Tooltip: the arrow of the overlay, which points at the trigger in the overlay's colors.
     // - Avatar: the silhouette that fills an avatar without an image, at a fraction of the avatar's size.
+    // - QrCode: a QR code that the server encoded, drawn from its path data; a picture of data, not an icon.
     // - EmptyState.stories: a stand-in for the illustration a caller passes, which is a picture and not an icon.
     // Tests are exempt too (below): they render stand-in children.
     {
       "files": [
-        "ui/src/{Checkbox,Select,ContentWarning,Tooltip,Avatar}.tsx",
+        "ui/src/{Checkbox,Select,ContentWarning,Tooltip,Avatar,QrCode}.tsx",
         "ui/src/EmptyState.stories.tsx"
       ],
       "jsPlugins": [

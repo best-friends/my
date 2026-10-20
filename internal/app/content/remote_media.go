@@ -254,17 +254,11 @@ func (p *MediaProxy) Open(ctx context.Context, mediaID, variant, sig string) (*P
 	if err != nil {
 		return nil, fmt.Errorf("proxy media %s: owner: %w", mediaID, err)
 	}
-	for _, domain := range []string{owner, strings.ToLower(u.Hostname())} {
-		if domain == "" {
-			continue
-		}
-		rejected, err := p.d.Policy.RejectsMedia(ctx, domain)
-		if err != nil {
-			return nil, err
-		}
-		if rejected {
-			return nil, notFound("media of " + domain + " are rejected")
-		}
+	switch rejected, err := p.rejects(ctx, nil, owner, u.Hostname()); {
+	case err != nil:
+		return nil, err
+	case rejected != "":
+		return nil, notFound("media of " + rejected + " are rejected")
 	}
 	settings, err := p.d.Settings(ctx)
 	if err != nil {
@@ -359,6 +353,32 @@ func (p *MediaProxy) keepSmall(ctx context.Context, m content.RemoteMedia, key s
 	if err != nil {
 		p.d.Logger.WarnContext(ctx, "small variant of remote media not cached", slog.String("media_id", m.MediaID), slog.Any("error", err))
 	}
+}
+
+// rejects returns the first of domains whose media are rejected (the media_fetch restriction of
+// a reject_media domain action), or "" when none is; "" domains are skipped. seen, when not nil,
+// keeps the answers by domain across calls, so that a page of media asks once per domain.
+func (p *MediaProxy) rejects(ctx context.Context, seen map[string]bool, domains ...string) (string, error) {
+	for _, domain := range domains {
+		domain = strings.ToLower(domain)
+		if domain == "" {
+			continue
+		}
+		rejected, ok := seen[domain]
+		if !ok {
+			var err error
+			if rejected, err = p.d.Policy.RejectsMedia(ctx, domain); err != nil {
+				return "", err
+			}
+			if seen != nil {
+				seen[domain] = rejected
+			}
+		}
+		if rejected {
+			return domain, nil
+		}
+	}
+	return "", nil
 }
 
 // relay fetches a remote media file and relays it without keeping a copy.

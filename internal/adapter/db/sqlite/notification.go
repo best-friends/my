@@ -32,7 +32,8 @@ func (r *NotificationRepository) InsertNotification(ctx context.Context, tx uow.
 		ID: n.ID, RecipientAccountID: n.RecipientAccountID, Type: string(n.Type),
 		SourceAccountID: toNullString(n.SourceAccountID), StatusID: toNullString(n.StatusID),
 		ModerationActionID: toNullString(n.ModerationActionID), ReportID: toNullString(n.ReportID),
-		SubjectUserID: toNullString(n.SubjectUserID), SeveranceID: toNullString(n.SeveranceID), AppealID: toNullString(n.AppealID), DedupeKey: n.DedupeKey, CreatedAt: toMillis(n.CreatedAt),
+		SubjectUserID: toNullString(n.SubjectUserID), SeveranceID: toNullString(n.SeveranceID), AppealID: toNullString(n.AppealID),
+		ReactionEmoji: toNullString(n.ReactionEmoji), ReactionCustomEmojiID: toNullString(n.ReactionCustomEmojiID), DedupeKey: n.DedupeKey, CreatedAt: toMillis(n.CreatedAt),
 	})
 	if err != nil {
 		return false, wrap(err, "insert notification")
@@ -151,7 +152,8 @@ func notificationFrom(row sqlitegen.Notification) notification.Notification {
 		ID: row.ID, RecipientAccountID: row.RecipientAccountID, Type: notification.Type(row.Type),
 		SourceAccountID: row.SourceAccountID.String, StatusID: row.StatusID.String,
 		ModerationActionID: row.ModerationActionID.String, ReportID: row.ReportID.String,
-		SubjectUserID: row.SubjectUserID.String, SeveranceID: row.SeveranceID.String, AppealID: row.AppealID.String, DedupeKey: row.DedupeKey, CreatedAt: fromMillis(row.CreatedAt),
+		SubjectUserID: row.SubjectUserID.String, SeveranceID: row.SeveranceID.String, AppealID: row.AppealID.String,
+		ReactionEmoji: row.ReactionEmoji.String, ReactionCustomEmojiID: row.ReactionCustomEmojiID.String, DedupeKey: row.DedupeKey, CreatedAt: fromMillis(row.CreatedAt),
 	}
 }
 

@@ -57,6 +57,12 @@ type CustomEmojiImage struct {
 	RevisedAt time.Time
 }
 
+// CurrentCustomEmoji is a custom emoji with its current image.
+type CurrentCustomEmoji struct {
+	Emoji CustomEmoji
+	Image CustomEmojiImage
+}
+
 // MaxPollOptions bounds the choices of a remote poll that are kept.
 const MaxPollOptions = 20
 

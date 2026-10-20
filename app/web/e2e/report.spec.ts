@@ -31,6 +31,7 @@ const alice: Status["account"] = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -42,7 +43,7 @@ function status(id: string, content: string, overrides: Partial<Status> = {}): S
   return {
     id,
     uri: `https://my.example/ap/statuses/${id}`,
-    url: `https://my.example/@bob/${id}`,
+    url: `https://my.example/@bob/status/${id}`,
     account: bob,
     content,
     spoiler_text: "",
@@ -53,9 +54,11 @@ function status(id: string, content: string, overrides: Partial<Status> = {}): S
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
     favourited: false,
     boosted: false,
     bookmarked: false,
@@ -124,7 +127,7 @@ async function expectStep(page: Page, key: string, makeAxeBuilder: Parameters<ty
 
 test("reports a post with the keyboard only, the focus on each step's heading", async ({ page, makeAxeBuilder }) => {
   const reports = await serveApi(page);
-  await page.goto(`/@bob/${post.id}`);
+  await page.goto(`/@bob/status/${post.id}`);
   await expect(page.getByRole("heading", { level: 1, name: message("status.title") })).toBeVisible();
 
   const more = page.getByRole("main").getByRole("article").getByRole("button", { name: message("status.action.more") });

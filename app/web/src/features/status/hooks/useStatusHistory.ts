@@ -2,7 +2,7 @@
 // The edit history of a post (FR-109), as plain values for the page (web-client.md A4): every revision,
 // newest first, with when it was made, what it changed from the one before, and its content as the cards
 // show it. The route loader has fetched the post and its history.
-import { type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
+import { type CustomEmojiImage, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
@@ -26,6 +26,8 @@ export type RevisionView = {
   html: SanitizedHtml;
   /** The content warning, or null when there is none. */
   contentWarning: string | null;
+  /** The custom emoji of the body and the content warning. */
+  emojis: readonly CustomEmojiImage[];
   media: MediaItem[];
   sensitive: boolean;
 };
@@ -78,6 +80,7 @@ export function useStatusHistory(id: string): StatusHistoryView {
       // `content` is sanitized HTML (api/openapi.yaml, StatusEdit.content).
       html: serverSanitizedHtml(revision.content),
       contentWarning: revision.spoiler_text === "" ? null : revision.spoiler_text,
+      emojis: revision.emojis,
       media: mediaItems(revision.media_attachments, lang),
       sensitive: revision.sensitive,
     }),

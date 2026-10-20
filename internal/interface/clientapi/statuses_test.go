@@ -31,6 +31,8 @@ type fakeStatuses struct {
 	del      func(accountID, id string) error
 	view     func(appcontent.Viewer, string) (appcontent.StatusView, error)
 	interact func(op, accountID, id string) error
+	// reactions answers Reactions; nil answers like View, with no reactions.
+	reactions func(v appcontent.Viewer, id, emoji, before string, limit int) (appcontent.ReactedPage, error)
 }
 
 var errNotFound = fmt.Errorf("fake: %w", appcontent.ErrNotFound)
@@ -98,6 +100,27 @@ func (f *fakeStatuses) Bookmarks(_ context.Context, accountID, _ string, limit i
 	return appcontent.BookmarkPage{Statuses: []appcontent.StatusView{view}, Next: fmt.Sprintf("next-%d", limit)}, nil
 }
 
+func (f *fakeStatuses) Reactions(_ context.Context, v appcontent.Viewer, id, emoji, before string, limit int) (appcontent.ReactedPage, error) {
+	if f.reactions != nil {
+		return f.reactions(v, id, emoji, before, limit)
+	}
+	_, err := f.View(context.Background(), v, id)
+	return appcontent.ReactedPage{}, err
+}
+
+func (f *fakeStatuses) ReactionEmoji(_ context.Context, e appcontent.ReactionEmoji) (appcontent.EmojiView, error) {
+	return appcontent.EmojiView{Emoji: e, Custom: &sampleCustomEmoji}, nil
+}
+
+// sampleCustomEmoji is a custom emoji of another server.
+var sampleCustomEmoji = appcontent.ReactionCustomEmoji{
+	ID: "01890a5d-ac96-774b-bcce-b302099a9200", Shortcode: "blobcat", Domain: "misskey.example",
+	Image: &appcontent.CustomEmojiView{
+		ID: "01890a5d-ac96-774b-bcce-b302099a9200", Shortcode: "blobcat",
+		URL: "https://social.example/media/proxy/blobcat", StaticURL: "https://social.example/media/proxy/blobcat",
+	},
+}
+
 func (f *fakeStatuses) do(op, accountID, id string) error {
 	if f.interact == nil {
 		return errNotFound
@@ -134,7 +157,7 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 	}
 	v := appcontent.StatusView{
 		Status: content.Status{
-			ID: sampleStatusID, URI: "https://social.example/ap/statuses/" + sampleStatusID, URL: "https://social.example/@alice/" + sampleStatusID,
+			ID: sampleStatusID, URI: "https://social.example/ap/statuses/" + sampleStatusID,
 			AuthorAccountID: aliceAccountID, IsLocal: true, Visibility: content.VisibilityPublic, PublishedAt: published,
 		},
 		Revision: content.Revision{
@@ -162,9 +185,14 @@ func sampleView(viewer appcontent.Viewer) appcontent.StatusView {
 		Mentions: []appaccount.Actor{alice},
 		Tags:     []content.Tag{{Name: "GoLang", NameNormalized: "golang"}},
 		Counters: content.Counters{StatusID: sampleStatusID, RepliesCount: 1, BoostsCount: 2, FavouritesCount: 3},
+		Reactions: []appcontent.ReactionView{
+			{EmojiView: appcontent.EmojiView{Emoji: content.ReactionEmoji{Unicode: "👍"}}, Count: 4},
+			{EmojiView: appcontent.EmojiView{Emoji: content.ReactionEmoji{CustomEmojiID: sampleCustomEmoji.ID}, Custom: &sampleCustomEmoji}, Count: 1},
+		},
 	}
 	if viewer.Kind == appcontent.ViewerLocal {
 		v.Relation = &appcontent.ViewerRelation{Favourited: true, Author: viewer.AccountID == aliceAccountID}
+		v.Reactions[0].Me = true
 	}
 	return v
 }
@@ -207,6 +235,11 @@ func TestGetStatus(t *testing.T) {
 	if s.Favourited != nil || s.Boosted != nil || s.Bookmarked != nil || s.Pinned != nil {
 		t.Errorf("an anonymous status has the viewer's relation: %+v", s)
 	}
+	if r := s.Reactions; len(r) != 2 || r[0].Name != "👍" || r[0].Count != 4 || r[0].Me != nil || r[0].Shortcode != nil || r[0].Emoji != nil ||
+		r[1].Name != "blobcat@misskey.example" || *r[1].Shortcode != "blobcat" || *r[1].Domain != "misskey.example" ||
+		r[1].Emoji == nil || r[1].Emoji.Url != sampleCustomEmoji.Image.URL || r[1].Count != 1 {
+		t.Errorf("anonymous reactions = %+v", r)
+	}
 	if len(s.MediaAttachments) != 1 || s.MediaAttachments[0].Type != clientapi.MediaAttachmentTypeImage || s.MediaAttachments[0].Meta.Width == nil || *s.MediaAttachments[0].Meta.Width != 640 ||
 		*s.MediaAttachments[0].Description != "a cat" || s.MediaAttachments[0].Meta.Focus.Y != -0.25 || s.MediaAttachments[0].Variants == nil ||
 		s.MediaAttachments[0].Variants.Large.Url != "https://social.example/media/r/large.jpg" ||
@@ -225,6 +258,8 @@ func TestGetStatus(t *testing.T) {
 	}
 	if s := decodeStatus(t, res); s.Favourited == nil || !*s.Favourited || s.Pinned == nil || *s.Pinned {
 		t.Errorf("the author's status = %+v, want favourited and pinned false", s)
+	} else if r := s.Reactions; r[0].Me == nil || !*r[0].Me || r[1].Me == nil || *r[1].Me {
+		t.Errorf("the viewer's reactions = %+v, want the first only", r)
 	}
 	res = e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "bob", "")
 	if s := decodeStatus(t, res); s.Favourited == nil || s.Pinned != nil {

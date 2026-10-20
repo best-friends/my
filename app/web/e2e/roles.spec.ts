@@ -20,6 +20,7 @@ const viewer = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -46,7 +47,7 @@ const admin: Schemas["AdminRole"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000a01",
   key: "admin",
   position: 1000,
-  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs"],
+  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_two_factor"],
 };
 const staff: Schemas["AdminRole"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000a03",
@@ -118,7 +119,7 @@ function rolesRegion(page: Page) {
 test.describe("roles", () => {
   test("grants a role by keyboard after its confirmation, with a role above the viewer's highest one explained", async ({ page, makeAxeBuilder }) => {
     const changes = await rolesServer(page);
-    await page.goto(`/admin/accounts/${local.id}`);
+    await page.goto(`/moderation/accounts/${local.id}`);
     const region = rolesRegion(page);
     await expect(region.getByRole("listitem")).toHaveCount(3);
     await expect(region).toMatchAriaSnapshot(`

@@ -42,6 +42,8 @@ tags:
     description: Media files that the user uploads to attach to posts.
   - name: preferences
     description: The authenticated user's preferences.
+  - name: two_factor
+    description: The authenticated user's two-factor authentication.
   - name: moderation
     description: The moderation actions on the authenticated user's own account.
   - name: notifications
@@ -56,10 +58,19 @@ tags:
     description: Reports of accounts and posts to the moderators.
   - name: streaming
     description: Real-time updates of the home timeline and the notifications.
-  - name: admin
+  - name: admin-moderation
     description: |
-      Instance administration. The operations need an `admin` scope and a permission of the
-      user's roles; a user without it gets a 403 `/api/v1/problems/missing-permission`.
+      The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
+      sign-up blocks, domain actions, the health of remote servers, the audit log, and the counts
+      of what awaits the moderators (ADR-0058). The operations need an `admin` scope and a
+      permission of the user's roles in the moderation category; a user without it gets a 403
+      `/api/v1/problems/missing-permission`.
+  - name: admin-server
+    description: |
+      The administration of the server itself: its settings and texts, its rules, the roles and
+      granting them, and the dead jobs of the job queue (ADR-0058). The operations need an `admin`
+      scope and a permission of the user's roles in the server category; a user without it gets a
+      403 `/api/v1/problems/missing-permission`.
 paths:
   /instance:
     get:
@@ -212,6 +223,250 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end profile and preferences ---
+  # --- the user's own account: deletion and data exports (#627) ---
+  /accounts/delete:
+    post:
+      operationId: deleteOwnAccount
+      summary: Delete the authenticated user's account
+      description: |
+        Deletes the user's own account at once, after checking the user's current `password`
+        (FR-008). The account and its posts disappear, every session and token of the user ends,
+        and the other servers get a `Delete` of the actor; the data is erased 7 days later. It
+        cannot be undone, and the username is never reused. A wrong password is a 422
+        `/api/v1/problems/wrong-password`; at most 5 attempts per account are accepted every
+        hour.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteOwnAccountRequest"
+      responses:
+        "204":
+          description: The account is deleted.
+        default:
+          $ref: "#/components/responses/Problem"
+  /exports:
+    get:
+      operationId: listDataExports
+      summary: List the authenticated user's data exports
+      description: |
+        Lists the user's latest 10 data exports, newest first. An archive can be downloaded
+        while its export is `ready`; exports are removed 7 days after they end.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The exports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExportList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: requestDataExport
+      summary: Request an archive of the authenticated user's data
+      description: |
+        Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
+        `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
+        activities), and `moderation.json` (the moderation actions on the account, its appeals,
+        and the reports it filed). The export is `pending` until the archive is built. While
+        another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
+        at most 3 requests per account are accepted every day.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      responses:
+        "202":
+          description: The export, being built.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /exports/{id}/archive:
+    get:
+      operationId: downloadDataExport
+      summary: Download the archive of a data export
+      description: |
+        Returns the ZIP archive of one of the user's exports. An export that is not `ready` is
+        a 409 `/api/v1/problems/export-not-ready`; another user's export is a 404.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the export.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: The archive.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            Content-Disposition:
+              description: Names the file to save the archive as.
+              schema:
+                type: string
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of the user's own account: deletion and data exports (#627) ---
+  # --- two-factor authentication (#628) ---
+  /two_factor:
+    get:
+      operationId: getTwoFactor
+      summary: Get where the authenticated user's two-factor authentication stands
+      tags: [two_factor]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The two-factor authentication of the user.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFactor"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/totp/setup:
+    post:
+      operationId: setUpTotp
+      summary: Generate a TOTP secret for the authenticated user to add to an authenticator app
+      description: |
+        A new secret (RFC 6238: HMAC-SHA-1, six digits, 30-second steps) as text, as an
+        `otpauth://` URI, and as a QR code of the URI, with a `setup_token` that carries the
+        secret to `POST /two_factor/totp` for 15 minutes. Nothing is stored until then. A user
+        who has two-factor authentication enabled gets a 409
+        `/api/v1/problems/two-factor-enabled`.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      responses:
+        "200":
+          description: The new secret.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TotpSetup"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/totp:
+    post:
+      operationId: enableTotp
+      summary: Enable two-factor authentication with the secret of a setup
+      description: |
+        Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns
+        the recovery codes, which are shown only this once. From then on, signing in asks for
+        a code after the password. A wrong code is a 422
+        `/api/v1/problems/invalid-two-factor-code`, an expired or unknown setup a 422
+        `/api/v1/problems/totp-setup-expired`, and too many wrong codes a 429.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnableTotpRequest"
+      responses:
+        "200":
+          description: The recovery codes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodes"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/totp/disable:
+    post:
+      operationId: disableTotp
+      summary: Disable two-factor authentication
+      description: |
+        Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms
+        it. A wrong code is a 422 `/api/v1/problems/invalid-two-factor-code`, too many wrong
+        codes a 429, and a user without two-factor authentication a 409
+        `/api/v1/problems/two-factor-not-enabled`.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwoFactorCodeRequest"
+      responses:
+        "200":
+          description: The two-factor authentication of the user, disabled.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TwoFactor"
+        default:
+          $ref: "#/components/responses/Problem"
+  /two_factor/recovery_codes:
+    post:
+      operationId: regenerateRecoveryCodes
+      summary: Replace the recovery codes
+      description: |
+        Returns new recovery codes, shown only this once, once `code` confirms it; the previous
+        ones stop working and the app keeps working. The problems are those of
+        `POST /two_factor/totp/disable`.
+      tags: [two_factor]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TwoFactorCodeRequest"
+      responses:
+        "200":
+          description: The new recovery codes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodes"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of two-factor authentication (#628) ---
   # --- Accounts and relationships (#108): accounts, follows, follow requests, blocks, mutes ---
   /accounts/lookup:
     get:
@@ -1212,6 +1467,44 @@ paths:
           $ref: "#/components/responses/StatusAfterAction"
         default:
           $ref: "#/components/responses/Problem"
+  /statuses/{id}/reactions:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: listStatusReactions
+      summary: List the emoji reactions to a status
+      description: |
+        The emoji reactions to a status that the viewer may see, newest first, each with the
+        account that reacted, only those with one emoji when `emoji` is given. Accounts that
+        block the viewer, are deactivated, or are deleted are left out, so a page may hold fewer
+        than `limit` reactions before the last. A status that the viewer may not see is a 404,
+        the same as a missing one.
+      tags: [statuses]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: emoji
+          in: query
+          description: |
+            The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+            reaction has gives an empty page.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the reactions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusReactionPage"
+        default:
+          $ref: "#/components/responses/Problem"
   /statuses/{id}/source:
     parameters:
       - $ref: "#/components/parameters/StatusId"
@@ -1493,7 +1786,7 @@ paths:
         The jobs of the job queue that failed for good (their handler gave up, or they used up
         their attempts), most recently failed first. Needs the `manage_jobs` permission; a user
         without it gets a 403 `/api/v1/problems/missing-permission`.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1519,7 +1812,7 @@ paths:
         Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
         the dead jobs. When a pending job has the same idempotency key, that job stands in for
         it. An unknown ID, or one already retried, is a 404. Needs the `manage_jobs` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1544,7 +1837,7 @@ paths:
         has no failures. Unavailable servers are sent only `Follow`, `Accept`, and `Reject`
         until a delivery succeeds, they send a signed request, the daily probe reaches them, or
         an operator marks them available. Needs the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1575,7 +1868,7 @@ paths:
       description: |
         The health of the server; one without failures is `available`, without `since`. Needs
         the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1592,7 +1885,7 @@ paths:
       description: |
         Why and when the server was marked unavailable or available again, newest first. Needs
         the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1620,7 +1913,7 @@ paths:
         again with the reason `operator`, so that deliveries to it resume. A server that is
         already available without failures stays as it is. Needs the `manage_domains`
         permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1643,7 +1936,7 @@ paths:
         stay with the operation itself (`source_event_id`). The audit log cannot be changed or
         deleted through the API. An unknown `action` or `target_kind`, or a `target_id`
         without its `target_kind`, is a 400. Needs the `view_audit` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1698,7 +1991,7 @@ paths:
       description: |
         The actions that moderators took on remote domains (FR-702), newest first, lifted and
         expired ones included unless `active` is set. Needs the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1746,7 +2039,7 @@ paths:
         dot); one that is not a valid domain is a 422 naming `domain`. A `public_comment` or
         `private_note` that is too long or contains U+0000 is a 422 naming it. Needs the
         `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -1765,7 +2058,7 @@ paths:
       operationId: getDomainAction
       summary: Get a moderation action on a domain
       description: An unknown ID is a 404. Needs the `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1783,7 +2076,7 @@ paths:
         Ends the action's restrictions at once; those of other actions on the domain stay.
         Lifting a lifted action changes nothing. An unknown ID is a 404. Needs the
         `manage_domains` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1800,7 +2093,7 @@ paths:
       description: |
         The reports in the moderators' queue (FR-701), newest first. Needs the `manage_reports`
         permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1831,7 +2124,7 @@ paths:
       description: |
         The report as a moderator opens it, with the posts it points at whatever their
         visibility. An unknown ID is a 404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -1848,7 +2141,7 @@ paths:
       description: |
         Makes the authenticated user the moderator who handles the report. An unknown ID is a
         404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1865,7 +2158,7 @@ paths:
       description: |
         Removes the moderator who handles the report, whoever it is. An unknown ID is a 404.
         Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1882,7 +2175,7 @@ paths:
       description: |
         Resolves an open report with an outcome. Resolving a resolved report changes nothing
         and keeps its outcome. An unknown ID is a 404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1908,7 +2201,7 @@ paths:
         Adds an internal note to the report (FR-710). Notes are shown to the moderators only,
         never to the target or the reporter, and cannot be edited or removed. An unknown ID is
         a 404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1932,7 +2225,7 @@ paths:
         Puts a resolved report back in the queue as `open`, keeping its assignee. Resolving it
         again does not notify the reporter again. An open report is a 409, an unknown ID a
         404. Needs the `manage_reports` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -1952,7 +2245,7 @@ paths:
         The actions that moderators took on an account (FR-703), newest first, lifted and
         expired ones included unless `active` is set. An unknown account is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2002,7 +2295,7 @@ paths:
         `expires_in` on a `ban` or an action on posts is a 422 naming `expires_in`. A text that
         is too long or contains U+0000 is a 422 naming it. An unknown account is a 404. Needs
         the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2023,7 +2316,7 @@ paths:
       operationId: getAccountAction
       summary: Get a moderation action on an account
       description: An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2044,7 +2337,7 @@ paths:
         they were. Lifting a lifted action changes nothing and keeps its first reason. A `ban`
         is never lifted: a 422 naming `id`. A `reason` that is too long or contains U+0000 is a
         422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2070,7 +2363,7 @@ paths:
         Every rule in every locale (FR-705): the rules in effect by position, followed, when
         `include_retired` is set, by the retired ones. The list is not paginated; at most 100
         rules are in effect. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2102,7 +2395,7 @@ paths:
         that is not a BCP 47 tag or appears twice (after canonicalization: `ja_jp` is `ja-JP`),
         no texts, or more than 50 is a 422 naming the property (`texts[0].text`). With 100
         rules in effect it is a 422 naming `rules`. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -2123,7 +2416,7 @@ paths:
       description: |
         A rule, retired or not; reports cite rules by ID. An unknown ID is a 404. Needs the
         `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2140,7 +2433,7 @@ paths:
         Records a revision whose texts replace every text of the rule; the rule keeps its ID
         and position. The texts are checked as for a new rule (422). A retired rule is a 409
         and an unknown ID a 404. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2164,7 +2457,7 @@ paths:
         Moves the rule to a place among the rules in effect and numbers them 1, 2, ... in their
         new order; a place after the last rule moves it last. A `position` below 1 is a 422, a
         retired rule a 409, and an unknown ID a 404. Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2188,7 +2481,7 @@ paths:
         Removes the rule from the rules in effect, at once and for good; reports that cite it
         still refer to it. Retiring a retired rule changes nothing. An unknown ID is a 404.
         Needs the `manage_rules` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2199,6 +2492,75 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: instance rules (#331) ---
+  # --- admin: instance theme (#664) ---
+  /admin/theme:
+    get:
+      operationId: getAdminTheme
+      summary: Read the instance theme
+      description: |
+        The current theme of the web client (ADR-0059, FR-605): the overridden design tokens and the
+        custom CSS. A server that never saved a theme, or reset it, answers an empty theme. Needs the
+        `manage_settings` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminTheme"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: setAdminTheme
+      summary: Replace the instance theme
+      description: |
+        Records a revision of the theme, which every visitor's web client and the server-rendered
+        pages load as the stylesheet `stylesheet_url` (after the shell's shared cache of up to a
+        few minutes). `tokens` lists every overridden token; the tokens it leaves out go back to
+        their defaults, and no tokens and an empty `custom_css` reset the theme. The revision and the
+        change are kept (`instance_theme_revisions`, the audit log's `setting_changed` of `theme`).
+
+        The overridable tokens are the web client's design tokens except the primitive palette
+        (the generated list of `@my/ui`). A color token takes `light` and `dark`, each `#rrggbb`
+        (`#rrggbbaa` for `color-overlay`); the other tokens take `value`: a length is `0` or a `rem`
+        / `px` value within the token's bounds, a line height a number, a duration `ms` / `s`, an
+        easing a keyword or `cubic-bezier()`, a font family a list of family names, and an
+        `elevation-*` shadow `none` or up to four `[inset] <x> <y> [<blur> [<spread>]] <#color>`
+        layers. Every contrast pair of the color tokens, with the defaults of the tokens not
+        overridden, must meet WCAG 2.2 AA (4.5:1 for text, 3:1 for controls) in both color schemes.
+        The custom CSS (at most 65,536 bytes) is served as it is after the token rules; the server
+        does not read it, it runs under the same Content-Security-Policy as the client (only
+        same-origin resources), and what it does to contrast, layout, and focus is the
+        administrator's responsibility. A theme that breaks any rule is a 422
+        `/api/v1/problems/invalid-theme` listing every problem in `theme_errors`. Needs the
+        `manage_settings` permission.
+      tags: [admin]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetThemeRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminTheme"
+        "422":
+          description: The theme breaks a rule; nothing was saved.
+          headers:
+            Content-Language:
+              description: The locale of `title` and `detail`.
+              schema:
+                type: string
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ThemeProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: instance theme (#664) ---
   # --- admin: instance texts (#489) ---
   /admin/instance_texts:
     get:
@@ -2209,7 +2571,7 @@ paths:
         descriptions, the terms of service, the privacy policy, and the alternative text of the
         preview image, by key and locale. Cleared texts are not listed. The list is not
         paginated. Needs the `manage_settings` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       responses:
@@ -2245,7 +2607,7 @@ paths:
         `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
         or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
         permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2280,7 +2642,7 @@ paths:
         that await approval and appeals that await a decision (with the `manage_accounts`
         permission), for the badges of the admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
         user without either gets an empty object.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       responses:
@@ -2314,7 +2676,7 @@ paths:
         `email_domain` with an `@` inside, more than one of `email`, `email_domain`, and `ip`,
         or a parameter longer than 320 characters is a 400 naming it. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2399,7 +2761,7 @@ paths:
         verified, and its roles, with its newest 20 actions and reports. The email address and
         the IP addresses are not included; `POST .../reveal` shows them. An unknown account is
         a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2428,7 +2790,7 @@ paths:
         of the sign-in and registration origins only (ADR-0038). A remote account or the
         instance actor is a 422 naming `id`. An unknown account is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2445,6 +2807,27 @@ paths:
                 $ref: "#/components/schemas/AdminAccountPrivateData"
         default:
           $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/two_factor/disable:
+    post:
+      operationId: disableAdminAccountTwoFactor
+      summary: Remove the two-factor authentication of a local account
+      description: |
+        Ends the TOTP enrollment of a local account's user, who lost their authenticator app
+        and recovery codes, so that they sign in with the password alone (FR-005). It is
+        recorded in the audit log as `two_factor_disabled`. A remote account or the instance
+        actor is a 422 naming `id`, an account without two-factor authentication a 409
+        `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
+        `manage_two_factor` permission, which only the built-in admin role has by default.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AdminAccountId"
+      responses:
+        "204":
+          description: The two-factor authentication is removed.
+        default:
+          $ref: "#/components/responses/Problem"
   # --- end of admin: accounts (#344) ---
   # --- admin: roles (#348) ---
   /admin/roles:
@@ -2456,7 +2839,7 @@ paths:
         (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
         (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
         `manage_roles` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       responses:
@@ -2471,7 +2854,7 @@ paths:
       description: |
         The roles that the user of a local account holds, highest position first. An unknown
         account, or one that is not local, is a 404. Needs the `manage_roles` permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2492,7 +2875,7 @@ paths:
         of the viewer is a 403. An unknown account, one that is not local, or an unknown role
         is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
         permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2514,7 +2897,7 @@ paths:
         only holder is a 409. An unknown account, one that is not local, or an unknown role
         is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
         permission.
-      tags: [admin]
+      tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2534,7 +2917,7 @@ paths:
       description: |
         The appeals that local users made of the actions on their accounts (FR-707), newest
         first, each with its action. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2563,7 +2946,7 @@ paths:
       operationId: getAppeal
       summary: Get an appeal of a moderation action
       description: An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2588,7 +2971,7 @@ paths:
         `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
         U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2615,7 +2998,7 @@ paths:
         `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
         U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2640,7 +3023,7 @@ paths:
       description: |
         The sign-ups that wait for a moderator's decision (FR-721), with the reasons their
         applicants gave, longest waiting first. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2667,7 +3050,7 @@ paths:
         for the moderators; the decision is audited. Deciding a decided registration changes
         nothing and keeps its decision. A user without a registration is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2691,7 +3074,7 @@ paths:
         for the moderators; the decision is audited. Deciding a decided registration changes
         nothing and keeps its decision. A user without a registration is a 404. Needs the
         `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2715,7 +3098,7 @@ paths:
       description: |
         The blocks on sign-ups from the registration page (FR-719), newest first, lifted and
         expired ones included unless `active` is set. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2759,7 +3142,7 @@ paths:
         CIDR prefix (a single address is a prefix of its full length). A value that is not
         valid for its kind, or a `comment` that is too long or contains U+0000, is a 422.
         Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -2778,7 +3161,7 @@ paths:
       operationId: getSignupBlock
       summary: Get a sign-up block
       description: An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:read"]
       parameters:
@@ -2795,7 +3178,7 @@ paths:
       description: |
         The block stops matching sign-ups at once; the lift is audited. Lifting a lifted block
         changes nothing. An unknown ID is a 404. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       parameters:
@@ -2824,7 +3207,7 @@ paths:
         ones before it; sending the list again skips them as `already_blocked`. More than
         10,000 values, an invalid kind or severity, or a `comment` that is too long or contains
         U+0000 is a 422 that adds nothing. Needs the `manage_accounts` permission.
-      tags: [admin]
+      tags: [admin-moderation]
       security:
         - oauth2: ["admin:write"]
       requestBody:
@@ -3067,6 +3450,15 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/AccountStatusPage"
+    AdminTheme:
+      description: The current theme.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminTheme"
     Problem:
       description: An error, as an RFC 9457 problem document.
       headers:
@@ -3287,6 +3679,22 @@ components:
         - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
           account is deleted, so it can no longer be appealed or overturned.
         - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+        - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+          not the user's current password.
+        - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+          built. Wait for it to end.
+        - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+          it is being built, failed, or expired.
+        - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+          already used, or is not a code.
+        - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+          Start a new one.
+        - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+          authentication.
+        - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+          operation, has no two-factor authentication.
+        - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
+          reason in `theme_errors` (`PUT /admin/theme`).
       type: object
       required: [type, title, status]
       properties:
@@ -3370,6 +3778,8 @@ components:
             when no locale of the request's fallback chain has it.
           type: string
           format: uri
+        theme:
+          $ref: "#/components/schemas/InstanceTheme"
     InstanceRegistrations:
       description: How people sign up on the instance.
       type: object
@@ -3462,7 +3872,7 @@ components:
     Account:
       description: An account, as clients show it (FR-006).
       type: object
-      required: [id, username, acct, domain, uri, display_name, note, fields, url, locked, bot, created_at]
+      required: [id, username, acct, domain, uri, display_name, note, fields, emojis, url, locked, bot, created_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3509,6 +3919,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProfileField"
+        emojis:
+          description: |
+            The custom emoji of the display name, the note, and the fields' names and values
+            (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+            image, and the rest as text.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
         avatar:
           description: |
             The avatar image, square; omitted when the account has none, or its image is not
@@ -3600,6 +4018,27 @@ components:
         value:
           description: The field's value as sanitized HTML.
           type: string
+    CustomEmoji:
+      description: |
+        A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+        An emoji that is disabled or deleted, or whose images come from a domain whose media the
+        instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+        `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+        otherwise.
+      type: object
+      required: [shortcode, url, static_url]
+      properties:
+        shortcode:
+          description: The shortcode, without the colons around it.
+          type: string
+        url:
+          description: The URL of the image, animated when the emoji is.
+          type: string
+          format: uri
+        static_url:
+          description: The URL of a still image of the emoji; the same as `url` when no still version is served.
+          type: string
+          format: uri
     Relationship:
       description: |
         The viewer's relationship with an account. It never says whether the account blocks
@@ -3938,6 +4377,55 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/AdminAppeal"
+    DeleteOwnAccountRequest:
+      description: The confirmation of the deletion of the user's own account.
+      type: object
+      required: [password]
+      properties:
+        password:
+          description: The user's current password.
+          type: string
+          minLength: 1
+          maxLength: 1024
+    DataExport:
+      description: A request for an archive of the user's data.
+      type: object
+      required: [id, state, requested_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        state:
+          description: |
+            `pending` while the archive is being built, `ready` while it can be downloaded,
+            `failed` when it could not be built (request another one).
+          type: string
+          enum: [pending, ready, failed]
+        requested_at:
+          description: When the user asked for the export.
+          type: string
+          format: date-time
+        completed_at:
+          description: When the build ended; omitted while `pending`.
+          type: string
+          format: date-time
+        expires_at:
+          description: When the export and its archive are removed; omitted while `pending`.
+          type: string
+          format: date-time
+        file_size:
+          description: The size of the archive in bytes; only for `ready`.
+          type: integer
+          format: int64
+          minimum: 0
+    DataExportList:
+      description: The user's latest data exports, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataExport"
     AppealModerationActionRequest:
       description: An appeal of an action on the user's own account.
       type: object
@@ -4026,6 +4514,9 @@ components:
             - $ref: "#/components/schemas/Id"
         relationship_severance:
           $ref: "#/components/schemas/RelationshipSeverance"
+        reaction:
+          description: The emoji of a `reaction`; omitted for the other types.
+          $ref: "#/components/schemas/ReactionEmoji"
     RelationshipSeverance:
       description: |
         The follows that a `relationships_severed` tells of: the user lost them when the
@@ -4138,9 +4629,10 @@ components:
       description: |
         The kind of a notification. `account` is the account that acted: the follower
         (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-        (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-        `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-        about. `moderation_notice` comes from the instance and has no `account`; its
+        (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+        account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+        with another emoji is another notification). `status` is the post that `mention`,
+        `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
         `moderation_action` is the action on the user's account, with its kind, reason, and end.
         `report_resolved` also comes from the instance: its `report` is the user's report that
         the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -4164,6 +4656,7 @@ components:
         - mention
         - boost
         - favourite
+        - reaction
         - poll_closed
         - moderation_notice
         - report_resolved
@@ -4222,8 +4715,8 @@ components:
         In a timeline, a boost is a status of the booster with `boost` set to the boosted
         status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
         `visibility` and `language` are those of the boosted status, its `content`,
-        `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-        are zero.
+        `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+        empty, and its counts are zero.
       type: object
       required:
         - id
@@ -4238,9 +4731,11 @@ components:
         - media_attachments
         - mentions
         - tags
+        - emojis
         - replies_count
         - boosts_count
         - favourites_count
+        - reactions
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -4301,6 +4796,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StatusTag"
+        emojis:
+          description: |
+            The custom emoji of the text, the content warning, and the poll's choices
+            (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+            image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
         replies_count:
           description: The number of replies.
           type: integer
@@ -4313,6 +4816,14 @@ components:
           description: The number of favourites.
           type: integer
           minimum: 0
+        reactions:
+          description: |
+            The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+            reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+            are counted apart, in `favourites_count`.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusReaction"
         favourited:
           description: Whether the authenticated user favourited the status.
           type: boolean
@@ -4325,6 +4836,70 @@ components:
         pinned:
           description: Whether the status is pinned to the author's profile; given only to the author.
           type: boolean
+    ReactionEmoji:
+      description: |
+        The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+        emoji of another server is shown as it is and cannot be used to react from here.
+      type: object
+      required: [name]
+      properties:
+        name:
+          description: |
+            The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+            custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+            server.
+          type: string
+        shortcode:
+          description: The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+          type: string
+        domain:
+          description: The server of a custom emoji of another server; omitted otherwise.
+          type: string
+        emoji:
+          description: |
+            The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+            be shown (as `CustomEmoji` leaves such an emoji out).
+          $ref: "#/components/schemas/CustomEmoji"
+    StatusReaction:
+      description: The reactions to a status with one emoji.
+      allOf:
+        - $ref: "#/components/schemas/ReactionEmoji"
+        - type: object
+          required: [count]
+          properties:
+            count:
+              description: The number of the reactions with the emoji.
+              type: integer
+              minimum: 1
+            me:
+              description: |
+                Whether the authenticated user reacted with the emoji; omitted for anonymous
+                requests.
+              type: boolean
+    StatusReactor:
+      description: One emoji reaction to a status, with the account that reacted.
+      type: object
+      required: [account, emoji, created_at]
+      properties:
+        account:
+          $ref: "#/components/schemas/Account"
+        emoji:
+          $ref: "#/components/schemas/ReactionEmoji"
+        created_at:
+          description: When the account reacted.
+          type: string
+          format: date-time
+    StatusReactionPage:
+      description: A page of the emoji reactions to a status, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/StatusReactor"
     StatusContext:
       description: The thread around a status.
       type: object
@@ -4343,7 +4918,7 @@ components:
     StatusEdit:
       description: One revision of a status.
       type: object
-      required: [content, spoiler_text, sensitive, created_at, media_attachments]
+      required: [content, spoiler_text, sensitive, created_at, media_attachments, emojis]
       properties:
         content:
           description: The text of the revision as sanitized HTML.
@@ -4363,6 +4938,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MediaAttachment"
+        emojis:
+          description: The custom emoji of the revision's text and content warning, as `Status.emojis`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
     StatusHistory:
       description: The revisions of a status.
       type: object
@@ -4643,6 +5223,91 @@ components:
           items:
             type: string
     # --- end profile and preferences ---
+    # --- two-factor authentication (#628) ---
+    TwoFactor:
+      description: Where the authenticated user's two-factor authentication (TOTP) stands.
+      type: object
+      required: [enabled]
+      properties:
+        enabled:
+          description: Whether signing in asks for a code after the password.
+          type: boolean
+        enrolled_at:
+          description: When the authenticator app was enrolled; omitted when not enabled.
+          type: string
+          format: date-time
+        recovery_codes_remaining:
+          description: How many recovery codes are unused; omitted when not enabled.
+          type: integer
+          minimum: 0
+    TotpSetup:
+      description: A new TOTP secret to add to an authenticator app.
+      type: object
+      required: [secret, uri, qr_code, setup_token, expires_at]
+      properties:
+        secret:
+          description: The secret in base32, for typing it into the app.
+          type: string
+        uri:
+          description: The `otpauth://totp/...` URI of the secret.
+          type: string
+        qr_code:
+          $ref: "#/components/schemas/QrCode"
+        setup_token:
+          description: An opaque token that carries the secret to `POST /two_factor/totp`.
+          type: string
+        expires_at:
+          description: When `setup_token` stops working.
+          type: string
+          format: date-time
+    QrCode:
+      description: |
+        A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+        zone of four modules included) on a light background.
+      type: object
+      required: [size, path]
+      properties:
+        size:
+          description: The width and height of the view box, in modules.
+          type: integer
+          minimum: 1
+        path:
+          description: The path data (`d`) of the dark modules, one unit per module.
+          type: string
+    EnableTotpRequest:
+      description: The setup to enroll and a code of the app that shows it has the secret.
+      type: object
+      required: [setup_token, code]
+      properties:
+        setup_token:
+          description: The `setup_token` of `POST /two_factor/totp/setup`.
+          type: string
+          maxLength: 1024
+        code:
+          description: The six-digit code that the app shows now.
+          type: string
+          maxLength: 64
+    TwoFactorCodeRequest:
+      description: A code that confirms an operation on two-factor authentication.
+      type: object
+      required: [code]
+      properties:
+        code:
+          description: A six-digit code of the app or an unused recovery code.
+          type: string
+          maxLength: 64
+    RecoveryCodes:
+      description: |
+        Recovery codes, each of which signs in once in place of a code of the app. They are
+        shown only once.
+      type: object
+      required: [recovery_codes]
+      properties:
+        recovery_codes:
+          type: array
+          items:
+            type: string
+    # --- end of two-factor authentication (#628) ---
     # --- The viewer's posting limits (#207) ---
     PostingLimits:
       description: |
@@ -4781,7 +5446,8 @@ components:
         The kind of an audited operation, each on one kind of target. On an `account`:
         `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
         `revealed_private_data` (a moderator was shown the account's email address and IP
-        addresses). On a `domain`:
+        addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+        authentication). On a `domain`:
         `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
         `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
         `user` (a registration):
@@ -4819,6 +5485,7 @@ components:
         - revealed_private_data
         - signup_block_added
         - signup_block_lifted
+        - two_factor_disabled
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -5326,7 +5993,8 @@ components:
         `manage_domains`: the health of remote servers and the moderation actions on domains.
         `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
         roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-        log. The others guard no client API operation yet.
+        log. `manage_two_factor`: removing the two-factor authentication of a local user (only
+        the built-in admin role by default). The others guard no client API operation yet.
       type: string
       enum:
         - manage_reports
@@ -5338,6 +6006,7 @@ components:
         - manage_invites
         - view_audit
         - manage_jobs
+        - manage_two_factor
     # --- end of the viewer's permissions (#267) ---
     # --- admin: instance rules (#331) ---
     AdminRule:
@@ -5436,6 +6105,114 @@ components:
           minimum: 1
     # --- end of admin: instance rules (#331) ---
     # --- admin: instance texts (#489) ---
+    ThemeTokenValue:
+      description: |
+        The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
+        and `dark` for a color token, `value` for the others.
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+        light:
+          type: string
+        dark:
+          type: string
+        value:
+          type: string
+    AdminTheme:
+      description: The instance theme as its administrators edit it.
+      type: object
+      required: [tokens, custom_css]
+      properties:
+        revision:
+          description: The ID of the current theme revision; omitted when no theme was ever saved.
+          type: string
+        stylesheet_url:
+          description: The stylesheet of the theme; omitted when the theme changes nothing.
+          type: string
+          format: uri
+        tokens:
+          description: The overridden tokens, in the order of the token list.
+          type: array
+          items:
+            $ref: "#/components/schemas/ThemeTokenValue"
+        custom_css:
+          description: The custom CSS; empty for none.
+          type: string
+        revised_at:
+          description: When the current revision was recorded; omitted when no theme was ever saved.
+          type: string
+          format: date-time
+    SetThemeRequest:
+      description: The whole theme; tokens left out go back to their defaults.
+      type: object
+      required: [tokens, custom_css]
+      properties:
+        tokens:
+          type: array
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/ThemeTokenValue"
+        custom_css:
+          type: string
+    InstanceTheme:
+      description: |
+        The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
+        stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
+        instance has no theme.
+      type: object
+      required: [revision, stylesheet_url, tokens]
+      properties:
+        revision:
+          type: string
+        stylesheet_url:
+          type: string
+          format: uri
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/ThemeTokenValue"
+    ThemeError:
+      description: |
+        One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
+        `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
+        of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
+        duration), `low_contrast` (`token` on `background` is `ratio`:1 in `scheme` and needs
+        `minimum`:1), `css_too_long` (`max` bytes), or `css_invalid` (not UTF-8 text).
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          enum: [unknown_token, duplicate_token, invalid_value, out_of_range, low_contrast, css_too_long, css_invalid]
+        token:
+          type: string
+        scheme:
+          type: string
+          enum: [light, dark]
+        background:
+          type: string
+        ratio:
+          type: number
+        minimum:
+          type: number
+        min:
+          type: number
+        max:
+          type: number
+    ThemeProblem:
+      description: |
+        A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+        lists why the theme cannot be saved; another 422 (a malformed request) has none.
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            theme_errors:
+              type: array
+              items:
+                $ref: "#/components/schemas/ThemeError"
     AdminInstanceText:
       description: The current text of a key in one locale.
       type: object
@@ -5540,6 +6317,11 @@ components:
               description: |
                 Whether the primary email address of a local account is verified; omitted when
                 it has none.
+              type: boolean
+            two_factor_enabled:
+              description: |
+                Whether the user of a local account signs in with two-factor authentication;
+                omitted for a remote account.
               type: boolean
             roles:
               description: The keys of the user's roles, highest position first; empty for a remote account.

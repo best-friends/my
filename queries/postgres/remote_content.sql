@@ -148,3 +148,14 @@ VALUES (@poll_id, @position, @votes, @voters_count);
 
 -- name: ListPollTallies :many
 SELECT poll_id, position, votes, voters_count FROM poll_tallies WHERE poll_id = @poll_id ORDER BY position;
+
+-- ListCurrentCustomEmojiImages returns the custom emoji with an ID in @emoji_ids that have an
+-- image, each with its current (newest) image, for the emoji of a page of statuses and accounts.
+-- name: ListCurrentCustomEmojiImages :many
+SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
+  i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at
+FROM custom_emojis e
+JOIN custom_emoji_images i ON i.emoji_id = e.id
+WHERE e.id = ANY(@emoji_ids::text[])
+  AND i.id = (SELECT MAX(l.id) FROM custom_emoji_images l WHERE l.emoji_id = e.id)
+ORDER BY e.id;

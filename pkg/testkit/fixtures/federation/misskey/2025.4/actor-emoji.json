@@ -1,0 +1,99 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://w3id.org/security/v1",
+    {
+      "Key": "sec:Key",
+      "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "sensitive": "as:sensitive",
+      "Hashtag": "as:Hashtag",
+      "quoteUrl": "as:quoteUrl",
+      "toot": "http://joinmastodon.org/ns#",
+      "Emoji": "toot:Emoji",
+      "featured": "toot:featured",
+      "discoverable": "toot:discoverable",
+      "schema": "http://schema.org#",
+      "PropertyValue": "schema:PropertyValue",
+      "value": "schema:value",
+      "misskey": "https://misskey-hub.net/ns#",
+      "_misskey_content": "misskey:_misskey_content",
+      "_misskey_quote": "misskey:_misskey_quote",
+      "_misskey_reaction": "misskey:_misskey_reaction",
+      "_misskey_votes": "misskey:_misskey_votes",
+      "_misskey_summary": "misskey:_misskey_summary",
+      "_misskey_followedMessage": "misskey:_misskey_followedMessage",
+      "_misskey_requireSigninToViewContents": "misskey:_misskey_requireSigninToViewContents",
+      "_misskey_makeNotesFollowersOnlyBefore": "misskey:_misskey_makeNotesFollowersOnlyBefore",
+      "_misskey_makeNotesHiddenBefore": "misskey:_misskey_makeNotesHiddenBefore",
+      "_misskey_license": "misskey:_misskey_license",
+      "freeText": {
+        "@id": "misskey:freeText",
+        "@type": "schema:text"
+      },
+      "isCat": "misskey:isCat",
+      "vcard": "http://www.w3.org/2006/vcard/ns#"
+    }
+  ],
+  "type": "Person",
+  "id": "https://misskey.example/users/9xyzabc123",
+  "inbox": "https://misskey.example/users/9xyzabc123/inbox",
+  "outbox": "https://misskey.example/users/9xyzabc123/outbox",
+  "followers": "https://misskey.example/users/9xyzabc123/followers",
+  "following": "https://misskey.example/users/9xyzabc123/following",
+  "featured": "https://misskey.example/users/9xyzabc123/collections/featured",
+  "sharedInbox": "https://misskey.example/inbox",
+  "endpoints": {
+    "sharedInbox": "https://misskey.example/inbox"
+  },
+  "url": "https://misskey.example/@alice",
+  "preferredUsername": "alice",
+  "name": "Alice :blobcat:",
+  "summary": "<p>Hello :blobcat:</p>",
+  "_misskey_requireSigninToViewContents": false,
+  "_misskey_makeNotesFollowersOnlyBefore": null,
+  "_misskey_makeNotesHiddenBefore": null,
+  "icon": {
+    "type": "Image",
+    "url": "https://media.misskey.example/avatar.png",
+    "sensitive": false,
+    "name": null
+  },
+  "image": {
+    "type": "Image",
+    "url": "https://media.misskey.example/header.png",
+    "sensitive": false,
+    "name": null
+  },
+  "manuallyApprovesFollowers": false,
+  "discoverable": true,
+  "publicKey": {
+    "id": "https://misskey.example/users/9xyzabc123#main-key",
+    "type": "Key",
+    "owner": "https://misskey.example/users/9xyzabc123",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuA0aNwC+1ApDv/FNHeNl\n2l2VS1mWVFBjlq6lCvXhu+af/+KnZsrkDqOY1s1dqKhsXPzBKQX3rVZbsnr62HYn\nFF+6IGDJCtTF4q3cbtKfZ6dhli7FSEfLe0XulA2PJkcjN9xORcwq8YVQdqdWEsj5\nM9d0d8d4tBLKfxE0z3ebyCl7SN3a6iDaMjC0TSqsDKpXerBzK7SwAc9sGJiz48+c\nKBFcq5L2PGCMV0s31g9VOWDmOVMlsZ6KltKGIhLgwQZmPRl0/NAE8SOhHkt/7rsy\n9E1H/XkrU44T7FITu5Vin/bza/W2D8Yij6C5McWe6J7SUwP9DG7tOd0++l1tNb7Z\n/wIDAQAB\n-----END PUBLIC KEY-----\n"
+  },
+  "isCat": true,
+  "attachment": [
+    {
+      "type": "PropertyValue",
+      "name": "Website",
+      "value": "https://example.org"
+    }
+  ],
+  "tag": [
+    {
+      "id": "https://misskey.example/emojis/blobcat",
+      "type": "Emoji",
+      "name": ":blobcat:",
+      "updated": "2025-04-01T00:00:00.000Z",
+      "icon": {
+        "type": "Image",
+        "mediaType": "image/png",
+        "url": "https://media.misskey.example/emoji/blobcat.png"
+      },
+      "_misskey_license": {
+        "freeText": null
+      }
+    }
+  ]
+}

@@ -360,9 +360,11 @@ func (e *fedEnv) local() string {
 	id := e.ids.NewID()
 	e.accounts.mu.Lock()
 	defer e.accounts.mu.Unlock()
+	username := "l" + id[len(id)-6:]
 	e.accounts.actors[id] = appaccount.Actor{
 		Account:   account.Account{ID: id, URI: account.ActorURI(contractHost, id), Domain: account.LocalDomain, ActorType: account.ActorPerson},
-		Handle:    &account.Handle{AccountID: id, Username: "l" + id[len(id)-6:], UsernameNormalized: "l" + id[len(id)-6:]},
+		Local:     &account.LocalAccount{AccountID: id, Username: username, UsernameNormalized: username},
+		Handle:    &account.Handle{AccountID: id, Username: username, UsernameNormalized: username},
 		Lifecycle: account.LifecycleState{AccountID: id, State: account.StateActive},
 	}
 	return id
@@ -422,7 +424,7 @@ func (e *fedEnv) postWith(t *testing.T, author string, v content.Visibility, edi
 	e.clock.Advance(time.Second)
 	id := e.ids.NewID()
 	s := content.Status{
-		ID: id, URI: content.StatusURI(contractHost, id), URL: "https://" + contractHost + "/@author/" + id,
+		ID: id, URI: content.StatusURI(contractHost, id),
 		AuthorAccountID: author, IsLocal: true, Visibility: v, PublishedAt: e.clock.Now(),
 	}
 	rev := content.Revision{

@@ -39,12 +39,15 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // AccountRepositoryContract verifies the identity and account repositories of a database
 // adapter through the use cases that drive them: registering a local user with sealed RSA and
 // Ed25519 keys, rejecting a taken username, creating the instance actor exactly once, lookups by
-// handle and ID, profile revisions, lifecycle events, the built-in roles, creating an admin with
+// handle and ID, profile revisions, lifecycle events, the deletion of an account at its owner's
+// request, the data exports with their archives, expiry, and erasure, the built-in roles, creating an admin with
 // an email address and a role grant while rejecting a taken username or email, signing in and out
 // with browser sessions (new tokens on every sign-in, expiry, activity, the same error for an
 // unknown address, a wrong password, and an inactive account, rate-limited failures, rehashing weaker passwords,
 // the origin of each sign-in and its purge after the configured retention, except for held
-// users), the OAuth 2.0
+// users), two-factor authentication with TOTP (enrolling from a sealed setup token, a second
+// sign-in step that takes a code once or a recovery code once, rate-limited wrong codes,
+// regenerating recovery codes, and disabling), the OAuth 2.0
 // authorization server (registering the web client, exact redirect URIs, PKCE S256 only,
 // one-time codes, refresh token rotation that revokes the whole family on reuse, revocation),
 // and the property that the account module's synchronous projections equal a rebuild from their events.
@@ -63,6 +66,9 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"UpdatesLocalProfiles", accountUpdatesLocalProfiles},
 		{"RecordsLifecycleEvents", accountRecordsLifecycle},
 		{"ExecutesScheduledDeletions", accountExecutesDeletions},
+		{"DeletesAccountsAtTheOwnersRequest", accountDeletesAtTheOwnersRequest},
+		{"BuildsAndExpiresDataExports", exportsBuildAndExpireArchives},
+		{"ErasesDataExportsWithTheAccount", exportsAreErasedWithTheAccount},
 		{"CountsLocalUsers", accountCountsLocalUsers},
 		{"ReadsRemoteInboxes", accountReadsRemoteInboxes},
 		{"FindsAccountsByURIAndDomain", accountFindsByURIAndDomain},
@@ -81,6 +87,10 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"OriginPurgeFollowsTheRetentionPolicy", originPurgeFollowsThePolicy},
 		{"EndsTheLoginsOfModeratedAccounts", sessionModerationEndsLogins},
 		{"SignsInBannedAccountsUntilTheirDeletion", sessionBannedSignsInUntilDeletion},
+		{"EnrollsTOTPAndSignsInWithACode", totpEnrollsAndSignsIn},
+		{"TOTPRecoveryCodesWorkOnce", totpRecoveryCodesWorkOnce},
+		{"RateLimitsWrongTOTPCodes", totpRateLimitsWrongCodes},
+		{"RegeneratesRecoveryCodesAndDisablesTOTP", totpRegeneratesAndDisables},
 		{"RegistersTheWebClient", oauthRegistersTheWebClient},
 		{"ValidatesAuthorizationRequests", oauthValidatesAuthorizationRequests},
 		{"ExchangesCodesWithPKCE", oauthExchangesCodesWithPKCE},
@@ -106,7 +116,9 @@ type accountEnv struct {
 	accounts   *appaccount.Service
 	identity   *appidentity.Service
 	hasher     *appidentity.PasswordHasher
+	kv         *KeyValueStore
 	limiter    *kernel.RateLimiter
+	sealer     *kernel.Sealer
 }
 
 const contractHost = "social.example"
@@ -150,6 +162,7 @@ func newAccountEnvOn(h AccountHarness, projectors *uow.Projectors, register ...f
 			return nil
 		},
 	})
+	kv := NewKeyValueStore(clock)
 	e := &accountEnv{
 		h:          h,
 		projectors: projectors,
@@ -157,7 +170,9 @@ func newAccountEnvOn(h AccountHarness, projectors *uow.Projectors, register ...f
 		ids:        ids,
 		accounts:   accounts,
 		hasher:     appidentity.NewPasswordHasher(cheapArgon2, 0),
-		limiter:    kernel.NewRateLimiter(NewKeyValueStore(clock), clock),
+		kv:         kv,
+		limiter:    kernel.NewRateLimiter(kv, clock),
+		sealer:     kernel.NewSealer(NewKeyManager("contract")),
 	}
 	e.identity = e.newIdentity(e.hasher)
 	return e
@@ -179,7 +194,10 @@ func (e *accountEnv) newIdentityWith(change func(*appidentity.Deps)) *appidentit
 		Passwords:   e.hasher,
 		Accounts:    e.accounts,
 		RateLimiter: e.limiter,
+		Sealer:      e.sealer,
+		KV:          e.kv,
 		WebClient:   contractWebClient,
+		BaseURL:     "https://" + contractHost,
 	}
 	change(&d)
 	return appidentity.NewService(d)

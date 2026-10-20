@@ -14,7 +14,7 @@ import { renderApp } from "../../test/render";
 /** A post newer than the fixture of the home timeline. */
 function newStatus(n: number): Status {
   const id = `0192f0c4-7a8e-7000-8000-0000000001${String(n).padStart(2, "0")}`;
-  return { ...timelineStatusFixture, id, uri: `https://my.example/ap/statuses/${id}`, url: `https://my.example/@bob/${id}`, content: `<p>New post ${String(n)}</p>` };
+  return { ...timelineStatusFixture, id, uri: `https://my.example/ap/statuses/${id}`, url: `https://my.example/@bob/status/${id}`, content: `<p>New post ${String(n)}</p>` };
 }
 
 /** The reconnect waits about a second after a stream ends (lib/sse/stream.ts). */

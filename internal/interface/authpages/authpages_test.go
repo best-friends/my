@@ -28,6 +28,9 @@ type fakeIdentity struct {
 	n       int
 	limited bool
 	last    appidentity.SignInInput
+	// second records the inputs of CompleteSignIn; challengeUsed makes bob's challenge expired.
+	second        []appidentity.SecondFactorInput
+	challengeUsed bool
 
 	mode      identity.RegistrationMode
 	owner     map[string]string // token -> user ID
@@ -58,6 +61,9 @@ func (f *fakeIdentity) SignIn(_ context.Context, in appidentity.SignInInput) (ap
 	f.last = in
 	if f.limited {
 		return appidentity.SignedIn{}, &kernel.RateLimitedError{RetryAfter: 61 * time.Second}
+	}
+	if in.Email == "bob@example.com" && in.Password == "correct horse" {
+		return appidentity.SignedIn{}, &appidentity.SecondFactorRequiredError{Challenge: bobChallenge}
 	}
 	if in.Email != "alice@example.com" || in.Password != "correct horse" {
 		return appidentity.SignedIn{}, appidentity.ErrInvalidCredentials
@@ -281,6 +287,24 @@ func TestRightToLeftLocale(t *testing.T) {
 	authpages.New(authpages.Options{Identity: newFakeIdentity(), Locales: &i18n.Resolver{Bundle: b}, Stylesheet: "/assets/x.css"}).Register(m)
 	w := newBrowser(t, m).do(http.MethodGet, authpages.PathSignIn, nil, map[string]string{"Accept-Language": "ar-XB"})
 	if body := w.Body.String(); !strings.Contains(body, `<html lang="ar-XB" dir="rtl">`) || !strings.Contains(body, `href="/assets/x.css"`) {
+		t.Errorf("page = %s", body)
+	}
+}
+
+// The instance theme's stylesheet follows the pages' own stylesheet (ADR-0059).
+func TestPagesLoadTheThemeStylesheet(t *testing.T) {
+	b, err := i18n.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := mux{http.NewServeMux()}
+	authpages.New(authpages.Options{
+		Identity: newFakeIdentity(), Locales: &i18n.Resolver{Bundle: b}, Stylesheet: "/assets/x.css",
+		ThemeStylesheet: func(context.Context) string { return "/theme/rev1.css" },
+	}).Register(m)
+	body := newBrowser(t, m).do(http.MethodGet, authpages.PathSignIn, nil, nil).Body.String()
+	i, j := strings.Index(body, `href="/assets/x.css"`), strings.Index(body, `<link rel="stylesheet" href="/theme/rev1.css">`)
+	if i < 0 || j < i {
 		t.Errorf("page = %s", body)
 	}
 }

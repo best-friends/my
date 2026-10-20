@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -319,7 +320,7 @@ func (s *Service) remoteRevision(ctx context.Context, tx uow.Tx, in RemoteStatus
 	if rev.TagIDs, err = ensureTags(ctx, tx, s.d.Repository, tags); err != nil {
 		return content.Revision{}, err
 	}
-	if rev.EmojiIDs, err = s.remoteEmojis(ctx, tx, in); err != nil {
+	if rev.EmojiIDs, err = s.RecordRemoteEmojis(ctx, tx, in.AuthorAccountID, in.AuthorDomain, in.Emojis); err != nil {
 		return content.Revision{}, err
 	}
 	if rev.Attachments, err = s.remoteAttachments(ctx, tx, in); err != nil {
@@ -335,30 +336,37 @@ func (s *Service) remoteRevision(ctx context.Context, tx uow.Tx, in RemoteStatus
 	return rev, nil
 }
 
-// remoteEmojis records the custom emoji of a remote post, each with its image as a remote media
-// file of the author, and returns their IDs, sorted. A new image URL of a known emoji becomes its
-// new image.
-func (s *Service) remoteEmojis(ctx context.Context, tx uow.Tx, in RemoteStatusInput) ([]string, error) {
-	if len(in.Emojis) == 0 {
+// RecordRemoteEmojis records inside tx the custom emoji that a remote document of an account
+// uses (a post, or the profile of an actor, ADR-0051 §3), each with its image as a remote media
+// file of the account, and returns their IDs, sorted. domain is the canonical host of the
+// account, the domain of its emoji: an emoji is identified by its shortcode and domain, and the
+// id of its Emoji object is recorded as its URI only when it has that host, so that no server
+// can take the row of another's emoji. A new image URL of a known emoji becomes its new image.
+func (s *Service) RecordRemoteEmojis(ctx context.Context, tx uow.Tx, ownerAccountID, domain string, emojis []RemoteEmojiInput) ([]string, error) {
+	if len(emojis) == 0 {
 		return nil, nil
 	}
 	if s.d.RemoteMedia == nil {
-		return nil, errors.New("content: remote statuses need a remote media recorder")
+		return nil, errors.New("content: remote emoji need a remote media recorder")
 	}
 	var ids []string
 	now := s.d.Clock.Now()
-	for _, e := range in.Emojis {
+	for _, e := range emojis {
 		if e.Shortcode == "" || e.ImageURL == "" {
 			continue
 		}
 		m, err := s.d.RemoteMedia.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
-			OwnerAccountID: in.AuthorAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeEmoji,
+			OwnerAccountID: ownerAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeEmoji,
 		})
 		if err != nil {
 			return nil, err
 		}
+		uri := e.URI
+		if !hasHost(uri, domain) {
+			uri = ""
+		}
 		emoji, err := s.d.Repository.EnsureCustomEmoji(ctx, tx, content.CustomEmoji{
-			ID: s.d.IDs.NewID(), Shortcode: e.Shortcode, Domain: in.AuthorDomain, URI: e.URI, CreatedAt: now,
+			ID: s.d.IDs.NewID(), Shortcode: e.Shortcode, Domain: domain, URI: uri, CreatedAt: now,
 		})
 		if err != nil {
 			return nil, err
@@ -378,6 +386,12 @@ func (s *Service) remoteEmojis(ctx context.Context, tx uow.Tx, in RemoteStatusIn
 		ids = append(ids, emoji.ID)
 	}
 	return sortedSet(ids), nil
+}
+
+// hasHost reports whether uri is an absolute URL whose host is domain.
+func hasHost(uri, domain string) bool {
+	u, err := url.Parse(uri)
+	return err == nil && u.Host != "" && strings.EqualFold(u.Host, domain)
 }
 
 // remoteAttachments records the attachments of a remote post as remote media files of the

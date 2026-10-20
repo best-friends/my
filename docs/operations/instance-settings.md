@@ -136,3 +136,37 @@ my instance rule list                                 # 有効なルール（-al
 
 - 管理 API は `/api/v1/admin/rules`（一覧・追加・取得・改訂・移動・廃止）で、ロールの権限 `manage_rules` を要します。
 - 終了コードは設定と同じです（0 は成功、1 は値の拒否や DB のエラー、2 は引数の誤り）。
+
+## テーマ
+
+サーバー単位のテーマ（FR-605、[ADR-0059](../adr/0059-design-tokens-and-instance-theme.md)）は、Web クライアントのデザイントークンの上書きと、任意の CSS（カスタム CSS）1 つです。
+すべての閲覧者の Web クライアントとサーバーが描画する画面（ログイン・登録・規約など）に、ライトとダークの両方で当たります。
+
+- 上書きできるトークンは `app/ui/src/theme.css` の原色（`--palette-*`）以外で、一覧・既定値・範囲は [app/ui/README.md](../../app/ui/README.md#server-themes) にあります。
+  色はライト / ダークそれぞれ `#rrggbb`（`color-overlay` は `#rrggbbaa` も可）で、ほかは種類ごとの形（長さ・数・時間・緩急・フォント名の並び・影）と範囲に収まる値です。
+- 保存のときにサーバーが、値の形と範囲、色のトークンのすべての組のコントラスト（上書きしないトークンは既定値で、ライト / ダークの両方で WCAG 2.2 AA）、カスタム CSS の長さ（64 KiB）を検査し、
+  1 つでも満たさなければ何も保存しません。
+- カスタム CSS は、サーバーは中身を読まずに、トークンの規則の後に `@layer` の外で同じスタイルシートに入れて返します。Web クライアントと同じ CSP の下で動くので、別のオリジンの画像・フォント・`@import` は読めません。
+  **カスタム CSS の結果（コントラスト・横スクロール・タップ領域・フォーカスの表示・右から左の言語）はサーバーが確かめず、管理者の責任です。** クラス名とページの構造は版で変わるので、安定して使えるのはトークンだけです。
+- テーマは版（`instance_theme_revisions`）として残り、現在の版のスタイルシートを `/theme/{版の ID}.css`（`immutable` で長期キャッシュ）で配ります。
+  HTML の外枠は共有キャッシュ（60 秒と再検証の 300 秒）を持つので、保存してから全員に届くまで数分かかります。開いているページは読み込み直すまで前の見た目のままです。
+- 外枠の `<meta name="theme-color">`（ライト / ダーク）と Web App Manifest の `theme_color` / `background_color`（ライト）は、テーマの `color-surface` の値になります。
+- トークンもカスタム CSS も無い版を保存すると、テーマは既定に戻り、スタイルシートを読み込まなくなります。
+- Web クライアントの管理画面（「テーマ」、`/admin/theme`）とクライアント API（`GET` / `PUT /api/v1/admin/theme`）と CLI で変えられます。
+  管理画面とクライアント API はロールの権限 `manage_settings` が要り、変更は監査ログ（`setting_changed`、対象 `theme`）に残ります。
+
+```sh
+my instance theme get > theme.json                    # 今のテーマを管理 API と同じ JSON で出す
+my instance theme set < theme.json                    # テーマ全体を置き換える（検査に通らなければ理由を出して何もしない）
+echo '{"tokens":[],"custom_css":""}' | my instance theme set   # 既定に戻す
+```
+
+```json
+{
+  "tokens": [
+    { "token": "color-accent", "light": "#1447e6", "dark": "#92c5fe" },
+    { "token": "radius-md", "value": "0.25rem" }
+  ],
+  "custom_css": ".brand { letter-spacing: 0.02em; }"
+}
+```

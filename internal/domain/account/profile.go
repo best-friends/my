@@ -5,6 +5,7 @@ package account
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -26,6 +27,9 @@ type ProfileRevision struct {
 	HeaderMediaID string // "" when there is no header image
 	RevisedAt     time.Time
 	Fields        []ProfileField
+	// EmojiIDs are the custom emoji of the display name, note, and fields (ADR-0051), sorted;
+	// they are the content module's custom_emojis rows.
+	EmojiIDs []string
 	// Source is what the owner typed, nil for a revision without one (remote profiles).
 	Source *ProfileSource
 	// Remote is where a remote revision came from, nil for a local one.
@@ -37,7 +41,8 @@ type ProfileRevision struct {
 func (r ProfileRevision) SameContent(o ProfileRevision) bool {
 	if r.DisplayName != o.DisplayName || r.NoteHTML != o.NoteHTML || r.Locked != o.Locked || r.Bot != o.Bot ||
 		r.Discoverable != o.Discoverable || r.Indexable != o.Indexable ||
-		r.AvatarMediaID != o.AvatarMediaID || r.HeaderMediaID != o.HeaderMediaID || len(r.Fields) != len(o.Fields) {
+		r.AvatarMediaID != o.AvatarMediaID || r.HeaderMediaID != o.HeaderMediaID || len(r.Fields) != len(o.Fields) ||
+		!slices.Equal(r.EmojiIDs, o.EmojiIDs) {
 		return false
 	}
 	for i, f := range r.Fields {

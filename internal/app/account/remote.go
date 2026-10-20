@@ -56,6 +56,8 @@ type RemoteActorInput struct {
 	Discoverable      bool
 	Indexable         bool
 	Fields            []RemoteFieldInput
+	// Emojis are the custom emoji of the display name, note, and fields (the actor's Emoji tags).
+	Emojis []RemoteEmojiInput
 	// Keys are the public keys the document declares for the actor. A stored key of the actor
 	// that is missing from them is revoked.
 	Keys []RemoteKeyInput
@@ -69,6 +71,13 @@ type RemoteActorInput struct {
 type RemoteFieldInput struct {
 	Name      string
 	ValueHTML string
+}
+
+// RemoteEmojiInput is a custom emoji that a remote profile uses.
+type RemoteEmojiInput struct {
+	URI       string // the id of the Emoji object, "" when it has none
+	Shortcode string // without colons
+	ImageURL  string
 }
 
 // RemoteKeyInput is a public key of a remote actor: *rsa.PublicKey or ed25519.PublicKey.
@@ -220,6 +229,11 @@ func (s *Service) reviseRemoteProfile(ctx context.Context, tx uow.Tx, accountID,
 	}
 	if rev.HeaderMediaID, err = s.remoteImage(ctx, tx, accountID, in.HeaderURL, account.PropertyHeader); err != nil {
 		return err
+	}
+	if len(in.Emojis) > 0 && s.d.RecordRemoteEmojis != nil {
+		if rev.EmojiIDs, err = s.d.RecordRemoteEmojis(ctx, tx, accountID, account.NormalizeDomain(in.Domain), in.Emojis); err != nil {
+			return err
+		}
 	}
 	cur, err := s.d.Repository.CurrentProfile(ctx, tx, accountID)
 	switch {

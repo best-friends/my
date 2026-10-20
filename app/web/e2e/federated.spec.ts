@@ -24,6 +24,7 @@ function account(username: string, displayName: string, domain: string): Account
     display_name: displayName,
     note: "",
     fields: [],
+    emojis: [],
     url: `https://${domain}/@${username}`,
     locked: false,
     bot: false,
@@ -50,9 +51,11 @@ function status(n: number, author: Account): Status {
     media_attachments: [],
     mentions: [],
     tags: [],
+    emojis: [],
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   };
 }
 

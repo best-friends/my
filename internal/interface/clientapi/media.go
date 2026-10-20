@@ -33,6 +33,8 @@ type MediaFiles interface {
 	// Images returns the images that accounts show as their own (avatars and headers), keyed
 	// by ref, leaving out files of other accounts and unprocessed files.
 	Images(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error)
+	// CustomEmojis returns the custom emoji with an ID in ids that can be shown, keyed by ID.
+	CustomEmojis(ctx context.Context, ids []string) (map[string]appcontent.CustomEmojiView, error)
 	// Limits returns the upload limits.
 	Limits() media.Limits
 }

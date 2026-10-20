@@ -28,8 +28,10 @@ type runtimeConfig struct {
 }
 
 type shellData struct {
-	Lang, Dir, Title, ThemeColor string
-	HasIcon, HasAppleTouchIcon   bool
+	Lang, Dir, Title string
+	// Theme gives the theme colors and the theme's stylesheet (ADR-0059).
+	Theme                      themeState
+	HasIcon, HasAppleTouchIcon bool
 	// HasThemeScript reports whether the build has theme.js, which applies the stored color theme.
 	HasThemeScript bool
 	// ViteClient is the Vite client script of a dev server, empty in production.
@@ -89,7 +91,8 @@ const shellSource = `<!doctype html>
 <link rel="canonical" href="{{.URL}}">
 <link rel="alternate" type="application/activity+json" href="{{.ActivityPubID}}">
 {{- end}}
-<meta name="theme-color" content="{{.ThemeColor}}">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="{{.Theme.Light}}">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="{{.Theme.Dark}}">
 <link rel="manifest" href="` + PathWebManifest + `">
 {{- if .HasIcon}}
 <link rel="icon" href="/` + iconPath + `" type="image/svg+xml">
@@ -101,6 +104,9 @@ const shellSource = `<!doctype html>
 <script src="/` + themeScriptPath + `"></script>
 {{- end}}
 {{- range .Entry.Stylesheet}}
+<link rel="stylesheet" href="{{.}}">
+{{- end}}
+{{- with .Theme.Stylesheet}}
 <link rel="stylesheet" href="{{.}}">
 {{- end}}
 {{- range .Entry.Preload}}
@@ -204,12 +210,12 @@ type manifestIcon struct {
 	Purpose string `json:"purpose"`
 }
 
-// renderWebManifest generates the manifest from the instance settings in o and the instance's
-// name in the default locale.
-func renderWebManifest(o *Options, locale, name string, icons []manifestIcon) (document, error) {
+// renderWebManifest generates the manifest from the instance's name in the default locale and its
+// theme. A manifest has one color scheme, so both colors are the light surface (ADR-0059 §5).
+func renderWebManifest(locale, name string, theme themeState, icons []manifestIcon) (document, error) {
 	m := webManifest{
 		ID: "/", Name: name, ShortName: name, StartURL: "/", Scope: "/", Display: "standalone",
-		Lang: locale, Dir: i18n.Direction(locale), ThemeColor: o.ThemeColor, BackgroundColor: o.BackgroundColor,
+		Lang: locale, Dir: i18n.Direction(locale), ThemeColor: theme.Light, BackgroundColor: theme.Light,
 		Icons: icons,
 	}
 	body, err := json.Marshal(m)

@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package clientapi_test
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/url"
+	"testing"
+	"time"
+
+	appcontent "github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/interface/clientapi"
+)
+
+func TestListStatusReactions(t *testing.T) {
+	at := time.Date(2026, 10, 16, 9, 0, 0, 0, time.UTC)
+	reactions := []appcontent.ReactedView{
+		{
+			Reaction: content.Reaction{ID: "r3", AccountID: aliceAccountID, StatusID: sampleStatusID, Emoji: content.ReactionEmoji{Unicode: "👍"}, CreatedAt: at},
+			Emoji:    appcontent.EmojiView{Emoji: content.ReactionEmoji{Unicode: "👍"}},
+		},
+		{
+			// An account that no longer exists is left out.
+			Reaction: content.Reaction{ID: "r2", AccountID: "01890a5d-ac96-774b-bcce-b302099a8999", StatusID: sampleStatusID, Emoji: content.ReactionEmoji{Unicode: "👍"}, CreatedAt: at},
+			Emoji:    appcontent.EmojiView{Emoji: content.ReactionEmoji{Unicode: "👍"}},
+		},
+		{
+			Reaction: content.Reaction{ID: "r1", AccountID: aliceAccountID, StatusID: sampleStatusID, Emoji: content.ReactionEmoji{CustomEmojiID: sampleCustomEmoji.ID}, CreatedAt: at},
+			Emoji:    appcontent.EmojiView{Emoji: content.ReactionEmoji{CustomEmojiID: sampleCustomEmoji.ID}, Custom: &sampleCustomEmoji},
+		},
+	}
+	var gotEmoji, gotBefore string
+	var gotLimit int
+	f := &fakeStatuses{reactions: func(_ appcontent.Viewer, id, emoji, before string, limit int) (appcontent.ReactedPage, error) {
+		if id != sampleStatusID {
+			return appcontent.ReactedPage{}, errNotFound
+		}
+		gotEmoji, gotBefore, gotLimit = emoji, before, limit
+		return appcontent.ReactedPage{Reactions: reactions[:min(limit, len(reactions))]}, nil
+	}}
+	e := newStatusEnv(t, f)
+
+	res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/reactions?limit=2", "", "")
+	if res.StatusCode != http.StatusOK || res.Header.Get("Cache-Control") != "public, max-age=60" {
+		t.Fatalf("GET = %d, Cache-Control %q", res.StatusCode, res.Header.Get("Cache-Control"))
+	}
+	var page clientapi.StatusReactionPage
+	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+		t.Fatal(err)
+	}
+	if gotLimit != 3 || gotEmoji != "" || gotBefore != "" {
+		t.Errorf("Reactions(emoji %q, before %q, limit %d), want one more than the limit", gotEmoji, gotBefore, gotLimit)
+	}
+	if len(page.Items) != 1 || page.Items[0].Account.Username != "alice" || page.Items[0].Emoji.Name != "👍" ||
+		!page.Items[0].CreatedAt.Equal(at) || page.NextCursor == nil {
+		t.Fatalf("page = %+v, want alice's reaction and a next page", page)
+	}
+
+	res = e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/reactions?emoji="+url.QueryEscape("blobcat@misskey.example")+"&cursor="+*page.NextCursor, "read", "")
+	if err := json.NewDecoder(res.Body).Decode(&page); err != nil || res.StatusCode != http.StatusOK {
+		t.Fatalf("GET with an emoji = %d, %v", res.StatusCode, err)
+	}
+	if gotEmoji != "blobcat@misskey.example" || gotBefore != "r2" {
+		t.Errorf("Reactions(emoji %q, before %q), want the emoji and the cursor", gotEmoji, gotBefore)
+	}
+	if c := page.Items[len(page.Items)-1].Emoji; c.Name != "blobcat@misskey.example" || *c.Shortcode != "blobcat" || *c.Domain != "misskey.example" || c.Emoji == nil || c.Emoji.StaticUrl != sampleCustomEmoji.Image.StaticURL {
+		t.Errorf("custom emoji = %+v", c)
+	}
+
+	res = e.send(t, http.MethodGet, "/statuses/01890a5d-ac96-774b-bcce-b302099a9999/reactions", "", "")
+	if res.StatusCode != http.StatusNotFound {
+		t.Errorf("reactions of a status that cannot be seen = %d, want 404", res.StatusCode)
+	}
+	if res := e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/reactions?limit=0", "", ""); res.StatusCode != http.StatusBadRequest {
+		t.Errorf("limit 0 = %d, want 400", res.StatusCode)
+	}
+}
