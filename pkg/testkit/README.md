@@ -18,6 +18,19 @@ test's own, whose keys are deleted when the test ends. The server is a `valkey/v
 testcontainers-go on the first call, unless `TEST_VALKEY_URL` names an existing server; without Docker the tests are
 skipped, or fail when `TEST_VALKEY_REQUIRED` is set (CI). The package's `TestMain` calls `os.Exit(valkeytest.Main(m))`.
 
+## Amazon SNS and SQS
+
+`awstest.NewFake(clock)` (package `pkg/testkit/awstest`) is SNS and SQS in memory, with the aws-sdk-go-v2 signatures of
+the operations that the adapters on an SNS topic fanning out to SQS queues use (`stream/sns`): its `SNS()` and `SQS()`
+stand in for `*sns.Client` and `*sqs.Client` behind the adapters' narrow interfaces. It keeps the queue policy, raw
+message delivery, the visibility timeout, the retention, the long polls, and the 60 seconds before a deleted queue's
+name can be used again; `SetUnreachable` makes every call wait for its context. Every test run uses it.
+
+`awstest.Emulator(t)` returns the `aws.Config` of the AWS emulator [Floci](https://github.com/floci-io/floci): a
+`floci/floci` container started with testcontainers-go when `TEST_AWS=container` (`make go-test-stream`, CI on main and
+nightly), or a running emulator at `TEST_AWS_ENDPOINT`; otherwise the test is skipped. `TEST_AWS_REQUIRED` makes a
+missing Docker fail the tests. The package's `TestMain` calls `os.Exit(awstest.Main(m))`.
+
 ## Federation fixtures
 
 `fixtures/federation/` holds AS2 documents (activities, objects, actors) that other implementations send, for the
