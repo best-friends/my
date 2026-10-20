@@ -277,6 +277,8 @@ export const auditActions = [
   "webhook_enabled",
   "webhook_disabled",
   "webhook_secret_rotated",
+  "invite_created",
+  "invite_revoked",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -293,6 +295,7 @@ export const auditTargetKinds = [
   "signup_block",
   "custom_emoji",
   "webhook",
+  "invite",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

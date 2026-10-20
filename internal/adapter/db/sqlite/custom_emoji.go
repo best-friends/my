@@ -263,3 +263,19 @@ func (r *CustomEmojiRepository) PurgeRemoteEmoji(ctx context.Context, tx uow.Tx,
 	}
 	return true, nil
 }
+
+// ExistingCustomEmojiIDs implements content.CustomEmojiRepository.
+func (r *CustomEmojiRepository) ExistingCustomEmojiIDs(ctx context.Context, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	out, err := r.db.reader().ListExistingCustomEmojiIDs(ctx, list)
+	if err != nil {
+		return nil, wrap(err, "list existing custom emoji")
+	}
+	return out, nil
+}

@@ -353,3 +353,19 @@ func (r *WebhookRepository) DeleteMessagesBefore(ctx context.Context, tx uow.Tx,
 	n, err := q.DeleteWebhookMessages(ctx, list)
 	return n, wrap(err, "delete webhook messages")
 }
+
+// ExistingEndpointIDs implements appwebhook.Repository.
+func (r *WebhookRepository) ExistingEndpointIDs(ctx context.Context, ids []string) ([]string, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	list, err := jsonList(ids)
+	if err != nil {
+		return nil, err
+	}
+	out, err := r.db.reader().ListExistingWebhookEndpointIDs(ctx, list)
+	if err != nil {
+		return nil, wrap(err, "list existing webhook endpoints")
+	}
+	return out, nil
+}

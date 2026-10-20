@@ -1966,11 +1966,11 @@ CREATE TABLE audit_log_entries (
     'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_updated',
     'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted',
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
-    'webhook_secret_rotated'
+    'webhook_secret_rotated', 'invite_created', 'invite_revoked'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook'
+    'signup_block', 'custom_emoji', 'webhook', 'invite'
   )),
   target_id TEXT NOT NULL,
   target_label TEXT NOT NULL,

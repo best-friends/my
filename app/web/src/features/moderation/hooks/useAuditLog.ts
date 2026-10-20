@@ -51,6 +51,8 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   webhook_enabled: "client:admin.audit_log.action.webhook_enabled",
   webhook_disabled: "client:admin.audit_log.action.webhook_disabled",
   webhook_secret_rotated: "client:admin.audit_log.action.webhook_secret_rotated",
+  invite_created: "client:admin.audit_log.action.invite_created",
+  invite_revoked: "client:admin.audit_log.action.invite_revoked",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -66,6 +68,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   signup_block: "client:admin.audit_log.target_kind.signup_block",
   custom_emoji: "client:admin.audit_log.target_kind.custom_emoji",
   webhook: "client:admin.audit_log.target_kind.webhook",
+  invite: "client:admin.audit_log.target_kind.invite",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -78,9 +81,9 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 
 /**
  * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block, a
- * custom emoji or a webhook.
+ * role, a custom emoji, a webhook or an invite.
  * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
- * gone (erased past its retention) has nothing left to show, so their entries show the label only.
+ * gone (erased past its retention, or deleted) has nothing left to show, so their entries show the label only.
  */
 export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_id" | "target_label" | "target_exists">): string | undefined {
   if (!entry.target_exists) return undefined;
@@ -99,9 +102,14 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "custom_emoji":
       // An emoji has no screen of its own: the list searched by its shortcode, of this server or of its domain.
       return customEmojiHref(entry.target_label);
+    case "role":
+      // A role has no screen of its own: the list of roles shows it.
+      return "/admin/roles";
     case "webhook":
-      // The list, which a deleted webhook has left; its page would be gone.
-      return "/admin/webhooks";
+      return `/admin/webhooks/${id}`;
+    case "invite":
+      // An invite has no screen of its own: the list of invites shows it.
+      return "/moderation/invites";
     default:
       return undefined;
   }

@@ -134,3 +134,9 @@ DELETE FROM webhook_deliveries WHERE message_id = ANY(sqlc.arg(ids)::text[]);
 
 -- name: DeleteWebhookMessages :execrows
 DELETE FROM webhook_messages WHERE id = ANY(sqlc.arg(ids)::text[]);
+
+-- ListExistingWebhookEndpointIDs returns, in ID order, the endpoints among ids that are not
+-- deleted (the audit log).
+-- name: ListExistingWebhookEndpointIDs :many
+SELECT endpoint_id FROM webhook_endpoint_heads WHERE endpoint_id = ANY(sqlc.arg(ids)::text[]) AND state <> 'deleted'
+ORDER BY endpoint_id;

@@ -1387,6 +1387,14 @@
     "defaultMessage": "[Ḓǿǿḿȧȧīƞ ȧȧƈŧīǿǿƞ ŀīƒŧḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.invite_created": {
+    "defaultMessage": "[Īƞṽīŧḗḗ ƈřḗḗȧȧŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.invite_revoked": {
+    "defaultMessage": "[Īƞṽīŧḗḗ řḗḗṽǿǿķḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.registration_approved": {
     "defaultMessage": "[Řḗḗɠīşŧřȧȧŧīǿǿƞ ȧȧƥƥřǿǿṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1625,6 +1633,10 @@
   },
   "admin.audit_log.target_kind.domain": {
     "defaultMessage": "[Ḓǿǿḿȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.invite": {
+    "defaultMessage": "[Īƞṽīŧḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.target_kind.report": {

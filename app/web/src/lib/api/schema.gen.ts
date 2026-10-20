@@ -4380,10 +4380,12 @@ export interface components {
          *     `webhook_created`, `webhook_updated` (its URL, description, or events),
          *     `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
          *     endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-         *     description and the host name of its URL, never the URL.
+         *     description and the host name of its URL, never the URL. On an `invite`:
+         *     `invite_created`, `invite_revoked`; the label is the first characters of its code,
+         *     never the whole code.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "invite_created" | "invite_revoked";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4405,8 +4407,9 @@ export interface components {
             action: components["schemas"]["AdminAuditAction"];
             target_kind: components["schemas"]["AdminAuditTargetKind"];
             /**
-             * @description The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
-             *     domain of a domain action, or the key of a setting or a text.
+             * @description The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+             *     sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+             *     or the key of a setting or a text.
              */
             target_id: string;
             /**
@@ -4417,9 +4420,9 @@ export interface components {
             target_label: string;
             /**
              * @description Whether the target is still there to look at. It is `false` for an account, a report,
-             *     an appeal, or a sign-up block that is gone (erased past its retention), which only
-             *     `target_label` names now. It is `true` for the other kinds of targets: a role, a
-             *     custom emoji, or a webhook that was deleted is not looked up yet.
+             *     an appeal, or a sign-up block that is gone (erased past its retention), and for a
+             *     role, a custom emoji, or a webhook that was deleted, which only `target_label` names
+             *     now. It is `true` for the other kinds of targets, which are never removed.
              */
             target_exists: boolean;
             /**
@@ -4439,7 +4442,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "invite";
         /** @description A moderation action on a remote domain and its subdomains (FR-702). */
         AdminDomainAction: {
             id: components["schemas"]["Id"];

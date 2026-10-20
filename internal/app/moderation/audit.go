@@ -53,12 +53,17 @@ const (
 	AuditWebhookEnabled       = moderation.AuditWebhookEnabled
 	AuditWebhookDisabled      = moderation.AuditWebhookDisabled
 	AuditWebhookSecretRotated = moderation.AuditWebhookSecretRotated
+	AuditInviteCreated        = moderation.AuditInviteCreated
+	AuditInviteRevoked        = moderation.AuditInviteRevoked
 
 	AuditTargetUser    = moderation.AuditTargetUser
 	AuditTargetSetting = moderation.AuditTargetSetting
 	AuditTargetRule    = moderation.AuditTargetRule
 	AuditTargetRole    = moderation.AuditTargetRole
 	AuditTargetWebhook = moderation.AuditTargetWebhook
+	AuditTargetInvite  = moderation.AuditTargetInvite
+
+	AuditTargetCustomEmoji = moderation.AuditTargetCustomEmoji
 )
 
 // AuditActorSystem is moderation.AuditActorSystem, the server itself.
@@ -155,10 +160,10 @@ type AuditTarget struct {
 }
 
 // GoneAuditTargets returns the targets of entries that no longer exist: accounts, reports,
-// appeals, and sign-up blocks erased (past their retention, ADR-0038). It looks up each kind of
-// target once for all the entries. A domain, a user, a setting, and a rule are never erased, and
-// a status has no operation recorded on it; a deleted role, custom emoji, or webhook is not
-// looked up yet. None of these is reported gone.
+// appeals, and sign-up blocks erased (past their retention, ADR-0038), and roles, custom emoji,
+// and webhooks deleted (through Deps.AuditTargets). It looks up each kind of target once for all
+// the entries. A domain, a user, a setting, a rule, and an invite are never removed, and a
+// status has no operation recorded on it; none of these is reported gone.
 func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[AuditTarget]bool, error) {
 	ids := map[moderation.AuditTargetKind][]string{}
 	seen := map[AuditTarget]bool{}
@@ -171,15 +176,22 @@ func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.Aud
 		switch e.TargetKind {
 		case moderation.AuditTargetAccount, moderation.AuditTargetReport, moderation.AuditTargetAppeal, moderation.AuditTargetSignupBlock:
 			ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
+		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook:
+			if s.d.AuditTargets != nil {
+				ids[e.TargetKind] = append(ids[e.TargetKind], e.TargetID)
+			}
 		}
 	}
 	gone := map[AuditTarget]bool{}
 	for kind, list := range ids {
 		var existing []string
 		var err error
-		if kind == moderation.AuditTargetAccount {
+		switch kind {
+		case moderation.AuditTargetAccount:
 			existing, err = s.d.Accounts.ExistingIDs(ctx, list)
-		} else {
+		case moderation.AuditTargetRole, moderation.AuditTargetCustomEmoji, moderation.AuditTargetWebhook:
+			existing, err = s.d.AuditTargets.ExistingAuditTargets(ctx, kind, list)
+		default:
 			existing, err = s.d.Repository.ExistingAuditTargets(ctx, kind, list)
 		}
 		if err != nil {
