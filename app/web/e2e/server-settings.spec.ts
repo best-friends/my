@@ -63,6 +63,7 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "ai_usage", kind: "enum", default: "deny", choices: ["allow", "deny_training", "deny"] },
     { key: "indexable_default", kind: "bool", default: "false" },
     { key: "security_contact", kind: "uri", default: "" },
+    { key: "link_cards_enabled", kind: "bool", default: "true" },
   ];
   return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
 }

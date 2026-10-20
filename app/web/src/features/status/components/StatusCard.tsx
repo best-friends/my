@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLinkIcon, Link, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLinkIcon, Link, LinkCard, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
 import type { Ref } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
@@ -51,6 +52,25 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
   const intl = useIntl();
   const view = useStatusView(status);
 
+  const card =
+    view.card === null ? undefined : (
+      // The card is drawn from what another site declared: should it fail to render, only the card is lost
+      // (web-client.md E1).
+      <ErrorBoundary fallback={<p className="text-sm text-fg-muted">{t("client:timeline.card.failed")}</p>}>
+        <LinkCard
+          href={view.card.href}
+          title={view.card.title}
+          description={view.card.description}
+          siteName={view.card.siteName}
+          lang={view.card.lang}
+          image={view.card.image}
+          {...(view.card.byline !== null && { byline: view.card.byline })}
+          sensitive={view.sensitive}
+          revealLabel={t("client:timeline.media.reveal")}
+        />
+      </ErrorBoundary>
+    );
+  // A post with attachments has no card (ADR-0062 §1); the card takes the place of the media.
   const media =
     view.media.length > 0 ? (
       <MediaGrid
@@ -59,7 +79,9 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         noDescriptionLabel={t("client:timeline.media.no_description")}
         revealLabel={t("client:timeline.media.reveal")}
       />
-    ) : undefined;
+    ) : (
+      card
+    );
   const body = (
     <PostContent
       html={view.html}

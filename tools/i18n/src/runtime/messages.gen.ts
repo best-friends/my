@@ -1980,6 +1980,10 @@ export interface MessageArgs {
   "client:admin.settings.federation.authorized_fetch": {};
   /** Other servers then read posts and collections only with a verified signature, so that suspended servers cannot read them. Some software cannot read them anymore. */
   "client:admin.settings.federation.authorized_fetch.description": {};
+  /** Show the cards of links in posts */
+  "client:admin.settings.federation.link_cards": {};
+  /** The server fetches the page of the first link in each post, whoever can see the post, and shows its title, description, and image under it. The linked sites learn when the link was posted, but not by whom. */
+  "client:admin.settings.federation.link_cards.description": {};
   /** Federation */
   "client:admin.settings.federation.title": {};
   /** Default language */
@@ -3866,6 +3870,16 @@ export interface MessageArgs {
   "client:tag.title": { tag: string };
   /** {name} boosted */
   "client:timeline.boosted_by": { name: string };
+  /** {name} ({handle}) */
+  "client:timeline.card.account": { handle: string; name: string };
+  /** By {author} */
+  "client:timeline.card.author": { author: string };
+  /** By {author} · {date} */
+  "client:timeline.card.author_published": { author: string; date: string };
+  /** Could not show the preview of this link. */
+  "client:timeline.card.failed": {};
+  /** Published {date} */
+  "client:timeline.card.published": { date: string };
   /** Show content */
   "client:timeline.content_warning.toggle": {};
   /** No posts yet */

@@ -80,6 +80,7 @@ const settingDefaults: readonly Omit<Schemas["AdminSetting"], "value" | "stored"
   { key: "ai_usage", kind: "enum", default: "deny", choices: ["allow", "deny_training", "deny"] },
   { key: "indexable_default", kind: "bool", default: "false" },
   { key: "security_contact", kind: "uri", default: "" },
+  { key: "link_cards_enabled", kind: "bool", default: "true" },
 ];
 
 /** The instance settings as GET /admin/settings answers them, with the `stored` values set and the others at their defaults. */
