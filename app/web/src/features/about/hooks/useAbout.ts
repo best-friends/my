@@ -11,6 +11,10 @@ export type About = {
   /** The paragraphs of the full description (plain text, split at blank lines); empty when there is none. */
   description: readonly string[];
   rules: Instance["rules"];
+  /** The image that represents the instance; undefined when there is none. */
+  thumbnail: Instance["thumbnail"];
+  /** How people reach the operators; undefined when the instance has no contact. */
+  contact: Instance["contact"];
 };
 
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
@@ -34,6 +38,8 @@ export function useAbout(): About {
     summary: instance?.short_description?.trim() ?? "",
     description: paragraphs(instance?.description),
     rules: instance?.rules ?? [],
+    thumbnail: instance?.thumbnail,
+    contact: instance?.contact,
   };
 }
 

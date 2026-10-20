@@ -1,21 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, EmptyState, Link, RegionError, Spinner } from "@my/ui";
+import { Avatar, Button, EmptyState, Link, RegionError, Spinner } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
+import { handleOf } from "../../../lib/handle";
 import { domainToUnicode } from "../../../lib/idn";
+import { imageSources } from "../../../lib/images";
+import { profilePath } from "../../../lib/paths";
 import { DocumentsSection } from "../../documents";
-import type { PublicDomainAction } from "../api/about";
+import type { Instance, PublicDomainAction } from "../api/about";
 import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/useAbout";
 
 /**
- * The body of the instance's information page (`/about`), under the page's heading: the summary, the description,
- * the rules, the remote domains it moderates as far as the instance lists them, and its terms of service and
- * privacy policy. Everyone may read it, signed in or not.
+ * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
+ * description, the rules, how to reach the operators, the remote domains it moderates as far as the instance lists
+ * them, and its terms of service and privacy policy. Everyone may read it, signed in or not.
  */
 export function About() {
   const about = useAbout();
   return (
     <div className="flex flex-col gap-8">
+      {about.thumbnail !== undefined && <ServerThumbnail thumbnail={about.thumbnail} />}
       {about.summary !== "" && (
         // The administrator's text, in any language (web-client.md Y10).
         <p dir="auto" className="text-lg">
@@ -24,7 +28,7 @@ export function About() {
       )}
       {about.description.length > 0 && <Description paragraphs={about.description} />}
       {about.rules.length > 0 && <Rules rules={about.rules} />}
-      {/* The operators' contact and the instance's thumbnail (#663) go here once GET /instance has them. */}
+      {about.contact !== undefined && <Contact contact={about.contact} />}
       <ModeratedDomainsSection />
       <DocumentsSection />
     </div>
@@ -70,6 +74,70 @@ function Rules({ rules }: { rules: ReturnType<typeof useAbout>["rules"] }) {
           </li>
         ))}
       </ol>
+    </Section>
+  );
+}
+
+/**
+ * The image that represents the instance, at the width of the page. Its alt text is the administrator's; without
+ * one, the image is decorative, as the page names the server in its heading.
+ */
+export function ServerThumbnail({ thumbnail }: { thumbnail: NonNullable<Instance["thumbnail"]> }) {
+  return (
+    <img
+      src={thumbnail.url}
+      alt={thumbnail.alt ?? ""}
+      width={thumbnail.width}
+      height={thumbnail.height}
+      decoding="async"
+      className="h-auto max-h-80 w-full rounded-lg bg-surface-sunken object-cover"
+    />
+  );
+}
+
+/** How to reach the operators: their account on the server and their email address, as far as the server has them. */
+function Contact({ contact }: { contact: NonNullable<Instance["contact"]> }) {
+  const t = useT();
+  const { account, email } = contact;
+  return (
+    <Section title={t("client:about.contact.title")}>
+      <dl className="flex flex-col gap-3">
+        {account !== undefined && (
+          <div className="flex flex-col gap-1">
+            <dt className="text-sm text-fg-muted">{t("client:about.contact.account")}</dt>
+            <dd>
+              <Link
+                href={profilePath(account.acct)}
+                variant="standalone"
+                className="inline-grid max-w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3"
+              >
+                <>
+                  <Avatar sources={imageSources(account.avatar)} name={account.display_name || account.username} decorative className="row-span-2" />
+                  {/* The user's own text, in any language (web-client.md Y10). */}
+                  <span dir="auto" className="font-semibold wrap-anywhere">
+                    {account.display_name || account.username}
+                  </span>
+                  {/* The space keeps the name and the handle apart in the link's name. */}{" "}
+                  <span dir="ltr" className="text-start text-sm font-normal wrap-anywhere text-fg-muted">
+                    {handleOf(account.acct)}
+                  </span>
+                </>
+              </Link>
+            </dd>
+          </div>
+        )}
+        {email !== undefined && (
+          <div className="flex flex-col gap-1">
+            <dt className="text-sm text-fg-muted">{t("client:about.contact.email")}</dt>
+            <dd>
+              {/* An address reads left to right in every locale. */}
+              <Link href={`mailto:${email}`} variant="standalone" className="wrap-anywhere">
+                <span dir="ltr">{email}</span>
+              </Link>
+            </dd>
+          </div>
+        )}
+      </dl>
     </Section>
   );
 }

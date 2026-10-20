@@ -25,6 +25,6 @@ export { twoFactorQueryOptions } from "./api/twoFactor";
 export { TwoFactorSettings } from "./components/TwoFactorSettings";
 export { useUserDisplaySettings } from "./hooks/useUserDisplaySettings";
 // Uploading an image and waiting for the server to process it, which the admin screen of custom emoji shares.
-export { MediaProcessingError, uploadImage } from "./api/media";
+export { acceptedImageTypes, type MediaAttachment, MediaProcessingError, uploadImage } from "./api/media";
 // Asking before leaving a form with unsaved changes (web-client.md §9), which the admin screens' forms share.
 export { useUnsavedChangesGuard } from "./hooks/useUnsavedChangesGuard";

@@ -1,4 +1,16 @@
 {
+  "about.contact.account": {
+    "defaultMessage": "Account",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "Email",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "Contact",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
   "about.description.title": {
     "defaultMessage": "Description",
     "description": "Heading of the section of the server's information page with the server's description."
@@ -3034,6 +3046,74 @@
   "admin.settings.characters_over": {
     "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
     "description": "Character count under a text of the server settings and the rules when the text is over its limit."
+  },
+  "admin.settings.contact.account": {
+    "defaultMessage": "Contact account",
+    "description": "Label of the field of the username of the account to contact about the server."
+  },
+  "admin.settings.contact.account.description": {
+    "defaultMessage": "The username of an account on this server, such as admin.",
+    "description": "Help under the field of the contact account: what to type in it."
+  },
+  "admin.settings.contact.description": {
+    "defaultMessage": "How people reach the people who run this server, and the image that represents it. The about page, the page that welcomes visitors, and other servers (NodeInfo) show them. Leave a field empty to show none.",
+    "description": "Explanation above the fields of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.email": {
+    "defaultMessage": "Contact email address",
+    "description": "Label of the field of the email address to contact about the server."
+  },
+  "admin.settings.contact.email.description": {
+    "defaultMessage": "Everyone can see it, signed in or not.",
+    "description": "Help under the field of the contact email address: who can see it."
+  },
+  "admin.settings.contact.email.invalid": {
+    "defaultMessage": "Enter an email address such as admin@example.com.",
+    "description": "Error under the field of the contact email address when it is not an email address."
+  },
+  "admin.settings.contact.save": {
+    "defaultMessage": "Save the contact and thumbnail",
+    "description": "Button that saves the server's contact and thumbnail."
+  },
+  "admin.settings.contact.save_failed": {
+    "defaultMessage": "Could not save the contact and thumbnail: {reason}",
+    "description": "Error when saving the server's contact and thumbnail failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.contact.saved": {
+    "defaultMessage": "Saved the contact and thumbnail. The audit log records the change.",
+    "description": "Status after the server's contact and thumbnail were saved."
+  },
+  "admin.settings.contact.thumbnail": {
+    "defaultMessage": "Thumbnail",
+    "description": "Heading of the part of the form with the image that represents the server."
+  },
+  "admin.settings.contact.thumbnail.alt": {
+    "defaultMessage": "Description of the image in {language}",
+    "description": "Label of the field of the thumbnail's alt text in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.contact.thumbnail.choose": {
+    "defaultMessage": "Choose an image",
+    "description": "Button that opens the file picker to choose the server's thumbnail."
+  },
+  "admin.settings.contact.thumbnail.description": {
+    "defaultMessage": "A wide image, such as 1600 × 900 pixels, at the top of the about page and the page that welcomes visitors.",
+    "description": "Help about the server's thumbnail: where it shows and what size suits it."
+  },
+  "admin.settings.contact.thumbnail.failed": {
+    "defaultMessage": "The server could not process this image. Try another one.",
+    "description": "Error when the chosen thumbnail could not be processed."
+  },
+  "admin.settings.contact.thumbnail.remove": {
+    "defaultMessage": "Remove the image",
+    "description": "Button that removes the server's thumbnail when the form is saved."
+  },
+  "admin.settings.contact.title": {
+    "defaultMessage": "Contact and thumbnail",
+    "description": "Heading of the section of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.unchanged": {
+    "defaultMessage": "The contact and thumbnail are already saved.",
+    "description": "Status after pressing the save button of the contact and thumbnail without changing anything."
   },
   "admin.settings.descriptions.description": {
     "defaultMessage": "The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language.",

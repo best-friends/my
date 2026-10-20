@@ -1,4 +1,16 @@
 {
+  "about.contact.account": {
+    "defaultMessage": "アカウント",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "連絡先",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
   "about.description.title": {
     "defaultMessage": "説明",
     "description": "Heading of the section of the server's information page with the server's description."
@@ -3034,6 +3046,74 @@
   "admin.settings.characters_over": {
     "defaultMessage": "{count, plural, other {# 文字超えています}}",
     "description": "Character count under a text of the server settings and the rules when the text is over its limit."
+  },
+  "admin.settings.contact.account": {
+    "defaultMessage": "連絡先のアカウント",
+    "description": "Label of the field of the username of the account to contact about the server."
+  },
+  "admin.settings.contact.account.description": {
+    "defaultMessage": "このサーバーのアカウントのユーザー名（例：admin）",
+    "description": "Help under the field of the contact account: what to type in it."
+  },
+  "admin.settings.contact.description": {
+    "defaultMessage": "このサーバーを運営する人への連絡先と、サーバーを表す画像です。このサーバーについてのページ、訪れた人を迎えるページ、ほかのサーバー（NodeInfo）に表示されます。表示しない項目は空にしてください。",
+    "description": "Explanation above the fields of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.email": {
+    "defaultMessage": "連絡先のメールアドレス",
+    "description": "Label of the field of the email address to contact about the server."
+  },
+  "admin.settings.contact.email.description": {
+    "defaultMessage": "サインインしていない人も含め、誰でも見られます。",
+    "description": "Help under the field of the contact email address: who can see it."
+  },
+  "admin.settings.contact.email.invalid": {
+    "defaultMessage": "admin@example.com のようなメールアドレスを入力してください。",
+    "description": "Error under the field of the contact email address when it is not an email address."
+  },
+  "admin.settings.contact.save": {
+    "defaultMessage": "連絡先とサムネイルを保存する",
+    "description": "Button that saves the server's contact and thumbnail."
+  },
+  "admin.settings.contact.save_failed": {
+    "defaultMessage": "連絡先とサムネイルを保存できませんでした：{reason}",
+    "description": "Error when saving the server's contact and thumbnail failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.contact.saved": {
+    "defaultMessage": "連絡先とサムネイルを保存しました。変更は監査ログに記録されます。",
+    "description": "Status after the server's contact and thumbnail were saved."
+  },
+  "admin.settings.contact.thumbnail": {
+    "defaultMessage": "サムネイル",
+    "description": "Heading of the part of the form with the image that represents the server."
+  },
+  "admin.settings.contact.thumbnail.alt": {
+    "defaultMessage": "{language}での画像の説明",
+    "description": "Label of the field of the thumbnail's alt text in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.contact.thumbnail.choose": {
+    "defaultMessage": "画像を選ぶ",
+    "description": "Button that opens the file picker to choose the server's thumbnail."
+  },
+  "admin.settings.contact.thumbnail.description": {
+    "defaultMessage": "このサーバーについてのページと、訪れた人を迎えるページの上に表示される横長の画像（1600 × 900 ピクセルなど）です。",
+    "description": "Help about the server's thumbnail: where it shows and what size suits it."
+  },
+  "admin.settings.contact.thumbnail.failed": {
+    "defaultMessage": "サーバーがこの画像を処理できませんでした。別の画像を試してください。",
+    "description": "Error when the chosen thumbnail could not be processed."
+  },
+  "admin.settings.contact.thumbnail.remove": {
+    "defaultMessage": "画像を外す",
+    "description": "Button that removes the server's thumbnail when the form is saved."
+  },
+  "admin.settings.contact.title": {
+    "defaultMessage": "連絡先とサムネイル",
+    "description": "Heading of the section of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.unchanged": {
+    "defaultMessage": "連絡先とサムネイルはすでに保存されています。",
+    "description": "Status after pressing the save button of the contact and thumbnail without changing anything."
   },
   "admin.settings.descriptions.description": {
     "defaultMessage": "短い説明は、このサーバーについてのページやほかのアプリがサーバーの名前と並べて表示する 1 段落の文です。説明は、このサーバーについてのページで詳しく伝えます。どちらも言語ごとに持ち、説明のない言語ではサーバーの既定の言語の説明が表示されます。",

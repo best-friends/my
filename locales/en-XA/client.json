@@ -1,4 +1,16 @@
 {
+  "about.contact.account": {
+    "defaultMessage": "[Ȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.contact.email": {
+    "defaultMessage": "[Ḗḿȧȧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.contact.title": {
+    "defaultMessage": "[Ƈǿǿƞŧȧȧƈŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "about.description.title": {
     "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3341,6 +3353,74 @@
   },
   "admin.settings.characters_over": {
     "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŧǿǿǿǿ ḿȧȧƞẏ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŧǿǿǿǿ ḿȧȧƞẏ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.account": {
+    "defaultMessage": "[Ƈǿǿƞŧȧȧƈŧ ȧȧƈƈǿǿŭŭƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.account.description": {
+    "defaultMessage": "[Ŧħḗḗ ŭŭşḗḗřƞȧȧḿḗḗ ǿǿƒ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ ǿǿƞ ŧħīş şḗḗřṽḗḗř, şŭŭƈħ ȧȧş ȧȧḓḿīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.description": {
+    "defaultMessage": "[Ħǿǿẇ ƥḗḗǿǿƥŀḗḗ řḗḗȧȧƈħ ŧħḗḗ ƥḗḗǿǿƥŀḗḗ ẇħǿǿ řŭŭƞ ŧħīş şḗḗřṽḗḗř, ȧȧƞḓ ŧħḗḗ īḿȧȧɠḗḗ ŧħȧȧŧ řḗḗƥřḗḗşḗḗƞŧş īŧ. Ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ, ŧħḗḗ ƥȧȧɠḗḗ ŧħȧȧŧ ẇḗḗŀƈǿǿḿḗḗş ṽīşīŧǿǿřş, ȧȧƞḓ ǿǿŧħḗḗř şḗḗřṽḗḗřş (ȠǿǿḓḗḗĪƞƒǿǿ) şħǿǿẇ ŧħḗḗḿ. Ŀḗḗȧȧṽḗḗ ȧȧ ƒīḗḗŀḓ ḗḗḿƥŧẏ ŧǿǿ şħǿǿẇ ƞǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.email": {
+    "defaultMessage": "[Ƈǿǿƞŧȧȧƈŧ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.email.description": {
+    "defaultMessage": "[Ḗṽḗḗřẏǿǿƞḗḗ ƈȧȧƞ şḗḗḗḗ īŧ, şīɠƞḗḗḓ īƞ ǿǿř ƞǿǿŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.email.invalid": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧƞ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş şŭŭƈħ ȧȧş ȧȧḓḿīƞ@ḗḗẋȧȧḿƥŀḗḗ.ƈǿǿḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.save": {
+    "defaultMessage": "[Şȧȧṽḗḗ ŧħḗḗ ƈǿǿƞŧȧȧƈŧ ȧȧƞḓ ŧħŭŭḿƀƞȧȧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.save_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ şȧȧṽḗḗ ŧħḗḗ ƈǿǿƞŧȧȧƈŧ ȧȧƞḓ ŧħŭŭḿƀƞȧȧīŀ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.saved": {
+    "defaultMessage": "[Şȧȧṽḗḗḓ ŧħḗḗ ƈǿǿƞŧȧȧƈŧ ȧȧƞḓ ŧħŭŭḿƀƞȧȧīŀ. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş ŧħḗḗ ƈħȧȧƞɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.thumbnail": {
+    "defaultMessage": "[Ŧħŭŭḿƀƞȧȧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.thumbnail.alt": {
+    "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ŧħḗḗ īḿȧȧɠḗḗ īƞ {language}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.thumbnail.choose": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ȧȧƞ īḿȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.thumbnail.description": {
+    "defaultMessage": "[Ȧ ẇīḓḗḗ īḿȧȧɠḗḗ, şŭŭƈħ ȧȧş 1600 × 900 ƥīẋḗḗŀş, ȧȧŧ ŧħḗḗ ŧǿǿƥ ǿǿƒ ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ȧȧƞḓ ŧħḗḗ ƥȧȧɠḗḗ ŧħȧȧŧ ẇḗḗŀƈǿǿḿḗḗş ṽīşīŧǿǿřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.thumbnail.failed": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř ƈǿǿŭŭŀḓ ƞǿǿŧ ƥřǿǿƈḗḗşş ŧħīş īḿȧȧɠḗḗ. Ŧřẏ ȧȧƞǿǿŧħḗḗř ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.thumbnail.remove": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ īḿȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.title": {
+    "defaultMessage": "[Ƈǿǿƞŧȧȧƈŧ ȧȧƞḓ ŧħŭŭḿƀƞȧȧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.contact.unchanged": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿƞŧȧȧƈŧ ȧȧƞḓ ŧħŭŭḿƀƞȧȧīŀ ȧȧřḗḗ ȧȧŀřḗḗȧȧḓẏ şȧȧṽḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.descriptions.description": {
