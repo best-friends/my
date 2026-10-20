@@ -129,6 +129,11 @@ function moderatorEmailSwitch(page: Page) {
   return page.getByRole("main").getByRole("switch", { name: message("settings.moderator_notifications.email") });
 }
 
+/** The button that switches the time zone to the browser's, shown only when they differ. */
+function useDeviceButton(page: Page) {
+  return page.getByRole("main").getByRole("button", { name: message("settings.time_zone.use_device"), exact: true });
+}
+
 const pages = [
   "/settings",
   "/settings/profile",
@@ -152,7 +157,7 @@ const totpSetup = {
 test("two-factor setup shows the QR code and the key without axe violations or horizontal scroll", async ({ page, makeAxeBuilder }) => {
   await signedInServer(page, projectLocale());
   await page.goto("/settings/two-factor");
-  await page.getByRole("main").getByRole("button").first().click();
+  await page.getByRole("main").getByRole("button", { name: message("settings.two_factor.setup.start"), exact: true }).click();
   await expect(page.getByRole("main").getByRole("img")).toBeVisible();
   await expect(page.getByRole("main").getByRole("textbox")).toBeVisible();
   await expectNoAxeViolations(makeAxeBuilder);
@@ -232,8 +237,8 @@ test.describe("theme", () => {
     await page.emulateMedia({ colorScheme: "light" });
     const changes = await signedInServer(page, projectLocale());
     await page.goto("/settings/preferences");
-    // The theme is the first radio group: the OS setting (checked), light and dark.
-    const theme = page.getByRole("main").getByRole("radiogroup").first();
+    // The theme: the OS setting (checked), light and dark.
+    const theme = page.getByRole("main").getByRole("radiogroup", { name: message("settings.theme.label"), exact: true });
     await expect(theme.getByRole("radio").first()).toBeChecked();
     const html = page.locator("html");
     await expect(html).not.toHaveAttribute("data-theme");
@@ -251,7 +256,7 @@ test.describe("theme", () => {
     await expectNoAxeViolations(makeAxeBuilder);
 
     await page.reload();
-    await expect(page.getByRole("main").getByRole("radiogroup").first().getByRole("radio").nth(1)).toBeChecked();
+    await expect(theme.getByRole("radio").nth(1)).toBeChecked();
     await expect(html).toHaveAttribute("data-theme", "light");
     expect(changes).toEqual([]);
   });
@@ -381,7 +386,7 @@ test.describe("moderator notifications by email", () => {
   test("says why there is no switch when the server sends no email", async ({ page, makeAxeBuilder }) => {
     await signedInServer(page, projectLocale(), { permissions: ["manage_accounts"], sendsEmail: false });
     await page.goto("/settings/preferences");
-    const section = page.getByRole("main").getByRole("region");
+    const section = page.getByRole("main").getByRole("region", { name: message("settings.moderator_notifications.title"), exact: true });
     await expect(section).toMatchAriaSnapshot(`
       - region:
         - heading [level=2]
@@ -421,8 +426,8 @@ test.describe("time zone of the device", () => {
     await expect.poll(() => changes).toEqual([{ time_zone: "Asia/Tokyo" }]);
     const select = page.locator('main button[aria-haspopup="listbox"]').nth(1);
     await expect(select).toContainText("+09:00");
-    // The zone is the browser's, so no note tells of a difference: the two selects are the only buttons.
-    await expect(page.getByRole("main").getByRole("button")).toHaveCount(2);
+    // The zone is the browser's, so no note tells of a difference and offers to switch to it.
+    await expect(useDeviceButton(page)).toHaveCount(0);
     await expectNoAxeViolations(makeAxeBuilder);
   });
 
@@ -443,13 +448,13 @@ test.describe("time zone of the device", () => {
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
-    const useDevice = page.getByRole("main").getByRole("button").nth(2);
+    const useDevice = useDeviceButton(page);
     await useDevice.focus();
     await page.keyboard.press("Enter");
 
     await expect.poll(() => changes).toEqual([{ time_zone: "Asia/Tokyo" }]);
     await expect(select).toContainText("+09:00");
     await expect(select).toBeFocused();
-    await expect(page.getByRole("main").getByRole("button")).toHaveCount(2);
+    await expect(useDevice).toHaveCount(0);
   });
 });
