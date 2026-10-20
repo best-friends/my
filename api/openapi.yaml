@@ -1133,14 +1133,22 @@ paths:
       summary: Upload a media file
       description: |
         Uploads an image to attach to a post or to use as an avatar, a header, or a custom
-        emoji (`purpose`). The server checks the format from the content (JPEG, PNG, GIF, or
-        WebP, the last two animated or not; the declared type must match it) and the size and
-        dimension limits before it accepts the file, then processes it in the background: it
+        emoji (`purpose`), or a video or audio file to attach to a post. The server checks the
+        format from the content (images: JPEG, PNG, GIF, or WebP, the last two animated or not;
+        video: MP4, QuickTime, or WebM of H.264, VP8, VP9, or AV1; audio: MP3, Ogg, M4A, or WebM
+        of AAC, Opus, Vorbis, or MP3; the declared type must match it) and the size, dimension,
+        and duration limits before it accepts the file, then processes it in the background: it
         removes the metadata (such as the location) by re-encoding the image into small,
         medium, and large variants for its purpose, still and, for an animation, moving ones,
-        and makes a blurhash. The answer is 202 with the file in its current `state`, usually
-        `processing`; poll `getMedia` until it is `ready` or `failed`. A file used for another
-        purpose later is processed again for it.
+        and makes a blurhash. A video or audio file is not re-encoded: the server writes its
+        streams again without metadata, and makes the variants and the blurhash of its
+        `thumbnail`, or of the cover image in the file. The answer is 202 with the file in its
+        current `state`, usually `processing`; poll `getMedia` until it is `ready` or
+        `failed`. A file used for another purpose later is processed again for it.
+
+        The size limits of images and of video and audio files differ, and the limits of video
+        and audio files are set by the operator (`media_max_av_bytes`,
+        `media_max_video_duration`, `media_max_audio_duration` in the server configuration).
 
         A body larger than the size limit is refused with a 413 before it is read. Uploads
         count against a limit per account besides the API-wide one. Only the uploader can
@@ -5056,11 +5064,14 @@ components:
         - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
           instance accepts.
         - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-          accepted format, or its declared type does not match its content.
+          accepted format or codec (such as HEVC video), or its declared type does not match its
+          content.
         - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-          many pixels or frames.
-        - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
-          of its format.
+          many pixels or frames; or the video has too many pixels or frames per second.
+        - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+          instance accepts.
+        - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+          its format.
         - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
           no longer be changed on its own.
         - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
@@ -5144,7 +5155,7 @@ components:
           description: The server version.
           type: string
         source_url:
-          description: Where users get the source code of the running server (AGPL-3.0 section 13).
+          description: Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
           type: string
           format: uri
         limits:
@@ -5597,7 +5608,10 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         type:
-          description: The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+          description: |
+            The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+            a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+            an animated image: muted, looped, without controls.
           type: string
           enum: [image, gifv, video, audio, unknown]
         state:
@@ -5620,11 +5634,14 @@ components:
         url:
           description: |
             Where the file is served on this instance; for an upload, `variants.large.url`, or
-            `variants.animated.large.url` for an animation.
+            `variants.animated.large.url` for an animation, and the file itself for a video or
+            audio file.
           type: string
           format: uri
         preview_url:
-          description: Where its preview is served; for an upload, `variants.small.url` (still).
+          description: |
+            Where its preview is served; for an upload, `variants.small.url` (still). A video or
+            audio file without a poster has none.
           type: string
           format: uri
         remote_url:
@@ -5663,6 +5680,11 @@ components:
           minimum: 1
         focus:
           $ref: "#/components/schemas/MediaFocus"
+        duration:
+          description: The length of a video or audio file in seconds; absent for an image and until the file is ready.
+          type: number
+          format: double
+          minimum: 0
     MediaUpdate:
       description: The changes to a media file; a property left out keeps its value.
       type: object
@@ -5696,6 +5718,13 @@ components:
           type: string
           enum: [attachment, avatar, header, emoji]
           default: attachment
+        thumbnail:
+          description: |
+            The poster of a video or audio file: an image that it shows before it plays, which
+            the client takes from the file. Its declared type is ignored; it must be an image
+            within the image limits. It is ignored for an image.
+          type: string
+          format: binary
     MediaVariant:
       description: |
         A rendition of a media file, without metadata. Its URL never serves other content, so
@@ -5729,7 +5758,8 @@ components:
       description: |
         The renditions of a ready media file within the sizes of its purpose (see
         `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-        still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+        still: for an animation, its first frame, and for a video or audio file, its poster
+        (absent without one). Clients pick one by its width (`srcset`), and
         show `animated` instead only when the user lets animations play and does not prefer
         reduced motion.
       type: object
@@ -6365,7 +6395,7 @@ components:
         status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
         `visibility` and `language` are those of the boosted status, its `content`,
         `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-        empty, and its counts are zero.
+        empty, its `card` is omitted, and its counts are zero.
       type: object
       required:
         - id
@@ -6487,6 +6517,8 @@ components:
           type: boolean
         poll:
           $ref: "#/components/schemas/Poll"
+        card:
+          $ref: "#/components/schemas/LinkCard"
     Poll:
       description: |
         The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
@@ -6565,6 +6597,76 @@ components:
             type: integer
             minimum: 0
             maximum: 19
+    LinkCard:
+      description: |
+        The card of the first link in a status (ADR-0062): the title, description, and image
+        that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+        after the status was posted or received. Omitted from a status with attachments or a
+        poll, from a status whose link has no card yet, and when the instance setting
+        `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+        it was posted may have none.
+
+        Clients show the card as one link to `url` and, under a content warning, only once the
+        warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+        shows it.
+      type: object
+      required: [url, title, description, site_name]
+      properties:
+        url:
+          description: The page that the card links to, after redirects.
+          type: string
+          format: uri
+        title:
+          description: The title of the page, as plain text.
+          type: string
+        description:
+          description: The description of the page, as plain text; empty when it has none.
+          type: string
+        site_name:
+          description: The name of the site, as plain text; the host of `url` when the page names none.
+          type: string
+        author_name:
+          description: The author that the page names, as plain text; omitted when it names none.
+          type: string
+        published_at:
+          description: When the page says it was published; omitted when it does not say.
+          type: string
+          format: date-time
+        language:
+          description: The BCP 47 language of the page; omitted when it does not say.
+          type: string
+        image:
+          $ref: "#/components/schemas/LinkCardImage"
+        author:
+          description: |
+            The account that the page names as its creator (`fediverse:creator`), given only when
+            the account's server lists the page's domain among its `attributionDomains`.
+          $ref: "#/components/schemas/Account"
+    LinkCardImage:
+      description: |
+        The image of a link card, served by this server's media proxy in the small size of an
+        attachment's image. An animated image is its first frame.
+      type: object
+      required: [url, width, height]
+      properties:
+        url:
+          description: The image through the media proxy.
+          type: string
+          format: uri
+        width:
+          description: The width of the original image in pixels.
+          type: integer
+          minimum: 1
+        height:
+          description: The height of the original image in pixels.
+          type: integer
+          minimum: 1
+        blurhash:
+          description: The blurhash (https://blurha.sh) of the image, to show while it loads.
+          type: string
+        description:
+          description: The alternative text of the image (`og:image:alt`); omitted when it has none.
+          type: string
     ReactionEmoji:
       description: |
         The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
@@ -9557,6 +9659,7 @@ components:
         - indexable_default
         - security_contact
         - require_media_description
+        - link_cards_enabled
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from

@@ -125,6 +125,8 @@ test.describe("the landing page", () => {
             - link
         - paragraph:
           - link
+        - paragraph:
+          - link
         - navigation:
           - list:
             - listitem:

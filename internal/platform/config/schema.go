@@ -95,7 +95,7 @@ var schema = []field{
 	},
 	{
 		key:   "source_url",
-		doc:   "Where users get the source code of the running server, as an `https` URL. NodeInfo publishes it as `software.repository` (AGPL-3.0 section 13, ADR-0011); point it at your own repository when you run a modified version.",
+		doc:   "Where users get the source code of the running server, as an `https` URL or a `mailto:` address to request it from. AGPL-3.0 section 13 (ADR-0011) requires offering the source to everyone who uses the server over the network; `GET /instance`, the information page (`/about`), the landing page, and NodeInfo (`metadata.sourceCode`, and `software.repository` for an `https` URL) publish it. Point it at your own source when you run a fork or a modified version (docs/operations/running.md).",
 		def:   DefaultSourceURL,
 		check: checkSourceURL,
 		set:   func(c *Config, v string) { c.SourceURL = v },
@@ -227,6 +227,27 @@ var schema = []field{
 		def:   "24h",
 		check: checkPositiveDuration,
 		set:   func(c *Config, v string) { c.MediaUnattachedTTL, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "media_max_av_bytes",
+		doc:   "Largest accepted video or audio upload in bytes (ADR-0019 §8, ADR-0054 §6). The file is held in memory while it is checked and remuxed, so this also bounds the memory of one upload.",
+		def:   strconv.Itoa(100 << 20),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.MediaMaxAVBytes, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:   "media_max_video_duration",
+		doc:   "Longest accepted video upload (ADR-0054 §6), as a Go duration such as `5m`.",
+		def:   "5m",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.MediaMaxVideoDuration, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "media_max_audio_duration",
+		doc:   "Longest accepted audio upload (ADR-0054 §6), as a Go duration such as `10m`.",
+		def:   "10m",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.MediaMaxAudioDuration, _ = time.ParseDuration(v) },
 	},
 	{
 		key:   "custom_emoji_max_bytes",
@@ -673,10 +694,27 @@ func validLabel(l string) bool {
 	return true
 }
 
+// checkSourceURL accepts an absolute https URL or a mailto: URI with an address, the two ways of offering the source
+// that AGPL-3.0 section 13 leaves to the operator.
 func checkSourceURL(v string) error {
+	const msg = "must be an absolute https URL without user info or fragment, or a mailto: URI with an email address"
 	u, err := url.Parse(v)
-	if err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.Fragment != "" {
-		return errors.New("must be an absolute https URL without user info or fragment")
+	if err != nil || u.Fragment != "" {
+		return errors.New(msg)
+	}
+	switch u.Scheme {
+	case "https":
+		if u.Host == "" || u.User != nil {
+			return errors.New(msg)
+		}
+	case "mailto":
+		// mailto:alice@example.org[?subject=...]: the address is the opaque part, without "//".
+		to, err := url.PathUnescape(u.Opaque)
+		if err != nil || u.Host != "" || !strings.Contains(to, "@") {
+			return errors.New(msg)
+		}
+	default:
+		return errors.New(msg)
 	}
 	return nil
 }

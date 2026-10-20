@@ -95,6 +95,26 @@
     "defaultMessage": "ルール",
     "description": "Heading of the section of the server's information page with the server's rules."
   },
+  "about.source.title": {
+    "defaultMessage": "ソースコード",
+    "description": "Heading of the section of the server's information page that tells where to get the source code of the server's software."
+  },
+  "about.source.license": {
+    "defaultMessage": "このサーバーは、GNU Affero General Public License 第 3 版（AGPL-3.0）のもとで公開されている自由ソフトウェアで動いています。サーバーを使う人は誰でも、動いているソースコードを入手できます。",
+    "description": "Paragraph in the source code section of the server's information page: the license of the server's software and the right of its users to get the source code."
+  },
+  "about.source.view": {
+    "defaultMessage": "ソースコードを見る",
+    "description": "Link to the web page where the source code of the server's software is published, on the server's information page and the landing page. The link leaves the app."
+  },
+  "about.source.request": {
+    "defaultMessage": "ソースコードをメールで請求する",
+    "description": "Link that writes an email to the address where the server's operators take requests for the source code of the server's software, on the server's information page and the landing page."
+  },
+  "about.source.address": {
+    "defaultMessage": "請求先のメールアドレス",
+    "description": "Term before the email address that takes requests for the source code, in the source code section of the server's information page."
+  },
   "about.title": {
     "defaultMessage": "{instance} について",
     "description": "Heading and document title of the server's information page, which everyone may read. {instance} is the name of this server."
@@ -3859,6 +3879,14 @@
     "defaultMessage": "ほかのサーバーは、検証できる署名があるときだけ投稿とコレクションを読めます。凍結したサーバーには読めなくなりますが、読めなくなるソフトウェアもあります。",
     "description": "Description of the authorized fetch checkbox."
   },
+  "admin.settings.federation.link_cards": {
+    "defaultMessage": "投稿のリンクのカードを表示する",
+    "description": "Checkbox of the link_cards_enabled setting: whether posts show the cards (title, description, image) of the pages they link to."
+  },
+  "admin.settings.federation.link_cards.description": {
+    "defaultMessage": "サーバーが各投稿の最初のリンクのページを、投稿の公開範囲によらず取得し、題名・説明・画像を投稿の下に表示します。リンク先のサイトには、そのリンクがいつ投稿されたかが伝わりますが、誰が投稿したかは伝わりません。",
+    "description": "Description of the link cards checkbox."
+  },
   "admin.settings.federation.title": {
     "defaultMessage": "連合",
     "description": "Heading of the section of the federation settings."
@@ -4992,68 +5020,68 @@
     "description": "Choice of post language when the user does not say which language the post is in."
   },
   "compose.media.add": {
-    "defaultMessage": "画像を追加",
-    "description": "Button that opens the file picker to attach images to a post."
+    "defaultMessage": "画像・動画・音声を追加",
+    "description": "Button that opens the file picker to attach images, a video, or an audio file to a post."
   },
   "compose.media.count": {
-    "defaultMessage": "{count, plural, other {# 枚の画像を添付しています}}",
-    "description": "Description of the button that attaches images, while the post has some. {count} is how many."
+    "defaultMessage": "{count, plural, other {# 件のファイルを添付しています}}",
+    "description": "Description of the button that attaches media, while the post has some. {count} is how many files."
   },
   "compose.media.description.hint": {
-    "defaultMessage": "画像を見られない人のために、画像の内容を書いてください。",
-    "description": "Help text under the alternative text field of an attached image."
+    "defaultMessage": "見られない人・聞こえない人のために、内容を書いてください。",
+    "description": "Help text under the alternative text field of an attached image, video, or audio file."
   },
   "compose.media.description.label": {
-    "defaultMessage": "画像 {position} の説明",
-    "description": "Label of the alternative text field of an attached image. {position} is its number in the post, from 1."
+    "defaultMessage": "添付 {position} の説明",
+    "description": "Label of the alternative text field of an attached image, video, or audio file. {position} is its number in the post, from 1."
   },
   "compose.media.description.required": {
-    "defaultMessage": "画像を見られない人のために、画像の内容を書いてください。設定で、すべての画像に説明を付けるようにしています。",
-    "description": "Help text under the alternative text field of an attached image when the user's settings ask for a description of every image."
+    "defaultMessage": "見られない人・聞こえない人のために、内容を書いてください。設定で、すべての添付に説明を付けるようにしています。",
+    "description": "Help text under the alternative text field of an attachment when the user's settings ask for a description of every attachment."
   },
   "compose.media.description.server_required": {
-    "defaultMessage": "画像を見られない人のために、画像の内容を書いてください。このサーバーでは、すべての画像に説明が必要です。",
-    "description": "Help text under the alternative text field of an attached image when the server requires a description of every image (the instance setting require_media_description)."
+    "defaultMessage": "見られない人・聞こえない人のために、内容を書いてください。このサーバーでは、すべての添付に説明が必要です。",
+    "description": "Help text under the alternative text field of an attached image, video, or audio file when the server requires a description of every image (the instance setting require_media_description)."
   },
   "compose.media.description.missing": {
-    "defaultMessage": "この画像の説明を書いてください。このサーバーでは、すべての画像に説明が必要です。",
-    "description": "Error of the alternative text field of an attached image that has no description while the server requires one for every image."
+    "defaultMessage": "この添付の説明を書いてください。このサーバーでは、すべての添付に説明が必要です。",
+    "description": "Error of the alternative text field of an attached image, video, or audio file that has no description while the server requires one for every image."
   },
   "compose.media.failed": {
-    "defaultMessage": "画像を添付できませんでした：{reason}",
-    "description": "State of an attached image whose upload failed. {reason} is the error message."
+    "defaultMessage": "ファイルを添付できませんでした：{reason}",
+    "description": "State of an attached file whose upload failed. {reason} is the error message."
   },
   "compose.media.failed_processing": {
-    "defaultMessage": "サーバーがこの画像を処理できませんでした。",
-    "description": "Why an attached image failed: the server could not process it."
+    "defaultMessage": "サーバーがこのファイルを処理できませんでした。",
+    "description": "Why an attached file failed: the server could not process it."
   },
   "compose.media.hint": {
-    "defaultMessage": "{max, plural, other {# 枚}}まで（JPEG・PNG・GIF・WebP）。位置情報などのメタデータは、送る前に取り除きます。",
-    "description": "Help text next to the button that attaches images. {max} is the most images a post can have."
+    "defaultMessage": "{max, plural, other {# 件}}まで（画像は JPEG・PNG・GIF・WebP、動画は MP4・WebM、音声は MP3・Ogg・M4A）。位置情報などのメタデータは取り除きます。",
+    "description": "Help text next to the button that attaches media. {max} is the most files a post can have. JPEG, PNG, GIF, WebP, MP4, WebM, MP3, Ogg, M4A are format names (not translated)."
   },
   "compose.media.list": {
-    "defaultMessage": "添付した画像",
-    "description": "Accessible name of the list of images attached to the post being written."
+    "defaultMessage": "添付したメディア",
+    "description": "Accessible name of the list of images, videos, and audio files attached to the post being written."
   },
   "compose.media.processing": {
     "defaultMessage": "処理中…",
-    "description": "State of an attached image while the server prepares it."
+    "description": "State of an attached file while the server prepares it."
   },
   "compose.media.remove": {
-    "defaultMessage": "画像 {position} を外す",
-    "description": "Button that removes an attached image from the post. {position} is its number in the post, from 1."
+    "defaultMessage": "添付 {position} を外す",
+    "description": "Button that removes an attached file from the post. {position} is its number in the post, from 1."
   },
   "compose.media.too_many": {
-    "defaultMessage": "画像は {max, plural, other {# 枚}}までです。残りは追加しませんでした。",
-    "description": "Notice when the user picked more images than a post can have. {max} is the most images a post can have."
+    "defaultMessage": "添付は {max, plural, other {# 件}}までです。残りは追加しませんでした。",
+    "description": "Notice when the user picked more files than a post can have. {max} is the most files a post can have."
   },
   "compose.media.unsupported": {
-    "defaultMessage": "{name} は JPEG・PNG・GIF・WebP の画像ではありません。",
-    "description": "Notice when a picked file is not an image type the server accepts. {name} is the file name."
+    "defaultMessage": "{name} は対応している形式（画像は JPEG・PNG・GIF・WebP、動画は MP4・WebM、音声は MP3・Ogg・M4A）ではありません。",
+    "description": "Notice when a picked file is not a type the server accepts. {name} is the file name. The format names are not translated."
   },
   "compose.media.uploading": {
     "defaultMessage": "アップロード中…",
-    "description": "State of an attached image while it is being sent to the server."
+    "description": "State of an attached file while it is being sent to the server."
   },
   "compose.mention.unreached": {
     "defaultMessage": "{count, plural, other {{accounts} はほかのサーバーのアカウントで、あなたをフォローしていないため、この投稿は届きません。}}公開範囲「このサーバー」の投稿は、ほかのサーバーではあなたのフォロワーにだけ届き、このメンションはメンションではなくただのリンクとして表示されます。",
@@ -7683,6 +7711,26 @@
     "defaultMessage": "センシティブなメディアを表示",
     "description": "Toggle button over the pictures of a post that the author marked sensitive; it shows or hides them."
   },
+  "timeline.card.author": {
+    "defaultMessage": "作者：{author}",
+    "description": "Line under the description of a link card naming the author of the linked page. {author} is the author's name as the page gives it, or the verified account (timeline.card.account)."
+  },
+  "timeline.card.author_published": {
+    "defaultMessage": "作者：{author} · {date}",
+    "description": "Line under the description of a link card naming the author of the linked page and when it was published. {author} is the author's name; {date} is the formatted date."
+  },
+  "timeline.card.published": {
+    "defaultMessage": "公開：{date}",
+    "description": "Line under the description of a link card saying when the linked page was published. {date} is the formatted date."
+  },
+  "timeline.card.account": {
+    "defaultMessage": "{name}（{handle}）",
+    "description": "The verified author of a linked page as an account: {name} is the display name, {handle} the handle such as @alice@example.com."
+  },
+  "timeline.card.failed": {
+    "defaultMessage": "このリンクのプレビューを表示できませんでした。",
+    "description": "Shown in place of the card of a link in a post when it failed to render."
+  },
   "timeline.new_posts": {
     "defaultMessage": "{count, plural, other {新しい投稿 # 件}}",
     "description": "Button above the home timeline when new posts have arrived; pressing it shows them at the top. Screen readers also read it out when the count changes."
@@ -8118,6 +8166,10 @@
   "reaction.list.title": {
     "defaultMessage": "リアクションした人",
     "description": "Title of the dialog that lists the accounts that reacted to a post, each with its emoji."
+  },
+  "reaction.list.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the × button that closes the dialog of the accounts that reacted to a post."
   },
   "reaction.list.loading": {
     "defaultMessage": "リアクションを読み込んでいます",

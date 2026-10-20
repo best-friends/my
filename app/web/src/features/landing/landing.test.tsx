@@ -58,6 +58,19 @@ describe("the landing page", () => {
     expect(within(documents).getAllByRole("link").map((link) => link.textContent)).toEqual(["Terms of service", "Privacy policy"]);
   });
 
+  test("links to the source code the server runs, or to an email that requests it", async () => {
+    serveInstance({ source_url: "https://git.example.org/fork/my" });
+    const { unmount } = await renderApp({ path: "/" });
+    const view = await screen.findByRole("link", { name: "View the source code" });
+    expect(view).toHaveAttribute("href", "https://git.example.org/fork/my");
+    expect(view).toHaveAttribute("rel", "noreferrer");
+    unmount();
+
+    serveInstance({ source_url: "mailto:source@my.example" });
+    await renderApp({ path: "/" });
+    expect(await screen.findByRole("link", { name: "Request the source code by email" })).toHaveAttribute("href", "mailto:source@my.example");
+  });
+
   test("shows the server's thumbnail above its summary", async () => {
     serveInstance({
       short_description: "A small server for gardeners.",

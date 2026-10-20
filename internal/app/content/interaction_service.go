@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -279,6 +280,76 @@ func (s *Interactions) Unpin(ctx context.Context, accountID, statusID string) er
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		_, err := s.d.Interactions.DeletePin(ctx, tx, accountID, statusID)
 		return err
+	})
+}
+
+// ReplaceRemotePins makes the pins of the remote account accountID the statuses statusIDs, the
+// newest pin first: the mirror of the account's featured collection, which the federation
+// module reads when it fetches or refreshes the account (ADR-0044). Only the first
+// content.MaxPins statuses that are the account's own, pinnable, and not deleted are kept; the
+// others are skipped. Pins that statusIDs leaves out are removed. A local account fails with
+// ErrActorUnavailable: its pins are its own commands (Pin, Unpin). Replacing the pins with the
+// ones the account has changes nothing.
+func (s *Interactions) ReplaceRemotePins(ctx context.Context, accountID string, statusIDs []string) error {
+	a, err := s.d.Accounts.FindByID(ctx, accountID)
+	if errors.Is(err, appaccount.ErrNotFound) || (err == nil && a.Account.IsLocal()) {
+		return fmt.Errorf("account %s: %w", accountID, ErrActorUnavailable)
+	}
+	if err != nil {
+		return err
+	}
+	var pinned []string
+	for _, id := range statusIDs {
+		if len(pinned) == content.MaxPins {
+			break
+		}
+		st, err := s.d.Statuses.FindStatus(ctx, id)
+		switch {
+		case errors.Is(err, ErrNotFound):
+			continue
+		case err != nil:
+			return err
+		case st.AuthorAccountID != accountID || !st.Visibility.Pinnable() || slices.Contains(pinned, st.ID):
+			continue
+		}
+		pinned = append(pinned, st.ID)
+	}
+	current, err := s.d.Interactions.ListPins(ctx, accountID)
+	if err != nil {
+		return err
+	}
+	if slices.EqualFunc(current, pinned, func(p content.Pin, id string) bool { return p.StatusID == id }) {
+		return nil
+	}
+	// IDs order the pins newest first, so the last status gets the first (smallest) ID.
+	pins := make([]content.Pin, len(pinned))
+	now := s.d.Clock.Now()
+	for i := len(pinned) - 1; i >= 0; i-- {
+		pins[i] = content.Pin{ID: s.d.IDs.NewID(), AccountID: accountID, StatusID: pinned[i], CreatedAt: now}
+	}
+	repo := s.d.Interactions
+	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if _, err := repo.DeletePinsOf(ctx, tx, accountID); err != nil {
+			return err
+		}
+		for _, p := range pins {
+			deleted, err := s.d.Statuses.IsDeleted(ctx, tx, p.StatusID)
+			if err != nil {
+				return err
+			}
+			if deleted {
+				continue
+			}
+			inserted, err := repo.InsertPin(ctx, tx, p)
+			if err != nil {
+				return err
+			}
+			if !inserted {
+				// A concurrent replacement took a slot; the transaction runs again.
+				return uow.MarkRetryable(fmt.Errorf("pin %s of %s: slot taken concurrently", p.StatusID, accountID))
+			}
+		}
+		return nil
 	})
 }
 

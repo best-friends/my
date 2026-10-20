@@ -297,7 +297,7 @@ The overlay components wrap React Aria Components, which handle focus, Esc and t
 
 | Component | Pattern | Notes |
 | --- | --- | --- |
-| `Dialog` / `Sheet` in a `DialogTrigger` | Modal dialog | Traps focus, closes on Esc, returns focus to the trigger. `closeLabel` adds the × button; `role="alertdialog"` for confirmations; `isOpen` / `onOpenChange` without a trigger. `Sheet` sits on the bottom edge below a 32rem container width, with safe-area padding and a height capped in `svh`. |
+| `Dialog` / `Sheet` in a `DialogTrigger` | Modal dialog | Traps focus, closes on Esc and on a press on the scrim (`isDismissable={false}` for a form whose input that would lose), returns focus to the trigger. `closeLabel` (the × button) is required; only `role="alertdialog"`, the confirmations whose content has a cancel button, passes `null`; `isOpen` / `onOpenChange` without a trigger. `Sheet` sits on the bottom edge below a 32rem container width, with safe-area padding and a height capped in `svh`. |
 | `ConfirmDialog` in a `DialogTrigger` | Alert dialog | The confirmation before an action that cannot be undone (see below). |
 | `Popover` in a `PopoverTrigger` | Non-modal dialog | Named by `title` or `aria-label`. |
 | `Menu`, `MenuItem`, `MenuSeparator` in a `MenuTrigger`; `SubmenuTrigger` | Menu button | `intent="danger"` for destructive items. Submenus open towards the inline end. |

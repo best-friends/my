@@ -50,6 +50,16 @@ export interface MessageArgs {
   "client:about.domains.title": {};
   /** Rules */
   "client:about.rules.title": {};
+  /** Email address for requests */
+  "client:about.source.address": {};
+  /** This server runs free software under the GNU Affero General Public License, version 3 (AGPL-3.0). Everyone who uses the server may get the source code that it runs. */
+  "client:about.source.license": {};
+  /** Request the source code by email */
+  "client:about.source.request": {};
+  /** Source code */
+  "client:about.source.title": {};
+  /** View the source code */
+  "client:about.source.view": {};
   /** About {instance} */
   "client:about.title": { instance: string };
   /** No actions are in effect on your account */
@@ -2088,6 +2098,10 @@ export interface MessageArgs {
   "client:admin.settings.federation.authorized_fetch": {};
   /** Other servers then read posts and collections only with a verified signature, so that suspended servers cannot read them. Some software cannot read them anymore. */
   "client:admin.settings.federation.authorized_fetch.description": {};
+  /** Show the cards of links in posts */
+  "client:admin.settings.federation.link_cards": {};
+  /** The server fetches the page of the first link in each post, whoever can see the post, and shows its title, description, and image under it. The linked sites learn when the link was posted, but not by whom. */
+  "client:admin.settings.federation.link_cards.description": {};
   /** Federation */
   "client:admin.settings.federation.title": {};
   /** Default language */
@@ -2668,35 +2682,35 @@ export interface MessageArgs {
   "client:compose.language.label": {};
   /** Not specified */
   "client:compose.language.und": {};
-  /** Add images */
+  /** Add images, video, or audio */
   "client:compose.media.add": {};
-  /** {count, plural, one {# image attached} other {# images attached}} */
+  /** {count, plural, one {# file attached} other {# files attached}} */
   "client:compose.media.count": { count: number };
-  /** Describe the image for people who cannot see it. */
+  /** Describe it for people who cannot see or hear it. */
   "client:compose.media.description.hint": {};
-  /** Description of image {position} */
+  /** Description of attachment {position} */
   "client:compose.media.description.label": { position: string };
-  /** Add a description of this image. This server requires one for every image. */
+  /** Add a description of this attachment. This server requires one for every attachment. */
   "client:compose.media.description.missing": {};
-  /** Describe the image for people who cannot see it. Your settings ask for a description of every image. */
+  /** Describe it for people who cannot see or hear it. Your settings ask for a description of every attachment. */
   "client:compose.media.description.required": {};
-  /** Describe the image for people who cannot see it. This server requires a description of every image. */
+  /** Describe it for people who cannot see or hear it. This server requires a description of every attachment. */
   "client:compose.media.description.server_required": {};
-  /** Could not attach the image: {reason} */
+  /** Could not attach the file: {reason} */
   "client:compose.media.failed": { reason: string };
-  /** The server could not process this image. */
+  /** The server could not process this file. */
   "client:compose.media.failed_processing": {};
-  /** Up to {max, plural, other {# images}}: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload. */
+  /** Up to {max, plural, other {# files}}: JPEG, PNG, GIF, or WebP images, MP4 or WebM video, or MP3, Ogg, or M4A audio. Location and other metadata are removed. */
   "client:compose.media.hint": { max: number };
-  /** Attached images */
+  /** Attached media */
   "client:compose.media.list": {};
   /** Processing… */
   "client:compose.media.processing": {};
-  /** Remove image {position} */
+  /** Remove attachment {position} */
   "client:compose.media.remove": { position: string };
-  /** A post can have at most {max, plural, other {# images}}. The rest were not added. */
+  /** A post can have at most {max, plural, other {# files}}. The rest were not added. */
   "client:compose.media.too_many": { max: number };
-  /** {name} is not a JPEG, PNG, GIF or WebP image. */
+  /** {name} is not a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file. */
   "client:compose.media.unsupported": { name: string };
   /** Uploading… */
   "client:compose.media.uploading": {};
@@ -3096,6 +3110,8 @@ export interface MessageArgs {
   "client:public.disabled.title": {};
   /** Federated timeline */
   "client:public.title": {};
+  /** Close */
+  "client:reaction.list.close": {};
   /** Nobody has reacted yet. */
   "client:reaction.list.empty": {};
   /** The reactions could not be loaded: {reason} */
@@ -4058,6 +4074,16 @@ export interface MessageArgs {
   "client:tag.title": { tag: string };
   /** {name} boosted */
   "client:timeline.boosted_by": { name: string };
+  /** {name} ({handle}) */
+  "client:timeline.card.account": { handle: string; name: string };
+  /** By {author} */
+  "client:timeline.card.author": { author: string };
+  /** By {author} · {date} */
+  "client:timeline.card.author_published": { author: string; date: string };
+  /** Could not show the preview of this link. */
+  "client:timeline.card.failed": {};
+  /** Published {date} */
+  "client:timeline.card.published": { date: string };
   /** Show content */
   "client:timeline.content_warning.toggle": {};
   /** No posts yet */
@@ -4424,7 +4450,11 @@ export interface MessageArgs {
   "server:errors.media_invalid_focus": {};
   /** The file is too large. */
   "server:errors.media_too_large": {};
-  /** This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image. */
+  /** The video or audio is too long. */
+  "server:errors.media_too_long": {};
+  /** This video or audio codec is not supported. HEVC (High Efficiency) video cannot be uploaded: record in H.264 (Most Compatible) instead. */
+  "server:errors.media_unsupported_codec": {};
+  /** This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file. */
   "server:errors.media_unsupported_format": {};
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };

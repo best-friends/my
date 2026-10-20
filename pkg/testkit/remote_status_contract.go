@@ -43,6 +43,9 @@ type RemoteStatusHarness struct {
 	// Federation and Instances serve the fetches of remote posts and threads.
 	Federation appfederation.Repository
 	Instances  appfederation.InstanceRepository
+	// Pins serves the pins that the featured collections of remote accounts become; without it,
+	// the cases of featured collections are skipped.
+	Pins appcontent.InteractionRepository
 }
 
 // RemoteStatusFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
@@ -60,7 +63,8 @@ type RemoteStatusFactory func(t *testing.T, opts uow.Options) RemoteStatusHarnes
 // leave tombstones; and the timeline and notification projectors see remote posts. The parent of a
 // reply is fetched one level; an opened thread fetches its ancestors and replies within
 // ThreadDepth and ThreadMaxItems; fetched posts must be attributed within their origin; failed
-// fetches are not repeated; Resolver resolves handles and the URLs of accounts and posts; and a
+// fetches are not repeated; Resolver resolves handles and the URLs of accounts and posts; the
+// featured collections of fetched actors become their pins (ADR-0044); and a
 // post with NUL in every string is stored with U+FFFD (federation.md §4). The
 // actors and the fetches are in-memory stand-ins, and the network of the fetch cases is in memory.
 func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
@@ -85,6 +89,8 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"FetchesTheRecentPostsOfOutboxesOfMajorImplementations", remoteFetchesOutboxFixtures},
 		{"FetchesOutboxesWithinBounds", remoteFetchesOutboxesWithinBounds},
 		{"StartsOutboxFetchesOnlyWhenAllowed", remoteStartsOutboxFetches},
+		{"PinsTheFeaturedPostsOfMajorImplementations", remotePinsFeaturedFixtures},
+		{"MirrorsFeaturedCollectionsWithinBounds", remoteMirrorsFeaturedWithinBounds},
 		{"StoresStringsWithNUL", remoteStatusStoresStringsWithNUL},
 	}
 	for _, tc := range cases {

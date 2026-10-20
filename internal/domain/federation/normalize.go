@@ -250,6 +250,11 @@ func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 	if ep, ok := o.get("endpoints").(object); ok {
 		a.SharedInbox = n.firstRef(ep.get("sharedInbox"))
 	}
+	for _, d := range strs(o.get("attributionDomains")) {
+		if d = strings.ToLower(strings.TrimSpace(d)); d != "" && len(a.AttributionDomains) < MaxItems {
+			a.AttributionDomains = append(a.AttributionDomains, d)
+		}
+	}
 	for _, v := range list(o.get("publicKey")) {
 		k, ok := v.(object)
 		if !ok {

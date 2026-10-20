@@ -53,6 +53,9 @@ An instance setting that has never been set reads as its default, which is defin
 | [`media_max_image_side`](#media_max_image_side) | `MY_MEDIA_MAX_IMAGE_SIDE` | `8192` | no | no |
 | [`media_max_image_pixels`](#media_max_image_pixels) | `MY_MEDIA_MAX_IMAGE_PIXELS` | `33177600` | no | no |
 | [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
+| [`media_max_av_bytes`](#media_max_av_bytes) | `MY_MEDIA_MAX_AV_BYTES` | `104857600` | no | no |
+| [`media_max_video_duration`](#media_max_video_duration) | `MY_MEDIA_MAX_VIDEO_DURATION` | `5m` | no | no |
+| [`media_max_audio_duration`](#media_max_audio_duration) | `MY_MEDIA_MAX_AUDIO_DURATION` | `10m` | no | no |
 | [`custom_emoji_max_bytes`](#custom_emoji_max_bytes) | `MY_CUSTOM_EMOJI_MAX_BYTES` | `262144` | no | no |
 | [`remote_custom_emoji_max_bytes`](#remote_custom_emoji_max_bytes) | `MY_REMOTE_CUSTOM_EMOJI_MAX_BYTES` | `1048576` | no | no |
 | [`remote_media_cache_max_bytes`](#remote_media_cache_max_bytes) | `MY_REMOTE_MEDIA_CACHE_MAX_BYTES` | `1073741824` | no | no |
@@ -110,7 +113,7 @@ Domain of user handles (`@alice@{account_domain}`). Defaults to `host`. When it 
 
 ### `source_url`
 
-Where users get the source code of the running server, as an `https` URL. NodeInfo publishes it as `software.repository` (AGPL-3.0 section 13, ADR-0011); point it at your own repository when you run a modified version.
+Where users get the source code of the running server, as an `https` URL or a `mailto:` address to request it from. AGPL-3.0 section 13 (ADR-0011) requires offering the source to everyone who uses the server over the network; `GET /instance`, the information page (`/about`), the landing page, and NodeInfo (`metadata.sourceCode`, and `software.repository` for an `https` URL) publish it. Point it at your own source when you run a fork or a modified version (docs/operations/running.md).
 
 - Environment variable: `MY_SOURCE_URL`
 - Default: `https://github.com/best-friends/my`
@@ -270,6 +273,30 @@ How long an upload may stay unattached to any post or profile before the hourly 
 
 - Environment variable: `MY_MEDIA_UNATTACHED_TTL`
 - Default: `24h`
+- Required: no
+
+### `media_max_av_bytes`
+
+Largest accepted video or audio upload in bytes (ADR-0019 §8, ADR-0054 §6). The file is held in memory while it is checked and remuxed, so this also bounds the memory of one upload.
+
+- Environment variable: `MY_MEDIA_MAX_AV_BYTES`
+- Default: `104857600`
+- Required: no
+
+### `media_max_video_duration`
+
+Longest accepted video upload (ADR-0054 §6), as a Go duration such as `5m`.
+
+- Environment variable: `MY_MEDIA_MAX_VIDEO_DURATION`
+- Default: `5m`
+- Required: no
+
+### `media_max_audio_duration`
+
+Longest accepted audio upload (ADR-0054 §6), as a Go duration such as `10m`.
+
+- Environment variable: `MY_MEDIA_MAX_AUDIO_DURATION`
+- Default: `10m`
 - Required: no
 
 ### `custom_emoji_max_bytes`

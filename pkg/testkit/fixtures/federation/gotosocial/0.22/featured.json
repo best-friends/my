@@ -1,0 +1,10 @@
+{
+  "@context": "https://www.w3.org/ns/activitystreams",
+  "id": "http://gotosocial.example/users/admin/collections/featured",
+  "orderedItems": [
+    "http://gotosocial.example/users/admin/statuses/01F8MHAAY43M6RJ473VQFCVH37",
+    "http://gotosocial.example/users/admin/statuses/01F8MH75CBF9JFX4ZAD54N0W0R"
+  ],
+  "totalItems": 2,
+  "type": "OrderedCollection"
+}

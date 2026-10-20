@@ -233,6 +233,41 @@ describe("a status card", () => {
     expect(within(article).getByRole("img", { name: "No description" })).toHaveAttribute("src", "https://my.example/media/thumb.webp");
   });
 
+  test("shows the card of a post's link as one link, behind the content warning with the body", async () => {
+    const linked = status(1, {
+      spoiler_text: "News",
+      sensitive: true,
+      card: {
+        url: "https://news.example/articles/sunrise",
+        title: "The sun rose again",
+        description: "Observers report a sunrise.",
+        site_name: "Example News",
+        language: "en",
+        author_name: "Alice Example",
+        published_at: "2026-10-02T09:00:00Z",
+        image: { url: "https://my.example/media/proxy/card/small?sig=x", width: 1200, height: 630, description: "A sunrise" },
+      },
+    });
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([linked]))));
+    const { user } = await renderApp({ path: "/local" });
+
+    const article = await screen.findByRole("article", { name: /^Bob @bob/ });
+    expect(within(article).queryByRole("link", { name: "The sun rose again" })).not.toBeInTheDocument();
+
+    await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
+
+    const link = within(article).getByRole("link", { name: "The sun rose again" });
+    expect(link).toHaveAttribute("href", "https://news.example/articles/sunrise");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    expect(within(article).getByText("Observers report a sunrise.")).toHaveAttribute("lang", "en");
+    expect(within(article).getByText("By Alice Example · Oct 2, 2026")).toBeVisible();
+    // The post is sensitive: the card's image waits for its own toggle.
+    expect(within(article).queryByRole("img", { name: "A sunrise" })).not.toBeInTheDocument();
+    await user.click(within(article).getByRole("button", { name: "Show sensitive media", pressed: false }));
+    expect(within(article).getByRole("img", { name: "A sunrise" })).toHaveAttribute("src", "https://my.example/media/proxy/card/small?sig=x");
+  });
+
   test("moves an animated picture only without reduced motion, and not at all with autoplay off", async () => {
     const variant = (name: string, width: number) => ({ url: `https://my.example/media/${name}`, width, height: width / 2 });
     const dancing = status(1, {
@@ -268,6 +303,54 @@ describe("a status card", () => {
     // eslint-disable-next-line testing-library/no-node-access -- <picture> and <source> have no role.
     expect(still.parentElement?.querySelector("source")).toBeNull();
     expect(still).toHaveAttribute("src", "https://my.example/media/s.webp");
+  });
+
+  test("plays videos and audio files, local and remote, only when asked to", async () => {
+    const variant = (name: string, width: number) => ({ url: `https://my.example/media/${name}`, width, height: (width * 9) / 16 });
+    const playing = status(1, {
+      media_attachments: [
+        {
+          id: "0192f0c4-7a8e-7000-8000-0000000000m3",
+          type: "video",
+          state: "ready",
+          description: "A cat jumps",
+          meta: { focus: { x: 0, y: 0 }, width: 1920, height: 1080, duration: 12.5 },
+          variants: { small: variant("s.webp", 640), medium: variant("m.webp", 1920), large: variant("l.jpg", 1920) },
+          url: "https://my.example/media/large-animated.mp4",
+          preview_url: "https://my.example/media/s.webp",
+        },
+        {
+          id: "0192f0c4-7a8e-7000-8000-0000000000m4",
+          type: "audio",
+          state: "ready",
+          meta: { focus: { x: 0, y: 0 }, duration: 61 },
+          url: "https://my.example/media/large-animated.ogg",
+        },
+        {
+          // A remote video: served through the media proxy, without a poster.
+          id: "0192f0c4-7a8e-7000-8000-0000000000m5",
+          type: "video",
+          state: "ready",
+          description: "A remote clip",
+          meta: { focus: { x: 0, y: 0 } },
+          url: "https://my.example/proxy/media/m5/full",
+          remote_url: "https://remote.example/files/clip.mp4",
+        },
+      ],
+    });
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([playing]))));
+    await renderApp({ path: "/local" });
+    const article = await screen.findByRole("article", { description: "Post 1" });
+    // eslint-disable-next-line testing-library/no-node-access -- <video> and <audio> have no ARIA role.
+    const players = Array.from(article.querySelectorAll("video, audio"));
+    expect(players.map((p) => [p.tagName, p.getAttribute("src"), p.getAttribute("poster"), p.hasAttribute("controls"), p.hasAttribute("autoplay")])).toEqual([
+      ["VIDEO", "https://my.example/media/large-animated.mp4", "https://my.example/media/l.jpg", true, false],
+      ["AUDIO", "https://my.example/media/large-animated.ogg", null, true, false],
+      ["VIDEO", "https://my.example/proxy/media/m5/full", null, true, false],
+    ]);
+    expect(players[0]).toHaveAccessibleName("A cat jumps");
+    expect(players[1]).toHaveAccessibleName("No description");
+    expect(players[2]).toHaveAccessibleName("A remote clip");
   });
 
   test("formats the relative time in the page's locale", async () => {

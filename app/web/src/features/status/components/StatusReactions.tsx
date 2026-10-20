@@ -97,7 +97,7 @@ function ReactorsDialog({ statusId, isOpen, onOpenChange }: ReactorsDialogProps)
   const t = useT();
   const state = useReactors(statusId, isOpen);
   return (
-    <Dialog title={t("client:reaction.list.title")} isOpen={isOpen} onOpenChange={onOpenChange}>
+    <Dialog title={t("client:reaction.list.title")} closeLabel={t("client:reaction.list.close")} isOpen={isOpen} onOpenChange={onOpenChange}>
       {state.status === "loading" ? (
         <p role="status">{t("client:reaction.list.loading")}</p>
       ) : state.status === "error" ? (

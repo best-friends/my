@@ -54,7 +54,8 @@ export type ConfirmDialogProps = {
 
 /**
  * A confirmation dialog. Put it inside a `DialogTrigger` next to its trigger button, or control it with
- * `isOpen` / `onOpenChange`. It has no × button and a press outside does not close it; cancel and Esc do.
+ * `isOpen` / `onOpenChange`. It has no × button: cancel, Esc and a press outside close it, except that a dialog
+ * with fields ignores a press outside, which would lose what was typed.
  */
 export function ConfirmDialog({
   title,
@@ -70,7 +71,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const styles = confirmDialog();
   return (
-    <Dialog {...overlayProps} role="alertdialog" size="sm" title={title}>
+    <Dialog {...overlayProps} role="alertdialog" closeLabel={null} size="sm" title={title} isDismissable={children === undefined}>
       {({ close }) => (
         <Form
           className={styles.form()}

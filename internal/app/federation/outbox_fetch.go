@@ -37,12 +37,14 @@ const (
 	OutboxUserNamespace = "federation.outbox_fetch_user"
 )
 
-// OutboxAccounts is the part of the account module's public API that fetching outboxes reads:
-// the account and the outbox of its newest document. *appaccount.Service implements it.
+// OutboxAccounts is the part of the account module's public API that fetching outboxes and
+// featured collections reads: the account and the collections of its newest document.
+// *appaccount.Service implements it.
 type OutboxAccounts interface {
 	FindByID(ctx context.Context, id string) (appaccount.Actor, error)
-	// RemoteOutboxURL fails with appaccount.ErrNotFound for a local account.
+	// RemoteOutboxURL and RemoteFeaturedURL fail with appaccount.ErrNotFound for a local account.
 	RemoteOutboxURL(ctx context.Context, accountID string) (string, error)
+	RemoteFeaturedURL(ctx context.Context, accountID string) (string, error)
 }
 
 // fetchOutboxPayload is the payload of JobFetchOutbox.
@@ -112,6 +114,13 @@ func (h *StatusHandlers) FetchOutbox(ctx context.Context, viewerID, accountID st
 // account without the federation restriction (ok); the outbox is "" when the account's document
 // declares none or one of another origin.
 func (h *StatusHandlers) outboxOf(ctx context.Context, accountID string) (appaccount.Actor, string, bool, error) {
+	return h.remoteCollectionOf(ctx, accountID, h.d.Profiles.RemoteOutboxURL)
+}
+
+// remoteCollectionOf returns the account accountID and the collection that collection reads of
+// it when the account is an active remote account without the federation restriction (ok); the
+// collection is "" when the account's document declares none or one of another origin.
+func (h *StatusHandlers) remoteCollectionOf(ctx context.Context, accountID string, collection func(ctx context.Context, accountID string) (string, error)) (appaccount.Actor, string, bool, error) {
 	actor, err := h.d.Profiles.FindByID(ctx, accountID)
 	switch {
 	case errors.Is(err, appaccount.ErrNotFound):
@@ -127,16 +136,16 @@ func (h *StatusHandlers) outboxOf(ctx context.Context, accountID string) (appacc
 			return actor, "", false, err
 		}
 	}
-	outbox, err := h.d.Profiles.RemoteOutboxURL(ctx, accountID)
+	uri, err := collection(ctx, accountID)
 	switch {
 	case errors.Is(err, appaccount.ErrNotFound):
 		return actor, "", false, nil
 	case err != nil:
 		return actor, "", false, err
-	case !federation.SameOrigin(federation.IRI(outbox), federation.IRI(actor.Account.URI)):
+	case !federation.SameOrigin(federation.IRI(uri), federation.IRI(actor.Account.URI)):
 		return actor, "", true, nil
 	}
-	return actor, outbox, true, nil
+	return actor, uri, true, nil
 }
 
 // handleFetchOutbox is the queue.Handler of JobFetchOutbox. A document that cannot be fetched
@@ -161,14 +170,17 @@ func (h *StatusHandlers) handleFetchOutbox(ctx context.Context, j queue.Job) que
 	return queue.Retry(0, err)
 }
 
-// outboxBudget counts the documents that one fetch of an outbox fetches.
-type outboxBudget struct{ left int }
+// fetchBudget counts the documents that one fetch of a collection (an outbox, a featured
+// collection) fetches: left of at most limit.
+type fetchBudget struct{ left, limit int }
+
+func newFetchBudget(limit int) *fetchBudget { return &fetchBudget{left: limit, limit: limit} }
 
 // fetchWithin fetches uri when the budget allows another document; it fails with ErrFetchRefused
 // otherwise.
-func (h *StatusHandlers) fetchWithin(ctx context.Context, b *outboxBudget, uri federation.IRI) (*Fetched, error) {
+func (h *StatusHandlers) fetchWithin(ctx context.Context, b *fetchBudget, uri federation.IRI) (*Fetched, error) {
 	if b.left <= 0 {
-		return nil, fmt.Errorf("%w: %s: the outbox fetch reached %d documents", ErrFetchRefused, uri, OutboxMaxDocuments)
+		return nil, fmt.Errorf("%w: %s: the collection fetch reached %d documents", ErrFetchRefused, uri, b.limit)
 	}
 	b.left--
 	return h.d.Fetcher.Fetch(ctx, string(uri))
@@ -183,8 +195,8 @@ func (h *StatusHandlers) fetchOutbox(ctx context.Context, accountID string) (int
 		return 0, err
 	}
 	author := federation.IRI(actor.Account.URI)
-	budget := &outboxBudget{left: OutboxMaxDocuments}
-	page, err := h.outboxPage(ctx, budget, author, federation.IRI(outbox))
+	budget := newFetchBudget(OutboxMaxDocuments)
+	page, err := h.collectionPage(ctx, budget, author, federation.IRI(outbox))
 	if err != nil || page == nil {
 		return 0, err
 	}
@@ -205,18 +217,19 @@ func (h *StatusHandlers) fetchOutbox(ctx context.Context, accountID string) (int
 	return stored, nil
 }
 
-// outboxPage returns the page of the outbox to read: the outbox itself when it lists items, or
-// else its first page, embedded or fetched. Only an outbox and a page of the author's origin are
-// read; it returns nil when there is none.
-func (h *StatusHandlers) outboxPage(ctx context.Context, b *outboxBudget, author, outbox federation.IRI) (*federation.Collection, error) {
-	got, err := h.fetchWithin(ctx, b, outbox)
+// collectionPage returns the page of a collection of author (its outbox, its featured
+// collection) to read: the collection itself when it lists items, or else its first page,
+// embedded or fetched. Only a page of the author's origin is read; it returns nil when there is
+// none.
+func (h *StatusHandlers) collectionPage(ctx context.Context, b *fetchBudget, author, collection federation.IRI) (*federation.Collection, error) {
+	got, err := h.fetchWithin(ctx, b, collection)
 	if err != nil {
 		return nil, err
 	}
 	c := got.Document.Collection
 	switch {
 	case c == nil:
-		return nil, fmt.Errorf("%w: the outbox %s is not a collection", ErrNotTaken, outbox)
+		return nil, fmt.Errorf("%w: %s is not a collection", ErrNotTaken, collection)
 	case c.Page || len(c.Items) > 0:
 		return c, nil
 	}
@@ -295,30 +308,42 @@ func addressedToPublic(a federation.Audience) bool {
 // outboxPost stores the post that ref refers to unless it is stored (reporting false): the
 // embedded document as it is, or the document fetched from its IRI when it has the author's
 // origin, is addressed to Public, and is attributed to the author. Its parent is not fetched.
-func (h *StatusHandlers) outboxPost(ctx context.Context, b *outboxBudget, author federation.IRI, ref federation.Ref) (bool, error) {
-	switch _, err := h.d.Statuses.FindStatusByURI(ctx, string(ref.ID)); {
+func (h *StatusHandlers) outboxPost(ctx context.Context, b *fetchBudget, author federation.IRI, ref federation.Ref) (bool, error) {
+	_, stored, err := h.collectionPost(ctx, b, author, ref)
+	return stored, err
+}
+
+// collectionPost returns the status of the post that ref refers to: the stored one, or else the
+// one it stores (reporting stored) from the embedded document as it is, or from the document
+// fetched from its IRI when it has the author's origin, is addressed to Public, and is attributed
+// to the author. Its parent is not fetched.
+func (h *StatusHandlers) collectionPost(ctx context.Context, b *fetchBudget, author federation.IRI, ref federation.Ref) (appcontent.Status, bool, error) {
+	switch st, err := h.d.Statuses.FindStatusByURI(ctx, string(ref.ID)); {
 	case err == nil:
-		return false, nil
+		return st, false, nil
 	case !errors.Is(err, appcontent.ErrNotFound):
-		return false, err
+		return appcontent.Status{}, false, err
 	}
 	got := &Fetched{Document: ref.Trusted()}
 	if got.Document == nil {
 		if !federation.SameOrigin(ref.ID, author) {
-			return false, fmt.Errorf("%w: %s has another origin than its author %s", ErrNotTaken, ref.ID, author)
+			return appcontent.Status{}, false, fmt.Errorf("%w: %s has another origin than its author %s", ErrNotTaken, ref.ID, author)
 		}
 		if err := h.untombstoned(ctx, ref.ID); err != nil {
-			return false, err
+			return appcontent.Status{}, false, err
 		}
 		var err error
 		if got, err = h.fetchWithin(ctx, b, ref.ID); err != nil {
-			return false, err
+			return appcontent.Status{}, false, err
 		}
 		obj := got.Document.Object
 		if obj == nil || obj.AttributedTo != author || !addressedToPublic(obj.Audience) {
-			return false, fmt.Errorf("%w: %s is not a public post of %s", ErrNotTaken, ref.ID, author)
+			return appcontent.Status{}, false, fmt.Errorf("%w: %s is not a public post of %s", ErrNotTaken, ref.ID, author)
 		}
 	}
-	_, err := h.fetched(ctx, got, false)
-	return err == nil, err
+	st, err := h.fetched(ctx, got, false)
+	if err != nil {
+		return appcontent.Status{}, false, err
+	}
+	return st, true, nil
 }

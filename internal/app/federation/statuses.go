@@ -79,6 +79,9 @@ type StatusHandlersDeps struct {
 	Profiles      OutboxAccounts
 	Relationships Relationships
 	Restrictions  AccountPolicy
+	// Pins mirrors the featured collections of remote accounts (JobFetchFeatured, ADR-0044);
+	// without Pins (or Profiles), featured collections are not fetched.
+	Pins RemotePins
 	// Votes records the votes of remote accounts in local polls; nil takes every Note in reply
 	// to a local status as a post.
 	Votes RemotePollVotes

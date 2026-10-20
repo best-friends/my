@@ -20,6 +20,11 @@ export type About = {
    * has not loaded.
    */
   crawlers: { searchIndexing: Instance["search_indexing"]; aiUsage: Instance["ai_usage"] } | undefined;
+  /**
+   * Where users get the source code the server runs (AGPL-3.0 section 13, ADR-0011): an https URL or a mailto: URI;
+   * undefined while the instance has not loaded.
+   */
+  sourceUrl: string | undefined;
 };
 
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
@@ -46,6 +51,7 @@ export function useAbout(): About {
     thumbnail: instance?.thumbnail,
     contact: instance?.contact,
     crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
+    sourceUrl: instance?.source_url,
   };
 }
 

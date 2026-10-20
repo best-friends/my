@@ -271,6 +271,16 @@ func (r *InteractionRepository) DeletePin(ctx context.Context, tx uow.Tx, accoun
 	return n == 1, nil
 }
 
+// DeletePinsOf implements content.InteractionRepository.
+func (r *InteractionRepository) DeletePinsOf(ctx context.Context, tx uow.Tx, accountID string) (int64, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return 0, err
+	}
+	n, err := q.DeleteStatusPinsOf(ctx, accountID)
+	return n, wrap(err, "delete status pins")
+}
+
 // CountPins implements content.InteractionRepository.
 func (r *InteractionRepository) CountPins(ctx context.Context, tx uow.Tx, accountID string) (int64, error) {
 	q, err := queries(tx)

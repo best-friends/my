@@ -414,6 +414,30 @@ type Invite struct {
 	CreatedAt       time.Time
 }
 
+type LinkCard struct {
+	Url              string
+	CardUrl          string
+	Title            string
+	Description      string
+	SiteName         string
+	AuthorName       string
+	PublishedAt      *time.Time
+	ImageMediaID     *string
+	CreatorAccountID *string
+	Language         *string
+	FetchedAt        time.Time
+}
+
+type LinkCardMedium struct {
+	MediaID     string
+	RemoteUrl   string
+	ContentType string
+	Width       int32
+	Height      int32
+	Blurhash    string
+	Description string
+}
+
 type LocalAccount struct {
 	AccountID          string
 	UserID             string

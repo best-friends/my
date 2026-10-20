@@ -2,6 +2,8 @@
 // Modal dialogs: Dialog (centered) and Sheet (from the bottom on narrow screens). Both are React Aria's
 // ModalOverlay + Modal + Dialog, which trap focus while open, close on Esc, hide the rest of the page
 // from assistive technology, and return focus to the trigger on close (WAI-ARIA APG, dialog pattern).
+// Every dialog also closes by pointer alone: a dialog has a × button, an alert dialog a cancel button,
+// and a press on the scrim closes either unless the dialog holds input that the press would lose.
 import type { ReactNode, Ref } from "react";
 import { Button, Dialog as AriaDialog, DialogTrigger, Heading, Modal, ModalOverlay } from "react-aria-components";
 import { tv } from "tailwind-variants";
@@ -66,21 +68,27 @@ type ModalDialogProps = {
   title: ReactNode;
   /** The content. A function receives `close` for actions that close the dialog. */
   children: ReactNode | ((renderProps: { close: () => void }) => ReactNode);
-  /** The accessible name of the × button. Without it there is no × button, so the content must offer a way out. */
-  closeLabel?: string;
-  /** `alertdialog` for confirmations that interrupt the user (WAI-ARIA APG, alert dialog pattern). */
-  role?: "dialog" | "alertdialog";
   /** Controlled open state, for a dialog opened without a DialogTrigger (from a route, for example). */
   isOpen?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
-  /** Close when the user presses outside the panel. Off by default, so a stray tap never loses input. */
+  /**
+   * Close when the user presses outside the panel (a click or tap on the scrim). On by default, so that every
+   * dialog closes by pointer alone; turn it off for a dialog whose input a stray tap would lose (a form).
+   */
   isDismissable?: boolean;
   /** Ignore Esc, for a dialog that must be answered. */
   isKeyboardDismissDisabled?: boolean;
   /** Classes merged onto the panel with tailwind-merge. */
   className?: string;
   ref?: Ref<HTMLElement>;
+  /** `alertdialog` for confirmations that interrupt the user (WAI-ARIA APG, alert dialog pattern). */
+  role?: "dialog" | "alertdialog";
+  /**
+   * The accessible name of the × button in the header, so that the dialog closes by click or tap alone.
+   * It is required: only an `alertdialog`, whose content offers a cancel button, passes `null` to leave it out.
+   */
+  closeLabel: string | null;
 };
 
 function ModalDialog({
@@ -92,11 +100,12 @@ function ModalDialog({
   ref,
   placement,
   size,
+  isDismissable = true,
   ...overlayProps
 }: ModalDialogProps & { placement: "center" | "sheet"; size?: "sm" | "md" | "lg" }) {
   const styles = modal({ placement, size });
   return (
-    <ModalOverlay {...overlayProps} className={styles.overlay()}>
+    <ModalOverlay {...overlayProps} isDismissable={isDismissable} className={styles.overlay()}>
       <Modal className={styles.panel({ class: className })}>
         <AriaDialog ref={ref} role={role} className={styles.dialog()}>
           {({ close }) => (
@@ -105,7 +114,7 @@ function ModalDialog({
                 <Heading slot="title" className={styles.title()}>
                   {title}
                 </Heading>
-                {closeLabel !== undefined && (
+                {closeLabel !== null && (
                   <Button slot="close" aria-label={closeLabel} className={styles.close()}>
                     <CloseIcon />
                   </Button>

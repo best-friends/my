@@ -22,7 +22,7 @@ export type EditStatusDialogProps = {
 export function EditStatusDialog({ status, isOpen, onOpenChange }: EditStatusDialogProps) {
   const t = useT();
   return (
-    <Dialog title={t("client:status.edit.title")} closeLabel={t("client:status.edit.close")} isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
+    <Dialog title={t("client:status.edit.title")} closeLabel={t("client:status.edit.close")} isDismissable={false} isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
       {({ close }) => <EditStatusContent status={status} close={close} />}
     </Dialog>
   );

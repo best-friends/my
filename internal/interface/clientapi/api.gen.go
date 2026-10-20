@@ -1108,6 +1108,7 @@ const (
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
+	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
@@ -1147,6 +1148,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyFederatedTimelineEnabled:
 		return true
 	case InstanceSettingKeyIndexableDefault:
+		return true
+	case InstanceSettingKeyLinkCardsEnabled:
 		return true
 	case InstanceSettingKeyLocalTimelineEnabled:
 		return true
@@ -2932,7 +2935,7 @@ type AdminReportStatus struct {
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
 	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-	// empty, and its counts are zero.
+	// empty, its `card` is omitted, and its counts are zero.
 	Status Status `json:"status"`
 }
 
@@ -4047,7 +4050,7 @@ type Instance struct {
 	// ShortDescription A one-paragraph summary of the instance, as plain text; omitted when there is none.
 	ShortDescription *string `json:"short_description,omitempty"`
 
-	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13).
+	// SourceUrl Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
 	SourceUrl string `json:"source_url"`
 
 	// TermsUrl The public page of the instance's terms of service, which needs no sign-in; omitted
@@ -4223,6 +4226,66 @@ type LiftAccountActionRequest struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// LinkCard The card of the first link in a status (ADR-0062): the title, description, and image
+// that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+// after the status was posted or received. Omitted from a status with attachments or a
+// poll, from a status whose link has no card yet, and when the instance setting
+// `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+// it was posted may have none.
+//
+// Clients show the card as one link to `url` and, under a content warning, only once the
+// warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+// shows it.
+type LinkCard struct {
+	// Author The account that the page names as its creator (`fediverse:creator`), given only when
+	// the account's server lists the page's domain among its `attributionDomains`.
+	Author *Account `json:"author,omitempty"`
+
+	// AuthorName The author that the page names, as plain text; omitted when it names none.
+	AuthorName *string `json:"author_name,omitempty"`
+
+	// Description The description of the page, as plain text; empty when it has none.
+	Description string `json:"description"`
+
+	// Image The image of a link card, served by this server's media proxy in the small size of an
+	// attachment's image. An animated image is its first frame.
+	Image *LinkCardImage `json:"image,omitempty"`
+
+	// Language The BCP 47 language of the page; omitted when it does not say.
+	Language *string `json:"language,omitempty"`
+
+	// PublishedAt When the page says it was published; omitted when it does not say.
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+
+	// SiteName The name of the site, as plain text; the host of `url` when the page names none.
+	SiteName string `json:"site_name"`
+
+	// Title The title of the page, as plain text.
+	Title string `json:"title"`
+
+	// Url The page that the card links to, after redirects.
+	Url string `json:"url"`
+}
+
+// LinkCardImage The image of a link card, served by this server's media proxy in the small size of an
+// attachment's image. An animated image is its first frame.
+type LinkCardImage struct {
+	// Blurhash The blurhash (https://blurha.sh) of the image, to show while it loads.
+	Blurhash *string `json:"blurhash,omitempty"`
+
+	// Description The alternative text of the image (`og:image:alt`); omitted when it has none.
+	Description *string `json:"description,omitempty"`
+
+	// Height The height of the original image in pixels.
+	Height int `json:"height"`
+
+	// Url The image through the media proxy.
+	Url string `json:"url"`
+
+	// Width The width of the original image in pixels.
+	Width int `json:"width"`
+}
+
 // MediaAnimatedVariants The moving renditions of an animation, absent for a still image: animated WebP for
 // `small` and `medium`, and a GIF for `large`.
 type MediaAnimatedVariants struct {
@@ -4270,7 +4333,8 @@ type MediaAttachment struct {
 	// Meta What the server knows about the media file.
 	Meta MediaMeta `json:"meta"`
 
-	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still).
+	// PreviewUrl Where its preview is served; for an upload, `variants.small.url` (still). A video or
+	// audio file without a poster has none.
 	PreviewUrl *string `json:"preview_url,omitempty"`
 
 	// RemoteUrl The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
@@ -4280,16 +4344,20 @@ type MediaAttachment struct {
 	// then `ready`, or `failed` when the content could not be processed.
 	State MediaAttachmentState `json:"state"`
 
-	// Type The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+	// Type The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+	// a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+	// an animated image: muted, looped, without controls.
 	Type MediaAttachmentType `json:"type"`
 
 	// Url Where the file is served on this instance; for an upload, `variants.large.url`, or
-	// `variants.animated.large.url` for an animation.
+	// `variants.animated.large.url` for an animation, and the file itself for a video or
+	// audio file.
 	Url *string `json:"url,omitempty"`
 
 	// Variants The renditions of a ready media file within the sizes of its purpose (see
 	// `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-	// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+	// still: for an animation, its first frame, and for a video or audio file, its poster
+	// (absent without one). Clients pick one by its width (`srcset`), and
 	// show `animated` instead only when the user lets animations play and does not prefer
 	// reduced motion.
 	Variants *MediaVariants `json:"variants,omitempty"`
@@ -4299,7 +4367,9 @@ type MediaAttachment struct {
 // then `ready`, or `failed` when the content could not be processed.
 type MediaAttachmentState string
 
-// MediaAttachmentType The kind of media. Every accepted upload is an `image`; a file that failed processing is `unknown`.
+// MediaAttachmentType The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+// a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+// an animated image: muted, looped, without controls.
 type MediaAttachmentType string
 
 // MediaFocus The focal point that previews keep in view when they crop the image, from -1.0 (left,
@@ -4311,6 +4381,9 @@ type MediaFocus struct {
 
 // MediaMeta What the server knows about the media file.
 type MediaMeta struct {
+	// Duration The length of a video or audio file in seconds; absent for an image and until the file is ready.
+	Duration *float64 `json:"duration,omitempty"`
+
 	// Focus The focal point that previews keep in view when they crop the image, from -1.0 (left,
 	// bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
 	Focus MediaFocus `json:"focus"`
@@ -4346,6 +4419,11 @@ type MediaUpload struct {
 	// (within 750 × 250, 1500 × 500, and 3000 × 1000), or a custom `emoji` (within 64,
 	// 128, and 256 pixels).
 	Purpose *MediaUploadPurpose `json:"purpose,omitempty"`
+
+	// Thumbnail The poster of a video or audio file: an image that it shows before it plays, which
+	// the client takes from the file. Its declared type is ignored; it must be an image
+	// within the image limits. It is ignored for an image.
+	Thumbnail *openapi_types.File `json:"thumbnail,omitempty"`
 }
 
 // MediaUploadPurpose What the file is for, which picks the sizes of its variants: an `attachment` of a
@@ -4378,7 +4456,8 @@ type MediaVariant struct {
 
 // MediaVariants The renditions of a ready media file within the sizes of its purpose (see
 // `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
-// still: for an animation, its first frame. Clients pick one by its width (`srcset`), and
+// still: for an animation, its first frame, and for a video or audio file, its poster
+// (absent without one). Clients pick one by its width (`srcset`), and
 // show `animated` instead only when the user lets animations play and does not prefer
 // reduced motion.
 type MediaVariants struct {
@@ -4818,11 +4897,14 @@ type PreviewDomainBlockImportRequest struct {
 //   - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
 //     instance accepts.
 //   - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-//     accepted format, or its declared type does not match its content.
+//     accepted format or codec (such as HEVC video), or its declared type does not match its
+//     content.
 //   - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-//     many pixels or frames.
-//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as an image
-//     of its format.
+//     many pixels or frames; or the video has too many pixels or frames per second.
+//   - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+//     instance accepts.
+//   - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+//     its format.
 //   - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
 //     no longer be changed on its own.
 //   - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
@@ -5190,7 +5272,7 @@ type SpoilerText = string
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
 // `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-// empty, and its counts are zero.
+// empty, its `card` is omitted, and its counts are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
@@ -5206,7 +5288,7 @@ type Status struct {
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
 	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-	// empty, and its counts are zero.
+	// empty, its `card` is omitted, and its counts are zero.
 	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
@@ -5214,6 +5296,18 @@ type Status struct {
 
 	// BoostsCount The number of boosts.
 	BoostsCount int `json:"boosts_count"`
+
+	// Card The card of the first link in a status (ADR-0062): the title, description, and image
+	// that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+	// after the status was posted or received. Omitted from a status with attachments or a
+	// poll, from a status whose link has no card yet, and when the instance setting
+	// `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+	// it was posted may have none.
+	//
+	// Clients show the card as one link to `url` and, under a content warning, only once the
+	// warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+	// shows it.
+	Card *LinkCard `json:"card,omitempty"`
 
 	// Content The text as sanitized HTML, with mentions, hashtags, and URLs linked. The HTML of a
 	// remote status is what the server's sanitizer kept of the received document (ADR-0019 §2).
@@ -5924,7 +6018,7 @@ type AccountProfile = Account
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
 // `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-// empty, and its counts are zero.
+// empty, its `card` is omitted, and its counts are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.

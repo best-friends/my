@@ -278,7 +278,7 @@ function EditRole({ role, rights, actions }: { role: AdminRole; rights: RoleRigh
       <Button size="sm" aria-label={t("client:admin.roles.edit_role", { role: key })}>
         {t("client:admin.roles.edit")}
       </Button>
-      <Dialog title={t("client:admin.roles.edit.title", { role: key })} closeLabel={t("client:admin.roles.edit.close")} size="md">
+      <Dialog title={t("client:admin.roles.edit.title", { role: key })} closeLabel={t("client:admin.roles.edit.close")} isDismissable={false} size="md">
         {({ close }) => <EditRoleForm role={role} rights={rights} actions={actions} close={close} />}
       </Dialog>
     </DialogTrigger>

@@ -665,6 +665,10 @@ func interactionBookmarksAndPins(t *testing.T, e *interactionEnv) {
 	if err := e.svc.Pin(ctx, author, s.ID); err != nil {
 		t.Errorf("Pin after Unpin = %v", err)
 	}
+	// The pins of a local account are its own commands, not a mirror of a featured collection.
+	if err := e.svc.ReplaceRemotePins(ctx, author, nil); !errors.Is(err, appcontent.ErrActorUnavailable) {
+		t.Errorf("ReplaceRemotePins(local) = %v, want ErrActorUnavailable", err)
+	}
 	if got := e.takeEvents(); len(got) != 0 {
 		t.Errorf("bookmarks and pins emitted %v", got)
 	}

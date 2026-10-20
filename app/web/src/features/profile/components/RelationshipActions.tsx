@@ -202,6 +202,7 @@ function ConfirmDialog({ isOpen, kind, name, onCancel, onConfirm }: ConfirmDialo
   return (
     <Dialog
       role="alertdialog"
+      closeLabel={null}
       size="sm"
       title={text.title}
       isOpen={isOpen}

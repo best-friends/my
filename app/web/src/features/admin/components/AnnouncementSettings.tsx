@@ -211,7 +211,7 @@ function EditAnnouncement({ announcement, name, actions }: AnnouncementActionPro
       <Button size="sm" aria-label={t("client:admin.announcements.edit_one", { announcement: name })}>
         {t("client:admin.announcements.edit")}
       </Button>
-      <Dialog title={t("client:admin.announcements.edit.title")} closeLabel={t("client:admin.announcements.edit.close")} size="md">
+      <Dialog title={t("client:admin.announcements.edit.title")} closeLabel={t("client:admin.announcements.edit.close")} isDismissable={false} size="md">
         {({ close }) => <EditAnnouncementForm announcement={announcement} actions={actions} close={close} />}
       </Dialog>
     </DialogTrigger>

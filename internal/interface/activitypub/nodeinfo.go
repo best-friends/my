@@ -5,6 +5,7 @@ package activitypub
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 )
 
 // nodeInfoSchema names NodeInfo 2.1, as the link relation and the profile of the document.
@@ -51,8 +52,13 @@ type nodeThumbnail struct {
 // metadata returns NodeInfo's metadata: nodeName and, from m, the keys that Mastodon, Misskey,
 // and Pleroma read (nodeDescription; maintainer as Misskey; staffAccounts as Pleroma, the actor
 // ids) with the thumbnail.
-func metadata(name string, m NodeMetadata) map[string]any {
+func metadata(name, sourceURL string, m NodeMetadata) map[string]any {
 	out := map[string]any{"nodeName": name}
+	if sourceURL != "" {
+		// Where users get the source (AGPL-3.0 section 13, ADR-0011), also when it is a mailto: address, which
+		// software.repository cannot hold.
+		out["sourceCode"] = sourceURL
+	}
 	if m.Description != "" {
 		out["nodeDescription"] = m.Description
 	}
@@ -76,6 +82,15 @@ type nodeInfo struct {
 	OpenRegistrations bool             `json:"openRegistrations"`
 	Usage             nodeInfoUsage    `json:"usage"`
 	Metadata          map[string]any   `json:"metadata"`
+}
+
+// repository is the source URL as NodeInfo 2.1 software.repository, whose schema takes only http(s) URLs: a
+// mailto: address is left out of it (and published in metadata.sourceCode only).
+func repository(sourceURL string) string {
+	if !strings.HasPrefix(sourceURL, "https://") {
+		return ""
+	}
+	return sourceURL
 }
 
 type nodeInfoSoftware struct {
@@ -145,11 +160,11 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	h.writeJSON(w, r, typeNodeInfo, nodeInfo{
 		Version:           "2.1",
-		Software:          nodeInfoSoftware{Name: softwareName, Version: h.o.SoftwareVersion, Repository: h.o.SourceURL},
+		Software:          nodeInfoSoftware{Name: softwareName, Version: h.o.SoftwareVersion, Repository: repository(h.o.SourceURL)},
 		Protocols:         []string{"activitypub"},
 		Services:          nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
 		OpenRegistrations: open,
 		Usage:             nodeInfoUsage{Users: nodeInfoUsers{Total: users}, LocalPosts: posts},
-		Metadata:          metadata(name, meta),
+		Metadata:          metadata(name, h.o.SourceURL, meta),
 	})
 }

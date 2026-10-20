@@ -6,6 +6,7 @@
 import { Button } from "@my/ui";
 import { createMemoryHistory, createRootRouteWithContext, createRouter, Outlet } from "@tanstack/react-router";
 import { screen, waitFor, within } from "@testing-library/react";
+import { userEvent } from "@testing-library/user-event";
 import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RouterContext } from "../../lib/query";
@@ -115,9 +116,9 @@ describe("the new-post form", () => {
     const sheet = await openSheet(user);
     const text = await within(sheet).findByRole("textbox", { name: "Your post" });
 
-    const images = within(sheet).getByRole("button", { name: "Add images" });
+    const images = within(sheet).getByRole("button", { name: "Add images, video, or audio" });
     expect(images).toHaveAccessibleDescription(
-      "Up to 4 images: JPEG, PNG, GIF or WebP. Location and other metadata are removed before upload.",
+      "Up to 4 files: JPEG, PNG, GIF, or WebP images, MP4 or WebM video, or MP3, Ogg, or M4A audio. Location and other metadata are removed.",
     );
     expect(within(sheet).getByRole("button", { name: "Add a content warning" })).toHaveAttribute("aria-pressed", "false");
     const visibility = within(sheet).getByRole("button", { name: "Visibility: Public" });
@@ -134,8 +135,8 @@ describe("the new-post form", () => {
     expect(text).toHaveFocus();
     await user.tab();
     expect(images).toHaveFocus();
-    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add images");
-    expect(images).toHaveAccessibleDescription(/^Up to 4 images/);
+    expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add images, video, or audio");
+    expect(images).toHaveAccessibleDescription(/^Up to 4 files/);
     await user.tab();
     expect(await screen.findByRole("tooltip", { hidden: true })).toHaveTextContent("Add a content warning");
   });
@@ -409,7 +410,7 @@ function recordUploads() {
   return files;
 }
 
-/** The hidden file input of the "Add images" button (React Aria's FileTrigger). */
+/** The hidden file input of the "Add images, video, or audio" button (React Aria's FileTrigger). */
 function fileInput(): HTMLInputElement {
   // eslint-disable-next-line testing-library/no-node-access -- the file input is hidden behind its button, as the browser's picker is.
   const input = document.querySelector<HTMLInputElement>('input[type="file"]');
@@ -429,9 +430,9 @@ describe("images", () => {
 
     await user.upload(fileInput(), new File(["exif and pixels"], "IMG_0001.jpeg", { type: "image/jpeg" }));
 
-    const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
-    expect(description).toHaveAccessibleDescription(/Describe the image for people who cannot see it\./);
-    expect(within(sheet).getByRole("button", { name: "Add images" })).toHaveAccessibleDescription(/^1 image attached Up to 4 images/);
+    const description = await within(sheet).findByRole("textbox", { name: "Description of attachment 1" });
+    expect(description).toHaveAccessibleDescription(/Describe it for people who cannot see or hear it\./);
+    expect(within(sheet).getByRole("button", { name: "Add images, video, or audio" })).toHaveAccessibleDescription(/^1 file attached Up to 4 files/);
     expect(within(sheet).getByRole("button", { name: "Post" })).toBeDisabled();
     // 6000 × 4000 is more than 3840 × 2160 pixels of area: scaled to fit, with the aspect ratio kept.
     await waitFor(() => {
@@ -470,8 +471,8 @@ describe("images", () => {
     const sheet = await openSheet(user);
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Look");
     await user.upload(fileInput(), new File(["png"], "chart.png", { type: "image/png" }));
-    const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
-    expect(description).toHaveAccessibleDescription(/Your settings ask for a description of every image\./);
+    const description = await within(sheet).findByRole("textbox", { name: "Description of attachment 1" });
+    expect(description).toHaveAccessibleDescription(/Your settings ask for a description of every attachment\./);
     const post = within(sheet).getByRole("button", { name: "Post" });
     await waitFor(() => {
       expect(post).toBeEnabled();
@@ -506,9 +507,9 @@ describe("images", () => {
     const sheet = await openSheet(user);
     await user.type(await within(sheet).findByRole("textbox", { name: "Your post" }), "Look");
     await user.upload(fileInput(), new File(["png"], "chart.png", { type: "image/png" }));
-    const description = await within(sheet).findByRole("textbox", { name: "Description of image 1" });
+    const description = await within(sheet).findByRole("textbox", { name: "Description of attachment 1" });
     expect(description).toBeRequired();
-    expect(description).toHaveAccessibleDescription(/This server requires a description of every image\./);
+    expect(description).toHaveAccessibleDescription(/This server requires a description of every attachment\./);
     const post = within(sheet).getByRole("button", { name: "Post" });
     await waitFor(() => {
       expect(post).toBeEnabled();
@@ -520,7 +521,7 @@ describe("images", () => {
       expect(description).toHaveFocus();
     });
     expect(description).toBeInvalid();
-    expect(description).toHaveAccessibleDescription(/Add a description of this image\./);
+    expect(description).toHaveAccessibleDescription(/Add a description of this attachment\./);
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(sent).toHaveLength(0);
 
@@ -528,6 +529,82 @@ describe("images", () => {
     await user.click(post);
     expect(await findToast("Posted.")).toBeInTheDocument();
     expect(sent[0]?.body["media"]).toEqual([{ id: uploadedMediaId, description: "A bar chart" }]);
+  });
+});
+
+/** Records the file and the thumbnail (poster) of every POST /media. */
+function recordMediaParts() {
+  const parts: { file: File; thumbnail: File | null }[] = [];
+  server.use(
+    http.post(`${apiBase}/media`, async ({ request }) => {
+      const form = await request.formData();
+      const file = form.get("file");
+      const thumbnail = form.get("thumbnail");
+      if (file instanceof File) parts.push({ file, thumbnail: thumbnail instanceof File ? thumbnail : null });
+      return undefined;
+    }),
+  );
+  return parts;
+}
+
+/**
+ * jsdom loads no video: the poster's <video> fires `loadeddata` when given a source and `seeked` when moved, and has
+ * the size and length of a 4K video of 12 seconds.
+ */
+function stubVideoElement() {
+  vi.spyOn(HTMLMediaElement.prototype, "src", "set").mockImplementation(function (this: HTMLMediaElement) {
+    queueMicrotask(() => this.dispatchEvent(new Event("loadeddata")));
+  });
+  vi.spyOn(HTMLMediaElement.prototype, "currentTime", "set").mockImplementation(function (this: HTMLMediaElement) {
+    queueMicrotask(() => this.dispatchEvent(new Event("seeked")));
+  });
+  vi.spyOn(HTMLMediaElement.prototype, "duration", "get").mockReturnValue(12);
+  vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => undefined);
+  vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(3840);
+  vi.spyOn(HTMLVideoElement.prototype, "videoHeight", "get").mockReturnValue(2160);
+}
+
+describe("videos and audio files", () => {
+  test("upload as they are, a video with a poster drawn from it, an audio file without one", async () => {
+    signedIn();
+    const drawn = await stubImageApis();
+    stubVideoElement();
+    const parts = recordMediaParts();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+
+    await user.upload(fileInput(), [
+      new File(["moov and mdat"], "IMG_0002.MOV", { type: "video/quicktime" }),
+      new File(["ID3 and frames"], "song.mp3", { type: "audio/mpeg" }),
+    ]);
+
+    expect(await within(sheet).findByRole("textbox", { name: "Description of attachment 1" })).toBeInTheDocument();
+    expect(within(sheet).getByRole("textbox", { name: "Description of attachment 2" })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(parts).toHaveLength(2);
+    });
+    const [video, audio] = [parts.find((p) => p.file.name === "IMG_0002.MOV"), parts.find((p) => p.file.name === "song.mp3")];
+    // The files go as they are: the server removes their metadata without re-encoding them.
+    expect(video?.file.type).toBe("video/quicktime");
+    expect(await video?.file.text()).toBe("moov and mdat");
+    expect(await audio?.file.text()).toBe("ID3 and frames");
+    expect(audio?.thumbnail).toBeNull();
+    // The poster is a frame of the video, within the medium size of 1920 × 1080.
+    expect(video?.thumbnail?.type).toBe("image/jpeg");
+    expect(drawn).toEqual([{ width: 1920, height: 1080 }]);
+  });
+
+  test("of other types are not attached", async () => {
+    signedIn();
+    const parts = recordMediaParts();
+    const { user } = await renderApp();
+    const sheet = await openSheet(user);
+    // The picker offers only the accepted types; a file dropped past it is still checked.
+    await userEvent.setup({ applyAccept: false }).upload(fileInput(), new File(["mkv"], "movie.mkv", { type: "video/x-matroska" }));
+
+    expect(await screen.findByText("movie.mkv is not a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file.")).toBeInTheDocument();
+    expect(within(sheet).queryByRole("list", { name: "Attached media" })).not.toBeInTheDocument();
+    expect(parts).toHaveLength(0);
   });
 });
 

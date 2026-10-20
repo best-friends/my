@@ -66,6 +66,9 @@ const (
 	// SettingSecurityContact is where vulnerabilities are reported (/.well-known/security.txt,
 	// RFC 9116); empty serves no security.txt.
 	SettingSecurityContact SettingKey = "security_contact"
+	// SettingLinkCardsEnabled is whether statuses show the cards of their links, fetched from
+	// the linked pages (FR-117, ADR-0062).
+	SettingLinkCardsEnabled SettingKey = "link_cards_enabled"
 	// SettingRequireMediaDescription makes every media file attached to a local post need an
 	// alt text (FR-105).
 	SettingRequireMediaDescription SettingKey = "require_media_description"
@@ -302,6 +305,10 @@ var definitions = []Definition{
 	{
 		Key: SettingRequireMediaDescription, Kind: KindBool, Default: "false",
 		Doc: "Whether every media file attached to a local post needs an alt text; posts and edits without one are rejected (FR-105).",
+	},
+	{
+		Key: SettingLinkCardsEnabled, Kind: KindBool, Default: "true",
+		Doc: "Whether statuses show the cards of their links, which the server fetches from the linked pages (FR-117, ADR-0062).",
 	},
 }
 
@@ -659,6 +666,9 @@ func (s Settings) AIUsage() AIUsage {
 
 // IndexableDefault returns the value of SettingIndexableDefault.
 func (s Settings) IndexableDefault() bool { return s.boolValue(SettingIndexableDefault) }
+
+// LinkCardsEnabled returns the value of SettingLinkCardsEnabled.
+func (s Settings) LinkCardsEnabled() bool { return s.boolValue(SettingLinkCardsEnabled) }
 
 // SecurityContact returns the value of SettingSecurityContact, "" when unset.
 func (s Settings) SecurityContact() string {

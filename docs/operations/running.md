@@ -39,6 +39,41 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 `service.name`・`service.version`・`my.role` も付く。この 3 つの指標は別の行には出さない。`metrics_emf_dimensions` に選んだ項目は、EMF の決まりに従って文字列で書く（例: `http.response.status_code` を次元にすると `"200"`）。
 ログは標準エラー、そのほかの EMF の行は標準出力に出る。Lambda はどちらも CloudWatch Logs に送るので、どちらの行からも指標が取り出される。
 
+## ソースコードの公開（AGPL-3.0）
+
+my のライセンスは AGPL-3.0-only（[ADR-0011](../adr/0011-license.md)）。AGPL-3.0 第 13 条により、サーバーを運営してネットワーク越しに利用者に使わせる人は、
+その利用者に、動いているプログラムの対応するソースコードを入手する手段を示す義務を負う。対象はアカウントを持つ利用者に限らず、サーバーとやり取りするすべての人である。
+
+公開先は設定 `source_url`（環境変数 `MY_SOURCE_URL`、[設定リファレンス](../reference/configuration.md#source_url)）で示す。
+
+| 値 | 意味 |
+| --- | --- |
+| 指定しない | 既定の `https://github.com/best-friends/my`。改変していない my をそのまま動かすとき |
+| `https:` の URL | ソースコードを読める場所（フォークのリポジトリ、特定の版のタグやアーカイブなど） |
+| `mailto:` の URI | ソースコードを請求するメールアドレス（例: `mailto:source@example.org`。`?subject=...` も付けられる） |
+
+`https:` と `mailto:` 以外の値（`http:`、`git@...`、相対パス、ユーザー情報や `#` 付きの URL、アドレスのない `mailto:` など）では、`my config check` が失敗し、サーバーは起動しない。
+
+公開先は次の場所に出る。
+
+- クライアント API の `GET /instance` の `source_url`
+- Web クライアントのインスタンスの情報ページ（`/about`）の「ソースコード」の区画と、ランディングページ（`/`）のリンク
+- NodeInfo（`/nodeinfo/2.1`）の `metadata.sourceCode`。`https:` の URL なら `software.repository` にも出す
+  （NodeInfo 2.1 のスキーマは `software.repository` に `http(s)` の URL しか許さないので、`mailto:` は `metadata.sourceCode` だけに出す）
+
+### フォーク・改変したとき
+
+my を改変して動かす（パッチを当てる、フォークをビルドする、依存を差し替える）ときは、既定の URL は動いているソースコードを指さなくなる。
+`source_url` を、動いている版の改変を含むソースコードの場所に変える。リポジトリの最新ではなく、動いている版に対応するコミットやタグ・アーカイブを指すと、利用者は確実に同じソースを得られる。
+改変していない公式の版を動かしているなら、既定のままでよい。
+
+### `mailto:` を使うとき
+
+- 請求を受けたら、遅れずに対応するソースコード（ビルドに必要なスクリプトを含む）を渡せるようにしておく。メールで示すだけで、渡す準備がなければ義務を果たしたことにならない
+- 運営をやめた後や担当が替わった後も届くアドレスにする。個人の受信箱ではなく、運営の共有アドレスを推奨する
+- 迷惑メールの対策で請求のメールを落とさないようにする
+- 公開してよいアドレスにする。情報ページとランディングページ、NodeInfo で誰にでも見える
+
 ## 指標（メトリクス）
 
 設定 `metrics_exporter`（既定 `none`）でサービスの指標を出す（[ADR-0055](../adr/0055-service-observability.md)、設定は [configuration.md](../reference/configuration.md)）。
@@ -192,7 +227,7 @@ URI の形式は [ADR-0018](../adr/0018-federated-uris.md) に従う。
 | --- | --- |
 | `GET /.well-known/webfinger` | WebFinger（RFC 7033）。`resource` は `acct:alice@{account_domain}`（`acct:alice@{host}` も可）、Actor の `id`、`/@alice` の URL。`subject` は常に `account_domain` 側のハンドル |
 | `GET /.well-known/host-meta`、`/.well-known/host-meta.json` | WebFinger の URI テンプレート（XRD / JRD） |
-| `GET /.well-known/nodeinfo`、`GET /nodeinfo/2.1` | NodeInfo 2.1。`software.repository` は設定 `source_url`（AGPL 第 13 条、[ADR-0011](../adr/0011-license.md)） |
+| `GET /.well-known/nodeinfo`、`GET /nodeinfo/2.1` | NodeInfo 2.1。`metadata.sourceCode` は設定 `source_url`、`https:` の URL なら `software.repository` も（[ソースコードの公開](#ソースコードの公開agpl-30)） |
 | `GET /ap/actors/{uuid}` | Actor（`publicKey` は RSA の `#main-key`）。HTML を優先するリクエストは `/@{username}` へ 303 |
 | `GET /ap/actors/{uuid}/{outbox,followers,following,featured,featured-tags}` | コレクション。投稿・フォローを実装するまでは空 |
 | `GET /@{username}` | ActivityPub の `Accept` なら Actor の `id` へ 302。それ以外は Web クライアントの HTML（下記） |

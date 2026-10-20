@@ -15,7 +15,7 @@ import {
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { EmojiPickerButton } from "../../emoji";
-import { acceptedImageTypes, maxAttachments } from "../hooks/policy";
+import { acceptedMediaTypes, maxAttachments } from "../hooks/policy";
 import { composeTextId } from "../hooks/useCompose";
 import type { ReadyComposeForm } from "../hooks/useComposeForm";
 import { VisibilityPicker } from "./VisibilityPicker";
@@ -41,7 +41,7 @@ export function ComposeTools({ form }: ComposeToolsProps) {
     <div className="flex min-w-0 flex-wrap items-center gap-1">
       <TooltipTrigger>
         <FileTrigger
-          acceptedFileTypes={acceptedImageTypes}
+          acceptedFileTypes={acceptedMediaTypes}
           allowsMultiple
           onSelect={(files) => {
             attachments.add(files === null ? [] : Array.from(files));

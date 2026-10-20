@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/best-friends/my/internal/app/media"
 )
@@ -66,6 +67,63 @@ func (p FakeMediaProcessor) Process(ctx context.Context, data []byte, limits med
 	}
 	if probe.Format == media.FormatGIF {
 		out.Animated = &media.Variants{Small: moving("small", 1, 1), Medium: moving("medium", 2, 1), Large: moving("large", 4, 3)}
+	}
+	return out, nil
+}
+
+// InspectAV implements media.AVProcessor: it detects the container with media.SniffAV, reports
+// a file as 3 seconds long (an MP4 or WebM that contains "audio-only" as audio, the others of
+// those as 640 × 360 video), and rejects files that contain "corrupt", "hevc" (an unsupported
+// codec), or "too-long".
+func (FakeMediaProcessor) InspectAV(ctx context.Context, data []byte, limits media.AVLimits) (media.AVProbe, error) {
+	if err := ctx.Err(); err != nil {
+		return media.AVProbe{}, err
+	}
+	limits = limits.WithDefaults()
+	if int64(len(data)) > limits.MaxBytes {
+		return media.AVProbe{}, media.ErrTooLarge
+	}
+	f := media.SniffAV(data)
+	switch {
+	case f == "":
+		return media.AVProbe{}, media.ErrUnsupportedFormat
+	case bytes.Contains(data, []byte("corrupt")):
+		return media.AVProbe{}, media.ErrCorrupt
+	case bytes.Contains(data, []byte("hevc")):
+		return media.AVProbe{}, media.ErrUnsupportedCodec
+	case bytes.Contains(data, []byte("too-long")):
+		return media.AVProbe{}, media.ErrTooLong
+	}
+	p := media.AVProbe{Format: f, Kind: media.AVAudio, Duration: 3 * time.Second, AudioCodec: "opus"}
+	switch {
+	case f == media.FormatMP3:
+		p.ContentType, p.Extension, p.AudioCodec = "audio/mpeg", "mp3", "mp3"
+	case f == media.FormatOgg:
+		p.ContentType, p.Extension = "audio/ogg", "ogg"
+	case f == media.FormatMP4 && bytes.Contains(data, []byte("audio-only")):
+		p.ContentType, p.Extension, p.AudioCodec = "audio/mp4", "m4a", "aac"
+	case f == media.FormatWebM && bytes.Contains(data, []byte("audio-only")):
+		p.ContentType, p.Extension = "audio/webm", "webm"
+	case f == media.FormatMP4:
+		p.Kind, p.ContentType, p.Extension, p.VideoCodec, p.AudioCodec = media.AVVideo, "video/mp4", "mp4", "h264", "aac"
+		p.Width, p.Height = 640, 360
+	default:
+		p.Kind, p.ContentType, p.Extension, p.VideoCodec = media.AVVideo, "video/webm", "webm", "vp9"
+		p.Width, p.Height = 640, 360
+	}
+	return p, nil
+}
+
+// Remux implements media.AVProcessor: the file without the bytes "location", and as its cover
+// the bytes after "cover:", if any.
+func (p FakeMediaProcessor) Remux(ctx context.Context, data []byte, limits media.AVLimits) (media.AVOutput, error) {
+	probe, err := p.InspectAV(ctx, data, limits)
+	if err != nil {
+		return media.AVOutput{}, err
+	}
+	out := media.AVOutput{AVProbe: probe, Data: bytes.ReplaceAll(data, []byte("location"), nil)}
+	if _, cover, ok := bytes.Cut(data, []byte("cover:")); ok {
+		out.Cover = bytes.Clone(cover)
 	}
 	return out, nil
 }

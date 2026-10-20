@@ -175,6 +175,20 @@ func (q *Queries) DeleteStatusPin(ctx context.Context, arg DeleteStatusPinParams
 	return result.RowsAffected(), nil
 }
 
+const deleteStatusPinsOf = `-- name: DeleteStatusPinsOf :execrows
+DELETE FROM status_pins WHERE account_id = $1
+`
+
+// DeleteStatusPinsOf removes every pin of an account: the mirror of a remote account's featured
+// collection is replaced as a whole.
+func (q *Queries) DeleteStatusPinsOf(ctx context.Context, accountID string) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteStatusPinsOf, accountID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getBookmark = `-- name: GetBookmark :one
 SELECT account_id, status_id, created_at, id FROM bookmarks WHERE account_id = $1 AND status_id = $2
 `
