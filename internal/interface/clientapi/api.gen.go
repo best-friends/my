@@ -3417,6 +3417,16 @@ type CreateInviteRequest struct {
 	MaxUses *int `json:"max_uses,omitempty"`
 }
 
+// CreatePasskeyRequest The browser's answer to a passkey registration.
+type CreatePasskeyRequest struct {
+	// Credential The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+	// `PublicKeyCredential.toJSON()` returns for the new credential.
+	Credential map[string]interface{} `json:"credential"`
+
+	// RegistrationToken The `registration_token` of `POST /passkeys/registration`.
+	RegistrationToken string `json:"registration_token"`
+}
+
 // CreateReportNoteRequest A note to add to a report.
 type CreateReportNoteRequest struct {
 	// Body The note as plain text; it may not be blank.
@@ -4638,6 +4648,47 @@ type PageInfo struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
+// Passkey A passkey that signs the authenticated user in instead of the password.
+type Passkey struct {
+	// CreatedAt When the passkey was registered.
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Name What the user calls the passkey, such as the device it is on.
+	Name string `json:"name"`
+}
+
+// PasskeyList The authenticated user's passkeys, oldest first.
+type PasskeyList struct {
+	Items []Passkey `json:"items"`
+}
+
+// PasskeyRegistration The start of a passkey registration.
+type PasskeyRegistration struct {
+	// ExpiresAt When `registration_token` stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Options The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+	// values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+	Options map[string]interface{} `json:"options"`
+
+	// RegistrationToken An opaque token that carries the registration to `POST /passkeys`.
+	RegistrationToken string `json:"registration_token"`
+}
+
+// PasskeyRegistrationRequest The name of a new passkey and the user's password that confirms it.
+type PasskeyRegistrationRequest struct {
+	// Name What the user calls the passkey; spaces around it are dropped.
+	Name string `json:"name"`
+
+	// Password The user's current password.
+	Password string `json:"password"`
+}
+
 // Permission A capability that a role grants. `manage_accounts`: the accounts and their moderation
 // actions.
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
@@ -4778,6 +4829,12 @@ type PreviewDomainBlockImportRequest struct {
 //     authentication.
 //   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
 //     operation, has no two-factor authentication.
+//   - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+//     registration does not verify, or the passkey is registered already.
+//   - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+//     unknown or expired. Start a new one.
+//   - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+//     allowed. Remove one first.
 //   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
 //     says which.
 //   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -6354,6 +6411,12 @@ type AppealModerationActionJSONRequestBody = AppealModerationActionRequest
 // UpdateNotificationMarkerJSONRequestBody defines body for UpdateNotificationMarker for application/json ContentType.
 type UpdateNotificationMarkerJSONRequestBody = NotificationMarkerUpdate
 
+// CreatePasskeyJSONRequestBody defines body for CreatePasskey for application/json ContentType.
+type CreatePasskeyJSONRequestBody = CreatePasskeyRequest
+
+// BeginPasskeyRegistrationJSONRequestBody defines body for BeginPasskeyRegistration for application/json ContentType.
+type BeginPasskeyRegistrationJSONRequestBody = PasskeyRegistrationRequest
+
 // UpdatePreferencesJSONRequestBody defines body for UpdatePreferences for application/json ContentType.
 type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 
@@ -6785,6 +6848,18 @@ type ServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(w http.ResponseWriter, r *http.Request, id Id)
+	// ListPasskeys List the authenticated user's passkeys
+	// (GET /passkeys)
+	ListPasskeys(w http.ResponseWriter, r *http.Request)
+	// CreatePasskey Register a passkey with the browser's response to a registration
+	// (POST /passkeys)
+	CreatePasskey(w http.ResponseWriter, r *http.Request)
+	// BeginPasskeyRegistration Start the registration of a passkey
+	// (POST /passkeys/registration)
+	BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request)
+	// DeletePasskey Remove a passkey
+	// (DELETE /passkeys/{id})
+	DeletePasskey(w http.ResponseWriter, r *http.Request, id Id)
 	// GetPreferences Get the authenticated user's preferences
 	// (GET /preferences)
 	GetPreferences(w http.ResponseWriter, r *http.Request)
@@ -10905,6 +10980,74 @@ func (siw *ServerInterfaceWrapper) DismissNotification(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// ListPasskeys operation middleware
+func (siw *ServerInterfaceWrapper) ListPasskeys(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPasskeys(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePasskey operation middleware
+func (siw *ServerInterfaceWrapper) CreatePasskey(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePasskey(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BeginPasskeyRegistration operation middleware
+func (siw *ServerInterfaceWrapper) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BeginPasskeyRegistration(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeletePasskey operation middleware
+func (siw *ServerInterfaceWrapper) DeletePasskey(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeletePasskey(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPreferences operation middleware
 func (siw *ServerInterfaceWrapper) GetPreferences(w http.ResponseWriter, r *http.Request) {
 
@@ -11993,6 +12136,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp", wrapper.EnableTotp)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/disable", wrapper.DisableTotp)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/recovery_codes", wrapper.RegenerateRecoveryCodes)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/passkeys", wrapper.ListPasskeys)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys", wrapper.CreatePasskey)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys/registration", wrapper.BeginPasskeyRegistration)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/passkeys/{id}", wrapper.DeletePasskey)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}", wrapper.GetAccount)
@@ -20293,6 +20440,227 @@ func (response DismissNotificationdefaultApplicationProblemPlusJSONResponse) Vis
 	return err
 }
 
+type ListPasskeysRequestObject struct {
+}
+
+type ListPasskeysResponseObject interface {
+	VisitListPasskeysResponse(w http.ResponseWriter) error
+}
+
+type ListPasskeys200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListPasskeys200JSONResponse struct {
+	Body    PasskeyList
+	Headers ListPasskeys200ResponseHeaders
+}
+
+func (response ListPasskeys200JSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPasskeysdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListPasskeysdefaultApplicationProblemPlusJSONResponse) VisitListPasskeysResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePasskeyRequestObject struct {
+	Body *CreatePasskeyJSONRequestBody
+}
+
+type CreatePasskeyResponseObject interface {
+	VisitCreatePasskeyResponse(w http.ResponseWriter) error
+}
+
+type CreatePasskey201JSONResponse Passkey
+
+func (response CreatePasskey201JSONResponse) VisitCreatePasskeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePasskeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreatePasskeydefaultApplicationProblemPlusJSONResponse) VisitCreatePasskeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BeginPasskeyRegistrationRequestObject struct {
+	Body *BeginPasskeyRegistrationJSONRequestBody
+}
+
+type BeginPasskeyRegistrationResponseObject interface {
+	VisitBeginPasskeyRegistrationResponse(w http.ResponseWriter) error
+}
+
+type BeginPasskeyRegistration200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type BeginPasskeyRegistration200JSONResponse struct {
+	Body    PasskeyRegistration
+	Headers BeginPasskeyRegistration200ResponseHeaders
+}
+
+func (response BeginPasskeyRegistration200JSONResponse) VisitBeginPasskeyRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BeginPasskeyRegistrationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response BeginPasskeyRegistrationdefaultApplicationProblemPlusJSONResponse) VisitBeginPasskeyRegistrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeletePasskeyRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DeletePasskeyResponseObject interface {
+	VisitDeletePasskeyResponse(w http.ResponseWriter) error
+}
+
+type DeletePasskey204Response struct {
+}
+
+func (response DeletePasskey204Response) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeletePasskeydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeletePasskeydefaultApplicationProblemPlusJSONResponse) VisitDeletePasskeyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetPreferencesRequestObject struct {
 }
 
@@ -22795,6 +23163,18 @@ type StrictServerInterface interface {
 	// DismissNotification Dismiss a notification
 	// (POST /notifications/{id}/dismiss)
 	DismissNotification(ctx context.Context, request DismissNotificationRequestObject) (DismissNotificationResponseObject, error)
+	// ListPasskeys List the authenticated user's passkeys
+	// (GET /passkeys)
+	ListPasskeys(ctx context.Context, request ListPasskeysRequestObject) (ListPasskeysResponseObject, error)
+	// CreatePasskey Register a passkey with the browser's response to a registration
+	// (POST /passkeys)
+	CreatePasskey(ctx context.Context, request CreatePasskeyRequestObject) (CreatePasskeyResponseObject, error)
+	// BeginPasskeyRegistration Start the registration of a passkey
+	// (POST /passkeys/registration)
+	BeginPasskeyRegistration(ctx context.Context, request BeginPasskeyRegistrationRequestObject) (BeginPasskeyRegistrationResponseObject, error)
+	// DeletePasskey Remove a passkey
+	// (DELETE /passkeys/{id})
+	DeletePasskey(ctx context.Context, request DeletePasskeyRequestObject) (DeletePasskeyResponseObject, error)
 	// GetPreferences Get the authenticated user's preferences
 	// (GET /preferences)
 	GetPreferences(ctx context.Context, request GetPreferencesRequestObject) (GetPreferencesResponseObject, error)
@@ -26634,6 +27014,118 @@ func (sh *strictHandler) DismissNotification(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DismissNotificationResponseObject); ok {
 		if err := validResponse.VisitDismissNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPasskeys operation middleware
+func (sh *strictHandler) ListPasskeys(w http.ResponseWriter, r *http.Request) {
+	var request ListPasskeysRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPasskeys(ctx, request.(ListPasskeysRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPasskeys")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPasskeysResponseObject); ok {
+		if err := validResponse.VisitListPasskeysResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePasskey operation middleware
+func (sh *strictHandler) CreatePasskey(w http.ResponseWriter, r *http.Request) {
+	var request CreatePasskeyRequestObject
+
+	var body CreatePasskeyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePasskey(ctx, request.(CreatePasskeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePasskey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePasskeyResponseObject); ok {
+		if err := validResponse.VisitCreatePasskeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BeginPasskeyRegistration operation middleware
+func (sh *strictHandler) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+	var request BeginPasskeyRegistrationRequestObject
+
+	var body BeginPasskeyRegistrationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BeginPasskeyRegistration(ctx, request.(BeginPasskeyRegistrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BeginPasskeyRegistration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BeginPasskeyRegistrationResponseObject); ok {
+		if err := validResponse.VisitBeginPasskeyRegistrationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeletePasskey operation middleware
+func (sh *strictHandler) DeletePasskey(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DeletePasskeyRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeletePasskey(ctx, request.(DeletePasskeyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeletePasskey")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeletePasskeyResponseObject); ok {
+		if err := validResponse.VisitDeletePasskeyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

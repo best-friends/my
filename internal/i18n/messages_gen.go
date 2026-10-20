@@ -368,6 +368,34 @@ func (l *Localizer) ServerAuthSignInMissing() string {
 	return l.format("server:auth.sign_in.missing", nil)
 }
 
+// ServerAuthSignInPasskey formats "server:auth.sign_in.passkey". Button on the sign-in page that signs in with a passkey (WebAuthn) instead of the email address and password. Shown only in browsers that support passkeys.
+//
+//	en: Sign in with a passkey
+func (l *Localizer) ServerAuthSignInPasskey() string {
+	return l.format("server:auth.sign_in.passkey", nil)
+}
+
+// ServerAuthSignInPasskeyCancelled formats "server:auth.sign_in.passkey_cancelled". Alert on the sign-in page when the browser's passkey prompt was dismissed or failed before anything was sent to the server.
+//
+//	en: The passkey was not used. Try again, or sign in with your email address and password.
+func (l *Localizer) ServerAuthSignInPasskeyCancelled() string {
+	return l.format("server:auth.sign_in.passkey_cancelled", nil)
+}
+
+// ServerAuthSignInPasskeyExpired formats "server:auth.sign_in.passkey_expired". Alert on the sign-in page when the passkey sign-in was answered after it expired (5 minutes) or was already used.
+//
+//	en: The sign-in with a passkey took too long. Try again.
+func (l *Localizer) ServerAuthSignInPasskeyExpired() string {
+	return l.format("server:auth.sign_in.passkey_expired", nil)
+}
+
+// ServerAuthSignInPasskeyFailed formats "server:auth.sign_in.passkey_failed". Alert on the sign-in page when the server could not verify the passkey (unknown or removed passkey, wrong signature) or its account cannot sign in.
+//
+//	en: The passkey could not be verified. Try another passkey, or sign in with your email address and password.
+func (l *Localizer) ServerAuthSignInPasskeyFailed() string {
+	return l.format("server:auth.sign_in.passkey_failed", nil)
+}
+
 // ServerAuthSignInPasswordLabel formats "server:auth.sign_in.password_label". Label of the password field on the sign-in form.
 //
 //	en: Password
@@ -1129,6 +1157,27 @@ func (l *Localizer) ServerErrorsMissingPermissionDetail(permission string) strin
 //	en: The requested resource was not found.
 func (l *Localizer) ServerErrorsNotFound() string {
 	return l.format("server:errors.not_found", nil)
+}
+
+// ServerErrorsPasskeyInvalid formats "server:errors.passkey.invalid". Title of the HTTP 422 API error when the browser's answer to a passkey registration does not verify (another site, no screen lock or biometrics, or a passkey that is registered already).
+//
+//	en: The passkey could not be verified.
+func (l *Localizer) ServerErrorsPasskeyInvalid() string {
+	return l.format("server:errors.passkey.invalid", nil)
+}
+
+// ServerErrorsPasskeyRegistrationExpired formats "server:errors.passkey.registration_expired". Title of the HTTP 422 API error when the user finishes a passkey registration after it expired (5 minutes) or with an unknown registration.
+//
+//	en: The registration of the passkey expired. Start again.
+func (l *Localizer) ServerErrorsPasskeyRegistrationExpired() string {
+	return l.format("server:errors.passkey.registration_expired", nil)
+}
+
+// ServerErrorsPasskeyTooMany formats "server:errors.passkey.too_many". Title of the HTTP 409 API error when the user registers a passkey while having the most passkeys allowed (20).
+//
+//	en: You have as many passkeys as allowed. Remove one first.
+func (l *Localizer) ServerErrorsPasskeyTooMany() string {
+	return l.format("server:errors.passkey.too_many", nil)
 }
 
 // ServerErrorsRateLimited formats "server:errors.rate_limited". API error title for HTTP 429 when a client sent more requests than the rate limit allows.

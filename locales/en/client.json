@@ -7055,6 +7055,134 @@
     "defaultMessage": "Turn off",
     "description": "Button that turns two-factor authentication off."
   },
+  "settings.passkeys.title": {
+    "defaultMessage": "Passkeys",
+    "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
+  },
+  "settings.passkeys.summary": {
+    "defaultMessage": "Sign in with your device's screen lock instead of your password",
+    "description": "Description of the passkeys page in the settings menu."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Your password keeps working.",
+    "description": "Explanation at the top of the passkeys settings page."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "Add a passkey",
+    "description": "Heading of the form that adds a passkey on the passkeys settings page."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey.",
+    "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "Name",
+    "description": "Label of the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "Such as the device or password manager that keeps it.",
+    "description": "Hint under the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "Enter a name.",
+    "description": "Error of the empty name field of a new passkey."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "Current password",
+    "description": "Label of the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "Adding a way to sign in needs your password.",
+    "description": "Hint under the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "Enter your password.",
+    "description": "Error of the empty password field when adding a passkey."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "Add passkey",
+    "description": "Button that adds a passkey: it checks the password and opens the browser's prompt."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error of the password field when the server refused the password that confirms adding a passkey."
+  },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "No passkey was added: the browser's prompt was closed or timed out. Try again.",
+    "description": "Alert when the user dismissed the browser's passkey prompt or it timed out."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "This device or password manager already has a passkey for your account.",
+    "description": "Alert when the authenticator already holds a passkey of the account."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "The browser could not create a passkey for this site.",
+    "description": "Alert when the browser refused to create a passkey for another reason (unsupported, or the site's address does not allow it)."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "The passkey could not be verified. Try again with another device or password manager.",
+    "description": "Alert when the server could not verify the new passkey (for example, the device has no screen lock)."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "Adding the passkey took too long. Try again.",
+    "description": "Alert when the passkey was created after the registration expired (5 minutes)."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "You have as many passkeys as allowed. Remove one first.",
+    "description": "Alert when the user already has the most passkeys allowed (20)."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "Too many incorrect passwords: {reason}",
+    "description": "Alert when too many wrong passwords were entered to add a passkey. {reason} is the server's message, which says when to try again."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "Could not add the passkey: {reason}",
+    "description": "Alert when adding a passkey failed for another reason. {reason} is the error's message."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "The passkey “{name}” was added.",
+    "description": "Status after a passkey was added. {name} is the name the user gave it."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "This browser cannot create passkeys. Open this page in a browser that supports them to add one.",
+    "description": "Note instead of the form that adds a passkey, in a browser without passkey support."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "Your passkeys",
+    "description": "Heading of the list of the user's passkeys."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "No passkeys yet",
+    "description": "Empty state of the list of the user's passkeys."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "Added {date}",
+    "description": "When a passkey was added, under its name. {date} is a formatted date and time."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "Remove",
+    "description": "Button that removes a passkey, and the confirm button of its dialog."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "Remove the passkey “{name}”?",
+    "description": "Title of the dialog that confirms removing a passkey. {name} is its name."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "You will no longer be able to sign in with it. Delete it from your device or password manager too.",
+    "description": "Explanation in the dialog that confirms removing a passkey."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes the dialog without removing the passkey."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "Could not remove the passkey: {reason}",
+    "description": "Alert in the dialog when removing a passkey failed. {reason} is the error's message."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "The passkey “{name}” was removed.",
+    "description": "Announcement after a passkey was removed. {name} is its name."
+  },
   "settings.visibility.direct": {
     "defaultMessage": "Mentioned people",
     "description": "Visibility option: only the mentioned accounts."

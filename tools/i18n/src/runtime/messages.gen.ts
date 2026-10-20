@@ -3554,6 +3554,70 @@ export interface MessageArgs {
   "client:settings.navigation.title": {};
   /** Not offered by this server */
   "client:settings.navigation.unavailable": {};
+  /** No passkey was added: the browser's prompt was closed or timed out. Try again. */
+  "client:settings.passkeys.add.cancelled": {};
+  /** Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey. */
+  "client:settings.passkeys.add.description": {};
+  /** This device or password manager already has a passkey for your account. */
+  "client:settings.passkeys.add.exists": {};
+  /** Adding the passkey took too long. Try again. */
+  "client:settings.passkeys.add.expired": {};
+  /** Could not add the passkey: {reason} */
+  "client:settings.passkeys.add.failed": { reason: string };
+  /** The passkey could not be verified. Try again with another device or password manager. */
+  "client:settings.passkeys.add.invalid": {};
+  /** Too many incorrect passwords: {reason} */
+  "client:settings.passkeys.add.rate_limited": { reason: string };
+  /** Add passkey */
+  "client:settings.passkeys.add.submit": {};
+  /** Add a passkey */
+  "client:settings.passkeys.add.title": {};
+  /** You have as many passkeys as allowed. Remove one first. */
+  "client:settings.passkeys.add.too_many": {};
+  /** The browser could not create a passkey for this site. */
+  "client:settings.passkeys.add.unavailable": {};
+  /** The password is wrong. */
+  "client:settings.passkeys.add.wrong_password": {};
+  /** The passkey “{name}” was added. */
+  "client:settings.passkeys.added": { name: string };
+  /** Added {date} */
+  "client:settings.passkeys.added_at": { date: string };
+  /** A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Your password keeps working. */
+  "client:settings.passkeys.description": {};
+  /** No passkeys yet */
+  "client:settings.passkeys.empty": {};
+  /** Your passkeys */
+  "client:settings.passkeys.list.title": {};
+  /** Name */
+  "client:settings.passkeys.name": {};
+  /** Such as the device or password manager that keeps it. */
+  "client:settings.passkeys.name.description": {};
+  /** Enter a name. */
+  "client:settings.passkeys.name.required": {};
+  /** Current password */
+  "client:settings.passkeys.password": {};
+  /** Adding a way to sign in needs your password. */
+  "client:settings.passkeys.password.description": {};
+  /** Enter your password. */
+  "client:settings.passkeys.password.required": {};
+  /** Remove */
+  "client:settings.passkeys.remove": {};
+  /** Cancel */
+  "client:settings.passkeys.remove.cancel": {};
+  /** You will no longer be able to sign in with it. Delete it from your device or password manager too. */
+  "client:settings.passkeys.remove.description": {};
+  /** Could not remove the passkey: {reason} */
+  "client:settings.passkeys.remove.failed": { reason: string };
+  /** Remove the passkey “{name}”? */
+  "client:settings.passkeys.remove.title": { name: string };
+  /** The passkey “{name}” was removed. */
+  "client:settings.passkeys.removed": { name: string };
+  /** Sign in with your device's screen lock instead of your password */
+  "client:settings.passkeys.summary": {};
+  /** Passkeys */
+  "client:settings.passkeys.title": {};
+  /** This browser cannot create passkeys. Open this page in a browser that supports them to add one. */
+  "client:settings.passkeys.unsupported": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
   /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
@@ -4176,6 +4240,14 @@ export interface MessageArgs {
   "server:auth.sign_in.failed": {};
   /** Enter your email address and password. */
   "server:auth.sign_in.missing": {};
+  /** Sign in with a passkey */
+  "server:auth.sign_in.passkey": {};
+  /** The passkey was not used. Try again, or sign in with your email address and password. */
+  "server:auth.sign_in.passkey_cancelled": {};
+  /** The sign-in with a passkey took too long. Try again. */
+  "server:auth.sign_in.passkey_expired": {};
+  /** The passkey could not be verified. Try another passkey, or sign in with your email address and password. */
+  "server:auth.sign_in.passkey_failed": {};
   /** Password */
   "server:auth.sign_in.password_label": {};
   /** {minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}} */
@@ -4394,6 +4466,12 @@ export interface MessageArgs {
   "server:errors.missing_permission_detail": { permission: string };
   /** The requested resource was not found. */
   "server:errors.not_found": {};
+  /** The passkey could not be verified. */
+  "server:errors.passkey.invalid": {};
+  /** The registration of the passkey expired. Start again. */
+  "server:errors.passkey.registration_expired": {};
+  /** You have as many passkeys as allowed. Remove one first. */
+  "server:errors.passkey.too_many": {};
   /** Too many requests. */
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */

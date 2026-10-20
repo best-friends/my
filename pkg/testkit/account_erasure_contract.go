@@ -194,6 +194,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	aliceID, userID := alice.AccountID, alice.User.ID
 	e.signIn(t, appidentity.SignInInput{})
 	e.enableTOTP(t, alice)
+	e.registerPasskey(t, userID, "phone")
 	bob := e.user(t, "bob")
 	carol := e.actor(t, "https://remote.example/users/carol")
 
@@ -293,7 +294,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		e.rows(t, table, "account_id", aliceID, 0)
 	}
 	for _, table := range []string{"user_email_addresses", "user_primary_emails", "password_credentials", "sessions",
-		"user_preferences", "user_time_zones", "user_registration_states", "registration_applications", "totp_enrollments"} {
+		"user_preferences", "user_time_zones", "user_registration_states", "registration_applications", "totp_enrollments", "passkey_credentials"} {
 		e.rows(t, table, "user_id", userID, 0)
 	}
 	e.rows(t, "local_accounts", "account_id", aliceID, 1)

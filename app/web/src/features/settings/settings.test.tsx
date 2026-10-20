@@ -742,6 +742,7 @@ describe("signed out", () => {
       "/settings/profile",
       "/settings/preferences",
       "/settings/two-factor",
+      "/settings/passkeys",
       "/settings/auto-delete",
       "/settings/follow-requests",
       "/settings/blocks",

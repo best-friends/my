@@ -335,6 +335,16 @@ linters:
               desc: sign and verify through federation.Signer / federation.Verifier (internal/adapter/httpsig)
             - pkg: github.com/dunglas/httpsfv
               desc: Structured Fields of HTTP signatures are parsed in internal/adapter/httpsig
+        # The WebAuthn library stays inside the adapter of identity.PasskeyCeremonies (FR-004), so that
+        # every passkey ceremony asks for the same discoverable, user-verified credential.
+        webauthn:
+          list-mode: lax
+          files:
+            - $all
+            - "!**/internal/adapter/webauthn/**"
+          deny:
+            - pkg: github.com/go-webauthn
+              desc: run WebAuthn ceremonies through identity.PasskeyCeremonies (internal/adapter/webauthn)
         # The OpenTelemetry SDK and the Prometheus client stay inside the adapters of kernel.Meter
         # (ADR-0055 §1), so that the core, the interfaces, and the other adapters measure through the port.
         opentelemetry:

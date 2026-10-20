@@ -207,6 +207,22 @@
     "defaultMessage": "[Ḗƞŧḗḗř ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ȧȧƞḓ ƥȧȧşşẇǿǿřḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.sign_in.passkey": {
+    "defaultMessage": "[Şīɠƞ īƞ ẇīŧħ ȧȧ ƥȧȧşşķḗḗẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.passkey_cancelled": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ ẇȧȧş ƞǿǿŧ ŭŭşḗḗḓ. Ŧřẏ ȧȧɠȧȧīƞ, ǿǿř şīɠƞ īƞ ẇīŧħ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ȧȧƞḓ ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.passkey_expired": {
+    "defaultMessage": "[Ŧħḗḗ şīɠƞ-īƞ ẇīŧħ ȧȧ ƥȧȧşşķḗḗẏ ŧǿǿǿǿķ ŧǿǿǿǿ ŀǿǿƞɠ. Ŧřẏ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.passkey_failed": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ṽḗḗřīƒīḗḗḓ. Ŧřẏ ȧȧƞǿǿŧħḗḗř ƥȧȧşşķḗḗẏ, ǿǿř şīɠƞ īƞ ẇīŧħ ẏǿǿŭŭř ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ȧȧƞḓ ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.password_label": {
     "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -641,6 +657,18 @@
   },
   "errors.not_found": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧḗḗḓ řḗḗşǿǿŭŭřƈḗḗ ẇȧȧş ƞǿǿŧ ƒǿǿŭŭƞḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.invalid": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşķḗḗẏ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ṽḗḗřīƒīḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.registration_expired": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗɠīşŧřȧȧŧīǿǿƞ ǿǿƒ ŧħḗḗ ƥȧȧşşķḗḗẏ ḗḗẋƥīřḗḗḓ. Şŧȧȧřŧ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.passkey.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧş ḿȧȧƞẏ ƥȧȧşşķḗḗẏş ȧȧş ȧȧŀŀǿǿẇḗḗḓ. Řḗḗḿǿǿṽḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.rate_limited": {

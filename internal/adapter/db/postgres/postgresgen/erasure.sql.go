@@ -712,6 +712,25 @@ func (q *Queries) EraseNotificationsOfStatuses(ctx context.Context, ids []string
 	return err
 }
 
+const erasePasskeyCredentialRevocations = `-- name: ErasePasskeyCredentialRevocations :exec
+DELETE FROM passkey_credential_revocations WHERE passkey_id IN (
+  SELECT c.id FROM passkey_credentials c WHERE c.user_id = $1)
+`
+
+func (q *Queries) ErasePasskeyCredentialRevocations(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, erasePasskeyCredentialRevocations, userID)
+	return err
+}
+
+const erasePasskeyCredentials = `-- name: ErasePasskeyCredentials :exec
+DELETE FROM passkey_credentials WHERE user_id = $1
+`
+
+func (q *Queries) ErasePasskeyCredentials(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, erasePasskeyCredentials, userID)
+	return err
+}
+
 const erasePasswordCredentials = `-- name: ErasePasswordCredentials :exec
 DELETE FROM password_credentials WHERE user_id = $1
 `

@@ -27,7 +27,8 @@ func fakeBuild() fstest.MapFS {
 				"imports": ["_shared-BBBB.js"], "dynamicImports": ["src/lazy.tsx"], "css": ["assets/index-CCCC.css"]},
 			"_shared-BBBB.js": {"file": "assets/shared-BBBB.js", "css": ["assets/shared-DDDD.css"]},
 			"src/lazy.tsx": {"file": "assets/lazy-EEEE.js", "src": "src/lazy.tsx", "isDynamicEntry": true},
-			"src/server-pages.css": {"file": "assets/server-pages-FFFF.css", "src": "src/server-pages.css", "isEntry": true}
+			"src/server-pages.css": {"file": "assets/server-pages-FFFF.css", "src": "src/server-pages.css", "isEntry": true},
+			"src/server-pages/passkey-sign-in.ts": {"file": "assets/server-pages-passkey-GGGG.js", "src": "src/server-pages/passkey-sign-in.ts", "isEntry": true}
 		}`)},
 		"index.html":                   {Data: []byte("<!doctype html><title>vite</title>")},
 		"assets/index-AAAA.js":         {Data: []byte("console.log('entry')")},
@@ -126,6 +127,9 @@ func TestStylesheetIsTheServerPagesEntry(t *testing.T) {
 	h, mux := newHandler(t, web.Options{})
 	if got := h.Stylesheet(); got != "/assets/server-pages-FFFF.css" {
 		t.Fatalf("Stylesheet() = %q, want the server pages' entry", got)
+	}
+	if got := h.PasskeySignInScript(); got != "/assets/server-pages-passkey-GGGG.js" {
+		t.Errorf("PasskeySignInScript() = %q, want the passkey entry", got)
 	}
 	if rec := get(mux, h.Stylesheet(), nil); rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "text/css; charset=utf-8" {
 		t.Errorf("GET %s = %d %q", h.Stylesheet(), rec.Code, rec.Header().Get("Content-Type"))

@@ -64,6 +64,8 @@ type Options struct {
 	AutoDelete AutoDeletePolicies
 	// TwoFactor runs the viewer's two-factor authentication; nil answers its operations 404.
 	TwoFactor TwoFactorSettings
+	// Passkeys runs the viewer's passkeys; nil answers their operations 404.
+	Passkeys PasskeySettings
 	// Media runs the media use cases and presents profile images; nil serves no media
 	// operation (they fail with 500) and presents no images.
 	Media MediaFiles
