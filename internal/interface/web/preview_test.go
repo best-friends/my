@@ -83,6 +83,9 @@ func previewHandler(t *testing.T, p *fakePreviews, o web.Options) http.Handler {
 	if o.InstanceName == nil {
 		o.InstanceName = named("Example Social")
 	}
+	if o.Settings == nil {
+		o.Settings = crawlerSettings("allow", "allow")
+	}
 	_, mux := newHandler(t, o)
 	return mux
 }
@@ -228,7 +231,7 @@ func TestPostPreview(t *testing.T) {
 	rec = get(mux, "/@alice/status/"+unlisted.Post.Status.ID, nil)
 	body := rec.Body.String()
 	got = metas(t, body)
-	if rec.Code != http.StatusOK || got["robots"] != "noindex" || rec.Header().Get("X-Robots-Tag") != "noindex" {
+	if rec.Code != http.StatusOK || got["robots"] != "noindex, noarchive" || rec.Header().Get("X-Robots-Tag") != "noindex, noarchive" {
 		t.Errorf("unlisted post = %d, robots %q, X-Robots-Tag %q", rec.Code, got["robots"], rec.Header().Get("X-Robots-Tag"))
 	}
 	// Without an attached image, the header image is the preview; the post's language sets
@@ -388,7 +391,7 @@ func TestHiddenPagesAreTheGenericShell(t *testing.T) {
 			t.Errorf("GET %s = %d, want 404 with the generic shell:\n%s", path, rec.Code, rec.Body)
 		}
 		h := rec.Header()
-		if h.Get("X-Robots-Tag") != "noindex" || h.Get("Content-Type") != "text/html; charset=utf-8" || h.Get("Vary") != "Accept" {
+		if h.Get("X-Robots-Tag") != "noindex, noarchive" || h.Get("Content-Type") != "text/html; charset=utf-8" || h.Get("Vary") != "Accept" {
 			t.Errorf("GET %s headers = %v", path, h)
 		}
 		if first == nil {
@@ -399,13 +402,13 @@ func TestHiddenPagesAreTheGenericShell(t *testing.T) {
 	}
 	// Other pages of the web client under a profile (the reserved words of ADR-0053 but status,
 	// pages under a post, and the form without status, which is no page), and remote profiles,
-	// are the generic shell.
+	// are the generic shell, which search engines never index (ADR-0057).
 	for _, path := range []string{
 		"/@alice/followers", "/@alice/" + statusID, "/@alice/status/" + statusID + "/boosts",
 		"/@bob@remote.example", "/@/x", "/@",
 	} {
 		rec := get(mux, path, nil)
-		if rec.Code != http.StatusOK || rec.Body.String() != generic.Body.String() || rec.Header().Get("X-Robots-Tag") != "" {
+		if rec.Code != http.StatusOK || rec.Body.String() != generic.Body.String() || rec.Header().Get("X-Robots-Tag") != "noindex, noarchive" {
 			t.Errorf("GET %s = %d, want the generic shell", path, rec.Code)
 		}
 	}

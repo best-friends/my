@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -56,6 +57,15 @@ const (
 	SettingRetentionReports             SettingKey = "retention_reports"
 	SettingRetentionModerationActions   SettingKey = "retention_moderation_actions"
 	SettingRetentionAuditLog            SettingKey = "retention_audit_log"
+	// SettingSearchIndexing, SettingAIUsage, and SettingIndexableDefault are what the instance
+	// states to search engines and AI crawlers, and the indexable default of new accounts
+	// (FR-725, ADR-0057). Unset, they take the deny side.
+	SettingSearchIndexing   SettingKey = "search_indexing"
+	SettingAIUsage          SettingKey = "ai_usage"
+	SettingIndexableDefault SettingKey = "indexable_default"
+	// SettingSecurityContact is where vulnerabilities are reported (/.well-known/security.txt,
+	// RFC 9116); empty serves no security.txt.
+	SettingSecurityContact SettingKey = "security_contact"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -98,6 +108,26 @@ func (a Audience) Allows(authenticated bool) bool {
 }
 
 var audienceChoices = []string{string(AudienceNone), string(AudienceUsers), string(AudienceAll)}
+
+// SearchIndexing is the value of SettingSearchIndexing (ADR-0057): whether search engines may
+// index the instance's pages.
+type SearchIndexing string
+
+// Search indexing values.
+const (
+	SearchAllow SearchIndexing = "allow"
+	SearchDeny  SearchIndexing = "deny"
+)
+
+// AIUsage is the value of SettingAIUsage (ADR-0057): what AI may do with the instance's pages.
+type AIUsage string
+
+// AI usage values, from the least to the most restrictive.
+const (
+	AIAllow        AIUsage = "allow"         // no reservation
+	AIDenyTraining AIUsage = "deny_training" // no training of AI models
+	AIDeny         AIUsage = "deny"          // no training, and no use by AI (AI search, assistants, agents)
+)
 
 // Bounds of SettingRemoteMediaCacheTTL, in seconds: a minute to a year.
 const (
@@ -145,7 +175,12 @@ const (
 	KindAccount Kind = "account"
 	// KindEmail is an email address (a bare addr-spec such as alice@example.com), or "" for none.
 	KindEmail Kind = "email"
+	// KindURI is an https: or mailto: URI, or "" for none.
+	KindURI Kind = "uri"
 )
+
+// MaxURILength bounds a KindURI value, in bytes.
+const MaxURILength = 2048
 
 // Definition describes a setting key: its type, allowed values, and default. A key that has
 // never been set reads as its default.
@@ -243,6 +278,24 @@ var definitions = []Definition{
 		Key: SettingRetentionAuditLog, Kind: KindInt, Default: strconv.Itoa(DefaultRetentionAuditLog), Min: MinRetentionAuditLog, Max: MaxRetention,
 		Doc: "How many days an audit log entry is kept (ADR-0037, ADR-0038).",
 	},
+	{
+		Key: SettingSearchIndexing, Kind: KindEnum, Default: string(SearchDeny),
+		Choices: []string{string(SearchAllow), string(SearchDeny)},
+		Doc:     "Whether search engines may index the profiles and public posts of the accounts that allow it (indexable); deny states noindex on every page (FR-725, ADR-0057).",
+	},
+	{
+		Key: SettingAIUsage, Kind: KindEnum, Default: string(AIDeny),
+		Choices: []string{string(AIAllow), string(AIDenyTraining), string(AIDeny)},
+		Doc:     "What the instance states to AI crawlers: allow, deny_training (no training of AI models), or deny (no training and no use by AI search, assistants, and agents) (FR-725, ADR-0057).",
+	},
+	{
+		Key: SettingIndexableDefault, Kind: KindBool, Default: "false",
+		Doc: "The indexable setting of new accounts; existing accounts keep theirs (FR-412, ADR-0057).",
+	},
+	{
+		Key: SettingSecurityContact, Kind: KindURI, Default: "",
+		Doc: "Where to report vulnerabilities, an https: or mailto: URI; /.well-known/security.txt is served only when it is set (RFC 9116, ADR-0057).",
+	},
 }
 
 // Definitions returns the definitions of every setting key, in a fixed order.
@@ -316,6 +369,14 @@ func (d Definition) Parse(raw string) (string, error) {
 			return "", invalid("is not an email address")
 		}
 		return raw, nil
+	case KindURI:
+		if raw == "" {
+			return "", nil
+		}
+		if !wellFormedContactURI(raw) {
+			return "", invalid("is not an https: or mailto: URI")
+		}
+		return raw, nil
 	}
 	return "", invalid("has an unknown kind " + string(d.Kind))
 }
@@ -371,6 +432,25 @@ func wellFormedEmail(address string) bool {
 	}
 	parsed, err := mail.ParseAddress(address)
 	return err == nil && parsed.Name == "" && parsed.Address == address
+}
+
+// wellFormedContactURI reports whether s is an absolute https: URI with a host or a mailto: URI
+// with an address, at most MaxURILength bytes, without spaces or control characters.
+func wellFormedContactURI(s string) bool {
+	if len(s) > MaxURILength || strings.IndexFunc(s, func(r rune) bool { return r <= ' ' || r == 0x7f }) >= 0 {
+		return false
+	}
+	u, err := url.Parse(s)
+	if err != nil {
+		return false
+	}
+	switch u.Scheme {
+	case "https":
+		return u.Host != "" && u.User == nil
+	case "mailto":
+		return strings.Contains(u.Opaque, "@")
+	}
+	return false
 }
 
 // wellFormedUUID reports whether id is a UUID in lowercase hexadecimal, 8-4-4-4-12.
@@ -549,6 +629,39 @@ func (s Settings) AppealWindow() time.Duration {
 // SettingRetentionModerationActions, SettingRetentionAuditLog) as a duration.
 func (s Settings) Retention(key SettingKey) time.Duration {
 	return time.Duration(s.intValue(key)) * 24 * time.Hour
+}
+
+// SearchIndexing returns the value of SettingSearchIndexing; an unexpected value denies.
+func (s Settings) SearchIndexing() SearchIndexing {
+	if v, _ := s.Value(SettingSearchIndexing); v == string(SearchAllow) {
+		return SearchAllow
+	}
+	return SearchDeny
+}
+
+// AIUsage returns the value of SettingAIUsage; an unexpected value denies.
+func (s Settings) AIUsage() AIUsage {
+	switch v, _ := s.Value(SettingAIUsage); AIUsage(v) {
+	case AIAllow:
+		return AIAllow
+	case AIDenyTraining:
+		return AIDenyTraining
+	}
+	return AIDeny
+}
+
+// IndexableDefault returns the value of SettingIndexableDefault.
+func (s Settings) IndexableDefault() bool { return s.boolValue(SettingIndexableDefault) }
+
+// SecurityContact returns the value of SettingSecurityContact, "" when unset.
+func (s Settings) SecurityContact() string {
+	v, _ := s.Value(SettingSecurityContact)
+	return v
+}
+
+// CrawlerPolicy returns what the instance states to crawlers on its own (ADR-0057).
+func (s Settings) CrawlerPolicy() CrawlerPolicy {
+	return CrawlerPolicy{Search: s.SearchIndexing(), AI: s.AIUsage()}
 }
 
 // MediaKeys returns the setting keys whose values are media IDs.

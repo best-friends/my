@@ -15,6 +15,11 @@ export type About = {
   thumbnail: Instance["thumbnail"];
   /** How people reach the operators; undefined when the instance has no contact. */
   contact: Instance["contact"];
+  /**
+   * What the instance states to search engines and AI crawlers (FR-725, ADR-0057); undefined while the instance
+   * has not loaded.
+   */
+  crawlers: { searchIndexing: Instance["search_indexing"]; aiUsage: Instance["ai_usage"] } | undefined;
 };
 
 /** Splits a plain-text description into paragraphs at blank lines, without empty ones. */
@@ -40,6 +45,7 @@ export function useAbout(): About {
     rules: instance?.rules ?? [],
     thumbnail: instance?.thumbnail,
     contact: instance?.contact,
+    crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
   };
 }
 

@@ -1,6 +1,6 @@
 # インスタンス設定
 
-運営者向けの手順です。要件は FR-001・FR-101・FR-202・FR-408・FR-704・FR-705・FR-718（[機能要件](../requirements/01-functional.md)）、
+運営者向けの手順です。要件は FR-001・FR-101・FR-202・FR-408・FR-704・FR-705・FR-718・FR-725（[機能要件](../requirements/01-functional.md)）、
 テーブルは [データモデル §4.9](../architecture/data-model.md#49-instance) です。
 
 ## 設定（環境変数）とインスタンス設定（DB）の分担
@@ -49,6 +49,10 @@
 | `retention_reports` | 整数 180〜3650（日） | `365` | 通報を、最後の解決から何日残すか。処分が参照する通報は処分と同じだけ残る |
 | `retention_moderation_actions` | 整数 180〜3650（日） | `365` | アカウントへの処分と異議申し立てを、処分の終わり（解除・期限切れ・異議の審査の遅い方）から何日残すか |
 | `retention_audit_log` | 整数 365〜3650（日） | `730` | 監査ログの行を、記録から何日残すか |
+| `search_indexing` | `allow` / `deny` | `deny` | 検索エンジンに索引を許すか（FR-725、ADR-0057）。`allow` でも、索引されるのは `indexable` のアカウントのプロフィールと `public` の投稿だけ（[検索エンジンと AI クローラー](crawlers.md)） |
+| `ai_usage` | `allow` / `deny_training` / `deny` | `deny` | AI への表明（FR-725、ADR-0057）。`deny_training` は学習を拒否し、`deny` は学習と AI での利用（AI 検索・アシスタント・エージェント）を拒否する |
+| `indexable_default` | `true` / `false` | `false` | 新規アカウントの `indexable` の既定（FR-412）。変えても既存のアカウントの `indexable` は変わらない |
+| `security_contact` | `https:` か `mailto:` の URI（空 = 未設定） | 空 | 脆弱性の連絡先。設定すると `/.well-known/security.txt`（RFC 9116）を返す |
 
 - 値は保存前に正規形にします（`TRUE` → `true`、`0750` → `750`、`ja_jp` → `ja-JP`、メディア ID は小文字）。不正な値は何も書き込まずに拒否します。
 - `preview_image` と `thumbnail` は、存在する画像のメディア（処理中を含む）だけを受け付けます。`preview_image` は、処理が終わるまでと、処理に失敗した画像の代わりには既定画像が出ます。
@@ -151,6 +155,7 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
   | タイムライン | `local_timeline_enabled`・`federated_timeline_enabled` |
   | 連合 | `authorized_fetch`・`remote_media_policy`・`remote_media_cache_ttl`（1 時間・1 日・7 日・30 日・365 日から選ぶ） |
   | 制限・凍結したサーバー | `domain_actions_visibility`・`domain_actions_rationale_visibility` |
+  | 検索エンジンと AI | `search_indexing`・`indexable_default`・`ai_usage`・`security_contact` |
 
   連絡先とサムネイル（`contact_account`・`contact_email`・`thumbnail` と文章 `thumbnail_alt`）は、名前と説明の下の「連絡先とサムネイル」の区画で変えます。画像は選んだときにアップロードされ、保存したときにサムネイルになります。
 

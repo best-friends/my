@@ -75,6 +75,7 @@ type AccountProfileRevision struct {
 	Bot           bool
 	Discoverable  bool
 	Indexable     bool
+	AiOptOut      bool
 	AvatarMediaID *string
 	HeaderMediaID *string
 	RevisedAt     time.Time

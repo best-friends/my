@@ -22,6 +22,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AIUsage.
+const (
+	AIUsageAllow        AIUsage = "allow"
+	AIUsageDeny         AIUsage = "deny"
+	AIUsageDenyTraining AIUsage = "deny_training"
+)
+
+// Valid indicates whether the value is a known member of the AIUsage enum.
+func (e AIUsage) Valid() bool {
+	switch e {
+	case AIUsageAllow:
+		return true
+	case AIUsageDeny:
+		return true
+	case AIUsageDenyTraining:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAccountActionIssuer.
 const (
 	AdminAccountActionIssuerModerator AdminAccountActionIssuer = "moderator"
@@ -894,6 +915,7 @@ func (e InstanceRegistrationsMode) Valid() bool {
 
 // Defines values for InstanceSettingKey.
 const (
+	InstanceSettingKeyAiUsage                          InstanceSettingKey = "ai_usage"
 	InstanceSettingKeyAppealWindow                     InstanceSettingKey = "appeal_window"
 	InstanceSettingKeyAuthorizedFetch                  InstanceSettingKey = "authorized_fetch"
 	InstanceSettingKeyContactAccount                   InstanceSettingKey = "contact_account"
@@ -902,6 +924,7 @@ const (
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
 	InstanceSettingKeyMaxStatusLength                  InstanceSettingKey = "max_status_length"
 	InstanceSettingKeyPreviewImage                     InstanceSettingKey = "preview_image"
@@ -913,12 +936,16 @@ const (
 	InstanceSettingKeyRetentionRegistrationOrigins     InstanceSettingKey = "retention_registration_origins"
 	InstanceSettingKeyRetentionReports                 InstanceSettingKey = "retention_reports"
 	InstanceSettingKeyRetentionSessionOrigins          InstanceSettingKey = "retention_session_origins"
+	InstanceSettingKeySearchIndexing                   InstanceSettingKey = "search_indexing"
+	InstanceSettingKeySecurityContact                  InstanceSettingKey = "security_contact"
 	InstanceSettingKeyThumbnail                        InstanceSettingKey = "thumbnail"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKey enum.
 func (e InstanceSettingKey) Valid() bool {
 	switch e {
+	case InstanceSettingKeyAiUsage:
+		return true
 	case InstanceSettingKeyAppealWindow:
 		return true
 	case InstanceSettingKeyAuthorizedFetch:
@@ -934,6 +961,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyDomainActionsVisibility:
 		return true
 	case InstanceSettingKeyFederatedTimelineEnabled:
+		return true
+	case InstanceSettingKeyIndexableDefault:
 		return true
 	case InstanceSettingKeyLocalTimelineEnabled:
 		return true
@@ -957,6 +986,10 @@ func (e InstanceSettingKey) Valid() bool {
 		return true
 	case InstanceSettingKeyRetentionSessionOrigins:
 		return true
+	case InstanceSettingKeySearchIndexing:
+		return true
+	case InstanceSettingKeySecurityContact:
+		return true
 	case InstanceSettingKeyThumbnail:
 		return true
 	default:
@@ -973,6 +1006,7 @@ const (
 	InstanceSettingKindInt     InstanceSettingKind = "int"
 	InstanceSettingKindLocale  InstanceSettingKind = "locale"
 	InstanceSettingKindMedia   InstanceSettingKind = "media"
+	InstanceSettingKindUri     InstanceSettingKind = "uri"
 )
 
 // Valid indicates whether the value is a known member of the InstanceSettingKind enum.
@@ -991,6 +1025,8 @@ func (e InstanceSettingKind) Valid() bool {
 	case InstanceSettingKindLocale:
 		return true
 	case InstanceSettingKindMedia:
+		return true
+	case InstanceSettingKindUri:
 		return true
 	default:
 		return false
@@ -1312,6 +1348,24 @@ func (e ReportState) Valid() bool {
 	}
 }
 
+// Defines values for SearchIndexing.
+const (
+	SearchIndexingAllow SearchIndexing = "allow"
+	SearchIndexingDeny  SearchIndexing = "deny"
+)
+
+// Valid indicates whether the value is a known member of the SearchIndexing enum.
+func (e SearchIndexing) Valid() bool {
+	switch e {
+	case SearchIndexingAllow:
+		return true
+	case SearchIndexingDeny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SignupBlockImportSkippedReason.
 const (
 	SignupBlockImportSkippedReasonAlreadyBlocked SignupBlockImportSkippedReason = "already_blocked"
@@ -1569,6 +1623,12 @@ func (e ListAdminAccountsParamsOrigin) Valid() bool {
 		return false
 	}
 }
+
+// AIUsage What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+// `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+// and no use by AI search, assistants, and agents. An account can opt out of what the
+// instance allows (`ai_opt_out`), never the reverse.
+type AIUsage string
 
 // Account An account, as clients show it (FR-006).
 type Account struct {
@@ -2668,7 +2728,8 @@ type AdminSetting struct {
 	// `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
 	// `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
 	// the username of a local account, or empty for none. `email`: an email address such as
-	// `admin@example.com`, or empty for none.
+	// `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+	// none.
 	Kind InstanceSettingKind `json:"kind"`
 
 	// Maximum The greatest value of an `int` setting; omitted for other kinds.
@@ -3093,6 +3154,11 @@ type CredentialAccount struct {
 	// Acct The username for local accounts, `username@domain` for remote ones.
 	Acct string `json:"acct"`
 
+	// AiOptOut Whether the account's pages state that AI may neither train on nor use them
+	// (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+	// pages of this instance only; other servers and the media files do not carry it.
+	AiOptOut bool `json:"ai_opt_out"`
+
 	// Avatar The avatar image, square; omitted when the account has none, or its image is not
 	// processed yet or could not be processed. Clients show a placeholder instead. For a
 	// remote account, every size is its media proxy URL.
@@ -3139,7 +3205,9 @@ type CredentialAccount struct {
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 	Id Id `json:"id"`
 
-	// Indexable Whether the account's public posts may be indexed for search.
+	// Indexable Whether the account's profile and public posts may be indexed for search: by this
+	// instance's search and, when the instance's `search_indexing` is `allow`, by search
+	// engines (FR-412, ADR-0057). New accounts take the instance's default.
 	Indexable bool `json:"indexable"`
 
 	// Locked Whether follow requests need the account's approval.
@@ -3342,6 +3410,12 @@ type ImportSignupBlocksRequest struct {
 
 // Instance Public information about the instance.
 type Instance struct {
+	// AiUsage What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+	// `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+	// and no use by AI search, assistants, and agents. An account can opt out of what the
+	// instance allows (`ai_opt_out`), never the reverse.
+	AiUsage AIUsage `json:"ai_usage"`
+
 	// Contact How people reach the instance's operators (the instance settings `contact_account` and
 	// `contact_email`). Omitted when the instance has neither.
 	Contact *InstanceContact `json:"contact,omitempty"`
@@ -3372,6 +3446,12 @@ type Instance struct {
 
 	// Rules The rules in effect, in order, each in the locale of the request.
 	Rules []InstanceRule `json:"rules"`
+
+	// SearchIndexing Whether the instance lets search engines index its pages (the instance setting
+	// `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+	// that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+	// the reverse.
+	SearchIndexing SearchIndexing `json:"search_indexing"`
 
 	// SendsEmail Whether the instance sends email (the server setting `mail` is not `none`). Without
 	// email, the moderator notifications come only in the app, so clients do not offer
@@ -3508,7 +3588,8 @@ type InstanceSettingKey string
 // `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
 // `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
 // the username of a local account, or empty for none. `email`: an email address such as
-// `admin@example.com`, or empty for none.
+// `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+// none.
 type InstanceSettingKind string
 
 // InstanceTextKey The key of an instance text: the name (one line), the short and full descriptions,
@@ -4343,6 +4424,12 @@ type ResolveReportRequest struct {
 	Outcome AdminReportOutcome `json:"outcome"`
 }
 
+// SearchIndexing Whether the instance lets search engines index its pages (the instance setting
+// `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+// that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+// the reverse.
+type SearchIndexing string
+
 // SetInstanceTextRequest A new revision of an instance text in one locale.
 type SetInstanceTextRequest struct {
 	// Body The text; empty clears it in the locale.
@@ -4751,6 +4838,9 @@ type TwoFactorCodeRequest struct {
 
 // UpdateCredentialsRequest A change of the profile; properties left out keep their current values.
 type UpdateCredentialsRequest struct {
+	// AiOptOut Whether the account's pages state that AI may neither train on nor use them (FR-412).
+	AiOptOut *bool `json:"ai_opt_out,omitempty"`
+
 	// AvatarMediaId The ID of a processed image that the user uploaded, to become the avatar; empty
 	// removes the avatar.
 	AvatarMediaId *string `json:"avatar_media_id,omitempty"`
@@ -4771,7 +4861,7 @@ type UpdateCredentialsRequest struct {
 	// empty removes the header image.
 	HeaderMediaId *string `json:"header_media_id,omitempty"`
 
-	// Indexable Whether the account's public posts may be indexed for search.
+	// Indexable Whether the account's profile and public posts may be indexed for search (FR-412).
 	Indexable *bool `json:"indexable,omitempty"`
 
 	// Locked Whether follow requests need the user's approval.

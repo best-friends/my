@@ -8,6 +8,18 @@ export interface MessageArgs {
   "client:about.contact.email": {};
   /** Contact */
   "client:about.contact.title": {};
+  /** Each account can also keep its profile and posts out of search engines, or deny AI, for its own pages on this server. An account cannot allow what the server denies. Media files and copies of posts on other servers do not carry an account's choice. */
+  "client:about.crawlers.accounts": {};
+  /** {setting, select, allow {This server reserves nothing against AI: AI may train on and use its pages, except those of the accounts that opt out.} deny_training {This server reserves its pages against the training of AI models. AI search and assistants may still use them, except the pages of the accounts that opt out.} other {This server reserves its pages against the training of AI models and against their use by AI search, assistants and agents.}} */
+  "client:about.crawlers.ai": { setting: "allow" | "deny_training" | (string & {}) };
+  /** The server states this in its robots.txt (with a list of known AI crawlers), in the robots meta tag and the X-Robots-Tag, Content-Usage and tdm-reservation headers of its pages, and in /.well-known/tdmrep.json. These are requests: well-known crawlers say they follow some of them, but nothing technically stops a crawler that does not. */
+  "client:about.crawlers.how": {};
+  /** What such a statement means in law depends on the country. In the EU, it is meant as a machine-readable reservation of rights against text and data mining under Article 4(3) of the Directive on Copyright in the Digital Single Market. In Japan, Article 30-4 of the Copyright Act allows many uses for data analysis without permission, so the statement may not bind them legally; many operators still follow such statements voluntarily. This page is not legal advice. */
+  "client:about.crawlers.legal": {};
+  /** {setting, select, allow {Search engines may index the profiles and public posts of the accounts that allow it.} other {This server asks search engines not to index any of its pages.}} */
+  "client:about.crawlers.search": { setting: "allow" | (string & {}) };
+  /** Search engines and AI */
+  "client:about.crawlers.title": {};
   /** Description */
   "client:about.description.title": {};
   /** No servers are moderated */
@@ -1714,6 +1726,42 @@ export interface MessageArgs {
   "client:admin.settings.contact.title": {};
   /** The contact and thumbnail are already saved. */
   "client:admin.settings.contact.unchanged": {};
+  /** AI */
+  "client:admin.settings.crawlers.ai": {};
+  /** Allow */
+  "client:admin.settings.crawlers.ai.allow": {};
+  /** The server reserves nothing against AI. Accounts may still deny it for their own pages. */
+  "client:admin.settings.crawlers.ai.allow.description": {};
+  /** Deny training and use */
+  "client:admin.settings.crawlers.ai.deny": {};
+  /** Deny training */
+  "client:admin.settings.crawlers.ai.deny_training": {};
+  /** The crawlers that collect data to train AI models are denied. AI search and assistants that people ask to read a page are not. */
+  "client:admin.settings.crawlers.ai.deny_training.description": {};
+  /** AI crawlers are denied, including AI search, assistants and agents that people ask to read a page. */
+  "client:admin.settings.crawlers.ai.deny.description": {};
+  /** What the server states to search engines and AI crawlers. Until they are set, the server denies both. The server makes its robots.txt from these settings and a bundled list of known AI crawlers, and states them on every page. Each account can deny more for its own pages, never less. */
+  "client:admin.settings.crawlers.description": {};
+  /** New accounts allow search indexing */
+  "client:admin.settings.crawlers.indexable_default": {};
+  /** The setting that accounts registered from now on start with. Existing accounts keep their own choice. */
+  "client:admin.settings.crawlers.indexable_default.description": {};
+  /** Search engines */
+  "client:admin.settings.crawlers.search": {};
+  /** Allow indexing */
+  "client:admin.settings.crawlers.search.allow": {};
+  /** Search engines may index the profiles and public posts of the accounts that allow it. Other pages stay out of their index. */
+  "client:admin.settings.crawlers.search.allow.description": {};
+  /** Deny indexing */
+  "client:admin.settings.crawlers.search.deny": {};
+  /** Every page asks search engines not to index it (noindex). Link previews keep working. */
+  "client:admin.settings.crawlers.search.deny.description": {};
+  /** Security contact */
+  "client:admin.settings.crawlers.security_contact": {};
+  /** Where to report vulnerabilities: an https: or mailto: address, such as mailto:security@example.com. The server serves /.well-known/security.txt only while it is set. */
+  "client:admin.settings.crawlers.security_contact.description": {};
+  /** Search engines and AI */
+  "client:admin.settings.crawlers.title": {};
   /** The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language. */
   "client:admin.settings.descriptions.description": {};
   /** Description in {language} */
@@ -3038,6 +3086,12 @@ export interface MessageArgs {
   "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
+  /** Deny AI training and use */
+  "client:settings.profile.ai_opt_out": {};
+  /** Your profile and post pages on this server ask AI not to train on or use them. Media files and the copies of your posts on other servers do not carry it. */
+  "client:settings.profile.ai_opt_out.description": {};
+  /** {usage, select, deny_training {This server already denies AI training on every page; this also denies the use by AI search and assistants.} other {This server already denies AI training and use on every page.}} */
+  "client:settings.profile.ai_opt_out.server_denies": { usage: "deny_training" | (string & {}) };
   /** Avatar */
   "client:settings.profile.avatar": {};
   /** This is a bot */
@@ -3048,6 +3102,8 @@ export interface MessageArgs {
   "client:settings.profile.characters_left": { count: number };
   /** {count, plural, one {# character too many} other {# characters too many}} */
   "client:settings.profile.characters_over": { count: number };
+  /** Search engines and AI */
+  "client:settings.profile.crawlers": {};
   /** Display name */
   "client:settings.profile.display_name": {};
   /** Up to {max} characters. Leave it empty to show your username. */
@@ -3078,6 +3134,12 @@ export interface MessageArgs {
   "client:settings.profile.image.failed": {};
   /** Remove image */
   "client:settings.profile.image.remove": {};
+  /** Show my profile and public posts in search */
+  "client:settings.profile.indexable": {};
+  /** Search on this server and, when the server allows it, search engines may index them. Other servers that follow this choice see it too. */
+  "client:settings.profile.indexable.description": {};
+  /** This server asks search engines not to index any page, so they do not index yours even if you allow it. */
+  "client:settings.profile.indexable.server_denies": {};
   /** Approve followers */
   "client:settings.profile.locked": {};
   /** People must ask to follow you, and you choose whom to accept. */

@@ -51,6 +51,7 @@ const alice: Schemas["CredentialAccount"] = {
   created_at: "2026-10-01T00:00:00Z",
   discoverable: true,
   indexable: true,
+  ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
   permissions: [],
@@ -86,6 +87,8 @@ const instance: Schemas["Instance"] = {
   limits: { max_post_characters: 500 },
   timelines: { local: true, federated: true },
   sends_email: false,
+  search_indexing: "deny",
+  ai_usage: "deny",
   rules: [],
 };
 

@@ -11,6 +11,30 @@
     "defaultMessage": "[Ƈǿǿƞŧȧȧƈŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "about.crawlers.accounts": {
+    "defaultMessage": "[Ḗȧȧƈħ ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞ ȧȧŀşǿǿ ķḗḗḗḗƥ īŧş ƥřǿǿƒīŀḗḗ ȧȧƞḓ ƥǿǿşŧş ǿǿŭŭŧ ǿǿƒ şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş, ǿǿř ḓḗḗƞẏ ȦĪ, ƒǿǿř īŧş ǿǿẇƞ ƥȧȧɠḗḗş ǿǿƞ ŧħīş şḗḗřṽḗḗř. Ȧƞ ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞƞǿǿŧ ȧȧŀŀǿǿẇ ẇħȧȧŧ ŧħḗḗ şḗḗřṽḗḗř ḓḗḗƞīḗḗş. Ḿḗḗḓīȧȧ ƒīŀḗḗş ȧȧƞḓ ƈǿǿƥīḗḗş ǿǿƒ ƥǿǿşŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş ḓǿǿ ƞǿǿŧ ƈȧȧřřẏ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ'ş ƈħǿǿīƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.crawlers.ai": {
+    "defaultMessage": "[{setting,select,allow{Ŧħīş şḗḗřṽḗḗř řḗḗşḗḗřṽḗḗş ƞǿǿŧħīƞɠ ȧȧɠȧȧīƞşŧ ȦĪ: ȦĪ ḿȧȧẏ ŧřȧȧīƞ ǿǿƞ ȧȧƞḓ ŭŭşḗḗ īŧş ƥȧȧɠḗḗş, ḗḗẋƈḗḗƥŧ ŧħǿǿşḗḗ ǿǿƒ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ŧħȧȧŧ ǿǿƥŧ ǿǿŭŭŧ.} deny_training{Ŧħīş şḗḗřṽḗḗř řḗḗşḗḗřṽḗḗş īŧş ƥȧȧɠḗḗş ȧȧɠȧȧīƞşŧ ŧħḗḗ ŧřȧȧīƞīƞɠ ǿǿƒ ȦĪ ḿǿǿḓḗḗŀş. ȦĪ şḗḗȧȧřƈħ ȧȧƞḓ ȧȧşşīşŧȧȧƞŧş ḿȧȧẏ şŧīŀŀ ŭŭşḗḗ ŧħḗḗḿ, ḗḗẋƈḗḗƥŧ ŧħḗḗ ƥȧȧɠḗḗş ǿǿƒ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ŧħȧȧŧ ǿǿƥŧ ǿǿŭŭŧ.} other{Ŧħīş şḗḗřṽḗḗř řḗḗşḗḗřṽḗḗş īŧş ƥȧȧɠḗḗş ȧȧɠȧȧīƞşŧ ŧħḗḗ ŧřȧȧīƞīƞɠ ǿǿƒ ȦĪ ḿǿǿḓḗḗŀş ȧȧƞḓ ȧȧɠȧȧīƞşŧ ŧħḗḗīř ŭŭşḗḗ ƀẏ ȦĪ şḗḗȧȧřƈħ, ȧȧşşīşŧȧȧƞŧş ȧȧƞḓ ȧȧɠḗḗƞŧş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.crawlers.how": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř şŧȧȧŧḗḗş ŧħīş īƞ īŧş řǿǿƀǿǿŧş.ŧẋŧ (ẇīŧħ ȧȧ ŀīşŧ ǿǿƒ ķƞǿǿẇƞ ȦĪ ƈřȧȧẇŀḗḗřş), īƞ ŧħḗḗ řǿǿƀǿǿŧş ḿḗḗŧȧȧ ŧȧȧɠ ȧȧƞḓ ŧħḗḗ Ẋ-Řǿǿƀǿǿŧş-Ŧȧȧɠ, Ƈǿǿƞŧḗḗƞŧ-Ŭşȧȧɠḗḗ ȧȧƞḓ ŧḓḿ-řḗḗşḗḗřṽȧȧŧīǿǿƞ ħḗḗȧȧḓḗḗřş ǿǿƒ īŧş ƥȧȧɠḗḗş, ȧȧƞḓ īƞ /.ẇḗḗŀŀ-ķƞǿǿẇƞ/ŧḓḿřḗḗƥ.ĵşǿǿƞ. Ŧħḗḗşḗḗ ȧȧřḗḗ řḗḗɋŭŭḗḗşŧş: ẇḗḗŀŀ-ķƞǿǿẇƞ ƈřȧȧẇŀḗḗřş şȧȧẏ ŧħḗḗẏ ƒǿǿŀŀǿǿẇ şǿǿḿḗḗ ǿǿƒ ŧħḗḗḿ, ƀŭŭŧ ƞǿǿŧħīƞɠ ŧḗḗƈħƞīƈȧȧŀŀẏ şŧǿǿƥş ȧȧ ƈřȧȧẇŀḗḗř ŧħȧȧŧ ḓǿǿḗḗş ƞǿǿŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.crawlers.legal": {
+    "defaultMessage": "[Ẇħȧȧŧ şŭŭƈħ ȧȧ şŧȧȧŧḗḗḿḗḗƞŧ ḿḗḗȧȧƞş īƞ ŀȧȧẇ ḓḗḗƥḗḗƞḓş ǿǿƞ ŧħḗḗ ƈǿǿŭŭƞŧřẏ. Īƞ ŧħḗḗ ḖŬ, īŧ īş ḿḗḗȧȧƞŧ ȧȧş ȧȧ ḿȧȧƈħīƞḗḗ-řḗḗȧȧḓȧȧƀŀḗḗ řḗḗşḗḗřṽȧȧŧīǿǿƞ ǿǿƒ řīɠħŧş ȧȧɠȧȧīƞşŧ ŧḗḗẋŧ ȧȧƞḓ ḓȧȧŧȧȧ ḿīƞīƞɠ ŭŭƞḓḗḗř Ȧřŧīƈŀḗḗ 4(3) ǿǿƒ ŧħḗḗ Ḓīřḗḗƈŧīṽḗḗ ǿǿƞ Ƈǿǿƥẏřīɠħŧ īƞ ŧħḗḗ Ḓīɠīŧȧȧŀ Şīƞɠŀḗḗ Ḿȧȧřķḗḗŧ. Īƞ Ĵȧȧƥȧȧƞ, Ȧřŧīƈŀḗḗ 30-4 ǿǿƒ ŧħḗḗ Ƈǿǿƥẏřīɠħŧ Ȧƈŧ ȧȧŀŀǿǿẇş ḿȧȧƞẏ ŭŭşḗḗş ƒǿǿř ḓȧȧŧȧȧ ȧȧƞȧȧŀẏşīş ẇīŧħǿǿŭŭŧ ƥḗḗřḿīşşīǿǿƞ, şǿǿ ŧħḗḗ şŧȧȧŧḗḗḿḗḗƞŧ ḿȧȧẏ ƞǿǿŧ ƀīƞḓ ŧħḗḗḿ ŀḗḗɠȧȧŀŀẏ; ḿȧȧƞẏ ǿǿƥḗḗřȧȧŧǿǿřş şŧīŀŀ ƒǿǿŀŀǿǿẇ şŭŭƈħ şŧȧȧŧḗḗḿḗḗƞŧş ṽǿǿŀŭŭƞŧȧȧřīŀẏ. Ŧħīş ƥȧȧɠḗḗ īş ƞǿǿŧ ŀḗḗɠȧȧŀ ȧȧḓṽīƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.crawlers.search": {
+    "defaultMessage": "[{setting,select,allow{Şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ḿȧȧẏ īƞḓḗḗẋ ŧħḗḗ ƥřǿǿƒīŀḗḗş ȧȧƞḓ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ŧħȧȧŧ ȧȧŀŀǿǿẇ īŧ.} other{Ŧħīş şḗḗřṽḗḗř ȧȧşķş şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ƞǿǿŧ ŧǿǿ īƞḓḗḗẋ ȧȧƞẏ ǿǿƒ īŧş ƥȧȧɠḗḗş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.crawlers.title": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ȧȧƞḓ ȦĪ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "about.description.title": {
     "defaultMessage": "[Ḓḗḗşƈřīƥŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3423,6 +3447,78 @@
     "defaultMessage": "[Ŧħḗḗ ƈǿǿƞŧȧȧƈŧ ȧȧƞḓ ŧħŭŭḿƀƞȧȧīŀ ȧȧřḗḗ ȧȧŀřḗḗȧȧḓẏ şȧȧṽḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.crawlers.ai": {
+    "defaultMessage": "[ȦĪ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.ai.allow": {
+    "defaultMessage": "[Ȧŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.ai.allow.description": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗřṽḗḗř řḗḗşḗḗřṽḗḗş ƞǿǿŧħīƞɠ ȧȧɠȧȧīƞşŧ ȦĪ. Ȧƈƈǿǿŭŭƞŧş ḿȧȧẏ şŧīŀŀ ḓḗḗƞẏ īŧ ƒǿǿř ŧħḗḗīř ǿǿẇƞ ƥȧȧɠḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.ai.deny": {
+    "defaultMessage": "[Ḓḗḗƞẏ ŧřȧȧīƞīƞɠ ȧȧƞḓ ŭŭşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.ai.deny.description": {
+    "defaultMessage": "[ȦĪ ƈřȧȧẇŀḗḗřş ȧȧřḗḗ ḓḗḗƞīḗḗḓ, īƞƈŀŭŭḓīƞɠ ȦĪ şḗḗȧȧřƈħ, ȧȧşşīşŧȧȧƞŧş ȧȧƞḓ ȧȧɠḗḗƞŧş ŧħȧȧŧ ƥḗḗǿǿƥŀḗḗ ȧȧşķ ŧǿǿ řḗḗȧȧḓ ȧȧ ƥȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.ai.deny_training": {
+    "defaultMessage": "[Ḓḗḗƞẏ ŧřȧȧīƞīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.ai.deny_training.description": {
+    "defaultMessage": "[Ŧħḗḗ ƈřȧȧẇŀḗḗřş ŧħȧȧŧ ƈǿǿŀŀḗḗƈŧ ḓȧȧŧȧȧ ŧǿǿ ŧřȧȧīƞ ȦĪ ḿǿǿḓḗḗŀş ȧȧřḗḗ ḓḗḗƞīḗḗḓ. ȦĪ şḗḗȧȧřƈħ ȧȧƞḓ ȧȧşşīşŧȧȧƞŧş ŧħȧȧŧ ƥḗḗǿǿƥŀḗḗ ȧȧşķ ŧǿǿ řḗḗȧȧḓ ȧȧ ƥȧȧɠḗḗ ȧȧřḗḗ ƞǿǿŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.description": {
+    "defaultMessage": "[Ẇħȧȧŧ ŧħḗḗ şḗḗřṽḗḗř şŧȧȧŧḗḗş ŧǿǿ şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ȧȧƞḓ ȦĪ ƈřȧȧẇŀḗḗřş. Ŭƞŧīŀ ŧħḗḗẏ ȧȧřḗḗ şḗḗŧ, ŧħḗḗ şḗḗřṽḗḗř ḓḗḗƞīḗḗş ƀǿǿŧħ. Ŧħḗḗ şḗḗřṽḗḗř ḿȧȧķḗḗş īŧş řǿǿƀǿǿŧş.ŧẋŧ ƒřǿǿḿ ŧħḗḗşḗḗ şḗḗŧŧīƞɠş ȧȧƞḓ ȧȧ ƀŭŭƞḓŀḗḗḓ ŀīşŧ ǿǿƒ ķƞǿǿẇƞ ȦĪ ƈřȧȧẇŀḗḗřş, ȧȧƞḓ şŧȧȧŧḗḗş ŧħḗḗḿ ǿǿƞ ḗḗṽḗḗřẏ ƥȧȧɠḗḗ. Ḗȧȧƈħ ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞ ḓḗḗƞẏ ḿǿǿřḗḗ ƒǿǿř īŧş ǿǿẇƞ ƥȧȧɠḗḗş, ƞḗḗṽḗḗř ŀḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.indexable_default": {
+    "defaultMessage": "[Ƞḗḗẇ ȧȧƈƈǿǿŭŭƞŧş ȧȧŀŀǿǿẇ şḗḗȧȧřƈħ īƞḓḗḗẋīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.indexable_default.description": {
+    "defaultMessage": "[Ŧħḗḗ şḗḗŧŧīƞɠ ŧħȧȧŧ ȧȧƈƈǿǿŭŭƞŧş řḗḗɠīşŧḗḗřḗḗḓ ƒřǿǿḿ ƞǿǿẇ ǿǿƞ şŧȧȧřŧ ẇīŧħ. Ḗẋīşŧīƞɠ ȧȧƈƈǿǿŭŭƞŧş ķḗḗḗḗƥ ŧħḗḗīř ǿǿẇƞ ƈħǿǿīƈḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.search": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.search.allow": {
+    "defaultMessage": "[Ȧŀŀǿǿẇ īƞḓḗḗẋīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.search.allow.description": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ḿȧȧẏ īƞḓḗḗẋ ŧħḗḗ ƥřǿǿƒīŀḗḗş ȧȧƞḓ ƥŭŭƀŀīƈ ƥǿǿşŧş ǿǿƒ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ŧħȧȧŧ ȧȧŀŀǿǿẇ īŧ. Ǿŧħḗḗř ƥȧȧɠḗḗş şŧȧȧẏ ǿǿŭŭŧ ǿǿƒ ŧħḗḗīř īƞḓḗḗẋ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.search.deny": {
+    "defaultMessage": "[Ḓḗḗƞẏ īƞḓḗḗẋīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.search.deny.description": {
+    "defaultMessage": "[Ḗṽḗḗřẏ ƥȧȧɠḗḗ ȧȧşķş şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ƞǿǿŧ ŧǿǿ īƞḓḗḗẋ īŧ (ƞǿǿīƞḓḗḗẋ). Ŀīƞķ ƥřḗḗṽīḗḗẇş ķḗḗḗḗƥ ẇǿǿřķīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.security_contact": {
+    "defaultMessage": "[Şḗḗƈŭŭřīŧẏ ƈǿǿƞŧȧȧƈŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.security_contact.description": {
+    "defaultMessage": "[Ẇħḗḗřḗḗ ŧǿǿ řḗḗƥǿǿřŧ ṽŭŭŀƞḗḗřȧȧƀīŀīŧīḗḗş: ȧȧƞ ħŧŧƥş: ǿǿř ḿȧȧīŀŧǿǿ: ȧȧḓḓřḗḗşş, şŭŭƈħ ȧȧş ḿȧȧīŀŧǿǿ:şḗḗƈŭŭřīŧẏ@ḗḗẋȧȧḿƥŀḗḗ.ƈǿǿḿ. Ŧħḗḗ şḗḗřṽḗḗř şḗḗřṽḗḗş /.ẇḗḗŀŀ-ķƞǿǿẇƞ/şḗḗƈŭŭřīŧẏ.ŧẋŧ ǿǿƞŀẏ ẇħīŀḗḗ īŧ īş şḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.crawlers.title": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ȧȧƞḓ ȦĪ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.descriptions.description": {
     "defaultMessage": "[Ŧħḗḗ şħǿǿřŧ ḓḗḗşƈřīƥŧīǿǿƞ īş ȧȧ ƥȧȧřȧȧɠřȧȧƥħ ŧħȧȧŧ ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ȧȧƞḓ ǿǿŧħḗḗř ȧȧƥƥş şħǿǿẇ ƞḗḗẋŧ ŧǿǿ ŧħḗḗ şḗḗřṽḗḗř'ş ƞȧȧḿḗḗ; ŧħḗḗ ƒŭŭŀŀ ḓḗḗşƈřīƥŧīǿǿƞ şȧȧẏş ḿǿǿřḗḗ ǿǿƞ ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ. Ḗȧȧƈħ ŀȧȧƞɠŭŭȧȧɠḗḗ ħȧȧş īŧş ǿǿẇƞ. Ȧ ŀȧȧƞɠŭŭȧȧɠḗḗ ẇīŧħǿǿŭŭŧ ǿǿƞḗḗ şħǿǿẇş ŧħḗḗ ḓḗḗşƈřīƥŧīǿǿƞ īƞ ŧħḗḗ şḗḗřṽḗḗř'ş ḓḗḗƒȧȧŭŭŀŧ ŀȧȧƞɠŭŭȧȧɠḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6071,6 +6167,18 @@
     "defaultMessage": "[Ƥřḗḗƒḗḗřḗḗƞƈḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.profile.ai_opt_out": {
+    "defaultMessage": "[Ḓḗḗƞẏ ȦĪ ŧřȧȧīƞīƞɠ ȧȧƞḓ ŭŭşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.ai_opt_out.description": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ ȧȧƞḓ ƥǿǿşŧ ƥȧȧɠḗḗş ǿǿƞ ŧħīş şḗḗřṽḗḗř ȧȧşķ ȦĪ ƞǿǿŧ ŧǿǿ ŧřȧȧīƞ ǿǿƞ ǿǿř ŭŭşḗḗ ŧħḗḗḿ. Ḿḗḗḓīȧȧ ƒīŀḗḗş ȧȧƞḓ ŧħḗḗ ƈǿǿƥīḗḗş ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş ḓǿǿ ƞǿǿŧ ƈȧȧřřẏ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.ai_opt_out.server_denies": {
+    "defaultMessage": "[{usage,select,deny_training{Ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ḓḗḗƞīḗḗş ȦĪ ŧřȧȧīƞīƞɠ ǿǿƞ ḗḗṽḗḗřẏ ƥȧȧɠḗḗ; ŧħīş ȧȧŀşǿǿ ḓḗḗƞīḗḗş ŧħḗḗ ŭŭşḗḗ ƀẏ ȦĪ şḗḗȧȧřƈħ ȧȧƞḓ ȧȧşşīşŧȧȧƞŧş.} other{Ŧħīş şḗḗřṽḗḗř ȧȧŀřḗḗȧȧḓẏ ḓḗḗƞīḗḗş ȦĪ ŧřȧȧīƞīƞɠ ȧȧƞḓ ŭŭşḗḗ ǿǿƞ ḗḗṽḗḗřẏ ƥȧȧɠḗḗ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.profile.avatar": {
     "defaultMessage": "[Ȧṽȧȧŧȧȧř]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6089,6 +6197,10 @@
   },
   "settings.profile.characters_over": {
     "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŧǿǿǿǿ ḿȧȧƞẏ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŧǿǿǿǿ ḿȧȧƞẏ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.crawlers": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ȧȧƞḓ ȦĪ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.profile.display_name": {
@@ -6149,6 +6261,18 @@
   },
   "settings.profile.image.remove": {
     "defaultMessage": "[Řḗḗḿǿǿṽḗḗ īḿȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.indexable": {
+    "defaultMessage": "[Şħǿǿẇ ḿẏ ƥřǿǿƒīŀḗḗ ȧȧƞḓ ƥŭŭƀŀīƈ ƥǿǿşŧş īƞ şḗḗȧȧřƈħ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.indexable.description": {
+    "defaultMessage": "[Şḗḗȧȧřƈħ ǿǿƞ ŧħīş şḗḗřṽḗḗř ȧȧƞḓ, ẇħḗḗƞ ŧħḗḗ şḗḗřṽḗḗř ȧȧŀŀǿǿẇş īŧ, şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ḿȧȧẏ īƞḓḗḗẋ ŧħḗḗḿ. Ǿŧħḗḗř şḗḗřṽḗḗřş ŧħȧȧŧ ƒǿǿŀŀǿǿẇ ŧħīş ƈħǿǿīƈḗḗ şḗḗḗḗ īŧ ŧǿǿǿǿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.indexable.server_denies": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ȧȧşķş şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş ƞǿǿŧ ŧǿǿ īƞḓḗḗẋ ȧȧƞẏ ƥȧȧɠḗḗ, şǿǿ ŧħḗḗẏ ḓǿǿ ƞǿǿŧ īƞḓḗḗẋ ẏǿǿŭŭřş ḗḗṽḗḗƞ īƒ ẏǿǿŭŭ ȧȧŀŀǿǿẇ īŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.profile.locked": {

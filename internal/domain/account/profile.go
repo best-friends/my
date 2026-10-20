@@ -14,15 +14,18 @@ import (
 // ProfileRevision is one version of an account's profile. Seq starts at 1 and grows by one
 // per revision of the same account; the revision with the highest Seq is current.
 type ProfileRevision struct {
-	ID            string
-	AccountID     string
-	Seq           int
-	DisplayName   string
-	NoteHTML      string
-	Locked        bool
-	Bot           bool
-	Discoverable  bool
-	Indexable     bool
+	ID           string
+	AccountID    string
+	Seq          int
+	DisplayName  string
+	NoteHTML     string
+	Locked       bool
+	Bot          bool
+	Discoverable bool
+	Indexable    bool
+	// AIOptOut denies the training and use by AI of the account's pages (FR-412, ADR-0057); it
+	// only narrows what the instance states, and remote profiles never have it.
+	AIOptOut      bool
 	AvatarMediaID string // "" when there is no avatar
 	HeaderMediaID string // "" when there is no header image
 	RevisedAt     time.Time
@@ -40,7 +43,7 @@ type ProfileRevision struct {
 // identity, Seq, time, and sources.
 func (r ProfileRevision) SameContent(o ProfileRevision) bool {
 	if r.DisplayName != o.DisplayName || r.NoteHTML != o.NoteHTML || r.Locked != o.Locked || r.Bot != o.Bot ||
-		r.Discoverable != o.Discoverable || r.Indexable != o.Indexable ||
+		r.Discoverable != o.Discoverable || r.Indexable != o.Indexable || r.AIOptOut != o.AIOptOut ||
 		r.AvatarMediaID != o.AvatarMediaID || r.HeaderMediaID != o.HeaderMediaID || len(r.Fields) != len(o.Fields) ||
 		!slices.Equal(r.EmojiIDs, o.EmojiIDs) {
 		return false

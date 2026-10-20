@@ -225,6 +225,15 @@ const choices = {
     { value: "users", label: "client:admin.settings.audience.users", description: "client:admin.settings.domain_actions.comments.users" },
     { value: "all", label: "client:admin.settings.audience.all", description: "client:admin.settings.domain_actions.comments.all" },
   ],
+  search_indexing: [
+    { value: "allow", label: "client:admin.settings.crawlers.search.allow", description: "client:admin.settings.crawlers.search.allow.description" },
+    { value: "deny", label: "client:admin.settings.crawlers.search.deny", description: "client:admin.settings.crawlers.search.deny.description" },
+  ],
+  ai_usage: [
+    { value: "allow", label: "client:admin.settings.crawlers.ai.allow", description: "client:admin.settings.crawlers.ai.allow.description" },
+    { value: "deny_training", label: "client:admin.settings.crawlers.ai.deny_training", description: "client:admin.settings.crawlers.ai.deny_training.description" },
+    { value: "deny", label: "client:admin.settings.crawlers.ai.deny", description: "client:admin.settings.crawlers.ai.deny.description" },
+  ],
 } as const satisfies Partial<Record<PolicyKey, readonly { value: string; label: ClientMessageKey; description: ClientMessageKey }[]>>;
 
 type RadioKey = keyof typeof choices;
@@ -330,6 +339,25 @@ function PoliciesForm() {
         <p className="text-fg-muted">{t("client:admin.settings.domain_actions.description")}</p>
         <PolicyRadios form={form} setting="domain_actions_visibility" label={t("client:admin.settings.domain_actions.list")} />
         <PolicyRadios form={form} setting="domain_actions_rationale_visibility" label={t("client:admin.settings.domain_actions.comments")} />
+      </DetailSection>
+      <DetailSection title={t("client:admin.settings.crawlers.title")}>
+        <p className="text-fg-muted">{t("client:admin.settings.crawlers.description")}</p>
+        <PolicyRadios form={form} setting="search_indexing" label={t("client:admin.settings.crawlers.search")} />
+        <PolicyCheckbox
+          form={form}
+          setting="indexable_default"
+          label={t("client:admin.settings.crawlers.indexable_default")}
+          description={t("client:admin.settings.crawlers.indexable_default.description")}
+        />
+        <PolicyRadios form={form} setting="ai_usage" label={t("client:admin.settings.crawlers.ai")} />
+        <TextField
+          label={t("client:admin.settings.crawlers.security_contact")}
+          description={t("client:admin.settings.crawlers.security_contact.description")}
+          value={form.value("security_contact")}
+          onChange={(value) => {
+            form.change("security_contact", value);
+          }}
+        />
       </DetailSection>
       {form.saveError !== undefined && (
         <p role="alert" className="text-danger">

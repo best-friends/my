@@ -62,6 +62,8 @@ func TestGetInstance(t *testing.T) {
 		Limits:        clientapi.InstanceLimits{MaxPostCharacters: 500},
 		Timelines:     clientapi.InstanceTimelines{Local: true, Federated: true},
 		Rules:         []clientapi.InstanceRule{},
+		// Unset, the instance denies search engines and AI (ADR-0057).
+		SearchIndexing: clientapi.SearchIndexingDeny, AiUsage: clientapi.AIUsageDeny,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("instance = %+v, want %+v", got, want)

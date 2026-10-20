@@ -54,7 +54,7 @@ func (s *Server) newCredentialAccount(ctx context.Context, userID string, a appa
 	if p == nil {
 		return out, nil
 	}
-	out.Discoverable, out.Indexable = p.Discoverable, p.Indexable
+	out.Discoverable, out.Indexable, out.AiOptOut = p.Discoverable, p.Indexable, p.AIOptOut
 	for i, f := range p.Fields {
 		src := AccountFieldSource{Name: f.Name}
 		if p.Source != nil && i < len(p.Source.FieldValues) {
@@ -103,7 +103,7 @@ func (s *Server) UpdateAccountCredentials(ctx context.Context, req UpdateAccount
 	if b := req.Body; b != nil {
 		in = appaccount.ProfileUpdate{
 			DisplayName: b.DisplayName, Note: b.Note, AvatarMediaID: b.AvatarMediaId, HeaderMediaID: b.HeaderMediaId,
-			Locked: b.Locked, Bot: b.Bot, Discoverable: b.Discoverable, Indexable: b.Indexable,
+			Locked: b.Locked, Bot: b.Bot, Discoverable: b.Discoverable, Indexable: b.Indexable, AIOptOut: b.AiOptOut,
 		}
 		if b.Fields != nil {
 			fields := make([]account.FieldSource, len(*b.Fields))

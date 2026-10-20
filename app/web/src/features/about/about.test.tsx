@@ -73,6 +73,25 @@ describe("the information page", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
+  test("says what the server states to search engines and AI, and what such a statement means", async () => {
+    serveInstance({ search_indexing: "allow", ai_usage: "deny_training" });
+    await renderApp({ path: "/about" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    expect(within(crawlers).getByText("Search engines may index the profiles and public posts of the accounts that allow it.")).toBeInTheDocument();
+    expect(within(crawlers).getByText(/^This server reserves its pages against the training of AI models\. AI search/u)).toBeInTheDocument();
+    expect(within(crawlers).getByText(/Article 30-4 of the Copyright Act/u)).toBeInTheDocument();
+  });
+
+  test("says when the server denies search engines and every use by AI", async () => {
+    serveInstance({ search_indexing: "deny", ai_usage: "deny" });
+    await renderApp({ path: "/about" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    expect(within(crawlers).getByText("This server asks search engines not to index any of its pages.")).toBeInTheDocument();
+    expect(
+      within(crawlers).getByText("This server reserves its pages against the training of AI models and against their use by AI search, assistants and agents."),
+    ).toBeInTheDocument();
+  });
+
   test("leaves out the moderated servers when the server lists them to nobody", async () => {
     server.use(http.get(`${apiBase}/instance/domain_actions`, () => problem(404, "about:blank", "Not Found")));
     await renderApp({ path: "/about" });

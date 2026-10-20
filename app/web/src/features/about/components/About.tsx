@@ -13,7 +13,8 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
 /**
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
  * description, the rules, how to reach the operators, the remote domains it moderates as far as the instance lists
- * them, and its terms of service and privacy policy. Everyone may read it, signed in or not.
+ * them, what it states to search engines and AI crawlers, and its terms of service and privacy policy. Everyone may
+ * read it, signed in or not.
  */
 export function About() {
   const about = useAbout();
@@ -30,6 +31,7 @@ export function About() {
       {about.rules.length > 0 && <Rules rules={about.rules} />}
       {about.contact !== undefined && <Contact contact={about.contact} />}
       <ModeratedDomainsSection />
+      {about.crawlers !== undefined && <Crawlers searchIndexing={about.crawlers.searchIndexing} aiUsage={about.crawlers.aiUsage} />}
       <DocumentsSection />
     </div>
   );
@@ -138,6 +140,23 @@ function Contact({ contact }: { contact: NonNullable<Instance["contact"]> }) {
           </div>
         )}
       </dl>
+    </Section>
+  );
+}
+
+/**
+ * What the instance states to search engines and AI crawlers (FR-725, ADR-0057), and what such a statement is: a
+ * request that crawlers may or may not follow, with the legal standing it may have, never a promise of one.
+ */
+function Crawlers({ searchIndexing, aiUsage }: { searchIndexing: Instance["search_indexing"]; aiUsage: Instance["ai_usage"] }) {
+  const t = useT();
+  return (
+    <Section title={t("client:about.crawlers.title")}>
+      <p>{t("client:about.crawlers.search", { setting: searchIndexing })}</p>
+      <p>{t("client:about.crawlers.ai", { setting: aiUsage })}</p>
+      <p className="text-sm text-fg-muted">{t("client:about.crawlers.how")}</p>
+      <p className="text-sm text-fg-muted">{t("client:about.crawlers.accounts")}</p>
+      <p className="text-sm text-fg-muted">{t("client:about.crawlers.legal")}</p>
     </Section>
   );
 }

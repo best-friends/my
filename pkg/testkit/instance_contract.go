@@ -375,6 +375,8 @@ func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
 			return []string{"", "admin", "Moderator_1"}[rng.IntN(3)]
 		case instance.KindEmail:
 			return []string{"", "admin@example.com"}[rng.IntN(2)]
+		case instance.KindURI:
+			return fmt.Sprintf("mailto:security%d@social.example", rng.IntN(3))
 		default:
 			return locales[rng.IntN(len(locales))]
 		}

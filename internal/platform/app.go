@@ -488,6 +488,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			mode, err := a.Instance.RegistrationMode(ctx)
 			return domainidentity.RegistrationMode(mode), err
 		},
+		// New accounts take the instance's indexable default (FR-412, ADR-0057).
+		IndexableDefault: func(ctx context.Context) (bool, error) {
+			s, err := a.Instance.Settings(ctx)
+			return s.IndexableDefault(), err
+		},
 		Mailer: a.Mailer,
 		// The registration page screens sign-ups against the sign-up block list (FR-719).
 		SignupBlocks: a.Moderation,
@@ -786,8 +791,11 @@ func (a *App) setUpWeb(opts AppOptions) error {
 		// The instance theme (ADR-0059), read per request so that a saved theme applies at once.
 		Theme:         a.Instance.Theme,
 		ThemeRevision: a.themeRevision,
-		NotFound:      func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
-		Logger:        a.Logger,
+		// What /robots.txt, the pages, and /.well-known/ state to crawlers (ADR-0057), read per request.
+		Settings: a.Instance.Settings,
+		Now:      a.Clock.Now,
+		NotFound: func(w http.ResponseWriter, r *http.Request) { a.writeStatusProblem(w, r, http.StatusNotFound) },
+		Logger:   a.Logger,
 	})
 	if err != nil {
 		return err

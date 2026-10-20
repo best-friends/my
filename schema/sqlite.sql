@@ -163,6 +163,7 @@ CREATE TABLE account_profile_revisions (
   bot INTEGER NOT NULL CHECK (bot IN (0, 1)),
   discoverable INTEGER NOT NULL CHECK (discoverable IN (0, 1)),
   indexable INTEGER NOT NULL CHECK (indexable IN (0, 1)),
+  ai_opt_out INTEGER NOT NULL CHECK (ai_opt_out IN (0, 1)),
   avatar_media_id TEXT,
   header_media_id TEXT,
   revised_at INTEGER NOT NULL
@@ -592,7 +593,8 @@ CREATE TABLE instance_setting_revisions (
     'preview_image', 'contact_account', 'contact_email', 'thumbnail', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
-    'retention_moderation_actions', 'retention_audit_log'
+    'retention_moderation_actions', 'retention_audit_log',
+    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact'
   )),
   value TEXT NOT NULL,
   revised_by_user_id TEXT,
