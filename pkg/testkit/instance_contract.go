@@ -3,10 +3,12 @@
 package testkit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand/v2"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -32,7 +34,8 @@ type InstanceFactory func(t *testing.T, opts uow.Options) InstanceHarness
 // canonical values, rejection of invalid input without writing, localized texts with their
 // history, lookups through the locale fallback chain, the media files that media settings
 // refer to, the property that the synchronous projections equal a rebuild from the
-// revisions, the instance rules (instanceRuleCases), and the theme (instanceThemeCases).
+// revisions, the instance rules (instanceRuleCases), the theme (instanceThemeCases), and the
+// announcements (instanceAnnouncementCases).
 func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 	t.Helper()
 	cases := []struct {
@@ -49,9 +52,11 @@ func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 		{"RejectsInvalidTexts", instanceRejectsInvalidTexts},
 		{"IncrementalProjectionEqualsRebuild", instanceProjectionEqualsRebuild},
 		{"ReferencesMediaFromSettings", instanceReferencesMedia},
+		{"KeepsTheContactAndTheThumbnail", instanceKeepsContactAndThumbnail},
 	}
 	cases = append(cases, instanceRuleCases...)
 	cases = append(cases, instanceThemeCases...)
+	cases = append(cases, instanceAnnouncementCases...)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newInstanceEnv(t, newHarness)) })
 	}
@@ -368,6 +373,10 @@ func instanceProjectionEqualsRebuild(t *testing.T, e *instanceEnv) {
 			return d.Choices[rng.IntN(len(d.Choices))]
 		case instance.KindMedia:
 			return fmt.Sprintf("0199f0e0-0000-7000-8000-%012x", rng.IntN(3))
+		case instance.KindAccount:
+			return []string{"", "admin", "Moderator_1"}[rng.IntN(3)]
+		case instance.KindEmail:
+			return []string{"", "admin@example.com"}[rng.IntN(2)]
 		case instance.KindURI:
 			return fmt.Sprintf("mailto:security%d@social.example", rng.IntN(3))
 		default:
@@ -426,7 +435,7 @@ func instanceReferencesMedia(t *testing.T, e *instanceEnv) {
 		second = "0199f0e0-0000-7000-8000-00000000f002"
 		other  = "0199f0e0-0000-7000-8000-00000000f003"
 	)
-	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.PreviewImage{}) {
+	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.Image{}) {
 		t.Errorf("PreviewImage unset = %+v, %v; want none", p, err)
 	}
 	e.set(t, instance.SettingPreviewImage, strings.ToUpper(first), "")
@@ -445,11 +454,64 @@ func instanceReferencesMedia(t *testing.T, e *instanceEnv) {
 		}
 	}
 	e.set(t, instance.SettingPreviewImage, "", "")
-	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.PreviewImage{}) {
+	if p, err := e.service.PreviewImage(ctx, "ja"); err != nil || p != (appinstance.Image{}) {
 		t.Errorf("PreviewImage cleared = %+v, %v; want none", p, err)
 	}
 	// "" is the cleared value, never a media file.
 	if got, err := e.service.IsMediaReferenced(ctx, ""); err != nil || got {
 		t.Errorf("IsMediaReferenced(\"\") = %v, %v; want false", got, err)
+	}
+}
+
+// contactAccounts is the LocalAccounts of instanceKeepsContactAndThumbnail: the local accounts
+// are the usernames it holds.
+type contactAccounts []string
+
+func (c contactAccounts) CheckLocalAccount(_ context.Context, username string) error {
+	if !slices.Contains(c, username) {
+		return fmt.Errorf("no local account %s", username)
+	}
+	return nil
+}
+
+func instanceKeepsContactAndThumbnail(t *testing.T, e *instanceEnv) {
+	ctx := t.Context()
+	const thumbnail = "0199f0e0-0000-7000-8000-00000000f004"
+	service := appinstance.NewService(appinstance.Deps{
+		UnitOfWork: e.h.UnitOfWork, Repository: e.h.Instance, Clock: e.clock, IDs: NewIDGenerator(e.clock),
+		Accounts: contactAccounts{"admin"},
+	})
+	if _, err := service.SetSettings(ctx, []appinstance.SetSettingInput{
+		{Key: instance.SettingContactAccount, Value: "Admin"},
+		{Key: instance.SettingContactEmail, Value: "admin@example.com"},
+		{Key: instance.SettingThumbnail, Value: thumbnail},
+	}); err != nil {
+		t.Fatalf("SetSettings = %v", err)
+	}
+	settings := e.settings(t)
+	if settings.ContactAccount() != "admin" || settings.ContactEmail() != "admin@example.com" || settings.ThumbnailMediaID() != thumbnail {
+		t.Errorf("contact %q %q, thumbnail %q", settings.ContactAccount(), settings.ContactEmail(), settings.ThumbnailMediaID())
+	}
+	// An account that is not local is refused, and nothing is changed.
+	var se *appinstance.SettingError
+	if _, err := service.SetSettings(ctx, []appinstance.SetSettingInput{
+		{Key: instance.SettingContactEmail, Value: "other@example.com"},
+		{Key: instance.SettingContactAccount, Value: "nobody"},
+	}); !errors.As(err, &se) || se.Key != instance.SettingContactAccount || !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("SetSettings(unknown account) = %v, want a SettingError of contact_account", err)
+	}
+	if got := e.settings(t).ContactEmail(); got != "admin@example.com" {
+		t.Errorf("contact_email after a refused change = %q", got)
+	}
+	e.setText(t, instance.TextThumbnailAlt, "en", "The beach")
+	if img, err := service.Thumbnail(ctx, "ja"); err != nil || img.MediaID != thumbnail || img.Alt != "The beach" {
+		t.Errorf("Thumbnail(ja) = %+v, %v", img, err)
+	}
+	if used, err := service.IsMediaReferenced(ctx, thumbnail); err != nil || !used {
+		t.Errorf("IsMediaReferenced(thumbnail) = %v, %v; want true", used, err)
+	}
+	e.set(t, instance.SettingThumbnail, "", "")
+	if img, err := service.Thumbnail(ctx, "en"); err != nil || img != (appinstance.Image{}) {
+		t.Errorf("Thumbnail cleared = %+v, %v; want none", img, err)
 	}
 }

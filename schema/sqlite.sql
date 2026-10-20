@@ -89,7 +89,7 @@ CREATE TABLE role_permissions (
   permission TEXT NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
-    'manage_two_factor', 'manage_custom_emojis', 'manage_webhooks'
+    'manage_two_factor', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements'
   )),
   PRIMARY KEY (role_id, permission)
 ) STRICT;
@@ -590,7 +590,7 @@ CREATE TABLE instance_setting_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
     'registration_mode', 'max_status_length', 'default_locale', 'local_timeline_enabled', 'federated_timeline_enabled',
-    'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
+    'preview_image', 'contact_account', 'contact_email', 'thumbnail', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
     'retention_moderation_actions', 'retention_audit_log',
@@ -615,7 +615,7 @@ CREATE TABLE instance_settings (
 CREATE TABLE instance_text_revisions (
   id TEXT NOT NULL PRIMARY KEY,
   key TEXT NOT NULL CHECK (key IN (
-    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt'
+    'name', 'short_description', 'description', 'terms', 'privacy_policy', 'preview_image_alt', 'thumbnail_alt'
   )),
   locale TEXT NOT NULL,
   body TEXT NOT NULL,
@@ -720,6 +720,61 @@ CREATE TABLE instance_rule_heads (
   position INTEGER NOT NULL
 ) STRICT;
 CREATE INDEX instance_rule_heads_position ON instance_rule_heads (position);
+
+-- ---------------------------------------------------------------------------------------------
+-- instance: server-wide announcements (data-model §4.9, FR-726). Owned by internal/app/instance.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: an announcement to every local user.
+CREATE TABLE announcements (
+  id TEXT NOT NULL PRIMARY KEY,
+  created_at INTEGER NOT NULL
+) STRICT;
+
+-- Event (revision): one version of an announcement: its body in Markdown and the window in which
+-- it shows once published. A NULL starts_at shows it from its publication, a NULL ends_at until
+-- it is withdrawn. revised_by_user_id is NULL for a change from the CLI.
+CREATE TABLE announcement_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  announcement_id TEXT NOT NULL,
+  body TEXT NOT NULL,
+  starts_at INTEGER,
+  ends_at INTEGER,
+  revised_by_user_id TEXT,
+  revised_at INTEGER NOT NULL,
+  CHECK (starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at)
+) STRICT;
+CREATE INDEX announcement_revisions_announcement_id_id ON announcement_revisions (announcement_id, id DESC);
+
+-- Event: an announcement was published or withdrawn; a withdrawal is for good.
+-- changed_by_user_id is NULL for the CLI.
+CREATE TABLE announcement_state_changes (
+  id TEXT NOT NULL PRIMARY KEY,
+  announcement_id TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('published', 'withdrawn')),
+  changed_by_user_id TEXT,
+  changed_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX announcement_state_changes_announcement_id_id ON announcement_state_changes (announcement_id, id DESC);
+
+-- Projection: the current revision and state of each announcement. published_at is the time of
+-- its latest publication, set exactly when it has been published.
+CREATE TABLE announcement_heads (
+  announcement_id TEXT NOT NULL PRIMARY KEY,
+  revision_id TEXT NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('draft', 'published', 'withdrawn')),
+  published_at INTEGER,
+  CHECK ((state = 'draft') = (published_at IS NULL))
+) STRICT;
+CREATE INDEX announcement_heads_state ON announcement_heads (state);
+
+-- Current value: the announcements a user has read (ADR-0020 rule 5: the history means nothing).
+CREATE TABLE announcement_reads (
+  user_id TEXT NOT NULL,
+  announcement_id TEXT NOT NULL,
+  read_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, announcement_id)
+) STRICT;
 
 -- ---------------------------------------------------------------------------------------------
 -- content: media files (data-model §4.4, ADR-0005, ADR-0019 §8). Owned by internal/app/content.
@@ -1917,7 +1972,7 @@ CREATE INDEX registration_origins_ip ON registration_origins (ip);
 CREATE INDEX registration_origins_recorded_at ON registration_origins (recorded_at);
 
 -- ---------------------------------------------------------------------------------------------
--- identity: the exports of a user's data (data-model.md §4.1, FR-008).
+-- identity: the exports and imports of a user's data (data-model.md §4.1, FR-008).
 -- ---------------------------------------------------------------------------------------------
 
 -- Resource: a user's request for an archive of their data.
@@ -1941,6 +1996,43 @@ CREATE TABLE data_export_results (
   CHECK ((outcome = 'ready') = (file_size IS NOT NULL))
 ) STRICT;
 CREATE INDEX data_export_results_expires_at ON data_export_results (expires_at);
+
+-- Resource: a user's import of a Mastodon CSV file of follows, blocks, mutes, or bookmarks.
+CREATE TABLE data_imports (
+  id TEXT NOT NULL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('following', 'blocks', 'mutes', 'bookmarks')),
+  mode TEXT NOT NULL CHECK (mode IN ('merge', 'overwrite')),
+  created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX data_imports_user_id_id ON data_imports (user_id, id DESC);
+CREATE INDEX data_imports_created_at ON data_imports (created_at);
+
+-- Resource (child of an import): one thing the import does. An 'add' item is a line of the file,
+-- target its address or post URL as written; a 'remove' item is what an overwrite removes,
+-- target the ID of the account or status.
+CREATE TABLE data_import_items (
+  import_id TEXT NOT NULL,
+  position INTEGER NOT NULL CHECK (position >= 0),
+  action TEXT NOT NULL CHECK (action IN ('add', 'remove')),
+  target TEXT NOT NULL,
+  show_boosts INTEGER NOT NULL CHECK (show_boosts IN (0, 1)),
+  notify INTEGER NOT NULL CHECK (notify IN (0, 1)),
+  hide_notifications INTEGER NOT NULL CHECK (hide_notifications IN (0, 1)),
+  PRIMARY KEY (import_id, position)
+) STRICT;
+
+-- Event (child of an item): how the item ended. failure says why exactly when it failed.
+CREATE TABLE data_import_item_results (
+  import_id TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  outcome TEXT NOT NULL CHECK (outcome IN ('done', 'failed')),
+  failure TEXT CHECK (failure IN ('unresolvable', 'unavailable', 'blocked', 'restricted', 'self')),
+  processed_at INTEGER NOT NULL,
+  PRIMARY KEY (import_id, position),
+  CHECK ((outcome = 'failed') = (failure IS NOT NULL))
+) STRICT;
 
 -- moderation: the audit log (data-model §4.3, ADR-0037). Owned by internal/app/moderation.
 -- ---------------------------------------------------------------------------------------------
@@ -1966,11 +2058,12 @@ CREATE TABLE audit_log_entries (
     'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_updated',
     'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted',
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
-    'webhook_secret_rotated', 'invite_created', 'invite_revoked'
+    'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
+    'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook', 'invite'
+    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite'
   )),
   target_id TEXT NOT NULL,
   target_label TEXT NOT NULL,

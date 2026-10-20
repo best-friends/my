@@ -27,6 +27,10 @@ const (
 	KindHomeEntry Kind = "home_entry"
 	// KindNotifications signals that an account may have new notifications.
 	KindNotifications Kind = "notifications"
+	// KindAnnouncement signals that a server-wide announcement was published, changed while
+	// published, or withdrawn (FR-726). It goes to every subscriber, which reads whether its
+	// viewer sees the announcement now.
+	KindAnnouncement Kind = "announcement"
 )
 
 // Event is one signal.
@@ -37,6 +41,8 @@ type Event struct {
 	// EntryID is the ID of the new timeline entry (KindHomeEntry): a status ID for a post, a
 	// boost ID for a boost.
 	EntryID string
+	// AnnouncementID is the ID of the announcement that changed (KindAnnouncement).
+	AnnouncementID string
 }
 
 // Publisher publishes signals. Publish never blocks on subscribers or brokers and never fails

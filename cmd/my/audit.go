@@ -124,6 +124,7 @@ custom_emoji_created, custom_emoji_image_replaced, custom_emoji_updated,
 custom_emoji_enabled, custom_emoji_disabled, custom_emoji_deleted
 (custom_emoji); webhook_created, webhook_updated, webhook_deleted,
 webhook_enabled, webhook_disabled, webhook_secret_rotated (webhook);
-invite_created, invite_revoked (invite).
+announcement_created, announcement_updated, announcement_published,
+announcement_withdrawn (announcement); invite_created, invite_revoked (invite).
 `)
 }

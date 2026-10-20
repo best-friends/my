@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Uploading the images of a profile (the avatar and the header), and of the custom emoji that the admin screen
-// registers: the server accepts a file, processes it in the background, and is polled until the file is ready
+// Uploading the images of a profile (the avatar and the header), and of the custom emoji and the server's thumbnail
+// that the admin screens set: the server accepts a file, processes it in the background, and is polled until the file is ready
 // (api/openapi.yaml, uploadMedia and getMedia).
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -20,7 +20,7 @@ export class MediaProcessingError extends Error {
 }
 
 /** What an image is for, which picks the sizes the server makes of it (MediaUpload.purpose). */
-export type ImagePurpose = "avatar" | "header" | "emoji";
+export type ImagePurpose = "avatar" | "header" | "emoji" | "attachment";
 
 /** Uploads `file` as a `purpose` image and resolves with it once the server has processed it. */
 export async function uploadImage(api: Api, file: File, purpose: ImagePurpose, signal?: AbortSignal): Promise<MediaAttachment> {

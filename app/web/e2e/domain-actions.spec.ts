@@ -3,7 +3,8 @@
 // domain in non-Latin letters shown in both of its forms, a suspension taken through its alert dialog, and
 // lifting an action, each passing axe without scrolling sideways. `vite preview` has no API, so each test plays
 // the server of a signed-in operator with page.route; names change with the locale, so the structure is checked
-// by role and the identifiers the server sends (domains).
+// by role and the identifiers the server sends (domains). The import of Mastodon's domain block CSV is previewed,
+// a row cleared by keyboard, and the rest imported.
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
@@ -81,6 +82,23 @@ async function operatorServer(page: Page) {
       actions = [action, ...actions];
       return json(route, action);
     }
+    if (key === "POST /admin/domain_actions/import/preview") {
+      requests.push(key);
+      return json(route, {
+        rows: [
+          { line: 2, written_domain: "spam.example", status: "importable", issue: ["limit", "reject_media"], block: { domain: "spam.example", severity: "silence", reject_media: true, reject_reports: false, obfuscate: false } },
+          { line: 3, written_domain: asciiDomain, status: "importable", issue: ["reject_reports"], block: { domain: asciiDomain, severity: "noop", reject_media: false, reject_reports: true, obfuscate: false, public_comment: longComment } },
+          { line: 4, written_domain: "not a domain", status: "invalid", issue: [] },
+        ],
+      });
+    }
+    if (key === "POST /admin/domain_actions/import") {
+      const body = request.postDataJSON() as { blocks: { domain: string }[] };
+      requests.push(`${key} ${body.blocks.map((block) => block.domain).join(" ")}`);
+      const issued = body.blocks.map((block, i) => ({ id: `0192f0c4-7a8e-7000-8000-0000000000b${String(i)}`, domain: block.domain, kind: "reject_reports", obfuscate: false, state: "active", issued_at: "2026-10-17T00:00:00Z" }));
+      actions = [...issued, ...actions];
+      return json(route, { issued, skipped: [] });
+    }
     const lift = /^POST \/admin\/domain_actions\/([^/]+)\/lift$/.exec(key);
     if (lift) {
       requests.push(key);
@@ -147,7 +165,7 @@ test.describe("domain actions", () => {
     await main.getByRole("radio").last().focus();
     await page.keyboard.press("Space");
     await expect(main.getByRole("radio").last()).toBeChecked();
-    await main.locator('form button[type="submit"]').click();
+    await main.locator('form button[type="submit"]').first().click();
     const dialog = page.getByRole("alertdialog");
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole("button").first()).toBeFocused();
@@ -172,6 +190,40 @@ test.describe("domain actions", () => {
     await expect(list.getByRole("heading", { level: 3 })).toHaveCount(1);
     await expect(list.getByRole("button")).toBeFocused();
     expect(requests).toEqual(["POST /admin/domain_actions suspend spam.example", "POST /admin/domain_actions/0192f0c4-7a8e-7000-8000-0000000000a2/lift"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("Mastodon's domain block CSV", () => {
+  test("previews a CSV, clears a row by keyboard, and imports the rest with focus on the import's heading", async ({ page, makeAxeBuilder }) => {
+    const requests = await operatorServer(page);
+    await page.goto("/moderation/domain-actions");
+    const main = page.getByRole("main");
+    await expect(main.getByRole("tabpanel").getByRole("heading", { level: 3 })).toHaveCount(1);
+
+    // The CSV's text area is the last text box of the page; the preview is the submit button of the last form.
+    await main.getByRole("textbox").last().fill("#domain,#severity\nspam.example,silence\n");
+    await main.locator('form button[type="submit"]').last().click();
+    const rows = main.getByRole("list").last();
+    // Each row that takes actions is a checkbox named by its domain, chosen at first; the invalid row is text.
+    await expect(rows.getByRole("listitem")).toHaveCount(3);
+    await expect(rows.getByRole("checkbox", { name: "spam.example" })).toBeChecked();
+    await expect(rows.getByRole("checkbox", { name: new RegExp(asciiDomain.replaceAll(".", "\\.")) })).toBeChecked();
+    await expect(rows.getByRole("listitem").last()).toContainText("not a domain");
+    expect(requests).toEqual(["POST /admin/domain_actions/import/preview"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // By keyboard: the checkbox's input is visually hidden under its drawn box.
+    await rows.getByRole("checkbox").first().focus();
+    await page.keyboard.press("Space");
+    await expect(rows.getByRole("checkbox").first()).not.toBeChecked();
+    // The import is the last button of the page; no row suspends, so it asks nothing.
+    await main.getByRole("button").last().click();
+    await expect(rows).toBeHidden();
+    expect(requests).toEqual(["POST /admin/domain_actions/import/preview", `POST /admin/domain_actions/import ${asciiDomain}`]);
+    await expect(main.getByRole("heading", { level: 3 }).last()).toBeFocused();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

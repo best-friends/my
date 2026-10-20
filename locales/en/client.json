@@ -1,4 +1,16 @@
 {
+  "about.contact.account": {
+    "defaultMessage": "Account",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "Email",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "Contact",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
   "about.description.title": {
     "defaultMessage": "Description",
     "description": "Heading of the section of the server's information page with the server's description."
@@ -1139,6 +1151,186 @@
     "defaultMessage": "Accounts",
     "description": "Title of the admin screen that searches the local and remote accounts, and of its link in the administration menu."
   },
+  "admin.announcements.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that leaves a dialog of the announcements screen without changing anything."
+  },
+  "admin.announcements.change_failed": {
+    "defaultMessage": "The announcement could not be changed: {reason}",
+    "description": "Error after a change of an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_draft": {
+    "defaultMessage": "Save as a draft",
+    "description": "Button that writes a new announcement as a draft."
+  },
+  "admin.announcements.create_failed": {
+    "defaultMessage": "The announcement could not be written: {reason}",
+    "description": "Error after writing an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_published": {
+    "defaultMessage": "Publish the announcement",
+    "description": "Button that writes a new announcement and publishes it."
+  },
+  "admin.announcements.description": {
+    "defaultMessage": "Announcements show above the home timeline of everyone on this server, who can mark them as read. The audit log records every change.",
+    "description": "Explanation at the top of the announcements screen."
+  },
+  "admin.announcements.drafted": {
+    "defaultMessage": "Saved the announcement as a draft. The audit log records the change.",
+    "description": "Status after a new announcement was saved as a draft."
+  },
+  "admin.announcements.duration": {
+    "defaultMessage": "Show for",
+    "description": "Label of how long a new announcement shows."
+  },
+  "admin.announcements.duration.description": {
+    "defaultMessage": "From when you write it. It stops showing after that.",
+    "description": "Description of how long a new announcement shows."
+  },
+  "admin.announcements.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the button that closes the dialog that edits an announcement."
+  },
+  "admin.announcements.edit.title": {
+    "defaultMessage": "Edit the announcement",
+    "description": "Title of the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit_one": {
+    "defaultMessage": "Edit: {announcement}",
+    "description": "Accessible name of the button that edits an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.empty": {
+    "defaultMessage": "No announcements",
+    "description": "Heading of the list of announcements when there are none."
+  },
+  "admin.announcements.empty.description": {
+    "defaultMessage": "Announcements you write appear here.",
+    "description": "Description of the list of announcements when there are none."
+  },
+  "admin.announcements.ends_at": {
+    "defaultMessage": "Shows until",
+    "description": "Term of when an announcement stops showing."
+  },
+  "admin.announcements.heading": {
+    "defaultMessage": "{announcement} ({state})",
+    "description": "Heading of an announcement in the list. {announcement} is the first line of its text; {state} its state (draft, published, withdrawn)."
+  },
+  "admin.announcements.list.title": {
+    "defaultMessage": "All announcements",
+    "description": "Heading of the list of announcements, newest first."
+  },
+  "admin.announcements.new.title": {
+    "defaultMessage": "Write an announcement",
+    "description": "Heading of the form of a new announcement."
+  },
+  "admin.announcements.publish": {
+    "defaultMessage": "Publish",
+    "description": "Button that publishes a draft announcement."
+  },
+  "admin.announcements.publish_now": {
+    "defaultMessage": "Publish now",
+    "description": "Checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_now.description": {
+    "defaultMessage": "Without it, the announcement stays a draft that only the administrators see.",
+    "description": "Description of the checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_one": {
+    "defaultMessage": "Publish: {announcement}",
+    "description": "Accessible name of the button that publishes an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.published": {
+    "defaultMessage": "Published the announcement. The audit log records the change.",
+    "description": "Status after a new announcement was published."
+  },
+  "admin.announcements.published_at": {
+    "defaultMessage": "Published",
+    "description": "Term of when an announcement was published."
+  },
+  "admin.announcements.published_one": {
+    "defaultMessage": "Published {announcement}. The audit log records the change.",
+    "description": "Status after a draft announcement was published. {announcement} is the first line of its text."
+  },
+  "admin.announcements.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the text of an announcement."
+  },
+  "admin.announcements.starts_at": {
+    "defaultMessage": "Shows from",
+    "description": "Term of when an announcement starts to show."
+  },
+  "admin.announcements.state": {
+    "defaultMessage": "State",
+    "description": "Term of the state of an announcement."
+  },
+  "admin.announcements.state.draft": {
+    "defaultMessage": "Draft",
+    "description": "State of an announcement that no user sees yet."
+  },
+  "admin.announcements.state.published": {
+    "defaultMessage": "Published",
+    "description": "State of an announcement that the users see."
+  },
+  "admin.announcements.state.withdrawn": {
+    "defaultMessage": "Withdrawn",
+    "description": "State of an announcement taken down for good."
+  },
+  "admin.announcements.summary": {
+    "defaultMessage": "Tell everyone on this server about maintenance and changes.",
+    "description": "Description of the announcements screen in the administration menu."
+  },
+  "admin.announcements.text": {
+    "defaultMessage": "Text",
+    "description": "Label of the text of an announcement."
+  },
+  "admin.announcements.text.description": {
+    "defaultMessage": "Markdown: paragraphs, emphasis, lists, quotes, code and links. Raw HTML is removed.",
+    "description": "Description of the text field of an announcement: which Markdown it takes."
+  },
+  "admin.announcements.text_required": {
+    "defaultMessage": "Write the announcement.",
+    "description": "Error of an announcement without text."
+  },
+  "admin.announcements.title": {
+    "defaultMessage": "Announcements",
+    "description": "Title of the announcements screen, in the administration menu and as its heading."
+  },
+  "admin.announcements.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of the text of an announcement longer than its limit. {max} is the limit."
+  },
+  "admin.announcements.until_withdrawn": {
+    "defaultMessage": "Until withdrawn",
+    "description": "Choice of an announcement that shows until it is withdrawn, and the end of such an announcement."
+  },
+  "admin.announcements.updated": {
+    "defaultMessage": "Changed {announcement}. The audit log records the change.",
+    "description": "Status after the text of an announcement was changed. {announcement} is the first line of its new text."
+  },
+  "admin.announcements.withdraw": {
+    "defaultMessage": "Withdraw",
+    "description": "Button that withdraws an announcement, and the confirming button of its dialog."
+  },
+  "admin.announcements.withdraw.description": {
+    "defaultMessage": "Nobody sees the announcement again, and it cannot be published or changed any more.",
+    "description": "Description of the dialog that confirms withdrawing an announcement."
+  },
+  "admin.announcements.withdraw.title": {
+    "defaultMessage": "Withdraw {announcement}?",
+    "description": "Title of the dialog that confirms withdrawing an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdraw_one": {
+    "defaultMessage": "Withdraw: {announcement}",
+    "description": "Accessible name of the button that withdraws an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdrawn": {
+    "defaultMessage": "Withdrew {announcement}. The audit log records the change.",
+    "description": "Status after an announcement was withdrawn. {announcement} is the first line of its text."
+  },
   "admin.appeal.account": {
     "defaultMessage": "Account",
     "description": "Term of the account that appealed, which the action is on."
@@ -1346,6 +1538,22 @@
   "admin.audit_log.action.account_deletion_cancelled": {
     "defaultMessage": "Account deletion cancelled",
     "description": "Heading of an audit log entry: overturning a user's appeal of a ban cancelled the scheduled deletion of their account."
+  },
+  "admin.audit_log.action.announcement_created": {
+    "defaultMessage": "Announcement written",
+    "description": "Kind of an audited operation: an administrator wrote an announcement."
+  },
+  "admin.audit_log.action.announcement_published": {
+    "defaultMessage": "Announcement published",
+    "description": "Kind of an audited operation: an administrator published an announcement."
+  },
+  "admin.audit_log.action.announcement_updated": {
+    "defaultMessage": "Announcement changed",
+    "description": "Kind of an audited operation: an administrator changed the text or window of an announcement."
+  },
+  "admin.audit_log.action.announcement_withdrawn": {
+    "defaultMessage": "Announcement withdrawn",
+    "description": "Kind of an audited operation: an administrator withdrew an announcement."
   },
   "admin.audit_log.action.appeal_overturned": {
     "defaultMessage": "Appeal overturned",
@@ -2074,6 +2282,134 @@
   "admin.domain_actions.too_long": {
     "defaultMessage": "Use at most {max, number} characters",
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
+  },
+  "admin.domain_actions.csv.confirm.confirm": {
+    "defaultMessage": "Import and suspend",
+    "description": "Confirm button of an import of a domain block CSV that suspends domains."
+  },
+  "admin.domain_actions.csv.confirm.title": {
+    "defaultMessage": "Suspend {count, plural, one {# domain} other {# domains}}?",
+    "description": "Title of the confirmation of an import of a domain block CSV that suspends domains. {count} is how many."
+  },
+  "admin.domain_actions.csv.csv": {
+    "defaultMessage": "CSV",
+    "description": "Label of the text area of a domain block CSV to import."
+  },
+  "admin.domain_actions.csv.csv.description": {
+    "defaultMessage": "A domain block CSV that Mastodon exported, at most {max, number} rows. A file without the #domain header is read as a list of domains to suspend.",
+    "description": "Help text under the text area of a domain block CSV. {max} is the most rows one import holds."
+  },
+  "admin.domain_actions.csv.csv.required": {
+    "defaultMessage": "Paste a CSV, or choose a file",
+    "description": "Error under the text area of a domain block CSV when it is empty."
+  },
+  "admin.domain_actions.csv.csv.too_large": {
+    "defaultMessage": "The CSV is larger than {max, number} KB. Split it into smaller files",
+    "description": "Error under the text area of a domain block CSV when it has too many bytes to send. {max} is the limit in kilobytes."
+  },
+  "admin.domain_actions.csv.description": {
+    "defaultMessage": "Export the actions in effect as the domain block CSV that Mastodon imports, or import a CSV that Mastodon exported. Mastodon's silence is a limit here. Domains with only Force sensitive are not exported, and private notes and end dates are not exported.",
+    "description": "Text at the top of the section that exports and imports Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.export": {
+    "defaultMessage": "Export CSV",
+    "description": "Button that saves the domain actions in effect as Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.export.done": {
+    "defaultMessage": "Saved {name}.",
+    "description": "Status after the domain block CSV was saved. {name} is the file name."
+  },
+  "admin.domain_actions.csv.export.failed": {
+    "defaultMessage": "Could not export the CSV: {reason}",
+    "description": "Error when the domain block CSV could not be exported. {reason} is why."
+  },
+  "admin.domain_actions.csv.file": {
+    "defaultMessage": "Choose a CSV file",
+    "description": "Button that opens the file picker to read a domain block CSV."
+  },
+  "admin.domain_actions.csv.file.description": {
+    "defaultMessage": "Its text replaces the CSV above.",
+    "description": "Help text next to the button that reads a domain block CSV from a file."
+  },
+  "admin.domain_actions.csv.file.failed": {
+    "defaultMessage": "Could not read {name}. Choose the file again.",
+    "description": "Error when the browser could not read the chosen domain block CSV. {name} is the file name."
+  },
+  "admin.domain_actions.csv.file.read": {
+    "defaultMessage": "Read {name}.",
+    "description": "Status after the chosen domain block CSV was read into the text area. {name} is the file name."
+  },
+  "admin.domain_actions.csv.file.too_large": {
+    "defaultMessage": "{name} is larger than {max, number} KB. Split it into smaller files.",
+    "description": "Error when the chosen domain block CSV is too large to send. {name} is the file name; {max} the limit in kilobytes."
+  },
+  "admin.domain_actions.csv.import.done": {
+    "defaultMessage": "{issued, plural, =0 {No action was taken.} one {# action was taken.} other {# actions were taken.}} {skipped, plural, =0 {No row was skipped.} one {# row was skipped.} other {# rows were skipped.}}",
+    "description": "Status after an import of a domain block CSV. {issued} is the number of actions taken; {skipped} the number of rows that took none."
+  },
+  "admin.domain_actions.csv.import.failed": {
+    "defaultMessage": "Could not import the rows: {reason}",
+    "description": "Error when the server refused the import of the chosen rows of a domain block CSV. {reason} is why."
+  },
+  "admin.domain_actions.csv.import.title": {
+    "defaultMessage": "Import a CSV",
+    "description": "Heading of the form that imports Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.none_selected": {
+    "defaultMessage": "Choose at least one row to import",
+    "description": "Error when the import of a domain block CSV is sent with no row chosen."
+  },
+  "admin.domain_actions.csv.preview": {
+    "defaultMessage": "Preview",
+    "description": "Submit button that shows what importing each row of a domain block CSV would do, without changing anything."
+  },
+  "admin.domain_actions.csv.preview.failed": {
+    "defaultMessage": "Could not read the CSV: {reason}",
+    "description": "Error under the import form when the server refused the domain block CSV. {reason} is why."
+  },
+  "admin.domain_actions.csv.preview.summary": {
+    "defaultMessage": "{importable, number} of {count, plural, one {# row} other {# rows}} can be imported. Clear the rows you do not want.",
+    "description": "Text above the preview table of a domain block CSV. {count} is the number of rows; {importable} how many issue an action."
+  },
+  "admin.domain_actions.csv.preview.title": {
+    "defaultMessage": "Rows of the CSV",
+    "description": "Heading of the preview of a domain block CSV, and the name of its table."
+  },
+  "admin.domain_actions.csv.private_note.description": {
+    "defaultMessage": "Only moderators see this. Every action of the import gets this note.",
+    "description": "Help text under the private note of an import of a domain block CSV."
+  },
+  "admin.domain_actions.csv.row.issue": {
+    "defaultMessage": "Line {line, number}. Takes: {kinds}",
+    "description": "What importing a row of a domain block CSV does, under the checkbox that chooses it. {line} is its line; {kinds} the list of the kinds of action, such as Suspend and Reject reports."
+  },
+  "admin.domain_actions.csv.row.skipped": {
+    "defaultMessage": "Line {line, number}. {reason}",
+    "description": "A row of a domain block CSV that takes no action. {line} is its line; {reason} why, such as Already in effect."
+  },
+  "admin.domain_actions.csv.status.already_applied": {
+    "defaultMessage": "Already in effect",
+    "description": "Why a row of a domain block CSV takes no action: actions in effect on the domain or a parent domain cover it."
+  },
+  "admin.domain_actions.csv.status.duplicate": {
+    "defaultMessage": "Same domain as an earlier row",
+    "description": "Why a row of a domain block CSV takes no action: an earlier row has the same domain."
+  },
+  "admin.domain_actions.csv.status.invalid": {
+    "defaultMessage": "Not a valid row",
+    "description": "Why a row of a domain block CSV takes no action: its domain, severity or comment is not valid."
+  },
+  "admin.domain_actions.csv.status.no_action": {
+    "defaultMessage": "No action",
+    "description": "Why a row of a domain block CSV takes no action: a noop row without rejections."
+  },
+  "admin.domain_actions.csv.submit": {
+    "defaultMessage": "Import {count, plural, one {# row} other {# rows}}",
+    "description": "Button that imports the chosen rows of a domain block CSV. {count} is how many are chosen."
+  },
+  "admin.domain_actions.csv.title": {
+    "defaultMessage": "Mastodon's CSV",
+    "description": "Heading of the section of the domain actions screen that exports and imports Mastodon's domain block CSV."
   },
   "admin.home.none.description": {
     "defaultMessage": "Your roles grant none of the permissions that the server administration screens need. An administrator can grant them.",
@@ -3035,6 +3371,10 @@
     "defaultMessage": "Accounts and registrations",
     "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
   },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "Announcements",
+    "description": "Name of the permission manage_announcements: the server's announcements to every local user."
+  },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "Custom emoji",
     "description": "Name of the permission manage_custom_emojis: the custom emoji."
@@ -3286,6 +3626,74 @@
   "admin.settings.characters_over": {
     "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
     "description": "Character count under a text of the server settings and the rules when the text is over its limit."
+  },
+  "admin.settings.contact.account": {
+    "defaultMessage": "Contact account",
+    "description": "Label of the field of the username of the account to contact about the server."
+  },
+  "admin.settings.contact.account.description": {
+    "defaultMessage": "The username of an account on this server, such as admin.",
+    "description": "Help under the field of the contact account: what to type in it."
+  },
+  "admin.settings.contact.description": {
+    "defaultMessage": "How people reach the people who run this server, and the image that represents it. The about page, the page that welcomes visitors, and other servers (NodeInfo) show them. Leave a field empty to show none.",
+    "description": "Explanation above the fields of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.email": {
+    "defaultMessage": "Contact email address",
+    "description": "Label of the field of the email address to contact about the server."
+  },
+  "admin.settings.contact.email.description": {
+    "defaultMessage": "Everyone can see it, signed in or not.",
+    "description": "Help under the field of the contact email address: who can see it."
+  },
+  "admin.settings.contact.email.invalid": {
+    "defaultMessage": "Enter an email address such as admin@example.com.",
+    "description": "Error under the field of the contact email address when it is not an email address."
+  },
+  "admin.settings.contact.save": {
+    "defaultMessage": "Save the contact and thumbnail",
+    "description": "Button that saves the server's contact and thumbnail."
+  },
+  "admin.settings.contact.save_failed": {
+    "defaultMessage": "Could not save the contact and thumbnail: {reason}",
+    "description": "Error when saving the server's contact and thumbnail failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.contact.saved": {
+    "defaultMessage": "Saved the contact and thumbnail. The audit log records the change.",
+    "description": "Status after the server's contact and thumbnail were saved."
+  },
+  "admin.settings.contact.thumbnail": {
+    "defaultMessage": "Thumbnail",
+    "description": "Heading of the part of the form with the image that represents the server."
+  },
+  "admin.settings.contact.thumbnail.alt": {
+    "defaultMessage": "Description of the image in {language}",
+    "description": "Label of the field of the thumbnail's alt text in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.contact.thumbnail.choose": {
+    "defaultMessage": "Choose an image",
+    "description": "Button that opens the file picker to choose the server's thumbnail."
+  },
+  "admin.settings.contact.thumbnail.description": {
+    "defaultMessage": "A wide image, such as 1600 × 900 pixels, at the top of the about page and the page that welcomes visitors.",
+    "description": "Help about the server's thumbnail: where it shows and what size suits it."
+  },
+  "admin.settings.contact.thumbnail.failed": {
+    "defaultMessage": "The server could not process this image. Try another one.",
+    "description": "Error when the chosen thumbnail could not be processed."
+  },
+  "admin.settings.contact.thumbnail.remove": {
+    "defaultMessage": "Remove the image",
+    "description": "Button that removes the server's thumbnail when the form is saved."
+  },
+  "admin.settings.contact.title": {
+    "defaultMessage": "Contact and thumbnail",
+    "description": "Heading of the section of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.unchanged": {
+    "defaultMessage": "The contact and thumbnail are already saved.",
+    "description": "Status after pressing the save button of the contact and thumbnail without changing anything."
   },
   "admin.settings.descriptions.description": {
     "defaultMessage": "The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language.",
@@ -5672,7 +6080,7 @@
     "description": "Error in the deletion dialog when the password the user typed is not their current password."
   },
   "settings.account.export.description": {
-    "defaultMessage": "Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days.",
+    "defaultMessage": "Get a ZIP archive of your posts in ActivityStreams format, your profile, the moderation actions on your account, and your follows, blocks, mutes, and bookmarks as CSV files. It takes a while to prepare, and you can download it for 7 days.",
     "description": "Explains the archive of the user's data, above the button that asks for one."
   },
   "settings.account.export.download": {
@@ -5802,6 +6210,186 @@
   "settings.follow_requests.title": {
     "defaultMessage": "Follow requests",
     "description": "Heading and document title of the settings page with the follow requests awaiting approval."
+  },
+  "settings.import_export.export.description": {
+    "defaultMessage": "Download CSV files in the format Mastodon uses. Mastodon and other servers that read this format can import them.",
+    "description": "Explains the CSV files the user can download, above the list of them."
+  },
+  "settings.import_export.export.download": {
+    "defaultMessage": "Download",
+    "description": "Button that downloads one CSV file."
+  },
+  "settings.import_export.export.download_of": {
+    "defaultMessage": "Download {kind} as CSV",
+    "description": "Accessible name of the button that downloads one CSV file. {kind} is the name of the list, e.g. Blocked accounts."
+  },
+  "settings.import_export.export.title": {
+    "defaultMessage": "Export",
+    "description": "Heading of the section of the import and export page that downloads CSV files."
+  },
+  "settings.import_export.history.empty": {
+    "defaultMessage": "You have no imports",
+    "description": "Shown when the user has no recent import."
+  },
+  "settings.import_export.history.failed": {
+    "defaultMessage": "Could not be imported",
+    "description": "Label of the number of entries of an import that could not be carried out, e.g. accounts that no longer exist."
+  },
+  "settings.import_export.history.item": {
+    "defaultMessage": "{kind}, {date}",
+    "description": "Heading of one import in the list. {kind} is the name of the list, e.g. Follows; {date} is when the import started, a formatted date and time."
+  },
+  "settings.import_export.history.mode": {
+    "defaultMessage": "Method",
+    "description": "Label of how an import was done (merge or overwrite)."
+  },
+  "settings.import_export.history.progress": {
+    "defaultMessage": "Progress",
+    "description": "Label of how many entries of an import are done."
+  },
+  "settings.import_export.history.progress_value": {
+    "defaultMessage": "{processed, number} of {total, number}",
+    "description": "How many entries of an import are done. {processed} and {total} are numbers."
+  },
+  "settings.import_export.history.state": {
+    "defaultMessage": "State",
+    "description": "Label of the state of an import (in progress, finished)."
+  },
+  "settings.import_export.history.state.finished": {
+    "defaultMessage": "Finished",
+    "description": "State of an import that the server has carried out."
+  },
+  "settings.import_export.history.state.in_progress": {
+    "defaultMessage": "In progress",
+    "description": "State of an import that the server is still carrying out."
+  },
+  "settings.import_export.history.title": {
+    "defaultMessage": "Recent imports",
+    "description": "Heading of the list of the user's latest imports on the import and export page."
+  },
+  "settings.import_export.import.choose": {
+    "defaultMessage": "Choose a CSV file",
+    "description": "Button that opens the file picker to choose the CSV file to import."
+  },
+  "settings.import_export.import.chosen": {
+    "defaultMessage": "Chosen file: {name}",
+    "description": "Shows the name of the CSV file the user chose to import. {name} is the file name."
+  },
+  "settings.import_export.import.description": {
+    "defaultMessage": "Import a CSV file exported from Mastodon or from this server. Accounts and posts on other servers are looked up in the background, which can take a while.",
+    "description": "Explains importing a CSV file, above the form."
+  },
+  "settings.import_export.import.file": {
+    "defaultMessage": "CSV file",
+    "description": "Heading of the part of the import form where the user chooses the file."
+  },
+  "settings.import_export.import.file_too_large": {
+    "defaultMessage": "The file is too large to import. Split it into smaller files.",
+    "description": "Error in the import form when the chosen CSV file is larger than the server accepts."
+  },
+  "settings.import_export.import.file_unreadable": {
+    "defaultMessage": "The file cannot be read. Choose it again.",
+    "description": "Error in the import form when the browser could not read the chosen file."
+  },
+  "settings.import_export.import.kind": {
+    "defaultMessage": "What to import",
+    "description": "Label of the radio group that chooses the kind of CSV file to import (follows, blocked accounts, muted accounts, bookmarks)."
+  },
+  "settings.import_export.import.mode": {
+    "defaultMessage": "How to import",
+    "description": "Label of the radio group that chooses whether the import merges with or overwrites what the user has."
+  },
+  "settings.import_export.import.mode.merge": {
+    "defaultMessage": "Merge",
+    "description": "Option of an import that keeps what the user has and adds what the file lists."
+  },
+  "settings.import_export.import.mode.merge.description": {
+    "defaultMessage": "Keep what you have and add what the file lists.",
+    "description": "Description of the merge option of an import."
+  },
+  "settings.import_export.import.mode.overwrite": {
+    "defaultMessage": "Overwrite",
+    "description": "Option of an import that makes the user's list exactly what the file lists."
+  },
+  "settings.import_export.import.mode.overwrite.description": {
+    "defaultMessage": "Make it exactly what the file lists. Anything the file does not list is removed.",
+    "description": "Description of the overwrite option of an import."
+  },
+  "settings.import_export.import.no_file": {
+    "defaultMessage": "No file chosen",
+    "description": "Shown in the import form before the user chooses a CSV file."
+  },
+  "settings.import_export.import.preview": {
+    "defaultMessage": "Check the file",
+    "description": "Button that asks the server what importing the chosen file would do, without importing it."
+  },
+  "settings.import_export.import.preview.entries": {
+    "defaultMessage": "Entries in the file",
+    "description": "Label of the number of accounts or posts that the file to import lists."
+  },
+  "settings.import_export.import.preview.present": {
+    "defaultMessage": "Already on your list",
+    "description": "Label of the number of entries of the file to import that the user already has."
+  },
+  "settings.import_export.import.preview.removals": {
+    "defaultMessage": "To be removed",
+    "description": "Label of the number of accounts or posts that an overwrite removes because the file does not list them."
+  },
+  "settings.import_export.import.preview.skip.duplicate": {
+    "defaultMessage": "Repeats an earlier line",
+    "description": "Why a line of the file to import is skipped: an earlier line names the same account or post."
+  },
+  "settings.import_export.import.preview.skip.invalid": {
+    "defaultMessage": "Not an account address or a post URL",
+    "description": "Why a line of the file to import is skipped: it names no account (user@domain) or post URL."
+  },
+  "settings.import_export.import.preview.skipped": {
+    "defaultMessage": "Skipped lines",
+    "description": "Heading of the list of lines of the file that the import skips."
+  },
+  "settings.import_export.import.preview.skipped_line": {
+    "defaultMessage": "Line {line, number}: {value}",
+    "description": "One line of the file that the import skips. {line} is the line number, {value} the line as written."
+  },
+  "settings.import_export.import.preview.title": {
+    "defaultMessage": "What the import does",
+    "description": "Heading of the result of checking the file to import."
+  },
+  "settings.import_export.import.start": {
+    "defaultMessage": "Start the import",
+    "description": "Button that starts importing the checked file."
+  },
+  "settings.import_export.import.started": {
+    "defaultMessage": "The import has started with {total, plural, one {# entry} other {# entries}}. Its progress appears below.",
+    "description": "Announced after the user started an import. {total} is the number of accounts or posts to add or remove."
+  },
+  "settings.import_export.import.title": {
+    "defaultMessage": "Import",
+    "description": "Heading of the section of the import and export page that imports a CSV file."
+  },
+  "settings.import_export.kind.blocks": {
+    "defaultMessage": "Blocked accounts",
+    "description": "Name of the list of accounts the user blocks, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.bookmarks": {
+    "defaultMessage": "Bookmarks",
+    "description": "Name of the list of posts the user bookmarked, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.following": {
+    "defaultMessage": "Follows",
+    "description": "Name of the list of accounts the user follows, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.mutes": {
+    "defaultMessage": "Muted accounts",
+    "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.summary": {
+    "defaultMessage": "Move your follows, blocks, mutes, and bookmarks to or from another server",
+    "description": "Description of the import and export page in the list of settings pages."
+  },
+  "settings.import_export.title": {
+    "defaultMessage": "Import and export",
+    "description": "Heading and document title of the settings page for exporting and importing the user's follows, blocks, mutes, and bookmarks as CSV files."
   },
   "settings.list.action": {
     "defaultMessage": "{action}: {name}",
@@ -7071,6 +7659,10 @@
     "defaultMessage": "Custom emoji deleted",
     "description": "Kind of an audited operation: an administrator deleted a custom emoji of this server."
   },
+  "admin.audit_log.target_kind.announcement": {
+    "defaultMessage": "Announcement",
+    "description": "Kind of target of an audited operation: an announcement, shown by the first line of its text."
+  },
   "admin.audit_log.target_kind.custom_emoji": {
     "defaultMessage": "Custom emoji",
     "description": "Kind of target of an audited operation: a custom emoji, shown as :shortcode:."
@@ -7354,6 +7946,34 @@
   "admin.custom_emojis.enabled_status": {
     "defaultMessage": "{emoji} is enabled.",
     "description": "Status after enabling a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "announcements.heading": {
+    "defaultMessage": "Announcement of {date}",
+    "description": "Heading of one announcement of the server. {date} is the day it started to show, formatted."
+  },
+  "announcements.mark_read": {
+    "defaultMessage": "Mark as read",
+    "description": "Button that marks an announcement read."
+  },
+  "announcements.mark_read_failed": {
+    "defaultMessage": "The announcement could not be marked as read: {reason}",
+    "description": "Error after marking an announcement read failed. {reason} is why."
+  },
+  "announcements.title": {
+    "defaultMessage": "Announcements",
+    "description": "Heading of the server's announcements above the home timeline."
+  },
+  "announcements.unread": {
+    "defaultMessage": "Unread",
+    "description": "Marker of an announcement that the user has not read, next to its heading."
+  },
+  "announcements.unread_count": {
+    "defaultMessage": "{count, plural, one {# unread} other {# unread}}",
+    "description": "The number of unread announcements on the badge next to the heading of the announcements, for example '2 unread'."
+  },
+  "announcements.until": {
+    "defaultMessage": "Shown until {date}",
+    "description": "When an announcement stops showing. {date} is the date and time, formatted."
   },
   "emoji.picker.button": {
     "defaultMessage": "Add emoji",

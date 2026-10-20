@@ -1,4 +1,16 @@
 {
+  "about.contact.account": {
+    "defaultMessage": "アカウント",
+    "description": "Term before the account of this server to contact about the server, on the server's information page."
+  },
+  "about.contact.email": {
+    "defaultMessage": "メールアドレス",
+    "description": "Term before the email address to contact about the server, on the server's information page."
+  },
+  "about.contact.title": {
+    "defaultMessage": "連絡先",
+    "description": "Heading of the section of the server's information page with how to reach the server's operators."
+  },
   "about.description.title": {
     "defaultMessage": "説明",
     "description": "Heading of the section of the server's information page with the server's description."
@@ -1139,6 +1151,186 @@
     "defaultMessage": "アカウント",
     "description": "Title of the admin screen that searches the local and remote accounts, and of its link in the administration menu."
   },
+  "admin.announcements.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that leaves a dialog of the announcements screen without changing anything."
+  },
+  "admin.announcements.change_failed": {
+    "defaultMessage": "お知らせを変更できませんでした：{reason}",
+    "description": "Error after a change of an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_draft": {
+    "defaultMessage": "下書きとして保存する",
+    "description": "Button that writes a new announcement as a draft."
+  },
+  "admin.announcements.create_failed": {
+    "defaultMessage": "お知らせを書けませんでした：{reason}",
+    "description": "Error after writing an announcement failed. {reason} is why."
+  },
+  "admin.announcements.create_published": {
+    "defaultMessage": "お知らせを公開する",
+    "description": "Button that writes a new announcement and publishes it."
+  },
+  "admin.announcements.description": {
+    "defaultMessage": "お知らせは、このサーバーの全員のホームのタイムラインの上に出て、それぞれが既読にできます。変更はすべて監査ログに残ります。",
+    "description": "Explanation at the top of the announcements screen."
+  },
+  "admin.announcements.drafted": {
+    "defaultMessage": "お知らせを下書きとして保存しました。変更は監査ログに残ります。",
+    "description": "Status after a new announcement was saved as a draft."
+  },
+  "admin.announcements.duration": {
+    "defaultMessage": "掲載する期間",
+    "description": "Label of how long a new announcement shows."
+  },
+  "admin.announcements.duration.description": {
+    "defaultMessage": "書いた時から数えます。過ぎると表示されなくなります。",
+    "description": "Description of how long a new announcement shows."
+  },
+  "admin.announcements.edit": {
+    "defaultMessage": "編集",
+    "description": "Button that opens the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the button that closes the dialog that edits an announcement."
+  },
+  "admin.announcements.edit.title": {
+    "defaultMessage": "お知らせを編集",
+    "description": "Title of the dialog that edits the text of an announcement."
+  },
+  "admin.announcements.edit_one": {
+    "defaultMessage": "編集：{announcement}",
+    "description": "Accessible name of the button that edits an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.empty": {
+    "defaultMessage": "お知らせはありません",
+    "description": "Heading of the list of announcements when there are none."
+  },
+  "admin.announcements.empty.description": {
+    "defaultMessage": "書いたお知らせがここに並びます。",
+    "description": "Description of the list of announcements when there are none."
+  },
+  "admin.announcements.ends_at": {
+    "defaultMessage": "掲載の終了",
+    "description": "Term of when an announcement stops showing."
+  },
+  "admin.announcements.heading": {
+    "defaultMessage": "{announcement}（{state}）",
+    "description": "Heading of an announcement in the list. {announcement} is the first line of its text; {state} its state (draft, published, withdrawn)."
+  },
+  "admin.announcements.list.title": {
+    "defaultMessage": "すべてのお知らせ",
+    "description": "Heading of the list of announcements, newest first."
+  },
+  "admin.announcements.new.title": {
+    "defaultMessage": "お知らせを書く",
+    "description": "Heading of the form of a new announcement."
+  },
+  "admin.announcements.publish": {
+    "defaultMessage": "公開する",
+    "description": "Button that publishes a draft announcement."
+  },
+  "admin.announcements.publish_now": {
+    "defaultMessage": "すぐに公開する",
+    "description": "Checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_now.description": {
+    "defaultMessage": "外すと、管理者だけが見られる下書きになります。",
+    "description": "Description of the checkbox that publishes a new announcement at once."
+  },
+  "admin.announcements.publish_one": {
+    "defaultMessage": "公開する：{announcement}",
+    "description": "Accessible name of the button that publishes an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.published": {
+    "defaultMessage": "お知らせを公開しました。変更は監査ログに残ります。",
+    "description": "Status after a new announcement was published."
+  },
+  "admin.announcements.published_at": {
+    "defaultMessage": "公開日時",
+    "description": "Term of when an announcement was published."
+  },
+  "admin.announcements.published_one": {
+    "defaultMessage": "{announcement}を公開しました。変更は監査ログに残ります。",
+    "description": "Status after a draft announcement was published. {announcement} is the first line of its text."
+  },
+  "admin.announcements.save": {
+    "defaultMessage": "保存",
+    "description": "Button that saves the text of an announcement."
+  },
+  "admin.announcements.starts_at": {
+    "defaultMessage": "掲載の開始",
+    "description": "Term of when an announcement starts to show."
+  },
+  "admin.announcements.state": {
+    "defaultMessage": "状態",
+    "description": "Term of the state of an announcement."
+  },
+  "admin.announcements.state.draft": {
+    "defaultMessage": "下書き",
+    "description": "State of an announcement that no user sees yet."
+  },
+  "admin.announcements.state.published": {
+    "defaultMessage": "公開中",
+    "description": "State of an announcement that the users see."
+  },
+  "admin.announcements.state.withdrawn": {
+    "defaultMessage": "取り下げ済み",
+    "description": "State of an announcement taken down for good."
+  },
+  "admin.announcements.summary": {
+    "defaultMessage": "メンテナンスや変更を、このサーバーの全員に知らせる。",
+    "description": "Description of the announcements screen in the administration menu."
+  },
+  "admin.announcements.text": {
+    "defaultMessage": "本文",
+    "description": "Label of the text of an announcement."
+  },
+  "admin.announcements.text.description": {
+    "defaultMessage": "Markdown で書きます（段落・強調・リスト・引用・コード・リンク）。HTML は取り除かれます。",
+    "description": "Description of the text field of an announcement: which Markdown it takes."
+  },
+  "admin.announcements.text_required": {
+    "defaultMessage": "本文を入力してください。",
+    "description": "Error of an announcement without text."
+  },
+  "admin.announcements.title": {
+    "defaultMessage": "お知らせ",
+    "description": "Title of the announcements screen, in the administration menu and as its heading."
+  },
+  "admin.announcements.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of the text of an announcement longer than its limit. {max} is the limit."
+  },
+  "admin.announcements.until_withdrawn": {
+    "defaultMessage": "取り下げるまで",
+    "description": "Choice of an announcement that shows until it is withdrawn, and the end of such an announcement."
+  },
+  "admin.announcements.updated": {
+    "defaultMessage": "{announcement}を変更しました。変更は監査ログに残ります。",
+    "description": "Status after the text of an announcement was changed. {announcement} is the first line of its new text."
+  },
+  "admin.announcements.withdraw": {
+    "defaultMessage": "取り下げる",
+    "description": "Button that withdraws an announcement, and the confirming button of its dialog."
+  },
+  "admin.announcements.withdraw.description": {
+    "defaultMessage": "お知らせは誰にも表示されなくなり、再び公開することも変更することもできません。",
+    "description": "Description of the dialog that confirms withdrawing an announcement."
+  },
+  "admin.announcements.withdraw.title": {
+    "defaultMessage": "{announcement}を取り下げますか？",
+    "description": "Title of the dialog that confirms withdrawing an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdraw_one": {
+    "defaultMessage": "取り下げる：{announcement}",
+    "description": "Accessible name of the button that withdraws an announcement. {announcement} is the first line of its text."
+  },
+  "admin.announcements.withdrawn": {
+    "defaultMessage": "{announcement}を取り下げました。変更は監査ログに残ります。",
+    "description": "Status after an announcement was withdrawn. {announcement} is the first line of its text."
+  },
   "admin.appeal.account": {
     "defaultMessage": "アカウント",
     "description": "Term of the account that appealed, which the action is on."
@@ -1346,6 +1538,22 @@
   "admin.audit_log.action.account_deletion_cancelled": {
     "defaultMessage": "アカウントの削除の取り消し",
     "description": "Heading of an audit log entry: overturning a user's appeal of a ban cancelled the scheduled deletion of their account."
+  },
+  "admin.audit_log.action.announcement_created": {
+    "defaultMessage": "お知らせの作成",
+    "description": "Kind of an audited operation: an administrator wrote an announcement."
+  },
+  "admin.audit_log.action.announcement_published": {
+    "defaultMessage": "お知らせの公開",
+    "description": "Kind of an audited operation: an administrator published an announcement."
+  },
+  "admin.audit_log.action.announcement_updated": {
+    "defaultMessage": "お知らせの変更",
+    "description": "Kind of an audited operation: an administrator changed the text or window of an announcement."
+  },
+  "admin.audit_log.action.announcement_withdrawn": {
+    "defaultMessage": "お知らせの取り下げ",
+    "description": "Kind of an audited operation: an administrator withdrew an announcement."
   },
   "admin.audit_log.action.appeal_overturned": {
     "defaultMessage": "異議申し立ての容認（処分の解除）",
@@ -2074,6 +2282,134 @@
   "admin.domain_actions.too_long": {
     "defaultMessage": "{max, number} 文字以内にしてください",
     "description": "Error under the public comment or private note of a domain action when it is too long. {max} is the limit."
+  },
+  "admin.domain_actions.csv.confirm.confirm": {
+    "defaultMessage": "インポートして凍結する",
+    "description": "Confirm button of an import of a domain block CSV that suspends domains."
+  },
+  "admin.domain_actions.csv.confirm.title": {
+    "defaultMessage": "{count, number} 件のドメインを凍結しますか？",
+    "description": "Title of the confirmation of an import of a domain block CSV that suspends domains. {count} is how many."
+  },
+  "admin.domain_actions.csv.csv": {
+    "defaultMessage": "CSV",
+    "description": "Label of the text area of a domain block CSV to import."
+  },
+  "admin.domain_actions.csv.csv.description": {
+    "defaultMessage": "Mastodon がエクスポートしたドメインブロックの CSV（{max, number} 行まで）。#domain の見出しのないファイルは、凍結するドメインの一覧として読みます。",
+    "description": "Help text under the text area of a domain block CSV. {max} is the most rows one import holds."
+  },
+  "admin.domain_actions.csv.csv.required": {
+    "defaultMessage": "CSV を貼り付けるか、ファイルを選んでください",
+    "description": "Error under the text area of a domain block CSV when it is empty."
+  },
+  "admin.domain_actions.csv.csv.too_large": {
+    "defaultMessage": "CSV が {max, number} KB を超えています。小さなファイルに分けてください",
+    "description": "Error under the text area of a domain block CSV when it has too many bytes to send. {max} is the limit in kilobytes."
+  },
+  "admin.domain_actions.csv.description": {
+    "defaultMessage": "効いている処分を Mastodon がインポートできるドメインブロックの CSV でエクスポートするか、Mastodon がエクスポートした CSV をインポートします。Mastodon のサイレンスはここでの制限です。センシティブ扱いだけのドメイン、非公開のメモ、終了の日時はエクスポートしません。",
+    "description": "Text at the top of the section that exports and imports Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.export": {
+    "defaultMessage": "CSV をエクスポート",
+    "description": "Button that saves the domain actions in effect as Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.export.done": {
+    "defaultMessage": "{name} を保存しました。",
+    "description": "Status after the domain block CSV was saved. {name} is the file name."
+  },
+  "admin.domain_actions.csv.export.failed": {
+    "defaultMessage": "CSV をエクスポートできませんでした：{reason}",
+    "description": "Error when the domain block CSV could not be exported. {reason} is why."
+  },
+  "admin.domain_actions.csv.file": {
+    "defaultMessage": "CSV ファイルを選ぶ",
+    "description": "Button that opens the file picker to read a domain block CSV."
+  },
+  "admin.domain_actions.csv.file.description": {
+    "defaultMessage": "ファイルの内容で上の CSV を置き換えます。",
+    "description": "Help text next to the button that reads a domain block CSV from a file."
+  },
+  "admin.domain_actions.csv.file.failed": {
+    "defaultMessage": "{name} を読み込めませんでした。ファイルを選び直してください。",
+    "description": "Error when the browser could not read the chosen domain block CSV. {name} is the file name."
+  },
+  "admin.domain_actions.csv.file.read": {
+    "defaultMessage": "{name} を読み込みました。",
+    "description": "Status after the chosen domain block CSV was read into the text area. {name} is the file name."
+  },
+  "admin.domain_actions.csv.file.too_large": {
+    "defaultMessage": "{name} は {max, number} KB を超えています。小さなファイルに分けてください。",
+    "description": "Error when the chosen domain block CSV is too large to send. {name} is the file name; {max} the limit in kilobytes."
+  },
+  "admin.domain_actions.csv.import.done": {
+    "defaultMessage": "処分を {issued, number} 件出しました。{skipped, plural, =0 {飛ばした行はありません。} other {# 行は飛ばしました。}}",
+    "description": "Status after an import of a domain block CSV. {issued} is the number of actions taken; {skipped} the number of rows that took none."
+  },
+  "admin.domain_actions.csv.import.failed": {
+    "defaultMessage": "行をインポートできませんでした：{reason}",
+    "description": "Error when the server refused the import of the chosen rows of a domain block CSV. {reason} is why."
+  },
+  "admin.domain_actions.csv.import.title": {
+    "defaultMessage": "CSV をインポート",
+    "description": "Heading of the form that imports Mastodon's domain block CSV."
+  },
+  "admin.domain_actions.csv.none_selected": {
+    "defaultMessage": "インポートする行を 1 つ以上選んでください",
+    "description": "Error when the import of a domain block CSV is sent with no row chosen."
+  },
+  "admin.domain_actions.csv.preview": {
+    "defaultMessage": "プレビュー",
+    "description": "Submit button that shows what importing each row of a domain block CSV would do, without changing anything."
+  },
+  "admin.domain_actions.csv.preview.failed": {
+    "defaultMessage": "CSV を読み込めませんでした：{reason}",
+    "description": "Error under the import form when the server refused the domain block CSV. {reason} is why."
+  },
+  "admin.domain_actions.csv.preview.summary": {
+    "defaultMessage": "{count, number} 行のうち {importable, number} 行をインポートできます。インポートしない行の選択を外してください。",
+    "description": "Text above the preview table of a domain block CSV. {count} is the number of rows; {importable} how many issue an action."
+  },
+  "admin.domain_actions.csv.preview.title": {
+    "defaultMessage": "CSV の行",
+    "description": "Heading of the preview of a domain block CSV, and the name of its table."
+  },
+  "admin.domain_actions.csv.private_note.description": {
+    "defaultMessage": "モデレーターだけが見られます。インポートするすべての処分に付きます。",
+    "description": "Help text under the private note of an import of a domain block CSV."
+  },
+  "admin.domain_actions.csv.row.issue": {
+    "defaultMessage": "{line, number} 行目。処分：{kinds}",
+    "description": "What importing a row of a domain block CSV does, under the checkbox that chooses it. {line} is its line; {kinds} the list of the kinds of action, such as Suspend and Reject reports."
+  },
+  "admin.domain_actions.csv.row.skipped": {
+    "defaultMessage": "{line, number} 行目。{reason}",
+    "description": "A row of a domain block CSV that takes no action. {line} is its line; {reason} why, such as Already in effect."
+  },
+  "admin.domain_actions.csv.status.already_applied": {
+    "defaultMessage": "適用済み",
+    "description": "Why a row of a domain block CSV takes no action: actions in effect on the domain or a parent domain cover it."
+  },
+  "admin.domain_actions.csv.status.duplicate": {
+    "defaultMessage": "前の行と同じドメイン",
+    "description": "Why a row of a domain block CSV takes no action: an earlier row has the same domain."
+  },
+  "admin.domain_actions.csv.status.invalid": {
+    "defaultMessage": "不正な行",
+    "description": "Why a row of a domain block CSV takes no action: its domain, severity or comment is not valid."
+  },
+  "admin.domain_actions.csv.status.no_action": {
+    "defaultMessage": "処分なし",
+    "description": "Why a row of a domain block CSV takes no action: a noop row without rejections."
+  },
+  "admin.domain_actions.csv.submit": {
+    "defaultMessage": "{count, number} 行をインポート",
+    "description": "Button that imports the chosen rows of a domain block CSV. {count} is how many are chosen."
+  },
+  "admin.domain_actions.csv.title": {
+    "defaultMessage": "Mastodon の CSV",
+    "description": "Heading of the section of the domain actions screen that exports and imports Mastodon's domain block CSV."
   },
   "admin.home.none.description": {
     "defaultMessage": "あなたのロールには、サーバー管理の画面に要る権限がありません。管理者が付与できます。",
@@ -3035,6 +3371,10 @@
     "defaultMessage": "アカウントと登録",
     "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
   },
+  "admin.roles.permission.manage_announcements": {
+    "defaultMessage": "お知らせ",
+    "description": "Name of the permission manage_announcements: the server's announcements to every local user."
+  },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "カスタム絵文字",
     "description": "Name of the permission manage_custom_emojis: the custom emoji."
@@ -3286,6 +3626,74 @@
   "admin.settings.characters_over": {
     "defaultMessage": "{count, plural, other {# 文字超えています}}",
     "description": "Character count under a text of the server settings and the rules when the text is over its limit."
+  },
+  "admin.settings.contact.account": {
+    "defaultMessage": "連絡先のアカウント",
+    "description": "Label of the field of the username of the account to contact about the server."
+  },
+  "admin.settings.contact.account.description": {
+    "defaultMessage": "このサーバーのアカウントのユーザー名（例：admin）",
+    "description": "Help under the field of the contact account: what to type in it."
+  },
+  "admin.settings.contact.description": {
+    "defaultMessage": "このサーバーを運営する人への連絡先と、サーバーを表す画像です。このサーバーについてのページ、訪れた人を迎えるページ、ほかのサーバー（NodeInfo）に表示されます。表示しない項目は空にしてください。",
+    "description": "Explanation above the fields of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.email": {
+    "defaultMessage": "連絡先のメールアドレス",
+    "description": "Label of the field of the email address to contact about the server."
+  },
+  "admin.settings.contact.email.description": {
+    "defaultMessage": "サインインしていない人も含め、誰でも見られます。",
+    "description": "Help under the field of the contact email address: who can see it."
+  },
+  "admin.settings.contact.email.invalid": {
+    "defaultMessage": "admin@example.com のようなメールアドレスを入力してください。",
+    "description": "Error under the field of the contact email address when it is not an email address."
+  },
+  "admin.settings.contact.save": {
+    "defaultMessage": "連絡先とサムネイルを保存する",
+    "description": "Button that saves the server's contact and thumbnail."
+  },
+  "admin.settings.contact.save_failed": {
+    "defaultMessage": "連絡先とサムネイルを保存できませんでした：{reason}",
+    "description": "Error when saving the server's contact and thumbnail failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.contact.saved": {
+    "defaultMessage": "連絡先とサムネイルを保存しました。変更は監査ログに記録されます。",
+    "description": "Status after the server's contact and thumbnail were saved."
+  },
+  "admin.settings.contact.thumbnail": {
+    "defaultMessage": "サムネイル",
+    "description": "Heading of the part of the form with the image that represents the server."
+  },
+  "admin.settings.contact.thumbnail.alt": {
+    "defaultMessage": "{language}での画像の説明",
+    "description": "Label of the field of the thumbnail's alt text in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.contact.thumbnail.choose": {
+    "defaultMessage": "画像を選ぶ",
+    "description": "Button that opens the file picker to choose the server's thumbnail."
+  },
+  "admin.settings.contact.thumbnail.description": {
+    "defaultMessage": "このサーバーについてのページと、訪れた人を迎えるページの上に表示される横長の画像（1600 × 900 ピクセルなど）です。",
+    "description": "Help about the server's thumbnail: where it shows and what size suits it."
+  },
+  "admin.settings.contact.thumbnail.failed": {
+    "defaultMessage": "サーバーがこの画像を処理できませんでした。別の画像を試してください。",
+    "description": "Error when the chosen thumbnail could not be processed."
+  },
+  "admin.settings.contact.thumbnail.remove": {
+    "defaultMessage": "画像を外す",
+    "description": "Button that removes the server's thumbnail when the form is saved."
+  },
+  "admin.settings.contact.title": {
+    "defaultMessage": "連絡先とサムネイル",
+    "description": "Heading of the section of the server's contact and thumbnail on the server settings screen."
+  },
+  "admin.settings.contact.unchanged": {
+    "defaultMessage": "連絡先とサムネイルはすでに保存されています。",
+    "description": "Status after pressing the save button of the contact and thumbnail without changing anything."
   },
   "admin.settings.descriptions.description": {
     "defaultMessage": "短い説明は、このサーバーについてのページやほかのアプリがサーバーの名前と並べて表示する 1 段落の文です。説明は、このサーバーについてのページで詳しく伝えます。どちらも言語ごとに持ち、説明のない言語ではサーバーの既定の言語の説明が表示されます。",
@@ -5672,7 +6080,7 @@
     "description": "Error in the deletion dialog when the password the user typed is not their current password."
   },
   "settings.account.export.description": {
-    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
+    "defaultMessage": "投稿（ActivityStreams 形式）、プロフィール、アカウントへのモデレーションの処分と、フォロー・ブロック・ミュート・ブックマークの CSV を ZIP のアーカイブにまとめます。作成には時間がかかり、7 日間ダウンロードできます。",
     "description": "Explains the archive of the user's data, above the button that asks for one."
   },
   "settings.account.export.download": {
@@ -5802,6 +6210,186 @@
   "settings.follow_requests.title": {
     "defaultMessage": "フォローリクエスト",
     "description": "Heading and document title of the settings page with the follow requests awaiting approval."
+  },
+  "settings.import_export.export.description": {
+    "defaultMessage": "Mastodon と同じ形式の CSV ファイルをダウンロードします。Mastodon や、この形式を読めるほかのサーバーでインポートできます。",
+    "description": "Explains the CSV files the user can download, above the list of them."
+  },
+  "settings.import_export.export.download": {
+    "defaultMessage": "ダウンロード",
+    "description": "Button that downloads one CSV file."
+  },
+  "settings.import_export.export.download_of": {
+    "defaultMessage": "{kind}を CSV でダウンロード",
+    "description": "Accessible name of the button that downloads one CSV file. {kind} is the name of the list, e.g. Blocked accounts."
+  },
+  "settings.import_export.export.title": {
+    "defaultMessage": "エクスポート",
+    "description": "Heading of the section of the import and export page that downloads CSV files."
+  },
+  "settings.import_export.history.empty": {
+    "defaultMessage": "インポートはありません",
+    "description": "Shown when the user has no recent import."
+  },
+  "settings.import_export.history.failed": {
+    "defaultMessage": "インポートできなかったもの",
+    "description": "Label of the number of entries of an import that could not be carried out, e.g. accounts that no longer exist."
+  },
+  "settings.import_export.history.item": {
+    "defaultMessage": "{kind}（{date}）",
+    "description": "Heading of one import in the list. {kind} is the name of the list, e.g. Follows; {date} is when the import started, a formatted date and time."
+  },
+  "settings.import_export.history.mode": {
+    "defaultMessage": "方法",
+    "description": "Label of how an import was done (merge or overwrite)."
+  },
+  "settings.import_export.history.progress": {
+    "defaultMessage": "進み具合",
+    "description": "Label of how many entries of an import are done."
+  },
+  "settings.import_export.history.progress_value": {
+    "defaultMessage": "{total, number} 件中 {processed, number} 件",
+    "description": "How many entries of an import are done. {processed} and {total} are numbers."
+  },
+  "settings.import_export.history.state": {
+    "defaultMessage": "状態",
+    "description": "Label of the state of an import (in progress, finished)."
+  },
+  "settings.import_export.history.state.finished": {
+    "defaultMessage": "完了",
+    "description": "State of an import that the server has carried out."
+  },
+  "settings.import_export.history.state.in_progress": {
+    "defaultMessage": "処理中",
+    "description": "State of an import that the server is still carrying out."
+  },
+  "settings.import_export.history.title": {
+    "defaultMessage": "最近のインポート",
+    "description": "Heading of the list of the user's latest imports on the import and export page."
+  },
+  "settings.import_export.import.choose": {
+    "defaultMessage": "CSV ファイルを選ぶ",
+    "description": "Button that opens the file picker to choose the CSV file to import."
+  },
+  "settings.import_export.import.chosen": {
+    "defaultMessage": "選んだファイル：{name}",
+    "description": "Shows the name of the CSV file the user chose to import. {name} is the file name."
+  },
+  "settings.import_export.import.description": {
+    "defaultMessage": "Mastodon やこのサーバーからエクスポートした CSV ファイルをインポートします。ほかのサーバーのアカウントと投稿はバックグラウンドで探すので、時間がかかることがあります。",
+    "description": "Explains importing a CSV file, above the form."
+  },
+  "settings.import_export.import.file": {
+    "defaultMessage": "CSV ファイル",
+    "description": "Heading of the part of the import form where the user chooses the file."
+  },
+  "settings.import_export.import.file_too_large": {
+    "defaultMessage": "ファイルが大きすぎてインポートできません。小さなファイルに分けてください。",
+    "description": "Error in the import form when the chosen CSV file is larger than the server accepts."
+  },
+  "settings.import_export.import.file_unreadable": {
+    "defaultMessage": "ファイルを読み込めません。もう一度選んでください。",
+    "description": "Error in the import form when the browser could not read the chosen file."
+  },
+  "settings.import_export.import.kind": {
+    "defaultMessage": "インポートするもの",
+    "description": "Label of the radio group that chooses the kind of CSV file to import (follows, blocked accounts, muted accounts, bookmarks)."
+  },
+  "settings.import_export.import.mode": {
+    "defaultMessage": "インポートの方法",
+    "description": "Label of the radio group that chooses whether the import merges with or overwrites what the user has."
+  },
+  "settings.import_export.import.mode.merge": {
+    "defaultMessage": "統合",
+    "description": "Option of an import that keeps what the user has and adds what the file lists."
+  },
+  "settings.import_export.import.mode.merge.description": {
+    "defaultMessage": "今あるものを残し、ファイルにあるものを追加します。",
+    "description": "Description of the merge option of an import."
+  },
+  "settings.import_export.import.mode.overwrite": {
+    "defaultMessage": "置き換え",
+    "description": "Option of an import that makes the user's list exactly what the file lists."
+  },
+  "settings.import_export.import.mode.overwrite.description": {
+    "defaultMessage": "ファイルの内容と同じにします。ファイルにないものは削除します。",
+    "description": "Description of the overwrite option of an import."
+  },
+  "settings.import_export.import.no_file": {
+    "defaultMessage": "ファイルを選んでいません",
+    "description": "Shown in the import form before the user chooses a CSV file."
+  },
+  "settings.import_export.import.preview": {
+    "defaultMessage": "ファイルを確認する",
+    "description": "Button that asks the server what importing the chosen file would do, without importing it."
+  },
+  "settings.import_export.import.preview.entries": {
+    "defaultMessage": "ファイルの項目",
+    "description": "Label of the number of accounts or posts that the file to import lists."
+  },
+  "settings.import_export.import.preview.present": {
+    "defaultMessage": "登録済み",
+    "description": "Label of the number of entries of the file to import that the user already has."
+  },
+  "settings.import_export.import.preview.removals": {
+    "defaultMessage": "削除されるもの",
+    "description": "Label of the number of accounts or posts that an overwrite removes because the file does not list them."
+  },
+  "settings.import_export.import.preview.skip.duplicate": {
+    "defaultMessage": "前の行と重複しています",
+    "description": "Why a line of the file to import is skipped: an earlier line names the same account or post."
+  },
+  "settings.import_export.import.preview.skip.invalid": {
+    "defaultMessage": "アカウントのアドレスでも投稿の URL でもありません",
+    "description": "Why a line of the file to import is skipped: it names no account (user@domain) or post URL."
+  },
+  "settings.import_export.import.preview.skipped": {
+    "defaultMessage": "読み飛ばす行",
+    "description": "Heading of the list of lines of the file that the import skips."
+  },
+  "settings.import_export.import.preview.skipped_line": {
+    "defaultMessage": "{line, number} 行目：{value}",
+    "description": "One line of the file that the import skips. {line} is the line number, {value} the line as written."
+  },
+  "settings.import_export.import.preview.title": {
+    "defaultMessage": "インポートの内容",
+    "description": "Heading of the result of checking the file to import."
+  },
+  "settings.import_export.import.start": {
+    "defaultMessage": "インポートを始める",
+    "description": "Button that starts importing the checked file."
+  },
+  "settings.import_export.import.started": {
+    "defaultMessage": "{total, plural, other {# 件}}のインポートを始めました。進み具合は下に表示されます。",
+    "description": "Announced after the user started an import. {total} is the number of accounts or posts to add or remove."
+  },
+  "settings.import_export.import.title": {
+    "defaultMessage": "インポート",
+    "description": "Heading of the section of the import and export page that imports a CSV file."
+  },
+  "settings.import_export.kind.blocks": {
+    "defaultMessage": "ブロックしたアカウント",
+    "description": "Name of the list of accounts the user blocks, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.bookmarks": {
+    "defaultMessage": "ブックマーク",
+    "description": "Name of the list of posts the user bookmarked, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.following": {
+    "defaultMessage": "フォロー",
+    "description": "Name of the list of accounts the user follows, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.kind.mutes": {
+    "defaultMessage": "ミュートしたアカウント",
+    "description": "Name of the list of accounts the user mutes, as one kind of CSV file to export or import."
+  },
+  "settings.import_export.summary": {
+    "defaultMessage": "フォロー・ブロック・ミュート・ブックマークをほかのサーバーと移し合います",
+    "description": "Description of the import and export page in the list of settings pages."
+  },
+  "settings.import_export.title": {
+    "defaultMessage": "インポートとエクスポート",
+    "description": "Heading and document title of the settings page for exporting and importing the user's follows, blocks, mutes, and bookmarks as CSV files."
   },
   "settings.list.action": {
     "defaultMessage": "{action}：{name}",
@@ -7071,6 +7659,10 @@
     "defaultMessage": "カスタム絵文字の削除",
     "description": "Kind of an audited operation: an administrator deleted a custom emoji of this server."
   },
+  "admin.audit_log.target_kind.announcement": {
+    "defaultMessage": "お知らせ",
+    "description": "Kind of target of an audited operation: an announcement, shown by the first line of its text."
+  },
   "admin.audit_log.target_kind.custom_emoji": {
     "defaultMessage": "カスタム絵文字",
     "description": "Kind of target of an audited operation: a custom emoji, shown as :shortcode:."
@@ -7354,6 +7946,34 @@
   "admin.custom_emojis.enabled_status": {
     "defaultMessage": "{emoji} を有効にしました。",
     "description": "Status after enabling a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "announcements.heading": {
+    "defaultMessage": "{date}のお知らせ",
+    "description": "Heading of one announcement of the server. {date} is the day it started to show, formatted."
+  },
+  "announcements.mark_read": {
+    "defaultMessage": "既読にする",
+    "description": "Button that marks an announcement read."
+  },
+  "announcements.mark_read_failed": {
+    "defaultMessage": "お知らせを既読にできませんでした：{reason}",
+    "description": "Error after marking an announcement read failed. {reason} is why."
+  },
+  "announcements.title": {
+    "defaultMessage": "お知らせ",
+    "description": "Heading of the server's announcements above the home timeline."
+  },
+  "announcements.unread": {
+    "defaultMessage": "未読",
+    "description": "Marker of an announcement that the user has not read, next to its heading."
+  },
+  "announcements.unread_count": {
+    "defaultMessage": "{count, plural, other {未読 # 件}}",
+    "description": "The number of unread announcements on the badge next to the heading of the announcements, for example '2 unread'."
+  },
+  "announcements.until": {
+    "defaultMessage": "{date}まで掲載",
+    "description": "When an announcement stops showing. {date} is the date and time, formatted."
   },
   "emoji.picker.button": {
     "defaultMessage": "絵文字を入れる",

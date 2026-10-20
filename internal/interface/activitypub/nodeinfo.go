@@ -20,6 +20,54 @@ func (h *Handler) nodeInfoIndex(w http.ResponseWriter, r *http.Request) {
 	}{Links: []jrdLink{{Rel: nodeInfoSchema, Href: "https://" + h.o.Host + PathNodeInfo}}})
 }
 
+// NodeMetadata is what NodeInfo's free-form metadata says about the instance besides its name.
+// Empty fields are left out.
+type NodeMetadata struct {
+	// Description is the instance's one-paragraph summary (nodeDescription).
+	Description string
+	// ContactActorURI is the actor id of the local account to contact about the instance, which
+	// staffAccounts lists, and ContactName is its display name or username (maintainer.name).
+	ContactActorURI, ContactName string
+	// ContactEmail is the email address to contact about the instance (maintainer.email).
+	ContactEmail string
+	// ThumbnailURL and ThumbnailAlt are the image that represents the instance and its alt text
+	// (thumbnail.url and thumbnail.alt).
+	ThumbnailURL, ThumbnailAlt string
+}
+
+// nodeMaintainer is the maintainer of Misskey's NodeInfo metadata.
+type nodeMaintainer struct {
+	Name  string `json:"name,omitempty"`
+	Email string `json:"email,omitempty"`
+}
+
+// nodeThumbnail is the thumbnail of the metadata, shaped as the thumbnail of Mastodon's
+// instance API.
+type nodeThumbnail struct {
+	URL string `json:"url"`
+	Alt string `json:"alt,omitempty"`
+}
+
+// metadata returns NodeInfo's metadata: nodeName and, from m, the keys that Mastodon, Misskey,
+// and Pleroma read (nodeDescription; maintainer as Misskey; staffAccounts as Pleroma, the actor
+// ids) with the thumbnail.
+func metadata(name string, m NodeMetadata) map[string]any {
+	out := map[string]any{"nodeName": name}
+	if m.Description != "" {
+		out["nodeDescription"] = m.Description
+	}
+	if m.ContactName != "" || m.ContactEmail != "" {
+		out["maintainer"] = nodeMaintainer{Name: m.ContactName, Email: m.ContactEmail}
+	}
+	if m.ContactActorURI != "" {
+		out["staffAccounts"] = []string{m.ContactActorURI}
+	}
+	if m.ThumbnailURL != "" {
+		out["thumbnail"] = nodeThumbnail{URL: m.ThumbnailURL, Alt: m.ThumbnailAlt}
+	}
+	return out
+}
+
 type nodeInfo struct {
 	Version           string           `json:"version"`
 	Software          nodeInfoSoftware `json:"software"`
@@ -86,6 +134,14 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 			name = n
 		}
 	}
+	var meta NodeMetadata
+	if h.o.Metadata != nil {
+		if meta, err = h.o.Metadata(r.Context()); err != nil {
+			h.o.Logger.ErrorContext(r.Context(), "nodeinfo: read the instance metadata failed", slog.Any("error", err))
+			h.o.Problem(w, r, http.StatusInternalServerError)
+			return
+		}
+	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	h.writeJSON(w, r, typeNodeInfo, nodeInfo{
 		Version:           "2.1",
@@ -94,6 +150,6 @@ func (h *Handler) nodeInfo(w http.ResponseWriter, r *http.Request) {
 		Services:          nodeInfoServices{Inbound: []string{}, Outbound: []string{}},
 		OpenRegistrations: open,
 		Usage:             nodeInfoUsage{Users: nodeInfoUsers{Total: users}, LocalPosts: posts},
-		Metadata:          map[string]any{"nodeName": name},
+		Metadata:          metadata(name, meta),
 	})
 }

@@ -35,6 +35,9 @@ type Options struct {
 	// Instance reads the instance settings and texts; nil reads every setting as its default
 	// and no text.
 	Instance InstanceInfo
+	// InstanceThumbnail returns the image that represents the instance (the thumbnail setting)
+	// for a reader of locale, for Instance.thumbnail; nil, or a nil image, leaves it out.
+	InstanceThumbnail func(ctx context.Context, locale string) (*InstanceImage, error)
 	// SendsEmail tells whether the instance sends email (the setting mail is not none), for
 	// Instance.sends_email.
 	SendsEmail bool
@@ -125,12 +128,19 @@ type Options struct {
 	OwnAccount OwnAccount
 	// Exports runs the viewer's data exports (own_account.go); nil refuses them with 404.
 	Exports Exports
+	// Imports writes the viewer's CSV exports and runs the CSV imports (data_import.go); nil
+	// refuses them with 404.
+	Imports Imports
 	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.
 	ProfileRestrictions ProfileRestrictions
 	// AuditLog lists the audit log for the admin operations (admin_audit.go).
 	AuditLog AuditLog
+	// Announcements runs the server-wide announcements (announcements.go): the users' list and
+	// reads, the admin operations, and the announcements of the streams; nil lists none, answers
+	// 404 to the others, and streams none.
+	Announcements Announcements
 	// Rules runs the use cases of the instance rules: the admin operations (admin_rules.go)
 	// and the rules of GET /instance, which lists none when it is nil.
 	Rules InstanceRules

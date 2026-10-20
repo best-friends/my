@@ -956,6 +956,20 @@ func (l *Localizer) ServerErrorsForbidden() string {
 	return l.format("server:errors.forbidden", nil)
 }
 
+// ServerErrorsImportInProgress formats "server:errors.import.in_progress". API error title for HTTP 409 when the user starts an import of a CSV file of follows, blocks, mutes, or bookmarks while another import is still being carried out.
+//
+//	en: Another import is in progress. Wait until it finishes.
+func (l *Localizer) ServerErrorsImportInProgress() string {
+	return l.format("server:errors.import.in_progress", nil)
+}
+
+// ServerErrorsImportInvalidCsv formats "server:errors.import.invalid_csv". Detail of an API error (HTTP 422) when the file the user imports is not a valid CSV file, e.g. it has an unterminated quoted field.
+//
+//	en: The file cannot be read as CSV.
+func (l *Localizer) ServerErrorsImportInvalidCsv() string {
+	return l.format("server:errors.import.invalid_csv", nil)
+}
+
 // ServerErrorsInsufficientScope formats "server:errors.insufficient_scope". API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs.
 //
 //	en: This app is not allowed to do this.

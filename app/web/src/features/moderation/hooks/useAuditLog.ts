@@ -51,6 +51,10 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   webhook_enabled: "client:admin.audit_log.action.webhook_enabled",
   webhook_disabled: "client:admin.audit_log.action.webhook_disabled",
   webhook_secret_rotated: "client:admin.audit_log.action.webhook_secret_rotated",
+  announcement_created: "client:admin.audit_log.action.announcement_created",
+  announcement_updated: "client:admin.audit_log.action.announcement_updated",
+  announcement_published: "client:admin.audit_log.action.announcement_published",
+  announcement_withdrawn: "client:admin.audit_log.action.announcement_withdrawn",
   invite_created: "client:admin.audit_log.action.invite_created",
   invite_revoked: "client:admin.audit_log.action.invite_revoked",
 };
@@ -68,6 +72,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   signup_block: "client:admin.audit_log.target_kind.signup_block",
   custom_emoji: "client:admin.audit_log.target_kind.custom_emoji",
   webhook: "client:admin.audit_log.target_kind.webhook",
+  announcement: "client:admin.audit_log.target_kind.announcement",
   invite: "client:admin.audit_log.target_kind.invite",
 };
 
@@ -81,7 +86,7 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 
 /**
  * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block, a
- * role, a custom emoji, a webhook or an invite.
+ * role, a custom emoji, a webhook, an announcement or an invite.
  * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
  * gone (erased past its retention, or deleted) has nothing left to show, so their entries show the label only.
  */
@@ -107,6 +112,9 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
       return "/admin/roles";
     case "webhook":
       return `/admin/webhooks/${id}`;
+    case "announcement":
+      // An announcement has no screen of its own: the list, which keeps every announcement.
+      return "/admin/announcements";
     case "invite":
       // An invite has no screen of its own: the list of invites shows it.
       return "/moderation/invites";

@@ -58,6 +58,15 @@ describe("the landing page", () => {
     expect(within(documents).getAllByRole("link").map((link) => link.textContent)).toEqual(["Terms of service", "Privacy policy"]);
   });
 
+  test("shows the server's thumbnail above its summary", async () => {
+    serveInstance({
+      short_description: "A small server for gardeners.",
+      thumbnail: { url: "https://my.example/media/beach/r/large.webp", width: 1600, height: 900, alt: "A beach at dawn" },
+    });
+    await renderApp({ path: "/" });
+    expect(await screen.findByRole("img", { name: "A beach at dawn" })).toHaveAttribute("src", "https://my.example/media/beach/r/large.webp");
+  });
+
   test("links to the server's registration page, which loads in place of the app", async () => {
     serveInstance({ registrations: { mode: "approval" } });
     const { user, leftTo } = await renderApp({ path: "/" });

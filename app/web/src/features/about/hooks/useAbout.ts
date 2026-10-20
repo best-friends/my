@@ -11,6 +11,10 @@ export type About = {
   /** The paragraphs of the full description (plain text, split at blank lines); empty when there is none. */
   description: readonly string[];
   rules: Instance["rules"];
+  /** The image that represents the instance; undefined when there is none. */
+  thumbnail: Instance["thumbnail"];
+  /** How people reach the operators; undefined when the instance has no contact. */
+  contact: Instance["contact"];
   /**
    * What the instance states to search engines and AI crawlers (FR-725, ADR-0057); undefined while the instance
    * has not loaded.
@@ -39,6 +43,8 @@ export function useAbout(): About {
     summary: instance?.short_description?.trim() ?? "",
     description: paragraphs(instance?.description),
     rules: instance?.rules ?? [],
+    thumbnail: instance?.thumbnail,
+    contact: instance?.contact,
     crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
   };
 }

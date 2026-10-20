@@ -48,6 +48,59 @@ export function newDomainAction(body: Schemas["CreateDomainActionRequest"]): Sch
   };
 }
 
+/** The header of Mastodon's domain block CSV. */
+export const domainBlockCsvHeader = "#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate";
+
+/** The kinds of action a block stands for, as the server issues them: the severity first, then the rejections. */
+function domainBlockKinds(block: Schemas["DomainBlock"]): Schemas["AdminDomainActionKind"][] {
+  const severity: Schemas["AdminDomainActionKind"][] = block.severity === "suspend" ? ["suspend"] : block.severity === "silence" ? ["limit"] : [];
+  return [...severity, ...(block.reject_media ? (["reject_media"] as const) : []), ...(block.reject_reports ? (["reject_reports"] as const) : [])];
+}
+
+/**
+ * The preview of a CSV of simple rows (no quoted field), as POST /admin/domain_actions/import/preview answers it with
+ * no action in effect: every row with a severity of Mastodon's is importable, unless it takes no action.
+ */
+export function previewDomainBlocks(csv: string): Schemas["DomainBlockImportPreview"] {
+  const rows: Schemas["DomainBlockImportRow"][] = [];
+  csv.split("\n").forEach((line, index) => {
+    const [domain = "", severity = "suspend", media = "", reports = "", comment = "", obfuscate = ""] = line.split(",").map((field) => field.trim());
+    if (domain === "" || domain === "#domain") return;
+    const row = { line: index + 1, written_domain: domain };
+    if (severity !== "suspend" && severity !== "silence" && severity !== "noop") {
+      rows.push({ ...row, status: "invalid", issue: [] });
+      return;
+    }
+    const block: Schemas["DomainBlock"] = {
+      domain,
+      severity,
+      reject_media: media === "true",
+      reject_reports: reports === "true",
+      obfuscate: obfuscate === "true",
+      ...(comment === "" ? {} : { public_comment: comment }),
+    };
+    const issue = domainBlockKinds(block);
+    rows.push({ ...row, block, status: issue.length === 0 ? "no_action" : "importable", issue });
+  });
+  return { rows };
+}
+
+/** What POST /admin/domain_actions/import does for `body`: every action of every block is taken. */
+export function importDomainBlocks(body: Schemas["ImportDomainBlocksRequest"]): Schemas["DomainBlockImportResult"] {
+  const issued = body.blocks.flatMap((block) =>
+    domainBlockKinds(block).map((kind) =>
+      newDomainAction({
+        domain: block.domain,
+        kind,
+        obfuscate: block.obfuscate,
+        ...(block.public_comment === undefined ? {} : { public_comment: block.public_comment }),
+        ...(body.private_note === undefined ? {} : { private_note: body.private_note }),
+      }),
+    ),
+  );
+  return { issued, skipped: [] };
+}
+
 /** A sign-up block on the email domain `mail.example` in effect since 2026-10-10, as the server answers it; `overrides` replace its fields. */
 export function signupBlockFixture(overrides: Partial<Schemas["AdminSignupBlock"]> = {}): Schemas["AdminSignupBlock"] {
   return { id: "0192f0c4-7a8e-7000-8000-0000000001a1", kind: "email_domain", value: "mail.example", severity: "reject", state: "active", created_at: "2026-10-10T08:00:00Z", ...overrides };
@@ -249,7 +302,7 @@ export const adminRoleFixture: Schemas["AdminRole"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000a01",
   key: "admin",
   position: 1000,
-  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_two_factor", "manage_custom_emojis", "manage_webhooks"],
+  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_two_factor", "manage_custom_emojis", "manage_webhooks", "manage_announcements"],
 };
 export const moderatorRoleFixture: Schemas["AdminRole"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000a02",
@@ -294,6 +347,19 @@ export const handlers = [
   http.post(`${apiBase}/admin/domain_actions`, async ({ request }) => {
     const body = (await request.clone().json()) as Schemas["CreateDomainActionRequest"];
     return withViewer(request, () => HttpResponse.json(newDomainAction(body)));
+  }),
+  // operationIds exportDomainBlocks, previewDomainBlockImport, importDomainBlocks, before the routes of one action
+  // (whose `:id` would match them): no action is exported; every row of a CSV is imported, as written.
+  http.get(`${apiBase}/admin/domain_actions/export`, ({ request }) =>
+    withViewer(request, () => new HttpResponse(`${domainBlockCsvHeader}\n`, { headers: { "Content-Type": "text/csv" } })),
+  ),
+  http.post(`${apiBase}/admin/domain_actions/import/preview`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["PreviewDomainBlockImportRequest"];
+    return withViewer(request, () => HttpResponse.json(previewDomainBlocks(body.csv)));
+  }),
+  http.post(`${apiBase}/admin/domain_actions/import`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["ImportDomainBlocksRequest"];
+    return withViewer(request, () => HttpResponse.json(importDomainBlocks(body)));
   }),
   http.get(`${apiBase}/admin/domain_actions/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(domainActionFixture({ id: String(params["id"]) })))),
   http.post(`${apiBase}/admin/domain_actions/:id/lift`, ({ request, params }) =>

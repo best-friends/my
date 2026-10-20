@@ -38,7 +38,7 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case args[0] == "audit":
 		return runAdminAudit(args[1:], stdout, stderr)
 	case args[0] == "domain":
-		return runAdminDomain(args[1:], stdout, stderr)
+		return runAdminDomain(args[1:], stdin, stdout, stderr)
 	case args[0] == "emoji":
 		return runAdminEmoji(args[1:], stdout, stderr)
 	case args[0] == "report":

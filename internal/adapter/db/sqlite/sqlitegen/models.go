@@ -88,6 +88,21 @@ type AccountRestriction struct {
 	EffectiveUntil sql.NullInt64
 }
 
+type AnnouncementHead struct {
+	AnnouncementID string
+	RevisionID     string
+	State          string
+	PublishedAt    sql.NullInt64
+}
+
+type AnnouncementStateChange struct {
+	ID              string
+	AnnouncementID  string
+	State           string
+	ChangedByUserID sql.NullString
+	ChangedAt       int64
+}
+
 type AuditLogEntry struct {
 	ID            string
 	ActorKind     string
@@ -168,6 +183,16 @@ type CustomEmojiSetting struct {
 	Enabled         int64
 	VisibleInPicker int64
 	Category        sql.NullString
+}
+
+type DataImportItem struct {
+	ImportID          string
+	Position          int64
+	Action            string
+	Target            string
+	ShowBoosts        int64
+	Notify            int64
+	HideNotifications int64
 }
 
 type Delivery struct {

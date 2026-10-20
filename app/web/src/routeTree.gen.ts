@@ -23,6 +23,7 @@ import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
@@ -48,6 +49,7 @@ import { Route as SettingsAccountStatusRouteImport } from './routes/settings.acc
 import { Route as SettingsAutoDeleteRouteImport } from './routes/settings.auto-delete'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
+import { Route as SettingsImportExportRouteImport } from './routes/settings.import-export'
 import { Route as SettingsMutesRouteImport } from './routes/settings.mutes'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings.preferences'
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
@@ -131,6 +133,11 @@ const AtChar123acctChar125FollowingRoute =
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/admin/announcements',
+  path: '/admin/announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCustomEmojisRoute = AdminCustomEmojisRouteImport.update({
@@ -258,6 +265,11 @@ const SettingsFollowRequestsRoute = SettingsFollowRequestsRouteImport.update({
   path: '/settings/follow-requests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsImportExportRoute = SettingsImportExportRouteImport.update({
+  id: '/settings/import-export',
+  path: '/settings/import-export',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsMutesRoute = SettingsMutesRouteImport.update({
   id: '/settings/mutes',
   path: '/settings/mutes',
@@ -336,6 +348,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -359,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -389,6 +403,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -412,6 +427,7 @@ export interface FileRoutesByTo {
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -443,6 +459,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -466,6 +483,7 @@ export interface FileRoutesById {
   '/settings/auto-delete': typeof SettingsAutoDeleteRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
+  '/settings/import-export': typeof SettingsImportExportRoute
   '/settings/mutes': typeof SettingsMutesRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -498,6 +516,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
@@ -521,6 +540,7 @@ export interface FileRouteTypes {
     | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -551,6 +571,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
@@ -574,6 +595,7 @@ export interface FileRouteTypes {
     | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -604,6 +626,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
+    | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/dead-jobs'
     | '/admin/documents'
@@ -627,6 +650,7 @@ export interface FileRouteTypes {
     | '/settings/auto-delete'
     | '/settings/blocks'
     | '/settings/follow-requests'
+    | '/settings/import-export'
     | '/settings/mutes'
     | '/settings/preferences'
     | '/settings/profile'
@@ -658,6 +682,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
@@ -681,6 +706,7 @@ export interface RootRouteChildren {
   SettingsAutoDeleteRoute: typeof SettingsAutoDeleteRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
+  SettingsImportExportRoute: typeof SettingsImportExportRoute
   SettingsMutesRoute: typeof SettingsMutesRoute
   SettingsPreferencesRoute: typeof SettingsPreferencesRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -796,6 +822,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/announcements': {
+      id: '/admin/announcements'
+      path: '/admin/announcements'
+      fullPath: '/admin/announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/custom-emojis': {
@@ -973,6 +1006,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsFollowRequestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/import-export': {
+      id: '/settings/import-export'
+      path: '/settings/import-export'
+      fullPath: '/settings/import-export'
+      preLoaderRoute: typeof SettingsImportExportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/mutes': {
       id: '/settings/mutes'
       path: '/settings/mutes'
@@ -1074,6 +1114,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
@@ -1097,6 +1138,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAutoDeleteRoute: SettingsAutoDeleteRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,
+  SettingsImportExportRoute: SettingsImportExportRoute,
   SettingsMutesRoute: SettingsMutesRoute,
   SettingsPreferencesRoute: SettingsPreferencesRoute,
   SettingsProfileRoute: SettingsProfileRoute,
