@@ -55,14 +55,24 @@ test.describe("passkeys", () => {
 
     // Into the app through the server's sign-in page, with the password.
     await page.goto("/login");
+    const authorized = page.waitForRequest(
+      (request) => new URL(request.url()).pathname.startsWith("/api/") && request.headers()["authorization"]?.startsWith("Bearer ") === true,
+    );
     await page.getByRole("main").getByRole("button").click();
     await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
     await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
     await page.locator('main button[type="submit"]').first().click();
+    const authorization = (await authorized).headers()["authorization"] ?? "";
     await expect(page).toHaveURL(`${serverURL}/home`);
+    // The app shows itself in the user's display language, which `my admin create` leaves at the server's: it
+    // becomes the project's locale through the client API, as the user would set it on the preferences page.
+    const locale = test.info().project.use.locale ?? "en";
+    const preferences = await page.request.patch(`${serverURL}/api/v1/preferences`, { headers: { Authorization: authorization }, data: { locale } });
+    expect(preferences.ok(), `PATCH /api/v1/preferences: ${String(preferences.status())}`).toBe(true);
 
     // The settings page adds a passkey after the password.
     await page.goto("/settings/passkeys");
+    await expect(page.locator("html")).toHaveAttribute("lang", locale);
     const main = page.getByRole("main");
     const form = main.getByRole("region", { name: message("client", "settings.passkeys.add.title") });
     await form.getByRole("textbox", { name: message("client", "settings.passkeys.name") }).fill("E2E authenticator");

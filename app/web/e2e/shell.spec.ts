@@ -436,6 +436,7 @@ test("an unknown address shows the not-found page inside the layout", async ({ p
   await page.goto("/no-such-page");
   await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation")).toBeVisible();
-  await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/home");
+  // Signed out, the way out is the landing page; signed-in users get their home timeline (HomeLink).
+  await expect(page.getByRole("main").getByRole("link")).toHaveAttribute("href", "/");
   await expectNoAxeViolations(makeAxeBuilder);
 });

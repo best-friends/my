@@ -153,7 +153,11 @@ test.describe("the poll of a post", () => {
 
   test("takes a vote and shows its results, axe-clean and without horizontal scrolling", async ({ page, makeAxeBuilder }) => {
     const region = pollRegion(page);
-    await region.getByRole("radio", { name: "The ridge" }).check();
+    // By keyboard: the radio's input is visually hidden under its drawn circle.
+    const ridge = region.getByRole("radio", { name: "The ridge" });
+    await ridge.focus();
+    await page.keyboard.press("Space");
+    await expect(ridge).toBeChecked();
     await region.getByRole("button", { name: message("status.poll.vote"), exact: true }).click();
     const results = region.getByRole("list", { name: message("status.poll.results"), exact: true });
     await expect(results).toBeVisible();

@@ -225,8 +225,11 @@ test("checking a file to import shows what it does without axe violations or hor
   await signedInServer(page, projectLocale());
   await page.goto("/settings/import-export");
   const main = page.getByRole("main");
-  await main.getByText(message("settings.import_export.import.mode.overwrite"), { exact: true }).click();
-  await expect(main.getByRole("radio", { name: message("settings.import_export.import.mode.overwrite") })).toBeChecked();
+  // By keyboard: the radio's input is visually hidden under its drawn circle.
+  const overwrite = main.getByRole("radio", { name: message("settings.import_export.import.mode.overwrite") });
+  await overwrite.focus();
+  await page.keyboard.press("Space");
+  await expect(overwrite).toBeChecked();
   // FileTrigger's input is hidden; Playwright sets its files as the file picker would.
   await main.locator('input[type="file"]').setInputFiles({ name: "following_accounts.csv", mimeType: "text/csv", buffer: Buffer.from("bob@remote.example\n") });
   await main.getByRole("button", { name: message("settings.import_export.import.preview"), exact: true }).click();
@@ -254,8 +257,15 @@ test("the automatic deletion of old posts is turned on and saved without axe vio
   await signedInServer(page, projectLocale());
   await page.goto("/settings/auto-delete");
   const main = page.getByRole("main");
-  await main.getByRole("switch", { name: message("settings.auto_delete.enabled") }).check();
-  await main.getByRole("checkbox", { name: message("settings.auto_delete.keep.media") }).check();
+  // By keyboard: the inputs of the switch and the checkbox are visually hidden under what they draw.
+  const enabled = main.getByRole("switch", { name: message("settings.auto_delete.enabled") });
+  await enabled.focus();
+  await page.keyboard.press("Space");
+  await expect(enabled).toBeChecked();
+  const keepMedia = main.getByRole("checkbox", { name: message("settings.auto_delete.keep.media") });
+  await keepMedia.focus();
+  await page.keyboard.press("Space");
+  await expect(keepMedia).toBeChecked();
   await main.getByRole("button", { name: message("settings.auto_delete.save"), exact: true }).click();
   // The status names the age in the plural form of the locale; its words before the number are enough.
   await expect(main.getByRole("status").getByText(message("settings.auto_delete.saved_on").replace(/\{.*$/s, "").trim())).toBeVisible();
