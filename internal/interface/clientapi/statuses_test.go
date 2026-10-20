@@ -138,6 +138,12 @@ func (f *fakeStatuses) Favourite(_ context.Context, a, id string) (content.Favou
 func (f *fakeStatuses) Unfavourite(_ context.Context, a, id string) error {
 	return f.do("unfavourite", a, id)
 }
+func (f *fakeStatuses) React(_ context.Context, a, id, emoji string) (content.Reaction, error) {
+	return content.Reaction{}, f.do("react:"+emoji, a, id)
+}
+func (f *fakeStatuses) Unreact(_ context.Context, a, id string) error {
+	return f.do("unreact", a, id)
+}
 func (f *fakeStatuses) Bookmark(_ context.Context, a, id string) error {
 	return f.do("bookmark", a, id)
 }

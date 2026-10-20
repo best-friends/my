@@ -3509,6 +3509,13 @@ type QrCode struct {
 	Size int `json:"size"`
 }
 
+// ReactToStatusRequest The emoji to react with.
+type ReactToStatusRequest struct {
+	// Emoji A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
+	// its `ReactionEmoji`; colons around it are accepted).
+	Emoji string `json:"emoji"`
+}
+
 // ReactionEmoji The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
 // emoji of another server is shown as it is and cannot be used to react from here.
 type ReactionEmoji struct {
@@ -4699,6 +4706,9 @@ type CreateStatusJSONRequestBody = CreateStatusRequest
 // EditStatusJSONRequestBody defines body for EditStatus for application/json ContentType.
 type EditStatusJSONRequestBody = EditStatusRequest
 
+// ReactToStatusJSONRequestBody defines body for ReactToStatus for application/json ContentType.
+type ReactToStatusJSONRequestBody = ReactToStatusRequest
+
 // RegenerateRecoveryCodesJSONRequestBody defines body for RegenerateRecoveryCodes for application/json ContentType.
 type RegenerateRecoveryCodesJSONRequestBody = TwoFactorCodeRequest
 
@@ -5061,6 +5071,12 @@ type ServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// UnreactToStatus Take back the emoji reaction to a status
+	// (DELETE /statuses/{id}/reaction)
+	UnreactToStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// ReactToStatus React to a status with an emoji
+	// (PUT /statuses/{id}/reaction)
+	ReactToStatus(w http.ResponseWriter, r *http.Request, id StatusId)
 	// ListStatusReactions List the emoji reactions to a status
 	// (GET /statuses/{id}/reactions)
 	ListStatusReactions(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusReactionsParams)
@@ -8767,6 +8783,58 @@ func (siw *ServerInterfaceWrapper) PinStatus(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// UnreactToStatus operation middleware
+func (siw *ServerInterfaceWrapper) UnreactToStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UnreactToStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReactToStatus operation middleware
+func (siw *ServerInterfaceWrapper) ReactToStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReactToStatus(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListStatusReactions operation middleware
 func (siw *ServerInterfaceWrapper) ListStatusReactions(w http.ResponseWriter, r *http.Request) {
 
@@ -9304,6 +9372,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/history", wrapper.GetStatusHistory)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.UnpinStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.PinStatus)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/reaction", wrapper.UnreactToStatus)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/statuses/{id}/reaction", wrapper.ReactToStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/reactions", wrapper.ListStatusReactions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
@@ -16408,6 +16478,117 @@ func (response PinStatusdefaultApplicationProblemPlusJSONResponse) VisitPinStatu
 	return err
 }
 
+type UnreactToStatusRequestObject struct {
+	Id StatusId `json:"id"`
+}
+
+type UnreactToStatusResponseObject interface {
+	VisitUnreactToStatusResponse(w http.ResponseWriter) error
+}
+
+type UnreactToStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response UnreactToStatus200JSONResponse) VisitUnreactToStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UnreactToStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UnreactToStatusdefaultApplicationProblemPlusJSONResponse) VisitUnreactToStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactToStatusRequestObject struct {
+	Id   StatusId `json:"id"`
+	Body *ReactToStatusJSONRequestBody
+}
+
+type ReactToStatusResponseObject interface {
+	VisitReactToStatusResponse(w http.ResponseWriter) error
+}
+
+type ReactToStatus200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response ReactToStatus200JSONResponse) VisitReactToStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReactToStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ReactToStatusdefaultApplicationProblemPlusJSONResponse) VisitReactToStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListStatusReactionsRequestObject struct {
 	Id     StatusId `json:"id"`
 	Params ListStatusReactionsParams
@@ -17415,6 +17596,12 @@ type StrictServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(ctx context.Context, request PinStatusRequestObject) (PinStatusResponseObject, error)
+	// UnreactToStatus Take back the emoji reaction to a status
+	// (DELETE /statuses/{id}/reaction)
+	UnreactToStatus(ctx context.Context, request UnreactToStatusRequestObject) (UnreactToStatusResponseObject, error)
+	// ReactToStatus React to a status with an emoji
+	// (PUT /statuses/{id}/reaction)
+	ReactToStatus(ctx context.Context, request ReactToStatusRequestObject) (ReactToStatusResponseObject, error)
 	// ListStatusReactions List the emoji reactions to a status
 	// (GET /statuses/{id}/reactions)
 	ListStatusReactions(ctx context.Context, request ListStatusReactionsRequestObject) (ListStatusReactionsResponseObject, error)
@@ -20725,6 +20912,65 @@ func (sh *strictHandler) PinStatus(w http.ResponseWriter, r *http.Request, id St
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PinStatusResponseObject); ok {
 		if err := validResponse.VisitPinStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UnreactToStatus operation middleware
+func (sh *strictHandler) UnreactToStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request UnreactToStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UnreactToStatus(ctx, request.(UnreactToStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UnreactToStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UnreactToStatusResponseObject); ok {
+		if err := validResponse.VisitUnreactToStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReactToStatus operation middleware
+func (sh *strictHandler) ReactToStatus(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request ReactToStatusRequestObject
+
+	request.Id = id
+
+	var body ReactToStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReactToStatus(ctx, request.(ReactToStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReactToStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReactToStatusResponseObject); ok {
+		if err := validResponse.VisitReactToStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

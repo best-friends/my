@@ -102,7 +102,7 @@ ADR-0003（短く再実行可能なトランザクション、内部で外部 I/
 | ブースト | `boosts` | `boost_edges`, `feed_entries`, `status_counters`, `local_post_counters`, `notifications` | `Announce` の配送（`local` 投稿のブーストは連合しない） |
 | ブーストの取り消し | `boost_retractions` | `boost_edges`, `feed_entries`, `status_counters`, `local_post_counters` | `Undo Announce` の配送（連合したブーストだけ） |
 | お気に入り / 取り消し | `favourites`（現在値） | `status_counters`, `notifications`（お気に入りだけ） | `Like` / `Undo Like` の配送（リモートの投稿だけ） |
-| 絵文字リアクション / 取り消し | `reactions`（リソース。取り消しで行を消す） | `status_reaction_counts`, `notifications`（リアクションだけ） | なし（リモートの人のリアクションだけを受信で記録する） |
+| 絵文字リアクション / 取り消し | `reactions`（リソース。取り消しで行を消す） | `status_reaction_counts`, `notifications`（リアクションだけ） | 絵文字付きの `Like` / `Undo Like` の配送（ローカルの人のリモートの投稿へのものだけ） |
 | ブックマーク・ピン留め / 取り消し | `bookmarks` / `status_pins`（現在値） | なし | なし |
 | フォロー | `follows`（＋自動承認なら `follow_acceptances`） | `follow_edges`, `feed_follow_edges`, `follow_counters`, `notifications` | `Follow` / `Accept` の配送 |
 | ブロック | `blocks`（＋両方向のフォローの `follow_terminations`） | `block_edges`, `follow_edges`, `feed_follow_edges`, `feed_exclusions`, `follow_counters`, `notification_exclusions` | `Block` の配送 |
@@ -745,8 +745,8 @@ flowchart LR
 | `content.boost_retracted` | 有効なブーストの取り消し | `boost_edges` から削除、`boosts_count` 減算 | `feed_entries` から削除、連合したブーストなら `Undo Announce` の配送 |
 | `content.favourited` | お気に入りの追加 | `favourites_count` 加算 | 通知 `favourite`、リモートの投稿なら `Like` の配送 |
 | `content.unfavourited` | お気に入りの削除 | `favourites_count` 減算 | リモートの投稿なら `Undo Like` の配送 |
-| `content.reacted` | 絵文字リアクションの追加 | `status_reaction_counts` の絵文字の件数を加算 | 通知 `reaction` |
-| `content.unreacted` | 絵文字リアクションの削除 | `status_reaction_counts` の絵文字の件数を減算 | なし |
+| `content.reacted` | 絵文字リアクションの追加 | `status_reaction_counts` の絵文字の件数を加算 | 通知 `reaction`、リモートの投稿なら絵文字付きの `Like` の配送 |
+| `content.unreacted` | 絵文字リアクションの削除 | `status_reaction_counts` の絵文字の件数を減算 | リモートの投稿なら `Undo Like` の配送 |
 
 #### 絵文字リアクション
 
@@ -761,7 +761,9 @@ flowchart LR
 - **リモートのリアクション**: 受信した `EmojiReact` と、絵文字の付いた `Like`（[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）を、`content` の公開 API（`RecordRemoteReaction` / `RemoveRemoteReaction`）で記録します。リモートのアカウントがリアクションできるのは、お気に入りと同じく閲覧できる（`ContextObjectFetch`）ローカルの投稿だけで、交流の禁止（`interact`）の制限があれば記録しません。リアクションの `id` は活動の `published`（無い・未来なら受信時刻）の UUIDv7 です。
   - カスタム絵文字は、投稿のカスタム絵文字と同じく `custom_emojis` と `custom_emoji_images` に取り込み、画像はリアクションした人のリモートのメディアです。ドメインは `Emoji` の `id` のホスト（`id` が無ければリアクションした人のドメイン）で、第三のサーバーの絵文字はそのサーバーの絵文字になります。
   - `Undo` は、`reactions (uri)`、`favourites (uri)` の順に引き、どちらにも無ければ埋め込みの活動の投稿と絵文字で主体のリアクション（またはお気に入り）を消します。
-- ローカルの人のリアクション（送信と `Like` の枠）はまだありません。
+- **ローカルの人のリアクションと `Like` の枠**（ADR-0052 §1、§2）: ローカルの人は 1 投稿にお気に入りかリアクション 1 つのどちらか一方だけを持ちます。`content.Interactions.React` は、同じトランザクションで同じ投稿へのお気に入り（`content.unfavourited`）と別の絵文字のリアクション（`content.unreacted`）を消してから行を挿入し（`content.reacted`）、`Favourite` も同じくリアクションを消してからお気に入りを挿入します。同じ絵文字で付け直しても何も変えません。`Unreact` はその人のリアクションを消します。
+  - 使える絵文字は、Unicode 絵文字（fully-qualified の形に正規化）と、このサーバーの有効な（`custom_emoji_settings.enabled`）画像のあるカスタム絵文字です。リモートのカスタム絵文字は使えません。閲覧の可否・ブロック・交流の禁止（`interact`）はお気に入りと同じ規則です。
+  - リモートの投稿へのリアクションは、イベントにカスタム絵文字の `Emoji` タグの材料（ショートコード・画像）を持たせ、`federation` が絵文字付きの `Like` と `Undo Like` を組み立てて保存します（[federation.md §7.1](federation.md#71-記録)）。
 
 #### メディア
 

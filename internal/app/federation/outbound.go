@@ -96,6 +96,8 @@ type RecorderDeps struct {
 //     (registerFollowProjectors).
 //   - content.favourited / unfavourited of a remote status: Like and Undo Like
 //     (registerFavouriteProjectors).
+//   - content.reacted / unreacted of a remote status: Like with the emoji and Undo Like
+//     (registerReactionProjectors).
 //
 // Other activities (Block) are added here, one projector each, with the use cases that send
 // them.
@@ -105,6 +107,7 @@ func RegisterOutboundProjectors(r *uow.Projectors, d RecorderDeps) {
 		registerFollowProjectors(r, rec)
 	}
 	registerFavouriteProjectors(r, rec)
+	registerReactionProjectors(r, rec)
 	r.Register(appcontent.EventStatusCreated, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev, ok := e.(appcontent.StatusCreated)
 		if !ok || !ev.Status.IsLocal {

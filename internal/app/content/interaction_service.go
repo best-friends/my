@@ -30,14 +30,17 @@ type InteractionDeps struct {
 	// RecordRemoteEmojis records the custom emoji that remote reactions use, as those of remote
 	// posts (Service.RecordRemoteEmojis); nil refuses those reactions.
 	RecordRemoteEmojis func(ctx context.Context, tx uow.Tx, ownerAccountID, domain string, emojis []RemoteEmojiInput) ([]string, error)
-	Clock              kernel.Clock
-	IDs                kernel.IDGenerator
+	// EmojiTags reads the enabled custom emoji that local accounts react with, with their images
+	// (MediaService.EmojiTags); nil refuses the reactions with custom emoji.
+	EmojiTags func(ctx context.Context, ids []string) ([]EmojiTag, error)
+	Clock     kernel.Clock
+	IDs       kernel.IDGenerator
 	// Host is the serving domain of the Announce and Like activity URIs (ADR-0018).
 	Host string
 }
 
-// Interactions runs the use cases of local accounts acting on statuses (FR-107, FR-113):
-// boosting, favouriting, bookmarking, and pinning, and undoing each. Every command is safe to
+// Interactions runs the use cases of local accounts acting on statuses (FR-107, FR-113, FR-116):
+// boosting, favouriting, reacting with an emoji, bookmarking, and pinning, and undoing each. Every command is safe to
 // repeat: doing what is already done, or undoing what is not, changes nothing and emits no
 // event, so the counters never move twice.
 //
@@ -143,13 +146,18 @@ func (s *Interactions) Unboost(ctx context.Context, accountID, statusID string) 
 }
 
 // Favourite makes accountID favourite statusID and returns the favourite. Favouriting a status
-// that the account already favourites returns the existing favourite. An account whose
-// restrictions forbid interacting fails with ErrInteractionRestricted.
+// that the account already favourites returns the existing favourite. The favourite takes back
+// the account's reaction to the status, with which it shares the Like slot (ADR-0052 §1). An
+// account whose restrictions forbid interacting fails with ErrInteractionRestricted.
 func (s *Interactions) Favourite(ctx context.Context, accountID, statusID string) (content.Favourite, error) {
 	if err := s.checkRestrictions(ctx, accountID, false); err != nil {
 		return content.Favourite{}, err
 	}
 	st, err := s.visibleStatus(ctx, accountID, statusID)
+	if err != nil {
+		return content.Favourite{}, err
+	}
+	taken, err := s.slotEmojis(ctx, accountID, st)
 	if err != nil {
 		return content.Favourite{}, err
 	}
@@ -159,6 +167,10 @@ func (s *Interactions) Favourite(ctx context.Context, accountID, statusID string
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		inserted = false
 		if err := s.ensureLive(ctx, tx, st.ID); err != nil {
+			return err
+		}
+		// The favourite fills the Like slot (local_reaction.go): it takes back a reaction.
+		if err := s.takeBackReactions(ctx, tx, accountID, st, "", taken, s.d.Clock.Now()); err != nil {
 			return err
 		}
 		ok, err := s.d.Interactions.InsertFavourite(ctx, tx, f)

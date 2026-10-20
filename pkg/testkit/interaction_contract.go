@@ -50,6 +50,7 @@ func InteractionRepositoryContract(t *testing.T, newHarness InteractionFactory) 
 		{"BoostsAndRetracts", interactionBoosts},
 		{"BoostsCopyVisibility", interactionBoostsCopyVisibility},
 		{"FavouritesAndUnfavourites", interactionFavourites},
+		{"ReactsInTheLikeSlot", interactionReactsInTheLikeSlot},
 		{"BookmarksAndPins", interactionBookmarksAndPins},
 		{"LimitsConcurrentPins", interactionLimitsConcurrentPins},
 		{"ChecksVisibility", interactionChecksVisibility},
@@ -94,7 +95,7 @@ func newInteractionEnv(t *testing.T, newHarness InteractionFactory) *interaction
 		relations:    &stubRelations{follows: map[[2]string]graph.State{}, blocks: map[[2]string]bool{}},
 		restrictions: &fakeRestrictions{byID: map[string]appcontent.Restrictions{}},
 	}
-	for _, typ := range []string{appcontent.EventBoosted, appcontent.EventBoostRetracted, appcontent.EventFavourited, appcontent.EventUnfavourited} {
+	for _, typ := range []string{appcontent.EventBoosted, appcontent.EventBoostRetracted, appcontent.EventFavourited, appcontent.EventUnfavourited, appcontent.EventReacted, appcontent.EventUnreacted} {
 		projectors.Register(typ, func(_ context.Context, _ uow.Tx, ev uow.Event) error {
 			e.mu.Lock()
 			defer e.mu.Unlock()
@@ -498,6 +499,107 @@ func interactionFavourites(t *testing.T, e *interactionEnv) {
 	}
 	if _, err := e.h.Interactions.FindFavourite(ctx, fan, s.ID); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("FindFavourite after Unfavourite = %v, want ErrNotFound", err)
+	}
+}
+
+// interactionReactsInTheLikeSlot checks the emoji reactions of local accounts (ADR-0052 §1, §2):
+// an account has a favourite or one reaction on a status, and filling that Like slot takes back
+// what was in it, each change with its event and counted once.
+func interactionReactsInTheLikeSlot(t *testing.T, e *interactionEnv) {
+	ctx := t.Context()
+	author, fan := e.localAccount(), e.localAccount()
+	s := e.post(t, author, content.VisibilityPublic)
+	e.takeEvents()
+	counts := func() map[string]int64 {
+		t.Helper()
+		cs, err := e.h.Interactions.ListReactionCounts(ctx, s.ID, content.MaxStatusReactions)
+		if err != nil {
+			t.Fatalf("ListReactionCounts: %v", err)
+		}
+		out := map[string]int64{}
+		for _, c := range cs {
+			out[c.Emoji.Key()] = c.Count
+		}
+		return out
+	}
+
+	// The unqualified heart is the fully-qualified one.
+	r, err := e.svc.React(ctx, fan, s.ID, "\u2764")
+	if err != nil {
+		t.Fatalf("React = %v", err)
+	}
+	if r.AccountID != fan || r.StatusID != s.ID || r.Emoji.Unicode != "\u2764\ufe0f" || r.URI != content.ActivityURI(contractHost, r.ID) {
+		t.Errorf("React = %+v", r)
+	}
+	if again, err := e.svc.React(ctx, fan, s.ID, "\u2764\ufe0f"); err != nil || again != r {
+		t.Errorf("React(again) = %+v, %v; want the existing %+v", again, err, r)
+	}
+	if got := e.takeEvents(); !reflect.DeepEqual(got, []string{appcontent.EventReacted}) {
+		t.Errorf("events = %v, want one %s", got, appcontent.EventReacted)
+	}
+	// Another emoji replaces the reaction.
+	if _, err := e.svc.React(ctx, fan, s.ID, "🎉"); err != nil {
+		t.Fatalf("React(another emoji) = %v", err)
+	}
+	if got := e.takeEvents(); !reflect.DeepEqual(got, []string{appcontent.EventUnreacted, appcontent.EventReacted}) {
+		t.Errorf("events of another emoji = %v, want the old one taken back, then the new one", got)
+	}
+	if got := counts(); !reflect.DeepEqual(got, map[string]int64{"🎉": 1}) {
+		t.Errorf("counts = %v, want the new emoji only", got)
+	}
+	// A favourite takes the slot, and a reaction takes it back.
+	if _, err := e.svc.Favourite(ctx, fan, s.ID); err != nil {
+		t.Fatalf("Favourite = %v", err)
+	}
+	if got := e.takeEvents(); !reflect.DeepEqual(got, []string{appcontent.EventUnreacted, appcontent.EventFavourited}) {
+		t.Errorf("events of a favourite = %v, want the reaction taken back, then the favourite", got)
+	}
+	if c := e.counters(t, s.ID); c.FavouritesCount != 1 || len(counts()) != 0 {
+		t.Errorf("FavouritesCount = %d, counts %v; want the favourite only", c.FavouritesCount, counts())
+	}
+	if _, err := e.svc.React(ctx, fan, s.ID, "👍"); err != nil {
+		t.Fatalf("React after the favourite = %v", err)
+	}
+	if got := e.takeEvents(); !reflect.DeepEqual(got, []string{appcontent.EventUnfavourited, appcontent.EventReacted}) {
+		t.Errorf("events of a reaction = %v, want the favourite taken back, then the reaction", got)
+	}
+	if c := e.counters(t, s.ID); c.FavouritesCount != 0 {
+		t.Errorf("FavouritesCount = %d, want 0", c.FavouritesCount)
+	}
+	if rs, err := e.h.Interactions.ListAccountStatusReactions(ctx, fan, s.ID); err != nil || len(rs) != 1 || rs[0].Emoji.Unicode != "👍" {
+		t.Errorf("reactions of the fan = %+v, %v; want one", rs, err)
+	}
+	// Unreact empties the slot, once.
+	for range 2 {
+		if err := e.svc.Unreact(ctx, fan, s.ID); err != nil {
+			t.Fatalf("Unreact = %v", err)
+		}
+	}
+	if got := e.takeEvents(); !reflect.DeepEqual(got, []string{appcontent.EventUnreacted}) {
+		t.Errorf("events of Unreact = %v, want one %s", got, appcontent.EventUnreacted)
+	}
+	if got := counts(); len(got) != 0 {
+		t.Errorf("counts after Unreact = %v, want none", got)
+	}
+
+	// Not an emoji, a custom emoji of another server, and an unknown shortcode are refused.
+	for _, emoji := range []string{"", "hello", "👍👍", "blobcat@misskey.example", ":nothing:"} {
+		if _, err := e.svc.React(ctx, fan, s.ID, emoji); !errors.Is(err, content.ErrInvalidReaction) {
+			t.Errorf("React(%q) = %v, want ErrInvalidReaction", emoji, err)
+		}
+	}
+	// The interact restriction and the visibility apply as to a favourite.
+	e.restrictions.set(fan, appcontent.Restrictions{Interact: true})
+	if _, err := e.svc.React(ctx, fan, s.ID, "👍"); !errors.Is(err, appcontent.ErrInteractionRestricted) {
+		t.Errorf("React under the interact restriction = %v", err)
+	}
+	e.restrictions.set(fan, appcontent.Restrictions{})
+	hidden := e.post(t, author, content.VisibilityPrivate)
+	if _, err := e.svc.React(ctx, fan, hidden.ID, "👍"); !errors.Is(err, appcontent.ErrNotFound) {
+		t.Errorf("React to a status the account cannot see = %v, want ErrNotFound", err)
+	}
+	if got := e.takeEvents(); len(got) != 0 {
+		t.Errorf("events of refused reactions = %v, want none", got)
 	}
 }
 

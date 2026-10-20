@@ -96,7 +96,7 @@
     "description": "Permission (OAuth scope write:bookmarks) listed on the authorization page."
   },
   "auth.authorize.scope.write_favourites": {
-    "defaultMessage": "Add and remove favourites",
+    "defaultMessage": "Add and remove favourites and emoji reactions",
     "description": "Permission (OAuth scope write:favourites) listed on the authorization page."
   },
   "auth.authorize.scope.write_follows": {
@@ -670,6 +670,10 @@
   "errors.status.invalid_media_description": {
     "defaultMessage": "{max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}}",
     "description": "Detail of the HTTP 422 API error when the alternative text of an attached image is too long or invalid. {max} is the maximum number of characters."
+  },
+  "errors.status.invalid_reaction": {
+    "defaultMessage": "Only a Unicode emoji or an enabled custom emoji of this server can be used to react.",
+    "description": "Detail of the HTTP 422 API error when a user reacts to a post with something that is not a Unicode emoji or an enabled custom emoji of this server (for example a custom emoji of another server)."
   },
   "errors.status.invalid_text": {
     "defaultMessage": "The text contains characters that cannot be posted.",

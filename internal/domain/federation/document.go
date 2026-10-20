@@ -85,6 +85,48 @@ func (d ActivityDocument) Embedded() ActivityDocument {
 // Marshal returns the JSON of d, the bytes every delivery of it sends.
 func (d ActivityDocument) Marshal() ([]byte, error) { return json.Marshal(d) }
 
+// ReactionLDContext returns the JSON-LD context of the Like of an emoji reaction: LDContext with
+// Misskey's _misskey_reaction (ADR-0052 §3).
+func ReactionLDContext() []any {
+	c := LDContext()
+	terms := c[len(c)-1].(map[string]any)
+	terms["misskey"] = "https://misskey-hub.net/ns#"
+	terms["_misskey_reaction"] = "misskey:_misskey_reaction"
+	return c
+}
+
+// LikeDocument is the Like of an emoji reaction (ADR-0052 §3): the Like of a favourite with the
+// emoji as its content and its _misskey_reaction, the same string (the Unicode emoji, or
+// ":shortcode:" of a custom emoji), and the Emoji tag of a custom emoji. Misskey and Akkoma read
+// it as a reaction, Mastodon and GoToSocial as a favourite.
+type LikeDocument struct {
+	ActivityDocument
+	Content         string        `json:"content,omitempty"`
+	MisskeyReaction string        `json:"_misskey_reaction,omitempty"`
+	Tag             []TagDocument `json:"tag,omitempty"`
+}
+
+// NewReactionLike returns like, a Like built by NewActivityDocument, as the Like of the emoji
+// reaction emoji, with the Emoji tag of a custom emoji (nil for a Unicode emoji) and the context
+// of ReactionLDContext.
+func NewReactionLike(like ActivityDocument, emoji string, tag *TagDocument) LikeDocument {
+	like.Context = ReactionLDContext()
+	d := LikeDocument{ActivityDocument: like, Content: emoji, MisskeyReaction: emoji}
+	if tag != nil {
+		d.Tag = []TagDocument{*tag}
+	}
+	return d
+}
+
+// Embedded returns d without its context, to embed it in an Undo.
+func (d LikeDocument) Embedded() LikeDocument {
+	d.Context = nil
+	return d
+}
+
+// Marshal returns the JSON of d.
+func (d LikeDocument) Marshal() ([]byte, error) { return json.Marshal(d) }
+
 // FlagDocument is the Flag that forwards a report to the server of the reported account
 // (federation.md §11), in the shape that Mastodon sends and reads: the instance actor as its
 // actor, the reported actor and statuses as its object, and the comment as plain-text content.

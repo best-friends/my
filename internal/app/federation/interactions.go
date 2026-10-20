@@ -15,8 +15,8 @@ import (
 )
 
 // Boosts, favourites, and emoji reactions across servers (federation.md §3.4, §7.1): the
-// outbound projectors that turn a local account's favourite of a remote status into Like and
-// Undo Like, their fan-out to the status's author, and the inbox handlers of the Announce, Like,
+// outbound projectors that turn a local account's favourite or emoji reaction of a remote status
+// into Like and Undo Like, their fan-out to the status's author, and the inbox handlers of the Announce, Like,
 // EmojiReact, and their Undo that remote servers send. The Announce and Undo Announce of local boosts are recorded with the
 // other content activities (RegisterOutboundProjectors).
 
@@ -64,6 +64,77 @@ func registerFavouriteProjectors(r *uow.Projectors, rec recorder) {
 		}
 		return record(ctx, tx, federation.ActivityUndo, ev.Favourite, ev.Status, ev.RemovedAt)
 	})
+}
+
+// registerReactionProjectors records the Like and Undo Like of a local account's emoji reaction
+// to a remote status (ADR-0052 §3), as registerFavouriteProjectors does for a favourite: the same
+// activity of the same Like slot, to the status's author, whose Like carries the emoji
+// (reactionLikeDocument). Remote accounts react only to local statuses, so the reaction to a
+// remote status is a local account's.
+func registerReactionProjectors(r *uow.Projectors, rec recorder) {
+	record := func(ctx context.Context, tx uow.Tx, t federation.ActivityType, re appcontent.Reaction, emoji *appcontent.EmojiTag, st appcontent.StatusRef, at time.Time) error {
+		if st.IsLocal || st.URI == "" {
+			return nil
+		}
+		a := federation.OutboundActivity{
+			Type: t, ActorAccountID: re.AccountID, ObjectKind: federation.OutboundFavourite, ObjectID: st.ID, CreatedAt: at,
+		}
+		if t == federation.ActivityLike {
+			a.ActivityURI = federation.IRI(re.URI)
+		}
+		act, err := rec.insert(ctx, tx, a)
+		if err != nil {
+			return err
+		}
+		doc, err := reactionLikeDocument(act, rec.d.Host, re, emoji, st)
+		if err != nil {
+			return err
+		}
+		if _, err := rec.d.Repository.InsertOutboundDocument(ctx, tx, act.ID, doc, act.CreatedAt); err != nil {
+			return err
+		}
+		return rec.enqueue(ctx, tx, act, fanOutPayload{})
+	}
+	r.Register(appcontent.EventReacted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev, ok := e.(appcontent.Reacted)
+		if !ok {
+			return nil
+		}
+		return record(ctx, tx, federation.ActivityLike, ev.Reaction, ev.Emoji, ev.Status, ev.Reaction.CreatedAt)
+	})
+	r.Register(appcontent.EventUnreacted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev, ok := e.(appcontent.Unreacted)
+		if !ok {
+			return nil
+		}
+		return record(ctx, tx, federation.ActivityUndo, ev.Reaction, ev.Emoji, ev.Status, ev.RemovedAt)
+	})
+}
+
+// reactionLikeDocument returns the Like of reaction re to the remote status st, or for an Undo
+// the Undo that embeds it (ADR-0052 §3): the Like of likeDocument with the emoji as its content
+// and _misskey_reaction, the Unicode emoji or ":shortcode:" of the custom emoji, and the Emoji tag
+// of a custom emoji whose image can be shown. A custom emoji without its shortcode (one the
+// command could not read) leaves the emoji out; the Undo still names the Like.
+func reactionLikeDocument(act federation.OutboundActivity, host string, re appcontent.Reaction, emoji *appcontent.EmojiTag, st appcontent.StatusRef) ([]byte, error) {
+	actor := federation.IRI(appaccount.ActorURI(host, re.AccountID))
+	text := re.Emoji.Unicode
+	var tag *federation.TagDocument
+	if re.Emoji.CustomEmojiID != "" && emoji != nil && emoji.Shortcode != "" {
+		text = ":" + emoji.Shortcode + ":"
+		if emoji.URL != "" {
+			t := EmojiTagOf(*emoji, host)
+			tag = &t
+		}
+	}
+	like := federation.NewReactionLike(federation.NewActivityDocument(federation.IRI(re.URI), federation.ActivityLike, actor, re.CreatedAt,
+		federation.Audience{}, federation.IRI(st.URI)), text, tag)
+	if act.Type == federation.ActivityLike {
+		return like.Marshal()
+	}
+	undo := federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, federation.Audience{}, like.Embedded())
+	undo.Context = federation.ReactionLDContext()
+	return undo.Marshal()
 }
 
 // likeDocument returns the Like of favourite f of the remote status st, or for an Undo the Undo

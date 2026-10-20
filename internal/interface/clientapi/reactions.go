@@ -106,3 +106,21 @@ func (s *Server) ListStatusReactions(ctx context.Context, req ListStatusReaction
 	}
 	return ListStatusReactions200JSONResponse{Body: out, Headers: ListStatusReactions200ResponseHeaders{CacheControl: statusCache(ctx)}}, nil
 }
+
+// ReactToStatus serves PUT /api/v1/statuses/{id}/reaction.
+func (s *Server) ReactToStatus(ctx context.Context, req ReactToStatusRequestObject) (ReactToStatusResponseObject, error) {
+	res, p, err := s.act(ctx, req.Id, func(a string) error { return ignoreResult(s.o.Interactions.React(ctx, a, req.Id, req.Body.Emoji)) })
+	if p != nil {
+		return ReactToStatusdefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	return ReactToStatus200JSONResponse{res}, err
+}
+
+// UnreactToStatus serves DELETE /api/v1/statuses/{id}/reaction.
+func (s *Server) UnreactToStatus(ctx context.Context, req UnreactToStatusRequestObject) (UnreactToStatusResponseObject, error) {
+	res, p, err := s.act(ctx, req.Id, func(a string) error { return s.o.Interactions.Unreact(ctx, a, req.Id) })
+	if p != nil {
+		return UnreactToStatusdefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	return UnreactToStatus200JSONResponse{res}, err
+}

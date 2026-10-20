@@ -1137,6 +1137,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/statuses/{id}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * React to a status with an emoji
+         * @description Sets the authenticated user's emoji reaction to a status: a Unicode emoji, or a custom
+         *     emoji of this server that is enabled. A user has one favourite or one reaction on a
+         *     status, so reacting takes back the favourite and the reaction with another emoji;
+         *     reacting again with the same emoji changes nothing. A custom emoji of another server,
+         *     or anything else that is not one emoji, is a 422.
+         */
+        put: operations["reactToStatus"];
+        post?: never;
+        /**
+         * Take back the emoji reaction to a status
+         * @description Without a reaction it changes nothing.
+         */
+        delete: operations["unreactToStatus"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/statuses/{id}/reactions": {
         parameters: {
             query?: never;
@@ -3532,6 +3563,14 @@ export interface components {
              *     requests.
              */
             me?: boolean;
+        };
+        /** @description The emoji to react with. */
+        ReactToStatusRequest: {
+            /**
+             * @description A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
+             *     its `ReactionEmoji`; colons around it are accepted).
+             */
+            emoji: string;
         };
         /** @description One emoji reaction to a status, with the account that reacted. */
         StatusReactor: {
@@ -6479,6 +6518,42 @@ export interface operations {
         };
     };
     unpinStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["StatusAfterAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    reactToStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactToStatusRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["StatusAfterAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    unreactToStatus: {
         parameters: {
             query?: never;
             header?: never;

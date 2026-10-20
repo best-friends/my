@@ -184,7 +184,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C） |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
-- ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、`Like` / `Undo Like` を送ります。
+- ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、お気に入りと絵文字リアクションの `Like` / `Undo Like` を送ります（`Like` の枠の付け替えでは、外したものの `Undo` が新しい `Like` の前に記録される）。
 - リアクションの送信（ローカルの人のリアクション）はまだありません。リモートの人のリアクションはローカルの投稿へのものだけを記録し、何も送りません。
 
 ## 4. AS2 の正規化
@@ -313,6 +313,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `content.status_deleted`（アカウントの消去による `origin = account_deletion` を除く。`Delete`（Actor）が代わりを務める） | `Delete`（`Tombstone`） | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー） |
 | `content.boosted` / `content.boost_retracted`（`Federates` のときだけ） | `Announce` / `Undo Announce` | ブーストした人のリモートフォロワー + 元投稿の作者（リモートなら） |
 | `content.favourited` / `content.unfavourited`（リモートの投稿だけ） | `Like` / `Undo Like`（本文は projector がイベントから組み立てて保存する。Mastodon と同じく宛先を持たない） | 投稿の作者の inbox |
+| `content.reacted` / `content.unreacted`（ローカルの人のリモートの投稿へのものだけ） | `content` と `_misskey_reaction`（同じ文字列。Unicode 絵文字か `:shortcode:`）を付けた `Like`、カスタム絵文字なら `tag` に `Emoji` を 1 つ（ADR-0051 の形）。`@context` に `misskey` と `_misskey_reaction` を足す。`Undo Like` はその `Like` を埋め込む（ADR-0052 §3。お気に入りと同じ `Like` の枠の活動） | 投稿の作者の inbox |
 | `graph.follow_requested` / `graph.followed`（相手がリモート） | `Follow` | 相手の inbox |
 | `graph.follow_terminated`（`unfollowed` / `blocked` / `moderation`、自分がフォローした相手がリモート） | `Undo Follow` | 相手の inbox |
 | `graph.followed` / `graph.follow_accepted` / `graph.follow_rejected`（フォローした人がリモート。相手の `Accept` / `Reject` によるものを除く） | `Accept` / `Reject` | フォローした人の inbox |

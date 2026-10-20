@@ -27,6 +27,49 @@ func (q *Queries) DecrementReactionCount(ctx context.Context, arg DecrementReact
 	return err
 }
 
+const deleteAccountStatusReactions = `-- name: DeleteAccountStatusReactions :many
+DELETE FROM reactions
+WHERE account_id = $1 AND status_id = $2 AND emoji_key <> CAST($3 AS TEXT)
+RETURNING id, account_id, status_id, emoji_key, custom_emoji_id, uri, created_at
+`
+
+type DeleteAccountStatusReactionsParams struct {
+	AccountID string
+	StatusID  string
+	ExceptKey string
+}
+
+// DeleteAccountStatusReactions removes the reactions of an account to a status, except the one with
+// the emoji except_key (” removes them all): what the Like slot of a local account gives up
+// (ADR-0052 section 1).
+func (q *Queries) DeleteAccountStatusReactions(ctx context.Context, arg DeleteAccountStatusReactionsParams) ([]Reaction, error) {
+	rows, err := q.db.Query(ctx, deleteAccountStatusReactions, arg.AccountID, arg.StatusID, arg.ExceptKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Reaction{}
+	for rows.Next() {
+		var i Reaction
+		if err := rows.Scan(
+			&i.ID,
+			&i.AccountID,
+			&i.StatusID,
+			&i.EmojiKey,
+			&i.CustomEmojiID,
+			&i.Uri,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const deleteAllReactionCounts = `-- name: DeleteAllReactionCounts :exec
 DELETE FROM status_reaction_counts
 `

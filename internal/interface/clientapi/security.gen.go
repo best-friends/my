@@ -15,6 +15,7 @@ var operationSecurity = map[string]operationAccess{
 	"DELETE /api/v1/statuses/{id}/boost":                       {Operation: "unboostStatus", Scopes: []string{"write:statuses"}},
 	"DELETE /api/v1/statuses/{id}/favourite":                   {Operation: "unfavouriteStatus", Scopes: []string{"write:favourites"}},
 	"DELETE /api/v1/statuses/{id}/pin":                         {Operation: "unpinStatus", Scopes: []string{"write:statuses"}},
+	"DELETE /api/v1/statuses/{id}/reaction":                    {Operation: "unreactToStatus", Scopes: []string{"write:favourites"}},
 	"GET /api/v1/accounts/lookup":                              {Operation: "lookupAccount", Anonymous: true, Scopes: []string{"read:accounts"}},
 	"GET /api/v1/accounts/relationships":                       {Operation: "getRelationships", Scopes: []string{"read:follows"}},
 	"GET /api/v1/accounts/verify_credentials":                  {Operation: "verifyAccountCredentials", Scopes: []string{"read:accounts"}},
@@ -136,4 +137,5 @@ var operationSecurity = map[string]operationAccess{
 	"PUT /api/v1/notifications/marker":                         {Operation: "updateNotificationMarker", Scopes: []string{"write:notifications"}},
 	"PUT /api/v1/push/subscription":                            {Operation: "putPushSubscription", Scopes: []string{"push"}},
 	"PUT /api/v1/statuses/{id}":                                {Operation: "editStatus", Scopes: []string{"write:statuses"}},
+	"PUT /api/v1/statuses/{id}/reaction":                       {Operation: "reactToStatus", Scopes: []string{"write:favourites"}},
 }

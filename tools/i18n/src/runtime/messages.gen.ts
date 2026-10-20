@@ -2944,7 +2944,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_blocks": {};
   /** Add and remove bookmarks */
   "server:auth.authorize.scope.write_bookmarks": {};
-  /** Add and remove favourites */
+  /** Add and remove favourites and emoji reactions */
   "server:auth.authorize.scope.write_favourites": {};
   /** Follow and unfollow accounts and answer follow requests */
   "server:auth.authorize.scope.write_follows": {};
@@ -3236,6 +3236,8 @@ export interface MessageArgs {
   "server:errors.status.invalid_language": {};
   /** {max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}} */
   "server:errors.status.invalid_media_description": { max: number };
+  /** Only a Unicode emoji or an enabled custom emoji of this server can be used to react. */
+  "server:errors.status.invalid_reaction": {};
   /** The text contains characters that cannot be posted. */
   "server:errors.status.invalid_text": {};
   /** An attached file was not found among your uploads. */

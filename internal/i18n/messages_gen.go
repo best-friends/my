@@ -174,7 +174,7 @@ func (l *Localizer) ServerAuthAuthorizeScopeWriteBookmarks() string {
 
 // ServerAuthAuthorizeScopeWriteFavourites formats "server:auth.authorize.scope.write_favourites". Permission (OAuth scope write:favourites) listed on the authorization page.
 //
-//	en: Add and remove favourites
+//	en: Add and remove favourites and emoji reactions
 func (l *Localizer) ServerAuthAuthorizeScopeWriteFavourites() string {
 	return l.format("server:auth.authorize.scope.write_favourites", nil)
 }
@@ -1192,6 +1192,13 @@ func (l *Localizer) ServerErrorsStatusInvalidLanguage() string {
 //	en: {max, plural, one {An image description must be at most # character.} other {An image description must be at most # characters.}}
 func (l *Localizer) ServerErrorsStatusInvalidMediaDescription(max int) string {
 	return l.format("server:errors.status.invalid_media_description", map[string]any{"max": max})
+}
+
+// ServerErrorsStatusInvalidReaction formats "server:errors.status.invalid_reaction". Detail of the HTTP 422 API error when a user reacts to a post with something that is not a Unicode emoji or an enabled custom emoji of this server (for example a custom emoji of another server).
+//
+//	en: Only a Unicode emoji or an enabled custom emoji of this server can be used to react.
+func (l *Localizer) ServerErrorsStatusInvalidReaction() string {
+	return l.format("server:errors.status.invalid_reaction", nil)
 }
 
 // ServerErrorsStatusInvalidText formats "server:errors.status.invalid_text". Detail of the HTTP 422 API error when a post's text or content warning is not valid UTF-8 or contains a NUL character.

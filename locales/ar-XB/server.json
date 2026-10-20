@@ -96,7 +96,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_favourites": {
-    "defaultMessage": "‮∀pp ɐup ɹǝɯoʌǝ ɟɐʌonɹıʇǝs‬",
+    "defaultMessage": "‮∀pp ɐup ɹǝɯoʌǝ ɟɐʌonɹıʇǝs ɐup ǝɯoɾı ɹǝɐɔʇıous‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_follows": {
@@ -677,6 +677,10 @@
   },
   "errors.status.invalid_media_description": {
     "defaultMessage": "‮{max,plural,one{∀u ıɯɐƃǝ pǝsɔɹıdʇıou ɯnsʇ qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹ.} other{∀u ıɯɐƃǝ pǝsɔɹıdʇıou ɯnsʇ qǝ ɐʇ ɯosʇ # ɔɥɐɹɐɔʇǝɹs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.invalid_reaction": {
+    "defaultMessage": "‮Ouʅʎ ɐ ∩uıɔopǝ ǝɯoɾı oɹ ɐu ǝuɐqʅǝp ɔnsʇoɯ ǝɯoɾı oɟ ʇɥıs sǝɹʌǝɹ ɔɐu qǝ nsǝp ʇo ɹǝɐɔʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.status.invalid_text": {
