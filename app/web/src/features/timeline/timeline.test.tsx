@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The timelines through the whole app (web-client.md T4): the real router and QueryClient, MSW for the
 // client API. Time is fixed so that relative times are known.
-import { isInaccessible, screen, within } from "@testing-library/react";
+import { isInaccessible, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Status } from "./api/timelines";
@@ -303,6 +303,65 @@ describe("a status card", () => {
     // eslint-disable-next-line testing-library/no-node-access -- <picture> and <source> have no role.
     expect(still.parentElement?.querySelector("source")).toBeNull();
     expect(still).toHaveAttribute("src", "https://my.example/media/s.webp");
+  });
+
+  test("opens a picture at its original size in the viewer, and steps to the next one", async () => {
+    const pictures = status(1, {
+      media_attachments: [
+        {
+          id: "0192f0c4-7a8e-7000-8000-0000000000m3",
+          type: "image",
+          state: "ready",
+          description: "A cat",
+          meta: { focus: { x: 0, y: 0 }, width: 4000, height: 3000 },
+          variants: {
+            small: { url: "https://my.example/media/cat-s.webp", width: 640, height: 480 },
+            medium: { url: "https://my.example/media/cat-m.webp", width: 1920, height: 1440 },
+            large: { url: "https://my.example/media/cat-l.jpg", width: 3840, height: 2880 },
+          },
+          url: "https://my.example/media/cat-l.jpg",
+          preview_url: "https://my.example/media/cat-s.webp",
+        },
+        {
+          // A remote file: no renditions, and its original through the media proxy.
+          id: "0192f0c4-7a8e-7000-8000-0000000000m4",
+          type: "image",
+          state: "ready",
+          meta: { focus: { x: 0, y: 0 }, width: 800, height: 600 },
+          url: "https://my.example/media/proxy/dog/original?sig=x",
+          preview_url: "https://my.example/media/proxy/dog/small?sig=x",
+          remote_url: "https://remote.example/files/dog.png",
+        },
+      ],
+    });
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([pictures]))));
+    const { user } = await renderApp({ path: "/local" });
+
+    const article = await screen.findByRole("article", { name: /^Bob @bob/ });
+    const cat = within(article).getByRole("button", { name: "A cat" });
+    await user.click(cat);
+    const dialog = await screen.findByRole("dialog", { name: "Image 1 of 2" });
+    expect(within(dialog).getByRole("img", { name: "A cat" })).toHaveAttribute("src", "https://my.example/media/cat-l.jpg");
+
+    await user.keyboard("{ArrowRight}");
+    expect(screen.getByRole("dialog", { name: "Image 2 of 2" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("img", { name: "No description" })).toHaveAttribute("src", "https://my.example/media/proxy/dog/original?sig=x");
+
+    await user.click(within(dialog).getByRole("button", { name: "Close" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(cat).toHaveFocus();
+    });
+
+    // By keyboard alone: Enter on the focused picture opens it, Esc closes it.
+    await user.keyboard("{Enter}");
+    expect(await screen.findByRole("dialog", { name: "Image 1 of 2" })).toBeInTheDocument();
+    await user.keyboard("{Escape}");
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
   });
 
   test("plays videos and audio files, local and remote, only when asked to", async () => {

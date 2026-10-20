@@ -263,7 +263,7 @@ test.describe("the main flow", () => {
         await expect(article.getByText(text)).toBeVisible();
         await expect(article.getByRole("img", { name: description })).toBeVisible();
         // The author's name (the picture's link is hidden), the time, the warning and its toggle, the post,
-        // its image named by the description, and the actions.
+        // its image named by the description (a button that opens it in the image viewer), and the actions.
         await expect(article).toMatchAriaSnapshot(`
           - article:
             - link
@@ -272,7 +272,8 @@ test.describe("the main flow", () => {
             - paragraph: ${warning}
             - button [expanded]
             - paragraph: ${text}
-            - img "${description}"
+            - button:
+              - img "${description}"
             - button
             - button
             - button
