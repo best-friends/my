@@ -26,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminThemeRouteImport } from './routes/admin.theme'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as ModerationIndexRouteImport } from './routes/moderation.index'
 import { Route as ModerationAccountsRouteImport } from './routes/moderation.accounts'
@@ -137,6 +138,11 @@ const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminThemeRoute = AdminThemeRouteImport.update({
+  id: '/admin/theme',
+  path: '/admin/theme',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/theme': typeof AdminThemeRoute
   '/login/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/theme': typeof AdminThemeRoute
   '/login/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -373,6 +381,7 @@ export interface FileRoutesById {
   '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/theme': typeof AdminThemeRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
+    | '/admin/theme'
     | '/login/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
+    | '/admin/theme'
     | '/login/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/admin/dead-jobs'
     | '/admin/documents'
     | '/admin/settings'
+    | '/admin/theme'
     | '/login_/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -552,6 +564,7 @@ export interface RootRouteChildren {
   AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminThemeRoute: typeof AdminThemeRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   ModerationAccountsRoute: typeof ModerationAccountsRoute
   ModerationAppealsRoute: typeof ModerationAppealsRoute
@@ -699,6 +712,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/theme': {
+      id: '/admin/theme'
+      path: '/admin/theme'
+      fullPath: '/admin/theme'
+      preLoaderRoute: typeof AdminThemeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login_/callback': {
@@ -896,6 +916,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminThemeRoute: AdminThemeRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   ModerationAccountsRoute: ModerationAccountsRoute,
   ModerationAppealsRoute: ModerationAppealsRoute,

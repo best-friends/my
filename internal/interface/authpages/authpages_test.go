@@ -291,6 +291,24 @@ func TestRightToLeftLocale(t *testing.T) {
 	}
 }
 
+// The instance theme's stylesheet follows the pages' own stylesheet (ADR-0059).
+func TestPagesLoadTheThemeStylesheet(t *testing.T) {
+	b, err := i18n.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := mux{http.NewServeMux()}
+	authpages.New(authpages.Options{
+		Identity: newFakeIdentity(), Locales: &i18n.Resolver{Bundle: b}, Stylesheet: "/assets/x.css",
+		ThemeStylesheet: func(context.Context) string { return "/theme/rev1.css" },
+	}).Register(m)
+	body := newBrowser(t, m).do(http.MethodGet, authpages.PathSignIn, nil, nil).Body.String()
+	i, j := strings.Index(body, `href="/assets/x.css"`), strings.Index(body, `<link rel="stylesheet" href="/theme/rev1.css">`)
+	if i < 0 || j < i {
+		t.Errorf("page = %s", body)
+	}
+}
+
 func TestSignInIssuesANewSession(t *testing.T) {
 	id := newFakeIdentity()
 	b := newBrowser(t, newServer(t, id))

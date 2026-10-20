@@ -115,7 +115,8 @@ classify() {
       ;;
   esac
   case "$path" in
-    app/* | scripts/playwright-image-check.sh | scripts/web-icons.sh)
+    # make web-tokens fails when the token list generated from app/ui/src/theme.css is stale.
+    app/* | scripts/playwright-image-check.sh | scripts/web-icons.sh | internal/domain/instance/theme_tokens.gen.go)
       select_contexts web
       known=1
       ;;

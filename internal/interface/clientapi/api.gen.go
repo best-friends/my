@@ -997,6 +997,57 @@ func (e SignupBlockImportSkippedReason) Valid() bool {
 	}
 }
 
+// Defines values for ThemeErrorCode.
+const (
+	ThemeErrorCodeCssInvalid     ThemeErrorCode = "css_invalid"
+	ThemeErrorCodeCssTooLong     ThemeErrorCode = "css_too_long"
+	ThemeErrorCodeDuplicateToken ThemeErrorCode = "duplicate_token"
+	ThemeErrorCodeInvalidValue   ThemeErrorCode = "invalid_value"
+	ThemeErrorCodeLowContrast    ThemeErrorCode = "low_contrast"
+	ThemeErrorCodeOutOfRange     ThemeErrorCode = "out_of_range"
+	ThemeErrorCodeUnknownToken   ThemeErrorCode = "unknown_token"
+)
+
+// Valid indicates whether the value is a known member of the ThemeErrorCode enum.
+func (e ThemeErrorCode) Valid() bool {
+	switch e {
+	case ThemeErrorCodeCssInvalid:
+		return true
+	case ThemeErrorCodeCssTooLong:
+		return true
+	case ThemeErrorCodeDuplicateToken:
+		return true
+	case ThemeErrorCodeInvalidValue:
+		return true
+	case ThemeErrorCodeLowContrast:
+		return true
+	case ThemeErrorCodeOutOfRange:
+		return true
+	case ThemeErrorCodeUnknownToken:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ThemeErrorScheme.
+const (
+	ThemeErrorSchemeDark  ThemeErrorScheme = "dark"
+	ThemeErrorSchemeLight ThemeErrorScheme = "light"
+)
+
+// Valid indicates whether the value is a known member of the ThemeErrorScheme enum.
+func (e ThemeErrorScheme) Valid() bool {
+	switch e {
+	case ThemeErrorSchemeDark:
+		return true
+	case ThemeErrorSchemeLight:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for Visibility.
 const (
 	VisibilityDirect   Visibility = "direct"
@@ -2071,6 +2122,24 @@ type AdminSignupBlockSeverity string
 // lifted it.
 type AdminSignupBlockState string
 
+// AdminTheme The instance theme as its administrators edit it.
+type AdminTheme struct {
+	// CustomCss The custom CSS; empty for none.
+	CustomCss string `json:"custom_css"`
+
+	// RevisedAt When the current revision was recorded; omitted when no theme was ever saved.
+	RevisedAt *time.Time `json:"revised_at,omitempty"`
+
+	// Revision The ID of the current theme revision; omitted when no theme was ever saved.
+	Revision *string `json:"revision,omitempty"`
+
+	// StylesheetUrl The stylesheet of the theme; omitted when the theme changes nothing.
+	StylesheetUrl *string `json:"stylesheet_url,omitempty"`
+
+	// Tokens The overridden tokens, in the order of the token list.
+	Tokens []ThemeTokenValue `json:"tokens"`
+}
+
 // AppealModerationActionRequest An appeal of an action on the user's own account.
 type AppealModerationActionRequest struct {
 	// Text Why the moderators should reconsider the action, as plain text.
@@ -2472,6 +2541,11 @@ type Instance struct {
 	// link to it.
 	TermsUrl *string `json:"terms_url,omitempty"`
 
+	// Theme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
+	// stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
+	// instance has no theme.
+	Theme *InstanceTheme `json:"theme,omitempty"`
+
 	// Timelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 	// clients do not offer it.
 	Timelines InstanceTimelines `json:"timelines"`
@@ -2567,6 +2641,15 @@ type InstanceRuleTextInput struct {
 // the terms of service and the privacy policy (Markdown), and the alternative text of the
 // preview image.
 type InstanceTextKey string
+
+// InstanceTheme The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
+// stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
+// instance has no theme.
+type InstanceTheme struct {
+	Revision      string            `json:"revision"`
+	StylesheetUrl string            `json:"stylesheet_url"`
+	Tokens        []ThemeTokenValue `json:"tokens"`
+}
 
 // InstanceTimelines Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
 // clients do not offer it.
@@ -3052,6 +3135,8 @@ type Preferences struct {
 //     authentication.
 //   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
 //     operation, has no two-factor authentication.
+//   - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
+//     reason in `theme_errors` (`PUT /admin/theme`).
 type Problem struct {
 	// Detail An explanation of this occurrence, localized from `Accept-Language`.
 	Detail *string `json:"detail,omitempty"`
@@ -3275,6 +3360,12 @@ type ResolveReportRequest struct {
 type SetInstanceTextRequest struct {
 	// Body The text; empty clears it in the locale.
 	Body string `json:"body"`
+}
+
+// SetThemeRequest The whole theme; tokens left out go back to their defaults.
+type SetThemeRequest struct {
+	CustomCss string            `json:"custom_css"`
+	Tokens    []ThemeTokenValue `json:"tokens"`
 }
 
 // SignupBlockImportResult What an import of a list of sign-up blocks did.
@@ -3581,6 +3672,58 @@ type StatusTag struct {
 
 // StatusText The plain text; the server links mentions, hashtags, and URLs.
 type StatusText = string
+
+// ThemeError One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
+// `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
+// of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
+// duration), `low_contrast` (`token` on `background` is `ratio`:1 in `scheme` and needs
+// `minimum`:1), `css_too_long` (`max` bytes), or `css_invalid` (not UTF-8 text).
+type ThemeError struct {
+	Background *string           `json:"background,omitempty"`
+	Code       ThemeErrorCode    `json:"code"`
+	Max        *float32          `json:"max,omitempty"`
+	Min        *float32          `json:"min,omitempty"`
+	Minimum    *float32          `json:"minimum,omitempty"`
+	Ratio      *float32          `json:"ratio,omitempty"`
+	Scheme     *ThemeErrorScheme `json:"scheme,omitempty"`
+	Token      *string           `json:"token,omitempty"`
+}
+
+// ThemeErrorCode defines model for ThemeError.Code.
+type ThemeErrorCode string
+
+// ThemeErrorScheme defines model for ThemeError.Scheme.
+type ThemeErrorScheme string
+
+// ThemeProblem A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+// lists why the theme cannot be saved; another 422 (a malformed request) has none.
+type ThemeProblem struct {
+	// Detail An explanation of this occurrence, localized from `Accept-Language`.
+	Detail *string `json:"detail,omitempty"`
+
+	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Status The HTTP status code.
+	Status      int           `json:"status"`
+	ThemeErrors *[]ThemeError `json:"theme_errors,omitempty"`
+
+	// Title A short summary of the problem type, localized from `Accept-Language`.
+	Title string `json:"title"`
+
+	// Type A URI that identifies the problem type, stable for clients to branch on.
+	// It is `about:blank` when the problem means no more than its HTTP status.
+	Type string `json:"type"`
+}
+
+// ThemeTokenValue The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
+// and `dark` for a color token, `value` for the others.
+type ThemeTokenValue struct {
+	Dark  *string `json:"dark,omitempty"`
+	Light *string `json:"light,omitempty"`
+	Token string  `json:"token"`
+	Value *string `json:"value,omitempty"`
+}
 
 // TotpSetup A new TOTP secret to add to an authenticator app.
 type TotpSetup struct {
@@ -4175,6 +4318,9 @@ type CreateSignupBlockJSONRequestBody = CreateSignupBlockRequest
 // ImportSignupBlocksJSONRequestBody defines body for ImportSignupBlocks for application/json ContentType.
 type ImportSignupBlocksJSONRequestBody = ImportSignupBlocksRequest
 
+// SetAdminThemeJSONRequestBody defines body for SetAdminTheme for application/json ContentType.
+type SetAdminThemeJSONRequestBody = SetThemeRequest
+
 // UploadMediaMultipartRequestBody defines body for UploadMedia for multipart/form-data ContentType.
 type UploadMediaMultipartRequestBody = MediaUpload
 
@@ -4414,6 +4560,12 @@ type ServerInterface interface {
 	// LiftSignupBlock Lift a sign-up block
 	// (POST /admin/signup_blocks/{id}/lift)
 	LiftSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId)
+	// GetAdminTheme Read the instance theme
+	// (GET /admin/theme)
+	GetAdminTheme(w http.ResponseWriter, r *http.Request)
+	// SetAdminTheme Replace the instance theme
+	// (PUT /admin/theme)
+	SetAdminTheme(w http.ResponseWriter, r *http.Request)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(w http.ResponseWriter, r *http.Request, params ListBlocksParams)
@@ -6875,6 +7027,34 @@ func (siw *ServerInterfaceWrapper) LiftSignupBlock(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// GetAdminTheme operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminTheme(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminTheme(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAdminTheme operation middleware
+func (siw *ServerInterfaceWrapper) SetAdminTheme(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAdminTheme(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListBlocks operation middleware
 func (siw *ServerInterfaceWrapper) ListBlocks(w http.ResponseWriter, r *http.Request) {
 
@@ -8571,6 +8751,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/rules/{id}", wrapper.UpdateInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/move", wrapper.MoveInstanceRule)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/rules/{id}/retire", wrapper.RetireInstanceRule)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/theme", wrapper.GetAdminTheme)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/theme", wrapper.SetAdminTheme)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instance_texts", wrapper.ListInstanceTexts)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/instance_texts/{key}/{locale}", wrapper.SetInstanceText)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/counts", wrapper.GetAdminCounts)
@@ -8704,6 +8886,15 @@ type AdminSignupBlockJSONResponse struct {
 	Body AdminSignupBlock
 
 	Headers AdminSignupBlockResponseHeaders
+}
+
+type AdminThemeResponseHeaders struct {
+	CacheControl *string
+}
+type AdminThemeJSONResponse struct {
+	Body AdminTheme
+
+	Headers AdminThemeResponseHeaders
 }
 
 type ProblemResponseHeaders struct {
@@ -12571,6 +12762,143 @@ func (response LiftSignupBlockdefaultApplicationProblemPlusJSONResponse) VisitLi
 	return err
 }
 
+type GetAdminThemeRequestObject struct {
+}
+
+type GetAdminThemeResponseObject interface {
+	VisitGetAdminThemeResponse(w http.ResponseWriter) error
+}
+
+type GetAdminTheme200JSONResponse struct{ AdminThemeJSONResponse }
+
+func (response GetAdminTheme200JSONResponse) VisitGetAdminThemeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminThemedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminThemedefaultApplicationProblemPlusJSONResponse) VisitGetAdminThemeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAdminThemeRequestObject struct {
+	Body *SetAdminThemeJSONRequestBody
+}
+
+type SetAdminThemeResponseObject interface {
+	VisitSetAdminThemeResponse(w http.ResponseWriter) error
+}
+
+type SetAdminTheme200JSONResponse struct{ AdminThemeJSONResponse }
+
+func (response SetAdminTheme200JSONResponse) VisitSetAdminThemeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAdminTheme422ResponseHeaders struct {
+	CacheControl    *string
+	ContentLanguage *string
+}
+
+type SetAdminTheme422ApplicationProblemPlusJSONResponse struct {
+	Body    ThemeProblem
+	Headers SetAdminTheme422ResponseHeaders
+}
+
+func (response SetAdminTheme422ApplicationProblemPlusJSONResponse) VisitSetAdminThemeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAdminThemedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetAdminThemedefaultApplicationProblemPlusJSONResponse) VisitSetAdminThemeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListBlocksRequestObject struct {
 	Params ListBlocksParams
 }
@@ -15843,6 +16171,12 @@ type StrictServerInterface interface {
 	// LiftSignupBlock Lift a sign-up block
 	// (POST /admin/signup_blocks/{id}/lift)
 	LiftSignupBlock(ctx context.Context, request LiftSignupBlockRequestObject) (LiftSignupBlockResponseObject, error)
+	// GetAdminTheme Read the instance theme
+	// (GET /admin/theme)
+	GetAdminTheme(ctx context.Context, request GetAdminThemeRequestObject) (GetAdminThemeResponseObject, error)
+	// SetAdminTheme Replace the instance theme
+	// (PUT /admin/theme)
+	SetAdminTheme(ctx context.Context, request SetAdminThemeRequestObject) (SetAdminThemeResponseObject, error)
 	// ListBlocks List the accounts that the viewer blocks
 	// (GET /blocks)
 	ListBlocks(ctx context.Context, request ListBlocksRequestObject) (ListBlocksResponseObject, error)
@@ -17917,6 +18251,61 @@ func (sh *strictHandler) LiftSignupBlock(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LiftSignupBlockResponseObject); ok {
 		if err := validResponse.VisitLiftSignupBlockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminTheme operation middleware
+func (sh *strictHandler) GetAdminTheme(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminThemeRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminTheme(ctx, request.(GetAdminThemeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminTheme")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminThemeResponseObject); ok {
+		if err := validResponse.VisitGetAdminThemeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAdminTheme operation middleware
+func (sh *strictHandler) SetAdminTheme(w http.ResponseWriter, r *http.Request) {
+	var request SetAdminThemeRequestObject
+
+	var body SetAdminThemeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAdminTheme(ctx, request.(SetAdminThemeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAdminTheme")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAdminThemeResponseObject); ok {
+		if err := validResponse.VisitSetAdminThemeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

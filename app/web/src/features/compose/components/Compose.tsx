@@ -69,7 +69,7 @@ function ComposeSheet({ controller, trigger }: { controller: ComposeController; 
   return (
     <>
       {trigger === "labelled" && (
-        <Button variant="primary" onPress={open} className="min-h-12 rounded-full px-5 shadow-lg">
+        <Button variant="primary" onPress={open} className="min-h-12 rounded-full px-4 shadow-lg">
           <PlusIcon />
           {t("client:compose.open")}
         </Button>

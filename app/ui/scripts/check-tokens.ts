@@ -8,73 +8,29 @@
 //    sRGB gamut, or when a semantic color is in no pair and not listed as decorative.
 // 2. Usage: for each app entry stylesheet, scans the sources Tailwind scans for it and fails on
 //    a color utility that names Tailwind's default palette (`bg-red-500`), an arbitrary color
-//    (`text-[#333]`, `bg-(--palette-gray-50)`), or a transition / animation outside `motion-safe:`.
+//    (`text-[#333]`, `bg-(--palette-gray-50)`), a transition / animation outside `motion-safe:`, an
+//    arbitrary radius, shadow, duration, or easing (`rounded-[3px]`), or a padding or gap step
+//    that app/ui/README.md does not list.
+// 3. Generated files: fails when the overridable token list generated from theme.css and tokens.ts
+//    (scripts/theme-tokens.ts) differs from the committed one.
 import { readFileSync } from "node:fs";
 import { dirname, extname, relative, resolve } from "node:path";
 import { Scanner } from "@tailwindcss/oxide";
 import { __unstable__loadDesignSystem, compile } from "tailwindcss";
 import defaultColors from "tailwindcss/colors";
 import { colorPairs, decorativeColors, minimumContrast } from "../src/tokens";
-import { contrast, inSrgbGamut, type LinearRgba, parseColor } from "./color";
+import { contrast, inSrgbGamut, type LinearRgba, parseColor } from "../src/color";
+import { colorResolver, readDeclarations, readTheme, type Scheme, schemes } from "./theme-source";
+import { checkGenerated } from "./theme-tokens";
 
-const themePath = resolve(import.meta.dir, "../src/theme.css");
 const problems: string[] = [];
 
 // --- 1. Contrast ---------------------------------------------------------------------------------
 
-type Scheme = "light" | "dark";
-const schemes: Scheme[] = ["light", "dark"];
-
-/** Splits a function's arguments at top-level commas. */
-function splitArguments(body: string): string[] {
-  const parts: string[] = [];
-  let depth = 0;
-  let start = 0;
-  for (let i = 0; i < body.length; i++) {
-    const ch = body[i];
-    if (ch === "(") depth++;
-    else if (ch === ")") depth--;
-    else if (ch === "," && depth === 0) {
-      parts.push(body.slice(start, i).trim());
-      start = i + 1;
-    }
-  }
-  parts.push(body.slice(start).trim());
-  return parts;
-}
-
-function readDeclarations(css: string, prefix: string): Map<string, string> {
-  const withoutComments = css.replaceAll(/\/\*[\s\S]*?\*\//g, "");
-  const declarations = new Map<string, string>();
-  for (const match of withoutComments.matchAll(new RegExp(`--${prefix}-([a-z0-9-]+)\\s*:\\s*([^;]+);`, "g"))) {
-    const [, name, value] = match;
-    if (name !== undefined && value !== undefined) declarations.set(name, value.trim());
-  }
-  return declarations;
-}
-
-const themeCss = readFileSync(themePath, "utf8");
+const themeCss = readTheme();
 const palette = readDeclarations(themeCss, "palette");
 const semantic = readDeclarations(themeCss, "color");
-
-function resolveColor(value: string, scheme: Scheme, seen: string[] = []): LinearRgba {
-  const lightDark = /^light-dark\(([\s\S]*)\)$/.exec(value);
-  if (lightDark?.[1] !== undefined) {
-    const args = splitArguments(lightDark[1]);
-    if (args.length !== 2) throw new Error(`light-dark() needs two colors: ${value}`);
-    return resolveColor(args[scheme === "light" ? 0 : 1] ?? "", scheme, seen);
-  }
-  const reference = /^var\(--(palette|color)-([a-z0-9-]+)\)$/.exec(value);
-  if (reference !== null) {
-    const [, layer = "", name = ""] = reference;
-    const key = `${layer}-${name}`;
-    if (seen.includes(key)) throw new Error(`circular reference: ${[...seen, key].join(" -> ")}`);
-    const target = (layer === "palette" ? palette : semantic).get(name);
-    if (target === undefined) throw new Error(`undefined --${key}`);
-    return resolveColor(target, scheme, [...seen, key]);
-  }
-  return parseColor(value);
-}
+const resolveColor = colorResolver(themeCss);
 
 for (const [name, value] of palette) {
   try {
@@ -165,6 +121,17 @@ const colorRoots = new Set([
   "via",
   "to",
 ]);
+/**
+ * Utilities whose value must be a token, so that a server theme's override of the token reaches them
+ * (ADR-0059): radius, shadow, and the duration and easing of motion.
+ */
+const tokenOnlyRoots = /^(?:rounded(?:-[a-z]+)?|shadow|duration|ease)$/;
+/**
+ * Padding and gap utilities, which use the spacing steps of app/ui/README.md only. Margins and sizes also
+ * scale with --spacing but hold geometry (aligning text with a control's label), not a spacing role.
+ */
+const spacingRoots = /^(?:p[xytrblse]?|p[bi][se]|gap(?:-[xy])?)$/;
+const spacingSteps = new Set(["0", "0.5", "1", "1.5", "2", "3", "4", "6", "8", "10"]);
 /** Utilities that animate; web-client.md D6 allows them only under motion-safe:. */
 const motionRoots = new Set(["transition", "animate"]);
 /**
@@ -228,6 +195,19 @@ for (const entry of process.argv.slice(2).map((arg) => resolve(arg))) {
             problems.push(`${where(position)}: ${candidate} animates outside motion-safe: (D6)`);
           }
         }
+        if (parsed.kind === "functional" && parsed.value !== null) {
+          const value = parsed.value;
+          if (value.kind === "arbitrary" && tokenOnlyRoots.test(parsed.root) && !(parsed.root === "shadow" && value.dataType === "color")) {
+            problems.push(`${where(position)}: ${candidate} uses an arbitrary value; use a token (app/ui/README.md)`);
+          } else if (
+            value.kind === "named" &&
+            spacingRoots.test(parsed.root) &&
+            /^[0-9.]+$/.test(value.value) &&
+            !spacingSteps.has(value.value)
+          ) {
+            problems.push(`${where(position)}: ${candidate} uses a spacing step outside ${[...spacingSteps].join(", ")} (app/ui/README.md)`);
+          }
+        }
         if (parsed.kind !== "functional" || !colorRoots.has(parsed.root) || parsed.value === null) continue;
         if (parsed.value.kind === "arbitrary") {
           const value = parsed.value.value;
@@ -241,6 +221,14 @@ for (const entry of process.argv.slice(2).map((arg) => resolve(arg))) {
     }
   }
   console.log(`Scanned ${files} source file(s) for ${relative(process.cwd(), entry)}`);
+}
+
+// --- 3. Generated token list --------------------------------------------------------------------
+
+try {
+  problems.push(...checkGenerated());
+} catch (error) {
+  problems.push((error as Error).message);
 }
 
 if (problems.length > 0) {

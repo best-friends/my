@@ -269,7 +269,7 @@ i18n-check: i18n-install ## Lint catalogs, fail on stale generated i18n files, c
 # packages and runs their scripts; Vite runs on Node.js from .tool-versions, because the scripts'
 # `vite` is a `#!/usr/bin/env node` bin. Do not add --bun (ADR-0025).
 
-.PHONY: web-install web-typecheck web-dist web-build web-licenses web-lint web-lint-code web-lint-css web-tokens web-test web-e2e web-e2e-install web-routes-check web-check
+.PHONY: web-install web-typecheck web-dist web-build web-licenses web-lint web-lint-code web-lint-css web-tokens web-tokens-gen web-test web-e2e web-e2e-install web-routes-check web-check
 .PHONY: ui-typecheck ui-unit-test
 
 # internal/interface/web embeds the build from here with //go:embed all:dist (ADR-0028). Only its
@@ -309,8 +309,11 @@ web-lint-css: ## Fail when CSS uses 100vh (docs/architecture/web-client.md D5)
 	@! grep -rn --include='*.css' '100vh' app/ui/src app/web/src \
 		|| { echo 'CSS must not use 100vh; use svh / dvh (docs/architecture/web-client.md D5)' >&2; exit 1; }
 
-web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors, motion only under motion-safe
+web-tokens: web-install ## Check the @my/ui design tokens: WCAG AA contrast of every token pair, no palette / arbitrary colors or token values, motion only under motion-safe, the generated token list up to date
 	cd app/ui && bun run check-tokens
+
+web-tokens-gen: web-install ## Regenerate the list of the tokens a server theme may override (ADR-0059) from app/ui/src/theme.css and tokens.ts
+	cd app/ui && bun run scripts/theme-tokens.ts
 
 web-test: web-install ## Run the app/web component tests with Vitest (jsdom + MSW)
 	cd app/web && bun run test

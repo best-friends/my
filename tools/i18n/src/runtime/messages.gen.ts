@@ -1510,6 +1510,88 @@ export interface MessageArgs {
   "client:admin.signup_blocks.value.ip_range.description": {};
   /** Enter an IP address or range */
   "client:admin.signup_blocks.value.ip_range.required": {};
+  /** Default: {value} */
+  "client:admin.theme.bounds.default": { value: string };
+  /** Default: {value}. ms or s, from {min}ms to {max}ms. */
+  "client:admin.theme.bounds.duration": { max: string; min: string; value: string };
+  /** Default: {value}. 0 or rem / px, from {min}rem to {max}rem. */
+  "client:admin.theme.bounds.length": { max: string; min: string; value: string };
+  /** Default: {value}. A number from {min} to {max}. */
+  "client:admin.theme.bounds.number": { max: string; min: string; value: string };
+  /** {token}, dark theme */
+  "client:admin.theme.color.dark": { token: string };
+  /** {format}. Default: {value} */
+  "client:admin.theme.color.default": { format: string; value: string };
+  /** {token}, light theme */
+  "client:admin.theme.color.light": { token: string };
+  /** Each color has a value for the light and the dark theme, as #rrggbb. Text and controls must keep enough contrast with the backgrounds they sit on (WCAG 2.2 AA), so changing one color can require changing another. */
+  "client:admin.theme.colors.description": {};
+  /** Colors */
+  "client:admin.theme.colors.title": {};
+  /** {fg} on {bg} has a contrast of {ratio}:1 in the dark theme; it needs {minimum}:1. */
+  "client:admin.theme.contrast.failing_dark": { bg: string; fg: string; minimum: string; ratio: string };
+  /** {fg} on {bg} has a contrast of {ratio}:1 in the light theme; it needs {minimum}:1. */
+  "client:admin.theme.contrast.failing_light": { bg: string; fg: string; minimum: string; ratio: string };
+  /** Every text and control color has enough contrast with its backgrounds in both themes (WCAG 2.2 AA). */
+  "client:admin.theme.contrast.ok": {};
+  /** Contrast */
+  "client:admin.theme.contrast.title": {};
+  /** The CSS is added after the tokens and applies to every page. It runs under the app's Content Security Policy, so it can only use images and fonts of this server. The server does not check its result: contrast, layout, focus indicators, and right-to-left languages are your responsibility, and class names and page structure can change with any update. Prefer the tokens above, which stay stable. */
+  "client:admin.theme.css.description": {};
+  /** Custom CSS */
+  "client:admin.theme.css.label": {};
+  /** Custom CSS */
+  "client:admin.theme.css.title": {};
+  /** The theme applies to every visitor's web app and to the sign-in and other server pages, in the light and the dark theme. Pages already open keep their look until they are loaded again, and a saved theme can take a few minutes to reach everyone. Leave a field empty to keep its default. */
+  "client:admin.theme.description": {};
+  /** The custom CSS is not valid text. */
+  "client:admin.theme.error.css_invalid": {};
+  /** The custom CSS can be at most {max} bytes. */
+  "client:admin.theme.error.css_too_long": { max: string };
+  /** {token} is given twice. */
+  "client:admin.theme.error.duplicate_token": { token: string };
+  /** {token} in the dark theme is not a valid color. */
+  "client:admin.theme.error.invalid_dark": { token: string };
+  /** {token} in the light theme is not a valid color. */
+  "client:admin.theme.error.invalid_light": { token: string };
+  /** {token} does not have a valid value. */
+  "client:admin.theme.error.invalid_value": { token: string };
+  /** {token} must be from {min} to {max}. */
+  "client:admin.theme.error.out_of_range": { max: string; min: string; token: string };
+  /** {token} cannot be changed. */
+  "client:admin.theme.error.unknown_token": { token: string };
+  /** Primary button */
+  "client:admin.theme.preview.button": {};
+  /** An error message */
+  "client:admin.theme.preview.danger": {};
+  /** The tokens as typed, in the theme this page is shown in. The custom CSS is not previewed. */
+  "client:admin.theme.preview.description": {};
+  /** A post on the timeline */
+  "client:admin.theme.preview.heading": {};
+  /** A link */
+  "client:admin.theme.preview.link": {};
+  /** Secondary text: times, handles, and hints */
+  "client:admin.theme.preview.muted": {};
+  /** Body text reads like this. */
+  "client:admin.theme.preview.text": {};
+  /** Preview */
+  "client:admin.theme.preview.title": {};
+  /** Save theme */
+  "client:admin.theme.save": {};
+  /** The theme could not be saved: {reason} */
+  "client:admin.theme.save_failed": { reason: string };
+  /** The theme was not saved: */
+  "client:admin.theme.save_refused": {};
+  /** Theme saved. Visitors get it when they next load a page, within a few minutes. */
+  "client:admin.theme.saved": {};
+  /** Colors, type, spacing, and custom CSS of the web app for everyone */
+  "client:admin.theme.summary": {};
+  /** Theme */
+  "client:admin.theme.title": {};
+  /** Fonts, text sizes and line heights, the spacing step, corner radii, shadows (elevation), and the duration and easing of motion. Values outside a token's bounds are not saved; the server does not check how the app looks with them. */
+  "client:admin.theme.tokens.description": {};
+  /** Type, spacing, and motion */
+  "client:admin.theme.tokens.title": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
@@ -2920,6 +3002,8 @@ export interface MessageArgs {
   "server:errors.internal": {};
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
+  /** The theme cannot be saved. */
+  "server:errors.invalid_theme": {};
   /** Your sign-in has expired or was revoked. Sign in again. */
   "server:errors.invalid_token": {};
   /** The value of {name} is invalid. */

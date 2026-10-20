@@ -1929,6 +1929,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/theme": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the instance theme
+         * @description The current theme of the web client (ADR-0059, FR-605): the overridden design tokens and the
+         *     custom CSS. A server that never saved a theme, or reset it, answers an empty theme. Needs the
+         *     `manage_settings` permission.
+         */
+        get: operations["getAdminTheme"];
+        /**
+         * Replace the instance theme
+         * @description Records a revision of the theme, which every visitor's web client and the server-rendered
+         *     pages load as the stylesheet `stylesheet_url` (after the shell's shared cache of up to a
+         *     few minutes). `tokens` lists every overridden token; the tokens it leaves out go back to
+         *     their defaults, and no tokens and an empty `custom_css` reset the theme. The revision and the
+         *     change are kept (`instance_theme_revisions`, the audit log's `setting_changed` of `theme`).
+         *
+         *     The overridable tokens are the web client's design tokens except the primitive palette
+         *     (the generated list of `@my/ui`). A color token takes `light` and `dark`, each `#rrggbb`
+         *     (`#rrggbbaa` for `color-overlay`); the other tokens take `value`: a length is `0` or a `rem`
+         *     / `px` value within the token's bounds, a line height a number, a duration `ms` / `s`, an
+         *     easing a keyword or `cubic-bezier()`, a font family a list of family names, and an
+         *     `elevation-*` shadow `none` or up to four `[inset] <x> <y> [<blur> [<spread>]] <#color>`
+         *     layers. Every contrast pair of the color tokens, with the defaults of the tokens not
+         *     overridden, must meet WCAG 2.2 AA (4.5:1 for text, 3:1 for controls) in both color schemes.
+         *     The custom CSS (at most 65,536 bytes) is served as it is after the token rules; the server
+         *     does not read it, it runs under the same Content-Security-Policy as the client (only
+         *     same-origin resources), and what it does to contrast, layout, and focus is the
+         *     administrator's responsibility. A theme that breaks any rule is a 422
+         *     `/api/v1/problems/invalid-theme` listing every problem in `theme_errors`. Needs the
+         *     `manage_settings` permission.
+         */
+        put: operations["setAdminTheme"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/instance_texts": {
         parameters: {
             query?: never;
@@ -2529,6 +2574,8 @@ export interface components {
          *       authentication.
          *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
          *       operation, has no two-factor authentication.
+         *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
+         *       reason in `theme_errors` (`PUT /admin/theme`).
          */
         Problem: {
             /**
@@ -2593,6 +2640,7 @@ export interface components {
              *     when no locale of the request's fallback chain has it.
              */
             privacy_policy_url?: string;
+            theme?: components["schemas"]["InstanceTheme"];
         };
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
@@ -4122,6 +4170,77 @@ export interface components {
             /** @description The place among the rules in effect, from 1. */
             position: number;
         };
+        /**
+         * @description The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
+         *     and `dark` for a color token, `value` for the others.
+         */
+        ThemeTokenValue: {
+            token: string;
+            light?: string;
+            dark?: string;
+            value?: string;
+        };
+        /** @description The instance theme as its administrators edit it. */
+        AdminTheme: {
+            /** @description The ID of the current theme revision; omitted when no theme was ever saved. */
+            revision?: string;
+            /**
+             * Format: uri
+             * @description The stylesheet of the theme; omitted when the theme changes nothing.
+             */
+            stylesheet_url?: string;
+            /** @description The overridden tokens, in the order of the token list. */
+            tokens: components["schemas"]["ThemeTokenValue"][];
+            /** @description The custom CSS; empty for none. */
+            custom_css: string;
+            /**
+             * Format: date-time
+             * @description When the current revision was recorded; omitted when no theme was ever saved.
+             */
+            revised_at?: string;
+        };
+        /** @description The whole theme; tokens left out go back to their defaults. */
+        SetThemeRequest: {
+            tokens: components["schemas"]["ThemeTokenValue"][];
+            custom_css: string;
+        };
+        /**
+         * @description The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
+         *     stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
+         *     instance has no theme.
+         */
+        InstanceTheme: {
+            revision: string;
+            /** Format: uri */
+            stylesheet_url: string;
+            tokens: components["schemas"]["ThemeTokenValue"][];
+        };
+        /**
+         * @description One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
+         *     `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
+         *     of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
+         *     duration), `low_contrast` (`token` on `background` is `ratio`:1 in `scheme` and needs
+         *     `minimum`:1), `css_too_long` (`max` bytes), or `css_invalid` (not UTF-8 text).
+         */
+        ThemeError: {
+            /** @enum {string} */
+            code: "unknown_token" | "duplicate_token" | "invalid_value" | "out_of_range" | "low_contrast" | "css_too_long" | "css_invalid";
+            token?: string;
+            /** @enum {string} */
+            scheme?: "light" | "dark";
+            background?: string;
+            ratio?: number;
+            minimum?: number;
+            min?: number;
+            max?: number;
+        };
+        /**
+         * @description A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+         *     lists why the theme cannot be saved; another 422 (a malformed request) has none.
+         */
+        ThemeProblem: components["schemas"]["Problem"] & {
+            theme_errors?: components["schemas"]["ThemeError"][];
+        };
         /** @description The current text of a key in one locale. */
         AdminInstanceText: {
             key: components["schemas"]["InstanceTextKey"];
@@ -4523,6 +4642,16 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["AccountStatusPage"];
+            };
+        };
+        /** @description The current theme. */
+        AdminTheme: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminTheme"];
             };
         };
         /** @description An error, as an RFC 9457 problem document. */
@@ -6861,6 +6990,48 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRule"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getAdminTheme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminTheme"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    setAdminTheme: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetThemeRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminTheme"];
+            /** @description The theme breaks a rule; nothing was saved. */
+            422: {
+                headers: {
+                    /** @description The locale of `title` and `detail`. */
+                    "Content-Language"?: string;
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ThemeProblem"];
+                };
+            };
             default: components["responses"]["Problem"];
         };
     };

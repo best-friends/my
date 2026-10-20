@@ -351,7 +351,7 @@ func TestWebManifest(t *testing.T) {
 	}
 	if m.Name != "Example Social" || m.ShortName != "Example Social" || m.Lang != "ar" || m.Dir != "rtl" ||
 		m.StartURL != "/" || m.Scope != "/" || m.ID != "/" || m.Display != "standalone" ||
-		m.ThemeColor != web.DefaultThemeColor || m.BackgroundColor != web.DefaultBackgroundColor {
+		m.ThemeColor != defaultSurface.Light || m.BackgroundColor != defaultSurface.Light {
 		t.Errorf("manifest = %+v", m)
 	}
 	type icon = struct{ Src, Sizes, Type, Purpose string }

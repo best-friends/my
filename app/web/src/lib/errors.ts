@@ -25,9 +25,15 @@ export class ApiError extends Error implements Problem {
    * rate limit says when the limit lets a request through.
    */
   readonly retryAt?: number;
+  /**
+   * The problem document as the server sent it, with the members its type adds (`theme_errors` of
+   * `/api/v1/problems/invalid-theme`); read them only after branching on `type`.
+   */
+  readonly document: Readonly<Record<string, unknown>>;
 
   constructor(problem: Problem, { retryAt }: { retryAt?: number | undefined } = {}) {
     super(problem.detail ?? problem.title);
+    this.document = { ...problem };
     this.type = problem.type;
     this.title = problem.title;
     this.status = problem.status;

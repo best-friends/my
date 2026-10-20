@@ -14,6 +14,12 @@
  * The contrast check (scripts/check-tokens.ts, run by `make web-check`) reads this file, so keep
  * every color as oklch() or hex, in the sRGB gamut, and every semantic color as a var(--palette-*)
  * or light-dark() of them. The fg / bg pairs it verifies are listed in src/tokens.ts.
+ *
+ * Server themes (ADR-0059) override the tokens other than the palette with an unlayered :root rule,
+ * which wins over the @layer theme that Tailwind emits these into. That works only while utilities
+ * refer to the variables, so never declare a token in `@theme inline`. scripts/theme-tokens.ts
+ * generates the list of overridable tokens from this file (`make web-tokens-gen`); src/tokens.ts
+ * says how each one is checked.
  */
 
 @theme {
@@ -136,10 +142,15 @@
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
 
+  /* Tailwind copies a --shadow-* value into its utilities instead of referring to the variable, so
+     the values live in --elevation-* (no utilities of their own), which a server theme overrides. */
+  --elevation-sm: 0 1px 2px 0 oklch(0% 0 0 / 0.08);
+  --elevation-md: 0 2px 6px -1px oklch(0% 0 0 / 0.12), 0 1px 3px -1px oklch(0% 0 0 / 0.08);
+  --elevation-lg: 0 12px 24px -6px oklch(0% 0 0 / 0.18), 0 4px 8px -4px oklch(0% 0 0 / 0.1);
   --shadow-*: initial;
-  --shadow-sm: 0 1px 2px 0 oklch(0% 0 0 / 0.08);
-  --shadow-md: 0 2px 6px -1px oklch(0% 0 0 / 0.12), 0 1px 3px -1px oklch(0% 0 0 / 0.08);
-  --shadow-lg: 0 12px 24px -6px oklch(0% 0 0 / 0.18), 0 4px 8px -4px oklch(0% 0 0 / 0.1);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
 
   /* --- Motion (only ever applied under motion-safe:, web-client.md D6) ----------------------- */
   --ease-*: initial;

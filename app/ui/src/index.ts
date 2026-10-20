@@ -98,3 +98,8 @@ export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
 export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";
 export { PostContent, serverSanitizedHtml, type PostContentProps, type SanitizedHtml } from "./PostContent";
+
+// The design tokens a server theme may override (ADR-0059), and the contrast of their colors under a theme.
+export type { TokenKind } from "./tokens";
+export { themeTokens, type ThemeToken } from "./themeTokens.gen";
+export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./themeContrast";

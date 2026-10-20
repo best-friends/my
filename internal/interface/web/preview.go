@@ -321,8 +321,12 @@ func (h *Handler) previewLanguage(ctx context.Context, lang string) string {
 func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMeta, version []string) (document, error) {
 	locale := h.instanceLocale(ctx)
 	name := h.instanceName(ctx, locale)
+	theme, err := h.currentTheme(ctx)
+	if err != nil {
+		return document{}, err
+	}
 	d, err := renderShell(shellData{
-		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, ThemeColor: h.o.ThemeColor,
+		Lang: lang, Dir: i18n.Direction(lang), Title: meta.Title, Theme: theme,
 		HasIcon: h.hasIcon, HasAppleTouchIcon: h.hasAppleTouchIcon, HasThemeScript: h.hasThemeScript, ViteClient: viteClient(h.o.DevViteOrigin), Entry: h.tags,
 		Config:  h.runtimeConfig(locale, name),
 		Preview: &meta,
@@ -330,7 +334,7 @@ func (h *Handler) renderPreview(ctx context.Context, lang string, meta previewMe
 	if err != nil {
 		return document{}, err
 	}
-	key := append([]string{h.previewVersion, lang, locale, name}, version...)
+	key := append([]string{h.previewVersion, lang, locale, name, theme.Stylesheet, theme.Light, theme.Dark}, version...)
 	d.etag = etag([]byte(strings.Join(key, "\x00")))
 	d.noIndex = meta.NoIndex
 	return d, nil

@@ -70,6 +70,9 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 		return nil, err
 	}
 	out.Rules = rules
+	if out.Theme, err = s.instanceTheme(ctx); err != nil {
+		return nil, err
+	}
 
 	cache := cachePublic
 	if _, ok := ViewerFrom(ctx); ok {

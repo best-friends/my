@@ -349,6 +349,13 @@ type InstanceTextRevision struct {
 	RevisedAt       int64
 }
 
+type InstanceThemeRevision struct {
+	ID              string
+	CustomCss       string
+	RevisedByUserID sql.NullString
+	RevisedAt       int64
+}
+
 type Invite struct {
 	ID              string
 	Code            string
