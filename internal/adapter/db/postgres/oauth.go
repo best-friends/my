@@ -128,6 +128,12 @@ func (r *IdentityRepository) RevokeTokenFamily(ctx context.Context, tx uow.Tx, f
 	return wrap(err, "revoke token family")
 }
 
+// TokenFamilyActive implements identity.Repository.
+func (r *IdentityRepository) TokenFamilyActive(ctx context.Context, familyID string, now time.Time) (bool, error) {
+	active, err := r.db.reader().TokenFamilyActive(ctx, postgresgen.TokenFamilyActiveParams{FamilyID: familyID, Now: now})
+	return active, wrap(err, "check token family")
+}
+
 // RevokeSessionOfTokenFamily implements identity.Repository.
 func (r *IdentityRepository) RevokeSessionOfTokenFamily(ctx context.Context, tx uow.Tx, familyID string, reason identity.RevocationReason, at time.Time) error {
 	q, err := queries(tx)

@@ -62,6 +62,9 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	out.Limits = InstanceLimits{MaxPostCharacters: settings.MaxStatusLength()}
 	out.Timelines = InstanceTimelines{Local: settings.LocalTimelineEnabled(), Federated: settings.FederatedTimelineEnabled()}
 	out.SendsEmail = s.o.SendsEmail
+	if key := s.pushServerKey(); key != "" {
+		out.PushServerKey = &key
+	}
 	rules, err := s.instanceRules(ctx, locale)
 	if err != nil {
 		return nil, err

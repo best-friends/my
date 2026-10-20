@@ -403,6 +403,11 @@ func TestLoadInvalid(t *testing.T) {
 			},
 		},
 		{
+			name: "vapid private key that is not a P-256 key",
+			env:  with(minimal(), "MY_VAPID_PRIVATE_KEY", "c2hvcnQ"),
+			want: []string{"vapid_private_key (MY_VAPID_PRIVATE_KEY): "},
+		},
+		{
 			name:  "captcha secret key in the config file",
 			env:   with(minimal(), "MY_CONFIG", "my.toml"),
 			files: map[string]string{"my.toml": "captcha = \"hcaptcha\"\ncaptcha_site_key = \"site\"\ncaptcha_secret_key = \"0x5eCrE7\"\n"},
@@ -492,6 +497,7 @@ kek = "nope"
 func TestLoadSettingsRedactSecrets(t *testing.T) {
 	_, settings, err := Load(source(with(minimal(), "MY_KEK_PREVIOUS", testKEK1, "MY_SMTP_PASSWORD", "hunter3",
 		"MY_CAPTCHA", "turnstile", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7",
+		"MY_VAPID_PRIVATE_KEY", "yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw",
 		"MY_KV", "valkey", "MY_VALKEY_URL", "valkey://user:pass@cache:6379/0",
 		"MY_STREAM_POSTGRES_URL", "postgres://user:pass@db/my"), nil))
 	if err != nil {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The viewer's actions on a post (FR-106 to FR-108, FR-113): boost, favourite and bookmark are turned on
+// The viewer's actions on a post (FR-106 to FR-109, FR-113): boost, favourite and bookmark are turned on
 // and off optimistically in every cached copy of the post and restored when the server refuses
 // (web-client.md S8); delete waits for the server, then drops the post from every list. Each result is
 // announced (Y7) and a failure is also shown as a toast, because the restored button alone tells a
@@ -47,6 +47,8 @@ export type StatusActions = {
    * failure is already shown.
    */
   delete: (() => Promise<boolean>) | null;
+  /** Whether the viewer can edit the post: their own posts only (FR-109). */
+  canEdit: boolean;
   /** Whether the post is being deleted. */
   isDeleting: boolean;
   /** Whether the viewer can report the post's author: anyone's posts but the viewer's own (FR-701). */
@@ -157,6 +159,7 @@ export function useStatusActions(status: Status): StatusActions | null {
       );
     },
     delete: isAuthor ? () => remove.mutateAsync().then(() => true, () => false) : null,
+    canEdit: isAuthor,
     isDeleting: remove.isPending,
     canReport: !isAuthor,
   };

@@ -47,6 +47,8 @@ type ProjectorDeps struct {
 	// that do not follow it; nil restricts no source.
 	Reach ReachPolicy
 	IDs   kernel.IDGenerator
+	// Push enqueues the Web Push messages of the new notifications; nil pushes none.
+	Push *Pusher
 }
 
 // RegisterProjectors registers the synchronous projectors that create notifications from the
@@ -81,7 +83,8 @@ type ProjectorDeps struct {
 // unsolicited_reach (a limit on it or its domain) and the recipient does not follow it. Each notification
 // has a dedupe key unique per recipient (notification.FollowKey, MentionKey, InteractionKey,
 // ModerationNoticeKey),
-// so projecting an event again, or a repeated boost or favourite, creates nothing more.
+// so projecting an event again, or a repeated boost or favourite, creates nothing more. Each new
+// notification enqueues its Web Push messages through d.Push in the same transaction.
 //
 // The exclusion projectors keep notification_exclusions, which the list and the unread count
 // apply at read time, so that a later block or mute also hides the notifications that came
@@ -303,8 +306,11 @@ func (p *projector) notify(ctx context.Context, tx uow.Tx, n notification.Notifi
 	if err := n.Validate(); err != nil {
 		return err
 	}
-	_, err = p.d.Repository.InsertNotification(ctx, tx, n)
-	return err
+	created, err := p.d.Repository.InsertNotification(ctx, tx, n)
+	if err != nil || !created {
+		return err
+	}
+	return p.d.Push.enqueue(ctx, tx, n)
 }
 
 // reaches reports whether sourceID may notify recipientID: always, unless the source has

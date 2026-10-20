@@ -62,6 +62,9 @@ type Viewer struct {
 	// TokenID and ClientID identify the access token and its OAuth client (the row IDs).
 	TokenID  string
 	ClientID string
+	// FamilyID identifies the grant of the access token: its token family, which refreshing
+	// keeps. A Web Push subscription belongs to it.
+	FamilyID string
 	// Scope is the token's scope. The operation's scopes are checked before its handler runs;
 	// a handler checks Scope.Grants itself only for what depends on more than the operation.
 	Scope identity.Scope
@@ -168,7 +171,7 @@ func (s *Server) authenticate(w http.ResponseWriter, r *http.Request) (*Viewer, 
 	}
 	switch {
 	case err == nil:
-		return &Viewer{UserID: b.UserID, AccountID: b.AccountID, TokenID: b.TokenID, ClientID: b.ClientID, Scope: b.Scope}, true
+		return &Viewer{UserID: b.UserID, AccountID: b.AccountID, TokenID: b.TokenID, ClientID: b.ClientID, FamilyID: b.FamilyID, Scope: b.Scope}, true
 	case errors.Is(err, appidentity.ErrInvalidAccessToken):
 		if s.limit(w, r, policyIP, s.o.AnonymousLimit, s.clientKey(r)) {
 			w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)

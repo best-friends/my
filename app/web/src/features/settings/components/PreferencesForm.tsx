@@ -6,6 +6,7 @@ import { useDisplaySettings } from "../../../lib/locale";
 import type { Visibility } from "../api/me";
 import { displayLanguageOf, displayLanguageOptions, timelineLanguageOptions } from "../hooks/languages";
 import { useModeratorEmail } from "../hooks/useModeratorEmail";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 import { deviceTimeZone, sameTimeZone, useTimeZoneOptions } from "../hooks/timeZones";
 import { type PreferenceControl, usePreferences } from "../hooks/usePreferences";
 import { ThemeRadioGroup } from "./ThemeRadioGroup";
@@ -47,8 +48,70 @@ export function PreferencesForm() {
         ))}
       </RadioGroup>
       <TimelineLanguages control={timelineLanguages} />
+      <PushNotifications />
       <ModeratorNotifications control={emailModeratorNotifications} />
     </div>
+  );
+}
+
+/**
+ * Web Push on this device (FR-206), when the server sends it: a switch that turns it on for this signed-in app (the
+ * APG switch pattern), and the kinds of notifications to push as a group of checkboxes; or why it cannot be on.
+ */
+function PushNotifications() {
+  const t = useT();
+  const headingId = useId();
+  const kindsId = useId();
+  const push = usePushNotifications();
+  if (push.status === "hidden") return null;
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-3">
+      <h2 id={headingId} className="text-lg font-semibold">
+        {t("client:settings.push.title")}
+      </h2>
+      {push.status === "unsupported" && <p className="text-sm text-fg-muted">{t("client:settings.push.unsupported")}</p>}
+      {push.status === "denied" && <p className="text-sm text-fg-muted">{t("client:settings.push.denied")}</p>}
+      {push.status === "available" && (
+        <>
+          <Switch
+            isSelected={push.enabled}
+            onChange={push.setEnabled}
+            isDisabled={push.isPending}
+            description={t("client:settings.push.enable.description")}
+          >
+            {t("client:settings.push.enable")}
+          </Switch>
+          {push.enabled && (
+            <fieldset aria-describedby={kindsId} className="@container flex min-w-0 flex-col gap-2">
+              <legend className="text-sm font-medium text-fg">{t("client:settings.push.types.label")}</legend>
+              <p id={kindsId} className="text-sm text-fg-muted">
+                {t("client:settings.push.types.description")}
+              </p>
+              <ul className="grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2">
+                {push.groups.map((group) => (
+                  <li key={group.id}>
+                    <Checkbox
+                      isSelected={group.types.every((type) => push.alerts.includes(type))}
+                      isDisabled={push.isPending}
+                      onChange={(selected) => {
+                        push.setGroup(group, selected);
+                      }}
+                    >
+                      {t(group.label)}
+                    </Checkbox>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+          )}
+          {push.error !== undefined && (
+            <p role="alert" className="text-sm text-danger">
+              {push.error}
+            </p>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 

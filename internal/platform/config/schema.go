@@ -18,6 +18,7 @@ import (
 	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
 	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
 	"github.com/best-friends/my/internal/adapter/valkey"
+	"github.com/best-friends/my/internal/adapter/webpush"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -418,6 +419,16 @@ var schema = []field{
 		requiredWhen: "when `captcha` is not `none`",
 		check:        checkNotBlank,
 		set:          func(c *Config, v string) { c.CaptchaSecretKey = v },
+	},
+	{
+		key:    "vapid_private_key",
+		doc:    "VAPID private key of the server's Web Push notifications (FR-206, RFC 8292): a P-256 private key, 32 bytes in base64url. Generate one with `my config vapid-key`. Without it, the server sends no Web Push and clients do not offer it. Changing it ends every subscription, since browsers subscribe with its public key (docs/operations/key-management.md).",
+		secret: true,
+		check: func(v string) error {
+			_, err := webpush.ParsePrivateKey(v)
+			return err
+		},
+		set: func(c *Config, v string) { c.VAPIDPrivateKey = v },
 	},
 	{
 		key: "profile",
