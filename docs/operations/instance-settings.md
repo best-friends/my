@@ -31,7 +31,7 @@
 | --- | --- | --- | --- |
 | `registration_mode` | `open` / `approval` / `invite` / `closed` | `approval` | 登録モード（FR-001、[利用者登録](registration.md)） |
 | `max_status_length` | 整数 1〜100000 | `500` | 投稿の文字数上限（FR-101） |
-| `default_locale` | BCP 47 言語タグ | `en` | 既定のロケール。新しい利用者の UI ロケールの初期値、利用者の希望に合うカタログが無いとき、インスタンスの文章がその言語に無いときに使う（ADR-0009） |
+| `default_locale` | BCP 47 言語タグ | `en` | 既定のロケール。新しい利用者の UI ロケールの初期値で、利用者の希望に合うカタログが無いときにも使う（ADR-0009） |
 | `local_timeline_enabled` | `true` / `false` | `true` | ローカルタイムラインを提供するか（FR-202） |
 | `federated_timeline_enabled` | `true` / `false` | `true` | 連合タイムラインを提供するか（FR-202） |
 | `preview_image` | メディア ID（空 = 未設定） | 空 | 画像のない投稿・プロフィールのリンクプレビュー画像（`og:image`）。未設定なら同梱の既定画像（[リンクプレビュー](link-previews.md)） |
@@ -61,7 +61,7 @@
   どの版でも一度設定したメディアは、未添付アップロードの消去（FR-803）で消えません。
 - `contact_account` は、削除されていないローカルの利用者のユーザー名だけを受け付けます（小文字にして保存）。`contact_email` は `alice@example.com` の形のアドレスだけを受け付けます。
 
-### 文章（ロケール別）
+### 文章（1 キー 1 値）
 
 | キー | 上限 | 説明 |
 | --- | --- | --- |
@@ -73,18 +73,17 @@
 | `preview_image_alt` | 1500 文字 | `preview_image` の画像の代替テキスト（`og:image:alt`）。無ければ「〇〇のイメージ画像」 |
 | `thumbnail_alt` | 1500 文字 | `thumbnail` の画像の代替テキスト |
 
-- 文章はロケールごとに持ちます。読むときは、読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に探します
-  （例: `ja-JP` → `ja` → 既定のロケール → `en`）。
-  読み手のロケールは、画面の文言のロケールを選んだ要求のロケール（利用者の設定、または `Accept-Language` のタグ）を地域や文字体系ごと使います。
-  `ja-JP` の読み手は文言は `ja` のカタログで読みますが、文章は `ja-JP` から探します。
-- 空の文章を設定すると、そのロケールの文章を消したことになり、チェーンの次のロケールが使われます。
-- 文章は CLI のほか、Web クライアントの管理画面（名前・短い説明・説明は「サーバーの設定」、`/admin/settings`。利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}/{locale}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
+- 文章はキーごとに 1 つの値です。管理者が好きな言語で 1 回書き、どのロケールの読み手にも同じ値を出します。ほかの言語の読み手は機械翻訳などで読みます。
+  管理画面の欄の名前や説明は、ほかの画面の文言と同じく閲覧者の言語に翻訳します（対象になるのは管理者が書く値だけです）。
+- 書かれた言語はサーバーには分からないので、Web クライアントとサーバーが描画する画面は、文章を `dir="auto"` と `lang=""`（言語が不明であることを示す HTML の値）で出し、画面の言語を引き継がせません。
+- 空の文章を設定すると、その文章を消したことになります。
+- 文章は CLI のほか、Web クライアントの管理画面（名前・短い説明・説明は「サーバーの設定」、`/admin/settings`。利用規約とプライバシーポリシーは「規約とポリシー」、`/admin/documents`）とクライアント API（`GET /api/v1/admin/instance_texts`・`PUT /api/v1/admin/instance_texts/{key}`）で変えられます。どちらもロールの権限 `manage_settings` が要り、変更は監査ログ（`text_changed`）に残ります。
 
 ### 利用規約とプライバシーポリシー
 
 - `terms` と `privacy_policy` は Markdown で書きます（CommonMark と、GitHub Flavored Markdown の表・取り消し線・URL の自動リンク）。段落の中の改行はそのまま改行になり、`#` の見出しはページの題の下の段（`h2`）から始まります。
 - サーバーが公開ページ `/auth/terms`・`/auth/privacy` で HTML にしてサニタイズします。生の HTML・画像・`http` / `https` / `mailto` 以外のリンクは出ません。ページはサインインも JavaScript も要りません。
-- 書いた文書は、登録の画面（作成のボタンの前の同意の文とリンク）、サーバーが描画するすべての画面のフッター、Web クライアント（3 列目・メニュー・設定・サインインの画面）からリンクされます。読み手のチェーンのどのロケールにも無い文書はリンクされず、ページは 404 です。
+- 書いた文書は、登録の画面（作成のボタンの前の同意の文とリンク）、サーバーが描画するすべての画面のフッター、Web クライアント（3 列目・メニュー・設定・サインインの画面）からリンクされます。書かれていない文書はリンクされず、ページは 404 です。
 
 ### 名前とドメイン
 
@@ -94,8 +93,7 @@
 - **名前**は文章 `name` で、人に向けてインスタンスを名指す場所に出ます: Web クライアントのサイドバーと「このサーバーについて」、ブラウザのタブのタイトル、
   サーバーが描画するログイン・登録・メール確認・アカウントの状態・認可同意の画面、メール（メールアドレスの確認・モデレーターへの通知）、
   リンクプレビューの `og:site_name`、Web App Manifest の `name` / `short_name`、NodeInfo の `metadata.nodeName`、`GET /api/v1/instance` の `name`。
-- 名前は読み手のロケールで選びます（利用者・メールの宛先のロケール、リンクプレビューは投稿の言語）。HTML の外枠・Web App Manifest・NodeInfo は `default_locale` の名前です。
-  どのロケールのチェーンにも名前が無ければ、名前の代わりにドメイン（`host`）を出します。
+- 名前はどのロケールでも同じです。名前が無ければ、名前の代わりにドメイン（`host`）を出します。
 - 変更は再起動なしで、次の要求から反映されます。開いている Web クライアントのタブのタイトルとサイドバーは、管理画面で保存したときに更新されます。
 
 ### 連絡先とサムネイル
@@ -104,8 +102,8 @@
 どれも未設定なら出ません。
 
 - Web クライアントの「このサーバーについて」（`/about`）。サムネイルはサインインしていない人の最初の画面（`/`）にも出ます。
-- `GET /api/v1/instance` の `contact`（`account` と `email`）と `thumbnail`（`url`・`width`・`height`・`alt`）。代替テキストは要求のロケールで選びます。
-- NodeInfo の `metadata`（`default_locale` で選ぶ）。Misskey の慣行の `maintainer`（`name` は連絡先のアカウントの表示名、無ければユーザー名。`email` は `contact_email`）、
+- `GET /api/v1/instance` の `contact`（`account` と `email`）と `thumbnail`（`url`・`width`・`height`・`alt`）。
+- NodeInfo の `metadata`。Misskey の慣行の `maintainer`（`name` は連絡先のアカウントの表示名、無ければユーザー名。`email` は `contact_email`）、
   Pleroma・Akkoma の慣行の `staffAccounts`（連絡先のアカウントの Actor の ID）、`thumbnail`（`url` と `alt`）、短い説明 `short_description` の `nodeDescription`。
 
 連絡先のアカウントが凍結・削除されたときは、アカウントは出さずにメールアドレスだけを出します。
@@ -117,21 +115,20 @@
 my instance list                                      # すべての設定値（既定値かどうか）と文章
 my instance get registration_mode
 my instance set registration_mode open
-my instance set name "Example Social"                 # default_locale のロケールに設定
-my instance set -locale ja name "例のソーシャル"
-my instance set -locale ja description - < description.ja.txt   # 値 "-" は標準入力から読む
-my instance get -locale ja-JP name                    # フォールバックチェーンで探す
-my instance set -locale ja name ""                    # ja の名前を消す
+my instance set name "例のソーシャル"                 # どのロケールでも同じ名前
+my instance set description - < description.txt       # 値 "-" は標準入力から読む
+my instance get name
+my instance set name ""                               # 名前を消す
 my instance history registration_mode                 # 変更履歴（新しい順、-limit で件数）
-my instance history -locale ja description
+my instance history description
 my instance set -owner admin preview_image ./preview.png   # 画像を admin のメディアとしてアップロードし、プレビュー画像にする
 my instance set preview_image 0192f3a4-7b1c-7d2e-9f00-1a2b3c4d5e6f   # アップロード済みのメディア ID を指定
-my instance set -locale ja preview_image_alt "青い鳥のマスコット"
+my instance set preview_image_alt "青い鳥のマスコット"
 my instance set preview_image ""                      # 同梱の既定画像に戻す
 my instance set contact_account admin                 # 連絡先のアカウント
 my instance set contact_email admin@example.com
 my instance set -owner admin thumbnail ./thumbnail.png  # サムネイル
-my instance set -locale ja thumbnail_alt "海辺の町の写真"
+my instance set thumbnail_alt "海辺の町の写真"
 ```
 
 - フラグはキーと値より前に書きます。
@@ -147,7 +144,7 @@ my instance set -locale ja thumbnail_alt "海辺の町の写真"
 CLI で変えられる設定値は、Web クライアントの管理画面とクライアント API でも変えられます。どちらもロールの権限 `manage_settings` が要り（組み込みの `admin` だけが持つ）、
 変更は CLI と同じく版として残り、キーごとに監査ログ（`setting_changed`、対象は設定、操作者はその利用者）に記録されます。監査ログはモデレーションの画面（「監査ログ」、`/moderation/audit-log`）で引けます。
 
-- **Web クライアント**（「サーバーの設定」、`/admin/settings`、[ADR-0058](../adr/0058-moderation-admin-separation.md) のサーバー管理）: 名前・説明（言語ごと）と、次の設定を変えられます。
+- **Web クライアント**（「サーバーの設定」、`/admin/settings`、[ADR-0058](../adr/0058-moderation-admin-separation.md) のサーバー管理）: 名前・説明と、次の設定を変えられます。
   設定はまとめて 1 つのフォームで保存し、変えたものだけを送ります。
 
   | 区画 | 設定 |
@@ -172,24 +169,20 @@ CLI で変えられる設定値は、Web クライアントの管理画面とク
 
 インスタンスのルール（FR-705）は、`GET /api/v1/instance` の `rules` が並べ、通報が ID で引用します。
 
-- ルールはロケールごとに 1 行の文（300 文字まで）と任意の補足（1,000 文字まで）を持ちます。1 つのルールのロケールは 50 個まで、有効なルールは 100 個までです。
+- ルールは 1 行の文（300 文字まで）と任意の補足（1,000 文字まで）を 1 つずつ持ちます。文章と同じく、管理者が好きな言語で書き、どのロケールでも同じ値を出します（`dir="auto"` と `lang=""`）。有効なルールは 100 個までです。
 - 変更（文の改訂・並べ替え）はすべて版（`instance_rule_revisions`）として残り、ルールの ID は変わりません。
 - 廃止したルールは有効なルールの一覧から消えます。元には戻せませんが、通報からは引き続き参照できます。
-- 公開の一覧では、各ルールの文を読み手のロケールのフォールバックチェーン → `default_locale` のチェーン → `en` の順に選びます。
-  どのロケールにも文が無いルールは、ロケール順で最初の文を出します（ルールが読み手によって消えることはありません）。
 
 ```sh
-my instance rule add "Be kind"                        # default_locale のロケールで、有効なルールの最後に追加
-my instance rule add -locale ja -hint "嫌がらせをしない" "親切に"
-my instance rule edit -locale ja <rule> "いつも親切に"     # ja の文を変える（無ければ足す）。補足は -hint を付けたときだけ変わる
-my instance rule edit -locale ja <rule> ""            # ja の文を消す（最後のロケールは消せない）
+my instance rule add -hint "嫌がらせをしない" "親切に"   # 有効なルールの最後に追加
+my instance rule edit <rule> "いつも親切に"             # 文を変える。補足は -hint を付けたときだけ変わる
 my instance rule move <rule> 1                        # 1 番目に移し、有効なルールを 1, 2, ... と振り直す
 my instance rule retire <rule>                        # 廃止する
 my instance rule list                                 # 有効なルール（-all で廃止したものも）
 ```
 
 - 管理 API は `/api/v1/admin/rules`（一覧・追加・取得・改訂・移動・廃止）で、ロールの権限 `manage_rules` を要します。
-- Web クライアントの管理画面（「ルール」、`/admin/rules`、`manage_rules`）で、言語ごとの文と補足でのルールの追加、編集、「上へ」「下へ」での並べ替え、廃止（確認のダイアログを経る）ができます。
+- Web クライアントの管理画面（「ルール」、`/admin/rules`、`manage_rules`）で、文と補足でのルールの追加、編集、「上へ」「下へ」での並べ替え、廃止（確認のダイアログを経る）ができます。
   どの変更も監査ログ（`rule_added`・`rule_revised`・`rule_moved`・`rule_retired`）に残ります。
 - 終了コードは設定と同じです（0 は成功、1 は値の拒否や DB のエラー、2 は引数の誤り）。
 

@@ -31,7 +31,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 | `og:url`、`<link rel="canonical">` | 正規 URL（現在のユーザー名の URL） |
 | `og:description` | 投稿の本文（プロフィールは自己紹介）からタグを除いた平文を 200 書記素で切り詰めたもの。CW 付きの投稿は CW の文だけ |
 | `og:image`、`og:image:alt` / `width` / `height` | 下記の順で選んだ画像 |
-| `og:site_name` | インスタンスの名前（文章 `name` を `og:locale` と同じ言語で選ぶ。無ければ `host`、[名前とドメイン](instance-settings.md#名前とドメイン)） |
+| `og:site_name` | インスタンスの名前（文章 `name`。どの言語でも同じ値。無ければ `host`、[名前とドメイン](instance-settings.md#名前とドメイン)） |
 | `og:locale`、`<html lang dir>` | 投稿の言語。未設定（`und`）なら投稿者の既定の投稿言語、それもなければインスタンスの `default_locale`。`Accept-Language` では変わらない |
 | `article:published_time`、`article:author` | 投稿だけ。投稿日時（UTC）と投稿者のプロフィール URL |
 | `profile:username` | プロフィールだけ。`ユーザー名@アカウントドメイン` |
@@ -43,7 +43,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 
 - `og:type` は `website`、`og:title`・`<title>`・`og:site_name` はインスタンスの名前、`og:url` と `<link rel="canonical">` は `https://<host>/` です。
 - `og:description` はインスタンスの文章 `short_description` を、200 書記素で切り詰めたものです。無ければ出しません。
-- 言語（`og:locale`、`<html lang dir>`）・名前・説明は、インスタンスの `default_locale` で選びます。
+- 言語（`og:locale`、`<html lang dir>`）は、インスタンスの `default_locale` です。名前と説明はどの言語でも同じ値です。
 - `og:image` は下の 3（インスタンスのプレビュー画像）、なければ 4 です。
 - アカウントのものではないので、`fediverse:creator` と ActivityPub の `alternate` は出しません。
 - インスタンスの情報ページ（`/about`）も同じ meta タグで、`og:title` と `<title>` は「{インスタンスの名前} について」（`server:preview.about_title`）、`og:url` と `<link rel="canonical">` は `https://<host>/about` です。
@@ -52,7 +52,7 @@ ActivityPub の `Accept` で来たリクエストには外枠を返さず、Acti
 
 1. 投稿の最初の添付画像（代替テキストを `og:image:alt` に入れる）。センシティブ指定または CW 付きの投稿では使わない
 2. プロフィールのヘッダー画像、なければアバター（`og:image:alt` は「〇〇のヘッダー画像」「〇〇のアバター」）
-3. インスタンスのプレビュー画像（インスタンス設定 `preview_image`。`og:image:alt` は文章 `preview_image_alt` を言語のフォールバックチェーンで選び、無ければ「〇〇のイメージ画像」）
+3. インスタンスのプレビュー画像（インスタンス設定 `preview_image`。`og:image:alt` は文章 `preview_image_alt`、無ければ「〇〇のイメージ画像」）
 4. 同梱の既定画像（`https://<host>/preview-image.png`、1200×630 の PNG。インスタンス名は描かない汎用の絵で、`og:image:alt` は絵の説明）
 
 そのため、プレビューの出るページには必ず `og:image` と `og:image:alt` があります。
