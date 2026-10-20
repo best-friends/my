@@ -114,7 +114,7 @@ describe("the tab bar's Timelines", () => {
 });
 
 describe("the tab bar's Menu", () => {
-  test("is a button, never the current item, that opens a sheet with the profile and the settings", async () => {
+  test("is a button, never the current item, that opens a sheet with the profile, the bookmarks and the settings", async () => {
     server.use(signedInHandler);
     const { user } = await renderApp({ path: "/settings" });
     await screen.findByRole("heading", { level: 1, name: "Settings" });
@@ -124,7 +124,7 @@ describe("the tab bar's Menu", () => {
     await user.click(menu);
 
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Settings"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings"]);
     expect(within(sheet).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page");
     expect(within(sheet).getByRole("link", { name: "Profile" })).not.toHaveAttribute("aria-current");
 
@@ -247,6 +247,7 @@ describe("the sidebar's server and viewer", () => {
       "/notifications",
       "/search",
       "/profile",
+      "/bookmarks",
       "/settings",
     ]);
   });

@@ -1,6 +1,6 @@
 # ADR-0018: 連合 URI は ID ベースで `/ap/` 名前空間に置き、表示用 URL と分離する
 
-- Status: Accepted
+- Status: Accepted（投稿の `url` とその振り分けの規則を ADR-0053（投稿の表示用 URL） が置き換える。URI 一覧に ADR-0051（カスタム絵文字）の `/ap/emojis/{uuid}` が加わる）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #36

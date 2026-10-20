@@ -37,6 +37,8 @@ export type Timeline =
   /** The federated timeline (GET /timelines/public): public posts of this server and of the others it knows. */
   | { kind: "public" }
   | { kind: "tag"; tag: string }
+  /** The posts the viewer bookmarked (GET /bookmarks, FR-113), newest bookmark first. */
+  | { kind: "bookmarks" }
   /** The posts of the account `id` on its profile. */
   | { kind: "account"; id: string; filter: AccountTimelineFilter };
 
@@ -63,6 +65,8 @@ function timelineQueryKey(timeline: Timeline) {
       return ["get", "/timelines/public", "pages"] as const;
     case "tag":
       return ["get", "/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag } } }, "pages"] as const;
+    case "bookmarks":
+      return ["get", "/bookmarks", "pages"] as const;
     case "account":
       return ["get", "/accounts/{id}/statuses", { params: { path: { id: timeline.id }, query: accountTimelineQuery(timeline.filter) } }, "pages"] as const;
   }
@@ -81,6 +85,8 @@ async function fetchTimelinePage(api: Api, timeline: Timeline, cursor: string | 
         return api.fetch.GET("/timelines/public", { params: { query }, signal });
       case "tag":
         return api.fetch.GET("/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag }, query }, signal });
+      case "bookmarks":
+        return api.fetch.GET("/bookmarks", { params: { query }, signal });
       case "account":
         return api.fetch.GET("/accounts/{id}/statuses", {
           params: { path: { id: timeline.id }, query: { ...accountTimelineQuery(timeline.filter), ...query } },

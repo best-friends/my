@@ -134,6 +134,8 @@ type App struct {
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
+	// Push registers the Web Push subscriptions and sends the notifications to them (FR-206).
+	Push *notification.PushService
 	// Streams is the broker of the streaming endpoint that cfg.Stream selects: a stream.Hub,
 	// which reaches only the streams of this process, or a stream.Relay on a Bus across
 	// processes (ADR-0050).
@@ -260,6 +262,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		interactions content.InteractionRepository
 		feeds        timeline.Repository
 		notifs       notification.Repository
+		pushes       notification.PushRepository
 		medias       content.MediaRepository
 		feds         federationRepository
 		mods         moderation.Repository
@@ -277,7 +280,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
-		notifs = d.NotificationRepository()
+		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
@@ -298,7 +301,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
-		notifs = d.NotificationRepository()
+		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
 		feds = d.FederationRepository()
 		mods = d.ModerationRepository()
 		retention = retentionRepositories{statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository()}
@@ -457,14 +460,19 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	timeline.RegisterProjectors(a.Projectors, feeds)
 	timeline.RegisterModerationProjectors(a.Projectors, feeds, a.Accounts)
 	a.Timeline = timeline.NewService(timeline.Deps{Repository: feeds, Clock: a.Clock})
+	pusher, err := a.setUpPush(cfg, pushes)
+	if err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// After the graph and content projectors, whose events these projectors turn into notifications.
 	notification.RegisterProjectors(a.Projectors, notification.ProjectorDeps{
-		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, Reach: a.AccountPolicy, IDs: a.IDs,
+		Repository: notifs, Accounts: a.Accounts, Relationships: a.Graph, Reach: a.AccountPolicy, IDs: a.IDs, Push: pusher,
 	})
 	a.Notifications = notification.NewService(notification.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: notifs, Clock: a.Clock, Staff: moderatorStaff{a},
 	})
-	a.setUpModeratorNotifications(cfg, notifs, moderatorStaff{a})
+	a.setUpModeratorNotifications(cfg, notifs, moderatorStaff{a}, pusher)
 	a.setUpRetention(cfg, retention, statuses)
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
@@ -557,8 +565,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Authenticator: a.Identity, Accounts: a.Accounts, Profiles: a.Accounts, Posting: a.Content, Preferences: a.Identity, Media: a.Media,
 		AccountDomain: cfg.AccountDomain, Graph: a.Graph,
 		Resolver: a.RemoteActors, RemoteProfiles: a.Accounts,
-		Notifications: a.Notifications,
-		Statuses:      a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses, Outboxes: a.RemoteStatuses,
+		Notifications: a.Notifications, Push: a.Push,
+		Statuses: a.Content, StatusReader: a.Statuses, Interactions: a.Interactions, Threads: a.RemoteStatuses, Outboxes: a.RemoteStatuses,
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtChar123acctChar125RouteImport } from './routes/@{$acct}'
+import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
@@ -46,6 +47,7 @@ import { Route as AdminAccountsIdRouteImport } from './routes/admin.accounts_.$i
 import { Route as AdminAppealsIdRouteImport } from './routes/admin.appeals_.$id'
 import { Route as AdminInstancesDomainRouteImport } from './routes/admin.instances_.$domain'
 import { Route as AdminReportsIdRouteImport } from './routes/admin.reports_.$id'
+import { Route as AtChar123acctChar125StatusIdHistoryRouteImport } from './routes/@{$acct}_.status.$id_.history'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -55,6 +57,11 @@ const IndexRoute = IndexRouteImport.update({
 const AtChar123acctChar125Route = AtChar123acctChar125RouteImport.update({
   id: '/@{$acct}',
   path: '/@{$acct}',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookmarksRoute = BookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -235,10 +242,17 @@ const AdminReportsIdRoute = AdminReportsIdRouteImport.update({
   path: '/admin/reports/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125StatusIdHistoryRoute =
+  AtChar123acctChar125StatusIdHistoryRouteImport.update({
+    id: '/@{$acct}_/status/$id_/history',
+    path: '/@{$acct}/status/$id/history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -274,10 +288,12 @@ export interface FileRoutesByFullPath {
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
   '/admin/reports/$id': typeof AdminReportsIdRoute
+  '/@{$acct}/status/$id/history': typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -313,11 +329,13 @@ export interface FileRoutesByTo {
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
   '/admin/reports/$id': typeof AdminReportsIdRoute
+  '/@{$acct}/status/$id/history': typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -353,12 +371,14 @@ export interface FileRoutesById {
   '/admin/appeals_/$id': typeof AdminAppealsIdRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
   '/admin/reports_/$id': typeof AdminReportsIdRoute
+  '/@{$acct}_/status/$id_/history': typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -394,10 +414,12 @@ export interface FileRouteTypes {
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
     | '/admin/reports/$id'
+    | '/@{$acct}/status/$id/history'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -433,10 +455,12 @@ export interface FileRouteTypes {
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
     | '/admin/reports/$id'
+    | '/@{$acct}/status/$id/history'
   id:
     | '__root__'
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -472,11 +496,13 @@ export interface FileRouteTypes {
     | '/admin/appeals_/$id'
     | '/admin/instances_/$domain'
     | '/admin/reports_/$id'
+    | '/@{$acct}_/status/$id_/history'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtChar123acctChar125Route: typeof AtChar123acctChar125Route
+  BookmarksRoute: typeof BookmarksRoute
   HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
   LoginRoute: typeof LoginRoute
@@ -512,6 +538,7 @@ export interface RootRouteChildren {
   AdminAppealsIdRoute: typeof AdminAppealsIdRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
   AdminReportsIdRoute: typeof AdminReportsIdRoute
+  AtChar123acctChar125StatusIdHistoryRoute: typeof AtChar123acctChar125StatusIdHistoryRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -528,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}'
       fullPath: '/@{$acct}'
       preLoaderRoute: typeof AtChar123acctChar125RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookmarks': {
+      id: '/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof BookmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -775,12 +809,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/status/$id_/history': {
+      id: '/@{$acct}_/status/$id_/history'
+      path: '/@{$acct}/status/$id/history'
+      fullPath: '/@{$acct}/status/$id/history'
+      preLoaderRoute: typeof AtChar123acctChar125StatusIdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtChar123acctChar125Route: AtChar123acctChar125Route,
+  BookmarksRoute: BookmarksRoute,
   HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
   LoginRoute: LoginRoute,
@@ -816,6 +858,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAppealsIdRoute: AdminAppealsIdRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
   AdminReportsIdRoute: AdminReportsIdRoute,
+  AtChar123acctChar125StatusIdHistoryRoute:
+    AtChar123acctChar125StatusIdHistoryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
