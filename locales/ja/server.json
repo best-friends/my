@@ -907,6 +907,14 @@
     "defaultMessage": "パスキーを確認できませんでした。",
     "description": "Title of the HTTP 422 API error when the browser's answer to a passkey registration does not verify (another site, no screen lock or biometrics, or a passkey that is registered already)."
   },
+  "errors.passkey.confirmation_expired": {
+    "defaultMessage": "パスキーでの確認の有効期限が切れました。もう一度やり直してください。",
+    "description": "Title of the HTTP 422 API error when the user confirms an operation on their own account (such as deleting it or removing the password) with a passkey after the confirmation expired (5 minutes) or was already used."
+  },
+  "errors.passkey.last_sign_in_method": {
+    "defaultMessage": "これはログインに使える最後の手段です。先にパスキーを追加するか、パスワードを設定してください。",
+    "description": "Title of the HTTP 409 API error when the user removes their password without a passkey, or their last passkey without a password, which would leave them no way to sign in."
+  },
   "errors.passkey.registration_expired": {
     "defaultMessage": "パスキーの登録の有効期限が切れました。最初からやり直してください。",
     "description": "Title of the HTTP 422 API error when the user finishes a passkey registration after it expired (5 minutes) or with an unknown registration."
@@ -986,6 +994,14 @@
   "mail.password_changed.subject": {
     "defaultMessage": "{instance} のパスワードが変更されました",
     "description": "Subject of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.password_removed.body": {
+    "defaultMessage": "{instance} のアカウントのパスワードが削除され、ほかのセッションとアプリはログアウトしました。これからはパスキーでログインします。\n\n削除した覚えがない場合は、ほかの誰かがアカウントにログインしているかもしれません。すぐに新しいパスワードを設定してください。\n\n{url}\n\nこのメールは {host} から送られました。",
+    "description": "Plain-text body of the email that tells a user their password was removed, so that only their passkeys sign in. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the page that asks for a password reset link, which sets a new password (keep it on its own line)."
+  },
+  "mail.password_removed.subject": {
+    "defaultMessage": "{instance} のパスワードが削除されました",
+    "description": "Subject of the email that tells a user their password was removed, so that only their passkeys sign in. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.password_reset.body": {
     "defaultMessage": "{instance} のアカウントのパスワードの再設定が求められました。\n\n次のリンクを開いて、新しいパスワードを設定してください。\n\n{url}\n\n{minutes, plural, other {リンクは # 分間、1 回だけ使えます。}}{host} で求めた覚えがない場合は、このメールを無視してください。パスワードは変わりません。",

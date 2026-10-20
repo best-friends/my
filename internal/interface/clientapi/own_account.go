@@ -16,8 +16,9 @@ import (
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
-// The viewer's own account: its password (FR-002), its deletion, and the exports of its data
-// (FR-008).
+// The viewer's own account: its password (FR-002) and its removal (FR-004), its deletion, and
+// the exports of its data (FR-008). The current password or a passkey of the viewer confirms
+// them (passkeys.go).
 
 // Problem types of the viewer's own account.
 const (
@@ -31,17 +32,66 @@ const (
 )
 
 var (
-	// DeleteAccountLimit bounds the attempts to delete the own account, which check a password.
+	// DeleteAccountLimit bounds the attempts to delete the own account, which check a password
+	// or a passkey.
 	DeleteAccountLimit = kernel.Limit{Name: "api.account.delete", Max: 5, Window: time.Hour}
 	// ExportLimit bounds the requests for data exports.
 	ExportLimit = kernel.Limit{Name: "api.export", Max: 3, Window: 24 * time.Hour}
 )
 
-// OwnAccount changes the viewer's password and deletes the viewer's own account;
+// OwnAccount changes and removes the viewer's password and deletes the viewer's own account;
 // *appidentity.Service implements it.
 type OwnAccount interface {
+	HasPassword(ctx context.Context, userID string) (bool, error)
 	ChangePassword(ctx context.Context, in appidentity.ChangePasswordInput) error
-	DeleteOwnAccount(ctx context.Context, userID, password string) error
+	RemovePassword(ctx context.Context, in appidentity.RemovePasswordInput) error
+	DeleteOwnAccount(ctx context.Context, userID string, c appidentity.Confirmation) error
+}
+
+// GetPasswordStatus serves GET /api/v1/accounts/password.
+func (s *Server) GetPasswordStatus(ctx context.Context, _ GetPasswordStatusRequestObject) (GetPasswordStatusResponseObject, error) {
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if s.o.OwnAccount == nil {
+		return GetPasswordStatusdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	has, err := s.o.OwnAccount.HasPassword(ctx, v.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: whether user %s has a password: %w", v.UserID, err)
+	}
+	cache := cacheNoStore
+	return GetPasswordStatus200JSONResponse{
+		Body: PasswordStatus{HasPassword: has}, Headers: GetPasswordStatus200ResponseHeaders{CacheControl: &cache},
+	}, nil
+}
+
+// RemovePassword serves POST /api/v1/accounts/password/remove. The grant of the request's token
+// keeps working; every other one ends.
+func (s *Server) RemovePassword(ctx context.Context, req RemovePasswordRequestObject) (RemovePasswordResponseObject, error) {
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if s.o.OwnAccount == nil {
+		return RemovePassworddefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	if req.Body == nil {
+		return RemovePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "passkey")), nil
+	}
+	c, _, ok := confirmationOf(nil, &req.Body.Passkey, "passkey")
+	if !ok {
+		return RemovePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "passkey")), nil
+	}
+	err = s.o.OwnAccount.RemovePassword(ctx, appidentity.RemovePasswordInput{UserID: v.UserID, Passkey: c.Passkey, KeepFamilyID: v.FamilyID})
+	if p := s.passkeyProblem(ctx, err); p != nil {
+		return RemovePassworddefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("clientapi: remove the password of user %s: %w", v.UserID, err)
+	}
+	return RemovePassword204Response{}, nil
 }
 
 // ChangePassword serves POST /api/v1/accounts/password. The grant of the request's token keeps
@@ -54,26 +104,23 @@ func (s *Server) ChangePassword(ctx context.Context, req ChangePasswordRequestOb
 	if s.o.OwnAccount == nil {
 		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
 	}
-	if req.Body == nil || req.Body.CurrentPassword == "" {
+	if req.Body == nil {
 		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "current_password")), nil
+	}
+	c, param, ok := confirmationOf(req.Body.CurrentPassword, req.Body.Passkey, "current_password")
+	if !ok {
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, param)), nil
 	}
 	if identity.ValidatePassword(req.Body.NewPassword) != nil {
 		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "new_password")), nil
 	}
 	err = s.o.OwnAccount.ChangePassword(ctx, appidentity.ChangePasswordInput{
-		UserID: v.UserID, CurrentPassword: req.Body.CurrentPassword, NewPassword: req.Body.NewPassword, KeepFamilyID: v.FamilyID,
+		UserID: v.UserID, Confirmation: c, NewPassword: req.Body.NewPassword, KeepFamilyID: v.FamilyID,
 	})
-	var limited *kernel.RateLimitedError
-	l := s.Localizer(ctx)
+	if p := s.passkeyProblem(ctx, err); p != nil {
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
 	switch {
-	case errors.As(err, &limited):
-		retry := seconds(limited.RetryAfter)
-		p := s.problem(ctx, http.StatusTooManyRequests, ProblemTypeBlank, l.ServerErrorsRateLimited(), l.ServerErrorsRateLimitedDetail(retry))
-		p.Headers.RetryAfter = &retry
-		return ChangePassworddefaultApplicationProblemPlusJSONResponse(p), nil
-	case errors.Is(err, appidentity.ErrWrongPassword):
-		return ChangePassworddefaultApplicationProblemPlusJSONResponse(
-			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeWrongPassword, l.ServerErrorsWrongPassword(), "")), nil
 	case errors.Is(err, identity.ErrInvalidPassword):
 		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "new_password")), nil
 	case err != nil:
@@ -102,16 +149,18 @@ func (s *Server) DeleteOwnAccount(ctx context.Context, req DeleteOwnAccountReque
 	if p, h, limited := s.LimitProblem(ctx, DeleteAccountLimit, v.AccountID); limited {
 		return DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse{Body: p, Headers: h, StatusCode: http.StatusTooManyRequests}, nil
 	}
-	if req.Body == nil || req.Body.Password == "" {
+	if req.Body == nil {
 		return DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "password")), nil
 	}
-	err = s.o.OwnAccount.DeleteOwnAccount(ctx, v.UserID, req.Body.Password)
-	switch {
-	case errors.Is(err, appidentity.ErrWrongPassword):
-		l := s.Localizer(ctx)
-		return DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse(
-			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeWrongPassword, l.ServerErrorsWrongPassword(), "")), nil
-	case err != nil:
+	c, param, ok := confirmationOf(req.Body.Password, req.Body.Passkey, "password")
+	if !ok {
+		return DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, param)), nil
+	}
+	err = s.o.OwnAccount.DeleteOwnAccount(ctx, v.UserID, c)
+	if p := s.passkeyProblem(ctx, err); p != nil {
+		return DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	if err != nil {
 		return nil, fmt.Errorf("clientapi: delete the account of user %s: %w", v.UserID, err)
 	}
 	return DeleteOwnAccount204Response{}, nil

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Passkeys (FR-004) against a real `my serve` (e2e/server.ts) with Chromium's virtual authenticator (the
 // WebAuthn domain of the DevTools protocol): a user adds a passkey on the settings page of the app, then signs in
-// with it on the server-rendered sign-in page, without the email address and the password. The authenticator
+// with it on the server-rendered sign-in page, without the email address and the password; then a user removes the
+// password, which a passkey confirms, keeps the last passkey, and signs in with the passkey only. The authenticator
 // stores discoverable credentials and verifies the user, as a phone or a password manager does.
 //
 // Every project creates a user of its own (a random name), so a retry and the other projects never meet its
@@ -91,5 +92,57 @@ test.describe("passkeys", () => {
     await expect(page.locator('form[action="/auth/sign_out"]')).toBeVisible();
     const { credentials: used } = await cdp.send("WebAuthn.getCredentials", { authenticatorId });
     expect(used[0]?.signCount).toBeGreaterThan(credentials[0]?.signCount ?? 0);
+  });
+
+  test("removes the password with a passkey and signs in with the passkey only", async ({ page, makeAxeBuilder }) => {
+    const username = `e2e_passwordless_${randomBytes(4).toString("hex")}`;
+    const user = { email: `${username}@example.com`, password: `e2e-password-${username}` };
+    runMy(["admin", "create", "-username", username, "-email", user.email], `${user.password}\n`);
+    await addAuthenticator(page);
+
+    await page.goto("/login");
+    await page.getByRole("main").getByRole("button").click();
+    await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
+    await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
+    await page.locator('main button[type="submit"]').first().click();
+    await expect(page).toHaveURL(`${serverURL}/home`);
+
+    await page.goto("/settings/passkeys");
+    const main = page.getByRole("main");
+    const form = main.getByRole("region", { name: message("client", "settings.passkeys.add.title") });
+    await form.getByRole("textbox", { name: message("client", "settings.passkeys.name") }).fill("Only key");
+    await form.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
+    await form.getByRole("button", { name: message("client", "settings.passkeys.add.submit"), exact: true }).click();
+    await expect(main.getByText(message("client", "settings.passkeys.added", { name: "Only key" }))).toBeVisible();
+
+    // The password page removes the password once the passkey confirms it.
+    await page.goto("/settings/password");
+    const removal = main.getByRole("region", { name: message("client", "settings.password.remove.title") });
+    await removal.getByRole("button", { name: message("client", "settings.password.remove.open"), exact: true }).click();
+    const dialog = page.getByRole("alertdialog", { name: message("client", "settings.password.remove.confirm.title") });
+    await expectNoAxeViolations(makeAxeBuilder);
+    await dialog.getByRole("button", { name: message("client", "settings.password.remove.confirm"), exact: true }).click();
+    await expect(main.getByText(message("client", "settings.password.removed"))).toBeVisible();
+    await expect(main.getByRole("region", { name: message("client", "settings.password.set.title") })).toBeVisible();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // The last passkey stays while there is no password.
+    await page.goto("/settings/passkeys");
+    const list = main.getByRole("region", { name: message("client", "settings.passkeys.list.title") });
+    await list.getByRole("button").click();
+    const confirm = page.getByRole("alertdialog");
+    await confirm.getByRole("button", { name: message("client", "settings.passkeys.remove"), exact: true }).click();
+    await expect(confirm.getByText(message("server", "errors.passkey.last_sign_in_method"), { exact: false })).toBeVisible();
+
+    // Signed out, the password no longer signs in; the passkey does.
+    await page.context().clearCookies();
+    await page.goto("/auth/sign_in");
+    await page.locator('input[type="email"][autocomplete="username"]').fill(user.email);
+    await page.locator('input[type="password"][autocomplete="current-password"]').fill(user.password);
+    await page.locator('main button[type="submit"]').first().click();
+    await expect(page.getByText(message("server", "auth.sign_in.failed"))).toBeVisible();
+    await page.getByRole("main").getByRole("button", { name: message("server", "auth.sign_in.passkey"), exact: true }).click();
+    await expect(page).toHaveURL(`${serverURL}/`);
   });
 });

@@ -162,7 +162,7 @@ func passwordResetWorksOnce(t *testing.T, e *accountEnv) {
 	older := resetToken(t, m, address)
 	e.clock.Advance(time.Second)
 	if err := e.identity.ChangePassword(ctx, appidentity.ChangePasswordInput{
-		UserID: reg.User.ID, CurrentPassword: "a brand new password", NewPassword: "yet another password",
+		UserID: reg.User.ID, Confirmation: appidentity.Confirmation{Password: "a brand new password"}, NewPassword: "yet another password",
 	}); err != nil {
 		t.Fatalf("ChangePassword = %v", err)
 	}
@@ -216,7 +216,7 @@ func passwordChangeKeepsTheCurrentGrant(t *testing.T, e *accountEnv) {
 	bobTokens, _ := e.webTokensFor(t, bob.User.ID)
 	change := func(currentPassword, newPassword string) error {
 		return e.identity.ChangePassword(ctx, appidentity.ChangePasswordInput{
-			UserID: reg.User.ID, CurrentPassword: currentPassword, NewPassword: newPassword, KeepFamilyID: current.Token.FamilyID,
+			UserID: reg.User.ID, Confirmation: appidentity.Confirmation{Password: currentPassword}, NewPassword: newPassword, KeepFamilyID: current.Token.FamilyID,
 		})
 	}
 	if err := change(sessionPassword, "short"); !errors.Is(err, identity.ErrInvalidPassword) {

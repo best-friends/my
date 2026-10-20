@@ -731,6 +731,16 @@ func (q *Queries) ErasePasskeyCredentials(ctx context.Context, userID string) er
 	return err
 }
 
+const erasePasswordCredentialRemovals = `-- name: ErasePasswordCredentialRemovals :exec
+DELETE FROM password_credential_removals WHERE password_credential_id IN (
+  SELECT c.id FROM password_credentials c WHERE c.user_id = $1)
+`
+
+func (q *Queries) ErasePasswordCredentialRemovals(ctx context.Context, userID string) error {
+	_, err := q.db.Exec(ctx, erasePasswordCredentialRemovals, userID)
+	return err
+}
+
 const erasePasswordCredentials = `-- name: ErasePasswordCredentials :exec
 DELETE FROM password_credentials WHERE user_id = $1
 `

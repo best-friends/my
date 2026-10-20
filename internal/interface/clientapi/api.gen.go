@@ -3494,13 +3494,16 @@ type AutoDeletePolicy struct {
 	MinAgeDays int `json:"min_age_days"`
 }
 
-// ChangePasswordRequest A change of the user's password.
+// ChangePasswordRequest A change of the user's password, confirmed with `current_password` or `passkey`.
 type ChangePasswordRequest struct {
 	// CurrentPassword The user's current password, which confirms the change.
-	CurrentPassword string `json:"current_password"`
+	CurrentPassword *string `json:"current_password,omitempty"`
 
 	// NewPassword The new password, 8 to 128 characters.
 	NewPassword string `json:"new_password"`
+
+	// Passkey The browser's answer to a confirmation with a passkey, which confirms an operation.
+	Passkey *PasskeyAssertion `json:"passkey,omitempty"`
 }
 
 // CopyCustomEmojiRequest The local custom emoji that a copy of a remote one becomes.
@@ -4033,10 +4036,13 @@ type DecideAppealRequest struct {
 	PublicReason *string `json:"public_reason,omitempty"`
 }
 
-// DeleteOwnAccountRequest The confirmation of the deletion of the user's own account.
+// DeleteOwnAccountRequest The confirmation of the deletion of the user's own account: `password` or `passkey`.
 type DeleteOwnAccountRequest struct {
+	// Passkey The browser's answer to a confirmation with a passkey, which confirms an operation.
+	Passkey *PasskeyAssertion `json:"passkey,omitempty"`
+
 	// Password The user's current password.
-	Password string `json:"password"`
+	Password *string `json:"password,omitempty"`
 }
 
 // DomainBlock A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
@@ -4944,6 +4950,29 @@ type Passkey struct {
 	Name string `json:"name"`
 }
 
+// PasskeyAssertion The browser's answer to a confirmation with a passkey, which confirms an operation.
+type PasskeyAssertion struct {
+	// ConfirmationToken The `confirmation_token` of `POST /passkeys/confirmation`.
+	ConfirmationToken string `json:"confirmation_token"`
+
+	// Credential The `AuthenticationResponseJSON` of WebAuthn Level 3 (§5.1): what
+	// `PublicKeyCredential.toJSON()` returns for the passkey.
+	Credential map[string]interface{} `json:"credential"`
+}
+
+// PasskeyConfirmation The start of a confirmation with a passkey.
+type PasskeyConfirmation struct {
+	// ConfirmationToken An opaque token that carries the confirmation to the operation it confirms.
+	ConfirmationToken string `json:"confirmation_token"`
+
+	// ExpiresAt When `confirmation_token` stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Options The `PublicKeyCredentialRequestOptionsJSON` of WebAuthn Level 3 (§5.1.9): binary
+	// values in base64url, for `PublicKeyCredential.parseRequestOptionsFromJSON()`.
+	Options map[string]interface{} `json:"options"`
+}
+
 // PasskeyList The authenticated user's passkeys, oldest first.
 type PasskeyList struct {
 	Items []Passkey `json:"items"`
@@ -4962,13 +4991,24 @@ type PasskeyRegistration struct {
 	RegistrationToken string `json:"registration_token"`
 }
 
-// PasskeyRegistrationRequest The name of a new passkey and the user's password that confirms it.
+// PasskeyRegistrationRequest The name of a new passkey and what confirms it: the user's `password` or a `passkey` of
+// the user.
 type PasskeyRegistrationRequest struct {
 	// Name What the user calls the passkey; spaces around it are dropped.
 	Name string `json:"name"`
 
+	// Passkey The browser's answer to a confirmation with a passkey, which confirms an operation.
+	Passkey *PasskeyAssertion `json:"passkey,omitempty"`
+
 	// Password The user's current password.
-	Password string `json:"password"`
+	Password *string `json:"password,omitempty"`
+}
+
+// PasswordStatus Whether the authenticated user has a password.
+type PasswordStatus struct {
+	// HasPassword Whether the password signs in; false after the user removed it, when only the
+	// passkeys sign in.
+	HasPassword bool `json:"has_password"`
 }
 
 // Permission A capability that a role grants. `manage_accounts`: the accounts and their moderation
@@ -5177,11 +5217,16 @@ type PreviewDomainBlockImportRequest struct {
 //   - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
 //     operation, has no two-factor authentication.
 //   - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
-//     registration does not verify, or the passkey is registered already.
+//     registration or confirmation does not verify, the passkey is registered already, or
+//     the passkey that confirms an operation is not one of the user's.
 //   - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
 //     unknown or expired. Start a new one.
+//   - `/api/v1/problems/passkey-confirmation-expired` (422): the confirmation with a passkey
+//     is unknown, expired, or used. Start a new one.
 //   - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
 //     allowed. Remove one first.
+//   - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
+//     way to sign in: the password without a passkey, or the last passkey without a password.
 //   - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
 //     says which.
 //   - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -5410,6 +5455,12 @@ type RelayProtocol string
 // `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
 // instance sent the `Undo` of its `Follow`.
 type RelayState string
+
+// RemovePasswordRequest The passkey that confirms the removal of the user's password.
+type RemovePasswordRequest struct {
+	// Passkey The browser's answer to a confirmation with a passkey, which confirms an operation.
+	Passkey PasskeyAssertion `json:"passkey"`
+}
 
 // ReplaceCustomEmojiImageRequest The new image of a local custom emoji.
 type ReplaceCustomEmojiImageRequest struct {
@@ -6727,6 +6778,9 @@ type DeleteOwnAccountJSONRequestBody = DeleteOwnAccountRequest
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = ChangePasswordRequest
 
+// RemovePasswordJSONRequestBody defines body for RemovePassword for application/json ContentType.
+type RemovePasswordJSONRequestBody = RemovePasswordRequest
+
 // UpdateAccountCredentialsJSONRequestBody defines body for UpdateAccountCredentials for application/json ContentType.
 type UpdateAccountCredentialsJSONRequestBody = UpdateCredentialsRequest
 
@@ -6897,9 +6951,15 @@ type ServerInterface interface {
 	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(w http.ResponseWriter, r *http.Request, params LookupAccountParams)
-	// ChangePassword Change the authenticated user's password
+	// GetPasswordStatus Get whether the authenticated user has a password
+	// (GET /accounts/password)
+	GetPasswordStatus(w http.ResponseWriter, r *http.Request)
+	// ChangePassword Change or set the authenticated user's password
 	// (POST /accounts/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// RemovePassword Remove the authenticated user's password
+	// (POST /accounts/password/remove)
+	RemovePassword(w http.ResponseWriter, r *http.Request)
 	// GetRelationships Get the viewer's relationships with accounts
 	// (GET /accounts/relationships)
 	GetRelationships(w http.ResponseWriter, r *http.Request, params GetRelationshipsParams)
@@ -7317,6 +7377,9 @@ type ServerInterface interface {
 	// CreatePasskey Register a passkey with the browser's response to a registration
 	// (POST /passkeys)
 	CreatePasskey(w http.ResponseWriter, r *http.Request)
+	// BeginPasskeyConfirmation Start a confirmation with a passkey
+	// (POST /passkeys/confirmation)
+	BeginPasskeyConfirmation(w http.ResponseWriter, r *http.Request)
 	// BeginPasskeyRegistration Start the registration of a passkey
 	// (POST /passkeys/registration)
 	BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request)
@@ -7505,11 +7568,39 @@ func (siw *ServerInterfaceWrapper) LookupAccount(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// GetPasswordStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetPasswordStatus(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPasswordStatus(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ChangePassword operation middleware
 func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangePassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemovePassword operation middleware
+func (siw *ServerInterfaceWrapper) RemovePassword(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemovePassword(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -11620,6 +11711,20 @@ func (siw *ServerInterfaceWrapper) CreatePasskey(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// BeginPasskeyConfirmation operation middleware
+func (siw *ServerInterfaceWrapper) BeginPasskeyConfirmation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BeginPasskeyConfirmation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // BeginPasskeyRegistration operation middleware
 func (siw *ServerInterfaceWrapper) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
 
@@ -12762,7 +12867,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/auto_delete", wrapper.GetAutoDeletePolicy)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/auto_delete", wrapper.UpdateAutoDeletePolicy)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/password", wrapper.GetPasswordStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/password", wrapper.ChangePassword)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/password/remove", wrapper.RemovePassword)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports", wrapper.ListDataExports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/exports", wrapper.RequestDataExport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports/{id}/archive", wrapper.DownloadDataExport)
@@ -12778,6 +12885,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/passkeys", wrapper.ListPasskeys)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys", wrapper.CreatePasskey)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys/registration", wrapper.BeginPasskeyRegistration)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/passkeys/confirmation", wrapper.BeginPasskeyConfirmation)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/passkeys/{id}", wrapper.DeletePasskey)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/lookup", wrapper.LookupAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/relationships", wrapper.GetRelationships)
@@ -13306,6 +13414,67 @@ func (response LookupAccountdefaultApplicationProblemPlusJSONResponse) VisitLook
 	return err
 }
 
+type GetPasswordStatusRequestObject struct {
+}
+
+type GetPasswordStatusResponseObject interface {
+	VisitGetPasswordStatusResponse(w http.ResponseWriter) error
+}
+
+type GetPasswordStatus200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetPasswordStatus200JSONResponse struct {
+	Body    PasswordStatus
+	Headers GetPasswordStatus200ResponseHeaders
+}
+
+func (response GetPasswordStatus200JSONResponse) VisitGetPasswordStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPasswordStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetPasswordStatusdefaultApplicationProblemPlusJSONResponse) VisitGetPasswordStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ChangePasswordRequestObject struct {
 	Body *ChangePasswordJSONRequestBody
 }
@@ -13329,6 +13498,52 @@ type ChangePassworddefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ChangePassworddefaultApplicationProblemPlusJSONResponse) VisitChangePasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemovePasswordRequestObject struct {
+	Body *RemovePasswordJSONRequestBody
+}
+
+type RemovePasswordResponseObject interface {
+	VisitRemovePasswordResponse(w http.ResponseWriter) error
+}
+
+type RemovePassword204Response struct {
+}
+
+func (response RemovePassword204Response) VisitRemovePasswordResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemovePassworddefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RemovePassworddefaultApplicationProblemPlusJSONResponse) VisitRemovePasswordResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -21702,6 +21917,67 @@ func (response CreatePasskeydefaultApplicationProblemPlusJSONResponse) VisitCrea
 	return err
 }
 
+type BeginPasskeyConfirmationRequestObject struct {
+}
+
+type BeginPasskeyConfirmationResponseObject interface {
+	VisitBeginPasskeyConfirmationResponse(w http.ResponseWriter) error
+}
+
+type BeginPasskeyConfirmation200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type BeginPasskeyConfirmation200JSONResponse struct {
+	Body    PasskeyConfirmation
+	Headers BeginPasskeyConfirmation200ResponseHeaders
+}
+
+func (response BeginPasskeyConfirmation200JSONResponse) VisitBeginPasskeyConfirmationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BeginPasskeyConfirmationdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response BeginPasskeyConfirmationdefaultApplicationProblemPlusJSONResponse) VisitBeginPasskeyConfirmationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type BeginPasskeyRegistrationRequestObject struct {
 	Body *BeginPasskeyRegistrationJSONRequestBody
 }
@@ -23975,9 +24251,15 @@ type StrictServerInterface interface {
 	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(ctx context.Context, request LookupAccountRequestObject) (LookupAccountResponseObject, error)
-	// ChangePassword Change the authenticated user's password
+	// GetPasswordStatus Get whether the authenticated user has a password
+	// (GET /accounts/password)
+	GetPasswordStatus(ctx context.Context, request GetPasswordStatusRequestObject) (GetPasswordStatusResponseObject, error)
+	// ChangePassword Change or set the authenticated user's password
 	// (POST /accounts/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// RemovePassword Remove the authenticated user's password
+	// (POST /accounts/password/remove)
+	RemovePassword(ctx context.Context, request RemovePasswordRequestObject) (RemovePasswordResponseObject, error)
 	// GetRelationships Get the viewer's relationships with accounts
 	// (GET /accounts/relationships)
 	GetRelationships(ctx context.Context, request GetRelationshipsRequestObject) (GetRelationshipsResponseObject, error)
@@ -24395,6 +24677,9 @@ type StrictServerInterface interface {
 	// CreatePasskey Register a passkey with the browser's response to a registration
 	// (POST /passkeys)
 	CreatePasskey(ctx context.Context, request CreatePasskeyRequestObject) (CreatePasskeyResponseObject, error)
+	// BeginPasskeyConfirmation Start a confirmation with a passkey
+	// (POST /passkeys/confirmation)
+	BeginPasskeyConfirmation(ctx context.Context, request BeginPasskeyConfirmationRequestObject) (BeginPasskeyConfirmationResponseObject, error)
 	// BeginPasskeyRegistration Start the registration of a passkey
 	// (POST /passkeys/registration)
 	BeginPasskeyRegistration(ctx context.Context, request BeginPasskeyRegistrationRequestObject) (BeginPasskeyRegistrationResponseObject, error)
@@ -24610,6 +24895,30 @@ func (sh *strictHandler) LookupAccount(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// GetPasswordStatus operation middleware
+func (sh *strictHandler) GetPasswordStatus(w http.ResponseWriter, r *http.Request) {
+	var request GetPasswordStatusRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPasswordStatus(ctx, request.(GetPasswordStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPasswordStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPasswordStatusResponseObject); ok {
+		if err := validResponse.VisitGetPasswordStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ChangePassword operation middleware
 func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var request ChangePasswordRequestObject
@@ -24634,6 +24943,37 @@ func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangePasswordResponseObject); ok {
 		if err := validResponse.VisitChangePasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemovePassword operation middleware
+func (sh *strictHandler) RemovePassword(w http.ResponseWriter, r *http.Request) {
+	var request RemovePasswordRequestObject
+
+	var body RemovePasswordJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemovePassword(ctx, request.(RemovePasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemovePassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemovePasswordResponseObject); ok {
+		if err := validResponse.VisitRemovePasswordResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -28498,6 +28838,30 @@ func (sh *strictHandler) CreatePasskey(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreatePasskeyResponseObject); ok {
 		if err := validResponse.VisitCreatePasskeyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BeginPasskeyConfirmation operation middleware
+func (sh *strictHandler) BeginPasskeyConfirmation(w http.ResponseWriter, r *http.Request) {
+	var request BeginPasskeyConfirmationRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BeginPasskeyConfirmation(ctx, request.(BeginPasskeyConfirmationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BeginPasskeyConfirmation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BeginPasskeyConfirmationResponseObject); ok {
+		if err := validResponse.VisitBeginPasskeyConfirmationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

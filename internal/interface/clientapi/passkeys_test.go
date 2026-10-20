@@ -16,14 +16,23 @@ import (
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
-// fakePasskeys are the passkeys of alice: password "secret" confirms a registration, token
-// "reg-1" is a valid registration, and a credential {"id":"ok"} verifies. err, when set, fails
-// every registration.
+// fakePasskeys are the passkeys of alice: password "secret" or the passkey confirmation token
+// "conf-1" confirms a registration, token "reg-1" is a valid registration, and a credential
+// {"id":"ok"} verifies. err, when set, fails every registration. noPassword makes the last
+// passkey the last way to sign in.
 type fakePasskeys struct {
-	list     []identity.PasskeyCredential
-	err      error
-	calls    []string
-	response []byte
+	list       []identity.PasskeyCredential
+	err        error
+	calls      []string
+	response   []byte
+	noPassword bool
+}
+
+func (f *fakePasskeys) BeginPasskeyConfirmation(_ context.Context, userID string) (appidentity.PasskeyConfirmation, error) {
+	f.calls = append(f.calls, "confirm "+userID)
+	return appidentity.PasskeyConfirmation{
+		Options: json.RawMessage(`{"challenge":"Y29uZmlybQ","rpId":"social.example"}`), Token: "conf-1", ExpiresAt: passkeyCreatedAt,
+	}, nil
 }
 
 var passkeyCreatedAt = time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
@@ -33,14 +42,16 @@ func (f *fakePasskeys) Passkeys(_ context.Context, userID string) ([]identity.Pa
 	return f.list, nil
 }
 
-func (f *fakePasskeys) BeginPasskeyRegistration(_ context.Context, userID, name, password string) (appidentity.PasskeyRegistration, error) {
+func (f *fakePasskeys) BeginPasskeyRegistration(_ context.Context, userID, name string, c appidentity.Confirmation) (appidentity.PasskeyRegistration, error) {
 	f.calls = append(f.calls, "begin "+userID+" "+name)
 	switch {
 	case f.err != nil:
 		return appidentity.PasskeyRegistration{}, f.err
 	case name == "":
 		return appidentity.PasskeyRegistration{}, identity.ErrInvalidPasskeyName
-	case password != "secret":
+	case c.Passkey.Token != "" && c.Passkey.Token != "conf-1":
+		return appidentity.PasskeyRegistration{}, appidentity.ErrPasskeyConfirmationExpired
+	case c.Passkey.Token == "" && c.Password != "secret":
 		return appidentity.PasskeyRegistration{}, appidentity.ErrWrongPassword
 	}
 	return appidentity.PasskeyRegistration{
@@ -70,6 +81,9 @@ func (f *fakePasskeys) RemovePasskey(_ context.Context, userID, id string) error
 	f.calls = append(f.calls, "remove "+userID+" "+id)
 	for i, c := range f.list {
 		if c.ID == id {
+			if f.noPassword && len(f.list) == 1 {
+				return appidentity.ErrLastSignInMethod
+			}
 			f.list = slices.Delete(f.list, i, i+1)
 			return nil
 		}
@@ -97,6 +111,8 @@ func TestPasskeyRegistration(t *testing.T) {
 	}{
 		{`{"name":"phone","password":"wrong"}`, clientapi.ProblemTypeWrongPassword, http.StatusUnprocessableEntity},
 		{`{"name":"phone","password":""}`, clientapi.ProblemTypeBlank, http.StatusBadRequest},
+		{`{"name":"phone"}`, clientapi.ProblemTypeBlank, http.StatusBadRequest},
+		{`{"name":"phone","passkey":{"confirmation_token":"old","credential":{"id":"ok"}}}`, clientapi.ProblemTypePasskeyConfirmationExpired, http.StatusUnprocessableEntity},
 	} {
 		res := e.send(t, http.MethodPost, "/passkeys/registration", "write", tc.body)
 		if p := decodeProblem(t, res); res.StatusCode != tc.status || p.Type != tc.typ {
@@ -160,6 +176,26 @@ func TestPasskeyRegistration(t *testing.T) {
 	}
 }
 
+func TestPasskeyConfirmation(t *testing.T) {
+	e, f := newPasskeyEnv(t)
+	res := e.send(t, http.MethodPost, "/passkeys/confirmation", "write", "")
+	c := decodeJSON[clientapi.PasskeyConfirmation](t, res)
+	if res.StatusCode != http.StatusOK || c.ConfirmationToken != "conf-1" || c.Options["challenge"] != "Y29uZmlybQ" ||
+		!c.ExpiresAt.Equal(passkeyCreatedAt) || res.Header.Get("Cache-Control") != "no-store" {
+		t.Errorf("confirmation = %d %+v", res.StatusCode, c)
+	}
+	if want := "confirm user-" + aliceAccountID; !slices.Contains(f.calls, want) {
+		t.Errorf("calls = %v, want %q", f.calls, want)
+	}
+	res = e.send(t, http.MethodPost, "/passkeys/registration", "write", `{"name":"phone","passkey":{"confirmation_token":"conf-1","credential":{"id":"ok"}}}`)
+	if reg := decodeJSON[clientapi.PasskeyRegistration](t, res); res.StatusCode != http.StatusOK || reg.RegistrationToken != "reg-1" {
+		t.Errorf("begin a registration confirmed with a passkey = %d %+v", res.StatusCode, reg)
+	}
+	if res := e.send(t, http.MethodPost, "/passkeys/confirmation", "read-accounts", ""); res.StatusCode != http.StatusForbidden {
+		t.Errorf("confirmation with read:accounts = %d, want 403", res.StatusCode)
+	}
+}
+
 func TestPasskeyRemoval(t *testing.T) {
 	e, f := newPasskeyEnv(t)
 	f.list = []identity.PasskeyCredential{{ID: "019a0000-0000-7000-8000-0000000000a1", Name: "phone", CreatedAt: passkeyCreatedAt}}
@@ -167,6 +203,12 @@ func TestPasskeyRemoval(t *testing.T) {
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusNotFound {
 		t.Errorf("remove unknown = %d %+v, want 404", res.StatusCode, p)
 	}
+	f.noPassword = true
+	res = e.send(t, http.MethodDelete, "/passkeys/019a0000-0000-7000-8000-0000000000a1", "write", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusConflict || p.Type != clientapi.ProblemTypeLastSignInMethod {
+		t.Errorf("remove the last way to sign in = %d %+v, want 409 last-sign-in-method", res.StatusCode, p)
+	}
+	f.noPassword = false
 	res = e.send(t, http.MethodDelete, "/passkeys/019a0000-0000-7000-8000-0000000000a1", "write", "")
 	if res.StatusCode != http.StatusNoContent || len(f.list) != 0 {
 		t.Errorf("remove = %d, list %+v; want 204 and none", res.StatusCode, f.list)

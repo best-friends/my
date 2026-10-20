@@ -1,16 +1,39 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The form that changes the user's password (FR-002): the current password that confirms it and the new one. A wrong
-// current password is that field's error, a new password of the wrong length the new field's (the browser's
-// constraint validation catches it first), and any other failure an alert next to the form (web-client.md E2, G16).
-import { useMutation } from "@tanstack/react-query";
+// The user's password (FR-002, FR-004): the form that changes it with the current one, or sets one with a passkey for a
+// user who removed theirs, and removing it with a passkey. A wrong current password is that field's error, a new
+// password of the wrong length the new field's (the browser's constraint validation catches it first), a failed
+// confirmation with a passkey and any other failure an alert next to the form (web-client.md E2, G16).
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
-import { changePasswordMutation, passwordChangeFailure } from "../api/password";
+import { supportsPasskeys } from "../../../lib/webauthn";
+import { passkeysQueryOptions } from "../api/passkeys";
+import {
+  changePasswordMutation,
+  confirmationFailure,
+  passwordStatusQueryOptions,
+  refreshPasswordStatus,
+  removePasswordMutation,
+} from "../api/password";
+import { confirmationErrorMessage } from "./passkeyConfirmation";
 
-/** What the form that changes the password needs. */
+/** Whether the user has a password, which the route has loaded. */
+export function useHasPassword(): boolean {
+  const api = useApi();
+  return useSuspenseQuery(passwordStatusQueryOptions(api)).data.has_password;
+}
+
+/** What the form that changes or sets the password needs. */
 export type PasswordChangeForm = {
+  /**
+   * Whether the user has a password: the form changes it after the current one. Without one, the form sets one after a
+   * passkey confirms it.
+   */
+  hasPassword: boolean;
+  /** Whether the browser can use passkeys, which confirm setting a password. */
+  isPasskeySupported: boolean;
   currentPassword: string;
   changeCurrentPassword: (password: string) => void;
   newPassword: string;
@@ -21,30 +44,38 @@ export type PasswordChangeForm = {
   currentPasswordError: string | undefined;
   /** Why the change failed otherwise, localized, for an alert next to the form; undefined when it did not. */
   error: string | undefined;
-  /** What the last change did, for the form's StatusMessage; undefined before the first one. */
-  status: string | undefined;
 };
 
-/** The form that changes the password. A success empties the form and says that the other sessions ended. */
-export function usePasswordChangeForm(): PasswordChangeForm {
+/**
+ * The form that changes the password, or sets one with a passkey. A success empties the form and passes what it did to
+ * `onStatus` (the page's StatusMessage, which a new submission empties), once whether the user has a password is
+ * fetched again.
+ */
+export function usePasswordChangeForm(onStatus: (status: string | undefined) => void): PasswordChangeForm {
   const api = useApi();
   const t = useT();
+  const queryClient = useQueryClient();
+  const hasPassword = useHasPassword();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [status, setStatus] = useState<string | undefined>(undefined);
   const change = useMutation({
     ...changePasswordMutation(api),
-    onSuccess: () => {
+    onSuccess: async (_, { currentPassword: confirmed }) => {
+      await refreshPasswordStatus(api, queryClient);
       setCurrentPassword("");
       setNewPassword("");
-      setStatus(t("client:settings.password.changed"));
+      onStatus(t(confirmed === undefined ? "client:settings.password.set.done" : "client:settings.password.changed"));
     },
   });
-  const failure = change.isError ? passwordChangeFailure(change.error) : undefined;
+  const failure = change.isError ? confirmationFailure(change.error) : undefined;
   let error: string | undefined;
   if (failure === "rate-limited") error = t("client:settings.password.rate_limited", { reason: errorMessage(change.error) });
-  else if (failure === "other") error = t("client:settings.password.failed", { reason: errorMessage(change.error) });
+  else if (failure !== undefined && failure !== "wrong-password") {
+    error = confirmationErrorMessage(t, failure, change.error, (reason) => t("client:settings.password.failed", { reason }));
+  }
   return {
+    hasPassword,
+    isPasskeySupported: supportsPasskeys(),
     currentPassword,
     changeCurrentPassword: (next) => {
       setCurrentPassword(next);
@@ -58,14 +89,72 @@ export function usePasswordChangeForm(): PasswordChangeForm {
     },
     submit: (event) => {
       event.preventDefault();
-      if (change.isPending || currentPassword === "" || newPassword === "") return;
+      if (change.isPending || newPassword === "" || (hasPassword && currentPassword === "")) return;
       change.reset();
-      setStatus(undefined);
-      change.mutate({ current_password: currentPassword, new_password: newPassword });
+      onStatus(undefined);
+      change.mutate({ currentPassword: hasPassword ? currentPassword : undefined, newPassword });
     },
     isPending: change.isPending,
     currentPasswordError: failure === "wrong-password" ? t("client:settings.password.wrong_password") : undefined,
     error,
-    status,
+  };
+}
+
+/** What removing the password needs. */
+export type PasswordRemoval = {
+  /** Whether the browser can use passkeys, which confirm the removal. */
+  isSupported: boolean;
+  /** Whether the user has a passkey, without which the password stays. */
+  hasPasskey: boolean;
+  isOpen: boolean;
+  open: () => void;
+  cancel: () => void;
+  /** Asks the browser for a passkey and removes the password; the dialog closes once it is gone. */
+  confirm: () => void;
+  isPending: boolean;
+  /** Why the removal failed, localized, for the dialog (which stays open); undefined when it did not. */
+  error: string | undefined;
+};
+
+/**
+ * Removing the password after a passkey confirms it, from an alert dialog. Once whether the user has a password is
+ * fetched again, the dialog closes and the page's StatusMessage (`onStatus`) says what happened.
+ */
+export function usePasswordRemoval(onStatus: (status: string | undefined) => void): PasswordRemoval {
+  const api = useApi();
+  const t = useT();
+  const queryClient = useQueryClient();
+  const hasPasskey = useSuspenseQuery(passkeysQueryOptions(api)).data.items.length > 0;
+  const [isOpen, setIsOpen] = useState(false);
+  const remove = useMutation({
+    ...removePasswordMutation(api),
+    onSuccess: async () => {
+      await refreshPasswordStatus(api, queryClient);
+      setIsOpen(false);
+      onStatus(t("client:settings.password.removed"));
+    },
+  });
+  const failure = remove.isError ? confirmationFailure(remove.error) : undefined;
+  return {
+    isSupported: supportsPasskeys(),
+    hasPasskey,
+    isOpen,
+    open: () => {
+      remove.reset();
+      onStatus(undefined);
+      setIsOpen(true);
+    },
+    cancel: () => {
+      setIsOpen(false);
+      remove.reset();
+    },
+    confirm: () => {
+      if (!remove.isPending) remove.mutate();
+    },
+    isPending: remove.isPending,
+    error:
+      failure === undefined
+        ? undefined
+        : confirmationErrorMessage(t, failure, remove.error, (reason) => t("client:settings.password.remove.failed", { reason })),
   };
 }

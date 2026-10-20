@@ -30,6 +30,14 @@ CREATE TABLE password_credentials (
 );
 CREATE INDEX password_credentials_user_id_id ON password_credentials (user_id, id DESC);
 
+-- Event: a user removed their password (FR-004), which then no longer signs in. It ends the
+-- password credential it names, the newest one of the user; a newer credential sets a password
+-- again.
+CREATE TABLE password_credential_removals (
+  password_credential_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  removed_at timestamptz NOT NULL
+);
+
 -- Event: a TOTP authenticator a user enrolled (FR-005). The secret is sealed with kernel.Sealer
 -- (ADR-0019 §6). The active enrollment is the newest one without a revocation.
 CREATE TABLE totp_enrollments (

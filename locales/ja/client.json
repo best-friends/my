@@ -6383,6 +6383,10 @@
     "defaultMessage": "確認のためパスワードを入力してください。アカウントはすぐに削除され、ログアウトします。元に戻すことはできません。",
     "description": "Description of the dialog that deletes the user's account."
   },
+  "settings.account.delete.confirm.description_passkey": {
+    "defaultMessage": "確認のため、ブラウザがパスキーを求めます。アカウントはすぐに削除され、ログアウトします。元に戻すことはできません。",
+    "description": "Description of the dialog that deletes the account of a user who has no password: pressing the delete button opens the browser's passkey prompt, which confirms the deletion."
+  },
   "settings.account.delete.confirm.title": {
     "defaultMessage": "アカウントを削除しますか？",
     "description": "Title of the dialog that asks the user to confirm deleting their account."
@@ -7396,7 +7400,7 @@
     "description": "Description of the passkeys page in the settings menu."
   },
   "settings.passkeys.description": {
-    "defaultMessage": "パスキーを使うと、パスワードの代わりに、端末やパスワードマネージャーのロックを解除する指紋・顔・PIN でログインできます。二要素認証を有効にしている場合は、パスキーでログインしたあとにも認証コードを求められます。パスワードは引き続き使えます。",
+    "defaultMessage": "パスキーを使うと、パスワードの代わりに、端末やパスワードマネージャーのロックを解除する指紋・顔・PIN でログインできます。二要素認証を有効にしている場合は、パスキーでログインしたあとにも認証コードを求められます。パスキーがあれば、パスワードのページでパスワードを削除できます。",
     "description": "Explanation at the top of the passkeys settings page."
   },
   "settings.passkeys.add.title": {
@@ -7406,6 +7410,10 @@
   "settings.passkeys.add.description": {
     "defaultMessage": "見分けられるようにパスキーに名前を付け、確認のためにパスワードを入力してください。続いて、ブラウザがパスキーの保存先を尋ねます。",
     "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.add.description_passkey": {
+    "defaultMessage": "見分けられるようにパスキーに名前を付けてください。確認のためにブラウザが登録済みのパスキーを求め、続いて新しいパスキーの保存先を尋ねます。",
+    "description": "Explanation of the form that adds a passkey for a user who has no password: an existing passkey confirms adding the new one."
   },
   "settings.passkeys.name": {
     "defaultMessage": "名前",
@@ -7520,12 +7528,16 @@
     "description": "Title of the settings page that changes the password, and its entry in the settings menu."
   },
   "settings.password.summary": {
-    "defaultMessage": "ログインに使うパスワードを変える",
+    "defaultMessage": "ログインに使うパスワードを変更・設定・削除する",
     "description": "Description of the password page in the settings menu."
   },
   "settings.password.description": {
     "defaultMessage": "パスワードを変えると、ほかのすべてのブラウザーとアプリからログアウトします。パスキーと二要素認証はそのまま残ります。",
     "description": "Text at the top of the settings page that changes the password."
+  },
+  "settings.password.change.title": {
+    "defaultMessage": "パスワードを変更",
+    "description": "Heading of the form that changes the password with the current one, on the password settings page."
   },
   "settings.password.current": {
     "defaultMessage": "現在のパスワード",
@@ -7566,6 +7578,82 @@
   "settings.password.failed": {
     "defaultMessage": "パスワードを変更できませんでした：{reason}",
     "description": "Alert when changing the password failed for another reason. {reason} is the error's message."
+  },
+  "settings.password.remove.title": {
+    "defaultMessage": "パスワードを削除",
+    "description": "Heading of the section that removes the password, so that only passkeys sign in, on the password settings page."
+  },
+  "settings.password.remove.description": {
+    "defaultMessage": "パスキーだけでログインするようにします。確認には登録済みのパスキーを使い、ほかのすべてのブラウザーとアプリからはログアウトします。パスワードは、このページかパスワードリセットのリンクで設定し直せます。",
+    "description": "Explanation of the section that removes the password."
+  },
+  "settings.password.remove.no_passkey": {
+    "defaultMessage": "ログインできなくならないように、パスワードを削除する前にパスキーを追加してください。",
+    "description": "Note instead of the button that removes the password, for a user who has no passkey."
+  },
+  "settings.password.remove.open": {
+    "defaultMessage": "パスワードを削除…",
+    "description": "Button that opens the dialog that removes the password."
+  },
+  "settings.password.remove.confirm.title": {
+    "defaultMessage": "パスワードを削除しますか？",
+    "description": "Title of the dialog that confirms removing the password."
+  },
+  "settings.password.remove.confirm.description": {
+    "defaultMessage": "これからはパスキーだけでログインします。確認のため、ブラウザがパスキーを求めます。",
+    "description": "Description of the dialog that removes the password: the confirm button opens the browser's passkey prompt."
+  },
+  "settings.password.remove.confirm": {
+    "defaultMessage": "パスワードを削除",
+    "description": "Button in the dialog that removes the password after the browser's passkey prompt."
+  },
+  "settings.password.remove.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the dialog without removing the password."
+  },
+  "settings.password.removed": {
+    "defaultMessage": "パスワードを削除しました。これからはパスキーでログインしてください。ほかのブラウザーとアプリはログアウトしました。",
+    "description": "Status after the password was removed."
+  },
+  "settings.password.remove.failed": {
+    "defaultMessage": "パスワードを削除できませんでした：{reason}",
+    "description": "Alert in the dialog when removing the password failed. {reason} is the error's message."
+  },
+  "settings.password.set.title": {
+    "defaultMessage": "パスワードを設定",
+    "description": "Heading of the form that sets a password for a user who removed theirs and signs in with passkeys only."
+  },
+  "settings.password.set.description": {
+    "defaultMessage": "いまはパスキーでログインしています。パスワードを設定すると、メールアドレスとパスワードでもログインできます。確認のためブラウザがパスキーを求め、ほかのすべてのブラウザーとアプリからはログアウトします。",
+    "description": "Explanation of the form that sets a password for a user who has none."
+  },
+  "settings.password.set.submit": {
+    "defaultMessage": "パスワードを設定",
+    "description": "Button that sets a password after the browser's passkey prompt, for a user who has none."
+  },
+  "settings.password.set.done": {
+    "defaultMessage": "パスワードを設定しました。ほかのブラウザーとアプリはログアウトしました。",
+    "description": "Status after a user who had no password set one."
+  },
+  "settings.password.passkeys_unsupported": {
+    "defaultMessage": "このブラウザではパスキーを使えないため、確認できません。パスキーに対応したブラウザでこのページを開いてください。",
+    "description": "Note instead of a form or button of the password page that a passkey confirms (removing or setting the password), in a browser without passkey support."
+  },
+  "settings.passkey_confirmation.cancelled": {
+    "defaultMessage": "パスキーは使われませんでした。ブラウザの確認が閉じられたか、時間切れになりました。もう一度お試しください。",
+    "description": "Alert when the user dismissed the browser's passkey prompt that confirms an operation (deleting the account, setting or removing the password, adding a passkey), or it timed out."
+  },
+  "settings.passkey_confirmation.unavailable": {
+    "defaultMessage": "ブラウザがこのサイトのパスキーを使えませんでした。",
+    "description": "Alert when the browser refused the passkey prompt that confirms an operation for another reason (unsupported, or the site's address)."
+  },
+  "settings.passkey_confirmation.invalid": {
+    "defaultMessage": "パスキーを確認できませんでした。このアカウントのパスキーを使ってください。",
+    "description": "Alert when the server did not accept the passkey that confirms an operation (another account's passkey, a removed one, or one that does not verify)."
+  },
+  "settings.passkey_confirmation.expired": {
+    "defaultMessage": "パスキーでの確認に時間がかかりすぎました。もう一度お試しください。",
+    "description": "Alert when the passkey that confirms an operation was given after the confirmation expired (5 minutes)."
   },
   "settings.visibility.direct": {
     "defaultMessage": "メンションした相手",

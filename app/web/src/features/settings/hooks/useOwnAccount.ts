@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The user's own account (FR-008): asking for archives of the user's data and downloading them, and deleting the
-// account with the password. A pending archive is read again every few seconds until it is built.
+// account with the password, or a passkey for a user without one. A pending archive is read again every few seconds until it is built.
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
@@ -13,9 +13,11 @@ import {
   dataExportsQueryOptions,
   deleteOwnAccountMutation,
   fetchExportArchive,
-  isWrongPasswordError,
   requestDataExportMutation,
 } from "../api/account";
+import { confirmationFailure } from "../api/password";
+import { confirmationErrorMessage } from "./passkeyConfirmation";
+import { useHasPassword } from "./usePasswordChange";
 import { saveFile } from "./saveFile";
 
 /** How often a pending archive is checked, in ms. */
@@ -80,6 +82,8 @@ export function useDataExports(): DataExports {
 
 /** What the deletion of the account needs: the dialog with the password, and deleting. */
 export type AccountDeletion = {
+  /** Whether the user has a password, which confirms the deletion; without one, a passkey confirms it. */
+  hasPassword: boolean;
   isOpen: boolean;
   open: () => void;
   cancel: () => void;
@@ -97,6 +101,7 @@ export function useAccountDeletion(): AccountDeletion {
   const session = useSession();
   const navigate = useNavigate();
   const t = useT();
+  const hasPassword = useHasPassword();
   const [isOpen, setIsOpen] = useState(false);
   const [password, setPassword] = useState("");
   const mutation = useMutation({
@@ -109,7 +114,9 @@ export function useAccountDeletion(): AccountDeletion {
       await navigate({ to: "/login" });
     },
   });
+  const failure = mutation.isError ? confirmationFailure(mutation.error) : undefined;
   return {
+    hasPassword,
     isOpen,
     open: () => {
       mutation.reset();
@@ -123,13 +130,16 @@ export function useAccountDeletion(): AccountDeletion {
     password,
     changePassword: setPassword,
     submit: () => {
-      if (!mutation.isPending && password !== "") mutation.mutate(password);
+      if (mutation.isPending) return;
+      if (!hasPassword) mutation.mutate(undefined);
+      else if (password !== "") mutation.mutate(password);
     },
     isPending: mutation.isPending,
-    error: !mutation.isError
-      ? undefined
-      : isWrongPasswordError(mutation.error)
-        ? t("client:settings.account.delete.wrong_password")
-        : errorMessage(mutation.error),
+    error:
+      failure === undefined
+        ? undefined
+        : failure === "wrong-password"
+          ? t("client:settings.account.delete.wrong_password")
+          : confirmationErrorMessage(t, failure, mutation.error, (reason) => reason),
   };
 }

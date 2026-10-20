@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The passkeys page below its heading (FR-004): what a passkey does, the form that adds one (its name and the
-// password that confirms it, then the browser's prompt), and the passkeys, oldest first, each with when it was added
+// password that confirms it, or for a user without a password another passkey, then the browser's prompt), and the
+// passkeys, oldest first, each with when it was added
 // and its button that removes it after an alert dialog (ConfirmDialog: it can no longer sign in). A browser that
 // cannot create passkeys gets a note instead of the form. What adding did stays on the page in a StatusMessage
 // (role="status"); removing is announced and moves focus to the next row. A wrong password is the password field's
@@ -47,7 +48,9 @@ function AddPasskeyForm() {
   if (!form.isSupported) return <p>{t("client:settings.passkeys.unsupported")}</p>;
   return (
     <form onSubmit={form.submit} className="flex flex-col items-start gap-4">
-      <p className="text-sm text-fg-muted">{t("client:settings.passkeys.add.description")}</p>
+      <p className="text-sm text-fg-muted">
+        {t(form.hasPassword ? "client:settings.passkeys.add.description" : "client:settings.passkeys.add.description_passkey")}
+      </p>
       <TextField
         className="w-full max-w-sm"
         label={t("client:settings.passkeys.name")}
@@ -59,18 +62,20 @@ function AddPasskeyForm() {
         autoComplete="off"
         errorMessage={t("client:settings.passkeys.name.required")}
       />
-      <TextField
-        className="w-full max-w-sm"
-        label={t("client:settings.passkeys.password")}
-        description={t("client:settings.passkeys.password.description")}
-        type="password"
-        autoComplete="current-password"
-        value={form.password}
-        onChange={form.changePassword}
-        isRequired
-        isInvalid={form.passwordError !== undefined}
-        errorMessage={form.passwordError ?? t("client:settings.passkeys.password.required")}
-      />
+      {form.hasPassword && (
+        <TextField
+          className="w-full max-w-sm"
+          label={t("client:settings.passkeys.password")}
+          description={t("client:settings.passkeys.password.description")}
+          type="password"
+          autoComplete="current-password"
+          value={form.password}
+          onChange={form.changePassword}
+          isRequired
+          isInvalid={form.passwordError !== undefined}
+          errorMessage={form.passwordError ?? t("client:settings.passkeys.password.required")}
+        />
+      )}
       {form.error !== undefined && (
         <p role="alert" className="text-danger">
           {form.error}
