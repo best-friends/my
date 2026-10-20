@@ -16,7 +16,8 @@ import (
 var ErrNotFound = errors.New("notification: not found")
 
 // Repository is the persistence port of the notification module: notifications, their
-// dismissals, read markers, the exclusions projected from the graph module's blocks and mutes,
+// dismissals, read markers, the exclusions projected from the graph module's blocks, mutes, and
+// domain mutes,
 // and the statuses that the content module deleted (data-model §4.7). The database adapters implement it and pass
 // testkit.NotificationContract.
 //
@@ -42,10 +43,19 @@ type Repository interface {
 	UpsertExclusion(ctx context.Context, tx uow.Tx, x notification.Exclusion) error
 	// DeleteExclusion deletes the exclusion of the viewer, target, and reason, if any.
 	DeleteExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, targetAccountID string, reason notification.ExclusionReason) error
+	// InsertDomainExclusion records that the viewer mutes a domain and its subdomains, which
+	// hides the notifications whose source domain it covers; recording it again changes nothing.
+	InsertDomainExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) error
+	// DeleteDomainExclusion deletes the viewer's exclusion of a domain, if any.
+	DeleteDomainExclusion(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) error
+	// DomainExcluded reports whether an exclusion of the viewer covers domain: the domain itself
+	// or one of its parent domains.
+	DomainExcluded(ctx context.Context, tx uow.Tx, viewerAccountID, domain string) (bool, error)
 	// InsertDeletedStatus records that a status is deleted, so that the notifications about it
 	// are no longer visible. Recording it again changes nothing.
 	InsertDeletedStatus(ctx context.Context, tx uow.Tx, statusID string) error
-	// DeleteAllExclusions and DeleteAllDeletedStatuses empty the projections, for a rebuild.
+	// DeleteAllExclusions (with the domain exclusions) and DeleteAllDeletedStatuses empty the
+	// projections, for a rebuild.
 	DeleteAllExclusions(ctx context.Context, tx uow.Tx) error
 	DeleteAllDeletedStatuses(ctx context.Context, tx uow.Tx) error
 	// ListNotifiedStatusIDs returns every status that a notification, dismissed or not, is
@@ -59,7 +69,8 @@ type Repository interface {
 	// notifications. A non-empty types keeps only notifications of those types, and hidden
 	// leaves out the notifications of its types. A notification is visible when it is not
 	// dismissed, no exclusion of the recipient that is in force at now has its source as the
-	// target, and its status, if any, is not recorded as deleted.
+	// target, no domain exclusion of the recipient covers its source domain, and its status, if
+	// any, is not recorded as deleted.
 	ListNotifications(ctx context.Context, recipientAccountID string, types, hidden []notification.Type, before string, limit int, now time.Time) ([]notification.Notification, error)
 	// CountNotificationsAfter counts the recipient's visible notifications, as in
 	// ListNotifications with hidden, whose ID is greater than after ("" counts them all).

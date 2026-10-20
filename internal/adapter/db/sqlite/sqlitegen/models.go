@@ -18,6 +18,12 @@ type Account struct {
 	CreatedAt int64
 }
 
+type AccountDomainMute struct {
+	AccountID string
+	Domain    string
+	CreatedAt int64
+}
+
 type AccountHandle struct {
 	AccountID          string
 	Username           string
@@ -86,6 +92,21 @@ type AccountRestriction struct {
 	Restriction    string
 	SourceActionID string
 	EffectiveUntil sql.NullInt64
+}
+
+type AnnouncementHead struct {
+	AnnouncementID string
+	RevisionID     string
+	State          string
+	PublishedAt    sql.NullInt64
+}
+
+type AnnouncementStateChange struct {
+	ID              string
+	AnnouncementID  string
+	State           string
+	ChangedByUserID sql.NullString
+	ChangedAt       int64
 }
 
 type AuditLogEntry struct {
@@ -170,6 +191,16 @@ type CustomEmojiSetting struct {
 	Category        sql.NullString
 }
 
+type DataImportItem struct {
+	ImportID          string
+	Position          int64
+	Action            string
+	Target            string
+	ShowBoosts        int64
+	Notify            int64
+	HideNotifications int64
+}
+
 type Delivery struct {
 	ID                 string
 	OutboundActivityID string
@@ -224,6 +255,11 @@ type FeedAuthorRestriction struct {
 type FeedDirectRecipient struct {
 	EntryID            string
 	RecipientAccountID string
+}
+
+type FeedDomainMute struct {
+	ViewerAccountID string
+	Domain          string
 }
 
 type FeedDomainRestriction struct {
@@ -472,6 +508,7 @@ type Notification struct {
 	RecipientAccountID    string
 	Type                  string
 	SourceAccountID       sql.NullString
+	SourceDomain          sql.NullString
 	StatusID              sql.NullString
 	ModerationActionID    sql.NullString
 	ReportID              sql.NullString
@@ -567,6 +604,15 @@ type PollTallyObservationCount struct {
 	ObservationID string
 	Position      int64
 	Votes         int64
+}
+
+type PollVote struct {
+	ID        string
+	PollID    string
+	AccountID string
+	Position  int64
+	Uri       sql.NullString
+	VotedAt   int64
 }
 
 type PushSubscription struct {

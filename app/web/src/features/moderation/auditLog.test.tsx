@@ -329,8 +329,17 @@ describe("the link of an entry's target", () => {
     );
   });
 
-  test("is not there for an account or a report that is gone", () => {
+  test("goes to the list of roles or invites, and to the page of a webhook", () => {
+    expect(auditTargetHref({ target_kind: "role", target_id: "role1", target_label: "helper", target_exists: true })).toBe("/admin/roles");
+    expect(auditTargetHref({ target_kind: "invite", target_id: "inv1", target_label: "ABCD…", target_exists: true })).toBe("/moderation/invites");
+    expect(auditTargetHref({ target_kind: "webhook", target_id: "w1", target_label: "Chat (hooks.example)", target_exists: true })).toBe("/admin/webhooks/w1");
+  });
+
+  test("is not there for a target that is gone or deleted", () => {
     expect(auditTargetHref({ target_kind: "account", target_id: "a1", target_label: "a1", target_exists: false })).toBeUndefined();
     expect(auditTargetHref({ target_kind: "report", target_id: "r1", target_label: "r1", target_exists: false })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "role", target_id: "role1", target_label: "helper", target_exists: false })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "custom_emoji", target_id: "e1", target_label: ":blobcat:", target_exists: false })).toBeUndefined();
+    expect(auditTargetHref({ target_kind: "webhook", target_id: "w1", target_label: "Chat (hooks.example)", target_exists: false })).toBeUndefined();
   });
 });

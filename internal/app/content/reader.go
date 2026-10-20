@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	appaccount "github.com/best-friends/my/internal/app/account"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/domain/content"
 )
 
@@ -29,6 +30,8 @@ type ReaderDeps struct {
 	Restrictions RestrictionPolicy
 	// Media reads the attached media; nil presents no attachments.
 	Media *MediaService
+	// Clock tells whether a poll has ended; nil means the system's clock.
+	Clock kernel.Clock
 }
 
 // Reader presents statuses to a viewer: one status, its thread, its edit history, and a local
@@ -47,6 +50,9 @@ type Reader struct {
 func NewReader(d ReaderDeps) *Reader {
 	if d.Restrictions == nil {
 		d.Restrictions = NoRestrictions{}
+	}
+	if d.Clock == nil {
+		d.Clock = wallClock{}
 	}
 	return &Reader{d: d, aud: audience{
 		statuses: d.Statuses, interactions: d.Interactions, accounts: d.Accounts,
@@ -71,6 +77,8 @@ type StatusView struct {
 	// Reactions are the counts of the emoji reactions to the status, the most used
 	// content.MaxStatusReactions emoji first (ADR-0052 §5).
 	Reactions []ReactionView
+	// Poll is the poll of the revision, nil for none (FR-112).
+	Poll *PollView
 	// Relation is the viewer's relation to the status, nil for an anonymous viewer.
 	Relation *ViewerRelation
 }
@@ -342,6 +350,9 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 		}
 	}
 	if out.Reactions, err = r.reactions(ctx, st, reactor); err != nil {
+		return StatusView{}, err
+	}
+	if out.Poll, err = r.poll(ctx, rev, reactor); err != nil {
 		return StatusView{}, err
 	}
 	return out, nil

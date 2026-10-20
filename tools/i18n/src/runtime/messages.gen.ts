@@ -578,6 +578,96 @@ export interface MessageArgs {
   "client:admin.accounts.summary": {};
   /** Accounts */
   "client:admin.accounts.title": {};
+  /** Cancel */
+  "client:admin.announcements.cancel": {};
+  /** The announcement could not be changed: {reason} */
+  "client:admin.announcements.change_failed": { reason: string };
+  /** Save as a draft */
+  "client:admin.announcements.create_draft": {};
+  /** The announcement could not be written: {reason} */
+  "client:admin.announcements.create_failed": { reason: string };
+  /** Publish the announcement */
+  "client:admin.announcements.create_published": {};
+  /** Announcements show above the home timeline of everyone on this server, who can mark them as read. The audit log records every change. */
+  "client:admin.announcements.description": {};
+  /** Saved the announcement as a draft. The audit log records the change. */
+  "client:admin.announcements.drafted": {};
+  /** Show for */
+  "client:admin.announcements.duration": {};
+  /** From when you write it. It stops showing after that. */
+  "client:admin.announcements.duration.description": {};
+  /** Edit */
+  "client:admin.announcements.edit": {};
+  /** Edit: {announcement} */
+  "client:admin.announcements.edit_one": { announcement: string };
+  /** Close */
+  "client:admin.announcements.edit.close": {};
+  /** Edit the announcement */
+  "client:admin.announcements.edit.title": {};
+  /** No announcements */
+  "client:admin.announcements.empty": {};
+  /** Announcements you write appear here. */
+  "client:admin.announcements.empty.description": {};
+  /** Shows until */
+  "client:admin.announcements.ends_at": {};
+  /** {announcement} ({state}) */
+  "client:admin.announcements.heading": { announcement: string; state: string };
+  /** All announcements */
+  "client:admin.announcements.list.title": {};
+  /** Write an announcement */
+  "client:admin.announcements.new.title": {};
+  /** Publish */
+  "client:admin.announcements.publish": {};
+  /** Publish now */
+  "client:admin.announcements.publish_now": {};
+  /** Without it, the announcement stays a draft that only the administrators see. */
+  "client:admin.announcements.publish_now.description": {};
+  /** Publish: {announcement} */
+  "client:admin.announcements.publish_one": { announcement: string };
+  /** Published the announcement. The audit log records the change. */
+  "client:admin.announcements.published": {};
+  /** Published */
+  "client:admin.announcements.published_at": {};
+  /** Published {announcement}. The audit log records the change. */
+  "client:admin.announcements.published_one": { announcement: string };
+  /** Save */
+  "client:admin.announcements.save": {};
+  /** Shows from */
+  "client:admin.announcements.starts_at": {};
+  /** State */
+  "client:admin.announcements.state": {};
+  /** Draft */
+  "client:admin.announcements.state.draft": {};
+  /** Published */
+  "client:admin.announcements.state.published": {};
+  /** Withdrawn */
+  "client:admin.announcements.state.withdrawn": {};
+  /** Tell everyone on this server about maintenance and changes. */
+  "client:admin.announcements.summary": {};
+  /** Text */
+  "client:admin.announcements.text": {};
+  /** Write the announcement. */
+  "client:admin.announcements.text_required": {};
+  /** Markdown: paragraphs, emphasis, lists, quotes, code and links. Raw HTML is removed. */
+  "client:admin.announcements.text.description": {};
+  /** Announcements */
+  "client:admin.announcements.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.announcements.too_long": { max: string };
+  /** Until withdrawn */
+  "client:admin.announcements.until_withdrawn": {};
+  /** Changed {announcement}. The audit log records the change. */
+  "client:admin.announcements.updated": { announcement: string };
+  /** Withdraw */
+  "client:admin.announcements.withdraw": {};
+  /** Withdraw: {announcement} */
+  "client:admin.announcements.withdraw_one": { announcement: string };
+  /** Nobody sees the announcement again, and it cannot be published or changed any more. */
+  "client:admin.announcements.withdraw.description": {};
+  /** Withdraw {announcement}? */
+  "client:admin.announcements.withdraw.title": { announcement: string };
+  /** Withdrew {announcement}. The audit log records the change. */
+  "client:admin.announcements.withdrawn": { announcement: string };
   /** Account */
   "client:admin.appeal.account": {};
   /** Open the account in the admin screens */
@@ -682,6 +772,14 @@ export interface MessageArgs {
   "client:admin.audit_log.action.account_action_lifted": {};
   /** Account deletion cancelled */
   "client:admin.audit_log.action.account_deletion_cancelled": {};
+  /** Announcement written */
+  "client:admin.audit_log.action.announcement_created": {};
+  /** Announcement published */
+  "client:admin.audit_log.action.announcement_published": {};
+  /** Announcement changed */
+  "client:admin.audit_log.action.announcement_updated": {};
+  /** Announcement withdrawn */
+  "client:admin.audit_log.action.announcement_withdrawn": {};
   /** Appeal overturned */
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
@@ -702,6 +800,10 @@ export interface MessageArgs {
   "client:admin.audit_log.action.domain_action_issued": {};
   /** Domain action lifted */
   "client:admin.audit_log.action.domain_action_lifted": {};
+  /** Invite created */
+  "client:admin.audit_log.action.invite_created": {};
+  /** Invite revoked */
+  "client:admin.audit_log.action.invite_revoked": {};
   /** Registration approved */
   "client:admin.audit_log.action.registration_approved": {};
   /** Registration rejected */
@@ -816,12 +918,16 @@ export interface MessageArgs {
   "client:admin.audit_log.summary": {};
   /** Account */
   "client:admin.audit_log.target_kind.account": {};
+  /** Announcement */
+  "client:admin.audit_log.target_kind.announcement": {};
   /** Appeal */
   "client:admin.audit_log.target_kind.appeal": {};
   /** Custom emoji */
   "client:admin.audit_log.target_kind.custom_emoji": {};
   /** Domain */
   "client:admin.audit_log.target_kind.domain": {};
+  /** Invite */
+  "client:admin.audit_log.target_kind.invite": {};
   /** Report */
   "client:admin.audit_log.target_kind.report": {};
   /** Role */
@@ -1080,6 +1186,70 @@ export interface MessageArgs {
   "client:admin.domain_actions.confirm_suspend.description": {};
   /** Suspend {domain}? */
   "client:admin.domain_actions.confirm_suspend.title": { domain: string };
+  /** Import and suspend */
+  "client:admin.domain_actions.csv.confirm.confirm": {};
+  /** Suspend {count, plural, one {# domain} other {# domains}}? */
+  "client:admin.domain_actions.csv.confirm.title": { count: number };
+  /** CSV */
+  "client:admin.domain_actions.csv.csv": {};
+  /** A domain block CSV that Mastodon exported, at most {max, number} rows. A file without the #domain header is read as a list of domains to suspend. */
+  "client:admin.domain_actions.csv.csv.description": { max: number };
+  /** Paste a CSV, or choose a file */
+  "client:admin.domain_actions.csv.csv.required": {};
+  /** The CSV is larger than {max, number} KB. Split it into smaller files */
+  "client:admin.domain_actions.csv.csv.too_large": { max: number };
+  /** Export the actions in effect as the domain block CSV that Mastodon imports, or import a CSV that Mastodon exported. Mastodon's silence is a limit here. Domains with only Force sensitive are not exported, and private notes and end dates are not exported. */
+  "client:admin.domain_actions.csv.description": {};
+  /** Export CSV */
+  "client:admin.domain_actions.csv.export": {};
+  /** Saved {name}. */
+  "client:admin.domain_actions.csv.export.done": { name: string };
+  /** Could not export the CSV: {reason} */
+  "client:admin.domain_actions.csv.export.failed": { reason: string };
+  /** Choose a CSV file */
+  "client:admin.domain_actions.csv.file": {};
+  /** Its text replaces the CSV above. */
+  "client:admin.domain_actions.csv.file.description": {};
+  /** Could not read {name}. Choose the file again. */
+  "client:admin.domain_actions.csv.file.failed": { name: string };
+  /** Read {name}. */
+  "client:admin.domain_actions.csv.file.read": { name: string };
+  /** {name} is larger than {max, number} KB. Split it into smaller files. */
+  "client:admin.domain_actions.csv.file.too_large": { max: number; name: string };
+  /** {issued, plural, =0 {No action was taken.} one {# action was taken.} other {# actions were taken.}} {skipped, plural, =0 {No row was skipped.} one {# row was skipped.} other {# rows were skipped.}} */
+  "client:admin.domain_actions.csv.import.done": { issued: number; skipped: number };
+  /** Could not import the rows: {reason} */
+  "client:admin.domain_actions.csv.import.failed": { reason: string };
+  /** Import a CSV */
+  "client:admin.domain_actions.csv.import.title": {};
+  /** Choose at least one row to import */
+  "client:admin.domain_actions.csv.none_selected": {};
+  /** Preview */
+  "client:admin.domain_actions.csv.preview": {};
+  /** Could not read the CSV: {reason} */
+  "client:admin.domain_actions.csv.preview.failed": { reason: string };
+  /** {importable, number} of {count, plural, one {# row} other {# rows}} can be imported. Clear the rows you do not want. */
+  "client:admin.domain_actions.csv.preview.summary": { count: number; importable: number };
+  /** Rows of the CSV */
+  "client:admin.domain_actions.csv.preview.title": {};
+  /** Only moderators see this. Every action of the import gets this note. */
+  "client:admin.domain_actions.csv.private_note.description": {};
+  /** Line {line, number}. Takes: {kinds} */
+  "client:admin.domain_actions.csv.row.issue": { kinds: string; line: number };
+  /** Line {line, number}. {reason} */
+  "client:admin.domain_actions.csv.row.skipped": { line: number; reason: string };
+  /** Already in effect */
+  "client:admin.domain_actions.csv.status.already_applied": {};
+  /** Same domain as an earlier row */
+  "client:admin.domain_actions.csv.status.duplicate": {};
+  /** Not a valid row */
+  "client:admin.domain_actions.csv.status.invalid": {};
+  /** No action */
+  "client:admin.domain_actions.csv.status.no_action": {};
+  /** Import {count, plural, one {# row} other {# rows}} */
+  "client:admin.domain_actions.csv.submit": { count: number };
+  /** Mastodon's CSV */
+  "client:admin.domain_actions.csv.title": {};
   /** Domain */
   "client:admin.domain_actions.domain": {};
   /** A remote domain, such as spam.example. The action also covers its subdomains. A domain in non-Latin letters can be entered as it is. */
@@ -1674,6 +1844,8 @@ export interface MessageArgs {
   "client:admin.roles.outranked": { role: string };
   /** Accounts and registrations */
   "client:admin.roles.permission.manage_accounts": {};
+  /** Announcements */
+  "client:admin.roles.permission.manage_announcements": {};
   /** Custom emoji */
   "client:admin.roles.permission.manage_custom_emojis": {};
   /** Other servers */
@@ -1950,6 +2122,12 @@ export interface MessageArgs {
   "client:admin.settings.policies.saved": {};
   /** The settings are already saved. */
   "client:admin.settings.policies.unchanged": {};
+  /** Require a description of every image */
+  "client:admin.settings.posts.require_media_description": {};
+  /** Posts and edits with an image without a description (alt text) are refused, so that people who cannot see the images can follow every post. */
+  "client:admin.settings.posts.require_media_description.description": {};
+  /** Posts */
+  "client:admin.settings.posts.title": {};
   /** With approval */
   "client:admin.settings.registration.approval": {};
   /** Anyone may sign up with a reason; the account works once a moderator approves it. */
@@ -2460,6 +2638,20 @@ export interface MessageArgs {
   "client:admin.webhooks.url": {};
   /** Where the messages are posted, an https URL. A destination on this server's own network works only when the operator allows it in the configuration. */
   "client:admin.webhooks.url.description": {};
+  /** Announcement of {date} */
+  "client:announcements.heading": { date: string };
+  /** Mark as read */
+  "client:announcements.mark_read": {};
+  /** The announcement could not be marked as read: {reason} */
+  "client:announcements.mark_read_failed": { reason: string };
+  /** Announcements */
+  "client:announcements.title": {};
+  /** Unread */
+  "client:announcements.unread": {};
+  /** {count, plural, one {# unread} other {# unread}} */
+  "client:announcements.unread_count": { count: number };
+  /** Shown until {date} */
+  "client:announcements.until": { date: string };
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
@@ -2484,8 +2676,12 @@ export interface MessageArgs {
   "client:compose.media.description.hint": {};
   /** Description of attachment {position} */
   "client:compose.media.description.label": { position: string };
+  /** Add a description of this image. This server requires one for every image. */
+  "client:compose.media.description.missing": {};
   /** Describe it for people who cannot see or hear it. Your settings ask for a description of every attachment. */
   "client:compose.media.description.required": {};
+  /** Describe the image for people who cannot see it. This server requires a description of every image. */
+  "client:compose.media.description.server_required": {};
   /** Could not attach the file: {reason} */
   "client:compose.media.failed": { reason: string };
   /** The server could not process this file. */
@@ -3068,7 +3264,7 @@ export interface MessageArgs {
   "client:settings.account.delete.title": {};
   /** The password is wrong. */
   "client:settings.account.delete.wrong_password": {};
-  /** Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days. */
+  /** Get a ZIP archive of your posts in ActivityStreams format, your profile, the moderation actions on your account, and your follows, blocks, mutes, and bookmarks as CSV files. It takes a while to prepare, and you can download it for 7 days. */
   "client:settings.account.export.description": {};
   /** Download */
   "client:settings.account.export.download": {};
@@ -3178,6 +3374,36 @@ export interface MessageArgs {
   "client:settings.default_visibility.description": {};
   /** Who sees your posts by default */
   "client:settings.default_visibility.label": {};
+  /** Muting a domain hides the posts of its accounts, and of its subdomains' accounts, from your timelines other than home, their boosts from your home timeline, and their notifications. The accounts you follow stay on your home timeline. Only you are affected, and the server is not told. */
+  "client:settings.domain_mutes.description": {};
+  /** Domain */
+  "client:settings.domain_mutes.domain": {};
+  /** The domain of the server, such as mastodon.example. Its subdomains are muted too. */
+  "client:settings.domain_mutes.domain.description": {};
+  /** Enter a domain. */
+  "client:settings.domain_mutes.domain.required": {};
+  /** You do not mute any domain */
+  "client:settings.domain_mutes.empty": {};
+  /** Domains you mute */
+  "client:settings.domain_mutes.list.title": {};
+  /** Mute */
+  "client:settings.domain_mutes.mute": {};
+  /** Could not mute the domain: {reason} */
+  "client:settings.domain_mutes.mute_failed": { reason: string };
+  /** You muted {domain}. */
+  "client:settings.domain_mutes.muted": { domain: string };
+  /** Mute a domain */
+  "client:settings.domain_mutes.new.title": {};
+  /** Muted on {date} */
+  "client:settings.domain_mutes.since": { date: string };
+  /** Servers whose posts and notifications you do not see */
+  "client:settings.domain_mutes.summary": {};
+  /** Muted domains */
+  "client:settings.domain_mutes.title": {};
+  /** Unmute */
+  "client:settings.domain_mutes.unmute": {};
+  /** You unmuted {domain}. */
+  "client:settings.domain_mutes.unmuted": { domain: string };
   /** Accept */
   "client:settings.follow_requests.accept": {};
   /** {name} now follows you. */
@@ -3192,6 +3418,98 @@ export interface MessageArgs {
   "client:settings.follow_requests.summary": {};
   /** Follow requests */
   "client:settings.follow_requests.title": {};
+  /** Download CSV files in the format Mastodon uses. Mastodon and other servers that read this format can import them. */
+  "client:settings.import_export.export.description": {};
+  /** Download */
+  "client:settings.import_export.export.download": {};
+  /** Download {kind} as CSV */
+  "client:settings.import_export.export.download_of": { kind: string };
+  /** Export */
+  "client:settings.import_export.export.title": {};
+  /** You have no imports */
+  "client:settings.import_export.history.empty": {};
+  /** Could not be imported */
+  "client:settings.import_export.history.failed": {};
+  /** {kind}, {date} */
+  "client:settings.import_export.history.item": { date: string; kind: string };
+  /** Method */
+  "client:settings.import_export.history.mode": {};
+  /** Progress */
+  "client:settings.import_export.history.progress": {};
+  /** {processed, number} of {total, number} */
+  "client:settings.import_export.history.progress_value": { processed: number; total: number };
+  /** State */
+  "client:settings.import_export.history.state": {};
+  /** Finished */
+  "client:settings.import_export.history.state.finished": {};
+  /** In progress */
+  "client:settings.import_export.history.state.in_progress": {};
+  /** Recent imports */
+  "client:settings.import_export.history.title": {};
+  /** Choose a CSV file */
+  "client:settings.import_export.import.choose": {};
+  /** Chosen file: {name} */
+  "client:settings.import_export.import.chosen": { name: string };
+  /** Import a CSV file exported from Mastodon or from this server. Accounts and posts on other servers are looked up in the background, which can take a while. */
+  "client:settings.import_export.import.description": {};
+  /** CSV file */
+  "client:settings.import_export.import.file": {};
+  /** The file is too large to import. Split it into smaller files. */
+  "client:settings.import_export.import.file_too_large": {};
+  /** The file cannot be read. Choose it again. */
+  "client:settings.import_export.import.file_unreadable": {};
+  /** What to import */
+  "client:settings.import_export.import.kind": {};
+  /** How to import */
+  "client:settings.import_export.import.mode": {};
+  /** Merge */
+  "client:settings.import_export.import.mode.merge": {};
+  /** Keep what you have and add what the file lists. */
+  "client:settings.import_export.import.mode.merge.description": {};
+  /** Overwrite */
+  "client:settings.import_export.import.mode.overwrite": {};
+  /** Make it exactly what the file lists. Anything the file does not list is removed. */
+  "client:settings.import_export.import.mode.overwrite.description": {};
+  /** No file chosen */
+  "client:settings.import_export.import.no_file": {};
+  /** Check the file */
+  "client:settings.import_export.import.preview": {};
+  /** Entries in the file */
+  "client:settings.import_export.import.preview.entries": {};
+  /** Already on your list */
+  "client:settings.import_export.import.preview.present": {};
+  /** To be removed */
+  "client:settings.import_export.import.preview.removals": {};
+  /** Repeats an earlier line */
+  "client:settings.import_export.import.preview.skip.duplicate": {};
+  /** Not an account address or a post URL */
+  "client:settings.import_export.import.preview.skip.invalid": {};
+  /** Skipped lines */
+  "client:settings.import_export.import.preview.skipped": {};
+  /** Line {line, number}: {value} */
+  "client:settings.import_export.import.preview.skipped_line": { line: number; value: string };
+  /** What the import does */
+  "client:settings.import_export.import.preview.title": {};
+  /** Start the import */
+  "client:settings.import_export.import.start": {};
+  /** The import has started with {total, plural, one {# entry} other {# entries}}. Its progress appears below. */
+  "client:settings.import_export.import.started": { total: number };
+  /** Import */
+  "client:settings.import_export.import.title": {};
+  /** Blocked accounts */
+  "client:settings.import_export.kind.blocks": {};
+  /** Bookmarks */
+  "client:settings.import_export.kind.bookmarks": {};
+  /** Muted domains */
+  "client:settings.import_export.kind.domain_mutes": {};
+  /** Follows */
+  "client:settings.import_export.kind.following": {};
+  /** Muted accounts */
+  "client:settings.import_export.kind.mutes": {};
+  /** Move your follows, blocks, mutes, and bookmarks to or from another server */
+  "client:settings.import_export.summary": {};
+  /** Import and export */
+  "client:settings.import_export.title": {};
   /** {action}: {name} */
   "client:settings.list.action": { action: string; name: string };
   /** Show more */
@@ -3684,6 +4002,34 @@ export interface MessageArgs {
   "client:status.pin.failed": { reason: string };
   /** Pinned post */
   "client:status.pin.label": {};
+  /** Choose one or more options. */
+  "client:status.poll.choose_many": {};
+  /** Choose one option. */
+  "client:status.poll.choose_one": {};
+  /** Closed */
+  "client:status.poll.closed": {};
+  /** Ends {time} */
+  "client:status.poll.ends": { time: string };
+  /** Poll */
+  "client:status.poll.label": {};
+  /** Poll options */
+  "client:status.poll.options": {};
+  /** Your vote */
+  "client:status.poll.own_vote": {};
+  /** Counts as {host} last reported them */
+  "client:status.poll.remote_counts": { host: string };
+  /** Poll results */
+  "client:status.poll.results": {};
+  /** Vote */
+  "client:status.poll.vote": {};
+  /** Could not vote: {reason} */
+  "client:status.poll.vote_failed": { reason: string };
+  /** Vote sent */
+  "client:status.poll.voted": {};
+  /** {count, plural, one {# person} other {# people}} */
+  "client:status.poll.voters": { count: number };
+  /** {count, plural, one {# vote} other {# votes}} */
+  "client:status.poll.votes": { count: number };
   /** Reaction removed */
   "client:status.reaction.off": {};
   /** Reacted with {emoji} */
@@ -3796,7 +4142,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_favourites": {};
   /** Read your follows and follow requests */
   "server:auth.authorize.scope.read_follows": {};
-  /** Read the accounts you mute */
+  /** Read the accounts and domains you mute */
   "server:auth.authorize.scope.read_mutes": {};
   /** Read your notifications */
   "server:auth.authorize.scope.read_notifications": {};
@@ -3818,7 +4164,7 @@ export interface MessageArgs {
   "server:auth.authorize.scope.write_follows": {};
   /** Upload images and edit their descriptions */
   "server:auth.authorize.scope.write_media": {};
-  /** Mute and unmute accounts */
+  /** Mute and unmute accounts and domains */
   "server:auth.authorize.scope.write_mutes": {};
   /** Mark notifications as read and dismiss them */
   "server:auth.authorize.scope.write_notifications": {};
@@ -4030,12 +4376,18 @@ export interface MessageArgs {
   "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
+  /** You already mute the most domains allowed. Unmute one first. */
+  "server:errors.domain_mutes.too_many": {};
   /** An archive of your data is already being prepared. Wait until it is ready. */
   "server:errors.export.in_progress": {};
   /** This archive cannot be downloaded. */
   "server:errors.export.not_ready": {};
   /** You are not allowed to do this. */
   "server:errors.forbidden": {};
+  /** Another import is in progress. Wait until it finishes. */
+  "server:errors.import.in_progress": {};
+  /** The file cannot be read as CSV. */
+  "server:errors.import.invalid_csv": {};
   /** This app is not allowed to do this. */
   "server:errors.insufficient_scope": {};
   /** The access token needs the scope {scope}. */
@@ -4120,6 +4472,8 @@ export interface MessageArgs {
   "server:errors.status.media_not_found": {};
   /** An attached file is still being processed or could not be processed. */
   "server:errors.status.media_not_ready": {};
+  /** This server requires a description (alt text) for every image. Add one to each image before posting. */
+  "server:errors.status.missing_media_description": {};
   /** Only the author can change this post. */
   "server:errors.status.not_author": {};
   /** This post cannot be boosted. */
@@ -4128,6 +4482,16 @@ export interface MessageArgs {
   "server:errors.status.not_pinnable": {};
   /** {max, plural, one {You can pin at most # post.} other {You can pin at most # posts.}} */
   "server:errors.status.pin_limit": { max: number };
+  /** You have already voted in this poll. */
+  "server:errors.status.poll_already_voted": {};
+  /** The poll was changed by an edit of the post. Reload it and vote again. */
+  "server:errors.status.poll_changed": {};
+  /** This poll has ended. */
+  "server:errors.status.poll_closed": {};
+  /** Choose one of the poll's options, or several only when the poll allows it. */
+  "server:errors.status.poll_invalid_choices": {};
+  /** This post has no poll. */
+  "server:errors.status.poll_missing": {};
   /** Your account may not post right now. */
   "server:errors.status.posting_restricted": {};
   /** The post you are replying to was not found. */

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the settings feature (web-client.md §7): the user's own profile and
-// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes and follow requests, the archives of the user's
-// data, and deleting the account. Unblocking and unmuting are the account
+// preferences, the automatic deletion of old posts, two-factor authentication, the lists of blocks, mutes, muted domains, and follow requests, the archives of the user's
+// data, the CSV exports and imports, and deleting the account. Unblocking and unmuting are the account
 // actions of the profile feature's handlers.
 import { http, HttpResponse } from "msw";
 import { preferencesFixture, relationshipFixture, type Schemas, viewerFixture } from "../../../test/fixtures";
@@ -70,6 +70,15 @@ export const handlers = [
   // operationIds listBlocks, listMutes, listFollowRequests, acceptFollowRequest, rejectFollowRequest: empty lists by default.
   http.get(`${apiBase}/blocks`, ({ request }) => withViewer(request, () => HttpResponse.json({ accounts: [] }))),
   http.get(`${apiBase}/mutes`, ({ request }) => withViewer(request, () => HttpResponse.json({ mutes: [] }))),
+  // operationIds listDomainMutes, muteDomain, unmuteDomain: no muted domains by default; muting answers the domain in lower case.
+  http.get(`${apiBase}/domain_mutes`, ({ request }) => withViewer(request, () => HttpResponse.json({ domain_mutes: [] }))),
+  http.post(`${apiBase}/domain_mutes`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["MuteDomainRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json({ domain: body.domain.toLowerCase(), created_at: "2026-10-21T09:30:00Z" } satisfies Schemas["DomainMute"]),
+    );
+  }),
+  http.delete(`${apiBase}/domain_mutes/:domain`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   http.get(`${apiBase}/follow_requests`, ({ request }) => withViewer(request, () => HttpResponse.json({ accounts: [] }))),
   http.post(`${apiBase}/follow_requests/:id/authorize`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json({ ...relationshipFixture(String(params["id"])), followed_by: true })),
@@ -84,7 +93,32 @@ export const handlers = [
     withViewer(request, () => new HttpResponse(new Blob(["PK"], { type: "application/zip" }), { headers: { "Content-Type": "application/zip" } })),
   ),
   http.post(`${apiBase}/accounts/delete`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationIds exportCsv, listDataImports, previewDataImport, startDataImport: one blocked account, no imports, and a file of
+  // one entry.
+  http.get(`${apiBase}/csv_exports/:kind`, ({ request }) =>
+    withViewer(request, () => new HttpResponse("bob@remote.example\n", { headers: { "Content-Type": "text/csv" } })),
+  ),
+  http.get(`${apiBase}/imports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/imports/preview`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ entries: 1, present: 0, removals: 0, skipped: [] } satisfies Schemas["DataImportPreview"])),
+  ),
+  http.post(`${apiBase}/imports`, ({ request }) => withViewer(request, () => HttpResponse.json(dataImportFixture(), { status: 202 }))),
 ];
+
+/** An import of a CSV file; following, merged, and in progress unless `change` says otherwise. */
+export function dataImportFixture(change: Partial<Schemas["DataImport"]> = {}): Schemas["DataImport"] {
+  return {
+    id: "0192f0c4-7a8e-7000-8000-0000000009a1",
+    kind: "following",
+    mode: "merge",
+    state: "in_progress",
+    created_at: "2026-10-21T09:30:00Z",
+    total: 1,
+    processed: 0,
+    failed: 0,
+    ...change,
+  };
+}
 
 /** An archive of the user's data; pending unless `change` says otherwise. */
 export function dataExportFixture(change: Partial<Schemas["DataExport"]> = {}): Schemas["DataExport"] {

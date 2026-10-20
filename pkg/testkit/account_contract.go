@@ -40,7 +40,7 @@ type AccountFactory func(t *testing.T, opts uow.Options) AccountHarness
 // adapter through the use cases that drive them: registering a local user with sealed RSA and
 // Ed25519 keys, rejecting a taken username, creating the instance actor exactly once, lookups by
 // handle and ID, profile revisions, lifecycle events, the deletion of an account at its owner's
-// request, the data exports with their archives, expiry, and erasure, the built-in roles, creating an admin with
+// request, the data exports with their archives, expiry, and erasure, the CSV imports carried out by their jobs, the built-in roles, creating an admin with
 // an email address and a role grant while rejecting a taken username or email, signing in and out
 // with browser sessions (new tokens on every sign-in, expiry, activity, the same error for an
 // unknown address, a wrong password, and an inactive account, rate-limited failures, rehashing weaker passwords,
@@ -69,6 +69,8 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"DeletesAccountsAtTheOwnersRequest", accountDeletesAtTheOwnersRequest},
 		{"BuildsAndExpiresDataExports", exportsBuildAndExpireArchives},
 		{"ErasesDataExportsWithTheAccount", exportsAreErasedWithTheAccount},
+		{"CarriesOutCSVImports", importsCarryOutCSVFiles},
+		{"ErasesCSVImportsWithTheAccount", importsAreErasedWithTheAccount},
 		{"CountsLocalUsers", accountCountsLocalUsers},
 		{"ReadsRemoteInboxes", accountReadsRemoteInboxes},
 		{"FindsAccountsByURIAndDomain", accountFindsByURIAndDomain},

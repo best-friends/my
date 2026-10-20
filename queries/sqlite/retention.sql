@@ -78,6 +78,11 @@ DELETE FROM poll_tally_observations WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
   WHERE r.status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))));
 
+-- name: PurgePollVotes :exec
+DELETE FROM poll_votes WHERE poll_id IN (
+  SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
+  WHERE r.status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))));
+
 -- name: PurgePollTallies :exec
 DELETE FROM poll_tallies WHERE poll_id IN (
   SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id

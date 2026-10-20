@@ -64,7 +64,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.read_mutes": {
-    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ẏǿǿŭŭ ḿŭŭŧḗḗ]",
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧş ȧȧƞḓ ḓǿǿḿȧȧīƞş ẏǿǿŭŭ ḿŭŭŧḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.read_notifications": {
@@ -108,7 +108,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_mutes": {
-    "defaultMessage": "[Ḿŭŭŧḗḗ ȧȧƞḓ ŭŭƞḿŭŭŧḗḗ ȧȧƈƈǿǿŭŭƞŧş]",
+    "defaultMessage": "[Ḿŭŭŧḗḗ ȧȧƞḓ ŭŭƞḿŭŭŧḗḗ ȧȧƈƈǿǿŭŭƞŧş ȧȧƞḓ ḓǿǿḿȧȧīƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.authorize.scope.write_notifications": {
@@ -531,6 +531,10 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿƞƒŀīƈŧş ẇīŧħ ŧħḗḗ ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ ǿǿƒ ŧħḗḗ řḗḗşǿǿŭŭřƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧŀřḗḗȧȧḓẏ ḿŭŭŧḗḗ ŧħḗḗ ḿǿǿşŧ ḓǿǿḿȧȧīƞş ȧȧŀŀǿǿẇḗḗḓ. Ŭƞḿŭŭŧḗḗ ǿǿƞḗḗ ƒīřşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.export.in_progress": {
     "defaultMessage": "[Ȧƞ ȧȧřƈħīṽḗḗ ǿǿƒ ẏǿǿŭŭř ḓȧȧŧȧȧ īş ȧȧŀřḗḗȧȧḓẏ ƀḗḗīƞɠ ƥřḗḗƥȧȧřḗḗḓ. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ īş řḗḗȧȧḓẏ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -541,6 +545,14 @@
   },
   "errors.forbidden": {
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ŧǿǿ ḓǿǿ ŧħīş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.import.in_progress": {
+    "defaultMessage": "[Ȧƞǿǿŧħḗḗř īḿƥǿǿřŧ īş īƞ ƥřǿǿɠřḗḗşş. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ ƒīƞīşħḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ řḗḗȧȧḓ ȧȧş ƇŞṼ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.insufficient_scope": {
@@ -711,6 +723,10 @@
     "defaultMessage": "[Ȧƞ ȧȧŧŧȧȧƈħḗḗḓ ƒīŀḗḗ īş şŧīŀŀ ƀḗḗīƞɠ ƥřǿǿƈḗḗşşḗḗḓ ǿǿř ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ƥřǿǿƈḗḗşşḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř řḗḗɋŭŭīřḗḗş ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ (ȧȧŀŧ ŧḗḗẋŧ) ƒǿǿř ḗḗṽḗḗřẏ īḿȧȧɠḗḗ. Ȧḓḓ ǿǿƞḗḗ ŧǿǿ ḗḗȧȧƈħ īḿȧȧɠḗḗ ƀḗḗƒǿǿřḗḗ ƥǿǿşŧīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.not_author": {
     "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ȧȧŭŭŧħǿǿř ƈȧȧƞ ƈħȧȧƞɠḗḗ ŧħīş ƥǿǿşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -725,6 +741,26 @@
   },
   "errors.status.pin_limit": {
     "defaultMessage": "[{max,plural,one{Ẏǿǿŭŭ ƈȧȧƞ ƥīƞ ȧȧŧ ḿǿǿşŧ # ƥǿǿşŧ.} other{Ẏǿǿŭŭ ƈȧȧƞ ƥīƞ ȧȧŧ ḿǿǿşŧ # ƥǿǿşŧş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧŀřḗḗȧȧḓẏ ṽǿǿŧḗḗḓ īƞ ŧħīş ƥǿǿŀŀ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿŀŀ ẇȧȧş ƈħȧȧƞɠḗḗḓ ƀẏ ȧȧƞ ḗḗḓīŧ ǿǿƒ ŧħḗḗ ƥǿǿşŧ. Řḗḗŀǿǿȧȧḓ īŧ ȧȧƞḓ ṽǿǿŧḗḗ ȧȧɠȧȧīƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "[Ŧħīş ƥǿǿŀŀ ħȧȧş ḗḗƞḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿƒ ŧħḗḗ ƥǿǿŀŀ'ş ǿǿƥŧīǿǿƞş, ǿǿř şḗḗṽḗḗřȧȧŀ ǿǿƞŀẏ ẇħḗḗƞ ŧħḗḗ ƥǿǿŀŀ ȧȧŀŀǿǿẇş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "[Ŧħīş ƥǿǿşŧ ħȧȧş ƞǿǿ ƥǿǿŀŀ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.status.posting_restricted": {

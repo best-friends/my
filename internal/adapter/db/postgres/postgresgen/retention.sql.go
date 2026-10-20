@@ -252,6 +252,17 @@ func (q *Queries) PurgePollTallyObservations(ctx context.Context, ids []string) 
 	return err
 }
 
+const purgePollVotes = `-- name: PurgePollVotes :exec
+DELETE FROM poll_votes WHERE poll_id IN (
+  SELECT p.id FROM polls p JOIN status_revisions r ON r.id = p.revision_id
+  WHERE r.status_id = ANY($1::text[]))
+`
+
+func (q *Queries) PurgePollVotes(ctx context.Context, ids []string) error {
+	_, err := q.db.Exec(ctx, purgePollVotes, ids)
+	return err
+}
+
 const purgePolls = `-- name: PurgePolls :exec
 DELETE FROM polls WHERE revision_id IN (
   SELECT r.id FROM status_revisions r WHERE r.status_id = ANY($1::text[]))

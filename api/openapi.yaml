@@ -57,7 +57,9 @@ tags:
   - name: reports
     description: Reports of accounts and posts to the moderators.
   - name: streaming
-    description: Real-time updates of the home timeline and the notifications.
+    description: Real-time updates of the home timeline, the notifications, and the announcements.
+  - name: announcements
+    description: The server's announcements to every local user and which of them the user has read.
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
@@ -68,8 +70,8 @@ tags:
   - name: admin-server
     description: |
       The administration of the server itself: its settings and texts, its rules, the roles and
-      granting them, the custom emoji, the webhooks, and the dead jobs of the job queue
-      (ADR-0058). The
+      granting them, the custom emoji, the webhooks, the announcements, and the dead jobs of the
+      job queue (ADR-0058). The
       operations need an `admin` scope and a permission of the user's roles in the server
       category; a user without it gets a 403 `/api/v1/problems/missing-permission`.
 paths:
@@ -360,8 +362,10 @@ paths:
       description: |
         Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
         `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
-        activities), and `moderation.json` (the moderation actions on the account, its appeals,
-        and the reports it filed). The export is `pending` until the archive is built. While
+        activities), `moderation.json` (the moderation actions on the account, its appeals, and
+        the reports it filed), and the CSV files of `exportCsv` (`following_accounts.csv`,
+        `blocked_accounts.csv`, `muted_accounts.csv`, `bookmarks.csv`). The export is
+        `pending` until the archive is built. While
         another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
         at most 3 requests per account are accepted every day.
       tags: [accounts]
@@ -414,6 +418,139 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of the user's own account: deletion and data exports (#627) ---
+  # --- the user's own account: Mastodon CSV exports and imports (#658) ---
+  /csv_exports/{kind}:
+    get:
+      operationId: exportCsv
+      summary: Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
+      description: |
+        Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
+        Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
+        (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
+        `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
+        `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect),
+        `domain_mutes` is `blocked_domains.csv` (one domain per line, the domains the user
+        mutes, which Mastodon imports as blocked domains), and `bookmarks` is `bookmarks.csv`
+        (one post URI per line, the posts the user may still see).
+        Addresses are `username@domain`, with the account domain for this server's accounts;
+        remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
+        are accepted every hour.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          description: What to export.
+          schema:
+            $ref: "#/components/schemas/DataImportKind"
+      responses:
+        "200":
+          description: The CSV file.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            Content-Disposition:
+              description: Names the file to save the CSV as, the name Mastodon gives it.
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+        default:
+          $ref: "#/components/responses/Problem"
+  /imports:
+    get:
+      operationId: listDataImports
+      summary: List the authenticated user's imports
+      description: |
+        Lists the user's latest 10 imports of CSV files, newest first, with their progress.
+        Imports are removed 7 days after they start.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The imports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataImportList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: startDataImport
+      summary: Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
+      description: |
+        Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
+        entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
+        `overwrite` also removes what the user has of `kind` that the file does not list. The
+        server carries the import out in the background: it resolves remote accounts and posts
+        on their servers, sends the follows, and counts the entries it could not carry out
+        (an account or post that cannot be found or acted on). The import is `in_progress`
+        until every entry is done. While another import of the user is `in_progress` the
+        request is a 409 `/api/v1/problems/import-in-progress`. At most 10 imports per account
+        are accepted every day.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataImportRequest"
+      responses:
+        "202":
+          description: The import, being carried out.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataImport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /imports/preview:
+    post:
+      operationId: previewDataImport
+      summary: Preview an import of a CSV file
+      description: |
+        Reads a CSV file as `startDataImport` would and tells what importing it would do,
+        changing nothing. The header row is optional, a leading `@` of an address is dropped,
+        and blank lines are ignored; a line that names no address (or for `bookmarks`, no
+        `http(s)` URL) is skipped as `invalid`, and one that repeats an earlier entry as
+        `duplicate`. Settings left out default as in Mastodon: boosts shown, no notifications of
+        new posts, notifications of a muted account hidden. The `Languages` column of a follow
+        is ignored. A file that is not CSV or has more than 10,000 entries is a 422.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataImportRequest"
+      responses:
+        "200":
+          description: What the import would do.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataImportPreview"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of the user's own account: Mastodon CSV exports and imports (#658) ---
   # --- two-factor authentication (#628) ---
   /two_factor:
     get:
@@ -909,6 +1046,83 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MutePage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /domain_mutes:
+    get:
+      operationId: listDomainMutes
+      summary: List the domains that the viewer mutes
+      description: In the order of the domains.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:mutes"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of domain mutes.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainMutePage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: muteDomain
+      summary: Mute a domain
+      description: |
+        Hides the posts of a remote domain and of its subdomains from the viewer's timelines
+        other than home, their boosts from home, and their notifications (FR-304). The accounts
+        of the domain that the viewer follows stay on the home timeline. Nothing is sent to the
+        domain. Muting a domain that the viewer already mutes changes nothing. The domain is
+        normalized (IDNA A-labels in lower case, without a trailing dot); one that is not a
+        valid remote domain, or this server's own, is a 422 naming `domain`. A viewer mutes at
+        most 1000 domains; one more is a 422 `/api/v1/problems/too-many-domain-mutes`.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:mutes"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MuteDomainRequest"
+      responses:
+        "200":
+          description: The domain mute.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainMute"
+        default:
+          $ref: "#/components/responses/Problem"
+  /domain_mutes/{domain}:
+    delete:
+      operationId: unmuteDomain
+      summary: Unmute a domain
+      description: The domain is normalized as in `muteDomain`. Without a mute it changes nothing.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:mutes"]
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          description: The muted domain, such as `mastodon.example`.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 253
+      responses:
+        "204":
+          description: The domain is not muted.
         default:
           $ref: "#/components/responses/Problem"
   # --- End of accounts and relationships (#108) ---
@@ -1560,6 +1774,33 @@ paths:
           $ref: "#/components/responses/StatusAfterAction"
         default:
           $ref: "#/components/responses/Problem"
+  /statuses/{id}/poll/votes:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    post:
+      operationId: voteInPoll
+      summary: Vote in the poll of a status
+      description: |
+        Votes for one or more choices of the poll of a status (FR-112). `poll_id` names the poll
+        the user saw: a poll that an edit of the status replaced is a 409. A status without a
+        poll, a poll that has ended, a second vote, or choices the poll does not take (none, an
+        unknown one, the same one twice, or several in a single-choice poll) is a 422. A vote in
+        a poll of another server is sent to that server, whose counts in `poll` include it once
+        the server reports them again.
+      tags: [statuses]
+      security:
+        - oauth2: ["write:statuses"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteInPollRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/StatusAfterAction"
+        default:
+          $ref: "#/components/responses/Problem"
   /statuses/{id}/reaction:
     parameters:
       - $ref: "#/components/parameters/StatusId"
@@ -1862,6 +2103,56 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of reports (#332) ---
+  # --- announcements (#665) ---
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      summary: List the announcements
+      description: |
+        The server's announcements that every local user sees now (FR-726): published, and
+        within their window. The ones whose `published_at` is the latest come first, each with
+        whether the user has read it. The list is not paginated.
+      tags: [announcements]
+      security:
+        - oauth2: ["read:notifications"]
+      responses:
+        "200":
+          description: The announcements.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnnouncementList"
+        default:
+          $ref: "#/components/responses/Problem"
+  /announcements/{id}/read:
+    post:
+      operationId: markAnnouncementRead
+      summary: Mark an announcement read
+      description: |
+        Records that the user read the announcement; marking it again changes nothing. An
+        announcement that the users do not see now (a draft, a withdrawn one, one outside its
+        window, an unknown ID) is a 404.
+      tags: [announcements]
+      security:
+        - oauth2: ["write:notifications"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          description: The announcement, read.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of announcements (#665) ---
   # --- streaming (#116) ---
   /streaming:
     get:
@@ -1869,7 +2160,7 @@ paths:
       summary: Stream real-time updates
       description: |
         A Server-Sent Events stream (`text/event-stream`) of the authenticated user's new home
-        timeline entries and notifications, from the moment it opens. Read it with `fetch` and
+        timeline entries, notifications, and announcements, from the moment it opens. Read it with `fetch` and
         send the access token in `Authorization`, like every other operation (`EventSource`
         cannot send it).
 
@@ -1878,11 +2169,16 @@ paths:
         - `update`: a new post or boost in the home timeline, as it would appear there (the
           viewer's follows, timeline languages, blocks, and mutes apply). `data` is a `Status`.
         - `notification`: a new notification. `data` is a `Notification`.
+        - `announcement`: an announcement that the users see was published or changed. `data`
+          is an `Announcement`.
+        - `announcement_removed`: an announcement no longer shows (it was withdrawn, or its
+          window changed). `data` is `{"id": "<announcement id>"}`.
 
         A comment line (`: heartbeat`) arrives every 30 seconds. The server ends the stream when
         the access token stops being valid, when the client does not keep up, and when it shuts
         down; nothing is replayed, so after reconnecting read the home timeline and the
-        notifications again for what was missed. A user may hold a limited number of streams
+        notifications again for what was missed. Announcements whose window starts later
+        arrive with no event: list the announcements again from time to time. A user may hold a limited number of streams
         open at once; past it the answer is 429 with type
         `/api/v1/problems/too-many-streams`. While the server cannot receive updates (its
         broker is not ready, or it is shutting down) the answer is 503 with `Retry-After`; try
@@ -2623,6 +2919,129 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: instance rules (#331) ---
+  # --- admin: announcements (#665) ---
+  /admin/announcements:
+    get:
+      operationId: listAdminAnnouncements
+      summary: List the announcements
+      description: |
+        Every announcement, drafts and withdrawn ones included, newest first (FR-726). The
+        list is not paginated. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The announcements.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAnnouncementList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createAdminAnnouncement
+      summary: Write an announcement
+      description: |
+        Writes an announcement to every local user, a draft unless `publish` is set. The text
+        is Markdown; the users get it as sanitized HTML. A blank text or one longer than 5,000
+        characters is a 422 naming `text`, and a window that ends when or before it starts a
+        422 naming `ends_at`. Recorded in the audit log. Needs the `manage_announcements`
+        permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAnnouncementCreateRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/announcements/{id}:
+    get:
+      operationId: getAdminAnnouncement
+      summary: Get an announcement
+      description: An unknown ID is a 404. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+    put:
+      operationId: updateAdminAnnouncement
+      summary: Revise an announcement
+      description: |
+        Replaces the text and the window of a draft or a published announcement, which keeps
+        its state; an omitted `starts_at` or `ends_at` leaves that side of the window open. The
+        input is checked as for a new announcement (422). A withdrawn announcement is a 409 and
+        an unknown ID a 404. Recorded in the audit log. Needs the `manage_announcements`
+        permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminAnnouncementInput"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/announcements/{id}/publish:
+    post:
+      operationId: publishAdminAnnouncement
+      summary: Publish an announcement
+      description: |
+        Publishes a draft to every local user, within its window. Publishing a published
+        announcement changes nothing. A withdrawn announcement is a 409 and an unknown ID a 404.
+        Recorded in the audit log. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/announcements/{id}/withdraw:
+    post:
+      operationId: withdrawAdminAnnouncement
+      summary: Withdraw an announcement
+      description: |
+        Withdraws an announcement for good: no user sees it again, and it can no longer change
+        or be published. Withdrawing a withdrawn announcement changes nothing. An unknown ID is
+        a 404. Recorded in the audit log. Needs the `manage_announcements` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/AnnouncementId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminAnnouncement"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: announcements (#665) ---
   # --- admin: instance theme (#664) ---
   /admin/theme:
     get:
@@ -3601,6 +4020,111 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: sign-up block import (#498) ---
+  # --- admin: domain block CSV (#641) ---
+  /admin/domain_actions/export:
+    get:
+      operationId: exportDomainBlocks
+      summary: Export the domain actions as Mastodon's domain block CSV
+      description: |
+        The domain actions in effect (FR-706) as the CSV that Mastodon's moderation screens
+        import, with the header
+        `#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`: one row
+        per domain in domain order. `#severity` is `suspend` when a `suspend` is in effect on
+        the domain, `silence` for a `limit`, and `noop` otherwise; `#reject_media`,
+        `#reject_reports`, and `#obfuscate` are `true` when one of the domain's actions has
+        them. A domain whose only actions are `force_sensitive`, which Mastodon's domain blocks
+        cannot hold, is left out. Private notes and expiry dates are not exported. Needs the
+        `manage_domains` permission.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The CSV.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            Content-Disposition:
+              description: Names the file to save the CSV as.
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/domain_actions/import/preview:
+    post:
+      operationId: previewDomainBlockImport
+      summary: Preview the import of a Mastodon domain block CSV
+      description: |
+        Reads a domain block CSV that Mastodon exported (FR-706) and says what importing each
+        row would do, without changing anything. A file whose first field is `#domain` has a
+        header naming the columns; any other file is a list of domains, one per row, each
+        suspended. An empty `#severity` is `suspend`, and a boolean is false when empty, `0`,
+        `f`, `false`, or `off`. A row of `suspend` issues a `suspend`, `silence` a `limit`, and
+        `noop` nothing, plus `reject_media` and `reject_reports` when set. A file that is not
+        CSV or has more than 5,000 rows is a 422 naming `csv`. Needs the `manage_domains`
+        permission.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewDomainBlockImportRequest"
+      responses:
+        "200":
+          description: What importing each row would do, in row order.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainBlockImportPreview"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/domain_actions/import:
+    post:
+      operationId: importDomainBlocks
+      summary: Import the chosen rows of a Mastodon domain block CSV
+      description: |
+        Issues the domain actions of each block (FR-706), as the preview names them: the kinds
+        of the block that no action in effect on the domain or a parent domain has already. The
+        actions last until they are lifted, carry the block's public comment and obfuscation
+        and the request's private note, and are audited like actions issued one at a time. A
+        block that would issue nothing is skipped with the reason. The actions are written a
+        few dozen at a time, so an error part way keeps the ones before it; sending the blocks
+        again skips them as `already_applied`. More than 5,000 blocks or a `private_note` that
+        is too long or contains U+0000 is a 422 that issues nothing. Needs the `manage_domains`
+        permission.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportDomainBlocksRequest"
+      responses:
+        "200":
+          description: What the import issued and skipped.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainBlockImportResult"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: domain block CSV (#641) ---
   # --- admin: instance settings (#624) ---
   /admin/settings:
     get:
@@ -3987,7 +4511,7 @@ components:
             "read:bookmarks": Read the user's bookmarks.
             "read:favourites": Read the user's favourites.
             "read:follows": Read follows and follow requests.
-            "read:mutes": Read the accounts the user mutes.
+            "read:mutes": Read the accounts and domains the user mutes.
             "read:notifications": Read the user's notifications.
             "read:reports": Read the reports the user filed and whether they are resolved.
             "read:statuses": Read posts and timelines.
@@ -3997,7 +4521,7 @@ components:
             "write:favourites": Favourite posts and react to them with emoji, and take both back.
             "write:follows": Follow and unfollow accounts and answer follow requests.
             "write:media": Upload media and change their descriptions.
-            "write:mutes": Mute and unmute accounts.
+            "write:mutes": Mute and unmute accounts and domains.
             "write:notifications": Mark notifications read and dismiss them.
             "write:reports": Report accounts and posts to the moderators.
             "write:statuses": Post, edit, delete, boost, and pin posts.
@@ -4114,6 +4638,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: instance rules (#331) ---
+    # --- announcements (#665) ---
+    AnnouncementId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the announcement.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of announcements (#665) ---
     # --- admin: custom emoji (#621) ---
     CustomEmojiId:
       name: id
@@ -4347,6 +4880,17 @@ components:
           schema:
             $ref: "#/components/schemas/AdminRule"
     # --- end of admin: instance rules (#331) ---
+    # --- admin: announcements (#665) ---
+    AdminAnnouncement:
+      description: The announcement.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminAnnouncement"
+    # --- end of admin: announcements (#665) ---
     # --- admin: custom emoji (#621) ---
     AdminCustomEmoji:
       description: The custom emoji.
@@ -4546,6 +5090,8 @@ components:
           built. Wait for it to end.
         - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
           it is being built, failed, or expired.
+        - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+          carried out. Wait for it to finish.
         - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
           already used, or is not a code.
         - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -4560,6 +5106,8 @@ components:
           which.
         - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
           reason in `theme_errors` (`PUT /admin/theme`).
+        - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+          allowed. Unmute one first.
       type: object
       required: [type, title, status]
       properties:
@@ -4719,12 +5267,18 @@ components:
     InstanceLimits:
       description: Limits that clients check before sending a request.
       type: object
-      required: [max_post_characters]
+      required: [max_post_characters, require_media_description]
       properties:
         max_post_characters:
           description: The maximum number of characters in the text and content warning of a post.
           type: integer
           minimum: 1
+        require_media_description:
+          description: |
+            Whether every media file attached to a post needs an alternative text (the instance
+            setting `require_media_description`, FR-105). While it is on, a post or an edit with
+            a media file without one is a 422, so clients ask for it before sending.
+          type: boolean
     InstanceTimelines:
       description: |
         Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
@@ -4932,6 +5486,39 @@ components:
           description: When the mute ends; left out for a mute until unmuted.
           type: string
           format: date-time
+    MuteDomainRequest:
+      description: The domain to mute.
+      type: object
+      required: [domain]
+      properties:
+        domain:
+          description: A remote domain, such as `mastodon.example`; its subdomains are muted too.
+          type: string
+          minLength: 1
+          maxLength: 253
+    DomainMute:
+      description: A domain that the viewer mutes, with its subdomains.
+      type: object
+      required: [domain, created_at]
+      properties:
+        domain:
+          description: The domain, in IDNA A-labels.
+          type: string
+        created_at:
+          description: When the viewer muted the domain.
+          type: string
+          format: date-time
+    DomainMutePage:
+      description: A page of domain mutes.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [domain_mutes]
+          properties:
+            domain_mutes:
+              type: array
+              items:
+                $ref: "#/components/schemas/DomainMute"
     ProfileField:
       description: One metadata field of a profile.
       type: object
@@ -5370,6 +5957,122 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DataExport"
+    # --- Mastodon CSV exports and imports (#658) ---
+    DataImportKind:
+      description: |
+        What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+        accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+        domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+        `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
+        posts the user bookmarked).
+      type: string
+      enum: [following, blocks, mutes, domain_mutes, bookmarks]
+    DataImportMode:
+      description: |
+        `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+        what the user has that the file does not list.
+      type: string
+      enum: [merge, overwrite]
+    DataImportRequest:
+      description: A CSV file to import, and how.
+      type: object
+      required: [kind, mode, text]
+      properties:
+        kind:
+          $ref: "#/components/schemas/DataImportKind"
+        mode:
+          $ref: "#/components/schemas/DataImportMode"
+        text:
+          description: The content of the CSV file, in UTF-8.
+          type: string
+          maxLength: 1000000
+    DataImportPreview:
+      description: What an import of a CSV file would do.
+      type: object
+      required: [entries, present, removals, skipped]
+      properties:
+        entries:
+          description: The number of entries of the file, each of which the import adds.
+          type: integer
+          minimum: 0
+        present:
+          description: How many of the entries the user has already.
+          type: integer
+          minimum: 0
+        removals:
+          description: |
+            How many things the user has of the kind that the file does not list, which an
+            `overwrite` removes; 0 for a `merge`.
+          type: integer
+          minimum: 0
+        skipped:
+          description: The lines that are not entries, in line order.
+          type: array
+          items:
+            $ref: "#/components/schemas/DataImportSkipped"
+    DataImportSkipped:
+      description: A line of a CSV file that is not an entry.
+      type: object
+      required: [line, value, reason]
+      properties:
+        line:
+          description: The line of the file, from 1.
+          type: integer
+          minimum: 1
+        value:
+          description: The line as written.
+          type: string
+        reason:
+          description: |
+            `invalid`: the line names no account address (for bookmarks, no post URL; for
+            domain mutes, no domain).
+            `duplicate`: an earlier line names the same account, post, or domain.
+          type: string
+          enum: [invalid, duplicate]
+    DataImport:
+      description: An import of a CSV file, with its progress.
+      type: object
+      required: [id, kind, mode, state, created_at, total, processed, failed]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        kind:
+          $ref: "#/components/schemas/DataImportKind"
+        mode:
+          $ref: "#/components/schemas/DataImportMode"
+        state:
+          description: "`in_progress` until every entry and removal is done, then `finished`."
+          type: string
+          enum: [in_progress, finished]
+        created_at:
+          description: When the import started.
+          type: string
+          format: date-time
+        total:
+          description: The number of entries to add and things to remove.
+          type: integer
+          minimum: 0
+        processed:
+          description: How many of them are done, including the failed ones.
+          type: integer
+          minimum: 0
+        failed:
+          description: |
+            How many of them could not be carried out: an account or post that cannot be found
+            or acted on, a follow that a block stops, or a domain that cannot be muted (this
+            server's own, or one beyond the most muted domains allowed).
+          type: integer
+          minimum: 0
+    DataImportList:
+      description: The user's latest imports, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataImport"
+    # --- end of Mastodon CSV exports and imports (#658) ---
     AppealModerationActionRequest:
       description: An appeal of an action on the user's own account.
       type: object
@@ -5782,6 +6485,83 @@ components:
         pinned:
           description: Whether the status is pinned to the author's profile; given only to the author.
           type: boolean
+        poll:
+          $ref: "#/components/schemas/Poll"
+    Poll:
+      description: |
+        The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
+        another server are those its server last reported. `voted` and `own_votes` describe the
+        authenticated user's vote and are omitted for anonymous requests.
+      type: object
+      required: [id, multiple, expired, votes_count, options]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        expires_at:
+          description: When the poll ends; omitted when it has no end.
+          type: string
+          format: date-time
+        expired:
+          description: Whether the poll has ended. An ended poll takes no votes and shows its results.
+          type: boolean
+        multiple:
+          description: Whether a vote may choose several options.
+          type: boolean
+        votes_count:
+          description: The number of votes, one per chosen option.
+          type: integer
+          minimum: 0
+        voters_count:
+          description: |
+            The number of accounts that voted; omitted when it is unknown (a multiple-choice poll
+            of another server that does not report it).
+          type: integer
+          minimum: 0
+        options:
+          description: The options, in order; a vote names them by their index in this list.
+          type: array
+          minItems: 1
+          maxItems: 20
+          items:
+            $ref: "#/components/schemas/PollOption"
+        voted:
+          description: Whether the authenticated user voted in the poll.
+          type: boolean
+        own_votes:
+          description: The indexes of the options the authenticated user voted for, in order.
+          type: array
+          items:
+            type: integer
+            minimum: 0
+    PollOption:
+      description: One option of a poll.
+      type: object
+      required: [title, votes_count]
+      properties:
+        title:
+          description: The option as plain text.
+          type: string
+        votes_count:
+          description: The number of votes for the option.
+          type: integer
+          minimum: 0
+    VoteInPollRequest:
+      description: A vote in the poll of a status.
+      type: object
+      required: [poll_id, choices]
+      properties:
+        poll_id:
+          $ref: "#/components/schemas/Id"
+        choices:
+          description: The indexes of the chosen options in `Poll.options`; one for a single-choice poll.
+          type: array
+          minItems: 1
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: integer
+            minimum: 0
+            maximum: 19
     ReactionEmoji:
       description: |
         The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
@@ -5930,7 +6710,10 @@ components:
         id:
           $ref: "#/components/schemas/Id"
         description:
-          description: The alternative text; omitted or empty for none.
+          description: |
+            The alternative text; omitted or empty for none. While the instance requires alt
+            text (`limits.require_media_description` of `GET /instance`), a post or an edit
+            whose media file has none, or only spaces, is a 422.
           type: string
           maxLength: 1500
     StatusMention:
@@ -6485,7 +7268,11 @@ components:
         `webhook_created`, `webhook_updated` (its URL, description, or events),
         `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
         endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-        description and the host name of its URL, never the URL.
+        description and the host name of its URL, never the URL. On an `announcement`:
+        `announcement_created`, `announcement_updated` (its text or window),
+        `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+        text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+        characters of its code, never the whole code.
       type: string
       enum:
         - account_action_issued
@@ -6529,6 +7316,12 @@ components:
         - webhook_enabled
         - webhook_disabled
         - webhook_secret_rotated
+        - announcement_created
+        - announcement_updated
+        - announcement_published
+        - announcement_withdrawn
+        - invite_created
+        - invite_revoked
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -6561,8 +7354,9 @@ components:
           $ref: "#/components/schemas/AdminAuditTargetKind"
         target_id:
           description: |
-            The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
-            domain of a domain action, or the key of a setting or a text.
+            The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+            sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+            or the key of a setting or a text.
           type: string
         target_label:
           description: |
@@ -6573,9 +7367,9 @@ components:
         target_exists:
           description: |
             Whether the target is still there to look at. It is `false` for an account, a report,
-            an appeal, or a sign-up block that is gone (erased past its retention), which only
-            `target_label` names now. It is `true` for the other kinds of targets: a role, a
-            custom emoji, or a webhook that was deleted is not looked up yet.
+            an appeal, or a sign-up block that is gone (erased past its retention), and for a
+            role, a custom emoji, or a webhook that was deleted, which only `target_label` names
+            now. It is `true` for the other kinds of targets, which are never removed.
           type: boolean
         source_event_id:
           description: |
@@ -6600,7 +7394,7 @@ components:
     AdminAuditTargetKind:
       description: The kind of what an audited operation acted on.
       type: string
-      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook]
+      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite]
     # --- end of admin: audit log (#330) ---
     # --- admin: domain actions and reports (#296) ---
     AdminDomainAction:
@@ -7038,8 +7832,9 @@ components:
         roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
         log. `manage_two_factor`: removing the two-factor authentication of a local user (only
         the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
-        remote. `manage_webhooks`: the webhooks of the instance. The others guard no client API
-        operation yet.
+        remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
+        server's announcements to every local user. The others guard no client API operation
+        yet.
       type: string
       enum:
         - manage_reports
@@ -7054,6 +7849,7 @@ components:
         - manage_two_factor
         - manage_custom_emojis
         - manage_webhooks
+        - manage_announcements
     # --- end of the viewer's permissions (#267) ---
     # --- admin: instance rules (#331) ---
     AdminRule:
@@ -7151,6 +7947,135 @@ components:
           type: integer
           minimum: 1
     # --- end of admin: instance rules (#331) ---
+    # --- announcements (#665) ---
+    Announcement:
+      description: An announcement of the server to every local user (FR-726), as the user sees it.
+      type: object
+      required: [id, content, published_at, updated_at, read]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        content:
+          description: |
+            The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
+            headings from `h2`, and `http`, `https`, and `mailto` links).
+          type: string
+        published_at:
+          description: When it started to show to the users, its publication or the start of its window.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing; omitted when it shows until it is withdrawn.
+          type: string
+          format: date-time
+        updated_at:
+          description: When its text or window last changed.
+          type: string
+          format: date-time
+        read:
+          description: Whether the user has marked it read.
+          type: boolean
+    AnnouncementList:
+      description: The announcements.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Announcement"
+    # --- end of announcements (#665) ---
+    # --- admin: announcements (#665) ---
+    AdminAnnouncementState:
+      description: |
+        `draft`: no user sees it. `published`: every local user sees it within its window.
+        `withdrawn`: taken down for good.
+      type: string
+      enum: [draft, published, withdrawn]
+    AdminAnnouncement:
+      description: An announcement with its Markdown text and its state.
+      type: object
+      required: [id, text, content, state, created_at, updated_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        text:
+          description: The text, in Markdown.
+          type: string
+        content:
+          description: The text as the users get it, an HTML fragment (`Announcement.content`).
+          type: string
+        state:
+          $ref: "#/components/schemas/AdminAnnouncementState"
+        starts_at:
+          description: When it starts to show once published; omitted to show it from its publication.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing; omitted to show it until it is withdrawn.
+          type: string
+          format: date-time
+        published_at:
+          description: When it was last published; omitted for a draft.
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          description: When its text or window last changed.
+          type: string
+          format: date-time
+    AdminAnnouncementList:
+      description: The announcements, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAnnouncement"
+    AdminAnnouncementInput:
+      description: The text and the window of an announcement.
+      type: object
+      required: [text]
+      properties:
+        text:
+          description: The text, in Markdown.
+          type: string
+          minLength: 1
+          maxLength: 5000
+        starts_at:
+          description: When it starts to show once published; omitted to show it from its publication.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+          type: string
+          format: date-time
+    AdminAnnouncementCreateRequest:
+      description: A new announcement, with its text and its window.
+      type: object
+      required: [text]
+      properties:
+        text:
+          description: The text, in Markdown.
+          type: string
+          minLength: 1
+          maxLength: 5000
+        starts_at:
+          description: When it starts to show once published; omitted to show it from its publication.
+          type: string
+          format: date-time
+        ends_at:
+          description: When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+          type: string
+          format: date-time
+        publish:
+          description: Publish it at once instead of keeping it a draft.
+          type: boolean
+          default: false
+    # --- end of admin: announcements (#665) ---
     # --- custom emoji (#621) ---
     PickerCustomEmoji:
       description: |
@@ -8348,6 +9273,123 @@ components:
           type: string
           enum: [invalid, duplicate, already_blocked]
     # --- end of admin: sign-up block import (#498) ---
+    # --- admin: domain block CSV (#641) ---
+    DomainBlockSeverity:
+      description: |
+        The `#severity` of Mastodon's domain block CSV. `suspend`: the action `suspend`.
+        `silence`: Mastodon's name of the action `limit`. `noop`: no action but the rejections.
+      type: string
+      enum: [suspend, silence, noop]
+    DomainBlock:
+      description: |
+        A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
+        such as `例え.jp` is accepted) and the public comment (at most 5,000 characters).
+      type: object
+      required: [domain, severity, reject_media, reject_reports, obfuscate]
+      properties:
+        domain:
+          type: string
+        severity:
+          $ref: "#/components/schemas/DomainBlockSeverity"
+        reject_media:
+          type: boolean
+        reject_reports:
+          type: boolean
+        public_comment:
+          type: string
+        obfuscate:
+          type: boolean
+    PreviewDomainBlockImportRequest:
+      description: A domain block CSV to preview.
+      type: object
+      required: [csv]
+      properties:
+        csv:
+          description: The file's text, with a header or as a list of domains; at most 5,000 rows.
+          type: string
+    DomainBlockImportStatus:
+      description: |
+        What importing a row would do. `importable`: it issues the actions of `issue`.
+        `already_applied`: an action in effect of each of the row's kinds covers the domain
+        already, on it or on a parent domain. `no_action`: the row stands for no action (a
+        `noop` without rejections). `duplicate`: an earlier row has the same domain once
+        normalized. `invalid`: the domain, the severity, or the public comment is not valid.
+      type: string
+      enum: [importable, already_applied, no_action, duplicate, invalid]
+    DomainBlockImportRow:
+      description: A row of a domain block CSV and what importing it would do.
+      type: object
+      required: [line, written_domain, status, issue]
+      properties:
+        line:
+          description: The line of the file the row starts on, from 1.
+          type: integer
+          minimum: 1
+        written_domain:
+          description: The domain as written in the row.
+          type: string
+        block:
+          description: |
+            The row, with its domain normalized (IDNA A-labels in lower case); absent when
+            the row is `invalid`. The import takes it as it is.
+          $ref: "#/components/schemas/DomainBlock"
+        status:
+          $ref: "#/components/schemas/DomainBlockImportStatus"
+        issue:
+          description: The kinds of the actions the import would issue; empty unless `importable`.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDomainActionKind"
+    DomainBlockImportPreview:
+      description: What importing each row of a domain block CSV would do, in row order.
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainBlockImportRow"
+    ImportDomainBlocksRequest:
+      description: The rows of a domain block CSV to import.
+      type: object
+      required: [blocks]
+      properties:
+        blocks:
+          type: array
+          maxItems: 5000
+          items:
+            $ref: "#/components/schemas/DomainBlock"
+        private_note:
+          description: The private note of every action issued.
+          type: string
+          maxLength: 5000
+    DomainBlockImportResult:
+      description: What an import of domain blocks did.
+      type: object
+      required: [issued, skipped]
+      properties:
+        issued:
+          description: The actions issued, in the order of the blocks.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminDomainAction"
+        skipped:
+          description: The blocks that issued nothing, in their order.
+          type: array
+          items:
+            $ref: "#/components/schemas/DomainBlockImportSkipped"
+    DomainBlockImportSkipped:
+      description: A block of an import that issued nothing.
+      type: object
+      required: [domain, reason]
+      properties:
+        domain:
+          description: The domain as sent.
+          type: string
+        reason:
+          description: Why it issued nothing; never `importable`.
+          $ref: "#/components/schemas/DomainBlockImportStatus"
+    # --- end of admin: domain block CSV (#641) ---
     # --- reports (#332) ---
     CreateReportRequest:
       description: A report of an account to the moderators.
@@ -8511,6 +9553,7 @@ components:
         - ai_usage
         - indexable_default
         - security_contact
+        - require_media_description
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from

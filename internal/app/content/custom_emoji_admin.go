@@ -49,6 +49,8 @@ type CustomEmojiRepository interface {
 	// ListLocalCustomEmojis returns the local emoji with one of shortcodes, or every local emoji
 	// for nil shortcodes, enabled or not, ordered by shortcode.
 	ListLocalCustomEmojis(ctx context.Context, shortcodes []string) ([]content.CustomEmojiRecord, error)
+	// ExistingCustomEmojiIDs returns, in ID order, the emoji among ids that exist.
+	ExistingCustomEmojiIDs(ctx context.Context, ids []string) ([]string, error)
 }
 
 // CustomEmojiLocality selects the local emoji, the remote ones, or both.
@@ -497,4 +499,10 @@ func (s *CustomEmojiService) LocalEmojiIDs(ctx context.Context, texts ...string)
 // ADR-0060). Each one reads as the method of the same name without Tx does.
 type CustomEmojiTxReads interface {
 	FindCustomEmojiRecordTx(ctx context.Context, tx uow.Tx, id string) (content.CustomEmojiRecord, error)
+}
+
+// ExistingIDs returns, in ID order, the custom emoji among ids that exist (not deleted), in one
+// lookup.
+func (s *CustomEmojiService) ExistingIDs(ctx context.Context, ids []string) ([]string, error) {
+	return s.d.Repository.ExistingCustomEmojiIDs(ctx, ids)
 }

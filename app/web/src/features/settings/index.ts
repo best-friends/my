@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The settings feature (FR-005, FR-006, FR-007, FR-008, FR-118, FR-208, FR-302, FR-303): the profile editor, the preferences, two-factor
 // authentication, the automatic deletion of old posts, the lists of blocked and muted accounts and of follow requests, the archives of the user's data and deleting
-// the account, displaying the app in the user's locale
+// the account, the follows, blocks, mutes, and bookmarks as Mastodon's CSV files, displaying the app in the user's locale
 // and time zone, the color theme of this browser, and the arrangement of the navigation's items on this browser. Routes and other features use it through this file only (web-client.md A3).
 export { dataExportsQueryOptions } from "./api/account";
+export { dataImportsQueryOptions } from "./api/importExport";
 export { credentialsQueryOptions, preferencesQueryOptions } from "./api/me";
 export { blocksQueryOptions, followRequestsQueryOptions, mutesQueryOptions } from "./api/relationships";
 export { BlockedAccounts, FollowRequests, MutedAccounts } from "./components/AccountLists";
+// The domains the user mutes (FR-304).
+export { domainMutesQueryOptions } from "./api/domainMutes";
+export { DomainMutes } from "./components/DomainMutes";
+export { ImportExport } from "./components/ImportExport";
 export { OwnAccount } from "./components/OwnAccount";
 export { PreferencesForm } from "./components/PreferencesForm";
 export { ProfileForm } from "./components/ProfileForm";

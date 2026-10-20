@@ -34,7 +34,7 @@ const moderator = {
   ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks", "manage_roles"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks", "manage_roles", "manage_announcements"],
 };
 
 /** The reported account: a long display name, local. */
@@ -216,11 +216,23 @@ const roles: Schemas["AdminRole"][] = [
     id: "0192f0c4-7a8e-7000-8000-0000000000f7",
     key: "admin",
     position: 1000,
-    permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_two_factor", "manage_custom_emojis", "manage_webhooks"],
+    permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_two_factor", "manage_custom_emojis", "manage_webhooks", "manage_announcements"],
   },
   { id: "0192f0c4-7a8e-7000-8000-0000000000f8", key: "moderator", position: 100, permissions: ["manage_reports", "manage_accounts", "view_audit"] },
   { id: "0192f0c4-7a8e-7000-8000-0000000000f9", key: "weekend-volunteers-of-the-community-help-desk", position: 50, permissions: ["manage_reports", "manage_jobs"] },
 ];
+
+/** A published announcement with a long first line and a link, as GET /admin/announcements lists it. */
+const announcement: Schemas["AdminAnnouncement"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e6",
+  text: `# Scheduled maintenance of the database ${"and of the media storage ".repeat(3)}\n\nSee [the status page](https://status.example/).`,
+  content: `<h2>Scheduled maintenance of the database ${"and of the media storage ".repeat(3)}</h2><p>See <a href="https://status.example/">the status page</a>.</p>`,
+  state: "published",
+  published_at: "2026-10-20T00:00:00Z",
+  ends_at: "2026-10-27T00:00:00Z",
+  created_at: "2026-10-20T00:00:00Z",
+  updated_at: "2026-10-20T00:00:00Z",
+};
 
 /** A failing delivery of the webhook, as GET /admin/webhooks/{id}/deliveries lists it. */
 const webhookDelivery: Schemas["AdminWebhookDelivery"] = {
@@ -326,7 +338,7 @@ async function moderatorServer(page: Page) {
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     const key = `${request.method()} ${path}`;
     if (key === "GET /instance") {
-      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, rules: [] });
+      return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
     if (key === "GET /accounts/verify_credentials" || key === `GET /accounts/${moderator.id}`) return json(route, moderator);
     if (key === `GET /accounts/${target.id}`) return json(route, target);
@@ -391,6 +403,7 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/invites") return json(route, { items: [invite] });
     if (key === "GET /admin/custom_emojis") return json(route, { items: url.searchParams.get("local") === "false" ? [] : [customEmoji] });
     if (key === "GET /admin/webhooks") return json(route, { items: [webhook] });
+    if (key === "GET /admin/announcements") return json(route, { items: [announcement] });
     if (key === `GET /admin/webhooks/${webhook.id}`) return json(route, webhook);
     if (key === `GET /admin/webhooks/${webhook.id}/deliveries`) return json(route, { items: [webhookDelivery] });
     if (key === "GET /admin/roles") return json(route, { items: roles });
@@ -444,6 +457,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
   "admin.webhooks": { path: "/admin/webhooks", ready: webhook.description ?? "" },
   "admin.webhooks_.$id": { path: `/admin/webhooks/${webhook.id}`, ready: webhookDelivery.message_id },
+  "admin.announcements": { path: "/admin/announcements", ready: "the status page" },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },

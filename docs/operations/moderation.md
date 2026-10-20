@@ -155,6 +155,33 @@ my admin domain lift <action id>
 - 解除はその処分の制限だけを消します。同じドメインへの別の処分は残ります。解除済みの処分をもう一度解除しても何も変わりません。
 - 一覧は新しい順で、`-active`（`active=true`）を付けると効いているものだけを出します。
 
+### Mastodon の CSV でのインポートとエクスポート
+
+ドメインへの処分の一覧を、Mastodon のドメインブロックの CSV（`#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`）で受け渡しできます（FR-706）。
+Mastodon がエクスポートした CSV をインポートでき、このサーバーがエクスポートした CSV は Mastodon でインポートできます。
+
+```sh
+my admin domain export > domain_blocks.csv
+my admin domain import domain_blocks.csv                       # 何をするかを表示するだけ
+my admin domain import -apply -only spam.example,bad.example domain_blocks.csv
+```
+
+管理 API では `GET /api/v1/admin/domain_actions/export`（`text/csv`）、`POST .../import/preview`（本文は `csv`）、`POST .../import`（本文は選んだ行の `blocks` と `private_note`）です。
+Web クライアントでは、ドメインへの処分の画面（`/moderation/domain-actions`）の「CSV のインポート」と「CSV のエクスポート」で行います。
+
+| CSV の行 | このサーバーの処分 |
+| --- | --- |
+| `#severity` が `suspend`（空のときも） | `suspend` |
+| `#severity` が `silence` | `limit` |
+| `#severity` が `noop` | なし |
+| `#reject_media` / `#reject_reports` が真 | それぞれ `reject_media` / `reject_reports` を足す |
+
+- インポートは 2 段階です。まずプレビューで行ごとに出す処分を確かめ、残す行を選んでからインポートします（CLI は `-apply` を付けるまで何も変えず、`-only` で行のドメインを選びます）。
+- そのドメインか親ドメインに同じ種類の有効な処分がある行は、その種類を出しません（すべてあれば「適用済み」）。同じドメインの 2 行目・不正な行・何も出さない行（`noop` だけ）も飛ばします。同じ CSV をもう一度インポートしても処分は増えません。
+- `#domain` の見出しのない CSV は、1 行に 1 つのドメインの一覧として、すべて `suspend` にします（Mastodon と同じ）。1 回に 5,000 行までです。
+- インポートした処分は「解除するまで」で、行の公開コメントと伏せ字、指定した非公開のメモを持ちます。1 件ずつ出した処分と同じく監査ログに載ります（操作者は API ならその人、CLI なら `cli`）。
+- エクスポートは効いている処分を、ドメインごとに 1 行にします。`suspend` があれば `suspend`、`limit` があれば `silence`、どちらもなければ `noop` です。Mastodon のドメインブロックにない `force_sensitive` だけのドメインは出しません。非公開のメモと期限は出しません。
+
 ### 切れたフォロー
 
 ドメインの `suspend` とリモートのアカウントの `suspend` は、ローカルの利用者と凍結したアカウントのフォローを両方向とも切ります（FR-717）。
@@ -243,9 +270,15 @@ my admin report reopen <report id>
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章。1 ロケールの変更） |
 | `rule` | `rule_added`・`rule_revised`・`rule_moved`・`rule_retired`（インスタンスのルール） |
-| `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪） |
+| `role` | `role_granted`・`role_revoked`（利用者へのロールの付与・剥奪）・`role_created`・`role_updated`・`role_deleted`（ロールの作成・変更・削除） |
 | `appeal` | `appeal_upheld`・`appeal_overturned`（異議申し立ての審査。覆したときは処分の `account_action_lifted`、`ban` なら `account_deletion_cancelled` も記録する） |
 | `signup_block` | `signup_block_added`・`signup_block_lifted`（登録の拒否の追加・解除） |
+| `custom_emoji` | `custom_emoji_created`・`custom_emoji_image_replaced`・`custom_emoji_updated`・`custom_emoji_enabled`・`custom_emoji_disabled`・`custom_emoji_deleted`（カスタム絵文字の登録・画像の差し替え・変更・有効化・無効化・削除） |
+| `webhook` | `webhook_created`・`webhook_updated`・`webhook_deleted`・`webhook_enabled`・`webhook_disabled`・`webhook_secret_rotated`（webhook の設定・変更・削除・有効化・無効化・秘密の作り直し） |
+| `announcement` | `announcement_created`・`announcement_updated`・`announcement_published`・`announcement_withdrawn`（お知らせの作成・変更・公開・取り下げ） |
+| `invite` | `invite_created`・`invite_revoked`（招待の作成・失効。対象の名前はコードの先頭 4 文字） |
+
+一覧は、対象が今もあるかを示します。保持期間を過ぎて消えたアカウント・通報・異議申し立て・登録の拒否と、削除されたロール・カスタム絵文字・webhook は、記録時の名前だけを出し、画面へのリンクを出しません。
 
 ```sh
 my admin audit list

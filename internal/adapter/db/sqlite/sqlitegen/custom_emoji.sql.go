@@ -292,6 +292,35 @@ func (q *Queries) ListCustomEmojiImageMediaIDs(ctx context.Context, emojiID stri
 	return items, nil
 }
 
+const listExistingCustomEmojiIDs = `-- name: ListExistingCustomEmojiIDs :many
+SELECT id FROM custom_emojis WHERE id IN (SELECT value FROM json_each(CAST(?1 AS TEXT))) ORDER BY id
+`
+
+// ListExistingCustomEmojiIDs returns, in ID order, the custom emoji among ids that exist (the
+// audit log). The ids are a JSON array.
+func (q *Queries) ListExistingCustomEmojiIDs(ctx context.Context, ids string) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, listExistingCustomEmojiIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLocalCustomEmojis = `-- name: ListLocalCustomEmojis :many
 SELECT e.id, e.shortcode, e.domain, e.uri, e.created_at,
   i.id AS image_id, i.media_id AS image_media_id, i.revised_at AS image_revised_at,

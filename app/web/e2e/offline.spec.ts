@@ -68,7 +68,7 @@ const instance: Instance = {
   version: "0.0.0-e2e",
   source_url: "https://github.com/best-friends/my",
   registrations: { mode: "open" },
-  limits: { max_post_characters: 500 },
+  limits: { max_post_characters: 500, require_media_description: false },
   timelines: { local: true, federated: true },
   sends_email: false,
   search_indexing: "deny",

@@ -77,7 +77,7 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     if (request.headers()["authorization"] !== "Bearer e2e-token" && path !== "/instance") return json(route, { type: "about:blank", title: "Unauthorized", status: 401 }, 401);
     switch (`${request.method()} ${path}`) {
       case "GET /instance":
-        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500 }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
+        return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, sends_email: sendsEmail, rules: [], search_indexing: "deny", ai_usage: "deny" });
       case "GET /accounts/verify_credentials":
         return json(route, { ...viewer, permissions });
       case "GET /preferences":
@@ -92,6 +92,14 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
         return json(route, { accounts: [bob] });
       case "GET /mutes":
         return json(route, { mutes: [{ account: bob, notifications: true }] });
+      case "GET /domain_mutes":
+        // A long domain, and one in IDNA A-labels that the page shows with its U-labels too.
+        return json(route, {
+          domain_mutes: [
+            { domain: "a-very-long-subdomain-name-for-the-narrowest-screens.spam.example", created_at: "2026-10-17T10:00:00Z" },
+            { domain: "xn--r8jz45g.xn--zckzah", created_at: "2026-10-18T10:00:00Z" },
+          ],
+        });
       case "GET /follow_requests":
         return json(route, { accounts: [bob] });
       case "GET /exports":
@@ -107,6 +115,28 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
               file_size: 2_500_000,
             },
           ],
+        });
+      case "GET /imports":
+        return json(route, {
+          items: [
+            {
+              id: "0192f0c4-7a8e-7000-8000-0000000009a1",
+              kind: "following",
+              mode: "overwrite",
+              state: "in_progress",
+              created_at: "2026-10-21T09:30:00Z",
+              total: 1200,
+              processed: 340,
+              failed: 2,
+            },
+          ],
+        });
+      case "POST /imports/preview":
+        return json(route, {
+          entries: 1200,
+          present: 30,
+          removals: 4,
+          skipped: [{ line: 7, value: "a-very-long-line-that-is-not-an-address-and-goes-on-and-on@", reason: "invalid" }],
         });
       case "GET /preferences/auto_delete":
         return json(route, autoDeletePolicy);
@@ -159,9 +189,11 @@ const pages = [
   "/settings/follow-requests",
   "/settings/blocks",
   "/settings/mutes",
+  "/settings/domain-mutes",
   "/settings/two-factor",
   "/settings/auto-delete",
   "/settings/account",
+  "/settings/import-export",
 ] as const;
 
 /** A TOTP setup whose QR code is the three finder patterns of a 21-module code with its quiet zone. */
@@ -179,6 +211,35 @@ test("two-factor setup shows the QR code and the key without axe violations or h
   await page.getByRole("main").getByRole("button", { name: message("settings.two_factor.setup.start"), exact: true }).click();
   await expect(page.getByRole("main").getByRole("img")).toBeVisible();
   await expect(page.getByRole("main").getByRole("textbox")).toBeVisible();
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+});
+
+test("checking a file to import shows what it does without axe violations or horizontal scroll", async ({ page, makeAxeBuilder }) => {
+  await signedInServer(page, projectLocale());
+  await page.goto("/settings/import-export");
+  const main = page.getByRole("main");
+  await main.getByText(message("settings.import_export.import.mode.overwrite"), { exact: true }).click();
+  await expect(main.getByRole("radio", { name: message("settings.import_export.import.mode.overwrite") })).toBeChecked();
+  // FileTrigger's input is hidden; Playwright sets its files as the file picker would.
+  await main.locator('input[type="file"]').setInputFiles({ name: "following_accounts.csv", mimeType: "text/csv", buffer: Buffer.from("bob@remote.example\n") });
+  await main.getByRole("button", { name: message("settings.import_export.import.preview"), exact: true }).click();
+  const preview = main.getByRole("region", { name: message("settings.import_export.import.preview.title") });
+  await expect(preview.getByRole("button", { name: message("settings.import_export.import.start"), exact: true })).toBeVisible();
+  await expect(preview).toMatchAriaSnapshot(`
+    - region:
+      - heading [level=3]
+      - term
+      - definition
+      - term
+      - definition
+      - term
+      - definition
+      - heading [level=4]
+      - list:
+        - listitem
+      - button
+  `);
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);
 });

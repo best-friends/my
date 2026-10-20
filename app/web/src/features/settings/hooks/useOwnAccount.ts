@@ -16,11 +16,10 @@ import {
   isWrongPasswordError,
   requestDataExportMutation,
 } from "../api/account";
+import { saveFile } from "./saveFile";
 
 /** How often a pending archive is checked, in ms. */
 const pendingPollInterval = 5000;
-/** How long the URL of a downloaded archive stays usable, in ms: long enough for the browser to start saving it. */
-const downloadUrlLifetime = 60_000;
 
 /** What the archives section needs. */
 export type DataExports = {
@@ -38,18 +37,6 @@ export type DataExports = {
   /** What the last request did, for the section's StatusMessage. */
   status: string | undefined;
 };
-
-/** Saves `blob` as a file named `name` through a temporary link, as the browser's download does. */
-function saveFile(blob: Blob, name: string): void {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  link.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-  }, downloadUrlLifetime);
-}
 
 export function useDataExports(): DataExports {
   const api = useApi();

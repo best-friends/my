@@ -6,6 +6,7 @@ import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
 import { useStatusView } from "../hooks/useStatusView";
 import { StatusActions } from "./StatusActions";
+import { StatusPoll } from "./StatusPoll";
 import { StatusReactions } from "./StatusReactions";
 
 export type StatusCardProps = {
@@ -60,6 +61,8 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         revealLabel={t("client:timeline.media.reveal")}
       />
     ) : undefined;
+  // The poll goes with the body, under the content warning too (FR-112).
+  const poll = (status.boost ?? status).poll === undefined ? undefined : <StatusPoll status={status} canVote={withActions} />;
   const body = (
     <PostContent
       html={view.html}
@@ -156,11 +159,23 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         ) : (
           <ContentWarning summary={<EmojiText text={view.contentWarning} emojis={view.emojis} />} summaryLang={view.lang} toggleLabel={t("client:timeline.content_warning.toggle")}>
             {body}
+            {poll}
             {media}
           </ContentWarning>
         )
       }
-      {...(view.contentWarning === null && media !== undefined && { media })}
+      {...(view.contentWarning === null &&
+        (poll !== undefined || media !== undefined) && {
+          media:
+            poll === undefined ? (
+              media
+            ) : (
+              <div className="flex min-w-0 flex-col gap-3">
+                {poll}
+                {media}
+              </div>
+            ),
+        })}
       {...(withActions && (status.boost ?? status).reactions.length > 0 && { reactions: <StatusReactions status={status} /> })}
       {...((withActions || view.original !== null) && {
         actions: (

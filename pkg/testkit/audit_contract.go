@@ -3,9 +3,11 @@
 package testkit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -47,6 +49,23 @@ type auditEnv struct {
 	ids    *IDGenerator
 	svc    *appmoderation.Service
 	remote string
+	// others are the roles, custom emoji, and webhooks that exist, by kind.
+	others stubAuditTargets
+}
+
+// stubAuditTargets is the appmoderation.AuditTargets of the other modules' targets: the IDs that
+// exist, by kind.
+type stubAuditTargets map[moderation.AuditTargetKind][]string
+
+func (s stubAuditTargets) ExistingAuditTargets(_ context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error) {
+	var out []string
+	for _, id := range ids {
+		if slices.Contains(s[kind], id) {
+			out = append(out, id)
+		}
+	}
+	slices.Sort(out)
+	return out, nil
 }
 
 func newAuditEnv(t *testing.T, newHarness ModerationFactory) *auditEnv {
@@ -57,13 +76,14 @@ func newAuditEnv(t *testing.T, newHarness ModerationFactory) *auditEnv {
 	clock := NewClock(time.Date(2026, 10, 17, 12, 0, 0, 0, time.UTC))
 	ids := NewIDGenerator(clock)
 	actors := &stubActors{actors: map[string]appaccount.Actor{}}
-	e := &auditEnv{h: h, clock: clock, ids: ids, remote: ids.NewID()}
+	e := &auditEnv{h: h, clock: clock, ids: ids, remote: ids.NewID(), others: stubAuditTargets{}}
 	actors.set(appaccount.Actor{
 		Account: account.Account{ID: e.remote, Domain: "remote.example", URI: "https://remote.example/users/bob"},
 		Handle:  &account.Handle{AccountID: e.remote, Username: "bob", Domain: "remote.example"},
 	})
 	e.svc = appmoderation.NewService(appmoderation.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Moderation, Accounts: actors, Clock: clock, IDs: ids,
+		AuditTargets: e.others,
 	})
 	return e
 }
@@ -339,6 +359,10 @@ func auditTellsGoneTargets(t *testing.T, e *auditEnv) {
 		return moderation.AuditEntry{TargetKind: kind, TargetID: id}
 	}
 	missing := e.ids.NewID()
+	role, emoji, hook := e.ids.NewID(), e.ids.NewID(), e.ids.NewID()
+	e.others[moderation.AuditTargetRole] = []string{role}
+	e.others[moderation.AuditTargetCustomEmoji] = []string{emoji}
+	e.others[moderation.AuditTargetWebhook] = []string{hook}
 	entries := []moderation.AuditEntry{
 		entry(moderation.AuditTargetAccount, e.remote), entry(moderation.AuditTargetAccount, missing),
 		entry(moderation.AuditTargetReport, report.ID), entry(moderation.AuditTargetReport, missing),
@@ -348,6 +372,11 @@ func auditTellsGoneTargets(t *testing.T, e *auditEnv) {
 		// Kinds of targets that are never erased are never gone.
 		entry(moderation.AuditTargetDomain, "gone.example"), entry(moderation.AuditTargetSetting, "registration_mode"),
 		entry(moderation.AuditTargetUser, missing), entry(moderation.AuditTargetRule, missing),
+		entry(moderation.AuditTargetInvite, missing),
+		// The other modules' targets, deleted or not.
+		entry(moderation.AuditTargetRole, role), entry(moderation.AuditTargetRole, missing),
+		entry(moderation.AuditTargetCustomEmoji, emoji), entry(moderation.AuditTargetCustomEmoji, missing),
+		entry(moderation.AuditTargetWebhook, hook), entry(moderation.AuditTargetWebhook, missing),
 	}
 	got, err := e.svc.GoneAuditTargets(ctx, entries)
 	if err != nil {
@@ -358,6 +387,9 @@ func auditTellsGoneTargets(t *testing.T, e *auditEnv) {
 		{Kind: moderation.AuditTargetReport, ID: missing}:      true,
 		{Kind: moderation.AuditTargetAppeal, ID: missing}:      true,
 		{Kind: moderation.AuditTargetSignupBlock, ID: missing}: true,
+		{Kind: moderation.AuditTargetRole, ID: missing}:        true,
+		{Kind: moderation.AuditTargetCustomEmoji, ID: missing}: true,
+		{Kind: moderation.AuditTargetWebhook, ID: missing}:     true,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("GoneAuditTargets = %v, want %v", got, want)

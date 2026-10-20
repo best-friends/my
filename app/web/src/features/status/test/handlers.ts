@@ -6,7 +6,8 @@
 // favourite, bookmark, pin and their removal; edit; delete; the emoji reaction and its removal). An action answers
 // the post with the viewer's relation set as asked (a reaction: the post with that one reaction, the viewer's); an
 // edit answers it with the new text as its content and `edited_at` set. The accounts that reacted to a post
-// (GET /statuses/{id}/reactions) are Bob with 👍, in one page.
+// (GET /statuses/{id}/reactions) are Bob with 👍, in one page. A vote in the poll of a post
+// (POST /statuses/{id}/poll/votes) answers the post with `pollFixture` and the vote counted in it.
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, type Schemas, statusFixture } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
@@ -27,6 +28,35 @@ const context: Schemas["StatusContext"] = { ancestors: [], descendants: [] };
 function historyOf(status: Schemas["Status"]): Schemas["StatusHistory"] {
   const { content, spoiler_text, sensitive, created_at, media_attachments, emojis } = status;
   return { items: [{ content, spoiler_text, sensitive, created_at, media_attachments, emojis }] };
+}
+
+/** A single-choice poll of three options that ends a day after the tests' now, before the viewer voted. */
+export const pollFixture: Schemas["Poll"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e1",
+  expires_at: "2026-10-17T12:00:00Z",
+  expired: false,
+  multiple: false,
+  votes_count: 4,
+  voters_count: 4,
+  options: [
+    { title: "Red", votes_count: 1 },
+    { title: "Blue", votes_count: 3 },
+    { title: "Green", votes_count: 0 },
+  ],
+  voted: false,
+  own_votes: [],
+};
+
+/** `poll` after the viewer voted for the options at `choices`. */
+export function votedPoll(poll: Schemas["Poll"], choices: readonly number[]): Schemas["Poll"] {
+  return {
+    ...poll,
+    votes_count: poll.votes_count + choices.length,
+    ...(poll.voters_count !== undefined && { voters_count: poll.voters_count + 1 }),
+    options: poll.options.map((option, index) => (choices.includes(index) ? { ...option, votes_count: option.votes_count + 1 } : option)),
+    voted: true,
+    own_votes: [...choices],
+  };
 }
 
 export const handlers = [
@@ -63,6 +93,12 @@ export const handlers = [
     );
   }),
   http.delete(`${apiBase}/statuses/:id/reaction`, ({ params, request }) => withViewer(request, () => HttpResponse.json(statusFixture(String(params["id"]))))),
+  http.post(`${apiBase}/statuses/:id/poll/votes`, async ({ params, request }) => {
+    const body = (await request.clone().json()) as Schemas["VoteInPollRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json({ ...statusFixture(String(params["id"])), poll: votedPoll(pollFixture, body.choices) } satisfies Schemas["Status"]),
+    );
+  }),
   http.get(`${apiBase}/statuses/:id/reactions`, () =>
     HttpResponse.json({
       items: [{ account: otherAccountFixture, emoji: { name: "👍" }, created_at: "2026-10-16T10:00:00Z" }],

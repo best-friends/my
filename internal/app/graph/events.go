@@ -12,7 +12,9 @@ import "github.com/best-friends/my/internal/domain/graph"
 // tables. Blocking emits one EventFollowTerminated per follow it ends, then EventBlocked. Mutes
 // are a current value that this module reads at query time; their commands emit EventMuted and
 // EventUnmuted for other modules' projections (timeline's feed_exclusions, notification's
-// notification_exclusions).
+// notification_exclusions). Domain mutes are a current value too; their commands emit
+// EventDomainMuted and EventDomainUnmuted for timeline's feed_domain_mutes and notification's
+// notification_domain_exclusions.
 //
 //   - EventFollowed: a follow became active on creation (the followee is not locked).
 //   - EventFollowRequested: a follow awaits the followee's approval (the followee is locked).
@@ -27,6 +29,8 @@ import "github.com/best-friends/my/internal/domain/graph"
 //   - EventMuted: an account muted another, or replaced the settings and expiry of a mute.
 //   - EventUnmuted: an account removed its mute of another, or the cleanup deleted an expired
 //     mute (not emitted without a mute).
+//   - EventDomainMuted: an account muted a domain (not emitted when it already did).
+//   - EventDomainUnmuted: an account removed its mute of a domain (not emitted without one).
 const (
 	EventFollowed                 = "graph.followed"
 	EventFollowRequested          = "graph.follow_requested"
@@ -39,6 +43,8 @@ const (
 	EventUnblocked                = "graph.unblocked"
 	EventMuted                    = "graph.muted"
 	EventUnmuted                  = "graph.unmuted"
+	EventDomainMuted              = "graph.domain_muted"
+	EventDomainUnmuted            = "graph.domain_unmuted"
 )
 
 // Muted is emitted when a mute is stored. Mute.ExpiresAt is nil for a mute until unmuted.
@@ -58,6 +64,23 @@ type Unmuted struct {
 
 // EventType implements uow.Event.
 func (Unmuted) EventType() string { return EventUnmuted }
+
+// DomainMuted is emitted when an account mutes a domain.
+type DomainMuted struct {
+	Mute graph.DomainMute
+}
+
+// EventType implements uow.Event.
+func (DomainMuted) EventType() string { return EventDomainMuted }
+
+// DomainUnmuted is emitted when an account removes its mute of a domain.
+type DomainUnmuted struct {
+	AccountID string
+	Domain    string
+}
+
+// EventType implements uow.Event.
+func (DomainUnmuted) EventType() string { return EventDomainUnmuted }
 
 // WasActive reports whether the follow was active when it ended, rather than pending.
 func (e FollowTerminated) WasActive() bool { return e.PreviousState == graph.StateActive }

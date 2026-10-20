@@ -381,9 +381,16 @@ func roleCreatesUpdatesAndDeletes(t *testing.T, e *roleEnv) {
 		t.Errorf("DeleteRole(held) = %v, want ErrRoleHeld", err)
 	}
 	e.revoke(t, bob, "helper", e.admin)
+	missing := e.ids.NewID()
+	if got, err := e.identity.ExistingRoleIDs(ctx, []string{missing, created.ID}); err != nil || !reflect.DeepEqual(got, []string{created.ID}) {
+		t.Errorf("ExistingRoleIDs = %v, %v; want helper", got, err)
+	}
 	e.clock.Advance(time.Second)
 	if err := e.identity.DeleteRole(ctx, "helper", e.admin); err != nil {
 		t.Fatalf("DeleteRole = %v", err)
+	}
+	if got, err := e.identity.ExistingRoleIDs(ctx, []string{created.ID}); err != nil || len(got) != 0 {
+		t.Errorf("ExistingRoleIDs after the deletion = %v, %v; want none", got, err)
 	}
 	if _, _, err := e.h.Identity.FindRole(ctx, "helper"); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("FindRole(helper) after the deletion = %v, want ErrNotFound", err)

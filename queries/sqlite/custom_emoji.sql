@@ -110,3 +110,8 @@ WHERE remote_media.media_id = sqlc.arg(media_id)
 
 -- name: DeleteRemoteMediaFile :exec
 DELETE FROM media_files WHERE media_files.id = sqlc.arg(id) AND media_files.origin = 'remote';
+
+-- ListExistingCustomEmojiIDs returns, in ID order, the custom emoji among ids that exist (the
+-- audit log). The ids are a JSON array.
+-- name: ListExistingCustomEmojiIDs :many
+SELECT id FROM custom_emojis WHERE id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT))) ORDER BY id;

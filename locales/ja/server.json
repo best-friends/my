@@ -64,7 +64,7 @@
     "description": "Permission (OAuth scope read:follows) listed on the authorization page."
   },
   "auth.authorize.scope.read_mutes": {
-    "defaultMessage": "ミュートしているアカウントの読み取り",
+    "defaultMessage": "ミュートしているアカウントとドメインの読み取り",
     "description": "Permission (OAuth scope read:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.read_notifications": {
@@ -108,7 +108,7 @@
     "description": "Permission (OAuth scope write:media) listed on the authorization page."
   },
   "auth.authorize.scope.write_mutes": {
-    "defaultMessage": "アカウントのミュートと解除",
+    "defaultMessage": "アカウントとドメインのミュートと解除",
     "description": "Permission (OAuth scope write:mutes) listed on the authorization page."
   },
   "auth.authorize.scope.write_notifications": {
@@ -543,6 +543,14 @@
     "defaultMessage": "この操作は許可されていません。",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
   },
+  "errors.import.in_progress": {
+    "defaultMessage": "別のインポートを処理中です。終わるまでお待ちください。",
+    "description": "API error title for HTTP 409 when the user starts an import of a CSV file of follows, blocks, mutes, or bookmarks while another import is still being carried out."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "ファイルを CSV として読み込めません。",
+    "description": "Detail of an API error (HTTP 422) when the file the user imports is not a valid CSV file, e.g. it has an unterminated quoted field."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "このアプリにはこの操作が許可されていません。",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
@@ -703,6 +711,10 @@
     "defaultMessage": "添付したファイルは処理中か、処理できませんでした。",
     "description": "Detail of the HTTP 422 API error when a post attaches a media file whose processing has not finished or failed."
   },
+  "errors.status.missing_media_description": {
+    "defaultMessage": "このサーバーでは、すべての画像に説明（代替テキスト）が必要です。投稿する前に、それぞれの画像に説明を付けてください。",
+    "description": "Detail of the HTTP 422 API error when an attached image has no alternative text while the server requires one for every image (the instance setting require_media_description)."
+  },
   "errors.status.not_author": {
     "defaultMessage": "この投稿を変更できるのは投稿者だけです。",
     "description": "Detail of the HTTP 403 API error when a user tries to edit or delete another account's post."
@@ -718,6 +730,26 @@
   "errors.status.pin_limit": {
     "defaultMessage": "{max, plural, other {固定できる投稿は # 件までです。}}",
     "description": "Detail of the HTTP 422 API error when a user pins more posts than allowed. {max} is the maximum number of pinned posts."
+  },
+  "errors.status.poll_already_voted": {
+    "defaultMessage": "この投票にはすでに回答しています。",
+    "description": "Detail of the HTTP 422 API error when a user votes in a poll a second time."
+  },
+  "errors.status.poll_changed": {
+    "defaultMessage": "投稿の編集で投票が変わりました。読み込み直してから回答してください。",
+    "description": "Detail of the HTTP 409 API error when a user votes in a poll that an edit of the post replaced."
+  },
+  "errors.status.poll_closed": {
+    "defaultMessage": "この投票は締め切られました。",
+    "description": "Detail of the HTTP 422 API error when a user votes in a poll whose end has passed."
+  },
+  "errors.status.poll_invalid_choices": {
+    "defaultMessage": "投票の選択肢から選んでください。複数選べるのは複数選択の投票だけです。",
+    "description": "Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll."
+  },
+  "errors.status.poll_missing": {
+    "defaultMessage": "この投稿には投票がありません。",
+    "description": "Detail of the HTTP 422 API error when a user votes on a post that has no poll."
   },
   "errors.status.posting_restricted": {
     "defaultMessage": "現在、あなたのアカウントは投稿できません。",
@@ -942,5 +974,9 @@
   "errors.invalid_custom_emoji_detail": {
     "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} other {カスタム絵文字が規則に合いません。}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
+  },
+  "errors.domain_mutes.too_many": {
+    "defaultMessage": "ミュートできるドメインの数の上限に達しています。先にどれかのミュートを解除してください。",
+    "description": "API error title for HTTP 422 when the user mutes another domain beyond the limit of muted domains."
   }
 }

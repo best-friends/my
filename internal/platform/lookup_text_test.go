@@ -184,10 +184,16 @@ func sweepRequests(doc *openapi3.T) []sweepRequest {
 				if err != nil {
 					panic(err)
 				}
+				// A NUL is no date-time, so the body does not decode: the request is malformed. In any
+				// other string, it is a value that the operation rejects.
+				want := http.StatusUnprocessableEntity
+				if fieldFormat(schema, field) == "date-time" {
+					want = http.StatusBadRequest
+				}
 				add(sweepRequest{
 					name:   fmt.Sprintf("%s %s NUL in body %s", method, path, field),
 					method: method, target: pathWith("x"), header: jsonHeader.Clone(), body: string(b), api: true,
-					want: http.StatusUnprocessableEntity,
+					want: want,
 				})
 			}
 		}
@@ -346,10 +352,29 @@ func objectWith(s *openapi3.Schema, prefix, field, bad string) map[string]any {
 }
 
 func goodString(p *openapi3.Schema) any {
-	if len(p.Enum) > 0 {
+	switch {
+	case len(p.Enum) > 0:
 		return p.Enum[0]
+	case p.Format == "date-time":
+		return "2026-10-21T00:00:00Z"
 	}
 	return "x"
+}
+
+// fieldFormat returns the format of the string at field (a path from stringFields) of s.
+func fieldFormat(s *openapi3.Schema, field string) string {
+	name, rest, nested := strings.Cut(strings.TrimSuffix(field, "[]"), ".")
+	p, ok := s.Properties[name]
+	if !ok || p.Value == nil {
+		return ""
+	}
+	if nested {
+		return fieldFormat(p.Value, rest)
+	}
+	if p.Value.Type.Is(openapi3.TypeArray) && p.Value.Items != nil {
+		return p.Value.Items.Value.Format
+	}
+	return p.Value.Format
 }
 
 func sortedKeys[V any](m map[string]V) []string {

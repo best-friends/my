@@ -159,6 +159,9 @@ func (r *StatusRepository) EraseInteractionsBy(ctx context.Context, tx uow.Tx, a
 		func() error {
 			return keep(q.EraseBookmarksBy(ctx, postgresgen.EraseBookmarksByParams{AccountID: accountID, Lim: lim}))
 		},
+		func() error {
+			return keep(q.ErasePollVotesBy(ctx, postgresgen.ErasePollVotesByParams{AccountID: accountID, Lim: lim}))
+		},
 		func() error { return keep(q.ErasePinsBy(ctx, accountID)) },
 		// The automatic deletion policy (FR-118) is a setting of the account.
 		func() error { return q.EraseAutoDeleteKeptVisibilitiesBy(ctx, accountID) },
@@ -245,7 +248,11 @@ func (r *GraphRepository) EraseMutesOf(ctx context.Context, tx uow.Tx, accountID
 		return 0, wrap(err, "erase mutes")
 	}
 	of, err := q.EraseMutesOf(ctx, postgresgen.EraseMutesOfParams{AccountID: accountID, Lim: batchLimit(limit)})
-	return max(by, of), wrap(err, "erase mutes")
+	if err != nil {
+		return 0, wrap(err, "erase mutes")
+	}
+	domains, err := q.EraseDomainMutesBy(ctx, postgresgen.EraseDomainMutesByParams{AccountID: accountID, Lim: batchLimit(limit)})
+	return max(by, of, domains), wrap(err, "erase domain mutes")
 }
 
 // EraseCountersOf implements graph.ErasureRepository.
@@ -292,6 +299,9 @@ func (r *TimelineRepository) EraseFeedsOf(ctx context.Context, tx uow.Tx, accoun
 		func(ctx context.Context, a string, n int32) (int64, error) {
 			return q.EraseFeedExclusionsAsTarget(ctx, postgresgen.EraseFeedExclusionsAsTargetParams{AccountID: a, Lim: n})
 		},
+		func(ctx context.Context, a string, n int32) (int64, error) {
+			return q.EraseFeedDomainMutesOf(ctx, postgresgen.EraseFeedDomainMutesOfParams{AccountID: a, Lim: n})
+		},
 	} {
 		n, err := step(ctx, accountID, lim)
 		if err != nil {
@@ -336,7 +346,11 @@ func (r *NotificationRepository) EraseNotificationsOf(ctx context.Context, tx uo
 	if err != nil {
 		return 0, wrap(err, "erase notification exclusions")
 	}
-	return max(most, viewer, target), nil
+	domains, err := q.EraseNotificationDomainExclusionsOf(ctx, postgresgen.EraseNotificationDomainExclusionsOfParams{AccountID: accountID, Lim: lim})
+	if err != nil {
+		return 0, wrap(err, "erase notification domain exclusions")
+	}
+	return max(most, viewer, target, domains), nil
 }
 
 // EraseStatusNotifications implements notification.ErasureRepository.

@@ -82,6 +82,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
           onDescribe={attachments.describe}
           onRemove={attachments.remove}
           requireDescriptions={form.requireDescriptions}
+          isDescriptionRequired={form.isDescriptionRequired}
         />
         {attachments.items.length > 0 && (
           <p className="text-sm text-fg-muted">{t("client:compose.media.hint", { max: maxAttachments })}</p>
