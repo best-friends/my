@@ -1,0 +1,297 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Everything the app keeps in the browser's storage (localStorage and sessionStorage), declared in one place
+// (web-client.md S11). Each key says where it is kept, the type of its value and how a stored value is checked,
+// the version of that format, the value that stands for "nothing kept", and whether it is the user's own data,
+// which is removed when the session ends. Nothing else reads or writes the storage: Oxlint rejects
+// `localStorage` and `sessionStorage` outside this module and the tests (restrict/storage).
+//
+// A value is stored as the JSON `{"v":<version>,"value":<value>}`. A value of another version, one that is not
+// JSON or one that fails its check reads as the default, as does a key that nothing was written to; writing the
+// default removes the key. Where the storage cannot be used (a browser that blocks it, a sandboxed frame, a full
+// quota), a write is kept in memory for the rest of the page, so the app behaves the same until it is reloaded.
+//
+// Reading is an external store (react.dev: useSyncExternalStore): a key returns the same value until its stored
+// text changes, a write here notifies the key's subscribers, and a write in another tab of the origin reaches
+// them through the storage event (https://developer.mozilla.org/docs/Web/API/Window/storage_event).
+import { useSyncExternalStore } from "react";
+import { z } from "zod";
+
+/** localStorage outlives the tab and is shared by the origin's tabs; sessionStorage belongs to one tab. */
+type Area = "local" | "session";
+
+type Declaration<T> = {
+  area: Area;
+  /** The version of the stored format; a stored value of another version reads as the default. */
+  version: number;
+  /** The value when nothing (valid) is kept. Writing it removes the key. */
+  defaultValue: T;
+  /** Checks a stored value and returns it typed, or undefined when it is not one. */
+  parse: (value: unknown) => T | undefined;
+  /** Whether the value is the user's own data (what they typed), removed when the session ends (lib/auth/userData). */
+  userData: boolean;
+};
+
+/** The stored form of every value. */
+const envelope = z.object({ v: z.number(), value: z.unknown() });
+
+/** The values written where the storage could not be used, by key name; null is a removal. */
+const unsaved = new Map<string, string | null>();
+/** The subscribers of each key name. */
+const listeners = new Map<string, Set<() => void>>();
+
+function storageOf(area: Area): Storage | null {
+  try {
+    return area === "local" ? globalThis.localStorage : globalThis.sessionStorage;
+  } catch {
+    // The browser refuses the storage (blocked site data, a sandboxed frame).
+    return null;
+  }
+}
+
+function notify(name: string): void {
+  for (const listener of listeners.get(name) ?? []) listener();
+}
+
+/** Follows a write made in another tab; a null key is a clear() of the whole storage. */
+function onStorage(event: StorageEvent): void {
+  if (event.key === null) for (const name of listeners.keys()) notify(name);
+  else notify(event.key);
+}
+
+/** One declared key. Instances are made by the declarations of this module only. */
+class StorageKey<T> {
+  readonly name: string;
+  readonly #declaration: Declaration<T>;
+  /** The last stored text read and its value, so that a snapshot keeps its identity while the text is the same. */
+  #cache: { raw: string | null; value: T } | undefined;
+
+  constructor(name: string, declaration: Declaration<T>) {
+    this.name = name;
+    this.#declaration = declaration;
+  }
+
+  /** The version of the stored format. */
+  get version(): number {
+    return this.#declaration.version;
+  }
+
+  /** The kept value, or the default when nothing valid is kept or the storage cannot be read. */
+  read(): T {
+    const raw = this.#readRaw();
+    if (this.#cache === undefined || this.#cache.raw !== raw) this.#cache = { raw, value: this.#decode(raw) };
+    return this.#cache.value;
+  }
+
+  /** Keeps `value`, or removes the key when it is the default, and notifies the subscribers. */
+  write(value: T): void {
+    if (Object.is(value, this.#declaration.defaultValue)) {
+      this.remove();
+      return;
+    }
+    this.#writeRaw(JSON.stringify({ v: this.#declaration.version, value }));
+  }
+
+  /** Removes the key, so that it reads as the default, and notifies the subscribers. */
+  remove(): void {
+    this.#writeRaw(null);
+  }
+
+  /** Calls `listener` whenever the value may have changed, here or in another tab (useSyncExternalStore's subscribe). */
+  readonly subscribe = (listener: () => void): (() => void) => {
+    if (listeners.size === 0) window.addEventListener("storage", onStorage);
+    let set = listeners.get(this.name);
+    if (set === undefined) {
+      set = new Set();
+      listeners.set(this.name, set);
+    }
+    set.add(listener);
+    return () => {
+      set.delete(listener);
+      if (set.size === 0) listeners.delete(this.name);
+      if (listeners.size === 0) window.removeEventListener("storage", onStorage);
+    };
+  };
+
+  /** useSyncExternalStore's getSnapshot. */
+  readonly getSnapshot = (): T => this.read();
+
+  #readRaw(): string | null {
+    const kept = unsaved.get(this.name);
+    if (kept !== undefined) return kept;
+    try {
+      return storageOf(this.#declaration.area)?.getItem(this.name) ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  #writeRaw(raw: string | null): void {
+    const storage = storageOf(this.#declaration.area);
+    try {
+      if (storage === null) throw new Error("no storage");
+      if (raw === null) storage.removeItem(this.name);
+      else storage.setItem(this.name, raw);
+      unsaved.delete(this.name);
+    } catch {
+      // The storage is blocked or full: keep the value for this page.
+      unsaved.set(this.name, raw);
+    }
+    notify(this.name);
+  }
+
+  #decode(raw: string | null): T {
+    const { version, defaultValue, parse } = this.#declaration;
+    if (raw === null) return defaultValue;
+    try {
+      const stored = envelope.safeParse(JSON.parse(raw));
+      if (!stored.success || stored.data.v !== version) return defaultValue;
+      return parse(stored.data.value) ?? defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  }
+}
+
+export type { StorageKey };
+
+/** Every declaration, for removing the user's data; a family is matched by its prefix. */
+const declared: { prefix: string; exact: boolean; area: Area; userData: boolean }[] = [];
+
+function declareKey<T>(name: string, declaration: Declaration<T>): StorageKey<T> {
+  declared.push({ prefix: name, exact: true, area: declaration.area, userData: declaration.userData });
+  return new StorageKey(name, declaration);
+}
+
+/** A key per ID under `prefix` (one per account, say). The same ID returns the same key. */
+function declareKeyFamily<T>(prefix: string, declaration: Declaration<T>): (id: string) => StorageKey<T> {
+  declared.push({ prefix, exact: false, area: declaration.area, userData: declaration.userData });
+  const keys = new Map<string, StorageKey<T>>();
+  return (id) => {
+    let key = keys.get(id);
+    if (key === undefined) {
+      key = new StorageKey(prefix + id, declaration);
+      keys.set(id, key);
+    }
+    return key;
+  };
+}
+
+/** A check that accepts the values of `schema`. */
+function schemaParser<T>(schema: z.ZodType<T>): (value: unknown) => T | undefined {
+  return (value) => {
+    const result = schema.safeParse(value);
+    return result.success ? result.data : undefined;
+  };
+}
+
+/** Returns the value of `key`, rendering again when it changes, here or in another tab. */
+export function useStorage<T>(key: StorageKey<T>): T {
+  return useSyncExternalStore(key.subscribe, key.getSnapshot);
+}
+
+/** Removes every key that holds the user's own data, in both storages (lib/auth/userData, at the end of a session). */
+export function clearUserStorage(): void {
+  const isUserData = (area: Area, name: string) =>
+    declared.some((d) => d.userData && d.area === area && (d.exact ? name === d.prefix : name.startsWith(d.prefix)));
+  const removed = new Set<string>();
+  for (const area of ["local", "session"] as const) {
+    const storage = storageOf(area);
+    if (storage === null) continue;
+    try {
+      const names = Array.from({ length: storage.length }, (_, i) => storage.key(i));
+      for (const name of names) {
+        if (name === null || !isUserData(area, name)) continue;
+        storage.removeItem(name);
+        removed.add(name);
+      }
+    } catch {
+      // The storage cannot be read: nothing was saved there.
+    }
+  }
+  for (const name of unsaved.keys()) {
+    if (isUserData("local", name) || isUserData("session", name)) {
+      unsaved.delete(name);
+      removed.add(name);
+    }
+  }
+  for (const name of removed) notify(name);
+}
+
+/** Forgets the values kept in memory where the storage could not be used. For the test setup only. */
+export function forgetUnsavedStorage(): void {
+  unsaved.clear();
+}
+
+// The keys. The names are listed in web-client.md §10–§12; public/theme.js reads `my:display:theme` itself.
+
+/** The color theme chosen on this browser (lib/theme). Kept across sessions: it is how this browser shows the app. */
+export const themeKey = declareKey<"system" | "light" | "dark">("my:display:theme", {
+  area: "local",
+  version: 1,
+  defaultValue: "system",
+  parse: schemaParser(z.enum(["light", "dark"])),
+  userData: false,
+});
+
+/** The locale the app was last displayed in on this browser (lib/locale); null starts in the instance's locale. */
+export const localeKey = declareKey<string | null>("my:display:locale", {
+  area: "local",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(z.string().min(1)),
+  userData: false,
+});
+
+/** Whether animated images play by themselves on this browser (lib/autoplay, ADR-0054 §3). */
+export const autoplayKey = declareKey<boolean>("my:display:autoplay", {
+  area: "local",
+  version: 1,
+  defaultValue: true,
+  parse: schemaParser(z.boolean()),
+  userData: false,
+});
+
+/** Which public timelines the instance served when GET /instance last answered (features/timeline). */
+export type StoredTimelines = { local: boolean; federated: boolean };
+
+/** The instance's public timelines, kept for a start without the network; an instance setting, not the user's data. */
+export const timelinesKey = declareKey<StoredTimelines | null>("my:instance:timelines", {
+  area: "local",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(z.object({ local: z.boolean(), federated: z.boolean() })),
+  userData: false,
+});
+
+/** The saved compose state of one account (features/compose): its draft and outbox, checked further by the draft store. */
+export type StoredCompose = { draft: Record<string, unknown>; outbox: Record<string, unknown>[] };
+
+/** The compose state of each account, for this tab only; the user's own data. */
+export const composeKey = declareKeyFamily<StoredCompose | null>("my:user:compose:", {
+  area: "session",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(z.object({ draft: z.record(z.string(), z.unknown()), outbox: z.array(z.record(z.string(), z.unknown())) })),
+  userData: true,
+});
+
+/** A sign-in between leaving for the authorization screen and its callback (lib/auth/signIn). */
+export type StoredSignIn = { state: string; codeVerifier: string; returnTo: string };
+
+/** The sign-in in progress in this tab; deleted when the callback reads it. */
+export const signInKey = declareKey<StoredSignIn | null>("my:oauth-pending", {
+  area: "session",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(z.object({ state: z.string(), codeVerifier: z.string(), returnTo: z.string() })),
+  userData: false,
+});
+
+/** When this tab last reloaded after a chunk failed to load (lib/pwa), in epoch milliseconds. */
+export const preloadReloadKey = declareKey<number | null>("my:preload-error-reloaded-at", {
+  area: "session",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(z.number()),
+  userData: false,
+});

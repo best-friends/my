@@ -29,6 +29,8 @@ const files = {
   featureTest: "web/src/features/timeline/timeline.test.tsx",
   featureComponentTest: "web/src/features/timeline/components/Timeline.test.tsx",
   lib: "web/src/lib/services.ts",
+  storage: "web/src/lib/storage.ts",
+  testSetup: "web/src/test/setup.ts",
   icons: "ui/src/Icons.tsx",
   component: "ui/src/Button.tsx",
   svgControl: "ui/src/Checkbox.tsx",
@@ -47,6 +49,10 @@ describe("where the restrictions apply", () => {
   it("keeps cache writes out of a feature's hooks and components, but not out of their tests (S1)", () => {
     assert.ok(ruleOptions("restrict/feature", files.featureComponent).length > 0);
     for (const file of [files.featureApi, files.featureComponentTest, files.route]) assert.equal(ruleValue("restrict/feature", file), undefined);
+  });
+  it("keeps the browser's storage to lib/storage and the tests (S11)", () => {
+    for (const file of [files.route, files.lib, files.featureHook, files.component]) assert.ok(ruleOptions("restrict/storage", file).length > 0);
+    for (const file of [files.storage, files.testSetup, files.featureTest]) assert.equal(ruleValue("restrict/storage", file), "off");
   });
   it("allows the API client and fetch in features/<x>/api and lib/ (S1)", () => {
     for (const file of [files.featureApi, files.lib]) {
@@ -149,6 +155,22 @@ ruleTester.run("restrict/test (tests)", restrict.rules.test, {
     { ...fails("globalThis.fetch = vi.fn();"), options: test },
     // T7
     { ...fails("vi.waitFor(() => expect(a).toBe(1));"), options: test },
+  ],
+});
+
+const storage = ruleOptions("restrict/storage", files.featureHook);
+ruleTester.run("restrict/storage (S11)", restrict.rules.storage, {
+  valid: [
+    { code: "themeKey.write('dark');", options: storage },
+    { code: "const theme = useStorage(themeKey);", options: storage },
+    { code: "window.addEventListener('storage', onStorage);", options: storage },
+  ],
+  invalid: [
+    { ...fails("localStorage.setItem('my:display:theme', 'dark');"), options: storage },
+    { ...fails("const raw = sessionStorage.getItem(key);"), options: storage },
+    { ...fails("window.localStorage.clear();"), options: storage },
+    { ...fails("const storage = globalThis['sessionStorage'];"), options: storage },
+    { ...fails("const { localStorage: kept } = window;"), options: storage },
   ],
 });
 

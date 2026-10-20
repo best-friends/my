@@ -4,10 +4,11 @@
 // code; the callback checks `state` and exchanges the code for an access token (session.ts).
 //
 // The PKCE verifier, `state` and where to return must survive the round trip through the server's pages,
-// so they wait in sessionStorage (this tab only) and are deleted when the callback reads them. They are
+// so they wait in sessionStorage (this tab only, lib/storage's signInKey) and are deleted when the callback reads them. They are
 // not credentials: the code they go with is single-use, short-lived and bound to the verifier.
 import type { Session } from "./session";
 import { webClientId } from "./session";
+import { signInKey, type StoredSignIn } from "../storage";
 
 /** The authorization endpoint (authpages.PathAuthorize). */
 const authorizePath = "/oauth/authorize";
@@ -15,17 +16,6 @@ const authorizePath = "/oauth/authorize";
 /** The path of the redirect URI on the web client's origin (platform.WebClientCallbackPath). */
 const callbackPath = "/login/callback";
 
-/** The sessionStorage key of the sign-in in progress. */
-const pendingKey = "my:oauth-pending";
-
-/** A sign-in between leaving for the authorization screen and its callback. */
-type PendingSignIn = { state: string; codeVerifier: string; returnTo: string };
-
-function isPendingSignIn(value: unknown): value is PendingSignIn {
-  if (typeof value !== "object" || value === null) return false;
-  const { state, codeVerifier, returnTo } = value as Record<string, unknown>;
-  return typeof state === "string" && typeof codeVerifier === "string" && typeof returnTo === "string";
-}
 
 /** Unpadded base64url (RFC 4648 §5), the encoding of PKCE's verifier and challenge. */
 function base64url(bytes: Uint8Array): string {
@@ -68,7 +58,7 @@ export type BeginSignInOptions = {
  * registered with.
  */
 export async function beginSignIn({ apiOrigin, appOrigin, returnTo }: BeginSignInOptions): Promise<URL> {
-  const pending: PendingSignIn = { state: randomToken(), codeVerifier: randomToken(), returnTo: isReturnPath(returnTo) ? returnTo : "/" };
+  const pending: StoredSignIn = { state: randomToken(), codeVerifier: randomToken(), returnTo: isReturnPath(returnTo) ? returnTo : "/" };
   const url = new URL(authorizePath, apiOrigin);
   url.search = new URLSearchParams({
     response_type: "code",
@@ -78,7 +68,7 @@ export async function beginSignIn({ apiOrigin, appOrigin, returnTo }: BeginSignI
     code_challenge: await codeChallenge(pending.codeVerifier),
     code_challenge_method: "S256",
   }).toString();
-  sessionStorage.setItem(pendingKey, JSON.stringify(pending));
+  signInKey.write(pending);
   return url;
 }
 
@@ -133,14 +123,8 @@ async function exchange(session: Session, { code, state, error }: AuthorizationR
 }
 
 /** Reads and deletes the sign-in in progress. */
-function takePending(): PendingSignIn | null {
-  const raw = sessionStorage.getItem(pendingKey);
-  sessionStorage.removeItem(pendingKey);
-  if (raw === null) return null;
-  try {
-    const value: unknown = JSON.parse(raw);
-    return isPendingSignIn(value) ? value : null;
-  } catch {
-    return null;
-  }
+function takePending(): StoredSignIn | null {
+  const pending = signInKey.read();
+  signInKey.remove();
+  return pending;
 }

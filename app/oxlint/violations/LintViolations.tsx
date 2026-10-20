@@ -126,6 +126,13 @@ export function useStatus(id: string) {
   return useQuery({ queryKey: ["status"], queryFn: () => id }); // expect: @tanstack/query(exhaustive-deps) @tanstack/query(prefer-query-options)
 }
 
+// S11
+export function storedTheme() {
+  const theme = localStorage.getItem("my:display:theme"); // expect: restrict(storage)
+  window.sessionStorage.removeItem("my:oauth-pending"); // expect: restrict(storage)
+  return theme;
+}
+
 // S7
 export const Route = createFileRoute("/lint-violations")({ // expect: @tanstack/router(create-route-property-order)
   loader: () => undefined,

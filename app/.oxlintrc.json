@@ -432,7 +432,7 @@
     // React Compiler memoizes a context value built during render; the rule asks for the useMemo that R5
     // forbids). A7: no-restricted-types. A8: dom-no-dangerously-set-innerhtml (PostContent below). A9: formatjs.
     // D8, D9: better-tailwindcss; D5–D7: its no-restricted-classes. A5, D5, D10, R4, R5, R13, S7, G10: restrict/syntax
-    // and restrict/svg. R5, S1, G10: no-restricted-imports / -globals / -properties.
+    // and restrict/svg. S11: restrict/storage. R5, S1, G10: no-restricted-imports / -globals / -properties.
     {
       "files": [
         "ui/src/**/*.{ts,tsx}",
@@ -705,6 +705,17 @@
             "selector": "JSXOpeningElement[name.name=/^(svg|g|path|circle|ellipse|line|polygon|polyline|rect|text|tspan|textPath|defs|use|symbol|marker|mask|clipPath|pattern|linearGradient|radialGradient|stop|filter|foreignObject|image)$/]",
             "message": "Do not draw SVG; use an icon of @my/ui (Icons.tsx), and add a row to its table for a new one (ADR-0043, web-client.md G10)."
           }
+        ],
+        "restrict/storage": [
+          "error",
+          {
+            "selector": "Identifier[name=/^(localStorage|sessionStorage)$/]",
+            "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client.md S11)."
+          },
+          {
+            "selector": "MemberExpression[computed=true][property.value=/^(localStorage|sessionStorage)$/]",
+            "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client.md S11)."
+          }
         ]
       },
       "plugins": [
@@ -719,6 +730,19 @@
       "env": {
         "browser": true
       }
+    },
+    // S11: the one module that uses the browser's storage, and the test setup that clears it after each test.
+    {
+      "files": [
+        "web/src/lib/storage.ts",
+        "web/src/test/**"
+      ],
+      "rules": {
+        "restrict/storage": "off"
+      },
+      "jsPlugins": [
+        "./oxlint/restrictions.js"
+      ]
     },
     // S1: the API client and fetch are allowed here.
     {
@@ -1287,7 +1311,9 @@
             "message": "Wait with findBy or Testing Library's waitFor, which use the timeout of the test setup (web-client.md T7)."
           }
         ],
-        "restrict/svg": "off"
+        "restrict/svg": "off",
+        // S11: a test prepares and inspects the stored text itself (a broken value, the format of a key).
+        "restrict/storage": "off"
       },
       "jsPlugins": [
         "eslint-plugin-testing-library",

@@ -8,6 +8,7 @@ import { describe, expect, test } from "vitest";
 import { instanceFixture, preferencesFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
+import { themeKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 /** GET /instance with the given public timelines turned on or off. */
@@ -148,7 +149,7 @@ describe("the tab bar's Menu", () => {
     await user.click(within(theme).getByRole("radio", { name: "Dark" }));
 
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
-    expect(localStorage.getItem("my:display:theme")).toBe("dark");
+    expect(themeKey.read()).toBe("dark");
     expect(screen.getByRole("dialog", { name: "Menu" })).toBeInTheDocument();
   });
 

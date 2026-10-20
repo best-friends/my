@@ -19,6 +19,7 @@ import {
 import { apiBase, problem, signedInHandler, withViewer } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { nodeUploadFile } from "../../test/multipart";
+import { autoplayKey, themeKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 /**
@@ -168,12 +169,12 @@ describe("theme", () => {
 
     await user.click(within(theme).getByRole("radio", { name: "Light" }));
     expect(document.documentElement).toHaveAttribute("data-theme", "light");
-    expect(localStorage.getItem("my:display:theme")).toBe("light");
+    expect(themeKey.read()).toBe("light");
     // The APG radio group: an arrow key moves to the next option and checks it.
     await user.keyboard("{ArrowDown}");
     expect(within(theme).getByRole("radio", { name: "Dark" })).toBeChecked();
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
-    expect(localStorage.getItem("my:display:theme")).toBe("dark");
+    expect(themeKey.read()).toBe("dark");
 
     await user.click(within(theme).getByRole("radio", { name: "Match the system" }));
     expect(document.documentElement).not.toHaveAttribute("data-theme");
@@ -201,7 +202,7 @@ describe("autoplay of animations", () => {
 
     await user.click(autoplay);
     expect(autoplay).not.toBeChecked();
-    expect(localStorage.getItem("my:display:autoplay")).toBe("off");
+    expect(autoplayKey.read()).toBe(false);
     await user.click(autoplay);
     expect(autoplay).toBeChecked();
     expect(localStorage.getItem("my:display:autoplay")).toBeNull();

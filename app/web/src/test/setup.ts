@@ -4,6 +4,7 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { afterAll, afterEach, beforeAll, beforeEach, vi } from "vitest";
+import { forgetUnsavedStorage } from "../lib/storage";
 import { server } from "./msw/server";
 
 // findBy and waitFor give up after this long (web-client.md T7). The wait is wall-clock time, which a busy
@@ -30,8 +31,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   server.resetHandlers();
-  // What the app keeps for the next start (the instance's timelines) must not leak into the next test.
+  // What the app keeps in the browser (lib/storage) must not leak into the next test, nor what it kept in
+  // memory when a test blocked the storage.
   localStorage.clear();
+  sessionStorage.clear();
+  forgetUnsavedStorage();
   // The tests share one document; a theme chosen in one (lib/theme) must not color the next.
   delete document.documentElement.dataset["theme"];
 });

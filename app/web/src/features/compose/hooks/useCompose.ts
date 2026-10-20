@@ -2,9 +2,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { createContext, use, useState, useSyncExternalStore } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
+import { composeKey } from "../../../lib/storage";
 import { useViewer } from "../../session";
 import { cacheReplyTarget, type Status } from "../api/compose";
-import { type ComposeState, DraftStore, draftStorageKey } from "./draftStore";
+import { type ComposeState, DraftStore } from "./draftStore";
 import { replyMentions } from "./policy";
 
 /** Where the form is: always on screen in a side panel (wide screens), or in a sheet opened by a button. */
@@ -26,15 +27,6 @@ export type ComposeController = {
 
 export const ComposeContext = createContext<ComposeController | null>(null);
 
-/** The tab's storage, or none where the browser refuses it (a sandboxed frame). */
-function tabStorage(): Storage | null {
-  try {
-    return window.sessionStorage;
-  } catch {
-    return null;
-  }
-}
-
 /** The controller for the signed-in viewer, or null while nobody is signed in. */
 export function useComposeController(layout: ComposeLayout): ComposeController | null {
   const viewer = useViewer();
@@ -45,7 +37,7 @@ export function useComposeController(layout: ComposeLayout): ComposeController |
   // react.dev describes for state that depends on a changed value ("Adjusting some state when a prop changes").
   const [store, setStore] = useState<{ accountId: string; store: DraftStore } | null>(null);
   if (accountId !== (store?.accountId ?? null)) {
-    setStore(accountId === null ? null : { accountId, store: new DraftStore(tabStorage(), draftStorageKey(accountId)) });
+    setStore(accountId === null ? null : { accountId, store: new DraftStore(composeKey(accountId)) });
   }
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   if (store === null || accountId === null || store.accountId !== accountId) return null;

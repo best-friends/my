@@ -6,17 +6,17 @@
 import type { Page } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
 
-/** The localStorage key of lib/theme.ts and public/theme.js. */
+/** The localStorage key of the theme (lib/storage's themeKey), which public/theme.js reads. */
 const themeKey = "my:display:theme";
 
 /**
- * Stores `theme` before the page's scripts run, and records whether <html data-theme> was set before <body>
- * existed: then it was there before anything could paint.
+ * Stores `theme` as lib/storage does before the page's scripts run, and records whether <html data-theme> was set
+ * before <body> existed: then it was there before anything could paint.
  */
 async function startWithStoredTheme(page: Page, theme: "light" | "dark") {
   await page.addInitScript(
     ([key, value]) => {
-      localStorage.setItem(key, value);
+      localStorage.setItem(key, JSON.stringify({ v: 1, value }));
       const observer = new MutationObserver(() => {
         if (!document.documentElement.hasAttribute("data-theme")) return;
         document.documentElement.dataset["themeBeforeBody"] = String(document.querySelector("body") === null);

@@ -3,6 +3,7 @@
 // update waits for the user, clearing the caches at sign-out, and reloading when a deploy removed the
 // chunks of the running version.
 import { useSyncExternalStore } from "react";
+import { preloadReloadKey } from "./storage";
 import { cachesClearedMessage, clearCachesMessage, isMessage, skipWaitingMessage } from "./sw-protocol";
 
 /** A downloaded version waiting to take over; `apply` activates it, and the page reloads into it. */
@@ -129,8 +130,6 @@ function askWorkerToClear(worker: ServiceWorker): Promise<void> {
   });
 }
 
-/** The session storage key of the time of the last reload after a failed chunk load. */
-const reloadedAtKey = "my:preload-error-reloaded-at";
 /** A second failure within this time is not reloaded again, so that a broken deploy cannot loop. */
 const reloadGuardMs = 10_000;
 
@@ -141,15 +140,11 @@ const reloadGuardMs = 10_000;
  */
 export function reloadOnPreloadError(target: Window): () => void {
   const onPreloadError = (event: Event) => {
+    // The time of the last reload is kept in this tab's sessionStorage (lib/storage), which a reload keeps.
     const now = Date.now();
-    let last = Number.NaN;
-    try {
-      last = Number(target.sessionStorage.getItem(reloadedAtKey));
-      target.sessionStorage.setItem(reloadedAtKey, String(now));
-    } catch {
-      // Without session storage there is no loop guard; reload anyway, as Vite's guide does.
-    }
-    if (now - last < reloadGuardMs) return;
+    const last = preloadReloadKey.read();
+    preloadReloadKey.write(now);
+    if (last !== null && now - last < reloadGuardMs) return;
     event.preventDefault();
     target.location.reload();
   };
