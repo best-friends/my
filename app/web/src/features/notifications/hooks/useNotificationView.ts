@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4):
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
+import type { CustomEmojiImage } from "@my/ui";
 import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
 import { accountStatusPath, moderationAppealPath, moderationReportPath, followListPath, profilePath } from "../../../lib/paths";
@@ -11,7 +12,8 @@ import type { ModerationAction, Notification, NotificationAccount, NotificationS
 import type { NotificationGroup } from "./groupNotifications";
 
 /** An account in a row: its name in the UI (the username when it has no display name), profile page, and avatar URL. */
-export type NotificationActor = { name: string; href: string; avatar: string | undefined };
+/** An account a row names: its display name with the custom emoji of its profile, its profile page, and its avatar. */
+export type NotificationActor = { name: string; emojis: readonly CustomEmojiImage[]; href: string; avatar: string | undefined };
 
 /** A link from a row to the page where the user follows up what it tells. */
 type NotificationLink = { href: string; label: ClientMessageKey };
@@ -69,6 +71,11 @@ export type NotificationView = {
   /** What a `moderation_notice` or an `appeal_decided` tells of the action; null for the other types. */
   notice: ModerationNoticeView | null;
   /**
+   * The emoji of a `reaction`, for `{emoji}` in its sentence: the Unicode emoji, or the `:shortcode:` of a
+   * custom emoji; null for the other types.
+   */
+  reaction: string | null;
+  /**
    * The pages the row leads to besides the actor's profile and the post, where the user follows up what it
    * tells: the account status, the report, the registrations, or the user's follow lists.
    */
@@ -82,6 +89,7 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   mention: "client:notifications.type.mention",
   boost: "client:notifications.type.boost",
   favourite: "client:notifications.type.favourite",
+  reaction: "client:notifications.type.reaction",
   poll_closed: "client:notifications.type.poll_closed",
   moderation_notice: "client:notifications.type.moderation_notice",
   report_resolved: "client:notifications.type.report_resolved",
@@ -99,7 +107,7 @@ const groupSentences: Readonly<Partial<Record<NotificationType, ClientMessageKey
 };
 
 function actorOf(account: NotificationAccount): NotificationActor {
-  return { name: account.display_name || account.username, href: profilePath(account.acct), avatar: account.avatar_url };
+  return { name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: account.avatar_url };
 }
 
 /**
@@ -188,6 +196,13 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
   }
 }
 
+/** The emoji of a `reaction` as its sentence shows it (NotificationView.reaction). */
+function reactionOf(notification: Notification): string | null {
+  const { reaction } = notification;
+  if (notification.type !== "reaction" || reaction === undefined) return null;
+  return reaction.shortcode === undefined ? reaction.name : `:${reaction.shortcode}:`;
+}
+
 /** Returns what the row of `group` shows: one notification, or the favourites or the boosts of one post. */
 export function useNotificationView(group: NotificationGroup): NotificationView {
   const [notification] = group.notifications;
@@ -220,6 +235,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
     followBack: notification.type === "follow" && account !== undefined ? account : null,
     severance: severed?.severance ?? null,
     notice: action === undefined ? null : noticeOf(action, (value) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" })),
+    reaction: reactionOf(notification),
     links: linksOf(notification, viewer.status === "signed-in" ? viewer.account.acct : null),
   };
 }

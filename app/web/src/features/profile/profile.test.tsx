@@ -68,6 +68,26 @@ describe("a profile", () => {
     expect(within(feed).getByRole("article", { description: "Hello from the local timeline!" })).toBeInTheDocument();
   });
 
+  test("draws the custom emoji of the name, the profile text and the fields, read as their shortcodes", async () => {
+    const blobcat = { shortcode: "blobcat", url: "https://my.example/media/proxy/e1/full", static_url: "https://my.example/media/proxy/e1/full" };
+    bobServer(
+      {},
+      {
+        display_name: "Bob :blobcat:",
+        note: "<p>I bake :blobcat: bread.</p>",
+        fields: [{ name: "Cat :blobcat:", value: "<p>:blobcat:</p>" }],
+        emojis: [blobcat],
+      },
+    );
+    await renderApp({ path: "/@bob" });
+
+    const heading = await screen.findByRole("heading", { level: 1, name: "Bob :blobcat:" });
+    expect(within(heading).getByRole("img", { name: ":blobcat:" })).toHaveAttribute("src", blobcat.static_url);
+    expect(within(within(main()).getByRole("term")).getByRole("img", { name: ":blobcat:" })).toBeInTheDocument();
+    expect(within(within(main()).getByRole("definition")).getByRole("img", { name: ":blobcat:" })).toBeInTheDocument();
+    expect(within(main()).getByText(/I bake/)).toHaveTextContent("I bake bread.");
+  });
+
   test("shows the account's header image and avatar, decorative, with the band in place of an image that fails", async () => {
     const header = "https://my.example/media/header/full.png";
     const avatar = "https://my.example/media/avatar/full.png";

@@ -104,6 +104,12 @@ func (r *AccountRepository) InsertProfileRevision(ctx context.Context, tx uow.Tx
 			return wrap(err, "insert profile field")
 		}
 	}
+	for _, id := range rev.EmojiIDs {
+		err := q.InsertProfileRevisionEmoji(ctx, postgresgen.InsertProfileRevisionEmojiParams{RevisionID: rev.ID, EmojiID: id})
+		if err != nil {
+			return wrap(err, "insert profile revision emoji")
+		}
+	}
 	if rev.Remote != nil {
 		version, err := toInt32(rev.Remote.HTMLPolicyVersion, "HTML policy version")
 		if err != nil {
@@ -544,6 +550,10 @@ func currentProfile(ctx context.Context, q *postgresgen.Queries, accountID strin
 	if err != nil {
 		return account.ProfileRevision{}, wrap(err, "list profile fields")
 	}
+	emojis, err := q.ListProfileRevisionEmojis(ctx, row.ID)
+	if err != nil {
+		return account.ProfileRevision{}, wrap(err, "list profile revision emoji")
+	}
 	rev := account.ProfileRevision{
 		ID:            row.ID,
 		AccountID:     row.AccountID,
@@ -560,6 +570,9 @@ func currentProfile(ctx context.Context, q *postgresgen.Queries, accountID strin
 	}
 	for _, f := range fields {
 		rev.Fields = append(rev.Fields, account.ProfileField{Position: int(f.Position), Name: f.Name, ValueHTML: f.ValueHtml})
+	}
+	if len(emojis) > 0 {
+		rev.EmojiIDs = emojis
 	}
 	note, err := q.GetProfileRevisionSource(ctx, row.ID)
 	if errors.Is(err, pgx.ErrNoRows) {

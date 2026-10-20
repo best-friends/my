@@ -23,6 +23,26 @@ func (q *Queries) AccountErased(ctx context.Context, accountID string) (bool, er
 	return exists, err
 }
 
+const deleteSingleReactionCountsBy = `-- name: DeleteSingleReactionCountsBy :exec
+
+DELETE FROM status_reaction_counts WHERE count = 1 AND EXISTS (
+  SELECT 1 FROM (SELECT r.status_id, r.emoji_key FROM reactions r WHERE r.account_id = ?1
+    ORDER BY r.id LIMIT ?2) x
+  WHERE x.status_id = status_reaction_counts.status_id AND x.emoji_key = status_reaction_counts.emoji_key)
+`
+
+type DeleteSingleReactionCountsByParams struct {
+	AccountID string
+	Lim       int64
+}
+
+// The account's reactions, the oldest lim of them: the counts of their emoji go down first (a
+// count of one goes away), for the same batch.
+func (q *Queries) DeleteSingleReactionCountsBy(ctx context.Context, arg DeleteSingleReactionCountsByParams) error {
+	_, err := q.db.ExecContext(ctx, deleteSingleReactionCountsBy, arg.AccountID, arg.Lim)
+	return err
+}
+
 const eraseAccessTokenRevocations = `-- name: EraseAccessTokenRevocations :exec
 DELETE FROM oauth_token_revocations WHERE token_id IN (
   SELECT t.id FROM oauth_access_tokens t WHERE t.user_id = ?1)
@@ -484,8 +504,8 @@ DELETE FROM local_statuses WHERE status_id IN (SELECT value FROM json_each(CAST(
 `
 
 // The EraseOfStatuses* statements delete what refers to the statuses @ids beyond what
-// PurgeStatuses deletes: their local rows, every boost of them, and the favourites, bookmarks,
-// and pins of them.
+// PurgeStatuses deletes: their local rows, every boost of them, and the favourites, reactions
+// (with their counts), bookmarks, and pins of them.
 func (q *Queries) EraseLocalStatusesOfStatuses(ctx context.Context, ids string) error {
 	_, err := q.db.ExecContext(ctx, eraseLocalStatusesOfStatuses, ids)
 	return err
@@ -684,6 +704,16 @@ func (q *Queries) EraseProfileHead(ctx context.Context, accountID string) error 
 	return err
 }
 
+const eraseProfileRevisionEmojis = `-- name: EraseProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = ?1)
+`
+
+func (q *Queries) EraseProfileRevisionEmojis(ctx context.Context, accountID string) error {
+	_, err := q.db.ExecContext(ctx, eraseProfileRevisionEmojis, accountID)
+	return err
+}
+
 const eraseProfileRevisionSources = `-- name: EraseProfileRevisionSources :exec
 DELETE FROM account_profile_revision_sources WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r WHERE r.account_id = ?1)
@@ -700,6 +730,42 @@ DELETE FROM account_profile_revisions WHERE account_id = ?1
 
 func (q *Queries) EraseProfileRevisions(ctx context.Context, accountID string) error {
 	_, err := q.db.ExecContext(ctx, eraseProfileRevisions, accountID)
+	return err
+}
+
+const eraseReactionCountsOfStatuses = `-- name: EraseReactionCountsOfStatuses :exec
+DELETE FROM status_reaction_counts WHERE status_id IN (SELECT value FROM json_each(CAST(?1 AS TEXT)))
+`
+
+func (q *Queries) EraseReactionCountsOfStatuses(ctx context.Context, ids string) error {
+	_, err := q.db.ExecContext(ctx, eraseReactionCountsOfStatuses, ids)
+	return err
+}
+
+const eraseReactionsBy = `-- name: EraseReactionsBy :execrows
+DELETE FROM reactions WHERE reactions.id IN (
+  SELECT r.id FROM reactions r WHERE r.account_id = ?1 ORDER BY r.id LIMIT ?2)
+`
+
+type EraseReactionsByParams struct {
+	AccountID string
+	Lim       int64
+}
+
+func (q *Queries) EraseReactionsBy(ctx context.Context, arg EraseReactionsByParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, eraseReactionsBy, arg.AccountID, arg.Lim)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const eraseReactionsOfStatuses = `-- name: EraseReactionsOfStatuses :exec
+DELETE FROM reactions WHERE status_id IN (SELECT value FROM json_each(CAST(?1 AS TEXT)))
+`
+
+func (q *Queries) EraseReactionsOfStatuses(ctx context.Context, ids string) error {
+	_, err := q.db.ExecContext(ctx, eraseReactionsOfStatuses, ids)
 	return err
 }
 
@@ -1216,5 +1282,22 @@ type UncountFavouritesByParams struct {
 // The account's favourites: the counts of the statuses go down first, for the same batch.
 func (q *Queries) UncountFavouritesBy(ctx context.Context, arg UncountFavouritesByParams) error {
 	_, err := q.db.ExecContext(ctx, uncountFavouritesBy, arg.AccountID, arg.Lim)
+	return err
+}
+
+const uncountReactionsBy = `-- name: UncountReactionsBy :exec
+UPDATE status_reaction_counts SET count = count - 1 WHERE EXISTS (
+  SELECT 1 FROM (SELECT r.status_id, r.emoji_key FROM reactions r WHERE r.account_id = ?1
+    ORDER BY r.id LIMIT ?2) x
+  WHERE x.status_id = status_reaction_counts.status_id AND x.emoji_key = status_reaction_counts.emoji_key)
+`
+
+type UncountReactionsByParams struct {
+	AccountID string
+	Lim       int64
+}
+
+func (q *Queries) UncountReactionsBy(ctx context.Context, arg UncountReactionsByParams) error {
+	_, err := q.db.ExecContext(ctx, uncountReactionsBy, arg.AccountID, arg.Lim)
 	return err
 }

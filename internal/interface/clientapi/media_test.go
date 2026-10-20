@@ -136,6 +136,12 @@ func (f *fakeMedia) Update(ctx context.Context, accountID string, u appcontent.M
 func (f *fakeMedia) URL(v content.MediaVariant) string { return "https://social.example/" + v.BlobKey }
 
 // ImageURLs answers as the real service does and counts its calls in imageCalls.
+// CustomEmojis knows no custom emoji: the platform tests present them through the real media
+// service.
+func (f *fakeMedia) CustomEmojis(context.Context, []string) (map[string]appcontent.CustomEmojiView, error) {
+	return map[string]appcontent.CustomEmojiView{}, nil
+}
+
 func (f *fakeMedia) ImageURLs(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]string, error) {
 	f.mu.Lock()
 	f.imageCalls++

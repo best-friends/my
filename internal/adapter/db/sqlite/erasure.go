@@ -50,7 +50,7 @@ func (r *AccountRepository) EraseProfilesAndKeys(ctx context.Context, tx uow.Tx,
 		return err
 	}
 	return runSteps(ctx, accountID, "erase profiles and keys",
-		q.EraseProfileFieldSources, q.EraseProfileFields, q.EraseProfileRevisionSources, q.EraseProfileHead,
+		q.EraseProfileFieldSources, q.EraseProfileFields, q.EraseProfileRevisionEmojis, q.EraseProfileRevisionSources, q.EraseProfileHead,
 		q.EraseProfileRevisions, q.ErasePrivateKeys, q.EraseKeyRevocations, q.EraseKeys)
 }
 
@@ -124,7 +124,7 @@ func (r *StatusRepository) EraseStatuses(ctx context.Context, tx uow.Tx, statusI
 	if err := runSteps(ctx, ids, "erase statuses",
 		q.EraseLocalStatusesOfStatuses, q.EraseCountersOfStatuses, q.EraseBoostEdgesOfStatuses,
 		q.EraseBoostRetractionsOfStatuses, q.EraseBoostsOfStatuses, q.EraseFavouritesOfStatuses,
-		q.EraseBookmarksOfStatuses, q.ErasePinsOfStatuses); err != nil {
+		q.EraseReactionsOfStatuses, q.EraseReactionCountsOfStatuses, q.EraseBookmarksOfStatuses, q.ErasePinsOfStatuses); err != nil {
 		return err
 	}
 	return r.PurgeStatuses(ctx, tx, statusIDs)
@@ -148,6 +148,15 @@ func (r *StatusRepository) EraseInteractionsBy(ctx context.Context, tx uow.Tx, a
 		},
 		func() error {
 			return keep(q.EraseFavouritesBy(ctx, sqlitegen.EraseFavouritesByParams{AccountID: accountID, Lim: lim}))
+		},
+		func() error {
+			return q.DeleteSingleReactionCountsBy(ctx, sqlitegen.DeleteSingleReactionCountsByParams{AccountID: accountID, Lim: lim})
+		},
+		func() error {
+			return q.UncountReactionsBy(ctx, sqlitegen.UncountReactionsByParams{AccountID: accountID, Lim: lim})
+		},
+		func() error {
+			return keep(q.EraseReactionsBy(ctx, sqlitegen.EraseReactionsByParams{AccountID: accountID, Lim: lim}))
 		},
 		func() error {
 			return keep(q.EraseBookmarksBy(ctx, sqlitegen.EraseBookmarksByParams{AccountID: accountID, Lim: lim}))

@@ -227,6 +227,28 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	if err := e.interactions.Pin(ctx, aliceID, plain.ID); err != nil {
 		t.Fatal(err)
 	}
+	// Carol reacts to alice's status, alice to bob's (as the reaction command of a local account
+	// records it: the row and its event).
+	if _, err := e.interactions.RecordRemoteReaction(ctx, appcontent.RemoteReactionInput{
+		URI: "https://remote.example/users/carol/reactions/1", AccountID: carol, StatusID: plain.ID,
+		Emoji: appcontent.RemoteReactionEmoji{Unicode: "👍"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	err := e.h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		r := content.Reaction{
+			ID: e.ids.NewID(), AccountID: aliceID, StatusID: bobs.ID, Emoji: content.ReactionEmoji{Unicode: "🎉"},
+			URI: "https://" + contractHost + "/ap/activities/alice-reaction", CreatedAt: e.clock.Now(),
+		}
+		if _, err := e.rh.Interactions.InsertReaction(ctx, tx, r); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, appcontent.Reacted{Reaction: r, Status: appcontent.RefOf(bobs)})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.rows(t, "status_reaction_counts", "status_id", bobs.ID, 1)
 	if _, err := e.graph.Follow(ctx, bob, aliceID); err != nil {
 		t.Fatal(err)
 	}
@@ -240,8 +262,8 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	if c, _ := e.graph.Counters(ctx, bob); c.FollowersCount != 1 || c.FollowingCount != 1 {
 		t.Fatalf("bob's counters before = %+v", c)
 	}
-	e.rows(t, "notifications", "recipient_account_id", aliceID, 3) // bob's follow, favourite, boost
-	e.rows(t, "notifications", "source_account_id", aliceID, 3)    // alice's follow, favourite, boost
+	e.rows(t, "notifications", "recipient_account_id", aliceID, 4) // bob's follow, favourite, boost; carol's reaction
+	e.rows(t, "notifications", "source_account_id", aliceID, 4)    // alice's follow, favourite, boost, reaction
 
 	e.deleteAccount(t, aliceID)
 	e.clock.Advance(appaccount.ErasureDelay)
@@ -261,7 +283,8 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		t.Errorf("erased actor = %+v, want the account, its username, and its lifecycle only", actor)
 	}
 	for _, table := range []string{"account_profile_revisions", "account_profile_heads", "account_keys", "follow_counters",
-		"account_post_counters", "local_post_counters", "mutes", "favourites", "bookmarks", "status_pins", "notification_read_markers"} {
+		"account_post_counters", "local_post_counters", "mutes", "favourites", "reactions", "bookmarks", "status_pins",
+		"notification_read_markers"} {
 		e.rows(t, table, "account_id", aliceID, 0)
 	}
 	for _, table := range []string{"user_email_addresses", "user_primary_emails", "password_credentials", "sessions",
@@ -308,6 +331,8 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 		e.rows(t, "status_revisions", "status_id", st.ID, 0)
 		e.rows(t, "boosts", "status_id", st.ID, 0)
 		e.rows(t, "favourites", "status_id", st.ID, 0)
+		e.rows(t, "reactions", "status_id", st.ID, 0)
+		e.rows(t, "status_reaction_counts", "status_id", st.ID, 0)
 		e.rows(t, "bookmarks", "status_id", st.ID, 0)
 	}
 	if d, err := e.eh.Statuses.FindDeletion(ctx, plain.ID); err != nil || d.Origin != content.DeletedByAccountDeletion {
@@ -330,6 +355,7 @@ func erasureErasesDeletedAccounts(t *testing.T, e *erasureEnv) {
 	if c, _ := e.interactions.Counters(ctx, bobs.ID); c.FavouritesCount != 0 || c.BoostsCount != 0 {
 		t.Errorf("bob's status counters = %+v, want none", c)
 	}
+	e.rows(t, "status_reaction_counts", "status_id", bobs.ID, 0)
 	if erased, err := e.eh.AccountErasure.AccountErased(ctx, aliceID); err != nil || erased {
 		t.Errorf("AccountErased while evidence stays = %v, %v; want false", erased, err)
 	}

@@ -863,6 +863,10 @@
     "defaultMessage": "[Ẏǿǿŭŭ ħȧȧṽḗḗ ȧȧ ƞḗḗẇ ƞǿǿŧīƒīƈȧȧŧīǿǿƞ ǿǿƞ {instance}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "push.reaction": {
+    "defaultMessage": "[{name} řḗḗȧȧƈŧḗḗḓ ŧǿǿ ẏǿǿŭŭř ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "push.relationships_severed": {
     "defaultMessage": "[Ȧ şŭŭşƥḗḗƞşīǿǿƞ ƀẏ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ǿǿƒ {instance} ḗḗƞḓḗḗḓ şǿǿḿḗḗ ǿǿƒ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇş]",
     "description": "Generated from en by tools/i18n; do not edit."

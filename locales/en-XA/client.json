@@ -3511,6 +3511,10 @@
     "defaultMessage": "[Ȧ ƥǿǿŀŀ ẏǿǿŭŭ ŧǿǿǿǿķ ƥȧȧřŧ īƞ ħȧȧş ḗḗƞḓḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.reaction": {
+    "defaultMessage": "[{name} řḗḗȧȧƈŧḗḗḓ ŧǿǿ ẏǿǿŭŭř ƥǿǿşŧ ẇīŧħ {emoji}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.relationships_severed": {
     "defaultMessage": "[Ȧ şŭŭşƥḗḗƞşīǿǿƞ ƀẏ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş ḗḗƞḓḗḗḓ şǿǿḿḗḗ ǿǿƒ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4353,6 +4357,10 @@
   },
   "settings.push.type.moderation": {
     "defaultMessage": "[Ƞǿǿŧīƈḗḗş ƒřǿǿḿ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.push.type.reaction": {
+    "defaultMessage": "[Ḗḿǿǿĵī řḗḗȧȧƈŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.push.types.description": {

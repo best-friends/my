@@ -22,6 +22,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -72,9 +73,11 @@ const post: Schemas["Status"] = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
 };
 
 const comment = "This account posts the same advertisement in reply to everyone who mentions the server, many times a day.";

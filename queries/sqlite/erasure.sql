@@ -25,6 +25,10 @@ DELETE FROM account_profile_field_sources WHERE revision_id IN (
 DELETE FROM account_profile_fields WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
 
+-- name: EraseProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
+
 -- name: EraseProfileRevisionSources :exec
 DELETE FROM account_profile_revision_sources WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r WHERE r.account_id = sqlc.arg(account_id));
@@ -148,8 +152,8 @@ ORDER BY s.id
 LIMIT sqlc.arg(lim);
 
 -- The EraseOfStatuses* statements delete what refers to the statuses @ids beyond what
--- PurgeStatuses deletes: their local rows, every boost of them, and the favourites, bookmarks,
--- and pins of them.
+-- PurgeStatuses deletes: their local rows, every boost of them, and the favourites, reactions
+-- (with their counts), bookmarks, and pins of them.
 
 -- name: EraseLocalStatusesOfStatuses :exec
 DELETE FROM local_statuses WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
@@ -166,6 +170,12 @@ DELETE FROM boosts WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg
 
 -- name: EraseFavouritesOfStatuses :exec
 DELETE FROM favourites WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
+
+-- name: EraseReactionsOfStatuses :exec
+DELETE FROM reactions WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
+
+-- name: EraseReactionCountsOfStatuses :exec
+DELETE FROM status_reaction_counts WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
 
 -- name: EraseBookmarksOfStatuses :exec
 DELETE FROM bookmarks WHERE status_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)));
@@ -188,6 +198,25 @@ WHERE favourites_count > 0 AND status_id IN (
 DELETE FROM favourites WHERE favourites.account_id = sqlc.arg(account_id) AND favourites.status_id IN (
   SELECT f.status_id FROM favourites f WHERE f.account_id = sqlc.arg(account_id)
   ORDER BY f.status_id LIMIT sqlc.arg(lim));
+
+-- The account's reactions, the oldest lim of them: the counts of their emoji go down first (a
+-- count of one goes away), for the same batch.
+
+-- name: DeleteSingleReactionCountsBy :exec
+DELETE FROM status_reaction_counts WHERE count = 1 AND EXISTS (
+  SELECT 1 FROM (SELECT r.status_id, r.emoji_key FROM reactions r WHERE r.account_id = sqlc.arg(account_id)
+    ORDER BY r.id LIMIT sqlc.arg(lim)) x
+  WHERE x.status_id = status_reaction_counts.status_id AND x.emoji_key = status_reaction_counts.emoji_key);
+
+-- name: UncountReactionsBy :exec
+UPDATE status_reaction_counts SET count = count - 1 WHERE EXISTS (
+  SELECT 1 FROM (SELECT r.status_id, r.emoji_key FROM reactions r WHERE r.account_id = sqlc.arg(account_id)
+    ORDER BY r.id LIMIT sqlc.arg(lim)) x
+  WHERE x.status_id = status_reaction_counts.status_id AND x.emoji_key = status_reaction_counts.emoji_key);
+
+-- name: EraseReactionsBy :execrows
+DELETE FROM reactions WHERE reactions.id IN (
+  SELECT r.id FROM reactions r WHERE r.account_id = sqlc.arg(account_id) ORDER BY r.id LIMIT sqlc.arg(lim));
 
 -- name: EraseBookmarksBy :execrows
 DELETE FROM bookmarks WHERE bookmarks.account_id = sqlc.arg(account_id) AND bookmarks.status_id IN (

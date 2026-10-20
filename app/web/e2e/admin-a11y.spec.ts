@@ -24,6 +24,7 @@ const moderator = {
   display_name: "Alice",
   note: "",
   fields: [],
+  emojis: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,
@@ -74,9 +75,11 @@ const post: Schemas["Status"] = {
   media_attachments: [],
   mentions: [],
   tags: [],
+  emojis: [],
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
 };
 
 const reportId = "0192f0c4-7a8e-7000-8000-0000000c0002";
