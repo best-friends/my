@@ -64,7 +64,8 @@ type RemoteStatusFactory func(t *testing.T, opts uow.Options) RemoteStatusHarnes
 // reply is fetched one level; an opened thread fetches its ancestors and replies within
 // ThreadDepth and ThreadMaxItems; fetched posts must be attributed within their origin; failed
 // fetches are not repeated; Resolver resolves handles and the URLs of accounts and posts; the
-// featured collections of fetched actors become their pins (ADR-0044); and a
+// featured collections of fetched actors become their pins, fetched again on an Add or Remove to
+// them by their owner (ADR-0044); and a
 // post with NUL in every string is stored with U+FFFD (federation.md §4). The
 // actors and the fetches are in-memory stand-ins, and the network of the fetch cases is in memory.
 func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
@@ -91,6 +92,7 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"StartsOutboxFetchesOnlyWhenAllowed", remoteStartsOutboxFetches},
 		{"PinsTheFeaturedPostsOfMajorImplementations", remotePinsFeaturedFixtures},
 		{"MirrorsFeaturedCollectionsWithinBounds", remoteMirrorsFeaturedWithinBounds},
+		{"AppliesAddAndRemoveOfFeaturedCollections", remoteAppliesFeaturedChanges},
 		{"StoresStringsWithNUL", remoteStatusStoresStringsWithNUL},
 	}
 	for _, tc := range cases {

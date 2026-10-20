@@ -29,12 +29,14 @@ import {
   PiGlobe,
   PiHouse,
   PiImage,
+  PiInfo,
   PiList,
   PiMagnifyingGlass,
   PiPlus,
   PiRepeat,
   PiRepeatBold,
   PiShieldCheck,
+  PiSignIn,
   PiSmiley,
   PiSlidersHorizontal,
   PiStar,
@@ -42,6 +44,7 @@ import {
   PiTextAlignLeft,
   PiTranslate,
   PiUser,
+  PiUserPlus,
   PiWarning,
   PiWarningFill,
   PiWrench,
@@ -116,6 +119,10 @@ export const iconTable = {
   ModerationIcon: { off: glyph(PiShieldCheck, "PiShieldCheck") },
   AdminIcon: { off: glyph(PiWrench, "PiWrench") },
   MenuIcon: { off: glyph(PiList, "PiList") },
+  AboutIcon: { off: glyph(PiInfo, "PiInfo") },
+  // The arrow points into the door along the line, so it mirrors in right-to-left text.
+  SignInIcon: { off: glyph(PiSignIn, "PiSignIn"), directional: true },
+  SignUpIcon: { off: glyph(PiUserPlus, "PiUserPlus") },
 } as const satisfies Record<string, IconEntry>;
 
 function renderIcon(entry: IconEntry, on = false) {
@@ -279,4 +286,19 @@ export function AdminIcon() {
 /** Three lines, for the button that opens the menu with the rest of the navigation. */
 export function MenuIcon() {
   return renderIcon(iconTable.MenuIcon);
+}
+
+/** An "i" in a circle, for the server's information page. */
+export function AboutIcon() {
+  return renderIcon(iconTable.AboutIcon);
+}
+
+/** An arrow into a door, for signing in. */
+export function SignInIcon() {
+  return renderIcon(iconTable.SignInIcon);
+}
+
+/** A person with a plus, for creating an account. */
+export function SignUpIcon() {
+  return renderIcon(iconTable.SignUpIcon);
 }

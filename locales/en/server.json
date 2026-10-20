@@ -207,6 +207,22 @@
     "defaultMessage": "Enter your email address and password.",
     "description": "Error when the sign-in form was submitted with an empty field."
   },
+  "auth.sign_in.passkey": {
+    "defaultMessage": "Sign in with a passkey",
+    "description": "Button on the sign-in page that signs in with a passkey (WebAuthn) instead of the email address and password. Shown only in browsers that support passkeys."
+  },
+  "auth.sign_in.passkey_cancelled": {
+    "defaultMessage": "The passkey was not used. Try again, or sign in with your email address and password.",
+    "description": "Alert on the sign-in page when the browser's passkey prompt was dismissed or failed before anything was sent to the server."
+  },
+  "auth.sign_in.passkey_expired": {
+    "defaultMessage": "The sign-in with a passkey took too long. Try again.",
+    "description": "Alert on the sign-in page when the passkey sign-in was answered after it expired (5 minutes) or was already used."
+  },
+  "auth.sign_in.passkey_failed": {
+    "defaultMessage": "The passkey could not be verified. Try another passkey, or sign in with your email address and password.",
+    "description": "Alert on the sign-in page when the server could not verify the passkey (unknown or removed passkey, wrong signature) or its account cannot sign in."
+  },
   "auth.sign_in.password_label": {
     "defaultMessage": "Password",
     "description": "Label of the password field on the sign-in form."
@@ -811,6 +827,18 @@
     "defaultMessage": "The setup of the authenticator app expired. Start again.",
     "description": "Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup."
   },
+  "errors.passkey.invalid": {
+    "defaultMessage": "The passkey could not be verified.",
+    "description": "Title of the HTTP 422 API error when the browser's answer to a passkey registration does not verify (another site, no screen lock or biometrics, or a passkey that is registered already)."
+  },
+  "errors.passkey.registration_expired": {
+    "defaultMessage": "The registration of the passkey expired. Start again.",
+    "description": "Title of the HTTP 422 API error when the user finishes a passkey registration after it expired (5 minutes) or with an unknown registration."
+  },
+  "errors.passkey.too_many": {
+    "defaultMessage": "You have as many passkeys as allowed. Remove one first.",
+    "description": "Title of the HTTP 409 API error when the user registers a passkey while having the most passkeys allowed (20)."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "Sign in to do this.",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
@@ -988,7 +1016,7 @@
     "description": "API error title for HTTP 422 when an administrator registers or changes a custom emoji that breaks a rule; the detail and the reason property say which."
   },
   "errors.invalid_custom_emoji_detail": {
-    "defaultMessage": "{reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}}",
+    "defaultMessage": "{reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} other {The custom emoji breaks a rule.}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
   },
   "errors.domain_mutes.too_many": {

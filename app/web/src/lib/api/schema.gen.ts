@@ -441,6 +441,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's passkeys
+         * @description The passkeys that sign the user in, oldest first; there are at most 20.
+         */
+        get: operations["listPasskeys"];
+        put?: never;
+        /**
+         * Register a passkey with the browser's response to a registration
+         * @description Verifies `credential`, the browser's answer to the `options` of
+         *     `POST /passkeys/registration`, and stores the passkey under the name given there. From
+         *     then on the passkey signs in on the server's sign-in page instead of the password; a
+         *     user with two-factor authentication still enters a code after it. A response that does
+         *     not verify (another origin, no user verification, a credential that is registered
+         *     already) is a 422 `/api/v1/problems/invalid-passkey`, an expired or unknown
+         *     `registration_token` a 422 `/api/v1/problems/passkey-registration-expired`, and a user
+         *     with 20 passkeys a 409 `/api/v1/problems/too-many-passkeys`.
+         */
+        post: operations["createPasskey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/passkeys/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start the registration of a passkey
+         * @description Checks the user's current `password` and returns the options of a WebAuthn
+         *     registration (a discoverable credential with user verification, no attestation) for the
+         *     browser's `navigator.credentials.create()`, with a `registration_token` that carries
+         *     them and `name` to `POST /passkeys` for 5 minutes. Nothing is stored until then. A
+         *     wrong password is a 422 `/api/v1/problems/wrong-password`, and at most 5 wrong
+         *     passwords per user are accepted every hour; a user with 20 passkeys gets a 409
+         *     `/api/v1/problems/too-many-passkeys`.
+         */
+        post: operations["beginPasskeyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/passkeys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a passkey
+         * @description The passkey no longer signs in. An unknown or removed passkey is a 404.
+         */
+        delete: operations["deletePasskey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/lookup": {
         parameters: {
             query?: never;
@@ -2487,6 +2564,35 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/custom_emojis/{id}/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Copy a remote custom emoji into a local one
+         * @description Registers a new local emoji with the image of a remote emoji, under the shortcode of the
+         *     request or the remote one's. The image is fetched through the media proxy, so the
+         *     instance does not fetch the media of a domain whose media it rejects, and is checked as
+         *     the image of a new emoji (`createCustomEmoji`); it shrinks into the boxes of an emoji.
+         *     The new emoji is in the picker, without a category or aliases. A local emoji is a 422
+         *     with the reason `local_emoji`; an image that cannot be fetched is a 422 with the reason
+         *     `fetch_failed`; a shortcode or an image that does not qualify is a 422 whose `reason`
+         *     says which, and keeps nothing of the copy. The copy is recorded in the audit log
+         *     (`custom_emoji_copied` on the new emoji). An unknown ID is a 404. Needs the
+         *     `manage_custom_emojis` permission.
+         */
+        post: operations["copyCustomEmoji"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/instance_texts": {
         parameters: {
             query?: never;
@@ -3508,6 +3614,12 @@ export interface components {
          *       authentication.
          *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
          *       operation, has no two-factor authentication.
+         *     - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+         *       registration does not verify, or the passkey is registered already.
+         *     - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+         *       unknown or expired. Start a new one.
+         *     - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+         *       allowed. Remove one first.
          *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
          *       says which.
          *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
@@ -4960,6 +5072,57 @@ export interface components {
             /** @description The six-digit code that the app shows now. */
             code: string;
         };
+        /** @description A passkey that signs the authenticated user in instead of the password. */
+        Passkey: {
+            id: components["schemas"]["Id"];
+            /** @description What the user calls the passkey, such as the device it is on. */
+            name: string;
+            /**
+             * Format: date-time
+             * @description When the passkey was registered.
+             */
+            created_at: string;
+        };
+        /** @description The authenticated user's passkeys, oldest first. */
+        PasskeyList: {
+            items: components["schemas"]["Passkey"][];
+        };
+        /** @description The name of a new passkey and the user's password that confirms it. */
+        PasskeyRegistrationRequest: {
+            /** @description What the user calls the passkey; spaces around it are dropped. */
+            name: string;
+            /** @description The user's current password. */
+            password: string;
+        };
+        /** @description The start of a passkey registration. */
+        PasskeyRegistration: {
+            /**
+             * @description The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+             *     values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+             */
+            options: {
+                [key: string]: unknown;
+            };
+            /** @description An opaque token that carries the registration to `POST /passkeys`. */
+            registration_token: string;
+            /**
+             * Format: date-time
+             * @description When `registration_token` stops working.
+             */
+            expires_at: string;
+        };
+        /** @description The browser's answer to a passkey registration. */
+        CreatePasskeyRequest: {
+            /** @description The `registration_token` of `POST /passkeys/registration`. */
+            registration_token: string;
+            /**
+             * @description The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+             *     `PublicKeyCredential.toJSON()` returns for the new credential.
+             */
+            credential: {
+                [key: string]: unknown;
+            };
+        };
         /** @description A code that confirms an operation on two-factor authentication. */
         TwoFactorCodeRequest: {
             /** @description A six-digit code of the app or an unused recovery code. */
@@ -5072,6 +5235,7 @@ export interface components {
          *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
          *     `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+         *     `custom_emoji_copied` (a new local emoji copied from a remote one),
          *     `custom_emoji_updated` (its category, aliases, or place in the picker),
          *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
          *     `webhook_created`, `webhook_updated` (its URL, description, or events),
@@ -5084,7 +5248,7 @@ export interface components {
          *     characters of its code, never the whole code.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -5713,6 +5877,14 @@ export interface components {
             /** @description The new aliases, each following the rules of a shortcode; at most 10. */
             aliases?: string[];
         };
+        /** @description The local custom emoji that a copy of a remote one becomes. */
+        CopyCustomEmojiRequest: {
+            /**
+             * @description The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+             *     underscores; case matters. Absent, the remote emoji's.
+             */
+            shortcode?: string;
+        };
         /** @description The new image of a local custom emoji. */
         ReplaceCustomEmojiImageRequest: {
             media_id: components["schemas"]["Id"];
@@ -5733,10 +5905,12 @@ export interface components {
          *     file is not an upload of the user. `media_not_ready`: it has not finished processing.
          *     `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
          *     than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-         *     `remote_emoji`: the operation is for local emoji only.
+         *     `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+         *     for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+         *     fetched (its server did not return it, or the instance rejects the media of its domain).
          * @enum {string}
          */
-        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji";
+        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji" | "local_emoji" | "fetch_failed";
         /**
          * @description An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
          *     `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
@@ -5942,8 +6116,8 @@ export interface components {
         WebhookCustomEmoji: components["schemas"]["AdminCustomEmoji"] & {
             /**
              * @description The operation, named as in the audit log: `custom_emoji_created`,
-             *     `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`,
-             *     `custom_emoji_disabled`, or `custom_emoji_deleted`.
+             *     `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+             *     `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
              */
             operation: string;
         };
@@ -7480,6 +7654,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RecoveryCodes"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listPasskeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The passkeys. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createPasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePasskeyRequest"];
+            };
+        };
+        responses: {
+            /** @description The new passkey. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Passkey"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    beginPasskeyRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasskeyRegistrationRequest"];
+            };
+        };
+        responses: {
+            /** @description The options of the registration. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasskeyRegistration"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deletePasskey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the passkey. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The passkey is removed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };
@@ -9705,6 +9974,27 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ReplaceCustomEmojiImageRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminCustomEmoji"];
+            422: components["responses"]["CustomEmojiProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    copyCustomEmoji: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the custom emoji. */
+                id: components["parameters"]["CustomEmojiId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CopyCustomEmojiRequest"];
             };
         };
         responses: {

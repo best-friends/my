@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries and mutations of the custom emoji screen (web-client.md S1, ADR-0051 §4, manage_custom_emojis): the
 // emoji, local or remote, newest first (GET /admin/custom_emojis), registering a local one with an uploaded image
-// (POST), changing its settings or enabling a remote one (PATCH), replacing its image (PUT .../image) and deleting
-// it (DELETE). An emoji that breaks a rule is a 422 `invalid-custom-emoji` problem whose detail says why. Every
+// (POST), changing its settings or enabling a remote one (PATCH), replacing its image (PUT .../image), deleting
+// it (DELETE) and copying a remote one into a local one (POST .../copy). An emoji that breaks a rule is a 422 `invalid-custom-emoji` problem whose detail says why. Every
 // change is recorded in the audit log and changes what the picker offers (GET /custom_emojis).
 import { infiniteQueryOptions, type InfiniteData, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -88,6 +88,21 @@ export function replaceCustomEmojiImageMutation(api: Api) {
     mutationFn: async ({ id, file }: { id: string; file: File }): Promise<AdminCustomEmoji> => {
       const media = await uploadImage(api, file, "emoji");
       const { data, error } = await api.fetch.PUT("/admin/custom_emojis/{id}/image", { params: { path: { id } }, body: { media_id: media.id } });
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+  };
+}
+
+/** Copies a remote emoji into a local one under `shortcode` (absent: the remote one's), as the options of useMutation. */
+export function copyCustomEmojiMutation(api: Api) {
+  return {
+    mutationKey: ["post", "/admin/custom_emojis/{id}/copy"] as const,
+    mutationFn: async ({ id, shortcode }: { id: string; shortcode?: string | undefined }): Promise<AdminCustomEmoji> => {
+      const { data, error } = await api.fetch.POST("/admin/custom_emojis/{id}/copy", {
+        params: { path: { id } },
+        body: shortcode === undefined ? {} : { shortcode },
+      });
       if (data === undefined) throw new ApiError(error);
       return data;
     },

@@ -29,6 +29,7 @@ type CustomEmojis interface {
 	Create(ctx context.Context, in appcontent.CreateCustomEmojiInput) (appcontent.AdminCustomEmoji, error)
 	Update(ctx context.Context, id string, u appcontent.CustomEmojiUpdate) (appcontent.AdminCustomEmoji, error)
 	ReplaceImage(ctx context.Context, id, ownerAccountID, mediaID, byUserID string) (appcontent.AdminCustomEmoji, error)
+	Copy(ctx context.Context, in appcontent.CopyCustomEmojiInput) (appcontent.AdminCustomEmoji, error)
 	Delete(ctx context.Context, id, byUserID string) error
 }
 
@@ -274,6 +275,34 @@ func (s *Server) ReplaceCustomEmojiImage(ctx context.Context, req ReplaceCustomE
 		return nil, fmt.Errorf("clientapi: replace the image of custom emoji %s: %w", req.Id, err)
 	}
 	return ReplaceCustomEmojiImage200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
+}
+
+// CopyCustomEmoji serves POST /api/v1/admin/custom_emojis/{id}/copy.
+func (s *Server) CopyCustomEmoji(ctx context.Context, req CopyCustomEmojiRequestObject) (CopyCustomEmojiResponseObject, error) {
+	if p, err := s.requireCustomEmojis(ctx); err != nil {
+		return nil, err
+	} else if p != nil {
+		return CopyCustomEmojidefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	in := appcontent.CopyCustomEmojiInput{ID: req.Id, OwnerAccountID: v.AccountID, ByUserID: v.UserID}
+	if req.Body != nil && req.Body.Shortcode != nil {
+		in.Shortcode = *req.Body.Shortcode
+	}
+	e, err := s.o.CustomEmojis.Copy(ctx, in)
+	if p, ok := s.customEmojiProblem(ctx, err); ok {
+		return CopyCustomEmoji422ApplicationProblemPlusJSONResponse{p}, nil
+	}
+	switch {
+	case customEmojiNotFound(err):
+		return CopyCustomEmojidefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	case err != nil:
+		return nil, fmt.Errorf("clientapi: copy custom emoji %s: %w", req.Id, err)
+	}
+	return CopyCustomEmoji200JSONResponse{adminCustomEmojiResponse(s.newAdminCustomEmoji(e))}, nil
 }
 
 // DeleteCustomEmoji serves DELETE /api/v1/admin/custom_emojis/{id}.

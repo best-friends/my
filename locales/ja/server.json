@@ -207,6 +207,22 @@
     "defaultMessage": "メールアドレスとパスワードを入力してください。",
     "description": "Error when the sign-in form was submitted with an empty field."
   },
+  "auth.sign_in.passkey": {
+    "defaultMessage": "パスキーでログイン",
+    "description": "Button on the sign-in page that signs in with a passkey (WebAuthn) instead of the email address and password. Shown only in browsers that support passkeys."
+  },
+  "auth.sign_in.passkey_cancelled": {
+    "defaultMessage": "パスキーを使えませんでした。もう一度試すか、メールアドレスとパスワードでログインしてください。",
+    "description": "Alert on the sign-in page when the browser's passkey prompt was dismissed or failed before anything was sent to the server."
+  },
+  "auth.sign_in.passkey_expired": {
+    "defaultMessage": "パスキーでのログインに時間がかかりすぎました。もう一度お試しください。",
+    "description": "Alert on the sign-in page when the passkey sign-in was answered after it expired (5 minutes) or was already used."
+  },
+  "auth.sign_in.passkey_failed": {
+    "defaultMessage": "パスキーを確認できませんでした。別のパスキーを使うか、メールアドレスとパスワードでログインしてください。",
+    "description": "Alert on the sign-in page when the server could not verify the passkey (unknown or removed passkey, wrong signature) or its account cannot sign in."
+  },
   "auth.sign_in.password_label": {
     "defaultMessage": "パスワード",
     "description": "Label of the password field on the sign-in form."
@@ -811,6 +827,18 @@
     "defaultMessage": "認証アプリの設定の有効期限が切れました。最初からやり直してください。",
     "description": "Title of the HTTP 422 API error when the user confirms the setup of an authenticator app after it expired (15 minutes) or with an unknown setup."
   },
+  "errors.passkey.invalid": {
+    "defaultMessage": "パスキーを確認できませんでした。",
+    "description": "Title of the HTTP 422 API error when the browser's answer to a passkey registration does not verify (another site, no screen lock or biometrics, or a passkey that is registered already)."
+  },
+  "errors.passkey.registration_expired": {
+    "defaultMessage": "パスキーの登録の有効期限が切れました。最初からやり直してください。",
+    "description": "Title of the HTTP 422 API error when the user finishes a passkey registration after it expired (5 minutes) or with an unknown registration."
+  },
+  "errors.passkey.too_many": {
+    "defaultMessage": "登録できるパスキーの数の上限に達しています。先にどれかを削除してください。",
+    "description": "Title of the HTTP 409 API error when the user registers a passkey while having the most passkeys allowed (20)."
+  },
   "errors.unauthenticated": {
     "defaultMessage": "この操作にはログインが必要です。",
     "description": "API error title for HTTP 401 when the request carries no access token and the operation needs one."
@@ -988,7 +1016,7 @@
     "description": "API error title for HTTP 422 when an administrator registers or changes a custom emoji that breaks a rule; the detail and the reason property say which."
   },
   "errors.invalid_custom_emoji_detail": {
-    "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} other {カスタム絵文字が規則に合いません。}}",
+    "defaultMessage": "{reason, select, invalid_shortcode {ショートコードは、2〜30 文字の英字（A〜Z）・数字・アンダースコアです。} shortcode_taken {このサーバーのカスタム絵文字に、同じショートコードのものがあります。} invalid_alias {別名は 2〜30 文字の英字（A〜Z）・数字・アンダースコアで、1 つの絵文字に 10 個までです。} invalid_category {カテゴリは 64 文字までです。} media_not_found {アップロードした画像の中に見つかりません。} media_not_ready {画像はまだ処理中です。少し待ってからもう一度試してください。} unsupported_format {画像は PNG・GIF・WebP のどれかにしてください。} too_large {画像がこのサーバーの上限より大きいです。} too_big {画像は縦横とも 1024 ピクセル以下にしてください。} remote_emoji {この操作は、このサーバーのカスタム絵文字にだけ行えます。} local_emoji {この操作は、ほかのサーバーのカスタム絵文字にだけ行えます。} fetch_failed {カスタム絵文字の画像を、そのサーバーから取得できませんでした。} other {カスタム絵文字が規則に合いません。}}",
     "description": "Detail of the API error (HTTP 422) of a custom emoji that breaks a rule. {reason} is the reason code (not shown); each branch explains one rule."
   },
   "errors.domain_mutes.too_many": {

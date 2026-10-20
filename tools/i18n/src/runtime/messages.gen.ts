@@ -794,6 +794,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
   "client:admin.audit_log.action.appeal_upheld": {};
+  /** Custom emoji copied from another server */
+  "client:admin.audit_log.action.custom_emoji_copied": {};
   /** Custom emoji registered */
   "client:admin.audit_log.action.custom_emoji_created": {};
   /** Custom emoji deleted */
@@ -970,6 +972,20 @@ export interface MessageArgs {
   "client:admin.custom_emojis.category.description": { max: string };
   /** Could not change the custom emoji: {reason} */
   "client:admin.custom_emojis.change_failed": { reason: string };
+  /** {emoji} is copied as {copy}. */
+  "client:admin.custom_emojis.copied": { copy: string; emoji: string };
+  /** Copy to this server */
+  "client:admin.custom_emojis.copy": {};
+  /** Copy {emoji} to this server */
+  "client:admin.custom_emojis.copy_emoji": { emoji: string };
+  /** Close */
+  "client:admin.custom_emojis.copy.close": {};
+  /** This server fetches the image and registers it as its own emoji, shown in the picker. The image shrinks to 256 pixels at most. */
+  "client:admin.custom_emojis.copy.description": {};
+  /** Copy */
+  "client:admin.custom_emojis.copy.submit": {};
+  /** Copy {emoji} to this server */
+  "client:admin.custom_emojis.copy.title": { emoji: string };
   /** Could not register the custom emoji: {reason} */
   "client:admin.custom_emojis.create_failed": { reason: string };
   /** {emoji} is registered. */
@@ -3106,8 +3122,6 @@ export interface MessageArgs {
   "client:profile.remote.original": { host: string };
   /** Sign in to follow */
   "client:profile.sign_in_to_follow": {};
-  /** Sign in to see your profile. */
-  "client:profile.signed_out.description": {};
   /** Without boosts */
   "client:profile.tab.no_boosts": {};
   /** Posts */
@@ -3604,6 +3618,70 @@ export interface MessageArgs {
   "client:settings.navigation.title": {};
   /** Not offered by this server */
   "client:settings.navigation.unavailable": {};
+  /** No passkey was added: the browser's prompt was closed or timed out. Try again. */
+  "client:settings.passkeys.add.cancelled": {};
+  /** Name the passkey so that you can tell it apart, and enter your password to confirm. Your browser then asks where to save the passkey. */
+  "client:settings.passkeys.add.description": {};
+  /** This device or password manager already has a passkey for your account. */
+  "client:settings.passkeys.add.exists": {};
+  /** Adding the passkey took too long. Try again. */
+  "client:settings.passkeys.add.expired": {};
+  /** Could not add the passkey: {reason} */
+  "client:settings.passkeys.add.failed": { reason: string };
+  /** The passkey could not be verified. Try again with another device or password manager. */
+  "client:settings.passkeys.add.invalid": {};
+  /** Too many incorrect passwords: {reason} */
+  "client:settings.passkeys.add.rate_limited": { reason: string };
+  /** Add passkey */
+  "client:settings.passkeys.add.submit": {};
+  /** Add a passkey */
+  "client:settings.passkeys.add.title": {};
+  /** You have as many passkeys as allowed. Remove one first. */
+  "client:settings.passkeys.add.too_many": {};
+  /** The browser could not create a passkey for this site. */
+  "client:settings.passkeys.add.unavailable": {};
+  /** The password is wrong. */
+  "client:settings.passkeys.add.wrong_password": {};
+  /** The passkey “{name}” was added. */
+  "client:settings.passkeys.added": { name: string };
+  /** Added {date} */
+  "client:settings.passkeys.added_at": { date: string };
+  /** A passkey signs you in with the fingerprint, face, or PIN that unlocks your device or password manager, instead of your password. If two-factor authentication is on, signing in still asks for its code. Your password keeps working. */
+  "client:settings.passkeys.description": {};
+  /** No passkeys yet */
+  "client:settings.passkeys.empty": {};
+  /** Your passkeys */
+  "client:settings.passkeys.list.title": {};
+  /** Name */
+  "client:settings.passkeys.name": {};
+  /** Such as the device or password manager that keeps it. */
+  "client:settings.passkeys.name.description": {};
+  /** Enter a name. */
+  "client:settings.passkeys.name.required": {};
+  /** Current password */
+  "client:settings.passkeys.password": {};
+  /** Adding a way to sign in needs your password. */
+  "client:settings.passkeys.password.description": {};
+  /** Enter your password. */
+  "client:settings.passkeys.password.required": {};
+  /** Remove */
+  "client:settings.passkeys.remove": {};
+  /** Cancel */
+  "client:settings.passkeys.remove.cancel": {};
+  /** You will no longer be able to sign in with it. Delete it from your device or password manager too. */
+  "client:settings.passkeys.remove.description": {};
+  /** Could not remove the passkey: {reason} */
+  "client:settings.passkeys.remove.failed": { reason: string };
+  /** Remove the passkey “{name}”? */
+  "client:settings.passkeys.remove.title": { name: string };
+  /** The passkey “{name}” was removed. */
+  "client:settings.passkeys.removed": { name: string };
+  /** Sign in with your device's screen lock instead of your password */
+  "client:settings.passkeys.summary": {};
+  /** Passkeys */
+  "client:settings.passkeys.title": {};
+  /** This browser cannot create passkeys. Open this page in a browser that supports them to add one. */
+  "client:settings.passkeys.unsupported": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
   /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
@@ -3878,6 +3956,8 @@ export interface MessageArgs {
   "client:shell.menu.close": {};
   /** Menu */
   "client:shell.menu.title": {};
+  /** About */
+  "client:shell.nav.about": {};
   /** Administration */
   "client:shell.nav.admin": {};
   /** Bookmarks */
@@ -3908,6 +3988,10 @@ export interface MessageArgs {
   "client:shell.nav.search": {};
   /** Settings */
   "client:shell.nav.settings": {};
+  /** Sign in */
+  "client:shell.nav.sign_in": {};
+  /** Sign up */
+  "client:shell.nav.sign_up": {};
   /** The account you are signed in with */
   "client:shell.nav.viewer": {};
   /** There is no page at this address. */
@@ -4266,6 +4350,14 @@ export interface MessageArgs {
   "server:auth.sign_in.failed": {};
   /** Enter your email address and password. */
   "server:auth.sign_in.missing": {};
+  /** Sign in with a passkey */
+  "server:auth.sign_in.passkey": {};
+  /** The passkey was not used. Try again, or sign in with your email address and password. */
+  "server:auth.sign_in.passkey_cancelled": {};
+  /** The sign-in with a passkey took too long. Try again. */
+  "server:auth.sign_in.passkey_expired": {};
+  /** The passkey could not be verified. Try another passkey, or sign in with your email address and password. */
+  "server:auth.sign_in.passkey_failed": {};
   /** Password */
   "server:auth.sign_in.password_label": {};
   /** {minutes, plural, one {Too many failed sign-in attempts. Try again in # minute.} other {Too many failed sign-in attempts. Try again in # minutes.}} */
@@ -4450,8 +4542,8 @@ export interface MessageArgs {
   "server:errors.internal": {};
   /** The custom emoji cannot be saved. */
   "server:errors.invalid_custom_emoji": {};
-  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} other {The custom emoji breaks a rule.}} */
-  "server:errors.invalid_custom_emoji_detail": { reason: "invalid_alias" | "invalid_category" | "invalid_shortcode" | "media_not_found" | "media_not_ready" | "remote_emoji" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
+  /** {reason, select, invalid_shortcode {A shortcode is 2 to 30 letters (A to Z), digits, and underscores.} shortcode_taken {A custom emoji of this server already has this shortcode.} invalid_alias {An alias is 2 to 30 letters (A to Z), digits, and underscores, and an emoji has at most 10.} invalid_category {A category is at most 64 characters.} media_not_found {The image was not found among your uploads.} media_not_ready {The image is still being processed. Try again in a moment.} unsupported_format {The image must be a PNG, a GIF, or a WebP.} too_large {The image is larger than the limit of this server.} too_big {The image must be at most 1,024 pixels on each side.} remote_emoji {This can be done only with the custom emoji of this server.} local_emoji {This can be done only with the custom emoji of other servers.} fetch_failed {The image of the custom emoji could not be fetched from its server.} other {The custom emoji breaks a rule.}} */
+  "server:errors.invalid_custom_emoji_detail": { reason: "fetch_failed" | "invalid_alias" | "invalid_category" | "invalid_shortcode" | "local_emoji" | "media_not_found" | "media_not_ready" | "remote_emoji" | "shortcode_taken" | "too_big" | "too_large" | "unsupported_format" | (string & {}) };
   /** The parameter {name} has an invalid value. */
   "server:errors.invalid_parameter": { name: string };
   /** The theme cannot be saved. */
@@ -4488,6 +4580,12 @@ export interface MessageArgs {
   "server:errors.missing_permission_detail": { permission: string };
   /** The requested resource was not found. */
   "server:errors.not_found": {};
+  /** The passkey could not be verified. */
+  "server:errors.passkey.invalid": {};
+  /** The registration of the passkey expired. Start again. */
+  "server:errors.passkey.registration_expired": {};
+  /** You have as many passkeys as allowed. Remove one first. */
+  "server:errors.passkey.too_many": {};
   /** Too many requests. */
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */

@@ -44,13 +44,25 @@ describe("the unread badge", () => {
     expect(await screen.findByRole("link", { name: "Notifications, 3 unread" })).toBeInTheDocument();
   });
 
-  test("is absent when everything is read and while signed out", async () => {
-    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-000000000001", unread_count: 3 });
+  test("is absent when everything is read", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-000000000001", unread_count: 0 });
 
     await renderApp({ path: "/home" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Home" })).toBeInTheDocument();
     expect(notificationsLink()).toHaveAccessibleName("Notifications");
+  });
+
+  test("is absent while signed out, as is the notifications item", async () => {
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-000000000001", unread_count: 3 });
+
+    await renderApp({ path: "/local" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Local timeline" })).toBeInTheDocument();
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(await within(nav).findByRole("link", { name: "Sign in" })).toBeInTheDocument();
+    expect(within(nav).queryByRole("link", { name: /^Notifications/ })).not.toBeInTheDocument();
   });
 });
 
@@ -512,12 +524,12 @@ describe("the notifications page", () => {
     expect(await screen.findByRole("feed", { name: "Notifications" })).toBeInTheDocument();
   });
 
-  test("offers to sign in when no session resumes", async () => {
-    const { user } = await renderApp({ path: "/notifications" });
-
-    await user.click(await screen.findByRole("link", { name: "Sign in" }));
+  test("sends to sign in when no session resumes, and back here after it", async () => {
+    const { router } = await renderApp({ path: "/notifications" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Sign in" })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/login");
+    expect(router.state.location.search).toEqual({ return_to: "/notifications" });
   });
 });
 

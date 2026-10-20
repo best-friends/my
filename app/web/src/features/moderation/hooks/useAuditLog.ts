@@ -41,6 +41,7 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   signup_block_lifted: "client:admin.audit_log.action.signup_block_lifted",
   custom_emoji_created: "client:admin.audit_log.action.custom_emoji_created",
   custom_emoji_image_replaced: "client:admin.audit_log.action.custom_emoji_image_replaced",
+  custom_emoji_copied: "client:admin.audit_log.action.custom_emoji_copied",
   custom_emoji_updated: "client:admin.audit_log.action.custom_emoji_updated",
   custom_emoji_enabled: "client:admin.audit_log.action.custom_emoji_enabled",
   custom_emoji_disabled: "client:admin.audit_log.action.custom_emoji_disabled",

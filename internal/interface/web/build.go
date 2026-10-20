@@ -20,6 +20,9 @@ const (
 	// serverPagesKey is the manifest key of the stylesheet entry of the pages the server renders
 	// without JavaScript (app/web/src/server-pages.css, ADR-0030).
 	serverPagesKey = "src/server-pages.css"
+	// passkeySignInKey is the manifest key of the script entry that signs in with a passkey on the
+	// server-rendered sign-in page (app/web/src/server-pages/passkey-sign-in.ts, FR-004).
+	passkeySignInKey = "src/server-pages/passkey-sign-in.ts" //nolint:gosec // G101: a file name, not a credential
 	// assetsDir holds the content-hashed files of the build (Vite's build.assetsDir).
 	assetsDir = "assets"
 	// iconPath is the instance-independent app icon (app/web/public/icon.svg).
@@ -49,6 +52,9 @@ type entryTags struct {
 	Preload    []string // chunks the entry imports statically, for <link rel="modulepreload">
 	// ServerPages is the stylesheet of the server-rendered pages; the shell does not load it.
 	ServerPages string
+	// PasskeySignIn is the module script of the sign-in page's passkey form; the shell does not
+	// load it.
+	PasskeySignIn string
 }
 
 // errNoBuild means the build has no Vite manifest: app/web was not built into dist/.
@@ -58,7 +64,7 @@ var errNoBuild = errors.New("web: the build has no " + manifestPath + "; run mak
 // backend integration guide: the entry's file, the CSS of the entry and of its static
 // imports, and the static imports as module preloads, each once and in import order.
 // URLs are absolute paths, since the shell is served at every SPA route. It also reads the
-// stylesheet entry of the server-rendered pages, which a build may lack.
+// stylesheet and the passkey script entries of the server-rendered pages, which a build may lack.
 func readEntry(build fs.FS) (entryTags, error) {
 	data, err := fs.ReadFile(build, manifestPath)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -79,6 +85,9 @@ func readEntry(build fs.FS) (entryTags, error) {
 	tags := entryTags{Script: fileURL(entry.File)}
 	if c, ok := manifest[serverPagesKey]; ok && c.IsEntry && c.File != "" {
 		tags.ServerPages = fileURL(c.File)
+	}
+	if c, ok := manifest[passkeySignInKey]; ok && c.IsEntry && c.File != "" {
+		tags.PasskeySignIn = fileURL(c.File)
 	}
 	addCSS := func(c chunk) {
 		for _, css := range c.CSS {

@@ -5839,10 +5839,6 @@
     "defaultMessage": "ログインしてフォロー",
     "description": "Link on a profile when nobody is signed in: it opens the sign-in page and comes back."
   },
-  "profile.signed_out.description": {
-    "defaultMessage": "ログインすると自分のプロフィールを見られます。",
-    "description": "Text of the Profile page of the navigation when nobody is signed in, above the sign-in link."
-  },
   "profile.tab.no_boosts": {
     "defaultMessage": "ブーストを除く",
     "description": "Tab of a profile: only the posts the account wrote itself, without replies and boosts."
@@ -7151,6 +7147,134 @@
     "defaultMessage": "無効にする",
     "description": "Button that turns two-factor authentication off."
   },
+  "settings.passkeys.title": {
+    "defaultMessage": "パスキー",
+    "description": "Title of the settings page of passkeys (WebAuthn credentials that sign in instead of the password), and its entry in the settings menu."
+  },
+  "settings.passkeys.summary": {
+    "defaultMessage": "パスワードの代わりに、端末の画面ロックでログインします",
+    "description": "Description of the passkeys page in the settings menu."
+  },
+  "settings.passkeys.description": {
+    "defaultMessage": "パスキーを使うと、パスワードの代わりに、端末やパスワードマネージャーのロックを解除する指紋・顔・PIN でログインできます。二要素認証を有効にしている場合は、パスキーでログインしたあとにも認証コードを求められます。パスワードは引き続き使えます。",
+    "description": "Explanation at the top of the passkeys settings page."
+  },
+  "settings.passkeys.add.title": {
+    "defaultMessage": "パスキーを追加",
+    "description": "Heading of the form that adds a passkey on the passkeys settings page."
+  },
+  "settings.passkeys.add.description": {
+    "defaultMessage": "見分けられるようにパスキーに名前を付け、確認のためにパスワードを入力してください。続いて、ブラウザがパスキーの保存先を尋ねます。",
+    "description": "Explanation of the form that adds a passkey."
+  },
+  "settings.passkeys.name": {
+    "defaultMessage": "名前",
+    "description": "Label of the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.description": {
+    "defaultMessage": "保存する端末やパスワードマネージャーの名前など。",
+    "description": "Hint under the field for the name of a new passkey."
+  },
+  "settings.passkeys.name.required": {
+    "defaultMessage": "名前を入力してください。",
+    "description": "Error of the empty name field of a new passkey."
+  },
+  "settings.passkeys.password": {
+    "defaultMessage": "現在のパスワード",
+    "description": "Label of the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.description": {
+    "defaultMessage": "ログインの方法を追加するには、パスワードが必要です。",
+    "description": "Hint under the password field that confirms adding a passkey."
+  },
+  "settings.passkeys.password.required": {
+    "defaultMessage": "パスワードを入力してください。",
+    "description": "Error of the empty password field when adding a passkey."
+  },
+  "settings.passkeys.add.submit": {
+    "defaultMessage": "パスキーを追加",
+    "description": "Button that adds a passkey: it checks the password and opens the browser's prompt."
+  },
+  "settings.passkeys.add.wrong_password": {
+    "defaultMessage": "パスワードが違います。",
+    "description": "Error of the password field when the server refused the password that confirms adding a passkey."
+  },
+  "settings.passkeys.add.cancelled": {
+    "defaultMessage": "パスキーは追加されませんでした。ブラウザの確認が閉じられたか、時間切れになりました。もう一度お試しください。",
+    "description": "Alert when the user dismissed the browser's passkey prompt or it timed out."
+  },
+  "settings.passkeys.add.exists": {
+    "defaultMessage": "この端末またはパスワードマネージャーには、このアカウントのパスキーがすでにあります。",
+    "description": "Alert when the authenticator already holds a passkey of the account."
+  },
+  "settings.passkeys.add.unavailable": {
+    "defaultMessage": "ブラウザがこのサイトのパスキーを作成できませんでした。",
+    "description": "Alert when the browser refused to create a passkey for another reason (unsupported, or the site's address does not allow it)."
+  },
+  "settings.passkeys.add.invalid": {
+    "defaultMessage": "パスキーを確認できませんでした。別の端末やパスワードマネージャーでお試しください。",
+    "description": "Alert when the server could not verify the new passkey (for example, the device has no screen lock)."
+  },
+  "settings.passkeys.add.expired": {
+    "defaultMessage": "パスキーの追加に時間がかかりすぎました。もう一度お試しください。",
+    "description": "Alert when the passkey was created after the registration expired (5 minutes)."
+  },
+  "settings.passkeys.add.too_many": {
+    "defaultMessage": "登録できるパスキーの数の上限に達しています。先にどれかを削除してください。",
+    "description": "Alert when the user already has the most passkeys allowed (20)."
+  },
+  "settings.passkeys.add.rate_limited": {
+    "defaultMessage": "間違ったパスワードが多すぎます：{reason}",
+    "description": "Alert when too many wrong passwords were entered to add a passkey. {reason} is the server's message, which says when to try again."
+  },
+  "settings.passkeys.add.failed": {
+    "defaultMessage": "パスキーを追加できませんでした：{reason}",
+    "description": "Alert when adding a passkey failed for another reason. {reason} is the error's message."
+  },
+  "settings.passkeys.added": {
+    "defaultMessage": "パスキー「{name}」を追加しました。",
+    "description": "Status after a passkey was added. {name} is the name the user gave it."
+  },
+  "settings.passkeys.unsupported": {
+    "defaultMessage": "このブラウザではパスキーを作成できません。追加するには、パスキーに対応したブラウザでこのページを開いてください。",
+    "description": "Note instead of the form that adds a passkey, in a browser without passkey support."
+  },
+  "settings.passkeys.list.title": {
+    "defaultMessage": "登録済みのパスキー",
+    "description": "Heading of the list of the user's passkeys."
+  },
+  "settings.passkeys.empty": {
+    "defaultMessage": "パスキーはまだありません",
+    "description": "Empty state of the list of the user's passkeys."
+  },
+  "settings.passkeys.added_at": {
+    "defaultMessage": "{date} に追加",
+    "description": "When a passkey was added, under its name. {date} is a formatted date and time."
+  },
+  "settings.passkeys.remove": {
+    "defaultMessage": "削除",
+    "description": "Button that removes a passkey, and the confirm button of its dialog."
+  },
+  "settings.passkeys.remove.title": {
+    "defaultMessage": "パスキー「{name}」を削除しますか？",
+    "description": "Title of the dialog that confirms removing a passkey. {name} is its name."
+  },
+  "settings.passkeys.remove.description": {
+    "defaultMessage": "このパスキーではログインできなくなります。端末やパスワードマネージャーからも削除してください。",
+    "description": "Explanation in the dialog that confirms removing a passkey."
+  },
+  "settings.passkeys.remove.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes the dialog without removing the passkey."
+  },
+  "settings.passkeys.remove.failed": {
+    "defaultMessage": "パスキーを削除できませんでした：{reason}",
+    "description": "Alert in the dialog when removing a passkey failed. {reason} is the error's message."
+  },
+  "settings.passkeys.removed": {
+    "defaultMessage": "パスキー「{name}」を削除しました。",
+    "description": "Announcement after a passkey was removed. {name} is its name."
+  },
   "settings.visibility.direct": {
     "defaultMessage": "メンションした相手",
     "description": "Visibility option: only the mentioned accounts."
@@ -7251,6 +7375,10 @@
     "defaultMessage": "メニュー",
     "description": "Heading and accessible name of the sheet that the tab bar's menu button opens on phones, with the navigation items that are not in the tab bar."
   },
+  "shell.nav.about": {
+    "defaultMessage": "サーバー情報",
+    "description": "Navigation item, shown while nobody is signed in, that opens the page about this server. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
   "shell.nav.admin": {
     "defaultMessage": "管理",
     "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
@@ -7310,6 +7438,14 @@
   "shell.nav.settings": {
     "defaultMessage": "設定",
     "description": "Navigation item that opens the settings. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
+  "shell.nav.sign_in": {
+    "defaultMessage": "ログイン",
+    "description": "Navigation item, shown while nobody is signed in, that opens the sign-in page and comes back to the current page. Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
+  },
+  "shell.nav.sign_up": {
+    "defaultMessage": "新規登録",
+    "description": "Navigation item, shown while nobody is signed in and the server takes new accounts, that opens the server's registration page. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
   },
   "shell.nav.viewer": {
     "defaultMessage": "サインインしているアカウント",
@@ -7819,6 +7955,10 @@
     "defaultMessage": "カスタム絵文字の画像の差し替え",
     "description": "Kind of an audited operation: an administrator replaced the image of a custom emoji."
   },
+  "admin.audit_log.action.custom_emoji_copied": {
+    "defaultMessage": "ほかのサーバーのカスタム絵文字の複製",
+    "description": "Kind of an audited operation: an administrator copied another server's custom emoji into a new emoji of this server."
+  },
   "admin.audit_log.action.custom_emoji_updated": {
     "defaultMessage": "カスタム絵文字の変更",
     "description": "Kind of an audited operation: an administrator changed the category, other names, or place in the picker of a custom emoji."
@@ -8098,6 +8238,34 @@
   "admin.custom_emojis.deleted": {
     "defaultMessage": "{emoji} を削除しました。",
     "description": "Status after deleting a custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy": {
+    "defaultMessage": "このサーバーに複製",
+    "description": "Button of another server's custom emoji that opens the dialog copying it into an emoji of this server."
+  },
+  "admin.custom_emojis.copy_emoji": {
+    "defaultMessage": "{emoji} をこのサーバーに複製",
+    "description": "Accessible name of the copy button of another server's custom emoji. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.title": {
+    "defaultMessage": "{emoji} をこのサーバーに複製",
+    "description": "Title of the dialog that copies another server's custom emoji into an emoji of this server. {emoji} is the emoji's :shortcode: (with @domain for another server's), not translated."
+  },
+  "admin.custom_emojis.copy.description": {
+    "defaultMessage": "画像を取得し、このサーバーの絵文字として登録します。絵文字はピッカーに表示されます。画像は最大 256 ピクセルに縮みます。",
+    "description": "Body of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copy.submit": {
+    "defaultMessage": "複製する",
+    "description": "Confirm button of the dialog that copies another server's custom emoji."
+  },
+  "admin.custom_emojis.copied": {
+    "defaultMessage": "{emoji} を {copy} として複製しました。",
+    "description": "Status after copying another server's custom emoji. {emoji} is the copied emoji's :shortcode:@domain and {copy} the new emoji's :shortcode:, not translated."
   },
   "admin.custom_emojis.disable": {
     "defaultMessage": "無効にする",

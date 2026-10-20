@@ -4,7 +4,9 @@
 // verification, and OAuth authorization (consent) screens (ADR-0030): plain HTML forms from
 // html/template that work without JavaScript, worded from the server message catalog and styled
 // by one stylesheet that the web client's build provides. With a CAPTCHA (Options.HumanCheck),
-// the sign-in and registration forms also load the service's widget (humancheck.go).
+// the sign-in and registration forms also load the service's widget (humancheck.go). In a
+// browser with passkeys, the web build's script adds a passkey button to the sign-in form
+// (passkey.go); without JavaScript the page stays the password form.
 //
 // A sign-in or sign-up starts a browser session carried by the __Host-my_session cookie
 // (Secure, HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST
@@ -53,8 +55,10 @@ const (
 	// PathSignInTwoFactor is the second step of a sign-in, which asks a user with two-factor
 	// authentication for a code (twofactor.go).
 	PathSignInTwoFactor = "/auth/sign_in/two_factor"
-	PathSignOut         = "/auth/sign_out"
-	PathSignUp          = "/auth/sign_up"
+	// PathSignInPasskey takes the sign-in page's passkey form (passkey.go).
+	PathSignInPasskey = "/auth/sign_in/passkey" //nolint:gosec // G101: a path, not a credential
+	PathSignOut       = "/auth/sign_out"
+	PathSignUp        = "/auth/sign_up"
 	// PathVerifyEmail is the page that verification emails link to.
 	PathVerifyEmail = appidentity.PathVerifyEmail
 	// PathResendVerification sends a signed-in user a new verification email.
@@ -79,12 +83,17 @@ const (
 // Browsers check form-action on the redirects that follow a form, so it lists the origins a
 // form may end up at: this site, Options.FormActionOrigins, and the consent page's redirect URI.
 // A page with the CAPTCHA widget adds the service's sources in widget (humancheck.go); the
-// others pass none.
-func contentSecurityPolicy(formAction []string, widget kernel.HumanCheckCSP) string {
+// others pass none. A page that loads the web build's script (scripts) allows this site's
+// scripts.
+func contentSecurityPolicy(formAction []string, widget kernel.HumanCheckCSP, scripts bool) string {
 	var b strings.Builder
 	b.WriteString("default-src 'none'")
-	if len(widget.ScriptSrc) > 0 {
-		b.WriteString("; script-src " + strings.Join(widget.ScriptSrc, " "))
+	scriptSrc := slices.Clone(widget.ScriptSrc)
+	if scripts {
+		scriptSrc = append([]string{"'self'"}, scriptSrc...)
+	}
+	if len(scriptSrc) > 0 {
+		b.WriteString("; script-src " + strings.Join(scriptSrc, " "))
 	}
 	if len(widget.FrameSrc) > 0 {
 		b.WriteString("; frame-src " + strings.Join(widget.FrameSrc, " "))
@@ -162,6 +171,11 @@ type Options struct {
 	// HumanCheck is the CAPTCHA widget of the sign-in and registration forms (humancheck.go);
 	// nil, as with the captcha setting none, renders none.
 	HumanCheck *kernel.HumanCheckWidget
+	// Passkeys signs in with passkeys (passkey.go), and PasskeyScript is the URL of the web
+	// build's script that runs the browser's side; the sign-in page offers passkeys only with
+	// both.
+	Passkeys      Passkeys
+	PasskeyScript string
 }
 
 // Handler serves the screens.
@@ -212,6 +226,9 @@ func (h *Handler) Register(r Router) {
 	r.Handle("POST "+PathSignIn, h.cop.Handler(http.HandlerFunc(h.signIn)))
 	r.Handle("GET "+PathSignInTwoFactor, http.HandlerFunc(h.twoFactorPage))
 	r.Handle("POST "+PathSignInTwoFactor, h.cop.Handler(http.HandlerFunc(h.twoFactor)))
+	if h.passkeysEnabled() {
+		r.Handle("POST "+PathSignInPasskey, h.cop.Handler(http.HandlerFunc(h.signInWithPasskey)))
+	}
 	r.Handle("POST "+PathSignOut, h.cop.Handler(http.HandlerFunc(h.signOut)))
 	r.Handle("GET "+PathSignUp, http.HandlerFunc(h.signUpPage))
 	r.Handle("POST "+PathSignUp, h.cop.Handler(http.HandlerFunc(h.signUp)))
@@ -261,6 +278,9 @@ type page struct {
 	// HumanCheck is the CAPTCHA widget of the form; the page's Content-Security-Policy admits
 	// the service when it is set.
 	HumanCheck *humanCheckView
+	// Passkey is the passkey form of the sign-in page; the page's Content-Security-Policy admits
+	// this site's scripts when it is set.
+	Passkey *passkeyView
 	// Documents are the links to the published documents, in the footer of every page and on
 	// the registration form; render fills them.
 	Documents []documentLink
@@ -292,7 +312,7 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, status int, nam
 	if p.HumanCheck != nil {
 		widget = h.humanCheckCSP()
 	}
-	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...), widget))
+	hd.Set("Content-Security-Policy", contentSecurityPolicy(append(slices.Clone(h.o.FormActionOrigins), p.formAction...), widget, p.Passkey != nil))
 	cache := p.cache
 	if cache == "" {
 		cache = "no-store"
@@ -363,11 +383,21 @@ func (h *Handler) renderSignedIn(w http.ResponseWriter, r *http.Request, returnT
 }
 
 func (h *Handler) renderSignIn(w http.ResponseWriter, r *http.Request, status int, returnTo, email string, message func(*i18n.Localizer) string) {
+	h.renderSignInPage(w, r, status, returnTo, email, message, nil)
+}
+
+// renderSignInPage renders the sign-in form with the alert message about the password form or
+// passkeyMessage about the passkey form.
+func (h *Handler) renderSignInPage(w http.ResponseWriter, r *http.Request, status int, returnTo, email string, message, passkeyMessage func(*i18n.Localizer) string) {
 	p := h.newPage(r, (*i18n.Localizer).ServerAuthSignInTitle)
 	p.CSRFToken = h.csrfToken(w, r)
 	p.ReturnTo, p.Email = returnTo, email
 	if message != nil {
 		p.Error = message(p.L)
+	}
+	p.Passkey = h.passkeyView(r)
+	if p.Passkey != nil && passkeyMessage != nil {
+		p.Passkey.Error = passkeyMessage(p.L)
 	}
 	mode, err := h.o.Identity.RegistrationMode(r.Context())
 	if err != nil {

@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { instanceFixture, statusPage, timelineStatusFixture } from "../../test/fixtures";
 import { findLoadingRegion } from "../../test/loading";
-import { apiBase, problem } from "../../test/msw/http";
+import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 
@@ -59,8 +59,8 @@ describe("the federated timeline", () => {
     );
     // The router measures its pending delay with Date, so the clock has to run here.
     vi.useRealTimers();
-    const { user } = await renderApp({ path: "/home" });
-    await screen.findByRole("heading", { level: 1, name: "Home" });
+    const { user } = await renderApp({ path: "/local" });
+    await screen.findByRole("heading", { level: 1, name: "Local timeline" });
     await user.click(await within(navigation()).findByRole("link", { name: "Federated" }));
 
     // After the router's pending delay, the page has its heading and a skeleton named once as loading posts.
@@ -122,6 +122,11 @@ describe("the federated timeline", () => {
 });
 
 describe("the navigation's timelines", () => {
+  // The signed-in user's items; routes/-layout/Navigation.test.tsx covers the signed-out ones.
+  beforeEach(() => {
+    server.use(signedInHandler);
+  });
+
   test("offer the federated timeline after the local one while the server serves it, and open it", async () => {
     const { user } = await renderApp({ path: "/home" });
     await screen.findByRole("heading", { level: 1, name: "Home" });
@@ -129,7 +134,7 @@ describe("the navigation's timelines", () => {
     const federated = await within(navigation()).findByRole("link", { name: "Federated" });
     // jsdom applies no styles, so the items of the rail only are here too. Local and Federated are items of
     // their own at every width.
-    expect(within(navigation()).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+    expect(within(within(navigation()).getByRole("list")).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
       "/home",
       "/local",
       "/public",

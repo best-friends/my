@@ -61,6 +61,27 @@ CREATE TABLE totp_recovery_code_uses (
   PRIMARY KEY (enrollment_id, code_hash)
 );
 
+-- Resource: a passkey (a WebAuthn discoverable credential) that a user registered to sign in
+-- with (FR-004): the authenticator's ID of the credential, unique among all, and its COSE public
+-- key. A passkey with a revocation no longer signs in.
+CREATE TABLE passkey_credentials (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  user_id text COLLATE "C" NOT NULL,
+  credential_id bytea NOT NULL,
+  public_key bytea NOT NULL,
+  backup_eligible boolean NOT NULL,
+  name text NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX passkey_credentials_credential_id ON passkey_credentials (credential_id);
+CREATE INDEX passkey_credentials_user_id_id ON passkey_credentials (user_id, id);
+
+-- Event: a passkey ended (removed by its user).
+CREATE TABLE passkey_credential_revocations (
+  passkey_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revoked_at timestamptz NOT NULL
+);
+
 -- Resource: an email address a user added.
 CREATE TABLE user_email_addresses (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
@@ -2153,7 +2174,7 @@ CREATE TABLE audit_log_entries (
     'role_created', 'role_updated', 'role_deleted', 'appeal_upheld',
     'appeal_overturned', 'account_deletion_cancelled',
     'revealed_private_data', 'signup_block_added', 'signup_block_lifted', 'two_factor_disabled',
-    'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_updated',
+    'custom_emoji_created', 'custom_emoji_image_replaced', 'custom_emoji_copied', 'custom_emoji_updated',
     'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted',
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
     'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
