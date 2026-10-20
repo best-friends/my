@@ -238,7 +238,7 @@ func (q *Queries) GetProfileHead(ctx context.Context, accountID string) (GetProf
 }
 
 const getProfileRevision = `-- name: GetProfileRevision :one
-SELECT id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable,
+SELECT id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable, ai_opt_out,
   avatar_media_id, header_media_id, revised_at
 FROM account_profile_revisions WHERE id = ?
 `
@@ -256,6 +256,7 @@ func (q *Queries) GetProfileRevision(ctx context.Context, id string) (AccountPro
 		&i.Bot,
 		&i.Discoverable,
 		&i.Indexable,
+		&i.AiOptOut,
 		&i.AvatarMediaID,
 		&i.HeaderMediaID,
 		&i.RevisedAt,
@@ -428,9 +429,9 @@ func (q *Queries) InsertProfileFieldSource(ctx context.Context, arg InsertProfil
 
 const insertProfileRevision = `-- name: InsertProfileRevision :exec
 INSERT INTO account_profile_revisions (
-  id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable,
+  id, account_id, seq, display_name, note_html, locked, bot, discoverable, indexable, ai_opt_out,
   avatar_media_id, header_media_id, revised_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type InsertProfileRevisionParams struct {
@@ -443,6 +444,7 @@ type InsertProfileRevisionParams struct {
 	Bot           int64
 	Discoverable  int64
 	Indexable     int64
+	AiOptOut      int64
 	AvatarMediaID sql.NullString
 	HeaderMediaID sql.NullString
 	RevisedAt     int64
@@ -459,6 +461,7 @@ func (q *Queries) InsertProfileRevision(ctx context.Context, arg InsertProfileRe
 		arg.Bot,
 		arg.Discoverable,
 		arg.Indexable,
+		arg.AiOptOut,
 		arg.AvatarMediaID,
 		arg.HeaderMediaID,
 		arg.RevisedAt,

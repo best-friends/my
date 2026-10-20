@@ -24,6 +24,24 @@ func (q *Queries) CountRoleHolders(ctx context.Context, roleID string) (int64, e
 	return count, err
 }
 
+const deleteRole = `-- name: DeleteRole :exec
+DELETE FROM roles WHERE id = $1
+`
+
+func (q *Queries) DeleteRole(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteRole, id)
+	return err
+}
+
+const deleteRolePermissions = `-- name: DeleteRolePermissions :exec
+DELETE FROM role_permissions WHERE role_id = $1
+`
+
+func (q *Queries) DeleteRolePermissions(ctx context.Context, roleID string) error {
+	_, err := q.db.Exec(ctx, deleteRolePermissions, roleID)
+	return err
+}
+
 const deleteUserRoleByGrant = `-- name: DeleteUserRoleByGrant :exec
 DELETE FROM user_roles WHERE grant_id = $1
 `
@@ -166,4 +184,20 @@ func (q *Queries) ListRoles(ctx context.Context) ([]Role, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateRolePosition = `-- name: UpdateRolePosition :exec
+
+UPDATE roles SET position = $2 WHERE id = $1
+`
+
+type UpdateRolePositionParams struct {
+	ID       string
+	Position int32
+}
+
+// Creating, changing, and deleting roles (FR-720).
+func (q *Queries) UpdateRolePosition(ctx context.Context, arg UpdateRolePositionParams) error {
+	_, err := q.db.Exec(ctx, updateRolePosition, arg.ID, arg.Position)
+	return err
 }

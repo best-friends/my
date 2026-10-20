@@ -5,7 +5,7 @@ import { screen, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test, vi } from "vitest";
 import type { Instance } from "./api/about";
-import { instanceFixture } from "../../test/fixtures";
+import { instanceFixture, otherAccountFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler, withViewer } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
@@ -51,6 +51,45 @@ describe("the information page", () => {
       "http://localhost:3000/auth/terms",
       "http://localhost:3000/auth/privacy",
     ]);
+  });
+
+  test("shows the server's thumbnail and how to reach its operators", async () => {
+    serveInstance({
+      thumbnail: { url: "https://my.example/media/beach/r/large.webp", width: 1600, height: 900, alt: "A beach at dawn" },
+      contact: { account: otherAccountFixture, email: "admin@my.example" },
+    });
+    await renderApp({ path: "/about" });
+
+    expect(await screen.findByRole("img", { name: "A beach at dawn" })).toHaveAttribute("src", "https://my.example/media/beach/r/large.webp");
+    const contact = screen.getByRole("region", { name: "Contact" });
+    expect(within(contact).getByRole("link", { name: "Bob @bob" })).toHaveAttribute("href", "/@bob");
+    expect(within(contact).getByRole("link", { name: "admin@my.example" })).toHaveAttribute("href", "mailto:admin@my.example");
+  });
+
+  test("leaves out the contact and the thumbnail when the server has none", async () => {
+    await renderApp({ path: "/about" });
+    expect(await screen.findByRole("heading", { level: 1, name: "About my example" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Contact" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  test("says what the server states to search engines and AI, and what such a statement means", async () => {
+    serveInstance({ search_indexing: "allow", ai_usage: "deny_training" });
+    await renderApp({ path: "/about" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    expect(within(crawlers).getByText("Search engines may index the profiles and public posts of the accounts that allow it.")).toBeInTheDocument();
+    expect(within(crawlers).getByText(/^This server reserves its pages against the training of AI models\. AI search/u)).toBeInTheDocument();
+    expect(within(crawlers).getByText(/Article 30-4 of the Copyright Act/u)).toBeInTheDocument();
+  });
+
+  test("says when the server denies search engines and every use by AI", async () => {
+    serveInstance({ search_indexing: "deny", ai_usage: "deny" });
+    await renderApp({ path: "/about" });
+    const crawlers = await screen.findByRole("region", { name: "Search engines and AI" });
+    expect(within(crawlers).getByText("This server asks search engines not to index any of its pages.")).toBeInTheDocument();
+    expect(
+      within(crawlers).getByText("This server reserves its pages against the training of AI models and against their use by AI search, assistants and agents."),
+    ).toBeInTheDocument();
   });
 
   test("leaves out the moderated servers when the server lists them to nobody", async () => {

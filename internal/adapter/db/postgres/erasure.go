@@ -160,6 +160,9 @@ func (r *StatusRepository) EraseInteractionsBy(ctx context.Context, tx uow.Tx, a
 			return keep(q.EraseBookmarksBy(ctx, postgresgen.EraseBookmarksByParams{AccountID: accountID, Lim: lim}))
 		},
 		func() error { return keep(q.ErasePinsBy(ctx, accountID)) },
+		// The automatic deletion policy (FR-118) is a setting of the account.
+		func() error { return q.EraseAutoDeleteKeptVisibilitiesBy(ctx, accountID) },
+		func() error { return q.EraseAutoDeletePolicyBy(ctx, accountID) },
 		func() error {
 			return q.UncountBoostsBy(ctx, postgresgen.UncountBoostsByParams{AccountID: accountID, Lim: lim})
 		},

@@ -134,6 +134,36 @@ export interface paths {
         patch: operations["updatePreferences"];
         trace?: never;
     };
+    "/preferences/auto_delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the authenticated user's automatic deletion of old posts
+         * @description The policy that deletes the user's own posts some days after their publication (FR-118).
+         *     A user who has never saved one gets the default policy, which is disabled.
+         */
+        get: operations["getAutoDeletePolicy"];
+        /**
+         * Replace the authenticated user's automatic deletion of old posts
+         * @description Replaces the whole policy. Once it is enabled, an hourly job deletes the user's posts
+         *     published more than `min_age_days` days ago, unless an exception keeps them, as the user
+         *     would delete them: each deletion is sent to the servers the post went to. A run deletes
+         *     at most 100 posts of a user, so a policy that finds more spreads their deletion over the
+         *     following hours. Boosts are not deleted. A 422 problem names the property that is invalid
+         *     in `detail`.
+         */
+        put: operations["updateAutoDeletePolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/delete": {
         parameters: {
             query?: never;
@@ -177,8 +207,10 @@ export interface paths {
          * Request an archive of the authenticated user's data
          * @description Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
          *     `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
-         *     activities), and `moderation.json` (the moderation actions on the account, its appeals,
-         *     and the reports it filed). The export is `pending` until the archive is built. While
+         *     activities), `moderation.json` (the moderation actions on the account, its appeals, and
+         *     the reports it filed), and the CSV files of `exportCsv` (`following_accounts.csv`,
+         *     `blocked_accounts.csv`, `muted_accounts.csv`, `bookmarks.csv`). The export is
+         *     `pending` until the archive is built. While
          *     another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
          *     at most 3 requests per account are accepted every day.
          */
@@ -204,6 +236,93 @@ export interface paths {
         get: operations["downloadDataExport"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/csv_exports/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+         * @description Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
+         *     Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
+         *     (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
+         *     `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
+         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
+         *     `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+         *     Addresses are `username@domain`, with the account domain for this server's accounts;
+         *     remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
+         *     are accepted every hour.
+         */
+        get: operations["exportCsv"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's imports
+         * @description Lists the user's latest 10 imports of CSV files, newest first, with their progress.
+         *     Imports are removed 7 days after they start.
+         */
+        get: operations["listDataImports"];
+        put?: never;
+        /**
+         * Import a CSV file of follows, blocks, mutes, or bookmarks
+         * @description Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
+         *     entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
+         *     `overwrite` also removes what the user has of `kind` that the file does not list. The
+         *     server carries the import out in the background: it resolves remote accounts and posts
+         *     on their servers, sends the follows, and counts the entries it could not carry out
+         *     (an account or post that cannot be found or acted on). The import is `in_progress`
+         *     until every entry is done. While another import of the user is `in_progress` the
+         *     request is a 409 `/api/v1/problems/import-in-progress`. At most 10 imports per account
+         *     are accepted every day.
+         */
+        post: operations["startDataImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview an import of a CSV file
+         * @description Reads a CSV file as `startDataImport` would and tells what importing it would do,
+         *     changing nothing. The header row is optional, a leading `@` of an address is dropped,
+         *     and blank lines are ignored; a line that names no address (or for `bookmarks`, no
+         *     `http(s)` URL) is skipped as `invalid`, and one that repeats an earlier entry as
+         *     `duplicate`. Settings left out default as in Mastodon: boosts shown, no notifications of
+         *     new posts, notifications of a muted account hidden. The `Languages` column of a follow
+         *     is ignored. A file that is not CSV or has more than 10,000 entries is a 422.
+         */
+        post: operations["previewDataImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2324,7 +2443,7 @@ export interface paths {
          *     where no locale of the chain has a name, the domain names it, and handles and URLs always
          *     use the domain. An unknown key is a 404. A locale that is not a BCP 47
          *     tag is a 422 naming `locale`; a body longer than the key allows (100 characters for
-         *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt`, 20,000 for
+         *     `name`, 500 for `short_description`, 1,500 for `preview_image_alt` and `thumbnail_alt`, 20,000 for
          *     `description`, 100,000 for `terms` and `privacy_policy`), or with a line break in `name`
          *     or of only spaces in `name`, is a 422 naming `body`. Needs the `manage_settings`
          *     permission.
@@ -2476,17 +2595,63 @@ export interface paths {
         /**
          * List the roles
          * @description The roles of the instance, highest position first, with the permissions they grant
-         *     (FR-720). Every instance has `admin` (position 1000, every permission) and `moderator`
-         *     (position 100: `manage_reports`, `manage_accounts`, and `view_audit`). Needs the
-         *     `manage_roles` permission.
+         *     (FR-720). Every instance has `admin` (position 1000, every permission, never changed)
+         *     and `moderator` (position 100 with `manage_reports`, `manage_accounts`, and
+         *     `view_audit` until an administrator changes them). Needs the `manage_roles` permission.
          */
         get: operations["listRoles"];
         put?: never;
-        post?: never;
+        /**
+         * Create a role
+         * @description Creates a role with a key, a position below `admin` (0 to 999), and permissions; the
+         *     audit log records `role_created`. A position above every role of the viewer is a 403.
+         *     A key, position, or permissions that break a rule, a key that another role has
+         *     (`admin` and `moderator` included), or a permission that the viewer's roles do not
+         *     grant is a 422 `/api/v1/problems/invalid-role` whose `reason` says which. Needs the
+         *     `manage_roles` permission.
+         */
+        post: operations["createRole"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/admin/roles/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a role
+         * @description Deletes a role that nobody holds; the audit log records `role_deleted`. `admin` and
+         *     `moderator` are never deleted (a 422 `builtin`), and a role that users hold is a 422
+         *     `held`: revoke it from them first. A role above every role of the viewer is a 403. An
+         *     unknown role is a 404. Needs the `manage_roles` permission.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Change a role
+         * @description Changes the position, the permissions, or both of a role; the change applies to its
+         *     holders from their next request, and the audit log records `role_updated`. A request
+         *     that changes nothing records nothing. The key never changes. `admin` is never changed
+         *     (a 422 `builtin`); `moderator` takes a new position and permissions like any other
+         *     role. A role, or a new position, above every role of the viewer is a 403. A position or
+         *     permissions that break a rule, or adding or removing a permission that the viewer's
+         *     roles do not grant, is a 422 `/api/v1/problems/invalid-role` whose `reason` says
+         *     which. An unknown role is a 404. Needs the `manage_roles` permission.
+         */
+        patch: operations["updateRole"];
         trace?: never;
     };
     "/admin/accounts/{id}/roles": {
@@ -3158,6 +3323,8 @@ export interface components {
          *       built. Wait for it to end.
          *     - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
          *       it is being built, failed, or expired.
+         *     - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+         *       carried out. Wait for it to finish.
          *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
          *       already used, or is not a code.
          *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -3237,7 +3404,55 @@ export interface components {
              */
             privacy_policy_url?: string;
             theme?: components["schemas"]["InstanceTheme"];
+            contact?: components["schemas"]["InstanceContact"];
+            thumbnail?: components["schemas"]["InstanceThumbnail"];
+            search_indexing: components["schemas"]["SearchIndexing"];
+            ai_usage: components["schemas"]["AIUsage"];
         };
+        /**
+         * @description How people reach the instance's operators (the instance settings `contact_account` and
+         *     `contact_email`). Omitted when the instance has neither.
+         */
+        InstanceContact: {
+            /**
+             * @description The local account to contact; omitted when there is none, or when the account
+             *     cannot be shown (it is suspended or deleted).
+             */
+            account?: components["schemas"]["Account"];
+            /** @description The email address to contact; omitted when there is none. */
+            email?: string;
+        };
+        /**
+         * @description The image that represents the instance (the instance setting `thumbnail`): the large still
+         *     variant of the media file. Omitted when there is none, or while the file is processing.
+         */
+        InstanceThumbnail: {
+            /** Format: uri */
+            url: string;
+            width: number;
+            height: number;
+            /**
+             * @description The alt text (the instance text `thumbnail_alt`) in the locale of the request;
+             *     omitted when no locale of the request's fallback chain has one.
+             */
+            alt?: string;
+        };
+        /**
+         * @description Whether the instance lets search engines index its pages (the instance setting
+         *     `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+         *     that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+         *     the reverse.
+         * @enum {string}
+         */
+        SearchIndexing: "allow" | "deny";
+        /**
+         * @description What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+         *     `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+         *     and no use by AI search, assistants, and agents. An account can opt out of what the
+         *     instance allows (`ai_opt_out`), never the reverse.
+         * @enum {string}
+         */
+        AIUsage: "allow" | "deny_training" | "deny";
         /** @description How people sign up on the instance. */
         InstanceRegistrations: {
             /**
@@ -3712,6 +3927,82 @@ export interface components {
         DataExportList: {
             items: components["schemas"]["DataExport"][];
         };
+        /**
+         * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+         *     accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+         *     posts the user bookmarked).
+         * @enum {string}
+         */
+        DataImportKind: "following" | "blocks" | "mutes" | "bookmarks";
+        /**
+         * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+         *     what the user has that the file does not list.
+         * @enum {string}
+         */
+        DataImportMode: "merge" | "overwrite";
+        /** @description A CSV file to import, and how. */
+        DataImportRequest: {
+            kind: components["schemas"]["DataImportKind"];
+            mode: components["schemas"]["DataImportMode"];
+            /** @description The content of the CSV file, in UTF-8. */
+            text: string;
+        };
+        /** @description What an import of a CSV file would do. */
+        DataImportPreview: {
+            /** @description The number of entries of the file, each of which the import adds. */
+            entries: number;
+            /** @description How many of the entries the user has already. */
+            present: number;
+            /**
+             * @description How many things the user has of the kind that the file does not list, which an
+             *     `overwrite` removes; 0 for a `merge`.
+             */
+            removals: number;
+            /** @description The lines that are not entries, in line order. */
+            skipped: components["schemas"]["DataImportSkipped"][];
+        };
+        /** @description A line of a CSV file that is not an entry. */
+        DataImportSkipped: {
+            /** @description The line of the file, from 1. */
+            line: number;
+            /** @description The line as written. */
+            value: string;
+            /**
+             * @description `invalid`: the line names no account address (or for bookmarks, no post URL).
+             *     `duplicate`: an earlier line names the same account or post.
+             * @enum {string}
+             */
+            reason: "invalid" | "duplicate";
+        };
+        /** @description An import of a CSV file, with its progress. */
+        DataImport: {
+            id: components["schemas"]["Id"];
+            kind: components["schemas"]["DataImportKind"];
+            mode: components["schemas"]["DataImportMode"];
+            /**
+             * @description `in_progress` until every entry and removal is done, then `finished`.
+             * @enum {string}
+             */
+            state: "in_progress" | "finished";
+            /**
+             * Format: date-time
+             * @description When the import started.
+             */
+            created_at: string;
+            /** @description The number of entries to add and things to remove. */
+            total: number;
+            /** @description How many of them are done, including the failed ones. */
+            processed: number;
+            /**
+             * @description How many of them could not be carried out: an account or post that cannot be found
+             *     or acted on, or a follow that a block stops.
+             */
+            failed: number;
+        };
+        /** @description The user's latest imports, newest first. */
+        DataImportList: {
+            items: components["schemas"]["DataImport"][];
+        };
         /** @description An appeal of an action on the user's own account. */
         AppealModerationActionRequest: {
             /** @description Why the moderators should reconsider the action, as plain text. */
@@ -4158,8 +4449,18 @@ export interface components {
         CredentialAccount: components["schemas"]["Account"] & {
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable: boolean;
-            /** @description Whether the account's public posts may be indexed for search. */
+            /**
+             * @description Whether the account's profile and public posts may be indexed for search: by this
+             *     instance's search and, when the instance's `search_indexing` is `allow`, by search
+             *     engines (FR-412, ADR-0057). New accounts take the instance's default.
+             */
             indexable: boolean;
+            /**
+             * @description Whether the account's pages state that AI may neither train on nor use them
+             *     (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+             *     pages of this instance only; other servers and the media files do not carry it.
+             */
+            ai_opt_out: boolean;
             source: components["schemas"]["AccountSource"];
             posting: components["schemas"]["PostingLimits"];
             /**
@@ -4193,8 +4494,10 @@ export interface components {
             bot?: boolean;
             /** @description Whether the account may be suggested to others and listed in directories. */
             discoverable?: boolean;
-            /** @description Whether the account's public posts may be indexed for search. */
+            /** @description Whether the account's profile and public posts may be indexed for search (FR-412). */
             indexable?: boolean;
+            /** @description Whether the account's pages state that AI may neither train on nor use them (FR-412). */
+            ai_opt_out?: boolean;
         };
         /** @description The authenticated user's preferences. */
         Preferences: {
@@ -4235,6 +4538,33 @@ export interface components {
             email_moderator_notifications?: boolean;
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
+        };
+        /**
+         * @description The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+         *     deleted once it was published more than `min_age_days` days ago, unless one of the
+         *     exceptions (the `keep_` properties) keeps it.
+         */
+        AutoDeletePolicy: {
+            /** @description Whether old posts are deleted. */
+            enabled: boolean;
+            /** @description How many days after its publication a post is deleted. */
+            min_age_days: number;
+            /** @description Keep the posts pinned to the profile. */
+            keep_pinned: boolean;
+            /** @description Keep the posts that the user bookmarked. */
+            keep_bookmarked: boolean;
+            /** @description Keep the posts that the user favourited. */
+            keep_favourited: boolean;
+            /** @description Keep the posts with media attachments. */
+            keep_media: boolean;
+            /** @description Keep the posts with a poll. */
+            keep_polls: boolean;
+            /** @description Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility. */
+            keep_visibilities: components["schemas"]["Visibility"][];
+            /** @description Keep the posts boosted at least this many times; 0 keeps none for their boosts. */
+            keep_min_boosts: number;
+            /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
+            keep_min_favourites: number;
         };
         /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
         TwoFactor: {
@@ -4384,8 +4714,10 @@ export interface components {
          *     `user` (a registration):
          *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
          *     (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
-         *     user): `role_granted`, `role_revoked`. On an `appeal`:
+         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+         *     `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+         *     `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+         *     an `appeal`:
          *     `appeal_upheld`, `appeal_overturned` (which also records the action's
          *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
          *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
@@ -4401,7 +4733,7 @@ export interface components {
          *     text.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4436,8 +4768,8 @@ export interface components {
             /**
              * @description Whether the target is still there to look at. It is `false` for an account, a report,
              *     an appeal, or a sign-up block that is gone (erased past its retention), which only
-             *     `target_label` names now. It is `true` for the other kinds of targets, which are
-             *     never erased.
+             *     `target_label` names now. It is `true` for the other kinds of targets: a role, a
+             *     custom emoji, or a webhook that was deleted is not looked up yet.
              */
             target_exists: boolean;
             /**
@@ -5364,7 +5696,7 @@ export interface components {
          *     preview image.
          * @enum {string}
          */
-        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt";
+        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt";
         /** @description A new revision of an instance text in one locale. */
         SetInstanceTextRequest: {
             /** @description The text; empty clears it in the locale. */
@@ -5507,7 +5839,8 @@ export interface components {
         };
         /**
          * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
-         *     a user may grant and revoke only the roles at or below their highest one.
+         *     a user may grant, revoke, create, change, and delete only the roles at or below their
+         *     highest one, and give or take only the permissions they hold.
          */
         AdminRole: {
             id: components["schemas"]["Id"];
@@ -5521,6 +5854,41 @@ export interface components {
         AdminRoleList: {
             items: components["schemas"]["AdminRole"][];
         };
+        /** @description A new role. */
+        CreateRoleRequest: {
+            /** @description The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`. */
+            key: string;
+            /** @description The rank of the role, from 0 to 999 (below `admin`). */
+            position: number;
+            /** @description The permissions that the role grants, each once. */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description The changes to a role; what is omitted stays. */
+        UpdateRoleRequest: {
+            /** @description The new rank of the role, from 0 to 999. */
+            position?: number;
+            /** @description The new permissions of the role, each once; empty removes them all. */
+            permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
+         *     `reason` says which. Another 422 (a malformed request) has none.
+         */
+        RoleProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["RoleProblemReason"];
+            /** @description The permissions that the change needs and the viewer lacks, for `missing_permission`. */
+            missing_permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+         *     and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+         *     `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+         *     and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+         *     `missing_permission`: the change adds or removes permissions that the viewer's roles
+         *     do not grant (`missing_permissions`).
+         * @enum {string}
+         */
+        RoleProblemReason: "key" | "key_taken" | "position" | "permissions" | "builtin" | "held" | "missing_permission";
         /** @description A user's registration as the moderators review it (FR-721). */
         AdminRegistration: {
             user_id: components["schemas"]["Id"];
@@ -5748,14 +6116,17 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+         *     the username of a local account, or empty for none. `email`: an email address such as
+         *     `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+         *     none.
          * @enum {string}
          */
-        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media";
+        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "account" | "email" | "uri";
         /** @description New values of some instance settings, saved together. */
         UpdateInstanceSettingsRequest: {
             /** @description The new value of each setting to change, by key, as a string. */
@@ -6033,6 +6404,28 @@ export interface components {
                 "application/json": components["schemas"]["AdminRoleList"];
             };
         };
+        /** @description The role. */
+        AdminRole: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRole"];
+            };
+        };
+        /** @description The role change breaks a rule; nothing was changed. */
+        RoleProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["RoleProblem"];
+            };
+        };
         /** @description The registration. */
         AdminRegistration: {
             headers: {
@@ -6303,6 +6696,54 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
+    getAutoDeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The policy. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoDeletePolicy"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateAutoDeletePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutoDeletePolicy"];
+            };
+        };
+        responses: {
+            /** @description The policy as saved. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AutoDeletePolicy"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
     deleteOwnAccount: {
         parameters: {
             query?: never;
@@ -6392,6 +6833,107 @@ export interface operations {
                 };
                 content: {
                     "application/zip": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    exportCsv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description What to export. */
+                kind: components["schemas"]["DataImportKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    /** @description Names the file to save the CSV as, the name Mastodon gives it. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDataImports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The imports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    startDataImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataImportRequest"];
+            };
+        };
+        responses: {
+            /** @description The import, being carried out. */
+            202: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImport"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    previewDataImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataImportRequest"];
+            };
+        };
+        responses: {
+            /** @description What the import would do. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportPreview"];
                 };
             };
             default: components["responses"]["Problem"];
@@ -8857,6 +9399,68 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminRoleList"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRole"];
+            422: components["responses"]["RoleProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The role is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            422: components["responses"]["RoleProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The key of the role, such as `moderator`. */
+                role: components["parameters"]["RoleKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRole"];
+            422: components["responses"]["RoleProblem"];
             default: components["responses"]["Problem"];
         };
     };

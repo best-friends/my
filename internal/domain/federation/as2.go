@@ -335,10 +335,13 @@ type Actor struct {
 	Image                     IRI
 	ManuallyApprovesFollowers bool
 	Discoverable              bool
-	PublicKeys                []PublicKey
-	Fields                    []Field
-	Emojis                    []Emoji
-	Published                 time.Time
+	// Indexable is Mastodon's toot:indexable: whether the actor's public posts may be indexed
+	// for search (ADR-0057).
+	Indexable  bool
+	PublicKeys []PublicKey
+	Fields     []Field
+	Emojis     []Emoji
+	Published  time.Time
 }
 
 // Bot reports whether the actor is an automated account.

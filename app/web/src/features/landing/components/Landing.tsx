@@ -3,6 +3,7 @@ import { Button, EmptyState, Feed, Link, PostSkeleton, RegionError, VisuallyHidd
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { aboutPath } from "../../../lib/paths";
+import { ServerThumbnail } from "../../about";
 import { DocumentLinks } from "../../documents";
 import { useSignIn } from "../../session";
 import { StatusCard } from "../../status";
@@ -10,9 +11,9 @@ import type { RecentPost } from "../api/landing";
 import { type Landing as LandingData, type RecentPosts, type RegistrationMode, useLanding } from "../hooks/useLanding";
 
 /**
- * The body of the landing page for people who are not signed in (`/`), under the page's heading: what the server
- * is, how to sign in or create an account, its rules, a few recent posts, and the links to its information page
- * (`/about`) and to its terms of service and privacy policy.
+ * The body of the landing page for people who are not signed in (`/`), under the page's heading: the image and the
+ * summary of the server, how to sign in or create an account, its rules, a few recent posts, and the links to its
+ * information page (`/about`) and to its terms of service and privacy policy.
  */
 export function Landing() {
   const t = useT();
@@ -20,6 +21,7 @@ export function Landing() {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-4">
+        {landing.thumbnail !== undefined && <ServerThumbnail thumbnail={landing.thumbnail} />}
         {landing.summary !== "" && (
           // The administrator's text, in any language (web-client.md Y10).
           <p dir="auto" className="text-lg">

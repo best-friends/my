@@ -59,6 +59,9 @@ func (r *IdentityRepository) EnsureRole(ctx context.Context, tx uow.Tx, role ide
 	if err != nil {
 		return identity.Role{}, wrap(err, "get role")
 	}
+	if row.ID != role.ID {
+		return roleFrom(row), nil
+	}
 	for _, p := range perms {
 		err := q.InsertRolePermissionIfAbsent(ctx, sqlitegen.InsertRolePermissionIfAbsentParams{RoleID: row.ID, Permission: string(p)})
 		if err != nil {

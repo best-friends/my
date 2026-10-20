@@ -24,8 +24,11 @@ export const instanceNameLimit = 100;
 export const shortDescriptionLimit = 500;
 export const descriptionLimit = 20_000;
 
+/** The most characters of the thumbnail's alt text (internal/domain/instance, text.go). */
+export const thumbnailAltLimit = 1500;
+
 /** The texts of the server settings screen, edited in each language. */
-type SettingsTextKey = Extract<Schemas["InstanceTextKey"], "name" | "short_description" | "description">;
+type SettingsTextKey = Extract<Schemas["InstanceTextKey"], "name" | "short_description" | "description" | "thumbnail_alt">;
 
 /** A text in one locale; an empty `body` clears it there. */
 export type InstanceTextChange = { key: SettingsTextKey; locale: string; body: string };
@@ -86,4 +89,33 @@ export function updateInstanceSettingsMutation(api: Api) {
 export async function cacheSavedSettings(queryClient: QueryClient, api: Api, settings: InstanceSettingList): Promise<void> {
   queryClient.setQueryData(instanceSettingsQueryOptions(api).queryKey, settings);
   await Promise.all([queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }), refreshAuditLog(queryClient)]);
+}
+
+/** A change of the server's contact and thumbnail: the settings that changed, and the alt texts that changed. */
+export type ContactChange = {
+  values: Readonly<Partial<Record<InstanceSettingKey, string>>>;
+  texts: readonly InstanceTextChange[];
+};
+
+/**
+ * Saves the server's contact and thumbnail, as the options of useMutation: the settings together, all or none
+ * (PATCH /admin/settings), then each alt text that changed (PUT /admin/instance_texts/thumbnail_alt/{locale}). Returns
+ * every setting as it is now, or undefined when no setting changed.
+ */
+export function saveContactMutation(api: Api) {
+  const setTexts = setInstanceTextsMutation(api).mutationFn;
+  return {
+    mutationKey: ["patch", "/admin/settings", "contact"] as const,
+    mutationFn: async ({ values, texts }: ContactChange): Promise<InstanceSettingList | undefined> => {
+      let settings: InstanceSettingList | undefined;
+      if (Object.keys(values).length > 0) {
+        const { data, error } = await api.fetch.PATCH("/admin/settings", { body: { values } });
+        // The middleware throws an ApiError for every error status; this narrows the type.
+        if (data === undefined) throw new ApiError(error);
+        settings = data;
+      }
+      if (texts.length > 0) await setTexts(texts);
+      return settings;
+    },
+  };
 }

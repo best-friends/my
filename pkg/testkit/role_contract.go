@@ -23,8 +23,9 @@ import (
 // permissions; a grant and a revocation change the user's permissions and the holders of a
 // permission at once, record their audit log entry in their transaction, and do nothing when
 // they would change nothing; a user changes only the roles at or below their own; the admin role
-// keeps its last holder, also when two revocations race; and unknown users
-// and roles are reported. It uses the same harness as AccountRepositoryContract.
+// keeps its last holder, also when two revocations race; unknown users and roles are reported;
+// roles are created, changed, and deleted (except the built-in ones, and those that users hold)
+// with their audit log entries, within the rank and the permissions of the actor. It uses the same harness as AccountRepositoryContract.
 func RoleRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
 	cases := []struct {
@@ -37,6 +38,10 @@ func RoleRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"KeepsTheLastAdmin", roleKeepsLastAdmin},
 		{"KeepsTheLastAdminUnderConcurrency", roleLastAdminConcurrency},
 		{"ReportsUnknownUsersAndRoles", roleReportsUnknown},
+		{"CreatesUpdatesAndDeletesRoles", roleCreatesUpdatesAndDeletes},
+		{"KeepsTheBuiltinRoles", roleKeepsBuiltins},
+		{"RefusesInvalidRoles", roleRefusesInvalid},
+		{"RefusesRoleChangesBeyondTheActor", roleRefusesChangesBeyondActor},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -321,5 +326,230 @@ func roleReportsUnknown(t *testing.T, e *roleEnv) {
 	}
 	if _, err := e.identity.RoleHolders(t.Context(), "owner"); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("RoleHolders(owner) = %v, want ErrNotFound", err)
+	}
+}
+
+func roleCreatesUpdatesAndDeletes(t *testing.T, e *roleEnv) {
+	ctx := t.Context()
+	bob := e.register(t, "bob").User.ID
+	created, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{
+		Key: "helper", Position: 50, Permissions: []identity.Permission{identity.PermViewAudit, identity.PermManageReports}, ByUserID: e.admin,
+	})
+	if err != nil {
+		t.Fatalf("CreateRole = %v", err)
+	}
+	if created.ID == "" || created.Key != "helper" || created.Position != 50 ||
+		!reflect.DeepEqual(created.Permissions, []identity.Permission{identity.PermManageReports, identity.PermViewAudit}) {
+		t.Errorf("CreateRole = %+v, want helper at 50 with manage_reports and view_audit", created)
+	}
+	roles, err := e.identity.Roles(ctx)
+	if err != nil || len(roles) != 3 || roles[2].ID != created.ID || !reflect.DeepEqual(roles[2].Permissions, created.Permissions) {
+		t.Fatalf("Roles = %+v, %v; want admin, moderator, and helper", roles, err)
+	}
+	e.grant(t, bob, "helper", e.admin)
+	if got := e.permissions(t, bob); !reflect.DeepEqual(got, created.Permissions) {
+		t.Errorf("bob's permissions = %v, want %v", got, created.Permissions)
+	}
+
+	e.clock.Advance(time.Second)
+	pos := 150
+	updated, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{
+		Key: "helper", Position: &pos, Permissions: []identity.Permission{identity.PermManageJobs}, SetPermissions: true, ByUserID: e.admin,
+	})
+	if err != nil {
+		t.Fatalf("UpdateRole = %v", err)
+	}
+	if updated.ID != created.ID || updated.Position != 150 || !reflect.DeepEqual(updated.Permissions, []identity.Permission{identity.PermManageJobs}) {
+		t.Errorf("UpdateRole = %+v, want helper at 150 with manage_jobs", updated)
+	}
+	if got := e.permissions(t, bob); !reflect.DeepEqual(got, []identity.Permission{identity.PermManageJobs}) {
+		t.Errorf("bob's permissions after the change = %v, want manage_jobs", got)
+	}
+	// Only the position, and then nothing.
+	pos = 120
+	if r, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{Key: "helper", Position: &pos}); err != nil || r.Position != 120 ||
+		!reflect.DeepEqual(r.Permissions, []identity.Permission{identity.PermManageJobs}) {
+		t.Errorf("UpdateRole(position) = %+v, %v; want 120 with manage_jobs", r, err)
+	}
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{
+		Key: "helper", Position: &pos, Permissions: []identity.Permission{identity.PermManageJobs}, SetPermissions: true,
+	}); err != nil {
+		t.Errorf("UpdateRole(no change) = %v", err)
+	}
+
+	if err := e.identity.DeleteRole(ctx, "helper", e.admin); !errors.Is(err, appidentity.ErrRoleHeld) {
+		t.Errorf("DeleteRole(held) = %v, want ErrRoleHeld", err)
+	}
+	e.revoke(t, bob, "helper", e.admin)
+	e.clock.Advance(time.Second)
+	if err := e.identity.DeleteRole(ctx, "helper", e.admin); err != nil {
+		t.Fatalf("DeleteRole = %v", err)
+	}
+	if _, _, err := e.h.Identity.FindRole(ctx, "helper"); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("FindRole(helper) after the deletion = %v, want ErrNotFound", err)
+	}
+	if err := e.identity.DeleteRole(ctx, "helper", e.admin); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("DeleteRole(deleted) = %v, want ErrNotFound", err)
+	}
+	// The key is free again.
+	if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{Key: "helper", Position: 1}); err != nil {
+		t.Errorf("CreateRole(helper again) = %v", err)
+	}
+
+	var got []moderation.AuditEntry
+	for _, a := range e.audit.all() {
+		if a.Action != moderation.AuditRoleGranted && a.Action != moderation.AuditRoleRevoked {
+			got = append(got, a)
+		}
+	}
+	want := []struct {
+		action moderation.AuditAction
+		actor  string
+	}{
+		{moderation.AuditRoleCreated, e.admin},
+		{moderation.AuditRoleUpdated, e.admin},
+		{moderation.AuditRoleUpdated, ""},
+		{moderation.AuditRoleDeleted, e.admin},
+		{moderation.AuditRoleCreated, ""},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("audit entries = %+v, want %d", got, len(want))
+	}
+	for i, w := range want {
+		g := got[i]
+		if g.Action != w.action || g.ActorUserID != w.actor || g.TargetKind != moderation.AuditTargetRole ||
+			g.TargetLabel != "helper" || g.SourceEventID != "" {
+			t.Errorf("audit entry %d = %+v, want %s by %q on helper", i, g, w.action, w.actor)
+		}
+		if i < 4 && g.TargetID != created.ID {
+			t.Errorf("audit entry %d targets %s, want %s", i, g.TargetID, created.ID)
+		}
+		if err := g.Validate(); err != nil {
+			t.Errorf("audit entry %d: %v", i, err)
+		}
+	}
+}
+
+func roleKeepsBuiltins(t *testing.T, e *roleEnv) {
+	ctx := t.Context()
+	for _, key := range []string{identity.RoleAdmin, identity.RoleModerator} {
+		if err := e.identity.DeleteRole(ctx, key, e.admin); !errors.Is(err, appidentity.ErrBuiltinRole) {
+			t.Errorf("DeleteRole(%s) = %v, want ErrBuiltinRole", key, err)
+		}
+		if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{Key: key, Position: 1}); !errors.Is(err, appidentity.ErrRoleKeyTaken) {
+			t.Errorf("CreateRole(%s) = %v, want ErrRoleKeyTaken", key, err)
+		}
+	}
+	pos := 10
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{Key: identity.RoleAdmin, Position: &pos}); !errors.Is(err, appidentity.ErrBuiltinRole) {
+		t.Errorf("UpdateRole(admin) = %v, want ErrBuiltinRole", err)
+	}
+	// The moderator role takes a new position and permissions, and keeps them when the built-in
+	// roles are ensured again.
+	pos = 200
+	perms := []identity.Permission{identity.PermManageReports, identity.PermManageInvites}
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{
+		Key: identity.RoleModerator, Position: &pos, Permissions: perms, SetPermissions: true, ByUserID: e.admin,
+	}); err != nil {
+		t.Fatalf("UpdateRole(moderator) = %v", err)
+	}
+	if err := e.identity.EnsureBuiltinRoles(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.identity.CreateAdmin(ctx, appidentity.CreateAdminInput{
+		Username: "root2", Email: "root2@example.com", Password: "correct horse battery staple",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	r, got, err := e.h.Identity.FindRole(ctx, identity.RoleModerator)
+	if err != nil || r.Position != 200 || !reflect.DeepEqual(got, []identity.Permission{identity.PermManageInvites, identity.PermManageReports}) {
+		t.Errorf("moderator = %+v %v, %v; want position 200 with manage_invites and manage_reports", r, got, err)
+	}
+	r, got, err = e.h.Identity.FindRole(ctx, identity.RoleAdmin)
+	if err != nil || r.Position != identity.AdminPosition || len(got) != len(identity.AllPermissions()) {
+		t.Errorf("admin = %+v %v, %v; want every permission at %d", r, got, err, identity.AdminPosition)
+	}
+}
+
+func roleRefusesInvalid(t *testing.T, e *roleEnv) {
+	ctx := t.Context()
+	for _, tc := range []struct {
+		in   appidentity.CreateRoleInput
+		want error
+	}{
+		{appidentity.CreateRoleInput{Key: "", Position: 1}, appidentity.ErrInvalidRoleKey},
+		{appidentity.CreateRoleInput{Key: "Helper", Position: 1}, appidentity.ErrInvalidRoleKey},
+		{appidentity.CreateRoleInput{Key: "help me", Position: 1}, appidentity.ErrInvalidRoleKey},
+		{appidentity.CreateRoleInput{Key: "helper", Position: identity.AdminPosition}, appidentity.ErrInvalidRolePosition},
+		{appidentity.CreateRoleInput{Key: "helper", Position: -1}, appidentity.ErrInvalidRolePosition},
+		{appidentity.CreateRoleInput{Key: "helper", Permissions: []identity.Permission{"own_everything"}}, appidentity.ErrInvalidRolePermissions},
+		{appidentity.CreateRoleInput{Key: "helper", Permissions: []identity.Permission{identity.PermViewAudit, identity.PermViewAudit}}, appidentity.ErrInvalidRolePermissions},
+	} {
+		if _, err := e.identity.CreateRole(ctx, tc.in); !errors.Is(err, tc.want) {
+			t.Errorf("CreateRole(%+v) = %v, want %v", tc.in, err, tc.want)
+		}
+	}
+	if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{Key: "helper_2-b", Position: identity.MaxRolePosition}); err != nil {
+		t.Fatalf("CreateRole(helper_2-b) = %v", err)
+	}
+	if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{Key: "helper_2-b", Position: 1}); !errors.Is(err, appidentity.ErrRoleKeyTaken) {
+		t.Errorf("CreateRole(taken) = %v, want ErrRoleKeyTaken", err)
+	}
+	pos := identity.AdminPosition
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{Key: "helper_2-b", Position: &pos}); !errors.Is(err, appidentity.ErrInvalidRolePosition) {
+		t.Errorf("UpdateRole(position 1000) = %v, want ErrInvalidRolePosition", err)
+	}
+	pos = 1
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{Key: "owner", Position: &pos}); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("UpdateRole(unknown) = %v, want ErrNotFound", err)
+	}
+	if err := e.identity.DeleteRole(ctx, "owner", ""); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("DeleteRole(unknown) = %v, want ErrNotFound", err)
+	}
+	if n := len(e.audit.all()); n != 1 {
+		t.Errorf("audit entries = %d, want 1; refused changes record nothing", n)
+	}
+}
+
+func roleRefusesChangesBeyondActor(t *testing.T, e *roleEnv) {
+	ctx := t.Context()
+	bob := e.register(t, "bob").User.ID
+	e.grant(t, bob, identity.RoleModerator, "") // position 100: manage_reports, manage_accounts, view_audit
+	if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{Key: "above", Position: 101}); err != nil {
+		t.Fatal(err)
+	}
+	var missing *appidentity.MissingPermissionsError
+	if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{Key: "boss", Position: 101, ByUserID: bob}); !errors.Is(err, appidentity.ErrRoleOutranksActor) {
+		t.Errorf("CreateRole above the actor = %v, want ErrRoleOutranksActor", err)
+	}
+	_, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{
+		Key: "settings", Position: 10, Permissions: []identity.Permission{identity.PermManageReports, identity.PermManageSettings}, ByUserID: bob,
+	})
+	if !errors.As(err, &missing) || !reflect.DeepEqual(missing.Missing, []identity.Permission{identity.PermManageSettings}) {
+		t.Errorf("CreateRole with a permission the actor lacks = %v, want manage_settings missing", err)
+	}
+	if _, err := e.identity.CreateRole(ctx, appidentity.CreateRoleInput{
+		Key: "triage", Position: 100, Permissions: []identity.Permission{identity.PermManageReports}, ByUserID: bob,
+	}); err != nil {
+		t.Fatalf("CreateRole within the actor = %v", err)
+	}
+	pos := 101
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{Key: "triage", Position: &pos, ByUserID: bob}); !errors.Is(err, appidentity.ErrRoleOutranksActor) {
+		t.Errorf("UpdateRole above the actor = %v, want ErrRoleOutranksActor", err)
+	}
+	pos = 1
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{Key: "above", Position: &pos, ByUserID: bob}); !errors.Is(err, appidentity.ErrRoleOutranksActor) {
+		t.Errorf("UpdateRole of a role above the actor = %v, want ErrRoleOutranksActor", err)
+	}
+	if _, err := e.identity.UpdateRole(ctx, appidentity.UpdateRoleInput{
+		Key: "triage", Permissions: []identity.Permission{identity.PermManageReports, identity.PermManageJobs}, SetPermissions: true, ByUserID: bob,
+	}); !errors.As(err, &missing) || !reflect.DeepEqual(missing.Missing, []identity.Permission{identity.PermManageJobs}) {
+		t.Errorf("UpdateRole adding a permission the actor lacks = %v, want manage_jobs missing", err)
+	}
+	if err := e.identity.DeleteRole(ctx, "above", bob); !errors.Is(err, appidentity.ErrRoleOutranksActor) {
+		t.Errorf("DeleteRole above the actor = %v, want ErrRoleOutranksActor", err)
+	}
+	if err := e.identity.DeleteRole(ctx, "triage", bob); err != nil {
+		t.Errorf("DeleteRole within the actor = %v", err)
 	}
 }

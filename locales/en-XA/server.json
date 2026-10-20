@@ -543,6 +543,14 @@
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ŧǿǿ ḓǿǿ ŧħīş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.import.in_progress": {
+    "defaultMessage": "[Ȧƞǿǿŧħḗḗř īḿƥǿǿřŧ īş īƞ ƥřǿǿɠřḗḗşş. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ ƒīƞīşħḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ řḗḗȧȧḓ ȧȧş ƇŞṼ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "[Ŧħīş ȧȧƥƥ īş ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ŧǿǿ ḓǿǿ ŧħīş.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -649,6 +657,14 @@
   },
   "errors.request_too_large": {
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.invalid": {
+    "defaultMessage": "[Ŧħḗḗ řǿǿŀḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ şȧȧṽḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.invalid_detail": {
+    "defaultMessage": "[{reason,select,builtin{Ŧħḗḗ ȧȧḓḿīƞ řǿǿŀḗḗ ƈȧȧƞƞǿǿŧ ƈħȧȧƞɠḗḗ, ȧȧƞḓ ŧħḗḗ ƀŭŭīŀŧ-īƞ řǿǿŀḗḗş ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ.} held{Řḗḗṽǿǿķḗḗ ŧħḗḗ řǿǿŀḗḗ ƒřǿǿḿ ḗḗṽḗḗřẏǿǿƞḗḗ ẇħǿǿ ħǿǿŀḓş īŧ ƒīřşŧ.} key{Ŧħḗḗ ķḗḗẏ ḿŭŭşŧ ƀḗḗ 1 ŧǿǿ 64 ŀǿǿẇḗḗřƈȧȧşḗḗ ŀḗḗŧŧḗḗřş, ḓīɠīŧş, ŭŭƞḓḗḗřşƈǿǿřḗḗş, ǿǿř ħẏƥħḗḗƞş.} key_taken{Ȧƞǿǿŧħḗḗř řǿǿŀḗḗ ħȧȧş ŧħīş ķḗḗẏ.} missing_permission{Ẏǿǿŭŭ ƈȧȧƞ ɠīṽḗḗ ǿǿř ŧȧȧķḗḗ ǿǿƞŀẏ ŧħḗḗ ƥḗḗřḿīşşīǿǿƞş ẏǿǿŭŭ ħǿǿŀḓ.} other{Ŧħḗḗ ƈħȧȧƞɠḗḗ ƀřḗḗȧȧķş ȧȧ řŭŭŀḗḗ.} permissions{Ƈħǿǿǿǿşḗḗ ḗḗȧȧƈħ ƥḗḗřḿīşşīǿǿƞ ȧȧŧ ḿǿǿşŧ ǿǿƞƈḗḗ.} position{Ŧħḗḗ ƥǿǿşīŧīǿǿƞ ḿŭŭşŧ ƀḗḗ ƒřǿǿḿ 0 ŧǿǿ 999.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.self_relationship": {

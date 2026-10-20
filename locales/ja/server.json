@@ -543,6 +543,14 @@
     "defaultMessage": "この操作は許可されていません。",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
   },
+  "errors.import.in_progress": {
+    "defaultMessage": "別のインポートを処理中です。終わるまでお待ちください。",
+    "description": "API error title for HTTP 409 when the user starts an import of a CSV file of follows, blocks, mutes, or bookmarks while another import is still being carried out."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "ファイルを CSV として読み込めません。",
+    "description": "Detail of an API error (HTTP 422) when the file the user imports is not a valid CSV file, e.g. it has an unterminated quoted field."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "このアプリにはこの操作が許可されていません。",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
@@ -642,6 +650,14 @@
   "errors.request_too_large": {
     "defaultMessage": "リクエストが大きすぎます。",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
+  },
+  "errors.role.invalid": {
+    "defaultMessage": "ロールを保存できません。",
+    "description": "API error title for HTTP 422 when a change to a role (creating, changing, or deleting it) breaks a rule; the detail says which."
+  },
+  "errors.role.invalid_detail": {
+    "defaultMessage": "{reason, select, key {キーは 1〜64 文字の英小文字・数字・アンダースコア・ハイフンにしてください。} key_taken {このキーのロールがすでにあります。} position {位置は 0〜999 にしてください。} permissions {同じ権限は 1 回だけ選んでください。} builtin {admin のロールは変えられず、組み込みのロールは削除できません。} held {先に、このロールを持つ全員から剥奪してください。} missing_permission {付けたり外したりできるのは、自分が持つ権限だけです。} other {変更が規則に反しています。}}",
+    "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, or missing_permission."
   },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",

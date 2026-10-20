@@ -27,6 +27,7 @@ const adminPages: readonly StaffPage[] = [
     description: "client:admin.announcements.summary",
   },
   { href: "/admin/webhooks", permission: "manage_webhooks", label: "client:admin.webhooks.title", description: "client:admin.webhooks.summary" },
+  { href: "/admin/roles", permission: "manage_roles", label: "client:admin.roles.title", description: "client:admin.roles.summary" },
   { href: "/admin/dead-jobs", permission: "manage_jobs", label: "client:admin.dead_jobs.title", description: "client:admin.dead_jobs.summary" },
 ];
 

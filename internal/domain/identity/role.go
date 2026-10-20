@@ -99,7 +99,7 @@ type BuiltinRole struct {
 // reports and accounts and reads the audit log.
 func BuiltinRoles() []BuiltinRole {
 	return []BuiltinRole{
-		{Key: RoleAdmin, Position: 1000, Permissions: AllPermissions()},
+		{Key: RoleAdmin, Position: AdminPosition, Permissions: AllPermissions()},
 		{Key: RoleModerator, Position: 100, Permissions: []Permission{PermManageReports, PermManageAccounts, PermViewAudit}},
 	}
 }

@@ -18,14 +18,17 @@ type retentionRepositories struct {
 	purges   federation.PurgeRepository
 	profiles account.ProfilePruneRepository
 	emojis   content.EmojiPurgeRepository
+	// autoDeletes is the persistence of the users' automatic deletion of their old posts.
+	autoDeletes content.AutoDeleteRepository
 }
 
 // setUpRetention registers the purges of federated data and their schedules (ADR-0034, FR-803):
 // the remote statuses past remote_status_retention (or remote_status_max_retention), the inbox
 // and delivery records, the past profiles of unrelated remote accounts, and the remote custom
 // emoji that nothing refers to any more (ADR-0051 §1). The statuses that the moderation records
-// need stay (ADR-0038). It comes after the content, graph, and notification services, which tell
-// what local data refers to.
+// need stay (ADR-0038). It also sets up the users' automatic deletion of their own old posts
+// (FR-118) and its schedule. It comes after the content, graph, and notification services, which
+// tell what local data refers to.
 func (a *App) setUpRetention(cfg *config.Config, repos retentionRepositories, statuses content.Repository) {
 	content.NewRetention(content.RetentionDeps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Retention: repos.statuses, Notifications: a.Notifications,
@@ -44,6 +47,13 @@ func (a *App) setUpRetention(cfg *config.Config, repos retentionRepositories, st
 		UnitOfWork: a.UnitOfWork, Repository: repos.emojis, Referrers: []content.EmojiReferrer{a.Accounts},
 		MediaReferrers: []content.MediaReferrer{a.Accounts}, Jobs: a.Jobs,
 	}).RegisterJobs(a.Handlers, a.Scheduler)
+	// The local accounts' automatic deletion of their own old posts (FR-118), which deletes them
+	// as their authors would and so sends a Delete of each.
+	a.AutoDelete = content.NewAutoDelete(content.AutoDeleteDeps{
+		UnitOfWork: a.UnitOfWork, Repository: statuses, AutoDeletes: repos.autoDeletes, Accounts: a.Accounts,
+		Jobs: a.Jobs, Clock: a.Clock,
+	})
+	a.AutoDelete.RegisterJobs(a.Handlers, a.Scheduler)
 }
 
 // remoteRelations tells the account module whether something local relates to a remote account:

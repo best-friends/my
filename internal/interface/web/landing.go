@@ -54,5 +54,10 @@ func (h *Handler) renderInstancePage(ctx context.Context, path string) (document
 		Type: ogTypeWebsite, SiteName: name, Title: title, URL: "https://" + h.o.Host + path,
 		Description: summary, Locale: ogLocale(lang), Image: img, Card: card(img),
 	}
-	return h.renderPreview(ctx, lang, meta, []string{"instance", path, title, summary, imageVersion(img)})
+	// The pages about the instance state the instance's own policy (ADR-0057).
+	settings, err := h.settings(ctx)
+	if err != nil {
+		return document{}, err
+	}
+	return h.renderPreview(ctx, lang, meta, settings.CrawlerPolicy(), []string{"instance", path, title, summary, imageVersion(img)})
 }

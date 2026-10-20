@@ -543,6 +543,14 @@
     "defaultMessage": "You are not allowed to do this.",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
   },
+  "errors.import.in_progress": {
+    "defaultMessage": "Another import is in progress. Wait until it finishes.",
+    "description": "API error title for HTTP 409 when the user starts an import of a CSV file of follows, blocks, mutes, or bookmarks while another import is still being carried out."
+  },
+  "errors.import.invalid_csv": {
+    "defaultMessage": "The file cannot be read as CSV.",
+    "description": "Detail of an API error (HTTP 422) when the file the user imports is not a valid CSV file, e.g. it has an unterminated quoted field."
+  },
   "errors.insufficient_scope": {
     "defaultMessage": "This app is not allowed to do this.",
     "description": "API error title for HTTP 403 when the access token lacks a permission (OAuth scope) that the operation needs."
@@ -642,6 +650,14 @@
   "errors.request_too_large": {
     "defaultMessage": "The request is too large.",
     "description": "API error title for HTTP 413 when a request body is larger than the server accepts."
+  },
+  "errors.role.invalid": {
+    "defaultMessage": "The role cannot be saved.",
+    "description": "API error title for HTTP 422 when a change to a role (creating, changing, or deleting it) breaks a rule; the detail says which."
+  },
+  "errors.role.invalid_detail": {
+    "defaultMessage": "{reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} other {The change breaks a rule.}}",
+    "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, or missing_permission."
   },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",
