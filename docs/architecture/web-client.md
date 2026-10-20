@@ -62,6 +62,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | `my:display:locale` | localStorage | 最後に表示したロケール（§9） | いいえ |
 | `my:display:autoplay` | localStorage | アニメーションの自動再生（§13） | いいえ |
 | `my:instance:timelines` | localStorage | インスタンスが提供する公開タイムライン（§9） | いいえ |
+| `my:emoji:recent` | localStorage | 最近選んだカスタム絵文字の shortcode（§12、ADR-0051 §4） | いいえ |
 | `my:user:compose:<アカウント ID>` | sessionStorage | 投稿の下書きと送信中の投稿（§12） | はい |
 | `my:oauth-pending` | sessionStorage | 進行中のサインインの verifier・`state`・戻り先（§10） | いいえ |
 | `my:preload-error-reloaded-at` | sessionStorage | チャンクの読み込みに失敗して再読み込みした時刻（§11） | いいえ |
