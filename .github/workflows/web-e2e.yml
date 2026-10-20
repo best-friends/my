@@ -60,7 +60,7 @@ jobs:
           echo "total=$total" >> "$GITHUB_OUTPUT"
           echo "list=$(jq -nc --argjson n "$total" '[range(1; $n + 1)]')" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions (ADR-0025).
@@ -113,7 +113,7 @@ jobs:
       # The image lacks the unzip that setup-bun extracts Bun with.
       - name: Install unzip
         run: apt-get update && apt-get install -y --no-install-recommends unzip
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
@@ -155,7 +155,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: .tool-versions
       - uses: actions/setup-node@v6
