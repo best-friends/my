@@ -174,7 +174,7 @@ describe("push notifications", () => {
       expect(toggle).toBeChecked();
     });
     const kinds = within(section).getByRole("group", { name: "Notify me of" });
-    expect(within(kinds).getAllByRole("checkbox")).toHaveLength(7);
+    expect(within(kinds).getAllByRole("checkbox")).toHaveLength(8);
     expect(within(kinds).getByRole("checkbox", { name: "Boosts" })).toBeChecked();
   });
 
