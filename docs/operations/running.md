@@ -51,9 +51,16 @@ Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../
 | `my.stream.connections` | UpDownCounter | `my.stream.kind`（`user`） |
 | `my.accounts.registered` | Counter | なし |
 | `my.statuses.created` | Counter | `my.visibility` |
+| `my.queue.ready` | Gauge | `my.job.type`（DB キューの実行可能なジョブの数） |
+| `my.queue.oldest_ready_age` | Gauge・秒 | なし（DB キューの最も古い実行可能なジョブの待ち） |
+| `my.queue.dead` | Gauge | なし |
+| `my.instance.users`・`my.instance.statuses` | Gauge | なし（NodeInfo と同じローカルの利用者数・投稿数） |
+| `my.media.stored_bytes` | Gauge・バイト | `my.media.origin`（`local` / `remote_cache`） |
+| `my.metrics.snapshot.age` | Gauge・秒 | `my.metrics.snapshot.part`（`queue` / `totals`） |
 
 ヘルスチェック（`/healthz`・`/readyz`）は計測しない。ラベルに連合先のドメイン・アカウント・URL・クライアント IP は入らない。
-インスタンス全体の値（キューの滞留・利用者数など）とプロセス・ランタイムの指標は、この一覧にない。
+`my.queue.*`・`my.instance.*`・`my.media.stored_bytes` はインスタンス全体の値で、KV に置く 1 つのスナップショットから全プロセスが同じ値を出す（ADR-0055 §4）。
+プロセス・ランタイムの指標は、この一覧にない。
 
 ## 停止する
 
