@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, BoostIcon, ContentWarning, ExternalLinkIcon, Link, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
+import { Avatar, BoostIcon, ContentWarning, EmojiText, ExternalLinkIcon, Link, MediaGrid, PostCard, PostCardAuthor, PostContent } from "@my/ui";
 import type { Ref } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
@@ -57,7 +57,15 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         revealLabel={t("client:timeline.media.reveal")}
       />
     ) : undefined;
-  const body = <PostContent html={view.html} lang={view.lang} onLinkClick={view.onLinkClick} {...(variant === "focused" && { className: "text-lg" })} />;
+  const body = (
+    <PostContent
+      html={view.html}
+      lang={view.lang}
+      emojis={view.emojis}
+      onLinkClick={view.onLinkClick}
+      {...(variant === "focused" && { className: "text-lg" })}
+    />
+  );
   const time =
     variant === "focused" ? (
       // The relative time as everywhere else (G8); the full date is in the details.
@@ -98,7 +106,9 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
                 {
                   name: (
                     <Link key="name" href={view.boostedBy.href} className={nameLink}>
-                      <bdi>{view.boostedBy.name}</bdi>
+                      <bdi>
+                        <EmojiText text={view.boostedBy.name} emojis={view.boostedBy.emojis} />
+                      </bdi>
                     </Link>
                   ),
                 },
@@ -120,7 +130,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
       author={
         // A block, so that the name and the handle inside are cut to the room of the header's row.
         <Link href={view.author.href} className={`${nameLink} block min-w-0`}>
-          <PostCardAuthor name={view.author.name} handle={view.author.handle} />
+          <PostCardAuthor name={<EmojiText text={view.author.name} emojis={view.author.emojis} />} handle={view.author.handle} />
         </Link>
       }
       time={time}
@@ -128,7 +138,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         view.contentWarning === null ? (
           body
         ) : (
-          <ContentWarning summary={view.contentWarning} summaryLang={view.lang} toggleLabel={t("client:timeline.content_warning.toggle")}>
+          <ContentWarning summary={<EmojiText text={view.contentWarning} emojis={view.emojis} />} summaryLang={view.lang} toggleLabel={t("client:timeline.content_warning.toggle")}>
             {body}
             {media}
           </ContentWarning>
