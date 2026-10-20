@@ -8083,6 +8083,10 @@
     "defaultMessage": "‮⊥ɹʎ ɐƃɐıu, oɹ ɔoɯǝ qɐɔʞ ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.link.new_tab": {
+    "defaultMessage": "‮(odǝus ıu ɐ uǝʍ ʇɐq)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.loading": {
     "defaultMessage": "‮⅂oɐpıuƃ‬",
     "description": "Generated from en by tools/i18n; do not edit."

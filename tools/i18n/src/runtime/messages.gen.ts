@@ -4044,6 +4044,8 @@ export interface MessageArgs {
   "client:shell.error.unexpected.heading": {};
   /** Try again, or come back later. */
   "client:shell.error.unexpected.reason": {};
+  /** (opens in a new tab) */
+  "client:shell.link.new_tab": {};
   /** Loading */
   "client:shell.loading": {};
   /** Close */
@@ -4444,6 +4446,8 @@ export interface MessageArgs {
   "server:auth.human_check.terms_link": { owner: string };
   /** The check that you are not a bot is not available right now. Try again later. */
   "server:auth.human_check.unavailable": {};
+  /** (opens in a new tab) */
+  "server:auth.link.new_tab": {};
   /** Email address */
   "server:auth.sign_in.email_label": {};
   /** The email address or password is incorrect. */

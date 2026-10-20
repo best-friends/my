@@ -53,7 +53,7 @@ function Gallery() {
         <h2 className="text-lg font-semibold">Text</h2>
         <p>
           Read the{" "}
-          <Link href="https://example.com/rules" variant="inline">
+          <Link href="#rules" variant="inline">
             server rules
           </Link>{" "}
           before you post.

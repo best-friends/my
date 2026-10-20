@@ -10,6 +10,7 @@ import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/m
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import { instanceTextFixture } from "./test/handlers";
+import { newTabName } from "../../test/links";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_settings"]));
@@ -53,7 +54,7 @@ describe("the terms and policies screen", () => {
   test("shows each document in the display language with the languages it is written in, and its page", async () => {
     textsServer([terms, termsJa]);
     server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, terms_url: "http://localhost:3000/auth/terms" })));
-    const { user, leftTo } = await renderApp({ path: "/admin/documents" });
+    await renderApp({ path: "/admin/documents" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Terms and policies" })).toBeInTheDocument();
     const termsSection = within(section("Terms of service"));
@@ -66,9 +67,10 @@ describe("the terms and policies screen", () => {
     expect(privacy.getByText("Not written yet")).toBeInTheDocument();
     expect(privacy.queryByRole("link")).not.toBeInTheDocument();
 
-    // The public page is the server's own: it loads in place of the app.
-    await user.click(await termsSection.findByRole("link", { name: "Open the terms of service page" }));
-    expect(leftTo.map(String)).toEqual(["http://localhost:3000/auth/terms"]);
+    // The public page is the server's own, outside the app: it opens in a new tab.
+    const page = await termsSection.findByRole("link", { name: newTabName("Open the terms of service page") });
+    expect(page).toHaveAttribute("href", "http://localhost:3000/auth/terms");
+    expect(page).toHaveAttribute("target", "_blank");
   });
 
   test("saves a text and says that the audit log records it", async () => {

@@ -10,6 +10,7 @@ import { remoteStatusFixture, statusFixture, statusPage, timelineStatusFixture, 
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
 import type { Status } from "./api/status";
+import { newTabName } from "../../test/links";
 
 const postId = "0192f0c4-7a8e-7000-8000-0000000000c1";
 const ancestor: Status = { ...statusFixture("0192f0c4-7a8e-7000-8000-0000000000c0"), content: "<p>The question</p>" };
@@ -134,24 +135,30 @@ describe("a post's page", () => {
     expect(heading).toHaveFocus();
   });
 
-  // The server links them under https://{host}/ (ADR-0018) while the app runs at http://localhost:3000,
-  // as on the local plain-HTTP setup; the link to another server is left to the browser.
+  // The server links them under https://{host}/ (ADR-0018), each with target="_blank", while the app runs at
+  // http://localhost:3000, as on the local plain-HTTP setup; the link to another server opens in a new tab.
+  const rel = 'rel="nofollow noopener noreferrer" target="_blank"';
   test.each([
     ["#cats", "/tags/cats"],
     ["@alice", "/@alice"],
-    ["@carol", "/local"],
+    [newTabName("@carol"), "/local"],
   ])("opens the link %s of its body at %s, whatever the link's scheme", async (name, path) => {
     const linked: Status = {
       ...post,
-      content:
-        '<p><a href="https://localhost:3000/@alice">@alice</a> <a href="https://localhost:3000/tags/cats">#cats</a> <a href="https://remote.example/@carol">@carol</a></p>',
+      content: `<p><a href="https://localhost:3000/@alice" ${rel}>@alice</a> <a href="https://localhost:3000/tags/cats" ${rel}>#cats</a> <a href="https://remote.example/@carol" ${rel}>@carol</a></p>`,
     };
     serveThread(linked);
     server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([linked]))));
     const { user, router } = await renderApp({ path: "/local" });
 
     const feed = await screen.findByRole("feed", { name: "Local timeline" });
-    await user.click(within(feed).getByRole("link", { name }));
+    const link = within(feed).getByRole("link", { name });
+    if (typeof name === "string") {
+      expect(link).not.toHaveAttribute("target");
+      await user.click(link);
+    } else {
+      expect(link).toHaveAttribute("target", "_blank");
+    }
     await waitFor(() => {
       expect(router.state.location.pathname).toBe(path);
     });
@@ -462,7 +469,7 @@ describe("a post of another server", () => {
     expect(within(article).getByRole("link", { name: "Carol @carol@remote.example" })).toBeInTheDocument();
     expect(within(article).getByText("@carol@remote.example")).toHaveAttribute("dir", "ltr");
     // The link shows the host and is named by where it leads; the actions stay next to it.
-    const original = within(article).getByRole("link", { name: "Open the original post on remote.example" });
+    const original = within(article).getByRole("link", { name: "Open the original post on remote.example (opens in a new tab)" });
     expect(original).toHaveAttribute("href", "https://remote.example/@carol/1");
     expect(original).toHaveTextContent("remote.example");
     expect(await within(article).findByRole("button", { name: "Reply" })).toBeInTheDocument();
@@ -523,6 +530,6 @@ describe("a post of another server", () => {
     await renderApp({ path: "/local" });
 
     const article = await screen.findByRole("article", { name: "Carol @carol@remote.example 3 hr. ago" });
-    expect(within(article).getByRole("link", { name: "Open the original post on remote.example" })).toHaveAttribute("href", remote.uri);
+    expect(within(article).getByRole("link", { name: "Open the original post on remote.example (opens in a new tab)" })).toHaveAttribute("href", remote.uri);
   });
 });

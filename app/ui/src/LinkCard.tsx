@@ -4,7 +4,7 @@ import { ToggleButton } from "react-aria-components";
 import { tv } from "tailwind-variants";
 import { Blurhash } from "./Blurhash";
 import { HideMediaIcon } from "./Icons";
-import { Link } from "./Link";
+import { ExternalLink } from "./ExternalLink";
 import { VisuallyHidden } from "./VisuallyHidden";
 
 const linkCard = tv({
@@ -74,9 +74,9 @@ export type LinkCardProps = Omit<ComponentPropsWithRef<"div">, "children" | "tit
 
 /**
  * The card of a link in a post: the image, site name, title, description and byline of the linked page. The whole
- * card is one link to the page (the title's link stretches over the card), which opens in a new tab with
- * `rel="noopener noreferrer nofollow"`. The page's texts are user content, shown with `dir="auto"` and the page's
- * language (web-client.md Y10). A sensitive image is concealed behind a toggle button above the link's area, as in
+ * card is one link to the page (the title's link stretches over the card), an ExternalLink that opens in a new tab
+ * with `rel="noopener noreferrer nofollow"`. The page's texts are user content, shown with `dir="auto"` and the
+ * page's language (web-client.md Y10). A sensitive image is concealed behind a toggle button above the link's area, as in
  * MediaGrid: while concealed, the image is not loaded and its blur stands in for it.
  */
 export function LinkCard({
@@ -135,11 +135,11 @@ export function LinkCard({
         <span dir="auto" lang={lang} className={slots.site()}>
           {siteName}
         </span>
-        <Link href={href} target="_blank" rel="noopener noreferrer nofollow" className={slots.link()}>
+        <ExternalLink href={href} rel="nofollow" icon={false} className={slots.link()}>
           <span dir="auto" lang={lang}>
             {title}
           </span>
-        </Link>
+        </ExternalLink>
         {description !== undefined && description !== "" && (
           <p dir="auto" lang={lang} className={slots.description()}>
             {description}

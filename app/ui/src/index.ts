@@ -17,6 +17,7 @@ export { DurationSelect, type DurationSelectProps } from "./DurationSelect";
 export type { FieldErrorMessage, FieldTextProps } from "./Field";
 // The hidden file input behind a Button child (React Aria FileTrigger): it has no look of its own.
 export { FileTrigger, type FileTriggerProps } from "react-aria-components";
+export { ExternalLink, ExternalLinkContext, type ExternalLinkProps, type ExternalLinkSettings } from "./ExternalLink";
 export { Link, type LinkProps } from "./Link";
 export { Radio, RadioGroup, type RadioGroupProps, type RadioProps } from "./RadioGroup";
 export { ReasonField, type ReasonFieldProps } from "./ReasonField";

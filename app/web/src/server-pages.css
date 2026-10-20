@@ -133,6 +133,11 @@
     @apply flex flex-col gap-2 text-sm;
   }
 
+  /* Text that only assistive technology reads, such as "(opens in a new tab)" after a link (web-client.md Y12). */
+  .visually-hidden {
+    @apply sr-only;
+  }
+
   /* Links that stand alone get the larger target on touch screens (web-client.md D4). */
   .links a {
     @apply inline-flex items-center pointer-coarse:min-h-11;

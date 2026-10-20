@@ -9,6 +9,7 @@ import { findLoadingRegion } from "../../test/loading";
 import { apiBase, problem, resumableSession } from "../../test/msw/http";
 import { imageFixture, otherAccountFixture, relationshipFixture, statusPage, timelineStatusFixture, viewerFixture } from "../../test/fixtures";
 import { server } from "../../test/msw/server";
+import { newTabName } from "../../test/links";
 import { renderApp } from "../../test/render";
 import type { Relationship } from "./api/accounts";
 
@@ -373,7 +374,7 @@ describe("a profile of another server", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Carol" })).toBeInTheDocument();
     expect(within(main()).getAllByText("@carol@remote.example")[0]).toHaveAttribute("dir", "ltr");
     // The host inside the sentence is isolated, as names are (web-client.md Y10); the link leaves the app.
-    expect(within(main()).getByRole("link", { name: "See on ⁨remote.example⁩" })).toHaveAttribute(
+    expect(within(main()).getByRole("link", { name: newTabName("See on ⁨remote.example⁩") })).toHaveAttribute(
       "href",
       "https://remote.example/@carol",
     );
@@ -381,7 +382,7 @@ describe("a profile of another server", () => {
     const feed = await screen.findByRole("feed", { name: "Posts" });
     const article = within(feed).getByRole("article", { name: /^Carol @carol@remote\.example / });
     // Signed out: no actions, but the link to the post on its server.
-    expect(within(article).getByRole("link", { name: "Open the original post on remote.example" })).toHaveAttribute(
+    expect(within(article).getByRole("link", { name: "Open the original post on remote.example (opens in a new tab)" })).toHaveAttribute(
       "href",
       "https://remote.example/@carol/1",
     );

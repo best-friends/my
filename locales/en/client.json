@@ -7551,6 +7551,10 @@
     "defaultMessage": "Try again, or come back later.",
     "description": "Text under the heading of a page's error when the page itself broke."
   },
+  "shell.link.new_tab": {
+    "defaultMessage": "(opens in a new tab)",
+    "description": "Text that only assistive technology reads, after the name of every link that opens in a new browser tab (a link that leaves the app: another site, the source code, the server's terms). Keep the brackets so that it reads apart from the link's name."
+  },
   "shell.loading": {
     "defaultMessage": "Loading",
     "description": "Accessible name of the progress indicator shown while a page loads."

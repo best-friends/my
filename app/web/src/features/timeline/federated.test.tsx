@@ -43,7 +43,7 @@ describe("the federated timeline", () => {
     expect(remote).toHaveAttribute("aria-posinset", "2");
     expect(remote).toHaveAttribute("aria-setsize", "2");
     // The post of another server links to its page there.
-    expect(within(remote).getByRole("link", { name: "Open the original post on remote.example" })).toHaveAttribute("href", "https://remote.example/@carol/1");
+    expect(within(remote).getByRole("link", { name: "Open the original post on remote.example (opens in a new tab)" })).toHaveAttribute("href", "https://remote.example/@carol/1");
   });
 
   test("shows the skeleton while the first page loads after a navigation", async () => {
