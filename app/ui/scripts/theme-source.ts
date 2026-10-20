@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { type LinearRgba, parseColor } from "../src/color";
 
-export const themePath = resolve(import.meta.dir, "../src/theme.css");
+const themePath = resolve(import.meta.dir, "../src/theme.css");
 
 export type Scheme = "light" | "dark";
 export const schemes: readonly Scheme[] = ["light", "dark"];
@@ -18,7 +18,7 @@ function withoutComments(css: string): string {
 }
 
 /** Splits a function's arguments at top-level commas. */
-export function splitArguments(body: string): string[] {
+function splitArguments(body: string): string[] {
   const parts: string[] = [];
   let depth = 0;
   let start = 0;

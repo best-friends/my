@@ -130,7 +130,7 @@ function renderTs(tokens: Token[]): string {
 }
 
 /** The generated files by path, with their content. */
-export function generate(): Map<string, string> {
+function generate(): Map<string, string> {
   const tokens = collectTokens();
   return new Map([
     [goPath, renderGo(tokens)],

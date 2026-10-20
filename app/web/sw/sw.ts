@@ -9,6 +9,8 @@
 //   page; when it fails or takes longer than 3 seconds, the precached shell starts the app offline. No
 //   navigation response is stored, so a page's own shell is never replayed for another URL;
 // - public images under /media/ are cache first, at most 300 entries for 30 days;
+// - the instance theme's stylesheets under /theme/ (ADR-0059), named by their revision, are cache first, at
+//   most 5 entries;
 // - the client API (/api), the server-rendered pages (/auth, /oauth) and every other request are not
 //   answered by the worker at all, so nothing they return is cached.
 import { clientsClaim, setCacheNameDetails } from "workbox-core";
@@ -30,6 +32,7 @@ import {
   isMessage,
   mediaCacheName,
   shellPath,
+  themeCacheName,
   skipWaitingMessage,
 } from "../src/lib/sw-protocol.ts";
 import { classify, type Handling } from "./routing.ts";
@@ -103,12 +106,21 @@ registerRoute(
   }),
 );
 
+const themeExpiration = new ExpirationPlugin({ maxEntries: 5, purgeOnQuotaError: true });
+registerRoute(
+  (options) => handlingOf(options) === "theme",
+  new CacheFirst({
+    cacheName: themeCacheName,
+    plugins: [new CacheableResponsePlugin({ statuses: [200] }), themeExpiration],
+  }),
+);
+
 // The precached build files, answered from the cache.
 addRoute();
 
-/** Deletes every cache, the precache included, and the expiration metadata of the media cache. */
+/** Deletes every cache, the precache included, and the expiration metadata of the runtime caches. */
 async function clearCaches(): Promise<void> {
-  await mediaExpiration.deleteCacheAndMetadata();
+  await Promise.all([mediaExpiration.deleteCacheAndMetadata(), themeExpiration.deleteCacheAndMetadata()]);
   const names = await caches.keys();
   await Promise.all(names.map((name) => caches.delete(name)));
 }

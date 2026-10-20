@@ -64,3 +64,6 @@ export { DocumentSettings } from "./components/DocumentSettings";
 // The server's settings: its name in each language, which people see in place of its domain, for manage_settings.
 export { instanceQueryOptions as ownInstanceQueryOptions } from "./api/documents";
 export { ServerSettings } from "./components/ServerSettings";
+// The server's theme: overrides of the design tokens and a custom CSS (ADR-0059), for manage_settings.
+export { themeQueryOptions } from "./api/theme";
+export { ThemeSettings } from "./components/ThemeSettings";

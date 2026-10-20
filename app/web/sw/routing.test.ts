@@ -45,6 +45,13 @@ describe("classify", () => {
     expect(classify(facts("/mediae/a.png", { destination: "image" }), origin)).toBe("network");
   });
 
+  it("caches the instance theme's stylesheets, whose URL names their revision", () => {
+    expect(classify(facts("/theme/0199f0e0.css", { destination: "style", mode: "no-cors" }), origin)).toBe("theme");
+    expect(classify(facts("/theme/0199f0e0.css", { destination: "style", authorized: true }), origin)).toBe("network");
+    expect(classify(facts("/theme.js", { destination: "script" }), origin)).toBe("network");
+    expect(classify(facts("/theme/0199f0e0.css", { mode: "navigate" }), origin)).toBe("network");
+  });
+
   it("leaves other origins and other methods to the browser", () => {
     expect(classify({ ...navigate("/"), url: "https://cdn.example/" }, origin)).toBe("network");
     expect(classify(facts("/media/a.png", { destination: "image", url: "https://cdn.example/media/a.png" }), origin)).toBe(
