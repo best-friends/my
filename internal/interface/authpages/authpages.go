@@ -497,15 +497,63 @@ func cookieValue(r *http.Request, name string) string {
 	return c.Value
 }
 
-// safeReturnTo returns s when it is a path on this site to go back to after signing in, and ""
-// otherwise, so that the form cannot be turned into an open redirect.
+// returnToBase stands for this site when safeReturnTo resolves a return_to value. Only the
+// path and the query of the result are kept, so the name does not matter; a .invalid name
+// (RFC 6761) can never be another site's host.
+var returnToBase = &url.URL{Scheme: "https", Host: "return-to.invalid", Path: "/"}
+
+// safeReturnTo returns the path and query on this site that s points to, for the sign-in form
+// to go back to, and "" when s is not such a reference, so that the form cannot be turned into
+// an open redirect (ADR-0019; OWASP Unvalidated Redirects and Forwards Cheat Sheet). Instead of
+// matching prefixes of s, it parses s, resolves it against this site's origin, checks that the
+// origin stays the same, and rebuilds the result from the normalized path and the query alone,
+// dropping the fragment. It refuses what a browser could read differently from net/url:
+// control characters and backslashes (which WHATWG URL parsers drop or read as "/"), anything
+// but an absolute path, an empty path segment ("//", which a dot segment or a decoded "%2F"
+// could turn into "//host"), and a percent-encoded dot segment.
 func safeReturnTo(s string) string {
-	if s == "" || len(s) > maxReturnTo || s[0] != '/' || strings.HasPrefix(s, "//") || strings.ContainsAny(s, "\\\x00\r\n\t") {
+	if s == "" || len(s) > maxReturnTo || s[0] != '/' || strings.ContainsFunc(s, unsafeReturnToRune) {
 		return ""
 	}
-	u, err := url.Parse(s)
-	if err != nil || u.Scheme != "" || u.Host != "" || u.User != nil {
+	ref, err := url.Parse(s)
+	if err != nil || ref.Scheme != "" || ref.Opaque != "" || ref.User != nil || ref.Host != "" || ref.OmitHost ||
+		strings.Contains(ref.Path, "//") {
 		return ""
 	}
-	return s
+	u := returnToBase.ResolveReference(ref)
+	if u.Scheme != returnToBase.Scheme || u.Host != returnToBase.Host || u.User != nil {
+		return ""
+	}
+	path := u.EscapedPath()
+	if !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") || strings.Contains(u.Path, "//") ||
+		strings.ContainsFunc(u.Path, unsafeReturnToRune) || hasDotSegment(u.Path) {
+		return ""
+	}
+	out := path
+	if u.RawQuery != "" {
+		out += "?" + u.RawQuery
+	}
+	// The rebuilt value must read back as a path on this site.
+	if back, err := url.Parse(out); err != nil || back.Scheme != "" || back.Host != "" || back.User != nil {
+		return ""
+	}
+	return out
+}
+
+// hasDotSegment reports whether the decoded path p still has a "." or ".." segment. Once
+// ResolveReference has removed the literal ones, such a segment was percent-encoded
+// ("%2E%2E"), which browsers resolve but net/url does not.
+func hasDotSegment(p string) bool {
+	for seg := range strings.SplitSeq(p, "/") {
+		if seg == "." || seg == ".." {
+			return true
+		}
+	}
+	return false
+}
+
+// unsafeReturnToRune reports a character that a return_to value must not contain, raw or
+// percent-decoded: a C0 or C1 control character, DEL, or a backslash.
+func unsafeReturnToRune(r rune) bool {
+	return r < 0x20 || (r >= 0x7f && r <= 0x9f) || r == '\\'
 }
