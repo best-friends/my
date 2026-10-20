@@ -787,6 +787,62 @@
     "defaultMessage": "Confirm your email address for {instance}",
     "description": "Subject of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none."
   },
+  "push.admin_appeal": {
+    "defaultMessage": "A new appeal awaits the moderators of {instance}",
+    "description": "Web Push notification to a moderator: a user appealed a moderation action. It never names the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.admin_report": {
+    "defaultMessage": "A new report awaits the moderators of {instance}",
+    "description": "Web Push notification to a moderator: someone reported an account that had no open report. It never names the accounts. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.admin_sign_up": {
+    "defaultMessage": "A new sign-up awaits approval on {instance}",
+    "description": "Web Push notification to a moderator: a new user signed up and waits for approval. It never names the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.appeal_decided": {
+    "defaultMessage": "The moderators of {instance} decided your appeal",
+    "description": "Web Push notification: the moderators upheld or overturned the user's appeal. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.boost": {
+    "defaultMessage": "{name} boosted your post",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that boosted the user's post."
+  },
+  "push.favourite": {
+    "defaultMessage": "{name} favourited your post",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that favourited the user's post."
+  },
+  "push.follow": {
+    "defaultMessage": "{name} followed you",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that followed the user."
+  },
+  "push.follow_accepted": {
+    "defaultMessage": "{name} accepted your follow request",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that accepted the user's follow request."
+  },
+  "push.follow_request": {
+    "defaultMessage": "{name} requested to follow you",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that asked to follow the user."
+  },
+  "push.mention": {
+    "defaultMessage": "{name} mentioned you",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that wrote a post that mentions the user."
+  },
+  "push.moderation_notice": {
+    "defaultMessage": "The moderators of {instance} sent you a notice",
+    "description": "Web Push notification: a notice to the user from the moderators. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.other": {
+    "defaultMessage": "You have a new notification on {instance}",
+    "description": "Web Push notification of a kind without its own sentence. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.relationships_severed": {
+    "defaultMessage": "A suspension by the moderators of {instance} ended some of your follows",
+    "description": "Web Push notification: the moderators suspended a server or an account, which ended follows between it and the user. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "push.report_resolved": {
+    "defaultMessage": "A report you filed on {instance} has been resolved",
+    "description": "Web Push notification: the moderators resolved a report that the user filed. It never says how. {instance} is the server's display name, or its domain name when it has none."
+  },
   "moderation.action.category": {
     "defaultMessage": "{category, select, spam {Spam} legal {Legal reasons} violation {Violation of the instance's rules} other {Other}}",
     "description": "Label of the reason category that a moderator chose for an action on the user's own account. {category} is the category."

@@ -85,6 +85,8 @@ type Config struct {
 	Captcha          string
 	CaptchaSiteKey   string
 	CaptchaSecretKey string
+	// VAPIDPrivateKey is the server's Web Push key (FR-206) in base64url; "" turns Web Push off.
+	VAPIDPrivateKey string
 	// Profile is "production" or "development".
 	Profile string
 	// HTTPAllowPrivateNetworks lets the HTTPClient reach non-public destinations (development only).
@@ -156,6 +158,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("captcha", c.Captcha),
 		slog.String("captcha_site_key", c.CaptchaSiteKey),
 		slog.String("captcha_secret_key", redact(c.CaptchaSecretKey != "")),
+		slog.String("vapid_private_key", redact(c.VAPIDPrivateKey != "")),
 		slog.String("profile", c.Profile),
 		slog.Bool("http_allow_private_networks", c.HTTPAllowPrivateNetworks),
 		slog.Duration("remote_status_retention", c.RemoteStatusRetention),

@@ -887,7 +887,7 @@ flowchart LR
 | `notification_read_markers` | 現在値 | `account_id`（PK）, `last_read_id` | 未読数は `id > last_read_id` で数える |
 | `notification_exclusions` | 投影 | `viewer_account_id`, `target_account_id`, `reason`（`enum(block, blocked_by, mute)`）, `expires_at`（NULL 可） | PK `(viewer_account_id, target_account_id, reason)`。`graph` のブロック・ミュートのイベントから作る |
 | `notification_deleted_statuses` | 投影 | `status_id`（PK） | `content.status_deleted` から作る。その投稿についての通知があるときだけ（削除された投稿に後から通知は付かない） |
-| `push_subscriptions` | 現在値 | `id`, `user_id`, `oauth_token_id`, `endpoint`, `key_p256dh`, `key_auth`, `created_at`, `updated_at` | 一意 `(endpoint)`（FR-206） |
+| `push_subscriptions` | 現在値 | `id`, `account_id`, `oauth_token_family_id`, `endpoint`, `key_p256dh`, `key_auth`, `created_at`, `updated_at` | 一意 `(endpoint)`, 一意 `(oauth_token_family_id)`。インデックス `(account_id)`（FR-206） |
 | `push_subscription_alerts` | 現在値 | `subscription_id`, `notification_type` | PK `(subscription_id, notification_type)` |
 
 - 通知は `notification` の同期 projector が、`graph` と `content` のドメインイベントから同じトランザクションで作ります（§2.1）。
@@ -945,6 +945,13 @@ flowchart LR
   - `admin_sign_up` は `identity.registration_pending`（登録が `pending` で始まった）から作ります。
   - `user_preferences.email_moderator_notifications` が真の受け取る人には、新しく作った通知ごとに、同じトランザクションの outbox でメールのジョブ（`notification.moderator_email`、冪等キーは通知の ID）を積みます。
     ジョブは送る時点で権限と設定を確かめ、通知の種類と通知の画面へのリンクだけを書いたメールを `Mailer` で送ります。`mail = none` ではジョブを積みません。
+- Web Push の購読（FR-206）は、OAuth のグラント（トークン系列。リフレッシュで変わらない）ごとに 1 つです。ブラウザの `PushSubscription` のエンドポイントと鍵（`key_p256dh`・`key_auth` は RFC 8291 の鍵をパディングなしの base64url で）と、送る通知の種類（`push_subscription_alerts`）を持ちます。
+  - 登録は、同じグラントの購読と同じエンドポイントの購読を置き換えます（どちらも一意）。同じグラントが同じエンドポイントで種類だけを変えたときは、ID と作成時刻を保ちます。
+    行は通知を受け取るアカウント（`account_id`）に結び付けるので、通知の作成のトランザクションの中で、受け取る人のアカウントと種類から購読を引けます。
+  - 通知を作った projector は、同じトランザクションの outbox で、受け取る人の購読のうちその種類を受け取るものごとに送信のジョブ（`notification.push`、冪等キーは通知と購読の ID）を積みます。
+    ジョブは購読が残っていて、その種類を受け取り、グラントが有効（失効していないトークンが系列にあり、リフレッシュトークンの期限内）なときだけ送ります。グラントが終わっていれば（ログアウト・処分・パスワードの変更）購読を消します。
+    プッシュサービスが 404 / 410 を返した購読も消します。再送された同じ通知は、同じ `Topic`（通知の ID）でプッシュサービスの未配達の通知を置き換え、Service Worker が同じ `tag` で表示を置き換えます。
+  - アカウントの消去は、そのアカウントの購読と種類も消します（§8）。
 
 ### 4.8 federation
 
@@ -1226,7 +1233,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | 操作 | 記録するイベント | 消去ジョブが物理削除するもの | 残すもの |
 | --- | --- | --- | --- |
 | 投稿の削除（FR-108） | `status_deletions` | `statuses`・版と子テーブル・投影の行・その投稿の `favourites` / `bookmarks` / `status_pins`・その投稿についての `notifications`（`notification_dismissals` を含む）と `notification_deleted_statuses` の行 | `status_deletions`（URI = tombstone） |
-| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
+| アカウント削除（FR-008） | `account_lifecycle_events`（`deletion_scheduled` → 期日に `deleted`）、消し終えたら `account_erasures` | プロフィールの版と子テーブル・`account_profile_heads`・鍵（秘密鍵と失効）、メールアドレス（確認と主アドレス）・資格情報・1 回限りのトークン・セッション（失効と `session_activity`）・認可コードとアクセストークン（引き換えと失効）・利用者設定・登録の申請（決定と状態）、投稿（上と同じ。`local_statuses` と、だれのものでもその投稿のブースト・お気に入り・ブックマーク・ピン留めを含む）、本人のお気に入り・ブックマーク・ピン留め・ブースト（件数から引く）、両方向のフォロー（イベントと `follow_edges`・`follow_counters`・`follow_preferences`）・ブロック・ミュート、本人が受けた・本人の操作による・本人の利用者についての通知（`notification_dismissals`・既読位置・`notification_exclusions` を含む）と Web Push の購読（`push_subscription_alerts` を含む）、`feed_*` の本人の行、本人のアップロード（`media_files` と子テーブル・Blob） | `accounts`（`uri` と `domain`。URI の再利用防止）、`local_accounts` と `account_handles`（ユーザー名の再利用防止）、`users`、ライフサイクル、`status_deletions`（tombstone）、処分の記録（理由・種類・日時）と `feed_author_restrictions`、保持期間で消える `session_origins`・`registration_origins`、招待とロールの付与、インスタンス設定が指すメディア |
 | BAN | `moderation_actions`（`ban`） + 上記の `deletion_scheduled` | 同上 | 同上 + `signup_blocks` |
 | モデレーション記録の保持期間（ADR-0038） | なし（期限は記録の日時から求める。§4.3 記録の保持期間） | 保持期間を過ぎた通報と子テーブル・処分と子テーブル・異議申し立て・監査ログ・`session_origins`・`registration_origins`・解除か期限切れから 30 日の `signup_blocks` | 保全（`retention_holds`）のあるアカウントの記録、未解決の通報、処分が参照する通報、終わっていない処分と審査待ちの異議申し立て |
 | リモート投稿の保持期間（FR-803） | `status_deletions`（`origin = retention`） | `statuses`・版と子テーブル・投票・投影の行・リモートのアカウントのブースト（§4.4 リモート投稿の保持期間） | `status_deletions`（取得し直しは拒まない）、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留め・通知 |

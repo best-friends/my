@@ -313,6 +313,9 @@ func (r *NotificationRepository) EraseNotificationsOf(ctx context.Context, tx uo
 	if err := q.EraseNotificationReadMarker(ctx, accountID); err != nil {
 		return 0, wrap(err, "erase notification read marker")
 	}
+	if err := runSteps(ctx, accountID, "erase push subscriptions", q.ErasePushSubscriptionAlertsOf, q.ErasePushSubscriptionsOf); err != nil {
+		return 0, err
+	}
 	viewer, err := q.EraseNotificationExclusionsAsViewer(ctx, postgresgen.EraseNotificationExclusionsAsViewerParams{AccountID: accountID, Lim: lim})
 	if err != nil {
 		return 0, wrap(err, "erase notification exclusions")

@@ -3015,6 +3015,10 @@
     "defaultMessage": "サーバーが要求を処理できませんでした（エラー {status}）。しばらくしてから試してください。",
     "description": "Error message when the server failed without describing the problem. {status} is the HTTP status code, for example 502."
   },
+  "bookmarks.title": {
+    "defaultMessage": "ブックマーク",
+    "description": "Heading and document title of the page that lists the posts the user bookmarked. Bookmarks are private."
+  },
   "compose.close": {
     "defaultMessage": "閉じる",
     "description": "Accessible name of the × button that closes the new-post sheet. The draft is kept."
@@ -4283,6 +4287,74 @@
     "defaultMessage": "プロフィールを保存せずに移動しますか？",
     "description": "Title (a question) of the dialog shown when the user leaves the profile settings with changes that are not saved."
   },
+  "settings.push.denied": {
+    "defaultMessage": "このサイトの通知はブラウザでブロックされています。プッシュ通知を使うには、ブラウザのサイトの設定で通知を許可してください。",
+    "description": "Shown in the push notification settings when the user blocked notifications for this site in the browser."
+  },
+  "settings.push.enable": {
+    "defaultMessage": "この端末に通知する",
+    "description": "Label of the switch that turns on Web Push notifications for this browser and signed-in session."
+  },
+  "settings.push.enable.description": {
+    "defaultMessage": "アプリを閉じているときも、新しい通知がこの端末に表示されます。",
+    "description": "Help text of the switch that turns on Web Push notifications."
+  },
+  "settings.push.failed": {
+    "defaultMessage": "この端末でプッシュ通知を設定できませんでした。しばらくしてからもう一度試してください。",
+    "description": "Error shown when the browser failed to subscribe to push notifications."
+  },
+  "settings.push.not_allowed": {
+    "defaultMessage": "ブラウザで通知が許可されなかったため、プッシュ通知はオフのままです。",
+    "description": "Error shown when the user did not allow notifications in the browser's permission prompt after turning on push notifications."
+  },
+  "settings.push.title": {
+    "defaultMessage": "プッシュ通知",
+    "description": "Heading of the section of the preferences about Web Push notifications on this device."
+  },
+  "settings.push.type.admin": {
+    "defaultMessage": "モデレーター向けの通知",
+    "description": "Checkbox of the push notification kinds, shown to moderators only: new reports, sign-ups awaiting approval and appeals."
+  },
+  "settings.push.type.boost": {
+    "defaultMessage": "ブースト",
+    "description": "Checkbox of the push notification kinds: someone boosted the user's post."
+  },
+  "settings.push.type.favourite": {
+    "defaultMessage": "お気に入り",
+    "description": "Checkbox of the push notification kinds: someone favourited the user's post."
+  },
+  "settings.push.type.follow": {
+    "defaultMessage": "新しいフォロワー",
+    "description": "Checkbox of the push notification kinds: someone followed the user."
+  },
+  "settings.push.type.follow_accepted": {
+    "defaultMessage": "承認されたフォローリクエスト",
+    "description": "Checkbox of the push notification kinds: someone accepted the user's follow request."
+  },
+  "settings.push.type.follow_request": {
+    "defaultMessage": "フォローリクエスト",
+    "description": "Checkbox of the push notification kinds: someone asked to follow the user."
+  },
+  "settings.push.type.mention": {
+    "defaultMessage": "メンション",
+    "description": "Checkbox of the push notification kinds: a post mentions the user."
+  },
+  "settings.push.type.moderation": {
+    "defaultMessage": "モデレーターからのお知らせ",
+    "description": "Checkbox of the push notification kinds: notices and decisions of the moderators about the user's account, appeals and reports, and follows ended by a suspension."
+  },
+  "settings.push.types.description": {
+    "defaultMessage": "この端末に通知する内容を選びます。",
+    "description": "Help text of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.types.label": {
+    "defaultMessage": "通知する内容",
+    "description": "Label of the group of checkboxes of the push notification kinds."
+  },
+  "settings.push.unsupported": {
+    "defaultMessage": "このブラウザはプッシュ通知を受け取れません。iPhone と iPad では、このサイトをホーム画面に追加して、そこから開いてください。",
+    "description": "Shown in the push notification settings when the browser has no Push API."
+  },
   "settings.saved": {
     "defaultMessage": "保存しました",
     "description": "Announced to screen readers after a preference was saved; preferences save as soon as they change."
@@ -4591,6 +4663,10 @@
     "defaultMessage": "管理、{count, plural, other {未対応 # 件}}",
     "description": "Accessible name of the navigation item to the admin screens while open reports or registrations awaiting approval wait for the moderators; starts with the visible label."
   },
+  "shell.nav.bookmarks": {
+    "defaultMessage": "ブックマーク",
+    "description": "Navigation item that opens the list of the posts the user bookmarked. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
+  },
   "shell.nav.home": {
     "defaultMessage": "ホーム",
     "description": "Navigation item that opens the home timeline. Keep it short: it is shown under an icon in a bottom tab bar."
@@ -4707,6 +4783,10 @@
     "defaultMessage": "削除",
     "description": "Menu item, on the user's own post, that asks to delete it."
   },
+  "status.action.edit": {
+    "defaultMessage": "編集",
+    "description": "Item of a post's More actions menu, for the user's own posts: opens the dialog that edits the post."
+  },
   "status.action.failed": {
     "defaultMessage": "変更を保存できませんでした：{reason}",
     "description": "Toast when boosting, favouriting or bookmarking a post failed; the button is set back. {reason} is the error message, a full sentence."
@@ -4763,6 +4843,50 @@
     "defaultMessage": "この投稿を削除しますか？",
     "description": "Heading of the dialog that asks the user to confirm deleting their post."
   },
+  "status.edit.cancel": {
+    "defaultMessage": "キャンセル",
+    "description": "Button of the dialog that edits the user's post: closes it without saving."
+  },
+  "status.edit.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close (x) button of the dialog that edits the user's post."
+  },
+  "status.edit.done": {
+    "defaultMessage": "投稿を編集しました",
+    "description": "Toast after the user's post was edited and saved."
+  },
+  "status.edit.failed": {
+    "defaultMessage": "編集を保存できませんでした：{reason}",
+    "description": "Shown in the dialog that edits the user's post when saving failed. {reason} is the error message, a full sentence."
+  },
+  "status.edit.fixed": {
+    "defaultMessage": "公開範囲と返信先は変わりません。",
+    "description": "Note in the dialog that edits the user's post: an edit cannot change these."
+  },
+  "status.edit.load_failed": {
+    "defaultMessage": "編集する投稿を読み込めませんでした：{reason}",
+    "description": "Shown in the dialog that edits the user's post when its text failed to load. {reason} is the error message, a full sentence."
+  },
+  "status.edit.loading": {
+    "defaultMessage": "投稿を読み込んでいます",
+    "description": "Accessible name of the spinner while the dialog that edits the user's post loads its text."
+  },
+  "status.edit.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads the post to edit again after it failed."
+  },
+  "status.edit.save": {
+    "defaultMessage": "保存する",
+    "description": "Submit button of the dialog that edits the user's post."
+  },
+  "status.edit.title": {
+    "defaultMessage": "投稿を編集",
+    "description": "Heading of the dialog that edits the user's post, and the name of its form."
+  },
+  "status.edited": {
+    "defaultMessage": "編集済み",
+    "description": "Link under an edited post to its edit history."
+  },
   "status.favourite.off": {
     "defaultMessage": "お気に入りから外しました",
     "description": "Read out by screen readers after the user removed a post from their favourites."
@@ -4782,6 +4906,46 @@
   "status.focused.label": {
     "defaultMessage": "開いている投稿",
     "description": "Not shown: read out by screen readers before the author and time of the post a page is about, to tell it apart from the posts of its thread."
+  },
+  "status.history.back": {
+    "defaultMessage": "投稿に戻る",
+    "description": "Link from a post's edit history to the post's page."
+  },
+  "status.history.change.media": {
+    "defaultMessage": "添付",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the attached media or their descriptions."
+  },
+  "status.history.change.sensitive": {
+    "defaultMessage": "センシティブの指定",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: whether the media are marked sensitive."
+  },
+  "status.history.change.text": {
+    "defaultMessage": "本文",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the text of the post."
+  },
+  "status.history.change.warning": {
+    "defaultMessage": "CW",
+    "description": "One of the changes a revision made, joined into {changes} of status.history.changes: the content warning."
+  },
+  "status.history.changes": {
+    "defaultMessage": "変更：{changes}",
+    "description": "What a revision of a post changed from the one before. {changes} is a list of the changes, like text, content warning."
+  },
+  "status.history.current": {
+    "defaultMessage": "現在の版",
+    "description": "Label of the revision that is the post's content now, in the edit history."
+  },
+  "status.history.list": {
+    "defaultMessage": "版の一覧",
+    "description": "Accessible name of the list of the revisions of a post."
+  },
+  "status.history.original": {
+    "defaultMessage": "最初の投稿",
+    "description": "Label of the revision that is the post as first written, in the edit history."
+  },
+  "status.history.title": {
+    "defaultMessage": "編集履歴",
+    "description": "Heading and title of the page that lists the revisions of a post."
   },
   "status.link.copied": {
     "defaultMessage": "リンクをコピーしました",
@@ -4846,6 +5010,14 @@
   "timeline.empty.account.heading": {
     "defaultMessage": "まだ投稿はありません",
     "description": "Shown instead of the posts of a profile's tab when it has none."
+  },
+  "timeline.empty.bookmarks.description": {
+    "defaultMessage": "ブックマークした投稿がここに表示されます。ブックマークは自分にだけ見えます。",
+    "description": "Text under the heading of the empty list of bookmarks."
+  },
+  "timeline.empty.bookmarks.heading": {
+    "defaultMessage": "まだブックマークはありません",
+    "description": "Heading shown instead of posts when the user has bookmarked none."
   },
   "timeline.empty.home.action": {
     "defaultMessage": "ローカルタイムラインを見る",

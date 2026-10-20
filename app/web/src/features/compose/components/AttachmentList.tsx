@@ -8,7 +8,8 @@ import { useFormatRemaining } from "../hooks/useFormatRemaining";
 export type AttachmentListProps = {
   items: readonly AttachmentView[];
   onDescribe: (key: string, description: string) => void;
-  onRemove: (key: string) => void;
+  /** Removes an image; without it, the images stay (editing a post changes only their descriptions). */
+  onRemove?: (key: string) => void;
   /** Whether the user's preferences ask for a description of every image. */
   requireDescriptions: boolean;
   isDisabled?: boolean;
@@ -51,17 +52,19 @@ export function AttachmentList({ items, onDescribe, onRemove, requireDescription
               formatRemaining={formatRemaining}
               isReadOnly={isDisabled}
             />
-            <Button
-              size="sm"
-              variant="ghost"
-              className="self-start"
-              isDisabled={isDisabled}
-              onPress={() => {
-                onRemove(item.key);
-              }}
-            >
-              {t("client:compose.media.remove", { position: String(item.position) })}
-            </Button>
+            {onRemove !== undefined && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="self-start"
+                isDisabled={isDisabled}
+                onPress={() => {
+                  onRemove(item.key);
+                }}
+              >
+                {t("client:compose.media.remove", { position: String(item.position) })}
+              </Button>
+            )}
           </div>
         </li>
       ))}

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AtChar123acctChar125RouteImport } from './routes/@{$acct}'
+import { Route as BookmarksRouteImport } from './routes/bookmarks'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LocalRouteImport } from './routes/local'
 import { Route as LoginRouteImport } from './routes/login'
@@ -43,6 +44,7 @@ import { Route as SettingsPreferencesRouteImport } from './routes/settings.prefe
 import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
+import { Route as AtChar123acctChar125IdHistoryRouteImport } from './routes/@{$acct}_.$id_.history'
 import { Route as AdminAccountsIdRouteImport } from './routes/admin.accounts_.$id'
 import { Route as AdminAppealsIdRouteImport } from './routes/admin.appeals_.$id'
 import { Route as AdminInstancesDomainRouteImport } from './routes/admin.instances_.$domain'
@@ -56,6 +58,11 @@ const IndexRoute = IndexRouteImport.update({
 const AtChar123acctChar125Route = AtChar123acctChar125RouteImport.update({
   id: '/@{$acct}',
   path: '/@{$acct}',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookmarksRoute = BookmarksRouteImport.update({
+  id: '/bookmarks',
+  path: '/bookmarks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -220,6 +227,12 @@ const TagsTagRoute = TagsTagRouteImport.update({
   path: '/tags/$tag',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AtChar123acctChar125IdHistoryRoute =
+  AtChar123acctChar125IdHistoryRouteImport.update({
+    id: '/@{$acct}_/$id_/history',
+    path: '/@{$acct}/$id/history',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminAccountsIdRoute = AdminAccountsIdRouteImport.update({
   id: '/admin/accounts_/$id',
   path: '/admin/accounts/$id',
@@ -244,6 +257,7 @@ const AdminReportsIdRoute = AdminReportsIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -276,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
   '/admin/accounts/$id': typeof AdminAccountsIdRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -284,6 +299,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -316,6 +332,7 @@ export interface FileRoutesByTo {
   '/tags/$tag': typeof TagsTagRoute
   '/admin': typeof AdminIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/@{$acct}/$id/history': typeof AtChar123acctChar125IdHistoryRoute
   '/admin/accounts/$id': typeof AdminAccountsIdRoute
   '/admin/appeals/$id': typeof AdminAppealsIdRoute
   '/admin/instances/$domain': typeof AdminInstancesDomainRoute
@@ -325,6 +342,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/@{$acct}': typeof AtChar123acctChar125Route
+  '/bookmarks': typeof BookmarksRoute
   '/home': typeof HomeRoute
   '/local': typeof LocalRoute
   '/login': typeof LoginRoute
@@ -357,6 +375,7 @@ export interface FileRoutesById {
   '/tags/$tag': typeof TagsTagRoute
   '/admin/': typeof AdminIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/@{$acct}_/$id_/history': typeof AtChar123acctChar125IdHistoryRoute
   '/admin/accounts_/$id': typeof AdminAccountsIdRoute
   '/admin/appeals_/$id': typeof AdminAppealsIdRoute
   '/admin/instances_/$domain': typeof AdminInstancesDomainRoute
@@ -367,6 +386,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -399,6 +419,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin/'
     | '/settings/'
+    | '/@{$acct}/$id/history'
     | '/admin/accounts/$id'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -407,6 +428,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -439,6 +461,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin'
     | '/settings'
+    | '/@{$acct}/$id/history'
     | '/admin/accounts/$id'
     | '/admin/appeals/$id'
     | '/admin/instances/$domain'
@@ -447,6 +470,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/@{$acct}'
+    | '/bookmarks'
     | '/home'
     | '/local'
     | '/login'
@@ -479,6 +503,7 @@ export interface FileRouteTypes {
     | '/tags/$tag'
     | '/admin/'
     | '/settings/'
+    | '/@{$acct}_/$id_/history'
     | '/admin/accounts_/$id'
     | '/admin/appeals_/$id'
     | '/admin/instances_/$domain'
@@ -488,6 +513,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AtChar123acctChar125Route: typeof AtChar123acctChar125Route
+  BookmarksRoute: typeof BookmarksRoute
   HomeRoute: typeof HomeRoute
   LocalRoute: typeof LocalRoute
   LoginRoute: typeof LoginRoute
@@ -520,6 +546,7 @@ export interface RootRouteChildren {
   TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  AtChar123acctChar125IdHistoryRoute: typeof AtChar123acctChar125IdHistoryRoute
   AdminAccountsIdRoute: typeof AdminAccountsIdRoute
   AdminAppealsIdRoute: typeof AdminAppealsIdRoute
   AdminInstancesDomainRoute: typeof AdminInstancesDomainRoute
@@ -540,6 +567,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}'
       fullPath: '/@{$acct}'
       preLoaderRoute: typeof AtChar123acctChar125RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bookmarks': {
+      id: '/bookmarks'
+      path: '/bookmarks'
+      fullPath: '/bookmarks'
+      preLoaderRoute: typeof BookmarksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -766,6 +800,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsTagRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/$id_/history': {
+      id: '/@{$acct}_/$id_/history'
+      path: '/@{$acct}/$id/history'
+      fullPath: '/@{$acct}/$id/history'
+      preLoaderRoute: typeof AtChar123acctChar125IdHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/accounts_/$id': {
       id: '/admin/accounts_/$id'
       path: '/admin/accounts/$id'
@@ -800,6 +841,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AtChar123acctChar125Route: AtChar123acctChar125Route,
+  BookmarksRoute: BookmarksRoute,
   HomeRoute: HomeRoute,
   LocalRoute: LocalRoute,
   LoginRoute: LoginRoute,
@@ -832,6 +874,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  AtChar123acctChar125IdHistoryRoute: AtChar123acctChar125IdHistoryRoute,
   AdminAccountsIdRoute: AdminAccountsIdRoute,
   AdminAppealsIdRoute: AdminAppealsIdRoute,
   AdminInstancesDomainRoute: AdminInstancesDomainRoute,
