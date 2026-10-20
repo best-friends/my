@@ -572,7 +572,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
+| `audit_log_entries` | イベント | `id`, `actor_kind`（`enum(user, cli, system, remote)`）, `actor_user_id`（NULL 可）, `action`（操作の enum）, `target_kind`（`enum(account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, relay)`）, `target_id`, `target_label`（`string(512)`。記録時の対象の表示名の写し）, `source_event_id`（NULL 可。元のイベントの行の ID）, `occurred_at` | 新しい順の一覧は PK を逆順に読む。インデックス `(target_kind, target_id, id DESC)`, `(actor_user_id, id DESC)`。CHECK `(actor_kind = 'user') = (actor_user_id IS NOT NULL)` |
 
 - 各モジュールの管理のユースケースが元のイベントと同じトランザクションで発行するドメインイベント（`moderation.audit_recorded`）を、`moderation` の同期の購読者が書きます。理由とメモの本文は写さず、`source_event_id` で元のイベントから引きます。
   記録の ID はトランザクションの前に作り、再試行しても同じ行を書きます。何も変えなかった操作（解除済みの処分の解除など）は記録しません。
@@ -597,11 +597,13 @@ flowchart LR
   | `custom_emoji_created`, `custom_emoji_image_replaced`, `custom_emoji_updated`, `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted` | `custom_emoji` | `custom_emojis.id` | `:shortcode:`（リモートは `:shortcode:@domain`） | `custom_emoji_images.id`（画像を記録した操作）。ほかはなし |
   | `webhook_created`, `webhook_updated`, `webhook_deleted`, `webhook_enabled`, `webhook_disabled`, `webhook_secret_rotated` | `webhook` | `webhook_endpoints.id` | 説明と URL のホスト名（`Moderation chat (hooks.example.com)`）。URL は写さない | `webhook_endpoint_revisions.id` / `webhook_endpoint_state_changes.id` / `webhook_secrets.id` |
 
-  サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。
+  | `relay_added`, `relay_followed`, `relay_unfollowed`, `relay_removed`, `relay_accepted`, `relay_rejected` | `relay` | `relays.id` | 登録した URL | `relay_events.id`（登録と削除はなし） |
+
+  サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。リレーが送った `Accept` / `Reject` の `relay_accepted` / `relay_rejected` は `actor_kind = remote` です（ADR-0061）。
 
 - ハンドルは、ローカルのアカウントは `@username`、リモートは `@username@domain`、ハンドルの無いアカウントは URI、消えたアカウントは ID です。表示名は 512 文字で切ります。
 - 一覧（`moderation.Service.GoneAuditTargets`）は、ページの行の対象が今もあるかを、対象の種類ごとに 1 回の問い合わせでまとめて確かめます。
-  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象のうち、ドメイン・利用者・設定・ルールは消えず、ロール・カスタム絵文字・webhook は削除されても今は問い合わせません。
+  アカウントは `account` の公開 API（`account.Service.ExistingIDs`）に、通報・異議申し立て・登録の拒否は `moderation` 自身の `reports`・`moderation_appeals`・`signup_blocks` に問い合わせ、ほかの種類の対象のうち、ドメイン・利用者・設定・ルールは消えず、ロール・カスタム絵文字・webhook・リレーは削除されても今は問い合わせません。
 - 新しい管理操作を足すときは、`internal/domain/moderation` の `AuditAction` と対象の種類、スキーマの `CHECK`、API の enum（`AdminAuditAction`）を一緒に増やし、ユースケースから発行します（API の enum と一致することをテストが確かめます）。
 - 更新・削除の API と CLI はありません。保持期間（ADR-0038、既定 730 日）を過ぎた行だけを消去ジョブが消します。
 
@@ -753,6 +755,13 @@ flowchart LR
   `status_deletions`、ローカルのアカウントのブースト・お気に入り・ブックマーク・ピン留めは残し、読み取りでは対象の投稿を削除済みとして扱います（一覧から外れる）。
 - 1 トランザクションで消すのは 100 件まで、1 回のジョブで 10 トランザクションまでです。続きはカーソル（投稿の `id`）を持った次のジョブが読みます。
   リモートの投稿の `id` は公開日時の UUIDv7（§1.3）なので、走査は主キーの範囲（期限の UUIDv7 の下限より前）で止まります。
+- リレーだけが運んだ投稿（[ADR-0061](../adr/0061-federation-relays.md)）は、取り込みのトランザクションで `relayed_statuses` に記録します。
+  1 時間ごとの消去ジョブ `content.purge_relayed_statuses` が、`relayed_statuses` にあり、公開から設定 `relay_status_retention`（既定 7 日）を過ぎ、上と同じくローカルからの参照が無く、作者をローカルのアカウントがフォローしていない投稿を、同じ規則（`origin = retention`、保全と通報の対象を残す）で消します。
+  フォローは `graph` の公開 API（フォロワーの数）でトランザクションの外で調べ、消すトランザクションで候補を読み直して、その間に参照されたものを残します。走査は `relayed_statuses` の主キーで行い、残ったものは `content.purge_remote_statuses` の対象になります。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `relayed_statuses` | イベント | `status_id`（PK）, `relay_id`（参照を持たない ID。リレーの登録を消しても残す）, `received_at` | 投稿の物理削除（保持期間の消去）と一緒に消す |
 
 #### 投稿の自動削除【現在値】
 
@@ -1070,7 +1079,7 @@ flowchart LR
 | `received_activity_documents` | イベント | `activity_uri`（PK）, `document`（`document`） | 原本。非同期の処理が読む。障害調査とフィクスチャ採取のため短期保持（#44） |
 | `remote_object_tombstones` | イベント | `uri`（PK）, `actor_uri`, `activity_uri`, `received_at` | 未知のオブジェクトへの `Delete` と、未知の対象への `Undo`。`uri` は `actor_uri` と同じオリジンのものだけ（[federation §3.3](federation.md#33-順序と冪等性)）。後から届いた `Create` / `Update` / `Follow` などを捨てる。インデックス `(received_at)`（30 日で削除）、`(activity_uri)`（`remote_follow_tombstones` を使い終えたかの判定） |
 | `remote_follow_tombstones` | イベント | `activity_uri`（PK。`Undo`）, `actor_uri`（フォローした人）, `object_uri`（埋め込みの `Follow` の `object`）, `received_at` | 未知の `Follow` への `Undo` を、埋め込みの `Follow` の 2 人の組で記録する。後から届いた同じ組の最初の `Follow` を捨て、その URI を同じ `activity_uri` で `remote_object_tombstones` に記録する（その行があれば使い終えた tombstone）。インデックス `(actor_uri, object_uri, received_at)`、`(received_at)`（30 日で削除） |
-| `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report)`）, `object_id`（`favourite` は投稿の ID）, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
+| `outbound_activities` | イベント | `id`, `activity_uri`, `type`, `actor_account_id`, `object_type`（`enum(status, boost, favourite, follow, block, account, report, relay)`）, `object_id`（`favourite` は投稿の ID）, `created_at` | 一意 `(activity_uri)`。インデックス `(object_type, object_id, id)` |
 | `outbound_activity_documents` | イベント | `outbound_activity_id`（PK）, `document`（`document`）, `built_at` | 配送する本文。展開ジョブが 1 回だけ組み立て（投稿の `Delete` と `Like` / `Undo Like` は記録のトランザクションで組み立てる）、すべての配送とリトライが同じ本文を送る。保持期間（30 日）後に削除 |
 | `deliveries` | イベント | `id`, `outbound_activity_id`, `inbox_url`（shared inbox に集約済み）, `domain`, `created_at` | 一意 `(outbound_activity_id, inbox_url)` |
 | `delivery_attempts` | イベント | `id`, `delivery_id`, `outcome`（`enum(succeeded, retryable_failure, permanent_failure, skipped)`）, `signature_scheme`（`enum(rfc9421, cavage)`、NULL 可 = 応答が無い）, `http_status`（`int`、NULL 可）, `error`（`text`、NULL 可）, `attempted_at` | インデックス `(delivery_id, id)`。保持期間（30 日）後に削除（NFR-OPS-3） |
@@ -1078,9 +1087,15 @@ flowchart LR
 | `instance_nodeinfo_observations` | イベント | `id`, `domain`, `software_name`, `software_version`, `observed_at` | インデックス `(domain, id DESC)` |
 | `instance_availability_events` | イベント | `id`, `domain`, `kind`（`enum(marked_unavailable, marked_available)`）, `reason`（`enum(failure_days, delivery_succeeded, inbound_request, probe_succeeded, operator)`）, `occurred_at` | インデックス `(domain, id DESC)`。配送先として扱うかの判断の記録（管理画面で理由を示す） |
 | `instance_health` | 現在値 | `domain`（PK）, `state`（`enum(available, unavailable)`）, `since`, `failure_days`（`int`。直近の連続した失敗の、異なる UTC の日の数）, `last_failure_day`（`string(8)`、`YYYYMMDD`。失敗が無ければ空文字） | インデックス `(state)`。`delivery_attempts` と `instance_availability_events` から更新する。成功時の更新は、`failure_days > 0` か `state = unavailable` のときだけ行う |
+| `relays` | リソース | `id`, `protocol`（`enum(mastodon, litepub)`）, `url`（登録した URL。`mastodon` は inbox、`litepub` は Actor）, `inbox_url`（配送先）, `receive`（`bool`）, `created_by_user_id`（NULL 可 = CLI）, `created_at` | 一意 `(url)`。`left` か `rejected` のときだけ、子の行と一緒に消せる（[ADR-0061](../adr/0061-federation-relays.md)） |
+| `relay_events` | イベント | `id`, `relay_id`, `kind`（`enum(follow_sent, accepted, rejected, left)`）, `follow_activity_uri`（`follow_sent` が送った `Follow` の `id`。ほかは対象の `Follow`）, `relay_actor_uri`（`accepted` の主体。ほかは NULL）, `actor_user_id`（NULL 可 = CLI か受信）, `occurred_at` | 一意 `(relay_id, follow_activity_uri, kind)`（同じ答えの再処理で増えない）。インデックス `(relay_id, id DESC)`。CHECK `(kind = 'accepted') = (relay_actor_uri IS NOT NULL)` |
+| `relay_states` | 投影 | `relay_id`（PK）, `state`（`enum(pending, accepted, rejected, left)`）, `follow_activity_uri`, `relay_actor_uri`（NULL 可）, `since` | `relay_events` の最新の行から作る。インデックス `(follow_activity_uri)`（`Accept` / `Reject` の照合）、`(relay_actor_uri)`（受信の署名者の照合） |
 
 - **配送先の記録** は `deliveries` が兼ねます。
   - 投稿の `Update` / `Delete` は、その投稿の `Create` の `outbound_activities` に紐づく `deliveries` の inbox に送ります（§7）。
+- `relay` の活動はリレーの参加と脱退の `Follow` / `Undo` と、インスタンス Actor への `Follow` に答える `Accept` / `Reject` です（[federation §13](federation.md#13-リレー)）。主体はインスタンス Actor、`object_id` はリレーの ID（リレーでない相手の `Follow` への `Reject` は相手のアカウントの ID）です。
+  本文は `relay_events` を書くトランザクションで組み立てて保存し、宛先の inbox は展開ジョブのペイロードが持ちます（登録を消した後でも届く）。
+  リレーの状態の遷移（`follow_sent` は状態が無いか `rejected` / `left` から `pending`、`accepted` は同じ `Follow` の `pending` から、`rejected` は同じ `Follow` の `pending` / `accepted` から、`left` は同じ `Follow` の `pending` / `accepted` から）は `federation.RelayStatus.Next` が決め、行を読んでから書くまで `relays` の行ロックを取ります（PostgreSQL は `SELECT ... FOR UPDATE`、SQLite は書き込みが直列）。
 - `report` の活動は通報の転送の `Flag` です。主体（`actor_account_id`）はインスタンス Actor、`object_id` は通報（`reports`）の ID で、`forwarded` の通報だけが持ちます（[federation §11](federation.md#11-モデレーションとの連携)）。
 - お気に入りは現在値で、取り消すと行が消えます。そこで `favourite` の活動は、お気に入りを決める組（`actor_account_id` と投稿）で記録し、`object_id` は投稿の ID です。
   `Like` / `Undo Like` の本文はイベントの値（お気に入りの `uri`・投稿の `uri`）から記録のトランザクションで組み立てるので、行が消えた後の `Undo Like` も `Like` の `id` を埋め込めます。
@@ -1359,7 +1374,8 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 
 | 公開範囲 | 配送先（作成時） | `Update` / `Delete` の宛先 |
 | --- | --- | --- |
-| `public` / `unlisted` | 作者のリモートフォロワー + メンション先 | 作成時の `deliveries` + その時点のフォロワー |
+| `public` | 作者のリモートフォロワー + メンション先 + 参加中（`accepted`）のリレーの inbox（ADR-0061） | 作成時の `deliveries` + その時点のフォロワー |
+| `unlisted` | 作者のリモートフォロワー + メンション先 | 作成時の `deliveries` + その時点のフォロワー |
 | `local` | 作者の **リモートフォロワーだけ**。フォロワーでないメンション先には送らない（ADR-0017、オーナー確認済み） | 作成時の `deliveries` |
 | `private` | 作者のリモートフォロワー + メンション先 | 作成時の `deliveries` |
 | `direct` | メンション先 | 作成時の `deliveries` |
@@ -1416,11 +1432,12 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `notification_deleted_statuses` | `status_deletions` | 同期 |
 | `instance_settings` / `instance_texts` / `instance_rule_heads` | `instance_setting_revisions`、`instance_text_revisions`、`instance_rules` と `instance_rule_revisions`・`instance_rule_retirements` | 同期 |
 | `webhook_endpoint_heads` / `webhook_endpoint_failures` | `webhook_endpoint_revisions`・`webhook_endpoint_state_changes`・`webhook_secrets`、`webhook_delivery_attempts` | 同期 |
+| `relay_states` | `relay_events` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 
 - CLI: `my projection list` は投影と所有モジュールと表を示します。投影の名前は所有モジュールの再構築関数の単位です
   （`instance`、`account`、`identity`、`moderation`、`graph`、`content`、`status_sensitivity_overrides`、`boost_edges`、`feeds`、`feed_restrictions`、
-  `notification_exclusions`、`notification_deleted_statuses`、`webhook`）。
+  `notification_exclusions`、`notification_deleted_statuses`、`relay_states`、`webhook`）。
   `<name>` には投影の名前か、その表の名前を渡します。省略するとすべての投影です。
   - `my projection verify [<name>]` は、1 つのトランザクションの中で現在の表を読み、所有モジュールの再構築関数を実行し、結果の表を読んでロールバックします。
     差分の行（現在の表にあって作り直した結果にない行、その逆）を表示し、差分があれば 1 で終了します。何も変えません。
@@ -1446,6 +1463,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
   - `webhook_endpoint_heads` は宛先ごとに最新（ID の最も大きい）の版・状態の変化・秘密から作ります。
     `webhook_endpoint_failures` は、宛先の最新の成功した試行より後の失敗した試行から、その最初の試行と件数で作ります。
     試行は 14 日で消えるので、最初の失敗が消えた連続の行は作り直せません。再構築はその行を、残っている成功が連続を終えていないかぎり、表にあるまま残します。
+  - `relay_states` はリレーごとに最新（ID の最も大きい）の `relay_events` の種類から状態を、その行から `Follow`・主体・時刻を作ります。
   - `instance_health` は投影ではなく【現在値】で、再構築・検証の対象ではありません（§4.8）。失敗の日数を 0 に戻す署名付きの受信と probe の成功は、
     `unavailable` からの復帰でないかぎり記録せず（間引き）、`delivery_attempts` は 30 日で消えるので、イベントから作り直せません。
 - コントラクトテスト: 各 projector に「イベント列を与えて投影を作る」テストと、「インクリメンタル更新の結果 = 一括再構築の結果」の性質テストを書きます。
@@ -1493,6 +1511,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-406 配送・リトライ・一時停止 | M | `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `instance_availability_events`, `instance_health`, `jobs` |
 | FR-407 リモート取得 | M | `remote_account_snapshots`, `remote_account_heads`, `remote_account_handle_verifications`, `remote_profile_revisions`, `remote_status_revisions`, `account_keys`, `kv_entries` |
 | FR-409 リモートメディア方針 | M | `remote_media`, `remote_media_cache`, `instance_settings` |
+| FR-411 リレーへの送信と受信 | S | `relay_states`, `deliveries`, `relayed_statuses`, `kv_entries`（時間あたりの件数） |
 | FR-501 クライアント API | M | `oauth_*`, `local_statuses.idempotency_key` |
 | FR-602 管理画面 | M | `user_roles`, `role_permissions`、モデレーション系 |
 | FR-701 通報 | M | `reports`, `report_statuses`, `report_rule_citations`, `report_states` |
@@ -1504,6 +1523,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-719 登録の拒否リスト | S | `signup_blocks`, `signup_block_lifts`, `registration_origins` |
 | FR-720 ロール | S | `user_role_grants`, `user_role_revocations`, `user_roles` |
 | FR-722 サーバー単位の webhook | S | §4.11 の `webhook_*`, `audit_log_entries`, `notifications`（`admin_webhook_disabled`） |
+| FR-724 リレーの参加と脱退の管理 | S | `relays`, `relay_events`, `relay_states`, `outbound_activities`（`relay`）, `audit_log_entries` |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
 | FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |

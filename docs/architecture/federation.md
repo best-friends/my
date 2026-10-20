@@ -1,8 +1,8 @@
 # 連合の設計（ActivityPub S2S）
 
 > 前提にしている ADR: [ADR-0002](../adr/0002-modular-monolith-hexagonal.md)、[ADR-0003](../adr/0003-database-abstraction.md)、[ADR-0004](../adr/0004-job-queue-abstraction.md)、[ADR-0005](../adr/0005-blob-storage-and-media.md)、[ADR-0006](../adr/0006-federation-protocol-scope.md)、[ADR-0017](../adr/0017-visibility-local.md)、[ADR-0018](../adr/0018-federated-uris.md)、[ADR-0019](../adr/0019-security-baseline.md)、[ADR-0020](../adr/0020-data-modeling-principles.md)。
-> 署名は [ADR-0032](../adr/0032-http-signature-profile.md)、受信処理は [ADR-0033](../adr/0033-inbox-processing-model.md)、取り込み範囲と保持は [ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、`local` 投稿のメンションは [ADR-0035](../adr/0035-local-visibility-mention-tags.md) に従います。
-> 要件: FR-305、FR-401〜410、FR-701〜702、FR-709、FR-713、FR-716〜717、NFR-MOD-3、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
+> 署名は [ADR-0032](../adr/0032-http-signature-profile.md)、受信処理は [ADR-0033](../adr/0033-inbox-processing-model.md)、取り込み範囲と保持は [ADR-0034](../adr/0034-remote-content-scope-and-retention.md)、`local` 投稿のメンションは [ADR-0035](../adr/0035-local-visibility-mention-tags.md)、リレーは [ADR-0061](../adr/0061-federation-relays.md) に従います。
+> 要件: FR-305、FR-401〜411、FR-701〜702、FR-709、FR-713、FR-716〜717、NFR-MOD-3、NFR-SEC-1〜2、NFR-SEC-4〜5、NFR-PERF-4、NFR-REL-1〜2、NFR-COST-4〜5。テーブルは [論理データモデル](data-model.md) §4.8 ほかにあります。
 
 ## 1. 構成
 
@@ -59,6 +59,7 @@ ADR-0032 のプロファイルに従います。要点:
 - **鍵**: リモートの公開鍵は `account_keys` に持ち、取得から 24 時間で古いとみなします。検証に失敗したら、`keyId` ごとに 5 分に 1 回まで取り直して 1 回だけ再検証します（ADR-0019 §5, §7）。
 - **署名者と主体**: 鍵の持ち主（`owner`）がアクティビティの `actor` と一致し、`keyId` のホストが `actor` のホストと一致することを確かめます。一致しなければ、オブジェクトを `id` からオリジンに取り直します（§3.3）。
 - **Object Integrity Proofs**（[FEP-8b32](https://codeberg.org/fediverse/fep/src/branch/main/fep/8b32/fep-8b32.md)、FR-410）: 配送する文書に、Actor の Ed25519 鍵で `eddsa-jcs-2022` の `proof` を付けます（§7.3）。鍵は Actor の文書の `assertionMethod` に `Multikey`（[FEP-521a](https://codeberg.org/fediverse/fep/src/branch/main/fep/521a/fep-521a.md)）で載せます（§10）。受信では、署名者が `actor` のアクティビティの `proof` を HTTP 署名に加えて検証します（§3.1 の手順 12）。HTTP 署名は省けず、署名者と `actor` が違うアクティビティは `proof` があっても取り直します（ADR-0032、ADR-0033）。
+- **Linked Data Signatures**（`RsaSignature2017`、ADR-0061）: `public` の投稿の `Create` / `Update` / `Delete` の文書に、作者の RSA 鍵で LD 署名を付けて送ります（§7.3）。リレーが原本のまま中継した投稿を、Mastodon と Misskey が検証できるようにするためです。受信した LD 署名は検証しません（中継は取り直す。§13）。
 - **インスタンス Actor**: オブジェクトの取得（GET）は、インスタンス Actor（`Application`）の鍵で署名します。相手が Authorized Fetch でも取得でき、特定の利用者の鍵を使わないので、相手のブロックに巻き込まれません。
 
 ### 2.1 実装
@@ -100,7 +101,7 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 | 9 | 未知の Actor の自分自身の `Delete` / `Update`（`actor == object`、`accounts (uri)` に無い）なら、鍵を取りに行かずに捨てる（ADR-0019 §7） | `202` |
 | 10 | 鍵の解決（未知・期限切れなら Actor を取得。5 秒で打ち切る） | `401`（取得できない）/ `503`（取得先がサーキットブレーカーで止まっている） |
 | 11 | 署名の検証（ADR-0032。保存した鍵で検証できなければ鍵を取り直して 1 回だけ再検証する） | `401` + `Accept-Signature` |
-| 12 | 署名者と `actor` の照合。一致しなければジョブに `trust = refetch` を付ける。一致すれば、本文の `proof`（FEP-8b32）を検証する（下記） | `401` + `Accept-Signature`（`proof` が検証できない） |
+| 12 | 署名者と `actor` の照合。一致しなければジョブに `trust = refetch` を付ける。一致すれば、本文の `proof`（FEP-8b32）を検証する（下記）。`refetch` のアクティビティと `Announce` は、署名者が参加中（`accepted`）のリレーの Actor ならジョブに `relay_id` を付ける（§13） | `401` + `Accept-Signature`（`proof` が検証できない） |
 | 13 | 1 つの短いトランザクションで、`received_activities` に `ON CONFLICT DO NOTHING` で挿入し、行が増えたときだけ `received_activity_documents` と `federation.inbox` ジョブ（`queue.Outbox`）を書く | — |
 | 14 | 署名者のドメインの `instance_health` を `available` に戻す（§7.3） | — |
 | 15 | `202 Accepted` | — |
@@ -119,9 +120,9 @@ ADR-0033 の推奨案に従い、**署名の検証までを同期**、**処理�
 
 ### 3.2 非同期の部分
 
-ジョブ `federation.inbox`（ペイロードは `activity_uri` と `trust`、冪等キーは `inbox:<activity_uri のハッシュ>`、`orderingKey` は `inbox:<actor の URI>`）が、原本を読んで処理します。
+ジョブ `federation.inbox`（ペイロードは `activity_uri` と `trust`、リレーが運んだものは `relay_id`、冪等キーは `inbox:<activity_uri のハッシュ>`、`orderingKey` は `inbox:<actor の URI>`）が、原本を読んで処理します。
 
-1. 原本を正規化する（§4）。正規化できなければ `Fail`（dead job に残る）。
+1. 原本を正規化する（§4）。正規化できなければ `Fail`（dead job に残る）。`relay_id` の付いたアクティビティは、何かを取得する前にリレーの関門を通す（§13）。
 2. `trust = refetch` なら、オブジェクトを `id` からオリジンに取得し直し（§6）、取得した文書を使う。`Announce` 以外で取得できなければ捨てる。
 3. 主体（`actor`）のアカウントを解決する（未知なら取得、§6）。主体やそのドメインに `federation` の制限があれば捨てる（`Delete` / `Undo` / `Reject` は通す。§11）。
 4. 種類ごとのハンドラ（§3.4）を呼ぶ。ハンドラは 1 つの短いトランザクションで、各モジュールの公開 API を呼んで書く。
@@ -167,7 +168,9 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 | アクティビティ | 対象 | 処理 |
 | --- | --- | --- |
+| `Follow` | インスタンス Actor | 参加中のリレーの Actor からのものは `Accept` を、それ以外は `Reject` をインスタンス Actor が送る。フォローとしては記録しない（§13） |
 | `Follow` | ローカルの Actor | `graph.ReceiveFollow`。鍵アカウントでなければ承認し、`Accept` を配送する。鍵アカウントなら承認待ち + 通知。ブロック関係があれば `Reject` を配送する。承認済みのフォローがあれば `follow_resends` に記録して `Accept` を送り直す |
+| `Accept` / `Reject` | リレーへの `Follow`（`object` の `id` がリレーの現在の `Follow`） | リレーの状態を `accepted`（主体を記録）/ `rejected` にする（§13）。リレーの Actor でない主体のものは捨てる |
 | `Accept` | 自分が送った `Follow`（URI か埋め込み） | `graph.AcceptRemote`（`follow_acceptances`、`accepted_by = remote`）。`object` の `id` が主体をフォローされる側とするフォローに無ければ、埋め込みの `object.actor`（ローカル）と `actor`（相手）の承認待ち・承認済みのフォローで照合する。埋め込みが `Follow` 以外（GoToSocial の返信の承認など）なら捨てる |
 | `Reject` | 自分が送った `Follow`、または承認済みのフォロー | `graph.RejectRemote`。照合は `Accept` と同じ。承認待ちなら `follow_rejections`（`rejected_by = remote`）、承認済みなら `follow_terminations`（`removed_by_followee`） |
 | `Undo` | `Follow` / `Like` / `EmojiReact` / `Announce` / `Block` / `Accept` | 対象の取り消し。`Undo Follow` は `graph.TerminateRemote`（`unfollowed`）で、`object` の `id` が主体のフォローに無ければ、埋め込みの `object.object`（ローカル）とのフォローで照合する（Misskey の `Undo` は送った `Follow` と違う `id` を持つ）。`Undo Accept` は `graph.RejectRemote` でフォローの終了として扱う。`Undo Like` / `Undo EmojiReact` は、主体が作った同じ URI の `reactions`、`favourites` の順に引き、どちらにも無ければ埋め込みの `object` を `Like` / `EmojiReact` の行と同じ規則で振り分けて、リアクションなら主体のその投稿への同じ絵文字のリアクションを、お気に入りなら主体のその投稿へのお気に入りを消す（ADR-0052 §1）。対象が URI だけなら、主体が作った同じ URI の `follows` / `reactions` / `favourites` / `boosts` / `blocks` を順に引く |
@@ -176,6 +179,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Update` | Actor（自分自身） | `RemoteActors.ReceiveActorUpdate`。オリジンが同じ埋め込みの文書で `account.UpsertRemoteActor`（内容が変わればプロフィールの版が増える）。埋め込みが無い・`id` が主体と一致しなければ取得し直す。削除済みの Actor の `Update` は捨てる |
 | `Delete` | 投稿・`Tombstone` | `content.DeleteRemoteStatus`（`origin = remote`）。未知なら tombstone |
 | `Delete` | Actor（自分自身） | `RemoteActors.ReceiveActorDelete`。`account.MarkRemoteDeleted`（`remote_deleted`）で、プロフィールと投稿（タイムラインでは `feed_author_restrictions` の `profile_view`）がすぐに表示されなくなる。未知の Actor なら何もしない。投稿・フォロー・ブーストは消去ジョブが消す |
+| `Announce` | 投稿（主体が参加中のリレーの Actor で `relay_id` の付いたもの） | 投稿をオリジンから取得し、`public` なら取り込んで `relayed_statuses` に記録する。ブーストとしては記録しない（§13） |
 | `Announce` | 投稿（URI か埋め込み） | `content.RecordRemoteBoost`。ローカルの投稿と保存済みの投稿は `id` で引く。保存していないリモートの投稿は、ブーストした人をローカルのアカウントがフォローしているときだけ取り込み（ADR-0034）、埋め込みの投稿は、オリジンが主体と同じでなければ `id` から取得し直す。ブーストの公開範囲は、`Announce` の宛先から決めた公開範囲と元投稿の公開範囲の狭いほう（`direct` になるものは捨てる）。`local` の投稿、ほかの人の `private` の投稿、主体が閲覧できないローカルの投稿は捨てる |
 | `EmojiReact` | ローカルの投稿 | `content.RecordRemoteReaction`（絵文字リアクション、FR-116、ADR-0052）。`content` が絵文字でなければ捨てる。絵文字は、1 つの Unicode 絵文字（`emoji-test.txt` の表で fully-qualified の形に正規化する）か、`:shortcode:` で `tag` に `name` が一致する（コロンと `@host` の接尾辞を問わない）`Emoji` がちょうど 1 つあるカスタム絵文字。カスタム絵文字は ADR-0051 の規則で `custom_emojis` に画像と取り込み、ドメインは `Emoji` の `id` のホスト（`id` が無ければ主体のドメイン）。同じ主体・投稿・絵文字のリアクションは 1 つで、絵文字ごとに複数を記録する。主体が閲覧できない投稿（`ContextObjectFetch`）・ブロック関係・交流の禁止（FR-708）は捨てる |
 | `Like` | ローカルの投稿 | `_misskey_reaction`、無ければ `content` が `EmojiReact` と同じ規則で絵文字なら `content.RecordRemoteReaction`（Misskey のリアクション、FEP-c0e0）。それ以外は `content.RecordRemoteFavourite`（お気に入り）。主体が閲覧できない投稿（`ContextObjectFetch`）は捨てる |
@@ -266,10 +270,11 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 ### 6.3 投稿
 
-- 取り込み範囲は ADR-0034 に従います（ローカルのアカウントとの関係がある投稿だけ）。判定は `federation.StatusHandlers`（`internal/app/federation`）が、受信ごとに次の順で行います。
+- 取り込み範囲は ADR-0034 に従います（ローカルのアカウントとの関係がある投稿と、参加中のリレーが運んだ `public` の投稿。ADR-0061）。判定は `federation.StatusHandlers`（`internal/app/federation`）が、受信ごとに次の順で行います。
   1. 保存済みのアカウントのうち、投稿がメンションする・宛先に含めるローカルのアカウント（`active` なもの）がある
   2. 作者に承認済みのフォロワーがいる（リモートの Actor のフォロワーはローカルのアカウントだけ。`graph` の `ActiveFollowerIDs`）
   3. 返信先がローカルの投稿か、返信先の `conversation_uri` に削除されていないローカルの投稿がある
+  4. 参加中のリレーが運んだ（`relay_id` の付いた）`public` の投稿（§13）
   - どれにも当てはまらない `Create` は `ErrDropActivity` で捨て、受信の記録だけが残ります（`info` のログ）。未知のリモートの Actor へのメンションは、範囲に入ると決まってから取得します。
 - 書き込む行とメンション・ハッシュタグ・カスタム絵文字・添付・投票の扱いは [data-model §4.4 のリモート投稿のコマンド](data-model.md#リモート投稿のコマンド) にあります。コントラクトテストは `testkit.RemoteStatusContract` で、主要実装のフィクスチャの `Note` を取り込みます。
 - 返信先は受信時に 1 段だけ非同期（`federation.fetch_object`、ペイロードに残りの深さ）で取得し、スレッドの祖先と返信の一覧は利用者がスレッドを開いたときに深さ 20・件数 100 まで取得します。
@@ -342,7 +347,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 | アクティビティ | フェーズ（順に） |
 | --- | --- |
-| `Create` | 版のメンション先 → 作者の承認済みのフォロワー |
+| `Create` | 版のメンション先 → 作者の承認済みのフォロワー → （`public` だけ）参加中のリレーの inbox（§13） |
 | `Update` / `Delete` | 元の `Create` の `deliveries` → （`public` / `unlisted` だけ）その時点のフォロワー |
 | `Announce` / `Undo Announce` | ブーストした人の承認済みのフォロワー → 元投稿の作者 |
 | `Like` / `Undo Like` | 投稿の作者 |
@@ -350,6 +355,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Delete`（Actor）、凍結とその終わりの `Update`（Actor。ペイロードの `shared_inboxes`） | Actor の承認済みのフォロワー → 既知の shared inbox（`account.KnownSharedInboxes`） |
 | `Follow` / `Accept` / `Reject` / `Undo Follow` | フォローの相手（その Actor の inbox。無ければ shared inbox）。公開範囲では判定しない |
 | `Flag` | 通報されたアカウント（その Actor の inbox。shared inbox に集約しない）。公開範囲では判定しない |
+| リレーの `Follow` / `Undo` と、インスタンス Actor への `Follow` に答える `Accept` / `Reject` | ペイロードの `inbox`（記録したときのリレーか相手の inbox）。本文は記録のトランザクションで保存済み。公開範囲では判定しない |
 
 1. 宛先のアカウントを集める: 作者の承認済みのフォロワー（`graph` の公開 API をカーソルで）、版のメンション先、元投稿の作者。ローカルのアカウントは inbox を持たないので落ちます。
 2. 公開範囲の規則で絞る: `content.CanView`（`ContextDelivery`、[visibility.md](visibility.md)）を宛先のアカウントごとに判定する。
@@ -375,10 +381,13 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 
 1. 宛先のドメインに送らない活動なら（`unavailable`、またはドメイン単位の `suspend`。§7.2 の手順 4 と同じ `federation.Deliverable`）、試行せず `skipped` を記録して完了にする。
 2. inbox のホストのサーキットブレーカーが開いていたら、送らずに `retryable_failure`（`signature_scheme` は NULL）を記録して `Retry` を返す。
-3. `outbound_activity_documents` の本文に Actor の Ed25519 鍵（`{actor}#ed25519-key`）で `proof`（FEP-8b32）を付け、Actor の RSA 鍵（`{actor}#main-key`）で HTTP 署名して POST する（§2 の double-knocking）。
+3. `outbound_activity_documents` の本文に、`public` の投稿の `Create` / `Update` / `Delete`（`to` に `as:Public` を含む）なら Actor の RSA 鍵で LD 署名（`signature`）を、それ以外なら Actor の Ed25519 鍵（`{actor}#ed25519-key`）で `proof`（FEP-8b32）を付け、Actor の RSA 鍵（`{actor}#main-key`）で HTTP 署名して POST する（§2 の double-knocking）。
+   - LD 署名は Mastodon の `LinkedDataSignature#sign!` と同じ形です。署名の選択肢（`type`・`id`・`signatureValue` を除き、`@context` を `https://w3id.org/identity/v1` にしたもの）と、`signature` を除いた文書を、それぞれ URDNA2015 で正規化した N-Quads の SHA-256（16 進）をつなげ、RSASSA-PKCS1-v1_5・SHA-256 で署名します。`creator` は `{actor}#main-key`、`created` は活動の時刻です。RSA の署名は決定的なので、同じ活動の配送とリトライはどれも同じバイト列を送ります。
+   - 正規化は `internal/adapter/jsonld`（`github.com/piprate/json-gold`、ポート `federation.Canonicalizer`）が行い、`@context` は同梱した ActivityStreams・`w3id.org/security/v1`・`w3id.org/identity/v1` の文書だけで解決します（リモートの文脈を取得しない）。jsonld.js（Misskey の処理系）と同じ N-Quads と署名になることをテストが確かめます。
+   - LD 署名を付けた文書には `proof` を付けません。LD 署名の後に足す `proof` は LD 署名を壊し、先に足す `proof` は data integrity の文脈を受け手の LD の処理系が持たないためです。LD 署名を作れなかった文書は、`warn` のログを残して `proof` を付けて送ります。
    - `proof` は `eddsa-jcs-2022`（JCS（[RFC 8785](https://www.rfc-editor.org/rfc/rfc8785)）・SHA-256・Ed25519）で、`created` は活動の時刻（`outbound_activities.created_at`）です。Ed25519 の署名は決定的なので、同じ活動の配送とリトライはどれも同じバイト列を送ります。保存する本文は変えません。
    - 本文の `@context` に `https://w3id.org/security/data-integrity/v2` が無ければ足し、`proof` にも同じ `@context` を付けます（FEP-8b32 の例と同じ）。
-   - Ed25519 の鍵が無い Actor の文書と、LD 署名（`signature`）の付いた文書には付けません。LD 署名の後に `proof` を足すと LD 署名が壊れるので、両方を付けるなら LD 署名を作るところで、その前に `proof` を付けます（FEP-8b32 の Backward compatibility）。
+   - Ed25519 の鍵が無い Actor の文書と、LD 署名（`signature`）の付いた文書には付けません。
    - JCS と `proof` の作成・検証は `internal/domain/federation`（`CanonicalJSON`、`SignEdDSAJCS2022`、`ReadProof`）にあり、FEP-8b32 と FEP-521a のテストベクタで確かめます。
 4. 結果を分類して `delivery_attempts` に記録し、同じトランザクションでイベント `federation.delivery_attempted` を発行する。同期 projector が `instance_health` を更新する。
 
@@ -555,6 +564,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 | 種類 | 内容 | 実行 |
 | --- | --- | --- |
+| リレー | `testkit.RelayContract`（登録・イベントと状態・照合・削除・再構築）、`testkit.RetentionContract` の `PurgesRelayedStatuses`、`internal/adapter/jsonld` の jsonld.js と同じ正規化と署名（`testdata/sign.mjs` で作ったベクタ）、`internal/platform` の `TestRelays`（参加・`Accept`・送信と LD 署名・中継の取り直し・上限・LitePub の `Announce`・脱退・削除・監査ログ） | `make check`（毎 PR） |
 | フィクスチャの回帰テスト | 実サーバー（Mastodon・Misskey・GoToSocial・Akkoma）から採取したアクティビティ・Actor・オブジェクトの JSON（`pkg/testkit/fixtures/federation/<実装>/<版>/…`）を正規化・ハンドラに通し、結果（正規化した値・書いた行）を golden ファイルと比べる。送信する文書は主要実装の形と比べる（既存の `internal/interface/activitypub/testdata/peers`） | `make check`（毎 PR） |
 | 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `make check` |
 | 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `make check` |
@@ -565,3 +575,42 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 - 置き換えと追加の手順は [pkg/testkit/README.md](../../pkg/testkit/README.md#federation-fixtures)、各ファイルの出典とライセンスは `pkg/testkit/fixtures/federation/<実装>/README.md` にあります。正規化の golden は `pkg/testkit/testdata/golden/normalize/` にあり、`go test ./pkg/testkit -update` で書き直します。
 - `make check` のテストはネットワークを使わず、`HTTPClient` をホスト名で振り分けるインメモリの実装に差し替えます（ADR-0015）。
 - ライブの相互運用テストは、このサーバーが受信したアクティビティを保存したとおりに成果物へ書き出します。フィクスチャの採取元にする手順は [deploy/docker/federation-live/README.md](../../deploy/docker/federation-live/README.md#adding-a-captured-activity-as-a-fixture) にあります。
+
+## 13. リレー
+
+[ADR-0061](../adr/0061-federation-relays.md)（FR-411、FR-724）の実装です。運営者が登録したリレーにインスタンス Actor が参加し、`public` の投稿を送り、リレーが運んだ `public` の投稿を取り込みます。
+リレーに参加していないインスタンスでは、受信の照合（下記）のほかに行もジョブも増えません。
+
+### 13.1 参加と脱退
+
+- 管理 API（`/api/v1/admin/relays`、権限 `manage_settings`）・CLI（`my admin relay`）・管理画面（`/admin/relays`）から、`federation.Relays` のユースケースを呼びます（[運用手順](../operations/relays.md)）。
+- 登録は方式（`mastodon` / `litepub`）と URL です。URL は `https` で、`CanonicalIRI` で正規化します。ドメイン単位の `suspend` のあるホストは登録できません。
+  `litepub` は登録のときに URL を取得し（インスタンス Actor の鍵で署名した GET、§6.1）、Actor の shared inbox（無ければ inbox）を配送先にします。方式を省くと、URL が Actor の文書を返せば `litepub`、そうでなければ `mastodon` です。
+- 参加はインスタンス Actor の `Follow` です。`id` は `/ap/activities/{relay_events.id}`、`object` は `mastodon` なら `as:Public`、`litepub` ならリレーの Actor です。
+  `relay_events`（`follow_sent`）・`relay_states`（`pending`）・`outbound_activities`（`object_type = relay`）・保存した本文・展開ジョブを 1 つのトランザクションで書きます。
+- 脱退は `Undo(Follow)`（`left`）、参加し直しは新しい `id` の `Follow`（`rejected` か `left` から）です。登録の削除は `left` か `rejected` のときだけで、`relays` と子の行を消します。
+- 状態の遷移は `federation.RelayStatus.Next` が決めます（[data-model §4.8](data-model.md#48-federation)）。`Accept` / `Reject` は、`object` の `id` がリレーの現在の `Follow` のものだけを受け付けます。
+  主体は、`litepub` なら登録した Actor、`mastodon` なら inbox か shared inbox が登録の inbox と一致する Actor でなければ捨てます。`accepted` で主体を `relay_actor_uri` に記録します。同じ答えをもう一度受けても何も変えません。
+- インスタンス Actor への `Follow` は、参加中のリレーの Actor からのもの（`litepub` のリレーはフォローし返す）に `Accept` を、それ以外に `Reject` を送ります。フォローとしては記録しません。
+- 監査ログは登録・参加・脱退・削除（`relay_added`・`relay_followed`・`relay_unfollowed`・`relay_removed`）と、受け取った答え（`relay_accepted`・`relay_rejected`、`actor_kind = remote`）を `target_kind = relay` で記録します。
+
+### 13.2 送信
+
+- 展開ジョブの `Create` のフェーズの最後に、実効の公開範囲が `public` の投稿だけ、参加中（`accepted`）のリレーの inbox を加えます（§7.2）。`unlisted`・`private`・`direct`・`local` と、ブーストの `Announce` は送りません。
+  `deliveries` に記録するので、`Update` / `Delete` は元の `Create` の `deliveries` に届きます（登録を消したリレーにも）。
+- `public` の投稿の `Create` / `Update` / `Delete` には、すべての宛先に LD 署名を付けて送ります（§7.3）。
+- リレーへの配送も、ほかの宛先と同じくドメインの状態（`suspend`・`unavailable`）で止まります。
+
+### 13.3 受信
+
+- 同期の部分（§3.1）は変えません。`refetch` のアクティビティと `Announce` だけ、署名者がどれかの参加中のリレーの Actor（`relay_states.relay_actor_uri`）かを引き、そうならジョブに `relay_id` を付けます。
+- 非同期の部分は、`relay_id` の付いたアクティビティを、何かを取得する前にリレーの関門（`federation.Relays.Admit`）に通します。
+  1. 登録が `receive = false`、またはリレーが `accepted` でなければ捨てる。
+  2. リレーごとの 1 時間（UTC の時）の件数を KV（名前空間 `federation.relay_ingest`、キーは `<relay_id>:<YYYYMMDDHH>`、25 時間）で数え、設定 `relay_ingest_hourly_limit`（既定 1,000）を超えたら捨てる。
+  3. `Create` / `Update` の `actor`、`Announce` の `object` のホストのドメインか、保存済みのアカウントに `federation` か `public_discovery` の制限があれば捨てる（`moderation.FederationPolicy.DiscoveryRestricted`）。`Delete` / `Undo` は捨てない。
+- 通ったものは、`trust = refetch` のとおりオリジンから取り直して（§3.2）、ほかの受信と同じハンドラで扱います。
+  - `Create`（と、§3.3 で `Create` として扱う `Update`）は、取り込み範囲（§6.3）に入らなくても、`public` なら取り込みます。返信先と未知のメンション先は取得せず、取り込みのトランザクションで `relayed_statuses` に記録します。
+  - リレーの Actor の `Announce` は、`object` をいつもオリジンから取得し、作者の制限を確かめて、`public` なら取り込んで記録します。ブーストとしては記録しません。
+- 取り込んだ投稿は、ほかのリモートの `public` の投稿と同じく連合タイムラインとハッシュタグのタイムラインに出ます。ホームには出ず、通知も作りません。
+- 関門の結果はメトリクス `my.relay.activities`（`my.outcome` が `admitted` / `over_limit` / `restricted` / `not_receiving`）に出ます。管理画面と CLI は、直近 24 時間の時ごとの件数から、取り込んだ件数（上限まで）と上限で捨てた件数を示します。
+- `relayed_statuses` の投稿は、`content.purge_relayed_statuses` が公開から設定 `relay_status_retention`（既定 7 日）で消します（[data-model §4.4](data-model.md#リモート投稿の保持期間)）。脱退しても、取り込んだ投稿はすぐには消しません。

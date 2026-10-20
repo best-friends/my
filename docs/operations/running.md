@@ -57,6 +57,7 @@ HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を
 | `http.server.request.duration` | Histogram・秒 | `http.request.method`、`http.route`（ルートのパターンのパス。一致しないものは `other`）、`http.response.status_code`、`my.surface`（`client_api` / `admin` / `activitypub` / `oauth` / `media` / `web`） |
 | `http.server.active_requests` | UpDownCounter | `my.surface` |
 | `my.inbox.activities` | Counter | `activity.type`（既知の Activity の型か `other`）、`my.outcome`（`accepted` / `duplicate` / `rejected` / `ignored` / `error`） |
+| `my.relay.activities` | Counter | `my.outcome`（`admitted` / `over_limit` / `restricted` / `not_receiving`。リレーが運んだアクティビティを取り込んだか、なぜ捨てたか。[連合リレー](relays.md)） |
 | `my.delivery.attempts` | Counter | `my.outcome`（`success` / `retry` / `gone` / `failed`。`gone` は 410 と、利用できない・停止したサーバーで送らなかったもの） |
 | `my.delivery.duration` | Histogram・秒 | `my.outcome` |
 | `my.job.duration` | Histogram・秒 | `my.job.type`（登録済みのジョブの型か `other`）、`my.outcome`（`success` / `retry` / `dead`） |
