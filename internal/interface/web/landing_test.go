@@ -17,6 +17,7 @@ func TestLandingPreview(t *testing.T) {
 	names := map[string]string{"ja": "例のサーバー", "en": "Example Social"}
 	summary := "  Gardeners & friends\n" + strings.Repeat("あ", 250)
 	_, mux := newHandler(t, web.Options{
+		Settings:      crawlerSettings("allow", "allow"),
 		DefaultLocale: locale("ja"),
 		InstanceName:  func(_ context.Context, l string) string { return names[l] },
 		InstanceDescription: func(_ context.Context, l string) string {

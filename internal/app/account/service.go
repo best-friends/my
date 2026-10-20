@@ -75,6 +75,9 @@ type LocalAccountInput struct {
 	Username string
 	// DisplayName is the display name of the first profile revision; it may be empty.
 	DisplayName string
+	// Indexable is the indexable of the first profile revision: the instance setting
+	// indexable_default (FR-412, ADR-0057).
+	Indexable bool
 }
 
 // PreparedLocalAccount is a local account with its IDs, time, and sealed keys fixed, ready to
@@ -122,6 +125,7 @@ func (s *Service) PrepareLocalAccount(ctx context.Context, in LocalAccountInput)
 			AccountID:   a.ID,
 			Seq:         1,
 			DisplayName: in.DisplayName,
+			Indexable:   in.Indexable,
 			RevisedAt:   now,
 			Source:      &account.ProfileSource{},
 		},
@@ -249,6 +253,7 @@ type ProfileInput struct {
 	Bot           bool
 	Discoverable  bool
 	Indexable     bool
+	AIOptOut      bool
 	AvatarMediaID string
 	HeaderMediaID string
 	// Fields are numbered by their order.
@@ -284,6 +289,7 @@ func (s *Service) ReviseProfile(ctx context.Context, accountID string, in Profil
 		Bot:           in.Bot,
 		Discoverable:  in.Discoverable,
 		Indexable:     in.Indexable,
+		AIOptOut:      in.AIOptOut,
 		AvatarMediaID: in.AvatarMediaID,
 		HeaderMediaID: in.HeaderMediaID,
 		RevisedAt:     s.d.Clock.Now(),

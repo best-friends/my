@@ -239,6 +239,7 @@ func (n normalizer) actor(o object, t ActorType) (*Actor, error) {
 		Image:                     n.imageURL(o.get("image")),
 		ManuallyApprovesFollowers: o.get("manuallyApprovesFollowers") == true,
 		Discoverable:              o.get("discoverable") == true,
+		Indexable:                 o.get("indexable") == true,
 		Published:                 n.time(o.get("published")),
 	}
 	var err error

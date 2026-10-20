@@ -168,6 +168,7 @@ CREATE TABLE account_profile_revisions (
   bot boolean NOT NULL,
   discoverable boolean NOT NULL,
   indexable boolean NOT NULL,
+  ai_opt_out boolean NOT NULL,
   avatar_media_id text COLLATE "C",
   header_media_id text COLLATE "C",
   revised_at timestamptz NOT NULL
@@ -599,7 +600,8 @@ CREATE TABLE instance_setting_revisions (
     'preview_image', 'remote_media_policy', 'remote_media_cache_ttl', 'authorized_fetch',
     'domain_actions_visibility', 'domain_actions_rationale_visibility', 'appeal_window',
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
-    'retention_moderation_actions', 'retention_audit_log'
+    'retention_moderation_actions', 'retention_audit_log',
+    'search_indexing', 'ai_usage', 'indexable_default', 'security_contact'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",
