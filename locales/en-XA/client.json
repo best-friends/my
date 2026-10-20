@@ -7979,6 +7979,62 @@
     "defaultMessage": "[Ƥīƞƞḗḗḓ ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.poll.choose_many": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿř ḿǿǿřḗḗ ǿǿƥŧīǿǿƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.choose_one": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ǿǿƞḗḗ ǿǿƥŧīǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.closed": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.ends": {
+    "defaultMessage": "[Ḗƞḓş {time}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.label": {
+    "defaultMessage": "[Ƥǿǿŀŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.options": {
+    "defaultMessage": "[Ƥǿǿŀŀ ǿǿƥŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.own_vote": {
+    "defaultMessage": "[Ẏǿǿŭŭř ṽǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.remote_counts": {
+    "defaultMessage": "[Ƈǿǿŭŭƞŧş ȧȧş {host} ŀȧȧşŧ řḗḗƥǿǿřŧḗḗḓ ŧħḗḗḿ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.results": {
+    "defaultMessage": "[Ƥǿǿŀŀ řḗḗşŭŭŀŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.vote": {
+    "defaultMessage": "[Ṽǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.vote_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ṽǿǿŧḗḗ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.voted": {
+    "defaultMessage": "[Ṽǿǿŧḗḗ şḗḗƞŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.voters": {
+    "defaultMessage": "[{count,plural,one{# ƥḗḗřşǿǿƞ} other{# ƥḗḗǿǿƥŀḗḗ}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.poll.votes": {
+    "defaultMessage": "[{count,plural,one{# ṽǿǿŧḗḗ} other{# ṽǿǿŧḗḗş}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.reaction.off": {
     "defaultMessage": "[Řḗḗȧȧƈŧīǿǿƞ řḗḗḿǿǿṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."

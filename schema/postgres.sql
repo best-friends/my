@@ -1590,7 +1590,7 @@ CREATE TABLE outbound_activities (
   activity_uri text NOT NULL,
   type text NOT NULL,
   actor_account_id text COLLATE "C" NOT NULL,
-  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report')),
+  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote')),
   object_id text COLLATE "C" NOT NULL,
   created_at timestamptz NOT NULL
 );
@@ -1729,6 +1729,21 @@ CREATE TABLE poll_options (
   title text NOT NULL,
   PRIMARY KEY (poll_id, position)
 );
+
+-- Event: one choice an account voted for in a poll (FR-112): a vote with several choices is one
+-- row per choice. uri is the id of the Note that carries the choice to a remote poll's server,
+-- or that a remote voter sent; votes are never taken back.
+CREATE TABLE poll_votes (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  poll_id text COLLATE "C" NOT NULL,
+  account_id text COLLATE "C" NOT NULL,
+  position integer NOT NULL CHECK (position >= 0),
+  uri text,
+  voted_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX poll_votes_poll_id_account_id_position ON poll_votes (poll_id, account_id, position);
+CREATE UNIQUE INDEX poll_votes_uri ON poll_votes (uri);
+CREATE INDEX poll_votes_account_id ON poll_votes (account_id);
 
 -- Event: the counts of a remote poll as its server reported them (in a Create or an Update).
 CREATE TABLE poll_tally_observations (

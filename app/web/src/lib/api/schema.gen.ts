@@ -1309,6 +1309,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/statuses/{id}/poll/votes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Vote in the poll of a status
+         * @description Votes for one or more choices of the poll of a status (FR-112). `poll_id` names the poll
+         *     the user saw: a poll that an edit of the status replaced is a 409. A status without a
+         *     poll, a poll that has ended, a second vote, or choices the poll does not take (none, an
+         *     unknown one, the same one twice, or several in a single-choice poll) is a 422. A vote in
+         *     a poll of another server is sent to that server, whose counts in `poll` include it once
+         *     the server reports them again.
+         */
+        post: operations["voteInPoll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/statuses/{id}/reaction": {
         parameters: {
             query?: never;
@@ -4424,6 +4452,50 @@ export interface components {
             bookmarked?: boolean;
             /** @description Whether the status is pinned to the author's profile; given only to the author. */
             pinned?: boolean;
+            poll?: components["schemas"]["Poll"];
+        };
+        /**
+         * @description The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
+         *     another server are those its server last reported. `voted` and `own_votes` describe the
+         *     authenticated user's vote and are omitted for anonymous requests.
+         */
+        Poll: {
+            id: components["schemas"]["Id"];
+            /**
+             * Format: date-time
+             * @description When the poll ends; omitted when it has no end.
+             */
+            expires_at?: string;
+            /** @description Whether the poll has ended. An ended poll takes no votes and shows its results. */
+            expired: boolean;
+            /** @description Whether a vote may choose several options. */
+            multiple: boolean;
+            /** @description The number of votes, one per chosen option. */
+            votes_count: number;
+            /**
+             * @description The number of accounts that voted; omitted when it is unknown (a multiple-choice poll
+             *     of another server that does not report it).
+             */
+            voters_count?: number;
+            /** @description The options, in order; a vote names them by their index in this list. */
+            options: components["schemas"]["PollOption"][];
+            /** @description Whether the authenticated user voted in the poll. */
+            voted?: boolean;
+            /** @description The indexes of the options the authenticated user voted for, in order. */
+            own_votes?: number[];
+        };
+        /** @description One option of a poll. */
+        PollOption: {
+            /** @description The option as plain text. */
+            title: string;
+            /** @description The number of votes for the option. */
+            votes_count: number;
+        };
+        /** @description A vote in the poll of a status. */
+        VoteInPollRequest: {
+            poll_id: components["schemas"]["Id"];
+            /** @description The indexes of the chosen options in `Poll.options`; one for a single-choice poll. */
+            choices: number[];
         };
         /**
          * @description The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
@@ -8301,6 +8373,26 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: components["responses"]["StatusAfterAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    voteInPoll: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoteInPollRequest"];
+            };
+        };
         responses: {
             200: components["responses"]["StatusAfterAction"];
             default: components["responses"]["Problem"];

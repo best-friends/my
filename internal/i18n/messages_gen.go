@@ -1285,6 +1285,41 @@ func (l *Localizer) ServerErrorsStatusPinLimit(max int) string {
 	return l.format("server:errors.status.pin_limit", map[string]any{"max": max})
 }
 
+// ServerErrorsStatusPollAlreadyVoted formats "server:errors.status.poll_already_voted". Detail of the HTTP 422 API error when a user votes in a poll a second time.
+//
+//	en: You have already voted in this poll.
+func (l *Localizer) ServerErrorsStatusPollAlreadyVoted() string {
+	return l.format("server:errors.status.poll_already_voted", nil)
+}
+
+// ServerErrorsStatusPollChanged formats "server:errors.status.poll_changed". Detail of the HTTP 409 API error when a user votes in a poll that an edit of the post replaced.
+//
+//	en: The poll was changed by an edit of the post. Reload it and vote again.
+func (l *Localizer) ServerErrorsStatusPollChanged() string {
+	return l.format("server:errors.status.poll_changed", nil)
+}
+
+// ServerErrorsStatusPollClosed formats "server:errors.status.poll_closed". Detail of the HTTP 422 API error when a user votes in a poll whose end has passed.
+//
+//	en: This poll has ended.
+func (l *Localizer) ServerErrorsStatusPollClosed() string {
+	return l.format("server:errors.status.poll_closed", nil)
+}
+
+// ServerErrorsStatusPollInvalidChoices formats "server:errors.status.poll_invalid_choices". Detail of the HTTP 422 API error when a vote has no choice, an unknown choice, the same choice twice, or several choices in a single-choice poll.
+//
+//	en: Choose one of the poll's options, or several only when the poll allows it.
+func (l *Localizer) ServerErrorsStatusPollInvalidChoices() string {
+	return l.format("server:errors.status.poll_invalid_choices", nil)
+}
+
+// ServerErrorsStatusPollMissing formats "server:errors.status.poll_missing". Detail of the HTTP 422 API error when a user votes on a post that has no poll.
+//
+//	en: This post has no poll.
+func (l *Localizer) ServerErrorsStatusPollMissing() string {
+	return l.format("server:errors.status.poll_missing", nil)
+}
+
 // ServerErrorsStatusPostingRestricted formats "server:errors.status.posting_restricted". Detail of the HTTP 403 API error when a moderator restricted the account from posting.
 //
 //	en: Your account may not post right now.

@@ -163,6 +163,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/statuses/{id}/boost":                                    {Operation: "boostStatus", Scopes: []string{"write:statuses"}},
 	"POST /api/v1/statuses/{id}/favourite":                                {Operation: "favouriteStatus", Scopes: []string{"write:favourites"}},
 	"POST /api/v1/statuses/{id}/pin":                                      {Operation: "pinStatus", Scopes: []string{"write:statuses"}},
+	"POST /api/v1/statuses/{id}/poll/votes":                               {Operation: "voteInPoll", Scopes: []string{"write:statuses"}},
 	"POST /api/v1/two_factor/recovery_codes":                              {Operation: "regenerateRecoveryCodes", Scopes: []string{"write:accounts"}},
 	"POST /api/v1/two_factor/totp":                                        {Operation: "enableTotp", Scopes: []string{"write:accounts"}},
 	"POST /api/v1/two_factor/totp/disable":                                {Operation: "disableTotp", Scopes: []string{"write:accounts"}},

@@ -54,7 +54,8 @@ type RemoteInteractionFactory func(t *testing.T, opts uow.Options) RemoteInterac
 // depend on the order or repetition of the activities (NFR-REL-1); switching the Like slot
 // between favourites and reactions delivers the Undo of what was in it before the next Like to
 // each inbox, also while an earlier delivery retries (ADR-0004 ordering keys), so that an inbox
-// of one reaction per account ends with what the sender has. The actors and the fetches are
+// of one reaction per account ends with what the sender has; and a local vote in a remote poll
+// sends a Create of a Note per choice to the poll's author (FR-112). The actors and the fetches are
 // in-memory stand-ins.
 func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory) {
 	t.Helper()
@@ -69,6 +70,7 @@ func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory
 		{"RefusesBoostsTheBoosterMayNotMake", remoteRefusesBoosts},
 		{"SendsLikesAndUndoLikes", remoteSendsLikes},
 		{"SendsReactionsInTheLikeSlot", remoteSendsReactions},
+		{"SendsPollVotes", remoteSendsPollVotes},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteInteractionEnv(t, newHarness)) })

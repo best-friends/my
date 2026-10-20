@@ -606,6 +606,15 @@ type PollTallyObservationCount struct {
 	Votes         int64
 }
 
+type PollVote struct {
+	ID        string
+	PollID    string
+	AccountID string
+	Position  int64
+	Uri       sql.NullString
+	VotedAt   int64
+}
+
 type PushSubscription struct {
 	ID                 string
 	AccountID          string

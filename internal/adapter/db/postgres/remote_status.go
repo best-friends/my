@@ -261,3 +261,46 @@ func customEmojiFrom(row postgresgen.CustomEmoji) content.CustomEmoji {
 func customEmojiImageFrom(row postgresgen.CustomEmojiImage) content.CustomEmojiImage {
 	return content.CustomEmojiImage{ID: row.ID, EmojiID: row.EmojiID, MediaID: row.MediaID, RevisedAt: utc(row.RevisedAt)}
 }
+
+// InsertPollVote implements content.Repository.
+func (r *StatusRepository) InsertPollVote(ctx context.Context, tx uow.Tx, v content.PollVote) (bool, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return false, err
+	}
+	pos, err := toInt32(v.Position, "poll vote position")
+	if err != nil {
+		return false, err
+	}
+	n, err := q.InsertPollVote(ctx, postgresgen.InsertPollVoteParams{
+		ID: v.ID, PollID: v.PollID, AccountID: v.AccountID, Position: pos, Uri: toNullString(v.URI), VotedAt: v.VotedAt,
+	})
+	if err != nil {
+		return false, wrap(err, "insert poll vote")
+	}
+	return n > 0, nil
+}
+
+// ListPollVotes implements content.Repository.
+func (r *StatusRepository) ListPollVotes(ctx context.Context, pollID, accountID string) ([]content.PollVote, error) {
+	rows, err := r.db.reader().ListPollVotesOfAccount(ctx, postgresgen.ListPollVotesOfAccountParams{PollID: pollID, AccountID: accountID})
+	if err != nil {
+		return nil, wrap(err, "list poll votes")
+	}
+	out := make([]content.PollVote, len(rows))
+	for i, row := range rows {
+		out[i] = content.PollVote{
+			ID: row.ID, PollID: row.PollID, AccountID: row.AccountID, Position: int(row.Position), URI: fromNullString(row.Uri), VotedAt: utc(row.VotedAt),
+		}
+	}
+	return out, nil
+}
+
+// ListPollVotesTx implements content.Repository.
+func (r *StatusRepository) ListPollVotesTx(ctx context.Context, tx uow.Tx, pollID, accountID string) ([]content.PollVote, error) {
+	db, err := r.db.in(tx)
+	if err != nil {
+		return nil, err
+	}
+	return (&StatusRepository{db: db}).ListPollVotes(ctx, pollID, accountID)
+}

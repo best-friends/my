@@ -59,6 +59,7 @@ type Interactions interface {
 	Unbookmark(ctx context.Context, accountID, statusID string) error
 	Pin(ctx context.Context, accountID, statusID string) error
 	Unpin(ctx context.Context, accountID, statusID string) error
+	VotePoll(ctx context.Context, accountID, statusID, pollID string, choices []int) ([]content.PollVote, error)
 }
 
 // defaultLimit is the page size of collections without a limit parameter.
@@ -149,6 +150,16 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return unprocessable(l.ServerErrorsStatusPinLimit(content.MaxPins))
 	case errors.Is(err, content.ErrInvalidReaction):
 		return unprocessable(l.ServerErrorsStatusInvalidReaction())
+	case errors.Is(err, content.ErrNoPoll):
+		return unprocessable(l.ServerErrorsStatusPollMissing())
+	case errors.Is(err, content.ErrPollChanged):
+		return s.problem(ctx, http.StatusConflict, ProblemTypeBlank, l.ServerErrorsConflict(), l.ServerErrorsStatusPollChanged()), true
+	case errors.Is(err, content.ErrPollClosed):
+		return unprocessable(l.ServerErrorsStatusPollClosed())
+	case errors.Is(err, content.ErrAlreadyVoted):
+		return unprocessable(l.ServerErrorsStatusPollAlreadyVoted())
+	case errors.Is(err, content.ErrInvalidPollChoices):
+		return unprocessable(l.ServerErrorsStatusPollInvalidChoices())
 	}
 	return problem{}, false
 }
@@ -263,6 +274,38 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		if r.Author {
 			out.Pinned = &r.Pinned
 		}
+	}
+	if v.Poll != nil {
+		p := newPoll(*v.Poll, v.Relation != nil)
+		out.Poll = &p
+	}
+	return out
+}
+
+// newPoll presents the poll of a status; withViewer adds the authenticated user's vote.
+func newPoll(v appcontent.PollView, withViewer bool) Poll {
+	out := Poll{
+		Id: v.Poll.ID, ExpiresAt: v.Poll.ClosesAt, Expired: v.Closed, Multiple: v.Poll.Multiple,
+		VotesCount: int(v.VotesCount()), Options: make([]PollOption, 0, len(v.Poll.Options)),
+	}
+	if v.VotersCount != nil {
+		n := int(*v.VotersCount)
+		out.VotersCount = &n
+	}
+	for i, o := range v.Poll.Options {
+		var votes int64
+		if i < len(v.Votes) {
+			votes = v.Votes[i]
+		}
+		out.Options = append(out.Options, PollOption{Title: o.Title, VotesCount: int(votes)})
+	}
+	if withViewer {
+		own := slices.Clone(v.OwnVotes)
+		if own == nil {
+			own = []int{}
+		}
+		voted := len(own) > 0
+		out.Voted, out.OwnVotes = &voted, &own
 	}
 	return out
 }
@@ -547,6 +590,22 @@ func (s *Server) BoostStatus(ctx context.Context, req BoostStatusRequestObject) 
 		return BoostStatusdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	return BoostStatus200JSONResponse{res}, err
+}
+
+// VoteInPoll serves POST /api/v1/statuses/{id}/poll/votes.
+func (s *Server) VoteInPoll(ctx context.Context, req VoteInPollRequestObject) (VoteInPollResponseObject, error) {
+	var pollID string
+	var choices []int
+	if req.Body != nil {
+		pollID, choices = req.Body.PollId, req.Body.Choices
+	}
+	res, p, err := s.act(ctx, req.Id, func(a string) error {
+		return ignoreResult(s.o.Interactions.VotePoll(ctx, a, req.Id, pollID, choices))
+	})
+	if p != nil {
+		return VoteInPolldefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	return VoteInPoll200JSONResponse{res}, err
 }
 
 // UnboostStatus serves DELETE /api/v1/statuses/{id}/boost.

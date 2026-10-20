@@ -166,6 +166,26 @@ type ObjectDocument struct {
 	Cc           []IRI      `json:"cc,omitempty"`
 }
 
+// VoteNoteDocument is the Note that carries a local account's choice in a remote poll (FR-112)
+// as Mastodon sends it: the title of the option as its name, in reply to the Question, and
+// addressed to the poll's author alone. Mastodon, Misskey, Pleroma, and GoToSocial count a Note
+// with a name in reply to their poll as a vote for the option of that title.
+type VoteNoteDocument struct {
+	ObjectDocument
+	Name string `json:"name"`
+}
+
+// NewPollVote returns the Create of the Note id by actor that votes for the option titled name
+// in the poll question of author. The Create is at id + "/activity" (ADR-0018).
+func NewPollVote(id, actor, author, question IRI, name string, published time.Time) ActivityDocument {
+	to := []IRI{author}
+	note := VoteNoteDocument{
+		ObjectDocument: ObjectDocument{ID: id, Type: ObjectNote, InReplyTo: &question, AttributedTo: actor, To: to},
+		Name:           name,
+	}
+	return NewActivityDocument(id+"/activity", ActivityCreate, actor, published, Audience{To: to}, note)
+}
+
 // TopLevelObject is an object document served on its own, with its context: the answer to a GET
 // of an object IRI (federation.md §10).
 type TopLevelObject struct {

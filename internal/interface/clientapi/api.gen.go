@@ -4674,6 +4674,50 @@ type PickerCustomEmojiList struct {
 	Items []PickerCustomEmoji `json:"items"`
 }
 
+// Poll The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
+// another server are those its server last reported. `voted` and `own_votes` describe the
+// authenticated user's vote and are omitted for anonymous requests.
+type Poll struct {
+	// Expired Whether the poll has ended. An ended poll takes no votes and shows its results.
+	Expired bool `json:"expired"`
+
+	// ExpiresAt When the poll ends; omitted when it has no end.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Multiple Whether a vote may choose several options.
+	Multiple bool `json:"multiple"`
+
+	// Options The options, in order; a vote names them by their index in this list.
+	Options []PollOption `json:"options"`
+
+	// OwnVotes The indexes of the options the authenticated user voted for, in order.
+	OwnVotes *[]int `json:"own_votes,omitempty"`
+
+	// Voted Whether the authenticated user voted in the poll.
+	Voted *bool `json:"voted,omitempty"`
+
+	// VotersCount The number of accounts that voted; omitted when it is unknown (a multiple-choice poll
+	// of another server that does not report it).
+	VotersCount *int `json:"voters_count,omitempty"`
+
+	// VotesCount The number of votes, one per chosen option.
+	VotesCount int `json:"votes_count"`
+}
+
+// PollOption One option of a poll.
+type PollOption struct {
+	// Title The option as plain text.
+	Title string `json:"title"`
+
+	// VotesCount The number of votes for the option.
+	VotesCount int `json:"votes_count"`
+}
+
 // PostingLimits What the account's current moderation restrictions let it post (data-model.md §5.4). The
 // server applies the same policy when it posts: a status asked for with a visibility that is
 // not in `visibilities` gets `visibility_ceiling` instead.
@@ -5189,6 +5233,11 @@ type Status struct {
 	// Pinned Whether the status is pinned to the author's profile; given only to the author.
 	Pinned *bool `json:"pinned,omitempty"`
 
+	// Poll The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
+	// another server are those its server last reported. `voted` and `own_votes` describe the
+	// authenticated user's vote and are omitted for anonymous requests.
+	Poll *Poll `json:"poll,omitempty"`
+
 	// Reactions The emoji reactions to the status, counted per emoji: the 20 emoji with the most
 	// reactions, the most first. The others are seen in `listStatusReactions`. Favourites
 	// are counted apart, in `favourites_count`.
@@ -5576,6 +5625,17 @@ type UpdateWebhookRequest struct {
 // public timelines; `private` followers and mentioned accounts; `direct` mentioned
 // accounts.
 type Visibility string
+
+// VoteInPollRequest A vote in the poll of a status.
+type VoteInPollRequest struct {
+	// Choices The indexes of the chosen options in `Poll.options`; one for a single-choice poll.
+	Choices []int `json:"choices"`
+
+	// PollId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	PollId Id `json:"poll_id"`
+}
 
 // WebhookCustomEmoji The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
 // `custom_emoji.deleted` message presents the emoji as it was before the deletion.
@@ -6372,6 +6432,9 @@ type CreateStatusJSONRequestBody = CreateStatusRequest
 // EditStatusJSONRequestBody defines body for EditStatus for application/json ContentType.
 type EditStatusJSONRequestBody = EditStatusRequest
 
+// VoteInPollJSONRequestBody defines body for VoteInPoll for application/json ContentType.
+type VoteInPollJSONRequestBody = VoteInPollRequest
+
 // ReactToStatusJSONRequestBody defines body for ReactToStatus for application/json ContentType.
 type ReactToStatusJSONRequestBody = ReactToStatusRequest
 
@@ -6854,6 +6917,9 @@ type ServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(w http.ResponseWriter, r *http.Request, id StatusId)
+	// VoteInPoll Vote in the poll of a status
+	// (POST /statuses/{id}/poll/votes)
+	VoteInPoll(w http.ResponseWriter, r *http.Request, id StatusId)
 	// UnreactToStatus Take back the emoji reaction to a status
 	// (DELETE /statuses/{id}/reaction)
 	UnreactToStatus(w http.ResponseWriter, r *http.Request, id StatusId)
@@ -11442,6 +11508,32 @@ func (siw *ServerInterfaceWrapper) PinStatus(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// VoteInPoll operation middleware
+func (siw *ServerInterfaceWrapper) VoteInPoll(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VoteInPoll(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // UnreactToStatus operation middleware
 func (siw *ServerInterfaceWrapper) UnreactToStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -12040,6 +12132,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/history", wrapper.GetStatusHistory)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.UnpinStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/pin", wrapper.PinStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/poll/votes", wrapper.VoteInPoll)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/reaction", wrapper.UnreactToStatus)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/statuses/{id}/reaction", wrapper.ReactToStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/reactions", wrapper.ListStatusReactions)
@@ -21629,6 +21722,62 @@ func (response PinStatusdefaultApplicationProblemPlusJSONResponse) VisitPinStatu
 	return err
 }
 
+type VoteInPollRequestObject struct {
+	Id   StatusId `json:"id"`
+	Body *VoteInPollJSONRequestBody
+}
+
+type VoteInPollResponseObject interface {
+	VisitVoteInPollResponse(w http.ResponseWriter) error
+}
+
+type VoteInPoll200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response VoteInPoll200JSONResponse) VisitVoteInPollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VoteInPolldefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response VoteInPolldefaultApplicationProblemPlusJSONResponse) VisitVoteInPollResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UnreactToStatusRequestObject struct {
 	Id StatusId `json:"id"`
 }
@@ -22864,6 +23013,9 @@ type StrictServerInterface interface {
 	// PinStatus Pin the authenticated user's status to the profile
 	// (POST /statuses/{id}/pin)
 	PinStatus(ctx context.Context, request PinStatusRequestObject) (PinStatusResponseObject, error)
+	// VoteInPoll Vote in the poll of a status
+	// (POST /statuses/{id}/poll/votes)
+	VoteInPoll(ctx context.Context, request VoteInPollRequestObject) (VoteInPollResponseObject, error)
 	// UnreactToStatus Take back the emoji reaction to a status
 	// (DELETE /statuses/{id}/reaction)
 	UnreactToStatus(ctx context.Context, request UnreactToStatusRequestObject) (UnreactToStatusResponseObject, error)
@@ -27258,6 +27410,39 @@ func (sh *strictHandler) PinStatus(w http.ResponseWriter, r *http.Request, id St
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PinStatusResponseObject); ok {
 		if err := validResponse.VisitPinStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VoteInPoll operation middleware
+func (sh *strictHandler) VoteInPoll(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request VoteInPollRequestObject
+
+	request.Id = id
+
+	var body VoteInPollJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VoteInPoll(ctx, request.(VoteInPollRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VoteInPoll")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VoteInPollResponseObject); ok {
+		if err := validResponse.VisitVoteInPollResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
