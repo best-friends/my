@@ -84,6 +84,7 @@ export {
   MoveUpIcon,
   NotificationsIcon,
   PlusIcon,
+  PollIcon,
   ProfileIcon,
   ReplyIcon,
   SearchIcon,
