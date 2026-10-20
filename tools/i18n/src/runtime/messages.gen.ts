@@ -712,10 +712,16 @@ export interface MessageArgs {
   "client:admin.audit_log.action.report_unassigned": {};
   /** Private data shown */
   "client:admin.audit_log.action.revealed_private_data": {};
+  /** Role created */
+  "client:admin.audit_log.action.role_created": {};
+  /** Role deleted */
+  "client:admin.audit_log.action.role_deleted": {};
   /** Role granted */
   "client:admin.audit_log.action.role_granted": {};
   /** Role revoked */
   "client:admin.audit_log.action.role_revoked": {};
+  /** Role changed */
+  "client:admin.audit_log.action.role_updated": {};
   /** Rule added */
   "client:admin.audit_log.action.rule_added": {};
   /** Rule moved */
@@ -1606,6 +1612,108 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
+  /** Built-in role with every permission. It cannot be changed or deleted. */
+  "client:admin.roles.builtin.admin": {};
+  /** Built-in role. Its position and permissions can be changed, but it cannot be deleted. */
+  "client:admin.roles.builtin.moderator": {};
+  /** Cancel */
+  "client:admin.roles.cancel": {};
+  /** Moderation */
+  "client:admin.roles.category.moderation": {};
+  /** Server administration */
+  "client:admin.roles.category.server": {};
+  /** Created the role {role}. The audit log records it. */
+  "client:admin.roles.created": { role: string };
+  /** Delete */
+  "client:admin.roles.delete": {};
+  /** Could not delete the role: {reason} */
+  "client:admin.roles.delete_failed": { reason: string };
+  /** Delete {role} */
+  "client:admin.roles.delete_role": { role: string };
+  /** This cannot be undone. A role that someone holds cannot be deleted: revoke it from them first. */
+  "client:admin.roles.delete.description": {};
+  /** Delete the role {role}? */
+  "client:admin.roles.delete.title": { role: string };
+  /** Deleted the role {role}. The audit log records it. */
+  "client:admin.roles.deleted": { role: string };
+  /** Edit */
+  "client:admin.roles.edit": {};
+  /** Edit {role} */
+  "client:admin.roles.edit_role": { role: string };
+  /** Close */
+  "client:admin.roles.edit.close": {};
+  /** Edit the role {role} */
+  "client:admin.roles.edit.title": { role: string };
+  /** This role is now above your highest role, so you cannot change it. */
+  "client:admin.roles.failed.outranked": {};
+  /** Key */
+  "client:admin.roles.key": {};
+  /** Up to {max} lowercase letters, digits, underscores, or hyphens. It cannot be changed later. */
+  "client:admin.roles.key.description": { max: string };
+  /** Enter up to {max} lowercase letters, digits, underscores, or hyphens. */
+  "client:admin.roles.key.invalid": { max: string };
+  /** Roles of this server */
+  "client:admin.roles.list.title": {};
+  /** Permissions your roles do not grant: {permissions} */
+  "client:admin.roles.missing_permissions": { permissions: string };
+  /** Find accounts */
+  "client:admin.roles.new.accounts": {};
+  /** A new role is held by nobody. Grant it on the admin page of an account. */
+  "client:admin.roles.new.description": {};
+  /** You hold no role, so you cannot create one. */
+  "client:admin.roles.new.no_role": {};
+  /** Create a role */
+  "client:admin.roles.new.title": {};
+  /** Above your highest role, {role}, so you cannot change it. */
+  "client:admin.roles.outranked": { role: string };
+  /** Accounts and registrations */
+  "client:admin.roles.permission.manage_accounts": {};
+  /** Custom emoji */
+  "client:admin.roles.permission.manage_custom_emojis": {};
+  /** Other servers */
+  "client:admin.roles.permission.manage_domains": {};
+  /** Invites */
+  "client:admin.roles.permission.manage_invites": {};
+  /** Failed jobs */
+  "client:admin.roles.permission.manage_jobs": {};
+  /** Reports */
+  "client:admin.roles.permission.manage_reports": {};
+  /** Roles */
+  "client:admin.roles.permission.manage_roles": {};
+  /** Server rules */
+  "client:admin.roles.permission.manage_rules": {};
+  /** Server settings */
+  "client:admin.roles.permission.manage_settings": {};
+  /** Removing two-factor authentication */
+  "client:admin.roles.permission.manage_two_factor": {};
+  /** Webhooks */
+  "client:admin.roles.permission.manage_webhooks": {};
+  /** Audit log */
+  "client:admin.roles.permission.view_audit": {};
+  /** Choose the permissions the role grants. You can give or take only the permissions your own roles grant. */
+  "client:admin.roles.permissions.description": {};
+  /** None */
+  "client:admin.roles.permissions.none": {};
+  /** ,  */
+  "client:admin.roles.permissions.separator": {};
+  /** Position */
+  "client:admin.roles.position": {};
+  /** A whole number from 0 to {max}. A higher position outranks a lower one; you can manage only roles at or below your own highest role. */
+  "client:admin.roles.position.description": { max: string };
+  /** Enter a whole number from 0 to {max}. */
+  "client:admin.roles.position.invalid": { max: string };
+  /** Save */
+  "client:admin.roles.save": {};
+  /** Could not save the role: {reason} */
+  "client:admin.roles.save_failed": { reason: string };
+  /** Create role */
+  "client:admin.roles.submit": {};
+  /** Create roles, and choose their positions and permissions. */
+  "client:admin.roles.summary": {};
+  /** Roles */
+  "client:admin.roles.title": {};
+  /** Changed the role {role}. Its holders get the change from their next request. The audit log records it. */
+  "client:admin.roles.updated": { role: string };
   /** Add the rule */
   "client:admin.rules.add": {};
   /** Could not add the rule: {reason} */
@@ -3942,6 +4050,10 @@ export interface MessageArgs {
   "server:errors.report.not_resolved": {};
   /** The request is too large. */
   "server:errors.request_too_large": {};
+  /** The role cannot be saved. */
+  "server:errors.role.invalid": {};
+  /** {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} other {The change breaks a rule.}} */
+  "server:errors.role.invalid_detail": { reason: "builtin" | "held" | "key" | "key_taken" | "missing_permission" | "permissions" | "position" | (string & {}) };
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
   /** The service is temporarily unavailable. Please try again later. */

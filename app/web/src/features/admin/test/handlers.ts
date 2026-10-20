@@ -113,7 +113,27 @@ const createdWebhookId = "0199f0e0-0000-7000-8000-0000000000b1";
 /** The ID the default POST /admin/custom_emojis handler gives a new emoji. */
 const createdCustomEmojiId = "0199f0e0-0000-7000-8000-00000000e001";
 
+/** The ID the default POST /admin/roles handler gives a new role. */
+export const createdRoleId = "0199f0e0-0000-7000-8000-0000000000c1";
+
 export const handlers = [
+  // operationIds createRole, updateRole, deleteRole (the roles themselves are the moderation feature's): a new
+  // role is answered as sent; a changed one is the moderator role with the changes sent.
+  http.post(`${apiBase}/admin/roles`, async ({ request }) => {
+    const body = (await request.clone().json()) as Schemas["CreateRoleRequest"];
+    return withViewer(request, () => HttpResponse.json({ id: createdRoleId, ...body } satisfies Schemas["AdminRole"]));
+  }),
+  http.patch(`${apiBase}/admin/roles/:role`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["UpdateRoleRequest"];
+    const role: Schemas["AdminRole"] = {
+      id: "0199f0e0-0000-7000-8000-0000000000c2",
+      key: String(params["role"]),
+      position: body.position ?? 100,
+      permissions: body.permissions ?? ["manage_reports", "manage_accounts", "view_audit"],
+    };
+    return withViewer(request, () => HttpResponse.json(role));
+  }),
+  http.delete(`${apiBase}/admin/roles/:role`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds listDeadJobs, retryDeadJob.
   http.get(`${apiBase}/admin/dead_jobs`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),

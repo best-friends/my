@@ -34,7 +34,7 @@ const moderator = {
   ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks", "manage_roles"],
 };
 
 /** The reported account: a long display name, local. */
@@ -210,6 +210,18 @@ const webhook: Schemas["AdminWebhook"] = {
   updated_at: "2026-10-16T00:00:00Z",
 };
 
+/** The roles, as GET /admin/roles lists them: the built-in ones, and one with a long key. */
+const roles: Schemas["AdminRole"][] = [
+  {
+    id: "0192f0c4-7a8e-7000-8000-0000000000f7",
+    key: "admin",
+    position: 1000,
+    permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_two_factor", "manage_custom_emojis", "manage_webhooks"],
+  },
+  { id: "0192f0c4-7a8e-7000-8000-0000000000f8", key: "moderator", position: 100, permissions: ["manage_reports", "manage_accounts", "view_audit"] },
+  { id: "0192f0c4-7a8e-7000-8000-0000000000f9", key: "weekend-volunteers-of-the-community-help-desk", position: 50, permissions: ["manage_reports", "manage_jobs"] },
+];
+
 /** A failing delivery of the webhook, as GET /admin/webhooks/{id}/deliveries lists it. */
 const webhookDelivery: Schemas["AdminWebhookDelivery"] = {
   id: "0192f0c4-7a8e-7000-8000-0000000000e4",
@@ -381,6 +393,8 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/webhooks") return json(route, { items: [webhook] });
     if (key === `GET /admin/webhooks/${webhook.id}`) return json(route, webhook);
     if (key === `GET /admin/webhooks/${webhook.id}/deliveries`) return json(route, { items: [webhookDelivery] });
+    if (key === "GET /admin/roles") return json(route, { items: roles });
+    if (/^GET \/admin\/accounts\/[^/]+\/roles$/.test(key)) return json(route, { items: key.includes(moderator.id) ? roles.slice(0, 1) : [] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
@@ -434,6 +448,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },
   "admin.rules": { path: "/admin/rules", ready: rule.texts[1]?.hint ?? "" },
+  "admin.roles": { path: "/admin/roles", ready: roles[2]?.key ?? "" },
   "moderation.invites": { path: "/moderation/invites", ready: invite.code },
 };
 

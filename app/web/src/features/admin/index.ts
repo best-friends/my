@@ -28,3 +28,6 @@ export { CustomEmojiSettings } from "./components/CustomEmojiSettings";
 export { webhookDeliveriesQueryOptions, webhookQueryOptions, webhooksQueryOptions } from "./api/webhooks";
 export { WebhookDeliveries } from "./components/WebhookDeliveries";
 export { WebhookSettings } from "./components/WebhookSettings";
+// The roles: creating them and changing their positions and permissions (FR-720), for manage_roles. Their queries
+// are those of the moderation feature, which shows an account's roles.
+export { RoleSettings } from "./components/RoleSettings";

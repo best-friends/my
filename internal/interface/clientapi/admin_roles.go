@@ -17,12 +17,28 @@ import (
 // on local accounts. The use cases check the rank of the viewer and keep the last admin, and
 // audit every change.
 
+// ProblemTypeInvalidRole is the problem type of a role change that breaks a rule (422), whose
+// reason says which.
+const ProblemTypeInvalidRole = "/api/v1/problems/invalid-role"
+
 // Roles runs the use cases of the roles. *appidentity.Service implements it.
 type Roles interface {
 	Roles(ctx context.Context) ([]appidentity.RoleWithPermissions, error)
 	UserRoles(ctx context.Context, userID string) ([]identity.Role, error)
 	GrantRole(ctx context.Context, in appidentity.RoleChangeInput) (bool, error)
 	RevokeRole(ctx context.Context, in appidentity.RoleChangeInput) (bool, error)
+	CreateRole(ctx context.Context, in appidentity.CreateRoleInput) (appidentity.RoleWithPermissions, error)
+	UpdateRole(ctx context.Context, in appidentity.UpdateRoleInput) (appidentity.RoleWithPermissions, error)
+	DeleteRole(ctx context.Context, key, byUserID string) error
+}
+
+// newAdminRole presents a role with its permissions.
+func newAdminRole(r appidentity.RoleWithPermissions) AdminRole {
+	item := AdminRole{Id: r.ID, Key: r.Key, Position: r.Position, Permissions: make([]Permission, len(r.Permissions))}
+	for i, p := range r.Permissions {
+		item.Permissions[i] = Permission(p)
+	}
+	return item
 }
 
 // roleList presents the user's current roles with their permissions, highest first.
@@ -48,11 +64,7 @@ func (s *Server) roleList(ctx context.Context, userID string) (AdminRoleListJSON
 		if !keep(r.ID) {
 			continue
 		}
-		item := AdminRole{Id: r.ID, Key: r.Key, Position: r.Position, Permissions: make([]Permission, len(r.Permissions))}
-		for i, p := range r.Permissions {
-			item.Permissions[i] = Permission(p)
-		}
-		list.Items = append(list.Items, item)
+		list.Items = append(list.Items, newAdminRole(r))
 	}
 	cache := cacheNoStore
 	return AdminRoleListJSONResponse{Body: list, Headers: AdminRoleListResponseHeaders{CacheControl: &cache}}, nil

@@ -9,6 +9,7 @@ package clientapi
 var operationSecurity = map[string]operationAccess{
 	"DELETE /api/v1/admin/accounts/{id}/roles/{role}":                     {Operation: "revokeAccountRole", Scopes: []string{"admin:write"}},
 	"DELETE /api/v1/admin/custom_emojis/{id}":                             {Operation: "deleteCustomEmoji", Scopes: []string{"admin:write"}},
+	"DELETE /api/v1/admin/roles/{role}":                                   {Operation: "deleteRole", Scopes: []string{"admin:write"}},
 	"DELETE /api/v1/admin/webhooks/{id}":                                  {Operation: "deleteWebhook", Scopes: []string{"admin:write"}},
 	"DELETE /api/v1/push/subscription":                                    {Operation: "deletePushSubscription", Scopes: []string{"push"}},
 	"DELETE /api/v1/statuses/{id}":                                        {Operation: "deleteStatus", Scopes: []string{"write:statuses"}},
@@ -86,6 +87,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/two_factor":                                              {Operation: "getTwoFactor", Scopes: []string{"read:accounts"}},
 	"PATCH /api/v1/accounts/update_credentials":                           {Operation: "updateAccountCredentials", Scopes: []string{"write:accounts"}},
 	"PATCH /api/v1/admin/custom_emojis/{id}":                              {Operation: "updateCustomEmoji", Scopes: []string{"admin:write"}},
+	"PATCH /api/v1/admin/roles/{role}":                                    {Operation: "updateRole", Scopes: []string{"admin:write"}},
 	"PATCH /api/v1/admin/rules/{id}":                                      {Operation: "updateInstanceRule", Scopes: []string{"admin:write"}},
 	"PATCH /api/v1/admin/settings":                                        {Operation: "updateInstanceSettings", Scopes: []string{"admin:write"}},
 	"PATCH /api/v1/admin/webhooks/{id}":                                   {Operation: "updateWebhook", Scopes: []string{"admin:write"}},
@@ -119,6 +121,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/admin/reports/{id}/reopen":                              {Operation: "reopenReport", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/reports/{id}/resolve":                             {Operation: "resolveReport", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/reports/{id}/unassign":                            {Operation: "unassignReport", Scopes: []string{"admin:write"}},
+	"POST /api/v1/admin/roles":                                            {Operation: "createRole", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/rules":                                            {Operation: "createInstanceRule", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/rules/{id}/move":                                  {Operation: "moveInstanceRule", Scopes: []string{"admin:write"}},
 	"POST /api/v1/admin/rules/{id}/retire":                                {Operation: "retireInstanceRule", Scopes: []string{"admin:write"}},

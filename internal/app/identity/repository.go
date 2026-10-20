@@ -28,8 +28,9 @@ type Repository interface {
 
 	InsertUser(ctx context.Context, tx uow.Tx, u identity.User) error
 	InsertPasswordCredential(ctx context.Context, tx uow.Tx, c identity.PasswordCredential) error
-	// EnsureRole inserts a role unless one with the same key exists, adds the permissions it
-	// lacks, and returns the stored role (whose ID and creation time are those of the first insert).
+	// EnsureRole inserts a role with perms unless one with the same key exists, and returns the
+	// stored role: r when it inserted r, and the existing role, whose permissions it leaves as
+	// they are, otherwise.
 	EnsureRole(ctx context.Context, tx uow.Tx, r identity.Role, perms []identity.Permission) (identity.Role, error)
 	InsertEmailAddress(ctx context.Context, tx uow.Tx, e identity.EmailAddress) error
 	// InsertPrimaryEmail makes e the primary email address of its user, who has none yet.

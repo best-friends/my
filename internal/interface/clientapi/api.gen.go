@@ -267,8 +267,11 @@ const (
 	AdminAuditActionReportResolved           AdminAuditAction = "report_resolved"
 	AdminAuditActionReportUnassigned         AdminAuditAction = "report_unassigned"
 	AdminAuditActionRevealedPrivateData      AdminAuditAction = "revealed_private_data"
+	AdminAuditActionRoleCreated              AdminAuditAction = "role_created"
+	AdminAuditActionRoleDeleted              AdminAuditAction = "role_deleted"
 	AdminAuditActionRoleGranted              AdminAuditAction = "role_granted"
 	AdminAuditActionRoleRevoked              AdminAuditAction = "role_revoked"
+	AdminAuditActionRoleUpdated              AdminAuditAction = "role_updated"
 	AdminAuditActionRuleAdded                AdminAuditAction = "rule_added"
 	AdminAuditActionRuleMoved                AdminAuditAction = "rule_moved"
 	AdminAuditActionRuleRetired              AdminAuditAction = "rule_retired"
@@ -331,9 +334,15 @@ func (e AdminAuditAction) Valid() bool {
 		return true
 	case AdminAuditActionRevealedPrivateData:
 		return true
+	case AdminAuditActionRoleCreated:
+		return true
+	case AdminAuditActionRoleDeleted:
+		return true
 	case AdminAuditActionRoleGranted:
 		return true
 	case AdminAuditActionRoleRevoked:
+		return true
+	case AdminAuditActionRoleUpdated:
 		return true
 	case AdminAuditActionRuleAdded:
 		return true
@@ -1330,6 +1339,39 @@ func (e ReportState) Valid() bool {
 	}
 }
 
+// Defines values for RoleProblemReason.
+const (
+	RoleProblemReasonBuiltin           RoleProblemReason = "builtin"
+	RoleProblemReasonHeld              RoleProblemReason = "held"
+	RoleProblemReasonKey               RoleProblemReason = "key"
+	RoleProblemReasonKeyTaken          RoleProblemReason = "key_taken"
+	RoleProblemReasonMissingPermission RoleProblemReason = "missing_permission"
+	RoleProblemReasonPermissions       RoleProblemReason = "permissions"
+	RoleProblemReasonPosition          RoleProblemReason = "position"
+)
+
+// Valid indicates whether the value is a known member of the RoleProblemReason enum.
+func (e RoleProblemReason) Valid() bool {
+	switch e {
+	case RoleProblemReasonBuiltin:
+		return true
+	case RoleProblemReasonHeld:
+		return true
+	case RoleProblemReasonKey:
+		return true
+	case RoleProblemReasonKeyTaken:
+		return true
+	case RoleProblemReasonMissingPermission:
+		return true
+	case RoleProblemReasonPermissions:
+		return true
+	case RoleProblemReasonPosition:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SearchIndexing.
 const (
 	SearchIndexingAllow SearchIndexing = "allow"
@@ -2014,8 +2056,10 @@ type AdminAppealPage struct {
 // `user` (a registration):
 // `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 // (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
-// user): `role_granted`, `role_revoked`. On an `appeal`:
+// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+// `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+// `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+// an `appeal`:
 // `appeal_upheld`, `appeal_overturned` (which also records the action's
 // `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
 // `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
@@ -2045,8 +2089,10 @@ type AdminAuditEntry struct {
 	// `user` (a registration):
 	// `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
 	// (an instance setting), `text_changed` (an instance text in one locale). On a `rule`:
-	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role` (a role of a
-	// user): `role_granted`, `role_revoked`. On an `appeal`:
+	// `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+	// `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+	// `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+	// an `appeal`:
 	// `appeal_upheld`, `appeal_overturned` (which also records the action's
 	// `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
 	// `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
@@ -2084,8 +2130,8 @@ type AdminAuditEntry struct {
 
 	// TargetExists Whether the target is still there to look at. It is `false` for an account, a report,
 	// an appeal, or a sign-up block that is gone (erased past its retention), which only
-	// `target_label` names now. It is `true` for the other kinds of targets, which are
-	// never erased.
+	// `target_label` names now. It is `true` for the other kinds of targets: a role, a
+	// custom emoji, or a webhook that was deleted is not looked up yet.
 	TargetExists bool `json:"target_exists"`
 
 	// TargetId The target: the ID of an account, a report, a user, a rule, or a sign-up block, the
@@ -2626,7 +2672,8 @@ type AdminReportTargetHistory struct {
 }
 
 // AdminRole A role (FR-720): a named set of permissions. A higher position outranks a lower one;
-// a user may grant and revoke only the roles at or below their highest one.
+// a user may grant, revoke, create, change, and delete only the roles at or below their
+// highest one, and give or take only the permissions they hold.
 type AdminRole struct {
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
@@ -3097,6 +3144,18 @@ type CreateReportRequest struct {
 
 	// StatusIds Posts of the account that the user can see, up to 20.
 	StatusIds *[]Id `json:"status_ids,omitempty"`
+}
+
+// CreateRoleRequest A new role.
+type CreateRoleRequest struct {
+	// Key The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`.
+	Key string `json:"key"`
+
+	// Permissions The permissions that the role grants, each once.
+	Permissions []Permission `json:"permissions"`
+
+	// Position The rank of the role, from 0 to 999 (below `admin`).
+	Position int `json:"position"`
 }
 
 // CreateSignupBlockRequest A new block on sign-ups.
@@ -4407,6 +4466,45 @@ type ResolveReportRequest struct {
 	Outcome AdminReportOutcome `json:"outcome"`
 }
 
+// RoleProblem The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
+// `reason` says which. Another 422 (a malformed request) has none.
+type RoleProblem struct {
+	// Detail An explanation of this occurrence, localized from `Accept-Language`.
+	Detail *string `json:"detail,omitempty"`
+
+	// MissingPermissions The permissions that the change needs and the viewer lacks, for `missing_permission`.
+	MissingPermissions *[]Permission `json:"missing_permissions,omitempty"`
+
+	// Reason Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+	// and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+	// `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+	// and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+	// `missing_permission`: the change adds or removes permissions that the viewer's roles
+	// do not grant (`missing_permissions`).
+	Reason *RoleProblemReason `json:"reason,omitempty"`
+
+	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Status The HTTP status code.
+	Status int `json:"status"`
+
+	// Title A short summary of the problem type, localized from `Accept-Language`.
+	Title string `json:"title"`
+
+	// Type A URI that identifies the problem type, stable for clients to branch on.
+	// It is `about:blank` when the problem means no more than its HTTP status.
+	Type string `json:"type"`
+}
+
+// RoleProblemReason Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+// and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+// `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+// and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+// `missing_permission`: the change adds or removes permissions that the viewer's roles
+// do not grant (`missing_permissions`).
+type RoleProblemReason string
+
 // SearchIndexing Whether the instance lets search engines index its pages (the instance setting
 // `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
 // that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
@@ -4900,6 +4998,15 @@ type UpdatePreferencesRequest struct {
 
 	// TimelineLanguages The languages that timelines show, at most 64; empty shows every language.
 	TimelineLanguages *[]string `json:"timeline_languages,omitempty"`
+}
+
+// UpdateRoleRequest The changes to a role; what is omitted stays.
+type UpdateRoleRequest struct {
+	// Permissions The new permissions of the role, each once; empty removes them all.
+	Permissions *[]Permission `json:"permissions,omitempty"`
+
+	// Position The new rank of the role, from 0 to 999.
+	Position *int `json:"position,omitempty"`
 }
 
 // UpdateWebhookRequest The changes to a webhook; what is omitted stays.
@@ -5613,6 +5720,12 @@ type AddReportNoteJSONRequestBody = CreateReportNoteRequest
 // ResolveReportJSONRequestBody defines body for ResolveReport for application/json ContentType.
 type ResolveReportJSONRequestBody = ResolveReportRequest
 
+// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
+type CreateRoleJSONRequestBody = CreateRoleRequest
+
+// UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
+type UpdateRoleJSONRequestBody = UpdateRoleRequest
+
 // CreateInstanceRuleJSONRequestBody defines body for CreateInstanceRule for application/json ContentType.
 type CreateInstanceRuleJSONRequestBody = InstanceRuleInput
 
@@ -5879,6 +5992,15 @@ type ServerInterface interface {
 	// ListRoles List the roles
 	// (GET /admin/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
+	// CreateRole Create a role
+	// (POST /admin/roles)
+	CreateRole(w http.ResponseWriter, r *http.Request)
+	// DeleteRole Delete a role
+	// (DELETE /admin/roles/{role})
+	DeleteRole(w http.ResponseWriter, r *http.Request, role RoleKey)
+	// UpdateRole Change a role
+	// (PATCH /admin/roles/{role})
+	UpdateRole(w http.ResponseWriter, r *http.Request, role RoleKey)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(w http.ResponseWriter, r *http.Request, params ListInstanceRulesParams)
@@ -8419,6 +8541,72 @@ func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// CreateRole operation middleware
+func (siw *ServerInterfaceWrapper) CreateRole(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRole(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteRole operation middleware
+func (siw *ServerInterfaceWrapper) DeleteRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteRole(w, r, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRole operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "role" -------------
+	var role RoleKey
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role", r.PathValue("role"), &role, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRole(w, r, role)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListInstanceRules operation middleware
 func (siw *ServerInterfaceWrapper) ListInstanceRules(w http.ResponseWriter, r *http.Request) {
 
@@ -10889,6 +11077,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/reveal", wrapper.RevealAdminAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/two_factor/disable", wrapper.DisableAdminAccountTwoFactor)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/roles", wrapper.CreateRole)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/roles/{role}", wrapper.DeleteRole)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/roles/{role}", wrapper.UpdateRole)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}/roles", wrapper.ListAccountRoles)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.RevokeAccountRole)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/accounts/{id}/roles/{role}", wrapper.GrantAccountRole)
@@ -11023,6 +11214,15 @@ type AdminReportDetailJSONResponse struct {
 	Headers AdminReportDetailResponseHeaders
 }
 
+type AdminRoleResponseHeaders struct {
+	CacheControl *string
+}
+type AdminRoleJSONResponse struct {
+	Body AdminRole
+
+	Headers AdminRoleResponseHeaders
+}
+
 type AdminRoleListResponseHeaders struct {
 	CacheControl *string
 }
@@ -11115,6 +11315,16 @@ type RelationshipJSONResponse struct {
 	Body Relationship
 
 	Headers RelationshipResponseHeaders
+}
+
+type RoleProblemResponseHeaders struct {
+	CacheControl    *string
+	ContentLanguage *string
+}
+type RoleProblemApplicationProblemPlusJSONResponse struct {
+	Body RoleProblem
+
+	Headers RoleProblemResponseHeaders
 }
 
 type StatusAfterActionResponseHeaders struct {
@@ -14910,6 +15120,229 @@ type ListRolesdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListRolesdefaultApplicationProblemPlusJSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoleRequestObject struct {
+	Body *CreateRoleJSONRequestBody
+}
+
+type CreateRoleResponseObject interface {
+	VisitCreateRoleResponse(w http.ResponseWriter) error
+}
+
+type CreateRole200JSONResponse struct{ AdminRoleJSONResponse }
+
+func (response CreateRole200JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRole422ApplicationProblemPlusJSONResponse struct {
+	RoleProblemApplicationProblemPlusJSONResponse
+}
+
+func (response CreateRole422ApplicationProblemPlusJSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateRoledefaultApplicationProblemPlusJSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRoleRequestObject struct {
+	Role RoleKey `json:"role"`
+}
+
+type DeleteRoleResponseObject interface {
+	VisitDeleteRoleResponse(w http.ResponseWriter) error
+}
+
+type DeleteRole204Response struct {
+}
+
+func (response DeleteRole204Response) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteRole422ApplicationProblemPlusJSONResponse struct {
+	RoleProblemApplicationProblemPlusJSONResponse
+}
+
+func (response DeleteRole422ApplicationProblemPlusJSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteRoledefaultApplicationProblemPlusJSONResponse) VisitDeleteRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRoleRequestObject struct {
+	Role RoleKey `json:"role"`
+	Body *UpdateRoleJSONRequestBody
+}
+
+type UpdateRoleResponseObject interface {
+	VisitUpdateRoleResponse(w http.ResponseWriter) error
+}
+
+type UpdateRole200JSONResponse struct{ AdminRoleJSONResponse }
+
+func (response UpdateRole200JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRole422ApplicationProblemPlusJSONResponse struct {
+	RoleProblemApplicationProblemPlusJSONResponse
+}
+
+func (response UpdateRole422ApplicationProblemPlusJSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRoledefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateRoledefaultApplicationProblemPlusJSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -20042,6 +20475,15 @@ type StrictServerInterface interface {
 	// ListRoles List the roles
 	// (GET /admin/roles)
 	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
+	// CreateRole Create a role
+	// (POST /admin/roles)
+	CreateRole(ctx context.Context, request CreateRoleRequestObject) (CreateRoleResponseObject, error)
+	// DeleteRole Delete a role
+	// (DELETE /admin/roles/{role})
+	DeleteRole(ctx context.Context, request DeleteRoleRequestObject) (DeleteRoleResponseObject, error)
+	// UpdateRole Change a role
+	// (PATCH /admin/roles/{role})
+	UpdateRole(ctx context.Context, request UpdateRoleRequestObject) (UpdateRoleResponseObject, error)
 	// ListInstanceRules List the instance rules
 	// (GET /admin/rules)
 	ListInstanceRules(ctx context.Context, request ListInstanceRulesRequestObject) (ListInstanceRulesResponseObject, error)
@@ -22152,6 +22594,96 @@ func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
 		if err := validResponse.VisitListRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRole operation middleware
+func (sh *strictHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
+	var request CreateRoleRequestObject
+
+	var body CreateRoleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRole(ctx, request.(CreateRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRoleResponseObject); ok {
+		if err := validResponse.VisitCreateRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteRole operation middleware
+func (sh *strictHandler) DeleteRole(w http.ResponseWriter, r *http.Request, role RoleKey) {
+	var request DeleteRoleRequestObject
+
+	request.Role = role
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteRole(ctx, request.(DeleteRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteRoleResponseObject); ok {
+		if err := validResponse.VisitDeleteRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateRole operation middleware
+func (sh *strictHandler) UpdateRole(w http.ResponseWriter, r *http.Request, role RoleKey) {
+	var request UpdateRoleRequestObject
+
+	request.Role = role
+
+	var body UpdateRoleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateRole(ctx, request.(UpdateRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateRoleResponseObject); ok {
+		if err := validResponse.VisitUpdateRoleResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

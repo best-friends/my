@@ -1395,6 +1395,14 @@
     "defaultMessage": "Private data shown",
     "description": "Heading of an audit log entry: a moderator was shown the email address and the IP addresses of a local account."
   },
+  "admin.audit_log.action.role_created": {
+    "defaultMessage": "Role created",
+    "description": "Heading of an audit log entry: an administrator created a role."
+  },
+  "admin.audit_log.action.role_deleted": {
+    "defaultMessage": "Role deleted",
+    "description": "Heading of an audit log entry: an administrator deleted a role."
+  },
   "admin.audit_log.action.role_granted": {
     "defaultMessage": "Role granted",
     "description": "Heading of an audit log entry: an administrator granted a role to a user."
@@ -1402,6 +1410,10 @@
   "admin.audit_log.action.role_revoked": {
     "defaultMessage": "Role revoked",
     "description": "Heading of an audit log entry: an administrator revoked a role from a user."
+  },
+  "admin.audit_log.action.role_updated": {
+    "defaultMessage": "Role changed",
+    "description": "Heading of an audit log entry: an administrator changed the position or the permissions of a role."
   },
   "admin.audit_log.action.rule_added": {
     "defaultMessage": "Rule added",
@@ -2898,6 +2910,210 @@
   "admin.reports.title": {
     "defaultMessage": "Reports",
     "description": "Heading and title of the report queue."
+  },
+  "admin.roles.builtin.admin": {
+    "defaultMessage": "Built-in role with every permission. It cannot be changed or deleted.",
+    "description": "Note on the built-in admin role in the list of roles."
+  },
+  "admin.roles.builtin.moderator": {
+    "defaultMessage": "Built-in role. Its position and permissions can be changed, but it cannot be deleted.",
+    "description": "Note on the built-in moderator role in the list of roles."
+  },
+  "admin.roles.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes a role's dialog without changing anything."
+  },
+  "admin.roles.category.moderation": {
+    "defaultMessage": "Moderation",
+    "description": "Label of the group of moderation permissions, and the term of them in the list of roles."
+  },
+  "admin.roles.category.server": {
+    "defaultMessage": "Server administration",
+    "description": "Label of the group of server administration permissions, and the term of them in the list of roles."
+  },
+  "admin.roles.created": {
+    "defaultMessage": "Created the role {role}. The audit log records it.",
+    "description": "Result after creating a role. {role} is its key (isolated)."
+  },
+  "admin.roles.delete": {
+    "defaultMessage": "Delete",
+    "description": "Button that deletes a role (and the confirmation's button)."
+  },
+  "admin.roles.delete.description": {
+    "defaultMessage": "This cannot be undone. A role that someone holds cannot be deleted: revoke it from them first.",
+    "description": "Body of the confirmation of deleting a role."
+  },
+  "admin.roles.delete.title": {
+    "defaultMessage": "Delete the role {role}?",
+    "description": "Title of the confirmation of deleting a role. {role} is its key (isolated)."
+  },
+  "admin.roles.delete_failed": {
+    "defaultMessage": "Could not delete the role: {reason}",
+    "description": "Error in the confirmation when deleting a role failed. {reason} is the server's explanation."
+  },
+  "admin.roles.delete_role": {
+    "defaultMessage": "Delete {role}",
+    "description": "Accessible name of the delete button of a role. {role} is its key (isolated)."
+  },
+  "admin.roles.deleted": {
+    "defaultMessage": "Deleted the role {role}. The audit log records it.",
+    "description": "Result after deleting a role. {role} is its key (isolated)."
+  },
+  "admin.roles.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog that changes a role."
+  },
+  "admin.roles.edit.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the button that closes the dialog that changes a role."
+  },
+  "admin.roles.edit.title": {
+    "defaultMessage": "Edit the role {role}",
+    "description": "Title of the dialog that changes a role. {role} is its key (isolated)."
+  },
+  "admin.roles.edit_role": {
+    "defaultMessage": "Edit {role}",
+    "description": "Accessible name of the edit button of a role. {role} is its key (isolated)."
+  },
+  "admin.roles.failed.outranked": {
+    "defaultMessage": "This role is now above your highest role, so you cannot change it.",
+    "description": "Error when the server refused a change of a role above the viewer's highest role (their roles changed since the page loaded)."
+  },
+  "admin.roles.key": {
+    "defaultMessage": "Key",
+    "description": "Label of the field of a new role's key, its name."
+  },
+  "admin.roles.key.description": {
+    "defaultMessage": "Up to {max} lowercase letters, digits, underscores, or hyphens. It cannot be changed later.",
+    "description": "Description of the key field. {max} is the length limit."
+  },
+  "admin.roles.key.invalid": {
+    "defaultMessage": "Enter up to {max} lowercase letters, digits, underscores, or hyphens.",
+    "description": "Error of the key field when the key is empty or has other characters. {max} is the length limit."
+  },
+  "admin.roles.list.title": {
+    "defaultMessage": "Roles of this server",
+    "description": "Heading of the list of roles, highest position first."
+  },
+  "admin.roles.missing_permissions": {
+    "defaultMessage": "Permissions your roles do not grant: {permissions}",
+    "description": "Error under the permissions of a role that the server refused. {permissions} lists the permissions (identifiers, isolated)."
+  },
+  "admin.roles.new.accounts": {
+    "defaultMessage": "Find accounts",
+    "description": "Link from the roles screen to the account search, where a role is granted."
+  },
+  "admin.roles.new.description": {
+    "defaultMessage": "A new role is held by nobody. Grant it on the admin page of an account.",
+    "description": "Text above the form that creates a role: how a role is granted. A link to the accounts follows."
+  },
+  "admin.roles.new.no_role": {
+    "defaultMessage": "You hold no role, so you cannot create one.",
+    "description": "Text instead of the form when the viewer holds no role (they may create none)."
+  },
+  "admin.roles.new.title": {
+    "defaultMessage": "Create a role",
+    "description": "Heading of the form that creates a role."
+  },
+  "admin.roles.outranked": {
+    "defaultMessage": "Above your highest role, {role}, so you cannot change it.",
+    "description": "Note on a role above the viewer's highest role. {role} is the viewer's highest role (isolated)."
+  },
+  "admin.roles.permission.manage_accounts": {
+    "defaultMessage": "Accounts and registrations",
+    "description": "Name of the permission manage_accounts: the accounts and their moderation actions, registrations, sign-up blocks, and appeals."
+  },
+  "admin.roles.permission.manage_custom_emojis": {
+    "defaultMessage": "Custom emoji",
+    "description": "Name of the permission manage_custom_emojis: the custom emoji."
+  },
+  "admin.roles.permission.manage_domains": {
+    "defaultMessage": "Other servers",
+    "description": "Name of the permission manage_domains: the moderation actions on domains and the health of remote servers."
+  },
+  "admin.roles.permission.manage_invites": {
+    "defaultMessage": "Invites",
+    "description": "Name of the permission manage_invites: the invites."
+  },
+  "admin.roles.permission.manage_jobs": {
+    "defaultMessage": "Failed jobs",
+    "description": "Name of the permission manage_jobs: the dead jobs of the job queue."
+  },
+  "admin.roles.permission.manage_reports": {
+    "defaultMessage": "Reports",
+    "description": "Name of the permission manage_reports: handling reports."
+  },
+  "admin.roles.permission.manage_roles": {
+    "defaultMessage": "Roles",
+    "description": "Name of the permission manage_roles: the roles and granting them."
+  },
+  "admin.roles.permission.manage_rules": {
+    "defaultMessage": "Server rules",
+    "description": "Name of the permission manage_rules: the instance rules."
+  },
+  "admin.roles.permission.manage_settings": {
+    "defaultMessage": "Server settings",
+    "description": "Name of the permission manage_settings: the instance's settings, theme, terms, and privacy policy."
+  },
+  "admin.roles.permission.manage_two_factor": {
+    "defaultMessage": "Removing two-factor authentication",
+    "description": "Name of the permission manage_two_factor: removing the two-factor authentication of a user."
+  },
+  "admin.roles.permission.manage_webhooks": {
+    "defaultMessage": "Webhooks",
+    "description": "Name of the permission manage_webhooks: the webhooks."
+  },
+  "admin.roles.permission.view_audit": {
+    "defaultMessage": "Audit log",
+    "description": "Name of the permission view_audit: reading the audit log."
+  },
+  "admin.roles.permissions.description": {
+    "defaultMessage": "Choose the permissions the role grants. You can give or take only the permissions your own roles grant.",
+    "description": "Text above the groups of permission checkboxes of a role."
+  },
+  "admin.roles.permissions.none": {
+    "defaultMessage": "None",
+    "description": "Value of a permission area in the list of roles when the role has none of its permissions."
+  },
+  "admin.roles.permissions.separator": {
+    "defaultMessage": ", ",
+    "description": "Separator between the names of permissions in a list of them."
+  },
+  "admin.roles.position": {
+    "defaultMessage": "Position",
+    "description": "Label of the field of a role's position (its rank), and the term of the position in the list."
+  },
+  "admin.roles.position.description": {
+    "defaultMessage": "A whole number from 0 to {max}. A higher position outranks a lower one; you can manage only roles at or below your own highest role.",
+    "description": "Description of the position field. {max} is the highest position the viewer may give."
+  },
+  "admin.roles.position.invalid": {
+    "defaultMessage": "Enter a whole number from 0 to {max}.",
+    "description": "Error of the position field when it is not a whole number in range. {max} is the highest position the viewer may give."
+  },
+  "admin.roles.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves the changes of a role in its dialog."
+  },
+  "admin.roles.save_failed": {
+    "defaultMessage": "Could not save the role: {reason}",
+    "description": "Error of the role form or dialog. {reason} is the server's explanation."
+  },
+  "admin.roles.submit": {
+    "defaultMessage": "Create role",
+    "description": "Button that creates a role."
+  },
+  "admin.roles.summary": {
+    "defaultMessage": "Create roles, and choose their positions and permissions.",
+    "description": "Description of the roles screen in the administration menu of the settings."
+  },
+  "admin.roles.title": {
+    "defaultMessage": "Roles",
+    "description": "Title of the roles screen, in the administration menu and as its heading."
+  },
+  "admin.roles.updated": {
+    "defaultMessage": "Changed the role {role}. Its holders get the change from their next request. The audit log records it.",
+    "description": "Result after changing a role. {role} is its key (isolated)."
   },
   "admin.rules.add": {
     "defaultMessage": "Add the rule",
