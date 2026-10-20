@@ -162,7 +162,7 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 			name = strings.TrimSpace(name)
 		}
 		link := obj.URL
-		if link == "" {
+		if !webLink(link) {
 			link = obj.ID
 		}
 		lang := UndeterminedLang
