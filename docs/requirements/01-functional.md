@@ -73,6 +73,7 @@
 | FR-408 | Authorized Fetch（secure mode）を設定で有効化できる | S |
 | FR-409 | リモートメディアのキャッシュ方針を選べる（キャッシュしない / TTL 付きでキャッシュ） | M |
 | FR-410 | Object Integrity Proofs（FEP-8b32） | C |
+| FR-411 | 連合リレー（Mastodon 方式・LitePub 方式）: 参加中のリレーへ `public` の投稿の `Create` / `Update` / `Delete` を LD 署名付きで送り（`unlisted`・`private`・`direct`・`local` は送らない）、リレーから届いた `public` の投稿をオリジンから取り直して取り込み、連合タイムラインとハッシュタグに出す。取り込みはリレーごとの時間あたりの上限と短い保持期間に従う（[ADR-0061](../adr/0061-federation-relays.md) の推奨案、Proposed） | S |
 
 ## クライアント API
 
@@ -116,6 +117,7 @@
 | FR-719 | 登録の拒否リスト: メールアドレスのドメインと IP の範囲（CIDR）による登録の拒否・承認制への切り替え。期限付きにでき、BAN から作れる | S |
 | FR-720 | ロールの付与と剥奪を管理 API・CLI・管理画面から行う（`manage_roles`）。自分より `position` の高いロールは付与・剥奪できない | S |
 | FR-721 | 登録の審査（承認制の承認・却下）を管理画面から行う | M |
+| FR-724 | 連合リレーの管理: 管理者がリレーを方式と URL で登録して参加・脱退し、状態（承認待ち・参加中・拒否・脱退）と受信の有無を管理 API・CLI・管理画面で扱う。操作は監査ログに残す（[ADR-0061](../adr/0061-federation-relays.md) の推奨案、Proposed） | S |
 
 ## 運用
 
