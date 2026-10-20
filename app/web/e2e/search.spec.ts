@@ -142,7 +142,7 @@ test.describe("the account search", () => {
     await page.keyboard.type(`@${carol.acct}`);
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(new RegExp(`/@carol@${host.replaceAll(".", "\\.")}$`));
+    await expect(page).toHaveURL((url) => url.pathname === `/@carol@${host}`);
     const heading = page.getByRole("heading", { level: 1 });
     await expect(heading).toHaveText("Carol");
     await expect(heading).toBeFocused();
