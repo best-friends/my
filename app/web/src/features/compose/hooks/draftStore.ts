@@ -2,11 +2,11 @@
 // The draft of a new post and the outbox of posts being sent, kept outside React so that the side panel,
 // the sheet and the reply buttons of other features share one draft (read with useSyncExternalStore).
 //
-// The store is saved to sessionStorage under the account's ID: a reload, or a crash of the tab, keeps the
+// The store is saved to sessionStorage under the account's ID (lib/storage's composeKey): a reload, or a crash of the tab, keeps the
 // draft, and a post that was being sent stays in the outbox so it can be sent again. sessionStorage
 // belongs to this tab only and ends with it; another account signing in on the same tab reads its own
-// key, and the end of the session removes it (lib/auth/userData.ts). Files picked but not yet uploaded live only in memory (their object URLs end with the page).
-import { userStoragePrefix } from "../../../lib/auth/userData";
+// key, and the end of the session removes it (it is the user's own data). Files picked but not yet uploaded live only in memory (their object URLs end with the page).
+import type { StorageKey, StoredCompose } from "../../../lib/storage";
 import type { CreateStatusRequest, Visibility } from "../api/compose";
 
 /** One image of the draft. */
@@ -78,22 +78,11 @@ function savedState(state: ComposeState) {
 }
 
 /** Reads a saved state; anything unreadable starts empty. */
-function loadState(storage: Storage | null, key: string): ComposeState {
-  const empty: ComposeState = { draft: emptyDraft, outbox: [], error: null };
-  try {
-    const raw = storage?.getItem(key);
-    if (raw === null || raw === undefined) return empty;
-    const parsed = JSON.parse(raw) as Partial<ReturnType<typeof savedState>>;
-    if (typeof parsed.draft !== "object" || !Array.isArray(parsed.outbox)) return empty;
-    return { draft: { ...emptyDraft, ...parsed.draft }, outbox: parsed.outbox, error: null };
-  } catch {
-    return empty;
-  }
-}
-
-/** The keys of the saved drafts: one per account. */
-export function draftStorageKey(accountId: string): string {
-  return `${userStoragePrefix}compose:${accountId}`;
+function loadState(key: StorageKey<StoredCompose | null>): ComposeState {
+  const saved = key.read();
+  if (saved === null) return { draft: emptyDraft, outbox: [], error: null };
+  // The saved state is what savedState wrote: lib/storage checks its shape, and the fields of the draft fill in from the empty one.
+  return { draft: { ...emptyDraft, ...(saved.draft as Partial<Draft>) }, outbox: saved.outbox as unknown as OutboxItem[], error: null };
 }
 
 /**
@@ -103,13 +92,12 @@ export function draftStorageKey(accountId: string): string {
 export class DraftStore {
   #state: ComposeState;
   readonly #listeners = new Set<() => void>();
-  readonly #storage: Storage | null;
-  readonly #key: string;
+  readonly #key: StorageKey<StoredCompose | null>;
 
-  constructor(storage: Storage | null, key: string) {
-    this.#storage = storage;
+  /** `key` is lib/storage's composeKey of the account. */
+  constructor(key: StorageKey<StoredCompose | null>) {
     this.#key = key;
-    this.#state = loadState(storage, key);
+    this.#state = loadState(key);
   }
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -123,11 +111,7 @@ export class DraftStore {
 
   #set(next: ComposeState) {
     this.#state = next;
-    try {
-      this.#storage?.setItem(this.#key, JSON.stringify(savedState(next)));
-    } catch {
-      // A full or disabled storage only loses the copy for a reload.
-    }
+    this.#key.write(savedState(next));
     for (const listener of this.#listeners) listener();
   }
 

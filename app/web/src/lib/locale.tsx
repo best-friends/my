@@ -7,6 +7,7 @@
 // reads it for every request (Accept-Language, localized errors) and the shell renders the providers from it.
 import { createContext, type ReactNode, use, useSyncExternalStore } from "react";
 import { applyDocumentLocale, createTranslate, type I18n, loadI18n, resolveLocale, type Translate } from "./i18n";
+import { localeKey } from "./storage";
 
 /** What the app is displayed in. Replaced, never changed, so that it can be a useSyncExternalStore snapshot. */
 export type DisplaySettings = {
@@ -23,23 +24,12 @@ export type AppLocaleOptions = {
 };
 
 /**
- * The localStorage key of the locale the app was last displayed in. It says how this browser shows the app, like
- * <html lang>, so it outlives the session; the next user's preferences replace it once they load.
- */
-const rememberedLocaleKey = "my:display:locale";
-
-/**
- * The locale a page starts in: the one the app was last displayed in on this browser, or else the instance's
- * locale that the server wrote into <html lang>.
+ * The locale a page starts in: the one the app was last displayed in on this browser (lib/storage's localeKey,
+ * which outlives the session like <html lang>; the next user's preferences replace it once they load), or else
+ * the instance's locale that the server wrote into <html lang>.
  */
 function startLocale(doc: Document): string {
-  try {
-    const remembered = localStorage.getItem(rememberedLocaleKey);
-    if (remembered !== null && remembered !== "") return remembered;
-  } catch {
-    // Storage is blocked; the page starts in the instance's locale.
-  }
-  return doc.documentElement.lang;
+  return localeKey.read() ?? doc.documentElement.lang;
 }
 
 /** Loads the messages of the supported locale closest to `startLocale(doc)` and sets <html lang dir> to it. */
@@ -50,11 +40,7 @@ export async function loadStartI18n(doc: Document): Promise<I18n> {
 }
 
 function rememberLocale(locale: string): void {
-  try {
-    localStorage.setItem(rememberedLocaleKey, locale);
-  } catch {
-    // Storage is full or blocked; the next start is in the instance's locale until the preferences load.
-  }
+  localeKey.write(locale);
 }
 
 export class AppLocale {
