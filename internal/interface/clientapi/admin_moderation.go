@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -44,6 +45,11 @@ type Moderation interface {
 	// PublicDomainActions lists the domain actions that the instance lists publicly
 	// (listInstanceDomainActions, instance_domain_actions.go).
 	PublicDomainActions(ctx context.Context, before string, limit int) ([]moderation.PublicDomainAction, error)
+	// ExportDomainBlocks, PreviewDomainBlocks, and ImportDomainBlocks serve the domain block
+	// list in Mastodon's CSV (admin_domain_blocks.go).
+	ExportDomainBlocks(ctx context.Context, w io.Writer) error
+	PreviewDomainBlocks(ctx context.Context, text string) ([]appmoderation.DomainBlockPreviewRow, error)
+	ImportDomainBlocks(ctx context.Context, in appmoderation.DomainBlockImportInput) (appmoderation.DomainBlockImportResult, error)
 }
 
 // UserAccounts finds the local account of a user, to present the moderator of a report by

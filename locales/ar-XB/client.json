@@ -2163,6 +2163,134 @@
     "defaultMessage": "‮Snsdǝup {domain}?‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.domain_actions.csv.confirm.confirm": {
+    "defaultMessage": "‮Iɯdoɹʇ ɐup snsdǝup‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.confirm.title": {
+    "defaultMessage": "‮Snsdǝup {count,plural,one{# poɯɐıu} other{# poɯɐıus}}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv": {
+    "defaultMessage": "‮ↃSɅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv.description": {
+    "defaultMessage": "‮∀ poɯɐıu qʅoɔʞ ↃSɅ ʇɥɐʇ Wɐsʇopou ǝxdoɹʇǝp, ɐʇ ɯosʇ {max, number} ɹoʍs. ∀ ɟıʅǝ ʍıʇɥonʇ ʇɥǝ #poɯɐıu ɥǝɐpǝɹ ıs ɹǝɐp ɐs ɐ ʅısʇ oɟ poɯɐıus ʇo snsdǝup.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv.required": {
+    "defaultMessage": "‮Ԁɐsʇǝ ɐ ↃSɅ, oɹ ɔɥoosǝ ɐ ɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.csv.too_large": {
+    "defaultMessage": "‮⊥ɥǝ ↃSɅ ıs ʅɐɹƃǝɹ ʇɥɐu {max, number} ӼԐ. Sdʅıʇ ıʇ ıuʇo sɯɐʅʅǝɹ ɟıʅǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.description": {
+    "defaultMessage": "‮Ǝxdoɹʇ ʇɥǝ ɐɔʇıous ıu ǝɟɟǝɔʇ ɐs ʇɥǝ poɯɐıu qʅoɔʞ ↃSɅ ʇɥɐʇ Wɐsʇopou ıɯdoɹʇs, oɹ ıɯdoɹʇ ɐ ↃSɅ ʇɥɐʇ Wɐsʇopou ǝxdoɹʇǝp. Wɐsʇopou's sıʅǝuɔǝ ıs ɐ ʅıɯıʇ ɥǝɹǝ. ᗡoɯɐıus ʍıʇɥ ouʅʎ Ⅎoɹɔǝ sǝusıʇıʌǝ ɐɹǝ uoʇ ǝxdoɹʇǝp, ɐup dɹıʌɐʇǝ uoʇǝs ɐup ǝup pɐʇǝs ɐɹǝ uoʇ ǝxdoɹʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.export": {
+    "defaultMessage": "‮Ǝxdoɹʇ ↃSɅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.export.done": {
+    "defaultMessage": "‮Sɐʌǝp {name}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.export.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ǝxdoɹʇ ʇɥǝ ↃSɅ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file": {
+    "defaultMessage": "‮Ↄɥoosǝ ɐ ↃSɅ ɟıʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.description": {
+    "defaultMessage": "‮Iʇs ʇǝxʇ ɹǝdʅɐɔǝs ʇɥǝ ↃSɅ ɐqoʌǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐp {name}. Ↄɥoosǝ ʇɥǝ ɟıʅǝ ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.read": {
+    "defaultMessage": "‮ᴚǝɐp {name}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.file.too_large": {
+    "defaultMessage": "‮{name} ıs ʅɐɹƃǝɹ ʇɥɐu {max, number} ӼԐ. Sdʅıʇ ıʇ ıuʇo sɯɐʅʅǝɹ ɟıʅǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.import.done": {
+    "defaultMessage": "‮{issued,plural,one{# ɐɔʇıou ʍɐs ʇɐʞǝu.} other{# ɐɔʇıous ʍǝɹǝ ʇɐʞǝu.} =0{No ɐɔʇıou ʍɐs ʇɐʞǝu.}} {skipped,plural,one{# ɹoʍ ʍɐs sʞıddǝp.} other{# ɹoʍs ʍǝɹǝ sʞıddǝp.} =0{No ɹoʍ ʍɐs sʞıddǝp.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.import.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ıɯdoɹʇ ʇɥǝ ɹoʍs: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.import.title": {
+    "defaultMessage": "‮Iɯdoɹʇ ɐ ↃSɅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.none_selected": {
+    "defaultMessage": "‮Ↄɥoosǝ ɐʇ ʅǝɐsʇ ouǝ ɹoʍ ʇo ıɯdoɹʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview": {
+    "defaultMessage": "‮Ԁɹǝʌıǝʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɹǝɐp ʇɥǝ ↃSɅ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview.summary": {
+    "defaultMessage": "‮{importable, number} oɟ {count,plural,one{# ɹoʍ} other{# ɹoʍs}} ɔɐu qǝ ıɯdoɹʇǝp. Ↄʅǝɐɹ ʇɥǝ ɹoʍs ʎon po uoʇ ʍɐuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.preview.title": {
+    "defaultMessage": "‮ᴚoʍs oɟ ʇɥǝ ↃSɅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.private_note.description": {
+    "defaultMessage": "‮Ouʅʎ ɯopǝɹɐʇoɹs sǝǝ ʇɥıs. Ǝʌǝɹʎ ɐɔʇıou oɟ ʇɥǝ ıɯdoɹʇ ƃǝʇs ʇɥıs uoʇǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.row.issue": {
+    "defaultMessage": "‮⅂ıuǝ {line, number}. ⊥ɐʞǝs: {kinds}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.row.skipped": {
+    "defaultMessage": "‮⅂ıuǝ {line, number}. {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.already_applied": {
+    "defaultMessage": "‮∀ʅɹǝɐpʎ ıu ǝɟɟǝɔʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.duplicate": {
+    "defaultMessage": "‮Sɐɯǝ poɯɐıu ɐs ɐu ǝɐɹʅıǝɹ ɹoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.invalid": {
+    "defaultMessage": "‮Noʇ ɐ ʌɐʅıp ɹoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.status.no_action": {
+    "defaultMessage": "‮No ɐɔʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.submit": {
+    "defaultMessage": "‮Iɯdoɹʇ {count,plural,one{# ɹoʍ} other{# ɹoʍs}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.domain_actions.csv.title": {
+    "defaultMessage": "‮Wɐsʇopou's ↃSɅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.domain_actions.domain": {
     "defaultMessage": "‮ᗡoɯɐıu‬",
     "description": "Generated from en by tools/i18n; do not edit."

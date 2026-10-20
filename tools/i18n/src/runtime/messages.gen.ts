@@ -1080,6 +1080,70 @@ export interface MessageArgs {
   "client:admin.domain_actions.confirm_suspend.description": {};
   /** Suspend {domain}? */
   "client:admin.domain_actions.confirm_suspend.title": { domain: string };
+  /** Import and suspend */
+  "client:admin.domain_actions.csv.confirm.confirm": {};
+  /** Suspend {count, plural, one {# domain} other {# domains}}? */
+  "client:admin.domain_actions.csv.confirm.title": { count: number };
+  /** CSV */
+  "client:admin.domain_actions.csv.csv": {};
+  /** A domain block CSV that Mastodon exported, at most {max, number} rows. A file without the #domain header is read as a list of domains to suspend. */
+  "client:admin.domain_actions.csv.csv.description": { max: number };
+  /** Paste a CSV, or choose a file */
+  "client:admin.domain_actions.csv.csv.required": {};
+  /** The CSV is larger than {max, number} KB. Split it into smaller files */
+  "client:admin.domain_actions.csv.csv.too_large": { max: number };
+  /** Export the actions in effect as the domain block CSV that Mastodon imports, or import a CSV that Mastodon exported. Mastodon's silence is a limit here. Domains with only Force sensitive are not exported, and private notes and end dates are not exported. */
+  "client:admin.domain_actions.csv.description": {};
+  /** Export CSV */
+  "client:admin.domain_actions.csv.export": {};
+  /** Saved {name}. */
+  "client:admin.domain_actions.csv.export.done": { name: string };
+  /** Could not export the CSV: {reason} */
+  "client:admin.domain_actions.csv.export.failed": { reason: string };
+  /** Choose a CSV file */
+  "client:admin.domain_actions.csv.file": {};
+  /** Its text replaces the CSV above. */
+  "client:admin.domain_actions.csv.file.description": {};
+  /** Could not read {name}. Choose the file again. */
+  "client:admin.domain_actions.csv.file.failed": { name: string };
+  /** Read {name}. */
+  "client:admin.domain_actions.csv.file.read": { name: string };
+  /** {name} is larger than {max, number} KB. Split it into smaller files. */
+  "client:admin.domain_actions.csv.file.too_large": { max: number; name: string };
+  /** {issued, plural, =0 {No action was taken.} one {# action was taken.} other {# actions were taken.}} {skipped, plural, =0 {No row was skipped.} one {# row was skipped.} other {# rows were skipped.}} */
+  "client:admin.domain_actions.csv.import.done": { issued: number; skipped: number };
+  /** Could not import the rows: {reason} */
+  "client:admin.domain_actions.csv.import.failed": { reason: string };
+  /** Import a CSV */
+  "client:admin.domain_actions.csv.import.title": {};
+  /** Choose at least one row to import */
+  "client:admin.domain_actions.csv.none_selected": {};
+  /** Preview */
+  "client:admin.domain_actions.csv.preview": {};
+  /** Could not read the CSV: {reason} */
+  "client:admin.domain_actions.csv.preview.failed": { reason: string };
+  /** {importable, number} of {count, plural, one {# row} other {# rows}} can be imported. Clear the rows you do not want. */
+  "client:admin.domain_actions.csv.preview.summary": { count: number; importable: number };
+  /** Rows of the CSV */
+  "client:admin.domain_actions.csv.preview.title": {};
+  /** Only moderators see this. Every action of the import gets this note. */
+  "client:admin.domain_actions.csv.private_note.description": {};
+  /** Line {line, number}. Takes: {kinds} */
+  "client:admin.domain_actions.csv.row.issue": { kinds: string; line: number };
+  /** Line {line, number}. {reason} */
+  "client:admin.domain_actions.csv.row.skipped": { line: number; reason: string };
+  /** Already in effect */
+  "client:admin.domain_actions.csv.status.already_applied": {};
+  /** Same domain as an earlier row */
+  "client:admin.domain_actions.csv.status.duplicate": {};
+  /** Not a valid row */
+  "client:admin.domain_actions.csv.status.invalid": {};
+  /** No action */
+  "client:admin.domain_actions.csv.status.no_action": {};
+  /** Import {count, plural, one {# row} other {# rows}} */
+  "client:admin.domain_actions.csv.submit": { count: number };
+  /** Mastodon's CSV */
+  "client:admin.domain_actions.csv.title": {};
   /** Domain */
   "client:admin.domain_actions.domain": {};
   /** A remote domain, such as spam.example. The action also covers its subdomains. A domain in non-Latin letters can be entered as it is. */

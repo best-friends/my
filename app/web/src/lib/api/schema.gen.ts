@@ -2880,6 +2880,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/domain_actions/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export the domain actions as Mastodon's domain block CSV
+         * @description The domain actions in effect (FR-706) as the CSV that Mastodon's moderation screens
+         *     import, with the header
+         *     `#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`: one row
+         *     per domain in domain order. `#severity` is `suspend` when a `suspend` is in effect on
+         *     the domain, `silence` for a `limit`, and `noop` otherwise; `#reject_media`,
+         *     `#reject_reports`, and `#obfuscate` are `true` when one of the domain's actions has
+         *     them. A domain whose only actions are `force_sensitive`, which Mastodon's domain blocks
+         *     cannot hold, is left out. Private notes and expiry dates are not exported. Needs the
+         *     `manage_domains` permission.
+         */
+        get: operations["exportDomainBlocks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/domain_actions/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview the import of a Mastodon domain block CSV
+         * @description Reads a domain block CSV that Mastodon exported (FR-706) and says what importing each
+         *     row would do, without changing anything. A file whose first field is `#domain` has a
+         *     header naming the columns; any other file is a list of domains, one per row, each
+         *     suspended. An empty `#severity` is `suspend`, and a boolean is false when empty, `0`,
+         *     `f`, `false`, or `off`. A row of `suspend` issues a `suspend`, `silence` a `limit`, and
+         *     `noop` nothing, plus `reject_media` and `reject_reports` when set. A file that is not
+         *     CSV or has more than 5,000 rows is a 422 naming `csv`. Needs the `manage_domains`
+         *     permission.
+         */
+        post: operations["previewDomainBlockImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/domain_actions/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import the chosen rows of a Mastodon domain block CSV
+         * @description Issues the domain actions of each block (FR-706), as the preview names them: the kinds
+         *     of the block that no action in effect on the domain or a parent domain has already. The
+         *     actions last until they are lifted, carry the block's public comment and obfuscation
+         *     and the request's private note, and are audited like actions issued one at a time. A
+         *     block that would issue nothing is skipped with the reason. The actions are written a
+         *     few dozen at a time, so an error part way keeps the ones before it; sending the blocks
+         *     again skips them as `already_applied`. More than 5,000 blocks or a `private_note` that
+         *     is too long or contains U+0000 is a 422 that issues nothing. Needs the `manage_domains`
+         *     permission.
+         */
+        post: operations["importDomainBlocks"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/settings": {
         parameters: {
             query?: never;
@@ -5848,6 +5931,77 @@ export interface components {
              * @enum {string}
              */
             reason: "invalid" | "duplicate" | "already_blocked";
+        };
+        /**
+         * @description The `#severity` of Mastodon's domain block CSV. `suspend`: the action `suspend`.
+         *     `silence`: Mastodon's name of the action `limit`. `noop`: no action but the rejections.
+         * @enum {string}
+         */
+        DomainBlockSeverity: "suspend" | "silence" | "noop";
+        /**
+         * @description A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
+         *     such as `例え.jp` is accepted) and the public comment (at most 5,000 characters).
+         */
+        DomainBlock: {
+            domain: string;
+            severity: components["schemas"]["DomainBlockSeverity"];
+            reject_media: boolean;
+            reject_reports: boolean;
+            public_comment?: string;
+            obfuscate: boolean;
+        };
+        /** @description A domain block CSV to preview. */
+        PreviewDomainBlockImportRequest: {
+            /** @description The file's text, with a header or as a list of domains; at most 5,000 rows. */
+            csv: string;
+        };
+        /**
+         * @description What importing a row would do. `importable`: it issues the actions of `issue`.
+         *     `already_applied`: an action in effect of each of the row's kinds covers the domain
+         *     already, on it or on a parent domain. `no_action`: the row stands for no action (a
+         *     `noop` without rejections). `duplicate`: an earlier row has the same domain once
+         *     normalized. `invalid`: the domain, the severity, or the public comment is not valid.
+         * @enum {string}
+         */
+        DomainBlockImportStatus: "importable" | "already_applied" | "no_action" | "duplicate" | "invalid";
+        /** @description A row of a domain block CSV and what importing it would do. */
+        DomainBlockImportRow: {
+            /** @description The line of the file the row starts on, from 1. */
+            line: number;
+            /** @description The domain as written in the row. */
+            written_domain: string;
+            /**
+             * @description The row, with its domain normalized (IDNA A-labels in lower case); absent when
+             *     the row is `invalid`. The import takes it as it is.
+             */
+            block?: components["schemas"]["DomainBlock"];
+            status: components["schemas"]["DomainBlockImportStatus"];
+            /** @description The kinds of the actions the import would issue; empty unless `importable`. */
+            issue: components["schemas"]["AdminDomainActionKind"][];
+        };
+        /** @description What importing each row of a domain block CSV would do, in row order. */
+        DomainBlockImportPreview: {
+            rows: components["schemas"]["DomainBlockImportRow"][];
+        };
+        /** @description The rows of a domain block CSV to import. */
+        ImportDomainBlocksRequest: {
+            blocks: components["schemas"]["DomainBlock"][];
+            /** @description The private note of every action issued. */
+            private_note?: string;
+        };
+        /** @description What an import of domain blocks did. */
+        DomainBlockImportResult: {
+            /** @description The actions issued, in the order of the blocks. */
+            issued: components["schemas"]["AdminDomainAction"][];
+            /** @description The blocks that issued nothing, in their order. */
+            skipped: components["schemas"]["DomainBlockImportSkipped"][];
+        };
+        /** @description A block of an import that issued nothing. */
+        DomainBlockImportSkipped: {
+            /** @description The domain as sent. */
+            domain: string;
+            /** @description Why it issued nothing; never `importable`. */
+            reason: components["schemas"]["DomainBlockImportStatus"];
         };
         /** @description A report of an account to the moderators. */
         CreateReportRequest: {
@@ -9495,6 +9649,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignupBlockImportResult"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    exportDomainBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    /** @description Names the file to save the CSV as. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    previewDomainBlockImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewDomainBlockImportRequest"];
+            };
+        };
+        responses: {
+            /** @description What importing each row would do, in row order. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainBlockImportPreview"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    importDomainBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportDomainBlocksRequest"];
+            };
+        };
+        responses: {
+            /** @description What the import issued and skipped. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainBlockImportResult"];
                 };
             };
             default: components["responses"]["Problem"];
