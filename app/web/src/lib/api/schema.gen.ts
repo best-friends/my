@@ -250,13 +250,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+         * Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
          * @description Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
          *     Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
          *     (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
          *     `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
-         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect), and
-         *     `bookmarks` is `bookmarks.csv` (one post URI per line, the posts the user may still see).
+         *     `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect),
+         *     `domain_mutes` is `blocked_domains.csv` (one domain per line, the domains the user
+         *     mutes, which Mastodon imports as blocked domains), and `bookmarks` is `bookmarks.csv`
+         *     (one post URI per line, the posts the user may still see).
          *     Addresses are `username@domain`, with the account domain for this server's accounts;
          *     remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
          *     are accepted every hour.
@@ -285,7 +287,7 @@ export interface paths {
         get: operations["listDataImports"];
         put?: never;
         /**
-         * Import a CSV file of follows, blocks, mutes, or bookmarks
+         * Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
          * @description Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
          *     entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
          *     `overwrite` also removes what the user has of `kind` that the file does not list. The
@@ -3850,11 +3852,13 @@ export interface components {
         };
         /**
          * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-         *     accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+         *     accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+         *     domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+         *     `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
          *     posts the user bookmarked).
          * @enum {string}
          */
-        DataImportKind: "following" | "blocks" | "mutes" | "bookmarks";
+        DataImportKind: "following" | "blocks" | "mutes" | "domain_mutes" | "bookmarks";
         /**
          * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
          *     what the user has that the file does not list.
@@ -3889,8 +3893,9 @@ export interface components {
             /** @description The line as written. */
             value: string;
             /**
-             * @description `invalid`: the line names no account address (or for bookmarks, no post URL).
-             *     `duplicate`: an earlier line names the same account or post.
+             * @description `invalid`: the line names no account address (for bookmarks, no post URL; for
+             *     domain mutes, no domain).
+             *     `duplicate`: an earlier line names the same account, post, or domain.
              * @enum {string}
              */
             reason: "invalid" | "duplicate";
@@ -3916,7 +3921,8 @@ export interface components {
             processed: number;
             /**
              * @description How many of them could not be carried out: an account or post that cannot be found
-             *     or acted on, or a follow that a block stops.
+             *     or acted on, a follow that a block stops, or a domain that cannot be muted (this
+             *     server's own, or one beyond the most muted domains allowed).
              */
             failed: number;
         };

@@ -78,9 +78,10 @@ type ImportRepository interface {
 }
 
 // ImportTarget is something a local account has of a kind: an account it follows, blocks, or
-// mutes, or a status it bookmarked, with the row of the CSV export that names it.
+// mutes, a status it bookmarked, or a domain it mutes, with the row of the CSV export that
+// names it.
 type ImportTarget struct {
-	// ID is the ID of the account or the status.
+	// ID is the ID of the account or the status, or the domain.
 	ID  string
 	Row identity.ExportRow
 }
@@ -96,7 +97,7 @@ type ImportTargets interface {
 	// fails with an *ImportItemError when the item cannot be carried out; other errors are
 	// worth retrying.
 	Add(ctx context.Context, accountID string, kind identity.ImportKind, item identity.DataImportItem) error
-	// Remove removes the account or status targetID from what accountID has of kind; removing
+	// Remove removes the account, status, or domain targetID from what accountID has of kind; removing
 	// what is not there succeeds.
 	Remove(ctx context.Context, accountID string, kind identity.ImportKind, targetID string) error
 }
@@ -123,6 +124,10 @@ type ImportDeps struct {
 	// Host and AccountDomain are this instance's domains: an address on either, or without a
 	// domain, names a local account.
 	Host, AccountDomain string
+	// CanonicalDomain returns the canonical form of a domain of a domain mute (IDNA A-labels in
+	// lower case), to compare a file's domains with the muted ones; nil compares them in lower
+	// case.
+	CanonicalDomain func(domain string) (string, error)
 	Clock               kernel.Clock
 	IDs                 kernel.IDGenerator
 	// Logger logs the items recorded as failed after errors; nil means slog.Default().
@@ -212,10 +217,20 @@ func (m *Imports) PreviewImport(ctx context.Context, in ImportInput) (ImportPrev
 }
 
 // key returns the form of a target that identifies it: an address in lower case, with this
-// instance's domains (or none) as AccountDomain; a post's URL as it is.
+// instance's domains (or none) as AccountDomain; a post's URL as it is; a domain in canonical
+// form.
 func (m *Imports) key(kind identity.ImportKind, target string) string {
-	if kind == identity.ImportBookmarks {
+	switch kind {
+	case identity.ImportBookmarks:
 		return target
+	case identity.ImportDomainMutes:
+		if m.d.CanonicalDomain != nil {
+			if d, err := m.d.CanonicalDomain(target); err == nil {
+				return d
+			}
+		}
+		d, _ := identity.DomainKey(target)
+		return d
 	}
 	username, domain, ok := identity.SplitAddress(target)
 	if !ok {

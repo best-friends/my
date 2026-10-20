@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-// The imports and CSV exports of a user's follows, blocks, mutes, and bookmarks in the CSV
+// The imports and CSV exports of a user's follows, blocks, mutes, bookmarks, and muted domains
+// in the CSV
 // formats of Mastodon (FR-008, data-model §4.1): the files that Mastodon's "Import and export"
 // page exports can be imported here, and the files exported here can be imported by Mastodon.
 
@@ -30,15 +31,18 @@ const (
 	ImportMutes ImportKind = "mutes"
 	// ImportBookmarks is the posts the user bookmarked (bookmarks.csv).
 	ImportBookmarks ImportKind = "bookmarks"
+	// ImportDomainMutes is the domains the user mutes (FR-304), as the domains a Mastodon user
+	// blocks (blocked_domains.csv).
+	ImportDomainMutes ImportKind = "domain_mutes"
 )
 
 // ImportKinds are the kinds, in the order of the settings page.
-var ImportKinds = []ImportKind{ImportFollowing, ImportBlocks, ImportMutes, ImportBookmarks}
+var ImportKinds = []ImportKind{ImportFollowing, ImportBlocks, ImportMutes, ImportDomainMutes, ImportBookmarks}
 
 // Valid reports whether k is a known kind.
 func (k ImportKind) Valid() bool {
 	switch k {
-	case ImportFollowing, ImportBlocks, ImportMutes, ImportBookmarks:
+	case ImportFollowing, ImportBlocks, ImportMutes, ImportBookmarks, ImportDomainMutes:
 		return true
 	}
 	return false
@@ -55,6 +59,8 @@ func (k ImportKind) FileName() string {
 		return "muted_accounts.csv"
 	case ImportBookmarks:
 		return "bookmarks.csv"
+	case ImportDomainMutes:
+		return "blocked_domains.csv"
 	}
 	return ""
 }
@@ -102,6 +108,8 @@ func defaultHeaders(k ImportKind) []string {
 		return []string{headerAccountAddress, headerHideNotifications}
 	case ImportBookmarks:
 		return []string{headerURI}
+	case ImportDomainMutes:
+		return []string{headerDomain}
 	}
 	return []string{headerAccountAddress}
 }
@@ -116,12 +124,12 @@ func isKnownFirstHeader(field string) bool {
 }
 
 // ImportEntry is one entry of a CSV file: an account address (username@domain, or a bare
-// username for this instance's account) or, for bookmarks, the URL of a post, with the
-// settings that its kind carries.
+// username for this instance's account), for bookmarks the URL of a post, or for domain mutes
+// a domain, with the settings that its kind carries.
 type ImportEntry struct {
 	// Line is the line of the file, from 1.
 	Line int
-	// Target is the account address without a leading "@", or the URL of the post.
+	// Target is the account address without a leading "@", the URL of the post, or the domain.
 	Target string
 	// ShowBoosts and Notify are the settings of a follow.
 	ShowBoosts bool
@@ -135,7 +143,7 @@ type ImportSkipReason string
 
 // Import skip reasons.
 const (
-	// ImportSkipInvalid is a line that names no account address or post URL.
+	// ImportSkipInvalid is a line that names no account address, post URL, or domain.
 	ImportSkipInvalid ImportSkipReason = "invalid"
 	// ImportSkipDuplicate is a line whose target an earlier line names.
 	ImportSkipDuplicate ImportSkipReason = "duplicate"
@@ -197,10 +205,14 @@ func ParseImportCSV(k ImportKind, text string) ([]ImportEntry, []ImportSkipped, 
 		}
 		var key string
 		var ok bool
-		if k == ImportBookmarks {
+		switch k {
+		case ImportBookmarks:
 			e.Target = fields[headerURI]
 			key, ok = e.Target, isPostURL(e.Target)
-		} else {
+		case ImportDomainMutes:
+			e.Target = fields[headerDomain]
+			key, ok = DomainKey(e.Target)
+		default:
 			e.Target = strings.TrimPrefix(fields[headerAccountAddress], "@")
 			key, ok = AddressKey(e.Target)
 		}
@@ -244,14 +256,25 @@ func AddressKey(address string) (string, bool) {
 	return strings.ToLower(username) + "@" + strings.ToLower(domain), true
 }
 
+// DomainKey returns the form of a domain of a file that identifies it, to compare domains: in
+// lower case without a trailing dot. It reports false for what is not a host name: empty, or
+// with a scheme, path, port, user, or space.
+func DomainKey(domain string) (string, bool) {
+	d := strings.ToLower(strings.TrimSuffix(domain, "."))
+	if d == "" || strings.ContainsAny(d, " \t/?#@:") || strings.HasPrefix(d, ".") || strings.Contains(d, "..") {
+		return "", false
+	}
+	return d, true
+}
+
 // isPostURL reports whether s is an absolute http(s) URL, as the URIs of posts are.
 func isPostURL(s string) bool {
 	u, err := url.Parse(s)
 	return err == nil && (u.Scheme == "https" || u.Scheme == "http") && u.Host != "" && !strings.ContainsAny(s, " \t")
 }
 
-// ExportRow is an entry of a CSV export: an account address, or for bookmarks the URI of a
-// post, with the settings of its kind.
+// ExportRow is an entry of a CSV export: an account address, for bookmarks the URI of a post,
+// or for domain mutes a domain, with the settings of its kind.
 type ExportRow struct {
 	Target            string
 	ShowBoosts        bool
@@ -260,7 +283,7 @@ type ExportRow struct {
 }
 
 // WriteExportCSV writes rows as the CSV file of kind that Mastodon exports: following and
-// mutes with their header row, blocks and bookmarks one value per line.
+// mutes with their header row, blocks, bookmarks, and domains one value per line.
 func WriteExportCSV(w io.Writer, k ImportKind, rows []ExportRow) error {
 	cw := csv.NewWriter(w)
 	flag := func(b bool) string {
@@ -355,7 +378,8 @@ type ImportFailure string
 
 // Import failures.
 const (
-	// ImportFailureUnresolvable: the account or post could not be found here or on its server.
+	// ImportFailureUnresolvable: the account or post could not be found here or on its server,
+	// or the domain is not one that can be muted.
 	ImportFailureUnresolvable ImportFailure = "unresolvable"
 	// ImportFailureUnavailable: the account or post exists but cannot be acted on now (it is
 	// suspended, deleted, or not visible to the user).
@@ -366,12 +390,14 @@ const (
 	ImportFailureRestricted ImportFailure = "restricted"
 	// ImportFailureSelf: the entry is the user's own account.
 	ImportFailureSelf ImportFailure = "self"
+	// ImportFailureLimit: the user already has the most of the kind allowed (the muted domains).
+	ImportFailureLimit ImportFailure = "limit"
 )
 
 // Valid reports whether f is a known failure.
 func (f ImportFailure) Valid() bool {
 	switch f {
-	case ImportFailureUnresolvable, ImportFailureUnavailable, ImportFailureBlocked, ImportFailureRestricted, ImportFailureSelf:
+	case ImportFailureUnresolvable, ImportFailureUnavailable, ImportFailureBlocked, ImportFailureRestricted, ImportFailureSelf, ImportFailureLimit:
 		return true
 	}
 	return false

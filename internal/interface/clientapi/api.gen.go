@@ -900,10 +900,11 @@ func (e DataImportState) Valid() bool {
 
 // Defines values for DataImportKind.
 const (
-	DataImportKindBlocks    DataImportKind = "blocks"
-	DataImportKindBookmarks DataImportKind = "bookmarks"
-	DataImportKindFollowing DataImportKind = "following"
-	DataImportKindMutes     DataImportKind = "mutes"
+	DataImportKindBlocks      DataImportKind = "blocks"
+	DataImportKindBookmarks   DataImportKind = "bookmarks"
+	DataImportKindDomainMutes DataImportKind = "domain_mutes"
+	DataImportKindFollowing   DataImportKind = "following"
+	DataImportKindMutes       DataImportKind = "mutes"
 )
 
 // Valid indicates whether the value is a known member of the DataImportKind enum.
@@ -912,6 +913,8 @@ func (e DataImportKind) Valid() bool {
 	case DataImportKindBlocks:
 		return true
 	case DataImportKindBookmarks:
+		return true
+	case DataImportKindDomainMutes:
 		return true
 	case DataImportKindFollowing:
 		return true
@@ -3511,7 +3514,8 @@ type DataImport struct {
 	CreatedAt time.Time `json:"created_at"`
 
 	// Failed How many of them could not be carried out: an account or post that cannot be found
-	// or acted on, or a follow that a block stops.
+	// or acted on, a follow that a block stops, or a domain that cannot be muted (this
+	// server's own, or one beyond the most muted domains allowed).
 	Failed int `json:"failed"`
 
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
@@ -3520,7 +3524,9 @@ type DataImport struct {
 	Id Id `json:"id"`
 
 	// Kind What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-	// accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+	// accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+	// domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+	// `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
 	// posts the user bookmarked).
 	Kind DataImportKind `json:"kind"`
 
@@ -3542,7 +3548,9 @@ type DataImport struct {
 type DataImportState string
 
 // DataImportKind What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-// accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+// accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+// domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+// `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
 // posts the user bookmarked).
 type DataImportKind string
 
@@ -3574,7 +3582,9 @@ type DataImportPreview struct {
 // DataImportRequest A CSV file to import, and how.
 type DataImportRequest struct {
 	// Kind What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-	// accounts the user blocks), `mutes` (the accounts the user mutes), or `bookmarks` (the
+	// accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+	// domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+	// `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
 	// posts the user bookmarked).
 	Kind DataImportKind `json:"kind"`
 
@@ -3591,16 +3601,18 @@ type DataImportSkipped struct {
 	// Line The line of the file, from 1.
 	Line int `json:"line"`
 
-	// Reason `invalid`: the line names no account address (or for bookmarks, no post URL).
-	// `duplicate`: an earlier line names the same account or post.
+	// Reason `invalid`: the line names no account address (for bookmarks, no post URL; for
+	// domain mutes, no domain).
+	// `duplicate`: an earlier line names the same account, post, or domain.
 	Reason DataImportSkippedReason `json:"reason"`
 
 	// Value The line as written.
 	Value string `json:"value"`
 }
 
-// DataImportSkippedReason `invalid`: the line names no account address (or for bookmarks, no post URL).
-// `duplicate`: an earlier line names the same account or post.
+// DataImportSkippedReason `invalid`: the line names no account address (for bookmarks, no post URL; for
+// domain mutes, no domain).
+// `duplicate`: an earlier line names the same account, post, or domain.
 type DataImportSkippedReason string
 
 // DecideAppealRequest The moderators' explanation of a decision on an appeal.
@@ -6358,7 +6370,7 @@ type ServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams)
-	// ExportCsv Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+	// ExportCsv Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
 	// (GET /csv_exports/{kind})
 	ExportCsv(w http.ResponseWriter, r *http.Request, kind DataImportKind)
 	// ListCustomEmojis List the custom emoji of the picker
@@ -6394,7 +6406,7 @@ type ServerInterface interface {
 	// ListDataImports List the authenticated user's imports
 	// (GET /imports)
 	ListDataImports(w http.ResponseWriter, r *http.Request)
-	// StartDataImport Import a CSV file of follows, blocks, mutes, or bookmarks
+	// StartDataImport Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
 	// (POST /imports)
 	StartDataImport(w http.ResponseWriter, r *http.Request)
 	// PreviewDataImport Preview an import of a CSV file
@@ -21448,7 +21460,7 @@ type StrictServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(ctx context.Context, request ListBookmarksRequestObject) (ListBookmarksResponseObject, error)
-	// ExportCsv Export the authenticated user's follows, blocks, mutes, or bookmarks as CSV
+	// ExportCsv Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
 	// (GET /csv_exports/{kind})
 	ExportCsv(ctx context.Context, request ExportCsvRequestObject) (ExportCsvResponseObject, error)
 	// ListCustomEmojis List the custom emoji of the picker
@@ -21484,7 +21496,7 @@ type StrictServerInterface interface {
 	// ListDataImports List the authenticated user's imports
 	// (GET /imports)
 	ListDataImports(ctx context.Context, request ListDataImportsRequestObject) (ListDataImportsResponseObject, error)
-	// StartDataImport Import a CSV file of follows, blocks, mutes, or bookmarks
+	// StartDataImport Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
 	// (POST /imports)
 	StartDataImport(ctx context.Context, request StartDataImportRequestObject) (StartDataImportResponseObject, error)
 	// PreviewDataImport Preview an import of a CSV file

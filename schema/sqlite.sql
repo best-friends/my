@@ -1970,12 +1970,13 @@ CREATE TABLE data_export_results (
 ) STRICT;
 CREATE INDEX data_export_results_expires_at ON data_export_results (expires_at);
 
--- Resource: a user's import of a Mastodon CSV file of follows, blocks, mutes, or bookmarks.
+-- Resource: a user's import of a Mastodon CSV file of follows, blocks, mutes, bookmarks, or
+-- muted domains.
 CREATE TABLE data_imports (
   id TEXT NOT NULL PRIMARY KEY,
   user_id TEXT NOT NULL,
   account_id TEXT NOT NULL,
-  kind TEXT NOT NULL CHECK (kind IN ('following', 'blocks', 'mutes', 'bookmarks')),
+  kind TEXT NOT NULL CHECK (kind IN ('following', 'blocks', 'mutes', 'bookmarks', 'domain_mutes')),
   mode TEXT NOT NULL CHECK (mode IN ('merge', 'overwrite')),
   created_at INTEGER NOT NULL
 ) STRICT;
@@ -2001,7 +2002,7 @@ CREATE TABLE data_import_item_results (
   import_id TEXT NOT NULL,
   position INTEGER NOT NULL,
   outcome TEXT NOT NULL CHECK (outcome IN ('done', 'failed')),
-  failure TEXT CHECK (failure IN ('unresolvable', 'unavailable', 'blocked', 'restricted', 'self')),
+  failure TEXT CHECK (failure IN ('unresolvable', 'unavailable', 'blocked', 'restricted', 'self', 'limit')),
   processed_at INTEGER NOT NULL,
   PRIMARY KEY (import_id, position),
   CHECK ((outcome = 'failed') = (failure IS NOT NULL))
