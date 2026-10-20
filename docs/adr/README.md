@@ -63,4 +63,5 @@
 | [0049](0049-client-lint-oxlint.md) | クライアントの lint を ESLint から Oxlint に移す | Accepted |
 | [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Accepted |
 | [0056](0056-system-observability.md) | システムメトリクスの可観測性 | Accepted |
+| [0062](0062-link-preview-cards.md) | 投稿中のリンクのカード | Accepted |
 <!-- adr-index:end -->
