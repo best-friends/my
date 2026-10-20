@@ -169,13 +169,17 @@ type DeadJobs interface {
 	// and removes it from the dead jobs. When a job with the same IdempotencyKey is pending,
 	// that job stands in for it. It returns ErrDeadJobNotFound when there is no such dead job.
 	RequeueDeadJob(ctx context.Context, id string) error
+	// DeleteDeadJob deletes the dead job id without running it again. It returns
+	// ErrDeadJobNotFound when there is no such dead job.
+	DeleteDeadJob(ctx context.Context, id string) error
 	// DeleteDeadJobsBefore deletes at most limit dead jobs that failed before t, the oldest
 	// first, and returns how many it deleted; none when limit <= 0. It is safe to repeat.
 	DeleteDeadJobsBefore(ctx context.Context, t time.Time, limit int) (int64, error)
 }
 
 var (
-	// ErrDeadJobNotFound is returned by DeadJobs.RequeueDeadJob for an unknown ID.
+	// ErrDeadJobNotFound is returned by DeadJobs.RequeueDeadJob and DeadJobs.DeleteDeadJob
+	// for an unknown ID.
 	ErrDeadJobNotFound = errors.New("queue: dead job not found")
 	// ErrLeaseLost is returned by Source methods when the worker no longer holds the job:
 	// its lease expired and another worker claimed it. The other worker's result wins.

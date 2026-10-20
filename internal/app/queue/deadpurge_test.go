@@ -24,6 +24,8 @@ func (f *fakeDeadJobs) ListDeadJobs(context.Context, queue.DeadJobPosition, int)
 
 func (f *fakeDeadJobs) RequeueDeadJob(context.Context, string) error { return nil }
 
+func (f *fakeDeadJobs) DeleteDeadJob(context.Context, string) error { return nil }
+
 func (f *fakeDeadJobs) DeleteDeadJobsBefore(_ context.Context, t time.Time, limit int) (int64, error) {
 	f.cutoffs = append(f.cutoffs, t)
 	if f.err != nil {

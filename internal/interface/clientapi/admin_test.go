@@ -117,6 +117,10 @@ func (f *fakeDeadJobs) RequeueDeadJob(_ context.Context, id string) error {
 	return nil
 }
 
+func (f *fakeDeadJobs) DeleteDeadJob(context.Context, string) error {
+	return errors.New("fakeDeadJobs: DeleteDeadJob is not used by the admin API")
+}
+
 func (f *fakeDeadJobs) DeleteDeadJobsBefore(context.Context, time.Time, int) (int64, error) {
 	return 0, errors.New("fakeDeadJobs: DeleteDeadJobsBefore is not used by the admin API")
 }
