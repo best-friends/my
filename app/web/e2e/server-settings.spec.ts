@@ -2,10 +2,22 @@
 // The server settings screen in every width × locale project (ADR-0027): an administrator names the server in
 // a language, and the tab title and the sidebar call the server by that name instead of its domain at once, and
 // changes the registration mode with the keyboard, each step passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
-// a signed-in administrator with page.route; names change with the locale, so the structure is checked by role
-// and by what the server sends.
+// a signed-in administrator with page.route; names change with the locale, so the structure is checked by role,
+// by the names in the project's locale catalog and by what the server sends.
+import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+
+type Catalog = Record<string, { defaultMessage: string }>;
+
+/** The client message `key` in the project's locale. */
+function message(key: string): string {
+  const locale = test.info().project.use.locale ?? "en";
+  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const text = catalog[key]?.defaultMessage;
+  if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
+  return text;
+}
 
 /** The signed-in administrator's account, as GET /accounts/verify_credentials answers, with manage_settings. */
 const administrator = {
@@ -132,7 +144,7 @@ test.describe("server settings", () => {
     const english = main.getByRole("textbox").first();
     await expect(english).toHaveValue("my example");
     await expect(page).toHaveTitle(/my example/);
-    const name = main.getByRole("region").first();
+    const name = main.getByRole("region", { name: message("admin.settings.name.title"), exact: true });
     await expect(name).toMatchAriaSnapshot(`
       - region:
         - heading [level=2]
@@ -165,12 +177,12 @@ test.describe("server policies", () => {
     await page.goto("/admin/settings");
     const main = page.getByRole("main");
     await expect(main.getByRole("textbox").first()).toHaveValue("my example");
-    const registration = main.getByRole("radiogroup").first();
+    const registration = main.getByRole("radiogroup", { name: message("admin.settings.registration.mode"), exact: true });
     // The radio group holds the saved mode (approval); Down Arrow selects the next one, invite, in every direction.
     await registration.getByRole("radio", { checked: true }).focus();
     await page.keyboard.press("ArrowDown");
     await expect(registration.getByRole("radio").nth(2)).toBeChecked();
-    const save = main.getByRole("button").last();
+    const save = main.getByRole("button", { name: message("admin.settings.policies.save"), exact: true });
     await save.focus();
     await page.keyboard.press("Enter");
     await expect(main.getByRole("status").last()).not.toBeEmpty();

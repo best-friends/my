@@ -2,9 +2,22 @@
 // The admin screens in every width × locale project (ADR-0027): the remote servers and their history, resuming
 // deliveries, and running a failed job again, each passing axe without scrolling sideways. `vite preview` has
 // no API, so each test plays the server of a signed-in operator with page.route; names change with the
-// locale, so the structure is checked by role and the identifiers the server sends (domains, job types).
+// locale, so the structure is checked by role, the names in the project's locale catalog and the identifiers the
+// server sends (domains, job types).
+import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+
+type Catalog = Record<string, { defaultMessage: string }>;
+
+/** The client message `key` in the project's locale. */
+function message(key: string): string {
+  const locale = test.info().project.use.locale ?? "en";
+  const catalog = JSON.parse(readFileSync(new URL(`../../../locales/${locale}/client.json`, import.meta.url), "utf8")) as Catalog;
+  const text = catalog[key]?.defaultMessage;
+  if (text === undefined) throw new Error(`no message ${key} in ${locale}`);
+  return text;
+}
 
 /** The signed-in operator's account, as GET /accounts/verify_credentials answers, with both admin permissions. */
 const operator = {
@@ -153,10 +166,10 @@ test.describe("remote servers", () => {
 
     await main.getByRole("link", { name: longDomain }).click();
     await expect(main.getByRole("heading", { level: 1, name: longDomain })).toBeFocused();
-    const resume = main.getByRole("button").first();
+    const resume = main.getByRole("button", { name: message("admin.instance.mark_available"), exact: true });
     await resume.click();
     await expect(resume).toBeHidden();
-    await expect(main.getByRole("region").getByRole("listitem")).toHaveCount(2);
+    await expect(main.getByRole("region", { name: message("admin.instance.history.title"), exact: true }).getByRole("listitem")).toHaveCount(2);
     expect(actions).toEqual([`POST /admin/instances/${longDomain}/mark_available`]);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
