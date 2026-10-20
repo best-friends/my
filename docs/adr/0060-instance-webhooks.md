@@ -1,6 +1,6 @@
 # ADR-0060: サーバー単位の webhook
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #650
@@ -30,7 +30,7 @@ webhook の仕組みも FR もないので、FR-722 を足し、送るイベン�
 | 署名 | `X-Hub-Signature: sha256=<本文の HMAC-SHA256 の hex>`（WebSub 由来）。時刻・ID を署名しない | 署名しない。秘密をそのまま `X-Misskey-Hook-Secret` ヘッダで送る | `webhook-id` / `webhook-timestamp` / `webhook-signature`。`id.timestamp.body` の HMAC-SHA256（`v1`）か Ed25519（`v1a`）。署名を空白区切りで複数並べて鍵を回転する |
 | 再送 | Sidekiq の retry 16 回、dead に送らない | 4xx（再送可能なもの以外）で打ち切り、それ以外は再送 | 数日にわたる指数バックオフとジッタ。リダイレクトは失敗として扱う。`410 Gone` で宛先を無効にする。タイムアウトは 15〜30 秒 |
 | 失敗の記録・無効化 | 自動の無効化なし | 最後の送信時刻と状態コードだけを持つ | 失敗が続けば別の経路で知らせ、無効化を検討する |
-| 宛先の検査 | `allow_local: true` で内部のアドレスへも送る | 共通の HTTP サービスを使う（要検証: 内部のアドレスを拒むか） | 内部のアドレスを塞ぐプロキシか、内部に届かないサブネットから送ることを推奨 |
+| 宛先の検査 | `allow_local: true` で内部のアドレスへも送る | 共通の HTTP サービスを使う | 内部のアドレスを塞ぐプロキシか、内部に届かないサブネットから送ることを推奨 |
 | 権限 | 購読するイベントごとに要る権限（`account.*` は `manage_users`、`report.*` は `manage_reports`、`status.*` は `view_devops`） | 管理者 | — |
 
 出典: Mastodon の [`Webhook`](https://github.com/mastodon/mastodon/blob/main/app/models/webhook.rb)・
@@ -39,7 +39,6 @@ webhook の仕組みも FR もないので、FR-722 を足し、送るイベン�
 Misskey の [`SystemWebhook`](https://github.com/misskey-dev/misskey/blob/develop/packages/backend/src/models/SystemWebhook.ts)・
 [`SystemWebhookDeliverProcessorService`](https://github.com/misskey-dev/misskey/blob/develop/packages/backend/src/queue/processors/SystemWebhookDeliverProcessorService.ts)、
 [Standard Webhooks の仕様](https://github.com/standard-webhooks/standard-webhooks/blob/main/spec/standard-webhooks.md)。
-GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない（要検証: 2026-10-20 時点の main）。
 
 ## Decision Drivers（判断基準）
 
@@ -63,9 +62,7 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
 
 ## Decision（決定）
 
-> 推奨案。決定者の承認で確定する。
-
-**選択肢 1 と、宛先の扱い (c) を推奨する。**
+**選択肢 1 と、宛先の扱い (c) を採用する。**
 
 ### イベントとペイロード
 
@@ -74,7 +71,7 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
   型は `api/openapi.yaml` の `components/schemas` に置く（`webhooks` キーワードは ADR-0029 の部分集合の外なので使わない）。イベントの一覧と `data` の型は参照文書 `docs/reference/webhooks.md` に書く。
 - 版: v0 のあいだは版を持たず、`data` は管理 API の `/api/v1` の表現に従う（ADR-0012）。
   v1 以降に `data` の互換を壊すときは、宛先ごとに API の版を選ぶ列を足す ADR を書く。
-- 最初のイベントと、購読に要る権限（Mastodon と同じく、購読するイベントのすべてについて、設定する人がその権限を持つ必要がある）:
+- イベントと、購読に要る権限（Mastodon と同じく、購読するイベントのすべてについて、設定する人がその権限を持つ必要がある）:
 
 | `type` | 起きるとき | 要る権限 |
 | --- | --- | --- |
@@ -85,10 +82,15 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
 | `moderation_action.created` / `moderation_action.lifted` | アカウントへの処分と解除（FR-703, FR-713） | `manage_accounts` |
 | `appeal.created` | 異議申し立て（FR-707） | `manage_accounts` |
 | `domain_moderation_action.created` / `domain_moderation_action.lifted` | ドメイン単位の処分と解除（FR-702） | `manage_domains` |
+| `account.updated` | ローカルのアカウントのプロフィールの変更（新しい版の記録） | `manage_accounts` |
 | `status.created` | ローカルの利用者の公開範囲 `public` の投稿 | `manage_webhooks`（ほかに要らない） |
+| `custom_emoji.created` / `custom_emoji.updated` / `custom_emoji.deleted` | カスタム絵文字の管理操作（ADR-0051、#618 の §5 で監査ログに記録する操作）。作成とリモートの絵文字の複製は `created`、画像の差し替え・設定と別名の変更・無効化と有効化は `updated`、削除は `deleted` | `manage_custom_emojis`（ADR-0051、#618） |
 | `webhook.test` | 管理画面の「テスト送信」（購読の設定に関係なく、その宛先にだけ送る） | — |
 
 - `status.created` は `public` だけを送る。`unlisted` 以下と `local`（ADR-0017）の投稿は、サーバーの外の宛先に出さない。リモートの投稿は量が読めないので送らない。
+- `account.updated` はローカルのアカウントだけを送る。リモートのプロフィールの取り込みは送らない。
+- `custom_emoji.*` は管理操作だけで起きる。リモートの絵文字を投稿やプロフィールの受信で記録したときは送らない。
+  イベント名と `data` の表現（管理 API `/admin/custom_emojis` の表現）は ADR-0051（#618）の名前に合わせる。
 - 権限の検査は設定・変更のときに行う。設定した人が後で権限を失っても、宛先は止めない（Mastodon と同じ。止めたいときは `manage_webhooks` を持つ人が無効にする）。
 
 ### 署名と秘密
@@ -98,7 +100,7 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
   署名する文字列は `webhook-id.webhook-timestamp.body` で、body は DB に保存したバイト列をそのまま送る。
 - 秘密は宛先ごとに 32 バイトの乱数で、`whsec_<base64>` の形で 1 度だけ見せる（作成時と回転時）。DB には `kernel.Sealer` で封をして置く。
 - 回転は新しい秘密を記録するだけで、古い秘密は 24 時間のあいだ有効なまま残し、そのあいだは 2 つの署名を空白区切りで並べる。
-- 非対称の `v1a`（Ed25519）は持たない。受け手が公開鍵だけで検証できる利点はあるが、宛先ごとの秘密で足り、対応する受け手のライブラリが少ない（要検証）。
+- 非対称の `v1a`（Ed25519）は持たない。受け手が公開鍵だけで検証できる利点はあるが、宛先ごとの秘密で足りる。
 
 ### 配送と再送
 
@@ -138,7 +140,8 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
 | `webhook_endpoint_heads` | 投影 | `endpoint_id`, `revision_id`, `state`, `secret_id` |
 | `webhook_endpoint_failures` | 投影 | `endpoint_id`（PK）, `first_failure_attempt_id`, `consecutive_failures`。行がある = 成功せずに失敗が続いている。成功した試行で行を消す |
 
-- `body` は「解釈しない文書」（規約 4）で、通報のコメントなどの個人データを含む。`webhook_messages` と配送・試行の行は、作成から 14 日で消す定期ジョブを持つ（FR-803、ADR-0038 の保持期間の一覧に足す）。
+- `body` は「解釈しない文書」（規約 4）で、通報のコメントなどの個人データを含む。`webhook_messages` と配送・試行の行は、作成から 14 日で消す定期ジョブを持つ（FR-803）。
+  14 日は固定の値で、ADR-0038 の保持期間の設定（`retention_*`）には足さない。
 - URL は、Discord や Slack のように経路やクエリに秘密を含むことがあるので、ログと監査ログにはホスト名だけを出す。
 
 ### 管理 API・画面・監査ログ・権限
@@ -162,7 +165,7 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
   - 配送は既存のジョブ・Outbox・`dead_jobs` に乗り、新しいキューを持たない。webhook を設定しないサーバーには行もジョブも増えない。
 - 悪い影響・トレードオフ
   - Mastodon の webhook 向けに作った受け手（`X-Hub-Signature` を検証するもの）はそのままでは使えない。
-  - Mastodon にあるテンプレート（Discord・Slack の形への変換）を持たないので、チャットに流すには中継（n8n など）が要る。
+  - Mastodon にあるテンプレート（Discord・Slack の形への変換）は持たない。チャットに流すには中継（n8n など）が要る。
   - 本文をトランザクションの中で作るので、イベントを発行するユースケースの書き込みに `data` の組み立てが加わる（購読する宛先があるときだけ）。
   - モジュールが 1 つ増え、overview §2・data-model §4 の表と depguard の設定を更新する必要がある。
 - 後続で必要になる作業（#666 の実装で Issue に分ける）
@@ -174,7 +177,7 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
-### 1. Standard Webhooks の形（推奨）
+### 1. Standard Webhooks の形（採用）
 
 - 良い: 署名・ID・時刻・回転・再送・`410` の扱いが仕様として公開され、受け手のライブラリがある（Driver 2）。時刻を署名に含むので、Mastodon の形より再生攻撃に強い。
 - 悪い: Fediverse の既存の受け手との互換はない。
@@ -194,13 +197,8 @@ GoToSocial と Pleroma / Akkoma はサーバー単位の webhook を持たない
 
 - (a) 常にガード: 最も安全だが、同じホストや VPC 内の自動化ツールに送れず、self-hosted の典型的な使い方を塞ぐ。
 - (b) ガードを外す: 最も手軽で Mastodon と同じだが、`manage_webhooks` を持つ人（乗っ取りを含む）がクラウドのメタデータエンドポイントや内部の管理画面に要求を送れる。応答の本文は見せなくても、状態コードと所要時間が配送の履歴に出るので、内部の探索に使える。
-- (c) 設定の許可リスト（推奨）: 内部に届くかを決めるのはサーバーに権限を持つ運営者だけになり、(a) の安全さを保ったまま (b) の使い方ができる。
+- (c) 設定の許可リスト（採用）: 内部に届くかを決めるのはサーバーに権限を持つ運営者だけになり、(a) の安全さを保ったまま (b) の使い方ができる。
 
 ## Open Questions / 要検証
 
-- 最初のイベントの一覧で足りるか。`status.created` を v0 に入れるか、`account.updated`（プロフィールの変更）を足すか
-- `webhook_messages` の保持期間（14 日）を固定にするか、ADR-0038 の保持期間の設定（`instance_settings` の `retention_*`）に足すか
-- Discord・Slack への変換（Mastodon のテンプレート相当）を後で足すか
-- 自動の無効化の閾値（72 時間かつ連続 20 回）
-- Misskey の `HttpRequestService` が内部のアドレスを拒むか（比較表の要検証）
-- GoToSocial と Pleroma / Akkoma がサーバー単位の webhook を持たないこと
+- なし
