@@ -101,7 +101,7 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 	var jobs sync.WaitGroup
 	stopJobs := make(chan struct{})
 	if a.Config.Role != config.RoleWeb {
-		jobs.Go(func() { _ = a.Runner.RunUntil(hardCtx, stopJobs) })
+		jobs.Go(func() { _ = a.runJobs(hardCtx, stopJobs) })
 		if a.Scheduler != nil {
 			jobs.Go(func() { a.Scheduler.RunUntil(hardCtx, stopJobs, 0) })
 		}
