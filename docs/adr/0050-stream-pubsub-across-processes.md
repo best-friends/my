@@ -135,10 +135,10 @@ type Listener interface {
 - SQS は point-to-point なので、全プロセスへの同報には SNS のトピックからプロセスごとのキューへ配る形にする
 - トピック（標準）はデプロイのテンプレートが作る。送信は `sns:Publish`（Raw の本文）
 - `Listen` で作るもの
-  - キュー `<stream_sqs_queue_prefix>-<process id>`（80 文字以内）。`MessageRetentionPeriod` 60 秒（最小）、`ReceiveMessageWaitTimeSeconds` 20 秒、タグ付き
+  - キュー `<stream_sqs_queue_prefix>-<process id>-<n>`（80 文字以内。`n` はそのプロセスの `Listen` の連番）。`MessageRetentionPeriod` 60 秒（最小）、`ReceiveMessageWaitTimeSeconds` 20 秒、タグ付き
   - キューのポリシー: `sns.amazonaws.com` に `sqs:SendMessage` を許し、`aws:SourceArn` をトピックの ARN に限る
   - トピックの購読（`Protocol` は `sqs`、`RawMessageDelivery=true`）。同じアカウントなので自動で確認される
-- 受信は 20 秒のロングポーリング（最大 10 件）と `DeleteMessageBatch`。`Close` で `Unsubscribe` と `DeleteQueue` を呼ぶ。キューの削除は最大 60 秒かかり、同じ名前は 60 秒使えないので、名前は毎回新しいプロセス ID にする
+- 受信は 20 秒のロングポーリング（最大 10 件）と `DeleteMessageBatch`。`Close` で `Unsubscribe` と `DeleteQueue` を呼ぶ。キューの削除は最大 60 秒かかり、同じ名前は 60 秒使えないので、名前はプロセス ID と `Listen` の連番で毎回新しくする（`Relay` は `Broken` の後に同じプロセスで listen し直す）
 - 後始末
   - Lambda Web Adapter は外部拡張として登録されるので、実行環境の終了時にプロセスは SIGTERM を受け、約 2 秒の猶予で `Close` を試みる
   - 異常終了や凍結のまま捨てられた実行環境の分は、定期ジョブ `stream.sweep`（ADR-0004 の Scheduler → JobQueue）が消す。
@@ -157,7 +157,7 @@ type Listener interface {
 #### `stream/pubsub`（Google Cloud Pub/Sub、プロセスごとの subscription）
 
 - 1 つの subscription に複数の購読者がいると知らせを分け合うので、プロセス（Cloud Run のインスタンス）ごとに subscription を作る
-- トピックはデプロイのテンプレートが作る。`Listen` で subscription `<stream_pubsub_subscription_prefix>-<process id>` を作る
+- トピックはデプロイのテンプレートが作る。`Listen` で subscription `<stream_pubsub_subscription_prefix>-<process id>-<n>` を作る（`n` はそのプロセスの `Listen` の連番。Pub/Sub の削除は世代を指定できないので、壊れた listener の遅れた `Close` が次の listener の subscription を消さないよう、名前を毎回新しくする）
   - `expirationPolicy.ttl` 1 日（最小）、`messageRetentionDuration` 10 分（最小）、ack の期限 10 秒
   - streaming pull で受け、受けたらすぐ ack する。`Close`（SIGTERM の 10 秒の猶予を含む）で subscription を消す
 - 後始末: 消し損ねた subscription は 1 日使われなければ Pub/Sub が消す。トピックあたり 10,000 の上限に近づかないよう、`stream.sweep` も同じ生存の印で消す
@@ -165,7 +165,7 @@ type Listener interface {
   遅延 listen と組み合わせれば「ストリームがある間だけ受ける」形になる。1 つのインスタンスは複数のリクエストを並行に扱う（concurrency）ので、subscription はインスタンスにつき 1 つ
 - コスト（2026-10-19 確認）: スループット $40 / TiB、毎月 10 GiB まで無料。リクエストごとに最低 1 KB で数える。
   subscription 3 つなら知らせ約 268 万件 / 月までが無料枠で、以降 100 万件ごとに約 $0.15。保持を 1 日以下にするので保存料はかからない。subscription の作成・削除に料金はない
-- IAM: トピックに `pubsub.topics.publish` と `pubsub.topics.attachSubscription`、プロジェクトに `pubsub.subscriptions.create`・`pubsub.subscriptions.delete`・`pubsub.subscriptions.consume`（カスタムロール。`roles/pubsub.editor` は広すぎる）
+- IAM: トピックに `pubsub.topics.publish` と `pubsub.topics.attachSubscription`、プロジェクトに `pubsub.subscriptions.create`・`pubsub.subscriptions.delete`・`pubsub.subscriptions.consume`・`pubsub.subscriptions.list`（カスタムロール。`roles/pubsub.editor` は広すぎる）。`list` は `stream.sweep` が、プロセス ID と作成時刻を持つラベルで古い subscription を探すのに使う
 - 依存: `cloud.google.com/go/pubsub/v2`（Apache-2.0。v1 は非推奨で、2026-12-31 までの修正のみ）
 
 ### 3. ターゲットごとの既定
@@ -201,9 +201,9 @@ type Listener interface {
 | `postgres` | pgmem（ADR-0041。pgmem は複数接続の `LISTEN` / `NOTIFY` をうたう。実装で確かめる） | `make go-test-postgres` の `postgres:18-alpine` |
 | `valkey` | miniredis（MIT、pure Go、`PUBLISH` / `SUBSCRIBE` と RESP3）。2026-10-19 時点で 2 週間を過ぎた版は v2.39.0 | testcontainers-go の `modules/valkey`（MIT）と `valkey/valkey:9.1.2-alpine` |
 | `pubsub` | `cloud.google.com/go/pubsub/v2/pstest`（Go のプロセス内の偽サーバー、Apache-2.0） | Pub/Sub エミュレータ（`google-cloud-cli:<版>-emulators` を testcontainers-go の `modules/gcloud/pubsub` で起動。アカウント不要。エミュレータは期限切れと保持期間に対応しない） |
-| `sns` | アダプタが使う SNS / SQS の操作を狭いインターフェイスにし、testkit のメモリの偽物で確かめる | goaws（MIT、Go 製、SNS → SQS と `RawMessageDelivery` に対応）のコンテナ |
+| `sns` | アダプタが使う SNS / SQS の操作を狭いインターフェイスにし、testkit のメモリの偽物で確かめる | Floci 2.1.0（MIT、`floci/floci:2.1.0`。キューの `Policy`、`CreatedTimestamp`、SNS → SQS と `RawMessageDelivery`、削除済みキューの `QueueDoesNotExist` に対応）のコンテナ |
 
-- LocalStack は 2026-03-23 のリリースから起動に認証トークン（アカウント）が要り、商用の CI は有料なので使わない。MiniStack・Floci（どちらも MIT）は goaws の代わりの候補
+- LocalStack は 2026-03-23 のリリースから起動に認証トークン（アカウント）が要り、商用の CI は有料なので使わない。goaws v0.5.4 はキューの `Policy` を受け付けず `CreatedTimestamp` を返さないので使わない
 - 2 プロセスの結合テスト（`internal/platform`）: 同じ DB と同じ `Bus` を使う 2 つの App を立て、片方で投稿したものと、`role = worker` 側で Inbox を処理して作られた通知が、もう片方のストリームに届くことを確かめる（`postgres` を pgmem で、と `Relay` のメモリの `Bus` で）
 - クラウドの資源の後始末（SIGTERM、`stream.sweep`、Pub/Sub の期限切れ）は、M4 のデプロイのスモークテストで確かめる
 
@@ -236,7 +236,6 @@ type Listener interface {
 - Self-hosted の `db = postgres` で、`stream` の既定を `postgres` にするか（今の推奨案は `db` と同じく推測しない）
 - ElastiCache Serverless の公開エンドポイントの提供リージョンと、valkey-go の IAM 認証の対応（対応すれば AWS で `valkey` も選べる）
 - `NOTIFY` のコミット時の直列化が、知らせの多い構成で投稿の書き込みを遅らせないか（負荷試験）
-- AWS のエミュレータ（goaws・MiniStack・Floci）のうち、SNS → SQS の再現度が最も高いもの（実装で確かめる）
 
 出典（2026-10-19 確認）:
 [Valkey Pub/Sub](https://valkey.io/topics/pubsub/) /
