@@ -17,6 +17,7 @@ func (a *App) setUpDelivery(repo federation.Repository) {
 		UnitOfWork: a.UnitOfWork, Repository: repo,
 		Client:  federation.NewSignedHTTPClient(a.HTTPClient, httpsig.New(), a.KV, a.Clock),
 		Keys:    federation.AccountSigningKeys{Accounts: a.Accounts},
+		Proofs:  federation.AccountProofKeys{Accounts: a.Accounts},
 		Domains: a.ModerationPolicy,
 		Clock:   a.Clock, IDs: a.IDs, Logger: a.Logger, Meter: a.Meter,
 	})

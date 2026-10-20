@@ -10,9 +10,11 @@ import (
 	"testing"
 	"time"
 
+	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/identity"
 	domcontent "github.com/best-friends/my/internal/domain/content"
+	"github.com/best-friends/my/internal/domain/federation"
 	"github.com/best-friends/my/internal/platform"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -23,6 +25,7 @@ func TestFederationEndpoints(t *testing.T) {
 	t.Parallel()
 	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true)})
 	var accountID string
+	var accounts *appaccount.Service
 	s := start(t, cfg, platform.ServeOptions{}, func(a *platform.App) {
 		reg, err := a.Identity.RegisterLocalUser(t.Context(), identity.RegisterInput{
 			Username: "alice", Password: "correct horse battery staple", DisplayName: "Alice",
@@ -30,7 +33,7 @@ func TestFederationEndpoints(t *testing.T) {
 		if err != nil {
 			t.Fatalf("RegisterLocalUser: %v", err)
 		}
-		accountID = reg.AccountID
+		accountID, accounts = reg.AccountID, a.Accounts
 		if _, err := a.Accounts.EnsureInstanceActor(t.Context()); err != nil {
 			t.Fatalf("EnsureInstanceActor: %v", err)
 		}
@@ -44,11 +47,13 @@ func TestFederationEndpoints(t *testing.T) {
 
 	resp, body = s.do(t, http.MethodGet, "/ap/actors/"+accountID, map[string]string{"Accept": "application/activity+json"})
 	var actor struct {
+		Context   []any  `json:"@context"`
 		ID        string `json:"id"`
 		PublicKey struct {
 			ID  string `json:"id"`
 			PEM string `json:"publicKeyPem"`
 		} `json:"publicKey"`
+		AssertionMethod []federation.MultikeyDocument `json:"assertionMethod"`
 	}
 	if err := json.Unmarshal([]byte(body), &actor); err != nil || resp.StatusCode != http.StatusOK {
 		t.Fatalf("actor = %d %s (%v)", resp.StatusCode, body, err)
@@ -58,6 +63,30 @@ func TestFederationEndpoints(t *testing.T) {
 	}
 	if got := resp.Header.Get("Cross-Origin-Resource-Policy"); got != "cross-origin" {
 		t.Errorf("actor Cross-Origin-Resource-Policy = %q, want cross-origin", got)
+	}
+	// The Ed25519 key of its integrity proofs is its assertionMethod (FEP-521a), and verifies
+	// the proofs that its key signs (FEP-8b32).
+	if len(actor.AssertionMethod) != 1 || !slices.Contains(actor.Context, any(federation.ControlledIdentifierContext)) {
+		t.Fatalf("actor assertionMethod = %+v, context %v", actor.AssertionMethod, actor.Context)
+	}
+	m := actor.AssertionMethod[0]
+	if m.ID != actorURI+"#ed25519-key" || m.Type != "Multikey" || m.Controller != federation.IRI(actorURI) {
+		t.Errorf("assertionMethod = %+v, want the Multikey %s#ed25519-key of %s", m, actorURI, actorURI)
+	}
+	pub, err := federation.ParseEd25519Multikey(m.PublicKeyMultibase)
+	if err != nil {
+		t.Fatalf("publicKeyMultibase %q: %v", m.PublicKeyMultibase, err)
+	}
+	keyID, priv, err := accounts.ProofKey(t.Context(), accountID)
+	if err != nil || keyID != m.ID {
+		t.Fatalf("ProofKey = %s, %v; want %s", keyID, err, m.ID)
+	}
+	signed, err := federation.SignEdDSAJCS2022([]byte(`{"type":"Like","actor":"`+actorURI+`"}`), priv, keyID, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p, err := federation.ReadProof(signed, time.Now()); err != nil || p.Verify(signed, pub) != nil {
+		t.Errorf("the proof %s does not verify with the published key (%v)", signed, err)
 	}
 
 	resp, body = s.do(t, http.MethodGet, "/nodeinfo/2.1", nil)

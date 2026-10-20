@@ -5,6 +5,7 @@ package federation
 import (
 	"context"
 	"crypto"
+	"crypto/ed25519"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -58,6 +59,36 @@ func (k AccountSigningKeys) SigningKey(ctx context.Context, accountID string) (S
 	return SigningKey{KeyID: id, PrivateKey: key}, nil
 }
 
+// ProofKey is the key that signs the integrity proofs of a local actor's activities (FEP-8b32):
+// its Ed25519 key and the IRI that its document publishes it under in assertionMethod.
+type ProofKey struct {
+	VerificationMethod string
+	PrivateKey         ed25519.PrivateKey
+}
+
+// ProofKeys returns the key a local actor signs integrity proofs with. *appaccount.Service
+// implements it through AccountProofKeys.
+type ProofKeys interface {
+	// ProofKey fails with an error wrapping appaccount.ErrNotFound when the actor has no key.
+	ProofKey(ctx context.Context, accountID string) (ProofKey, error)
+}
+
+// AccountProofKeys adapts the account module's proof keys to ProofKeys.
+type AccountProofKeys struct {
+	Accounts interface {
+		ProofKey(ctx context.Context, accountID string) (string, ed25519.PrivateKey, error)
+	}
+}
+
+// ProofKey implements ProofKeys.
+func (k AccountProofKeys) ProofKey(ctx context.Context, accountID string) (ProofKey, error) {
+	id, key, err := k.Accounts.ProofKey(ctx, accountID)
+	if err != nil {
+		return ProofKey{}, err
+	}
+	return ProofKey{VerificationMethod: id, PrivateKey: key}, nil
+}
+
 // DeliverDeps are the ports of the delivery.
 type DeliverDeps struct {
 	UnitOfWork uow.UnitOfWork
@@ -65,6 +96,9 @@ type DeliverDeps struct {
 	// Client signs and sends the POST (double-knocking, federation.md §2).
 	Client *SignedHTTPClient
 	Keys   SigningKeys
+	// Proofs signs the integrity proof of every delivered document (FEP-8b32); nil sends the
+	// documents without one.
+	Proofs ProofKeys
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
 	// Breaker is the process's circuit breaker; nil means a new one.
@@ -85,7 +119,8 @@ type DeliverDeps struct {
 //     block; federation.Deliverable), it records a skipped attempt and is done.
 //  2. When the circuit breaker of the host is open, it records a retryable failure without
 //     sending and retries on the schedule.
-//  3. It signs the stored document with the actor's key and POSTs it.
+//  3. It adds the integrity proof of the actor's Ed25519 key to the stored document
+//     (withProof), signs the request with the actor's key, and POSTs it.
 //  4. It classifies the result (federation.ClassifyResponse) and records the attempt in
 //     delivery_attempts, whose projector updates instance_health in the same transaction.
 //  5. A success or a permanent failure is Done; a retryable failure is Retry, after the
@@ -182,6 +217,10 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 		return queue.Retry(0, err)
 	}
 
+	if document, err = d.withProof(ctx, act, document); err != nil {
+		return queue.Retry(0, err)
+	}
+
 	started := time.Now()
 	attempt, retryAfter := d.send(ctx, del, document, key)
 	if attempt.Outcome != "" {
@@ -194,6 +233,37 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 	}
 	d.d.Breaker.Record(del.Domain, attempt.Outcome, d.d.Clock.Now())
 	return d.finish(ctx, del, attempt, retryAfter)
+}
+
+// withProof returns document with the eddsa-jcs-2022 proof of the actor's Ed25519 key
+// (FEP-8b32, federation.md §7.4), created at the activity's time, so that every delivery and
+// retry of the activity sends the same bytes. The document goes as it is when there is no
+// ProofKeys, when the actor has no Ed25519 key, and when the document carries a linked data
+// signature: a proof added after that signature would break it, so a document that has both
+// gets its proof where the signature is made, before it (FEP-8b32, Backward compatibility).
+func (d *Deliverer) withProof(ctx context.Context, act federation.OutboundActivity, document []byte) ([]byte, error) {
+	if d.d.Proofs == nil {
+		return document, nil
+	}
+	var head struct {
+		Signature json.RawMessage `json:"signature"`
+	}
+	if json.Unmarshal(document, &head) != nil || len(head.Signature) > 0 {
+		return document, nil
+	}
+	key, err := d.d.Proofs.ProofKey(ctx, act.ActorAccountID)
+	if errors.Is(err, appaccount.ErrNotFound) {
+		return document, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	signed, err := federation.SignEdDSAJCS2022(document, key.PrivateKey, key.VerificationMethod, act.CreatedAt)
+	if err != nil {
+		d.d.Logger.WarnContext(ctx, "delivery without an integrity proof", slog.String("outbound_activity_id", act.ID), slog.Any("error", err))
+		return document, nil
+	}
+	return signed, nil
 }
 
 // send POSTs document to the delivery's inbox and returns the classified attempt and the wait

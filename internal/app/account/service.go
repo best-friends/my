@@ -5,6 +5,7 @@ package account
 import (
 	"context"
 	"crypto"
+	"crypto/ed25519"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -394,6 +395,18 @@ func (a Actor) PublishedKey() (account.Key, bool) {
 	return account.Key{}, false
 }
 
+// AssertionKey returns the key that a's document publishes in assertionMethod: its Ed25519 key
+// at {actor}#ed25519-key, which signs its integrity proofs (FEP-521a, FEP-8b32), false when it
+// has none.
+func (a Actor) AssertionKey() (account.Key, bool) {
+	for _, k := range a.Keys {
+		if k.Algorithm == account.KeyEd25519 && k.KeyID == account.KeyIRI(a.Account.URI, account.KeyEd25519) {
+			return k, true
+		}
+	}
+	return account.Key{}, false
+}
+
 // FindByID returns the actor with an account ID. It fails with ErrNotFound when there is none.
 func (s *Service) FindByID(ctx context.Context, id string) (Actor, error) {
 	a, err := s.d.Repository.FindAccount(ctx, id)
@@ -613,6 +626,35 @@ func (s *Service) SigningKey(ctx context.Context, accountID string) (keyID strin
 		return "", nil, err
 	}
 	return newest.KeyID, signer, nil
+}
+
+// ProofKey returns the key ID and the opened private key that a local actor signs the integrity
+// proofs of its activities with (FEP-8b32): its newest Ed25519 key ({actor}#ed25519-key). It
+// fails with ErrNotFound when the account does not exist or has no Ed25519 key.
+func (s *Service) ProofKey(ctx context.Context, accountID string) (keyID string, key ed25519.PrivateKey, err error) {
+	keys, err := s.d.Repository.ListKeys(ctx, accountID)
+	if err != nil {
+		return "", nil, err
+	}
+	var newest *account.Key
+	for i := range keys {
+		k := &keys[i]
+		if k.Algorithm == account.KeyEd25519 && (newest == nil || k.CreatedAt.After(newest.CreatedAt)) {
+			newest = k
+		}
+	}
+	if newest == nil {
+		return "", nil, fmt.Errorf("account: proof key of %s: %w", accountID, ErrNotFound)
+	}
+	signer, err := s.PrivateKey(ctx, *newest)
+	if err != nil {
+		return "", nil, err
+	}
+	priv, ok := signer.(ed25519.PrivateKey)
+	if !ok {
+		return "", nil, fmt.Errorf("account: proof key %s is a %T", newest.KeyID, signer)
+	}
+	return newest.KeyID, priv, nil
 }
 
 // ValidateUsername checks a new local username (account.ValidateUsername), so that other
