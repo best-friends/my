@@ -1,6 +1,6 @@
 # ADR-0061: 連合リレーへの参加と脱退
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #651
@@ -18,7 +18,7 @@
 - [00-vision.md](../requirements/00-vision.md) の非目標に「リレー」がある。
 - 関連する要件: FR-202（連合タイムライン）、FR-405（受信アクティビティ）、FR-406（配送）、FR-702（ドメイン単位の処分）、FR-704（監査ログ）、FR-803（期限切れデータの消去）、NFR-COST-1・NFR-COST-5。
 - 関連する決定: [ADR-0004](0004-job-queue-abstraction.md)（ジョブ）、[ADR-0017](0017-visibility-local.md)（`local` は連合しない）、[ADR-0020](0020-data-modeling-principles.md)（データモデル）、[ADR-0036](0036-moderation-federation-propagation.md)（処分の伝播）、[ADR-0037](0037-audit-log.md)（監査ログ）。
-  並行して起草中の ADR-0058 モデレーションとサーバー管理の分離（#648）が、管理の権限の分け方を決める。
+  管理の権限は、ADR-0058 モデレーションとサーバー管理の分離（#648）のサーバー管理の側に置く。
 
 ### 主要実装とリレーの方式（2026-10-20 にソースで確認）
 
@@ -80,9 +80,7 @@
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: 方式 1 + 送信 A + 受信 X。** 運営者が管理 API・CLI・管理画面からリレーを登録して参加・脱退でき、`public` の投稿だけを送り、受け取った投稿は取り直して検証し、短い保持期間で消す。
+**方式 1 + 送信 A + 受信 X を採用する。** 運営者が管理 API・CLI・管理画面からリレーを登録して参加・脱退でき、`public` の投稿だけを送り、受け取った投稿は取り直して検証し、短い保持期間で消す。
 
 ### 参加と脱退
 
@@ -100,6 +98,7 @@
 
 - 送るのは **ローカルの `public` の投稿の `Create` / `Update` / `Delete` だけ**。`unlisted`・`private`・`direct` と、**`local` は送らない**（ADR-0017）。ブーストの `Announce` も送らない（Activity-Relay の Mastodon 方式の経路は `Announce` を扱わない）。
   判定は配送の展開（federation.md §7.2）の公開範囲の規則に足し、visibility の単一のポリシー関数を通す。
+- 利用者ごとに「自分の投稿をリレーに送らない」設定は持たない（Mastodon・Misskey と同じ）。リレーに出したくない投稿は、`unlisted` か `local` で投稿する。
 - 展開ジョブの `Create` のフェーズに「`accepted` のリレーの inbox」を最後に足す。`deliveries` に記録するので、`Update` / `Delete` は元の `Create` の `deliveries` に届く。
   サイレンスなどで公開範囲が `public` でなくなった投稿は、ほかの宛先と同じく対象にならない。
 - **`public` の投稿の `Create` / `Update` / `Delete` の文書に LD 署名（`RsaSignature2017`、作者の鍵）を付ける**。リレーに送る文書だけでなく、同じ文書をすべての宛先に送る（文書は展開ジョブが 1 回だけ組み立てる）。
@@ -141,7 +140,7 @@
 ### 管理 API・CLI・画面・監査ログ
 
 - 管理 API: `GET /api/v1/admin/relays`（状態つきの一覧）、`POST /api/v1/admin/relays`（登録して参加。`protocol`・`url`・`receive`）、`POST /api/v1/admin/relays/{id}/follow`（参加し直す）、`POST /api/v1/admin/relays/{id}/unfollow`（脱退）、`DELETE /api/v1/admin/relays/{id}`（`left` / `rejected` の登録の削除）。
-- 権限は `manage_settings`。ADR-0058（#648）が権限を分け直すなら、それに従う。
+- 権限は `manage_settings`。リレー用の権限は分けない。
 - CLI: `my admin relay add|follow|unfollow|remove|list`。
 - 管理画面: リレーの一覧（方式・URL・状態・受信の有無・直近 24 時間の取り込み件数と上限で捨てた件数）と、登録・参加・脱退・削除の操作。
 - 監査ログ（ADR-0037）: 登録・参加・脱退・削除を `target_kind = relay` で記録する。`Accept` / `Reject` の受信は `actor_kind = remote` で記録する。
@@ -155,7 +154,7 @@
 - 00-vision.md の非目標から「リレー」を除く（この PR で更新する）。
 - 機能要件に FR-411（リレーへの送信と受信）と FR-724（リレーの参加と脱退の管理）を足す（この PR で更新する）。
 
-### この推奨を覆す条件
+### この決定を見直す条件
 
 - 計測で、中継の取り直し（1 件につき投稿と、未知の作者の Actor の取得）の費用が上限の範囲でも許容できない場合: 受信 Y（LD 署名の検証で取り直しを省く）を別の ADR で決める。
 - LD 署名の生成が Mastodon・Misskey との相互運用テスト（federation-live）で通らない、または json-gold の正規化が相互運用上の問題を起こす場合: 送信 C（FEP-8b32）か B（Announce の経路のリレーに限る）を見直す。
@@ -183,7 +182,7 @@
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
-### 方式 1: 両方式に参加でき、送信は `Create` の原本（推奨）
+### 方式 1: 両方式に参加でき、送信は `Create` の原本
 
 - 良い: Mastodon 方式しか受け付けないリレー（pub-relay の系統）にも、LitePub 方式のリレーにも参加できる。送信の経路は方式によらず 1 つ。
 - 悪い: 登録に方式の選択が要る。LitePub 方式で `Announce` だけを中継するリレーには、こちらの投稿が届かないことがある。
@@ -198,7 +197,7 @@
 - 良い: LD 署名が要らない。受け取る側は `Announce` を見てオリジンから取得する。
 - 悪い: Mastodon 方式しか持たないリレーに参加できない。Activity-Relay の購読者（Mastodon・Misskey）に原本で届けるには、結局 `Create` に LD 署名が要る。リレー用 Actor のブーストがフォロワーに見えないよう、表示の除外も要る。
 
-### 送信 A: LD 署名（推奨）
+### 送信 A: LD 署名
 
 - 良い: Mastodon（全版）と Misskey の購読者が、原本の中継を検証できる。Mastodon・Misskey と同じ形。
 - 悪い: JSON-LD の正規化の依存と CPU。`RsaSignature2017` は仕様として廃れつつある。
@@ -213,7 +212,7 @@
 - 良い: JSON-LD の処理が要らない（JCS、RFC 8785）。新しい方式。
 - 悪い: 検証するのは 2026-07 以降の Mastodon の main だけで、Misskey は検証しない（判断基準 3）。Actor ごとに ed25519 の鍵と `assertionMethod` が要る。FR-410（C）として別に扱う。
 
-### 受信 X: 取り直す（推奨）と Y: LD 署名の検証
+### 受信 X: 取り直すと Y: LD 署名の検証
 
 - X の良い点: ADR-0033 のまま。JSON-LD の処理を、信用できない入力に対して行わない。
 - X の悪い点: 中継 1 件につき GET が 1 回要る。
@@ -226,5 +225,3 @@
 - aode-relay・ActivityRelay（Python）・Pleroma 系のリレーが、インスタンス Actor（`Application`）からの LitePub 方式の `Follow` と、`Create` の原本を受け付けるか
 - Pleroma / Akkoma が、署名者と `actor` が違う中継をオリジンから取り直すか、LD 署名を検証するか
 - json-gold の URDNA2015 と `RsaSignature2017` の署名が、Mastodon・Misskey の検証を通るか（federation-live で確かめる）
-- 管理の権限を `manage_settings` にするか、リレー用の権限を分けるか（ADR-0058、#648）
-- 利用者ごとに「自分の投稿をリレーに送らない」を選べるようにするか（Mastodon・Misskey には無い）

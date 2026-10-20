@@ -34,6 +34,7 @@
 | FR-112 | 投票（Poll）の表示と回答。作成は C | C |
 | FR-113 | ブックマーク | S |
 | FR-114 | 引用投稿 | W |
+| FR-117 | 投稿中のリンクのカード: 本文の最初の URL の先のページ（OGP / X Card / JSON-LD / `<title>`。公開範囲によらない。oEmbed と埋め込みは扱わない）から題名・説明・画像を取得してカードを表示する。取得はサーバーが行い、画像はメディアプロキシ経由で出す（[ADR-0062](../adr/0062-link-preview-cards.md)） | S |
 
 ## タイムライン・通知
 
@@ -73,7 +74,7 @@
 | FR-408 | Authorized Fetch（secure mode）を設定で有効化できる | S |
 | FR-409 | リモートメディアのキャッシュ方針を選べる（キャッシュしない / TTL 付きでキャッシュ） | M |
 | FR-410 | Object Integrity Proofs（FEP-8b32） | C |
-| FR-411 | 連合リレー（Mastodon 方式・LitePub 方式）: 参加中のリレーへ `public` の投稿の `Create` / `Update` / `Delete` を LD 署名付きで送り（`unlisted`・`private`・`direct`・`local` は送らない）、リレーから届いた `public` の投稿をオリジンから取り直して取り込み、連合タイムラインとハッシュタグに出す。取り込みはリレーごとの時間あたりの上限と短い保持期間に従う（[ADR-0061](../adr/0061-federation-relays.md) の推奨案、Proposed） | S |
+| FR-411 | 連合リレー（Mastodon 方式・LitePub 方式）: 参加中のリレーへ `public` の投稿の `Create` / `Update` / `Delete` を LD 署名付きで送り（`unlisted`・`private`・`direct`・`local` は送らない）、リレーから届いた `public` の投稿をオリジンから取り直して取り込み、連合タイムラインとハッシュタグに出す。取り込みはリレーごとの時間あたりの上限と短い保持期間に従う（[ADR-0061](../adr/0061-federation-relays.md)） | S |
 
 ## クライアント API
 
@@ -117,7 +118,8 @@
 | FR-719 | 登録の拒否リスト: メールアドレスのドメインと IP の範囲（CIDR）による登録の拒否・承認制への切り替え。期限付きにでき、BAN から作れる | S |
 | FR-720 | ロールの付与と剥奪を管理 API・CLI・管理画面から行う（`manage_roles`）。自分より `position` の高いロールは付与・剥奪できない | S |
 | FR-721 | 登録の審査（承認制の承認・却下）を管理画面から行う | M |
-| FR-724 | 連合リレーの管理: 管理者がリレーを方式と URL で登録して参加・脱退し、状態（承認待ち・参加中・拒否・脱退）と受信の有無を管理 API・CLI・管理画面で扱う。操作は監査ログに残す（[ADR-0061](../adr/0061-federation-relays.md) の推奨案、Proposed） | S |
+| FR-722 | サーバー単位の webhook: `manage_webhooks` を持つ人が、通報・登録の申請・アカウントの作成とプロフィールの変更・処分・異議・ドメインの処分・ローカルの公開投稿・カスタム絵文字の管理操作のイベントを、署名付き（Standard Webhooks）で外部の URL へ送る宛先を管理 API と管理画面から設定できる。失敗は再送し、配送の履歴を見られ、失敗が続く宛先は自動で無効になる（[ADR-0060](../adr/0060-instance-webhooks.md)） | S |
+| FR-724 | 連合リレーの管理: `manage_settings` を持つ人がリレーを方式と URL で登録して参加・脱退し、状態（承認待ち・参加中・拒否・脱退）と受信の有無を管理 API・CLI・管理画面で扱う。操作は監査ログに残す（[ADR-0061](../adr/0061-federation-relays.md) ） | S |
 
 ## 運用
 

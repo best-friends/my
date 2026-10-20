@@ -28,7 +28,7 @@
 
 - 大規模インスタンス（数万ユーザー以上）向けの最適化
 - ActivityPub C2S（Client-to-Server）プロトコル
-- 全文検索（連合先コンテンツ全体）、グループ、アカウント移行（`Move`）（連合リレーへの参加は対象にする。[ADR-0061](../adr/0061-federation-relays.md) の推奨案、Proposed）
+- 全文検索（連合先コンテンツ全体）、グループ、アカウント移行（`Move`）（連合リレーへの参加は対象にする。[ADR-0061](../adr/0061-federation-relays.md)）
 - E2EE DM
 - 後方互換性の維持（v0 の期間中は DB 作り直しを含む破壊的変更を許容。[ADR-0012](../adr/0012-v0-breaking-change-policy.md)）
 
