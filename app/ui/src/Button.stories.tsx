@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect } from "storybook/test";
+import { spacing } from "./storySpacing";
 import { Button } from "./Button";
 import { CloseIcon, MoreIcon, PlusIcon, ReplyIcon, StarIcon } from "./Icons";
 import { ToggleButton } from "./ToggleButton";
@@ -83,16 +84,16 @@ export const WithIcon: Story = {
   ),
   play: async ({ canvas }) => {
     const iconOf = (name: string) => canvas.getByRole("button", { name }).querySelector("svg")?.getBoundingClientRect();
-    for (const [name, size] of [
-      ["New post md", 20],
-      ["Close md", 20],
-      ["New post sm", 16],
-      ["Close sm", 16],
-      ["Publish this post to everyone who follows you", 20],
+    for (const [name, steps] of [
+      ["New post md", 5],
+      ["Close md", 5],
+      ["New post sm", 4],
+      ["Close sm", 4],
+      ["Publish this post to everyone who follows you", 5],
     ] as const) {
       const icon = iconOf(name);
-      await expect(icon?.width, name).toBe(size);
-      await expect(icon?.height, name).toBe(size);
+      await expect(icon?.width, name).toBeCloseTo(spacing(steps), 1);
+      await expect(icon?.height, name).toBeCloseTo(spacing(steps), 1);
     }
   },
 };
@@ -120,8 +121,8 @@ export const InToolbar: Story = {
     const boxOf = (name: string) => canvas.getByRole("button", { name }).getBoundingClientRect();
     const iconOf = (name: string) => canvas.getByRole("button", { name }).querySelector("svg")?.getBoundingClientRect();
     for (const name of ["Reply", "Favourite", "More"]) {
-      await expect(iconOf(name)?.width, name).toBe(20);
-      await expect(iconOf(name)?.height, name).toBe(20);
+      await expect(iconOf(name)?.width, name).toBeCloseTo(spacing(5), 1);
+      await expect(iconOf(name)?.height, name).toBeCloseTo(spacing(5), 1);
       await expect(boxOf(name).height, name).toBe(boxOf("Favourite").height);
     }
   },

@@ -2,6 +2,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentType } from "react";
 import { expect } from "storybook/test";
+import { spacing } from "./storySpacing";
 import { Button } from "./Button";
 import * as Icons from "./Icons";
 import type { ToggleIconProps } from "./Icons";
@@ -86,7 +87,7 @@ export const Gallery: Story = {
       for (const svg of svgs) {
         await expect(svg).toHaveAttribute("aria-hidden", "true");
         await expect(svg).toHaveAttribute("focusable", "false");
-        await expect(svg.getBoundingClientRect().width).toBe(24);
+        await expect(svg.getBoundingClientRect().width).toBeCloseTo(spacing(6), 1);
         // Only an icon with a direction mirrors, and only in right-to-left text.
         await expect(getComputedStyle(svg).scale.startsWith("-1")).toBe(rtl && directional);
       }
@@ -117,9 +118,9 @@ export const InControls: Story = {
   ),
   play: async ({ canvas }) => {
     const sizeOf = (element: HTMLElement) => element.querySelector("svg")?.getBoundingClientRect().width;
-    await expect(sizeOf(canvas.getByRole("button", { name: "New post" }))).toBe(20);
-    await expect(sizeOf(canvas.getByRole("button", { name: "More" }))).toBe(20);
-    await expect(sizeOf(canvas.getByRole("button", { name: "Reply" }))).toBe(16);
-    await expect(sizeOf(canvas.getByRole("link", { name: "example.com" }))).toBe(16);
+    await expect(sizeOf(canvas.getByRole("button", { name: "New post" }))).toBeCloseTo(spacing(5), 1);
+    await expect(sizeOf(canvas.getByRole("button", { name: "More" }))).toBeCloseTo(spacing(5), 1);
+    await expect(sizeOf(canvas.getByRole("button", { name: "Reply" }))).toBeCloseTo(spacing(4), 1);
+    await expect(sizeOf(canvas.getByRole("link", { name: "example.com" }))).toBeCloseTo(spacing(4), 1);
   },
 };

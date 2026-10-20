@@ -13,6 +13,9 @@
 //    that app/ui/README.md does not list.
 // 3. Generated files: fails when the overridable token list generated from theme.css and tokens.ts
 //    (scripts/theme-tokens.ts) differs from the committed one.
+// 4. Sample theme: checks the Storybook's sample server theme (.storybook/sampleTheme.ts) as the server
+//    checks a saved theme: every token is overridable, colors and lengths have their kind's form and
+//    bounds, and every pair in src/tokens.ts meets AA with the overrides over the defaults.
 import { readFileSync } from "node:fs";
 import { dirname, extname, relative, resolve } from "node:path";
 import { Scanner } from "@tailwindcss/oxide";
@@ -22,6 +25,9 @@ import { colorPairs, decorativeColors, minimumContrast } from "../src/tokens";
 import { contrast, inSrgbGamut, type LinearRgba, parseColor } from "../src/color";
 import { colorResolver, readDeclarations, readTheme, type Scheme, schemes } from "./theme-source";
 import { checkGenerated } from "./theme-tokens";
+import { type ThemeColorValue, themeContrast } from "../src/themeContrast";
+import { themeTokens } from "../src/themeTokens.gen";
+import { sampleTheme } from "../.storybook/sampleTheme";
 
 const problems: string[] = [];
 
@@ -229,6 +235,44 @@ try {
   problems.push(...checkGenerated());
 } catch (error) {
   problems.push((error as Error).message);
+}
+
+// --- 4. Sample theme ----------------------------------------------------------------------------
+
+{
+  const where = ".storybook/sampleTheme.ts";
+  const colors = new Map<string, ThemeColorValue>();
+  const length = /^(?:0|(\d{1,3}(?:\.\d{1,4})?|\.\d{1,4})(rem|px))$/;
+  for (const override of sampleTheme) {
+    const token = themeTokens.find((t) => t.name === override.token);
+    if (token === undefined) {
+      problems.push(`${where}: --${override.token} is not an overridable token`);
+      continue;
+    }
+    if ("light" in override) {
+      const hex = token.alpha === true ? /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/ : /^#[0-9a-f]{6}$/;
+      if (token.kind !== "color" || !hex.test(override.light) || !hex.test(override.dark)) {
+        problems.push(`${where}: --${override.token} takes ${token.kind === "color" ? "#rrggbb colors" : "a value"}`);
+        continue;
+      }
+      colors.set(override.token, { light: override.light, dark: override.dark });
+    } else if (token.kind === "color") {
+      problems.push(`${where}: --${override.token} takes a light and a dark color`);
+    } else if (token.kind === "length") {
+      const match = length.exec(override.value);
+      const rem = match === null ? Number.NaN : Number(match[1] ?? 0) / (match[2] === "px" ? 16 : 1);
+      if (Number.isNaN(rem) || (token.min !== undefined && rem < token.min) || (token.max !== undefined && rem > token.max)) {
+        problems.push(`${where}: --${override.token} (${override.value}) is not a length from ${token.min ?? 0} to ${token.max ?? "∞"}rem`);
+      }
+    } else {
+      problems.push(`${where}: --${override.token} is a ${token.kind}; this check validates only colors and lengths`);
+    }
+  }
+  for (const { fg, bg, use, scheme, ratio, minimum } of themeContrast(colors)) {
+    if (ratio === null || ratio < minimum) {
+      problems.push(`${where}: ${fg} on ${bg} is ${ratio?.toFixed(2) ?? "?"}:1 in the ${scheme} theme; ${use} needs ${minimum}:1`);
+    }
+  }
 }
 
 if (problems.length > 0) {
