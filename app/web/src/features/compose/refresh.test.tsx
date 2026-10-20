@@ -20,9 +20,10 @@ function postingServer() {
   const posts: Schemas["Status"][] = [];
   server.use(
     resumableSession(),
-    http.get(`${apiBase}/accounts/:id/statuses`, async () => {
+    http.get(`${apiBase}/accounts/:id/statuses`, async ({ request }) => {
       await delay(latency);
-      return HttpResponse.json(statusPage(posts));
+      // No pinned posts: the posts tab lists each post once.
+      return HttpResponse.json(statusPage(new URL(request.url).searchParams.get("pinned") === "true" ? [] : posts));
     }),
     http.get(`${apiBase}/timelines/home`, async () => {
       await delay(latency);
