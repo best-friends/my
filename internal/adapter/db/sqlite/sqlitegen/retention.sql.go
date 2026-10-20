@@ -161,6 +161,18 @@ func (q *Queries) PrunePastProfileFields(ctx context.Context, accountID string) 
 	return err
 }
 
+const prunePastProfileRevisionEmojis = `-- name: PrunePastProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r
+  WHERE r.account_id = ?1
+    AND r.id <> (SELECT h.revision_id FROM account_profile_heads h WHERE h.account_id = ?1))
+`
+
+func (q *Queries) PrunePastProfileRevisionEmojis(ctx context.Context, accountID string) error {
+	_, err := q.db.ExecContext(ctx, prunePastProfileRevisionEmojis, accountID)
+	return err
+}
+
 const prunePastProfileRevisions = `-- name: PrunePastProfileRevisions :exec
 DELETE FROM account_profile_revisions
 WHERE account_profile_revisions.account_id = ?1

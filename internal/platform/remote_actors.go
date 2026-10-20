@@ -37,6 +37,16 @@ func (a *App) recordRemoteImage(ctx context.Context, tx uow.Tx, accountID, url s
 	return m.MediaID, err
 }
 
+// recordRemoteEmojis records the custom emoji of a remote profile for the account module
+// (ADR-0051 §3) through the content module.
+func (a *App) recordRemoteEmojis(ctx context.Context, tx uow.Tx, accountID, domain string, emojis []account.RemoteEmojiInput) ([]string, error) {
+	in := make([]content.RemoteEmojiInput, 0, len(emojis))
+	for _, e := range emojis {
+		in = append(in, content.RemoteEmojiInput{URI: e.URI, Shortcode: e.Shortcode, ImageURL: e.ImageURL})
+	}
+	return a.Content.RecordRemoteEmojis(ctx, tx, accountID, domain, in)
+}
+
 // setUpRemoteActors builds the fetching of remote actors (federation.md §6): GETs signed with
 // the instance actor's key, WebFinger checks of handles, key rotation, the public key resolver
 // of inbound signatures, and the refresh and NodeInfo jobs. It needs the HTTPClient.

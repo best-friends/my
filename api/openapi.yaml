@@ -3385,7 +3385,7 @@ components:
     Account:
       description: An account, as clients show it (FR-006).
       type: object
-      required: [id, username, acct, domain, uri, display_name, note, fields, url, locked, bot, created_at]
+      required: [id, username, acct, domain, uri, display_name, note, fields, emojis, url, locked, bot, created_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -3432,6 +3432,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProfileField"
+        emojis:
+          description: |
+            The custom emoji of the display name, the note, and the fields' names and values
+            (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+            image, and the rest as text.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
         avatar_url:
           description: |
             The URL of the avatar image; omitted when the account has none, or its image is not
@@ -3524,6 +3532,27 @@ components:
         value:
           description: The field's value as sanitized HTML.
           type: string
+    CustomEmoji:
+      description: |
+        A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+        An emoji that is disabled or deleted, or whose images come from a domain whose media the
+        instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+        `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+        otherwise.
+      type: object
+      required: [shortcode, url, static_url]
+      properties:
+        shortcode:
+          description: The shortcode, without the colons around it.
+          type: string
+        url:
+          description: The URL of the image, animated when the emoji is.
+          type: string
+          format: uri
+        static_url:
+          description: The URL of a still image of the emoji; the same as `url` when no still version is served.
+          type: string
+          format: uri
     Relationship:
       description: |
         The viewer's relationship with an account. It never says whether the account blocks
@@ -4055,7 +4084,7 @@ components:
 
         In a timeline, a boost is a status of the booster with `boost` set to the boosted
         status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-        `visibility` and `language` are those of the boosted status, its `content`,
+        `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
         `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
         are zero.
       type: object
@@ -4072,6 +4101,7 @@ components:
         - media_attachments
         - mentions
         - tags
+        - emojis
         - replies_count
         - boosts_count
         - favourites_count
@@ -4135,6 +4165,14 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/StatusTag"
+        emojis:
+          description: |
+            The custom emoji of the text, the content warning, and the poll's choices
+            (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+            image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
         replies_count:
           description: The number of replies.
           type: integer
@@ -4177,7 +4215,7 @@ components:
     StatusEdit:
       description: One revision of a status.
       type: object
-      required: [content, spoiler_text, sensitive, created_at, media_attachments]
+      required: [content, spoiler_text, sensitive, created_at, media_attachments, emojis]
       properties:
         content:
           description: The text of the revision as sanitized HTML.
@@ -4197,6 +4235,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MediaAttachment"
+        emojis:
+          description: The custom emoji of the revision's text and content warning, as `Status.emojis`.
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomEmoji"
     StatusHistory:
       description: The revisions of a status.
       type: object

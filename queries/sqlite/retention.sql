@@ -139,6 +139,12 @@ DELETE FROM account_profile_fields WHERE revision_id IN (
   WHERE r.account_id = sqlc.arg(account_id)
     AND r.id <> (SELECT h.revision_id FROM account_profile_heads h WHERE h.account_id = sqlc.arg(account_id)));
 
+-- name: PrunePastProfileRevisionEmojis :exec
+DELETE FROM account_profile_revision_emojis WHERE revision_id IN (
+  SELECT r.id FROM account_profile_revisions r
+  WHERE r.account_id = sqlc.arg(account_id)
+    AND r.id <> (SELECT h.revision_id FROM account_profile_heads h WHERE h.account_id = sqlc.arg(account_id)));
+
 -- name: PrunePastRemoteProfileRevisions :exec
 DELETE FROM remote_profile_revisions WHERE revision_id IN (
   SELECT r.id FROM account_profile_revisions r

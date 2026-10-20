@@ -51,7 +51,7 @@ func (r *AccountRepository) EraseProfilesAndKeys(ctx context.Context, tx uow.Tx,
 		return err
 	}
 	return runSteps(ctx, accountID, "erase profiles and keys",
-		q.EraseProfileFieldSources, q.EraseProfileFields, q.EraseProfileRevisionSources, q.EraseProfileHead,
+		q.EraseProfileFieldSources, q.EraseProfileFields, q.EraseProfileRevisionEmojis, q.EraseProfileRevisionSources, q.EraseProfileHead,
 		q.EraseProfileRevisions, q.ErasePrivateKeys, q.EraseKeyRevocations, q.EraseKeys)
 }
 

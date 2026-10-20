@@ -361,8 +361,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		CheckProfileImage: func(ctx context.Context, accountID, mediaID string) error {
 			return a.Media.CheckProfileImage(ctx, accountID, mediaID)
 		},
-		Sanitizer:         newHTMLSanitizer(),
-		RecordRemoteImage: a.recordRemoteImage,
+		Sanitizer:          newHTMLSanitizer(),
+		RecordRemoteImage:  a.recordRemoteImage,
+		RecordRemoteEmojis: a.recordRemoteEmojis,
 	})
 	instance.RegisterProjectors(a.Projectors, instances)
 	a.Instance = instance.NewService(instance.Deps{

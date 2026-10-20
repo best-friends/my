@@ -179,7 +179,7 @@ func (r *AccountRepository) PrunePastProfiles(ctx context.Context, tx uow.Tx, ac
 		return err
 	}
 	for _, step := range []func(context.Context, string) error{
-		q.PrunePastProfileFields, q.PrunePastRemoteProfileRevisions, q.PrunePastProfileRevisions, q.PrunePastRemoteSnapshots,
+		q.PrunePastProfileFields, q.PrunePastProfileRevisionEmojis, q.PrunePastRemoteProfileRevisions, q.PrunePastProfileRevisions, q.PrunePastRemoteSnapshots,
 	} {
 		if err := step(ctx, accountID); err != nil {
 			return wrap(err, "prune past profiles")
