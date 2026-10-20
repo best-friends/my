@@ -496,7 +496,7 @@ describe("a post of another server", () => {
       emojis: [blobcat],
     };
     serveThread(withEmoji);
-    const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
+    const { user } = await renderApp({ path: `/@${remote.account.acct}/status/${remote.id}` });
 
     const article = await screen.findByRole("article", { name: /^Opened post Carol :blobcat: @carol@remote\.example / });
     expect(within(article).getByRole("link", { name: "Carol :blobcat: @carol@remote.example" })).toBeInTheDocument();
