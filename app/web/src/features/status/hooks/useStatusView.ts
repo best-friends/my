@@ -7,7 +7,7 @@ import { handleOf, isRemoteAcct } from "../../../lib/handle";
 import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
-import { type MediaAttachment, type Status, statusPath, statusShareUrl } from "../api/status";
+import { type MediaAttachment, type Status, statusHistoryPath, statusPath, statusShareUrl } from "../api/status";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
@@ -22,6 +22,8 @@ export type StatusView = {
   time: TimeView;
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
   path: string;
+  /** For a post that was edited, the address of its edit history (FR-109); null for one that never was. */
+  historyPath: string | null;
   /**
    * For a post of another server, its page there (its ActivityPub ID when it has none) and the host of that
    * page; null for a post of this instance.
@@ -49,7 +51,7 @@ export type StatusView = {
  * The pictures of a status that are ready to show, at their preview size: `preview_url` is the thumbnail of an
  * upload, and the media proxy URL of a remote file, which has no renditions (api/openapi.yaml, MediaAttachment).
  */
-function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
+export function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
   return attachments.flatMap((attachment) =>
     attachment.state === "ready" && attachment.type === "image" && attachment.preview_url !== undefined
       ? [{ id: attachment.id, src: attachment.preview_url, alt: attachment.description ?? null, lang }]
@@ -85,6 +87,7 @@ export function useStatusView(status: Status): StatusView {
     },
     time,
     path: statusPath(post),
+    historyPath: post.edited_at === undefined ? null : statusHistoryPath(post),
     original: originalOf(post),
     // `content` is sanitized HTML (api/openapi.yaml, Status.content).
     html: serverSanitizedHtml(post.content),

@@ -163,9 +163,9 @@ test.describe("the federated timeline while the server serves it", () => {
 
   test("fits every item of the navigation in its width, with every label whole", async ({ page }) => {
     const nav = page.getByRole("navigation");
-    // Five in the phones' tab bar (four links and the menu button), seven in the rail (ADR-0039).
+    // Five in the phones' tab bar (four links and the menu button), eight in the rail (ADR-0039).
     const items = nav.getByRole("listitem").filter({ visible: true });
-    await expect(items).toHaveCount(hasTabBar(page) ? 5 : 7);
+    await expect(items).toHaveCount(hasTabBar(page) ? 5 : 8);
     await expect(nav.getByRole("button")).toBeVisible({ visible: hasTabBar(page) });
     const navBox = await nav.boundingBox();
     expect(navBox).not.toBeNull();

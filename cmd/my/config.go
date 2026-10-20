@@ -9,6 +9,7 @@ import (
 	"io"
 	"text/tabwriter"
 
+	"github.com/best-friends/my/internal/adapter/webpush"
 	"github.com/best-friends/my/internal/platform/config"
 )
 
@@ -21,6 +22,8 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 	case args[0] == "-h" || args[0] == "-help" || args[0] == "--help":
 		configUsage(stderr)
 		return 0
+	case args[0] == "vapid-key":
+		return runVAPIDKey(args[1:], stdout, stderr)
 	case args[0] != "check":
 		_, _ = fmt.Fprintf(stderr, "my config: unknown subcommand %q\n\n", args[0])
 		configUsage(stderr)
@@ -57,8 +60,27 @@ func runConfig(args []string, stdout, stderr io.Writer) int {
 
 func configUsage(w io.Writer) {
 	_, _ = fmt.Fprint(w, `Usage: my config check [-config <file>]
+       my config vapid-key
 
-Validates the configuration from the environment, the TOML file, and defaults,
-listing every problem at once. Exits 1 if the configuration is invalid.
+check validates the configuration from the environment, the TOML file, and
+defaults, listing every problem at once. Exits 1 if the configuration is invalid.
+
+vapid-key generates a key pair for Web Push and prints the private key, the
+value of MY_VAPID_PRIVATE_KEY, and the public key that browsers subscribe with.
 `)
+}
+
+// runVAPIDKey implements `my config vapid-key`: it prints a new VAPID key pair (RFC 8292).
+func runVAPIDKey(args []string, stdout, stderr io.Writer) int {
+	if len(args) > 0 {
+		_, _ = fmt.Fprintf(stderr, "my config vapid-key: unexpected argument %q\n", args[0])
+		return 2
+	}
+	priv, pub, err := webpush.GenerateKey()
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "my config vapid-key: %v\n", err)
+		return 1
+	}
+	_, _ = fmt.Fprintf(stdout, "vapid_private_key = %s\nvapid_public_key  = %s\n", priv, pub)
+	return 0
 }

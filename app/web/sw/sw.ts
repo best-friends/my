@@ -10,7 +10,9 @@
 //   navigation response is stored, so a page's own shell is never replayed for another URL;
 // - public images under /media/ are cache first, at most 300 entries for 30 days;
 // - the client API (/api), the server-rendered pages (/auth, /oauth) and every other request are not
-//   answered by the worker at all, so nothing they return is cached.
+//   answered by the worker at all, so nothing they return is cached;
+// - a Web Push message (FR-206) is shown as a notification (push.ts), and tapping it opens its page in an open
+//   window of the app, or in a new one.
 import { clientsClaim, setCacheNameDetails } from "workbox-core";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 import { ExpirationPlugin } from "workbox-expiration";
@@ -32,6 +34,7 @@ import {
   shellPath,
   skipWaitingMessage,
 } from "../src/lib/sw-protocol.ts";
+import { clickedURL, notificationFor } from "./push.ts";
 import { classify, type Handling } from "./routing.ts";
 
 declare let self: ServiceWorkerGlobalScope & {
@@ -124,4 +127,30 @@ self.addEventListener("message", (event) => {
       }),
     );
   }
+});
+
+// Every message is shown (the subscription is userVisibleOnly), before the event's promise settles.
+self.addEventListener("push", (event) => {
+  const shown = notificationFor(event.data?.text() ?? null, self.location.origin);
+  event.waitUntil(self.registration.showNotification(shown.title, shown.options));
+});
+
+/**
+ * Opens `url` in a window of the app: the focused one, or else any, which navigates there; a new window when the
+ * app is not open (https://developer.mozilla.org/docs/Web/API/Clients/openWindow).
+ */
+async function openApp(url: string): Promise<void> {
+  const windows = await self.clients.matchAll({ type: "window" });
+  const target = windows.find((client) => client.focused) ?? windows[0];
+  if (target === undefined) {
+    await self.clients.openWindow(url);
+    return;
+  }
+  const focused = await target.focus();
+  await focused.navigate(url);
+}
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(openApp(clickedURL(event.notification.data, self.location.origin)));
 });

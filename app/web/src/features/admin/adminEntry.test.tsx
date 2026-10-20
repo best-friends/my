@@ -41,7 +41,7 @@ describe("the navigation's admin entry", () => {
     expect(within(navigation()).queryByRole("link", { name: /^Administration/ })).not.toBeInTheDocument();
     await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Settings"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings"]);
     expect(requests).toEqual([]);
   });
 
@@ -59,7 +59,7 @@ describe("the navigation's admin entry", () => {
 
     await user.click(menu);
     const sheet = await screen.findByRole("dialog", { name: "Menu" });
-    expect(within(sheet).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/profile", "/settings", "/admin"]);
+    expect(within(sheet).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/profile", "/bookmarks", "/settings", "/admin"]);
     await user.click(within(sheet).getByRole("link", { name: "Administration, 3 pending" }));
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Administration" });
