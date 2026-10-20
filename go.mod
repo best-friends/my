@@ -6,6 +6,10 @@ require (
 	cloud.google.com/go/pubsub/v2 v2.7.0
 	code.superseriousbusiness.org/httpsig v1.5.0
 	github.com/alicebob/miniredis/v2 v2.39.0
+	github.com/aws/aws-sdk-go-v2 v1.47.1
+	github.com/aws/aws-sdk-go-v2/service/sns v1.47.2
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.1
+	github.com/aws/smithy-go v1.28.1
 	github.com/dadrus/httpsig v0.9.0
 	github.com/dunglas/httpsfv v1.1.2
 	github.com/getkin/kin-openapi v0.149.0
@@ -43,6 +47,8 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/agentable/go-intl v0.2.17 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.4 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.4 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

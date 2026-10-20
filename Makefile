@@ -140,8 +140,8 @@ POSTGRES_TEST_PACKAGES := ./internal/adapter/db/postgres/ ./internal/adapter/kv/
 go-test-postgres: ## Run the PostgreSQL tests on a postgres container instead of pgmem (needs Docker; CI on main and nightly)
 	TEST_POSTGRES=container TEST_POSTGRES_REQUIRED=1 go test -count=1 $(POSTGRES_TEST_PACKAGES)
 
-go-test-stream: ## Run the stream.Bus contracts on broker containers instead of the in-process fakes (needs Docker; CI on main and nightly)
-	TEST_STREAM=container TEST_VALKEY_REQUIRED=1 TEST_PUBSUB_REQUIRED=1 go test -count=1 ./internal/adapter/stream/...
+go-test-stream: ## Run the stream.Bus contracts on broker containers instead of the in-process fakes (Valkey; Floci for SNS / SQS; the Pub/Sub emulator) (needs Docker; CI on main and nightly)
+	TEST_STREAM=container TEST_VALKEY_REQUIRED=1 TEST_AWS=container TEST_AWS_REQUIRED=1 TEST_PUBSUB_REQUIRED=1 go test -count=1 ./internal/adapter/stream/...
 
 go-build: ## Build all packages statically (CGO_ENABLED=0)
 	CGO_ENABLED=0 go build ./...

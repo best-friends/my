@@ -137,6 +137,11 @@ make sqlc-check  # 生成物が最新でなければ失敗（make check に含�
 - Valkey のテスト（`kv/valkey` など）は `pkg/testkit/valkeytest` でサーバーを得ます。Docker があれば testcontainers-go で
   `valkey/valkey` のコンテナ（`TEST_VALKEY_IMAGE` で変更可）を起動し、なければ飛ばします。`TEST_VALKEY_URL=valkey://...` は既存のサーバーを使います。
   CI の go-test は `TEST_VALKEY_REQUIRED=1` で流すので、Docker がないと失敗します。
+- Amazon SNS / SQS のアダプタ（`stream/sns`）のテストは、`pkg/testkit/awstest` のメモリの偽物で流します。AWS のエミュレータ
+  [Floci](https://github.com/floci-io/floci) でも流すときは、次のどちらかを使います。CI はそれらのテストが依存するパスを変えた `main` への push と nightly で `make go-test-stream` を流します。
+  - `make go-test-stream`: `TEST_AWS=container` で testcontainers-go のコンテナ（`TEST_AWS_IMAGE`、既定は `floci/floci:2.1.0`）を起動します。
+    Docker がないと、`TEST_AWS_REQUIRED=1` なので失敗します。
+  - `TEST_AWS_ENDPOINT=http://localhost:4566`: 起動済みのエミュレータを使います
 - Google Cloud Pub/Sub のアダプタ（`stream/pubsub`）のテストは、既定ではプロセスの中の偽サーバー pstest で流すので、Docker は要りません。
   `make go-test-stream`（`TEST_STREAM=container`）は Pub/Sub エミュレータのコンテナ（`TEST_PUBSUB_IMAGE` で変更可）を起動して同じコントラクトを流し、
   Docker がないと `TEST_PUBSUB_REQUIRED=1` なので失敗します。CI はそれが依存するパスを変えた `main` への push と nightly で流します。
