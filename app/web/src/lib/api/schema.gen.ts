@@ -189,6 +189,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change the authenticated user's password
+         * @description Replaces the user's password with `new_password` after checking `current_password`
+         *     (FR-002). Every other session and grant of the user ends: the user is signed out of
+         *     the server's sign-in pages and of every app but the one that makes the request, whose
+         *     tokens keep working. Passkeys and two-factor authentication stay as they are, and the
+         *     user is told by email when the server sends email. A wrong current password is a 422
+         *     `/api/v1/problems/wrong-password`, and at most 5 wrong ones per user are accepted every
+         *     hour. A new password that is not 8 to 128 characters is a 400 that names
+         *     `new_password`.
+         */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/exports": {
         parameters: {
             query?: never;
@@ -4194,6 +4221,13 @@ export interface components {
             /** @description The user's current password. */
             password: string;
         };
+        /** @description A change of the user's password. */
+        ChangePasswordRequest: {
+            /** @description The user's current password, which confirms the change. */
+            current_password: string;
+            /** @description The new password, 8 to 128 characters. */
+            new_password: string;
+        };
         /** @description A request for an archive of the user's data. */
         DataExport: {
             id: components["schemas"]["Id"];
@@ -5172,7 +5206,8 @@ export interface components {
          *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
          *     `revealed_private_data` (a moderator was shown the account's email address and IP
          *     addresses), `two_factor_disabled` (an administrator removed the account's two-factor
-         *     authentication). On a `domain`:
+         *     authentication), `password_reset_link_issued` (an administrator issued a link that sets
+         *     a new password for the account's user). On a `domain`:
          *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
          *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
          *     `user` (a registration):
@@ -5198,7 +5233,7 @@ export interface components {
          *     characters of its code, never the whole code.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -7295,6 +7330,29 @@ export interface operations {
         };
         responses: {
             /** @description The account is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description The password is changed. */
             204: {
                 headers: {
                     [name: string]: unknown;

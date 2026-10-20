@@ -1623,6 +1623,10 @@
     "defaultMessage": "‮Iuʌıʇǝ ɹǝʌoʞǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.password_reset_link_issued": {
+    "defaultMessage": "‮Ԁɐssʍoɹp ɹǝsǝʇ ʅıuʞ ıssnǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.registration_approved": {
     "defaultMessage": "‮ᴚǝƃısʇɹɐʇıou ɐddɹoʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7281,6 +7285,58 @@
   },
   "settings.passkeys.unsupported": {
     "defaultMessage": "‮⊥ɥıs qɹoʍsǝɹ ɔɐuuoʇ ɔɹǝɐʇǝ dɐssʞǝʎs. Odǝu ʇɥıs dɐƃǝ ıu ɐ qɹoʍsǝɹ ʇɥɐʇ snddoɹʇs ʇɥǝɯ ʇo ɐpp ouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.changed": {
+    "defaultMessage": "‮⅄onɹ dɐssʍoɹp ıs ɔɥɐuƃǝp. Oʇɥǝɹ qɹoʍsǝɹs ɐup ɐdds ɐɹǝ sıƃuǝp onʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.current": {
+    "defaultMessage": "‮Ↄnɹɹǝuʇ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.current.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʎonɹ ɔnɹɹǝuʇ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.description": {
+    "defaultMessage": "‮Ↄɥɐuƃıuƃ ʇɥǝ dɐssʍoɹp sıƃus ʎon onʇ oɟ ǝʌǝɹʎ oʇɥǝɹ qɹoʍsǝɹ ɐup ɐdd. ⅄onɹ dɐssʞǝʎs ɐup ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou sʇɐʎ ɐs ʇɥǝʎ ɐɹǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʇɥǝ dɐssʍoɹp: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.new": {
+    "defaultMessage": "‮Nǝʍ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.new.description": {
+    "defaultMessage": "‮{min, number} ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.new.invalid": {
+    "defaultMessage": "‮∩sǝ {min, number} ʇo {max, number} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.rate_limited": {
+    "defaultMessage": "‮⊥oo ɯɐuʎ ıuɔoɹɹǝɔʇ dɐssʍoɹps: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.submit": {
+    "defaultMessage": "‮Ↄɥɐuƃǝ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.summary": {
+    "defaultMessage": "‮Ↄɥɐuƃǝ ʇɥǝ dɐssʍoɹp ʎon sıƃu ıu ʍıʇɥ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.title": {
+    "defaultMessage": "‮Ԁɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.password.wrong_password": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp ıs ʍɹouƃ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.autosave": {

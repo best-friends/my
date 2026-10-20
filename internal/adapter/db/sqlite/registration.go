@@ -230,6 +230,15 @@ func (r *IdentityRepository) FindUserTokenByHash(ctx context.Context, hash []byt
 	}, nil
 }
 
+// UserTokenRedeemed implements identity.Repository.
+func (r *IdentityRepository) UserTokenRedeemed(ctx context.Context, tokenID string) (bool, error) {
+	v, err := r.db.reader().UserTokenRedeemed(ctx, tokenID)
+	if err != nil {
+		return false, wrap(err, "read the redemption of a user token")
+	}
+	return v, nil
+}
+
 // InsertUserTokenRedemption implements identity.Repository.
 func (r *IdentityRepository) InsertUserTokenRedemption(ctx context.Context, tx uow.Tx, rd identity.UserTokenRedemption) error {
 	q, err := queries(tx)

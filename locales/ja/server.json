@@ -163,6 +163,38 @@
     "defaultMessage": "問題が発生しました",
     "description": "Title and heading of the sign-in screens' error pages."
   },
+  "auth.forgot_password.email_label": {
+    "defaultMessage": "メールアドレス",
+    "description": "Label of the email address field of the form that asks for a password reset link."
+  },
+  "auth.forgot_password.invalid_email": {
+    "defaultMessage": "メールアドレスを入力してください。",
+    "description": "Error of the form that asks for a password reset link when the email address field is empty or not an email address."
+  },
+  "auth.forgot_password.prompt": {
+    "defaultMessage": "アカウントのメールアドレスを入力してください。新しいパスワードを設定するリンクをそのアドレスに送ります。",
+    "description": "Text above the form that asks for a password reset link."
+  },
+  "auth.forgot_password.rate_limited": {
+    "defaultMessage": "{minutes, plural, other {このネットワークからの要求が多すぎます。# 分後にもう一度試してください。}}",
+    "description": "Error (HTTP 429) after too many requests for a password reset link from the same network. {minutes} is the wait, rounded up to whole minutes."
+  },
+  "auth.forgot_password.sent": {
+    "defaultMessage": "{email} を使っているアカウントがあれば、新しいパスワードを設定するリンクを送りました。{minutes, plural, other {リンクの有効期限は # 分です。}}メールが届かないときは、迷惑メールのフォルダーとアドレスを確かめてください。",
+    "description": "Notice after a password reset link was asked for. It must read the same whether or not an account uses the address. {email} is the address the user entered; {minutes} how long the link works."
+  },
+  "auth.forgot_password.submit": {
+    "defaultMessage": "リンクを送る",
+    "description": "Button that asks for a password reset link by email."
+  },
+  "auth.forgot_password.title": {
+    "defaultMessage": "パスワードを忘れたとき",
+    "description": "Title and heading of the page that asks for a password reset link."
+  },
+  "auth.forgot_password.unavailable": {
+    "defaultMessage": "このサーバーはメールを送らないので、リンクを送れません。新しいパスワードを設定するリンクを、サーバーの管理者に頼んでください。",
+    "description": "Text of the page that asks for a password reset link on a server that sends no email; an administrator can issue the link."
+  },
   "auth.form_expired": {
     "defaultMessage": "フォームの有効期限が切れました。もう一度お試しください。",
     "description": "Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared."
@@ -195,6 +227,34 @@
     "defaultMessage": "いまはボットかどうかを確認できません。しばらくしてからやり直してください。",
     "description": "Error (HTTP 503) on the registration form when the CAPTCHA service cannot be reached; the account is not created."
   },
+  "auth.reset_password.done": {
+    "defaultMessage": "パスワードを変更し、古いパスワードで使っていたセッションはすべてログアウトしました。新しいパスワードでログインしてください。",
+    "description": "Body of the page after a new password was set from a reset link."
+  },
+  "auth.reset_password.done_title": {
+    "defaultMessage": "パスワードを変更しました",
+    "description": "Title and heading of the page after a new password was set from a reset link."
+  },
+  "auth.reset_password.invalid": {
+    "defaultMessage": "このリンクは使えません。期限切れか、すでに使われたか、その後にパスワードが変わった可能性があります。新しいリンクを受け取ってください。",
+    "description": "Error when a password reset link is unknown, expired, used, or older than the current password. Must not say which."
+  },
+  "auth.reset_password.password_label": {
+    "defaultMessage": "新しいパスワード",
+    "description": "Label of the new password field of the page that a password reset link opens."
+  },
+  "auth.reset_password.prompt": {
+    "defaultMessage": "新しいパスワードを決めてください。設定すると、すべての場所でログアウトします。パスキーと二要素認証はそのまま残ります。",
+    "description": "Text above the form that sets a new password from a reset link."
+  },
+  "auth.reset_password.submit": {
+    "defaultMessage": "パスワードを設定",
+    "description": "Button that sets the new password from a reset link."
+  },
+  "auth.reset_password.title": {
+    "defaultMessage": "新しいパスワードの設定",
+    "description": "Title and heading of the page that a password reset link opens."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "メールアドレス",
     "description": "Label of the email address field on the sign-in form."
@@ -202,6 +262,10 @@
   "auth.sign_in.failed": {
     "defaultMessage": "メールアドレスまたはパスワードが正しくありません。",
     "description": "Error after a failed sign-in. Must not say which of the two was wrong, so that it does not reveal whether an account exists."
+  },
+  "auth.sign_in.forgot_password_link": {
+    "defaultMessage": "パスワードを忘れたとき",
+    "description": "Link from the sign-in form to the page that asks for a password reset link."
   },
   "auth.sign_in.missing": {
     "defaultMessage": "メールアドレスとパスワードを入力してください。",
@@ -890,6 +954,22 @@
   "mail.admin_webhook_disabled.subject": {
     "defaultMessage": "{instance} の webhook が無効になりました",
     "description": "Subject of the email to an administrator who chose to get moderator notifications by email: the server turned off a webhook endpoint that kept failing or answered that it is gone. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.password_changed.body": {
+    "defaultMessage": "{instance} のアカウントのパスワードが変更され、ほかのセッションとアプリはログアウトしました。\n\n変更した覚えがない場合は、ほかの誰かがパスワードを知っているかもしれません。すぐに新しいパスワードを設定してください。\n\n{url}\n\nこのメールは {host} から送られました。",
+    "description": "Plain-text body of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the page that asks for a password reset link (keep it on its own line)."
+  },
+  "mail.password_changed.subject": {
+    "defaultMessage": "{instance} のパスワードが変更されました",
+    "description": "Subject of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none."
+  },
+  "mail.password_reset.body": {
+    "defaultMessage": "{instance} のアカウントのパスワードの再設定が求められました。\n\n次のリンクを開いて、新しいパスワードを設定してください。\n\n{url}\n\n{minutes, plural, other {リンクは # 分間、1 回だけ使えます。}}{host} で求めた覚えがない場合は、このメールを無視してください。パスワードは変わりません。",
+    "description": "Plain-text body of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the reset link (keep it on its own line), {minutes} how long the link works."
+  },
+  "mail.password_reset.subject": {
+    "defaultMessage": "{instance} のパスワードの再設定",
+    "description": "Subject of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none."
   },
   "mail.verify_email.body": {
     "defaultMessage": "{instance} へようこそ。\n\n次のリンクを開いて、メールアドレスを確認してください。\n\n{url}\n\n{hours, plural, other {リンクの有効期限は # 時間です。}}{host} に登録した覚えがない場合は、このメールを無視してください。",

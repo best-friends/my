@@ -491,3 +491,15 @@ func (q *Queries) UpsertRegistrationState(ctx context.Context, arg UpsertRegistr
 	_, err := q.db.ExecContext(ctx, upsertRegistrationState, arg.UserID, arg.State, arg.Since)
 	return err
 }
+
+const userTokenRedeemed = `-- name: UserTokenRedeemed :one
+SELECT EXISTS (SELECT 1 FROM user_token_redemptions WHERE token_id = ?)
+`
+
+// UserTokenRedeemed reports whether a user token was used.
+func (q *Queries) UserTokenRedeemed(ctx context.Context, tokenID string) (bool, error) {
+	row := q.db.QueryRowContext(ctx, userTokenRedeemed, tokenID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

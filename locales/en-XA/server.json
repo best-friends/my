@@ -163,6 +163,38 @@
     "defaultMessage": "[Şǿǿḿḗḗŧħīƞɠ ẇḗḗƞŧ ẇřǿǿƞɠ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.forgot_password.email_label": {
+    "defaultMessage": "[Ḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.invalid_email": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧƞ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.prompt": {
+    "defaultMessage": "[Ḗƞŧḗḗř ŧħḗḗ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ǿǿƒ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ. Ẇḗḗ şḗḗƞḓ īŧ ȧȧ ŀīƞķ ŧǿǿ şḗḗŧ ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.rate_limited": {
+    "defaultMessage": "[{minutes,plural,one{Ŧǿǿǿǿ ḿȧȧƞẏ řḗḗɋŭŭḗḗşŧş ƒřǿǿḿ ẏǿǿŭŭř ƞḗḗŧẇǿǿřķ. Ŧřẏ ȧȧɠȧȧīƞ īƞ # ḿīƞŭŭŧḗḗ.} other{Ŧǿǿǿǿ ḿȧȧƞẏ řḗḗɋŭŭḗḗşŧş ƒřǿǿḿ ẏǿǿŭŭř ƞḗḗŧẇǿǿřķ. Ŧřẏ ȧȧɠȧȧīƞ īƞ # ḿīƞŭŭŧḗḗş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.sent": {
+    "defaultMessage": "[Īƒ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ ŭŭşḗḗş {email}, ȧȧ ŀīƞķ ŧǿǿ şḗḗŧ ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ īş ǿǿƞ īŧş ẇȧȧẏ. {minutes,plural,one{Ŧħḗḗ ŀīƞķ ẇǿǿřķş ƒǿǿř # ḿīƞŭŭŧḗḗ.} other{Ŧħḗḗ ŀīƞķ ẇǿǿřķş ƒǿǿř # ḿīƞŭŭŧḗḗş.}} Īƒ ƞǿǿ ḗḗḿȧȧīŀ ȧȧřřīṽḗḗş, ƈħḗḗƈķ ŧħḗḗ şƥȧȧḿ ƒǿǿŀḓḗḗř ȧȧƞḓ ŧħḗḗ ȧȧḓḓřḗḗşş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.submit": {
+    "defaultMessage": "[Şḗḗƞḓ ŧħḗḗ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.title": {
+    "defaultMessage": "[Ƒǿǿřɠǿǿŧ ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.unavailable": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şḗḗƞḓ ḗḗḿȧȧīŀ, şǿǿ īŧ ƈȧȧƞƞǿǿŧ şḗḗƞḓ ẏǿǿŭŭ ȧȧ ŀīƞķ. Ȧşķ ŧħḗḗ şḗḗřṽḗḗř'ş ȧȧḓḿīƞīşŧřȧȧŧǿǿřş ƒǿǿř ȧȧ ŀīƞķ ŧħȧȧŧ şḗḗŧş ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.form_expired": {
     "defaultMessage": "[Ŧħīş ƒǿǿřḿ ħȧȧş ḗḗẋƥīřḗḗḓ. Ƥŀḗḗȧȧşḗḗ ŧřẏ ȧȧɠȧȧīƞ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -195,12 +227,44 @@
     "defaultMessage": "[Ŧħḗḗ ƈħḗḗƈķ ŧħȧȧŧ ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧ ƀǿǿŧ īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ řīɠħŧ ƞǿǿẇ. Ŧřẏ ȧȧɠȧȧīƞ ŀȧȧŧḗḗř.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.reset_password.done": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ īş ƈħȧȧƞɠḗḗḓ, ȧȧƞḓ ḗḗṽḗḗřẏ şḗḗşşīǿǿƞ ŧħȧȧŧ ŭŭşḗḗḓ ŧħḗḗ ǿǿŀḓ ǿǿƞḗḗ īş şīɠƞḗḗḓ ǿǿŭŭŧ. Şīɠƞ īƞ ẇīŧħ ŧħḗḗ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.done_title": {
+    "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ ƈħȧȧƞɠḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.invalid": {
+    "defaultMessage": "[Ŧħīş ŀīƞķ īş ƞǿǿŧ ṽȧȧŀīḓ. Īŧ ḿȧȧẏ ħȧȧṽḗḗ ḗḗẋƥīřḗḗḓ, ƀḗḗḗḗƞ ŭŭşḗḗḓ ȧȧŀřḗḗȧȧḓẏ, ǿǿř ƀḗḗḗḗƞ řḗḗƥŀȧȧƈḗḗḓ ƀẏ ȧȧ ƞḗḗẇḗḗř ƥȧȧşşẇǿǿřḓ. Ȧşķ ƒǿǿř ȧȧ ƞḗḗẇ ŀīƞķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.password_label": {
+    "defaultMessage": "[Ƞḗḗẇ ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.prompt": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ. Şḗḗŧŧīƞɠ īŧ şīɠƞş ẏǿǿŭŭ ǿǿŭŭŧ ḗḗṽḗḗřẏẇħḗḗřḗḗ. Ẏǿǿŭŭř ƥȧȧşşķḗḗẏş ȧȧƞḓ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ şŧȧȧẏ ȧȧş ŧħḗḗẏ ȧȧřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.submit": {
+    "defaultMessage": "[Şḗḗŧ ŧħḗḗ ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.title": {
+    "defaultMessage": "[Şḗḗŧ ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "[Ḗḿȧȧīŀ ȧȧḓḓřḗḗşş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.sign_in.failed": {
     "defaultMessage": "[Ŧħḗḗ ḗḗḿȧȧīŀ ȧȧḓḓřḗḗşş ǿǿř ƥȧȧşşẇǿǿřḓ īş īƞƈǿǿřřḗḗƈŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.forgot_password_link": {
+    "defaultMessage": "[Ƒǿǿřɠǿǿŧ ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ?]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.sign_in.missing": {
@@ -901,6 +965,22 @@
   },
   "mail.admin_webhook_disabled.subject": {
     "defaultMessage": "[Ȧ ẇḗḗƀħǿǿǿǿķ ǿǿƒ {instance} ẇȧȧş ŧŭŭřƞḗḗḓ ǿǿƒƒ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_changed.body": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşẇǿǿřḓ ǿǿƒ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ǿǿƞ {instance} ẇȧȧş ƈħȧȧƞɠḗḗḓ, ȧȧƞḓ ẏǿǿŭŭř ǿǿŧħḗḗř şḗḗşşīǿǿƞş ȧȧƞḓ ȧȧƥƥş ẇḗḗřḗḗ şīɠƞḗḗḓ ǿǿŭŭŧ.\n\nĪƒ ẏǿǿŭŭ ḓīḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ īŧ, şǿǿḿḗḗǿǿƞḗḗ ḗḗŀşḗḗ ḿȧȧẏ ķƞǿǿẇ ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ. Şḗḗŧ ȧȧ ƞḗḗẇ ǿǿƞḗḗ ȧȧŧ ǿǿƞƈḗḗ:\n\n{url}\n\nŦħīş ḗḗḿȧȧīŀ ẇȧȧş şḗḗƞŧ ƀẏ {host}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_changed.subject": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ ƒǿǿř {instance} ẇȧȧş ƈħȧȧƞɠḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_reset.body": {
+    "defaultMessage": "[Şǿǿḿḗḗǿǿƞḗḗ ȧȧşķḗḗḓ ŧǿǿ řḗḗşḗḗŧ ŧħḗḗ ƥȧȧşşẇǿǿřḓ ǿǿƒ ẏǿǿŭŭř ȧȧƈƈǿǿŭŭƞŧ ǿǿƞ {instance}.\n\nǾƥḗḗƞ ŧħīş ŀīƞķ ŧǿǿ şḗḗŧ ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ:\n\n{url}\n\n{minutes,plural,one{Ŧħḗḗ ŀīƞķ ẇǿǿřķş ƒǿǿř # ḿīƞŭŭŧḗḗ, ǿǿƞƈḗḗ.} other{Ŧħḗḗ ŀīƞķ ẇǿǿřķş ƒǿǿř # ḿīƞŭŭŧḗḗş, ǿǿƞƈḗḗ.}} Īƒ ẏǿǿŭŭ ḓīḓ ƞǿǿŧ ȧȧşķ ƒǿǿř īŧ ȧȧŧ {host}, īɠƞǿǿřḗḗ ŧħīş ḗḗḿȧȧīŀ; ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ şŧȧȧẏş ȧȧş īŧ īş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_reset.subject": {
+    "defaultMessage": "[Řḗḗşḗḗŧ ẏǿǿŭŭř ƥȧȧşşẇǿǿřḓ ƒǿǿř {instance}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.body": {

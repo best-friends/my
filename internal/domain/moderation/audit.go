@@ -151,6 +151,9 @@ const (
 	// AuditTwoFactorDisabled: an administrator removed the two-factor authentication of a local
 	// account (totp_enrollment_revocations).
 	AuditTwoFactorDisabled AuditAction = "two_factor_disabled"
+	// AuditPasswordResetLinkIssued: an administrator issued a password reset link for the user
+	// of a local account (user_tokens, purpose password_reset).
+	AuditPasswordResetLinkIssued AuditAction = "password_reset_link_issued"
 	// AuditCustomEmojiCreated: a local custom emoji was registered (custom_emojis).
 	AuditCustomEmojiCreated AuditAction = "custom_emoji_created"
 	// AuditCustomEmojiImageReplaced: a local custom emoji got a new image (custom_emoji_images).
@@ -228,6 +231,7 @@ var auditActions = []struct {
 	{AuditSignupBlockAdded, AuditTargetSignupBlock},
 	{AuditSignupBlockLifted, AuditTargetSignupBlock},
 	{AuditTwoFactorDisabled, AuditTargetAccount},
+	{AuditPasswordResetLinkIssued, AuditTargetAccount},
 	{AuditCustomEmojiCreated, AuditTargetCustomEmoji},
 	{AuditCustomEmojiImageReplaced, AuditTargetCustomEmoji},
 	{AuditCustomEmojiUpdated, AuditTargetCustomEmoji},

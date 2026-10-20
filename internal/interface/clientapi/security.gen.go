@@ -104,6 +104,7 @@ var operationSecurity = map[string]operationAccess{
 	"PATCH /api/v1/media/{id}":                                            {Operation: "updateMedia", Scopes: []string{"write:media"}},
 	"PATCH /api/v1/preferences":                                           {Operation: "updatePreferences", Scopes: []string{"write:accounts"}},
 	"POST /api/v1/accounts/delete":                                        {Operation: "deleteOwnAccount", Scopes: []string{"write:accounts"}},
+	"POST /api/v1/accounts/password":                                      {Operation: "changePassword", Scopes: []string{"write:accounts"}},
 	"POST /api/v1/accounts/{id}/block":                                    {Operation: "blockAccount", Scopes: []string{"write:blocks"}},
 	"POST /api/v1/accounts/{id}/follow":                                   {Operation: "followAccount", Scopes: []string{"write:follows"}},
 	"POST /api/v1/accounts/{id}/mute":                                     {Operation: "muteAccount", Scopes: []string{"write:mutes"}},

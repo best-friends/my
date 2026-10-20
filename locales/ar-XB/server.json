@@ -163,6 +163,38 @@
     "defaultMessage": "‮Soɯǝʇɥıuƃ ʍǝuʇ ʍɹouƃ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.forgot_password.email_label": {
+    "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.invalid_email": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐu ǝɯɐıʅ ɐppɹǝss.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.prompt": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʇɥǝ ǝɯɐıʅ ɐppɹǝss oɟ ʎonɹ ɐɔɔonuʇ. Mǝ sǝup ıʇ ɐ ʅıuʞ ʇo sǝʇ ɐ uǝʍ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.rate_limited": {
+    "defaultMessage": "‮{minutes,plural,one{⊥oo ɯɐuʎ ɹǝbnǝsʇs ɟɹoɯ ʎonɹ uǝʇʍoɹʞ. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝ.} other{⊥oo ɯɐuʎ ɹǝbnǝsʇs ɟɹoɯ ʎonɹ uǝʇʍoɹʞ. ⊥ɹʎ ɐƃɐıu ıu # ɯıunʇǝs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.sent": {
+    "defaultMessage": "‮Iɟ ɐu ɐɔɔonuʇ nsǝs {email}, ɐ ʅıuʞ ʇo sǝʇ ɐ uǝʍ dɐssʍoɹp ıs ou ıʇs ʍɐʎ. {minutes,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɯıunʇǝ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɯıunʇǝs.}} Iɟ uo ǝɯɐıʅ ɐɹɹıʌǝs, ɔɥǝɔʞ ʇɥǝ sdɐɯ ɟoʅpǝɹ ɐup ʇɥǝ ɐppɹǝss.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.submit": {
+    "defaultMessage": "‮Sǝup ʇɥǝ ʅıuʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.title": {
+    "defaultMessage": "‮Ⅎoɹƃoʇ ʎonɹ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.forgot_password.unavailable": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ poǝs uoʇ sǝup ǝɯɐıʅ, so ıʇ ɔɐuuoʇ sǝup ʎon ɐ ʅıuʞ. ∀sʞ ʇɥǝ sǝɹʌǝɹ's ɐpɯıuısʇɹɐʇoɹs ɟoɹ ɐ ʅıuʞ ʇɥɐʇ sǝʇs ɐ uǝʍ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.form_expired": {
     "defaultMessage": "‮⊥ɥıs ɟoɹɯ ɥɐs ǝxdıɹǝp. Ԁʅǝɐsǝ ʇɹʎ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -195,12 +227,44 @@
     "defaultMessage": "‮⊥ɥǝ ɔɥǝɔʞ ʇɥɐʇ ʎon ɐɹǝ uoʇ ɐ qoʇ ıs uoʇ ɐʌɐıʅɐqʅǝ ɹıƃɥʇ uoʍ. ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.reset_password.done": {
+    "defaultMessage": "‮⅄onɹ dɐssʍoɹp ıs ɔɥɐuƃǝp, ɐup ǝʌǝɹʎ sǝssıou ʇɥɐʇ nsǝp ʇɥǝ oʅp ouǝ ıs sıƃuǝp onʇ. Sıƃu ıu ʍıʇɥ ʇɥǝ uǝʍ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.done_title": {
+    "defaultMessage": "‮Ԁɐssʍoɹp ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.invalid": {
+    "defaultMessage": "‮⊥ɥıs ʅıuʞ ıs uoʇ ʌɐʅıp. Iʇ ɯɐʎ ɥɐʌǝ ǝxdıɹǝp, qǝǝu nsǝp ɐʅɹǝɐpʎ, oɹ qǝǝu ɹǝdʅɐɔǝp qʎ ɐ uǝʍǝɹ dɐssʍoɹp. ∀sʞ ɟoɹ ɐ uǝʍ ʅıuʞ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.password_label": {
+    "defaultMessage": "‮Nǝʍ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.prompt": {
+    "defaultMessage": "‮Ↄɥoosǝ ɐ uǝʍ dɐssʍoɹp. Sǝʇʇıuƃ ıʇ sıƃus ʎon onʇ ǝʌǝɹʎʍɥǝɹǝ. ⅄onɹ dɐssʞǝʎs ɐup ʇʍo-ɟɐɔʇoɹ ɐnʇɥǝuʇıɔɐʇıou sʇɐʎ ɐs ʇɥǝʎ ɐɹǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.submit": {
+    "defaultMessage": "‮Sǝʇ ʇɥǝ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.reset_password.title": {
+    "defaultMessage": "‮Sǝʇ ɐ uǝʍ dɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.sign_in.email_label": {
     "defaultMessage": "‮Ǝɯɐıʅ ɐppɹǝss‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.sign_in.failed": {
     "defaultMessage": "‮⊥ɥǝ ǝɯɐıʅ ɐppɹǝss oɹ dɐssʍoɹp ıs ıuɔoɹɹǝɔʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.sign_in.forgot_password_link": {
+    "defaultMessage": "‮Ⅎoɹƃoʇ ʎonɹ dɐssʍoɹp?‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "auth.sign_in.missing": {
@@ -901,6 +965,22 @@
   },
   "mail.admin_webhook_disabled.subject": {
     "defaultMessage": "‮∀ ʍǝqɥooʞ oɟ {instance} ʍɐs ʇnɹuǝp oɟɟ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_changed.body": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp oɟ ʎonɹ ɐɔɔonuʇ ou {instance} ʍɐs ɔɥɐuƃǝp, ɐup ʎonɹ oʇɥǝɹ sǝssıous ɐup ɐdds ʍǝɹǝ sıƃuǝp onʇ.\n\nIɟ ʎon pıp uoʇ ɔɥɐuƃǝ ıʇ, soɯǝouǝ ǝʅsǝ ɯɐʎ ʞuoʍ ʎonɹ dɐssʍoɹp. Sǝʇ ɐ uǝʍ ouǝ ɐʇ ouɔǝ:\n\n{url}\n\n⊥ɥıs ǝɯɐıʅ ʍɐs sǝuʇ qʎ {host}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_changed.subject": {
+    "defaultMessage": "‮⅄onɹ dɐssʍoɹp ɟoɹ {instance} ʍɐs ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_reset.body": {
+    "defaultMessage": "‮Soɯǝouǝ ɐsʞǝp ʇo ɹǝsǝʇ ʇɥǝ dɐssʍoɹp oɟ ʎonɹ ɐɔɔonuʇ ou {instance}.\n\nOdǝu ʇɥıs ʅıuʞ ʇo sǝʇ ɐ uǝʍ dɐssʍoɹp:\n\n{url}\n\n{minutes,plural,one{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɯıunʇǝ, ouɔǝ.} other{⊥ɥǝ ʅıuʞ ʍoɹʞs ɟoɹ # ɯıunʇǝs, ouɔǝ.}} Iɟ ʎon pıp uoʇ ɐsʞ ɟoɹ ıʇ ɐʇ {host}, ıƃuoɹǝ ʇɥıs ǝɯɐıʅ; ʎonɹ dɐssʍoɹp sʇɐʎs ɐs ıʇ ıs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "mail.password_reset.subject": {
+    "defaultMessage": "‮ᴚǝsǝʇ ʎonɹ dɐssʍoɹp ɟoɹ {instance}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "mail.verify_email.body": {

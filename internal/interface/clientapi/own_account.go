@@ -16,7 +16,8 @@ import (
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
-// The viewer's own account: its deletion and the exports of its data (FR-008).
+// The viewer's own account: its password (FR-002), its deletion, and the exports of its data
+// (FR-008).
 
 // Problem types of the viewer's own account.
 const (
@@ -36,9 +37,49 @@ var (
 	ExportLimit = kernel.Limit{Name: "api.export", Max: 3, Window: 24 * time.Hour}
 )
 
-// OwnAccount deletes the viewer's own account; *appidentity.Service implements it.
+// OwnAccount changes the viewer's password and deletes the viewer's own account;
+// *appidentity.Service implements it.
 type OwnAccount interface {
+	ChangePassword(ctx context.Context, in appidentity.ChangePasswordInput) error
 	DeleteOwnAccount(ctx context.Context, userID, password string) error
+}
+
+// ChangePassword serves POST /api/v1/accounts/password. The grant of the request's token keeps
+// working; every other one ends.
+func (s *Server) ChangePassword(ctx context.Context, req ChangePasswordRequestObject) (ChangePasswordResponseObject, error) {
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if s.o.OwnAccount == nil {
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	if req.Body == nil || req.Body.CurrentPassword == "" {
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "current_password")), nil
+	}
+	if identity.ValidatePassword(req.Body.NewPassword) != nil {
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "new_password")), nil
+	}
+	err = s.o.OwnAccount.ChangePassword(ctx, appidentity.ChangePasswordInput{
+		UserID: v.UserID, CurrentPassword: req.Body.CurrentPassword, NewPassword: req.Body.NewPassword, KeepFamilyID: v.FamilyID,
+	})
+	var limited *kernel.RateLimitedError
+	l := s.Localizer(ctx)
+	switch {
+	case errors.As(err, &limited):
+		retry := seconds(limited.RetryAfter)
+		p := s.problem(ctx, http.StatusTooManyRequests, ProblemTypeBlank, l.ServerErrorsRateLimited(), l.ServerErrorsRateLimitedDetail(retry))
+		p.Headers.RetryAfter = &retry
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(p), nil
+	case errors.Is(err, appidentity.ErrWrongPassword):
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(
+			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeWrongPassword, l.ServerErrorsWrongPassword(), "")), nil
+	case errors.Is(err, identity.ErrInvalidPassword):
+		return ChangePassworddefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "new_password")), nil
+	case err != nil:
+		return nil, fmt.Errorf("clientapi: change the password of user %s: %w", v.UserID, err)
+	}
+	return ChangePassword204Response{}, nil
 }
 
 // Exports runs the viewer's data exports; *appidentity.Exports implements it.

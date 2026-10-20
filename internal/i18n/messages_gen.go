@@ -291,6 +291,62 @@ func (l *Localizer) ServerAuthErrorTitle() string {
 	return l.format("server:auth.error.title", nil)
 }
 
+// ServerAuthForgotPasswordEmailLabel formats "server:auth.forgot_password.email_label". Label of the email address field of the form that asks for a password reset link.
+//
+//	en: Email address
+func (l *Localizer) ServerAuthForgotPasswordEmailLabel() string {
+	return l.format("server:auth.forgot_password.email_label", nil)
+}
+
+// ServerAuthForgotPasswordInvalidEmail formats "server:auth.forgot_password.invalid_email". Error of the form that asks for a password reset link when the email address field is empty or not an email address.
+//
+//	en: Enter an email address.
+func (l *Localizer) ServerAuthForgotPasswordInvalidEmail() string {
+	return l.format("server:auth.forgot_password.invalid_email", nil)
+}
+
+// ServerAuthForgotPasswordPrompt formats "server:auth.forgot_password.prompt". Text above the form that asks for a password reset link.
+//
+//	en: Enter the email address of your account. We send it a link to set a new password.
+func (l *Localizer) ServerAuthForgotPasswordPrompt() string {
+	return l.format("server:auth.forgot_password.prompt", nil)
+}
+
+// ServerAuthForgotPasswordRateLimited formats "server:auth.forgot_password.rate_limited". Error (HTTP 429) after too many requests for a password reset link from the same network. {minutes} is the wait, rounded up to whole minutes.
+//
+//	en: {minutes, plural, one {Too many requests from your network. Try again in # minute.} other {Too many requests from your network. Try again in # minutes.}}
+func (l *Localizer) ServerAuthForgotPasswordRateLimited(minutes int) string {
+	return l.format("server:auth.forgot_password.rate_limited", map[string]any{"minutes": minutes})
+}
+
+// ServerAuthForgotPasswordSent formats "server:auth.forgot_password.sent". Notice after a password reset link was asked for. It must read the same whether or not an account uses the address. {email} is the address the user entered; {minutes} how long the link works.
+//
+//	en: If an account uses {email}, a link to set a new password is on its way. {minutes, plural, one {The link works for # minute.} other {The link works for # minutes.}} If no email arrives, check the spam folder and the address.
+func (l *Localizer) ServerAuthForgotPasswordSent(email string, minutes int) string {
+	return l.format("server:auth.forgot_password.sent", map[string]any{"email": email, "minutes": minutes})
+}
+
+// ServerAuthForgotPasswordSubmit formats "server:auth.forgot_password.submit". Button that asks for a password reset link by email.
+//
+//	en: Send the link
+func (l *Localizer) ServerAuthForgotPasswordSubmit() string {
+	return l.format("server:auth.forgot_password.submit", nil)
+}
+
+// ServerAuthForgotPasswordTitle formats "server:auth.forgot_password.title". Title and heading of the page that asks for a password reset link.
+//
+//	en: Forgot your password
+func (l *Localizer) ServerAuthForgotPasswordTitle() string {
+	return l.format("server:auth.forgot_password.title", nil)
+}
+
+// ServerAuthForgotPasswordUnavailable formats "server:auth.forgot_password.unavailable". Text of the page that asks for a password reset link on a server that sends no email; an administrator can issue the link.
+//
+//	en: This server does not send email, so it cannot send you a link. Ask the server's administrators for a link that sets a new password.
+func (l *Localizer) ServerAuthForgotPasswordUnavailable() string {
+	return l.format("server:auth.forgot_password.unavailable", nil)
+}
+
 // ServerAuthFormExpired formats "server:auth.form_expired". Error on the sign-in screens (HTTP 403) when the form's anti-forgery token is missing or does not match, e.g. after cookies were cleared.
 //
 //	en: This form has expired. Please try again.
@@ -347,6 +403,55 @@ func (l *Localizer) ServerAuthHumanCheckUnavailable() string {
 	return l.format("server:auth.human_check.unavailable", nil)
 }
 
+// ServerAuthResetPasswordDone formats "server:auth.reset_password.done". Body of the page after a new password was set from a reset link.
+//
+//	en: Your password is changed, and every session that used the old one is signed out. Sign in with the new password.
+func (l *Localizer) ServerAuthResetPasswordDone() string {
+	return l.format("server:auth.reset_password.done", nil)
+}
+
+// ServerAuthResetPasswordDoneTitle formats "server:auth.reset_password.done_title". Title and heading of the page after a new password was set from a reset link.
+//
+//	en: Password changed
+func (l *Localizer) ServerAuthResetPasswordDoneTitle() string {
+	return l.format("server:auth.reset_password.done_title", nil)
+}
+
+// ServerAuthResetPasswordInvalid formats "server:auth.reset_password.invalid". Error when a password reset link is unknown, expired, used, or older than the current password. Must not say which.
+//
+//	en: This link is not valid. It may have expired, been used already, or been replaced by a newer password. Ask for a new link.
+func (l *Localizer) ServerAuthResetPasswordInvalid() string {
+	return l.format("server:auth.reset_password.invalid", nil)
+}
+
+// ServerAuthResetPasswordPasswordLabel formats "server:auth.reset_password.password_label". Label of the new password field of the page that a password reset link opens.
+//
+//	en: New password
+func (l *Localizer) ServerAuthResetPasswordPasswordLabel() string {
+	return l.format("server:auth.reset_password.password_label", nil)
+}
+
+// ServerAuthResetPasswordPrompt formats "server:auth.reset_password.prompt". Text above the form that sets a new password from a reset link.
+//
+//	en: Choose a new password. Setting it signs you out everywhere. Your passkeys and two-factor authentication stay as they are.
+func (l *Localizer) ServerAuthResetPasswordPrompt() string {
+	return l.format("server:auth.reset_password.prompt", nil)
+}
+
+// ServerAuthResetPasswordSubmit formats "server:auth.reset_password.submit". Button that sets the new password from a reset link.
+//
+//	en: Set the password
+func (l *Localizer) ServerAuthResetPasswordSubmit() string {
+	return l.format("server:auth.reset_password.submit", nil)
+}
+
+// ServerAuthResetPasswordTitle formats "server:auth.reset_password.title". Title and heading of the page that a password reset link opens.
+//
+//	en: Set a new password
+func (l *Localizer) ServerAuthResetPasswordTitle() string {
+	return l.format("server:auth.reset_password.title", nil)
+}
+
 // ServerAuthSignInEmailLabel formats "server:auth.sign_in.email_label". Label of the email address field on the sign-in form.
 //
 //	en: Email address
@@ -359,6 +464,13 @@ func (l *Localizer) ServerAuthSignInEmailLabel() string {
 //	en: The email address or password is incorrect.
 func (l *Localizer) ServerAuthSignInFailed() string {
 	return l.format("server:auth.sign_in.failed", nil)
+}
+
+// ServerAuthSignInForgotPasswordLink formats "server:auth.sign_in.forgot_password_link". Link from the sign-in form to the page that asks for a password reset link.
+//
+//	en: Forgot your password?
+func (l *Localizer) ServerAuthSignInForgotPasswordLink() string {
+	return l.format("server:auth.sign_in.forgot_password_link", nil)
 }
 
 // ServerAuthSignInMissing formats "server:auth.sign_in.missing". Error when the sign-in form was submitted with an empty field.
@@ -1584,6 +1696,34 @@ func (l *Localizer) ServerMailAdminWebhookDisabledBody(instance string, url stri
 //	en: A webhook of {instance} was turned off
 func (l *Localizer) ServerMailAdminWebhookDisabledSubject(instance string) string {
 	return l.format("server:mail.admin_webhook_disabled.subject", map[string]any{"instance": instance})
+}
+
+// ServerMailPasswordChangedBody formats "server:mail.password_changed.body". Plain-text body of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the page that asks for a password reset link (keep it on its own line).
+//
+//	en: The password of your account on {instance} was changed, and your other sessions and apps were signed out.  If you did not change it, someone else may know your password. Set a new one at once:  {url}  This email was sent by {host}.
+func (l *Localizer) ServerMailPasswordChangedBody(host string, instance string, url string) string {
+	return l.format("server:mail.password_changed.body", map[string]any{"host": host, "instance": instance, "url": url})
+}
+
+// ServerMailPasswordChangedSubject formats "server:mail.password_changed.subject". Subject of the email that tells a user their password was changed. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Your password for {instance} was changed
+func (l *Localizer) ServerMailPasswordChangedSubject(instance string) string {
+	return l.format("server:mail.password_changed.subject", map[string]any{"instance": instance})
+}
+
+// ServerMailPasswordResetBody formats "server:mail.password_reset.body". Plain-text body of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the reset link (keep it on its own line), {minutes} how long the link works.
+//
+//	en: Someone asked to reset the password of your account on {instance}.  Open this link to set a new password:  {url}  {minutes, plural, one {The link works for # minute, once.} other {The link works for # minutes, once.}} If you did not ask for it at {host}, ignore this email; your password stays as it is.
+func (l *Localizer) ServerMailPasswordResetBody(host string, instance string, minutes int, url string) string {
+	return l.format("server:mail.password_reset.body", map[string]any{"host": host, "instance": instance, "minutes": minutes, "url": url})
+}
+
+// ServerMailPasswordResetSubject formats "server:mail.password_reset.subject". Subject of the email with a password reset link. {instance} is the server's display name, or its domain name when it has none.
+//
+//	en: Reset your password for {instance}
+func (l *Localizer) ServerMailPasswordResetSubject(instance string) string {
+	return l.format("server:mail.password_reset.subject", map[string]any{"instance": instance})
 }
 
 // ServerMailVerifyEmailBody formats "server:mail.verify_email.body". Plain-text body of the email that confirms a new account's email address. {instance} is the server's display name, or its domain name when it has none; {host} the server's domain name, {url} the confirmation link (keep it on its own line), {hours} how long the link works.

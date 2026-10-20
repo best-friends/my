@@ -25,7 +25,7 @@ func runAdminAccount(args []string, stdout, stderr io.Writer) int {
 		adminAccountActionUsage(stderr)
 		return 2
 	}
-	sub, code := dispatch("admin account", args, []string{"action", "export-moderation", "disable-two-factor"}, stderr, adminAccountActionUsage)
+	sub, code := dispatch("admin account", args, []string{"action", "export-moderation", "disable-two-factor", "password-reset-link"}, stderr, adminAccountActionUsage)
 	if code >= 0 {
 		return code
 	}
@@ -34,6 +34,8 @@ func runAdminAccount(args []string, stdout, stderr io.Writer) int {
 		return runAdminAccountExport(args[1:], stdout, stderr)
 	case "disable-two-factor":
 		return runAdminAccountDisableTwoFactor(args[1:], stdout, stderr)
+	case "password-reset-link":
+		return runAdminAccountPasswordResetLink(args[1:], stdout, stderr)
 	}
 	return runAdminAccountAction(args[1:], stdout, stderr)
 }

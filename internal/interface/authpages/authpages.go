@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package authpages serves the server-rendered sign-in, sign-out, registration, email
-// verification, and OAuth authorization (consent) screens (ADR-0030): plain HTML forms from
-// html/template that work without JavaScript, worded from the server message catalog and styled
-// by one stylesheet that the web client's build provides. With a CAPTCHA (Options.HumanCheck),
-// the sign-in and registration forms also load the service's widget (humancheck.go). In a
-// browser with passkeys, the web build's script adds a passkey button to the sign-in form
-// (passkey.go); without JavaScript the page stays the password form.
+// verification, password reset (password_reset.go), and OAuth authorization (consent) screens
+// (ADR-0030): plain HTML forms from html/template that work without JavaScript, worded from the
+// server message catalog and styled by one stylesheet that the web client's build provides. With
+// a CAPTCHA (Options.HumanCheck), the sign-in, registration, and password reset forms also load
+// the service's widget (humancheck.go). In a browser with passkeys, the web build's script adds
+// a passkey button to the sign-in form (passkey.go); without JavaScript the page stays the
+// password form.
 //
 // A sign-in or sign-up starts a browser session carried by the __Host-my_session cookie
 // (Secure, HttpOnly, SameSite=Lax, Path=/) with a new token every time (ADR-0019 §4). Every POST
@@ -176,6 +177,9 @@ type Options struct {
 	// both.
 	Passkeys      Passkeys
 	PasskeyScript string
+	// PasswordReset serves the pages that reset a forgotten password (password_reset.go), which
+	// the sign-in page links to; nil leaves them out.
+	PasswordReset PasswordReset
 }
 
 // Handler serves the screens.
@@ -200,6 +204,10 @@ const (
 	pageVerified    = "verified"
 	pageAuthorize   = "authorize"
 	pageDocument    = "document"
+	// The pages of password_reset.go.
+	pageForgotPassword = "forgot_password"
+	pageResetPassword  = "reset_password"
+	pagePasswordReset  = "password_reset"
 )
 
 // New returns a Handler on o.
@@ -208,7 +216,8 @@ func New(o Options) *Handler {
 		o.Logger = slog.Default()
 	}
 	h := &Handler{o: o, pages: map[string]*template.Template{}, cop: http.NewCrossOriginProtection()}
-	for _, name := range []string{pageSignIn, pageTwoFactor, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument} {
+	for _, name := range []string{pageSignIn, pageTwoFactor, pageSignedIn, pageError, pageSignUp, pageStatus, pageVerifyEmail, pageVerified, pageAuthorize, pageDocument,
+		pageForgotPassword, pageResetPassword, pagePasswordReset} {
 		h.pages[name] = template.Must(template.ParseFS(templateFS, "templates/layout.html", "templates/human_check.html", "templates/"+name+".html"))
 	}
 	h.cop.SetDenyHandler(http.HandlerFunc(h.crossOrigin))
@@ -236,6 +245,12 @@ func (h *Handler) Register(r Router) {
 	r.Handle("POST "+PathVerifyEmail, h.cop.Handler(http.HandlerFunc(h.verifyEmail)))
 	r.Handle("POST "+PathResendVerification, h.cop.Handler(http.HandlerFunc(h.resendVerification)))
 	r.Handle("POST "+PathAppeal, h.cop.Handler(http.HandlerFunc(h.appeal)))
+	if h.passwordResetEnabled() {
+		r.Handle("GET "+PathForgotPassword, http.HandlerFunc(h.forgotPasswordPage))
+		r.Handle("POST "+PathForgotPassword, h.cop.Handler(http.HandlerFunc(h.forgotPassword)))
+		r.Handle("GET "+PathResetPassword, http.HandlerFunc(h.resetPasswordPage))
+		r.Handle("POST "+PathResetPassword, h.cop.Handler(http.HandlerFunc(h.resetPassword)))
+	}
 	for i, d := range documentPages {
 		r.Handle("GET "+d.path, h.documentPage(i))
 	}
@@ -263,14 +278,21 @@ type page struct {
 	Error  string
 	Notice string
 
-	// CanSignUp shows the link to the registration page.
-	CanSignUp bool
+	// CanSignUp shows the link to the registration page, and CanResetPassword the link to the
+	// page that asks for a password reset link.
+	CanSignUp        bool
+	CanResetPassword bool
 	// SignUp is the registration form.
 	SignUp *signUpForm
 	// Status is the state of an account that cannot be used yet.
 	Status *statusView
-	// Token is the email verification token of the confirmation form.
+	// Token is the email verification token of the confirmation form, or the password reset
+	// token of the form of a new password.
 	Token string
+	// ForgotPassword is the page that asks for a password reset link, and NewPassword the field
+	// of the page that sets the new password (password_reset.go).
+	ForgotPassword *forgotPasswordView
+	NewPassword    *newPasswordView
 	// Consent is the authorization request on the consent page.
 	Consent *consent
 	// Document is the document on its page.
@@ -404,6 +426,7 @@ func (h *Handler) renderSignInPage(w http.ResponseWriter, r *http.Request, statu
 		h.o.Logger.WarnContext(r.Context(), "read the registration mode", slog.Any("error", err))
 	}
 	p.CanSignUp = err == nil && mode != identity.RegistrationClosed
+	p.CanResetPassword = h.passwordResetEnabled()
 	p.HumanCheck = h.humanCheck(w, r, p.L, kernel.HumanCheckActionSignIn)
 	h.render(w, r, status, pageSignIn, p)
 }

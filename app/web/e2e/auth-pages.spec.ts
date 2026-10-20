@@ -365,6 +365,51 @@ test.describe("two-factor sign-in", () => {
   });
 });
 
+test.describe("password reset", () => {
+  test("links from the sign-in page to the page that asks for a link", async ({ page, makeAxeBuilder }) => {
+    await page.goto("/auth/sign_in");
+    await page.locator('main a[href="/auth/forgot_password"]').click();
+    await expect(page).toHaveURL(/\/auth\/forgot_password$/);
+    await expectPageBasics(page);
+    await expectNoAxeViolationsInBothThemes(page, makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test.describe("with a link from the CLI", () => {
+    test.use({ javaScriptEnabled: false });
+    test.skip(!ownsServer, "the test creates a user with bin/my, which needs the database of the server e2e/server.ts starts");
+
+    test("sets a new password once", async ({ browser, context, page }) => {
+      const username = `e2e_reset_${randomBytes(4).toString("hex")}`;
+      const email = `${username}@example.com`;
+      runMy(["admin", "create", "-username", username, "-email", email], `e2e-password-${username}\n`);
+      const link = new URL(runMy(["admin", "account", "password-reset-link", `@${username}`]).trim());
+      await page.goto(link.pathname + link.search);
+      await expectPageBasics(page);
+      await expect(passwordField(page, "new-password")).toHaveAccessibleName(/\S/);
+      await expect(passwordField(page, "new-password")).toHaveAccessibleDescription(/\S/);
+      await withJavaScript(browser, context, page, async (form, makeAxeBuilder) => {
+        await expectNoAxeViolationsInBothThemes(form, makeAxeBuilder);
+        await expectNoHorizontalScroll(form);
+      });
+
+      // Opening the link does not use it; setting the password does, once.
+      await passwordField(page, "new-password").fill(`e2e-new-password-${username}`);
+      await submitButton(page).click();
+      await expectPageBasics(page);
+      await expect(page.getByRole("main").getByRole("status")).toBeVisible();
+      await page.goto(link.pathname + link.search);
+      await expect(passwordField(page, "new-password")).toHaveCount(0);
+
+      await page.goto("/auth/sign_in");
+      await emailField(page).fill(email);
+      await passwordField(page, "current-password").fill(`e2e-new-password-${username}`);
+      await submitButton(page).click();
+      await expect(page).not.toHaveURL(/\/auth\/sign_in$/);
+    });
+  });
+});
+
 test.describe("sign-up page", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/auth/sign_up");

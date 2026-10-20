@@ -351,6 +351,33 @@ func (q *Queries) ListOAuthClientRedirectURIs(ctx context.Context, clientID stri
 	return items, nil
 }
 
+const revokeOtherTokensOfUser = `-- name: RevokeOtherTokensOfUser :exec
+INSERT INTO oauth_token_revocations (token_id, reason, revoked_at)
+SELECT t.id, $1::text, $2::timestamptz FROM oauth_access_tokens t
+WHERE t.user_id = $3 AND t.family_id <> $4
+  AND (t.expires_at > $2::timestamptz OR t.refresh_expires_at > $2::timestamptz)
+ON CONFLICT (token_id) DO NOTHING
+`
+
+type RevokeOtherTokensOfUserParams struct {
+	Reason       string
+	RevokedAt    time.Time
+	UserID       string
+	KeepFamilyID string
+}
+
+// RevokeOtherTokensOfUser revokes every token of a user outside the family keep_family_id whose
+// access or refresh token has not expired at revoked_at and that has no revocation yet.
+func (q *Queries) RevokeOtherTokensOfUser(ctx context.Context, arg RevokeOtherTokensOfUserParams) error {
+	_, err := q.db.Exec(ctx, revokeOtherTokensOfUser,
+		arg.Reason,
+		arg.RevokedAt,
+		arg.UserID,
+		arg.KeepFamilyID,
+	)
+	return err
+}
+
 const revokeSessionOfTokenFamily = `-- name: RevokeSessionOfTokenFamily :exec
 INSERT INTO session_revocations (session_id, reason, revoked_at)
 SELECT c.session_id, $1::text, $2::timestamptz

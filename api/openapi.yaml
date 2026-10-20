@@ -336,6 +336,33 @@ paths:
           description: The account is deleted.
         default:
           $ref: "#/components/responses/Problem"
+  /accounts/password:
+    post:
+      operationId: changePassword
+      summary: Change the authenticated user's password
+      description: |
+        Replaces the user's password with `new_password` after checking `current_password`
+        (FR-002). Every other session and grant of the user ends: the user is signed out of
+        the server's sign-in pages and of every app but the one that makes the request, whose
+        tokens keep working. Passkeys and two-factor authentication stay as they are, and the
+        user is told by email when the server sends email. A wrong current password is a 422
+        `/api/v1/problems/wrong-password`, and at most 5 wrong ones per user are accepted every
+        hour. A new password that is not 8 to 128 characters is a 400 that names
+        `new_password`.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: The password is changed.
+        default:
+          $ref: "#/components/responses/Problem"
   /exports:
     get:
       operationId: listDataExports
@@ -6031,6 +6058,21 @@ components:
           type: string
           minLength: 1
           maxLength: 1024
+    ChangePasswordRequest:
+      description: A change of the user's password.
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          description: The user's current password, which confirms the change.
+          type: string
+          minLength: 1
+          maxLength: 1024
+        new_password:
+          description: The new password, 8 to 128 characters.
+          type: string
+          minLength: 1
+          maxLength: 1024
     DataExport:
       description: A request for an archive of the user's data.
       type: object
@@ -7508,7 +7550,8 @@ components:
         `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
         `revealed_private_data` (a moderator was shown the account's email address and IP
         addresses), `two_factor_disabled` (an administrator removed the account's two-factor
-        authentication). On a `domain`:
+        authentication), `password_reset_link_issued` (an administrator issued a link that sets
+        a new password for the account's user). On a `domain`:
         `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
         `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
         `user` (a registration):
@@ -7563,6 +7606,7 @@ components:
         - signup_block_added
         - signup_block_lifted
         - two_factor_disabled
+        - password_reset_link_issued
         - custom_emoji_created
         - custom_emoji_image_replaced
         - custom_emoji_updated
