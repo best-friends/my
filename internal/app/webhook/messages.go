@@ -30,25 +30,25 @@ import (
 var ErrNoPresenter = errors.New("webhook: no presenter of the admin API representations")
 
 // Presenter presents the object of a message as the admin API does, as a value that encodes to
-// the JSON of the admin API's schema. Its context reads in the transaction of the event
-// (uow.ReadingIn), so the read use cases it calls see what the transaction wrote. The client
+// the JSON of the admin API's schema. It reads in tx, the transaction of the event, through the
+// modules' reads that take a transaction, so it sees what the transaction wrote. The client
 // API's server implements it with the serializers of its admin operations; each method fails
 // as those operations do for an unknown ID.
 type Presenter interface {
 	// WebhookReport presents a report as AdminReport.
-	WebhookReport(ctx context.Context, id string) (any, error)
+	WebhookReport(ctx context.Context, tx uow.Tx, id string) (any, error)
 	// WebhookRegistration presents the registration of a user as AdminRegistration.
-	WebhookRegistration(ctx context.Context, userID string) (any, error)
+	WebhookRegistration(ctx context.Context, tx uow.Tx, userID string) (any, error)
 	// WebhookAccount presents an account as AdminAccount.
-	WebhookAccount(ctx context.Context, id string) (any, error)
+	WebhookAccount(ctx context.Context, tx uow.Tx, id string) (any, error)
 	// WebhookAccountAction presents an action on an account as AdminAccountAction.
-	WebhookAccountAction(ctx context.Context, id string) (any, error)
+	WebhookAccountAction(ctx context.Context, tx uow.Tx, id string) (any, error)
 	// WebhookAppeal presents an appeal as AdminAppeal.
-	WebhookAppeal(ctx context.Context, id string) (any, error)
+	WebhookAppeal(ctx context.Context, tx uow.Tx, id string) (any, error)
 	// WebhookDomainAction presents an action on a domain as AdminDomainAction.
-	WebhookDomainAction(ctx context.Context, id string) (any, error)
+	WebhookDomainAction(ctx context.Context, tx uow.Tx, id string) (any, error)
 	// WebhookCustomEmoji presents a custom emoji as AdminCustomEmoji.
-	WebhookCustomEmoji(ctx context.Context, id string) (any, error)
+	WebhookCustomEmoji(ctx context.Context, tx uow.Tx, id string) (any, error)
 }
 
 // SetPresenter sets the presenter of the messages' data. The composition root calls it once,
@@ -120,7 +120,7 @@ var customEmojiEvents = map[string]webhook.EventType{
 }
 
 // presentFunc presents the data of a message with the Presenter.
-type presentFunc func(ctx context.Context, p Presenter) (any, error)
+type presentFunc func(ctx context.Context, tx uow.Tx, p Presenter) (any, error)
 
 // source is the message of a domain event: its type, when the event happened, and its data,
 // either built from the event (Data) or presented with the Presenter (Present). A zero Type
@@ -161,8 +161,8 @@ var sources = map[string]func(e uow.Event) source{
 			return source{}
 		}
 		r := ev.Revision
-		return source{Type: webhook.EventAccountUpdated, At: r.RevisedAt, Present: func(ctx context.Context, p Presenter) (any, error) {
-			return p.WebhookAccount(ctx, r.AccountID)
+		return source{Type: webhook.EventAccountUpdated, At: r.RevisedAt, Present: func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+			return p.WebhookAccount(ctx, tx, r.AccountID)
 		}}
 	},
 	appmoderation.EventAccountActionIssued: func(e uow.Event) source {
@@ -175,8 +175,8 @@ var sources = map[string]func(e uow.Event) source{
 	},
 	appmoderation.EventAppealFiled: func(e uow.Event) source {
 		a := e.(appmoderation.AppealFiled).Appeal
-		return source{Type: webhook.EventAppealCreated, At: a.SubmittedAt, Present: func(ctx context.Context, p Presenter) (any, error) {
-			return p.WebhookAppeal(ctx, a.ID)
+		return source{Type: webhook.EventAppealCreated, At: a.SubmittedAt, Present: func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+			return p.WebhookAppeal(ctx, tx, a.ID)
 		}}
 	},
 	appmoderation.EventDomainActionIssued: func(e uow.Event) source {
@@ -213,8 +213,8 @@ var sources = map[string]func(e uow.Event) source{
 			return source{}
 		}
 		// A deletion is emitted before the emoji's rows go, so that it is presented as it was.
-		return source{Type: t, At: ev.At, Present: func(ctx context.Context, p Presenter) (any, error) {
-			v, err := p.WebhookCustomEmoji(ctx, ev.Emoji.ID)
+		return source{Type: t, At: ev.At, Present: func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+			v, err := p.WebhookCustomEmoji(ctx, tx, ev.Emoji.ID)
 			if err != nil {
 				return nil, err
 			}
@@ -224,19 +224,27 @@ var sources = map[string]func(e uow.Event) source{
 }
 
 func report(id string) presentFunc {
-	return func(ctx context.Context, p Presenter) (any, error) { return p.WebhookReport(ctx, id) }
+	return func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+		return p.WebhookReport(ctx, tx, id)
+	}
 }
 
 func registration(userID string) presentFunc {
-	return func(ctx context.Context, p Presenter) (any, error) { return p.WebhookRegistration(ctx, userID) }
+	return func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+		return p.WebhookRegistration(ctx, tx, userID)
+	}
 }
 
 func accountAction(id string) presentFunc {
-	return func(ctx context.Context, p Presenter) (any, error) { return p.WebhookAccountAction(ctx, id) }
+	return func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+		return p.WebhookAccountAction(ctx, tx, id)
+	}
 }
 
 func domainAction(id string) presentFunc {
-	return func(ctx context.Context, p Presenter) (any, error) { return p.WebhookDomainAction(ctx, id) }
+	return func(ctx context.Context, tx uow.Tx, p Presenter) (any, error) {
+		return p.WebhookDomainAction(ctx, tx, id)
+	}
 }
 
 // RegisterSources registers the projectors that turn the domain events of the other modules into
@@ -258,7 +266,7 @@ func (s *Service) RegisterSources(r *uow.Projectors) {
 				if s.presenter == nil {
 					return fmt.Errorf("%w: %s", ErrNoPresenter, src.Type)
 				}
-				if data, err = src.Present(uow.ReadingIn(ctx, tx), s.presenter); err != nil {
+				if data, err = src.Present(ctx, tx, s.presenter); err != nil {
 					return fmt.Errorf("webhook: the data of %s: %w", src.Type, err)
 				}
 			}

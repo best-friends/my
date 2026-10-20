@@ -30,6 +30,8 @@ var (
 // Methods that take a uow.Tx run inside that transaction; the others read committed data outside
 // any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
 type Repository interface {
+	TxReads
+
 	// Resources and events, written by commands.
 
 	// InsertAccount inserts an account. A second local Application actor fails with
@@ -139,4 +141,18 @@ type Repository interface {
 
 	RemoteRepository
 	SearchRepository
+}
+
+// TxReads are the reads of Repository that run in a transaction tx, with what tx has written, for the
+// use cases that present what an event's transaction wrote (the data of the webhook messages,
+// ADR-0060). Each one reads as the method of the same name without Tx does.
+type TxReads interface {
+	FindAccountTx(ctx context.Context, tx uow.Tx, id string) (account.Account, error)
+	FindLocalAccountTx(ctx context.Context, tx uow.Tx, accountID string) (account.LocalAccount, error)
+	FindLocalAccountByUserTx(ctx context.Context, tx uow.Tx, userID string) (account.LocalAccount, error)
+	FindHandleOfTx(ctx context.Context, tx uow.Tx, accountID string) (account.Handle, error)
+	FindCurrentProfileTx(ctx context.Context, tx uow.Tx, accountID string) (account.ProfileRevision, error)
+	FindLifecycleStateTx(ctx context.Context, tx uow.Tx, accountID string) (account.LifecycleState, error)
+	ListKeysTx(ctx context.Context, tx uow.Tx, accountID string) ([]account.Key, error)
+	ListRemoteProfileURLsTx(ctx context.Context, tx uow.Tx, accountIDs []string) (map[string]string, error)
 }

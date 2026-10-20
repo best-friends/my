@@ -681,8 +681,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The custom emoji of the picker and their administration (ADR-0051).
 		CustomEmojis: a.CustomEmojis,
 		// The instance's webhooks (ADR-0060).
-		Webhooks:    a.Webhooks,
-		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+		Webhooks:     a.Webhooks,
+		WebhookReads: webhookReads{a},
+		RateLimiter:  a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})
 	// The data of the webhook messages is the admin API's representation (ADR-0060).

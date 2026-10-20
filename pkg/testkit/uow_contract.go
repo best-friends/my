@@ -25,10 +25,6 @@ type UnitOfWorkHarness struct {
 	// Keys returns the committed probe keys in any order, reading outside every transaction of
 	// UnitOfWork. It must not block while a transaction is open.
 	Keys func(ctx context.Context) ([]string, error)
-	// Has reports whether a probe row with key exists, reading as the adapter's repositories read
-	// outside transactions: in the transaction that ctx reads in (uow.ReadingIn), and on its own
-	// otherwise.
-	Has func(ctx context.Context, key string) (bool, error)
 }
 
 // UnitOfWorkFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
@@ -45,8 +41,7 @@ func (probeEvent) EventType() string { return "testkit.probe_inserted" }
 // UnitOfWorkContract verifies that the UnitOfWork built by newHarness satisfies the uow
 // contract: commit on success; rollback on error and panic; bounded retries of ErrRetryable
 // failures in fresh transactions; no retry of other errors; respect for context cancellation;
-// isolation of uncommitted writes; reads in the transaction a context carries (uow.ReadingIn);
-// concurrent writers; synchronous projectors running in
+// isolation of uncommitted writes; concurrent writers; synchronous projectors running in
 // the same transaction as the command that emits their event; and commit hooks running once,
 // after the commit, for the events of the attempt that committed.
 func UnitOfWorkContract(t *testing.T, newHarness UnitOfWorkFactory) {
@@ -63,7 +58,6 @@ func UnitOfWorkContract(t *testing.T, newHarness UnitOfWorkFactory) {
 		{"DoesNotRetryOtherErrors", uowDoesNotRetryOtherErrors},
 		{"StopsWhenContextEnds", uowStopsWhenContextEnds},
 		{"HidesUncommittedWrites", uowHidesUncommittedWrites},
-		{"ReadsInTheTransactionOfTheContext", uowReadsInTheTransactionOfTheContext},
 		{"SerializesConcurrentWriters", uowConcurrentWriters},
 		{"RunsProjectorsInTheSameTransaction", uowRunsProjectors},
 		{"RollsBackWhenAProjectorFails", uowRollsBackOnProjectorError},
@@ -248,35 +242,6 @@ func uowHidesUncommittedWrites(t *testing.T, newHarness UnitOfWorkFactory) {
 		}
 		if len(got) != 0 {
 			t.Errorf("keys visible outside the open transaction = %q, want none", got)
-		}
-		return nil
-	})
-	if err != nil {
-		t.Fatalf("Tx = %v", err)
-	}
-	wantKeys(t, h, "a")
-}
-
-func uowReadsInTheTransactionOfTheContext(t *testing.T, newHarness UnitOfWorkFactory) {
-	h := newHarness(t, uow.Options{Retry: fastRetry})
-	ctx := t.Context()
-	err := h.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := h.Insert(ctx, tx, "a"); err != nil {
-			return err
-		}
-		if _, ok := uow.ReadingTx(ctx); ok {
-			t.Error("ReadingTx of a plain context = true")
-		}
-		outside, err := h.Has(ctx, "a")
-		if err != nil {
-			return err
-		}
-		inside, err := h.Has(uow.ReadingIn(ctx, tx), "a")
-		if err != nil {
-			return err
-		}
-		if outside || !inside {
-			t.Errorf("the uncommitted row read outside = %t, in the transaction = %t; want false, true", outside, inside)
 		}
 		return nil
 	})

@@ -3,7 +3,6 @@
 package sqlite
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -26,37 +25,24 @@ func queries(tx uow.Tx) (*sqlitegen.Queries, error) {
 	return sqlitegen.New(sqlTx), nil
 }
 
-// reader returns the generated queries for reads outside transactions: on the connection pool,
-// or in the transaction that the context of a query reads in (uow.ReadingIn).
-func (d *DB) reader() *sqlitegen.Queries { return sqlitegen.New(readConn{d.db}) }
-
-// readConn runs a query in the SQLite transaction that its context reads in, and on the pool
-// otherwise.
-type readConn struct{ db *sql.DB }
-
-func (c readConn) conn(ctx context.Context) sqlitegen.DBTX {
-	if tx, ok := uow.ReadingTx(ctx); ok {
-		if t, ok := tx.(*Tx); ok {
-			return t.tx
-		}
+// reader returns the generated queries on the connection pool, for reads outside transactions,
+// or on the transaction of a copy that in made.
+func (d *DB) reader() *sqlitegen.Queries {
+	if d.tx != nil {
+		return sqlitegen.New(d.tx)
 	}
-	return c.db
+	return sqlitegen.New(d.db)
 }
 
-func (c readConn) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
-	return c.conn(ctx).ExecContext(ctx, query, args...)
-}
-
-func (c readConn) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
-	return c.conn(ctx).PrepareContext(ctx, query)
-}
-
-func (c readConn) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
-	return c.conn(ctx).QueryContext(ctx, query, args...)
-}
-
-func (c readConn) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
-	return c.conn(ctx).QueryRowContext(ctx, query, args...)
+// in returns a copy of d whose reads run in tx, for the repositories' read methods that take a
+// transaction (their ...Tx variants): they run the method that reads outside transactions on a
+// repository over the copy.
+func (d *DB) in(tx uow.Tx) (*DB, error) {
+	sqlTx, err := txOf(tx)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{db: d.db, opts: d.opts, tx: sqlTx}, nil
 }
 
 // Timestamps are stored as Unix milliseconds (data-model §1.2).

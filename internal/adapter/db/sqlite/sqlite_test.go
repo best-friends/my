@@ -331,13 +331,6 @@ func TestUnitOfWorkContract(t *testing.T) {
 				return insertProbe(ctx, q, name)
 			},
 			Keys: func(ctx context.Context) ([]string, error) { return probeKeys(ctx, db) },
-			Has: func(ctx context.Context, key string) (bool, error) {
-				_, err := db.reader().GetUser(ctx, key)
-				if errors.Is(err, sql.ErrNoRows) {
-					return false, nil
-				}
-				return err == nil, err
-			},
 		}
 	})
 }

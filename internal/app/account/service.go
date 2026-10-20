@@ -534,7 +534,70 @@ func (s *Service) InstanceActor(ctx context.Context) (Actor, error) {
 }
 
 func (s *Service) actor(ctx context.Context, a account.Account) (Actor, error) {
-	repo := s.d.Repository
+	return actorOf(ctx, s.d.Repository, a)
+}
+
+// actorReads are the reads of an actor's parts: those of the repository outside transactions,
+// or those of txReads in a transaction.
+type actorReads interface {
+	FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error)
+	FindHandleOf(ctx context.Context, accountID string) (account.Handle, error)
+	FindCurrentProfile(ctx context.Context, accountID string) (account.ProfileRevision, error)
+	ListKeys(ctx context.Context, accountID string) ([]account.Key, error)
+	FindLifecycleState(ctx context.Context, accountID string) (account.LifecycleState, error)
+}
+
+// txReads reads an actor's parts in a transaction.
+type txReads struct {
+	repo Repository
+	tx   uow.Tx
+}
+
+func (r txReads) FindLocalAccount(ctx context.Context, accountID string) (account.LocalAccount, error) {
+	return r.repo.FindLocalAccountTx(ctx, r.tx, accountID)
+}
+
+func (r txReads) FindHandleOf(ctx context.Context, accountID string) (account.Handle, error) {
+	return r.repo.FindHandleOfTx(ctx, r.tx, accountID)
+}
+
+func (r txReads) FindCurrentProfile(ctx context.Context, accountID string) (account.ProfileRevision, error) {
+	return r.repo.FindCurrentProfileTx(ctx, r.tx, accountID)
+}
+
+func (r txReads) ListKeys(ctx context.Context, accountID string) ([]account.Key, error) {
+	return r.repo.ListKeysTx(ctx, r.tx, accountID)
+}
+
+func (r txReads) FindLifecycleState(ctx context.Context, accountID string) (account.LifecycleState, error) {
+	return r.repo.FindLifecycleStateTx(ctx, r.tx, accountID)
+}
+
+// FindByIDTx returns an account with its parts as FindByID does, read in tx with what tx has
+// written (the data of the webhook messages, ADR-0060).
+func (s *Service) FindByIDTx(ctx context.Context, tx uow.Tx, id string) (Actor, error) {
+	a, err := s.d.Repository.FindAccountTx(ctx, tx, id)
+	if err != nil {
+		return Actor{}, err
+	}
+	return actorOf(ctx, txReads{repo: s.d.Repository, tx: tx}, a)
+}
+
+// LocalAccountOfUserTx returns the local account of a user as LocalAccountOfUser does, read in tx.
+func (s *Service) LocalAccountOfUserTx(ctx context.Context, tx uow.Tx, userID string) (account.LocalAccount, error) {
+	return s.d.Repository.FindLocalAccountByUserTx(ctx, tx, userID)
+}
+
+// RemoteProfileURLsTx returns the profile pages of remote accounts as RemoteProfileURLs does,
+// read in tx.
+func (s *Service) RemoteProfileURLsTx(ctx context.Context, tx uow.Tx, accountIDs []string) (map[string]string, error) {
+	if len(accountIDs) == 0 {
+		return map[string]string{}, nil
+	}
+	return s.d.Repository.ListRemoteProfileURLsTx(ctx, tx, accountIDs)
+}
+
+func actorOf(ctx context.Context, repo actorReads, a account.Account) (Actor, error) {
 	out := Actor{Account: a, Lifecycle: account.InitialLifecycleState(a.ID)}
 	if a.IsLocal() && a.ActorType != account.ActorApplication {
 		la, err := repo.FindLocalAccount(ctx, a.ID)

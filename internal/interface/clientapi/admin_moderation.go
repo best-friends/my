@@ -219,6 +219,11 @@ func (s *Server) LiftDomainAction(ctx context.Context, req LiftDomainActionReque
 // newAdminReports presents reports with their reporters, targets, and assignees, reading each
 // account once. An account that is gone is left out of the report.
 func (s *Server) newAdminReports(ctx context.Context, recs []moderation.ReportRecord) ([]AdminReport, error) {
+	return s.newAdminReportsWith(ctx, s.reads(), recs)
+}
+
+// newAdminReportsWith is newAdminReports through reads.
+func (s *Server) newAdminReportsWith(ctx context.Context, reads presentReads, recs []moderation.ReportRecord) ([]AdminReport, error) {
 	actors := map[string]appaccount.Actor{}
 	var order []appaccount.Actor
 	assignees := map[string]string{}
@@ -227,7 +232,7 @@ func (s *Server) newAdminReports(ctx context.Context, recs []moderation.ReportRe
 			if _, ok := actors[id]; ok {
 				continue
 			}
-			a, err := s.o.Accounts.FindByID(ctx, id)
+			a, err := reads.FindByID(ctx, id)
 			if errors.Is(err, appaccount.ErrNotFound) {
 				continue
 			}
@@ -237,18 +242,18 @@ func (s *Server) newAdminReports(ctx context.Context, recs []moderation.ReportRe
 			actors[id] = a
 			order = append(order, a)
 		}
-		if u := rec.Status.AssigneeUserID; u != "" && s.o.UserAccounts != nil {
+		if u := rec.Status.AssigneeUserID; u != "" {
 			if _, ok := assignees[u]; ok {
 				continue
 			}
-			la, err := s.o.UserAccounts.LocalAccountOfUser(ctx, u)
+			la, err := reads.LocalAccountOfUser(ctx, u)
 			if err != nil && !errors.Is(err, appaccount.ErrNotFound) {
 				return nil, fmt.Errorf("clientapi: the account of user %s: %w", u, err)
 			}
 			assignees[u] = la.AccountID
 		}
 	}
-	presented, err := s.newAccounts(ctx, order)
+	presented, err := s.newAccountsWith(ctx, reads, order)
 	if err != nil {
 		return nil, err
 	}

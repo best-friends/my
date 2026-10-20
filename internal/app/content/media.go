@@ -420,6 +420,69 @@ type ImageRef struct {
 // repository call and the remote files in another, so that presenting a page of accounts reads
 // their images together instead of one by one.
 func (s *MediaService) Images(ctx context.Context, refs []ImageRef) (map[ImageRef]Image, error) {
+	return s.images(ctx, s.reads(), refs)
+}
+
+// ImagesTx returns the images of refs as Images does, read in tx with what tx has written (the
+// data of the webhook messages, ADR-0060).
+func (s *MediaService) ImagesTx(ctx context.Context, tx uow.Tx, refs []ImageRef) (map[ImageRef]Image, error) {
+	return s.images(ctx, s.readsIn(tx), refs)
+}
+
+// mediaReads are the reads that presenting images and custom emoji needs: those of the
+// repository and the media policy outside transactions (MediaService.reads), or in one
+// (MediaService.readsIn).
+type mediaReads interface {
+	ListReadyVariants(ctx context.Context, ids []string) ([]FileVariant, error)
+	ListRemoteMedia(ctx context.Context, ids []string) ([]content.RemoteMedia, error)
+	ListCurrentCustomEmojis(ctx context.Context, ids []string) ([]content.CurrentCustomEmoji, error)
+	RejectsMedia(ctx context.Context, domain string) (bool, error)
+}
+
+type repositoryReads struct{ s *MediaService }
+
+func (r repositoryReads) ListReadyVariants(ctx context.Context, ids []string) ([]FileVariant, error) {
+	return r.s.d.Repository.ListReadyVariants(ctx, ids)
+}
+
+func (r repositoryReads) ListRemoteMedia(ctx context.Context, ids []string) ([]content.RemoteMedia, error) {
+	return r.s.d.Repository.ListRemoteMedia(ctx, ids)
+}
+
+func (r repositoryReads) ListCurrentCustomEmojis(ctx context.Context, ids []string) ([]content.CurrentCustomEmoji, error) {
+	return r.s.d.Repository.ListCurrentCustomEmojis(ctx, ids)
+}
+
+func (r repositoryReads) RejectsMedia(ctx context.Context, domain string) (bool, error) {
+	return r.s.d.Proxy.d.Policy.RejectsMedia(ctx, domain)
+}
+
+type txMediaReads struct {
+	s  *MediaService
+	tx uow.Tx
+}
+
+func (r txMediaReads) ListReadyVariants(ctx context.Context, ids []string) ([]FileVariant, error) {
+	return r.s.d.Repository.ListReadyVariantsTx(ctx, r.tx, ids)
+}
+
+func (r txMediaReads) ListRemoteMedia(ctx context.Context, ids []string) ([]content.RemoteMedia, error) {
+	return r.s.d.Repository.ListRemoteMediaTx(ctx, r.tx, ids)
+}
+
+func (r txMediaReads) ListCurrentCustomEmojis(ctx context.Context, ids []string) ([]content.CurrentCustomEmoji, error) {
+	return r.s.d.Repository.ListCurrentCustomEmojisTx(ctx, r.tx, ids)
+}
+
+func (r txMediaReads) RejectsMedia(ctx context.Context, domain string) (bool, error) {
+	return r.s.d.Proxy.d.Policy.RejectsMediaTx(ctx, r.tx, domain)
+}
+
+func (s *MediaService) reads() mediaReads { return repositoryReads{s} }
+
+func (s *MediaService) readsIn(tx uow.Tx) mediaReads { return txMediaReads{s: s, tx: tx} }
+
+func (s *MediaService) images(ctx context.Context, reads mediaReads, refs []ImageRef) (map[ImageRef]Image, error) {
 	out := map[ImageRef]Image{}
 	ids := make([]string, 0, len(refs))
 	for _, ref := range refs {
@@ -430,7 +493,7 @@ func (s *MediaService) Images(ctx context.Context, refs []ImageRef) (map[ImageRe
 	if len(ids) == 0 {
 		return out, nil
 	}
-	variants, err := s.d.Repository.ListReadyVariants(ctx, ids)
+	variants, err := reads.ListReadyVariants(ctx, ids)
 	if err != nil {
 		return nil, fmt.Errorf("content: the images %v: %w", ids, err)
 	}
@@ -453,7 +516,7 @@ func (s *MediaService) Images(ctx context.Context, refs []ImageRef) (map[ImageRe
 	if len(rest) == 0 || s.d.Proxy == nil {
 		return out, nil
 	}
-	remote, err := s.d.Repository.ListRemoteMedia(ctx, rest)
+	remote, err := reads.ListRemoteMedia(ctx, rest)
 	if err != nil {
 		return nil, fmt.Errorf("content: the remote images %v: %w", rest, err)
 	}

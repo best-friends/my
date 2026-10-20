@@ -24,6 +24,8 @@ var ErrEmailTaken = errors.New("identity: email address is taken")
 // Methods that take a uow.Tx run inside that transaction; the others read committed data outside
 // any transaction. Lookups that find nothing return an error wrapping ErrNotFound.
 type Repository interface {
+	TxReads
+
 	InsertUser(ctx context.Context, tx uow.Tx, u identity.User) error
 	InsertPasswordCredential(ctx context.Context, tx uow.Tx, c identity.PasswordCredential) error
 	// EnsureRole inserts a role unless one with the same key exists, adds the permissions it
@@ -89,4 +91,13 @@ type TOTPRepository interface {
 	UseTOTPRecoveryCode(ctx context.Context, tx uow.Tx, u identity.TOTPRecoveryCodeUse) (bool, error)
 	// CountUnusedTOTPRecoveryCodes returns how many recovery codes of an enrollment are unused.
 	CountUnusedTOTPRecoveryCodes(ctx context.Context, enrollmentID string) (int, error)
+}
+
+// TxReads are the reads of Repository that run in a transaction tx, with what tx has written, for the
+// use cases that present what an event's transaction wrote (the data of the webhook messages,
+// ADR-0060). Each one reads as the method of the same name without Tx does.
+type TxReads interface {
+	FindRegistrationApplicationTx(ctx context.Context, tx uow.Tx, userID string) (identity.RegistrationApplication, error)
+	FindRegistrationStateTx(ctx context.Context, tx uow.Tx, userID string) (identity.UserRegistrationState, error)
+	FindPrimaryEmailTx(ctx context.Context, tx uow.Tx, userID string) (identity.EmailAddress, bool, error)
 }

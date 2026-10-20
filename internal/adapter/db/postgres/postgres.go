@@ -25,6 +25,8 @@ import (
 type DB struct {
 	pool *pgxpool.Pool
 	opts uow.Options
+	// tx is the transaction that the reads of a copy made by in run in, nil for the pool.
+	tx pgx.Tx
 }
 
 var _ uow.UnitOfWork = (*DB)(nil)

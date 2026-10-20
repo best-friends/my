@@ -54,6 +54,7 @@ func CustomEmojiRepositoryContract(t *testing.T, newHarness CustomEmojiFactory) 
 		{"OnlyEnablesAndDisablesRemoteEmoji", emojiLimitsRemote},
 		{"ReplacesRemoteImagesByURL", emojiReplacesRemoteImagesByURL},
 		{"ListsAndFiltersEmoji", emojiLists},
+		{"ReadsAnEmojiInATransaction", emojiReadsInTransaction},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newEmojiEnv(t, newHarness)) })
@@ -69,12 +70,13 @@ const (
 )
 
 type emojiEnv struct {
-	h       CustomEmojiHarness
-	clock   *Clock
-	ids     *IDGenerator
-	blobs   *MemoryBlobStore
-	media   *appcontent.MediaService
-	service *appcontent.CustomEmojiService
+	h          CustomEmojiHarness
+	projectors *uow.Projectors
+	clock      *Clock
+	ids        *IDGenerator
+	blobs      *MemoryBlobStore
+	media      *appcontent.MediaService
+	service    *appcontent.CustomEmojiService
 
 	mu     sync.Mutex
 	events []appcontent.CustomEmojiAdministered
@@ -86,7 +88,7 @@ func newEmojiEnv(t *testing.T, newHarness CustomEmojiFactory) *emojiEnv {
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	appcontent.RegisterProjectors(projectors, h.Statuses)
 	clock := NewClock(time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
-	e := &emojiEnv{h: h, clock: clock, ids: NewIDGenerator(clock), blobs: NewMemoryBlobStore(clock)}
+	e := &emojiEnv{h: h, projectors: projectors, clock: clock, ids: NewIDGenerator(clock), blobs: NewMemoryBlobStore(clock)}
 	// The events are kept once their transaction commits, as the audit log keeps its entries.
 	projectors.OnCommit(appcontent.EventCustomEmojiAdministered, func(_ context.Context, ev uow.Event) {
 		e.mu.Lock()

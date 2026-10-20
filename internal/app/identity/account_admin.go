@@ -80,6 +80,8 @@ func (e *AccountSearchError) Error() string { return "identity: invalid account 
 // implements it.
 type AccountRestrictions interface {
 	OwnRestrictions(ctx context.Context, accountID string) ([]appmoderation.Restriction, error)
+	// OwnRestrictionsTx answers as OwnRestrictions does, read in tx with what tx has written.
+	OwnRestrictionsTx(ctx context.Context, tx uow.Tx, accountID string) ([]appmoderation.Restriction, error)
 	RestrictedAccounts(ctx context.Context, r appmoderation.Restriction, before string, limit int) ([]string, error)
 }
 

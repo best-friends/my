@@ -101,6 +101,8 @@ func AccountRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"RevokesTokens", oauthRevokesTokens},
 		{"EndsTheBrowserSessionOnWebSignOut", oauthWebSignOutEndsTheBrowserSession},
 		{"IncrementalProjectionEqualsRebuild", accountProjectionEqualsRebuild},
+		{"ReadsAnAccountInATransaction", accountReadsInTransaction},
+		{"ReadsARegistrationInATransaction", registrationReadsInTransaction},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newAccountEnv(t, newHarness)) })

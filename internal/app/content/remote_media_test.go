@@ -18,6 +18,7 @@ import (
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/media"
+	"github.com/best-friends/my/internal/app/uow"
 	domain "github.com/best-friends/my/internal/domain/content"
 )
 
@@ -46,6 +47,10 @@ func (d domains) AccountDomain(_ context.Context, id string) (string, error) {
 type rejected map[string]bool
 
 func (r rejected) RejectsMedia(_ context.Context, domain string) (bool, error) { return r[domain], nil }
+
+func (r rejected) RejectsMediaTx(ctx context.Context, _ uow.Tx, domain string) (bool, error) {
+	return r.RejectsMedia(ctx, domain)
+}
 
 // fakeHTTP answers every request with the response of its URL, or with err. It enforces the
 // purpose's body limit as the real HTTPClient does.

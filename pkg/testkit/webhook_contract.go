@@ -77,41 +77,40 @@ type webhookEnv struct {
 	mu       sync.Mutex
 }
 
-// webhookPresenter presents every object as its kind and ID, and whether its context reads in
-// the transaction of the event.
+// webhookPresenter presents every object as its kind and ID, and whether it is given the
+// transaction of the event.
 type webhookPresenter struct{}
 
-func (webhookPresenter) present(ctx context.Context, kind, id string) (any, error) {
-	_, inTx := uow.ReadingTx(ctx)
-	return map[string]any{"kind": kind, "id": id, "in_transaction": inTx}, nil
+func (webhookPresenter) present(_ context.Context, tx uow.Tx, kind, id string) (any, error) {
+	return map[string]any{"kind": kind, "id": id, "in_transaction": tx != nil}, nil
 }
 
-func (p webhookPresenter) WebhookReport(ctx context.Context, id string) (any, error) {
-	return p.present(ctx, "report", id)
+func (p webhookPresenter) WebhookReport(ctx context.Context, tx uow.Tx, id string) (any, error) {
+	return p.present(ctx, tx, "report", id)
 }
 
-func (p webhookPresenter) WebhookRegistration(ctx context.Context, userID string) (any, error) {
-	return p.present(ctx, "registration", userID)
+func (p webhookPresenter) WebhookRegistration(ctx context.Context, tx uow.Tx, userID string) (any, error) {
+	return p.present(ctx, tx, "registration", userID)
 }
 
-func (p webhookPresenter) WebhookAccount(ctx context.Context, id string) (any, error) {
-	return p.present(ctx, "account", id)
+func (p webhookPresenter) WebhookAccount(ctx context.Context, tx uow.Tx, id string) (any, error) {
+	return p.present(ctx, tx, "account", id)
 }
 
-func (p webhookPresenter) WebhookAccountAction(ctx context.Context, id string) (any, error) {
-	return p.present(ctx, "account_action", id)
+func (p webhookPresenter) WebhookAccountAction(ctx context.Context, tx uow.Tx, id string) (any, error) {
+	return p.present(ctx, tx, "account_action", id)
 }
 
-func (p webhookPresenter) WebhookAppeal(ctx context.Context, id string) (any, error) {
-	return p.present(ctx, "appeal", id)
+func (p webhookPresenter) WebhookAppeal(ctx context.Context, tx uow.Tx, id string) (any, error) {
+	return p.present(ctx, tx, "appeal", id)
 }
 
-func (p webhookPresenter) WebhookDomainAction(ctx context.Context, id string) (any, error) {
-	return p.present(ctx, "domain_action", id)
+func (p webhookPresenter) WebhookDomainAction(ctx context.Context, tx uow.Tx, id string) (any, error) {
+	return p.present(ctx, tx, "domain_action", id)
 }
 
-func (p webhookPresenter) WebhookCustomEmoji(ctx context.Context, id string) (any, error) {
-	return p.present(ctx, "custom_emoji", id)
+func (p webhookPresenter) WebhookCustomEmoji(ctx context.Context, tx uow.Tx, id string) (any, error) {
+	return p.present(ctx, tx, "custom_emoji", id)
 }
 
 // webhookHTTP is a kernel.HTTPClient that answers with the next status code (200 when none is
