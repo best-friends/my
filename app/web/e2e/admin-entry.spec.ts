@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The navigation's admin entry with what awaits the moderators, and the notifications from the instance, in every
-// width × locale project (FR-712, ADR-0027, ADR-0039). From md the rail (and from lg the sidebar) has
-// Administration with the count; below md the tab bar's Menu button carries the count and its sheet has the
-// entry. The counts are in the accessible names and drawn as digits. The notifications of a moderator and of a
-// user whose account was acted on lead to the screens that follow them up. `vite preview` has no API, so each
+// The navigation's Moderation entry with what awaits the moderators, and the notifications from the instance, in
+// every width × locale project (FR-712, ADR-0027, ADR-0039, ADR-0058). From md the rail (and from lg the sidebar)
+// has Moderation with the count; below md the tab bar's Menu button carries the count and its sheet has the
+// entry. A moderator has no Administration entry. The counts are in the accessible names and drawn as digits.
+// The notifications of a moderator and of a user whose account was acted on lead to the screens that follow them
+// up. `vite preview` has no API, so each
 // test plays the server of a signed-in moderator with page.route; names change with the locale, so the structure
 // is checked by role, by count and by address.
 import type { Page, Route } from "@playwright/test";
@@ -106,15 +107,16 @@ function hasTabBar(page: Page): boolean {
 /** The count of 3 as the project's locale writes it. */
 const three = /3|٣/;
 
-test.describe("the admin entry", () => {
+test.describe("the moderation entry", () => {
   test.beforeEach(async ({ page }) => {
     await moderatorServer(page);
   });
 
-  test("names the pending count where the width shows the entry, and opens the administration page", async ({ page, makeAxeBuilder }) => {
+  test("names the pending count where the width shows the entry, has no Administration, and opens the moderation page", async ({ page, makeAxeBuilder }) => {
     await page.goto("/home");
     const nav = page.getByRole("navigation").first();
-    const entry = nav.locator('a[href="/admin"]');
+    const entry = nav.locator('a[href="/moderation"]');
+    await expect(nav.locator('a[href="/admin"]')).toHaveCount(0);
     if (hasTabBar(page)) {
       await expect(entry).toBeHidden();
       const menu = nav.getByRole("button").last();
@@ -122,7 +124,8 @@ test.describe("the admin entry", () => {
       await expect(menu.locator('[aria-hidden="true"]', { hasText: three })).toBeVisible();
       await menu.click();
       const sheet = page.getByRole("dialog");
-      const link = sheet.locator('a[href="/admin"]');
+      const link = sheet.locator('a[href="/moderation"]');
+      await expect(sheet.locator('a[href="/admin"]')).toHaveCount(0);
       await expect(link).toHaveAccessibleName(three);
       await expect(link.locator('[aria-hidden="true"]', { hasText: three })).toBeVisible();
       // The sheet fades and slides in: axe measures contrast once it has settled.
@@ -137,19 +140,31 @@ test.describe("the admin entry", () => {
       await entry.click();
     }
 
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(/\/moderation$/);
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toBeFocused();
-    // The registrations' link carries its own count in its name; the audit log has none.
+    // The reports' and the registrations' links carry their own counts in their names; the others have none.
     await expect(main).toMatchAriaSnapshot(`
       - heading [level=1]
       - list:
         - listitem:
+          - link /2|٢/:
+            - /url: /moderation/reports
+        - listitem:
           - link:
-            - /url: /admin/audit-log
+            - /url: /moderation/appeals
+        - listitem:
+          - link:
+            - /url: /moderation/accounts
         - listitem:
           - link /1|١/:
-            - /url: /admin/registrations
+            - /url: /moderation/registrations
+        - listitem:
+          - link:
+            - /url: /moderation/signup-blocks
+        - listitem:
+          - link:
+            - /url: /moderation/audit-log
     `);
     // On a phone the sheet fades out as the page opens.
     await expect(page.locator("[data-exiting]")).toHaveCount(0);
@@ -187,14 +202,14 @@ test.describe("the notifications from the instance", () => {
           - paragraph
           - time
           - link:
-            - /url: /admin/reports/${reportId}
+            - /url: /moderation/reports/${reportId}
         - article:
           - paragraph:
             - link:
               - /url: /@bob
           - time
           - link:
-            - /url: /admin/registrations
+            - /url: /moderation/registrations
         - article:
           - paragraph
           - time
@@ -208,10 +223,10 @@ test.describe("the notifications from the instance", () => {
     await expectNoHorizontalScroll(page);
 
     // From the keyboard: the sign-up's link opens the review of registrations.
-    const review = feed.getByRole("article").nth(3).locator('a[href="/admin/registrations"]');
+    const review = feed.getByRole("article").nth(3).locator('a[href="/moderation/registrations"]');
     await review.focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/admin\/registrations$/);
+    await expect(page).toHaveURL(/\/moderation\/registrations$/);
     await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeFocused();
   });
 });
