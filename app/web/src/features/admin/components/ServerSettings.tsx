@@ -342,6 +342,12 @@ function PoliciesForm() {
             </SelectItem>
           )}
         </Select>
+        <PolicyCheckbox
+          form={form}
+          setting="link_cards_enabled"
+          label={t("client:admin.settings.federation.link_cards")}
+          description={t("client:admin.settings.federation.link_cards.description")}
+        />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.domain_actions.title")}>
         <p className="text-fg-muted">{t("client:admin.settings.domain_actions.description")}</p>

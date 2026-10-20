@@ -72,6 +72,13 @@ func TestMediaRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestLinkCardRepositoryContract(t *testing.T) {
+	testkit.LinkCardRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.LinkCardHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.LinkCardHarness{UnitOfWork: db, Cards: db.StatusRepository(), Media: db.MediaRepository()}
+	})
+}
+
 func TestCustomEmojiRepositoryContract(t *testing.T) {
 	testkit.CustomEmojiRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.CustomEmojiHarness {
 		db, _ := newTestDB(t, "", opts)
@@ -258,6 +265,7 @@ func TestRemoteStatusContract(t *testing.T) {
 			Inbox:          db.FederationRepository(),
 			Federation:     db.FederationRepository(),
 			Instances:      db.FederationRepository(),
+			Pins:           db.InteractionRepository(),
 		}
 	})
 }

@@ -11,6 +11,9 @@ import { forPost, type LikeSlot, updateCachedStatuses, withLikeSlot, withLikeSlo
 /** A status (post or boost), as the client API returns it. */
 export type Status = components["schemas"]["Status"];
 
+/** The card of the first link in a status (ADR-0062). */
+export type LinkCard = components["schemas"]["LinkCard"];
+
 /** One attachment of a status. */
 export type MediaAttachment = components["schemas"]["MediaAttachment"];
 

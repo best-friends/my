@@ -117,6 +117,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
       <Outbox items={form.outbox} onRetry={form.retry} onEdit={form.editOutbox} canEdit={form.canEditOutbox} onDiscard={form.discard} />
       <Dialog
         role="alertdialog"
+        closeLabel={null}
         title={t("client:compose.missing_description.title")}
         isOpen={form.confirmation.isOpen}
         onOpenChange={(isOpen) => {

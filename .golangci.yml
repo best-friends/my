@@ -95,6 +95,10 @@ linters:
             - github.com/best-friends/my/internal/i18n
             # NFKC normalization of hashtags (data-model §4.4, tags.name_normalized): pure-Go Unicode data, not an external resource.
             - golang.org/x/text/unicode/norm
+            # Reading the head of linked pages for link cards (ADR-0062 §2): a pure-Go HTML tokenizer and charset decoder, not an external resource.
+            - golang.org/x/net/html
+            # Cutting the values of link cards at grapheme cluster boundaries (ADR-0062 §2): pure-Go Unicode data, not an external resource.
+            - github.com/rivo/uniseg
         domain-graph:
           list-mode: strict
           files:

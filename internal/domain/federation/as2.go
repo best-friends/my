@@ -337,11 +337,14 @@ type Actor struct {
 	Discoverable              bool
 	// Indexable is Mastodon's toot:indexable: whether the actor's public posts may be indexed
 	// for search (ADR-0057).
-	Indexable  bool
-	PublicKeys []PublicKey
-	Fields     []Field
-	Emojis     []Emoji
-	Published  time.Time
+	Indexable bool
+	// AttributionDomains is Mastodon's toot:attributionDomains: the domains whose pages may
+	// name the actor as their fediverse:creator (ADR-0062 §5), lowercase.
+	AttributionDomains []string
+	PublicKeys         []PublicKey
+	Fields             []Field
+	Emojis             []Emoji
+	Published          time.Time
 }
 
 // Bot reports whether the actor is an automated account.

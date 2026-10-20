@@ -118,6 +118,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
       {remove !== null && (
         <Dialog
           role="alertdialog"
+          closeLabel={null}
           size="sm"
           title={t("client:status.delete.title")}
           isOpen={isConfirmingDelete}

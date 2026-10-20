@@ -362,7 +362,7 @@ function EditCustomEmoji({ emoji, actions, isPending }: RowActionProps) {
       <Button size="sm" isDisabled={isPending} aria-label={t("client:admin.custom_emojis.edit_emoji", { emoji: name })}>
         {t("client:admin.custom_emojis.edit")}
       </Button>
-      <Dialog title={t("client:admin.custom_emojis.edit.title", { emoji: name })} closeLabel={t("client:admin.custom_emojis.edit.close")} size="md">
+      <Dialog title={t("client:admin.custom_emojis.edit.title", { emoji: name })} closeLabel={t("client:admin.custom_emojis.edit.close")} isDismissable={false} size="md">
         {({ close }) => <EditCustomEmojiForm emoji={emoji} actions={actions} close={close} />}
       </Dialog>
     </DialogTrigger>
