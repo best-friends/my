@@ -285,6 +285,7 @@ async function moderatorServer(page: Page) {
     }
     if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
     if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, ...instanceNames] });
+    if (key === "GET /admin/theme") return json(route, adminTheme);
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
@@ -297,6 +298,18 @@ const instanceNames: Schemas["AdminInstanceText"][] = [
   { key: "name", locale: "ar", body: "مثال", revised_at: "2026-10-16T00:00:00Z" },
   { key: "name", locale: "en", body: "my example", revised_at: "2026-10-16T00:00:00Z" },
 ];
+
+/** The server's theme, as GET /admin/theme answers: a color, a radius, and a custom CSS. */
+const adminTheme: Schemas["AdminTheme"] = {
+  revision: "0192f0c4-7a8e-7000-8000-0000000000f1",
+  revised_at: "2026-10-20T00:00:00Z",
+  stylesheet_url: "https://my.example/theme/0192f0c4-7a8e-7000-8000-0000000000f1.css",
+  tokens: [
+    { token: "color-surface", light: "#fdfdf6", dark: "#05070d" },
+    { token: "radius-md", value: "3px" },
+  ],
+  custom_css: ".brand { font-weight: 600; }",
+};
 
 /**
  * Every admin screen, by the name of its route file in src/routes, with an address that opens it and a text of
@@ -320,6 +333,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
+  "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },
 };
 
 test("the suite lists every admin route", () => {
