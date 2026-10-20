@@ -146,6 +146,29 @@ func (q *Queries) DeleteDeadJob(ctx context.Context, id string) (int64, error) {
 	return result.RowsAffected(), nil
 }
 
+const deleteDeadJobsBefore = `-- name: DeleteDeadJobsBefore :execrows
+DELETE FROM dead_jobs
+WHERE id IN (
+  SELECT d.id FROM dead_jobs AS d WHERE d.failed_at < $1::timestamptz
+  ORDER BY d.failed_at, d.id LIMIT $2
+)
+`
+
+type DeleteDeadJobsBeforeParams struct {
+	FailedBefore time.Time
+	BatchLimit   int32
+}
+
+// DeleteDeadJobsBefore removes at most @batch_limit dead jobs that failed before @failed_before,
+// the oldest first.
+func (q *Queries) DeleteDeadJobsBefore(ctx context.Context, arg DeleteDeadJobsBeforeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteDeadJobsBefore, arg.FailedBefore, arg.BatchLimit)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteOutboxEvent = `-- name: DeleteOutboxEvent :exec
 DELETE FROM outbox_events WHERE id = $1
 `

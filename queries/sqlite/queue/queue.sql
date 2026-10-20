@@ -64,6 +64,15 @@ ON CONFLICT (idempotency_key) DO NOTHING;
 -- name: DeleteDeadJob :execrows
 DELETE FROM dead_jobs WHERE id = ?;
 
+-- DeleteDeadJobsBefore removes at most @batch_limit dead jobs that failed before @failed_before,
+-- the oldest first.
+-- name: DeleteDeadJobsBefore :execrows
+DELETE FROM dead_jobs
+WHERE id IN (
+  SELECT d.id FROM dead_jobs AS d WHERE d.failed_at < CAST(sqlc.arg(failed_before) AS INTEGER)
+  ORDER BY d.failed_at, d.id LIMIT sqlc.arg(batch_limit)
+);
+
 -- name: InsertOutboxEvent :exec
 INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, run_at, created_at)
 VALUES (?, ?, ?, ?, ?, ?, ?);

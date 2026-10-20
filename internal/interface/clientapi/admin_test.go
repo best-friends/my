@@ -5,6 +5,7 @@ package clientapi_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -114,6 +115,10 @@ func (f *fakeDeadJobs) RequeueDeadJob(_ context.Context, id string) error {
 	f.enqueued = append(f.enqueued, f.dead[i])
 	f.dead = slices.Delete(f.dead, i, i+1)
 	return nil
+}
+
+func (f *fakeDeadJobs) DeleteDeadJobsBefore(context.Context, time.Time, int) (int64, error) {
+	return 0, errors.New("fakeDeadJobs: DeleteDeadJobsBefore is not used by the admin API")
 }
 
 var adminNow = time.Date(2026, 10, 17, 9, 0, 0, 0, time.UTC)

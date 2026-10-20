@@ -210,6 +210,14 @@ func (postgresStore) deleteDead(ctx context.Context, tx uow.Tx, id string) (int6
 	return q.DeleteDeadJob(ctx, id)
 }
 
+func (postgresStore) deleteDeadBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error) {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return 0, err
+	}
+	return q.DeleteDeadJobsBefore(ctx, postgresqueue.DeleteDeadJobsBeforeParams{FailedBefore: before, BatchLimit: int32Of(limit)})
+}
+
 func (postgresStore) insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) error {
 	q, err := postgresQueries(tx)
 	if err != nil {

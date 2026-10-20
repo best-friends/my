@@ -1084,6 +1084,8 @@ flowchart LR
 - `outbox_events` は投入先のキューに渡す値（`run_at` を含む）をすべて持ち、リレーがそのまま `JobQueue.Enqueue` に渡します。
 - `jobs` は未完了のジョブだけを持ちます。完了したジョブは削除し、恒久的に失敗したジョブは `dead_jobs` に移します。
   そのため `jobs (idempotency_key)` の一意制約は「未完了のジョブの間での一意」を表します。
+- `dead_jobs` は管理 API から再実行するまで残り、`failed_at` から設定 `dead_job_retention`（既定 30 日）を過ぎた行を 1 時間ごとの消去ジョブ `queue.purge_dead_jobs` が
+  `DeadJobs.DeleteDeadJobsBefore` で古い順に、1 回 1,000 件・20 回まで消します（FR-803）。続きは次の回が消します。
 - `kv_entries` は `KeyValueStore` ポートの値です。`expires_at` を過ぎた行は無いものとして扱い、1 時間ごとの消去ジョブ `kv.cleanup` が `DeleteExpired` で物理削除します。
   `DeleteExpired` は 1 回（1 トランザクション）で消す件数に上限を取り、ジョブは上限の回数まで繰り返して、残りを次の回に回します（FR-803）。
   カウンタ（`IncrBy`、レート制限）は値を 10 進の文字列で持ち、1 文の upsert で加算します。

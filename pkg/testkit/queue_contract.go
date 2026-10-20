@@ -59,7 +59,8 @@ func FixedRandom(v float64) func() float64 { return func() float64 { return v } 
 // contract, driven by queue.PullRunner: due jobs run in RunAt order and delayed jobs not
 // before RunAt; idempotency keys deduplicate pending jobs; failed runs are retried with
 // exponential backoff with jitter or after the requested delay; jobs that fail for good or
-// use up their attempts become dead jobs, which are listed in pages and can be requeued; a job whose worker stopped
+// use up their attempts become dead jobs, which are listed in pages, can be requeued, and are
+// deleted, the oldest first in bounded batches, once they failed before a given time; a job whose worker stopped
 // is claimed again once its lease expires (at-least-once), and the stale worker's result is
 // dropped; concurrent workers run each job once; jobs of one ordering key run one at a time,
 // in enqueue order, even across retries, delays, and concurrent workers; and, where the harness enables them,
@@ -81,6 +82,7 @@ func QueueContract(t *testing.T, newHarness QueueFactory) {
 		{"RetriesJobsWithoutAHandler", queueRetriesUnknownTypes},
 		{"RequeuesDeadJobs", queueRequeuesDeadJobs},
 		{"PagesDeadJobsInFailureOrder", queuePagesDeadJobs},
+		{"DeletesDeadJobsPastTheirRetention", queueDeletesOldDeadJobs},
 		{"ReclaimsJobsOfAStoppedWorker", queueReclaimsAfterLeaseExpiry},
 		{"RunsEachJobOnceUnderConcurrentWorkers", queueConcurrentWorkers},
 		{"LeasesOneJobPerOrderingKeyAtATime", queueLeasesOnePerOrderingKey},
@@ -479,6 +481,53 @@ func queuePagesDeadJobs(t *testing.T, newHarness QueueFactory) {
 	}
 	if none, err := f.h.DeadJobs.ListDeadJobs(t.Context(), queue.DeadJobPosition{}, 0); err != nil || len(none) != 0 {
 		t.Errorf("ListDeadJobs(limit 0) = %+v, %v; want none", none, err)
+	}
+}
+
+func queueDeletesOldDeadJobs(t *testing.T, newHarness QueueFactory) {
+	bug := queue.Fail(errors.New("bug"))
+	f := newQueueFixture(t, newHarness, bug, bug, bug, bug)
+	// Jobs a and b fail at contractStart, c a minute later, and d an hour later.
+	f.enqueue(probe(`{"N":"a"}`), probe(`{"N":"b"}`))
+	f.drain()
+	f.clock.Advance(time.Minute)
+	f.enqueue(probe(`{"N":"c"}`))
+	f.drain()
+	f.clock.Advance(time.Hour)
+	f.enqueue(probe(`{"N":"d"}`))
+	f.drain()
+	if d := f.dead(); len(d) != 4 {
+		t.Fatalf("dead jobs = %+v, want 4", d)
+	}
+	ctx := t.Context()
+	cutoff := contractStart.Add(time.Hour) // after a, b, and c; before d
+	left := func() []string {
+		var out []string
+		for _, d := range f.dead() {
+			out = append(out, payloadOf(t, queue.Job{Payload: d.Payload}))
+		}
+		slices.Sort(out)
+		return out
+	}
+	if n, err := f.h.DeadJobs.DeleteDeadJobsBefore(ctx, cutoff, 0); err != nil || n != 0 {
+		t.Fatalf("DeleteDeadJobsBefore(limit 0) = %d, %v; want 0", n, err)
+	}
+	// A batch takes the oldest failures first: a and b before c.
+	if n, err := f.h.DeadJobs.DeleteDeadJobsBefore(ctx, cutoff, 2); err != nil || n != 2 {
+		t.Fatalf("DeleteDeadJobsBefore(limit 2) = %d, %v; want 2", n, err)
+	}
+	if got := left(); !slices.Equal(got, []string{"c", "d"}) {
+		t.Fatalf("dead jobs after the first batch = %v, want [c d]", got)
+	}
+	if n, err := f.h.DeadJobs.DeleteDeadJobsBefore(ctx, cutoff, 10); err != nil || n != 1 {
+		t.Fatalf("DeleteDeadJobsBefore(limit 10) = %d, %v; want 1", n, err)
+	}
+	// A job that failed at the cutoff or later stays, and repeating deletes nothing.
+	if n, err := f.h.DeadJobs.DeleteDeadJobsBefore(ctx, contractStart.Add(time.Hour+time.Minute), 10); err != nil || n != 0 {
+		t.Fatalf("DeleteDeadJobsBefore(d's failure) = %d, %v; want 0", n, err)
+	}
+	if got := left(); !slices.Equal(got, []string{"d"}) {
+		t.Fatalf("dead jobs after the purge = %v, want [d]", got)
 	}
 }
 
