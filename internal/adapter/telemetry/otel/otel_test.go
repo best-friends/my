@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -75,6 +76,29 @@ func TestPrometheusExposition(t *testing.T) {
 	}
 	if err := m.Err(); err != nil {
 		t.Error(err)
+	}
+}
+
+// TestRuntimeMetrics checks the Go runtime metrics of ADR-0056 §1, which the Meter reports
+// without any declaration.
+func TestRuntimeMetrics(t *testing.T) {
+	m := newPrometheus(t)
+	runtime.GC()
+	out := scrape(t, m)
+	for _, want := range []string{
+		`go_memory_used_bytes{go_memory_type="stack"}`,
+		"\ngo_memory_allocated_bytes_total ",
+		"\ngo_memory_gc_goal_bytes ",
+		"\ngo_goroutine_count ",
+		"\ngo_processor_limit ",
+		"\ngo_config_gogc_percent ",
+		`go_schedule_duration_seconds_bucket{le="+Inf"}`,
+		`go_memory_gc_pause_duration_seconds_bucket{le="+Inf"}`,
+		"\ngo_memory_gc_cycles_total ",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("scrape lacks %s\n%s", want, out)
+		}
 	}
 }
 

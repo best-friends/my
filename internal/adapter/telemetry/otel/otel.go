@@ -6,6 +6,11 @@
 // OTLP/HTTP to a collector (metrics_exporter = otlp), configured by the standard OTEL_EXPORTER_OTLP_*
 // and OTEL_METRIC_EXPORT_* environment variables.
 //
+// Besides the instruments declared through kernel.Meter, the Meter reports the Go runtime
+// metrics of ADR-0056 §1 (go.memory.*, go.goroutine.count, go.processor.limit, go.config.gogc,
+// go.schedule.duration, and the GC cycles and pauses) from the OpenTelemetry contrib runtime
+// instrumentation and runtime/metrics.
+//
 // The resource carries service.name, service.version, and my.role, and the attributes of
 // OTEL_RESOURCE_ATTRIBUTES, through which a platform can add the instance's identifier
 // (ADR-0055 §6).
@@ -84,11 +89,15 @@ func New(ctx context.Context, opts Options) (*Meter, error) {
 	switch opts.Exporter {
 	case ExporterPrometheus:
 		reg := promclient.NewRegistry()
-		exp, err := promexporter.New(
+		popts := []promexporter.Option{
 			promexporter.WithRegisterer(reg),
 			promexporter.WithTranslationStrategy(otlptranslator.UnderscoreEscapingWithSuffixes),
 			promexporter.WithoutScopeInfo(),
-		)
+		}
+		for _, p := range runtimeProducers() {
+			popts = append(popts, promexporter.WithProducer(p))
+		}
+		exp, err := promexporter.New(popts...)
 		if err != nil {
 			return nil, fmt.Errorf("prometheus exporter: %w", err)
 		}
@@ -99,12 +108,20 @@ func New(ctx context.Context, opts Options) (*Meter, error) {
 		if err != nil {
 			return nil, fmt.Errorf("otlp exporter: %w", err)
 		}
-		reader = sdkmetric.NewPeriodicReader(exp)
+		var ropts []sdkmetric.PeriodicReaderOption
+		for _, p := range runtimeProducers() {
+			ropts = append(ropts, sdkmetric.WithProducer(p))
+		}
+		reader = sdkmetric.NewPeriodicReader(exp, ropts...)
 	default:
 		return nil, fmt.Errorf("metrics exporter %q is not an OpenTelemetry exporter", opts.Exporter)
 	}
 	m.provider = sdkmetric.NewMeterProvider(sdkmetric.WithResource(res), sdkmetric.WithReader(reader))
 	m.meter = m.provider.Meter("github.com/best-friends/my")
+	if err := startRuntime(m.provider); err != nil {
+		_ = m.provider.Shutdown(ctx)
+		return nil, fmt.Errorf("runtime metrics: %w", err)
+	}
 	return m, nil
 }
 

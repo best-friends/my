@@ -225,6 +225,7 @@ internal/
     valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
     mail/{none,smtp,ses}/
     telemetry/{none,otel,emf}/ # kernel.Meter の実装（ADR-0055）。OpenTelemetry と Prometheus のライブラリはここだけが import する
+    telemetry/sysmetrics/ # システムの指標の計器と、アダプタの境界で測るデコレーター（ADR-0056）
     captcha/siteverify/ # HumanVerifier の実装（Turnstile / hCaptcha / reCAPTCHA v2 のプリセット。ADR-0042）
     system/          # Clock / IDGenerator の本番実装（システム時計・UUIDv7）
     keymanager/local/ # KeyManager の実装（設定の KEK。KMS アダプタは後続）

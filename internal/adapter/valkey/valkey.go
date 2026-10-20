@@ -16,10 +16,17 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	valkeygo "github.com/valkey-io/valkey-go"
+
+	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
+	"github.com/best-friends/my/internal/app/kernel"
 )
+
+// AdapterName is the my.adapter label of the client's connections (ADR-0056 §1).
+const AdapterName = "valkey"
 
 // Client is a connection pool to the server; it is safe for concurrent use.
 type Client = valkeygo.Client
@@ -32,6 +39,8 @@ type Options struct {
 	// TLSCAFile is a PEM file of the certificate authorities that the server's TLS certificate
 	// chains to, for a managed service with a private CA; empty uses the system roots.
 	TLSCAFile string
+	// Meter counts the client's open connections and reconnects; nil counts nothing.
+	Meter kernel.Meter
 }
 
 // CheckURL reports whether raw is a URL that Open accepts. It does not connect.
@@ -75,6 +84,19 @@ func Open(ctx context.Context, opts Options) (Client, error) {
 	// The adapters read every value from the server; client-side caching would need CLIENT
 	// TRACKING, which some managed services do not offer.
 	opt.DisableCache = true
+	if conns := sysmetrics.NewConnCounter(opts.Meter, AdapterName); conns != nil {
+		dial := opt.DialCtxFn // set for unix:// URLs
+		if dial == nil {
+			dial = dialTCP
+		}
+		opt.DialCtxFn = func(ctx context.Context, dst string, d *net.Dialer, cfg *tls.Config) (net.Conn, error) {
+			c, err := dial(ctx, dst, d, cfg)
+			if err != nil {
+				return nil, err
+			}
+			return conns.Track(ctx, c), nil
+		}
+	}
 	c, err := valkeygo.NewClient(opt)
 	if err != nil {
 		return nil, fmt.Errorf("valkey: connect: %w", err)
@@ -84,6 +106,14 @@ func Open(ctx context.Context, opts Options) (Client, error) {
 		return nil, err
 	}
 	return c, nil
+}
+
+// dialTCP connects like valkey-go does without a DialCtxFn: over TLS when cfg is set.
+func dialTCP(ctx context.Context, dst string, d *net.Dialer, cfg *tls.Config) (net.Conn, error) {
+	if cfg != nil {
+		return (&tls.Dialer{NetDialer: d, Config: cfg}).DialContext(ctx, "tcp", dst)
+	}
+	return d.DialContext(ctx, "tcp", dst)
 }
 
 // Ping reports whether the server answers.

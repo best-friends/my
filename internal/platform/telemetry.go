@@ -14,6 +14,7 @@ import (
 	"github.com/best-friends/my/internal/adapter/telemetry/emf"
 	"github.com/best-friends/my/internal/adapter/telemetry/none"
 	"github.com/best-friends/my/internal/adapter/telemetry/otel"
+	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/kernel"
@@ -55,7 +56,18 @@ func (a *App) setUpMeter(ctx context.Context, cfg *config.Config, opts AppOption
 		return fmt.Errorf("metrics_exporter %q is not implemented yet", cfg.MetricsExporter)
 	}
 	a.http = newHTTPMetrics(a.Meter)
+	a.readinessFailures = a.Meter.Counter(ReadinessFailures)
+	sysmetrics.RegisterProcess(a.Meter, processStart)
 	return nil
+}
+
+// processStart is when the process started, as near as the platform knows it.
+var processStart = time.Now()
+
+// ReadinessFailures counts the readiness checks that failed (ADR-0056 §3): the check itself
+// never looks at a metric.
+var ReadinessFailures = kernel.Instrument{
+	Name: "my.readiness.failures", Unit: "{check}", Description: "Readiness checks that failed.",
 }
 
 // MetricsHandler returns the handler of the Prometheus scrape, or nil when metrics_exporter is
