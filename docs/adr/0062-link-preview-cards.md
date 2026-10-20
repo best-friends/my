@@ -8,7 +8,7 @@
 ## Context（背景・課題）
 
 投稿の本文にある URL の先のページから、題名・説明・画像を取り出して投稿の下にカードとして出す仕組みがない（決定者の指示: 「URL 書き込み時の OGP などのカード埋め込み、及びその取得系の実装」）。
-Mastodon・Misskey・Pleroma / Akkoma の利用者はこのカードを前提に URL を貼るので、M4（機能の完成度、[00-vision.md](../requirements/00-vision.md)）で扱う。要件は FR-115（[01-functional.md](../requirements/01-functional.md)）。
+Mastodon・Misskey・Pleroma / Akkoma の利用者はこのカードを前提に URL を貼るので、M4（機能の完成度、[00-vision.md](../requirements/00-vision.md)）で扱う。要件は FR-117（[01-functional.md](../requirements/01-functional.md)）。
 
 この ADR は **他所のページを取得して自サーバーの投稿にカードを出す** ことを扱う。逆向きの **自分のページ（`/@{acct}`、投稿）に OGP / X Card の meta を付けて他所にプレビューを出させる** ことは
 [ADR-0028](0028-html-shell-link-previews-and-pwa.md) が決めており、この ADR は変えない。コードでも両者を混ぜないよう、ADR-0028 の側は「プレビュー」（`content.Previews`、`internal/interface/web`）、
@@ -58,7 +58,7 @@ Mastodon・Misskey・Pleroma / Akkoma の利用者はこのカードを前提に
 
 **推奨案: 選択肢 1（投稿時にサーバーがジョブで取得し、URL ごとに共有する）。**
 取得は投稿と URL の数に比例し（判断基準 3）、閲覧者の IP は出ず（判断基準 2）、Mastodon と同じ見え方になる（判断基準 4）。
-選択肢 2 は閲覧のたびに API を呼ぶので、キャッシュが外れるたびに外部 HTTP が閲覧に比例し、タイムラインの表示がカードの取得を待つ。選択肢 3 は FR-115 を満たさない。
+選択肢 2 は閲覧のたびに API を呼ぶので、キャッシュが外れるたびに外部 HTTP が閲覧に比例し、タイムラインの表示がカードの取得を待つ。選択肢 3 は FR-117 を満たさない。
 選択肢 4 は、送信側が任意の題名と画像を任意の URL に付けられ、フィッシングに使えるので採らない。
 
 ### 1. 対象と契機
@@ -183,7 +183,7 @@ Web クライアントは、カード全体を `url` へのリンク（`rel="noo
 ## Consequences（影響）
 
 - 良い影響
-  - URL を貼った投稿が、Mastodon などと同じくカード付きで見え、FR-115 を満たす。
+  - URL を貼った投稿が、Mastodon などと同じくカード付きで見え、FR-117 を満たす。
   - 取得は投稿と URL の数に比例し、閲覧回数に比例しない。閲覧者の IP は第三者に出ない。
   - 外部 HTTP は既存の `kernel.HTTPClient`（`HTTPPurposeHTML` / `HTTPPurposeImage`）とメディアプロキシの上に乗り、新しい依存も新しいミドルウェアも要らない。
 - 悪い影響・トレードオフ
