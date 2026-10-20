@@ -65,6 +65,10 @@ type MediaRepository interface {
 	// IsCustomEmojiImage reports whether any revision of a custom emoji uses a media file as
 	// its image.
 	IsCustomEmojiImage(ctx context.Context, mediaID string) (bool, error)
+	// ListCurrentCustomEmojis returns each custom emoji with an ID in ids with its current
+	// image, ordered by ID; emoji without an image and unknown IDs are left out. It reads every
+	// emoji in one query, for the emoji of a page of statuses and accounts.
+	ListCurrentCustomEmojis(ctx context.Context, ids []string) ([]content.CurrentCustomEmoji, error)
 
 	FindMediaFile(ctx context.Context, id string) (content.MediaFile, error)
 	// FindRemoteMedia returns the remote subtype of a media file; an upload is not found.

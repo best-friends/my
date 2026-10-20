@@ -485,6 +485,29 @@ describe("a post of another server", () => {
     expect(within(article).getByText("No description", { selector: "span" })).toBeVisible();
   });
 
+  test("draws the custom emoji of its author's name, its content warning and its text, read as their shortcodes", async () => {
+    signedIn();
+    const blobcat = { shortcode: "blobcat", url: "https://my.example/media/proxy/e1/full", static_url: "https://my.example/media/proxy/e1/full" };
+    const withEmoji: Status = {
+      ...remote,
+      account: { ...remote.account, display_name: "Carol :blobcat:", emojis: [blobcat] },
+      spoiler_text: "Cats :blobcat:",
+      content: "<p>Hello :blobcat: and :unknown:</p>",
+      emojis: [blobcat],
+    };
+    serveThread(withEmoji);
+    const { user } = await renderApp({ path: `/@${remote.account.acct}/${remote.id}` });
+
+    const article = await screen.findByRole("article", { name: /^Opened post Carol :blobcat: @carol@remote\.example / });
+    expect(within(article).getByRole("link", { name: "Carol :blobcat: @carol@remote.example" })).toBeInTheDocument();
+    await user.click(within(article).getByRole("button", { name: "Show content", expanded: false }));
+    const emoji = within(article).getAllByRole("img", { name: ":blobcat:" });
+    // The name, the content warning, and the text; the unknown shortcode stays text.
+    expect(emoji).toHaveLength(3);
+    for (const image of emoji) expect(image).toHaveAttribute("src", blobcat.static_url);
+    expect(within(article).getByText(/and :unknown:/)).toBeVisible();
+  });
+
   test("is the only kind of post with a link to another server", async () => {
     serveThread();
     await renderApp({ path: `/@bob/${postId}` });

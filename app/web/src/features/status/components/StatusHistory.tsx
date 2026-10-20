@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ContentWarning, Link, MediaGrid, PostContent } from "@my/ui";
+import { ContentWarning, EmojiText, Link, MediaGrid, PostContent } from "@my/ui";
 import { useId } from "react";
 import { type PlainClientMessageKey, useLocale, useT } from "../../../lib/i18n";
 import { type RevisionChange, type RevisionView, type StatusHistoryView, useStatusHistory } from "../hooks/useStatusHistory";
@@ -59,7 +59,7 @@ function Revision({ revision, history }: RevisionProps) {
       : t("client:status.history.changes", {
           changes: new Intl.ListFormat(locale, { type: "conjunction" }).format(revision.changes.map((change) => t(changeLabels[change]))),
         });
-  const body = <PostContent html={revision.html} lang={history.lang} onLinkClick={history.onLinkClick} />;
+  const body = <PostContent html={revision.html} lang={history.lang} emojis={revision.emojis} onLinkClick={history.onLinkClick} />;
   const media =
     revision.media.length > 0 ? (
       <MediaGrid
@@ -86,7 +86,7 @@ function Revision({ revision, history }: RevisionProps) {
           {media}
         </>
       ) : (
-        <ContentWarning summary={revision.contentWarning} summaryLang={history.lang} toggleLabel={t("client:timeline.content_warning.toggle")}>
+        <ContentWarning summary={<EmojiText text={revision.contentWarning} emojis={revision.emojis} />} summaryLang={history.lang} toggleLabel={t("client:timeline.content_warning.toggle")}>
           {body}
           {media}
         </ContentWarning>

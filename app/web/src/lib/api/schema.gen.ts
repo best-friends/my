@@ -2442,6 +2442,12 @@ export interface components {
             /** @description The profile's metadata fields, in their order; empty when there are none. */
             fields: components["schemas"]["ProfileField"][];
             /**
+             * @description The custom emoji of the display name, the note, and the fields' names and values
+             *     (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+             *     image, and the rest as text.
+             */
+            emojis: components["schemas"]["CustomEmoji"][];
+            /**
              * Format: uri
              * @description The URL of the avatar image; omitted when the account has none, or its image is not
              *     processed yet or could not be processed. Clients show a placeholder instead.
@@ -2506,6 +2512,27 @@ export interface components {
             name: string;
             /** @description The field's value as sanitized HTML. */
             value: string;
+        };
+        /**
+         * @description A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+         *     An emoji that is disabled or deleted, or whose images come from a domain whose media the
+         *     instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+         *     `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+         *     otherwise.
+         */
+        CustomEmoji: {
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is.
+             */
+            url: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji; the same as `url` when no still version is served.
+             */
+            static_url: string;
         };
         /**
          * @description The viewer's relationship with an account. It never says whether the account blocks
@@ -2901,7 +2928,7 @@ export interface components {
          *
          *     In a timeline, a boost is a status of the booster with `boost` set to the boosted
          *     status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
-         *     `visibility` and `language` are those of the boosted status, its `content`,
+         *     `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `emojis` are empty, and its counts
          *     `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
          *     are zero.
          */
@@ -2950,6 +2977,12 @@ export interface components {
             mentions: components["schemas"]["StatusMention"][];
             /** @description The hashtags of the text. */
             tags: components["schemas"]["StatusTag"][];
+            /**
+             * @description The custom emoji of the text, the content warning, and the poll's choices
+             *     (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+             *     image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+             */
+            emojis: components["schemas"]["CustomEmoji"][];
             /** @description The number of replies. */
             replies_count: number;
             /** @description The number of boosts. */
@@ -2987,6 +3020,8 @@ export interface components {
             created_at: string;
             /** @description The media the revision attaches, in order. */
             media_attachments: components["schemas"]["MediaAttachment"][];
+            /** @description The custom emoji of the revision's text and content warning, as `Status.emojis`. */
+            emojis: components["schemas"]["CustomEmoji"][];
         };
         /** @description The revisions of a status. */
         StatusHistory: {

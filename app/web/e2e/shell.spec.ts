@@ -157,6 +157,7 @@ test.describe("the sidebar of desktops", () => {
           display_name: displayName,
           note: "",
           fields: [],
+          emojis: [],
           url: "https://my.example/@alice",
           locked: false,
           bot: false,

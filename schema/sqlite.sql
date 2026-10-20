@@ -146,6 +146,14 @@ CREATE TABLE account_profile_fields (
   PRIMARY KEY (revision_id, position)
 ) STRICT;
 
+-- Event (child of a revision): a custom emoji of the profile's display name, note, or fields
+-- (ADR-0051). emoji_id is a custom_emojis row of the content module.
+CREATE TABLE account_profile_revision_emojis (
+  revision_id TEXT NOT NULL,
+  emoji_id TEXT NOT NULL,
+  PRIMARY KEY (revision_id, emoji_id)
+) STRICT;
+
 -- Projection: the current profile revision of each account.
 CREATE TABLE account_profile_heads (
   account_id TEXT NOT NULL PRIMARY KEY,

@@ -187,7 +187,7 @@ flowchart LR
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
-| `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
+| `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `media_focus`, `media_descriptions`, `remote_media_cache`, `favourites`, `bookmarks`, `status_pins` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_resends`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
@@ -377,6 +377,7 @@ flowchart LR
 | `account_profile_revisions` | イベント | `id`, `account_id`, `seq`, `display_name`, `note_html`, `locked`, `bot`, `discoverable`, `indexable`（`bool`）, `avatar_media_id` / `header_media_id`（NULL 可）, `revised_at` | 一意 `(account_id, seq)` |
 | `account_profile_revision_sources` | イベント（部分型） | `revision_id`（PK）, `note_source` | ローカルのみ。入力されたままの自己紹介 |
 | `account_profile_fields` | イベント（版の子） | `revision_id`, `position`（`int`）, `name`, `value_html` | PK `(revision_id, position)`（FR-006） |
+| `account_profile_revision_emojis` | イベント（版の子） | `revision_id`, `emoji_id` | PK `(revision_id, emoji_id)`。表示名・自己紹介・補足情報のカスタム絵文字（ADR-0051）。`emoji_id` は `content` の `custom_emojis` の行で、`content` の公開 API で得る |
 | `account_profile_field_sources` | イベント（部分型） | `revision_id`, `position`, `value_source` | PK `(revision_id, position)`。ローカルのみ。入力されたままの補足情報の値 |
 | `account_profile_field_verifications` | イベント | `revision_id`, `position`, `verified_at` | PK `(revision_id, position)`。`rel="me"` リンクの検証結果 |
 | `remote_profile_revisions` | イベント（部分型） | `revision_id`（PK）, `snapshot_id`, `html_policy_version`（`int`） | リモートのみ。版を作った取得と、`note_html` / `value_html` をサニタイズしたポリシーの版（ADR-0019 §2） |
@@ -392,8 +393,9 @@ flowchart LR
   表示する画像は、版が指すファイルの現在の処理結果（§4.4 メディア）の `full` 版です。ファイルの所有者がそのアカウントでないか、現在の処理結果が `ready` でなければ表示しません。
   アカウントの一覧・タイムライン・通知は、1 ページ分のアカウントの画像を `content` モジュールの公開 API（`MediaService.ImageURLs`）で 1 回の問い合わせにまとめて読みます。
 - リモートのプロフィールは、取得した文書から版を作ります（内容が変わったときだけ）。`summary` と補足情報の値は取り込み時にサニタイズして `note_html` / `value_html` に保存し、表示名と補足情報の名前はプレーンテキストにします（[federation.md §5](federation.md#5-リモート-html-のサニタイズ)）。
+  Actor の `tag` の `Emoji` は、投稿の絵文字と同じ規則（§4.4 のリモート投稿のコマンド）で `content` の公開 API（`Service.RecordRemoteEmojis`）が記録し、版の `account_profile_revision_emojis` に結びます。絵文字の組が変わったときも新しい版になります。
 - ローカルのアカウントとの関係が無いリモートのアカウント（どちらの向きのフォローも無く、保存した投稿も無い）は、1 日ごとの消去ジョブ `account.prune_remote_profiles` が、プロフィールの版を現在の 1 つに縮めます（[ADR-0034](../adr/0034-remote-content-scope-and-retention.md)）。
-  現在の版でない版と子テーブルの行（`account_profile_fields`、`remote_profile_revisions`）、`remote_account_heads` と現在の版のどちらも指さない `remote_account_snapshots` を消し、`accounts`・`remote_accounts`・鍵は残します。
+  現在の版でない版と子テーブルの行（`account_profile_fields`、`account_profile_revision_emojis`、`remote_profile_revisions`）、`remote_account_heads` と現在の版のどちらも指さない `remote_account_snapshots` を消し、`accounts`・`remote_accounts`・鍵は残します。
   関係の判定は `graph` と `content` の公開 API で行い（`account` はこの 2 つを import しないので、組み立てる側が渡す）、トランザクションの前に読みます。1 トランザクションで調べるのは 100 アカウントまでで、続きはカーソル（`account_id`）を持った次のジョブが読みます。
 
 #### 署名鍵
@@ -682,7 +684,9 @@ flowchart LR
   メンションは `Mention` のタグと宛先のローカルの Actor で、未知のリモートの Actor は 1 つの投稿につき 5 件・合計 10 秒まで取得します。ハッシュタグは `tags` を正規化した名前で引き（無ければ作り）、添付は 4 件まで `remote_media` に宣言値を記録します。
 - **編集**: `updated`（無ければ `published`）が現在版の `revised_at` より新しいときだけ、`seq + 1` の版を作ります。古い `Update` と同じ `Update` の再処理は版を作りません。
 - **削除**: `status_deletions`（`origin = remote`）を記録します。削除済みの投稿の `Delete` は何もしません。
-- **カスタム絵文字**: リモートの絵文字の `domain` は作者のホスト、`uri` は `Emoji` の `id` です。画像は作者を所有者とする `remote_media` で、記録した画像と異なる URL が届いたら新しい `custom_emoji_images` の行にします。
+- **カスタム絵文字**: リモートの絵文字は `(shortcode, domain)` で引き、`domain` は作者のホスト、`uri` は `Emoji` の `id` が `domain` と同じホストのときだけ記録します（ほかのサーバーの絵文字の行を奪わせないため。ADR-0051 §1）。
+  画像は作者を所有者とする `remote_media` で、記録した画像と異なる URL が届いたら新しい `custom_emoji_images` の行にします。shortcode が 128 文字を超える絵文字と、同じ文書の 2 つ目以降の同じ shortcode は読みません。
+  クライアント API は、1 ページ分の投稿とアカウントの絵文字を `content` の公開 API（`MediaService.CustomEmojis`）で 1 回にまとめて読み、現在の画像をメディアプロキシの URL で返します。`domain` か画像のホストに `media_fetch` の制限がある絵文字は返しません（FR-702）。
 - **投票**: `Question` の選択肢（20 件まで、プレーンテキスト）を版の `polls` / `poll_options` に、受信した票数を `poll_tally_observations` に記録します。リモートの票は取り消されないので、合計が最新の観測より少ない観測（遅れて届いた古い集計）と同じ票数の観測は記録しません。どの順で `Update` が届いても、集計は最も多い票数になります。
   観測を記録したらドメインイベント `content.poll_tally_observed` を発行し、同期 projector が `poll_tallies` を最新の観測に置き換えます。版を作らない `Update`（Mastodon が票数の変化で送る `Question` の `Update`）も、現在版の投票の観測を記録します。
 
@@ -1324,7 +1328,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-108 削除 | M | `status_deletions`, `deliveries` |
 | FR-109 編集と履歴 | S | `status_revisions`, `status_heads` |
 | FR-110 言語タグ | M | `status_revisions.language`, `status_revision_bodies` |
-| FR-111 カスタム絵文字 | S | `custom_emojis`, `custom_emoji_images`, `custom_emoji_settings`, `status_revision_emojis` |
+| FR-111 カスタム絵文字 | S | `custom_emojis`, `custom_emoji_images`, `custom_emoji_settings`, `status_revision_emojis`, `account_profile_revision_emojis` |
 | FR-112 投票 | C | `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tallies` |
 | FR-113 ブックマーク | S | `bookmarks` |
 | FR-201〜204 タイムライン | M | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |
