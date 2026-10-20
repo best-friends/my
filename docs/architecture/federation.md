@@ -184,7 +184,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `Add` / `Remove` | 主体の `featured` | ピン留めの一覧を取得し直す（C） |
 | `Move` ほか未知の型 | — | ログとメトリクスに残して完了にする（`Move` は v0 の非目標） |
 
-- ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、お気に入りと絵文字リアクションの `Like` / `Undo Like` を送ります（`Like` の枠の付け替えでは、外したものの `Undo` が新しい `Like` の前に記録される）。
+- ブースト・お気に入り・絵文字リアクションのハンドラは `federation.RegisterInteractionHandlers` です。`Announce` の対象の取り込みは投稿のハンドラ（`StatusHandlers`）と同じ規則で行います。コントラクトテストは `testkit.RemoteInteractionContract` で、主要実装のフィクスチャの `Announce` / `Like` / `EmojiReact` / `Undo` を受け取り、お気に入りと絵文字リアクションの `Like` / `Undo Like` を送ります（`Like` の枠の付け替えでは、外したものの `Undo` が新しい `Like` の前に記録され、同じ inbox へその順に届く。§7.2 の順序キー）。
 - リアクションの送信（ローカルの人のリアクション）はまだありません。リモートの人のリアクションはローカルの投稿へのものだけを記録し、何も送りません。
 
 ## 4. AS2 の正規化
@@ -362,6 +362,12 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 4. ドメインの状態で絞る: `federation` の制限（ドメイン単位の `suspend`、§11）があるドメインと、`instance_health` が `unavailable`（§7.3）のドメインには送りません（`Follow` と `Accept` / `Reject` は `unavailable` でも送る）。
 5. `deliveries` に `ON CONFLICT DO NOTHING` で挿入し、新しい行ごとに `federation.deliver` ジョブ（冪等キー `deliver:<delivery_id>`）を投入します。
 6. 残りがあれば、カーソルを進めた `federation.fanout` を投入します。
+
+`Like` / `Undo Like` のジョブは順序キー（ADR-0004 の `orderingKey`）を持ちます。
+同じローカルのアカウントから同じリモートの投稿への `Like` / `Undo Like` は、お気に入りでも絵文字リアクションでも（`Like` の枠、ADR-0052 §1）、`federation.fanout` が `like:<アカウントの ID>:<投稿の ID>`、`federation.deliver` がそれに `:<inbox>` を足したキーを持ちます。
+枠の付け替えは外したものの `Undo` と新しい `Like` を送るので、1 人 1 投稿に 1 リアクションの実装（Misskey）では、`Like` が `Undo` を追い越すと拒否されて何も残りません。
+展開がキーで直列化されるので後の活動の配送は前の活動の配送より後に投入され、配送は同じ inbox への前の配送がリトライ中でも完了か dead job になるまで待ちます。
+ほかの宛先の配送は待ちません。ほかの活動は順序キーを持たず、受信側が順序に依存しない処理をする前提です（§3.3）。
 
 ### 7.3 配送とリトライ
 

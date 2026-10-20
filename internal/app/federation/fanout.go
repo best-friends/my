@@ -177,13 +177,13 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 	var nextJob *queue.NewJob
 	switch {
 	case next != "":
-		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, SharedInboxes: p.SharedInboxes, Phase: string(phases[idx]), After: next}.job()
+		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, SharedInboxes: p.SharedInboxes, Phase: string(phases[idx]), After: next}.job(act)
 		if err != nil {
 			return err
 		}
 		nextJob = &j
 	case idx+1 < len(phases):
-		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, SharedInboxes: p.SharedInboxes, Phase: string(phases[idx+1])}.job()
+		j, err := fanOutPayload{OutboundActivityID: act.ID, RevisionID: p.RevisionID, FollowURI: p.FollowURI, SharedInboxes: p.SharedInboxes, Phase: string(phases[idx+1])}.job(act)
 		if err != nil {
 			return err
 		}
@@ -212,7 +212,7 @@ func (f *FanOut) Run(ctx context.Context, p fanOutPayload) error {
 			if !inserted {
 				continue
 			}
-			j, err := deliverJob(d.ID)
+			j, err := deliverJob(act, d)
 			if err != nil {
 				return err
 			}

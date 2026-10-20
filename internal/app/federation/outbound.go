@@ -42,7 +42,10 @@ type fanOutPayload struct {
 	After         string `json:"after,omitempty"`
 }
 
-func (p fanOutPayload) job() (queue.NewJob, error) {
+// job returns the JobFanOut of p, a batch of a. Its ordering key is that of a (orderingKey), so
+// that the fan-outs of the activities that must reach their inboxes in order run in the order
+// they were recorded.
+func (p fanOutPayload) job(a federation.OutboundActivity) (queue.NewJob, error) {
 	b, err := json.Marshal(p)
 	if err != nil {
 		return queue.NewJob{}, err
@@ -50,7 +53,25 @@ func (p fanOutPayload) job() (queue.NewJob, error) {
 	return queue.NewJob{
 		Type: JobFanOut, Payload: b,
 		IdempotencyKey: "fanout:" + p.OutboundActivityID + ":" + p.Phase + ":" + p.After,
+		OrderingKey:    orderingKey(a),
 	}, nil
+}
+
+// orderingKey returns the ordering key (ADR-0004) of the jobs that fan out and deliver a, ""
+// when a needs no order.
+//
+// The Like and Undo Like of one local account about one remote status share a key, whether they
+// come from a favourite or a reaction (the Like slot, ADR-0052 §1): switching the slot sends the
+// Undo of what was in it, then the new Like, and a server that keeps one reaction per account
+// and status (Misskey) refuses a Like that overtakes the Undo. Their fan-outs share the key, so
+// that the deliveries of the later activity are enqueued after those of the earlier one, and
+// each delivery adds its inbox to it (deliverJob), so that a delivery waits for the earlier one
+// to the same inbox while that one retries.
+func orderingKey(a federation.OutboundActivity) string {
+	if a.ObjectKind == federation.OutboundFavourite {
+		return "like:" + a.ActorAccountID + ":" + a.ObjectID
+	}
+	return ""
 }
 
 // deliveryPayload is the payload of JobDeliver.
@@ -58,12 +79,19 @@ type deliveryPayload struct {
 	DeliveryID string `json:"delivery_id"`
 }
 
-func deliverJob(deliveryID string) (queue.NewJob, error) {
-	b, err := json.Marshal(deliveryPayload{DeliveryID: deliveryID})
+// deliverJob returns the JobDeliver of d, a delivery of a. When a has an ordering key, the job's
+// is that key with the inbox of d: the deliveries to one inbox keep their order, and those to
+// other inboxes do not wait for them.
+func deliverJob(a federation.OutboundActivity, d federation.Delivery) (queue.NewJob, error) {
+	b, err := json.Marshal(deliveryPayload{DeliveryID: d.ID})
 	if err != nil {
 		return queue.NewJob{}, err
 	}
-	return queue.NewJob{Type: JobDeliver, Payload: b, IdempotencyKey: "deliver:" + deliveryID}, nil
+	j := queue.NewJob{Type: JobDeliver, Payload: b, IdempotencyKey: "deliver:" + d.ID}
+	if k := orderingKey(a); k != "" {
+		j.OrderingKey = k + ":" + string(d.InboxURL)
+	}
+	return j, nil
 }
 
 // RecorderDeps are the ports and settings of the outbound projectors.
@@ -232,7 +260,7 @@ func (r recorder) insert(ctx context.Context, tx uow.Tx, a federation.OutboundAc
 // enqueue enqueues the first fan-out batch of a in tx, with the payload p of a.
 func (r recorder) enqueue(ctx context.Context, tx uow.Tx, a federation.OutboundActivity, p fanOutPayload) error {
 	p.OutboundActivityID = a.ID
-	job, err := p.job()
+	job, err := p.job(a)
 	if err != nil {
 		return err
 	}
