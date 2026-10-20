@@ -1,6 +1,6 @@
 # ADR-0056: システムメトリクスの可観測性
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #646
@@ -79,9 +79,7 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
 
 ## Decision（決定）
 
-> 推奨案（Proposed）。決定者の承認で確定する。
-
-**分担は選択肢 2、スケールの契機は a** を推奨する。
+**分担は選択肢 2、スケールの契機は a** とする。
 
 ### 1. 分担: 基盤が測るもの、アプリが測るもの
 
@@ -98,7 +96,7 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
   （[Go のランタイム](https://opentelemetry.io/docs/specs/semconv/runtime/go-metrics/)、[DB](https://opentelemetry.io/docs/specs/semconv/database/database-metrics/)、
   [HTTP](https://opentelemetry.io/docs/specs/semconv/http/http-metrics/)）。独自の指標の接頭辞と命名は ADR-0055 に従う
 - ラベルに相手のホスト・ドメイン・URL・アカウント・Blob のキーを入れない（相手のドメインごとの配送の状態はサービスの指標と管理画面、NFR-OPS-3 で扱う）。
-  プロセスの識別（インスタンス ID・役割・版）は、ADR-0055 の仕組みでのリソースの属性に置く
+  プロセスの識別（インスタンス ID・役割・版）は、ラベルでなく ADR-0055 の仕組みがプロセスを識別する方法に従う
 - 計測するのはアダプタと `internal/platform` だけで、`internal/domain` と `internal/app` はシステムの指標を知らない。
   アダプタが計測の道具を受け取る方法（port か、OTel の `MeterProvider` を直接か）は ADR-0055 に従う
 - Go のランタイムの指標の実装は ADR-0055 のライブラリに合わせる。OpenTelemetry の Go SDK なら `go.opentelemetry.io/contrib/instrumentation/runtime`
@@ -114,12 +112,14 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
 | --- | --- | --- |
 | Cloud Run | CPU 使用率と同時リクエスト数（基盤の既定）。SSE のストリームは同時リクエスト数を占めるので、最大同時実行数はストリームの本数を見込んで決める（M6） | Cloud Tasks の push を受けるサービスとして、同じく CPU と同時リクエスト数。キューの配送の速さは Cloud Tasks のキューのレート制御で抑える |
 | Lambda | 基盤の同時実行（指標の設定なし）。予約同時実行数で上限を決める | SQS のイベントソース（基盤）。最大同時実行数で上限を決める |
-| ECS | `ECSServiceAverageCPUUtilization` の目標追跡。ALB を使うなら `ALBRequestCountPerTarget` を足してよい | pull のワーカーなので、キューの滞留（ADR-0055 のサービスの指標を CloudWatch に出したもの）を主にし、CPU を従にする |
-| Kubernetes | HPA の CPU 使用率（metrics-server。コンテナに CPU の requests を必ず書く） | KEDA でキューの滞留（DB キューなら PostgreSQL スケーラーのクエリか、ADR-0055 の指標を Prometheus スケーラーで）を主にし、CPU を従にする |
+| ECS | `ECSServiceAverageCPUUtilization` の目標追跡。ALB を使うなら `ALBRequestCountPerTarget` を足してよい | pull のワーカーなので、キューの滞留（サービスの指標、ADR-0055）を CloudWatch の指標にして主にし、CPU を従にする |
+| Kubernetes | HPA の CPU 使用率（metrics-server。コンテナに CPU の requests を必ず書く） | KEDA でキューの滞留（DB キューなら PostgreSQL スケーラーのクエリ、またはサービスの指標、ADR-0055）を主にし、CPU を従にする |
 | Docker Compose / SQLite | スケールしない（`role = all` の 1 台） | 同左 |
 
 - **メモリはスケールの契機にしない**。Go のヒープは負荷が下がってもすぐには返らず、台数を増やしても 1 台のメモリは減らない。Cloud Run はメモリでスケールしない。
-  代わりに `GOMEMLIMIT` をコンテナのメモリの上限の約 90% に設定し（デプロイのテンプレートの環境変数、M6）、`go.memory.used` と `go.memory.limit` の比で警報を出す
+  代わりに `go.memory.used` と `go.memory.limit` の比で警報を出す
+- **`GOMEMLIMIT` は運営者が設定できる項目の一つ** とする（Go のランタイムの環境変数）。アプリは cgroup のメモリの上限から自動では決めず、設定がなければ Go の既定（上限なし）のまま動く。
+  デプロイのテンプレート（M6）は設定できる値として置き、目安（コンテナのメモリの上限の約 90%）を添える
 - **DB の接続は台数の上限を決める**。web と worker の台数の最大 × プールの最大接続数が DB の接続の上限（Neon・Aurora・Cloud SQL・PgBouncer）を超えないように、
   デプロイのテンプレートで台数の最大を決める。`db.client.connection.pending_requests` と `wait_time` は、上限に当たっていることの警報に使う
 - `GOMAXPROCS` は Go 1.25 以降の既定（cgroup の CPU の上限に従う）に任せ、テンプレートで設定しない
@@ -132,7 +132,7 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
 - 指標を引き出す形（pull）のエンドポイントを置くかとその経路は ADR-0055 が決める。置くなら worker の役割でもヘルスチェックと同じ HTTP で返し、
   ヘルスチェックの経路とは別のパスにする
 
-### この推奨を覆す条件
+### この決定を見直す条件
 
 - ADR-0055 が計測の仕組みを持たない（基盤のログからの抽出だけにする）と決めた場合は、選択肢 1 に寄せ、プロセスの中の飽和はログの定期の出力で補う
 - Cloud Run のサービスが独自の指標でのスケールに対応した場合や、web の負荷が CPU に表れない（I/O 待ちが主で CPU が上がらないまま遅延が伸びる）ことが M6 の計測で分かった場合は、
@@ -149,7 +149,7 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
   - Docker Compose では台数が増えないので、指標は警報と容量の見積もりにしか使えない
   - 意味規約の Development の段階の名前を使うので、規約が変わると名前の変更（v0 の破壊的変更、ADR-0012）が要る
   - Lambda はメモリの指標が標準にないので、プロセスの指標を送る費用（ADR-0055 の経路）がかかる。送らない運営者は `REPORT` のログで補う
-- 後続で必要になる作業（ADR の承認後に Issue にする）
+- 後続で必要になる作業（Issue にする）
   - Go のランタイムとプロセスの指標の計測（ADR-0055 の仕組みの実装の後）
   - DB アダプタ（PostgreSQL・SQLite・libSQL）の接続のプールの指標
   - キュー・KV・ストリーム・Blob のアダプタの操作の指標と、常時の接続の数・再接続の数
@@ -165,7 +165,7 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
 - 悪い: DB の接続の待ち・goroutine・ヒープと上限・外向きの接続など、遅延の原因になるプロセスの中の詰まりが見えない。Docker Compose ではほぼ何も見えない。
   Lambda ではメモリが標準の指標にない
 
-### 選択肢 2: 基盤 + プロセスの中の飽和（推奨）
+### 選択肢 2: 基盤 + プロセスの中の飽和（採用）
 
 - 良い: 重ねて出さず、基盤から見えないものだけを足す。DB のプールの指標は既存の統計を読むだけで、クエリの経路に費用を足さない
 - 悪い: アダプタごとに計測を足す作業がある。ADR-0055 の仕組みに依存する
@@ -186,5 +186,4 @@ M6 のデプロイのテンプレートは、この ADR のスケールの設定
 - ADR-0055 が選ぶライブラリ（OpenTelemetry の Go SDK か Prometheus のクライアントか）に応じた、ランタイム・プロセスの指標のパッケージの版と依存（cgo なし、AGPL と両立するライセンス、公開から 2 週間以上）
 - Cloud Run で SSE のストリームを持つ web の最大同時実行数と CPU の目標の値（M6 の計測）
 - Lambda Insights（メモリの指標を出す拡張）の費用と、ADR-0055 の経路で送る費用のどちらが安いか（要検証）
-- `GOMEMLIMIT` をテンプレートの環境変数でなく、アプリが cgroup のメモリの上限から自動で決めるか（決定者の判断）
 - Cloud Run の worker を worker pool（CREMA）に移し、キューの滞留でスケールするか（Cloud Tasks の push をやめることになるので、ADR-0004 に関わる。要検証）
