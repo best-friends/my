@@ -193,6 +193,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 - スタイルは Vite のビルドの別のエントリ `app/web/src/server-pages.css` にある。Tailwind と `@my/ui/theme.css` を読み込み、テンプレートが使う少数のクラス（`page`・`card`・`field`・`hint`・`field-error`・`alert`・`notice`・`button` など）を
   トークンのユーティリティの `@apply` で定義する。テンプレートからクラスを集めないので、Tailwind はソースを走査しない（`source(none)`）。
 - `my serve` はビルドのマニフェストのキー `src/server-pages.css` からファイル名を引き（`web.Handler.Stylesheet`）、画面の `<link rel="stylesheet">` にする。SPA の外枠はこの CSS を読み込まない。
+  サーバーのテーマ（§9 の「サーバーのテーマ」）があれば、その後にテーマのスタイルシートも読む（`authpages.Options.ThemeStylesheet`）。この CSS はユーティリティを持たないので、テーマのトークンは `@apply` で作った規則と `theme.css` の基本の規則を通して効く。
   Vite の開発サーバーを使うときはビルドがないので、画面にスタイルは付かない。
 - CSP は `style-src 'self'` で、インラインのスタイルとスクリプトを置かない。
 - ダークモードは `prefers-color-scheme` に従う（トークンの `light-dark()` と `<meta name="color-scheme" content="light dark">`）。フォーカスのリングは `theme.css` の `:focus-visible`、
@@ -241,6 +242,11 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   `my serve` はビルドにこのファイルがあるときだけタグを書き（`internal/interface/web`）、Service Worker はほかのビルドのファイルと一緒にプリキャッシュする。
   属性を状態とし、`useTheme()` が `useSyncExternalStore` で読む。選ぶとすぐに属性と保存先を変え、ほかのタブでの選択も `storage` イベントで追う。保存できないとき（ストレージが使えない）もそのページには効く。
   選ぶ場所は「表示と投稿」の設定とメニューのシート（ADR-0039）で、どちらも同じ `ThemeRadioGroup`（APG の radio group。矢印キーで移ると選ぶ）にする。サーバーが描画する画面（§8）は JavaScript を使わないので、OS の設定に従う。
+- **サーバーのテーマ**（[ADR-0059](../adr/0059-design-tokens-and-instance-theme.md)、FR-605）: 管理者が保存したテーマ（トークンの上書きとカスタム CSS）は、`my serve` が版ごとの同じオリジンのスタイルシート `/theme/{版}.css`（`text/css`、`nosniff`、`immutable`）にして返す。
+  外枠はビルドのスタイルシートの後にこれを `<link rel="stylesheet">` で読むので、最初の描画からテーマが当たる。規則は `@layer` の外にあり、Tailwind の `@layer theme` の既定値とユーティリティに勝つ。CSP（`style-src 'self'`）は変えない。
+  外枠は閲覧者ごとに変わらず、ETag はテーマの版を含む。テーマがなければ `<link>` を出さない。
+  `<meta name="theme-color">` は `media="(prefers-color-scheme: light)"` と `dark` の 2 つで、値はテーマ（なければ既定）の `color-surface`。Web App Manifest の `theme_color` / `background_color` はそのライトの値にする。
+  `data-theme` で OS と違うテーマを選んだときのブラウザの枠の色は OS に従う。
 - **未保存の変更**: プロフィールの編集のように、まとめて保存するフォームは、保存していない変更があるまま別の画面へ移るとき（検索条件とハッシュだけの変化は除く）に、TanStack Router の `useBlocker`（`withResolver`）で遷移を止め、
   `ConfirmDialog`（`alertdialog`）で確かめる。フォーカスは「編集を続ける」から始まり、Esc もそれと同じく画面に残る。再読み込みとタブを閉じるときは、ブラウザ自身の確認（`beforeunload`）になる。
   変更は保存済みの値と比べて求めるので、手で元に戻した変更や保存した後は確かめない。設定を変えたとたんに保存する画面（表示と投稿）は対象にしない。
@@ -384,10 +390,11 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   - **ビルドの成果物**: ハッシュ付きのアセット・アイコンを事前にキャッシュする。Vite の `index.html`（`vite preview` 用の代わりの外枠）とサーバーが描画する画面の CSS は含めない。
   - **汎用の外枠**: `/` をビルドの版から作った revision で事前にキャッシュし、オフラインの外枠にする。外枠は訪問者ごとに変わらない（ADR-0028）。
   - **遷移**: ネットワークだけに問い合わせる（3 秒でタイムアウト）。失敗かタイムアウトのときだけ、事前にキャッシュした汎用の外枠を返す。遷移の応答は保存しないので、ある URL の外枠（OGP・404・`noindex`）を別の URL に返すことはない。
-  - **Service Worker が応えないパス**: `/api`・`/oauth`・`/auth`・`/.well-known`・`/nodeinfo`・`/ap`・`/media`・`/uploads`（サーバーの予約パス）と `/manifest.webmanifest` への遷移。
+  - **Service Worker が応えないパス**: `/api`・`/oauth`・`/auth`・`/.well-known`・`/nodeinfo`・`/ap`・`/media`・`/uploads`・`/theme`（サーバーの予約パス）と `/manifest.webmanifest` への遷移。
     サーバーが描画する画面（§8）はネットワークが要り、SPA の外枠に置き換えてはいけない。
   - **クライアント API**: `/api` への要求には応えない（ネットワークだけになり、何もキャッシュしない）。`Authorization` 付きの要求はどのパスでもキャッシュしない。
   - **公開メディア**: 同じオリジンの `/media/` の画像だけを、キャッシュ優先（最大 300 件、30 日、200 の応答だけ）にする。動画は範囲要求の部分応答を再生できないので対象にしない。
+  - **サーバーのテーマ**: 同じオリジンの `/theme/` のスタイルシートを、キャッシュ優先（最大 5 件、200 の応答だけ）にする。URL が版を含み内容が変わらないので、オフラインの外枠も最後に読んだテーマで表示する。
 - **登録と更新**（`src/lib/pwa.ts`）: ビルドしたアプリだけが `/sw.js` をスコープ `/` で登録する。外枠の CSP が Trusted Types を要求するので、URL は `/sw.js` だけを通すポリシーで作る。
   - 最初の Service Worker は有効になるとすぐページを制御する（`clientsClaim`）。新しい版は待機し、`UpdatePrompt` が「新しい版があります」のトースト（`timeout: null`、「更新する」の操作付き）を出す。
     利用者が押したときだけ `SKIP_WAITING` を送り、新しい版がページを制御したら読み直す。ページが表示に戻るたびに更新を確かめる。
@@ -473,7 +480,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 `features/admin` が、運用者の画面（連合先のサーバーの状態・ドメインへの処分・dead job・監査ログ・登録の審査・登録の拒否リスト・通報・異議申し立ての審査・アカウント）を受け持つ（[federation.md §7.3](federation.md)、[client-api.md](client-api.md) の管理の操作）。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「管理」（§9）・管理の画面（`/admin`）・設定の画面の「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_reports` が通報の画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -538,6 +545,12 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   説明に、名前がドメインの代わりに出る場所と、名前のない言語・どの言語にも名前がないときに何が出るか、ハンドルとリンクはドメインのままであることを書く（[名前とドメイン](../operations/instance-settings.md#名前とドメイン)）。
   101 文字以上と空白だけの名前はフォームの中で無効にし、送らない。「保存する」は変えた言語だけを `PUT /admin/instance_texts/name/{locale}` で送り（空は消す）、規約とポリシーと同じく `GET /admin/instance_texts`・`GET /instance`・監査ログに無効化の印を付け、表示中の `GET /instance` を取り直してから、結果を区画の `StatusMessage` に出す。
   外枠の名前（「サーバーの名前」）はこの取り直しで変わる。変えた言語がなければ何も送らずにその旨を出す。失敗はボタンの上（`role="alert"`）に出し、入力を残す（E2）。
+- **テーマ**（`/admin/theme`、`manage_settings`、FR-605、[ADR-0059](../adr/0059-design-tokens-and-instance-theme.md)）: 「色」「コントラスト」「文字・余白・動き」「カスタム CSS」「プレビュー」の区画（`h2` の `section`）と、保存のボタンの 1 つの `form`。
+  - 色は上書きできる `color-*` のトークンごとに、ライトとダークの `TextField`（名前は「{トークン}、ライト」、説明に形と既定値）。空の欄は既定値のままで、片方だけ入れた色はもう片方を既定値にして送る。ほかのトークンは 1 つずつの `TextField`（名前はトークン、説明に既定値と範囲）。トークンの名前は訳さない。
+  - 「コントラスト」は入力のたびに、`@my/ui` の `themeContrast`（サーバーと同じ組と式）で最小値を下回る組と、形の誤った色を文で並べる（保存のボタンの前）。保存できるかを決めるのはサーバーで、422（`invalid-theme`）の `theme_errors` を 1 つずつ訳した文の一覧を、ボタンの上の `role="alert"` に出し、入力を残す（E2）。
+  - 「カスタム CSS」は `TextArea` で、サーバーが結果を確かめないこと（コントラスト・レイアウト・フォーカス・RTL は管理者の責任）、CSP の下で同じオリジンの資源しか使えないこと、クラス名と構造は版で変わることを説明に書く。
+  - 「プレビュー」は入力中のトークンを、区画の要素の CSS 変数（React の `style`、D10）にして当てた見本（面・文字・補足の文字・リンクとボタンに似せた表示・エラーの文字）。操作できる要素は置かない。カスタム CSS はプレビューしない。
+  - 保存に成功したら、応答でテーマのキャッシュを置き換え、`GET /instance`（`theme`）と監査ログに無効化の印を付け、区画の `StatusMessage` に「数分以内に全員に届く」ことを出す。開いているページの見た目は読み込み直すまで変わらない。
 - **通報の一覧**（`/admin/reports`、FR-701・FR-710）: 「未解決」と「解決済み」のタブ（`?state=resolved`、URL に置く。S3）で、新しい順。各通報は見出し（対象のハンドル、詳細へのリンク）と、カテゴリ・通報者・通報日時・担当・投稿の数（解決済みは結果と解決日時も）の説明リスト、通報者のコメント（`dir="auto"`、2 行に省略）にする。
   担当はアカウントの ID しか返らないので、閲覧者なら「あなた」、ほかは `GET /accounts/{id}` で名前を出す。
 - **通報の詳細**（`/admin/reports/{id}`、NFR-MOD-4）: 1 つの画面に、通報の内容（状態・カテゴリ・日時・通報者・通報元・転送・引用するルール・コメント）、通報された投稿、通報されたアカウントとその履歴（ほかの通報と処分の件数、`manage_accounts` があれば処分の履歴）、担当、メモ、対応の区画を `h2` の `section` で並べる。

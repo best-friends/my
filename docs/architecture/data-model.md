@@ -987,6 +987,9 @@ flowchart LR
 | `instance_rule_texts` | イベント（版の子） | `rule_revision_id`, `locale`（`lang`）, `text`（`string(300)`。1 行）, `hint`（`string(1000)`。空 = 補足なし） | PK `(rule_revision_id, locale)`。1 つの版に 50 ロケールまで |
 | `instance_rule_retirements` | イベント | `rule_id`（PK）, `retired_by_user_id`（NULL 可 = CLI による廃止）, `retired_at` | 廃止したルールも通報からは参照できる |
 | `instance_rule_heads` | 投影 | `rule_id`（PK）, `revision_id`, `position` | 有効なルールだけ。インデックス `(position)` |
+| `instance_theme_revisions` | イベント（版） | `id`, `custom_css`（`string`。空 = なし。64 KiB まで）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | トークンもカスタム CSS も無い版はテーマを既定に戻す |
+| `instance_theme_tokens` | イベント（版の子） | `theme_revision_id`, `token`（`enum`。上書きできるトークンの生成した一覧）, `scheme`（`enum(light, dark, all)`。色はライトとダーク、ほかは `all`）, `value` | PK `(theme_revision_id, token, scheme)` |
+| `instance_theme` | 投影 | `id`（PK。常に 1）, `revision_id` | テーマを保存したことがあれば 1 行 |
 
 - 設定値は 1 キー 1 スカラーにします。複合的な設定はキーを分けます（JSON にしない）。
   キー・型・既定値・検証は `internal/domain/instance` に定義し、`key` の `CHECK` と一緒に増やします。一度も設定していないキーは既定値として読みます。
@@ -1007,6 +1010,9 @@ flowchart LR
     廃止で空いた番号は、次の並べ替えで詰まります。同じ `position` のルールは `rule_id` の順に並べます（PostgreSQL の READ COMMITTED で同時に追加した場合）。
 - `instance_rule_heads` は、廃止していないルールの `id` が最大の版を指します。廃止すると行が消え、廃止は取り消せません。
 - ルールの文は、テキストと同じフォールバックチェーンで選び、チェーンのどのロケールにも文が無ければロケール順で最初の文を使います（読み手によってルールが一覧から消えないように）。
+- テーマ（[ADR-0059](../adr/0059-design-tokens-and-instance-theme.md)）は版ごとにテーマ全体（上書きしたトークンとカスタム CSS）を記録し、`instance_theme` が `id` の最大の版を指します。
+  `instance_theme_tokens.token` の `CHECK` は、`app/ui/src/theme.css` から生成したトークンの一覧（`internal/domain/instance/theme_tokens.gen.go`）と同じで、`schema` のテストが食い違いを検出します。
+  値は保存の前にドメインが種類ごとの形・範囲と色の組のコントラストを検査し、検査済みの値だけからスタイルシートを組み立てます。版の内容は変わらないので、過去の版のスタイルシートの URL も同じ内容を返し続けます。
 
 ### 4.10 基盤（アダプタ所有）
 
