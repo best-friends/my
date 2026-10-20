@@ -158,3 +158,55 @@ describe("the end of a session", () => {
     expect(a.accessToken).toBeNull();
   });
 });
+
+describe("resuming while the server cannot be reached", () => {
+  test("acts signed out, and resumes on the next restore once the server answers", async () => {
+    server.use(http.post(oauthPaths.refresh, () => HttpResponse.error()));
+    const a = openTab();
+    const changes: string[] = [];
+    a.onUserChange((status) => changes.push(status));
+
+    await a.restore();
+    expect(a.status).toBe("signed-out");
+    expect(a.unreachable).toBe(true);
+    // Still unreachable: nothing changes.
+    await a.restore();
+    expect(a.unreachable).toBe(true);
+    expect(changes).toEqual([]);
+
+    refreshEndpoint();
+    await a.restore();
+    expect(a.status).toBe("signed-in");
+    expect(a.unreachable).toBe(false);
+    // The tab may have shown data of no session meanwhile: the user changed.
+    expect(changes).toEqual(["signed-in"]);
+  });
+
+  test("a session the server no longer has ends the user's data that the tab kept meanwhile", async () => {
+    server.use(http.post(oauthPaths.refresh, () => HttpResponse.error()));
+    const a = openTab();
+    const changes: string[] = [];
+    a.onUserChange((status) => changes.push(status));
+    await a.restore();
+    let notified = 0;
+    a.subscribe(() => notified++);
+
+    server.use(http.post(oauthPaths.refresh, () => oauthError("invalid_grant")));
+    await a.restore();
+
+    expect(a.status).toBe("signed-out");
+    expect(a.unreachable).toBe(false);
+    expect(notified).toBe(1);
+    expect(changes).toEqual(["signed-out"]);
+    // Resumed and answered: no more tries.
+    await a.restore();
+    expect(changes).toEqual(["signed-out"]);
+  });
+
+  test("a start that the server answers without a session is not unreachable", async () => {
+    const a = openTab();
+    await a.restore();
+    expect(a.status).toBe("signed-out");
+    expect(a.unreachable).toBe(false);
+  });
+});

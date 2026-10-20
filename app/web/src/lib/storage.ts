@@ -275,6 +275,31 @@ export const composeKey = declareKeyFamily<StoredCompose | null>("my:user:compos
   userData: true,
 });
 
+/**
+ * The newest posts of the home timeline as last loaded (features/timeline): when they were loaded, in epoch
+ * milliseconds, the posts (the client API's Status, checked further by the feature) and the cursor after them.
+ */
+export type StoredHomeTimeline = { loadedAt: number; items: Record<string, unknown>[]; nextCursor: string | null };
+
+/**
+ * The home timeline kept for reading offline (FR-604, web-client.md §11): the user's data, removed when the
+ * session ends and replaced when another user signs in (lib/auth/userData). Its version changes with the
+ * stored shape, the Status of the client API included.
+ */
+export const homeTimelineKey = declareKey<StoredHomeTimeline | null>("my:user:home-timeline", {
+  area: "local",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(
+    z.object({
+      loadedAt: z.number(),
+      items: z.array(z.record(z.string(), z.unknown())).max(100),
+      nextCursor: z.string().nullable(),
+    }),
+  ),
+  userData: true,
+});
+
 /** A sign-in between leaving for the authorization screen and its callback (lib/auth/signIn). */
 export type StoredSignIn = { state: string; codeVerifier: string; returnTo: string };
 

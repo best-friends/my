@@ -35,6 +35,12 @@ export function useSessionStatus(): SessionStatus {
   return useSyncExternalStore(session.subscribe, () => session.status);
 }
 
+/** Returns whether resuming the session failed because the server could not be reached (Session.unreachable). */
+export function useSessionUnreachable(): boolean {
+  const { session } = useSessionContext();
+  return useSyncExternalStore(session.subscribe, () => session.unreachable);
+}
+
 /** Returns the API client. */
 export function useApi(): Api {
   return useSessionContext().api;

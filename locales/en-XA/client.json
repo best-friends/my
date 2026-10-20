@@ -6391,6 +6391,10 @@
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ŀǿǿȧȧḓ ŧħḗḗ ƞḗḗẇ ƥǿǿşŧş: {reason}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "timeline.offline.home": {
+    "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ǿǿƒƒŀīƞḗḗ. Ŧħḗḗşḗḗ ȧȧřḗḗ ŧħḗḗ ƥǿǿşŧş ȧȧş ǿǿƒ {time}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "timeline.retry": {
     "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
     "description": "Generated from en by tools/i18n; do not edit."

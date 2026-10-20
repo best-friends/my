@@ -102,6 +102,8 @@ export class Session {
   readonly #channel: Channel | null;
   #accessToken: string | null = null;
   #status: SessionStatus = "unknown";
+  /** Whether resuming the session failed because the server could not be reached (see `unreachable`). */
+  #unreachable = false;
   /** The refresh this tab is running or waiting to run; concurrent callers share it. */
   #refreshing: Promise<string | null> | null = null;
   readonly #listeners = new Set<() => void>();
@@ -125,7 +127,16 @@ export class Session {
     return this.#status;
   }
 
-  /** Calls `listener` whenever the status changes (the subscribe of useSyncExternalStore). */
+  /**
+   * Whether resuming the session failed because the server could not be reached (a page opened offline):
+   * the tab acts signed out, but the session may still be there, so the next restore() tries again. A page
+   * may show the user's data saved on this browser meanwhile (the home timeline, web-client.md §11).
+   */
+  get unreachable(): boolean {
+    return this.#unreachable;
+  }
+
+  /** Calls `listener` whenever the status or `unreachable` changes (the subscribe of useSyncExternalStore). */
   readonly subscribe = (listener: () => void): (() => void) => {
     this.#listeners.add(listener);
     return () => this.#listeners.delete(listener);
@@ -140,16 +151,22 @@ export class Session {
     return () => this.#userListeners.delete(listener);
   }
 
-  /** Resumes the session from the refresh token cookie, once, when the status is still unknown. */
+  /**
+   * Resumes the session from the refresh token cookie when the status is still unknown, and again while the
+   * server could not be reached (`unreachable`).
+   */
   async restore(): Promise<void> {
-    if (this.#status !== "unknown") return;
+    if (this.#status !== "unknown" && !this.#unreachable) return;
     try {
       await this.refresh(null);
     } catch (error) {
       // The server is unreachable; without a token this tab acts signed out until a later refresh.
       console.error(error);
       // A tab may have shared a token meanwhile.
-      if (this.status === "unknown") this.#setStatus("signed-out");
+      if (this.#status === "unknown") {
+        this.#unreachable = true;
+        this.#setStatus("signed-out");
+      }
     }
   }
 
@@ -186,13 +203,15 @@ export class Session {
     }
     const token = await readTokenResponse(response);
     if (token === null) {
-      // The cookie is missing, expired or revoked. If this tab had a session, every tab has lost it.
-      const ended = this.#status === "signed-in";
+      // The cookie is missing, expired or revoked. If this tab had a session, every tab has lost it. A tab
+      // that could not reach the server may have shown the user's saved data meanwhile, which goes too.
+      const ended = this.#status === "signed-in" || this.#unreachable;
       this.#signedOut();
       if (ended) this.#post({ type: "signed-out" });
       return null;
     }
     const wasSignedOut = this.#status === "signed-out";
+    this.#unreachable = false;
     this.#accessToken = token;
     this.#setStatus("signed-in");
     if (wasSignedOut) this.#emitUserChange();
@@ -224,6 +243,7 @@ export class Session {
     }
     const token = await readTokenResponse(response);
     if (token === null) return false;
+    this.#unreachable = false;
     this.#accessToken = token;
     this.#setStatus("signed-in");
     this.#emitUserChange();
@@ -277,6 +297,7 @@ export class Session {
       case "refreshed":
       case "signed-in": {
         const changed = message.type === "signed-in" || this.#status === "signed-out";
+        this.#unreachable = false;
         this.#accessToken = message.accessToken;
         this.#setStatus("signed-in");
         if (changed) this.#emitUserChange();
@@ -289,15 +310,23 @@ export class Session {
   };
 
   #signedOut(): void {
-    const changed = this.#status === "signed-in";
+    const wasUnreachable = this.#unreachable;
+    const changed = this.#status === "signed-in" || wasUnreachable;
+    this.#unreachable = false;
     this.#accessToken = null;
     this.#setStatus("signed-out");
+    // The status stays signed out, but the tab no longer waits for the server.
+    if (wasUnreachable) this.#notify();
     if (changed) this.#emitUserChange();
   }
 
   #setStatus(status: SessionStatus): void {
     if (this.#status === status) return;
     this.#status = status;
+    this.#notify();
+  }
+
+  #notify(): void {
     for (const listener of this.#listeners) listener();
   }
 

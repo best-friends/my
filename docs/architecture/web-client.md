@@ -65,6 +65,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | `my:instance:timelines` | localStorage | インスタンスが提供する公開タイムライン（§9） | いいえ |
 | `my:emoji:recent` | localStorage | 最近選んだカスタム絵文字の shortcode（§12、ADR-0051 §4） | いいえ |
 | `my:user:compose:<アカウント ID>` | sessionStorage | 投稿の下書きと送信中の投稿（§12） | はい |
+| `my:user:home-timeline` | localStorage | オフラインで読むホームのタイムラインの新しい投稿と、それを読み込んだ時刻（§11）。利用者が変わったときも消す | はい |
 | `my:oauth-pending` | sessionStorage | 進行中のサインインの verifier・`state`・戻り先（§10） | いいえ |
 | `my:preload-error-reloaded-at` | sessionStorage | チャンクの読み込みに失敗して再読み込みした時刻（§11） | いいえ |
 
@@ -394,7 +395,9 @@ API の呼び出しとトークンは `lib/api`・`lib/auth` が 1 か所で扱�
   - 認可コードの交換も同じロックの中で行い、起動時の再開と競合しない。
   - サインイン・サインアウト・セッションの終了（更新が 4xx で断られた）も BroadcastChannel で他のタブに伝える。
   - 利用者が変わったとき（サインイン、またはセッションのあったタブでの終了）、`lib/auth/userData.ts` が Query のキャッシュをすべて消す。セッションが終わったときは、`lib/pwa` の `clearCaches()` で Cache Storage もすべて消す（§11）。
-    セッションが終わったときは、`lib/storage` で利用者のデータと宣言したキー（利用者が入力したもの。投稿の下書き、§12）も消す（§2「ブラウザの保存」）。サインインでは消さない（キーにアカウントの ID を含める）。
+    セッションが終わったときは、`lib/storage` で利用者のデータと宣言したキー（投稿の下書き（§12）とオフラインで読むホームのタイムライン（§11））も消す（§2「ブラウザの保存」）。サインインでは下書きを消さない（キーにアカウントの ID を含める）。ホームのタイムラインは前の利用者のものなので、サインインでも消す。
+  - 起動時のセッションの再開がサーバーに届かなかったとき（オフラインで開いた）は、サインインしていないものとして動きつつ、`unreachable` を立てる。次の `restore()`（ルートの loader・`requireSignIn`）がもう一度更新を試す。
+    再開できたら利用者が変わったものとして扱い（Query のキャッシュを消す）、サーバーがセッションはないと答えたら、セッションが終わったものとして利用者のデータを消す。
   - 状態（`unknown` / `signed-in` / `signed-out`）は `useSessionStatus()` で読む。サーバーのデータである閲覧者のアカウントは Context に置かず、`features/session` の `useViewer()` が Query で取る（S2、S6）。
 - **ログイン**（`lib/auth/signIn.ts`、Authorization Code + PKCE）: `/login` のボタンが、新しい verifier（32 バイトの乱数）と `state` を作り、S256 の challenge を付けてサーバーの認可画面（`/oauth/authorize`）にページごと遷移する。
   scope は指定せず、Web クライアントに登録されたすべてのスコープを受け取る。
@@ -442,6 +445,13 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   - デプロイで古いチャンクが消えたとき（`vite:preloadError`）は読み直す。10 秒以内に繰り返したら読み直さず、エラー境界に任せる。
 - **ログアウト**: セッションが終わると、`lib/auth/userData.ts` が `clearCaches()` を呼ぶ（§10）。事前のキャッシュも含めてすべてのキャッシュと、メディアの期限のメタデータを消す（ADR-0028）。
   消したあともオンラインでは同じように動き、新しい版の Service Worker が事前にキャッシュし直すまでオフラインの外枠は使えない。
+- **オフラインで読むホームのタイムライン**（FR-604、`features/timeline` の `api/savedHome.ts`）: Service Worker は API に答えないので（ADR-0045）、API の応答はアプリが残す。
+  サインイン中にホームを表示している間、Query のキャッシュのホームのタイムラインが読み込みか書き込みに成功するたびに、新しい投稿（40 件まで）と読み込んだ時刻を localStorage の `my:user:home-timeline`（利用者のデータ、§2）に書く。
+  - ホームの loader は、タイムラインが `NetworkError` で読めないとき、Query のキャッシュにあればそれを、なければ残した投稿を読み込んだ時刻のままキャッシュに入れて表示する。
+    オフラインで開いてセッションを再開できない（`unreachable`、§10）ときも、残した投稿があれば「サインイン」の代わりにそれを表示し、オンラインに戻るとルートを読み直してセッションを再開する。
+    サーバーがセッションはないと答えたら、残した投稿を消して「サインイン」を出す。
+  - オフラインの間（`useIsOffline`、§9）、ホームはフィードの上に「オフラインです。〜時点の投稿を表示しています」を読み込んだ時刻とともに出す。オフラインになったことは外枠の帯が読み上げるので、これはライブリージョンにしない。
+  - 外枠は Service Worker が事前にキャッシュしたものを使う。メディアは公開の画像のキャッシュにあれば表示される。
 - **Web Push**（FR-206）: 設定の「表示と投稿」の「プッシュ通知」（`features/settings` の `usePushNotifications`）で、この端末で受け取るかと通知の種類を選ぶ。インスタンスが `push_server_key` を返さないときは区画を出さない。
   - 有効にするとき（スイッチの操作の中）だけ `Notification.requestPermission()` で許可を求め、Service Worker の登録の `PushManager.subscribe`（`userVisibleOnly`、`applicationServerKey` はサーバーの鍵）で購読し、`PUT /push/subscription` で種類と一緒に登録する。
     別の鍵で作った購読が残っていれば解除してから購読し直す。種類を変えると登録し直し、無効にすると `DELETE /push/subscription` とブラウザの購読の解除を行う。
