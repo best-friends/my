@@ -820,6 +820,18 @@ export interface MessageArgs {
   "client:admin.audit_log.action.registration_approved": {};
   /** Registration rejected */
   "client:admin.audit_log.action.registration_rejected": {};
+  /** Relay accepted the server */
+  "client:admin.audit_log.action.relay_accepted": {};
+  /** Relay registered */
+  "client:admin.audit_log.action.relay_added": {};
+  /** Relay joined again */
+  "client:admin.audit_log.action.relay_followed": {};
+  /** Relay rejected the server */
+  "client:admin.audit_log.action.relay_rejected": {};
+  /** Relay deleted */
+  "client:admin.audit_log.action.relay_removed": {};
+  /** Relay left */
+  "client:admin.audit_log.action.relay_unfollowed": {};
   /** Report assigned */
   "client:admin.audit_log.action.report_assigned": {};
   /** Note added to a report */
@@ -940,6 +952,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.domain": {};
   /** Invite */
   "client:admin.audit_log.target_kind.invite": {};
+  /** Relay */
+  "client:admin.audit_log.target_kind.relay": {};
   /** Report */
   "client:admin.audit_log.target_kind.report": {};
   /** Role */
@@ -1628,6 +1642,110 @@ export interface MessageArgs {
   "client:admin.registrations.summary": {};
   /** Registrations */
   "client:admin.registrations.title": {};
+  /** {count, plural, one {# activity} other {# activities}} */
+  "client:admin.relays.activities": { count: number };
+  /** Relay actor */
+  "client:admin.relays.actor": {};
+  /** Cancel */
+  "client:admin.relays.cancel": {};
+  /** Could not change the relay: {reason} */
+  "client:admin.relays.change_failed": { reason: string };
+  /** Could not join the relay: {reason} */
+  "client:admin.relays.create_failed": { reason: string };
+  /** {name} is registered, and the server asked to join it. */
+  "client:admin.relays.created": { name: string };
+  /** Delete */
+  "client:admin.relays.delete": {};
+  /** Delete {name} */
+  "client:admin.relays.delete_relay": { name: string };
+  /** Its registration is deleted. The posts already sent to it still get their updates and deletions. This cannot be undone. */
+  "client:admin.relays.delete.description": {};
+  /** Delete {name}? */
+  "client:admin.relays.delete.title": { name: string };
+  /** {name} is deleted. */
+  "client:admin.relays.deleted": { name: string };
+  /** A domain action suspends the server of this relay: nothing is sent to it or taken from it while it does. */
+  "client:admin.relays.domain_suspended": {};
+  /** Dropped over the limit, last 24 hours */
+  "client:admin.relays.dropped": {};
+  /** No relays yet */
+  "client:admin.relays.empty": {};
+  /** A relay passes public posts between the servers that join it, which fills the federated timeline of a small server. */
+  "client:admin.relays.empty.description": {};
+  /** Join again */
+  "client:admin.relays.follow": {};
+  /** Join {name} again */
+  "client:admin.relays.follow_relay": { name: string };
+  /** The server asked to join {name} again. */
+  "client:admin.relays.followed": { name: string };
+  /** Inbox */
+  "client:admin.relays.inbox": {};
+  /** Relays of this server */
+  "client:admin.relays.list.title": {};
+  /** The public posts of this server go to every relay it joins, which passes them on to the other servers of the relay. Posts of other visibilities are never sent. */
+  "client:admin.relays.new.description": {};
+  /** Join a relay */
+  "client:admin.relays.new.title": {};
+  /** The server of the relay is suspended by a domain action. */
+  "client:admin.relays.problem.domain_suspended": {};
+  /** A relay with this URL is already registered. */
+  "client:admin.relays.problem.exists": {};
+  /** The URL does not serve the actor of a relay with an inbox. */
+  "client:admin.relays.problem.not_actor": {};
+  /** The relay is not in a state that allows this: leave a relay before deleting it, and join again only one that was left or rejected the server. */
+  "client:admin.relays.problem.state": {};
+  /** Enter an https URL of at most 2048 bytes. */
+  "client:admin.relays.problem.url": {};
+  /** Protocol */
+  "client:admin.relays.protocol": {};
+  /** Detect automatically */
+  "client:admin.relays.protocol.auto": {};
+  /** Detecting it automatically picks LitePub when the URL serves an actor, and Mastodon otherwise. */
+  "client:admin.relays.protocol.description": {};
+  /** LitePub */
+  "client:admin.relays.protocol.litepub": {};
+  /** Mastodon */
+  "client:admin.relays.protocol.mastodon": {};
+  /** Receive posts from the relay */
+  "client:admin.relays.receive": {};
+  /** The public posts it relays show in the federated and hashtag timelines, and are kept for a short time. Without it, the server only sends. */
+  "client:admin.relays.receive.description": {};
+  /** Sends only */
+  "client:admin.relays.receive.no": {};
+  /** Receiving */
+  "client:admin.relays.receive.term": {};
+  /** Takes in the posts it relays */
+  "client:admin.relays.receive.yes": {};
+  /** State */
+  "client:admin.relays.state": {};
+  /** State changed */
+  "client:admin.relays.state_changed_at": {};
+  /** Joined */
+  "client:admin.relays.state.accepted": {};
+  /** Left */
+  "client:admin.relays.state.left": {};
+  /** Awaiting the relay's answer */
+  "client:admin.relays.state.pending": {};
+  /** Rejected by the relay */
+  "client:admin.relays.state.rejected": {};
+  /** Join */
+  "client:admin.relays.submit": {};
+  /** Join federation relays to exchange public posts with more servers. */
+  "client:admin.relays.summary": {};
+  /** Taken in, last 24 hours */
+  "client:admin.relays.taken": {};
+  /** Relays */
+  "client:admin.relays.title": {};
+  /** Leave */
+  "client:admin.relays.unfollow": {};
+  /** Leave {name} */
+  "client:admin.relays.unfollow_relay": { name: string };
+  /** The server left {name}. */
+  "client:admin.relays.unfollowed": { name: string };
+  /** URL */
+  "client:admin.relays.url": {};
+  /** The relay's inbox for Mastodon or its actor for LitePub, an https URL. */
+  "client:admin.relays.url.description": {};
   /** A deleted account */
   "client:admin.report.account.deleted": {};
   /** Loading… */
@@ -4568,6 +4686,10 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** The relay cannot be changed that way. */
+  "server:errors.relay.invalid": {};
+  /** {reason, select, url {The URL must be an https URL of at most 2048 bytes.} exists {A relay with this URL is already registered.} domain_suspended {The relay's server is suspended by a domain action.} not_actor {The URL does not serve the actor of a relay with an inbox.} state {The relay is not in a state that allows this: leave a relay before you delete it, and join only one that you left or that rejected you.} other {The relay cannot be changed that way.}} */
+  "server:errors.relay.invalid_detail": { reason: "domain_suspended" | "exists" | "not_actor" | "state" | "url" | (string & {}) };
   /** This is not available for accounts on other servers. */
   "server:errors.remote_account": {};
   /** Only a resolved report can be reopened. */

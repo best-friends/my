@@ -54,6 +54,12 @@ declare module "@tanstack/react-router" {
     /** The shell floats the button that opens the new-post sheet over this page (timelines and profiles; web-client.md G4). */
     composeButton?: boolean;
     /**
+     * The page's h1 only says where the user is, which the navigation already shows (an item of the navigation
+     * with nothing beside its heading): PageHeading hides it visually and keeps it for assistive technology, on
+     * the page and on its pending and error states (web-client.md Y5).
+     */
+    hideHeading?: boolean;
+    /**
      * The page's name, the text of its h1. RouteError keeps it as the heading when the page fails, so that the
      * page and the document title stay named after the page (web-client.md G16). A page whose name depends on
      * its params passes the heading to RouteError from its own errorComponent instead.

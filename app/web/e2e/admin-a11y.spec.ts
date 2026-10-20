@@ -245,6 +245,22 @@ const webhookDelivery: Schemas["AdminWebhookDelivery"] = {
   created_at: "2026-10-19T00:00:00Z",
 };
 
+/** A joined relay on a long domain that a domain action suspends, as GET /admin/relays lists it. */
+const relay: Schemas["AdminRelay"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e6",
+  protocol: "litepub",
+  url: `https://relay.${longDomain}/actor`,
+  inbox_url: `https://relay.${longDomain}/inbox`,
+  receive: true,
+  state: "accepted",
+  state_changed_at: "2026-10-20T00:00:00Z",
+  actor_uri: `https://relay.${longDomain}/actor`,
+  taken_last_day: 12345,
+  dropped_last_day: 678,
+  domain_suspended: true,
+  created_at: "2026-10-19T00:00:00Z",
+};
+
 const instance = { domain: longDomain, state: "unavailable", since: "2026-10-10T08:00:00Z", failure_days: 7, last_failure_day: "2026-10-10" };
 
 /** A rule in English with a long hint and in Arabic, which reads right to left, as GET /admin/rules lists it. */
@@ -407,6 +423,7 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/announcements") return json(route, { items: [announcement] });
     if (key === `GET /admin/webhooks/${webhook.id}`) return json(route, webhook);
     if (key === `GET /admin/webhooks/${webhook.id}/deliveries`) return json(route, { items: [webhookDelivery] });
+    if (key === "GET /admin/relays") return json(route, { items: [relay] });
     if (key === "GET /admin/roles") return json(route, { items: roles });
     if (/^GET \/admin\/accounts\/[^/]+\/roles$/.test(key)) return json(route, { items: key.includes(moderator.id) ? roles.slice(0, 1) : [] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
@@ -459,6 +476,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.webhooks": { path: "/admin/webhooks", ready: webhook.description ?? "" },
   "admin.webhooks_.$id": { path: `/admin/webhooks/${webhook.id}`, ready: webhookDelivery.message_id },
   "admin.announcements": { path: "/admin/announcements", ready: "the status page" },
+  "admin.relays": { path: "/admin/relays", ready: relay.inbox_url },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },

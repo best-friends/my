@@ -108,6 +108,10 @@ type Config struct {
 	// RemoteStatusMaxRetention bounds how long any remote post is kept, zero for no bound (ADR-0034).
 	RemoteStatusRetention    time.Duration
 	RemoteStatusMaxRetention time.Duration
+	// RelayStatusRetention is how long a remote post that only a relay brought in is kept, and
+	// RelayIngestHourlyLimit how many activities each relay may bring in per hour (ADR-0061).
+	RelayStatusRetention   time.Duration
+	RelayIngestHourlyLimit int
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
 	DeadJobRetention time.Duration
 	// MetricsExporter is the Meter adapter (ADR-0055 §2); MetricsListen is the address of the
@@ -190,6 +194,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.Any("webhook_allowed_destinations", append(slices.Clone(c.WebhookAllowedHosts), prefixStrings(c.WebhookAllowedPrefixes)...)),
 		slog.Duration("remote_status_retention", c.RemoteStatusRetention),
 		slog.Duration("remote_status_max_retention", c.RemoteStatusMaxRetention),
+		slog.Duration("relay_status_retention", c.RelayStatusRetention),
+		slog.Int("relay_ingest_hourly_limit", c.RelayIngestHourlyLimit),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),
 		slog.String("metrics_listen", c.MetricsListen),

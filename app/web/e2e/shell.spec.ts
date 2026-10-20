@@ -44,6 +44,9 @@ async function serveSignedIn(page: Page, account: Record<string, unknown> = alic
 /** Every page of the shell, in the order of the navigation. */
 const pages = ["/home", "/local", "/notifications", "/search", "/profile", "/settings"] as const;
 
+/** The pages whose h1 only says where the user is, visually hidden (web-client.md G5). */
+const hiddenHeadingPages: ReadonlySet<string> = new Set(["/home", "/local", "/notifications", "/search", "/settings"]);
+
 /** The pages that phones reach from the menu's sheet instead of the tab bar (ADR-0039). */
 const menuPages: ReadonlySet<string> = new Set(["/profile", "/settings"]);
 
@@ -79,6 +82,22 @@ for (const path of pages) {
 
     test("does not scroll horizontally", async ({ page }) => {
       await expectNoHorizontalScroll(page);
+    });
+
+    test("hides its heading from view only when the heading just says where the user is", async ({ page }) => {
+      const heading = page.getByRole("main").getByRole("heading", { level: 1 });
+      expect(((await heading.textContent()) ?? "").trim()).not.toBe("");
+      if (!hiddenHeadingPages.has(path)) {
+        // Profile opens the user's own profile, whose heading names the account.
+        await expect(heading).not.toHaveClass(/\bsr-only\b/);
+        return;
+      }
+      // The navigation already says where the user is: the h1 is visually hidden (sr-only, a 1 px clipped box)
+      // and is still the page's named level-one heading.
+      await expect(heading).toHaveClass(/\bsr-only\b/);
+      const box = await heading.boundingBox();
+      expect(box?.width).toBeLessThanOrEqual(1);
+      expect(box?.height).toBeLessThanOrEqual(1);
     });
 
     test("is titled after its heading and marks its navigation item as current", async ({ page }) => {

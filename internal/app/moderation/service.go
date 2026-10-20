@@ -221,7 +221,8 @@ type Deps struct {
 // entries, so this module reaches them through this port.
 type AuditTargets interface {
 	// ExistingAuditTargets returns, in ID order, the targets among ids of kind that exist; kind
-	// is moderation.AuditTargetRole, AuditTargetCustomEmoji, or AuditTargetWebhook.
+	// is moderation.AuditTargetRole, AuditTargetCustomEmoji, AuditTargetWebhook, or
+	// AuditTargetRelay.
 	ExistingAuditTargets(ctx context.Context, kind moderation.AuditTargetKind, ids []string) ([]string, error)
 }
 

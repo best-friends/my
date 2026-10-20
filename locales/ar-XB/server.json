@@ -687,6 +687,14 @@
     "defaultMessage": "‮{seconds,plural,one{⊥ɹʎ ɐƃɐıu ıu # sǝɔoup.} other{⊥ɹʎ ɐƃɐıu ıu # sǝɔoups.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.relay.invalid": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝʅɐʎ ɔɐuuoʇ qǝ ɔɥɐuƃǝp ʇɥɐʇ ʍɐʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.relay.invalid_detail": {
+    "defaultMessage": "‮{reason,select,domain_suspended{⊥ɥǝ ɹǝʅɐʎ's sǝɹʌǝɹ ıs snsdǝupǝp qʎ ɐ poɯɐıu ɐɔʇıou.} exists{∀ ɹǝʅɐʎ ʍıʇɥ ʇɥıs ∩ᴚ⅂ ıs ɐʅɹǝɐpʎ ɹǝƃısʇǝɹǝp.} not_actor{⊥ɥǝ ∩ᴚ⅂ poǝs uoʇ sǝɹʌǝ ʇɥǝ ɐɔʇoɹ oɟ ɐ ɹǝʅɐʎ ʍıʇɥ ɐu ıuqox.} other{⊥ɥǝ ɹǝʅɐʎ ɔɐuuoʇ qǝ ɔɥɐuƃǝp ʇɥɐʇ ʍɐʎ.} state{⊥ɥǝ ɹǝʅɐʎ ıs uoʇ ıu ɐ sʇɐʇǝ ʇɥɐʇ ɐʅʅoʍs ʇɥıs: ʅǝɐʌǝ ɐ ɹǝʅɐʎ qǝɟoɹǝ ʎon pǝʅǝʇǝ ıʇ, ɐup ɾoıu ouʅʎ ouǝ ʇɥɐʇ ʎon ʅǝɟʇ oɹ ʇɥɐʇ ɹǝɾǝɔʇǝp ʎon.} url{⊥ɥǝ ∩ᴚ⅂ ɯnsʇ qǝ ɐu ɥʇʇds ∩ᴚ⅂ oɟ ɐʇ ɯosʇ 2048 qʎʇǝs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.remote_account": {
     "defaultMessage": "‮⊥ɥıs ıs uoʇ ɐʌɐıʅɐqʅǝ ɟoɹ ɐɔɔonuʇs ou oʇɥǝɹ sǝɹʌǝɹs.‬",
     "description": "Generated from en by tools/i18n; do not edit."

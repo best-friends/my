@@ -33,6 +33,9 @@ type Repository interface {
 
 	// InsertStatus inserts a status. A URI that another status has fails with ErrStatusExists.
 	InsertStatus(ctx context.Context, tx uow.Tx, s content.Status) error
+	// InsertRelayedStatus records a remote status that only a relay brought in (ADR-0061),
+	// unless it is recorded.
+	InsertRelayedStatus(ctx context.Context, tx uow.Tx, statusID, relayID string, receivedAt time.Time) error
 	// InsertLocalStatus inserts the local subtype of a status. An Idempotency-Key that the
 	// author already used fails with ErrIdempotencyKeyUsed.
 	InsertLocalStatus(ctx context.Context, tx uow.Tx, ls content.LocalStatus) error

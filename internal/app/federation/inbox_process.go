@@ -43,6 +43,9 @@ type InboxActivity struct {
 	Document []byte
 	// Actor is the actor of the activity: a remote account.
 	Actor appaccount.Actor
+	// Relay is the accepted relay that brought the activity in, nil for one that no relay
+	// brought (ADR-0061).
+	Relay *RelayMembership
 }
 
 // InboxHandler processes one kind of received activity (federation.md §3.4). It writes in one
@@ -57,6 +60,14 @@ type InboxHandler func(ctx context.Context, a *InboxActivity) error
 // InboxActors resolves the actor of a received activity; *RemoteActors implements it.
 type InboxActors interface {
 	Resolve(ctx context.Context, uri string) (appaccount.Actor, error)
+}
+
+// RelayGate decides whether an activity that a relay brought in is taken in (ADR-0061); *Relays
+// implements it.
+type RelayGate interface {
+	// Admit returns the relay of an admitted activity, and fails with an error wrapping
+	// ErrDropActivity for one that is dropped.
+	Admit(ctx context.Context, relayID string, act *federation.Activity) (*RelayMembership, error)
 }
 
 // DocumentFetcher fetches a document from its origin (federation.md §6.1); *Fetcher and
@@ -80,8 +91,10 @@ type InboxProcessorDeps struct {
 	// NoAccountRestrictions.
 	Domains  DomainPolicy
 	Accounts AccountPolicy
-	Clock    kernel.Clock
-	Logger   *slog.Logger
+	// Relays admits the activities that relays bring in; nil processes them as any other.
+	Relays RelayGate
+	Clock  kernel.Clock
+	Logger *slog.Logger
 }
 
 // InboxOutcome says what processing a received activity came to.
@@ -227,7 +240,7 @@ func (p *InboxProcessor) HandleJob(ctx context.Context, j queue.Job) queue.Resul
 	if err := json.Unmarshal(j.Payload, &payload); err != nil || payload.ActivityURI == "" || !payload.Trust.Valid() {
 		return queue.Fail(fmt.Errorf("%w: payload %s", ErrUnprocessable, j.Payload))
 	}
-	_, err := p.Process(ctx, federation.IRI(payload.ActivityURI), payload.Trust)
+	_, err := p.ProcessRelayed(ctx, federation.IRI(payload.ActivityURI), payload.Trust, payload.RelayID)
 	switch {
 	case err == nil:
 		return queue.Done()
@@ -241,6 +254,12 @@ func (p *InboxProcessor) HandleJob(ctx context.Context, j queue.Job) queue.Resul
 // error wrapping ErrUnprocessable for an activity that can never be processed; any other error
 // is worth retrying.
 func (p *InboxProcessor) Process(ctx context.Context, activityURI federation.IRI, trust federation.Trust) (InboxOutcome, error) {
+	return p.ProcessRelayed(ctx, activityURI, trust, "")
+}
+
+// ProcessRelayed is Process of an activity that the accepted relay relayID brought in ("" for
+// none): before anything is fetched for it, the relay's gate admits or drops it (ADR-0061).
+func (p *InboxProcessor) ProcessRelayed(ctx context.Context, activityURI federation.IRI, trust federation.Trust, relayID string) (InboxOutcome, error) {
 	received, err := p.d.Repository.FindReceivedActivity(ctx, activityURI)
 	if errors.Is(err, ErrNotFound) {
 		return "", fmt.Errorf("%w: %w", ErrUnprocessable, err)
@@ -265,6 +284,13 @@ func (p *InboxProcessor) Process(ctx context.Context, activityURI federation.IRI
 		return "", fmt.Errorf("%w: %s is not an activity of %s", ErrUnprocessable, activityURI, received.ActorURI)
 	}
 	in := &InboxActivity{Received: received, Activity: act, Document: document}
+
+	// What a relay brought in passes its gate before it costs a fetch.
+	if relayID != "" && p.d.Relays != nil {
+		if in.Relay, err = p.d.Relays.Admit(ctx, relayID, act); err != nil {
+			return p.dropped(ctx, in, err)
+		}
+	}
 
 	// 2. The activity confirmed at its origin when someone else signed it.
 	if trust == federation.TrustRefetch {

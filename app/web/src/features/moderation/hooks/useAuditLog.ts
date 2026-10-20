@@ -58,6 +58,12 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   announcement_withdrawn: "client:admin.audit_log.action.announcement_withdrawn",
   invite_created: "client:admin.audit_log.action.invite_created",
   invite_revoked: "client:admin.audit_log.action.invite_revoked",
+  relay_added: "client:admin.audit_log.action.relay_added",
+  relay_followed: "client:admin.audit_log.action.relay_followed",
+  relay_unfollowed: "client:admin.audit_log.action.relay_unfollowed",
+  relay_removed: "client:admin.audit_log.action.relay_removed",
+  relay_accepted: "client:admin.audit_log.action.relay_accepted",
+  relay_rejected: "client:admin.audit_log.action.relay_rejected",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -75,6 +81,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   webhook: "client:admin.audit_log.target_kind.webhook",
   announcement: "client:admin.audit_log.target_kind.announcement",
   invite: "client:admin.audit_log.target_kind.invite",
+  relay: "client:admin.audit_log.target_kind.relay",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -87,7 +94,7 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 
 /**
  * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block, a
- * role, a custom emoji, a webhook, an announcement or an invite.
+ * role, a custom emoji, a webhook, an announcement, an invite or a relay.
  * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
  * gone (erased past its retention, or deleted) has nothing left to show, so their entries show the label only.
  */
@@ -119,6 +126,9 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "invite":
       // An invite has no screen of its own: the list of invites shows it.
       return "/moderation/invites";
+    case "relay":
+      // The list, which a deleted relay has left; a relay has no screen of its own.
+      return "/admin/relays";
     default:
       return undefined;
   }
