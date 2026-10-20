@@ -98,6 +98,16 @@ func TestInteractionRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestAutoDeleteContract(t *testing.T) {
+	testkit.AutoDeleteContract(t, func(t *testing.T, opts uow.Options) testkit.AutoDeleteHarness {
+		db := newTestDB(t, opts)
+		return testkit.AutoDeleteHarness{
+			InteractionHarness: testkit.InteractionHarness{UnitOfWork: db, Statuses: db.StatusRepository(), Interactions: db.InteractionRepository()},
+			AutoDeletes:        db.StatusRepository(),
+		}
+	})
+}
+
 func TestTimelineContract(t *testing.T) {
 	testkit.TimelineContract(t, func(t *testing.T, opts uow.Options) testkit.TimelineHarness {
 		db := newTestDB(t, opts)

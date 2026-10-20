@@ -340,7 +340,7 @@ CREATE TABLE status_deletions (
   status_id text COLLATE "C" NOT NULL PRIMARY KEY,
   uri text NOT NULL,
   author_account_id text COLLATE "C" NOT NULL,
-  origin text NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion', 'retention')),
+  origin text NOT NULL CHECK (origin IN ('author', 'moderation', 'remote', 'account_deletion', 'retention', 'auto_delete')),
   moderation_action_id text COLLATE "C",
   deleted_at timestamptz NOT NULL
 );
@@ -1117,6 +1117,32 @@ CREATE TABLE status_pins (
 );
 CREATE UNIQUE INDEX status_pins_account_id_slot ON status_pins (account_id, slot);
 CREATE INDEX status_pins_account_id_id ON status_pins (account_id, id);
+
+-- Current value: a local account's automatic deletion of its own old posts (FR-118). No row
+-- means the default policy, which is disabled. Each keep_* flag is an exception that keeps a
+-- post; keep_min_boosts and keep_min_favourites keep a post with at least that many, 0 for none.
+CREATE TABLE status_auto_delete_policies (
+  account_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  enabled boolean NOT NULL,
+  min_age_days integer NOT NULL CHECK (min_age_days BETWEEN 1 AND 3650),
+  keep_pinned boolean NOT NULL,
+  keep_bookmarked boolean NOT NULL,
+  keep_favourited boolean NOT NULL,
+  keep_media boolean NOT NULL,
+  keep_polls boolean NOT NULL,
+  keep_min_boosts integer NOT NULL CHECK (keep_min_boosts BETWEEN 0 AND 1000000),
+  keep_min_favourites integer NOT NULL CHECK (keep_min_favourites BETWEEN 0 AND 1000000),
+  updated_at timestamptz NOT NULL
+);
+-- The hourly job walks the enabled policies in account order.
+CREATE INDEX status_auto_delete_policies_enabled ON status_auto_delete_policies (account_id) WHERE enabled;
+
+-- Current value: the visibilities whose posts an automatic deletion policy keeps.
+CREATE TABLE status_auto_delete_kept_visibilities (
+  account_id text COLLATE "C" NOT NULL,
+  visibility text NOT NULL CHECK (visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  PRIMARY KEY (account_id, visibility)
+);
 
 -- ---------------------------------------------------------------------------------------------
 -- timeline: feeds (data-model §4.6, §6, ADR-0013). Owned by internal/app/timeline, whose

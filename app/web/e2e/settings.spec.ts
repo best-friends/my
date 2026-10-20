@@ -57,6 +57,18 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     email_moderator_notifications: false,
     timeline_languages: [] as string[],
   };
+  let autoDeletePolicy = {
+    enabled: false,
+    min_age_days: 30,
+    keep_pinned: true,
+    keep_bookmarked: true,
+    keep_favourited: true,
+    keep_media: false,
+    keep_polls: false,
+    keep_visibilities: ["direct"],
+    keep_min_boosts: 0,
+    keep_min_favourites: 0,
+  };
   const changes: unknown[] = [];
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow" }));
   await page.route("**/api/v1/**", async (route) => {
@@ -96,6 +108,11 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
             },
           ],
         });
+      case "GET /preferences/auto_delete":
+        return json(route, autoDeletePolicy);
+      case "PUT /preferences/auto_delete":
+        autoDeletePolicy = request.postDataJSON() as typeof autoDeletePolicy;
+        return json(route, autoDeletePolicy);
       case "GET /two_factor":
         return json(route, { enabled: false });
       case "POST /two_factor/totp/setup":
@@ -143,6 +160,7 @@ const pages = [
   "/settings/blocks",
   "/settings/mutes",
   "/settings/two-factor",
+  "/settings/auto-delete",
   "/settings/account",
 ] as const;
 
@@ -161,6 +179,19 @@ test("two-factor setup shows the QR code and the key without axe violations or h
   await page.getByRole("main").getByRole("button", { name: message("settings.two_factor.setup.start"), exact: true }).click();
   await expect(page.getByRole("main").getByRole("img")).toBeVisible();
   await expect(page.getByRole("main").getByRole("textbox")).toBeVisible();
+  await expectNoAxeViolations(makeAxeBuilder);
+  await expectNoHorizontalScroll(page);
+});
+
+test("the automatic deletion of old posts is turned on and saved without axe violations or horizontal scroll", async ({ page, makeAxeBuilder }) => {
+  await signedInServer(page, projectLocale());
+  await page.goto("/settings/auto-delete");
+  const main = page.getByRole("main");
+  await main.getByRole("switch", { name: message("settings.auto_delete.enabled") }).check();
+  await main.getByRole("checkbox", { name: message("settings.auto_delete.keep.media") }).check();
+  await main.getByRole("button", { name: message("settings.auto_delete.save"), exact: true }).click();
+  // The status names the age in the plural form of the locale; its words before the number are enough.
+  await expect(main.getByRole("status").getByText(message("settings.auto_delete.saved_on").replace(/\{.*$/s, "").trim())).toBeVisible();
   await expectNoAxeViolations(makeAxeBuilder);
   await expectNoHorizontalScroll(page);
 });
