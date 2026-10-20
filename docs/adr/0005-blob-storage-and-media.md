@@ -1,6 +1,6 @@
 # ADR-0005: Blob ストレージとメディア処理
 
-- Status: Accepted
+- Status: Accepted（MediaProcessor の責務・プロキシが中継だけをすること・動画の扱いを ADR-0054（メディアの派生と動画・音声） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #7
