@@ -42,6 +42,12 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   custom_emoji_enabled: "client:admin.audit_log.action.custom_emoji_enabled",
   custom_emoji_disabled: "client:admin.audit_log.action.custom_emoji_disabled",
   custom_emoji_deleted: "client:admin.audit_log.action.custom_emoji_deleted",
+  webhook_created: "client:admin.audit_log.action.webhook_created",
+  webhook_updated: "client:admin.audit_log.action.webhook_updated",
+  webhook_deleted: "client:admin.audit_log.action.webhook_deleted",
+  webhook_enabled: "client:admin.audit_log.action.webhook_enabled",
+  webhook_disabled: "client:admin.audit_log.action.webhook_disabled",
+  webhook_secret_rotated: "client:admin.audit_log.action.webhook_secret_rotated",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -56,6 +62,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   rule: "client:admin.audit_log.target_kind.rule",
   signup_block: "client:admin.audit_log.target_kind.signup_block",
   custom_emoji: "client:admin.audit_log.target_kind.custom_emoji",
+  webhook: "client:admin.audit_log.target_kind.webhook",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -67,8 +74,8 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 };
 
 /**
- * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block or a
- * custom emoji.
+ * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block, a
+ * custom emoji or a webhook.
  * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
  * gone (erased past its retention) has nothing left to show, so their entries show the label only.
  */
@@ -89,6 +96,9 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "custom_emoji":
       // An emoji has no screen of its own: the list searched by its shortcode, of this server or of its domain.
       return customEmojiHref(entry.target_label);
+    case "webhook":
+      // The list, which a deleted webhook has left; its page would be gone.
+      return "/admin/webhooks";
     default:
       return undefined;
   }

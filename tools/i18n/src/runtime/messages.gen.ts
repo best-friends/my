@@ -686,6 +686,18 @@ export interface MessageArgs {
   "client:admin.audit_log.action.text_changed": {};
   /** Two-factor authentication removed */
   "client:admin.audit_log.action.two_factor_disabled": {};
+  /** Webhook set up */
+  "client:admin.audit_log.action.webhook_created": {};
+  /** Webhook deleted */
+  "client:admin.audit_log.action.webhook_deleted": {};
+  /** Webhook disabled */
+  "client:admin.audit_log.action.webhook_disabled": {};
+  /** Webhook enabled */
+  "client:admin.audit_log.action.webhook_enabled": {};
+  /** Webhook secret renewed */
+  "client:admin.audit_log.action.webhook_secret_rotated": {};
+  /** Webhook changed */
+  "client:admin.audit_log.action.webhook_updated": {};
   /** By */
   "client:admin.audit_log.actor": {};
   /** Command line */
@@ -764,6 +776,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.status": {};
   /** Registration */
   "client:admin.audit_log.target_kind.user": {};
+  /** Webhook */
+  "client:admin.audit_log.target_kind.webhook": {};
   /** Audit log */
   "client:admin.audit_log.title": {};
   /** Other names */
@@ -2010,6 +2024,210 @@ export interface MessageArgs {
   "client:admin.theme.tokens.description": {};
   /** Type, spacing, and motion */
   "client:admin.theme.tokens.title": {};
+  /** Back to the webhooks */
+  "client:admin.webhook.back": {};
+  /** Webhook */
+  "client:admin.webhook.title": {};
+  /** Cancel */
+  "client:admin.webhooks.cancel": {};
+  /** Could not change the webhook: {reason} */
+  "client:admin.webhooks.change_failed": { reason: string };
+  /** {name} is set up. */
+  "client:admin.webhooks.created": { name: string };
+  /** Delete */
+  "client:admin.webhooks.delete": {};
+  /** Delete {name} */
+  "client:admin.webhooks.delete_webhook": { name: string };
+  /** It receives nothing more and its deliveries are no longer listed. This cannot be undone. */
+  "client:admin.webhooks.delete.description": {};
+  /** Delete {name}? */
+  "client:admin.webhooks.delete.title": { name: string };
+  /** {name} is deleted. */
+  "client:admin.webhooks.deleted": { name: string };
+  /** Deliveries */
+  "client:admin.webhooks.deliveries": {};
+  /** Deliveries of {name} */
+  "client:admin.webhooks.deliveries_of": { name: string };
+  /** Attempts */
+  "client:admin.webhooks.deliveries.attempts": {};
+  /** {count, plural, one {# time} other {# times}} */
+  "client:admin.webhooks.deliveries.attempts.count": { count: number };
+  /** Created */
+  "client:admin.webhooks.deliveries.created_at": {};
+  /** The messages of the last 14 days, newest first. A failed one is retried 8 times over about 27 hours. */
+  "client:admin.webhooks.deliveries.description": {};
+  /** No deliveries in the last 14 days */
+  "client:admin.webhooks.deliveries.empty": {};
+  /** Last attempt */
+  "client:admin.webhooks.deliveries.last_attempt": {};
+  /** Message ID */
+  "client:admin.webhooks.deliveries.message_id": {};
+  /** Could not connect */
+  "client:admin.webhooks.deliveries.outcome.connection_error": {};
+  /** Destination not allowed */
+  "client:admin.webhooks.deliveries.outcome.forbidden_destination": {};
+  /** Error answer */
+  "client:admin.webhooks.deliveries.outcome.http_error": {};
+  /** Succeeded */
+  "client:admin.webhooks.deliveries.outcome.succeeded": {};
+  /** No answer in time */
+  "client:admin.webhooks.deliveries.outcome.timeout": {};
+  /** Send again */
+  "client:admin.webhooks.deliveries.redeliver": {};
+  /** Could not send the delivery again: {reason} */
+  "client:admin.webhooks.deliveries.redeliver_failed": { reason: string };
+  /** Send {event} {id} again */
+  "client:admin.webhooks.deliveries.redeliver_of": { event: string; id: string };
+  /** The delivery is on its way again. */
+  "client:admin.webhooks.deliveries.redelivered": {};
+  /** Result */
+  "client:admin.webhooks.deliveries.status": {};
+  /** HTTP {code} */
+  "client:admin.webhooks.deliveries.status_code": { code: string };
+  /** Failing */
+  "client:admin.webhooks.deliveries.status.failing": {};
+  /** Not sent yet */
+  "client:admin.webhooks.deliveries.status.pending": {};
+  /** Succeeded */
+  "client:admin.webhooks.deliveries.status.succeeded": {};
+  /** Deliveries */
+  "client:admin.webhooks.deliveries.title": {};
+  /** Description */
+  "client:admin.webhooks.description": {};
+  /** What the webhook is for, up to {max} characters. Lists and the audit log name it by this. */
+  "client:admin.webhooks.description.description": { max: string };
+  /** Settings */
+  "client:admin.webhooks.details.title": {};
+  /** Disable */
+  "client:admin.webhooks.disable": {};
+  /** Disable {name} */
+  "client:admin.webhooks.disable_webhook": { name: string };
+  /** {name} is disabled. */
+  "client:admin.webhooks.disabled_status": { name: string };
+  /** Edit */
+  "client:admin.webhooks.edit": {};
+  /** Edit {name} */
+  "client:admin.webhooks.edit_webhook": { name: string };
+  /** Close */
+  "client:admin.webhooks.edit.close": {};
+  /** Edit {name} */
+  "client:admin.webhooks.edit.title": { name: string };
+  /** No webhooks yet */
+  "client:admin.webhooks.empty": {};
+  /** A webhook sends the events you choose to a URL, such as a chat or an automation tool. */
+  "client:admin.webhooks.empty.description": {};
+  /** Enable */
+  "client:admin.webhooks.enable": {};
+  /** Enable {name} */
+  "client:admin.webhooks.enable_webhook": { name: string };
+  /** {name} is enabled. */
+  "client:admin.webhooks.enabled_status": { name: string };
+  /** An account is created */
+  "client:admin.webhooks.event.account_created": {};
+  /** A profile is changed */
+  "client:admin.webhooks.event.account_updated": {};
+  /** An action is appealed */
+  "client:admin.webhooks.event.appeal_created": {};
+  /** A custom emoji is added */
+  "client:admin.webhooks.event.custom_emoji_created": {};
+  /** A custom emoji is deleted */
+  "client:admin.webhooks.event.custom_emoji_deleted": {};
+  /** A custom emoji is changed */
+  "client:admin.webhooks.event.custom_emoji_updated": {};
+  /** A domain action is taken */
+  "client:admin.webhooks.event.domain_moderation_action_created": {};
+  /** A domain action is lifted */
+  "client:admin.webhooks.event.domain_moderation_action_lifted": {};
+  /** An account action is taken */
+  "client:admin.webhooks.event.moderation_action_created": {};
+  /** An account action is lifted */
+  "client:admin.webhooks.event.moderation_action_lifted": {};
+  /** A registration awaits approval */
+  "client:admin.webhooks.event.registration_pending": {};
+  /** A report is filed */
+  "client:admin.webhooks.event.report_created": {};
+  /** A report is reopened */
+  "client:admin.webhooks.event.report_reopened": {};
+  /** A report is resolved */
+  "client:admin.webhooks.event.report_resolved": {};
+  /** A public post is published */
+  "client:admin.webhooks.event.status_created": {};
+  /** Test message */
+  "client:admin.webhooks.event.webhook_test": {};
+  /** Events */
+  "client:admin.webhooks.events": {};
+  /** Choose at least one. Each event needs the permission of its kind besides managing webhooks. */
+  "client:admin.webhooks.events.description": {};
+  /** ,  */
+  "client:admin.webhooks.events.separator": {};
+  /** Failures */
+  "client:admin.webhooks.failure": {};
+  /** {count, plural, one {# failed attempt} other {# failed attempts}} */
+  "client:admin.webhooks.failure.count": { count: number };
+  /** since */
+  "client:admin.webhooks.failure.since": {};
+  /** Webhooks of this server */
+  "client:admin.webhooks.list.title": {};
+  /** Missing permissions: {permissions} */
+  "client:admin.webhooks.missing_permissions": { permissions: string };
+  /** Set up a webhook */
+  "client:admin.webhooks.new.title": {};
+  /** by a staff member */
+  "client:admin.webhooks.reason.admin": {};
+  /** (the deliveries kept failing) */
+  "client:admin.webhooks.reason.failing": {};
+  /** (the endpoint answered that it is gone) */
+  "client:admin.webhooks.reason.gone": {};
+  /** New secret */
+  "client:admin.webhooks.rotate": {};
+  /** New secret for {name} */
+  "client:admin.webhooks.rotate_webhook": { name: string };
+  /** The new secret signs every message from now on. For 24 hours the old secret signs them too, so that the receiver can switch to the new one. */
+  "client:admin.webhooks.rotate.description": {};
+  /** Make a new secret for {name}? */
+  "client:admin.webhooks.rotate.title": { name: string };
+  /** {name} has a new secret. */
+  "client:admin.webhooks.rotated": { name: string };
+  /** Save */
+  "client:admin.webhooks.save": {};
+  /** Could not save the webhook: {reason} */
+  "client:admin.webhooks.save_failed": { reason: string };
+  /** The secret is copied. */
+  "client:admin.webhooks.secret.copied": {};
+  /** Copy the secret */
+  "client:admin.webhooks.secret.copy": {};
+  /** Could not copy the secret. Select it and copy it yourself. */
+  "client:admin.webhooks.secret.copy_failed": {};
+  /** Copy it into the receiver now: it is not shown again. The receiver checks the signature of each message with it (Standard Webhooks). */
+  "client:admin.webhooks.secret.notice": {};
+  /** Secret of {name} */
+  "client:admin.webhooks.secret.title": { name: string };
+  /** State */
+  "client:admin.webhooks.state": {};
+  /** Disabled */
+  "client:admin.webhooks.state.disabled": {};
+  /** Enabled */
+  "client:admin.webhooks.state.enabled": {};
+  /** Set up */
+  "client:admin.webhooks.submit": {};
+  /** Send what happens on this server to other services, signed. */
+  "client:admin.webhooks.summary": {};
+  /** Send a test */
+  "client:admin.webhooks.test": {};
+  /** Send a test to {name} */
+  "client:admin.webhooks.test_webhook": { name: string };
+  /** A test message to {name} is on its way. Its deliveries show how it went. */
+  "client:admin.webhooks.tested": { name: string };
+  /** Webhooks */
+  "client:admin.webhooks.title": {};
+  /** {name} is saved. */
+  "client:admin.webhooks.updated": { name: string };
+  /** Changed */
+  "client:admin.webhooks.updated_at": {};
+  /** URL */
+  "client:admin.webhooks.url": {};
+  /** Where the messages are posted, an https URL. A destination on this server's own network works only when the operator allows it in the configuration. */
+  "client:admin.webhooks.url.description": {};
   /** Could not reach the server. Check your connection and try again. */
   "client:api.error.network": {};
   /** You are offline, so the server cannot be reached. Connect to the internet and try again. */
@@ -2222,6 +2440,8 @@ export interface MessageArgs {
   "client:notifications.link.registrations": {};
   /** Open the report */
   "client:notifications.link.report": {};
+  /** Open the webhooks */
+  "client:notifications.link.webhooks": {};
   /** Load more notifications */
   "client:notifications.load_more": {};
   /** Loading notifications */
@@ -2254,6 +2474,8 @@ export interface MessageArgs {
   "client:notifications.type.admin_report": {};
   /** {name} signed up and awaits approval */
   "client:notifications.type.admin_sign_up": { name: string };
+  /** The server disabled a webhook that kept failing */
+  "client:notifications.type.admin_webhook_disabled": {};
   /** The moderators decided your appeal */
   "client:notifications.type.appeal_decided": {};
   /** {name} boosted your post */
@@ -3594,6 +3816,10 @@ export interface MessageArgs {
   "server:errors.unsupported_media_type": {};
   /** {name} must be an image that you uploaded and that has finished processing. */
   "server:errors.unusable_image": { name: string };
+  /** The webhook cannot be saved. */
+  "server:errors.webhook.invalid": {};
+  /** {reason, select, url {The URL must be an absolute http or https URL of at most 2048 bytes, without user info or a fragment.} description {The description must be at most 200 characters, without control characters.} events {Choose at least one event, each once.} missing_permission {You need the permissions of every event you choose.} other {The settings break a rule.}} */
+  "server:errors.webhook.invalid_detail": { reason: "description" | "events" | "missing_permission" | "url" | (string & {}) };
   /** The password is wrong. */
   "server:errors.wrong_password": {};
   /** The server is not ready to accept requests. */
@@ -3610,6 +3836,10 @@ export interface MessageArgs {
   "server:mail.admin_sign_up.body": { instance: string; url: string };
   /** A new sign-up awaits approval on {instance} */
   "server:mail.admin_sign_up.subject": { instance: string };
+  /** The server {instance} turned off one of its webhooks: its endpoint kept failing, or answered that it is gone.  Open your notifications to see which one, and turn it on again once the endpoint works:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
+  "server:mail.admin_webhook_disabled.body": { instance: string; url: string };
+  /** A webhook of {instance} was turned off */
+  "server:mail.admin_webhook_disabled.subject": { instance: string };
   /** Welcome to {instance}.  Open this link to confirm your email address:  {url}  {hours, plural, one {The link works for # hour.} other {The link works for # hours.}} If you did not sign up at {host}, ignore this email. */
   "server:mail.verify_email.body": { host: string; hours: number; instance: string; url: string };
   /** Confirm your email address for {instance} */
@@ -3634,6 +3864,8 @@ export interface MessageArgs {
   "server:push.admin_report": { instance: string };
   /** A new sign-up awaits approval on {instance} */
   "server:push.admin_sign_up": { instance: string };
+  /** A webhook of {instance} was turned off */
+  "server:push.admin_webhook_disabled": { instance: string };
   /** The moderators of {instance} decided your appeal */
   "server:push.appeal_decided": { instance: string };
   /** {name} boosted your post */

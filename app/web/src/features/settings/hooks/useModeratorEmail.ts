@@ -5,8 +5,11 @@ import { shellQueryReader } from "../../../lib/query";
 import { credentialsQueryOptions, instanceQueryOptions, type Permission } from "../api/me";
 import type { PreferenceControl } from "./usePreferences";
 
-/** The permissions whose holders get moderator notifications (admin_report, admin_sign_up, admin_appeal). */
-const moderatorPermissions: readonly Permission[] = ["manage_reports", "manage_accounts"];
+/**
+ * The permissions whose holders get moderator notifications (admin_report, admin_sign_up, admin_appeal, and
+ * admin_webhook_disabled for manage_webhooks).
+ */
+const moderatorPermissions: readonly Permission[] = ["manage_reports", "manage_accounts", "manage_webhooks"];
 
 /** What the preferences show of `email_moderator_notifications`. */
 export type ModeratorEmail =

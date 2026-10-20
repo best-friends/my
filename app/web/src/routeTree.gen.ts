@@ -28,6 +28,7 @@ import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
 import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminThemeRouteImport } from './routes/admin.theme'
+import { Route as AdminWebhooksRouteImport } from './routes/admin.webhooks'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
 import { Route as ModerationIndexRouteImport } from './routes/moderation.index'
 import { Route as ModerationAccountsRouteImport } from './routes/moderation.accounts'
@@ -50,6 +51,7 @@ import { Route as SettingsProfileRouteImport } from './routes/settings.profile'
 import { Route as SettingsTwoFactorRouteImport } from './routes/settings.two-factor'
 import { Route as TagsTagRouteImport } from './routes/tags.$tag'
 import { Route as AtChar123acctChar125StatusIdRouteImport } from './routes/@{$acct}_.status.$id'
+import { Route as AdminWebhooksIdRouteImport } from './routes/admin.webhooks_.$id'
 import { Route as ModerationAccountsIdRouteImport } from './routes/moderation.accounts_.$id'
 import { Route as ModerationAppealsIdRouteImport } from './routes/moderation.appeals_.$id'
 import { Route as ModerationInstancesDomainRouteImport } from './routes/moderation.instances_.$domain'
@@ -151,6 +153,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
 const AdminThemeRoute = AdminThemeRouteImport.update({
   id: '/admin/theme',
   path: '/admin/theme',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminWebhooksRoute = AdminWebhooksRouteImport.update({
+  id: '/admin/webhooks',
+  path: '/admin/webhooks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginCallbackRoute = LoginCallbackRouteImport.update({
@@ -264,6 +271,11 @@ const AtChar123acctChar125StatusIdRoute =
     path: '/@{$acct}/status/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminWebhooksIdRoute = AdminWebhooksIdRouteImport.update({
+  id: '/admin/webhooks_/$id',
+  path: '/admin/webhooks/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ModerationAccountsIdRoute = ModerationAccountsIdRouteImport.update({
   id: '/moderation/accounts_/$id',
   path: '/moderation/accounts/$id',
@@ -311,6 +323,7 @@ export interface FileRoutesByFullPath {
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
+  '/admin/webhooks': typeof AdminWebhooksRoute
   '/login/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -334,6 +347,7 @@ export interface FileRoutesByFullPath {
   '/moderation/': typeof ModerationIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/@{$acct}/status/$id': typeof AtChar123acctChar125StatusIdRoute
+  '/admin/webhooks/$id': typeof AdminWebhooksIdRoute
   '/moderation/accounts/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
@@ -359,6 +373,7 @@ export interface FileRoutesByTo {
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
+  '/admin/webhooks': typeof AdminWebhooksRoute
   '/login/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -382,6 +397,7 @@ export interface FileRoutesByTo {
   '/moderation': typeof ModerationIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/@{$acct}/status/$id': typeof AtChar123acctChar125StatusIdRoute
+  '/admin/webhooks/$id': typeof AdminWebhooksIdRoute
   '/moderation/accounts/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
@@ -408,6 +424,7 @@ export interface FileRoutesById {
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/theme': typeof AdminThemeRoute
+  '/admin/webhooks': typeof AdminWebhooksRoute
   '/login_/callback': typeof LoginCallbackRoute
   '/moderation/accounts': typeof ModerationAccountsRoute
   '/moderation/appeals': typeof ModerationAppealsRoute
@@ -431,6 +448,7 @@ export interface FileRoutesById {
   '/moderation/': typeof ModerationIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/@{$acct}_/status/$id': typeof AtChar123acctChar125StatusIdRoute
+  '/admin/webhooks_/$id': typeof AdminWebhooksIdRoute
   '/moderation/accounts_/$id': typeof ModerationAccountsIdRoute
   '/moderation/appeals_/$id': typeof ModerationAppealsIdRoute
   '/moderation/instances_/$domain': typeof ModerationInstancesDomainRoute
@@ -458,6 +476,7 @@ export interface FileRouteTypes {
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
+    | '/admin/webhooks'
     | '/login/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -481,6 +500,7 @@ export interface FileRouteTypes {
     | '/moderation/'
     | '/settings/'
     | '/@{$acct}/status/$id'
+    | '/admin/webhooks/$id'
     | '/moderation/accounts/$id'
     | '/moderation/appeals/$id'
     | '/moderation/instances/$domain'
@@ -506,6 +526,7 @@ export interface FileRouteTypes {
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
+    | '/admin/webhooks'
     | '/login/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -529,6 +550,7 @@ export interface FileRouteTypes {
     | '/moderation'
     | '/settings'
     | '/@{$acct}/status/$id'
+    | '/admin/webhooks/$id'
     | '/moderation/accounts/$id'
     | '/moderation/appeals/$id'
     | '/moderation/instances/$domain'
@@ -554,6 +576,7 @@ export interface FileRouteTypes {
     | '/admin/rules'
     | '/admin/settings'
     | '/admin/theme'
+    | '/admin/webhooks'
     | '/login_/callback'
     | '/moderation/accounts'
     | '/moderation/appeals'
@@ -577,6 +600,7 @@ export interface FileRouteTypes {
     | '/moderation/'
     | '/settings/'
     | '/@{$acct}_/status/$id'
+    | '/admin/webhooks_/$id'
     | '/moderation/accounts_/$id'
     | '/moderation/appeals_/$id'
     | '/moderation/instances_/$domain'
@@ -603,6 +627,7 @@ export interface RootRouteChildren {
   AdminRulesRoute: typeof AdminRulesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminThemeRoute: typeof AdminThemeRoute
+  AdminWebhooksRoute: typeof AdminWebhooksRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
   ModerationAccountsRoute: typeof ModerationAccountsRoute
   ModerationAppealsRoute: typeof ModerationAppealsRoute
@@ -626,6 +651,7 @@ export interface RootRouteChildren {
   ModerationIndexRoute: typeof ModerationIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   AtChar123acctChar125StatusIdRoute: typeof AtChar123acctChar125StatusIdRoute
+  AdminWebhooksIdRoute: typeof AdminWebhooksIdRoute
   ModerationAccountsIdRoute: typeof ModerationAccountsIdRoute
   ModerationAppealsIdRoute: typeof ModerationAppealsIdRoute
   ModerationInstancesDomainRoute: typeof ModerationInstancesDomainRoute
@@ -766,6 +792,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/theme'
       fullPath: '/admin/theme'
       preLoaderRoute: typeof AdminThemeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/webhooks': {
+      id: '/admin/webhooks'
+      path: '/admin/webhooks'
+      fullPath: '/admin/webhooks'
+      preLoaderRoute: typeof AdminWebhooksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login_/callback': {
@@ -922,6 +955,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtChar123acctChar125StatusIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/webhooks_/$id': {
+      id: '/admin/webhooks_/$id'
+      path: '/admin/webhooks/$id'
+      fullPath: '/admin/webhooks/$id'
+      preLoaderRoute: typeof AdminWebhooksIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/moderation/accounts_/$id': {
       id: '/moderation/accounts_/$id'
       path: '/moderation/accounts/$id'
@@ -979,6 +1019,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRulesRoute: AdminRulesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminThemeRoute: AdminThemeRoute,
+  AdminWebhooksRoute: AdminWebhooksRoute,
   LoginCallbackRoute: LoginCallbackRoute,
   ModerationAccountsRoute: ModerationAccountsRoute,
   ModerationAppealsRoute: ModerationAppealsRoute,
@@ -1002,6 +1043,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationIndexRoute: ModerationIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   AtChar123acctChar125StatusIdRoute: AtChar123acctChar125StatusIdRoute,
+  AdminWebhooksIdRoute: AdminWebhooksIdRoute,
   ModerationAccountsIdRoute: ModerationAccountsIdRoute,
   ModerationAppealsIdRoute: ModerationAppealsIdRoute,
   ModerationInstancesDomainRoute: ModerationInstancesDomainRoute,

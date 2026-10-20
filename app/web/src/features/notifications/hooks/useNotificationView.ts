@@ -99,6 +99,7 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   relationships_severed: "client:notifications.type.relationships_severed",
   appeal_decided: "client:notifications.type.appeal_decided",
   admin_appeal: "client:notifications.type.admin_appeal",
+  admin_webhook_disabled: "client:notifications.type.admin_webhook_disabled",
 };
 
 /** The sentences of a group of the types that rows group (groupNotifications). */
@@ -185,6 +186,8 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
       return notification.report_id === undefined ? [] : [{ href: moderationReportPath(notification.report_id), label: "client:notifications.link.report" }];
     case "admin_sign_up":
       return [{ href: "/moderation/registrations", label: "client:notifications.link.registrations" }];
+    case "admin_webhook_disabled":
+      return [{ href: "/admin/webhooks", label: "client:notifications.link.webhooks" }];
     case "relationships_severed":
       return ownAcct === null
         ? []

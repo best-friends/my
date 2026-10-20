@@ -319,7 +319,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     区画は WAI-ARIA APG の並べ替えのできるリスト（listbox の Rearrangeable の例）の考え方に従う。各項目は、表示するかのチェックボックスと、1 つ上・1 つ下へ動かすアイコンのボタン（名前とツールチップは「ホームを上へ移動」）を持ち、どれもふつうのタブ移動で届く。
     動かすとフォーカスは動かした項目の同じボタン（端に着いて押せなくなったときはもう一方のボタン）に残り、新しい位置を `useAnnouncer` で知らせる（「ホームを 8 項目中 2 番目に移動しました」）。各項目の説明は、電話でタブバーとメニューのどちらに出るか・隠していること・サーバーが提供していないことを言う。
     スタッフの画面は「モデレーション」と「サーバー管理」の 2 つの区分に分ける（[ADR-0058](../adr/0058-moderation-admin-separation.md)、§14）。ロールがモデレーションの画面の権限（`manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`）のどれかを持つ閲覧者には「モデレーション」（`/moderation`）を、
-    サーバー管理の画面の権限（`manage_settings`・`manage_rules`・`manage_custom_emojis`・`manage_jobs`）のどれかを持つ閲覧者には「管理」（`/admin`）を、設定の後にこの順で足す。どちらも、その区分に閲覧者の使える画面があるときだけ出すので、組み込みのモデレーターには「管理」が出ない。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
+    サーバー管理の画面の権限（`manage_settings`・`manage_rules`・`manage_custom_emojis`・`manage_webhooks`・`manage_jobs`）のどれかを持つ閲覧者には「管理」（`/admin`）を、設定の後にこの順で足す。どちらも、その区分に閲覧者の使える画面があるときだけ出すので、組み込みのモデレーターには「管理」が出ない。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
     jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
   - `lg` からのサイドバーは、リストの上にサーバーの名前（下の「サーバーの名前」）を、リストの下（`nav` の末尾）にサインインしているアカウントのアバター・表示名・ハンドルを出す。
     アカウントはそのプロフィールへのリンクで、名前は表示名とハンドル（それぞれ 1 行に省略、G7）、説明（`aria-describedby`）は「サインインしているアカウント」にする。
@@ -559,12 +559,12 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 
 - **モデレーション**（`/moderation/*`、`features/moderation`）: 通報・異議申し立ての審査・アカウント・登録の審査・登録の拒否リスト・招待・ドメインへの処分・連合先のサーバーの状態（[federation.md §7.3](federation.md)）・監査ログ。
   `features/moderation` は、利用者が自分への処分を確かめる画面（§18）も受け持ち、サーバー管理の画面が使う共通の部品（下の「共通の部品」）と権限の型・一覧のページングも `index.ts` から出す。
-- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・ルール・テーマ・規約とポリシー・カスタム絵文字・dead job。これから足すサーバー管理の画面（お知らせ・webhook・リレー）は、
+- **サーバー管理**（`/admin/*`、`features/admin`）: サーバーの設定・ルール・テーマ・規約とポリシー・カスタム絵文字・webhook・dead job。これから足すサーバー管理の画面（お知らせ・リレー）は、
   `routes/admin.<画面>.tsx` のルートと、`features/admin/components/AdminMenu.tsx` の一覧の 1 行を足してここに置く。
 
 API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の管理の操作、タグ `admin-moderation` / `admin-server`）、Web の経路とは一致しない。
 
-- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面、`manage_custom_emojis` がカスタム絵文字の画面に要る。
+- **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` が dead job、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_webhooks` が webhook の画面に要る。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -609,6 +609,13 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     このサーバーの絵文字は「編集する」（カテゴリ・別名・ピッカーに出すか・有効にするかのダイアログ。保存したら閉じ、失敗はダイアログの中に出す）・「画像を差し替える」（`FileTrigger` で選ぶとすぐに送る）・「削除する」（元に戻せないので `ConfirmDialog` で確かめる）、ほかのサーバーの絵文字は「無効にする」「有効にする」を持つ。
     ボタンのアクセシブルネームは絵文字（`:shortcode:`、ほかのサーバーは `@domain` を付け、U+2066 / U+2069 で囲む）を含める。変えた絵文字は応答で行を置き換え、消した絵文字は一覧から除いてフォーカスを次の行のボタンに移す（`lib/useFocusAfterRemoval.ts`）。
     結果は一覧の上の `StatusMessage` に出し、失敗は同じ場所（`role="alert"`）に出す。どの変更も、ピッカーの絵文字と監査ログに無効化の印を付ける。
+- **webhook**（`/admin/webhooks`・`/admin/webhooks/{id}`、`manage_webhooks`、FR-722、[ADR-0060](../adr/0060-instance-webhooks.md)）: 「webhook を設定する」と「このサーバーの webhook」の 2 つの区画（`h2` の `section`）。
+  - **設定**: URL（必須、2048 バイトまで）・説明（200 文字まで）・イベント（`role="group"` の中の `Checkbox`、イベントの種類ごとに 1 つ）のフォーム。`POST /admin/webhooks` で送り、サーバーの拒否（422 `invalid-webhook`）は `reason` の項目（URL・説明・イベント）にサーバーの `detail` を出し、`missing_permission` では足りない権限（`missing_permissions`）も並べて、入力を残す。
+    成功したら入力を空にし、一覧と監査ログに無効化の印を付けてから、結果をフォームの `StatusMessage` に、秘密（`whsec_…`、`dir="ltr"`）を二度と表示しない旨とコピーのボタン（結果はトースト）と一緒にフォームの下に出す。秘密はキャッシュにも保存にも置かず、次の操作で消える。
+  - **一覧**: 新しい順。各 webhook は見出し（説明、なければ URL のホスト名）と、URL（`dir="ltr"`）・イベント・状態（サーバーが無効にしたときはその理由: 宛先がなくなった `gone`、失敗が続いた `failing`）・最後の成功から失敗した回数と最初の失敗の日時・設定を変えた日時の説明リストにする。
+    「送信履歴」（その webhook のページへのリンク）・「編集」（フォームと同じ項目のダイアログ。保存したら閉じ、拒否はダイアログの項目に出す）・「無効にする」「有効にする」・「テスト送信」（有効なときだけ）・「秘密を作り直す」（`ConfirmDialog` で確かめ、新しい秘密を一覧の上に一度だけ出す）・「削除」（元に戻せないので `ConfirmDialog` で確かめ、フォーカスを次の行に移す）を持つ。
+    ボタンのアクセシブルネームは webhook の名前（説明は U+2068 / U+2069、ホスト名は U+2066 / U+2069 で囲む）を含める。結果は一覧の上の `StatusMessage` に、失敗は同じ場所（`role="alert"`）に出し、どの変更も一覧と監査ログに無効化の印を付ける。
+  - **webhook のページ**（`/admin/webhooks/{id}`）: 設定の説明リストと、過去 14 日の送信履歴（新しい順、「さらに表示」）。各送信はイベントの見出しと、結果（未送信・成功・失敗中）・試行回数・作成日時・最後の試行（結果・状態コード・日時）・メッセージ ID（`dir="ltr"`）の説明リストと「もう一度送る」を持ち、送ると履歴を取り直して `StatusMessage` に知らせる。
 - **dead job**（`/admin/dead-jobs`）: 失敗した新しい順の一覧。各ジョブは型の見出し、失敗と作成の日時、試行回数、冪等キーと順序キー、最後のエラー、ペイロード（JSON の文字列のまま）を出す。型・キー・ペイロードは `dir="ltr"` で表示する。
   「再実行」はジョブの型と失敗の日時をアクセシブルネームに含める。成功したジョブはキャッシュの一覧から除き、フォーカスを次の行のボタン（なければ見出し）に移す（`lib/useFocusAfterRemoval.ts`）。
   複数のジョブを同時に再実行できるので、成功後の処理は `mutate` ではなく `useMutation` 自身のコールバックに書き、送信中のジョブは `useMutationState` で求める。
@@ -721,6 +728,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `features/moderation/appeals.test.tsx` は、異議申し立ての一覧とタブと URL、審査済みのタブが審査待ちだけのページを読み進めること、本文の `dir="auto"`、説明付きの撤回で処分が解除と出ることとフォーカス、説明なしの維持、キャンセルと Esc、ダイアログの中の失敗、先に逆の決定をされた申し立て、権限と 403 を検査する。
   `features/admin/settings.test.tsx` は、名前の保存と外枠の名前、説明の言語ごとの保存、設定の表示と変えた設定だけをまとめて送ることと `GET /instance` の取り直し、既定の言語の選択、保存の失敗、権限を、
   `features/admin/rules.test.tsx` は、ルールの一覧と言語ごとの文、追加と入力の検査、下へ動かしたルールの見出しへのフォーカス、ダイアログでの編集、確認を経た廃止、権限を、
+  `features/admin/webhooks.test.tsx` は、webhook の設定と一度だけの秘密、足りない権限の拒否をイベントの項目に出すこと、サーバーが無効にした webhook の理由と失敗の回数と有効化、確認を経た秘密の作り直し、ダイアログでの編集、確認を経た削除、送信履歴の一覧ともう一度送ること、権限を検査する。
   `features/moderation/invites.test.tsx` は、招待の一覧の状態と人数、既定の値と制限なしでの作成とコードとリンク、失効と見出しへのフォーカス、登録モードが `invite` でないときの説明、権限を検査する。
   `features/admin/documents.test.tsx` は、表示言語での本文と書かれている言語、公開ページをページごと開くこと、保存と `role="status"` の結果、URL での言語の切り替えと言語ごとの下書き、削除の確認と取り消し、保存の失敗、未保存の変更の確認、権限を検査し、
   `features/documents/documents.test.tsx` は、サインインの画面・設定・メニューのシートの文書へのリンクと、公開していない文書を出さないことを検査する。
@@ -729,6 +737,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   `e2e/registrations.spec.ts` は、登録の審査の画面の axe・横スクロール・ARIA スナップショット、承認の確認のダイアログ、キーボードでの却下とフォーカスの移動を検査する。
   `e2e/signup-blocks.spec.ts` は、登録の拒否リストの axe・横スクロール・ARIA スナップショット（両方の形のドメインと長いハッシュ）、キーボードでのメールのドメインの拒否の追加、キーボードでの一覧からの追加と追加しなかった行の表の ARIA スナップショット、解除とフォーカスの移動を検査する。
   `e2e/server-settings.spec.ts` は、名前の区画の ARIA スナップショットと名前の変更で外枠の名前が変わることと、キーボードで登録モードを招待制にして保存するまでを、各幅とロケールの axe・横スクロールとともに検査する。
+  `e2e/webhooks.spec.ts` は、webhook の設定と一度だけの秘密の表示、一覧、無効化と有効化、確認のダイアログを経た削除までを、各幅とロケールの axe・横スクロールとともに検査する。
   `e2e/roles.spec.ts` は、ロールの区画の ARIA スナップショット（閲覧者より上のロールの理由）・axe・横スクロールと、キーボードで付与の確認のダイアログを経て、区画の見出しにフォーカスが移るまでを検査する。
   `e2e/documents.spec.ts` は、本物の `my serve` で登録の画面の同意の文とフッターから文書の公開ページを開き、Markdown の見出し・箇条書き・表の ARIA スナップショット・両方のテーマの axe・横スクロールを、`vite preview` で規約とポリシーの画面の ARIA スナップショット・axe・横スクロールと、キーボードでプライバシーポリシーを書いて保存するまでを検査する。
   `e2e/appeals.spec.ts` は、異議申し立ての一覧の axe・横スクロール・ARIA スナップショットと、キーボードで申し立てを開き、撤回の確認のダイアログを経て処分が解除と出て、審査の見出しにフォーカスが移るまでを検査する。

@@ -33,7 +33,7 @@ const moderator = {
   indexable: true,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks"],
 };
 
 /** The reported account: a long display name, local. */
@@ -195,6 +195,31 @@ const customEmoji: Schemas["AdminCustomEmoji"] = {
   updated_at: "2026-10-20T00:00:00Z",
 };
 
+/** A webhook that the server disabled, with a long description and URL, as GET /admin/webhooks lists it. */
+const webhook: Schemas["AdminWebhook"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e3",
+  url: `https://hooks.example/services/${"a-very-long-path-segment-".repeat(4)}end`,
+  description: "Moderation chat of the staff, with every report and appeal",
+  events: ["report.created", "report.resolved", "appeal.created", "status.created"],
+  state: "disabled",
+  state_reason: "failing",
+  state_changed_at: "2026-10-20T00:00:00Z",
+  failure: { consecutive_failures: 20, first_failed_at: "2026-10-17T00:00:00Z" },
+  created_at: "2026-10-16T00:00:00Z",
+  updated_at: "2026-10-16T00:00:00Z",
+};
+
+/** A failing delivery of the webhook, as GET /admin/webhooks/{id}/deliveries lists it. */
+const webhookDelivery: Schemas["AdminWebhookDelivery"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000e4",
+  message_id: "0192f0c4-7a8e-7000-8000-0000000000e5",
+  event_type: "report.created",
+  status: "failing",
+  attempts: 8,
+  last_attempt: { outcome: "http_error", status_code: 503, duration_ms: 120, attempted_at: "2026-10-20T00:00:00Z" },
+  created_at: "2026-10-19T00:00:00Z",
+};
+
 const instance = { domain: longDomain, state: "unavailable", since: "2026-10-10T08:00:00Z", failure_days: 7, last_failure_day: "2026-10-10" };
 
 /** A rule in English with a long hint and in Arabic, which reads right to left, as GET /admin/rules lists it. */
@@ -348,6 +373,9 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/rules") return json(route, { items: [rule] });
     if (key === "GET /admin/invites") return json(route, { items: [invite] });
     if (key === "GET /admin/custom_emojis") return json(route, { items: url.searchParams.get("local") === "false" ? [] : [customEmoji] });
+    if (key === "GET /admin/webhooks") return json(route, { items: [webhook] });
+    if (key === `GET /admin/webhooks/${webhook.id}`) return json(route, webhook);
+    if (key === `GET /admin/webhooks/${webhook.id}/deliveries`) return json(route, { items: [webhookDelivery] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
@@ -395,6 +423,8 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "moderation.instances_.$domain": { path: `/moderation/instances/${longDomain}`, ready: longDomain },
   "admin.custom-emojis": { path: "/admin/custom-emojis", ready: customEmoji.category ?? "" },
   "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
+  "admin.webhooks": { path: "/admin/webhooks", ready: webhook.description ?? "" },
+  "admin.webhooks_.$id": { path: `/admin/webhooks/${webhook.id}`, ready: webhookDelivery.message_id },
   "admin.documents": { path: "/admin/documents?locale=en", ready: { value: documentText.body } },
   "admin.settings": { path: "/admin/settings", ready: "my.example" },
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },

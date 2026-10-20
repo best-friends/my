@@ -232,6 +232,19 @@ describe("the notifications page", () => {
     expect(within(decided).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/settings/account-status"]);
   });
 
+  test("tells an administrator of a webhook that the server disabled, and leads to the webhooks", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const items: Notification[] = [{ id: "0192f0c4-7a8e-7000-8000-0000000000d9", type: "admin_webhook_disabled", created_at: "2026-10-16T09:00:00Z" }];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    const disabled = within(feed).getByRole("article", { name: /The server disabled a webhook that kept failing/ });
+    expect(within(disabled).getByRole("link", { name: "Open the webhooks" })).toHaveAttribute("href", "/admin/webhooks");
+  });
+
   test("names the actor of every type and hides a post behind its content warning", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
