@@ -4,7 +4,8 @@ name: Main
 # has already checked, so the contexts of `make check` (ci.yml) do not run again here. This workflow saves the Go and
 # Bun caches that pull requests and merge groups restore, and runs the checks too slow for the merge queue: the web
 # E2E subset, the Docker Compose smoke test (except on docs-only pushes), the @my/ui story tests (when the ui context
-# changes), and the PostgreSQL tests on a real postgres container (when a path they depend on changes).
+# changes), the PostgreSQL tests on a real postgres container (when a path they depend on changes), and the
+# stream.Bus contracts on broker containers (likewise).
 
 on:
   push:
@@ -31,6 +32,7 @@ jobs:
       ui: ${{ steps.select.outputs.ui }}
       smoke: ${{ steps.select.outputs.smoke }}
       postgres: ${{ steps.select.outputs.postgres }}
+      stream: ${{ steps.select.outputs.stream }}
     steps:
       - uses: actions/checkout@v7
       # The push's range is `before`..`after`; `before` is fetched by SHA because the merge queue can merge several
@@ -54,10 +56,19 @@ jobs:
             else
               postgres=false
             fi
+            # The paths the stream.Bus contracts on broker containers depend on: the adapters and their connections,
+            # the port, the test kit, the Go modules, and how CI runs them.
+            if grep -qE '^(internal/adapter/(stream|valkey)/|internal/app/stream/|pkg/testkit/|go\.(mod|sum)$|Makefile$|\.tool-versions$|\.github/workflows/(main|stream-contract)\.yml$)' \
+              "$RUNNER_TEMP/changed"; then
+              stream=true
+            else
+              stream=false
+            fi
           else
             echo "No range to compare with: running every suite."
             contexts="$(scripts/changed-contexts.sh --all)"
             postgres=true
+            stream=true
           fi
           echo "contexts: ${contexts//$'\n'/ }"
           for c in go ui; do
@@ -66,6 +77,7 @@ jobs:
           # The images hold everything but the docs: any context other than docs runs the smoke test.
           if grep -vx docs <<< "$contexts" | grep -q .; then echo smoke=true; else echo smoke=false; fi >> "$GITHUB_OUTPUT"
           echo "postgres=$postgres" >> "$GITHUB_OUTPUT"
+          echo "stream=$stream" >> "$GITHUB_OUTPUT"
 
   # The Go caches that ctx-go.yml (go, go-test), ctx-api.yml, and postgres-contract.yml restore. Each is keyed by the
   # commit, so the newest main commit's cache is the one a restore-keys prefix finds. They are built without running
@@ -197,3 +209,10 @@ jobs:
     needs: changes
     if: needs.changes.outputs.postgres == 'true'
     uses: ./.github/workflows/postgres-contract.yml
+
+  stream-contract:
+    # The stream.Bus contracts on broker containers instead of the in-process fakes; nightly.yml runs them on every
+    # main (ADR-0050 §5).
+    needs: changes
+    if: needs.changes.outputs.stream == 'true'
+    uses: ./.github/workflows/stream-contract.yml
