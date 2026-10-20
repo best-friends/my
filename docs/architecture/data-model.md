@@ -816,7 +816,11 @@ flowchart LR
   - 用途ごとの大きさ: 投稿の画像は面積 640×360 / 1920×1080 / 3840×2160 まで、アイコンは焦点（`media_focus`、なければ中央）に合わせて正方形に切り抜いた 96 / 192 / 400 px、ヘッダーは 750×250 / 1500×500 / 3000×1000 の箱、カスタム絵文字は 64 / 128 / 256 px の箱に収めます。元より大きくはしません。
   - 別の用途で使う（投稿の画像をアバターにするなど）と、`content.MediaService.CheckProfileImage` が新しい用途の `media.process` を投入し、現在の結果の `large`（アニメーションなら動く版）から処理し直して新しい結果を記録します。それまでは前の結果の版を表示します。古い結果の Blob は残ります。
   ジョブは冪等です。最新の結果が同じ用途のファイルは受け取ったままのファイルの削除だけを繰り返し、消去済みのファイルは何もしません。初めての処理で処理できない中身は `outcome = failed`（版なし）の結果として記録します。処理し直しが失敗したときは記録せず、前の結果が残ります。
-- `width` / `height` は EXIF の向きを適用した元画像の寸法です（処理し直しても元の寸法を写す）。`media_variants` の寸法は各版の実寸です。
+- 動画・音声（投稿の添付だけ）はトランスコードしません（[ADR-0054](../adr/0054-media-variants-video-audio.md) §6）。アップロードのときに container を解析して codec・長さ・寸法を検査し（上限はインスタンス設定 `media_max_av_bytes`・`media_max_video_duration`・`media_max_audio_duration`、§4.9）、
+  クライアントが送ったポスター（API の `thumbnail`）を `uploads/<id>.poster` に置きます。`media.process` は、メタデータを落として並べ直した（remux）ファイルを `size = large`・`motion = animated` の版（`media/<id>/<result_id>/large-animated.<ext>`）にし、
+  ポスター（なければファイルに埋め込まれたカバー画像）を投稿の画像として処理した静止版 3 つと blurhash を同じ結果に入れます。ポスターのない動画・音声は静止版を持ちません。結果の `media_type` は `video` / `audio`、`duration_ms` は長さで、受け取ったままのファイルとポスターは処理のあとに消します。
+  動画・音声はほかの用途（アバター・ヘッダー・カスタム絵文字）に使えません。
+- `width` / `height` は EXIF の向きを適用した元画像の寸法（動画は回転を適用した表示の寸法、音声は NULL）です（処理し直しても元の寸法を写す）。`media_variants` の寸法は各版の実寸です。
 - 未添付のアップロードを読めるのも、説明（`media_descriptions`）と焦点（`media_focus`）を変えられるのも、アップロードした本人だけです。
   版が添付したあとは説明を版の `status_revision_attachments.description` で持つので、ファイル単体の説明・焦点は変えられません（投稿を編集して直す）。
 - 未添付のアップロード（どの版からも参照されず、`account_profile_revisions` のアバター・ヘッダーにも使われていない `media_files`）は、
@@ -1074,7 +1078,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
+| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, media_max_av_bytes, media_max_video_duration, media_max_audio_duration, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
 | `instance_settings` | 投影 | `key`（PK）, `revision_id`, `value` | |
 | `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt)`）, `locale`（`lang`）, `body`（空 = そのロケールの文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, locale, id DESC)` |
 | `instance_texts` | 投影 | `key`, `locale`, `revision_id` | PK `(key, locale)`。表示はロケールのフォールバックチェーン（ADR-0009）で選ぶ |

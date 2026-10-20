@@ -68,6 +68,8 @@ func MediaRepositoryContract(t *testing.T, newHarness MediaFactory) {
 		{"CachesTheSmallVariantOfRemoteMedia", mediaCachesSmallRemoteVariants},
 		{"CleansUpTheRemoteMediaCache", mediaCleansUpRemoteMediaCache},
 		{"CountsStoredBytes", mediaCountsStoredBytes},
+		{"ProcessesVideoAndAudio", mediaProcessesVideoAndAudio},
+		{"RejectsVideoAndAudio", mediaRejectsVideoAndAudio},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newMediaEnv(t, newHarness)) })

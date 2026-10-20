@@ -615,8 +615,16 @@
     "defaultMessage": "[Ŧħḗḗ ƒīŀḗḗ īş ŧǿǿǿǿ ŀȧȧřɠḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.media_too_long": {
+    "defaultMessage": "[Ŧħḗḗ ṽīḓḗḗǿǿ ǿǿř ȧȧŭŭḓīǿǿ īş ŧǿǿǿǿ ŀǿǿƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_unsupported_codec": {
+    "defaultMessage": "[Ŧħīş ṽīḓḗḗǿǿ ǿǿř ȧȧŭŭḓīǿǿ ƈǿǿḓḗḗƈ īş ƞǿǿŧ şŭŭƥƥǿǿřŧḗḗḓ. ĦḖṼƇ (Ħīɠħ Ḗƒƒīƈīḗḗƞƈẏ) ṽīḓḗḗǿǿ ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭƥŀǿǿȧȧḓḗḗḓ: řḗḗƈǿǿřḓ īƞ Ħ.264 (Ḿǿǿşŧ Ƈǿǿḿƥȧȧŧīƀŀḗḗ) īƞşŧḗḗȧȧḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.media_unsupported_format": {
-    "defaultMessage": "[Ŧħīş ƒīŀḗḗ ƒǿǿřḿȧȧŧ īş ƞǿǿŧ şŭŭƥƥǿǿřŧḗḗḓ. Ŭƥŀǿǿȧȧḓ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ, ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ.]",
+    "defaultMessage": "[Ŧħīş ƒīŀḗḗ ƒǿǿřḿȧȧŧ īş ƞǿǿŧ şŭŭƥƥǿǿřŧḗḗḓ. Ŭƥŀǿǿȧȧḓ ȧȧ ĴƤḖƓ, ƤȠƓ, ƓĪƑ, ǿǿř ẆḗḗƀƤ īḿȧȧɠḗḗ, ȧȧƞ ḾƤ4 ǿǿř ẆḗḗƀḾ ṽīḓḗḗǿǿ, ǿǿř ȧȧƞ ḾƤ3, Ǿɠɠ, ǿǿř Ḿ4Ȧ ȧȧŭŭḓīǿǿ ƒīŀḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.method_not_allowed": {

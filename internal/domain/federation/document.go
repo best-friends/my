@@ -4,6 +4,7 @@ package federation
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 )
 
@@ -220,16 +221,26 @@ type ImageDocument struct {
 const ImageType ObjectType = "Image"
 
 // AttachmentDocument is a media attachment of a Note. Name is the alternative text. FocalPoint is x, y from -1.0 to 1.0, left out at
-// the center; Width, Height, and Blurhash are left out when unknown.
+// the center; Width, Height, and Blurhash are left out when unknown. A video or audio file has
+// its poster as Icon, left out when it has none, and its length as Duration, an xsd:duration
+// such as "PT12.5S", as Mastodon sends them (ADR-0054 §5).
 type AttachmentDocument struct {
-	Type       ObjectType `json:"type"`
-	MediaType  string     `json:"mediaType"`
-	URL        string     `json:"url"`
-	Name       string     `json:"name,omitempty"`
-	Blurhash   string     `json:"blurhash,omitempty"`
-	FocalPoint []float64  `json:"focalPoint,omitempty"`
-	Width      int        `json:"width,omitempty"`
-	Height     int        `json:"height,omitempty"`
+	Type       ObjectType     `json:"type"`
+	MediaType  string         `json:"mediaType"`
+	URL        string         `json:"url"`
+	Name       string         `json:"name,omitempty"`
+	Blurhash   string         `json:"blurhash,omitempty"`
+	FocalPoint []float64      `json:"focalPoint,omitempty"`
+	Width      int            `json:"width,omitempty"`
+	Height     int            `json:"height,omitempty"`
+	Icon       *ImageDocument `json:"icon,omitempty"`
+	Duration   string         `json:"duration,omitempty"`
+}
+
+// FormatDuration returns d as an xsd:duration in seconds with up to three decimals ("PT12.5S").
+func FormatDuration(d time.Duration) string {
+	s := strconv.FormatFloat(d.Round(time.Millisecond).Seconds(), 'f', -1, 64)
+	return "PT" + s + "S"
 }
 
 // TagType is the type of an entry of a Note's tag.

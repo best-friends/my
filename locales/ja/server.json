@@ -607,9 +607,17 @@
     "defaultMessage": "ファイルが大きすぎます。",
     "description": "API error title for HTTP 413 when an uploaded media file is larger than the server accepts."
   },
+  "errors.media_too_long": {
+    "defaultMessage": "動画または音声が長すぎます。",
+    "description": "API error title for HTTP 422 when an uploaded video or audio file is longer than the server accepts."
+  },
+  "errors.media_unsupported_codec": {
+    "defaultMessage": "この動画・音声のコーデックには対応していません。HEVC（高効率）の動画はアップロードできません。H.264（互換性優先）で撮影してください。",
+    "description": "Detail of the HTTP 415 API error when an uploaded video or audio file is in an accepted container but its codec is not accepted. HEVC and H.264 are codec names (not translated); High Efficiency and Most Compatible are the names of the iPhone camera formats."
+  },
   "errors.media_unsupported_format": {
-    "defaultMessage": "このファイル形式には対応していません。JPEG・PNG・GIF・WebP の画像をアップロードしてください。",
-    "description": "API error title for HTTP 415 when an uploaded file is not an accepted image format, or its declared type does not match its content. JPEG, PNG, GIF, WebP are format names (not translated)."
+    "defaultMessage": "このファイル形式には対応していません。JPEG・PNG・GIF・WebP の画像、MP4・WebM の動画、MP3・Ogg・M4A の音声をアップロードしてください。",
+    "description": "API error title for HTTP 415 when an uploaded file is not an accepted image, video, or audio format, or its declared type does not match its content. JPEG, PNG, GIF, WebP, MP4, WebM, MP3, Ogg, M4A are format names (not translated)."
   },
   "errors.method_not_allowed": {
     "defaultMessage": "このリソースでは {method} メソッドを使用できません。",

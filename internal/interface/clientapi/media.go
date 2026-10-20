@@ -35,8 +35,11 @@ type MediaFiles interface {
 	Images(ctx context.Context, refs []appcontent.ImageRef) (map[appcontent.ImageRef]appcontent.Image, error)
 	// CustomEmojis returns the custom emoji with an ID in ids that can be shown, keyed by ID.
 	CustomEmojis(ctx context.Context, ids []string) (map[string]appcontent.CustomEmojiView, error)
-	// Limits returns the upload limits.
+	// Limits returns the upload limits of images.
 	Limits() media.Limits
+	// MaxUploadBytes returns the size limit of an uploaded file, an image or a video or audio
+	// file.
+	MaxUploadBytes(ctx context.Context) (int64, error)
 }
 
 // UploadLimit is the per-account limit of media uploads (ADR-0019 §5), on top of the
@@ -49,14 +52,16 @@ const (
 	ProblemTypeUnsupportedMediaFormat = "/api/v1/problems/unsupported-media-format"
 	ProblemTypeMediaDimensions        = "/api/v1/problems/media-dimensions"
 	ProblemTypeMediaCorrupt           = "/api/v1/problems/media-corrupt"
+	ProblemTypeMediaTooLong           = "/api/v1/problems/media-too-long"
 	ProblemTypeMediaAttached          = "/api/v1/problems/media-attached"
 )
 
 // uploadPattern is the pattern of uploadMedia, whose body may be larger than other requests'.
 const uploadPattern = "POST " + BasePath + "/media"
 
-// Request body limits. A multipart upload may carry the file, at most media.Limits.MaxBytes,
-// plus its part headers and the description within uploadOverhead.
+// Request body limits. A multipart upload may carry the file, at most MaxUploadBytes, and a
+// poster, at most media.Limits.MaxBytes, plus their part headers and the description within
+// uploadOverhead.
 const (
 	maxRequestBody = 1 << 20
 	uploadOverhead = 64 << 10
@@ -71,18 +76,23 @@ const maxDescriptionBytes = 4 * content.MaxMediaDescriptionLength
 
 // maxBody returns the largest request body that the operation registered with pattern
 // accepts.
-func (s *Server) maxBody(pattern string) int64 {
+func (s *Server) maxBody(ctx context.Context, pattern string) (int64, error) {
 	if pattern == uploadPattern && s.o.Media != nil {
-		return s.o.Media.Limits().MaxBytes + uploadOverhead
+		n, err := s.o.Media.MaxUploadBytes(ctx)
+		return n + s.o.Media.Limits().MaxBytes + uploadOverhead, err
 	}
-	return maxRequestBody
+	return maxRequestBody, nil
 }
 
 // limitBody refuses a request whose declared length is over the operation's body limit with a
 // 413 before reading any of it, and bounds the body of the others, so that a body sent without
 // a length is cut off at the limit as well. It returns false when it has answered the request.
 func (s *Server) limitBody(w http.ResponseWriter, r *http.Request, pattern string) bool {
-	n := s.maxBody(pattern)
+	n, err := s.maxBody(r.Context(), pattern)
+	if err != nil {
+		s.responseError(w, r, err)
+		return false
+	}
 	if r.ContentLength > n {
 		// The rest of the body is not read; the connection is closed instead of drained.
 		w.Header().Set("Connection", "close")
@@ -116,6 +126,10 @@ func (s *Server) mediaProblemOf(ctx context.Context, err error) problem {
 		return s.problem(ctx, http.StatusRequestEntityTooLarge, ProblemTypeMediaTooLarge, l.ServerErrorsMediaTooLarge(), "")
 	case errors.Is(err, media.ErrUnsupportedFormat), errors.Is(err, appcontent.ErrContentTypeMismatch):
 		return s.problem(ctx, http.StatusUnsupportedMediaType, ProblemTypeUnsupportedMediaFormat, l.ServerErrorsMediaUnsupportedFormat(), "")
+	case errors.Is(err, media.ErrUnsupportedCodec):
+		return s.problem(ctx, http.StatusUnsupportedMediaType, ProblemTypeUnsupportedMediaFormat, l.ServerErrorsMediaUnsupportedFormat(), l.ServerErrorsMediaUnsupportedCodec())
+	case errors.Is(err, media.ErrTooLong):
+		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeMediaTooLong, l.ServerErrorsMediaTooLong(), "")
 	case errors.Is(err, media.ErrDimensions):
 		return s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeMediaDimensions, l.ServerErrorsMediaDimensions(), "")
 	case errors.Is(err, media.ErrCorrupt):
@@ -143,8 +157,15 @@ var errNoMedia = errors.New("clientapi: no media files configured")
 // their attachments with it too, replacing the description with the revision's copy.
 func newMediaAttachment(m appcontent.Media, files imageSource) MediaAttachment {
 	out := MediaAttachment{Id: m.File.ID, State: MediaAttachmentState("processing"), Type: MediaAttachmentType(content.MediaTypeUnknown)}
-	if m.Upload != nil && strings.HasPrefix(m.Upload.ContentType, "image/") {
-		out.Type = MediaAttachmentType(content.MediaTypeImage)
+	if m.Upload != nil {
+		switch kind, _, _ := strings.Cut(m.Upload.ContentType, "/"); kind {
+		case "image":
+			out.Type = MediaAttachmentType(content.MediaTypeImage)
+		case "video":
+			out.Type = MediaAttachmentType(content.MediaTypeVideo)
+		case "audio":
+			out.Type = MediaAttachmentType(content.MediaTypeAudio)
+		}
 	}
 	if m.Description != "" {
 		out.Description = &m.Description
@@ -165,14 +186,21 @@ func newMediaAttachment(m appcontent.Media, files imageSource) MediaAttachment {
 	if r.Width > 0 && r.Height > 0 {
 		out.Meta.Width, out.Meta.Height = &r.Width, &r.Height
 	}
+	if r.DurationMS > 0 {
+		d := float64(r.DurationMS) / 1000
+		out.Meta.Duration = &d
+	}
 	if r.Blurhash != "" {
 		out.Blurhash = &r.Blurhash
 	}
 	if img, ok := files.Image(m); ok {
-		v := newMediaVariants(img)
-		out.Variants = &v
-		large, small := img.Primary().URL, img.Still.Small.URL
-		out.Url, out.PreviewUrl = &large, &small
+		large := img.Primary().URL
+		out.Url = &large
+		if img.HasStill() {
+			v := newMediaVariants(img)
+			small := img.Still.Small.URL
+			out.Variants, out.PreviewUrl = &v, &small
+		}
 	}
 	return out
 }
@@ -188,10 +216,14 @@ type imageSource interface {
 // variants.
 func newRemoteAttachment(m appcontent.Media, img appcontent.Image) MediaAttachment {
 	r := m.Remote
-	large, small := img.Primary().URL, img.Still.Small.URL
+	large := img.Primary().URL
 	out := MediaAttachment{
 		Id: m.File.ID, State: MediaAttachmentState("ready"), Type: MediaAttachmentType(r.DeclaredMediaType),
-		Url: &large, PreviewUrl: &small, RemoteUrl: &r.RemoteURL,
+		Url: &large, RemoteUrl: &r.RemoteURL,
+	}
+	if img.HasStill() {
+		small := img.Still.Small.URL
+		out.PreviewUrl = &small
 	}
 	if r.Width > 0 && r.Height > 0 {
 		out.Meta.Width, out.Meta.Height = &r.Width, &r.Height
@@ -242,7 +274,10 @@ func (s *Server) UploadMedia(ctx context.Context, req UploadMediaRequestObject) 
 	if p, h, limited := s.LimitProblem(ctx, UploadLimit, v.AccountID); limited {
 		return UploadMediadefaultApplicationProblemPlusJSONResponse{Body: p, Headers: h, StatusCode: http.StatusTooManyRequests}, nil
 	}
-	in, p, ok := s.readUpload(ctx, req.Body, v.AccountID)
+	in, p, ok, err := s.readUpload(ctx, req.Body, v.AccountID)
+	if err != nil {
+		return nil, err
+	}
 	if !ok {
 		return UploadMediadefaultApplicationProblemPlusJSONResponse(p), nil
 	}
@@ -257,13 +292,17 @@ func (s *Server) UploadMedia(ctx context.Context, req UploadMediaRequestObject) 
 	return UploadMedia202JSONResponse{Body: newMediaAttachment(m, s.o.Media), Headers: UploadMedia202ResponseHeaders{CacheControl: &cache}}, nil
 }
 
-// readUpload reads the parts of an upload: the file, and an optional description and purpose.
-// Other parts are skipped.
-func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, accountID string) (appcontent.UploadInput, problem, bool) {
+// readUpload reads the parts of an upload: the file, and an optional description, purpose, and
+// thumbnail (the poster of a video or audio file). Other parts are skipped.
+func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, accountID string) (appcontent.UploadInput, problem, bool, error) {
 	l := s.Localizer(ctx)
-	maxBytes := s.o.Media.Limits().MaxBytes
+	maxBytes, err := s.o.Media.MaxUploadBytes(ctx)
+	if err != nil {
+		return appcontent.UploadInput{}, problem{}, false, err
+	}
+	maxPoster := s.o.Media.Limits().MaxBytes
 	in := appcontent.UploadInput{OwnerAccountID: accountID}
-	var file []byte
+	var file, poster []byte
 	badPart := func(name string) problem {
 		return s.problem(ctx, http.StatusBadRequest, ProblemTypeBlank, l.ServerErrorsBadRequest(), l.ServerErrorsInvalidParameter(name))
 	}
@@ -279,45 +318,60 @@ func (s *Server) readUpload(ctx context.Context, body *multipart.Reader, account
 			break
 		}
 		if err != nil {
-			return in, readErr(err, "file"), false
+			return in, readErr(err, "file"), false, nil
 		}
 		switch part.FormName() {
 		case "file":
 			if file != nil {
-				return in, badPart("file"), false
+				return in, badPart("file"), false, nil
 			}
 			data, err := io.ReadAll(io.LimitReader(part, maxBytes+1))
 			if err != nil {
-				return in, readErr(err, "file"), false
+				return in, readErr(err, "file"), false, nil
 			}
 			if int64(len(data)) > maxBytes {
-				return in, s.mediaProblemOf(ctx, media.ErrTooLarge), false
+				return in, s.mediaProblemOf(ctx, media.ErrTooLarge), false, nil
 			}
 			file, in.DeclaredContentType = data, part.Header.Get("Content-Type")
+		case "thumbnail":
+			if poster != nil {
+				return in, badPart("thumbnail"), false, nil
+			}
+			data, err := io.ReadAll(io.LimitReader(part, maxPoster+1))
+			if err != nil {
+				return in, readErr(err, "thumbnail"), false, nil
+			}
+			if int64(len(data)) > maxPoster {
+				return in, s.mediaProblemOf(ctx, media.ErrTooLarge), false, nil
+			}
+			poster = data
 		case "description":
 			data, err := io.ReadAll(io.LimitReader(part, maxDescriptionBytes+1))
 			if err != nil {
-				return in, readErr(err, "description"), false
+				return in, readErr(err, "description"), false, nil
 			}
 			if len(data) > maxDescriptionBytes {
-				return in, s.mediaProblemOf(ctx, fmt.Errorf("%w: %d bytes", content.ErrDescriptionTooLong, len(data))), false
+				return in, s.mediaProblemOf(ctx, fmt.Errorf("%w: %d bytes", content.ErrDescriptionTooLong, len(data))), false, nil
 			}
 			in.Description = string(data)
 		case "purpose":
 			data, err := io.ReadAll(io.LimitReader(part, maxPurposeBytes+1))
 			if err != nil {
-				return in, readErr(err, "purpose"), false
+				return in, readErr(err, "purpose"), false, nil
 			}
 			if in.Purpose = content.MediaPurpose(data); !in.Purpose.Valid() {
-				return in, badPart("purpose"), false
+				return in, badPart("purpose"), false, nil
 			}
 		}
 	}
 	if file == nil {
-		return in, badPart("file"), false
+		return in, badPart("file"), false, nil
 	}
 	in.Content = bytes.NewReader(file)
-	return in, problem{}, true
+	if poster != nil {
+		in.Poster = bytes.NewReader(poster)
+	}
+	return in, problem{}, true, nil
 }
 
 // GetMedia serves GET /api/v1/media/{id}: a media file of the viewer with its state.

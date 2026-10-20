@@ -615,8 +615,16 @@
     "defaultMessage": "‮⊥ɥǝ ɟıʅǝ ıs ʇoo ʅɐɹƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.media_too_long": {
+    "defaultMessage": "‮⊥ɥǝ ʌıpǝo oɹ ɐnpıo ıs ʇoo ʅouƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.media_unsupported_codec": {
+    "defaultMessage": "‮⊥ɥıs ʌıpǝo oɹ ɐnpıo ɔopǝɔ ıs uoʇ snddoɹʇǝp. HƎɅↃ (Hıƃɥ Ǝɟɟıɔıǝuɔʎ) ʌıpǝo ɔɐuuoʇ qǝ ndʅoɐpǝp: ɹǝɔoɹp ıu H.264 (Wosʇ Ↄoɯdɐʇıqʅǝ) ıusʇǝɐp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.media_unsupported_format": {
-    "defaultMessage": "‮⊥ɥıs ɟıʅǝ ɟoɹɯɐʇ ıs uoʇ snddoɹʇǝp. ∩dʅoɐp ɐ ſԀƎ⅁, ԀN⅁, ⅁IℲ, oɹ MǝqԀ ıɯɐƃǝ.‬",
+    "defaultMessage": "‮⊥ɥıs ɟıʅǝ ɟoɹɯɐʇ ıs uoʇ snddoɹʇǝp. ∩dʅoɐp ɐ ſԀƎ⅁, ԀN⅁, ⅁IℲ, oɹ MǝqԀ ıɯɐƃǝ, ɐu WԀ4 oɹ MǝqW ʌıpǝo, oɹ ɐu WԀ3, Oƃƃ, oɹ W4∀ ɐnpıo ɟıʅǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.method_not_allowed": {

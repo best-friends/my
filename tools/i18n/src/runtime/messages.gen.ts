@@ -4072,7 +4072,11 @@ export interface MessageArgs {
   "server:errors.media_invalid_focus": {};
   /** The file is too large. */
   "server:errors.media_too_large": {};
-  /** This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image. */
+  /** The video or audio is too long. */
+  "server:errors.media_too_long": {};
+  /** This video or audio codec is not supported. HEVC (High Efficiency) video cannot be uploaded: record in H.264 (Most Compatible) instead. */
+  "server:errors.media_unsupported_codec": {};
+  /** This file format is not supported. Upload a JPEG, PNG, GIF, or WebP image, an MP4 or WebM video, or an MP3, Ogg, or M4A audio file. */
   "server:errors.media_unsupported_format": {};
   /** The {method} method is not allowed for this resource. */
   "server:errors.method_not_allowed": { method: string };
