@@ -5,7 +5,9 @@
 //
 // A topic, which the deployment template creates, carries the payloads. A Pub/Sub subscription
 // shares its messages among its subscribers, so every listening process gets a subscription of
-// its own, <prefix>-<process id>, which Listen creates and Close deletes:
+// its own, <prefix>-<process id>-<n>, which Listen creates and Close deletes. n counts the
+// listeners of the process, so that the late Close of a broken listener never deletes the
+// subscription of the next one:
 //
 //   - its expiration policy deletes it after SubscriptionTTL (1 day, the least Pub/Sub allows)
 //     without subscriber activity, and its messages are kept MessageRetention (10 minutes, the
@@ -41,6 +43,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	pubsubv2 "cloud.google.com/go/pubsub/v2"
@@ -76,6 +79,9 @@ const (
 // maxSubscriptionID is the longest subscription ID that Pub/Sub accepts.
 const maxSubscriptionID = 255
 
+// maxSubscriptionSuffix is the longest -<process id>-<n> that Listen appends to the prefix.
+const maxSubscriptionSuffix = 1 + 32 + 1 + 20
+
 var (
 	topicPattern  = regexp.MustCompile(`^projects/([^/]+)/topics/[A-Za-z][A-Za-z0-9\-_.~+%]{2,254}$`)
 	prefixPattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9\-_.~+%]*$`)
@@ -92,13 +98,13 @@ func CheckTopic(topic string) error {
 }
 
 // CheckSubscriptionPrefix reports whether prefix can start the ID of a Pub/Sub subscription
-// that Listen names <prefix>-<process id>.
+// that Listen names <prefix>-<process id>-<n>.
 func CheckSubscriptionPrefix(prefix string) error {
 	if !prefixPattern.MatchString(prefix) || strings.HasPrefix(prefix, "goog") {
 		return fmt.Errorf("not the start of a Pub/Sub subscription ID (a letter, then letters, digits, and - _ . ~ + %%; not goog): %q", prefix)
 	}
-	if len(prefix)+1+32 > maxSubscriptionID {
-		return fmt.Errorf("subscription prefix longer than %d characters: %q", maxSubscriptionID-33, prefix)
+	if len(prefix)+maxSubscriptionSuffix > maxSubscriptionID {
+		return fmt.Errorf("subscription prefix longer than %d characters: %q", maxSubscriptionID-maxSubscriptionSuffix, prefix)
 	}
 	return nil
 }
@@ -109,7 +115,7 @@ type Options struct {
 	// are created in its project. Required.
 	Topic string
 	// SubscriptionPrefix starts the IDs of the per-process subscriptions,
-	// <SubscriptionPrefix>-<ProcessID>; every process of the instance uses the same one, and
+	// <SubscriptionPrefix>-<ProcessID>-<n>; every process of the instance uses the same one, and
 	// Sweep looks only at the subscriptions that it starts. Required.
 	SubscriptionPrefix string
 	// ProcessID identifies this process (stream.NewProcessID); the Relay of the process uses the
@@ -132,6 +138,9 @@ type Bus struct {
 	client    *pubsubv2.Client
 	publisher *pubsubv2.Publisher
 	log       *slog.Logger
+
+	// listens counts the calls of Listen, for the names of their subscriptions.
+	listens atomic.Uint64
 }
 
 var (
@@ -175,13 +184,9 @@ func (b *Bus) Close() error {
 	return b.client.Close()
 }
 
-// Subscription returns the full name of the subscription of this process.
-func (b *Bus) Subscription() string {
-	return b.subscriptionName(b.o.ProcessID)
-}
-
-func (b *Bus) subscriptionName(processID string) string {
-	return "projects/" + b.project + "/subscriptions/" + b.o.SubscriptionPrefix + "-" + processID
+// subscriptionStart returns the start of the full names of the subscriptions of processID.
+func (b *Bus) subscriptionStart(processID string) string {
+	return "projects/" + b.project + "/subscriptions/" + b.o.SubscriptionPrefix + "-" + processID + "-"
 }
 
 // Send publishes payload on the topic and returns once Pub/Sub has it.
@@ -195,7 +200,7 @@ func (b *Bus) Send(ctx context.Context, payload []byte) error {
 // Listen creates the subscription of this process and receives from it. A payload published
 // after the subscription exists waits in it, so Listen returns once it is created.
 func (b *Bus) Listen(ctx context.Context, receive func(payload []byte)) (stream.Listener, error) {
-	name := b.Subscription()
+	name := b.subscriptionStart(b.o.ProcessID) + strconv.FormatUint(b.listens.Add(1), 10)
 	_, err := b.client.SubscriptionAdminClient.CreateSubscription(ctx, &pubsubpb.Subscription{
 		Name:                     name,
 		Topic:                    b.o.Topic,
@@ -207,9 +212,7 @@ func (b *Bus) Listen(ctx context.Context, receive func(payload []byte)) (stream.
 			labelCreated: strconv.FormatInt(b.o.Now().Unix(), 10),
 		},
 	})
-	// A subscription of this process that a failed Close left behind is reused: what it holds
-	// arrives as duplicates, which a Bus may deliver.
-	if err != nil && status.Code(err) != codes.AlreadyExists {
+	if err != nil {
 		return nil, fmt.Errorf("pubsub create subscription %s: %w", name, err)
 	}
 	sub := b.client.Subscriber(name)
@@ -292,7 +295,7 @@ func (b *Bus) Sweep(ctx context.Context, minAge time.Duration, alive func(ctx co
 	for _, s := range subs {
 		processID := s.GetLabels()[labelProcess]
 		created, err := strconv.ParseInt(s.GetLabels()[labelCreated], 10, 64)
-		if err != nil || !processIDHex.MatchString(processID) || s.GetName() != b.subscriptionName(processID) {
+		if err != nil || !processIDHex.MatchString(processID) || !strings.HasPrefix(s.GetName(), b.subscriptionStart(processID)) {
 			continue
 		}
 		if b.o.Now().Sub(time.Unix(created, 0)) < minAge {

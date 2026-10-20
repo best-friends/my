@@ -207,11 +207,11 @@ func TestListenCreatesTheSubscription(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = l.Close(context.Background()) })
-	s, err := bus.Client().SubscriptionAdminClient.GetSubscription(t.Context(), &pubsubpb.GetSubscriptionRequest{Subscription: bus.Subscription()})
+	s, err := bus.Client().SubscriptionAdminClient.GetSubscription(t.Context(), &pubsubpb.GetSubscriptionRequest{Subscription: pubsub.SubscriptionOf(l)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := s.GetName(), "projects/"+project+"/subscriptions/"+b.prefix+"-"+bus.ProcessID(); got != want {
+	if got, want := s.GetName(), "projects/"+project+"/subscriptions/"+b.prefix+"-"+bus.ProcessID()+"-1"; got != want {
 		t.Errorf("name = %s, want %s", got, want)
 	}
 	if got := s.GetExpirationPolicy().GetTtl().AsDuration(); got != 24*time.Hour {
@@ -240,20 +240,22 @@ func TestSweep(t *testing.T) {
 	now := start
 	clock := func() time.Time { mu.Lock(); defer mu.Unlock(); return now }
 
-	listen := func(bus *pubsub.Bus) {
+	listen := func(bus *pubsub.Bus) string {
 		t.Helper()
-		if _, err := bus.Listen(ctx, func([]byte) {}); err != nil {
+		l, err := bus.Listen(ctx, func([]byte) {})
+		if err != nil {
 			t.Fatal(err)
 		}
+		return pubsub.SubscriptionOf(l)
 	}
 	dead, live := b.bus(t, srv.Addr, clock), b.bus(t, srv.Addr, clock)
 	listen(dead)
-	listen(live)
+	liveSub := listen(live)
 	other := newBroker(t, srv.Addr)
 	otherDead := other.bus(t, srv.Addr, clock)
-	listen(otherDead)
+	otherDeadSub := listen(otherDead)
 	// A subscription of the prefix that Listen did not create.
-	unlabeled := "projects/" + project + "/subscriptions/" + b.prefix + "-" + stream.NewProcessID()
+	unlabeled := "projects/" + project + "/subscriptions/" + b.prefix + "-" + stream.NewProcessID() + "-1"
 	if _, err := dead.Client().SubscriptionAdminClient.CreateSubscription(ctx, &pubsubpb.Subscription{Name: unlabeled, Topic: b.topic}); err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +263,7 @@ func TestSweep(t *testing.T) {
 	now = start.Add(4 * time.Minute)
 	mu.Unlock()
 	young := b.bus(t, srv.Addr, clock)
-	listen(young)
+	youngSub := listen(young)
 	mu.Lock()
 	now = start.Add(5 * time.Minute)
 	mu.Unlock()
@@ -271,7 +273,7 @@ func TestSweep(t *testing.T) {
 	if err != nil || n != 1 {
 		t.Fatalf("Sweep = %d, %v; want 1, nil", n, err)
 	}
-	want := map[string]bool{live.Subscription(): true, young.Subscription(): true, unlabeled: true}
+	want := map[string]bool{liveSub: true, youngSub: true, unlabeled: true}
 	got := b.subscriptions(t)
 	if len(got) != len(want) {
 		t.Errorf("subscriptions = %v, want %v", got, want)
@@ -281,8 +283,8 @@ func TestSweep(t *testing.T) {
 			t.Errorf("subscription %s was kept", name)
 		}
 	}
-	if got := other.subscriptions(t); len(got) != 1 || got[0] != otherDead.Subscription() {
-		t.Errorf("subscriptions of another prefix = %v, want [%s]", got, otherDead.Subscription())
+	if got := other.subscriptions(t); len(got) != 1 || got[0] != otherDeadSub {
+		t.Errorf("subscriptions of another prefix = %v, want [%s]", got, otherDeadSub)
 	}
 
 	// A failing liveness check keeps the subscription and reports the error.
@@ -324,24 +326,40 @@ func TestNewRejectsBadOptions(t *testing.T) {
 	_ = b.Close()
 }
 
-// Listen reuses the subscription of its process that a failed Close left behind.
-func TestListenReusesALeftSubscription(t *testing.T) {
+// The late Close of a broken listener does not delete the subscription of the next listener of
+// the process.
+func TestLateCloseKeepsTheNextListener(t *testing.T) {
 	srv := pstest.NewServer()
+	srv.SetStreamTimeout(pstestStreamTimeout)
 	t.Cleanup(func() { _ = srv.Close() })
-	b := newBroker(t, srv.Addr)
-	bus := b.bus(t, srv.Addr, nil)
-	if _, err := bus.Client().SubscriptionAdminClient.CreateSubscription(t.Context(), &pubsubpb.Subscription{Name: bus.Subscription(), Topic: b.topic}); err != nil {
+	h := harness(t, srv.Addr)
+	bus := h.NewBus(t)
+	broken, err := bus.Listen(t.Context(), func([]byte) {})
+	if err != nil {
 		t.Fatal(err)
 	}
-	l, err := bus.Listen(t.Context(), func([]byte) {})
+	h.Break(t)
+	select {
+	case <-broken.Broken():
+	case <-time.After(h.Timeout):
+		t.Fatal("the listener did not break")
+	}
+	got := make(chan []byte, 1)
+	next, err := bus.Listen(t.Context(), func(p []byte) { got <- p })
 	if err != nil {
-		t.Fatalf("Listen: %v", err)
+		t.Fatal(err)
 	}
-	if err := l.Close(t.Context()); err != nil {
-		t.Fatalf("Close: %v", err)
+	t.Cleanup(func() { _ = next.Close(context.Background()) })
+	if err := broken.Close(t.Context()); err != nil {
+		t.Fatalf("Close of the broken listener: %v", err)
 	}
-	if got := b.subscriptions(t); len(got) != 0 {
-		t.Errorf("subscriptions after Close = %v", got)
+	if err := bus.Send(t.Context(), []byte(`{"v":1}`)); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case <-got:
+	case <-time.After(h.Timeout):
+		t.Fatal("the next listener did not receive after the late Close")
 	}
 }
 
