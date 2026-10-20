@@ -37,9 +37,12 @@ type fanOutPayload struct {
 	// SharedInboxes sends the Update of an actor to every known shared inbox after its
 	// followers, as the Delete of an actor goes: the Update of a suspension and of its end
 	// (federation.md §11.1). false for other activities.
-	SharedInboxes bool   `json:"shared_inboxes,omitempty"`
-	Phase         string `json:"phase,omitempty"`
-	After         string `json:"after,omitempty"`
+	SharedInboxes bool `json:"shared_inboxes,omitempty"`
+	// Inbox is the only recipient of an activity of the relay membership (ADR-0061), "" for
+	// other activities.
+	Inbox string `json:"inbox,omitempty"`
+	Phase string `json:"phase,omitempty"`
+	After string `json:"after,omitempty"`
 }
 
 // job returns the JobFanOut of p, a batch of a. Its ordering key is that of a (orderingKey), so

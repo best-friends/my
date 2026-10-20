@@ -15,7 +15,7 @@ import { PageHeading } from "./-layout/PageHeading";
  * signed-in account with signing out; and the links to the server's terms of service and privacy policy.
  */
 export const Route = createFileRoute("/settings/")({
-  staticData: { title: "client:settings.title" },
+  staticData: { title: "client:settings.title", hideHeading: true },
   // Every setting is the user's own, so the page needs a session (web-client.md §10).
   beforeLoad: requireSignIn,
   component: SettingsPage,

@@ -99,6 +99,9 @@ type DeliverDeps struct {
 	// Proofs signs the integrity proof of every delivered document (FEP-8b32); nil sends the
 	// documents without one.
 	Proofs ProofKeys
+	// LinkedData canonicalizes the documents of public posts for their linked data signature
+	// (RsaSignature2017, ADR-0061); nil sends them without one.
+	LinkedData Canonicalizer
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
 	// Breaker is the process's circuit breaker; nil means a new one.
@@ -119,8 +122,9 @@ type DeliverDeps struct {
 //     block; federation.Deliverable), it records a skipped attempt and is done.
 //  2. When the circuit breaker of the host is open, it records a retryable failure without
 //     sending and retries on the schedule.
-//  3. It adds the integrity proof of the actor's Ed25519 key to the stored document
-//     (withProof), signs the request with the actor's key, and POSTs it.
+//  3. It adds the linked data signature of the actor's key to the stored document of the
+//     Create, Update, or Delete of a public post (ADR-0061), or else the integrity proof of the
+//     actor's Ed25519 key (withProof), signs the request with the actor's key, and POSTs it.
 //  4. It classifies the result (federation.ClassifyResponse) and records the attempt in
 //     delivery_attempts, whose projector updates instance_health in the same transaction.
 //  5. A success or a permanent failure is Done; a retryable failure is Retry, after the
@@ -217,7 +221,7 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 		return queue.Retry(0, err)
 	}
 
-	if document, err = d.withProof(ctx, act, document); err != nil {
+	if document, err = d.sign(ctx, act, document, key); err != nil {
 		return queue.Retry(0, err)
 	}
 
@@ -233,6 +237,25 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 	}
 	d.d.Breaker.Record(del.Domain, attempt.Outcome, d.d.Clock.Now())
 	return d.finish(ctx, del, attempt, retryAfter)
+}
+
+// sign returns document with the linked data signature of key when it is the Create, Update, or
+// Delete of a public post (federation.SignsLinkedData), which relays forward as it is (ADR-0061),
+// and with the integrity proof of withProof otherwise. A proof added after the linked data
+// signature would break it, and a proof made before it would need the data integrity context
+// that the receivers' linked data processing does not bundle, so a signed document carries no
+// proof. The signature is created at the activity's time and is deterministic: every delivery
+// and retry of the activity sends the same bytes. A document that cannot be signed goes with its
+// proof instead, and a warning is logged.
+func (d *Deliverer) sign(ctx context.Context, act federation.OutboundActivity, document []byte, key SigningKey) ([]byte, error) {
+	if d.d.LinkedData != nil && federation.SignsLinkedData(act, addressedTo(document)) {
+		signed, err := SignLinkedData(document, d.d.LinkedData, key, act.CreatedAt)
+		if err == nil {
+			return signed, nil
+		}
+		d.d.Logger.WarnContext(ctx, "delivery without a linked data signature", slog.String("outbound_activity_id", act.ID), slog.Any("error", err))
+	}
+	return d.withProof(ctx, act, document)
 }
 
 // withProof returns document with the eddsa-jcs-2022 proof of the actor's Ed25519 key

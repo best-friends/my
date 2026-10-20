@@ -1657,7 +1657,7 @@ CREATE TABLE outbound_activities (
   activity_uri text NOT NULL,
   type text NOT NULL,
   actor_account_id text COLLATE "C" NOT NULL,
-  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote')),
+  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote', 'relay')),
   object_id text COLLATE "C" NOT NULL,
   created_at timestamptz NOT NULL
 );
@@ -1735,6 +1735,51 @@ CREATE TABLE instance_health (
 );
 CREATE INDEX instance_health_state ON instance_health (state);
 
+-- Resource: a relay the operator registered (ADR-0061). url is what was entered (the inbox of a
+-- mastodon relay, the actor of a litepub one); inbox_url is where posts are delivered.
+-- created_by_user_id is NULL for the CLI. Deleted with its events and state only when it is
+-- left or rejected.
+CREATE TABLE relays (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  protocol text NOT NULL CHECK (protocol IN ('mastodon', 'litepub')),
+  url text NOT NULL CHECK (length(url) BETWEEN 1 AND 2048),
+  inbox_url text NOT NULL CHECK (length(inbox_url) BETWEEN 1 AND 2048),
+  receive boolean NOT NULL,
+  created_by_user_id text COLLATE "C",
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX relays_url ON relays (url);
+
+-- Event: a change of a relay's membership. follow_activity_uri is the Follow that follow_sent
+-- sent and that the others are about; relay_actor_uri is the actor of an Accept, NULL otherwise;
+-- actor_user_id is NULL for the CLI and for what the relay sent. One event of each kind per
+-- Follow, so that an answer received again records nothing.
+CREATE TABLE relay_events (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  relay_id text COLLATE "C" NOT NULL,
+  kind text NOT NULL CHECK (kind IN ('follow_sent', 'accepted', 'rejected', 'left')),
+  follow_activity_uri text NOT NULL,
+  relay_actor_uri text,
+  actor_user_id text COLLATE "C",
+  occurred_at timestamptz NOT NULL,
+  CHECK ((kind = 'accepted') = (relay_actor_uri IS NOT NULL))
+);
+CREATE INDEX relay_events_relay_id_id ON relay_events (relay_id, id DESC);
+CREATE UNIQUE INDEX relay_events_relay_id_follow_activity_uri_kind ON relay_events (relay_id, follow_activity_uri, kind);
+
+-- Projection of relay_events: where a relay's membership stands, from its newest event.
+-- relay_actor_uri is the actor that accepted it, NULL unless accepted.
+CREATE TABLE relay_states (
+  relay_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  state text NOT NULL CHECK (state IN ('pending', 'accepted', 'rejected', 'left')),
+  follow_activity_uri text NOT NULL,
+  relay_actor_uri text,
+  since timestamptz NOT NULL,
+  CHECK ((state = 'accepted') = (relay_actor_uri IS NOT NULL))
+);
+CREATE INDEX relay_states_follow_activity_uri ON relay_states (follow_activity_uri);
+CREATE INDEX relay_states_relay_actor_uri ON relay_states (relay_actor_uri);
+
 -- ---------------------------------------------------------------------------------------------
 -- content: custom emoji and polls of statuses (data-model §4.4). Owned by internal/app/content.
 -- ---------------------------------------------------------------------------------------------
@@ -1788,6 +1833,15 @@ CREATE TABLE polls (
   closes_at timestamptz
 );
 CREATE UNIQUE INDEX polls_revision_id ON polls (revision_id);
+
+-- Event: a remote status taken in only because a relay sent it (ADR-0061), kept for
+-- relay_status_retention instead of remote_status_retention. relay_id is the relay it came from,
+-- kept as an ID after the relay is deleted. Purged with the status.
+CREATE TABLE relayed_statuses (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  relay_id text COLLATE "C" NOT NULL,
+  received_at timestamptz NOT NULL
+);
 
 -- Event (child of a poll): one choice of a poll.
 CREATE TABLE poll_options (
@@ -2177,11 +2231,12 @@ CREATE TABLE audit_log_entries (
     'custom_emoji_enabled', 'custom_emoji_disabled', 'custom_emoji_deleted',
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
     'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
-    'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked'
+    'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked',
+    'relay_added', 'relay_followed', 'relay_unfollowed', 'relay_removed', 'relay_accepted', 'relay_rejected'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite'
+    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,

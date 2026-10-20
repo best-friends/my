@@ -248,10 +248,23 @@ type ActorsByURI interface {
 	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
 }
 
+// RelayFollows receives the follow activities about the relays (ADR-0061); *Relays implements
+// it.
+type RelayFollows interface {
+	// ReceiveAnswer handles the Accept or Reject of a relay's Follow and reports whether it was
+	// one.
+	ReceiveAnswer(ctx context.Context, in *InboxActivity, accepted bool) (bool, error)
+	// ReceiveFollow answers a Follow of the instance actor.
+	ReceiveFollow(ctx context.Context, in *InboxActivity, instance appaccount.Actor) error
+}
+
 // FollowHandlerDeps are the ports of the follow inbox handlers.
 type FollowHandlerDeps struct {
 	Graph    RemoteFollows
 	Accounts ActorsByURI
+	// Relays receives the answers of the relays and the Follows of the instance actor; nil
+	// drops the Follows of the instance actor and takes every answer as one about a follow.
+	Relays RelayFollows
 }
 
 // RegisterFollowHandlers sets the inbox handlers of the follow activities (federation.md §3.4):
@@ -264,14 +277,16 @@ type FollowHandlerDeps struct {
 //   - Undo of a Follow: graph.TerminateRemote, found the same way; an unknown one leaves a
 //     tombstone (federation.md §3.3).
 //   - Undo of an Accept: graph.RejectRemote, the end of the follow it accepted.
+//   - Accept and Reject of the Follow of a relay, and Follow of the instance actor: Relays
+//     (ADR-0061).
 //
 // The embedded Follow is a hint only: the graph module matches it against the follows of the
 // sender.
 func RegisterFollowHandlers(p *InboxProcessor, d FollowHandlerDeps) {
 	h := followHandlers{d: d}
 	p.Handle(federation.ActivityFollow, h.follow)
-	p.Handle(federation.ActivityAccept, h.respond(d.Graph.AcceptRemote))
-	p.Handle(federation.ActivityReject, h.respond(d.Graph.RejectRemote))
+	p.Handle(federation.ActivityAccept, h.respond(true, d.Graph.AcceptRemote))
+	p.Handle(federation.ActivityReject, h.respond(false, d.Graph.RejectRemote))
 	p.HandleUndo(federation.ActivityFollow, h.undoFollow)
 	p.HandleUndo(federation.ActivityAccept, h.undoAccept)
 }
@@ -322,6 +337,18 @@ func graphError(err error) error {
 }
 
 func (h followHandlers) follow(ctx context.Context, in *InboxActivity) error {
+	if object := in.Activity.Object().ID; object != "" {
+		a, err := h.d.Accounts.FindByURI(ctx, string(object))
+		switch {
+		case err == nil && a.IsInstanceActor():
+			if h.d.Relays == nil {
+				return fmt.Errorf("%w: a Follow of the instance actor", ErrDropActivity)
+			}
+			return h.d.Relays.ReceiveFollow(ctx, in, a)
+		case err != nil && !errors.Is(err, appaccount.ErrNotFound):
+			return err
+		}
+	}
 	followee, err := h.local(ctx, in.Activity.Object().ID)
 	if err != nil {
 		return err
@@ -338,9 +365,15 @@ func (h followHandlers) follow(ctx context.Context, in *InboxActivity) error {
 	}))
 }
 
-// respond returns the handler of an Accept or Reject that use applies.
-func (h followHandlers) respond(use func(context.Context, appgraph.RemoteResponse) error) InboxHandler {
+// respond returns the handler of an Accept (accepted) or Reject: the answer of a relay to its
+// Follow, or else one about a follow, which use applies.
+func (h followHandlers) respond(accepted bool, use func(context.Context, appgraph.RemoteResponse) error) InboxHandler {
 	return func(ctx context.Context, in *InboxActivity) error {
+		if h.d.Relays != nil {
+			if handled, err := h.d.Relays.ReceiveAnswer(ctx, in, accepted); handled {
+				return err
+			}
+		}
 		ref := in.Activity.Object()
 		follow, err := embeddedFollow(ref)
 		if err != nil {

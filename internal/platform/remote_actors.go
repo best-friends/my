@@ -24,6 +24,7 @@ type federationRepository interface {
 	federation.Repository
 	federation.InstanceRepository
 	federation.InboxRepository
+	federation.RelayRepository
 }
 
 // newHTMLSanitizer returns the sanitizer of remote HTML (ADR-0019 §2).

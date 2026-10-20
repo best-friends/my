@@ -38,12 +38,19 @@ var (
 type inboxPayload struct {
 	ActivityURI string           `json:"activity_uri"`
 	Trust       federation.Trust `json:"trust"`
+	// RelayID is the accepted relay whose actor signed the activity (ADR-0061), "" otherwise.
+	RelayID string `json:"relay_id,omitempty"`
 }
 
 // InboxJob returns the JobInbox of a received activity. Its idempotency key is the hash of the
 // activity URI, which may be long; its ordering key serializes the activities of one actor.
 func InboxJob(a federation.ReceivedActivity) (queue.NewJob, error) {
-	b, err := json.Marshal(inboxPayload{ActivityURI: string(a.ActivityURI), Trust: a.Trust})
+	return inboxJob(a, "")
+}
+
+// inboxJob is InboxJob of an activity that the accepted relay relayID signed ("" for none).
+func inboxJob(a federation.ReceivedActivity, relayID string) (queue.NewJob, error) {
+	b, err := json.Marshal(inboxPayload{ActivityURI: string(a.ActivityURI), Trust: a.Trust, RelayID: relayID})
 	if err != nil {
 		return queue.NewJob{}, err
 	}
@@ -90,6 +97,12 @@ type InboxAccounts interface {
 	FindByURI(ctx context.Context, uri string) (appaccount.Actor, error)
 }
 
+// RelaySigners tells the accepted relay whose actor signed a request; *Relays implements it.
+type RelaySigners interface {
+	// AcceptedRelayOf returns the ID of the accepted relay whose actor is signer, "" for none.
+	AcceptedRelayOf(ctx context.Context, signer federation.IRI) (string, error)
+}
+
 // InstanceReacher records that a remote server is up; *Health implements it.
 type InstanceReacher interface {
 	Reached(ctx context.Context, domain string, reason federation.AvailabilityReason) error
@@ -106,6 +119,8 @@ type InboxDeps struct {
 	// Domains are the domain blocks; nil means NoDomainRestrictions.
 	Domains DomainPolicy
 	Health  InstanceReacher
+	// Relays tells the activities that an accepted relay signed (ADR-0061); nil knows none.
+	Relays RelaySigners
 	// RateLimiter applies IPLimit and DomainLimit; nil applies none.
 	RateLimiter *kernel.RateLimiter
 	// IPLimit and DomainLimit default to InboxIPLimit and InboxDomainLimit.
@@ -308,8 +323,16 @@ func (i *Inbox) receive(ctx context.Context, in InboxRequest, typ *string) (Rece
 			return Received{Rejection: rejection(rejected)}, nil
 		}
 	}
+	// An activity that an accepted relay relayed (signed by the relay for another actor) or
+	// announced carries the relay to its processing (ADR-0061).
+	var relayID string
+	if i.d.Relays != nil && owner != "" && (a.Trust == federation.TrustRefetch || env.Type == string(federation.ActivityAnnounce)) {
+		if relayID, err = i.d.Relays.AcceptedRelayOf(ctx, owner); err != nil {
+			return Received{}, err
+		}
+	}
 	// 13. The record, the document, and the job, once per activity.
-	recorded, err := i.record(ctx, a, r.Body)
+	recorded, err := i.record(ctx, a, relayID, r.Body)
 	if err != nil {
 		return Received{}, err
 	}
@@ -320,8 +343,8 @@ func (i *Inbox) receive(ctx context.Context, in InboxRequest, typ *string) (Rece
 	return Received{ActivityURI: a.ActivityURI, Trust: a.Trust, Recorded: recorded}, nil
 }
 
-func (i *Inbox) record(ctx context.Context, a federation.ReceivedActivity, body []byte) (bool, error) {
-	job, err := InboxJob(a)
+func (i *Inbox) record(ctx context.Context, a federation.ReceivedActivity, relayID string, body []byte) (bool, error) {
+	job, err := inboxJob(a, relayID)
 	if err != nil {
 		return false, err
 	}

@@ -67,12 +67,14 @@ const (
 	// AuditTargetInvite is an invite (ADR-0058); its label is the first characters of its code,
 	// never the whole code, which lets anyone sign up while the invite works.
 	AuditTargetInvite AuditTargetKind = "invite"
+	// AuditTargetRelay is a relay (ADR-0061); its label is its registered URL.
+	AuditTargetRelay AuditTargetKind = "relay"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
-	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite,
+	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite, AuditTargetRelay,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -198,6 +200,19 @@ const (
 	AuditInviteCreated AuditAction = "invite_created"
 	// AuditInviteRevoked: an invite was revoked (invite_revocations).
 	AuditInviteRevoked AuditAction = "invite_revoked"
+	// AuditRelayAdded: a relay was registered (relays).
+	AuditRelayAdded AuditAction = "relay_added"
+	// AuditRelayFollowed and AuditRelayUnfollowed: the instance actor sent the Follow that joins
+	// a relay or the Undo that leaves it (relay_events, follow_sent and left).
+	AuditRelayFollowed   AuditAction = "relay_followed"
+	AuditRelayUnfollowed AuditAction = "relay_unfollowed"
+	// AuditRelayRemoved: the registration of a relay was deleted with its events; the operation
+	// has no row of its own.
+	AuditRelayRemoved AuditAction = "relay_removed"
+	// AuditRelayAccepted and AuditRelayRejected: a relay accepted or rejected the Follow
+	// (relay_events, accepted and rejected), as the remote actor.
+	AuditRelayAccepted AuditAction = "relay_accepted"
+	AuditRelayRejected AuditAction = "relay_rejected"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -254,6 +269,12 @@ var auditActions = []struct {
 	{AuditAnnouncementWithdrawn, AuditTargetAnnouncement},
 	{AuditInviteCreated, AuditTargetInvite},
 	{AuditInviteRevoked, AuditTargetInvite},
+	{AuditRelayAdded, AuditTargetRelay},
+	{AuditRelayFollowed, AuditTargetRelay},
+	{AuditRelayUnfollowed, AuditTargetRelay},
+	{AuditRelayRemoved, AuditTargetRelay},
+	{AuditRelayAccepted, AuditTargetRelay},
+	{AuditRelayRejected, AuditTargetRelay},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

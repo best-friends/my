@@ -3569,6 +3569,113 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/relays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the relays
+         * @description The relays that the instance joins or joined (ADR-0061), in registration order, with
+         *     the state of the membership and what each brought in during the last 24 hours. Needs the
+         *     `manage_settings` permission.
+         */
+        get: operations["listAdminRelays"];
+        put?: never;
+        /**
+         * Register a relay and join it
+         * @description Registers a relay and sends the instance actor's `Follow`; the relay is `pending` until
+         *     it answers. `url` is the relay's inbox for a `mastodon` relay and its actor for a
+         *     `litepub` one, whose inbox the server fetches. Without `protocol`, a URL that serves an
+         *     actor is a `litepub` relay and any other a `mastodon` one. Only public posts go to the
+         *     relay; with `receive`, the public posts it relays come in too. A URL that is not https,
+         *     is registered already, is on a suspended server, or (for `litepub`) serves no actor is a
+         *     422 `/api/v1/problems/invalid-relay` whose `reason` says which. The registration and the
+         *     `Follow` are recorded in the audit log. Needs the `manage_settings` permission.
+         */
+        post: operations["createRelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/relays/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the relay. */
+                id: components["parameters"]["RelayId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a relay
+         * @description Deletes the registration of a relay that the instance left or that rejected it, with the
+         *     history of its membership. The edits and deletions of the posts that went to it still go
+         *     there. A relay that is `pending` or `accepted` is a 422
+         *     `/api/v1/problems/invalid-relay` (`state`): leave it first. The deletion is recorded in
+         *     the audit log. An unknown ID is a 404. Needs the `manage_settings` permission.
+         */
+        delete: operations["deleteRelay"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/relays/{id}/follow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join a relay again
+         * @description Sends a new `Follow` to a relay that rejected the instance or that the instance left;
+         *     the relay is `pending` again. A relay that is `pending` or `accepted`, or on a suspended
+         *     server, is a 422 `/api/v1/problems/invalid-relay`. The `Follow` is recorded in the audit
+         *     log. An unknown ID is a 404. Needs the `manage_settings` permission.
+         */
+        post: operations["followRelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/relays/{id}/unfollow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave a relay
+         * @description Sends the `Undo` of the `Follow` of a `pending` or `accepted` relay; the relay is `left`,
+         *     and nothing goes to it or comes from it any more. The posts it brought in stay until
+         *     their retention ends. A relay in another state is a 422 `/api/v1/problems/invalid-relay`
+         *     (`state`). The `Undo` is recorded in the audit log. An unknown ID is a 404. Needs the
+         *     `manage_settings` permission.
+         */
+        post: operations["unfollowRelay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3650,6 +3757,8 @@ export interface components {
          *       says which.
          *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
          *       which.
+         *     - `/api/v1/problems/invalid-relay` (422): a relay cannot be registered, joined, left, or
+         *       deleted; `reason` says why.
          *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
          *       reason in `theme_errors` (`PUT /admin/theme`).
          *     - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
@@ -5260,10 +5369,12 @@ export interface components {
          *     `announcement_created`, `announcement_updated` (its text or window),
          *     `announcement_published`, `announcement_withdrawn`; the label is the first line of its
          *     text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
-         *     characters of its code, never the whole code.
+         *     characters of its code, never the whole code. On a `relay`: `relay_added`,
+         *     `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
+         *     `relay_rejected` (by the `remote` relay); the label is its URL.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -5299,8 +5410,8 @@ export interface components {
             /**
              * @description Whether the target is still there to look at. It is `false` for an account, a report,
              *     an appeal, or a sign-up block that is gone (erased past its retention), and for a
-             *     role, a custom emoji, or a webhook that was deleted, which only `target_label` names
-             *     now. It is `true` for the other kinds of targets, which are never removed.
+             *     role, a custom emoji, a webhook, or a relay that was deleted, which only `target_label`
+             *     names now. It is `true` for the other kinds of targets, which are never removed.
              */
             target_exists: boolean;
             /**
@@ -5320,7 +5431,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay";
         /** @description A moderation action on a remote domain and its subdomains (FR-702). */
         AdminDomainAction: {
             id: components["schemas"]["Id"];
@@ -6080,6 +6191,79 @@ export interface components {
             /** @description The permissions that the events need and the user lacks, for `missing_permission`. */
             missing_permissions?: components["schemas"]["Permission"][];
         };
+        /**
+         * @description How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
+         *     collection. `litepub`: at its actor, by a `Follow` of the actor.
+         * @enum {string}
+         */
+        RelayProtocol: "mastodon" | "litepub";
+        /**
+         * @description Where the membership of a relay stands. `pending`: the `Follow` is sent and not
+         *     answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
+         *     `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
+         *     instance sent the `Undo` of its `Follow`.
+         * @enum {string}
+         */
+        RelayState: "pending" | "accepted" | "rejected" | "left";
+        /** @description A relay that the instance joins or joined (ADR-0061). */
+        AdminRelay: {
+            id: components["schemas"]["Id"];
+            protocol: components["schemas"]["RelayProtocol"];
+            /** @description The URL it was registered with, its inbox or its actor. */
+            url: string;
+            /** @description Where the public posts are delivered. */
+            inbox_url: string;
+            /** @description Whether the public posts it relays are taken in; `false` only sends. */
+            receive: boolean;
+            state: components["schemas"]["RelayState"];
+            /** Format: date-time */
+            state_changed_at: string;
+            /** @description The relay's actor, which accepted the `Follow`; omitted unless `accepted`. */
+            actor_uri?: string;
+            /** @description The activities it brought in during the last 24 hours that were taken in. */
+            taken_last_day: number;
+            /**
+             * @description The activities it brought in during the last 24 hours that were dropped over the
+             *     hourly limit (`relay_ingest_hourly_limit`).
+             */
+            dropped_last_day: number;
+            /**
+             * @description Whether a domain action suspends its server: nothing goes to it or comes from it
+             *     while it does, whatever `state` says.
+             */
+            domain_suspended: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description The relays, in registration order. */
+        AdminRelayList: {
+            items: components["schemas"]["AdminRelay"][];
+        };
+        /** @description A relay to register and join. */
+        CreateRelayRequest: {
+            protocol?: components["schemas"]["RelayProtocol"];
+            /** @description The relay's inbox (`mastodon`) or actor (`litepub`), an https URL. */
+            url: string;
+            /** @description Whether to take in the public posts it relays; `true` when omitted. */
+            receive?: boolean;
+        };
+        /**
+         * @description The problem of a relay operation that breaks a rule (422,
+         *     `/api/v1/problems/invalid-relay`); `reason` says which. Another 422 (a malformed
+         *     request) has none.
+         */
+        RelayProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["RelayProblemReason"];
+        };
+        /**
+         * @description Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
+         *     `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
+         *     suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
+         *     inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
+         *     `accepted` relay, leaving or deleting one that is not).
+         * @enum {string}
+         */
+        RelayProblemReason: "url" | "exists" | "domain_suspended" | "not_actor" | "state";
         /**
          * @description Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
          *     bytes without user info or a fragment. `description`: longer than 200 characters or with
@@ -7006,6 +7190,28 @@ export interface components {
                 "application/problem+json": components["schemas"]["WebhookProblem"];
             };
         };
+        /** @description The relay. */
+        AdminRelay: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRelay"];
+            };
+        };
+        /** @description The relay operation breaks a rule; nothing was changed. */
+        RelayProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["RelayProblem"];
+            };
+        };
         /** @description The roles. */
         AdminRoleList: {
             headers: {
@@ -7114,6 +7320,8 @@ export interface components {
         CustomEmojiId: components["schemas"]["Id"];
         /** @description The ID of the webhook. */
         WebhookId: components["schemas"]["Id"];
+        /** @description The ID of the relay. */
+        RelayId: components["schemas"]["Id"];
         /** @description The key of the text. */
         InstanceTextKey: components["schemas"]["InstanceTextKey"];
         /** @description The BCP 47 tag of the locale (`ja`, `ja-JP`); it is canonicalized. */
@@ -11012,6 +11220,103 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["AdminWebhookDelivery"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAdminRelays: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The relays. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRelayList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createRelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRelayRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["AdminRelay"];
+            422: components["responses"]["RelayProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteRelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the relay. */
+                id: components["parameters"]["RelayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The relay is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            422: components["responses"]["RelayProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    followRelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the relay. */
+                id: components["parameters"]["RelayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRelay"];
+            422: components["responses"]["RelayProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    unfollowRelay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the relay. */
+                id: components["parameters"]["RelayId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["AdminRelay"];
+            422: components["responses"]["RelayProblem"];
             default: components["responses"]["Problem"];
         };
     };

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-only
 # Live interoperability test (ADR-0006, ADR-0015, docs/architecture/federation.md §12): start
-# deploy/docker/federation-live/compose.yaml (this server, Mastodon, GoToSocial, Misskey, a private CA), create
+# deploy/docker/federation-live/compose.yaml (this server, Mastodon, GoToSocial, Misskey, Activity-Relay, a
+# private CA), create
 # the users on each server, and run the scenarios in deploy/docker/federation-live (go test -tags federationlive).
 #
 # Whatever the outcome, it writes to $FEDERATION_LIVE_OUT (default .tmp/federation-live/out):
@@ -40,9 +41,11 @@ printf '%s\n' \
 	'basicConstraints=critical,CA:FALSE' \
 	'keyUsage=critical,digitalSignature' \
 	'extendedKeyUsage=serverAuth' \
-	'subjectAltName=DNS:my.test,DNS:mastodon.test,DNS:gts.test,DNS:misskey.test' >"$certs/server.ext"
+	'subjectAltName=DNS:my.test,DNS:mastodon.test,DNS:gts.test,DNS:misskey.test,DNS:relay.test' >"$certs/server.ext"
 openssl x509 -req -in "$certs/server.csr" -CA "$certs/ca.pem" -CAkey "$certs/ca.key" -CAcreateserial \
 	-days 2 -extfile "$certs/server.ext" -out "$certs/server.pem" 2>/dev/null
+# The actor key of the relay: Activity-Relay reads a PKCS #1 RSA key.
+openssl genrsa -traditional -out "$certs/relay-actor.pem" 2048 2>/dev/null
 # Throwaway keys, read by containers that run as other users.
 chmod 0644 "$certs"/*
 
@@ -134,25 +137,28 @@ wait_ready my.test /readyz
 wait_ready mastodon.test /health
 wait_ready gts.test /readyz
 wait_ready misskey.test /healthz
+wait_ready relay.test /actor
 
 # --- Users --------------------------------------------------------------------------------------
 # alice@my.test, and frank@my.test (the user that the suspension scenario suspends). On Mastodon: bob
 # (alice's follower), dave (never follows alice: the mentioned non-follower of the visibility scenario),
-# eve (the signature scenario), and the administrator mod. On GoToSocial: carol (alice's follower) and
+# eve (the signature scenario), judy (the relay scenario: nobody on my.test follows her), and the
+# administrator mod. ivan@my.test is the relay scenario's user, whom nobody on Mastodon follows. On GoToSocial: carol (alice's follower) and
 # erin (never follows alice). On Misskey: grace (alice's follower) and heidi (never follows alice), made
 # by its administrator mkadmin.
-log "creating alice and frank @my.test, bob, dave, eve, and mod @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
+log "creating alice, frank, and ivan @my.test, bob, dave, eve, judy, and mod @mastodon.test, carol and erin @gts.test, and grace and heidi @misskey.test"
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username alice -email alice@my.test >/dev/null
 printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username frank -email frank@my.test >/dev/null
+printf '%s\n' "$my_password" | "${compose[@]}" exec -T my my admin create -username ivan -email ivan@my.test >/dev/null
 
-for user in bob dave eve; do
+for user in bob dave eve judy; do
 	"${compose[@]}" exec -T mastodon-web bin/tootctl accounts create "$user" --email "$user@mastodon.test" --confirmed --approve >/dev/null
 done
 # mod is the administrator whose token reads the reports (TestReportForwarding).
 "${compose[@]}" exec -T mastodon-web bin/tootctl accounts create mod --email mod@mastodon.test --confirmed --approve --role Owner >/dev/null
 mastodon_tokens="$("${compose[@]}" exec -T mastodon-web bin/rails runner '
 	app = Doorkeeper::Application.create!(name: "federation-live", redirect_uri: "urn:ietf:wg:oauth:2.0:oob", scopes: "read write follow")
-	%w[bob dave eve].each do |name|
+	%w[bob dave eve judy].each do |name|
 		user = Account.find_local!(name).user
 		token = Doorkeeper::AccessToken.create!(application: app, resource_owner_id: user.id, scopes: "read write follow")
 		puts "token_#{name}=#{token.plaintext_token}"
@@ -161,13 +167,16 @@ mastodon_tokens="$("${compose[@]}" exec -T mastodon-web bin/rails runner '
 	admin = Doorkeeper::Application.create!(name: "federation-live-admin", redirect_uri: "urn:ietf:wg:oauth:2.0:oob", scopes: "admin:read")
 	token = Doorkeeper::AccessToken.create!(application: admin, resource_owner_id: Account.find_local!("mod").user.id, scopes: "admin:read")
 	puts "token_mod=#{token.plaintext_token}"
+	# Mastodon joins the relay (TestRelay); Sidekiq sends the Follow, and the relay accepts it at once.
+	Relay.create!(inbox_url: "https://relay.test/inbox").enable!
 ')"
 mastodon_token() { sed -n "s/^token_$1=//p" <<<"$mastodon_tokens"; }
 mastodon_token_bob="$(mastodon_token bob)"
 mastodon_token_dave="$(mastodon_token dave)"
 mastodon_token_eve="$(mastodon_token eve)"
 mastodon_token_mod="$(mastodon_token mod)"
-[[ -n "$mastodon_token_bob" && -n "$mastodon_token_dave" && -n "$mastodon_token_eve" && -n "$mastodon_token_mod" ]] ||
+mastodon_token_judy="$(mastodon_token judy)"
+[[ -n "$mastodon_token_bob" && -n "$mastodon_token_dave" && -n "$mastodon_token_eve" && -n "$mastodon_token_mod" && -n "$mastodon_token_judy" ]] ||
 	fail "could not issue the access tokens of the Mastodon users"
 
 # The proxy refuses eve's draft-cavage POSTs in both directions (Caddyfile, TestSignatureProfile); it
@@ -216,6 +225,7 @@ export FEDERATION_LIVE_MY_PASSWORD="$my_password"
 export FEDERATION_LIVE_MASTODON_TOKEN="$mastodon_token_bob"
 export FEDERATION_LIVE_MASTODON_TOKEN_DAVE="$mastodon_token_dave"
 export FEDERATION_LIVE_MASTODON_TOKEN_EVE="$mastodon_token_eve"
+export FEDERATION_LIVE_MASTODON_TOKEN_JUDY="$mastodon_token_judy"
 export FEDERATION_LIVE_MASTODON_ADMIN_TOKEN="$mastodon_token_mod"
 export FEDERATION_LIVE_GTS_PASSWORD="$gts_password"
 export FEDERATION_LIVE_MISSKEY_TOKEN="$misskey_token_grace"

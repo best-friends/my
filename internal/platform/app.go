@@ -202,6 +202,8 @@ type App struct {
 	// (docs/architecture/federation.md §6.2, §6.3).
 	RemoteStatuses *federation.StatusHandlers
 	Resolver       *federation.Resolver
+	// Relays joins and leaves the relays and admits what they bring in (ADR-0061).
+	Relays *federation.Relays
 
 	source queue.Source
 	// ready reports whether the database is reachable and its schema applied.
@@ -589,7 +591,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpRetention(cfg, retention, statuses)
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
-		feeds: feeds, notifications: notifs, moderation: mods, identities: identities, webhooks: hooks,
+		feeds: feeds, notifications: notifs, moderation: mods, identities: identities, webhooks: hooks, relays: feds,
 	})
 	if err := a.setUpStreams(ctx, cfg, opts.StreamBus); err != nil {
 		_ = a.Close()
@@ -601,7 +603,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.registerBusinessMetrics(a.Projectors)
 	fedOutbox := a.setUpFederation(cfg, feds)
 
-	a.setUpDelivery(feds)
+	if err := a.setUpDelivery(feds); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	if err := a.setBlobs(cfg); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -627,6 +632,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, err
 	}
 	a.setUpRemoteActors(cfg, feds)
+	a.setUpRelays(cfg, feds)
 	a.setUpInbox(feds)
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
@@ -724,7 +730,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The instance's webhooks (ADR-0060).
 		Webhooks:     a.Webhooks,
 		WebhookReads: webhookReads{a},
-		RateLimiter:  a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+		// The relays the instance joins (ADR-0061).
+		Relays:      a.Relays,
+		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})
 	// The data of the webhook messages is the admin API's representation (ADR-0060).
@@ -768,6 +776,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		EmojiTags: a.Media.EmojiTags,
 		Blocks:    a.Graph,
 		Reports:   a.Moderation,
+		Relays:    a.Relays,
 		Domains:   a.ModerationPolicy,
 		Clock:     a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,

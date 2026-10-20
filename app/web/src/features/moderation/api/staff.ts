@@ -285,6 +285,12 @@ export const auditActions = [
   "announcement_withdrawn",
   "invite_created",
   "invite_revoked",
+  "relay_added",
+  "relay_followed",
+  "relay_unfollowed",
+  "relay_removed",
+  "relay_accepted",
+  "relay_rejected",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -303,6 +309,7 @@ export const auditTargetKinds = [
   "webhook",
   "announcement",
   "invite",
+  "relay",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

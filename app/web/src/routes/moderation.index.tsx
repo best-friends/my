@@ -12,7 +12,7 @@ import { PageHeading } from "./-layout/PageHeading";
  * viewer's account, whose permissions decide the links.
  */
 export const Route = createFileRoute("/moderation/")({
-  staticData: { title: "client:admin.moderation.title" },
+  staticData: { title: "client:admin.moderation.title", hideHeading: true },
   beforeLoad: requireSignIn,
   loader: async ({ context: { queryClient, api } }) => {
     await queryClient.query({ ...viewerQueryOptions(api), staleTime: Infinity });

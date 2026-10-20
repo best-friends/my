@@ -55,7 +55,9 @@ type RetentionFactory func(t *testing.T, opts uow.Options) RetentionHarness
 // and the tombstones of unknown objects and Follows go after their retention; unrelated remote accounts keep only their current profile;
 // and the remote custom emoji that no status, profile, or reaction refers to any more go with the
 // remote media of their images, while the referenced and the disabled ones stay, and a disabled
-// one stays disabled when it arrives again.
+// one stays disabled when it arrives again. The statuses that only a relay brought in go after
+// relay_status_retention unless something local refers to them or a local account follows their
+// author (ADR-0061).
 func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 	t.Helper()
 	cases := []struct {
@@ -71,6 +73,7 @@ func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 		{"PurgesInboxAndDeliveryRecords", retentionFederationRecords},
 		{"PrunesProfilesOfUnrelatedRemoteAccounts", retentionProfiles},
 		{"PurgesUnreferencedRemoteEmoji", retentionEmojis},
+		{"PurgesRelayedStatuses", retentionRelayed},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRetentionEnv(t, newHarness)) })
@@ -612,4 +615,71 @@ func (e *retentionEnv) statusReader() *appcontent.Reader {
 	return appcontent.NewReader(appcontent.ReaderDeps{
 		Statuses: e.rh.Statuses, Interactions: e.rh.Interactions, Accounts: e.accounts, Relationships: e.graph,
 	})
+}
+
+// stubFollows stands in for the graph module: the remote authors that a local account follows.
+type stubFollows map[string]bool
+
+// AuthorFollowed implements appcontent.FollowedAuthors.
+func (s stubFollows) AuthorFollowed(_ context.Context, accountID string) (bool, error) {
+	return s[accountID], nil
+}
+
+func retentionRelayed(t *testing.T, e *retentionEnv) {
+	ctx := t.Context()
+	const alice, bob = "https://remote.example/users/alice", "https://remote.example/users/bob"
+	aliceID, bobID := e.actor(t, alice), e.actor(t, bob)
+	reader := e.user(t, "reader")
+	e.follow(t, reader, aliceID)
+	e.follow(t, reader, bobID)
+	old := e.note(t, alice, alice+"/notes/old", 10*24*time.Hour, nil)
+	oldRev := e.post(t, old.URI).Revision.ID
+	older := e.note(t, alice, alice+"/notes/older", 20*24*time.Hour, nil)
+	olderRev := e.post(t, older.URI).Revision.ID
+	young := e.note(t, alice, alice+"/notes/young", 3*24*time.Hour, nil)
+	ofFollowed := e.note(t, bob, bob+"/notes/old", 10*24*time.Hour, nil)
+	favourited := e.note(t, alice, alice+"/notes/favourited", 10*24*time.Hour, nil)
+	plain := e.note(t, alice, alice+"/notes/plain", 10*24*time.Hour, nil)
+	err := e.rh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		for _, st := range []content.Status{old, older, young, ofFollowed, favourited} {
+			if err := e.content.RecordRelayedStatus(ctx, tx, st.ID, "relay-1", remoteNow); err != nil {
+				return err
+			}
+		}
+		// Recording again changes nothing.
+		return e.content.RecordRelayedStatus(ctx, tx, old.ID, "relay-2", remoteNow)
+	})
+	if err != nil {
+		t.Fatalf("RecordRelayedStatus = %v", err)
+	}
+	if _, err := e.interactions.Favourite(ctx, reader, favourited.ID); err != nil {
+		t.Fatal(err)
+	}
+	r := appcontent.NewRelayedRetention(appcontent.RelayedRetentionDeps{
+		UnitOfWork: e.rh.UnitOfWork, Repository: e.rh.Statuses, Retention: e.rh.Retention, Notifications: e.notifications,
+		Follows: stubFollows{bobID: true}, Clock: e.clock, Period: 7 * 24 * time.Hour, Batch: 1,
+	})
+	total, after := 0, ""
+	for range 100 {
+		next, n, err := r.Run(ctx, after)
+		if err != nil {
+			t.Fatalf("Run(%q) = %v", after, err)
+		}
+		total += n
+		if after = next; next == "" {
+			break
+		}
+	}
+	if total != 2 {
+		t.Errorf("purged %d relayed statuses, want 2", total)
+	}
+	e.purged(t, old, oldRev)
+	e.purged(t, older, olderRev)
+	for _, st := range []content.Status{young, ofFollowed, favourited, plain} {
+		e.kept(t, st)
+	}
+	// The purge of every remote status leaves them to their own retention.
+	if n := e.purgeAll(t, e.retention(retentionPeriod, 0, 0)); n != 0 {
+		t.Errorf("the retention purge took %d statuses, want 0", n)
+	}
 }

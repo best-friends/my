@@ -48,6 +48,39 @@ func (r *StatusRepository) ListRemoteStatusesToPurge(ctx context.Context, tx uow
 	return out, nil
 }
 
+// ListRelayedStatusesToPurge implements content.RetentionRepository.
+func (r *StatusRepository) ListRelayedStatusesToPurge(ctx context.Context, tx uow.Tx, pq appcontent.RelayedPurgeQuery) ([]content.Status, error) {
+	q, err := queries(tx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := toInt32(pq.Limit, "batch limit")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListRelayedStatusesToPurge(ctx, postgresgen.ListRelayedStatusesToPurgeParams{
+		After: pq.After, IDBefore: kernel.UUIDv7Floor(pq.Before.Add(time.Millisecond)), RelayedBefore: pq.Before, BatchLimit: n,
+	})
+	if err != nil {
+		return nil, wrap(err, "list relayed statuses to purge")
+	}
+	out := make([]content.Status, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, statusFrom(row))
+	}
+	return out, nil
+}
+
+// InsertRelayedStatus implements content.Repository.
+func (r *StatusRepository) InsertRelayedStatus(ctx context.Context, tx uow.Tx, statusID, relayID string, receivedAt time.Time) error {
+	q, err := queries(tx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertRelayedStatus(ctx, postgresgen.InsertRelayedStatusParams{StatusID: statusID, RelayID: relayID, ReceivedAt: receivedAt})
+	return wrap(err, "insert relayed status")
+}
+
 // purgeIDBound is the UUIDv7 floor just past the later of the query's times: the ID of a remote
 // status is stamped with its publication time, so no status published before them has a greater
 // ID, and the scan of the primary key stops there. A zero Before counts as no time.
@@ -73,7 +106,7 @@ func (r *StatusRepository) PurgeStatuses(ctx context.Context, tx uow.Tx, statusI
 		q.PurgeStatusRevisionMentions, q.PurgeStatusRevisionTags, q.PurgeStatusRevisionEmojis,
 		q.PurgeRemoteStatusRevisions, q.PurgePollTallyObservationCounts, q.PurgePollTallyObservations,
 		q.PurgePollVotes, q.PurgePollTallies, q.PurgePollOptions, q.PurgePolls, q.PurgeStatusRevisions,
-		q.PurgeRemoteBoostRetractions, q.PurgeRemoteBoosts, q.PurgeStatuses,
+		q.PurgeRemoteBoostRetractions, q.PurgeRemoteBoosts, q.PurgeRelayedStatuses, q.PurgeStatuses,
 	}
 	for _, step := range steps {
 		if err := step(ctx, ids); err != nil {

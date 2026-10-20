@@ -4649,6 +4649,124 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: webhooks (#666) ---
+  # --- admin: relays (#667) ---
+  /admin/relays:
+    get:
+      operationId: listAdminRelays
+      summary: List the relays
+      description: |
+        The relays that the instance joins or joined (ADR-0061), in registration order, with
+        the state of the membership and what each brought in during the last 24 hours. Needs the
+        `manage_settings` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          description: The relays.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRelayList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createRelay
+      summary: Register a relay and join it
+      description: |
+        Registers a relay and sends the instance actor's `Follow`; the relay is `pending` until
+        it answers. `url` is the relay's inbox for a `mastodon` relay and its actor for a
+        `litepub` one, whose inbox the server fetches. Without `protocol`, a URL that serves an
+        actor is a `litepub` relay and any other a `mastodon` one. Only public posts go to the
+        relay; with `receive`, the public posts it relays come in too. A URL that is not https,
+        is registered already, is on a suspended server, or (for `litepub`) serves no actor is a
+        422 `/api/v1/problems/invalid-relay` whose `reason` says which. The registration and the
+        `Follow` are recorded in the audit log. Needs the `manage_settings` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRelayRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRelay"
+        "422":
+          $ref: "#/components/responses/RelayProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/relays/{id}:
+    parameters:
+      - $ref: "#/components/parameters/RelayId"
+    delete:
+      operationId: deleteRelay
+      summary: Delete a relay
+      description: |
+        Deletes the registration of a relay that the instance left or that rejected it, with the
+        history of its membership. The edits and deletions of the posts that went to it still go
+        there. A relay that is `pending` or `accepted` is a 422
+        `/api/v1/problems/invalid-relay` (`state`): leave it first. The deletion is recorded in
+        the audit log. An unknown ID is a 404. Needs the `manage_settings` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      responses:
+        "204":
+          description: The relay is deleted.
+        "422":
+          $ref: "#/components/responses/RelayProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/relays/{id}/follow:
+    post:
+      operationId: followRelay
+      summary: Join a relay again
+      description: |
+        Sends a new `Follow` to a relay that rejected the instance or that the instance left;
+        the relay is `pending` again. A relay that is `pending` or `accepted`, or on a suspended
+        server, is a 422 `/api/v1/problems/invalid-relay`. The `Follow` is recorded in the audit
+        log. An unknown ID is a 404. Needs the `manage_settings` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RelayId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRelay"
+        "422":
+          $ref: "#/components/responses/RelayProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/relays/{id}/unfollow:
+    post:
+      operationId: unfollowRelay
+      summary: Leave a relay
+      description: |
+        Sends the `Undo` of the `Follow` of a `pending` or `accepted` relay; the relay is `left`,
+        and nothing goes to it or comes from it any more. The posts it brought in stay until
+        their retention ends. A relay in another state is a 422 `/api/v1/problems/invalid-relay`
+        (`state`). The `Undo` is recorded in the audit log. An unknown ID is a 404. Needs the
+        `manage_settings` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/RelayId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminRelay"
+        "422":
+          $ref: "#/components/responses/RelayProblem"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: relays (#667) ---
 components:
   securitySchemes:
     oauth2:
@@ -4831,6 +4949,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: webhooks (#666) ---
+    # --- admin: relays (#667) ---
+    RelayId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the relay.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: relays (#667) ---
     # --- admin: instance texts (#489) ---
     InstanceTextKey:
       name: key
@@ -5114,6 +5241,30 @@ components:
           schema:
             $ref: "#/components/schemas/WebhookProblem"
     # --- end of admin: webhooks (#666) ---
+    # --- admin: relays (#667) ---
+    AdminRelay:
+      description: The relay.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminRelay"
+    RelayProblem:
+      description: The relay operation breaks a rule; nothing was changed.
+      headers:
+        Content-Language:
+          description: The locale of `title` and `detail`.
+          schema:
+            type: string
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/RelayProblem"
+    # --- end of admin: relays (#667) ---
     # --- admin: roles (#348) ---
     AdminRoleList:
       description: The roles.
@@ -5276,6 +5427,8 @@ components:
           says which.
         - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
           which.
+        - `/api/v1/problems/invalid-relay` (422): a relay cannot be registered, joined, left, or
+          deleted; `reason` says why.
         - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
           reason in `theme_errors` (`PUT /admin/theme`).
         - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
@@ -7607,7 +7760,9 @@ components:
         `announcement_created`, `announcement_updated` (its text or window),
         `announcement_published`, `announcement_withdrawn`; the label is the first line of its
         text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
-        characters of its code, never the whole code.
+        characters of its code, never the whole code. On a `relay`: `relay_added`,
+        `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
+        `relay_rejected` (by the `remote` relay); the label is its URL.
       type: string
       enum:
         - account_action_issued
@@ -7659,6 +7814,12 @@ components:
         - announcement_withdrawn
         - invite_created
         - invite_revoked
+        - relay_added
+        - relay_followed
+        - relay_unfollowed
+        - relay_removed
+        - relay_accepted
+        - relay_rejected
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -7705,8 +7866,8 @@ components:
           description: |
             Whether the target is still there to look at. It is `false` for an account, a report,
             an appeal, or a sign-up block that is gone (erased past its retention), and for a
-            role, a custom emoji, or a webhook that was deleted, which only `target_label` names
-            now. It is `true` for the other kinds of targets, which are never removed.
+            role, a custom emoji, a webhook, or a relay that was deleted, which only `target_label`
+            names now. It is `true` for the other kinds of targets, which are never removed.
           type: boolean
         source_event_id:
           description: |
@@ -7731,7 +7892,7 @@ components:
     AdminAuditTargetKind:
       description: The kind of what an audited operation acted on.
       type: string
-      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite]
+      enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite, relay]
     # --- end of admin: audit log (#330) ---
     # --- admin: domain actions and reports (#296) ---
     AdminDomainAction:
@@ -8886,6 +9047,110 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/Permission"
+    # --- admin: relays (#667) ---
+    RelayProtocol:
+      description: |
+        How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
+        collection. `litepub`: at its actor, by a `Follow` of the actor.
+      type: string
+      enum: [mastodon, litepub]
+    RelayState:
+      description: |
+        Where the membership of a relay stands. `pending`: the `Follow` is sent and not
+        answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
+        `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
+        instance sent the `Undo` of its `Follow`.
+      type: string
+      enum: [pending, accepted, rejected, left]
+    AdminRelay:
+      description: A relay that the instance joins or joined (ADR-0061).
+      type: object
+      required: [id, protocol, url, inbox_url, receive, state, state_changed_at, taken_last_day, dropped_last_day, domain_suspended, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        protocol:
+          $ref: "#/components/schemas/RelayProtocol"
+        url:
+          description: The URL it was registered with, its inbox or its actor.
+          type: string
+        inbox_url:
+          description: Where the public posts are delivered.
+          type: string
+        receive:
+          description: Whether the public posts it relays are taken in; `false` only sends.
+          type: boolean
+        state:
+          $ref: "#/components/schemas/RelayState"
+        state_changed_at:
+          type: string
+          format: date-time
+        actor_uri:
+          description: The relay's actor, which accepted the `Follow`; omitted unless `accepted`.
+          type: string
+        taken_last_day:
+          description: The activities it brought in during the last 24 hours that were taken in.
+          type: integer
+          minimum: 0
+        dropped_last_day:
+          description: |
+            The activities it brought in during the last 24 hours that were dropped over the
+            hourly limit (`relay_ingest_hourly_limit`).
+          type: integer
+          minimum: 0
+        domain_suspended:
+          description: |
+            Whether a domain action suspends its server: nothing goes to it or comes from it
+            while it does, whatever `state` says.
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    AdminRelayList:
+      description: The relays, in registration order.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRelay"
+    CreateRelayRequest:
+      description: A relay to register and join.
+      type: object
+      required: [url]
+      properties:
+        protocol:
+          $ref: "#/components/schemas/RelayProtocol"
+        url:
+          description: The relay's inbox (`mastodon`) or actor (`litepub`), an https URL.
+          type: string
+          minLength: 1
+          maxLength: 2048
+        receive:
+          description: Whether to take in the public posts it relays; `true` when omitted.
+          type: boolean
+    RelayProblem:
+      description: |
+        The problem of a relay operation that breaks a rule (422,
+        `/api/v1/problems/invalid-relay`); `reason` says which. Another 422 (a malformed
+        request) has none.
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          properties:
+            reason:
+              $ref: "#/components/schemas/RelayProblemReason"
+    RelayProblemReason:
+      description: |
+        Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
+        `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
+        suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
+        inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
+        `accepted` relay, leaving or deleting one that is not).
+      type: string
+      enum: [url, exists, domain_suspended, not_actor, state]
+    # --- end of admin: relays (#667) ---
     WebhookProblemReason:
       description: |
         Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048

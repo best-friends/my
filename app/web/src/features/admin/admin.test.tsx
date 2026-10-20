@@ -91,6 +91,7 @@ describe("the staff's menus on the settings page", () => {
       "/admin/rules",
       "/admin/theme",
       "/admin/documents",
+      "/admin/relays",
       "/admin/roles",
       "/admin/dead-jobs",
     ]);
