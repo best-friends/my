@@ -207,6 +207,7 @@ describe("a status card", () => {
           },
           url: "https://my.example/media/full.jpg",
           preview_url: "https://my.example/media/thumb.webp",
+          blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
         },
       ],
     });
@@ -223,6 +224,9 @@ describe("a status card", () => {
     expect(within(article).getByText("Post 1")).toBeVisible();
     const reveal = within(article).getByRole("button", { name: "Show sensitive media", pressed: false });
     expect(within(article).queryByRole("img")).not.toBeInTheDocument();
+    // The blur of the picture (its blurhash) covers it while it is concealed, hidden from screen readers.
+    // eslint-disable-next-line testing-library/no-node-access -- the decorative canvas has no role.
+    expect(article.querySelector("canvas")).toHaveAttribute("aria-hidden", "true");
     await user.click(reveal);
     // No description: the picture is named so, and not skipped.
     expect(within(article).getByRole("img", { name: "No description" })).toHaveAttribute("src", "https://my.example/media/thumb.webp");

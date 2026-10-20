@@ -51,12 +51,21 @@ export type StatusView = {
 /**
  * The pictures of a status that are ready to show: `preview_url` is the small still rendition of an upload, and
  * the media proxy's small one of a remote file; an upload also has its renditions to choose from by size, still and
- * moving (api/openapi.yaml, MediaAttachment).
+ * moving (api/openapi.yaml, MediaAttachment). The blurhash stands in for a picture while it is concealed or loading.
  */
 export function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
   return attachments.flatMap((attachment) =>
     attachment.state === "ready" && attachment.type === "image" && attachment.preview_url !== undefined
-      ? [{ id: attachment.id, src: attachment.preview_url, sources: imageSources(attachment.variants), alt: attachment.description ?? null, lang }]
+      ? [
+          {
+            id: attachment.id,
+            src: attachment.preview_url,
+            sources: imageSources(attachment.variants),
+            alt: attachment.description ?? null,
+            lang,
+            blurhash: attachment.blurhash,
+          },
+        ]
       : [],
   );
 }

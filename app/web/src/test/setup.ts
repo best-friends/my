@@ -16,6 +16,9 @@ beforeAll(() => {
   server.listen({ onUnhandledFrame: "error" });
   // jsdom has no Element.scrollIntoView; a page that scrolls an element into view (a post's page) calls it.
   Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, writable: true, value: () => undefined });
+  // Nor does jsdom draw: without the canvas package, getContext logs "Not implemented". The blur of a picture
+  // (@my/ui's Blurhash) then draws nothing, as in a browser without a 2D canvas.
+  Object.defineProperty(HTMLCanvasElement.prototype, "getContext", { configurable: true, writable: true, value: () => null });
 });
 
 beforeEach(() => {
