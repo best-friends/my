@@ -62,5 +62,5 @@
 | [0048](0048-typescript-7-with-typescript-6-api.md) | 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる | Accepted |
 | [0049](0049-client-lint-oxlint.md) | クライアントの lint を ESLint から Oxlint に移す | Accepted |
 | [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Accepted |
-| [0059](0059-design-tokens-and-instance-theme.md) | デザイントークンの体系とサーバー単位のテーマ | Proposed |
+| [0059](0059-design-tokens-and-instance-theme.md) | デザイントークンの体系とサーバー単位のテーマ | Accepted |
 <!-- adr-index:end -->
