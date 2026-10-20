@@ -100,7 +100,7 @@ main の現状:
 
 | 単位 | 設定 | 値 | 既定 |
 | --- | --- | --- | --- |
-| サーバー（インスタンス設定、`instance_setting_revisions` の新しいキー） | `search_indexing` | `allow` / `deny` | `allow` |
+| サーバー（インスタンス設定、`instance_setting_revisions` の新しいキー） | `search_indexing` | `allow` / `deny` | 未設定なら `deny` |
 | サーバー | `ai_usage` | `allow` / `deny_training`（学習を拒否）/ `deny`（学習と AI での利用を拒否） | 未設定なら `deny` |
 | サーバー | `indexable_default` | 新規アカウントの `indexable` の既定（`true` / `false`） | 未設定なら `false` |
 | サーバー | `security_contact` | `mailto:` か `https:` の URI。空なら `security.txt` を返さない | 空 |
@@ -111,7 +111,7 @@ main の現状:
 - あるページの実際の表明は、**サーバーの設定と、そのページの持ち主の設定のうち制限の強いほう**にする（IETF AI Preferences の「最も制限の強いものが勝つ」と同じ）。
   - 検索: `search_indexing = allow` かつ持ち主の `indexable = true` のときだけ索引を許す。
   - AI: サーバーの `ai_usage` と、持ち主の `ai_opt_out` から決める。個人はサーバーより広く許可できない。
-- 設定の無いサーバーは、AI の学習と利用を拒否し、新規アカウントを検索に載せない。運営者は管理画面で既定を許可の側に変えられる。
+- 設定の無いサーバーは、検索エンジンの索引と、AI の学習と利用をすべて拒否し、新規アカウントの `indexable` も `false` にする。運営者は管理画面でそれぞれを許可の側に変えられる。
   - `indexable_default` を変えても、既存のアカウントの `indexable` は変わらない（登録時の既定にだけ効く）。
 - 管理画面とクライアントは、サーバーが拒否しているときに個人の設定が効かないことを示す（設定の画面に説明を出す）。
 
@@ -119,6 +119,7 @@ main の現状:
 
 `GET /robots.txt` を Go が動的に返す（`text/plain; charset=utf-8`、`Cache-Control: public, max-age=3600`、ETag）。
 外枠と同じく `reservedPrefixes` に入れ、SPA の外枠は返さない。`account_domain` を分けている構成では、`host` 側で返す（ハンドル側は運営者の領分）。
+次の例は設定の無いサーバー（`search_indexing = deny`、`ai_usage = deny`）のもの。
 
 ```text
 # AI の学習のクローラー（ai_usage が deny_training か deny のとき）
@@ -140,8 +141,8 @@ User-agent: PerplexityBot
 Disallow: /
 
 User-agent: *
-Content-Usage: train-ai=n, ai-use=n
-Content-Signal: search=yes, ai-train=no, ai-input=no
+Content-Usage: search=n, train-ai=n, ai-use=n
+Content-Signal: search=no, ai-train=no, ai-input=no
 Disallow: /api/
 Disallow: /oauth/
 Disallow: /auth/
@@ -152,7 +153,7 @@ Allow: /
 
 - `User-agent: *` の群は、検索エンジンの拒否にも `Disallow: /` を使わない。取得を止めると `noindex` を読めず URL だけが索引に残ることがあり、
   リンクプレビューの取得者の一部（`Twitterbot` など）は robots.txt に従うので、ADR-0028 のプレビューが止まる。検索の拒否は `noindex` で表す。
-- `Content-Usage` と `Content-Signal` の値はサーバーの設定から作る（`search_indexing = deny` なら `search=n` / `search=no`）。
+- `Content-Usage` と `Content-Signal` の値はサーバーの設定から作る（`search_indexing = allow` なら `search=y` / `search=yes`）。
   未知の行は RFC 9309 のパーサーが無視するので、草案の行を足しても既存のクローラーを壊さない。
 - `/.well-known/` と `/nodeinfo` は拒否しない。統計の収集やサーバーの一覧（FR-402）を止めないため。
 - AI クローラーの一覧は `ai-robots-txt/ai.robots.txt` の `robots.json`（MIT、AGPL-3.0 と両立）から作り、**用途（学習 / AI での利用）で分類した表をリポジトリに同梱する**。
@@ -168,7 +169,7 @@ Allow: /
 | `unlisted` の投稿、見せない・存在しないページの 404 | 常に `noindex`（現状どおり） | サーバーの設定に従う |
 | リモートのアカウントのページ・アプリの画面（`/home` `/settings` `/admin` など） | 常に `noindex` | サーバーの設定に従う |
 | `/`（汎用の外枠） | サーバーの設定に従う | サーバーの設定に従う |
-| `/media/`（このサーバーが返すとき） | `noindex` は付けない（画像検索はサーバーの `search_indexing` に従う） | サーバーの設定に従う。持ち主ごとの表明はしない |
+| `/media/`（このサーバーが返すとき） | `search_indexing = deny` のとき `X-Robots-Tag: noindex`。持ち主ごとの表明はしない | サーバーの設定に従う。持ち主ごとの表明はしない |
 | クライアント API・AP の JSON・`/.well-known/` | `X-Robots-Tag: noindex` | 付けない（robots.txt で足りる） |
 
 - 外枠の ETag には、表明の値（サーバーの設定と持ち主の設定）を含める（ADR-0028 の「投稿の版」と同じ扱い）。
@@ -217,7 +218,7 @@ Allow: /
   - robots.txt も meta も従うかどうかはクローラー次第で、技術的な遮断ではない。遮断はこの ADR の対象外（WAF・レート制限）。
   - 同梱の AI クローラーの一覧は古くなる。更新の PR を定期的に作る必要がある。
   - 設定の無いときの `ai_usage = deny` は、ChatGPT などで利用者がこのサーバーのページを読ませる操作も拒む表明になる。
-  - 設定の無いときの `indexable_default = false` では、サーバーが検索を許していても、利用者が選ぶまで検索エンジンに載らない。
+  - 設定の無いサーバーは検索エンジンに載らない。検索に載せたい運営者は `search_indexing` と `indexable_default` の両方を変える必要があり、`indexable_default` を変える前に登録した利用者は自分で `indexable` を選ぶまで載らない。
   - 持ち主ごとの AI の拒否はメディアと連合先のページに及ばない。
   - `noai` / `noimageai`・`Content-Usage`・`Content-Signal`・TDMRep は読み手が少ないか未確認で、効果は限られる。
 - 後続で必要になる作業（Issue 化する）
