@@ -1141,6 +1141,44 @@ paths:
           $ref: "#/components/responses/StatusAfterAction"
         default:
           $ref: "#/components/responses/Problem"
+  /statuses/{id}/reactions:
+    parameters:
+      - $ref: "#/components/parameters/StatusId"
+    get:
+      operationId: listStatusReactions
+      summary: List the emoji reactions to a status
+      description: |
+        The emoji reactions to a status that the viewer may see, newest first, each with the
+        account that reacted, only those with one emoji when `emoji` is given. Accounts that
+        block the viewer, are deactivated, or are deleted are left out, so a page may hold fewer
+        than `limit` reactions before the last. A status that the viewer may not see is a 404,
+        the same as a missing one.
+      tags: [statuses]
+      security:
+        - {}
+        - oauth2: ["read:statuses"]
+      parameters:
+        - name: emoji
+          in: query
+          description: |
+            The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+            reaction has gives an empty page.
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of the reactions.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusReactionPage"
+        default:
+          $ref: "#/components/responses/Problem"
   /statuses/{id}/source:
     parameters:
       - $ref: "#/components/parameters/StatusId"
@@ -3911,6 +3949,9 @@ components:
             - $ref: "#/components/schemas/Id"
         relationship_severance:
           $ref: "#/components/schemas/RelationshipSeverance"
+        reaction:
+          description: The emoji of a `reaction`; omitted for the other types.
+          $ref: "#/components/schemas/ReactionEmoji"
     RelationshipSeverance:
       description: |
         The follows that a `relationships_severed` tells of: the user lost them when the
@@ -3972,9 +4013,10 @@ components:
       description: |
         The kind of a notification. `account` is the account that acted: the follower
         (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
-        (`mention`), the booster (`boost`), or the account that favourited (`favourite`).
-        `status` is the post that `mention`, `boost`, `favourite`, and `poll_closed` are
-        about. `moderation_notice` comes from the instance and has no `account`; its
+        (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
+        account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
+        with another emoji is another notification). `status` is the post that `mention`,
+        `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
         `moderation_action` is the action on the user's account, with its kind, reason, and end.
         `report_resolved` also comes from the instance: its `report` is the user's report that
         the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -3998,6 +4040,7 @@ components:
         - mention
         - boost
         - favourite
+        - reaction
         - poll_closed
         - moderation_notice
         - report_resolved
@@ -4056,8 +4099,8 @@ components:
         In a timeline, a boost is a status of the booster with `boost` set to the boosted
         status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
         `visibility` and `language` are those of the boosted status, its `content`,
-        `spoiler_text`, `media_attachments`, `mentions`, and `tags` are empty, and its counts
-        are zero.
+        `spoiler_text`, `media_attachments`, `mentions`, `tags`, and `reactions` are empty, and
+        its counts are zero.
       type: object
       required:
         - id
@@ -4075,6 +4118,7 @@ components:
         - replies_count
         - boosts_count
         - favourites_count
+        - reactions
       properties:
         id:
           $ref: "#/components/schemas/Id"
@@ -4147,6 +4191,14 @@ components:
           description: The number of favourites.
           type: integer
           minimum: 0
+        reactions:
+          description: |
+            The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+            reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+            are counted apart, in `favourites_count`.
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusReaction"
         favourited:
           description: Whether the authenticated user favourited the status.
           type: boolean
@@ -4159,6 +4211,71 @@ components:
         pinned:
           description: Whether the status is pinned to the author's profile; given only to the author.
           type: boolean
+    ReactionEmoji:
+      description: |
+        The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+        emoji of another server is shown as it is and cannot be used to react from here.
+      type: object
+      required: [name]
+      properties:
+        name:
+          description: |
+            The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+            custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+            server.
+          type: string
+        shortcode:
+          description: The shortcode of a custom emoji, without colons; omitted for a Unicode emoji.
+          type: string
+        domain:
+          description: The server of a custom emoji of another server; omitted otherwise.
+          type: string
+        url:
+          description: |
+            The image of a custom emoji; omitted for a Unicode emoji and when the image cannot be
+            shown.
+          type: string
+          format: uri
+    StatusReaction:
+      description: The reactions to a status with one emoji.
+      allOf:
+        - $ref: "#/components/schemas/ReactionEmoji"
+        - type: object
+          required: [count]
+          properties:
+            count:
+              description: The number of the reactions with the emoji.
+              type: integer
+              minimum: 1
+            me:
+              description: |
+                Whether the authenticated user reacted with the emoji; omitted for anonymous
+                requests.
+              type: boolean
+    StatusReactor:
+      description: One emoji reaction to a status, with the account that reacted.
+      type: object
+      required: [account, emoji, created_at]
+      properties:
+        account:
+          $ref: "#/components/schemas/Account"
+        emoji:
+          $ref: "#/components/schemas/ReactionEmoji"
+        created_at:
+          description: When the account reacted.
+          type: string
+          format: date-time
+    StatusReactionPage:
+      description: A page of the emoji reactions to a status, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/StatusReactor"
     StatusContext:
       description: The thread around a status.
       type: object

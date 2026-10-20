@@ -27,8 +27,11 @@ type InteractionDeps struct {
 	Relationships Relationships
 	// Restrictions are the authors' moderation restrictions; nil means NoRestrictions.
 	Restrictions RestrictionPolicy
-	Clock        kernel.Clock
-	IDs          kernel.IDGenerator
+	// RemoteMedia records the images of the custom emoji that remote reactions use; nil refuses
+	// those reactions.
+	RemoteMedia RemoteMediaRecorder
+	Clock       kernel.Clock
+	IDs         kernel.IDGenerator
 	// Host is the serving domain of the Announce and Like activity URIs (ADR-0018).
 	Host string
 }

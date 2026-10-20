@@ -103,7 +103,7 @@ type ErasureDeps struct {
 
 // Eraser runs JobEraseDeletedAccounts (data-model §8): a local account deleted longer than the
 // delay ago, that no retention hold preserves, loses its statuses (each recorded as deleted with
-// origin account_deletion first), its favourites, bookmarks, pins, boosts, follows, blocks, mutes,
+// origin account_deletion first), its favourites, reactions, bookmarks, pins, boosts, follows, blocks, mutes,
 // its timeline and notification rows, its uploads with their blobs, its user's email addresses,
 // credentials, sessions, tokens, preferences, and registration application, and its profile
 // revisions and keys. The account's row with its URI and domain, its username, its lifecycle,

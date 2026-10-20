@@ -69,6 +69,11 @@ export type NotificationView = {
   /** What a `moderation_notice` or an `appeal_decided` tells of the action; null for the other types. */
   notice: ModerationNoticeView | null;
   /**
+   * The emoji of a `reaction`, for `{emoji}` in its sentence: the Unicode emoji, or the `:shortcode:` of a
+   * custom emoji; null for the other types.
+   */
+  reaction: string | null;
+  /**
    * The pages the row leads to besides the actor's profile and the post, where the user follows up what it
    * tells: the account status, the report, the registrations, or the user's follow lists.
    */
@@ -82,6 +87,7 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   mention: "client:notifications.type.mention",
   boost: "client:notifications.type.boost",
   favourite: "client:notifications.type.favourite",
+  reaction: "client:notifications.type.reaction",
   poll_closed: "client:notifications.type.poll_closed",
   moderation_notice: "client:notifications.type.moderation_notice",
   report_resolved: "client:notifications.type.report_resolved",
@@ -188,6 +194,13 @@ function linksOf(notification: Notification, ownAcct: string | null): Notificati
   }
 }
 
+/** The emoji of a `reaction` as its sentence shows it (NotificationView.reaction). */
+function reactionOf(notification: Notification): string | null {
+  const { reaction } = notification;
+  if (notification.type !== "reaction" || reaction === undefined) return null;
+  return reaction.shortcode === undefined ? reaction.name : `:${reaction.shortcode}:`;
+}
+
 /** Returns what the row of `group` shows: one notification, or the favourites or the boosts of one post. */
 export function useNotificationView(group: NotificationGroup): NotificationView {
   const [notification] = group.notifications;
@@ -220,6 +233,7 @@ export function useNotificationView(group: NotificationGroup): NotificationView 
     followBack: notification.type === "follow" && account !== undefined ? account : null,
     severance: severed?.severance ?? null,
     notice: action === undefined ? null : noticeOf(action, (value) => intl.formatDate(value, { dateStyle: "medium", timeStyle: "short" })),
+    reaction: reactionOf(notification),
     links: linksOf(notification, viewer.status === "signed-in" ? viewer.account.acct : null),
   };
 }

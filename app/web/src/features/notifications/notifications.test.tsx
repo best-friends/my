@@ -281,6 +281,38 @@ describe("the notifications page", () => {
     expect(within(within(feed).getByRole("article", { name: /A poll you took part in/ })).queryAllByRole("link")).toEqual([]);
   });
 
+  test("says which emoji an account reacted with", async () => {
+    server.use(resumableSession());
+    markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });
+    const post = statusFixture("0192f0c4-7a8e-7000-8000-0000000000b3");
+    const reaction = (id: string, emoji: NonNullable<Notification["reaction"]>): Notification => ({
+      id,
+      type: "reaction",
+      created_at: "2026-10-16T09:00:00Z",
+      account: otherAccountFixture,
+      status: post,
+      reaction: emoji,
+    });
+    const items: Notification[] = [
+      reaction("0192f0c4-7a8e-7000-8000-0000000000e2", { name: "👍" }),
+      reaction("0192f0c4-7a8e-7000-8000-0000000000e1", {
+        name: "blobcat@misskey.example",
+        shortcode: "blobcat",
+        domain: "misskey.example",
+        url: "https://my.example/media/proxy/blobcat",
+      }),
+    ];
+    server.use(http.get(`${apiBase}/notifications`, () => HttpResponse.json({ items })));
+
+    await renderApp({ path: "/notifications" });
+
+    const feed = await screen.findByRole("feed", { name: "Notifications" });
+    // Each reaction is a row of its own, not grouped like the favourites.
+    expect(within(feed).getAllByRole("article")).toHaveLength(2);
+    expect(within(feed).getByRole("article", { name: /Bob reacted to your post with 👍/ })).toBeInTheDocument();
+    expect(within(feed).getByRole("article", { name: /Bob reacted to your post with :blobcat:/ })).toBeInTheDocument();
+  });
+
   test("says which suspension ended follows and how many the user lost", async () => {
     server.use(resumableSession());
     markerServer({ last_read_id: "0192f0c4-7a8e-7000-8000-0000000000ff", unread_count: 0 });

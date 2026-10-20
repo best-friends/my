@@ -346,38 +346,56 @@ func (s *Service) remoteEmojis(ctx context.Context, tx uow.Tx, in RemoteStatusIn
 		return nil, errors.New("content: remote statuses need a remote media recorder")
 	}
 	var ids []string
-	now := s.d.Clock.Now()
+	rec := remoteEmojiRecorder{repo: s.d.Repository, media: s.d.RemoteMedia, ids: s.d.IDs, now: s.d.Clock.Now()}
 	for _, e := range in.Emojis {
 		if e.Shortcode == "" || e.ImageURL == "" {
 			continue
 		}
-		m, err := s.d.RemoteMedia.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
-			OwnerAccountID: in.AuthorAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage,
-		})
+		emoji, err := rec.record(ctx, tx, in.AuthorAccountID, in.AuthorDomain, e)
 		if err != nil {
-			return nil, err
-		}
-		emoji, err := s.d.Repository.EnsureCustomEmoji(ctx, tx, content.CustomEmoji{
-			ID: s.d.IDs.NewID(), Shortcode: e.Shortcode, Domain: in.AuthorDomain, URI: e.URI, CreatedAt: now,
-		})
-		if err != nil {
-			return nil, err
-		}
-		img, err := s.d.Repository.CurrentCustomEmojiImage(ctx, tx, emoji.ID)
-		switch {
-		case errors.Is(err, ErrNotFound), err == nil && img.MediaID != m.MediaID:
-			err := s.d.Repository.InsertCustomEmojiImage(ctx, tx, content.CustomEmojiImage{
-				ID: s.d.IDs.NewID(), EmojiID: emoji.ID, MediaID: m.MediaID, RevisedAt: now,
-			})
-			if err != nil {
-				return nil, err
-			}
-		case err != nil:
 			return nil, err
 		}
 		ids = append(ids, emoji.ID)
 	}
 	return sortedSet(ids), nil
+}
+
+// remoteEmojiRecorder records the custom emoji of remote servers that posts and reactions use.
+type remoteEmojiRecorder struct {
+	repo  Repository
+	media RemoteMediaRecorder
+	ids   kernel.IDGenerator
+	now   time.Time
+}
+
+// record stores the emoji e of domain, unless it is stored, with its image as a remote media
+// file of ownerAccountID, and returns it. A new image URL of a known emoji becomes its new image.
+func (r remoteEmojiRecorder) record(ctx context.Context, tx uow.Tx, ownerAccountID, domain string, e RemoteEmojiInput) (content.CustomEmoji, error) {
+	m, err := r.media.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
+		OwnerAccountID: ownerAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage,
+	})
+	if err != nil {
+		return content.CustomEmoji{}, err
+	}
+	emoji, err := r.repo.EnsureCustomEmoji(ctx, tx, content.CustomEmoji{
+		ID: r.ids.NewID(), Shortcode: e.Shortcode, Domain: domain, URI: e.URI, CreatedAt: r.now,
+	})
+	if err != nil {
+		return content.CustomEmoji{}, err
+	}
+	img, err := r.repo.CurrentCustomEmojiImage(ctx, tx, emoji.ID)
+	switch {
+	case errors.Is(err, ErrNotFound), err == nil && img.MediaID != m.MediaID:
+		err := r.repo.InsertCustomEmojiImage(ctx, tx, content.CustomEmojiImage{
+			ID: r.ids.NewID(), EmojiID: emoji.ID, MediaID: m.MediaID, RevisedAt: r.now,
+		})
+		if err != nil {
+			return content.CustomEmoji{}, err
+		}
+	case err != nil:
+		return content.CustomEmoji{}, err
+	}
+	return emoji, nil
 }
 
 // remoteAttachments records the attachments of a remote post as remote media files of the

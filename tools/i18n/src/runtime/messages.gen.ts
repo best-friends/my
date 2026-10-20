@@ -1730,6 +1730,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** {name} reacted to your post with {emoji} */
+  "client:notifications.type.reaction": { emoji: string; name: string };
   /** A suspension by the moderators ended some of your follows */
   "client:notifications.type.relationships_severed": {};
   /** A report you filed has been resolved */

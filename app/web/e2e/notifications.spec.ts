@@ -52,6 +52,7 @@ const post = {
   replies_count: 0,
   boosts_count: 0,
   favourites_count: 0,
+  reactions: [],
 };
 
 /** Newest first: a mention (unread), a boost of a post behind a content warning (unread), a follow (read). */

@@ -5,6 +5,7 @@ package testkit
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"reflect"
 	"slices"
@@ -808,9 +809,10 @@ func interactionCountsLocalPosts(t *testing.T, e *interactionEnv) {
 	}
 }
 
-// interactionProjectionEqualsRebuild runs random boosts, favourites, their undos, and status
-// deletions, and checks that rebuilding status_counters and boost_edges from their sources
-// yields exactly the rows that the synchronous projectors wrote (data-model §9).
+// interactionProjectionEqualsRebuild runs random boosts, favourites, remote emoji reactions,
+// their undos, and status deletions, and checks that rebuilding status_counters, boost_edges, and
+// status_reaction_counts from their sources yields exactly the rows that the synchronous
+// projectors wrote (data-model §9).
 func interactionProjectionEqualsRebuild(t *testing.T, e *interactionEnv) {
 	ctx := t.Context()
 	rng := rand.New(rand.NewPCG(100, 20261016)) //nolint:gosec // deterministic test input, not a secret
@@ -818,6 +820,12 @@ func interactionProjectionEqualsRebuild(t *testing.T, e *interactionEnv) {
 	for i := range accounts {
 		accounts[i] = e.localAccount()
 	}
+	remotes := make([]string, 3)
+	for i := range remotes {
+		remotes[i] = e.account(false, account.StateActive)
+	}
+	emojis := []string{"👍", "\u2764", "\u2764\uFE0F", "🎉"}
+	var reacted []string // the URIs of the reactions recorded, taken back or not
 	visibilities := []content.Visibility{content.VisibilityPublic, content.VisibilityLocal, content.VisibilityUnlisted}
 	var statuses []content.Status
 	for range 12 {
@@ -832,7 +840,7 @@ func interactionProjectionEqualsRebuild(t *testing.T, e *interactionEnv) {
 			e.clock.Advance(time.Duration(rng.IntN(5000)+1) * time.Millisecond)
 			a, s := accounts[rng.IntN(len(accounts))], statuses[rng.IntN(len(statuses))]
 			var err error
-			switch op := rng.IntN(20); {
+			switch op := rng.IntN(26); {
 			case op < 6:
 				_, err = e.svc.Boost(ctx, a, s.ID)
 			case op < 9:
@@ -841,6 +849,27 @@ func interactionProjectionEqualsRebuild(t *testing.T, e *interactionEnv) {
 				_, err = e.svc.Favourite(ctx, a, s.ID)
 			case op < 19:
 				err = e.svc.Unfavourite(ctx, a, s.ID)
+			case op < 23:
+				uri := fmt.Sprintf("https://remote.example/reactions/%d", len(reacted))
+				reacted = append(reacted, uri)
+				_, err = e.svc.RecordRemoteReaction(ctx, appcontent.RemoteReactionInput{
+					URI: uri, AccountID: remotes[rng.IntN(len(remotes))], StatusID: s.ID,
+					Emoji: appcontent.RemoteReactionEmoji{Unicode: emojis[rng.IntN(len(emojis))]},
+				})
+				// A local-only status is hidden from remote accounts.
+				if errors.Is(err, appcontent.ErrNotFound) {
+					err = nil
+				}
+			case op < 25:
+				if len(reacted) == 0 {
+					continue
+				}
+				uri := reacted[rng.IntN(len(reacted))]
+				r, findErr := e.h.Interactions.FindReactionByURI(ctx, uri)
+				if findErr != nil {
+					continue // taken back already, or never recorded
+				}
+				err = e.svc.RemoveRemoteReaction(ctx, appcontent.RemoteReactionUndo{URI: uri, AccountID: r.AccountID})
 			default:
 				if live[s.ID] {
 					e.mustRemove(t, s)
@@ -853,8 +882,8 @@ func interactionProjectionEqualsRebuild(t *testing.T, e *interactionEnv) {
 			}
 		}
 		incremental := snapshotInteractionProjections(t, e.h)
-		if len(incremental.Edges) == 0 {
-			t.Fatalf("round %d: boost_edges is too sparse to compare", round)
+		if len(incremental.Edges) == 0 || len(incremental.Reactions) == 0 {
+			t.Fatalf("round %d: boost_edges or status_reaction_counts is too sparse to compare", round)
 		}
 		if err := appcontent.RebuildProjections(ctx, e.h.UnitOfWork, e.h.Statuses); err != nil {
 			t.Fatalf("RebuildProjections = %v", err)
@@ -873,6 +902,7 @@ type interactionProjections struct {
 	Counters   []content.Counters
 	Edges      []content.BoostEdge
 	LocalPosts []content.LocalPostCounter
+	Reactions  []content.ReactionCount
 }
 
 func snapshotInteractionProjections(t *testing.T, h InteractionHarness) interactionProjections {
@@ -889,6 +919,9 @@ func snapshotInteractionProjections(t *testing.T, h InteractionHarness) interact
 	}
 	if p.LocalPosts, err = h.Statuses.ListLocalPostCounters(t.Context()); err != nil {
 		t.Fatalf("ListLocalPostCounters = %v", err)
+	}
+	if p.Reactions, err = h.Interactions.ListAllReactionCounts(t.Context()); err != nil {
+		t.Fatalf("ListAllReactionCounts = %v", err)
 	}
 	return p
 }

@@ -3455,6 +3455,10 @@
     "defaultMessage": "‮∀ doʅʅ ʎon ʇooʞ dɐɹʇ ıu ɥɐs ǝupǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.reaction": {
+    "defaultMessage": "‮{name} ɹǝɐɔʇǝp ʇo ʎonɹ dosʇ ʍıʇɥ {emoji}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.relationships_severed": {
     "defaultMessage": "‮∀ snsdǝusıou qʎ ʇɥǝ ɯopǝɹɐʇoɹs ǝupǝp soɯǝ oɟ ʎonɹ ɟoʅʅoʍs‬",
     "description": "Generated from en by tools/i18n; do not edit."

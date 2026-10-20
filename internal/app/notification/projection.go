@@ -60,6 +60,9 @@ type ProjectorDeps struct {
 //     mentions; an edit notifies only the accounts it newly mentions.
 //   - content.boosted: boost, to the status's author.
 //   - content.favourited: favourite, to the status's author.
+//   - content.reacted: reaction, to the status's author, with the reaction's emoji. Its dedupe
+//     key is per emoji (notification.ReactionKey), so a reaction with another emoji notifies
+//     again (ADR-0052 §5).
 //   - moderation.report_resolved: report_resolved, to the reporter when the reporter is a local
 //     account. It comes from the instance and has no source account. Its dedupe key is the
 //     report's (notification.ReportResolvedKey), so only the first resolution notifies: a
@@ -139,6 +142,18 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 	r.Register(appcontent.EventFavourited, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.Favourited)
 		return p.interaction(ctx, tx, notification.TypeFavourite, ev.Status, ev.Favourite.AccountID, ev.Favourite.CreatedAt)
+	})
+	r.Register(appcontent.EventReacted, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appcontent.Reacted)
+		re, st := ev.Reaction, ev.Status
+		if !st.IsLocal {
+			return nil // a remote author is notified by its own server
+		}
+		return p.notify(ctx, tx, notification.Notification{
+			RecipientAccountID: st.AuthorAccountID, SourceAccountID: re.AccountID, Type: notification.TypeReaction, StatusID: st.ID,
+			ReactionEmoji: re.Emoji.Unicode, ReactionCustomEmojiID: re.Emoji.CustomEmojiID,
+			DedupeKey: notification.ReactionKey(st.ID, re.AccountID, re.Emoji.Key()), CreatedAt: re.CreatedAt,
+		})
 	})
 	r.Register(appmoderation.EventReportResolved, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appmoderation.ReportResolved)

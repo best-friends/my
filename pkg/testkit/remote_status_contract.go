@@ -100,6 +100,7 @@ type remoteStatusEnv struct {
 	fetcher       *inboxFetcher
 	graph         *appgraph.Service
 	content       *appcontent.Service
+	media         *appcontent.MediaService
 	timeline      *apptimeline.Service
 	notifications *appnotification.Service
 	processor     *appfederation.InboxProcessor
@@ -143,6 +144,7 @@ func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteSta
 		Sanitizer:       remoteSanitizer{}, RemoteMedia: media,
 		Clock: ae.clock, IDs: ae.ids, Host: contractHost,
 	})
+	e.media = media
 	e.timeline = apptimeline.NewService(apptimeline.Deps{Repository: h.Timeline, Clock: ae.clock})
 	e.notifications = appnotification.NewService(appnotification.Deps{UnitOfWork: h.UnitOfWork, Repository: h.Notifications, Clock: ae.clock})
 	e.actors = &remoteStatusActors{accounts: e.remote, served: map[string]appaccount.RemoteActorInput{}}

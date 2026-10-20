@@ -56,6 +56,7 @@ function status(id: string, content: string, overrides: Partial<Status> = {}): S
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
     favourited: false,
     boosted: false,
     bookmarked: false,

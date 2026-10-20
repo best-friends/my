@@ -78,6 +78,7 @@ function post(n: number): Status {
     replies_count: 0,
     boosts_count: 0,
     favourites_count: 0,
+    reactions: [],
   };
 }
 
