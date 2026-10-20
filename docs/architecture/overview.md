@@ -110,7 +110,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `HumanVerifier` | サインインと登録の CAPTCHA のトークンの検証（`HTTPClient` で siteverify に送る）。`captcha = none` では使わない（nil） | なし（`captcha = none`） | [0042](../adr/0042-captcha-human-verifier.md) |
 | `PushSender` | Web Push 送信 | webpush | — |
 | `Publisher` / `Subscriber` | リアルタイム更新の通知と購読（§4.4）。設定 `stream` が `hub` なら `stream.Hub`、それ以外は `stream.Relay` | in-process（`stream.Hub`、`stream = hub`） | [0016](../adr/0016-client-api-style.md), [0050](../adr/0050-stream-pubsub-across-processes.md) |
-| `Bus` / `Sweeper` | プロセス間の知らせの同報（`stream.Relay` が使う）と、プロセスが残したブローカーの資源の後始末（§4.4）。アダプタは `postgres` / `valkey` / `sns`（`Sweeper` も実装）。`stream.MemoryBroker` はテスト用 | なし（`stream = hub`）。複数プロセスは `postgres` | [0050](../adr/0050-stream-pubsub-across-processes.md) |
+| `Bus` / `Sweeper` | プロセス間の知らせの同報（`stream.Relay` が使う）と、プロセスが残したブローカーの資源の後始末（§4.4）。アダプタは `postgres` / `valkey` / `sns` / `pubsub`（`sns` と `pubsub` は `Sweeper` も実装）。`stream.MemoryBroker` はテスト用 | なし（`stream = hub`）。複数プロセスは `postgres` | [0050](../adr/0050-stream-pubsub-across-processes.md) |
 | `Clock` / `IdGenerator` | 時刻（UTC・ミリ秒）・ID 生成（テスト容易性のため注入） | system（システム時計 / `uuid.NewV7()`） | [0003](../adr/0003-database-abstraction.md) |
 | `KeyManager` | 秘密（アクター秘密鍵など）を包む DEK の wrap / unwrap。暗号化は `kernel.Sealer` が行う | local（設定の KEK） | [0019](../adr/0019-security-baseline.md) |
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
@@ -153,13 +153,13 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 - 組み立て（`internal/platform`）は、設定 `stream`（[設定のリファレンス](../reference/configuration.md)）でブローカーを選ぶ。設定は推測せず、既定は `hub`（[ADR-0050](../adr/0050-stream-pubsub-across-processes.md) §3）
   - `hub`: `stream.Hub` だけで、**1 つのプロセスの中だけ** で知らせを配る。web のプロセスが複数ある構成、web と worker を分けた構成（Inbox の処理で作られた通知は worker で生まれる）では、
     別のプロセスで起きた変更がストリームに届かない。そのため `role` が `all` 以外のプロセスは、起動時に警告をログに出す
-  - `postgres`（`db = postgres` のときだけ）/ `valkey` / `sns`: `stream.Relay` とそのアダプタの `Bus`。プロセスごとに新しいプロセス ID を作り、`Relay` とアダプタで共有する。
-    アダプタが `stream.Sweeper` を実装していれば（`sns`）、`Relay` は KV に生存の印を書き、組み立ては `stream.sweep` を `Scheduler` に載せる
+  - `postgres`（`db = postgres` のときだけ）/ `valkey` / `sns` / `pubsub`: `stream.Relay` とそのアダプタの `Bus`。プロセスごとに新しいプロセス ID を作り、`Relay` とアダプタで共有する。
+    アダプタが `stream.Sweeper` を実装していれば（`sns`、`pubsub`）、`Relay` は KV に生存の印を書き、組み立ては `stream.sweep` を `Scheduler` に載せる
   - ターゲットごとのブローカーは [デプロイターゲット](deployment-targets.md#ストリームプロセス間の知らせ) のとおり
   - シャットダウン: web と all のロールは、シャットダウンの開始時にブローカーを閉じる（開いたストリームを終え、送信バッファの知らせを送り、listener を閉じてブローカーの資源を消す）。
     worker のロールはストリームを持たないので、実行中のジョブが終わってから閉じ、ジョブの知らせを最後まで送る。all のロールでシャットダウン中に終わったジョブの知らせは、ほかのプロセスに届かない
   - 2 つのプロセスの結合テスト（`internal/platform` の `TestStreamsAcrossProcesses`）: 同じ DB と同じブローカーの web と worker の 2 つの App で、worker で作った投稿と、worker が Inbox の処理で作った通知が、
-    web のストリームに届くことを、メモリの `Bus` と `stream = postgres`（PR では pgmem）で確かめる
+    web のストリームに届くことを、メモリの `Bus`、`stream = postgres`（PR では pgmem）、`stream = pubsub`（プロセス内の Pub/Sub サーバー pstest）で確かめる
 - プロセスをまたぐ配信は `stream.Relay` が行う。`Relay` は `Publisher` / `Subscriber` を実装し、プロセスの中の振り分け・上限・遅い購読者の切断は自分の `Hub` に任せ、
   プロセスの間はポート `stream.Bus`（すべてのプロセスへ同報し、受け取るだけ）で運ぶ
   - 知らせは JSON `{"v":1,"o":"<process id>","k":"home_entry","e":"<entry id>"}`（通知は `"k":"notifications","a":"<account id>"`）で、1 KiB を超える符号化は失敗させる。知らない `v` の知らせは捨てる
@@ -220,6 +220,7 @@ internal/
     stream/postgres/ # stream.Bus の PostgreSQL LISTEN / NOTIFY（送信はプール、listener は専用の接続。ADR-0050）
     stream/valkey/   # stream.Bus の Valkey Pub/Sub（1 チャネルに PUBLISH、listener は専用の接続で SUBSCRIBE。ADR-0050）
     stream/sns/      # stream.Bus と stream.Sweeper の Amazon SNS → プロセスごとの SQS キュー（ADR-0050）
+    stream/pubsub/   # stream.Bus と stream.Sweeper の Google Cloud Pub/Sub（プロセスごとの subscription。ADR-0050）
     valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
     mail/{none,smtp,ses}/
     captcha/siteverify/ # HumanVerifier の実装（Turnstile / hCaptcha / reCAPTCHA v2 のプリセット。ADR-0042）

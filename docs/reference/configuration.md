@@ -62,6 +62,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`stream_postgres_url`](#stream_postgres_url) | `MY_STREAM_POSTGRES_URL` | value of `database_url` | no | yes |
 | [`stream_sns_topic_arn`](#stream_sns_topic_arn) | `MY_STREAM_SNS_TOPIC_ARN` | none | when `stream = sns` | no |
 | [`stream_sqs_queue_prefix`](#stream_sqs_queue_prefix) | `MY_STREAM_SQS_QUEUE_PREFIX` | none | when `stream = sns` | no |
+| [`stream_pubsub_topic`](#stream_pubsub_topic) | `MY_STREAM_PUBSUB_TOPIC` | none | when `stream = pubsub` | no |
+| [`stream_pubsub_subscription_prefix`](#stream_pubsub_subscription_prefix) | `MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX` | none | when `stream = pubsub` | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
 | [`kek_previous`](#kek_previous) | `MY_KEK_PREVIOUS` | none | no | yes |
@@ -321,6 +323,7 @@ Broker that carries the signals of the real-time updates (`GET /api/v1/streaming
 | `postgres` | yes | PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`. |
 | `valkey` | yes | Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`. |
 | `sns` | yes | An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain. |
+| `pubsub` | yes | A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`. |
 
 ### `stream_postgres_url`
 
@@ -345,6 +348,22 @@ Start of the names of the per-process SQS queues of `stream = sns`, `{prefix}-{p
 - Environment variable: `MY_STREAM_SQS_QUEUE_PREFIX`
 - Default: none
 - Required: when `stream = sns`
+
+### `stream_pubsub_topic`
+
+Full name of the Google Cloud Pub/Sub topic of `stream = pubsub`, `projects/{project}/topics/{topic}`, which the deployment template creates. The subscriptions are created in its project.
+
+- Environment variable: `MY_STREAM_PUBSUB_TOPIC`
+- Default: none
+- Required: when `stream = pubsub`
+
+### `stream_pubsub_subscription_prefix`
+
+Start of the IDs of the per-process subscriptions of `stream = pubsub`, `{prefix}-{process id}-{n}`: a letter, then letters, digits, and `-_.~+%`, not starting with `goog`. The `stream.sweep` job deletes the subscriptions under it that ended processes left behind, so it belongs to one instance.
+
+- Environment variable: `MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX`
+- Default: none
+- Required: when `stream = pubsub`
 
 ### `key_manager`
 

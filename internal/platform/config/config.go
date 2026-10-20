@@ -65,13 +65,15 @@ type Config struct {
 	ValkeyKeyPrefix string
 	// Stream is the broker of the real-time updates between processes (ADR-0050); the other
 	// Stream fields configure it.
-	Stream               string
-	StreamPostgresURL    string
-	StreamSNSTopicARN    string
-	StreamSQSQueuePrefix string
-	KeyManager           string
-	KEK                  []byte
-	PreviousKEKs         [][]byte
+	Stream                         string
+	StreamPostgresURL              string
+	StreamSNSTopicARN              string
+	StreamSQSQueuePrefix           string
+	StreamPubSubTopic              string
+	StreamPubSubSubscriptionPrefix string
+	KeyManager                     string
+	KEK                            []byte
+	PreviousKEKs                   [][]byte
 	// Mail is the Mailer adapter; MailFrom and the SMTP fields configure it.
 	Mail         string
 	MailFrom     string
@@ -140,6 +142,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("stream_postgres_url", redact(c.StreamPostgresURL != "")),
 		slog.String("stream_sns_topic_arn", c.StreamSNSTopicARN),
 		slog.String("stream_sqs_queue_prefix", c.StreamSQSQueuePrefix),
+		slog.String("stream_pubsub_topic", c.StreamPubSubTopic),
+		slog.String("stream_pubsub_subscription_prefix", c.StreamPubSubSubscriptionPrefix),
 		slog.String("key_manager", c.KeyManager),
 		slog.String("kek", redact(len(c.KEK) > 0)),
 		slog.Int("kek_previous", len(c.PreviousKEKs)),

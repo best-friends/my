@@ -17,6 +17,9 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/pubsub/v2/apiv1/pubsubpb"
+	"cloud.google.com/go/pubsub/v2/pstest"
+
 	"github.com/best-friends/my/internal/adapter/httpsig"
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
@@ -281,4 +284,30 @@ func TestHubWarnsOutsideRoleAll(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestStreamsAcrossProcessesOnPubSub runs the processes of TestStreamsAcrossProcesses on
+// stream = pubsub, with the in-process Pub/Sub server pstest at PUBSUB_EMULATOR_HOST, and checks
+// that both register the sweep of the subscriptions. It sets the environment, so it does not run
+// in parallel.
+func TestStreamsAcrossProcessesOnPubSub(t *testing.T) {
+	srv := pstest.NewServer()
+	t.Cleanup(func() { _ = srv.Close() })
+	t.Setenv("PUBSUB_EMULATOR_HOST", srv.Addr)
+	const topic = "projects/my-test/topics/my-stream"
+	if _, err := srv.GServer.CreateTopic(t.Context(), &pubsubpb.Topic{Name: topic}); err != nil {
+		t.Fatalf("CreateTopic: %v", err)
+	}
+	env := map[string]string{
+		"MY_DB": "postgres", "MY_DATABASE_URL": newPostgresDatabase(t), "MY_WEB_ORIGIN": webOrigin,
+		"MY_STREAM": "pubsub", "MY_STREAM_PUBSUB_TOPIC": topic, "MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX": "my-stream",
+	}
+	web := newRoleApp(t, env, "web", nil)
+	worker := newRoleApp(t, env, "worker", nil)
+	for _, a := range []*platform.App{web, worker} {
+		if _, _, ok := a.Handlers.Lookup(stream.JobSweep); !ok {
+			t.Errorf("no handler of %s is registered", stream.JobSweep)
+		}
+	}
+	checkStreamsAcrossProcesses(t, web, worker)
 }

@@ -178,6 +178,18 @@ listen = "127.0.0.1:9000"
 			},
 		},
 		{
+			name: "stream on Pub/Sub",
+			env: with(minimal(), "MY_ROLE", "web", "MY_STREAM", "pubsub",
+				"MY_STREAM_PUBSUB_TOPIC", "projects/my-project/topics/my-stream", "MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX", "my-stream"),
+			want: Config{
+				Host: "social.example.org", AccountDomain: "social.example.org", SourceURL: DefaultSourceURL, WebOrigin: "https://social.example.org", Role: RoleWeb, Listen: ":8080",
+				DB: "sqlite", DatabaseURL: "file:my.db", Queue: "db", Blob: "fs", Media: "native", KV: "db", ValkeyKeyPrefix: "my:",
+				Stream: "pubsub", StreamPubSubTopic: "projects/my-project/topics/my-stream", StreamPubSubSubscriptionPrefix: "my-stream",
+				BlobFSDir: "blobs", MediaMaxImageBytes: 16 << 20, MediaMaxImageSide: 8192, MediaMaxImagePixels: 7680 * 4320, MediaUnattachedTTL: 24 * time.Hour, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour,
+				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
+			},
+		},
+		{
 			name: "stream on PostgreSQL with a direct connection",
 			env: with(minimal(), "MY_DB", "postgres", "MY_DATABASE_URL", "postgres://pooler:6543/my", "MY_STREAM", "postgres",
 				"MY_STREAM_POSTGRES_URL", "postgres://db:5432/my"),
@@ -289,6 +301,23 @@ func TestLoadInvalid(t *testing.T) {
 			want: []string{
 				`stream_sns_topic_arn (MY_STREAM_SNS_TOPIC_ARN): not the ARN of an SNS topic`,
 				`stream_sqs_queue_prefix (MY_STREAM_SQS_QUEUE_PREFIX): not 1 to 40 letters`,
+			},
+		},
+		{
+			name: "stream pubsub without its topic and subscriptions",
+			env:  with(minimal(), "MY_STREAM", "pubsub"),
+			want: []string{
+				"stream_pubsub_topic (MY_STREAM_PUBSUB_TOPIC): required when stream is pubsub",
+				"stream_pubsub_subscription_prefix (MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX): required when stream is pubsub",
+			},
+		},
+		{
+			name: "malformed stream pubsub settings",
+			env: with(minimal(), "MY_STREAM", "pubsub",
+				"MY_STREAM_PUBSUB_TOPIC", "my-stream", "MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX", "goog-stream"),
+			want: []string{
+				"stream_pubsub_topic (MY_STREAM_PUBSUB_TOPIC): not a Pub/Sub topic name",
+				"stream_pubsub_subscription_prefix (MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX): not the start of a Pub/Sub subscription ID",
 			},
 		},
 		{

@@ -13,6 +13,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 
 	pgstream "github.com/best-friends/my/internal/adapter/stream/postgres"
+	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
 	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
 	valkeystream "github.com/best-friends/my/internal/adapter/stream/valkey"
 	"github.com/best-friends/my/internal/app/stream"
@@ -110,6 +111,15 @@ func (a *App) newStreamBus(ctx context.Context, cfg *config.Config, processID st
 			Logger: a.Logger.With(slog.String("component", "stream")),
 		})
 		return b, nil, err
+	case "pubsub":
+		b, err := pubsubstream.New(ctx, pubsubstream.Options{
+			Topic: cfg.StreamPubSubTopic, SubscriptionPrefix: cfg.StreamPubSubSubscriptionPrefix, ProcessID: processID,
+			Logger: a.Logger.With(slog.String("component", "stream")),
+		})
+		if err != nil {
+			return nil, nil, fmt.Errorf("stream = pubsub: %w", err)
+		}
+		return b, b.Close, nil
 	default:
 		return nil, nil, fmt.Errorf("stream %q is not implemented yet", cfg.Stream)
 	}

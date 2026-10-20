@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
 	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
 	"github.com/best-friends/my/internal/adapter/valkey"
 )
@@ -274,6 +275,7 @@ var schema = []field{
 			{value: "postgres", inV0: true, doc: "PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`."},
 			{value: "valkey", inV0: true, doc: "Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`."},
 			{value: "sns", inV0: true, doc: "An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain."},
+			{value: "pubsub", inV0: true, doc: "A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`."},
 		},
 		set: func(c *Config, v string) { c.Stream = v },
 	},
@@ -297,6 +299,20 @@ var schema = []field{
 		requiredWhen: "when `stream = sns`",
 		check:        snsstream.CheckQueuePrefix,
 		set:          func(c *Config, v string) { c.StreamSQSQueuePrefix = v },
+	},
+	{
+		key:          "stream_pubsub_topic",
+		doc:          "Full name of the Google Cloud Pub/Sub topic of `stream = pubsub`, `projects/{project}/topics/{topic}`, which the deployment template creates. The subscriptions are created in its project.",
+		requiredWhen: "when `stream = pubsub`",
+		check:        pubsubstream.CheckTopic,
+		set:          func(c *Config, v string) { c.StreamPubSubTopic = v },
+	},
+	{
+		key:          "stream_pubsub_subscription_prefix",
+		doc:          "Start of the IDs of the per-process subscriptions of `stream = pubsub`, `{prefix}-{process id}-{n}`: a letter, then letters, digits, and `-_.~+%`, not starting with `goog`. The `stream.sweep` job deletes the subscriptions under it that ended processes left behind, so it belongs to one instance.",
+		requiredWhen: "when `stream = pubsub`",
+		check:        pubsubstream.CheckSubscriptionPrefix,
+		set:          func(c *Config, v string) { c.StreamPubSubSubscriptionPrefix = v },
 	},
 	{
 		key: "key_manager",
@@ -474,6 +490,13 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 		for _, k := range []string{"stream_sns_topic_arn", "stream_sqs_queue_prefix"} {
 			if !present[k] {
 				issues = append(issues, Issue{Key: k, Missing: true, Message: "required when stream is sns"})
+			}
+		}
+	}
+	if vals["stream"] == "pubsub" {
+		for _, k := range []string{"stream_pubsub_topic", "stream_pubsub_subscription_prefix"} {
+			if !present[k] {
+				issues = append(issues, Issue{Key: k, Missing: true, Message: "required when stream is pubsub"})
 			}
 		}
 	}
