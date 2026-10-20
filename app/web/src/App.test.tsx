@@ -82,6 +82,15 @@ describe("app shell", () => {
     expect(document.title).toBe("Page not found – my example");
   });
 
+  test("leads people who are not signed in from the not-found page to the landing page", async () => {
+    server.resetHandlers();
+    await renderApp({ path: "/no-such-page" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Page not found" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Go to the top page" })).toHaveAttribute("href", "/");
+    expect(screen.queryByRole("link", { name: "Go to the home timeline" })).not.toBeInTheDocument();
+  });
+
   test("renders in the locale it is given, falling back to the closest catalog", async () => {
     await renderApp({ locale: "ja-JP" });
 

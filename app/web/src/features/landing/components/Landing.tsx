@@ -4,16 +4,18 @@ import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { aboutPath } from "../../../lib/paths";
 import { ServerThumbnail, SourceCodeLink } from "../../about";
-import { DocumentLinks } from "../../documents";
+import { DocumentsSection } from "../../documents";
 import { useSignIn } from "../../session";
 import { StatusCard } from "../../status";
 import type { RecentPost } from "../api/landing";
 import { type Landing as LandingData, type RecentPosts, type RegistrationMode, useLanding } from "../hooks/useLanding";
 
 /**
- * The body of the landing page for people who are not signed in (`/`), under the page's heading: the image and the
- * summary of the server, how to sign in or create an account, its rules, a few recent posts, and the links to its
- * information page (`/about`), to its source code (AGPL-3.0 section 13), and to its terms of service and privacy policy.
+ * The body of the landing page for people who are not signed in (`/`), under the page's heading, in the order of the
+ * information page (`/about`): what the server is (its image and summary, how to sign in or create an account, its
+ * description, and a few recent posts), what users agree to (its rules, then its terms of service and privacy
+ * policy), and the links to the information page, which also tells how the server treats other servers and
+ * crawlers and who runs it, and to its source code (AGPL-3.0 section 13).
  */
 export function Landing() {
   const t = useT();
@@ -31,8 +33,13 @@ export function Landing() {
         <Entry mode={landing.registrationMode} signUpHref={landing.signUpHref} />
       </div>
       {landing.description.length > 0 && <About paragraphs={landing.description} />}
-      {landing.rules.length > 0 && <Rules rules={landing.rules} />}
+      {/* A sample of what the server is: its latest public posts. */}
       {landing.recentPosts.status !== "off" && <RecentPostsSection posts={landing.recentPosts} />}
+      {/* What users agree to stands together: the rules, then the terms and policies. */}
+      {landing.rules.length > 0 && <Rules rules={landing.rules} />}
+      <DocumentsSection />
+      {/* How the server treats other servers and crawlers, and how to reach the operators, are on the information
+          page; what the server runs comes last. */}
       <p>
         <Link href={aboutPath} variant="standalone">
           {t("client:shell.about.more")}
@@ -43,7 +50,6 @@ export function Landing() {
           <SourceCodeLink url={landing.sourceUrl} />
         </p>
       )}
-      <DocumentLinks />
     </div>
   );
 }

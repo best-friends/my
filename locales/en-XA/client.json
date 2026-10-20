@@ -7879,6 +7879,10 @@
     "defaultMessage": "[Ḿȧȧīƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "shell.nav.landing": {
+    "defaultMessage": "[Ŧǿǿƥ ƥȧȧɠḗḗ ǿǿƒ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "shell.nav.local": {
     "defaultMessage": "[Ŀǿǿƈȧȧŀ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7941,6 +7945,10 @@
   },
   "shell.not_found.home": {
     "defaultMessage": "[Ɠǿǿ ŧǿǿ ŧħḗḗ ħǿǿḿḗḗ ŧīḿḗḗŀīƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.not_found.landing": {
+    "defaultMessage": "[Ɠǿǿ ŧǿǿ ŧħḗḗ ŧǿǿƥ ƥȧȧɠḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.not_found.title": {

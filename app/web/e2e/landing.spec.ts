@@ -91,7 +91,7 @@ test.describe("the landing page", () => {
     await expect(page.getByRole("main").getByRole("feed")).toBeVisible();
   });
 
-  test("welcomes the visitor at the root address with the server, its rules and recent posts", async ({ page }) => {
+  test("welcomes the visitor at the root address with the server, its recent posts, its rules and documents, in the order of the information page", async ({ page }) => {
     await expect(page).toHaveURL(/\/$/);
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 1 })).toContainText("my example");
@@ -109,6 +109,14 @@ test.describe("the landing page", () => {
           - paragraph: Everyone is welcome, whatever the size of their garden.
         - region:
           - heading [level=2]
+          - paragraph
+          - feed:
+            - article
+            - article
+          - paragraph:
+            - link
+        - region:
+          - heading [level=2]
           - list:
             - listitem:
               - paragraph: Be kind
@@ -117,22 +125,16 @@ test.describe("the landing page", () => {
               - paragraph: Mark sensitive media
         - region:
           - heading [level=2]
-          - paragraph
-          - feed:
-            - article
-            - article
-          - paragraph:
-            - link
+          - navigation:
+            - list:
+              - listitem:
+                - link
+              - listitem:
+                - link
         - paragraph:
           - link
         - paragraph:
           - link
-        - navigation:
-          - list:
-            - listitem:
-              - link
-            - listitem:
-              - link
     `);
   });
 

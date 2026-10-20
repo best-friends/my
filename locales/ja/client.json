@@ -7347,6 +7347,10 @@
     "defaultMessage": "メイン",
     "description": "Accessible name of the main navigation (the tab bar on phones, the side rail on larger screens)."
   },
+  "shell.nav.landing": {
+    "defaultMessage": "このサーバーのトップページ",
+    "description": "Description read after the name of the link that shows the server's name (above the desktop sidebar, in the side column about this server, in the menu sheet) and opens the root address: the landing page for visitors, the home timeline for signed-in users."
+  },
   "shell.nav.local": {
     "defaultMessage": "ローカル",
     "description": "Navigation item that opens the local timeline (posts of this server's accounts). Keep it short: it is shown under an icon in the bottom tab bar of phones and in the side rail of tablets."
@@ -7409,7 +7413,11 @@
   },
   "shell.not_found.home": {
     "defaultMessage": "ホームタイムラインへ",
-    "description": "Link on the not-found page back to the home timeline."
+    "description": "Link, for a signed-in user, on a page with nothing to show (an address with no page, an account that is not there, a timeline the server turned off) that opens the home timeline."
+  },
+  "shell.not_found.landing": {
+    "defaultMessage": "トップページへ",
+    "description": "Link, for a visitor who is not signed in, on a page with nothing to show (an address with no page, an account that is not there, a timeline the server turned off) that opens the server's landing page at the root address."
   },
   "shell.not_found.title": {
     "defaultMessage": "ページが見つかりません",

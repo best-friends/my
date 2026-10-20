@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Link } from "@my/ui";
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { useId } from "react";
 import { TimelineFeed, TimelineSkeleton, timelineQueryOptions } from "../features/timeline";
@@ -7,6 +6,7 @@ import { ApiError } from "../lib/errors";
 import { useT } from "../lib/i18n";
 import { PageHeading } from "./-layout/PageHeading";
 import { RouteError } from "./-layout/RouteStates";
+import { HomeLink } from "./-layout/HomeLink";
 
 /**
  * The local timeline (FR-202): the public posts of this server's accounts, and their local posts for a signed-in
@@ -57,11 +57,7 @@ function LocalError(props: ErrorComponentProps) {
     <>
       <PageHeading>{t("client:local.disabled.title")}</PageHeading>
       <p>{t("client:local.disabled.body")}</p>
-      <p>
-        <Link href="/home" variant="standalone">
-          {t("client:shell.not_found.home")}
-        </Link>
-      </p>
+      <HomeLink />
     </>
   );
 }

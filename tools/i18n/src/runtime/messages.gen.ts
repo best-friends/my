@@ -3942,6 +3942,8 @@ export interface MessageArgs {
   "client:shell.nav.home": {};
   /** Main */
   "client:shell.nav.label": {};
+  /** Top page of this server */
+  "client:shell.nav.landing": {};
   /** Local */
   "client:shell.nav.local": {};
   /** Menu */
@@ -3974,6 +3976,8 @@ export interface MessageArgs {
   "client:shell.not_found.body": {};
   /** Go to the home timeline */
   "client:shell.not_found.home": {};
+  /** Go to the top page */
+  "client:shell.not_found.landing": {};
   /** Page not found */
   "client:shell.not_found.title": {};
   /** You are offline. Anything that failed to load loads again when you are back online. */

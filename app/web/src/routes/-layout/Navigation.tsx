@@ -27,9 +27,10 @@
 // not offer keeps its place among the first five, so that the tab bar does not change while GET /instance loads:
 // it has up to five items and Menu.
 //
-// The sidebar (lg) also says where and who the user is: the server's name above the list and, below it, the
-// signed-in account (avatar, display name and handle) as a link to its profile. Both are outside the list, so
-// the list's links stay the same and in the same order at every width, and narrower layouts hide both.
+// The sidebar (lg) also says where and who the user is: the server's name above the list, as a link to the root
+// address (the landing page, or the home timeline when signed in), and, below it, the signed-in account (avatar,
+// display name and handle) as a link to its profile. Both are outside the list, so the list's links stay the same
+// and in the same order at every width, and narrower layouts hide both.
 //
 // The items above need a session, so people who are not signed in get other ones (web-client.md §9, "signed-out
 // navigation"): Local, Federated, Search, About and Sign in, the tab bar's five items, and Sign up, in the rail and
@@ -56,10 +57,10 @@ import {
 import { type TimelineAvailability, useTimelineAvailability } from "../../features/timeline";
 import { useSessionStatus, useSessionUnreachable } from "../../lib/auth/SessionProvider";
 import { handleOf } from "../../lib/handle";
-import { useInstanceName } from "../../lib/instanceName";
 import { type ClientMessageKey, useT } from "../../lib/i18n";
 import { aboutPath, followListPath, profilePath } from "../../lib/paths";
 import { imageSources } from "../../lib/images";
+import { ServerNameLink } from "./ServerNameLink";
 
 type Section =
   | "/home"
@@ -183,7 +184,6 @@ type ItemBadge = { count: number; badgeLabel: string; name: string } | null;
 
 export function Navigation() {
   const t = useT();
-  const instanceName = useInstanceName();
   const pathname = useLocation({ select: (location) => location.pathname });
   const signInHref = useLocation({ select: signInHrefOf });
   const signUpHref = useSignUpHref();
@@ -232,10 +232,8 @@ export function Navigation() {
       aria-label={t("client:shell.nav.label")}
       className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface-raised px-[max(env(safe-area-inset-left),env(safe-area-inset-right))] pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:bottom-auto md:flex md:h-svh md:flex-col md:overflow-y-auto md:border-t-0 md:border-e md:bg-surface md:px-0 md:pb-0 lg:w-60"
     >
-      {/* The server's name is the administrator's text, in any language (web-client.md Y10, G9). */}
-      <p dir="auto" className="mx-2 hidden px-3 pt-4 pb-2 text-lg font-semibold wrap-anywhere align-match-parent lg:block">
-        {instanceName}
-      </p>
+      {/* The server's name, a link to the root address (web-client.md G9). */}
+      <ServerNameLink className="mx-2 hidden px-3 pt-4 pb-2 text-lg align-match-parent lg:block" />
       <ul className="flex md:flex-col md:gap-1 md:p-2">
         {shown.map((item) => {
           const badge = badgeOf(item.section);
@@ -316,9 +314,10 @@ type NavigationMenuProps = {
  * focus (useViewChange); a navigation that the unsaved-changes guard holds does not start, and the sheet stays.
  * The button carries the counts of the sheet's items (what awaits the moderators), so that they show in the tab
  * bar too, and the sheet's items show them as the rail does. Under the items, the sheet switches the color theme
- * (the same control as the preferences page, in a row), and under that it links to the server's information page
- * and to its terms of service and privacy policy, which the third column shows on wide screens (the documents when
- * the server publishes them).
+ * (the same control as the preferences page, in a row). Under that it names the server, as a link to the root
+ * address (phones have no sidebar that names it), and links to the server's information page and to its terms of
+ * service and privacy policy, which the third column shows on wide screens (the documents when the server
+ * publishes them).
  */
 function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
   const t = useT();
@@ -369,7 +368,8 @@ function NavigationMenu({ items, current, badgeOf }: NavigationMenuProps) {
         <div className="mt-4 border-t border-border px-3 pt-4">
           <ThemeRadioGroup layout="sheet" />
         </div>
-        <p className="mt-3 border-t border-border px-3 pt-3 text-sm">
+        <ServerNameLink className="mt-3 border-t border-border px-3 pt-3" />
+        <p className="px-3 text-sm">
           <Link href={aboutPath} variant="standalone">
             {t("client:shell.about.more")}
           </Link>

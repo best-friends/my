@@ -106,7 +106,8 @@ describe("the federated timeline", () => {
     await renderApp({ path: "/public" });
 
     expect(await screen.findByRole("heading", { level: 1, name: "The federated timeline is off" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Go to the home timeline" })).toHaveAttribute("href", "/home");
+    // A visitor who is not signed in has no home timeline: the way out is the landing page.
+    expect(screen.getByRole("link", { name: "Go to the top page" })).toHaveAttribute("href", "/");
     expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
   });
 
