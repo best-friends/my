@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The viewer's actions on a post (FR-106 to FR-109, FR-113): boost, favourite and bookmark are turned on
-// and off optimistically in every cached copy of the post and restored when the server refuses
+// The viewer's actions on a post (FR-106 to FR-109, FR-113, FR-116): boost, favourite, bookmark and the emoji
+// reaction (which shares the Like slot with the favourite, useLikeSlot) are turned on and off optimistically in every cached copy of the post and restored when the server refuses
 // (web-client.md S8); delete waits for the server, then drops the post from every list, and a pin (FR-403)
 // waits for it, then marks the post and reads the viewer's pinned posts again. Each result is
 // announced (Y7) and a failure is also shown as a toast, because the restored button alone tells a
@@ -13,12 +13,14 @@ import { type Translate, useT } from "../../../lib/i18n";
 import { useReply } from "../../compose";
 import { useViewer } from "../../session";
 import { hasRelation, relationCount } from "../api/cache";
+import { useLikeSlot } from "./useLikeSlot";
 import {
   cacheDeletedStatus,
   cachePinAnswer,
   cacheRelationAnswer,
   cacheRelationPending,
   deleteStatus,
+  type ReactionEmoji,
   type Relation,
   restoreRelation,
   setPin,
@@ -43,6 +45,11 @@ export type StatusActions = {
   boost: RelationToggle;
   favourite: RelationToggle;
   bookmark: RelationToggle;
+  /**
+   * Reacts to the post with `emoji`, in place of the viewer's favourite or other reaction (ADR-0052 §1); reacting
+   * with the emoji the viewer reacted with takes it back.
+   */
+  react: (emoji: ReactionEmoji) => void;
   /** Copies the post's address to the clipboard. */
   copyLink: () => void;
   /**
@@ -133,7 +140,7 @@ export function useStatusActions(status: Status): StatusActions | null {
   const reply = useReply();
   const viewerId = viewer.status === "signed-in" ? viewer.account.id : "";
   const boost = useRelation(post, "boost", viewerId);
-  const favourite = useRelation(post, "favourite", viewerId);
+  const likeSlot = useLikeSlot(post);
   const bookmark = useRelation(post, "bookmark", viewerId);
   const remove = useMutation({
     mutationFn: () => deleteStatus(api, post.id),
@@ -169,8 +176,19 @@ export function useStatusActions(status: Status): StatusActions | null {
       reply(post);
     },
     boost: { ...boost, isDisabled: !canOfferBoost(post.visibility, isAuthor) },
-    favourite,
+    favourite: {
+      isSelected: likeSlot.slot.kind === "favourite",
+      count: post.favourites_count,
+      isDisabled: false,
+      onChange: (on) => {
+        likeSlot.set(on ? { kind: "favourite" } : { kind: "none" });
+      },
+    },
     bookmark,
+    react: (emoji) => {
+      const { slot } = likeSlot;
+      likeSlot.set(slot.kind === "reaction" && slot.emoji.name === emoji.name ? { kind: "none" } : { kind: "reaction", emoji });
+    },
     copyLink: () => {
       navigator.clipboard.writeText(statusShareUrl(post)).then(
         () => {

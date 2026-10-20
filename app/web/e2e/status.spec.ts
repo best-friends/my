@@ -155,6 +155,7 @@ test.describe("a post's page", () => {
               - button
               - button [pressed=false]
               - button [pressed=false]
+              - button
               - button [pressed=false]
               - button
       - article ${startsWith(message("status.focused.label")).toString()}:
@@ -165,6 +166,7 @@ test.describe("a post's page", () => {
         - button
         - button [pressed=false]
         - button [pressed=false]
+        - button
         - button [pressed=false]
         - button
       - region:
@@ -190,7 +192,7 @@ test.describe("a post's page", () => {
     // Alice's post has no replies, so its reply button holds only its icon.
     const ancestorPost = page.getByRole("main").getByRole("article").filter({ hasText: "long walk" });
     for (const article of [ancestorPost, focusedPost(page)]) {
-      for (const key of ["status.action.reply", "status.action.boost", "status.action.favourite", "status.action.bookmark", "status.action.more"]) {
+      for (const key of ["status.action.reply", "status.action.boost", "status.action.favourite", "reaction.picker.button", "status.action.bookmark", "status.action.more"]) {
         const icon = article.getByRole("button", { name: message(key) }).locator("svg");
         await expect(icon).toBeVisible();
         expect(await icon.boundingBox(), key).toMatchObject({ width: 20, height: 20 });

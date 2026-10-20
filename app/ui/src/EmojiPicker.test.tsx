@@ -56,4 +56,30 @@ describe("EmojiPicker", () => {
     await user.click(screen.getByRole("row", { name: ":wave:" }));
     expect(onSelect).toHaveBeenCalledWith(wave);
   });
+  it("offers Unicode emoji after the recent ones, named by themselves, while nothing or one of them is searched", async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const onSelectUnicode = vi.fn();
+    render(
+      <EmojiPicker
+        emojis={emojis}
+        recent={[blobcat]}
+        unicode={["👍", "🎉"]}
+        onSelect={onSelect}
+        onSelectUnicode={onSelectUnicode}
+        labels={{ ...labels, unicode: "Emoji" }}
+      />,
+    );
+    const names = screen.getAllByRole("row").map((row) => row.getAttribute("aria-label") ?? row.textContent);
+    expect(names.slice(0, 5)).toEqual(["Recently used", ":blobcat:", "Emoji", "👍", "🎉"]);
+    await user.click(screen.getByRole("row", { name: "🎉" }));
+    expect(onSelectUnicode).toHaveBeenCalledWith("🎉");
+    expect(onSelect).not.toHaveBeenCalled();
+    await user.type(screen.getByRole("searchbox", { name: "Search emoji" }), "fox");
+    expect(screen.queryByRole("row", { name: "👍" })).not.toBeInTheDocument();
+    await user.clear(screen.getByRole("searchbox", { name: "Search emoji" }));
+    await user.type(screen.getByRole("searchbox", { name: "Search emoji" }), "👍");
+    expect(screen.getByRole("row", { name: "👍" })).toBeInTheDocument();
+    expect(screen.queryByRole("row", { name: "🎉" })).not.toBeInTheDocument();
+  });
 });

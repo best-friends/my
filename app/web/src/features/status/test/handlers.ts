@@ -3,10 +3,12 @@
 // Bob's post `statusFixture`; the thread around it (GET /statuses/{id}/context): no ancestors and no
 // replies; its source (GET /statuses/{id}/source): the plain text of that post; its history
 // (GET /statuses/{id}/history): the one revision of a post never edited; and the actions on it (boost,
-// favourite, bookmark, pin and their removal; edit; delete). An action answers the post with the viewer's
-// relation set as asked; an edit answers it with the new text as its content and `edited_at` set.
+// favourite, bookmark, pin and their removal; edit; delete; the emoji reaction and its removal). An action answers
+// the post with the viewer's relation set as asked (a reaction: the post with that one reaction, the viewer's); an
+// edit answers it with the new text as its content and `edited_at` set. The accounts that reacted to a post
+// (GET /statuses/{id}/reactions) are Bob with 👍, in one page.
 import { http, HttpResponse } from "msw";
-import { type Schemas, statusFixture } from "../../../test/fixtures";
+import { otherAccountFixture, type Schemas, statusFixture } from "../../../test/fixtures";
 import { apiBase, withViewer } from "../../../test/msw/http";
 
 /** The viewer's relations to a post, as the Status fields that the actions set. */
@@ -54,4 +56,16 @@ export const handlers = [
     ),
   ),
   http.delete(`${apiBase}/statuses/:id`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.put(`${apiBase}/statuses/:id/reaction`, async ({ params, request }) => {
+    const body = (await request.clone().json()) as Schemas["ReactToStatusRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json({ ...statusFixture(String(params["id"])), reactions: [{ name: body.emoji, count: 1, me: true }] } satisfies Schemas["Status"]),
+    );
+  }),
+  http.delete(`${apiBase}/statuses/:id/reaction`, ({ params, request }) => withViewer(request, () => HttpResponse.json(statusFixture(String(params["id"]))))),
+  http.get(`${apiBase}/statuses/:id/reactions`, () =>
+    HttpResponse.json({
+      items: [{ account: otherAccountFixture, emoji: { name: "👍" }, created_at: "2026-10-16T10:00:00Z" }],
+    } satisfies Schemas["StatusReactionPage"]),
+  ),
 ];

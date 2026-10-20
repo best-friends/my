@@ -2154,6 +2154,34 @@ export interface MessageArgs {
   "client:public.disabled.title": {};
   /** Federated timeline */
   "client:public.title": {};
+  /** Nobody has reacted yet. */
+  "client:reaction.list.empty": {};
+  /** The reactions could not be loaded: {reason} */
+  "client:reaction.list.failed": { reason: string };
+  /** Reactions */
+  "client:reaction.list.label": {};
+  /** Show more */
+  "client:reaction.list.load_more": {};
+  /** More reactions could not be loaded: {reason} */
+  "client:reaction.list.load_more_failed": { reason: string };
+  /** Loading the reactions */
+  "client:reaction.list.loading": {};
+  /** Who reacted */
+  "client:reaction.list.open": {};
+  /** Try again */
+  "client:reaction.list.retry": {};
+  /** Who reacted */
+  "client:reaction.list.title": {};
+  /** React */
+  "client:reaction.picker.button": {};
+  /** Emoji to react with */
+  "client:reaction.picker.grid": {};
+  /** Emoji to react with */
+  "client:reaction.picker.title": {};
+  /** Emoji */
+  "client:reaction.picker.unicode": {};
+  /** React with {emoji} */
+  "client:reaction.toggle": { emoji: string };
   /** Back */
   "client:report.back": {};
   /** Why are you reporting this account? */
@@ -2816,6 +2844,10 @@ export interface MessageArgs {
   "client:status.pin.failed": { reason: string };
   /** Pinned post */
   "client:status.pin.label": {};
+  /** Reaction removed */
+  "client:status.reaction.off": {};
+  /** Reacted with {emoji} */
+  "client:status.reaction.on": { emoji: string };
   /** Earlier in the thread */
   "client:status.thread.ancestors": {};
   /** Could not load the replies: {reason} */

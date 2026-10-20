@@ -98,6 +98,22 @@ export const WithMedia: Story = {
   },
 };
 
+/** The reactions in a row of their own, between the body and the actions. */
+export const WithReactions: Story = {
+  args: {
+    reactions: (
+      <>
+        <Button variant="ghost" size="sm">
+          👍 3
+        </Button>
+        <Button variant="ghost" size="sm">
+          🎉 1
+        </Button>
+      </>
+    ),
+  },
+};
+
 export const WithContentWarning: Story = {
   args: {
     content: (

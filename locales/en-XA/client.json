@@ -4303,6 +4303,62 @@
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "reaction.list.empty": {
+    "defaultMessage": "[Ƞǿǿƀǿǿḓẏ ħȧȧş řḗḗȧȧƈŧḗḗḓ ẏḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.failed": {
+    "defaultMessage": "[Ŧħḗḗ řḗḗȧȧƈŧīǿǿƞş ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ŀǿǿȧȧḓḗḗḓ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.label": {
+    "defaultMessage": "[Řḗḗȧȧƈŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.load_more": {
+    "defaultMessage": "[Şħǿǿẇ ḿǿǿřḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.load_more_failed": {
+    "defaultMessage": "[Ḿǿǿřḗḗ řḗḗȧȧƈŧīǿǿƞş ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ŀǿǿȧȧḓḗḗḓ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.loading": {
+    "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ŧħḗḗ řḗḗȧȧƈŧīǿǿƞş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.open": {
+    "defaultMessage": "[Ẇħǿǿ řḗḗȧȧƈŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.retry": {
+    "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.list.title": {
+    "defaultMessage": "[Ẇħǿǿ řḗḗȧȧƈŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.picker.button": {
+    "defaultMessage": "[Řḗḗȧȧƈŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.picker.grid": {
+    "defaultMessage": "[Ḗḿǿǿĵī ŧǿǿ řḗḗȧȧƈŧ ẇīŧħ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.picker.title": {
+    "defaultMessage": "[Ḗḿǿǿĵī ŧǿǿ řḗḗȧȧƈŧ ẇīŧħ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.picker.unicode": {
+    "defaultMessage": "[Ḗḿǿǿĵī]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "reaction.toggle": {
+    "defaultMessage": "[Řḗḗȧȧƈŧ ẇīŧħ {emoji}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "report.back": {
     "defaultMessage": "[Ɓȧȧƈķ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -5625,6 +5681,14 @@
   },
   "status.pin.label": {
     "defaultMessage": "[Ƥīƞƞḗḗḓ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.reaction.off": {
+    "defaultMessage": "[Řḗḗȧȧƈŧīǿǿƞ řḗḗḿǿǿṽḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.reaction.on": {
+    "defaultMessage": "[Řḗḗȧȧƈŧḗḗḓ ẇīŧħ {emoji}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.thread.ancestors": {

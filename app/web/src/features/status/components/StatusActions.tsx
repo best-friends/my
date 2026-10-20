@@ -16,8 +16,9 @@ import {
 import { type ReactNode, useId, useState } from "react";
 import { useIntl } from "react-intl";
 import { useT } from "../../../lib/i18n";
+import { type ReactionChoice, ReactionPickerButton } from "../../emoji";
 import { ReportDialog } from "../../report";
-import type { Status } from "../api/status";
+import type { ReactionEmoji, Status } from "../api/status";
 import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
 import { EditStatusDialog } from "./EditStatusDialog";
 
@@ -27,8 +28,15 @@ export type StatusActionsProps = {
   onDeleted?: () => void;
 };
 
+/** The emoji of a reaction picked in the picker: a Unicode emoji, or a custom emoji of this server. */
+function reactionEmojiOf(choice: ReactionChoice): ReactionEmoji {
+  if ("unicode" in choice) return { name: choice.unicode };
+  const { shortcode, url, static_url } = choice.custom;
+  return { name: shortcode, shortcode, emoji: { shortcode, url, static_url } };
+}
+
 /**
- * The action bar of a post: reply, boost, favourite, bookmark, and a menu with the link, the report of
+ * The action bar of a post: reply, boost, favourite, the picker of emoji reactions (ADR-0052 §5), bookmark, and a menu with the link, the report of
  * another account's post (features/report) and, for the viewer's own posts, edit (EditStatusDialog), pin or
  * unpin, and delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
  * nobody is signed in. The toggles keep their names in both states and expose the state with
@@ -60,6 +68,11 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
       </Button>
       <RelationButton label={t("client:status.action.boost")} toggle={actions.boost} tone="success" icon={(on) => <BoostIcon filled={on} />} />
       <RelationButton label={t("client:status.action.favourite")} toggle={actions.favourite} tone="warning" icon={(on) => <StarIcon filled={on} />} />
+      <ReactionPickerButton
+        onSelect={(choice) => {
+          actions.react(reactionEmojiOf(choice));
+        }}
+      />
       <RelationButton label={t("client:status.action.bookmark")} toggle={actions.bookmark} tone="accent" icon={(on) => <BookmarkIcon filled={on} />} />
       <MenuTrigger>
         <Button variant="ghost" size="toolbar" aria-label={t("client:status.action.more")} className="text-fg-muted">

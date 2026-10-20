@@ -6,6 +6,7 @@ import { useT } from "../../../lib/i18n";
 import type { Status } from "../api/status";
 import { useStatusView } from "../hooks/useStatusView";
 import { StatusActions } from "./StatusActions";
+import { StatusReactions } from "./StatusReactions";
 
 export type StatusCardProps = {
   status: Status;
@@ -160,6 +161,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         )
       }
       {...(view.contentWarning === null && media !== undefined && { media })}
+      {...(withActions && (status.boost ?? status).reactions.length > 0 && { reactions: <StatusReactions status={status} /> })}
       {...((withActions || view.original !== null) && {
         actions: (
           <>

@@ -5,7 +5,7 @@
 // rewritten and restored on failure). The answers are matched by shape, not by key, so a list that a
 // later feature caches (a profile's posts, the bookmarks) is rewritten too as long as it holds statuses.
 import type { QueryClient } from "@tanstack/react-query";
-import type { Relation, Status } from "./status";
+import type { ReactionEmoji, Relation, Status } from "./status";
 
 /** Returns the status to keep in place of `status`, or null to drop it from the lists it is in. */
 export type StatusUpdate = (status: Status) => Status | null;
@@ -43,6 +43,53 @@ export function withRelationFrom(status: Status, relation: Relation, from: Statu
   const next: Status = { ...status, [flag]: from[flag] === true };
   if (count !== null) next[count] = from[count];
   return next;
+}
+
+/**
+ * What fills the viewer's Like slot of a post (ADR-0052 §1): a favourite, a reaction with one emoji, or nothing. A
+ * favourite and a reaction never both: setting one takes back the other.
+ */
+export type LikeSlot = { kind: "none" } | { kind: "favourite" } | { kind: "reaction"; emoji: ReactionEmoji };
+
+/** The viewer's reaction to `status`, or undefined without one. */
+function myReaction(status: Status): ReactionEmoji | undefined {
+  return status.reactions.find((reaction) => reaction.me === true);
+}
+
+/** What fills the viewer's Like slot of `status`. */
+export function likeSlotOf(status: Status): LikeSlot {
+  if (status.favourited === true) return { kind: "favourite" };
+  const reaction = myReaction(status);
+  return reaction === undefined ? { kind: "none" } : { kind: "reaction", emoji: reaction };
+}
+
+/**
+ * Sets what fills the viewer's Like slot of `status`, moving the counts with it: the favourite and its count, the
+ * viewer's reaction and the count of its emoji (a count that reaches zero goes, and a new emoji comes last).
+ */
+export function withLikeSlot(status: Status, slot: LikeSlot): Status {
+  const current = likeSlotOf(status);
+  const sameReaction = current.kind === "reaction" && slot.kind === "reaction" && current.emoji.name === slot.emoji.name;
+  if (current.kind === slot.kind && (slot.kind !== "reaction" || sameReaction)) return status;
+  let next = withRelation(status, "favourite", slot.kind === "favourite");
+  const reactions = next.reactions.flatMap((reaction) => {
+    if (reaction.me !== true) return [reaction];
+    const count = reaction.count - 1;
+    return count > 0 ? [{ ...reaction, count, me: false }] : [];
+  });
+  if (slot.kind === "reaction") {
+    const i = reactions.findIndex((reaction) => reaction.name === slot.emoji.name);
+    const found = reactions[i];
+    if (found === undefined) reactions.push({ ...slot.emoji, count: 1, me: true });
+    else reactions[i] = { ...found, count: found.count + 1, me: true };
+  }
+  next = { ...next, reactions };
+  return next;
+}
+
+/** Copies the viewer's Like slot and the counts it moves (favourites and reactions) from the server's answer `from`. */
+export function withLikeSlotFrom(status: Status, from: Status): Status {
+  return { ...withRelationFrom(status, "favourite", from), reactions: from.reactions };
 }
 
 function isStatus(value: unknown): value is Status {

@@ -21,6 +21,7 @@ const postCard = tv({
     time: "max-w-1/2 shrink-0 text-sm text-fg-muted",
     body: "col-span-2 min-w-0 @md:col-span-1 @md:col-start-2",
     details: "col-span-2 flex min-w-0 flex-wrap gap-x-3 gap-y-1 text-sm text-fg-muted @md:col-span-1 @md:col-start-2",
+    reactions: "col-span-2 flex min-w-0 flex-wrap items-center gap-1 @md:col-span-1 @md:col-start-2",
     actions: "col-span-2 flex min-w-0 flex-wrap items-center gap-1 @md:col-span-1 @md:col-start-2",
     // The thread's line, down the middle of the avatar (1rem of padding and half of its 2.5rem), behind it.
     // It reaches from the card's top or from the avatar's middle (2rem down) to the card's bottom edge or
@@ -41,6 +42,7 @@ const postCard = tv({
         line: "-bottom-px",
         body: "ps-8 @md:ps-0",
         details: "ps-8 @md:ps-0",
+        reactions: "ps-8 @md:ps-0",
         actions: "ps-8 @md:ps-0",
       },
       false: { line: "h-8" },
@@ -72,6 +74,8 @@ export type PostCardProps = Omit<FeedArticleProps, "children" | "content" | "ari
    * such as the full date and the counts in words of the post a page is about.
    */
   details?: ReactNode;
+  /** The emoji reactions to the post, in one wrapping row above the actions. */
+  reactions?: ReactNode;
   /** The actions on the post: reply, boost, favourite, the overflow menu. */
   actions?: ReactNode;
   /**
@@ -89,7 +93,7 @@ export type PostCardProps = Omit<FeedArticleProps, "children" | "content" | "ari
 
 /**
  * The layout of one post: an optional context line, avatar, author and time, body, media and actions in
- * slots. The card knows nothing about posts; the caller fills the slots. It is an `<article>` labelled by
+ * slots, with the post's reactions in a row above the actions. The card knows nothing about posts; the caller fills the slots. It is an `<article>` labelled by
  * the context, author and time and described by the content, and inside a Feed it is one of the feed's
  * articles. The header is one row of the author and the time (with a PostCardAuthor, the handle goes to a
  * second line below the `@sm` container width). On a narrow card the body spans the full width under the
@@ -108,6 +112,7 @@ export function PostCard({
   content,
   media,
   details,
+  reactions,
   actions,
   label,
   highlighted = false,
@@ -148,6 +153,7 @@ export function PostCard({
         </div>
         {media !== undefined && <div className={slots.body()}>{media}</div>}
         {details !== undefined && <div className={slots.details()}>{details}</div>}
+        {reactions !== undefined && <div className={slots.reactions()}>{reactions}</div>}
         {actions !== undefined && <div className={slots.actions()}>{actions}</div>}
       </div>
     </FeedArticle>

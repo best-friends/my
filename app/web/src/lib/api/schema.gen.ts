@@ -1072,7 +1072,8 @@ export interface paths {
         put?: never;
         /**
          * Favourite a status
-         * @description Favouriting a status that is already favourited changes nothing.
+         * @description Favouriting a status that is already favourited changes nothing. A user has one
+         *     favourite or one emoji reaction on a status, so favouriting takes back the reaction.
          */
         post: operations["favouriteStatus"];
         /**
