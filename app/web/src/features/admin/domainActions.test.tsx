@@ -97,10 +97,11 @@ describe("the list of domain actions", () => {
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ filter: "all" });
     });
-    expect(await within(screen.getByRole("tabpanel")).findByText("Lifted")).toBeInTheDocument();
-    expect(within(screen.getByRole("tabpanel")).getAllByRole("listitem")).toHaveLength(3);
+    const all = within(await screen.findByRole("tabpanel", { name: "All" }));
+    expect(await all.findByText("Lifted")).toBeInTheDocument();
+    expect(all.getAllByRole("listitem")).toHaveLength(3);
     // A lifted action has no lift button.
-    expect(within(screen.getByRole("tabpanel")).getAllByRole("button", { name: /^Lift / })).toHaveLength(2);
+    expect(all.getAllByRole("button", { name: /^Lift / })).toHaveLength(2);
     expect(api.lists).toEqual(["limit=40&active=true", "limit=40"]);
   });
 
@@ -143,11 +144,14 @@ describe("the list of domain actions", () => {
   test("after a lift, the other tab shows the action lifted at once, however slowly the lists come", async () => {
     domainActionsServer([idn, limit]);
     const { user } = await renderApp({ path: "/admin/domain-actions?filter=all" });
-    expect(await within(await screen.findByRole("tabpanel")).findByRole("heading", { level: 3, name: "spam.example" })).toBeInTheDocument();
+    expect(await within(await screen.findByRole("tabpanel", { name: "All" })).findByRole("heading", { level: 3, name: "spam.example" })).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "In effect" }));
-    await user.click(await screen.findByRole("button", { name: /^Lift Limit for/ }));
+    // The All tab, with lift buttons of its own, stays on screen while the list in effect loads, and the pending
+    // page replaces both when that takes longer than defaultPendingMs: lift from the tab of the actions in effect,
+    // and wait until that tab, not just any page, no longer lists the action.
+    await user.click(await within(await screen.findByRole("tabpanel", { name: "In effect" })).findByRole("button", { name: /^Lift Limit for/ }));
     await waitFor(() => {
-      expect(screen.queryByRole("heading", { level: 3, name: "spam.example" })).not.toBeInTheDocument();
+      expect(within(screen.getByRole("tabpanel", { name: "In effect" })).queryByRole("heading", { level: 3, name: "spam.example" })).not.toBeInTheDocument();
     });
     // From now on every list takes a while; the handler falls through to domainActionsServer's.
     server.use(
@@ -157,7 +161,7 @@ describe("the list of domain actions", () => {
     );
 
     await user.click(screen.getByRole("tab", { name: "All" }));
-    const panel = within(screen.getByRole("tabpanel"));
+    const panel = within(await screen.findByRole("tabpanel", { name: "All" }));
     expect(await panel.findByRole("heading", { level: 3, name: "spam.example" })).toBeInTheDocument();
     const row = panel.getAllByRole("listitem").find((item) => within(item).queryByRole("heading", { level: 3, name: "spam.example" }) !== null);
     if (row === undefined) throw new Error("the lifted action is not listed");
@@ -204,9 +208,12 @@ describe("a new domain action", () => {
   test("is in the other tab's list at once, however slowly the lists come", async () => {
     const api = domainActionsServer([limit, lifted]);
     const { user } = await renderApp({ path: "/admin/domain-actions?filter=all" });
-    expect(await within(await screen.findByRole("tabpanel")).findByText("Lifted")).toBeInTheDocument();
+    expect(await within(await screen.findByRole("tabpanel", { name: "All" })).findByText("Lifted")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "In effect" }));
-    await user.type(await screen.findByRole("textbox", { name: "Domain" }), "new.example");
+    // The form is outside the tabs: take the action once the tab of the actions in effect is shown, not while the
+    // All tab stays on screen as that list loads.
+    expect(await within(await screen.findByRole("tabpanel", { name: "In effect" })).findByRole("heading", { level: 3, name: "spam.example" })).toBeInTheDocument();
+    await user.type(screen.getByRole("textbox", { name: "Domain" }), "new.example");
     await user.click(screen.getByRole("radio", { name: "Limit" }));
     // From now on every list takes a while; the handler falls through to domainActionsServer's.
     server.use(
@@ -218,7 +225,7 @@ describe("a new domain action", () => {
     expect(await screen.findByText(`Limit is in effect for ${isolated("new.example")}.`)).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "All" }));
-    const panel = within(screen.getByRole("tabpanel"));
+    const panel = within(await screen.findByRole("tabpanel", { name: "All" }));
     expect(await panel.findByText("Lifted")).toBeInTheDocument();
     expect(panel.getByRole("heading", { level: 3, name: "new.example" })).toBeInTheDocument();
     // Each list once as it was shown, and once more after the action, before the tab changed.
@@ -321,7 +328,8 @@ describe("the way from a remote server", () => {
     expect(within(screen.getByRole("tabpanel")).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual(["spam.example"]);
 
     await user.click(screen.getByRole("link", { name: "Show every domain" }));
-    expect(await within(screen.getByRole("tabpanel")).findByRole("heading", { level: 3, name: "other.example" })).toBeInTheDocument();
+    // The list of one domain stays on screen, or the pending page replaces it, while the list of every domain loads.
+    expect(screen.getByRole("tabpanel")).toContainElement(await screen.findByRole("heading", { level: 3, name: "other.example" }));
     expect(api.lists).toEqual(["limit=40&active=true&domain=spam.example", "limit=40&active=true"]);
   });
 });
