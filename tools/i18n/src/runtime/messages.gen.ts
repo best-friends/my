@@ -2420,6 +2420,28 @@ export interface MessageArgs {
   "client:settings.mutes.unmuted": { name: string };
   /** Until {date} */
   "client:settings.mutes.until": { date: string };
+  /** Choose the items of the navigation and their order. On phones, the first {count, plural, one {# shown item is} other {# shown items are}} in the tab bar and the others in the menu. Settings always shows. Kept on this browser. */
+  "client:settings.navigation.description": { count: number };
+  /** Hidden */
+  "client:settings.navigation.hidden": {};
+  /** In the menu on phones */
+  "client:settings.navigation.in_menu": {};
+  /** In the tab bar on phones */
+  "client:settings.navigation.in_tab_bar": {};
+  /** Move {name} down */
+  "client:settings.navigation.move_down": { name: string };
+  /** Move {name} up */
+  "client:settings.navigation.move_up": { name: string };
+  /** {name} moved to position {position, number} of {count, number} */
+  "client:settings.navigation.moved": { count: number; name: string; position: number };
+  /** Restore the default */
+  "client:settings.navigation.reset": {};
+  /** Restored the default navigation */
+  "client:settings.navigation.reset_done": {};
+  /** Navigation */
+  "client:settings.navigation.title": {};
+  /** Not offered by this server */
+  "client:settings.navigation.unavailable": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
   /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
@@ -2708,8 +2730,6 @@ export interface MessageArgs {
   "client:shell.nav.search": {};
   /** Settings */
   "client:shell.nav.settings": {};
-  /** Timelines */
-  "client:shell.nav.timelines": {};
   /** The account you are signed in with */
   "client:shell.nav.viewer": {};
   /** There is no page at this address. */
@@ -2922,12 +2942,6 @@ export interface MessageArgs {
   "client:timeline.signed_out.description": {};
   /** You are not signed in */
   "client:timeline.signed_out.heading": {};
-  /** Timelines */
-  "client:timeline.tabs.label": {};
-  /** Local */
-  "client:timeline.tabs.local": {};
-  /** Federated */
-  "client:timeline.tabs.public": {};
   /** Allow */
   "server:auth.authorize.approve": {};
   /** Deny */

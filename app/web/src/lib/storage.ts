@@ -304,3 +304,15 @@ export const recentEmojisKey = declareKey<readonly string[]>("my:emoji:recent", 
   parse: schemaParser(z.array(z.string()).max(64)),
   userData: false,
 });
+
+/** The order of the navigation's items and the ones the user hid, by their IDs; checked further by features/settings. */
+export type StoredNavigation = { order: readonly string[]; hidden: readonly string[] };
+
+/** The navigation's items as the user arranged them on this browser (features/settings); null is the default arrangement. */
+export const navigationKey = declareKey<StoredNavigation | null>("my:display:navigation", {
+  area: "local",
+  version: 1,
+  defaultValue: null,
+  parse: schemaParser(z.object({ order: z.array(z.string()).max(64), hidden: z.array(z.string()).max(64) })),
+  userData: false,
+});

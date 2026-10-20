@@ -4835,6 +4835,50 @@
     "defaultMessage": "‮∩uʇıʅ {date}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.navigation.description": {
+    "defaultMessage": "‮Ↄɥoosǝ ʇɥǝ ıʇǝɯs oɟ ʇɥǝ uɐʌıƃɐʇıou ɐup ʇɥǝıɹ oɹpǝɹ. Ou dɥouǝs, ʇɥǝ ɟıɹsʇ {count,plural,one{# sɥoʍu ıʇǝɯ ıs} other{# sɥoʍu ıʇǝɯs ɐɹǝ}} ıu ʇɥǝ ʇɐq qɐɹ ɐup ʇɥǝ oʇɥǝɹs ıu ʇɥǝ ɯǝun. Sǝʇʇıuƃs ɐʅʍɐʎs sɥoʍs. Ӽǝdʇ ou ʇɥıs qɹoʍsǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.hidden": {
+    "defaultMessage": "‮Hıppǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.in_menu": {
+    "defaultMessage": "‮Iu ʇɥǝ ɯǝun ou dɥouǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.in_tab_bar": {
+    "defaultMessage": "‮Iu ʇɥǝ ʇɐq qɐɹ ou dɥouǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.move_down": {
+    "defaultMessage": "‮Woʌǝ {name} poʍu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.move_up": {
+    "defaultMessage": "‮Woʌǝ {name} nd‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.moved": {
+    "defaultMessage": "‮{name} ɯoʌǝp ʇo dosıʇıou {position, number} oɟ {count, number}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.reset": {
+    "defaultMessage": "‮ᴚǝsʇoɹǝ ʇɥǝ pǝɟɐnʅʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.reset_done": {
+    "defaultMessage": "‮ᴚǝsʇoɹǝp ʇɥǝ pǝɟɐnʅʇ uɐʌıƃɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.title": {
+    "defaultMessage": "‮Nɐʌıƃɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.navigation.unavailable": {
+    "defaultMessage": "‮Noʇ oɟɟǝɹǝp qʎ ʇɥıs sǝɹʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.preferences.autosave": {
     "defaultMessage": "‮Ↄɥɐuƃǝs ɐɹǝ sɐʌǝp ɐs soou ɐs ʎon ɯɐʞǝ ʇɥǝɯ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -5411,10 +5455,6 @@
     "defaultMessage": "‮Sǝʇʇıuƃs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "shell.nav.timelines": {
-    "defaultMessage": "‮⊥ıɯǝʅıuǝs‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "shell.nav.viewer": {
     "defaultMessage": "‮⊥ɥǝ ɐɔɔonuʇ ʎon ɐɹǝ sıƃuǝp ıu ʍıʇɥ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -5837,18 +5877,6 @@
   },
   "timeline.signed_out.heading": {
     "defaultMessage": "‮⅄on ɐɹǝ uoʇ sıƃuǝp ıu‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "timeline.tabs.label": {
-    "defaultMessage": "‮⊥ıɯǝʅıuǝs‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "timeline.tabs.local": {
-    "defaultMessage": "‮⅂oɔɐʅ‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "timeline.tabs.public": {
-    "defaultMessage": "‮Ⅎǝpǝɹɐʇǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   }
 }

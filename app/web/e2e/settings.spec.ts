@@ -257,6 +257,40 @@ test.describe("theme", () => {
   });
 });
 
+test.describe("navigation", () => {
+  test("is arranged from the keyboard alone, passes axe, and stays after a reload", async ({ page, makeAxeBuilder }) => {
+    await signedInServer(page, projectLocale());
+    await page.goto("/settings/preferences");
+    const section = page.getByRole("main").getByRole("region", { name: message("settings.navigation.title") });
+    const name = (item: string) => message(`shell.nav.${item}`);
+    const moveUp = (item: string) => section.getByRole("button", { name: message("settings.navigation.move_up").replace("{name}", name(item)), exact: true });
+    /** The addresses of the navigation's links in their order, the ones the width hides included. */
+    const order = () => page.getByRole("navigation").getByRole("list").locator("a").evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    await expect(section.getByRole("checkbox")).toHaveCount(8);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // Enter on Move up moves Search before Notifications, and the focus stays on the moved item's button.
+    await moveUp("search").focus();
+    await page.keyboard.press("Enter");
+    await expect(moveUp("search")).toBeFocused();
+    await expect.poll(order).toEqual(["/home", "/local", "/public", "/search", "/notifications", "/profile", "/bookmarks", "/settings"]);
+
+    // Space on a checkbox hides Profile.
+    await section.getByRole("checkbox", { name: name("profile"), exact: true }).focus();
+    await page.keyboard.press("Space");
+    await expect(section.getByRole("checkbox", { name: name("profile"), exact: true })).not.toBeChecked();
+    await expect.poll(order).toEqual(["/home", "/local", "/public", "/search", "/notifications", "/bookmarks", "/settings"]);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    await page.reload();
+    await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
+    await expect.poll(order).toEqual(["/home", "/local", "/public", "/search", "/notifications", "/bookmarks", "/settings"]);
+    await expect(section.getByRole("checkbox", { name: name("profile"), exact: true })).not.toBeChecked();
+  });
+});
+
 test.describe("profile form", () => {
   test("ties a validation error to its field and moves focus to it", async ({ page, makeAxeBuilder }) => {
     await signedInServer(page, projectLocale());

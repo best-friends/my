@@ -19,7 +19,7 @@ import {
 import { apiBase, problem, signedInHandler, withViewer } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { nodeUploadFile } from "../../test/multipart";
-import { autoplayKey, themeKey } from "../../lib/storage";
+import { autoplayKey, navigationKey, themeKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 /**
@@ -207,6 +207,84 @@ describe("autoplay of animations", () => {
     expect(autoplay).toBeChecked();
     expect(localStorage.getItem("my:display:autoplay")).toBeNull();
     expect(prefs.changes).toEqual([]);
+  });
+});
+
+describe("navigation", () => {
+  test("moves and hides items from the keyboard, keeps them on this browser, and the navigation follows", async () => {
+    const prefs = preferencesServer();
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const section = await screen.findByRole("region", { name: "Navigation" });
+    expect(section).toHaveAccessibleDescription(expect.stringContaining("the first 5 shown items are in the tab bar") as string);
+    expect(within(section).getAllByRole("checkbox")).toHaveLength(8);
+    expect(within(section).getByRole("checkbox", { name: "Settings" })).toBeDisabled();
+    expect(within(section).getByRole("checkbox", { name: "Search" })).toHaveAccessibleDescription("In the tab bar on phones");
+    expect(within(section).getByRole("checkbox", { name: "Profile" })).toHaveAccessibleDescription("In the menu on phones");
+    expect(within(section).getByRole("button", { name: "Move Home up" })).toBeDisabled();
+
+    // Enter on Move up moves the item; the focus stays on the moved item's button and the move is announced.
+    within(section).getByRole("button", { name: "Move Profile up" }).focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(within(section).getByRole("button", { name: "Move Profile up" })).toHaveFocus();
+    });
+    expect(await screen.findByText("Profile moved to position 5 of 8")).toBeInTheDocument();
+    expect(within(section).getByRole("checkbox", { name: "Profile" })).toHaveAccessibleDescription("In the tab bar on phones");
+    expect(within(section).getByRole("checkbox", { name: "Search" })).toHaveAccessibleDescription("In the menu on phones");
+
+    // Down on the item before the last moves it to the end, and the focus goes to its Move up, Move down being disabled.
+    within(section).getByRole("button", { name: "Move Bookmarks down" }).focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => {
+      expect(within(section).getByRole("button", { name: "Move Bookmarks up" })).toHaveFocus();
+    });
+    expect(within(section).getByRole("button", { name: "Move Bookmarks down" })).toBeDisabled();
+
+    // Space on a checkbox hides its item.
+    within(section).getByRole("checkbox", { name: "Local" }).focus();
+    await user.keyboard(" ");
+    expect(within(section).getByRole("checkbox", { name: "Local" })).not.toBeChecked();
+    expect(within(section).getByRole("checkbox", { name: "Local" })).toHaveAccessibleDescription("Hidden");
+
+    expect(navigationKey.read()).toEqual({
+      order: ["home", "local", "public", "notifications", "profile", "search", "settings", "bookmarks"],
+      hidden: ["local"],
+    });
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    expect(within(within(nav).getByRole("list")).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/home",
+      "/public",
+      "/notifications",
+      "/profile",
+      "/search",
+      "/settings",
+      "/bookmarks",
+    ]);
+    expect(prefs.changes).toEqual([]);
+
+    // Restoring the default forgets the arrangement.
+    await user.click(within(section).getByRole("button", { name: "Restore the default" }));
+    expect(localStorage.getItem("my:display:navigation")).toBeNull();
+    expect(within(section).getByRole("checkbox", { name: "Local" })).toBeChecked();
+    expect(within(section).getAllByRole("checkbox", { checked: true })).toHaveLength(8);
+  });
+
+  test("says which timeline this server does not offer", async () => {
+    preferencesServer();
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, timelines: { local: true, federated: false } })));
+    await renderApp({ path: "/settings/preferences" });
+    const section = await screen.findByRole("region", { name: "Navigation" });
+    await waitFor(() => {
+      expect(within(section).getByRole("checkbox", { name: "Federated" })).toHaveAccessibleDescription("Not offered by this server");
+    });
+    expect(within(section).getByRole("checkbox", { name: "Local" })).toHaveAccessibleDescription("In the tab bar on phones");
+  });
+
+  test("is in Japanese in the ja locale", async () => {
+    preferencesServer({ locale: "ja" });
+    await renderApp({ path: "/settings/preferences", locale: "ja" });
+    const section = await screen.findByRole("region", { name: "ナビゲーション" });
+    expect(within(section).getByRole("button", { name: "ホームを下へ移動" })).toBeInTheDocument();
   });
 });
 

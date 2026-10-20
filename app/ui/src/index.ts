@@ -80,6 +80,8 @@ export {
   MenuIcon,
   ModerationIcon,
   MoreIcon,
+  MoveDownIcon,
+  MoveUpIcon,
   NotificationsIcon,
   PlusIcon,
   ProfileIcon,
@@ -88,7 +90,6 @@ export {
   SettingsIcon,
   StarIcon,
   SubmenuIcon,
-  TimelinesIcon,
   type ToggleIconProps,
   WarningIcon,
 } from "./Icons";

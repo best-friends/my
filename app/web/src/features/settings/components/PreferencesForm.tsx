@@ -10,6 +10,7 @@ import { usePushNotifications } from "../hooks/usePushNotifications";
 import { deviceTimeZone, sameTimeZone, useTimeZoneOptions } from "../hooks/timeZones";
 import { type PreferenceControl, usePreferences } from "../hooks/usePreferences";
 import { AutoplaySwitch } from "./AutoplaySwitch";
+import { NavigationSettings } from "./NavigationSettings";
 import { ThemeRadioGroup } from "./ThemeRadioGroup";
 
 /** The visibilities in the order of ADR-0017, widest first, with their label and description. */
@@ -22,8 +23,8 @@ const visibilities: readonly { id: Visibility; label: ClientMessageKey; descript
 ];
 
 /**
- * The preferences: every control saves its value as soon as it changes; the theme and the autoplay of animations are
- * kept on this browser.
+ * The preferences: every control saves its value as soon as it changes; the theme, the autoplay of animations and the
+ * arrangement of the navigation are kept on this browser.
  */
 export function PreferencesForm() {
   const t = useT();
@@ -35,6 +36,7 @@ export function PreferencesForm() {
       <TimeZoneSelect control={timeZone} />
       <ThemeRadioGroup />
       <AutoplaySwitch />
+      <NavigationSettings />
       <RadioGroup
         label={t("client:settings.default_visibility.label")}
         description={t("client:settings.default_visibility.description")}

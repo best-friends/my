@@ -3,13 +3,13 @@
 // items of their own, the phones' tab bar with Menu, and the menu's sheet. jsdom applies no styles, so the items
 // that only the tab bar or only the rail shows are all in the document; e2e/shell.spec.ts checks which ones each
 // width shows.
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { describe, expect, test } from "vitest";
 import { instanceFixture, preferencesFixture } from "../../test/fixtures";
 import { apiBase, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
-import { themeKey } from "../../lib/storage";
+import { navigationKey, themeKey } from "../../lib/storage";
 import { renderApp } from "../../test/render";
 
 /** GET /instance with the given public timelines turned on or off. */
@@ -86,6 +86,59 @@ describe("the timelines' items", () => {
     const nav = screen.getByRole("navigation", { name: "メイン" });
     expect(within(nav).getByRole("link", { name: "ローカル" })).toHaveAttribute("href", "/local");
     expect(await within(nav).findByRole("link", { name: "連合" })).toHaveAttribute("href", "/public");
+  });
+});
+
+describe("the user's arrangement", () => {
+  test("orders and hides the items as kept on this browser, with the shown items after the first five in the menu's sheet", async () => {
+    navigationKey.write({
+      order: ["search", "notifications", "home", "profile", "public", "local", "bookmarks", "settings"],
+      hidden: ["local"],
+    });
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    const list = within(navigation()).getByRole("list");
+    await within(list).findByRole("link", { name: "Federated" });
+    expect(within(list).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/search",
+      "/notifications",
+      "/home",
+      "/profile",
+      "/public",
+      "/bookmarks",
+      "/settings",
+    ]);
+
+    await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
+    const sheet = await screen.findByRole("dialog", { name: "Menu" });
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Bookmarks", "Settings"]);
+  });
+
+  test("keeps the place of a timeline the server does not offer among the first five", async () => {
+    server.use(instanceWith({ local: false, federated: true }));
+    navigationKey.write({ order: ["local", "home", "public", "notifications", "search", "profile", "bookmarks", "settings"], hidden: [] });
+    const { user } = await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    await waitFor(() => {
+      expect(within(navigation()).queryByRole("link", { name: "Local" })).not.toBeInTheDocument();
+    });
+
+    await user.click(within(navigation()).getByRole("button", { name: "Menu" }));
+    const sheet = await screen.findByRole("dialog", { name: "Menu" });
+    expect(within(sheet).getAllByRole("link").map((link) => link.textContent)).toEqual(["Profile", "Bookmarks", "Settings"]);
+  });
+
+  test("follows a change made in another tab", async () => {
+    await renderApp({ path: "/home" });
+    await screen.findByRole("heading", { level: 1, name: "Home" });
+    expect(within(navigation()).getByRole("link", { name: "Search" })).toBeInTheDocument();
+
+    const value = JSON.stringify({ v: 1, value: { order: [], hidden: ["search"] } });
+    localStorage.setItem("my:display:navigation", value);
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "my:display:navigation", newValue: value }));
+    });
+    expect(within(navigation()).queryByRole("link", { name: "Search" })).not.toBeInTheDocument();
   });
 });
 
