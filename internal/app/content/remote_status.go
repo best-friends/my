@@ -337,11 +337,13 @@ func (s *Service) remoteRevision(ctx context.Context, tx uow.Tx, in RemoteStatus
 }
 
 // RecordRemoteEmojis records inside tx the custom emoji that a remote document of an account
-// uses (a post, or the profile of an actor, ADR-0051 §3), each with its image as a remote media
-// file of the account, and returns their IDs, sorted. domain is the canonical host of the
+// uses (a post, or the profile of an actor, ADR-0051 §3), each with its image, and returns
+// their IDs, sorted. domain is the canonical host of the
 // account, the domain of its emoji: an emoji is identified by its shortcode and domain, and the
 // id of its Emoji object is recorded as its URI only when it has that host, so that no server
-// can take the row of another's emoji. A new image URL of a known emoji becomes its new image.
+// can take the row of another's emoji. A new image URL of a known emoji becomes its new image,
+// recorded as a remote media file of the account that sent it; the URL of the current image
+// changes nothing, whichever account sends it.
 func (s *Service) RecordRemoteEmojis(ctx context.Context, tx uow.Tx, ownerAccountID, domain string, emojis []RemoteEmojiInput) ([]string, error) {
 	if len(emojis) == 0 {
 		return nil, nil
@@ -355,12 +357,6 @@ func (s *Service) RecordRemoteEmojis(ctx context.Context, tx uow.Tx, ownerAccoun
 		if e.Shortcode == "" || e.ImageURL == "" {
 			continue
 		}
-		m, err := s.d.RemoteMedia.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
-			OwnerAccountID: ownerAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeEmoji,
-		})
-		if err != nil {
-			return nil, err
-		}
 		uri := e.URI
 		if !hasHost(uri, domain) {
 			uri = ""
@@ -371,10 +367,18 @@ func (s *Service) RecordRemoteEmojis(ctx context.Context, tx uow.Tx, ownerAccoun
 		if err != nil {
 			return nil, err
 		}
-		img, err := s.d.Repository.CurrentCustomEmojiImage(ctx, tx, emoji.ID)
+		// The image is replaced only when its URL changes: the same image in the documents of
+		// other accounts adds no revision and no media file of theirs.
+		current, err := s.d.Repository.CurrentCustomEmojiImageURL(ctx, tx, emoji.ID)
 		switch {
-		case errors.Is(err, ErrNotFound), err == nil && img.MediaID != m.MediaID:
-			err := s.d.Repository.InsertCustomEmojiImage(ctx, tx, content.CustomEmojiImage{
+		case errors.Is(err, ErrNotFound), err == nil && current != e.ImageURL:
+			m, err := s.d.RemoteMedia.RecordRemoteMedia(ctx, tx, RemoteMediaInput{
+				OwnerAccountID: ownerAccountID, RemoteURL: e.ImageURL, DeclaredMediaType: content.MediaTypeImage, Purpose: content.PurposeEmoji,
+			})
+			if err != nil {
+				return nil, err
+			}
+			err = s.d.Repository.InsertCustomEmojiImage(ctx, tx, content.CustomEmojiImage{
 				ID: s.d.IDs.NewID(), EmojiID: emoji.ID, MediaID: m.MediaID, RevisedAt: now,
 			})
 			if err != nil {

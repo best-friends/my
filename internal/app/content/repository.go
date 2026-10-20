@@ -158,8 +158,9 @@ type Repository interface {
 	// EnsureCustomEmoji inserts e unless an emoji with its Shortcode and Domain exists, and
 	// returns the stored emoji. A URI that another emoji has is not stored again.
 	EnsureCustomEmoji(ctx context.Context, tx uow.Tx, e content.CustomEmoji) (content.CustomEmoji, error)
-	// CurrentCustomEmojiImage returns the newest image of an emoji.
-	CurrentCustomEmojiImage(ctx context.Context, tx uow.Tx, emojiID string) (content.CustomEmojiImage, error)
+	// CurrentCustomEmojiImageURL returns the remote URL of the newest image of an emoji, "" when
+	// that image is not a remote media file; ErrNotFound means the emoji has no image.
+	CurrentCustomEmojiImageURL(ctx context.Context, tx uow.Tx, emojiID string) (string, error)
 	InsertCustomEmojiImage(ctx context.Context, tx uow.Tx, img content.CustomEmojiImage) error
 	// LatestPollObservation returns the newest tally observation of a poll, with its votes.
 	LatestPollObservation(ctx context.Context, tx uow.Tx, pollID string) (content.PollTallyObservation, error)

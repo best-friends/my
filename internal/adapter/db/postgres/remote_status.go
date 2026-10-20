@@ -113,17 +113,17 @@ func (r *StatusRepository) EnsureCustomEmoji(ctx context.Context, tx uow.Tx, e c
 	return content.CustomEmoji{}, wrap(pgx.ErrNoRows, "ensure custom emoji")
 }
 
-// CurrentCustomEmojiImage implements content.Repository.
-func (r *StatusRepository) CurrentCustomEmojiImage(ctx context.Context, tx uow.Tx, emojiID string) (content.CustomEmojiImage, error) {
+// CurrentCustomEmojiImageURL implements content.Repository.
+func (r *StatusRepository) CurrentCustomEmojiImageURL(ctx context.Context, tx uow.Tx, emojiID string) (string, error) {
 	q, err := queries(tx)
 	if err != nil {
-		return content.CustomEmojiImage{}, err
+		return "", err
 	}
-	row, err := q.GetLatestCustomEmojiImage(ctx, emojiID)
+	remoteURL, err := q.GetLatestCustomEmojiImageRemoteURL(ctx, emojiID)
 	if err != nil {
-		return content.CustomEmojiImage{}, notFound(err, appcontent.ErrNotFound, "image of emoji "+emojiID)
+		return "", notFound(err, appcontent.ErrNotFound, "image of emoji "+emojiID)
 	}
-	return customEmojiImageFrom(row), nil
+	return remoteURL, nil
 }
 
 // InsertCustomEmojiImage implements content.Repository.
