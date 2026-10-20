@@ -2,7 +2,7 @@
 // A profile (FR-204): the header with the account's picture, name, handle, profile text, metadata fields,
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
 // selection the route keeps in the URL (web-client.md S3), the posts tab starting with its pinned posts.
-import { Avatar, EmojiText, ExternalLinkIcon, Link, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
+import { Avatar, EmojiText, ExternalLinkIcon, type ImageSources, Link, Picture, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
 import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed, useRemoteFetch } from "../../timeline";
@@ -10,6 +10,7 @@ import { usePinnedStatuses } from "../hooks/usePinnedStatuses";
 import { isolate, type ProfileView as ProfileViewData, useProfile } from "../hooks/useProfile";
 import { useRelationship } from "../hooks/useRelationship";
 import { RelationshipActions } from "./RelationshipActions";
+import { imageSources } from "../../../lib/images";
 
 /** The label of each tab. */
 const tabLabels: Readonly<Record<AccountTimelineFilter, ClientMessageKey>> = {
@@ -47,9 +48,9 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
     <div className="flex flex-col gap-4">
       {/* The size container of the header and the tabs (web-client.md D2). */}
       <header className="@container flex flex-col">
-        <HeaderImage src={account.header?.medium.url} />
+        <HeaderImage sources={imageSources(account.header)} />
         <div className="flex flex-wrap items-end justify-between gap-3 px-4">
-          <Avatar src={account.avatar?.medium.url} name={profile.name} decorative size="xl" className="-mt-10 ring-4 ring-surface" />
+          <Avatar sources={imageSources(account.avatar)} name={profile.name} decorative size="xl" className="-mt-10 ring-4 ring-surface" />
           <RelationshipActions account={account} name={profile.name} state={relationship} />
         </div>
         <div className="mt-3 flex flex-col gap-3 px-4">
@@ -120,15 +121,18 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
  * The account's header image, or a plain band when it has none or the image fails to load. Either is
  * decorative (`alt=""`, ADR-0027): the name and the profile below it say whose page this is.
  */
-function HeaderImage({ src }: { src: string | undefined }) {
+function HeaderImage({ sources }: { sources: ImageSources | undefined }) {
   // The URL that failed, not a flag: a new src is tried again without resetting state in an Effect.
   const [failedSrc, setFailedSrc] = useState<string>();
-  if (src === undefined || src === "" || src === failedSrc) {
+  const src = sources?.still[0]?.url;
+  if (sources === undefined || src === undefined || src === "" || src === failedSrc) {
     return <div aria-hidden="true" className="h-24 rounded-lg bg-surface-sunken @md:h-36" />;
   }
   return (
-    <img
-      src={src}
+    <Picture
+      sources={sources}
+      // The page's column is at most about 40rem wide.
+      sizes="(min-width: 40rem) 40rem, 100vw"
       alt=""
       decoding="async"
       className="h-24 w-full rounded-lg bg-surface-sunken object-cover @md:h-36"

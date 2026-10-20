@@ -4311,6 +4311,14 @@
     "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.autoplay.description": {
+    "defaultMessage": "‮∀uıɯɐʇǝp ıɯɐƃǝs (⅁IℲ) ɯoʌǝ qʎ ʇɥǝɯsǝʅʌǝs; oɟɟ, ʇɥǝʎ ɯoʌǝ ouʅʎ ʍɥıʅǝ ʎon doıuʇ ɐʇ oɹ ʇonɔɥ ʇɥǝɯ. Ǝıʇɥǝɹ ʍɐʎ ʇɥǝʎ sʇɐʎ sʇıʅʅ ʍɥǝu ʎonɹ pǝʌıɔǝ ɐsʞs ɟoɹ ɹǝpnɔǝp ɯoʇıou. Ӽǝdʇ ou ʇɥıs qɹoʍsǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.autoplay.label": {
+    "defaultMessage": "‮Ԁʅɐʎ ɐuıɯɐʇıous ɐnʇoɯɐʇıɔɐʅʅʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.back": {
     "defaultMessage": "‮Ԑɐɔʞ ʇo sǝʇʇıuƃs‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -191,6 +191,24 @@ describe("theme", () => {
   });
 });
 
+describe("autoplay of animations", () => {
+  test("is on at first, applies at once, is kept on this browser, and sends nothing to the server", async () => {
+    const prefs = preferencesServer();
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const autoplay = await screen.findByRole("switch", { name: "Play animations automatically" });
+    expect(autoplay).toBeChecked();
+    expect(autoplay).toHaveAccessibleDescription(expect.stringContaining("Kept on this browser") as string);
+
+    await user.click(autoplay);
+    expect(autoplay).not.toBeChecked();
+    expect(localStorage.getItem("my:display:autoplay")).toBe("off");
+    await user.click(autoplay);
+    expect(autoplay).toBeChecked();
+    expect(localStorage.getItem("my:display:autoplay")).toBeNull();
+    expect(prefs.changes).toEqual([]);
+  });
+});
+
 describe("time zone of the device", () => {
   test("a new account takes this device's time zone", async () => {
     stubDeviceTimeZone("Asia/Tokyo");
@@ -279,7 +297,8 @@ describe("moderator notifications by email", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Preferences" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Moderator notifications" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    // The only switch left is this browser's autoplay of animations.
+    expect(screen.getAllByRole("switch")).toEqual([screen.getByRole("switch", { name: "Play animations automatically" })]);
   });
 
   test("says why there is no switch when the server sends no email", async () => {

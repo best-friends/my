@@ -30,6 +30,20 @@ describe("Avatar", () => {
     expect(screen.getByRole("img", { name: "Bob" })).toHaveAttribute("src", "/b.png");
   });
 
+  it("loads the rendition of its sources that fits its size", () => {
+    const still = [
+      { url: "/s.webp", width: 96 },
+      { url: "/m.webp", width: 192 },
+    ];
+    render(<Avatar sources={{ still }} name="Alice" decorative={false} size="lg" />);
+    const img = screen.getByRole("img", { name: "Alice" });
+    expect(img).toHaveAttribute("src", "/s.webp");
+    expect(img).toHaveAttribute("srcset", "/s.webp 96w, /m.webp 192w");
+    expect(img).toHaveAttribute("sizes", "3rem");
+    fireEvent.error(img);
+    expect(screen.getByRole("img", { name: "Alice" })).toHaveTextContent("A");
+  });
+
   it("takes one grapheme of any script", () => {
     render(<Avatar name="👩‍🚀 Astro" decorative={false} />);
     expect(screen.getByRole("img", { name: "👩‍🚀 Astro" })).toHaveTextContent(/^👩‍🚀$/u);

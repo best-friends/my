@@ -57,7 +57,7 @@ export function NotificationItem({ group, isUnread }: NotificationItemProps) {
           // `aria-hidden`, so an element around it hides it.
           <div aria-hidden="true">
             <Link href={actor.href} excludeFromTabOrder className="block rounded-full">
-              <Avatar src={actor.avatar} name={actor.name} decorative />
+              <Avatar sources={actor.avatar} name={actor.name} decorative />
             </Link>
           </div>
         ),
@@ -130,7 +130,7 @@ function OtherAvatars({ others }: { others: readonly NotificationActor[] }) {
     <div aria-hidden="true" className="mb-1 flex flex-wrap gap-1">
       {others.map((other) => (
         <Link key={other.href} href={other.href} excludeFromTabOrder className="block rounded-full">
-          <Avatar src={other.avatar} name={other.name} size="xs" decorative />
+          <Avatar sources={other.avatar} name={other.name} size="xs" decorative />
         </Link>
       ))}
     </div>

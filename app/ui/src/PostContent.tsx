@@ -11,10 +11,11 @@
 // The policy passes the HTML through unchanged. That is safe only because every HTML it receives comes
 // out of the server's sanitizer (the allowlist in the Go server); HTML from anywhere else, such as the
 // remote posts that federation brings (M3), must go through the same sanitizer on the server first.
-import type { ComponentPropsWithRef, RefCallback } from "react";
+import { type ComponentPropsWithRef, type RefCallback, use } from "react";
 import { mergeRefs } from "react-aria";
 import { tv } from "tailwind-variants";
 import { type CustomEmojiImage, insertCustomEmojis, noCustomEmojis } from "./CustomEmoji";
+import { AutoplayContext } from "./Picture";
 
 declare const sanitizedHtmlBrand: unique symbol;
 
@@ -88,7 +89,10 @@ export type PostContentProps = Omit<ComponentPropsWithRef<"div">, "children" | "
    * text is drawn as its image, made with the DOM API rather than HTML (ADR-0019 §2, ADR-0051 §4).
    */
   emojis?: readonly CustomEmojiImage[] | undefined;
-  /** Whether animated emoji may move when the user allows motion; false shows their still images. */
+  /**
+   * Whether animated emoji may move when the user allows motion; false shows their still images. The default is the
+   * app's `AutoplayContext`.
+   */
   emojiMotion?: boolean | undefined;
 };
 
@@ -132,7 +136,9 @@ function emojiDrawer(html: SanitizedHtml, emojis: readonly CustomEmojiImage[], a
  * PostCard by it, `onLinkClick` to open the links of the body itself (the app opens the links to its
  * own pages through its router), and `emojis` to draw its custom emoji.
  */
-export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion = true, className, ref, ...props }: PostContentProps) {
+export function PostContent({ html, lang, onLinkClick, emojis = noCustomEmojis, emojiMotion: motion, className, ref, ...props }: PostContentProps) {
+  const autoplay = use(AutoplayContext);
+  const emojiMotion = motion ?? autoplay;
   return (
     <div
       {...props}

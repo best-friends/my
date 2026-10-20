@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a status card shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4): the
 // hook decides what to show and formats it; the component only places it. It returns no JSX.
-import { type CustomEmojiImage, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
+import { type CustomEmojiImage, type ImageSources, type MediaItem, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useContentLinkClick } from "../../../lib/contentLinks";
 import { handleOf, isRemoteAcct } from "../../../lib/handle";
 import { hostOf } from "../../../lib/host";
 import { profilePath } from "../../../lib/paths";
 import { type TimeView, useTimeView } from "../../../lib/time";
 import { type MediaAttachment, type Status, statusHistoryPath, statusPath, statusShareUrl } from "../api/status";
+import { imageSources } from "../../../lib/images";
 
 export type StatusView = {
   /** The display name of the account that boosted the post and its profile page, or null for a post of its own. */
@@ -17,7 +18,7 @@ export type StatusView = {
    * profile page, and avatar URL (undefined when the account has none, and the avatar shows its fallback),
    * with the custom emoji of the name.
    */
-  author: { name: string; emojis: readonly CustomEmojiImage[]; handle: string; href: string; avatar: string | undefined };
+  author: { name: string; emojis: readonly CustomEmojiImage[]; handle: string; href: string; avatar: ImageSources | undefined };
   /** When the post was written: the ISO date for `<time>`, the relative time to show, and the full date and time. */
   time: TimeView;
   /** The web client's address of the post (the boosted post for a boost), which its time links to. */
@@ -48,13 +49,14 @@ export type StatusView = {
 };
 
 /**
- * The pictures of a status that are ready to show, at their preview size: `preview_url` is the thumbnail of an
- * upload, and the media proxy URL of a remote file, which has no renditions (api/openapi.yaml, MediaAttachment).
+ * The pictures of a status that are ready to show: `preview_url` is the small still rendition of an upload, and
+ * the media proxy's small one of a remote file; an upload also has its renditions to choose from by size, still and
+ * moving (api/openapi.yaml, MediaAttachment).
  */
 export function mediaItems(attachments: readonly MediaAttachment[], lang: string | undefined): MediaItem[] {
   return attachments.flatMap((attachment) =>
     attachment.state === "ready" && attachment.type === "image" && attachment.preview_url !== undefined
-      ? [{ id: attachment.id, src: attachment.preview_url, alt: attachment.description ?? null, lang }]
+      ? [{ id: attachment.id, src: attachment.preview_url, sources: imageSources(attachment.variants), alt: attachment.description ?? null, lang }]
       : [],
   );
 }
@@ -83,7 +85,7 @@ export function useStatusView(status: Status): StatusView {
       emojis: post.account.emojis,
       handle: handleOf(post.account.acct),
       href: profilePath(post.account.acct),
-      avatar: post.account.avatar?.small.url,
+      avatar: imageSources(post.account.avatar),
     },
     time,
     path: statusPath(post),

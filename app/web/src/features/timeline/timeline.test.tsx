@@ -228,6 +228,43 @@ describe("a status card", () => {
     expect(within(article).getByRole("img", { name: "No description" })).toHaveAttribute("src", "https://my.example/media/thumb.webp");
   });
 
+  test("moves an animated picture only without reduced motion, and not at all with autoplay off", async () => {
+    const variant = (name: string, width: number) => ({ url: `https://my.example/media/${name}`, width, height: width / 2 });
+    const dancing = status(1, {
+      media_attachments: [
+        {
+          id: "0192f0c4-7a8e-7000-8000-0000000000m2",
+          type: "image",
+          state: "ready",
+          description: "A dance",
+          meta: { focus: { x: 0, y: 0 } },
+          variants: {
+            small: variant("s.webp", 640),
+            medium: variant("m.webp", 1920),
+            large: variant("l.jpg", 3840),
+            animated: { small: variant("s-a.webp", 640), medium: variant("m-a.webp", 1920), large: variant("l-a.gif", 3840) },
+          },
+          url: "https://my.example/media/l-a.gif",
+          preview_url: "https://my.example/media/s.webp",
+        },
+      ],
+    });
+    server.use(http.get(`${apiBase}/timelines/local`, () => HttpResponse.json(statusPage([dancing]))));
+    const { unmount } = await renderApp({ path: "/local" });
+    const picture = await screen.findByRole("img", { name: "A dance" });
+    expect(picture).toHaveAttribute("srcset", "https://my.example/media/s.webp 640w, https://my.example/media/m.webp 1920w, https://my.example/media/l.jpg 3840w");
+    // eslint-disable-next-line testing-library/no-node-access -- <picture> and <source> have no role.
+    expect(picture.parentElement?.querySelector("source")).toHaveAttribute("media", "(prefers-reduced-motion: no-preference)");
+    unmount();
+
+    localStorage.setItem("my:display:autoplay", "off");
+    await renderApp({ path: "/local" });
+    const still = await screen.findByRole("img", { name: "A dance" });
+    // eslint-disable-next-line testing-library/no-node-access -- <picture> and <source> have no role.
+    expect(still.parentElement?.querySelector("source")).toBeNull();
+    expect(still).toHaveAttribute("src", "https://my.example/media/s.webp");
+  });
+
   test("formats the relative time in the page's locale", async () => {
     await renderApp({ path: "/local", locale: "ja" });
 

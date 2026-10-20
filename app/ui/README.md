@@ -331,6 +331,7 @@ announces only changes made after it is in the page. A failure is not a status; 
 
 | Component | Notes |
 | --- | --- |
+| `Picture`, `AutoplayContext` | An image in the rendition that fits (`srcset` / `sizes` from `ImageSources`). An animation's moving rendition is a `<source>` for `prefers-reduced-motion: no-preference` only, and with `AutoplayContext` off it moves only while pointed at or touched (ADR-0054 §3). `Avatar` (`sources`) and `MediaGrid` (`MediaItem.sources`) use it. |
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
 
 ## Component tests

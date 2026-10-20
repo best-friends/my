@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CustomEmoji, type CustomEmojiImage, EmojiText, insertCustomEmojis, splitCustomEmoji } from "./CustomEmoji";
+import { AutoplayContext } from "./Picture";
 import { PostContent, serverSanitizedHtml } from "./PostContent";
 
 const blobcat: CustomEmojiImage = { shortcode: "blobcat", url: "https://example.com/blobcat.gif", static_url: "https://example.com/blobcat.png" };
@@ -51,6 +53,12 @@ describe("CustomEmoji", () => {
   it("shows only the still image when it must not move or has no animation", () => {
     expect(renderToStaticMarkup(<CustomEmoji emoji={blobcat} allowMotion={false} />)).not.toContain("<picture");
     expect(renderToStaticMarkup(<CustomEmoji emoji={still} />)).not.toContain("<picture");
+  });
+
+  it("follows the app's autoplay setting unless told otherwise", () => {
+    const off = (children: ReactNode) => renderToStaticMarkup(<AutoplayContext value={false}>{children}</AutoplayContext>);
+    expect(off(<CustomEmoji emoji={blobcat} />)).not.toContain("<picture");
+    expect(off(<CustomEmoji emoji={blobcat} allowMotion />)).toContain("<picture");
   });
 });
 

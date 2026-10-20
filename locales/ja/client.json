@@ -4311,6 +4311,14 @@
     "defaultMessage": "アカウント",
     "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
   },
+  "settings.autoplay.description": {
+    "defaultMessage": "アニメーション画像（GIF）を自動で動かします。オフにすると、ポインタを重ねるか触れている間だけ動きます。どちらでも、端末で視差効果を減らす設定にしていれば止まります。このブラウザーに保存します。",
+    "description": "Help text of the switch that turns the autoplay of animated images on or off."
+  },
+  "settings.autoplay.label": {
+    "defaultMessage": "アニメーションを自動で再生する",
+    "description": "Label of the switch on the preferences page that turns the autoplay of animated images on or off."
+  },
   "settings.back": {
     "defaultMessage": "設定に戻る",
     "description": "Link under the heading of a settings page that opens the list of settings pages."

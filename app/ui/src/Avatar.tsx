@@ -2,6 +2,7 @@
 import { type ComponentPropsWithRef, useState } from "react";
 import { useLocale } from "react-aria-components";
 import { tv, type VariantProps } from "tailwind-variants";
+import { type ImageSources, Picture } from "./Picture";
 
 const avatar = tv({
   slots: {
@@ -22,10 +23,18 @@ const avatar = tv({
   defaultVariants: { size: "md" },
 });
 
+/** The CSS width of each size, which picks the rendition of `sources`. */
+const widths = { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem", xl: "5rem" } as const;
+
 export type AvatarProps = Omit<ComponentPropsWithRef<"span">, "children"> &
   VariantProps<typeof avatar> & {
     /** The image URL. Without one, or when it fails to load, the avatar shows the first letter of `name`. */
     src?: string | undefined;
+    /**
+     * The renditions of the image, used instead of `src`: the browser loads the one that fits the avatar's size, and
+     * an animation moves only as `Picture` lets it.
+     */
+    sources?: ImageSources | undefined;
     /** The account's display name: the accessible name of a standalone avatar and the source of the fallback letter. */
     name: string;
     /**
@@ -47,7 +56,8 @@ function initialOf(name: string, locale: string): string {
  * the name, or a generic silhouette when the name is blank. Whether it is announced is the caller's
  * explicit choice (`decorative`).
  */
-export function Avatar({ src, name, decorative, size, className, ...props }: AvatarProps) {
+export function Avatar({ src: plainSrc, sources, name, decorative, size, className, ...props }: AvatarProps) {
+  const src = sources?.still[0]?.url ?? plainSrc;
   const { locale } = useLocale();
   // The URL that failed, not a flag: a new src is tried again without resetting state in an Effect.
   const [failedSrc, setFailedSrc] = useState<string>();
@@ -59,15 +69,28 @@ export function Avatar({ src, name, decorative, size, className, ...props }: Ava
   return (
     <span {...props} className={base({ className })}>
       {showImage ? (
-        <img
-          src={src}
-          alt={decorative ? "" : name}
-          className={image()}
-          decoding="async"
-          onError={() => {
-            setFailedSrc(src);
-          }}
-        />
+        sources === undefined ? (
+          <img
+            src={src}
+            alt={decorative ? "" : name}
+            className={image()}
+            decoding="async"
+            onError={() => {
+              setFailedSrc(src);
+            }}
+          />
+        ) : (
+          <Picture
+            sources={sources}
+            sizes={widths[size ?? "md"]}
+            alt={decorative ? "" : name}
+            className={image()}
+            decoding="async"
+            onError={() => {
+              setFailedSrc(src);
+            }}
+          />
+        )
       ) : (
         <span {...label} aria-hidden={decorative || undefined} className={fallback()}>
           {initial === "" ? (

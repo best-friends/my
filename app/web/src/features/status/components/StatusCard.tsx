@@ -138,7 +138,7 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
         // `aria-hidden`, so an element around it hides it.
         <div aria-hidden="true">
           <Link href={view.author.href} excludeFromTabOrder className="block rounded-full">
-            <Avatar src={view.author.avatar} name={view.author.name} decorative />
+            <Avatar sources={view.author.avatar} name={view.author.name} decorative />
           </Link>
         </div>
       }
