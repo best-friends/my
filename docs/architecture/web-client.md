@@ -394,6 +394,12 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
   - デプロイで古いチャンクが消えたとき（`vite:preloadError`）は読み直す。10 秒以内に繰り返したら読み直さず、エラー境界に任せる。
 - **ログアウト**: セッションが終わると、`lib/auth/userData.ts` が `clearCaches()` を呼ぶ（§10）。事前のキャッシュも含めてすべてのキャッシュと、メディアの期限のメタデータを消す（ADR-0028）。
   消したあともオンラインでは同じように動き、新しい版の Service Worker が事前にキャッシュし直すまでオフラインの外枠は使えない。
+- **Web Push**（FR-206）: 設定の「表示と投稿」の「プッシュ通知」（`features/settings` の `usePushNotifications`）で、この端末で受け取るかと通知の種類を選ぶ。インスタンスが `push_server_key` を返さないときは区画を出さない。
+  - 有効にするとき（スイッチの操作の中）だけ `Notification.requestPermission()` で許可を求め、Service Worker の登録の `PushManager.subscribe`（`userVisibleOnly`、`applicationServerKey` はサーバーの鍵）で購読し、`PUT /push/subscription` で種類と一緒に登録する。
+    別の鍵で作った購読が残っていれば解除してから購読し直す。種類を変えると登録し直し、無効にすると `DELETE /push/subscription` とブラウザの購読の解除を行う。
+  - Push API のないブラウザ（iOS / iPadOS ではホーム画面に追加していない Safari を含む）と、サイトの通知をブロックしたブラウザでは、スイッチの代わりに理由を出す。
+  - Service Worker（`sw/push.ts`）は、サーバーが利用者の言語で書いた題を、通知の ID を `tag` にして表示する（同じ通知の再送は表示を置き換える）。押すと、開いているアプリの窓（フォーカスのある窓、なければどれか）をメッセージのパスに移し、窓がなければ新しく開く。
+    パスは同じオリジンのものだけを開き、それ以外と読めないメッセージは通知の画面を開く。
 - **`my serve` の配信**: `sw.js` は長期キャッシュせず（`no-cache`）、Service Worker 自身に効く CSP（`default-src 'none'; connect-src 'self'`）で返す。既定の `default-src 'none'` のままだと Service Worker の `fetch` が止まる。
 - **インストール**: マニフェストのアイコンは `icon.svg`・192 / 512 px の PNG・512 px の maskable の PNG、外枠は iOS 用に `apple-touch-icon.png`（180 px）を指す。
   PNG は SVG から `scripts/web-icons.sh`（ImageMagick）で作り、コミットする。インストールの条件は E2E が Chrome の `Page.getInstallabilityErrors` で検査する。
