@@ -53,6 +53,10 @@ func Open(ctx context.Context, url string, opts uow.Options) (*DB, error) {
 // Close closes every connection of the pool.
 func (d *DB) Close() { d.pool.Close() }
 
+// Pool returns the connection pool, for the adapters that share the database's connections
+// (stream/postgres sends its notifications on it).
+func (d *DB) Pool() *pgxpool.Pool { return d.pool }
+
 // Ready reports whether the database is reachable and its schema is applied, for the
 // readiness check. The schema counts as applied when every table that schema/postgres.sql
 // declares exists in the connection's current schema; Atlas applies the file as a whole

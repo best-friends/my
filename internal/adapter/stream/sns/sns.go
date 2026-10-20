@@ -155,15 +155,39 @@ var (
 	_ stream.Sweeper = (*Bus)(nil)
 )
 
+// CheckTopicARN reports whether topicARN is the ARN of an SNS topic,
+// arn:<partition>:sns:<region>:<account>:<topic> (Options.TopicARN).
+func CheckTopicARN(topicARN string) error {
+	_, err := parseTopicARN(topicARN)
+	return err
+}
+
+func parseTopicARN(topicARN string) (arn.ARN, error) {
+	topic, err := arn.Parse(topicARN)
+	if err != nil || topic.Service != "sns" || topic.Region == "" || topic.AccountID == "" || topic.Resource == "" {
+		return arn.ARN{}, fmt.Errorf("not the ARN of an SNS topic arn:<partition>:sns:<region>:<account>:<topic>: %q", topicARN)
+	}
+	return topic, nil
+}
+
+// CheckQueuePrefix reports whether prefix can start the names of the queues of a Bus
+// (Options.QueuePrefix).
+func CheckQueuePrefix(prefix string) error {
+	if len(prefix) > MaxQueuePrefix || !queuePrefixRe.MatchString(prefix) {
+		return fmt.Errorf("not 1 to %d letters, digits, hyphens, and underscores: %q", MaxQueuePrefix, prefix)
+	}
+	return nil
+}
+
 // New returns the Bus on the topic and queues of o through topics and queues, which must
 // reach the topic's region.
 func New(topics TopicClient, queues QueueClient, o Options) (*Bus, error) {
-	topic, err := arn.Parse(o.TopicARN)
-	if err != nil || topic.Service != "sns" || topic.Region == "" || topic.AccountID == "" || topic.Resource == "" {
-		return nil, fmt.Errorf("stream/sns: topic ARN %q is not the ARN of an SNS topic", o.TopicARN)
+	topic, err := parseTopicARN(o.TopicARN)
+	if err != nil {
+		return nil, fmt.Errorf("stream/sns: topic: %w", err)
 	}
-	if len(o.QueuePrefix) > MaxQueuePrefix || !queuePrefixRe.MatchString(o.QueuePrefix) {
-		return nil, fmt.Errorf("stream/sns: queue prefix %q is not 1 to %d letters, digits, hyphens, and underscores", o.QueuePrefix, MaxQueuePrefix)
+	if err := CheckQueuePrefix(o.QueuePrefix); err != nil {
+		return nil, fmt.Errorf("stream/sns: queue prefix: %w", err)
 	}
 	processID := o.ProcessID
 	if processID == "" {

@@ -55,9 +55,15 @@ An instance setting that has never been set reads as its default, which is defin
 | [`media_unattached_ttl`](#media_unattached_ttl) | `MY_MEDIA_UNATTACHED_TTL` | `24h` | no | no |
 | [`remote_media_cache_max_bytes`](#remote_media_cache_max_bytes) | `MY_REMOTE_MEDIA_CACHE_MAX_BYTES` | `1073741824` | no | no |
 | [`kv`](#kv) | `MY_KV` | `db` | no | no |
-| [`valkey_url`](#valkey_url) | `MY_VALKEY_URL` | none | when `kv = valkey` | yes |
+| [`valkey_url`](#valkey_url) | `MY_VALKEY_URL` | none | when `kv = valkey` or `stream = valkey` | yes |
 | [`valkey_tls_ca_file`](#valkey_tls_ca_file) | `MY_VALKEY_TLS_CA_FILE` | none | no | no |
 | [`valkey_key_prefix`](#valkey_key_prefix) | `MY_VALKEY_KEY_PREFIX` | `my:` | no | no |
+| [`stream`](#stream) | `MY_STREAM` | `hub` | no | no |
+| [`stream_postgres_url`](#stream_postgres_url) | `MY_STREAM_POSTGRES_URL` | value of `database_url` | no | yes |
+| [`stream_sns_topic_arn`](#stream_sns_topic_arn) | `MY_STREAM_SNS_TOPIC_ARN` | none | when `stream = sns` | no |
+| [`stream_sqs_queue_prefix`](#stream_sqs_queue_prefix) | `MY_STREAM_SQS_QUEUE_PREFIX` | none | when `stream = sns` | no |
+| [`stream_pubsub_topic`](#stream_pubsub_topic) | `MY_STREAM_PUBSUB_TOPIC` | none | when `stream = pubsub` | no |
+| [`stream_pubsub_subscription_prefix`](#stream_pubsub_subscription_prefix) | `MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX` | none | when `stream = pubsub` | no |
 | [`key_manager`](#key_manager) | `MY_KEY_MANAGER` | `local` | no | no |
 | [`kek`](#kek) | `MY_KEK` | none | when `key_manager = local` | yes |
 | [`kek_previous`](#kek_previous) | `MY_KEK_PREVIOUS` | none | no | yes |
@@ -281,11 +287,11 @@ Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).
 
 ### `valkey_url`
 
-Valkey server of the adapters that use one (`kv = valkey`): `valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.
+Valkey server of the adapters that use one (`kv = valkey`, `stream = valkey`):`valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.
 
 - Environment variable: `MY_VALKEY_URL` or `MY_VALKEY_URL_FILE`
 - Default: none
-- Required: when `kv = valkey`
+- Required: when `kv = valkey` or `stream = valkey`
 
 ### `valkey_tls_ca_file`
 
@@ -302,6 +308,62 @@ Prefix of every key that this server writes to `valkey_url`, so that several ins
 - Environment variable: `MY_VALKEY_KEY_PREFIX`
 - Default: `my:`
 - Required: no
+
+### `stream`
+
+Broker that carries the signals of the real-time updates (`GET /api/v1/streaming`) between processes (ADR-0050). It is never inferred from the other settings. With `hub`, a stream receives only the changes made in its own process, so run one process with `role = all`; a process with another role warns at start. The other brokers reach every process of the instance, and a process connects to them only while it has open streams (docs/architecture/deployment-targets.md).
+
+- Environment variable: `MY_STREAM`
+- Default: `hub`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `hub` | yes | In-process only; for one process with `role = all` (SQLite, or one PostgreSQL server process). |
+| `postgres` | yes | PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`. |
+| `valkey` | yes | Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`. |
+| `sns` | yes | An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain. |
+| `pubsub` | yes | A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`. |
+
+### `stream_postgres_url`
+
+Connection string of the `LISTEN` connections of `stream = postgres`, in the format of `database_url`. Set it when `database_url` goes through a pooler in transaction mode (PgBouncer's transaction pooling, Neon's pooled connection string, Supabase's port 6543), where `LISTEN` does not work: it must reach the same database directly or through a pooler in session mode.
+
+- Environment variable: `MY_STREAM_POSTGRES_URL` or `MY_STREAM_POSTGRES_URL_FILE`
+- Default: value of `database_url`
+- Required: no
+
+### `stream_sns_topic_arn`
+
+ARN of the Amazon SNS standard topic of `stream = sns`, which the deployment template creates. The queues are created in its account and region.
+
+- Environment variable: `MY_STREAM_SNS_TOPIC_ARN`
+- Default: none
+- Required: when `stream = sns`
+
+### `stream_sqs_queue_prefix`
+
+Start of the names of the per-process SQS queues of `stream = sns`, `{prefix}-{process id}-{n}`: at most 40 letters, digits, hyphens, and underscores. The `stream.sweep` job deletes the queues under it that ended processes left behind, so it belongs to one instance.
+
+- Environment variable: `MY_STREAM_SQS_QUEUE_PREFIX`
+- Default: none
+- Required: when `stream = sns`
+
+### `stream_pubsub_topic`
+
+Full name of the Google Cloud Pub/Sub topic of `stream = pubsub`, `projects/{project}/topics/{topic}`, which the deployment template creates. The subscriptions are created in its project.
+
+- Environment variable: `MY_STREAM_PUBSUB_TOPIC`
+- Default: none
+- Required: when `stream = pubsub`
+
+### `stream_pubsub_subscription_prefix`
+
+Start of the IDs of the per-process subscriptions of `stream = pubsub`, `{prefix}-{process id}-{n}`: a letter, then letters, digits, and `-_.~+%`, not starting with `goog`. The `stream.sweep` job deletes the subscriptions under it that ended processes left behind, so it belongs to one instance.
+
+- Environment variable: `MY_STREAM_PUBSUB_SUBSCRIPTION_PREFIX`
+- Default: none
+- Required: when `stream = pubsub`
 
 ### `key_manager`
 

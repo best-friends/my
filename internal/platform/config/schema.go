@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
+	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
 	"github.com/best-friends/my/internal/adapter/valkey"
 )
 
@@ -245,9 +247,9 @@ var schema = []field{
 	},
 	{
 		key:          "valkey_url",
-		doc:          "Valkey server of the adapters that use one (`kv = valkey`): `valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.",
+		doc:          "Valkey server of the adapters that use one (`kv = valkey`, `stream = valkey`):`valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.",
 		secret:       true,
-		requiredWhen: "when `kv = valkey`",
+		requiredWhen: "when `kv = valkey` or `stream = valkey`",
 		check:        valkey.CheckURL,
 		set:          func(c *Config, v string) { c.ValkeyURL = v },
 	},
@@ -263,6 +265,54 @@ var schema = []field{
 		def:   "my:",
 		check: checkNotBlank,
 		set:   func(c *Config, v string) { c.ValkeyKeyPrefix = v },
+	},
+	{
+		key: "stream",
+		doc: "Broker that carries the signals of the real-time updates (`GET /api/v1/streaming`) between processes (ADR-0050). It is never inferred from the other settings. With `hub`, a stream receives only the changes made in its own process, so run one process with `role = all`; a process with another role warns at start. The other brokers reach every process of the instance, and a process connects to them only while it has open streams (docs/architecture/deployment-targets.md).",
+		def: "hub",
+		choices: []choice{
+			{value: "hub", inV0: true, doc: "In-process only; for one process with `role = all` (SQLite, or one PostgreSQL server process)."},
+			{value: "postgres", inV0: true, doc: "PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`."},
+			{value: "valkey", inV0: true, doc: "Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`."},
+			{value: "sns", inV0: true, doc: "An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain."},
+			{value: "pubsub", inV0: true, doc: "A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`."},
+		},
+		set: func(c *Config, v string) { c.Stream = v },
+	},
+	{
+		key:    "stream_postgres_url",
+		defDoc: "value of `database_url`",
+		doc:    "Connection string of the `LISTEN` connections of `stream = postgres`, in the format of `database_url`. Set it when `database_url` goes through a pooler in transaction mode (PgBouncer's transaction pooling, Neon's pooled connection string, Supabase's port 6543), where `LISTEN` does not work: it must reach the same database directly or through a pooler in session mode.",
+		secret: true,
+		set:    func(c *Config, v string) { c.StreamPostgresURL = v },
+	},
+	{
+		key:          "stream_sns_topic_arn",
+		doc:          "ARN of the Amazon SNS standard topic of `stream = sns`, which the deployment template creates. The queues are created in its account and region.",
+		requiredWhen: "when `stream = sns`",
+		check:        snsstream.CheckTopicARN,
+		set:          func(c *Config, v string) { c.StreamSNSTopicARN = v },
+	},
+	{
+		key:          "stream_sqs_queue_prefix",
+		doc:          "Start of the names of the per-process SQS queues of `stream = sns`, `{prefix}-{process id}-{n}`: at most 40 letters, digits, hyphens, and underscores. The `stream.sweep` job deletes the queues under it that ended processes left behind, so it belongs to one instance.",
+		requiredWhen: "when `stream = sns`",
+		check:        snsstream.CheckQueuePrefix,
+		set:          func(c *Config, v string) { c.StreamSQSQueuePrefix = v },
+	},
+	{
+		key:          "stream_pubsub_topic",
+		doc:          "Full name of the Google Cloud Pub/Sub topic of `stream = pubsub`, `projects/{project}/topics/{topic}`, which the deployment template creates. The subscriptions are created in its project.",
+		requiredWhen: "when `stream = pubsub`",
+		check:        pubsubstream.CheckTopic,
+		set:          func(c *Config, v string) { c.StreamPubSubTopic = v },
+	},
+	{
+		key:          "stream_pubsub_subscription_prefix",
+		doc:          "Start of the IDs of the per-process subscriptions of `stream = pubsub`, `{prefix}-{process id}-{n}`: a letter, then letters, digits, and `-_.~+%`, not starting with `goog`. The `stream.sweep` job deletes the subscriptions under it that ended processes left behind, so it belongs to one instance.",
+		requiredWhen: "when `stream = pubsub`",
+		check:        pubsubstream.CheckSubscriptionPrefix,
+		set:          func(c *Config, v string) { c.StreamPubSubSubscriptionPrefix = v },
 	},
 	{
 		key: "key_manager",
@@ -430,6 +480,25 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	}
 	if vals["kv"] == "valkey" && !present["valkey_url"] {
 		issues = append(issues, Issue{Key: "valkey_url", Missing: true, Message: "required when kv is valkey"})
+	} else if vals["stream"] == "valkey" && !present["valkey_url"] {
+		issues = append(issues, Issue{Key: "valkey_url", Missing: true, Message: "required when stream is valkey"})
+	}
+	if db, ok := vals["db"]; ok && vals["stream"] == "postgres" && db != "postgres" {
+		issues = append(issues, Issue{Key: "stream", Message: "postgres requires db = postgres, not " + db})
+	}
+	if vals["stream"] == "sns" {
+		for _, k := range []string{"stream_sns_topic_arn", "stream_sqs_queue_prefix"} {
+			if !present[k] {
+				issues = append(issues, Issue{Key: k, Missing: true, Message: "required when stream is sns"})
+			}
+		}
+	}
+	if vals["stream"] == "pubsub" {
+		for _, k := range []string{"stream_pubsub_topic", "stream_pubsub_subscription_prefix"} {
+			if !present[k] {
+				issues = append(issues, Issue{Key: k, Missing: true, Message: "required when stream is pubsub"})
+			}
+		}
 	}
 	if vals["valkey_tls_ca_file"] != "" && vals["valkey_url"] != "" && !strings.HasPrefix(vals["valkey_url"], "valkeys://") && !strings.HasPrefix(vals["valkey_url"], "rediss://") {
 		issues = append(issues, Issue{Key: "valkey_tls_ca_file", Message: "needs a valkeys:// or rediss:// valkey_url"})

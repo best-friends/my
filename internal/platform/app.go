@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/captcha/siteverify"
 	"github.com/best-friends/my/internal/adapter/db/postgres"
@@ -133,10 +135,10 @@ type App struct {
 	// Notifications lists a local account's notifications, which projectors create from the
 	// graph and content events, with its read marker and dismissals (FR-205).
 	Notifications *notification.Service
-	// Streams is the in-process broker of the streaming endpoint (FR-207): the timeline and
-	// notification commit hooks publish to it, and each open stream subscribes. It reaches only
-	// the streams of this process (docs/architecture/overview.md §4.4).
-	Streams *stream.Hub
+	// Streams is the broker of the streaming endpoint that cfg.Stream selects: a stream.Hub,
+	// which reaches only the streams of this process, or a stream.Relay on a Bus across
+	// processes (ADR-0050).
+	Streams Streams
 
 	// Blobs stores media files (ADR-0005); MediaProcessor checks and re-encodes them.
 	Blobs          blob.Store
@@ -182,7 +184,11 @@ type App struct {
 	// valkey is the client of the Valkey server that the adapters configured with valkey_url
 	// share, nil until valkeyClient connects it.
 	valkey valkey.Client
-	routes []route
+	// postgresPool is the connection pool of db = postgres, nil with another db.
+	postgresPool *pgxpool.Pool
+	// closeStreams closes Streams within its context, once.
+	closeStreams func(ctx context.Context) error
+	routes       []route
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
 	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
@@ -211,6 +217,9 @@ type AppOptions struct {
 	// HTTPClient sends every outbound request; nil builds the SSRF-guarded client from the
 	// configuration. Tests only, to reach other test servers by their public hosts.
 	HTTPClient kernel.HTTPClient
+	// StreamBus, when set, carries the signals of the streams between processes instead of the
+	// broker that cfg.Stream selects. Tests only, to share an in-memory broker between Apps.
+	StreamBus stream.Bus
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -286,6 +295,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			return nil, err
 		}
 		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
+		a.postgresPool = d.Pool()
 		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
 		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
 		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
@@ -461,7 +471,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
 		feeds: feeds, notifications: notifs, moderation: mods, identities: identities,
 	})
-	a.Streams = stream.NewHub(stream.HubOptions{})
+	if err := a.setUpStreams(ctx, cfg, opts.StreamBus); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	timeline.RegisterCommitHooks(a.Projectors, a.Streams)
 	notification.RegisterCommitHooks(a.Projectors, a.Streams)
 	fedOutbox := a.setUpFederation(cfg, feds)
@@ -884,8 +897,10 @@ func (a *App) Handle(pattern string, h http.Handler) {
 
 // Close releases the database connections.
 func (a *App) Close() error {
-	if a.Streams != nil {
-		a.Streams.Close()
+	if a.closeStreams != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), streamsCloseTimeout)
+		a.shutDownStreams(ctx)
+		cancel()
 	}
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()

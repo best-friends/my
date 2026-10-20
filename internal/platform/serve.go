@@ -35,7 +35,8 @@ type ServeOptions struct {
 // When ctx ends, Serve stops accepting connections and claiming jobs, and waits up to
 // ShutdownTimeout for the requests and the job in progress to finish. After the timeout it
 // cancels their contexts, closes the remaining connections, and waits for the job runner to
-// return. Serve returns nil after a graceful shutdown and an error when it cannot listen,
+// return. The open streams end when the shutdown starts; the broker of the streams closes then
+// in the web and all roles, and after the jobs in the worker role. Serve returns nil after a graceful shutdown and an error when it cannot listen,
 // the server fails, or the timeout was hit.
 func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 	if opts.ShutdownTimeout <= 0 {
@@ -63,9 +64,14 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 		BaseContext:       func(net.Listener) context.Context { return hardCtx },
 	}
 	// Open streams never finish on their own: end them when the shutdown starts, so that it
-	// waits only for the other requests.
-	if a.Streams != nil {
-		srv.RegisterOnShutdown(a.Streams.Close)
+	// waits only for the other requests. A worker has no streams and keeps sending the signals
+	// of its jobs to the other processes until the jobs stop.
+	if a.Config.Role != config.RoleWorker {
+		srv.RegisterOnShutdown(func() {
+			closeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), opts.ShutdownTimeout)
+			defer cancel()
+			a.shutDownStreams(closeCtx)
+		})
 	}
 	if a.Config.Role != config.RoleWorker {
 		// The authorization server also registers the web client on its first request, so a
@@ -111,6 +117,7 @@ func Serve(ctx context.Context, a *App, opts ServeOptions) error {
 	hardStop()
 	_ = srv.Close()
 	<-jobsDone
+	a.shutDownStreams(graceCtx)
 	if err == nil {
 		a.Logger.InfoContext(ctx, "stopped")
 	}
