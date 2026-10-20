@@ -45,10 +45,10 @@ func retentionEmojis(t *testing.T, e *retentionEnv) {
 	local := e.user(t, "local")
 	e.follow(t, local, aliceID)
 
-	// A note that the retention purge removes, with an emoji that nothing else uses and one
-	// whose image is also an attachment of a note that stays.
+	// A note that the retention purge removes, with an emoji that nothing else uses, one whose
+	// image is also an attachment of a note that stays, and one that the administrators disabled.
 	e.note(t, alice, alice+"/notes/old", 100*24*time.Hour, map[string]any{
-		"content": "<p>:gone: :shared:</p>", "tag": []any{emojiTag("gone"), emojiTag("shared")},
+		"content": "<p>:gone: :shared: :muted:</p>", "tag": []any{emojiTag("gone"), emojiTag("shared"), emojiTag("muted")},
 	})
 	e.note(t, alice, alice+"/notes/attached", time.Hour, map[string]any{
 		"attachment": []any{map[string]any{"type": "Document", "mediaType": "image/png", "url": "https://remote.example/files/shared.png"}},
@@ -58,10 +58,13 @@ func retentionEmojis(t *testing.T, e *retentionEnv) {
 		"content": "<p>:kept: :disabled:</p>", "tag": []any{emojiTag("kept"), emojiTag("disabled")},
 	})
 	disabled, _ := e.emojiOf(t, "disabled")
-	if err := e.rh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		return e.rh.Emojis.SetCustomEmojiSettings(ctx, tx, content.CustomEmojiSettings{EmojiID: disabled, VisibleInPicker: true})
-	}); err != nil {
-		t.Fatal(err)
+	muted, _ := e.emojiOf(t, "muted")
+	for _, id := range []string{disabled, muted} {
+		if err := e.rh.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+			return e.rh.Emojis.SetCustomEmojiSettings(ctx, tx, content.CustomEmojiSettings{EmojiID: id, VisibleInPicker: true})
+		}); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	// A remote profile with an emoji.
@@ -128,7 +131,7 @@ func retentionEmojis(t *testing.T, e *retentionEnv) {
 	}
 
 	emojis := map[string][2]string{}
-	for _, shortcode := range []string{"gone", "shared", "kept", "disabled", "profile", "reacted", "unreacted"} {
+	for _, shortcode := range []string{"gone", "shared", "kept", "disabled", "muted", "profile", "reacted", "unreacted"} {
 		id, media := e.emojiOf(t, shortcode)
 		emojis[shortcode] = [2]string{id, media}
 	}
@@ -177,8 +180,10 @@ func retentionEmojis(t *testing.T, e *retentionEnv) {
 			}
 		}
 	}
-	if rec, err := e.rh.Emojis.FindCustomEmojiRecord(ctx, disabled); err != nil || rec.Settings.Enabled {
-		t.Errorf("the disabled emoji = %+v, %v; want it kept disabled", rec.Settings, err)
+	for _, id := range []string{disabled, muted} {
+		if rec, err := e.rh.Emojis.FindCustomEmojiRecord(ctx, id); err != nil || rec.Settings.Enabled {
+			t.Errorf("the disabled emoji %s = %+v, %v; want it kept disabled", id, rec.Settings, err)
+		}
 	}
 	if _, _, err := e.content.CustomEmoji(ctx, localEmoji.ID); err != nil {
 		t.Errorf("the local emoji = %v; want it kept", err)
@@ -190,5 +195,13 @@ func retentionEmojis(t *testing.T, e *retentionEnv) {
 	e.note(t, alice, alice+"/notes/again", time.Hour, map[string]any{"content": "<p>:gone:</p>", "tag": []any{emojiTag("gone")}})
 	if id, _ := e.emojiOf(t, "gone"); id == emojis["gone"][0] {
 		t.Errorf("the emoji came back with its purged ID %s", id)
+	}
+	// The disabled emoji that nothing refers to any more stays disabled when it arrives again.
+	e.note(t, alice, alice+"/notes/muted-again", time.Hour, map[string]any{"content": "<p>:muted:</p>", "tag": []any{emojiTag("muted")}})
+	if id, _ := e.emojiOf(t, "muted"); id != muted {
+		t.Errorf("the disabled emoji arrived again as %s, want %s", id, muted)
+	}
+	if rec, err := e.rh.Emojis.FindCustomEmojiRecord(ctx, muted); err != nil || rec.Settings.Enabled {
+		t.Errorf("the disabled emoji after it arrived again = %+v, %v; want it disabled", rec.Settings, err)
 	}
 }

@@ -31,15 +31,17 @@ const (
 // testkit.RetentionContract.
 type EmojiPurgeRepository interface {
 	// ListUnreferencedRemoteEmojis returns the IDs of up to limit remote custom emoji, in ID
-	// order after the cursor after, that no status revision and no reaction refers to.
+	// order after the cursor after, that no status revision and no reaction refers to and that
+	// are not disabled.
 	ListUnreferencedRemoteEmojis(ctx context.Context, after string, limit int) ([]string, error)
 	// CustomEmojiImageMediaIDs returns the media files of every image of an emoji, current or
 	// not.
 	CustomEmojiImageMediaIDs(ctx context.Context, emojiID string) ([]string, error)
 	// PurgeRemoteEmoji deletes inside tx a remote emoji that still no status revision and no
-	// reaction refers to, with its images, settings, and aliases, and then of mediaIDs the remote
-	// media files that no other emoji image and no attachment uses. It reports whether it
-	// deleted the emoji: false when it is gone or referred to meanwhile.
+	// reaction refers to and that is still not disabled, with its images, settings, and aliases,
+	// and then of mediaIDs the remote media files that no other emoji image and no attachment
+	// uses. It reports whether it deleted the emoji: false when it is gone, referred to, or
+	// disabled meanwhile.
 	PurgeRemoteEmoji(ctx context.Context, tx uow.Tx, emojiID string, mediaIDs []string) (bool, error)
 }
 
@@ -67,8 +69,9 @@ type EmojiPurgeDeps struct {
 
 // EmojiPurge deletes the remote custom emoji that no status revision, profile revision, or
 // reaction refers to any more (ADR-0051 §1), so that they do not outlive the remote statuses and
-// profiles that the retention purges remove (ADR-0034, FR-803). Whether an emoji is disabled does
-// not matter: a referenced one stays, and an unreferenced one goes. Each emoji goes in a short
+// profiles that the retention purges remove (ADR-0034, FR-803). A disabled emoji stays, referenced
+// or not, with its images: its row and settings are what keep its (shortcode, domain) disabled
+// when it arrives again, which recording it anew would turn back to enabled. Each emoji goes in a short
 // transaction of its own with its images, settings, and aliases, and with the remote media files
 // of its images that nothing else uses; the copies of the remote media cache expire on their own.
 //

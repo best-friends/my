@@ -54,7 +54,8 @@ type RetentionFactory func(t *testing.T, opts uow.Options) RetentionHarness
 // bounded batch; a purged status can be fetched and deleted again; the inbox and delivery records
 // and the tombstones of unknown objects and Follows go after their retention; unrelated remote accounts keep only their current profile;
 // and the remote custom emoji that no status, profile, or reaction refers to any more go with the
-// remote media of their images, while the referenced ones stay, disabled or not.
+// remote media of their images, while the referenced and the disabled ones stay, and a disabled
+// one stays disabled when it arrives again.
 func RetentionContract(t *testing.T, newHarness RetentionFactory) {
 	t.Helper()
 	cases := []struct {
