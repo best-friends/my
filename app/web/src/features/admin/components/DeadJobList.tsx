@@ -7,9 +7,9 @@ import { useRef } from "react";
 import { useIntl } from "react-intl";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
 import { useT } from "../../../lib/i18n";
-import type { DeadJob } from "../api/admin";
+import type { DeadJob } from "../api/deadJobs";
 import { type RetryDeadJob, useDeadJobs, useRetryDeadJob } from "../hooks/useDeadJobs";
-import { DateTime, RecordList, RequirePermission } from "./parts";
+import { DateTime, RecordList, RequirePermission } from "../../moderation";
 
 export function DeadJobList() {
   return (

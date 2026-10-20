@@ -138,6 +138,8 @@ async function serveApi(page: Page, { fetching = false } = {}): Promise<{ status
       ]);
     }
     if (path === `/accounts/${carol.id}/statuses`) {
+      // Carol pinned nothing that this server knows of.
+      if (url.searchParams.get("pinned") === "true") return json(route, { items: [] });
       requests.statuses += 1;
       if (!fetching) return json(route, { items: [post] });
       return requests.statuses === 1 ? json(route, { items: [post], remote_fetch_started: true }) : json(route, { items: [post, fetchedPost] });

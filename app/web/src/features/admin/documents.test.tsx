@@ -6,10 +6,10 @@ import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
 import { instanceFixture, type Schemas } from "../../test/fixtures";
-import { apiBase, problem, signedInHandler } from "../../test/msw/http";
+import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { instanceTextFixture, operatorHandler } from "./test/handlers";
+import { instanceTextFixture } from "./test/handlers";
 
 beforeEach(() => {
   server.use(signedInHandler, operatorHandler(["manage_settings"]));
