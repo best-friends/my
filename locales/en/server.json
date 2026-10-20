@@ -531,6 +531,14 @@
     "defaultMessage": "The request conflicts with the current state of the resource.",
     "description": "API error title for HTTP 409 when no more specific message applies."
   },
+  "errors.export.in_progress": {
+    "defaultMessage": "An archive of your data is already being prepared. Wait until it is ready.",
+    "description": "API error title for HTTP 409 when the user asks for an archive of their data while another one is still being built."
+  },
+  "errors.export.not_ready": {
+    "defaultMessage": "This archive cannot be downloaded.",
+    "description": "API error title for HTTP 409 when the user downloads an archive of their data that is still being built, failed, or has expired."
+  },
   "errors.forbidden": {
     "defaultMessage": "You are not allowed to do this.",
     "description": "API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post."
@@ -750,6 +758,10 @@
   "errors.unusable_image": {
     "defaultMessage": "{name} must be an image that you uploaded and that has finished processing.",
     "description": "Detail of an API error (HTTP 422) when a profile image refers to a media file that is not the user's own processed upload. {name} is the property name, e.g. avatar_media_id (not translated)."
+  },
+  "errors.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "API error title for HTTP 422 when the password the user typed to confirm an operation on their own account (such as deleting it) is not their current password."
   },
   "health.unavailable": {
     "defaultMessage": "The server is not ready to accept requests.",

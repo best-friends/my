@@ -37,6 +37,7 @@ import { Route as ModerationRegistrationsRouteImport } from './routes/moderation
 import { Route as ModerationReportsRouteImport } from './routes/moderation.reports'
 import { Route as ModerationSignupBlocksRouteImport } from './routes/moderation.signup-blocks'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsAccountRouteImport } from './routes/settings.account'
 import { Route as SettingsAccountStatusRouteImport } from './routes/settings.account-status'
 import { Route as SettingsBlocksRouteImport } from './routes/settings.blocks'
 import { Route as SettingsFollowRequestsRouteImport } from './routes/settings.follow-requests'
@@ -193,6 +194,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsAccountRoute = SettingsAccountRouteImport.update({
+  id: '/settings/account',
+  path: '/settings/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsAccountStatusRoute = SettingsAccountStatusRouteImport.update({
   id: '/settings/account-status',
   path: '/settings/account-status',
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -330,6 +337,7 @@ export interface FileRoutesByTo {
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/moderation/registrations': typeof ModerationRegistrationsRoute
   '/moderation/reports': typeof ModerationReportsRoute
   '/moderation/signup-blocks': typeof ModerationSignupBlocksRoute
+  '/settings/account': typeof SettingsAccountRoute
   '/settings/account-status': typeof SettingsAccountStatusRoute
   '/settings/blocks': typeof SettingsBlocksRoute
   '/settings/follow-requests': typeof SettingsFollowRequestsRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -505,6 +516,7 @@ export interface FileRouteTypes {
     | '/moderation/registrations'
     | '/moderation/reports'
     | '/moderation/signup-blocks'
+    | '/settings/account'
     | '/settings/account-status'
     | '/settings/blocks'
     | '/settings/follow-requests'
@@ -549,6 +561,7 @@ export interface RootRouteChildren {
   ModerationRegistrationsRoute: typeof ModerationRegistrationsRoute
   ModerationReportsRoute: typeof ModerationReportsRoute
   ModerationSignupBlocksRoute: typeof ModerationSignupBlocksRoute
+  SettingsAccountRoute: typeof SettingsAccountRoute
   SettingsAccountStatusRoute: typeof SettingsAccountStatusRoute
   SettingsBlocksRoute: typeof SettingsBlocksRoute
   SettingsFollowRequestsRoute: typeof SettingsFollowRequestsRoute
@@ -765,6 +778,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/account': {
+      id: '/settings/account'
+      path: '/settings/account'
+      fullPath: '/settings/account'
+      preLoaderRoute: typeof SettingsAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/account-status': {
       id: '/settings/account-status'
       path: '/settings/account-status'
@@ -885,6 +905,7 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationRegistrationsRoute: ModerationRegistrationsRoute,
   ModerationReportsRoute: ModerationReportsRoute,
   ModerationSignupBlocksRoute: ModerationSignupBlocksRoute,
+  SettingsAccountRoute: SettingsAccountRoute,
   SettingsAccountStatusRoute: SettingsAccountStatusRoute,
   SettingsBlocksRoute: SettingsBlocksRoute,
   SettingsFollowRequestsRoute: SettingsFollowRequestsRoute,

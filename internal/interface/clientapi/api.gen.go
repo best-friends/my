@@ -634,6 +634,27 @@ func (e AdminSignupBlockState) Valid() bool {
 	}
 }
 
+// Defines values for DataExportState.
+const (
+	DataExportStateFailed  DataExportState = "failed"
+	DataExportStatePending DataExportState = "pending"
+	DataExportStateReady   DataExportState = "ready"
+)
+
+// Valid indicates whether the value is a known member of the DataExportState enum.
+func (e DataExportState) Valid() bool {
+	switch e {
+	case DataExportStateFailed:
+		return true
+	case DataExportStatePending:
+		return true
+	case DataExportStateReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -2298,10 +2319,49 @@ type CustomEmoji struct {
 	Url string `json:"url"`
 }
 
+// DataExport A request for an archive of the user's data.
+type DataExport struct {
+	// CompletedAt When the build ended; omitted while `pending`.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// ExpiresAt When the export and its archive are removed; omitted while `pending`.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// FileSize The size of the archive in bytes; only for `ready`.
+	FileSize *int64 `json:"file_size,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// RequestedAt When the user asked for the export.
+	RequestedAt time.Time `json:"requested_at"`
+
+	// State `pending` while the archive is being built, `ready` while it can be downloaded,
+	// `failed` when it could not be built (request another one).
+	State DataExportState `json:"state"`
+}
+
+// DataExportState `pending` while the archive is being built, `ready` while it can be downloaded,
+// `failed` when it could not be built (request another one).
+type DataExportState string
+
+// DataExportList The user's latest data exports, newest first.
+type DataExportList struct {
+	Items []DataExport `json:"items"`
+}
+
 // DecideAppealRequest The moderators' explanation of a decision on an appeal.
 type DecideAppealRequest struct {
 	// PublicReason Shown to the user who appealed, as plain text.
 	PublicReason *string `json:"public_reason,omitempty"`
+}
+
+// DeleteOwnAccountRequest The confirmation of the deletion of the user's own account.
+type DeleteOwnAccountRequest struct {
+	// Password The user's current password.
+	Password string `json:"password"`
 }
 
 // EditStatusRequest The new content of a status.
@@ -2978,6 +3038,12 @@ type Preferences struct {
 //   - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
 //     account is deleted, so it can no longer be appealed or overturned.
 //   - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+//   - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+//     not the user's current password.
+//   - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+//     built. Wait for it to end.
+//   - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+//     it is being built, failed, or expired.
 //   - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
 //     already used, or is not a code.
 //   - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -4052,6 +4118,9 @@ type GetHashtagTimelineParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// DeleteOwnAccountJSONRequestBody defines body for DeleteOwnAccount for application/json ContentType.
+type DeleteOwnAccountJSONRequestBody = DeleteOwnAccountRequest
+
 // UpdateAccountCredentialsJSONRequestBody defines body for UpdateAccountCredentials for application/json ContentType.
 type UpdateAccountCredentialsJSONRequestBody = UpdateCredentialsRequest
 
@@ -4144,6 +4213,9 @@ type DisableTotpJSONRequestBody = TwoFactorCodeRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// DeleteOwnAccount Delete the authenticated user's account
+	// (POST /accounts/delete)
+	DeleteOwnAccount(w http.ResponseWriter, r *http.Request)
 	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(w http.ResponseWriter, r *http.Request, params LookupAccountParams)
@@ -4348,6 +4420,15 @@ type ServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(w http.ResponseWriter, r *http.Request, params ListBookmarksParams)
+	// ListDataExports List the authenticated user's data exports
+	// (GET /exports)
+	ListDataExports(w http.ResponseWriter, r *http.Request)
+	// RequestDataExport Request an archive of the authenticated user's data
+	// (POST /exports)
+	RequestDataExport(w http.ResponseWriter, r *http.Request)
+	// DownloadDataExport Download the archive of a data export
+	// (GET /exports/{id}/archive)
+	DownloadDataExport(w http.ResponseWriter, r *http.Request, id Id)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(w http.ResponseWriter, r *http.Request, params ListFollowRequestsParams)
@@ -4499,6 +4580,20 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// DeleteOwnAccount operation middleware
+func (siw *ServerInterfaceWrapper) DeleteOwnAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteOwnAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // LookupAccount operation middleware
 func (siw *ServerInterfaceWrapper) LookupAccount(w http.ResponseWriter, r *http.Request) {
@@ -6872,6 +6967,60 @@ func (siw *ServerInterfaceWrapper) ListBookmarks(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// ListDataExports operation middleware
+func (siw *ServerInterfaceWrapper) ListDataExports(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDataExports(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestDataExport operation middleware
+func (siw *ServerInterfaceWrapper) RequestDataExport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestDataExport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadDataExport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadDataExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadDataExport(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListFollowRequests operation middleware
 func (siw *ServerInterfaceWrapper) ListFollowRequests(w http.ResponseWriter, r *http.Request) {
 
@@ -8332,6 +8481,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports", wrapper.ListDataExports)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/exports", wrapper.RequestDataExport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/exports/{id}/archive", wrapper.DownloadDataExport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/two_factor", wrapper.GetTwoFactor)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp/setup", wrapper.SetUpTotp)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/two_factor/totp", wrapper.EnableTotp)
@@ -8590,6 +8743,52 @@ type StatusPageJSONResponse struct {
 	Body StatusPage
 
 	Headers StatusPageResponseHeaders
+}
+
+type DeleteOwnAccountRequestObject struct {
+	Body *DeleteOwnAccountJSONRequestBody
+}
+
+type DeleteOwnAccountResponseObject interface {
+	VisitDeleteOwnAccountResponse(w http.ResponseWriter) error
+}
+
+type DeleteOwnAccount204Response struct {
+}
+
+func (response DeleteOwnAccount204Response) VisitDeleteOwnAccountResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DeleteOwnAccountdefaultApplicationProblemPlusJSONResponse) VisitDeleteOwnAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type LookupAccountRequestObject struct {
@@ -12489,6 +12688,198 @@ func (response ListBookmarksdefaultApplicationProblemPlusJSONResponse) VisitList
 	return err
 }
 
+type ListDataExportsRequestObject struct {
+}
+
+type ListDataExportsResponseObject interface {
+	VisitListDataExportsResponse(w http.ResponseWriter) error
+}
+
+type ListDataExports200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListDataExports200JSONResponse struct {
+	Body    DataExportList
+	Headers ListDataExports200ResponseHeaders
+}
+
+func (response ListDataExports200JSONResponse) VisitListDataExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDataExportsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListDataExportsdefaultApplicationProblemPlusJSONResponse) VisitListDataExportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestDataExportRequestObject struct {
+}
+
+type RequestDataExportResponseObject interface {
+	VisitRequestDataExportResponse(w http.ResponseWriter) error
+}
+
+type RequestDataExport202ResponseHeaders struct {
+	CacheControl *string
+}
+
+type RequestDataExport202JSONResponse struct {
+	Body    DataExport
+	Headers RequestDataExport202ResponseHeaders
+}
+
+func (response RequestDataExport202JSONResponse) VisitRequestDataExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestDataExportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RequestDataExportdefaultApplicationProblemPlusJSONResponse) VisitRequestDataExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadDataExportRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type DownloadDataExportResponseObject interface {
+	VisitDownloadDataExportResponse(w http.ResponseWriter) error
+}
+
+type DownloadDataExport200ResponseHeaders struct {
+	CacheControl       *string
+	ContentDisposition *string
+}
+
+type DownloadDataExport200ApplicationzipResponse struct {
+	Body          io.Reader
+	Headers       DownloadDataExport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DownloadDataExport200ApplicationzipResponse) VisitDownloadDataExportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/zip")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadDataExportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response DownloadDataExportdefaultApplicationProblemPlusJSONResponse) VisitDownloadDataExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListFollowRequestsRequestObject struct {
 	Params ListFollowRequestsParams
 }
@@ -15251,6 +15642,9 @@ func (response SetUpTotpdefaultApplicationProblemPlusJSONResponse) VisitSetUpTot
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// DeleteOwnAccount Delete the authenticated user's account
+	// (POST /accounts/delete)
+	DeleteOwnAccount(ctx context.Context, request DeleteOwnAccountRequestObject) (DeleteOwnAccountResponseObject, error)
 	// LookupAccount Look up or resolve an account by its handle or URL
 	// (GET /accounts/lookup)
 	LookupAccount(ctx context.Context, request LookupAccountRequestObject) (LookupAccountResponseObject, error)
@@ -15455,6 +15849,15 @@ type StrictServerInterface interface {
 	// ListBookmarks List the posts the authenticated user bookmarked, newest bookmark first
 	// (GET /bookmarks)
 	ListBookmarks(ctx context.Context, request ListBookmarksRequestObject) (ListBookmarksResponseObject, error)
+	// ListDataExports List the authenticated user's data exports
+	// (GET /exports)
+	ListDataExports(ctx context.Context, request ListDataExportsRequestObject) (ListDataExportsResponseObject, error)
+	// RequestDataExport Request an archive of the authenticated user's data
+	// (POST /exports)
+	RequestDataExport(ctx context.Context, request RequestDataExportRequestObject) (RequestDataExportResponseObject, error)
+	// DownloadDataExport Download the archive of a data export
+	// (GET /exports/{id}/archive)
+	DownloadDataExport(ctx context.Context, request DownloadDataExportRequestObject) (DownloadDataExportResponseObject, error)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(ctx context.Context, request ListFollowRequestsRequestObject) (ListFollowRequestsResponseObject, error)
@@ -15635,6 +16038,37 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// DeleteOwnAccount operation middleware
+func (sh *strictHandler) DeleteOwnAccount(w http.ResponseWriter, r *http.Request) {
+	var request DeleteOwnAccountRequestObject
+
+	var body DeleteOwnAccountJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteOwnAccount(ctx, request.(DeleteOwnAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteOwnAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteOwnAccountResponseObject); ok {
+		if err := validResponse.VisitDeleteOwnAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // LookupAccount operation middleware
@@ -17535,6 +17969,80 @@ func (sh *strictHandler) ListBookmarks(w http.ResponseWriter, r *http.Request, p
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListBookmarksResponseObject); ok {
 		if err := validResponse.VisitListBookmarksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDataExports operation middleware
+func (sh *strictHandler) ListDataExports(w http.ResponseWriter, r *http.Request) {
+	var request ListDataExportsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDataExports(ctx, request.(ListDataExportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDataExports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDataExportsResponseObject); ok {
+		if err := validResponse.VisitListDataExportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestDataExport operation middleware
+func (sh *strictHandler) RequestDataExport(w http.ResponseWriter, r *http.Request) {
+	var request RequestDataExportRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestDataExport(ctx, request.(RequestDataExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestDataExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestDataExportResponseObject); ok {
+		if err := validResponse.VisitRequestDataExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadDataExport operation middleware
+func (sh *strictHandler) DownloadDataExport(w http.ResponseWriter, r *http.Request, id Id) {
+	var request DownloadDataExportRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadDataExport(ctx, request.(DownloadDataExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadDataExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadDataExportResponseObject); ok {
+		if err := validResponse.VisitDownloadDataExportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

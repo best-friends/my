@@ -615,6 +615,7 @@ describe("signed out", () => {
       "/settings/blocks",
       "/settings/mutes",
       "/settings/account-status",
+      "/settings/account",
     ]);
     expect(within(menu).getByRole("link", { name: "Blocked accounts" })).toHaveAccessibleDescription("Accounts that cannot follow you or see your posts");
   });

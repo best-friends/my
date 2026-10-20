@@ -4043,6 +4043,110 @@
     "defaultMessage": "You are not signed in.",
     "description": "Text in the account section of the settings page when nobody is signed in."
   },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button in the dialog that closes it without deleting the account."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "Delete account",
+    "description": "Button in the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone.",
+    "description": "Description of the dialog that deletes the user's account."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "Delete your account?",
+    "description": "Title of the dialog that asks the user to confirm deleting their account."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "Your account, posts and profile disappear at once, and other servers are asked to delete their copies. You cannot undo this, and your username cannot be used again. Download your data first if you want to keep it.",
+    "description": "Explains what deleting the account does, above the button that starts it."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "Delete account…",
+    "description": "Button that opens the dialog that deletes the user's account."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "Password",
+    "description": "Label of the field in which the user types their password to confirm deleting the account."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "Enter your password.",
+    "description": "Error under the password field when the user confirms the deletion without typing the password."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "Delete your account",
+    "description": "Heading of the section of the account page about deleting the account."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "The password is wrong.",
+    "description": "Error in the deletion dialog when the password the user typed is not their current password."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days.",
+    "description": "Explains the archive of the user's data, above the button that asks for one."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "Download",
+    "description": "Button that downloads an archive of the user's data."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "Download the archive of {date}",
+    "description": "Accessible name of the button that downloads one archive. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "You have no archives",
+    "description": "Shown when the user has no archive of their data."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "Available until",
+    "description": "Label of the date until which an archive of the user's data can be downloaded."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "Archive of {date}",
+    "description": "Heading of one archive of the user's data. {date} is when the user asked for it, a formatted date and time."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "Prepare an archive",
+    "description": "Button that asks the server to prepare an archive of the user's data."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "The archive is being prepared. It appears below when it is ready.",
+    "description": "Announced after the user asked for an archive of their data."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "Size",
+    "description": "Label of the file size of an archive of the user's data."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "State",
+    "description": "Label of the state of an archive of the user's data (being prepared, ready, failed)."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "Failed. Prepare another one.",
+    "description": "State of an archive of the user's data that the server could not prepare; the user can ask for another."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "Being prepared",
+    "description": "State of an archive of the user's data that the server is still preparing."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "Ready",
+    "description": "State of an archive of the user's data that can be downloaded."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "Download your data",
+    "description": "Heading of the section of the account page about archives of the user's data."
+  },
+  "settings.account.summary": {
+    "defaultMessage": "Download your data, or delete your account",
+    "description": "Description of the account page in the list of settings pages."
+  },
+  "settings.account.title": {
+    "defaultMessage": "Your account",
+    "description": "Heading and document title of the settings page about the user's own account: the archives of their data and deleting the account."
+  },
   "settings.back": {
     "defaultMessage": "Back to settings",
     "description": "Link under the heading of a settings page that opens the list of settings pages."

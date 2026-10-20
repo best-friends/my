@@ -114,6 +114,8 @@ type App struct {
 	Identity *identity.Service
 	// AccountAdmin is the moderators' account management (FR-714).
 	AccountAdmin *identity.AccountAdmin
+	// Exports builds the archives of the users' data (FR-008).
+	Exports *identity.Exports
 	// Instance holds the instance settings and texts, which live in the database; Config holds
 	// the deployment configuration. They never share a key (docs/reference/configuration.md).
 	Instance *instance.Service
@@ -527,6 +529,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
+	a.setUpExports(identities)
 	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -602,6 +605,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Reports:      a.LocalReports,
 		ReportCounts: a.Moderation, RegistrationCounts: a.Identity, Registrations: a.Identity,
 		OwnAppeals: a.Moderation, AppealModeration: a.Moderation, SignupBlocks: a.Moderation,
+		OwnAccount: a.Identity, Exports: a.Exports,
 		// The instance texts and the public pages of the documents among them (#489).
 		InstanceTexts: a.Instance, TermsPath: authpages.PathTerms, PrivacyPolicyPath: authpages.PathPrivacyPolicy,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,

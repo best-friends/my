@@ -79,6 +79,20 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
         return json(route, { mutes: [{ account: bob, notifications: true }] });
       case "GET /follow_requests":
         return json(route, { accounts: [bob] });
+      case "GET /exports":
+        return json(route, {
+          items: [
+            { id: "0192f0c4-7a8e-7000-8000-0000000008e2", state: "pending", requested_at: "2026-10-17T10:00:00Z" },
+            {
+              id: "0192f0c4-7a8e-7000-8000-0000000008e1",
+              state: "ready",
+              requested_at: "2026-10-16T09:30:00Z",
+              completed_at: "2026-10-16T09:35:00Z",
+              expires_at: "2026-10-23T09:35:00Z",
+              file_size: 2_500_000,
+            },
+          ],
+        });
       case "GET /two_factor":
         return json(route, { enabled: false });
       case "POST /two_factor/totp/setup":
@@ -106,6 +120,7 @@ const pages = [
   "/settings/blocks",
   "/settings/mutes",
   "/settings/two-factor",
+  "/settings/account",
 ] as const;
 
 /** A TOTP setup whose QR code is the three finder patterns of a 21-module code with its quiet zone. */

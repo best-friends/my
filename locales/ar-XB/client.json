@@ -4043,6 +4043,110 @@
     "defaultMessage": "‮⅄on ɐɹǝ uoʇ sıƃuǝp ıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.account.delete.cancel": {
+    "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.confirm": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.confirm.description": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʎonɹ dɐssʍoɹp ʇo ɔouɟıɹɯ. ⅄onɹ ɐɔɔonuʇ ıs pǝʅǝʇǝp ɐʇ ouɔǝ, ɐup ʎon ɐɹǝ sıƃuǝp onʇ. ⊥ɥıs ɔɐuuoʇ qǝ nupouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.confirm.title": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ ʎonɹ ɐɔɔonuʇ?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.description": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ, dosʇs ɐup dɹoɟıʅǝ pısɐddǝɐɹ ɐʇ ouɔǝ, ɐup oʇɥǝɹ sǝɹʌǝɹs ɐɹǝ ɐsʞǝp ʇo pǝʅǝʇǝ ʇɥǝıɹ ɔodıǝs. ⅄on ɔɐuuoʇ nupo ʇɥıs, ɐup ʎonɹ nsǝɹuɐɯǝ ɔɐuuoʇ qǝ nsǝp ɐƃɐıu. ᗡoʍuʅoɐp ʎonɹ pɐʇɐ ɟıɹsʇ ıɟ ʎon ʍɐuʇ ʇo ʞǝǝd ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.open": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ ɐɔɔonuʇ…‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.password": {
+    "defaultMessage": "‮Ԁɐssʍoɹp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.password.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʎonɹ dɐssʍoɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.title": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝ ʎonɹ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.delete.wrong_password": {
+    "defaultMessage": "‮⊥ɥǝ dɐssʍoɹp ıs ʍɹouƃ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.description": {
+    "defaultMessage": "‮⅁ǝʇ ɐ ZIԀ ɐɹɔɥıʌǝ oɟ ʎonɹ dosʇs ıu ∀ɔʇıʌıʇʎSʇɹǝɐɯs ɟoɹɯɐʇ, ʎonɹ dɹoɟıʅǝ, ɐup ʇɥǝ ɯopǝɹɐʇıou ɐɔʇıous ou ʎonɹ ɐɔɔonuʇ. Iʇ ʇɐʞǝs ɐ ʍɥıʅǝ ʇo dɹǝdɐɹǝ, ɐup ʎon ɔɐu poʍuʅoɐp ıʇ ɟoɹ 7 pɐʎs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.download": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.download_of": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp ʇɥǝ ɐɹɔɥıʌǝ oɟ {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.empty": {
+    "defaultMessage": "‮⅄on ɥɐʌǝ uo ɐɹɔɥıʌǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.expires_at": {
+    "defaultMessage": "‮∀ʌɐıʅɐqʅǝ nuʇıʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.item": {
+    "defaultMessage": "‮∀ɹɔɥıʌǝ oɟ {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.request": {
+    "defaultMessage": "‮Ԁɹǝdɐɹǝ ɐu ɐɹɔɥıʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.requested": {
+    "defaultMessage": "‮⊥ɥǝ ɐɹɔɥıʌǝ ıs qǝıuƃ dɹǝdɐɹǝp. Iʇ ɐddǝɐɹs qǝʅoʍ ʍɥǝu ıʇ ıs ɹǝɐpʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.size": {
+    "defaultMessage": "‮Sızǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.state.failed": {
+    "defaultMessage": "‮Ⅎɐıʅǝp. Ԁɹǝdɐɹǝ ɐuoʇɥǝɹ ouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.state.pending": {
+    "defaultMessage": "‮Ԑǝıuƃ dɹǝdɐɹǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.state.ready": {
+    "defaultMessage": "‮ᴚǝɐpʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.export.title": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp ʎonɹ pɐʇɐ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.summary": {
+    "defaultMessage": "‮ᗡoʍuʅoɐp ʎonɹ pɐʇɐ, oɹ pǝʅǝʇǝ ʎonɹ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.account.title": {
+    "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.back": {
     "defaultMessage": "‮Ԑɐɔʞ ʇo sǝʇʇıuƃs‬",
     "description": "Generated from en by tools/i18n; do not edit."

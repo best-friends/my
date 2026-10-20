@@ -935,6 +935,20 @@ func (l *Localizer) ServerErrorsConflict() string {
 	return l.format("server:errors.conflict", nil)
 }
 
+// ServerErrorsExportInProgress formats "server:errors.export.in_progress". API error title for HTTP 409 when the user asks for an archive of their data while another one is still being built.
+//
+//	en: An archive of your data is already being prepared. Wait until it is ready.
+func (l *Localizer) ServerErrorsExportInProgress() string {
+	return l.format("server:errors.export.in_progress", nil)
+}
+
+// ServerErrorsExportNotReady formats "server:errors.export.not_ready". API error title for HTTP 409 when the user downloads an archive of their data that is still being built, failed, or has expired.
+//
+//	en: This archive cannot be downloaded.
+func (l *Localizer) ServerErrorsExportNotReady() string {
+	return l.format("server:errors.export.not_ready", nil)
+}
+
 // ServerErrorsForbidden formats "server:errors.forbidden". API error title for HTTP 403 when the user may not perform the operation, e.g. edit another account's post.
 //
 //	en: You are not allowed to do this.
@@ -1318,6 +1332,13 @@ func (l *Localizer) ServerErrorsUnsupportedMediaType() string {
 //	en: {name} must be an image that you uploaded and that has finished processing.
 func (l *Localizer) ServerErrorsUnusableImage(name string) string {
 	return l.format("server:errors.unusable_image", map[string]any{"name": name})
+}
+
+// ServerErrorsWrongPassword formats "server:errors.wrong_password". API error title for HTTP 422 when the password the user typed to confirm an operation on their own account (such as deleting it) is not their current password.
+//
+//	en: The password is wrong.
+func (l *Localizer) ServerErrorsWrongPassword() string {
+	return l.format("server:errors.wrong_password", nil)
 }
 
 // ServerHealthUnavailable formats "server:health.unavailable". Body of the readiness check response (HTTP 503) while a dependency such as the database is unavailable.

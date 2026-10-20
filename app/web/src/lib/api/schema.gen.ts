@@ -111,6 +111,82 @@ export interface paths {
         patch: operations["updatePreferences"];
         trace?: never;
     };
+    "/accounts/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Delete the authenticated user's account
+         * @description Deletes the user's own account at once, after checking the user's current `password`
+         *     (FR-008). The account and its posts disappear, every session and token of the user ends,
+         *     and the other servers get a `Delete` of the actor; the data is erased 7 days later. It
+         *     cannot be undone, and the username is never reused. A wrong password is a 422
+         *     `/api/v1/problems/wrong-password`; at most 5 attempts per account are accepted every
+         *     hour.
+         */
+        post: operations["deleteOwnAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the authenticated user's data exports
+         * @description Lists the user's latest 10 data exports, newest first. An archive can be downloaded
+         *     while its export is `ready`; exports are removed 7 days after they end.
+         */
+        get: operations["listDataExports"];
+        put?: never;
+        /**
+         * Request an archive of the authenticated user's data
+         * @description Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
+         *     `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
+         *     activities), and `moderation.json` (the moderation actions on the account, its appeals,
+         *     and the reports it filed). The export is `pending` until the archive is built. While
+         *     another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
+         *     at most 3 requests per account are accepted every day.
+         */
+        post: operations["requestDataExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/exports/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download the archive of a data export
+         * @description Returns the ZIP archive of one of the user's exports. An export that is not `ready` is
+         *     a 409 `/api/v1/problems/export-not-ready`; another user's export is a 404.
+         */
+        get: operations["downloadDataExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/two_factor": {
         parameters: {
             query?: never;
@@ -2439,6 +2515,12 @@ export interface components {
          *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
          *       account is deleted, so it can no longer be appealed or overturned.
          *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+         *     - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+         *       not the user's current password.
+         *     - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+         *       built. Wait for it to end.
+         *     - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+         *       it is being built, failed, or expired.
          *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
          *       already used, or is not a code.
          *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -2915,6 +2997,45 @@ export interface components {
         /** @description A page of appeals, newest first. */
         AdminAppealPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["AdminAppeal"][];
+        };
+        /** @description The confirmation of the deletion of the user's own account. */
+        DeleteOwnAccountRequest: {
+            /** @description The user's current password. */
+            password: string;
+        };
+        /** @description A request for an archive of the user's data. */
+        DataExport: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description `pending` while the archive is being built, `ready` while it can be downloaded,
+             *     `failed` when it could not be built (request another one).
+             * @enum {string}
+             */
+            state: "pending" | "ready" | "failed";
+            /**
+             * Format: date-time
+             * @description When the user asked for the export.
+             */
+            requested_at: string;
+            /**
+             * Format: date-time
+             * @description When the build ended; omitted while `pending`.
+             */
+            completed_at?: string;
+            /**
+             * Format: date-time
+             * @description When the export and its archive are removed; omitted while `pending`.
+             */
+            expires_at?: string;
+            /**
+             * Format: int64
+             * @description The size of the archive in bytes; only for `ready`.
+             */
+            file_size?: number;
+        };
+        /** @description The user's latest data exports, newest first. */
+        DataExportList: {
+            items: components["schemas"]["DataExport"][];
         };
         /** @description An appeal of an action on the user's own account. */
         AppealModerationActionRequest: {
@@ -4752,6 +4873,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    deleteOwnAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteOwnAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description The account is deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listDataExports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The exports. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataExportList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    requestDataExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export, being built. */
+            202: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataExport"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    downloadDataExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the export. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The archive. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    /** @description Names the file to save the archive as. */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
                 };
             };
             default: components["responses"]["Problem"];

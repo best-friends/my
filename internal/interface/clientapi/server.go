@@ -118,6 +118,10 @@ type Options struct {
 	// (admin_appeals.go) and counts the pending ones for GET /admin/counts.
 	OwnAppeals       OwnAppeals
 	AppealModeration AppealModeration
+	// OwnAccount deletes the viewer's own account (own_account.go); nil refuses it with 404.
+	OwnAccount OwnAccount
+	// Exports runs the viewer's data exports (own_account.go); nil refuses them with 404.
+	Exports Exports
 	// ProfileRestrictions hides the accounts whose profiles moderation hides (profile_view)
 	// from everyone but themselves; nil hides none. Moderators see them through the admin
 	// operations.

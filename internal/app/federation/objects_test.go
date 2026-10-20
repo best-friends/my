@@ -152,14 +152,15 @@ func (w *objWorld) FederationSuspended(_ context.Context, domain string) (bool, 
 }
 
 // Profile lists the author's public and unlisted statuses, as the timeline does for an
-// anonymous viewer.
+// anonymous viewer, and all of them for the author (a data export).
 func (w *objWorld) Profile(_ context.Context, viewer appcontent.Viewer, _ string, f apptimeline.ProfileFilter, _ apptimeline.Query) (apptimeline.Page, error) {
-	if viewer.Kind != appcontent.ViewerAnonymous || !f.ExcludeBoosts {
-		return apptimeline.Page{}, errors.New("the outbox lists the posts an anonymous visitor sees")
+	owner := viewer.Kind == appcontent.ViewerLocal && viewer.AccountID == authorID
+	if (viewer.Kind != appcontent.ViewerAnonymous && !owner) || !f.ExcludeBoosts {
+		return apptimeline.Page{}, errors.New("the outbox lists the posts an anonymous visitor or the author sees")
 	}
 	var p apptimeline.Page
 	for _, id := range slices.Sorted(maps.Keys(w.statuses)) {
-		if v := w.statuses[id].Visibility; v == appcontent.VisibilityPublic || v == appcontent.VisibilityUnlisted {
+		if v := w.statuses[id].Visibility; owner || v == appcontent.VisibilityPublic || v == appcontent.VisibilityUnlisted {
 			p.Entries = append(p.Entries, apptimeline.Entry{ID: id, StatusID: id})
 		}
 	}

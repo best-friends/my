@@ -12,6 +12,7 @@ const pages: readonly { href: string; label: ClientMessageKey; description: Clie
   { href: "/settings/blocks", label: "client:settings.blocks.title", description: "client:settings.blocks.summary" },
   { href: "/settings/mutes", label: "client:settings.mutes.title", description: "client:settings.mutes.summary" },
   { href: "/settings/account-status", label: "client:account_status.title", description: "client:account_status.summary" },
+  { href: "/settings/account", label: "client:settings.account.title", description: "client:settings.account.summary" },
 ];
 
 /** The links to the pages of the settings, each with what it is about. */

@@ -223,6 +223,114 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end profile and preferences ---
+  # --- the user's own account: deletion and data exports (#627) ---
+  /accounts/delete:
+    post:
+      operationId: deleteOwnAccount
+      summary: Delete the authenticated user's account
+      description: |
+        Deletes the user's own account at once, after checking the user's current `password`
+        (FR-008). The account and its posts disappear, every session and token of the user ends,
+        and the other servers get a `Delete` of the actor; the data is erased 7 days later. It
+        cannot be undone, and the username is never reused. A wrong password is a 422
+        `/api/v1/problems/wrong-password`; at most 5 attempts per account are accepted every
+        hour.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteOwnAccountRequest"
+      responses:
+        "204":
+          description: The account is deleted.
+        default:
+          $ref: "#/components/responses/Problem"
+  /exports:
+    get:
+      operationId: listDataExports
+      summary: List the authenticated user's data exports
+      description: |
+        Lists the user's latest 10 data exports, newest first. An archive can be downloaded
+        while its export is `ready`; exports are removed 7 days after they end.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      responses:
+        "200":
+          description: The exports.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExportList"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: requestDataExport
+      summary: Request an archive of the authenticated user's data
+      description: |
+        Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
+        `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
+        activities), and `moderation.json` (the moderation actions on the account, its appeals,
+        and the reports it filed). The export is `pending` until the archive is built. While
+        another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
+        at most 3 requests per account are accepted every day.
+      tags: [accounts]
+      security:
+        - oauth2: ["write:accounts"]
+      responses:
+        "202":
+          description: The export, being built.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExport"
+        default:
+          $ref: "#/components/responses/Problem"
+  /exports/{id}/archive:
+    get:
+      operationId: downloadDataExport
+      summary: Download the archive of a data export
+      description: |
+        Returns the ZIP archive of one of the user's exports. An export that is not `ready` is
+        a 409 `/api/v1/problems/export-not-ready`; another user's export is a 404.
+      tags: [accounts]
+      security:
+        - oauth2: ["read:accounts"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the export.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "200":
+          description: The archive.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            Content-Disposition:
+              description: Names the file to save the archive as.
+              schema:
+                type: string
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of the user's own account: deletion and data exports (#627) ---
   # --- two-factor authentication (#628) ---
   /two_factor:
     get:
@@ -3490,6 +3598,12 @@ components:
         - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
           account is deleted, so it can no longer be appealed or overturned.
         - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+        - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+          not the user's current password.
+        - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+          built. Wait for it to end.
+        - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+          it is being built, failed, or expired.
         - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
           already used, or is not a code.
         - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
@@ -4140,6 +4254,55 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/AdminAppeal"
+    DeleteOwnAccountRequest:
+      description: The confirmation of the deletion of the user's own account.
+      type: object
+      required: [password]
+      properties:
+        password:
+          description: The user's current password.
+          type: string
+          minLength: 1
+          maxLength: 1024
+    DataExport:
+      description: A request for an archive of the user's data.
+      type: object
+      required: [id, state, requested_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        state:
+          description: |
+            `pending` while the archive is being built, `ready` while it can be downloaded,
+            `failed` when it could not be built (request another one).
+          type: string
+          enum: [pending, ready, failed]
+        requested_at:
+          description: When the user asked for the export.
+          type: string
+          format: date-time
+        completed_at:
+          description: When the build ended; omitted while `pending`.
+          type: string
+          format: date-time
+        expires_at:
+          description: When the export and its archive are removed; omitted while `pending`.
+          type: string
+          format: date-time
+        file_size:
+          description: The size of the archive in bytes; only for `ready`.
+          type: integer
+          format: int64
+          minimum: 0
+    DataExportList:
+      description: The user's latest data exports, newest first.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataExport"
     AppealModerationActionRequest:
       description: An appeal of an action on the user's own account.
       type: object

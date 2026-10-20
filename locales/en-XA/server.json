@@ -531,6 +531,14 @@
     "defaultMessage": "[Ŧħḗḗ řḗḗɋŭŭḗḗşŧ ƈǿǿƞƒŀīƈŧş ẇīŧħ ŧħḗḗ ƈŭŭřřḗḗƞŧ şŧȧȧŧḗḗ ǿǿƒ ŧħḗḗ řḗḗşǿǿŭŭřƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.export.in_progress": {
+    "defaultMessage": "[Ȧƞ ȧȧřƈħīṽḗḗ ǿǿƒ ẏǿǿŭŭř ḓȧȧŧȧȧ īş ȧȧŀřḗḗȧȧḓẏ ƀḗḗīƞɠ ƥřḗḗƥȧȧřḗḗḓ. Ẇȧȧīŧ ŭŭƞŧīŀ īŧ īş řḗḗȧȧḓẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.export.not_ready": {
+    "defaultMessage": "[Ŧħīş ȧȧřƈħīṽḗḗ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓǿǿẇƞŀǿǿȧȧḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.forbidden": {
     "defaultMessage": "[Ẏǿǿŭŭ ȧȧřḗḗ ƞǿǿŧ ȧȧŀŀǿǿẇḗḗḓ ŧǿǿ ḓǿǿ ŧħīş.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -749,6 +757,10 @@
   },
   "errors.unusable_image": {
     "defaultMessage": "[{name} ḿŭŭşŧ ƀḗḗ ȧȧƞ īḿȧȧɠḗḗ ŧħȧȧŧ ẏǿǿŭŭ ŭŭƥŀǿǿȧȧḓḗḗḓ ȧȧƞḓ ŧħȧȧŧ ħȧȧş ƒīƞīşħḗḗḓ ƥřǿǿƈḗḗşşīƞɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.wrong_password": {
+    "defaultMessage": "[Ŧħḗḗ ƥȧȧşşẇǿǿřḓ īş ẇřǿǿƞɠ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "health.unavailable": {

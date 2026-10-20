@@ -2024,6 +2024,58 @@ export interface MessageArgs {
   "client:session.sign_out.failed": {};
   /** You are not signed in. */
   "client:session.signed_out": {};
+  /** Cancel */
+  "client:settings.account.delete.cancel": {};
+  /** Delete account */
+  "client:settings.account.delete.confirm": {};
+  /** Enter your password to confirm. Your account is deleted at once, and you are signed out. This cannot be undone. */
+  "client:settings.account.delete.confirm.description": {};
+  /** Delete your account? */
+  "client:settings.account.delete.confirm.title": {};
+  /** Your account, posts and profile disappear at once, and other servers are asked to delete their copies. You cannot undo this, and your username cannot be used again. Download your data first if you want to keep it. */
+  "client:settings.account.delete.description": {};
+  /** Delete account… */
+  "client:settings.account.delete.open": {};
+  /** Password */
+  "client:settings.account.delete.password": {};
+  /** Enter your password. */
+  "client:settings.account.delete.password.required": {};
+  /** Delete your account */
+  "client:settings.account.delete.title": {};
+  /** The password is wrong. */
+  "client:settings.account.delete.wrong_password": {};
+  /** Get a ZIP archive of your posts in ActivityStreams format, your profile, and the moderation actions on your account. It takes a while to prepare, and you can download it for 7 days. */
+  "client:settings.account.export.description": {};
+  /** Download */
+  "client:settings.account.export.download": {};
+  /** Download the archive of {date} */
+  "client:settings.account.export.download_of": { date: string };
+  /** You have no archives */
+  "client:settings.account.export.empty": {};
+  /** Available until */
+  "client:settings.account.export.expires_at": {};
+  /** Archive of {date} */
+  "client:settings.account.export.item": { date: string };
+  /** Prepare an archive */
+  "client:settings.account.export.request": {};
+  /** The archive is being prepared. It appears below when it is ready. */
+  "client:settings.account.export.requested": {};
+  /** Size */
+  "client:settings.account.export.size": {};
+  /** State */
+  "client:settings.account.export.state": {};
+  /** Failed. Prepare another one. */
+  "client:settings.account.export.state.failed": {};
+  /** Being prepared */
+  "client:settings.account.export.state.pending": {};
+  /** Ready */
+  "client:settings.account.export.state.ready": {};
+  /** Download your data */
+  "client:settings.account.export.title": {};
+  /** Download your data, or delete your account */
+  "client:settings.account.summary": {};
+  /** Your account */
+  "client:settings.account.title": {};
   /** Back to settings */
   "client:settings.back": {};
   /** You have not blocked anyone */
@@ -2852,6 +2904,10 @@ export interface MessageArgs {
   "server:errors.blocking": {};
   /** The request conflicts with the current state of the resource. */
   "server:errors.conflict": {};
+  /** An archive of your data is already being prepared. Wait until it is ready. */
+  "server:errors.export.in_progress": {};
+  /** This archive cannot be downloaded. */
+  "server:errors.export.not_ready": {};
   /** You are not allowed to do this. */
   "server:errors.forbidden": {};
   /** This app is not allowed to do this. */
@@ -2962,6 +3018,8 @@ export interface MessageArgs {
   "server:errors.unsupported_media_type": {};
   /** {name} must be an image that you uploaded and that has finished processing. */
   "server:errors.unusable_image": { name: string };
+  /** The password is wrong. */
+  "server:errors.wrong_password": {};
   /** The server is not ready to accept requests. */
   "server:health.unavailable": {};
   /** A user of {instance} appealed a moderation action, and the appeal awaits the moderators.  Open your notifications to review it:  {url}  You get this email because you chose to get moderator notifications by email. You can turn it off in your preferences. */
