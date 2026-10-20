@@ -12,9 +12,9 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
 
 /**
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
- * description, the rules, how to reach the operators, the remote domains it moderates as far as the instance lists
- * them, what it states to search engines and AI crawlers, where to get its source code, and its terms of service and
- * privacy policy. Everyone may read it, signed in or not.
+ * description, the rules followed by its terms of service and privacy policy, the remote domains it moderates as far
+ * as the instance lists them, what it states to search engines and AI crawlers, how to reach the operators, and where
+ * to get its source code. Everyone may read it, signed in or not.
  */
 export function About() {
   const about = useAbout();
@@ -28,12 +28,15 @@ export function About() {
         </p>
       )}
       {about.description.length > 0 && <Description paragraphs={about.description} />}
+      {/* What users agree to stands together: the rules, then the terms and policies. */}
       {about.rules.length > 0 && <Rules rules={about.rules} />}
-      {about.contact !== undefined && <Contact contact={about.contact} />}
+      <DocumentsSection />
+      {/* How the server treats other servers and crawlers. */}
       <ModeratedDomainsSection />
       {about.crawlers !== undefined && <Crawlers searchIndexing={about.crawlers.searchIndexing} aiUsage={about.crawlers.aiUsage} />}
+      {/* Who runs the server and what it runs. */}
+      {about.contact !== undefined && <Contact contact={about.contact} />}
       {about.sourceUrl !== undefined && <SourceCode url={about.sourceUrl} />}
-      <DocumentsSection />
     </div>
   );
 }
