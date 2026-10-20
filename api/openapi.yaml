@@ -61,8 +61,8 @@ tags:
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
-      sign-up blocks, domain actions, the health of remote servers, the audit log, and the counts
-      of what awaits the moderators (ADR-0058). The operations need an `admin` scope and a
+      sign-up blocks, invites, domain actions, the health of remote servers, the audit log, and
+      the counts of what awaits the moderators (ADR-0058). The operations need an `admin` scope and a
       permission of the user's roles in the moderation category; a user without it gets a 403
       `/api/v1/problems/missing-permission`.
   - name: admin-server
@@ -3462,6 +3462,116 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: sign-up block import (#498) ---
+  # --- admin: instance settings (#624) ---
+  /admin/settings:
+    get:
+      operationId: listInstanceSettings
+      summary: List the instance settings
+      description: |
+        Every instance setting (FR-705, docs/operations/instance-settings.md): its current
+        value, or its default when it has never been set, with what it accepts. The policies
+        that administrators change at run time live here; the deployment configuration does
+        not. Needs the `manage_settings` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminSettingList"
+        default:
+          $ref: "#/components/responses/Problem"
+    patch:
+      operationId: updateInstanceSettings
+      summary: Change instance settings
+      description: |
+        Sets the settings named in `values`, all of them or none: each value is checked against
+        its key and stored in its canonical form (`TRUE` is `true`, `ja_jp` is `ja-JP`), and
+        each change is kept as a revision and audited (`setting_changed`). Setting the current
+        value again still records a revision, so clients send only the settings they change.
+        The changes take effect on the next request. An unknown key, or a value its key
+        rejects, is a 422 naming the key, and nothing is changed. Needs the `manage_settings`
+        permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInstanceSettingsRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminSettingList"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: instance settings (#624) ---
+  # --- admin: invites (#624) ---
+  /admin/invites:
+    get:
+      operationId: listInvites
+      summary: List the invites
+      description: |
+        The invites that let people sign up while the registration mode is `invite` (FR-001),
+        newest first, with how they have been used. Needs the `manage_invites` permission.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of invites.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInvitePage"
+        default:
+          $ref: "#/components/responses/Problem"
+    post:
+      operationId: createInvite
+      summary: Create an invite
+      description: |
+        Creates an invite with a new random code. It works only while the registration mode is
+        `invite`. `max_uses` outside 1 to 1,000,000 or `expires_in` outside 1 second to 10
+        years is a 422 naming it. Needs the `manage_invites` permission.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInviteRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminInvite"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/invites/{id}/revoke:
+    post:
+      operationId: revokeInvite
+      summary: Revoke an invite
+      description: |
+        The invite stops working at once; the people who signed up with it keep their
+        accounts. Revoking a revoked invite changes nothing. An unknown ID is a 404. Needs the
+        `manage_invites` permission.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/InviteId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AdminInvite"
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: invites (#624) ---
 components:
   securitySchemes:
     oauth2:
@@ -3673,6 +3783,15 @@ components:
       schema:
         $ref: "#/components/schemas/Id"
     # --- end of admin: sign-up blocks (#346) ---
+    # --- admin: invites (#624) ---
+    InviteId:
+      name: id
+      in: path
+      required: true
+      description: The ID of the invite.
+      schema:
+        $ref: "#/components/schemas/Id"
+    # --- end of admin: invites (#624) ---
   responses:
     StatusPage:
       description: A page of posts and boosts, newest first.
@@ -3889,6 +4008,28 @@ components:
           schema:
             $ref: "#/components/schemas/AdminSignupBlock"
     # --- end of admin: sign-up blocks (#346) ---
+    # --- admin: instance settings (#624) ---
+    AdminSettingList:
+      description: Every instance setting.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminSettingList"
+    # --- end of admin: instance settings (#624) ---
+    # --- admin: invites (#624) ---
+    AdminInvite:
+      description: The invite.
+      headers:
+        Cache-Control:
+          $ref: "#/components/headers/CacheControl"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AdminInvite"
+    # --- end of admin: invites (#624) ---
   schemas:
     Id:
       description: The ID of a resource, a UUIDv7 in its canonical string form.
@@ -7285,3 +7426,153 @@ components:
       type: string
       enum: [open, resolved]
     # --- end of reports (#332) ---
+    # --- admin: instance settings (#624) ---
+    AdminSetting:
+      description: |
+        An instance setting: its value and what it accepts. Every value is a string in its
+        canonical form, whatever its kind.
+      type: object
+      required: [key, kind, value, default, stored]
+      properties:
+        key:
+          $ref: "#/components/schemas/InstanceSettingKey"
+        kind:
+          $ref: "#/components/schemas/InstanceSettingKind"
+        value:
+          description: The current value, which is `default` when `stored` is false.
+          type: string
+        default:
+          description: The value of the setting while it has never been set.
+          type: string
+        stored:
+          description: Whether the setting has been set; false means its default applies.
+          type: boolean
+        choices:
+          description: The values an `enum` setting accepts, in order; omitted for other kinds.
+          type: array
+          items:
+            type: string
+        minimum:
+          description: The least value of an `int` setting; omitted for other kinds.
+          type: integer
+        maximum:
+          description: The greatest value of an `int` setting; omitted for other kinds.
+          type: integer
+    AdminSettingList:
+      description: Every instance setting, in a fixed order.
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminSetting"
+    InstanceSettingKey:
+      description: |
+        The key of an instance setting (docs/operations/instance-settings.md). New keys may be
+        added; clients show the ones they know.
+      type: string
+      enum:
+        - registration_mode
+        - max_status_length
+        - default_locale
+        - local_timeline_enabled
+        - federated_timeline_enabled
+        - preview_image
+        - remote_media_policy
+        - remote_media_cache_ttl
+        - authorized_fetch
+        - domain_actions_visibility
+        - domain_actions_rationale_visibility
+        - appeal_window
+        - retention_session_origins
+        - retention_registration_origins
+        - retention_reports
+        - retention_moderation_actions
+        - retention_audit_log
+    InstanceSettingKind:
+      description: |
+        The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
+        `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
+        `media`: the ID of an image uploaded with `POST /media`, or empty for none.
+      type: string
+      enum: [bool, int, enum, locale, media]
+    UpdateInstanceSettingsRequest:
+      description: New values of some instance settings, saved together.
+      type: object
+      required: [values]
+      properties:
+        values:
+          description: The new value of each setting to change, by key, as a string.
+          type: object
+          minProperties: 1
+          maxProperties: 64
+          additionalProperties:
+            type: string
+            maxLength: 64
+    # --- end of admin: instance settings (#624) ---
+    # --- admin: invites (#624) ---
+    AdminInvite:
+      description: An invite that lets people sign up while the registration mode is `invite`.
+      type: object
+      required: [id, code, url, uses, state, created_at]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        code:
+          description: The code people enter on the registration page, 16 characters.
+          type: string
+        url:
+          description: The registration page with the code filled in, to send to people.
+          type: string
+          format: uri
+        max_uses:
+          description: How many sign-ups the invite allows; omitted when there is no limit.
+          type: integer
+          minimum: 1
+        uses:
+          description: How many people have signed up with the invite.
+          type: integer
+          minimum: 0
+        state:
+          $ref: "#/components/schemas/AdminInviteState"
+        expires_at:
+          description: When the invite stops working; omitted when it never does.
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    AdminInvitePage:
+      description: A page of invites, newest first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminInvite"
+    AdminInviteState:
+      description: |
+        What the invite allows now. `usable`: people may sign up with it. `revoked`: a staff
+        member revoked it. `expired`: it passed `expires_at`. `exhausted`: it was used
+        `max_uses` times.
+      type: string
+      enum: [usable, revoked, expired, exhausted]
+    CreateInviteRequest:
+      description: A new invite.
+      type: object
+      properties:
+        max_uses:
+          description: How many sign-ups the invite allows; omitted for no limit.
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        expires_in:
+          description: How many seconds the invite works; omitted for an invite that never expires.
+          type: integer
+          minimum: 1
+          maximum: 315360000
+    # --- end of admin: invites (#624) ---

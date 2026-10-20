@@ -1,0 +1,152 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package clientapi_test
+
+import (
+	"context"
+	"net/http"
+	"slices"
+	"strings"
+	"testing"
+
+	appinstance "github.com/best-friends/my/internal/app/instance"
+	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/domain/instance"
+	"github.com/best-friends/my/internal/interface/clientapi"
+)
+
+// fakeSettings keeps instance settings with the semantics of appinstance.Service.SetSettings:
+// every value is checked before any is stored.
+type fakeSettings struct {
+	stored []instance.CurrentSetting
+	sets   [][]appinstance.SetSettingInput
+}
+
+func (f *fakeSettings) Settings(context.Context) (instance.Settings, error) {
+	return instance.NewSettings(f.stored), nil
+}
+
+func (f *fakeSettings) SetSettings(_ context.Context, ins []appinstance.SetSettingInput) ([]instance.SettingRevision, error) {
+	revs := make([]instance.SettingRevision, len(ins))
+	for i, in := range ins {
+		d, err := instance.Lookup(in.Key)
+		if err != nil {
+			return nil, &appinstance.SettingError{Key: in.Key, Err: err}
+		}
+		v, err := d.Parse(in.Value)
+		if err != nil {
+			return nil, &appinstance.SettingError{Key: in.Key, Err: err}
+		}
+		revs[i] = instance.SettingRevision{Key: in.Key, Value: v, RevisedByUserID: in.RevisedByUserID}
+	}
+	f.sets = append(f.sets, ins)
+	for _, r := range revs {
+		f.stored = slices.DeleteFunc(f.stored, func(c instance.CurrentSetting) bool { return c.Key == r.Key })
+		f.stored = append(f.stored, instance.CurrentSetting{Key: r.Key, Value: r.Value})
+	}
+	return revs, nil
+}
+
+// newSettingsEnv is newAuthEnv with the tokens of newAdminEnv and the instance settings: alice
+// holds every permission and bob none.
+func newSettingsEnv(t *testing.T) (*authEnv, *fakeSettings) {
+	t.Helper()
+	f := &fakeSettings{}
+	e := newAuthEnv(t, func(o *clientapi.Options) {
+		o.Permissions = fakePermissions{"user-" + aliceAccountID: identity.AllPermissions()}
+		o.Settings = f
+	})
+	e.auth.tokens["admin"] = bearer("admin", aliceAccountID)
+	e.auth.tokens["admin-read"] = bearer("admin:read", aliceAccountID)
+	e.auth.tokens["bob-admin"] = bearer("admin", bobAccountID)
+	return e, f
+}
+
+func settingItem(t *testing.T, list clientapi.AdminSettingList, key clientapi.InstanceSettingKey) clientapi.AdminSetting {
+	t.Helper()
+	i := slices.IndexFunc(list.Items, func(s clientapi.AdminSetting) bool { return s.Key == key })
+	if i < 0 {
+		t.Fatalf("no setting %s in %+v", key, list.Items)
+	}
+	return list.Items[i]
+}
+
+func TestInstanceSettingOperationsNeedAPermission(t *testing.T) {
+	e, f := newSettingsEnv(t)
+	for _, op := range []struct{ method, body string }{
+		{http.MethodGet, ""},
+		{http.MethodPatch, `{"values":{"registration_mode":"open"}}`},
+	} {
+		res := e.send(t, op.method, "/admin/settings", "bob-admin", op.body)
+		if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
+			p.Detail == nil || !strings.Contains(*p.Detail, "manage_settings") {
+			t.Errorf("%s by bob = %d %+v, want 403 for manage_settings", op.method, res.StatusCode, p)
+		}
+	}
+	res := e.sendJSON(t, http.MethodPatch, "/admin/settings", "admin-read", `{"values":{"registration_mode":"open"}}`)
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {
+		t.Errorf("patch with admin:read = %d %+v, want 403 insufficient-scope", res.StatusCode, p)
+	}
+	if len(f.sets) != 0 {
+		t.Error("a refused operation changed a setting")
+	}
+}
+
+func TestManageInstanceSettings(t *testing.T) {
+	e, f := newSettingsEnv(t)
+	res := e.admin(t, http.MethodGet, "/admin/settings", "admin-read", nil)
+	list := decodeJSON[clientapi.AdminSettingList](t, res)
+	if res.StatusCode != http.StatusOK || len(list.Items) != len(instance.Definitions()) {
+		t.Fatalf("list = %d with %d items, want every setting", res.StatusCode, len(list.Items))
+	}
+	if cc := res.Header.Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", cc)
+	}
+	mode := settingItem(t, list, clientapi.InstanceSettingKeyRegistrationMode)
+	if mode.Value != "approval" || mode.Default != "approval" || mode.Stored || mode.Kind != clientapi.InstanceSettingKindEnum ||
+		mode.Choices == nil || !slices.Equal(*mode.Choices, []string{"open", "approval", "invite", "closed"}) || mode.Minimum != nil {
+		t.Errorf("registration_mode = %+v, want the default with its choices", mode)
+	}
+	ttl := settingItem(t, list, clientapi.InstanceSettingKeyRemoteMediaCacheTtl)
+	if ttl.Kind != clientapi.InstanceSettingKindInt || ttl.Minimum == nil || *ttl.Minimum != 60 || ttl.Maximum == nil || *ttl.Maximum != 31536000 || ttl.Choices != nil {
+		t.Errorf("remote_media_cache_ttl = %+v, want its bounds", ttl)
+	}
+
+	res = e.sendJSON(t, http.MethodPatch, "/admin/settings", "admin",
+		`{"values":{"local_timeline_enabled":"FALSE","registration_mode":"invite"}}`)
+	list = decodeJSON[clientapi.AdminSettingList](t, res)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("patch = %d", res.StatusCode)
+	}
+	if got := settingItem(t, list, clientapi.InstanceSettingKeyRegistrationMode); got.Value != "invite" || !got.Stored {
+		t.Errorf("registration_mode after the change = %+v, want invite, stored", got)
+	}
+	if got := settingItem(t, list, clientapi.InstanceSettingKeyLocalTimelineEnabled); got.Value != "false" {
+		t.Errorf("local_timeline_enabled after the change = %+v, want the canonical false", got)
+	}
+	// The values are set together, in the order of the definitions, by alice.
+	want := []appinstance.SetSettingInput{
+		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: "user-" + aliceAccountID},
+		{Key: instance.SettingLocalTimelineEnabled, Value: "FALSE", RevisedByUserID: "user-" + aliceAccountID},
+	}
+	if len(f.sets) != 1 || !slices.Equal(f.sets[0], want) {
+		t.Errorf("sets = %+v, want one call of %+v", f.sets, want)
+	}
+}
+
+func TestInstanceSettingProblems(t *testing.T) {
+	e, f := newSettingsEnv(t)
+	for _, tc := range []struct{ name, body, detail string }{
+		{"unknown key", `{"values":{"registration_mode":"open","motto":"x"}}`, "values.motto"},
+		{"invalid value", `{"values":{"registration_mode":"open","max_status_length":"0"}}`, "values.max_status_length"},
+	} {
+		res := e.sendJSON(t, http.MethodPatch, "/admin/settings", "admin", tc.body)
+		p := decodeProblem(t, res)
+		if res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, tc.detail) {
+			t.Errorf("%s: %d %+v, want 422 naming %q", tc.name, res.StatusCode, p, tc.detail)
+		}
+	}
+	if len(f.stored) != 0 {
+		t.Errorf("a refused change was stored: %+v", f.stored)
+	}
+}

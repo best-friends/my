@@ -2075,6 +2075,150 @@
     "defaultMessage": "Remote servers",
     "description": "Heading of the screen of the remote servers that deliveries failed to reach, and its link in the administration menu."
   },
+  "admin.invites.copied": {
+    "defaultMessage": "Copied the link of the invite {code}.",
+    "description": "Toast after an invite's link was copied. {code} is its code."
+  },
+  "admin.invites.copy": {
+    "defaultMessage": "Copy link",
+    "description": "Button that copies an invite's sign-up link."
+  },
+  "admin.invites.copy_failed": {
+    "defaultMessage": "Could not copy the link.",
+    "description": "Toast when copying an invite's link failed."
+  },
+  "admin.invites.copy_invite": {
+    "defaultMessage": "Copy the link of the invite {code}",
+    "description": "Accessible name of the copy button of an invite. {code} is its code."
+  },
+  "admin.invites.create": {
+    "defaultMessage": "Create the invite",
+    "description": "Button that creates an invite."
+  },
+  "admin.invites.create_failed": {
+    "defaultMessage": "Could not create the invite: {reason}",
+    "description": "Error when creating an invite failed. {reason} is why."
+  },
+  "admin.invites.created": {
+    "defaultMessage": "Created the invite {code}.",
+    "description": "Status after an invite was created. {code} is its code."
+  },
+  "admin.invites.created_at": {
+    "defaultMessage": "Created",
+    "description": "Term of when an invite was created."
+  },
+  "admin.invites.duration.minutes": {
+    "defaultMessage": "{count, plural, one {# minute} other {# minutes}}",
+    "description": "An option of how long an invite works, in minutes."
+  },
+  "admin.invites.empty": {
+    "defaultMessage": "No invites yet",
+    "description": "Heading of the empty list of invites."
+  },
+  "admin.invites.empty.description": {
+    "defaultMessage": "Create one with the form above.",
+    "description": "Description of the empty list of invites."
+  },
+  "admin.invites.expires_at": {
+    "defaultMessage": "Expires",
+    "description": "Term of when an invite expires."
+  },
+  "admin.invites.expires_in": {
+    "defaultMessage": "Expires after",
+    "description": "Label of the select of how long an invite works."
+  },
+  "admin.invites.link": {
+    "defaultMessage": "Send this link to the people you invite:",
+    "description": "Text before the sign-up link of a new invite."
+  },
+  "admin.invites.list.title": {
+    "defaultMessage": "Invites",
+    "description": "Heading of the list of invites."
+  },
+  "admin.invites.max_uses": {
+    "defaultMessage": "Number of sign-ups",
+    "description": "Label of the select of how many sign-ups an invite allows."
+  },
+  "admin.invites.max_uses.description": {
+    "defaultMessage": "How many people may sign up with the code.",
+    "description": "Help of the number of sign-ups of an invite."
+  },
+  "admin.invites.mode_notice": {
+    "defaultMessage": "The server does not take sign-ups with an invite now, so invites let nobody sign up. An administrator changes who may sign up in the server settings.",
+    "description": "Notice on the invites screen when the registration mode is not invite."
+  },
+  "admin.invites.never": {
+    "defaultMessage": "Never",
+    "description": "An invite that never expires: an option and a value."
+  },
+  "admin.invites.new.title": {
+    "defaultMessage": "Create an invite",
+    "description": "Heading of the form of a new invite."
+  },
+  "admin.invites.revoke": {
+    "defaultMessage": "Revoke",
+    "description": "Button that revokes an invite."
+  },
+  "admin.invites.revoke_failed": {
+    "defaultMessage": "Could not revoke the invite: {reason}",
+    "description": "Toast when revoking an invite failed. {reason} is why."
+  },
+  "admin.invites.revoke_invite": {
+    "defaultMessage": "Revoke the invite {code}, created {date}",
+    "description": "Accessible name of the revoke button of an invite. {code} is its code; {date} when it was created, formatted."
+  },
+  "admin.invites.revoked": {
+    "defaultMessage": "Revoked the invite {code}. Nobody can sign up with it anymore.",
+    "description": "Status after an invite was revoked. {code} is its code."
+  },
+  "admin.invites.state": {
+    "defaultMessage": "State",
+    "description": "Term of an invite's state."
+  },
+  "admin.invites.state.exhausted": {
+    "defaultMessage": "Used up",
+    "description": "State of an invite used as many times as it allows."
+  },
+  "admin.invites.state.expired": {
+    "defaultMessage": "Expired",
+    "description": "State of an expired invite."
+  },
+  "admin.invites.state.revoked": {
+    "defaultMessage": "Revoked",
+    "description": "State of a revoked invite."
+  },
+  "admin.invites.state.usable": {
+    "defaultMessage": "Usable",
+    "description": "State of an invite that people may sign up with."
+  },
+  "admin.invites.summary": {
+    "defaultMessage": "Codes that let people sign up when the server takes invites.",
+    "description": "Description of the invites screen in the moderation menu."
+  },
+  "admin.invites.title": {
+    "defaultMessage": "Invites",
+    "description": "Title of the invites screen, in the moderation menu and as its heading."
+  },
+  "admin.invites.unlimited": {
+    "defaultMessage": "No limit",
+    "description": "Option of an invite that any number of people may use."
+  },
+  "admin.invites.used": {
+    "defaultMessage": "Sign-ups",
+    "description": "Term of how many people signed up with an invite."
+  },
+  "admin.invites.used.limited": {
+    "defaultMessage": "{uses, number} of {max, number}",
+    "description": "How many people signed up with an invite, and how many it allows."
+  },
+  "admin.invites.used.unlimited": {
+    "defaultMessage": "{uses, number} (no limit)",
+    "description": "How many people signed up with an invite without a limit. {uses} is the number."
+  },
+  "admin.invites.uses": {
+    "defaultMessage": "{count, plural, one {# person} other {# people}}",
+    "description": "An option of the number of sign-ups of an invite."
+  },
   "admin.list.more": {
     "defaultMessage": "Show more",
     "description": "Button under a list of an admin screen that loads more of it."
@@ -2631,6 +2775,274 @@
     "defaultMessage": "Reports",
     "description": "Heading and title of the report queue."
   },
+  "admin.rules.add": {
+    "defaultMessage": "Add the rule",
+    "description": "Button that adds a new rule after the others."
+  },
+  "admin.rules.add_failed": {
+    "defaultMessage": "Could not add the rule: {reason}",
+    "description": "Error when adding a rule failed. {reason} is why."
+  },
+  "admin.rules.added": {
+    "defaultMessage": "Added the rule after the others. The audit log records the change.",
+    "description": "Status after a rule was added."
+  },
+  "admin.rules.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes a dialog of the rules without changing anything."
+  },
+  "admin.rules.change_failed": {
+    "defaultMessage": "Could not change the rule: {reason}",
+    "description": "Error when changing, moving or retiring a rule failed. {reason} is why."
+  },
+  "admin.rules.description": {
+    "defaultMessage": "The about page and the report form show each rule in the reader's language. Each rule has a text of one line and an optional hint in each language. A retired rule leaves the list, and the reports that cite it keep it.",
+    "description": "Explanation at the top of the rules screen."
+  },
+  "admin.rules.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog of a rule's texts."
+  },
+  "admin.rules.edit.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of the dialog of a rule's texts."
+  },
+  "admin.rules.edit.title": {
+    "defaultMessage": "Edit the rule",
+    "description": "Title of the dialog of a rule's texts."
+  },
+  "admin.rules.edit_rule": {
+    "defaultMessage": "Edit: {rule}",
+    "description": "Accessible name of the edit button of a rule. {rule} is its text."
+  },
+  "admin.rules.empty": {
+    "defaultMessage": "No rules yet",
+    "description": "Heading of the empty list of rules."
+  },
+  "admin.rules.empty.description": {
+    "defaultMessage": "Add the rules people agree to with the form above.",
+    "description": "Description of the empty list of rules."
+  },
+  "admin.rules.heading": {
+    "defaultMessage": "Rule {place}: {rule}",
+    "description": "Heading of a rule in the list. {place} is its place, from 1; {rule} its text in the reader's language."
+  },
+  "admin.rules.hint": {
+    "defaultMessage": "Hint in {language}",
+    "description": "Label of the optional hint of a rule in one language. {language} is the language's name."
+  },
+  "admin.rules.list.title": {
+    "defaultMessage": "Rules in effect",
+    "description": "Heading of the list of the rules in effect."
+  },
+  "admin.rules.move_down": {
+    "defaultMessage": "Move down",
+    "description": "Button that moves a rule one place down."
+  },
+  "admin.rules.move_down_rule": {
+    "defaultMessage": "Move down: {rule}",
+    "description": "Accessible name of the button that moves a rule down. {rule} is its text."
+  },
+  "admin.rules.move_up": {
+    "defaultMessage": "Move up",
+    "description": "Button that moves a rule one place up."
+  },
+  "admin.rules.move_up_rule": {
+    "defaultMessage": "Move up: {rule}",
+    "description": "Accessible name of the button that moves a rule up. {rule} is its text."
+  },
+  "admin.rules.moved": {
+    "defaultMessage": "Moved “{rule}” to place {position}.",
+    "description": "Status after a rule was moved. {rule} is its text; {position} its new place, from 1."
+  },
+  "admin.rules.new.title": {
+    "defaultMessage": "Add a rule",
+    "description": "Heading of the form of a new rule."
+  },
+  "admin.rules.no_text": {
+    "defaultMessage": "Enter the rule in at least one language.",
+    "description": "Error when a rule has no text in any language."
+  },
+  "admin.rules.retire": {
+    "defaultMessage": "Retire",
+    "description": "Button that retires a rule, and the confirm button of its dialog."
+  },
+  "admin.rules.retire.description": {
+    "defaultMessage": "The rule leaves the list of rules for good. Reports that cite it keep it.",
+    "description": "Description of the dialog that confirms retiring a rule."
+  },
+  "admin.rules.retire.title": {
+    "defaultMessage": "Retire “{rule}”?",
+    "description": "Question of the dialog that confirms retiring a rule. {rule} is its text."
+  },
+  "admin.rules.retire_rule": {
+    "defaultMessage": "Retire: {rule}",
+    "description": "Accessible name of the retire button of a rule. {rule} is its text."
+  },
+  "admin.rules.retired": {
+    "defaultMessage": "Retired “{rule}”.",
+    "description": "Status after a rule was retired. {rule} is its text."
+  },
+  "admin.rules.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves a rule's texts in its dialog."
+  },
+  "admin.rules.summary": {
+    "defaultMessage": "The rules people agree to and reports cite.",
+    "description": "Description of the rules screen in the administration menu."
+  },
+  "admin.rules.text": {
+    "defaultMessage": "Rule in {language}",
+    "description": "Label of the text of a rule in one language. {language} is the language's name."
+  },
+  "admin.rules.text.description": {
+    "defaultMessage": "One line of at most {max} characters.",
+    "description": "Help of the text of a rule. {max} is the limit."
+  },
+  "admin.rules.text_required": {
+    "defaultMessage": "Enter the rule, or empty its hint too.",
+    "description": "Error of a rule's text left empty or blank while its hint is filled in."
+  },
+  "admin.rules.title": {
+    "defaultMessage": "Rules",
+    "description": "Title of the rules screen, in the administration menu and as its heading."
+  },
+  "admin.rules.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of a text or hint of a rule longer than its limit. {max} is the limit."
+  },
+  "admin.rules.updated": {
+    "defaultMessage": "Saved “{rule}”. The audit log records the change.",
+    "description": "Status after a rule's texts were saved. {rule} is its text."
+  },
+  "admin.settings.audience.all": {
+    "defaultMessage": "Everyone",
+    "description": "Choice of who may read something: everyone, visitors included."
+  },
+  "admin.settings.audience.none": {
+    "defaultMessage": "Nobody",
+    "description": "Choice of who may read something: nobody."
+  },
+  "admin.settings.audience.users": {
+    "defaultMessage": "Signed-in users",
+    "description": "Choice of who may read something: the server's signed-in users."
+  },
+  "admin.settings.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Character count under a text of the server settings and the rules while the text is within its limit."
+  },
+  "admin.settings.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Character count under a text of the server settings and the rules when the text is over its limit."
+  },
+  "admin.settings.descriptions.description": {
+    "defaultMessage": "The short description is a paragraph that the about page and other apps show next to the server's name; the full description says more on the about page. Each language has its own. A language without one shows the description in the server's default language.",
+    "description": "Explanation above the fields of the server's descriptions on the server settings screen."
+  },
+  "admin.settings.descriptions.full": {
+    "defaultMessage": "Description in {language}",
+    "description": "Label of the field of the server's full description in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.descriptions.save": {
+    "defaultMessage": "Save the descriptions",
+    "description": "Button that saves the server's descriptions."
+  },
+  "admin.settings.descriptions.save_failed": {
+    "defaultMessage": "Could not save the descriptions: {reason}",
+    "description": "Error when saving the server's descriptions failed. {reason} is the server's localized reason."
+  },
+  "admin.settings.descriptions.saved": {
+    "defaultMessage": "Saved the descriptions. The audit log records the change.",
+    "description": "Status after the server's descriptions were saved."
+  },
+  "admin.settings.descriptions.short": {
+    "defaultMessage": "Short description in {language}",
+    "description": "Label of the field of the server's short description in one language. {language} is the language's name in the app's language."
+  },
+  "admin.settings.descriptions.title": {
+    "defaultMessage": "Descriptions",
+    "description": "Heading of the section of the server's descriptions on the server settings screen."
+  },
+  "admin.settings.descriptions.unchanged": {
+    "defaultMessage": "The descriptions are already saved.",
+    "description": "Status after pressing the save button of the descriptions without changing one."
+  },
+  "admin.settings.domain_actions.comments": {
+    "defaultMessage": "Who may read the public comments",
+    "description": "Label of the radio buttons of who may read the public comments of the domain actions."
+  },
+  "admin.settings.domain_actions.comments.all": {
+    "defaultMessage": "Everyone who may read the list sees the comments.",
+    "description": "Description of showing the comments of the domain actions to everyone."
+  },
+  "admin.settings.domain_actions.comments.none": {
+    "defaultMessage": "The comments are not shown.",
+    "description": "Description of not showing the comments of the domain actions."
+  },
+  "admin.settings.domain_actions.comments.users": {
+    "defaultMessage": "Signed-in users who may read the list see the comments.",
+    "description": "Description of showing the comments of the domain actions to signed-in users."
+  },
+  "admin.settings.domain_actions.description": {
+    "defaultMessage": "The about page and the API can list the servers this server limits or suspends, with the public comments of the actions.",
+    "description": "Explanation of the publication of the domain actions."
+  },
+  "admin.settings.domain_actions.list": {
+    "defaultMessage": "Who may read the list",
+    "description": "Label of the radio buttons of who may read the list of domain actions."
+  },
+  "admin.settings.domain_actions.list.all": {
+    "defaultMessage": "Anyone sees the list, without signing in.",
+    "description": "Description of publishing the list of domain actions to everyone."
+  },
+  "admin.settings.domain_actions.list.none": {
+    "defaultMessage": "The list is not published.",
+    "description": "Description of not publishing the list of domain actions."
+  },
+  "admin.settings.domain_actions.list.users": {
+    "defaultMessage": "Only the users signed in to this server see the list.",
+    "description": "Description of publishing the list of domain actions to signed-in users."
+  },
+  "admin.settings.domain_actions.title": {
+    "defaultMessage": "Limited and suspended servers",
+    "description": "Heading of the section of the publication of the domain actions."
+  },
+  "admin.settings.duration.days": {
+    "defaultMessage": "{count, plural, one {# day} other {# days}}",
+    "description": "A length of time in days."
+  },
+  "admin.settings.duration.hours": {
+    "defaultMessage": "{count, plural, one {# hour} other {# hours}}",
+    "description": "A length of time in hours."
+  },
+  "admin.settings.duration.seconds": {
+    "defaultMessage": "{count, plural, one {# second} other {# seconds}}",
+    "description": "A length of time in seconds."
+  },
+  "admin.settings.federation.authorized_fetch": {
+    "defaultMessage": "Require signed requests (authorized fetch)",
+    "description": "Checkbox of the authorized fetch setting."
+  },
+  "admin.settings.federation.authorized_fetch.description": {
+    "defaultMessage": "Other servers then read posts and collections only with a verified signature, so that suspended servers cannot read them. Some software cannot read them anymore.",
+    "description": "Description of the authorized fetch checkbox."
+  },
+  "admin.settings.federation.title": {
+    "defaultMessage": "Federation",
+    "description": "Heading of the section of the federation settings."
+  },
+  "admin.settings.language.default": {
+    "defaultMessage": "Default language",
+    "description": "Label of the select of the server's default language."
+  },
+  "admin.settings.language.description": {
+    "defaultMessage": "The language of new accounts, of visitors whose language the app does not have, and of the server's texts missing in a language.",
+    "description": "Help of the server's default language."
+  },
+  "admin.settings.language.title": {
+    "defaultMessage": "Language",
+    "description": "Heading of the section of the server's default language."
+  },
   "admin.settings.name.blank": {
     "defaultMessage": "Enter a name with letters, or leave the field empty.",
     "description": "Error of a field of the server's name that holds only spaces."
@@ -2667,9 +3079,125 @@
     "defaultMessage": "The names are already saved.",
     "description": "Status after pressing Save on the server settings screen without changing a name."
   },
+  "admin.settings.policies.save": {
+    "defaultMessage": "Save the settings",
+    "description": "Button that saves the registration, language, timeline, federation and domain action settings together."
+  },
+  "admin.settings.policies.save_failed": {
+    "defaultMessage": "Could not save the settings; nothing was changed: {reason}",
+    "description": "Error when saving the server's settings failed. {reason} is the server's localized reason, which names the setting at fault."
+  },
+  "admin.settings.policies.saved": {
+    "defaultMessage": "Saved the settings. They take effect at once, and the audit log records each change.",
+    "description": "Status after the server's settings were saved."
+  },
+  "admin.settings.policies.unchanged": {
+    "defaultMessage": "The settings are already saved.",
+    "description": "Status after pressing the save button of the settings without changing one."
+  },
+  "admin.settings.registration.approval": {
+    "defaultMessage": "With approval",
+    "description": "Registration mode approval."
+  },
+  "admin.settings.registration.approval.description": {
+    "defaultMessage": "Anyone may sign up with a reason; the account works once a moderator approves it.",
+    "description": "Description of the registration mode approval."
+  },
+  "admin.settings.registration.closed": {
+    "defaultMessage": "Nobody",
+    "description": "Registration mode closed."
+  },
+  "admin.settings.registration.closed.description": {
+    "defaultMessage": "Nobody may sign up; administrators create accounts from the command line.",
+    "description": "Description of the registration mode closed."
+  },
+  "admin.settings.registration.description": {
+    "defaultMessage": "Moderators review the sign-ups that wait for approval, and create the invites, on the moderation screens.",
+    "description": "Help of the registration mode: where the sign-ups and the invites are handled."
+  },
+  "admin.settings.registration.invite": {
+    "defaultMessage": "With an invite",
+    "description": "Registration mode invite."
+  },
+  "admin.settings.registration.invite.description": {
+    "defaultMessage": "Only people with an invite code may sign up.",
+    "description": "Description of the registration mode invite."
+  },
+  "admin.settings.registration.mode": {
+    "defaultMessage": "Who may sign up",
+    "description": "Label of the radio buttons of the registration mode."
+  },
+  "admin.settings.registration.open": {
+    "defaultMessage": "Anyone",
+    "description": "Registration mode open."
+  },
+  "admin.settings.registration.open.description": {
+    "defaultMessage": "Anyone may sign up and use the account at once.",
+    "description": "Description of the registration mode open."
+  },
+  "admin.settings.registration.title": {
+    "defaultMessage": "Registration",
+    "description": "Heading of the section of who may sign up on the server settings screen."
+  },
+  "admin.settings.remote_media.all": {
+    "defaultMessage": "Everything",
+    "description": "Remote media policy all."
+  },
+  "admin.settings.remote_media.all.description": {
+    "defaultMessage": "Keep copies of every file for the time below.",
+    "description": "Description of the remote media policy all."
+  },
+  "admin.settings.remote_media.avatars": {
+    "defaultMessage": "Avatars and headers",
+    "description": "Remote media policy avatars."
+  },
+  "admin.settings.remote_media.avatars.description": {
+    "defaultMessage": "Keep copies of avatars, headers and custom emoji for the time below.",
+    "description": "Description of the remote media policy avatars."
+  },
+  "admin.settings.remote_media.none": {
+    "defaultMessage": "Keep none",
+    "description": "Remote media policy none."
+  },
+  "admin.settings.remote_media.none.description": {
+    "defaultMessage": "The media proxy relays every file from its server each time.",
+    "description": "Description of the remote media policy none."
+  },
+  "admin.settings.remote_media.policy": {
+    "defaultMessage": "Copies of media from other servers",
+    "description": "Label of the radio buttons of the remote media policy."
+  },
+  "admin.settings.remote_media.ttl": {
+    "defaultMessage": "How long to keep media from other servers",
+    "description": "Label of the select of the remote media cache time."
+  },
+  "admin.settings.remote_media.ttl.description": {
+    "defaultMessage": "Browsers and the CDN keep the files this long too.",
+    "description": "Help of the remote media cache time."
+  },
   "admin.settings.summary": {
-    "defaultMessage": "The server's name, which people see in place of its domain.",
+    "defaultMessage": "The server's name and descriptions, who may sign up, its default language, timelines and federation.",
     "description": "Description of the server settings screen in the administration menu."
+  },
+  "admin.settings.timelines.federated": {
+    "defaultMessage": "Offer the federated timeline",
+    "description": "Checkbox that turns the federated timeline on."
+  },
+  "admin.settings.timelines.federated.description": {
+    "defaultMessage": "The public posts that reach this server, from other servers too.",
+    "description": "Description of the federated timeline checkbox."
+  },
+  "admin.settings.timelines.local": {
+    "defaultMessage": "Offer the local timeline",
+    "description": "Checkbox that turns the local timeline on."
+  },
+  "admin.settings.timelines.local.description": {
+    "defaultMessage": "The public posts of this server's accounts.",
+    "description": "Description of the local timeline checkbox."
+  },
+  "admin.settings.timelines.title": {
+    "defaultMessage": "Timelines",
+    "description": "Heading of the section of the public timelines on the server settings screen."
   },
   "admin.settings.title": {
     "defaultMessage": "Server settings",

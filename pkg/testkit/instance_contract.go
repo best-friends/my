@@ -43,6 +43,7 @@ func InstanceRepositoryContract(t *testing.T, newHarness InstanceFactory) {
 		{"KeepsSettingRevisions", instanceKeepsSettingRevisions},
 		{"StoresCanonicalValues", instanceStoresCanonicalValues},
 		{"RejectsInvalidSettings", instanceRejectsInvalidSettings},
+		{"SetsSeveralSettingsAtOnce", instanceSetsSeveralSettings},
 		{"KeepsTextRevisions", instanceKeepsTextRevisions},
 		{"LooksUpTextsThroughTheFallbackChain", instanceLooksUpTextsThroughFallback},
 		{"RejectsInvalidTexts", instanceRejectsInvalidTexts},
@@ -208,6 +209,41 @@ func instanceRejectsInvalidSettings(t *testing.T, e *instanceEnv) {
 	}
 	if _, err := e.service.SettingHistory(ctx, "no_such_key", 10); !errors.Is(err, instance.ErrUnknownKey) {
 		t.Errorf("SettingHistory(unknown) = %v, want ErrUnknownKey", err)
+	}
+}
+
+// instanceSetsSeveralSettings checks SetSettings: one rejected value writes nothing and names
+// its key; otherwise every value becomes current, canonical, and kept as a revision by the user.
+func instanceSetsSeveralSettings(t *testing.T, e *instanceEnv) {
+	ctx := t.Context()
+	_, err := e.service.SetSettings(ctx, []appinstance.SetSettingInput{
+		{Key: instance.SettingRegistrationMode, Value: "invite"},
+		{Key: instance.SettingLocalTimelineEnabled, Value: "maybe"},
+	})
+	var se *appinstance.SettingError
+	if !errors.As(err, &se) || se.Key != instance.SettingLocalTimelineEnabled || !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("SetSettings(invalid local_timeline_enabled) = %v, want a SettingError of that key wrapping ErrInvalidValue", err)
+	}
+	if cur, err := e.h.Instance.ListCurrentSettings(ctx); err != nil || len(cur) != 0 {
+		t.Errorf("ListCurrentSettings = %+v, %v; want nothing written", cur, err)
+	}
+
+	e.clock.Advance(time.Second)
+	revs, err := e.service.SetSettings(ctx, []appinstance.SetSettingInput{
+		{Key: instance.SettingRegistrationMode, Value: "invite", RevisedByUserID: "admin"},
+		{Key: instance.SettingDefaultLocale, Value: "ja_jp", RevisedByUserID: "admin"},
+		{Key: instance.SettingFederatedTimelineEnabled, Value: "FALSE", RevisedByUserID: "admin"},
+	})
+	if err != nil || len(revs) != 3 {
+		t.Fatalf("SetSettings = %+v, %v; want 3 revisions", revs, err)
+	}
+	s := e.settings(t)
+	if s.RegistrationMode() != instance.RegistrationInvite || s.DefaultLocale() != "ja-JP" || s.FederatedTimelineEnabled() {
+		t.Errorf("settings = %v %q %v; want invite, ja-JP, false", s.RegistrationMode(), s.DefaultLocale(), s.FederatedTimelineEnabled())
+	}
+	history, err := e.service.SettingHistory(ctx, instance.SettingDefaultLocale, 10)
+	if err != nil || !reflect.DeepEqual(history, revs[1:2]) || history[0].RevisedByUserID != "admin" {
+		t.Errorf("SettingHistory(default_locale) = %+v, %v; want [%+v]", history, err, revs[1])
 	}
 }
 

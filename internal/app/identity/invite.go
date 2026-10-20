@@ -19,6 +19,9 @@ type InviteStatus struct {
 	identity.Invite
 	Uses    int
 	Revoked bool
+	// State is what the invite allowed when the Service read it (StateAt); the repository
+	// leaves it empty.
+	State InviteState
 }
 
 // Usable reports whether the invite still lets someone sign up at now.
@@ -70,12 +73,69 @@ func (s *Service) CreateInvite(ctx context.Context, in CreateInviteInput) (ident
 }
 
 // ListInvites returns invites with their usage, newest first, at most limit (1 to
-// MaxListLimit) of them.
-func (s *Service) ListInvites(ctx context.Context, limit int) ([]InviteStatus, error) {
+// MaxListLimit) of them. A before other than "" is the ID of the last invite of the previous
+// page: the list starts after it.
+func (s *Service) ListInvites(ctx context.Context, before string, limit int) ([]InviteStatus, error) {
 	if limit < 1 || limit > MaxListLimit {
 		return nil, fmt.Errorf("identity: limit must be 1 to %d", MaxListLimit)
 	}
-	return s.d.Repository.ListInvites(ctx, limit)
+	list, err := s.d.Repository.ListInvites(ctx, before, limit)
+	if err != nil {
+		return nil, err
+	}
+	now := s.d.Clock.Now()
+	for i := range list {
+		list[i].State = list[i].StateAt(now)
+	}
+	return list, nil
+}
+
+// InviteState is what an invite allows now.
+type InviteState string
+
+// Invite states, in the order StateAt checks them.
+const (
+	InviteUsable    InviteState = "usable"
+	InviteRevoked   InviteState = "revoked"
+	InviteExpired   InviteState = "expired"
+	InviteExhausted InviteState = "exhausted" // used as many times as it allows
+)
+
+// StateAt returns what the invite allows at now: a revoked invite is revoked even after it
+// expired, and an expired one expired even when it is used up.
+func (s InviteStatus) StateAt(now time.Time) InviteState {
+	switch {
+	case s.Revoked:
+		return InviteRevoked
+	case s.Expired(now):
+		return InviteExpired
+	case s.Exhausted(s.Uses):
+		return InviteExhausted
+	}
+	return InviteUsable
+}
+
+// RevokeInviteByID stops the invite with the ID from working, as RevokeInvite does, and returns
+// it with its usage. It fails with ErrNotFound when no invite has the ID.
+func (s *Service) RevokeInviteByID(ctx context.Context, id, revokedByUserID string) (InviteStatus, error) {
+	inv, err := s.d.Repository.FindInviteByID(ctx, id)
+	if err != nil {
+		return InviteStatus{}, err
+	}
+	out := InviteStatus{Invite: inv}
+	rev := identity.InviteRevocation{InviteID: inv.ID, RevokedByUserID: revokedByUserID, RevokedAt: s.d.Clock.Now()}
+	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := s.d.Repository.InsertInviteRevocation(ctx, tx, rev); err != nil {
+			return err
+		}
+		out.Uses, out.Revoked, err = s.d.Repository.InviteUsage(ctx, tx, inv.ID)
+		return err
+	})
+	if err != nil {
+		return InviteStatus{}, err
+	}
+	out.State = out.StateAt(rev.RevokedAt)
+	return out, nil
 }
 
 // RevokeInvite stops an invite from working. Revoking it again keeps the first revocation. It

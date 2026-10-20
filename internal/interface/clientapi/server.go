@@ -166,6 +166,12 @@ type Options struct {
 	Registrations Registrations
 	// SignupBlocks runs the sign-up block list (admin_signup_blocks.go).
 	SignupBlocks SignupBlocks
+	// Settings reads and changes the instance settings (admin_settings.go).
+	Settings InstanceSettings
+	// Invites runs the invites (admin_invites.go); SignUpPath is the path, on Origin, of the
+	// registration page that AdminInvite.url opens with the code filled in.
+	Invites    Invites
+	SignUpPath string
 	// RateLimiter applies AnonymousLimit and AccountLimit; nil applies no limit.
 	RateLimiter *kernel.RateLimiter
 	// AnonymousLimit and AccountLimit override the package's limits of the same names when

@@ -367,7 +367,7 @@ func registrationInviteConcurrency(t *testing.T, e *accountEnv) {
 	if ok != maxUses {
 		t.Errorf("%d sign-ups redeemed an invite of %d uses", ok, maxUses)
 	}
-	list, err := r.ListInvites(ctx, 10)
+	list, err := r.ListInvites(ctx, "", 10)
 	if err != nil || len(list) != 1 || list[0].Uses != maxUses || list[0].Usable(e.clock.Now()) {
 		t.Errorf("ListInvites = %+v, %v; want %d uses and used up", list, err, maxUses)
 	}
@@ -562,7 +562,7 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 	if _, err := r.RevokeInvite(ctx, "NOSUCHCODE", ""); !errors.Is(err, appidentity.ErrNotFound) {
 		t.Errorf("revoking an unknown code = %v, want ErrNotFound", err)
 	}
-	list, err := r.ListInvites(ctx, 10)
+	list, err := r.ListInvites(ctx, "", 10)
 	if err != nil || len(list) != 2 {
 		t.Fatalf("ListInvites = %+v, %v", list, err)
 	}
@@ -576,6 +576,24 @@ func registrationInvites(t *testing.T, e *accountEnv) {
 	}
 	if _, err := r.CreateInvite(ctx, appidentity.CreateInviteInput{MaxUses: -1}); err == nil {
 		t.Error("CreateInvite with negative uses succeeded")
+	}
+	if list[0].State != appidentity.InviteUsable || list[1].State != appidentity.InviteRevoked ||
+		list[0].StateAt(b.CreatedAt.Add(24*time.Hour)) != appidentity.InviteExpired {
+		t.Errorf("states = %s, %s, expired b %s; want usable, revoked, expired",
+			list[0].State, list[1].State, list[0].StateAt(b.CreatedAt.Add(24*time.Hour)))
+	}
+
+	// The second page starts after the last invite of the first.
+	page, err := r.ListInvites(ctx, b.ID, 10)
+	if err != nil || len(page) != 1 || page[0].ID != a.ID {
+		t.Errorf("ListInvites(before b) = %+v, %v; want a", page, err)
+	}
+	got, err := r.RevokeInviteByID(ctx, b.ID, "admin")
+	if err != nil || got.ID != b.ID || !got.Revoked || got.Uses != 0 || got.Code != b.Code || got.State != appidentity.InviteRevoked {
+		t.Errorf("RevokeInviteByID(b) = %+v, %v; want b, revoked", got, err)
+	}
+	if _, err := r.RevokeInviteByID(ctx, "no-such-invite", "admin"); !errors.Is(err, appidentity.ErrNotFound) {
+		t.Errorf("RevokeInviteByID(unknown) = %v, want ErrNotFound", err)
 	}
 }
 

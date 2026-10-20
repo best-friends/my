@@ -135,7 +135,7 @@ func runInvite(args []string, stdout, stderr io.Writer) int {
 		}
 	case "list":
 		var list []appidentity.InviteStatus
-		if list, err = app.Identity.ListInvites(ctx, limit); err == nil {
+		if list, err = app.Identity.ListInvites(ctx, "", limit); err == nil {
 			err = printInvites(stdout, list, app.Clock.Now())
 		}
 	case "revoke":

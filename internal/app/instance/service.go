@@ -119,9 +119,68 @@ type SetSettingInput struct {
 // instance.ErrInvalidValue for bad input. Setting the current value again still records a
 // revision. The change is audited in the same transaction.
 func (s *Service) SetSetting(ctx context.Context, in SetSettingInput) (instance.SettingRevision, error) {
-	def, err := instance.Lookup(in.Key)
+	revs, err := s.SetSettings(ctx, []SetSettingInput{in})
 	if err != nil {
 		return instance.SettingRevision{}, err
+	}
+	return revs[0], nil
+}
+
+// SettingError reports the input of SetSettings that its key rejects. It wraps an error
+// wrapping instance.ErrUnknownKey or instance.ErrInvalidValue.
+type SettingError struct {
+	Key instance.SettingKey
+	Err error
+}
+
+func (e *SettingError) Error() string { return e.Err.Error() }
+
+func (e *SettingError) Unwrap() error { return e.Err }
+
+// SetSettings changes several settings at once, each as SetSetting changes one. It validates
+// every value first and records nothing when one is rejected (a *SettingError naming the first
+// such key); otherwise it records the revisions and their audit entries in one transaction, in
+// the order of ins, so that a form of several settings is saved whole or not at all.
+func (s *Service) SetSettings(ctx context.Context, ins []SetSettingInput) ([]instance.SettingRevision, error) {
+	now := s.d.Clock.Now()
+	revs := make([]instance.SettingRevision, 0, len(ins))
+	audits := make([]appmoderation.AuditRecorded, 0, len(ins))
+	for _, in := range ins {
+		value, err := s.parseSetting(ctx, in)
+		if err != nil {
+			return nil, &SettingError{Key: in.Key, Err: err}
+		}
+		rev := instance.SettingRevision{ID: s.d.IDs.NewID(), Key: in.Key, Value: value, RevisedByUserID: in.RevisedByUserID, RevisedAt: now}
+		revs = append(revs, rev)
+		audits = append(audits, s.audit(appmoderation.AuditSettingChanged, appmoderation.AuditTargetSetting, string(in.Key), string(in.Key), rev.ID, in.RevisedByUserID, now))
+	}
+	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		for i, rev := range revs {
+			if err := s.d.Repository.InsertSettingRevision(ctx, tx, rev); err != nil {
+				return err
+			}
+			if err := tx.Emit(ctx, SettingRevised{Revision: rev}); err != nil {
+				return err
+			}
+			if err := tx.Emit(ctx, audits[i]); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return revs, nil
+}
+
+// parseSetting returns the canonical value of in (instance.Definition.Parse), with a locale
+// canonicalized first and a media file checked. It fails with an error wrapping
+// instance.ErrUnknownKey or instance.ErrInvalidValue.
+func (s *Service) parseSetting(ctx context.Context, in SetSettingInput) (string, error) {
+	def, err := instance.Lookup(in.Key)
+	if err != nil {
+		return "", err
 	}
 	raw := in.Value
 	if def.Kind == instance.KindLocale {
@@ -129,30 +188,14 @@ func (s *Service) SetSetting(ctx context.Context, in SetSettingInput) (instance.
 	}
 	value, err := def.Parse(raw)
 	if err != nil {
-		return instance.SettingRevision{}, err
+		return "", err
 	}
 	if def.Kind == instance.KindMedia && value != "" && s.d.Media != nil {
 		if err := s.d.Media.CheckImage(ctx, value); err != nil {
-			return instance.SettingRevision{}, fmt.Errorf("setting %s: media %s: %w: %w", in.Key, value, instance.ErrInvalidValue, err)
+			return "", fmt.Errorf("setting %s: media %s: %w: %w", in.Key, value, instance.ErrInvalidValue, err)
 		}
 	}
-	rev := instance.SettingRevision{
-		ID: s.d.IDs.NewID(), Key: in.Key, Value: value, RevisedByUserID: in.RevisedByUserID, RevisedAt: s.d.Clock.Now(),
-	}
-	audit := s.audit(appmoderation.AuditSettingChanged, appmoderation.AuditTargetSetting, string(in.Key), string(in.Key), rev.ID, in.RevisedByUserID, rev.RevisedAt)
-	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if err := s.d.Repository.InsertSettingRevision(ctx, tx, rev); err != nil {
-			return err
-		}
-		if err := tx.Emit(ctx, SettingRevised{Revision: rev}); err != nil {
-			return err
-		}
-		return tx.Emit(ctx, audit)
-	})
-	if err != nil {
-		return instance.SettingRevision{}, err
-	}
-	return rev, nil
+	return value, nil
 }
 
 // IsMediaReferenced reports whether any revision of a media setting, current or not, refers
