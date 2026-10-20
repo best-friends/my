@@ -3106,6 +3106,8 @@ export interface MessageArgs {
   "client:public.disabled.title": {};
   /** Federated timeline */
   "client:public.title": {};
+  /** Close */
+  "client:reaction.list.close": {};
   /** Nobody has reacted yet. */
   "client:reaction.list.empty": {};
   /** The reactions could not be loaded: {reason} */

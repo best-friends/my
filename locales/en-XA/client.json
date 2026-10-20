@@ -6207,6 +6207,10 @@
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧḗḗḓ ŧīḿḗḗŀīƞḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "reaction.list.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "reaction.list.empty": {
     "defaultMessage": "[Ƞǿǿƀǿǿḓẏ ħȧȧş řḗḗȧȧƈŧḗḗḓ ẏḗḗŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -8139,6 +8139,10 @@
     "defaultMessage": "リアクションした人",
     "description": "Title of the dialog that lists the accounts that reacted to a post, each with its emoji."
   },
+  "reaction.list.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the × button that closes the dialog of the accounts that reacted to a post."
+  },
   "reaction.list.loading": {
     "defaultMessage": "リアクションを読み込んでいます",
     "description": "Shown in the dialog of the accounts that reacted to a post while the first page loads."
