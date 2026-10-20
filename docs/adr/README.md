@@ -62,7 +62,7 @@
 | [0048](0048-typescript-7-with-typescript-6-api.md) | 型検査を TypeScript 7 にし、コンパイラ API を使うツールには TypeScript 6 を並べる | Accepted |
 | [0049](0049-client-lint-oxlint.md) | クライアントの lint を ESLint から Oxlint に移す | Accepted |
 | [0050](0050-stream-pubsub-across-processes.md) | リアルタイム更新のプロセス間 Pub/Sub | Accepted |
-| [0051](0051-custom-emoji.md) | カスタム絵文字 | Proposed |
+| [0051](0051-custom-emoji.md) | カスタム絵文字 | Accepted |
 | [0054](0054-media-variants-video-audio.md) | メディアの派生と動画・音声の扱い | Accepted |
 | [0056](0056-system-observability.md) | システムメトリクスの可観測性 | Accepted |
 | [0060](0060-instance-webhooks.md) | サーバー単位の webhook | Accepted |
