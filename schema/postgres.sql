@@ -123,7 +123,7 @@ CREATE TABLE role_permissions (
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
-    'manage_two_factor', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements'
+    'manage_login_recovery', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements'
   )),
   PRIMARY KEY (role_id, permission)
 );

@@ -15,7 +15,7 @@ func TestPermissionCategory(t *testing.T) {
 		PermManageRules:         CategoryServer,
 		PermManageRoles:         CategoryServer,
 		PermManageJobs:          CategoryServer,
-		PermManageTwoFactor:     CategoryServer,
+		PermManageLoginRecovery: CategoryServer,
 		PermManageCustomEmojis:  CategoryServer,
 		PermManageWebhooks:      CategoryServer,
 		PermManageAnnouncements: CategoryServer,

@@ -1449,11 +1449,11 @@ const (
 	PermissionManageDomains       Permission = "manage_domains"
 	PermissionManageInvites       Permission = "manage_invites"
 	PermissionManageJobs          Permission = "manage_jobs"
+	PermissionManageLoginRecovery Permission = "manage_login_recovery"
 	PermissionManageReports       Permission = "manage_reports"
 	PermissionManageRoles         Permission = "manage_roles"
 	PermissionManageRules         Permission = "manage_rules"
 	PermissionManageSettings      Permission = "manage_settings"
-	PermissionManageTwoFactor     Permission = "manage_two_factor"
 	PermissionManageWebhooks      Permission = "manage_webhooks"
 	PermissionViewAudit           Permission = "view_audit"
 )
@@ -1473,6 +1473,8 @@ func (e Permission) Valid() bool {
 		return true
 	case PermissionManageJobs:
 		return true
+	case PermissionManageLoginRecovery:
+		return true
 	case PermissionManageReports:
 		return true
 	case PermissionManageRoles:
@@ -1480,8 +1482,6 @@ func (e Permission) Valid() bool {
 	case PermissionManageRules:
 		return true
 	case PermissionManageSettings:
-		return true
-	case PermissionManageTwoFactor:
 		return true
 	case PermissionManageWebhooks:
 		return true
@@ -5000,7 +5000,7 @@ type PasswordStatus struct {
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
 // `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-// log. `manage_two_factor`: recovering a local user's sign-in, by removing their two-factor
+// log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
 // authentication or issuing a password reset link (only the built-in admin role by
 // default). `manage_custom_emojis`: the custom emoji, local and
 // remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the

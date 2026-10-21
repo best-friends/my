@@ -504,7 +504,7 @@ describe("an account's admin page", () => {
     const requests = recordAccountRequests();
     let detail: Detail = { ...bobDetail, two_factor_enabled: true };
     server.use(
-      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_two_factor"]),
+      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_login_recovery"]),
       http.get(`${apiBase}/admin/accounts/:id`, () => HttpResponse.json(detail)),
       http.post(`${apiBase}/admin/accounts/:id/two_factor/disable`, () => {
         detail = { ...detail, two_factor_enabled: false };
@@ -550,7 +550,7 @@ describe("an account's admin page", () => {
     const url = "https://my.example/auth/reset_password?token=rst_secret";
     accountServer({ ...bobDetail, two_factor_enabled: false });
     server.use(
-      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_two_factor"]),
+      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_login_recovery"]),
       http.post(`${apiBase}/admin/accounts/:id/password_reset_link`, () => HttpResponse.json({ url, expires_at: "2026-10-17T01:00:00Z" }, { status: 201 })),
     );
     const { user } = await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
@@ -581,7 +581,7 @@ describe("an account's admin page", () => {
   test("a password reset link the server refuses stays in the confirmation to try again", async () => {
     accountServer({ ...bobDetail, two_factor_enabled: false });
     server.use(
-      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_two_factor"]),
+      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_login_recovery"]),
       http.post(`${apiBase}/admin/accounts/:id/password_reset_link`, () => problem(503, "about:blank", "Service Unavailable")),
     );
     const { user } = await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
@@ -595,7 +595,7 @@ describe("an account's admin page", () => {
     expect(within(reset).queryByLabelText("Password reset link")).not.toBeInTheDocument();
   });
 
-  test("a moderator without manage_two_factor cannot issue a password reset link", async () => {
+  test("a moderator without manage_login_recovery cannot issue a password reset link", async () => {
     const requests = recordAccountRequests();
     accountServer({ ...bobDetail, two_factor_enabled: false });
     await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });

@@ -289,7 +289,7 @@ flowchart LR
 
 - パスワードリセットのトークン（FR-002）は、期限内で使われておらず、発行がパスワードの最後の変化（`password_credentials` の最新行の `set_at`、削除されていればその `removed_at`）より前でないときだけ使えます。
   リセット・変更・管理者の発行など、どの経路でもパスワードが新しくなるか削除されれば、それより前に発行したリンクは使えなくなります。状態の列は持たず、これらのイベントから求めます。パスワードを削除した利用者も、リセットのリンクで新しいパスワードを設定できます。
-- リセットのリンクは、メールを送るサーバー（`mail` が `none` でない）ではログインの画面から本人がメールで受け取り、どのサーバーでも管理者が管理画面（権限 `manage_two_factor`）か CLI（`my admin account password-reset-link`）で発行できます。
+- リセットのリンクは、メールを送るサーバー（`mail` が `none` でない）ではログインの画面から本人がメールで受け取り、どのサーバーでも管理者が管理画面（権限 `manage_login_recovery`）か CLI（`my admin account password-reset-link`）で発行できます。
   管理者の発行は監査ログに `password_reset_link_issued` を残し、その `source_event_id` はトークンの `id` です。
 
 #### 権限
@@ -304,7 +304,7 @@ flowchart LR
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
 | `roles` | リソース | `id`, `key`（`string(64)`）, `position`（`int`）, `created_at` | 一意 `(key)` |
-| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_two_factor, manage_custom_emojis, manage_webhooks, manage_announcements)`） | PK `(role_id, permission)` |
+| `role_permissions` | 現在値 | `role_id`, `permission`（`enum(manage_reports, manage_accounts, manage_domains, manage_rules, manage_settings, manage_roles, manage_invites, view_audit, manage_jobs, manage_login_recovery, manage_custom_emojis, manage_webhooks, manage_announcements)`） | PK `(role_id, permission)` |
 | `user_role_grants` | イベント | `id`, `user_id`, `role_id`, `granted_by_user_id`（NULL 可 = CLI による付与。最初の管理者など）, `granted_at` | |
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |

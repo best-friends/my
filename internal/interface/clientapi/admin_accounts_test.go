@@ -302,8 +302,8 @@ func TestDisableAdminAccountTwoFactor(t *testing.T) {
 	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
 	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
-		p.Detail == nil || !strings.Contains(*p.Detail, "manage_two_factor") {
-		t.Errorf("by a moderator = %d %+v, want 403 for manage_two_factor", res.StatusCode, p)
+		p.Detail == nil || !strings.Contains(*p.Detail, "manage_login_recovery") {
+		t.Errorf("by a moderator = %d %+v, want 403 for manage_login_recovery", res.StatusCode, p)
 	}
 	if len(admin.twoFactorRemovals) != 0 {
 		t.Fatalf("a refused removal ran: %v", admin.twoFactorRemovals)
@@ -340,8 +340,8 @@ func TestIssueAdminAccountPasswordResetLink(t *testing.T) {
 	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
 	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
-		p.Detail == nil || !strings.Contains(*p.Detail, "manage_two_factor") {
-		t.Errorf("by a moderator = %d %+v, want 403 for manage_two_factor", res.StatusCode, p)
+		p.Detail == nil || !strings.Contains(*p.Detail, "manage_login_recovery") {
+		t.Errorf("by a moderator = %d %+v, want 403 for manage_login_recovery", res.StatusCode, p)
 	}
 	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin-read", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {

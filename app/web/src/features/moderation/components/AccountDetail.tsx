@@ -2,7 +2,7 @@
 // An account's admin page below its heading (FR-714, FR-703, FR-713): the account with its state, registration
 // and roles; what its actions take away now; its email address and IP addresses, which a local account shows only
 // when the moderator presses "show" (each time is recorded in the audit log, ADR-0038); whether its user has
-// two-factor authentication, with its removal, which asks first (recorded in the audit log); for manage_two_factor,
+// two-factor authentication, with its removal, which asks first (recorded in the audit log); for manage_login_recovery,
 // issuing a password reset link for its user, which asks first, is recorded in the audit log, and shows the link
 // once with a copy button; the moderation actions
 // on it, each in effect with a lift that asks for an optional reason first; its reports; and the form of a new
@@ -61,7 +61,7 @@ function AccountPage({ id }: { id: string }) {
   const handle = handleOf(account.account);
   const canManageRoles = useHasPermission("manage_roles");
   // Recovering a user's sign-in is server administration (ADR-0058).
-  const canRecoverSignIn = useHasPermission("manage_two_factor");
+  const canRecoverSignIn = useHasPermission("manage_login_recovery");
   return (
     <div className="flex flex-col gap-8">
       <DetailSection title={t("client:admin.account.summary.title")}>
@@ -209,7 +209,7 @@ function TwoFactorSection({ id, enabled, handle }: { id: string; enabled: boolea
   const focusHeading = useFocusAfterChange(headingRef, enabled);
   const remove = useRemoveTwoFactor(id, handle, focusHeading);
   // Removing it is server administration (ADR-0058): moderators see the state but not the button.
-  const canRemove = useHasPermission("manage_two_factor");
+  const canRemove = useHasPermission("manage_login_recovery");
   return (
     <DetailSection title={t("client:admin.account.two_factor.title")} headingRef={headingRef}>
       <StatusMessage tone="success">{remove.status}</StatusMessage>
@@ -245,7 +245,7 @@ function TwoFactorSection({ id, enabled, handle }: { id: string; enabled: boolea
  * Issuing a link that sets a new password for the user of a local account, to hand to them when email does not
  * reach them (FR-002); it asks first, and the issuance is recorded in the audit log. The link is shown once, with
  * a button that copies it; issuing again replaces it. Like removing two-factor authentication, it lets the holder of
- * the link into the account, so it is server administration (ADR-0058): the region is only for manage_two_factor.
+ * the link into the account, so it is server administration (ADR-0058): the region is only for manage_login_recovery.
  */
 function PasswordResetSection({ id, handle }: { id: string; handle: string }) {
   const t = useT();

@@ -2016,6 +2016,8 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_invites": {};
   /** Failed jobs */
   "client:admin.roles.permission.manage_jobs": {};
+  /** Sign-in recovery */
+  "client:admin.roles.permission.manage_login_recovery": {};
   /** Reports */
   "client:admin.roles.permission.manage_reports": {};
   /** Roles */
@@ -2024,8 +2026,6 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_rules": {};
   /** Server settings */
   "client:admin.roles.permission.manage_settings": {};
-  /** Sign-in recovery */
-  "client:admin.roles.permission.manage_two_factor": {};
   /** Webhooks */
   "client:admin.roles.permission.manage_webhooks": {};
   /** Audit log */

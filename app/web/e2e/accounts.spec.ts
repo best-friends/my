@@ -110,11 +110,11 @@ const resetLink = "https://my.example/auth/reset_password?token=rst_3q2Ybq7mJXkQ
 
 /**
  * Plays the API of a signed-in moderator with `permissions`; returns the requests to the account operations. With
- * manage_two_factor, the local account's user shows without two-factor authentication.
+ * manage_login_recovery, the local account's user shows without two-factor authentication.
  */
 async function moderatorServer(page: Page, permissions: readonly string[] = moderator.permissions) {
   const viewer = { ...moderator, permissions };
-  const recovers = permissions.includes("manage_two_factor");
+  const recovers = permissions.includes("manage_login_recovery");
   const locale = test.info().project.use.locale ?? "en";
   let actions = [limit];
   let blocks: Schemas["AdminSignupBlock"][] = [];
@@ -350,7 +350,7 @@ test.describe("accounts", () => {
   });
 
   test("an administrator issues a password reset link for a local account after its confirmation, shown once", async ({ page, makeAxeBuilder }) => {
-    const requests = await moderatorServer(page, [...moderator.permissions, "manage_two_factor"]);
+    const requests = await moderatorServer(page, [...moderator.permissions, "manage_login_recovery"]);
     await page.goto(`/moderation/accounts/${local.id}`);
     const main = page.getByRole("main");
     await expect(main.getByRole("heading", { level: 3 }).first()).toBeVisible();

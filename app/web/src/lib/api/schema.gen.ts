@@ -2863,7 +2863,7 @@ export interface paths {
          *     recorded in the audit log as `two_factor_disabled`. A remote account or the instance
          *     actor is a 422 naming `id`, an account without two-factor authentication a 409
          *     `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
-         *     `manage_two_factor` permission, which only the built-in admin role has by default.
+         *     `manage_login_recovery` permission, which only the built-in admin role has by default.
          */
         post: operations["disableAdminAccountTwoFactor"];
         delete?: never;
@@ -2890,7 +2890,7 @@ export interface paths {
          *     only place it is shown. It is recorded in the audit log as `password_reset_link_issued`.
          *     Whoever holds the link can set the password: confirm who the user is through another
          *     channel first. A remote account or the instance actor is a 422 naming `id`, and an
-         *     unknown account a 404. Needs the `manage_two_factor` permission, which only the
+         *     unknown account a 404. Needs the `manage_login_recovery` permission, which only the
          *     built-in admin role has by default.
          */
         post: operations["issueAdminAccountPasswordResetLink"];
@@ -5885,7 +5885,7 @@ export interface components {
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
          *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-         *     log. `manage_two_factor`: recovering a local user's sign-in, by removing their two-factor
+         *     log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
          *     authentication or issuing a password reset link (only the built-in admin role by
          *     default). `manage_custom_emojis`: the custom emoji, local and
          *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
@@ -5893,7 +5893,7 @@ export interface components {
          *     yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
         /**
          * @description A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
          *     citing it.

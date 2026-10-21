@@ -4027,6 +4027,10 @@
     "defaultMessage": "[Ƒȧȧīŀḗḗḓ ĵǿǿƀş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.permission.manage_login_recovery": {
+    "defaultMessage": "[Şīɠƞ-īƞ řḗḗƈǿǿṽḗḗřẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.permission.manage_reports": {
     "defaultMessage": "[Řḗḗƥǿǿřŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4041,10 +4045,6 @@
   },
   "admin.roles.permission.manage_settings": {
     "defaultMessage": "[Şḗḗřṽḗḗř şḗḗŧŧīƞɠş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.roles.permission.manage_two_factor": {
-    "defaultMessage": "[Şīɠƞ-īƞ řḗḗƈǿǿṽḗḗřẏ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permission.manage_webhooks": {

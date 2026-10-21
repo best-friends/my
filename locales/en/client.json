@@ -3699,9 +3699,9 @@
     "defaultMessage": "Server settings",
     "description": "Name of the permission manage_settings: the instance's settings, theme, terms, and privacy policy."
   },
-  "admin.roles.permission.manage_two_factor": {
+  "admin.roles.permission.manage_login_recovery": {
     "defaultMessage": "Sign-in recovery",
-    "description": "Name of the permission manage_two_factor: recovering a user's sign-in, by removing their two-factor authentication or issuing a password reset link."
+    "description": "Name of the permission manage_login_recovery: recovering a user's sign-in, by removing their two-factor authentication or issuing a password reset link."
   },
   "admin.roles.permission.manage_webhooks": {
     "defaultMessage": "Webhooks",

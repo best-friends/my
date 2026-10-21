@@ -19,7 +19,7 @@ import (
 // The admin operations of the account management (FR-714, manage_accounts): the search, the
 // details of an account, and showing the email address and the IP addresses of a local one,
 // which only revealAdminAccount returns and the identity module records in the audit log; and,
-// with manage_two_factor, removing a user's two-factor authentication and issuing a password
+// with manage_login_recovery, removing a user's two-factor authentication and issuing a password
 // reset link for them (FR-005, FR-002), which the audit log records too.
 
 // AccountAdmin runs the moderators' account management. *appidentity.AccountAdmin implements it.
@@ -203,7 +203,7 @@ func (s *Server) GetAdminAccount(ctx context.Context, req GetAdminAccountRequest
 
 // DisableAdminAccountTwoFactor serves POST /api/v1/admin/accounts/{id}/two_factor/disable.
 func (s *Server) DisableAdminAccountTwoFactor(ctx context.Context, req DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error) {
-	if p, err := s.requirePermission(ctx, identity.PermManageTwoFactor); err != nil {
+	if p, err := s.requirePermission(ctx, identity.PermManageLoginRecovery); err != nil {
 		return nil, err
 	} else if p != nil {
 		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(*p), nil
@@ -231,9 +231,9 @@ func (s *Server) DisableAdminAccountTwoFactor(ctx context.Context, req DisableAd
 
 // IssueAdminAccountPasswordResetLink serves POST /api/v1/admin/accounts/{id}/password_reset_link.
 // Like removing two-factor authentication, it lets the holder of the link into the account, so it
-// needs manage_two_factor (server administration, ADR-0058) rather than manage_accounts.
+// needs manage_login_recovery (server administration, ADR-0058) rather than manage_accounts.
 func (s *Server) IssueAdminAccountPasswordResetLink(ctx context.Context, req IssueAdminAccountPasswordResetLinkRequestObject) (IssueAdminAccountPasswordResetLinkResponseObject, error) {
-	if p, err := s.requirePermission(ctx, identity.PermManageTwoFactor); err != nil {
+	if p, err := s.requirePermission(ctx, identity.PermManageLoginRecovery); err != nil {
 		return nil, err
 	} else if p != nil {
 		return IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse(*p), nil

@@ -22,7 +22,7 @@ const everyPermission: Schemas["Permission"][] = [
   "manage_invites",
   "view_audit",
   "manage_jobs",
-  "manage_two_factor",
+  "manage_login_recovery",
   "manage_custom_emojis",
   "manage_webhooks",
 ];
