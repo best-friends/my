@@ -33,6 +33,7 @@ const alice: Account = {
   note: "",
   fields: [],
   emojis: [],
+  badges: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,

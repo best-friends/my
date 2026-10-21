@@ -25,6 +25,7 @@ function account(username: string, displayName: string, domain: string): Account
     note: "",
     fields: [],
     emojis: [],
+    badges: [],
     url: `https://${domain}/@${username}`,
     locked: false,
     bot: false,

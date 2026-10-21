@@ -50,6 +50,7 @@ export { Tooltip, TooltipTrigger, type TooltipProps, type TooltipTriggerProps } 
 // Display.
 export { Avatar, type AvatarProps } from "./Avatar";
 export { Badge, type BadgeProps } from "./Badge";
+export { RoleBadge, RoleBadgeList, type RoleBadgeListProps, type RoleBadgeProps } from "./RoleBadge";
 export { DescriptionItem, DescriptionList, type DescriptionItemProps, type DescriptionListProps } from "./DescriptionList";
 export { EmptyState, type EmptyStateProps, type HeadingLevel } from "./EmptyState";
 export { OfflineBanner, type OfflineBannerProps } from "./OfflineBanner";
@@ -114,5 +115,7 @@ export { QuoteCard, type QuoteCardProps } from "./QuoteCard";
 
 // The design tokens a server theme may override (ADR-0059), and the contrast of their colors under a theme.
 export type { TokenKind } from "./tokens";
+// The colors of role badges (ADR-0071), in the order the staff choose from.
+export { badgeColors, type BadgeColor } from "./tokens";
 export { themeTokens, type ThemeToken } from "./themeTokens.gen";
 export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./themeContrast";

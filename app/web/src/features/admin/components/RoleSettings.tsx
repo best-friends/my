@@ -1,17 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The roles screen below its heading (FR-720, manage_roles): the form that creates a role, then the roles, highest
 // position first. Each role shows its position and its permissions by area (ADR-0058); one at or below the viewer's
-// highest role is changed in a dialog (position and permissions; never admin) and deleted after an alert dialog
-// (never a built-in role, and never one that someone holds). A role above the viewer's says why it has no buttons.
+// highest role is changed in a dialog (position and permissions; never admin), gets a badge in another dialog (a name
+// and one of the badge colors, with a sample; admin included, ADR-0071) and is deleted after an alert dialog (never a
+// built-in role, and never one that someone holds). A role above the viewer's says why it has no buttons.
 // Roles are granted on an account's admin page. What a change did stays above the list in a StatusMessage; a refusal
 // stays in the form or the dialog.
-import { Button, Checkbox, ConfirmDialog, DescriptionItem, DescriptionList, Dialog, DialogTrigger, Link, StatusMessage, TextField } from "@my/ui";
+import {
+  type BadgeColor,
+  badgeColors,
+  Button,
+  Checkbox,
+  ConfirmDialog,
+  DescriptionItem,
+  DescriptionList,
+  Dialog,
+  DialogTrigger,
+  Link,
+  Radio,
+  RadioGroup,
+  RoleBadge,
+  StatusMessage,
+  TextField,
+} from "@my/ui";
 import { type SubmitEvent, useId, useRef, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusAfterRemoval } from "../../../lib/useFocusAfterRemoval";
 import { DetailSection, type Permission, RecordList, RequirePermission } from "../../moderation";
-import { adminRoleKey, type AdminRole, moderatorRoleKey, permissionCategories, roleKeyLimit } from "../api/roles";
+import { adminRoleKey, type AdminRole, badgeLabelLimit, moderatorRoleKey, permissionCategories, roleKeyLimit } from "../api/roles";
 import {
+  type BadgeDraft,
+  draftOfBadge,
   draftOfRole,
   isolatedRoleKey,
   type RoleActions,
@@ -40,6 +59,19 @@ const permissionLabels: Readonly<Record<Permission, ClientMessageKey>> = {
   manage_webhooks: "client:admin.roles.permission.manage_webhooks",
   manage_announcements: "client:admin.roles.permission.manage_announcements",
   manage_finance: "client:admin.roles.permission.manage_finance",
+};
+
+/** The name of each badge color. */
+const badgeColorLabels: Readonly<Record<BadgeColor, ClientMessageKey>> = {
+  neutral: "client:admin.roles.badge.color.neutral",
+  red: "client:admin.roles.badge.color.red",
+  orange: "client:admin.roles.badge.color.orange",
+  yellow: "client:admin.roles.badge.color.yellow",
+  green: "client:admin.roles.badge.color.green",
+  teal: "client:admin.roles.badge.color.teal",
+  blue: "client:admin.roles.badge.color.blue",
+  purple: "client:admin.roles.badge.color.purple",
+  pink: "client:admin.roles.badge.color.pink",
 };
 
 const categoryLabels: Readonly<Record<"moderation" | "server", ClientMessageKey>> = {
@@ -247,9 +279,10 @@ function RoleItem({ row, rights, actions }: { row: RoleRow; rights: RoleRights; 
         <h3 className="font-semibold">
           <RoleKey value={role.key} />
         </h3>
-        {(row.canChange || row.canDelete) && (
+        {(row.canChange || row.canChangeBadge || row.canDelete) && (
           <div className="flex flex-wrap gap-2">
             {row.canChange && <EditRole role={role} rights={rights} actions={actions} />}
+            {row.canChangeBadge && <EditBadge role={role} actions={actions} />}
             {row.canDelete && <DeleteRole role={role} actions={actions} />}
           </div>
         )}
@@ -261,6 +294,13 @@ function RoleItem({ row, rights, actions }: { row: RoleRow; rights: RoleRights; 
             {permissionNames(role, permissions, t)}
           </DescriptionItem>
         ))}
+        <DescriptionItem term={t("client:admin.roles.badge")}>
+          {role.badge === undefined ? (
+            t("client:admin.roles.badge.none")
+          ) : (
+            <RoleBadge label={role.badge.label} color={role.badge.color} />
+          )}
+        </DescriptionItem>
       </DescriptionList>
       {builtin !== undefined && <p className="text-sm text-fg-muted">{builtin}</p>}
       {outrankedBy !== undefined && (
@@ -315,6 +355,110 @@ function EditRoleForm({ role, rights, actions, close }: { role: AdminRole; right
       <div className="flex flex-wrap justify-end gap-2">
         <Button onPress={close}>{t("client:admin.roles.cancel")}</Button>
         <Button type="submit" variant="primary" isPending={isSaving}>
+          {t("client:admin.roles.save")}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** The badge of a role in a dialog: its name and color with a sample, saved or removed; it closes once that is done. */
+function EditBadge({ role, actions }: { role: AdminRole; actions: RoleActions }) {
+  const t = useT();
+  const key = isolatedRoleKey(role.key);
+  return (
+    <DialogTrigger>
+      <Button size="sm" aria-label={t("client:admin.roles.badge.edit_role", { role: key })}>
+        {t("client:admin.roles.badge.edit")}
+      </Button>
+      <Dialog title={t("client:admin.roles.badge.edit.title", { role: key })} closeLabel={t("client:admin.roles.edit.close")} isDismissable={false} size="md">
+        {({ close }) => <EditBadgeForm role={role} actions={actions} close={close} />}
+      </Dialog>
+    </DialogTrigger>
+  );
+}
+
+function EditBadgeForm({ role, actions, close }: { role: AdminRole; actions: RoleActions; close: () => void }) {
+  const t = useT();
+  const [draft, setDraft] = useState<BadgeDraft>(() => draftOfBadge(role));
+  const [pending, setPending] = useState<"save" | "remove" | undefined>(undefined);
+  const [error, setError] = useState<RoleFieldError | undefined>(undefined);
+  const send = (next: BadgeDraft | null) => {
+    setPending(next === null ? "remove" : "save");
+    setError(undefined);
+    void actions.updateBadge(role, next).then((refused) => {
+      setPending(undefined);
+      if (refused === undefined) close();
+      else setError(refused);
+    });
+  };
+  const sample = draft.label.trim();
+  return (
+    <form
+      onSubmit={(event: SubmitEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        send(draft);
+      }}
+      className="@container flex flex-col gap-4"
+      noValidate
+    >
+      <p className="text-sm text-fg-muted">{t("client:admin.roles.badge.description")}</p>
+      <TextField
+        label={t("client:admin.roles.badge.label")}
+        description={t("client:admin.roles.badge.label.description", { max: String(badgeLabelLimit) })}
+        value={draft.label}
+        onChange={(label) => {
+          setDraft((previous) => ({ ...previous, label }));
+        }}
+        isRequired
+        autoComplete="off"
+        autoFocus
+        {...(error?.field === "badge" ? { isInvalid: true, errorMessage: error.message } : {})}
+      />
+      <RadioGroup
+        label={t("client:admin.roles.badge.color")}
+        description={t("client:admin.roles.badge.color.description")}
+        orientation="horizontal"
+        value={draft.color}
+        onChange={(color) => {
+          const chosen = badgeColors.find((c) => c === color);
+          if (chosen !== undefined) setDraft((previous) => ({ ...previous, color: chosen }));
+        }}
+      >
+        {badgeColors.map((color) => (
+          <Radio key={color} value={color}>
+            {t(badgeColorLabels[color])}
+          </Radio>
+        ))}
+      </RadioGroup>
+      <div className="flex flex-col items-start gap-1">
+        <span className="text-sm font-medium text-fg">{t("client:admin.roles.badge.sample")}</span>
+        {sample === "" ? (
+          <span className="text-sm text-fg-muted">{t("client:admin.roles.badge.sample.empty")}</span>
+        ) : (
+          <RoleBadge label={sample} color={draft.color} />
+        )}
+      </div>
+      {error?.field === "form" && (
+        <p role="alert" className="text-danger">
+          {t("client:admin.roles.save_failed", { reason: error.message })}
+        </p>
+      )}
+      <div className="flex flex-wrap justify-end gap-2">
+        {role.badge !== undefined && (
+          <Button
+            variant="danger"
+            isPending={pending === "remove"}
+            isDisabled={pending === "save"}
+            onPress={() => {
+              send(null);
+            }}
+          >
+            {t("client:admin.roles.badge.remove")}
+          </Button>
+        )}
+        <Button onPress={close}>{t("client:admin.roles.cancel")}</Button>
+        <Button type="submit" variant="primary" isPending={pending === "save"} isDisabled={pending === "remove"}>
           {t("client:admin.roles.save")}
         </Button>
       </div>

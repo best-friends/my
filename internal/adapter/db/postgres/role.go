@@ -25,6 +25,10 @@ func (r *IdentityRepository) ListRoles(ctx context.Context) ([]appidentity.RoleW
 	if err != nil {
 		return nil, wrap(err, "list role permissions")
 	}
+	badges, err := roleBadges(ctx, q)
+	if err != nil {
+		return nil, err
+	}
 	granted := map[string]map[identity.Permission]bool{}
 	for _, p := range perms {
 		if granted[p.RoleID] == nil {
@@ -34,7 +38,7 @@ func (r *IdentityRepository) ListRoles(ctx context.Context) ([]appidentity.RoleW
 	}
 	out := make([]appidentity.RoleWithPermissions, len(roles))
 	for i, row := range roles {
-		out[i] = appidentity.RoleWithPermissions{Role: roleFrom(row), Permissions: []identity.Permission{}}
+		out[i] = appidentity.RoleWithPermissions{Role: roleFrom(row), Permissions: []identity.Permission{}, Badge: badges[row.ID]}
 		for _, p := range identity.AllPermissions() {
 			if granted[row.ID][p] {
 				out[i].Permissions = append(out[i].Permissions, p)
@@ -161,6 +165,9 @@ func (r *IdentityRepository) DeleteRole(ctx context.Context, tx uow.Tx, roleID s
 	}
 	if err := q.DeleteRolePermissions(ctx, roleID); err != nil {
 		return wrap(err, "delete role permissions")
+	}
+	if err := r.DeleteRoleBadge(ctx, tx, roleID); err != nil {
+		return err
 	}
 	return wrap(q.DeleteRole(ctx, roleID), "delete role")
 }

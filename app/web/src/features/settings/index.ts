@@ -6,6 +6,9 @@
 export { dataExportsQueryOptions } from "./api/account";
 export { dataImportsQueryOptions } from "./api/importExport";
 export { credentialsQueryOptions, preferencesQueryOptions } from "./api/me";
+// The badges of the user's roles on their profile (ADR-0071).
+export { badgeChoicesQueryOptions } from "./api/badges";
+export { BadgeSettings } from "./components/BadgeSettings";
 export { blocksQueryOptions, followRequestsQueryOptions, mutesQueryOptions } from "./api/relationships";
 export { BlockedAccounts, FollowRequests, MutedAccounts } from "./components/AccountLists";
 // The domains the user mutes (FR-304).

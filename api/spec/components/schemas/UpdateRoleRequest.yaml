@@ -10,3 +10,12 @@ properties:
     type: array
     items:
       $ref: ./Permission.yaml
+  badge:
+    description: |
+      The new badge of the role (ADR-0071). Its holders keep their choice to show it.
+    $ref: ./RoleBadge.yaml
+  remove_badge:
+    description: |
+      `true` removes the badge of the role, and every holder's choice to show it; a new badge
+      starts hidden. Sending it with `badge` is a 422 whose `detail` names `remove_badge`.
+    type: boolean

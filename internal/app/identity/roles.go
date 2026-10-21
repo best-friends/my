@@ -45,15 +45,17 @@ type RoleRepository interface {
 	SetRolePermissions(ctx context.Context, tx uow.Tx, roleID string, perms []identity.Permission) error
 	// UpdateRolePosition changes the position of the role.
 	UpdateRolePosition(ctx context.Context, tx uow.Tx, roleID string, position int) error
-	// DeleteRole deletes the role and its permissions; nobody may hold it.
+	// DeleteRole deletes the role, its permissions, and its badge; nobody may hold it.
 	DeleteRole(ctx context.Context, tx uow.Tx, roleID string) error
+	RoleBadgeRepository
 }
 
 // RoleWithPermissions is a role with the permissions it grants, in the order of
-// identity.AllPermissions.
+// identity.AllPermissions, and its badge (nil for none).
 type RoleWithPermissions struct {
 	identity.Role
 	Permissions []identity.Permission
+	Badge       *identity.RoleBadge
 }
 
 // ErrRoleOutranksActor is identity.ErrRoleOutranksActor.
@@ -123,6 +125,10 @@ func (s *Service) GrantRole(ctx context.Context, in RoleChangeInput) (bool, erro
 		if err := s.d.Repository.InsertRoleGrant(ctx, tx, g); err != nil {
 			return err
 		}
+		// A new grant starts with the badge hidden (ADR-0071 §2).
+		if err := s.d.Repository.SetRoleBadgeDisplayed(ctx, tx, in.UserID, role.ID, false, c.at); err != nil {
+			return err
+		}
 		changed = true
 		return tx.Emit(ctx, c.audit(appmoderation.AuditRoleGranted, role, g.ID))
 	})
@@ -166,6 +172,10 @@ func (s *Service) RevokeRole(ctx context.Context, in RoleChangeInput) (bool, err
 		}
 		r := identity.RoleRevocation{GrantID: grantID, RevokedByUserID: in.ByUserID, RevokedAt: c.at}
 		if err := s.d.Repository.InsertRoleRevocation(ctx, tx, r); err != nil {
+			return err
+		}
+		// The user no longer shows the role's badge (ADR-0071 §2).
+		if err := s.d.Repository.SetRoleBadgeDisplayed(ctx, tx, in.UserID, role.ID, false, c.at); err != nil {
 			return err
 		}
 		changed = true

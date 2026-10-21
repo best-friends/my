@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The roles screen (FR-720, manage_roles): the roles of the instance, what the viewer may do with each, creating a
-// role, changing its position and permissions, and deleting it. The viewer changes only the roles at or below their
-// highest one and only the permissions their roles grant; admin never changes, and neither built-in role is
-// deleted. A refused input stays next to its field; what a change did is announced and kept in a StatusMessage.
-import { useAnnouncer } from "@my/ui";
+// role, changing its position and permissions, giving it a badge (ADR-0071), and deleting it. The viewer changes only
+// the roles at or below their highest one and only the permissions their roles grant; admin changes only its badge,
+// and neither built-in role is deleted. A refused input stays next to its field; what a change did is announced and kept in a StatusMessage.
+import { type BadgeColor, useAnnouncer } from "@my/ui";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { type SyntheticEvent, useState } from "react";
 import { useApi } from "../../../lib/auth/SessionProvider";
@@ -15,6 +15,7 @@ import {
   adminRoleKey,
   type AdminRole,
   allPermissions,
+  badgeLabelLimit,
   createRoleMutation,
   deleteRoleMutation,
   maxRolePosition,
@@ -44,6 +45,8 @@ export type RoleRow = {
   role: AdminRole;
   /** Whether the viewer may change its position and permissions (never admin). */
   canChange: boolean;
+  /** Whether the viewer may change its badge (admin included). */
+  canChangeBadge: boolean;
   /** Whether the viewer may delete it (never a built-in role). */
   canDelete: boolean;
   /** The viewer's highest role when this one is above it, else undefined. */
@@ -64,13 +67,13 @@ export function useRoleSettings(): { rows: RoleRow[]; rights: RoleRights } {
       const outrankedBy = top === undefined || role.position > top.position ? top : undefined;
       const builtin = role.key === adminRoleKey || role.key === moderatorRoleKey;
       const allowed = top !== undefined && outrankedBy === undefined;
-      return { role, outrankedBy, canChange: allowed && role.key !== adminRoleKey, canDelete: allowed && !builtin };
+      return { role, outrankedBy, canChange: allowed && role.key !== adminRoleKey, canChangeBadge: allowed, canDelete: allowed && !builtin };
     }),
   };
 }
 
 /** The fields of a role that the form checks or the server may refuse, and the rest of the form. */
-type RoleField = "key" | "position" | "permissions" | "form";
+type RoleField = "key" | "position" | "permissions" | "badge" | "form";
 
 /** Why a role was refused: the field, the localized reason, and the permissions it names. */
 export type RoleFieldError = { field: RoleField; message: string; missing: string[] };
@@ -108,6 +111,9 @@ function refusal(error: unknown, t: Translate): RoleFieldError {
     case "permissions":
     case "missing_permission":
       return { field: "permissions", message, missing: problem.missing };
+    case "badge_label":
+    case "badge_color":
+      return { field: "badge", message, missing: [] };
     default:
       return { field: "form", message, missing: [] };
   }
@@ -179,9 +185,28 @@ export function useNewRoleForm(rights: RoleRights) {
   };
 }
 
+/** A badge as the form edits it. */
+export type BadgeDraft = { label: string; color: BadgeColor };
+
+/** The draft of a role's badge: its badge, or a neutral one without a name. */
+export function draftOfBadge(role: AdminRole): BadgeDraft {
+  return role.badge === undefined ? { label: "", color: "neutral" } : { label: role.badge.label, color: role.badge.color };
+}
+
+/** Checks the name of a badge before it is sent: 1 to 32 characters (code points, as the server counts) once trimmed. */
+function checkBadge(draft: BadgeDraft, t: Translate): RoleFieldError | undefined {
+  const length = Array.from(draft.label.trim()).length;
+  if (length === 0 || length > badgeLabelLimit) {
+    return { field: "badge", message: t("client:admin.roles.badge.label.invalid", { max: String(badgeLabelLimit) }), missing: [] };
+  }
+  return undefined;
+}
+
 export type RoleActions = {
   /** Checks and sends a change of a role; resolves with the refused field, or undefined once it is saved. */
   update: (role: AdminRole, draft: RoleDraft) => Promise<RoleFieldError | undefined>;
+  /** Sets the badge of a role, or removes it for null; resolves with the refusal, or undefined once it is saved. */
+  updateBadge: (role: AdminRole, draft: BadgeDraft | null) => Promise<RoleFieldError | undefined>;
   /** Deletes a role; resolves with why it failed, or undefined once it is deleted. */
   remove: (role: AdminRole) => Promise<string | undefined>;
   /** What the last change did, for the list's StatusMessage. */
@@ -210,6 +235,19 @@ export function useRoleActions(rights: RoleRights, onDeleted: (id: string) => vo
       if (checked !== undefined) return checked;
       const position = Number(draft.position.trim());
       const change: RoleChange = { permissions: [...draft.permissions], ...(position === role.position ? {} : { position }) };
+      try {
+        const saved = await update.mutateAsync({ key: role.key, change });
+        await refreshRoles(api, queryClient);
+        report(t("client:admin.roles.updated", { role: isolatedRoleKey(saved.key) }));
+        return undefined;
+      } catch (error) {
+        return refusal(error, t);
+      }
+    },
+    updateBadge: async (role, draft) => {
+      const checked = draft === null ? undefined : checkBadge(draft, t);
+      if (checked !== undefined) return checked;
+      const change: RoleChange = draft === null ? { remove_badge: true } : { badge: { label: draft.label.trim(), color: draft.color } };
       try {
         const saved = await update.mutateAsync({ key: role.key, change });
         await refreshRoles(api, queryClient);

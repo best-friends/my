@@ -4551,8 +4551,100 @@
     "defaultMessage": "[Řḗḗƥǿǿřŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.badge": {
+    "defaultMessage": "[Ɓȧȧḓɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color": {
+    "defaultMessage": "[Ƈǿǿŀǿǿř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.blue": {
+    "defaultMessage": "[Ɓŀŭŭḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.description": {
+    "defaultMessage": "[Ŧħḗḗ ƈǿǿŀǿǿř ǿǿƞŀẏ ḓḗḗƈǿǿřȧȧŧḗḗş ŧħḗḗ ƀȧȧḓɠḗḗ; īŧş ƞȧȧḿḗḗ şȧȧẏş ẇħȧȧŧ īŧ ḿḗḗȧȧƞş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.green": {
+    "defaultMessage": "[Ɠřḗḗḗḗƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.neutral": {
+    "defaultMessage": "[Ɠřȧȧẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.orange": {
+    "defaultMessage": "[Ǿřȧȧƞɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.pink": {
+    "defaultMessage": "[Ƥīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.purple": {
+    "defaultMessage": "[Ƥŭŭřƥŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.red": {
+    "defaultMessage": "[Řḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.teal": {
+    "defaultMessage": "[Ŧḗḗȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.yellow": {
+    "defaultMessage": "[Ẏḗḗŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.description": {
+    "defaultMessage": "[Ħǿǿŀḓḗḗřş ǿǿƒ ŧħḗḗ řǿǿŀḗḗ ƈȧȧƞ şħǿǿẇ ŧħḗḗ ƀȧȧḓɠḗḗ ǿǿƞ ŧħḗḗīř ƥřǿǿƒīŀḗḗ. Īŧ şŧȧȧẏş ħīḓḓḗḗƞ ŭŭƞŧīŀ ḗḗȧȧƈħ ǿǿƒ ŧħḗḗḿ ƈħǿǿǿǿşḗḗş ŧǿǿ şħǿǿẇ īŧ, ȧȧƞḓ ǿǿŧħḗḗř şḗḗřṽḗḗřş ƞḗḗṽḗḗř şḗḗḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.edit": {
+    "defaultMessage": "[Ɓȧȧḓɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.edit.title": {
+    "defaultMessage": "[Ɓȧȧḓɠḗḗ ǿǿƒ {role}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.edit_role": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ ŧħḗḗ ƀȧȧḓɠḗḗ ǿǿƒ {role}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.label": {
+    "defaultMessage": "[Ƞȧȧḿḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.label.description": {
+    "defaultMessage": "[Ŭƥ ŧǿǿ {max} ƈħȧȧřȧȧƈŧḗḗřş ǿǿƞ ǿǿƞḗḗ ŀīƞḗḗ. Īŧ īş şħǿǿẇƞ ȧȧş ẇřīŧŧḗḗƞ īƞ ḗḗṽḗḗřẏ ŀȧȧƞɠŭŭȧȧɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.label.invalid": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧ ƞȧȧḿḗḗ ǿǿƒ 1 ŧǿǿ {max} ƈħȧȧřȧȧƈŧḗḗřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.none": {
+    "defaultMessage": "[Ƞǿǿ ƀȧȧḓɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.remove": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ ƀȧȧḓɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.sample": {
+    "defaultMessage": "[Şȧȧḿƥŀḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.sample.empty": {
+    "defaultMessage": "[Ḗƞŧḗḗř ȧȧ ƞȧȧḿḗḗ ŧǿǿ şḗḗḗḗ ŧħḗḗ ƀȧȧḓɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.builtin.admin": {
-    "defaultMessage": "[Ɓŭŭīŀŧ-īƞ řǿǿŀḗḗ ẇīŧħ ḗḗṽḗḗřẏ ƥḗḗřḿīşşīǿǿƞ. Īŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ƈħȧȧƞɠḗḗḓ ǿǿř ḓḗḗŀḗḗŧḗḗḓ.]",
+    "defaultMessage": "[Ɓŭŭīŀŧ-īƞ řǿǿŀḗḗ ẇīŧħ ḗḗṽḗḗřẏ ƥḗḗřḿīşşīǿǿƞ. Ǿƞŀẏ īŧş ƀȧȧḓɠḗḗ ƈȧȧƞ ƀḗḗ ƈħȧȧƞɠḗḗḓ, ȧȧƞḓ īŧ ƈȧȧƞƞǿǿŧ ƀḗḗ ḓḗḗŀḗḗŧḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.builtin.moderator": {
@@ -7167,6 +7259,10 @@
     "defaultMessage": "[Ŧħīş şƈřḗḗḗḗƞ īş ƞǿǿŧ řḗḗȧȧḓẏ ẏḗḗŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "profile.badges": {
+    "defaultMessage": "[Ɓȧȧḓɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "profile.change_failed": {
     "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ ẏǿǿŭŭř řḗḗŀȧȧŧīǿǿƞşħīƥ ẇīŧħ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ: {reason}]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8673,6 +8769,26 @@
   },
   "settings.profile.avatar": {
     "defaultMessage": "[Ȧṽȧȧŧȧȧř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges": {
+    "defaultMessage": "[Ɓȧȧḓɠḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.description": {
+    "defaultMessage": "[Ƈħǿǿǿǿşḗḗ ẇħīƈħ ƀȧȧḓɠḗḗş ǿǿƒ ẏǿǿŭŭř řǿǿŀḗḗş ŧǿǿ şħǿǿẇ ǿǿƞ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ. Ȧ ƀȧȧḓɠḗḗ şŧȧȧẏş ħīḓḓḗḗƞ ŭŭƞŧīŀ ẏǿǿŭŭ şħǿǿẇ īŧ, ȧȧƞḓ şħǿǿẇş ǿǿƞ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ ǿǿƞŀẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ ŧħḗḗ ƀȧȧḓɠḗḗ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.hidden": {
+    "defaultMessage": "[{badge} īş ƞǿǿ ŀǿǿƞɠḗḗř şħǿǿẇƞ ǿǿƞ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.shown": {
+    "defaultMessage": "[{badge} īş şħǿǿẇƞ ǿǿƞ ẏǿǿŭŭř ƥřǿǿƒīŀḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.profile.bot": {

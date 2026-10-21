@@ -53,6 +53,41 @@
 
   --palette-amber-400: oklch(82.8% 0.17 84.429);
   --palette-amber-800: oklch(47.3% 0.133 46.201);
+
+  /* Badge colors (ADR-0071): a pale and a deep step for the light theme, a dark and a light step
+     for the dark theme, at the same lightness for every hue so that each pair keeps its contrast. */
+  --palette-badge-red-100: oklch(95% 0.02 25);
+  --palette-badge-red-200: oklch(90% 0.043 25);
+  --palette-badge-red-800: oklch(42% 0.1 25);
+  --palette-badge-red-900: oklch(30% 0.07 25);
+  --palette-badge-orange-100: oklch(95% 0.022 50);
+  --palette-badge-orange-200: oklch(90% 0.049 50);
+  --palette-badge-orange-800: oklch(42% 0.094 50);
+  --palette-badge-orange-900: oklch(30% 0.067 50);
+  --palette-badge-yellow-100: oklch(95% 0.035 90);
+  --palette-badge-yellow-200: oklch(90% 0.06 90);
+  --palette-badge-yellow-800: oklch(42% 0.072 90);
+  --palette-badge-yellow-900: oklch(30% 0.051 90);
+  --palette-badge-green-100: oklch(95% 0.035 150);
+  --palette-badge-green-200: oklch(90% 0.06 150);
+  --palette-badge-green-800: oklch(42% 0.097 150);
+  --palette-badge-green-900: oklch(30% 0.069 150);
+  --palette-badge-teal-100: oklch(95% 0.035 185);
+  --palette-badge-teal-200: oklch(90% 0.06 185);
+  --palette-badge-teal-800: oklch(42% 0.062 185);
+  --palette-badge-teal-900: oklch(30% 0.044 185);
+  --palette-badge-blue-100: oklch(95% 0.02 255);
+  --palette-badge-blue-200: oklch(90% 0.041 255);
+  --palette-badge-blue-800: oklch(42% 0.1 255);
+  --palette-badge-blue-900: oklch(30% 0.07 255);
+  --palette-badge-purple-100: oklch(95% 0.024 305);
+  --palette-badge-purple-200: oklch(90% 0.051 305);
+  --palette-badge-purple-800: oklch(42% 0.1 305);
+  --palette-badge-purple-900: oklch(30% 0.07 305);
+  --palette-badge-pink-100: oklch(95% 0.024 350);
+  --palette-badge-pink-200: oklch(90% 0.051 350);
+  --palette-badge-pink-800: oklch(42% 0.1 350);
+  --palette-badge-pink-900: oklch(30% 0.07 350);
 }
 
 /* --- Semantic colors ------------------------------------------------------------------------- */
@@ -94,6 +129,27 @@
 
   /* The scrim behind modal dialogs and sheets. */
   --color-overlay: light-dark(oklch(0% 0 0 / 0.4), oklch(0% 0 0 / 0.6));
+
+  /* Role badges (ADR-0071): badge-<color> is the background and badge-<color>-fg the text on it.
+     The color only decorates; the badge's name carries its meaning. Server themes cannot override them. */
+  --color-badge-neutral: light-dark(var(--palette-gray-100), var(--palette-gray-800));
+  --color-badge-neutral-fg: light-dark(var(--palette-gray-800), var(--palette-gray-200));
+  --color-badge-red: light-dark(var(--palette-badge-red-100), var(--palette-badge-red-900));
+  --color-badge-red-fg: light-dark(var(--palette-badge-red-800), var(--palette-badge-red-200));
+  --color-badge-orange: light-dark(var(--palette-badge-orange-100), var(--palette-badge-orange-900));
+  --color-badge-orange-fg: light-dark(var(--palette-badge-orange-800), var(--palette-badge-orange-200));
+  --color-badge-yellow: light-dark(var(--palette-badge-yellow-100), var(--palette-badge-yellow-900));
+  --color-badge-yellow-fg: light-dark(var(--palette-badge-yellow-800), var(--palette-badge-yellow-200));
+  --color-badge-green: light-dark(var(--palette-badge-green-100), var(--palette-badge-green-900));
+  --color-badge-green-fg: light-dark(var(--palette-badge-green-800), var(--palette-badge-green-200));
+  --color-badge-teal: light-dark(var(--palette-badge-teal-100), var(--palette-badge-teal-900));
+  --color-badge-teal-fg: light-dark(var(--palette-badge-teal-800), var(--palette-badge-teal-200));
+  --color-badge-blue: light-dark(var(--palette-badge-blue-100), var(--palette-badge-blue-900));
+  --color-badge-blue-fg: light-dark(var(--palette-badge-blue-800), var(--palette-badge-blue-200));
+  --color-badge-purple: light-dark(var(--palette-badge-purple-100), var(--palette-badge-purple-900));
+  --color-badge-purple-fg: light-dark(var(--palette-badge-purple-800), var(--palette-badge-purple-200));
+  --color-badge-pink: light-dark(var(--palette-badge-pink-100), var(--palette-badge-pink-900));
+  --color-badge-pink-fg: light-dark(var(--palette-badge-pink-800), var(--palette-badge-pink-200));
 }
 
 @theme {

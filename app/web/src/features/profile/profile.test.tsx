@@ -417,3 +417,40 @@ describe("a timeline's post", () => {
     expect(avatar).toHaveAttribute("href", "/@bob");
   });
 });
+
+describe("the badges of a profile", () => {
+  const badges = [
+    { role_id: "0192f0c4-7a8e-7000-8000-0000000000b1", label: "Staff", color: "purple" },
+    { role_id: "0192f0c4-7a8e-7000-8000-0000000000b2", label: "داعم", color: "green" },
+  ] as const;
+
+  test("are a named list next to the name, drawn as the staff wrote them, and not on the account's posts", async () => {
+    bobServer({}, { badges: [...badges] });
+    // Even an author that carried badges would show none on its posts (ADR-0071 §3); the server sends none there.
+    server.use(
+      http.get(`${apiBase}/accounts/:id/statuses`, ({ request }) =>
+        HttpResponse.json(
+          statusPage(new URL(request.url).searchParams.get("pinned") === "true" ? [] : [{ ...timelineStatusFixture, account: { ...bob, badges: [...badges] } }]),
+        ),
+      ),
+    );
+    await renderApp({ path: "/@bob" });
+
+    const list = await screen.findByRole("list", { name: "Badges" });
+    expect(within(list).getAllByRole("listitem").map((item) => item.textContent)).toEqual(["Staff", "داعم"]);
+    // The label is the staff's text in any script and no recorded language (web-client.md Y10).
+    expect(within(list).getByText("داعم")).toHaveAttribute("dir", "auto");
+    expect(within(list).getByText("داعم")).toHaveAttribute("lang", "");
+    const feed = await screen.findByRole("feed", { name: "Posts" });
+    expect(await within(feed).findAllByRole("article")).not.toHaveLength(0);
+    expect(within(feed).queryByText("Staff")).not.toBeInTheDocument();
+  });
+
+  test("are not shown when the account shows none", async () => {
+    bobServer();
+    await renderApp({ path: "/@bob" });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Bob" })).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Badges" })).not.toBeInTheDocument();
+  });
+});

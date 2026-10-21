@@ -138,7 +138,7 @@ oapi-codegen と openapi-typescript が扱える範囲に限ります。`api/red
    `Account` のアバター・ヘッダー（`avatar` / `header`。大きさごとの版の `MediaVariants`）と、リモートのアカウントのプロフィールページ（`url`。Actor の `url`、無ければ `uri`）は、
    応答に含めるアカウントの分を `Server.accountParts`（投稿なら著者・メンション先・リンクのカードの作者を加える `Server.statusParts`）で
    1 回にまとめて読み、`newAccount` と `newStatus` に渡します。アカウントごとに読まない（N+1 にしない）ため、一覧は `Server.newAccounts` や `Server.presentStatuses` を使います。
-   フォロー数を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。
+   フォロー数とロールのバッジ（`Account.badges`、ADR-0071。`Options.Badges` から読む）を含めるのはアカウント自身の取得だけで、`Server.newProfile` を使います（`newCredentialAccount` もこれに重ねます）。ほかの `Account` の `badges` は空の配列です。
    ID で指定されたアカウントは `Server.visibleAccount` で引き、見せられないアカウント（[visibility.md §6](visibility.md#6-アカウントの表示)）は存在しないものと同じ 404 にします。
 5. 新しい利用者向けの文言は `locales/en` と `locales/ja` の `server` 名前空間に追加し、`make i18n-gen` を実行します。
 6. テストは `apitest.Load(t).Serve(t, handler, req)` を通してリクエストを送ります。応答の状態コード・`Content-Type`・本文が spec と一致しない場合、テストが失敗します。

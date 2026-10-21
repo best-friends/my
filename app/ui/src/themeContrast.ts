@@ -3,7 +3,7 @@
 // the administrator types, with the same pairs and formulas as the server, which decides whether a theme saves.
 import { contrast, parseColor } from "./color";
 import { themeTokens } from "./themeTokens.gen";
-import { colorPairs, type ContrastUse, minimumContrast } from "./tokens";
+import { type ContrastUse, minimumContrast, themeColorPairs } from "./tokens";
 
 /** A color token's value in each theme, as `#rrggbb[aa]`. */
 export type ThemeColorValue = { light: string; dark: string };
@@ -37,7 +37,7 @@ export function themeContrast(overrides: ReadonlyMap<string, ThemeColorValue>): 
     return value?.[scheme] ?? "";
   };
   return (["light", "dark"] as const).flatMap((scheme) =>
-    colorPairs.map(({ fg, bg, use }) => ({
+    themeColorPairs.map(({ fg, bg, use }) => ({
       fg: `color-${fg}`,
       bg: `color-${bg}`,
       use,

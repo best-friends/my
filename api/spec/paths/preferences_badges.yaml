@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listBadgeChoices
+  summary: List the badges that the authenticated user may show
+  description: |
+    The roles that the user holds and that have a badge, highest position first, with whether
+    the user shows each badge on their profile (ADR-0071). Every badge is hidden until the user
+    shows it.
+  tags: [preferences]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      description: The badges.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/BadgeChoiceList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

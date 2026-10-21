@@ -964,6 +964,45 @@ func (e AdminWebhookStateReason) Valid() bool {
 	}
 }
 
+// Defines values for BadgeColor.
+const (
+	BadgeColorBlue    BadgeColor = "blue"
+	BadgeColorGreen   BadgeColor = "green"
+	BadgeColorNeutral BadgeColor = "neutral"
+	BadgeColorOrange  BadgeColor = "orange"
+	BadgeColorPink    BadgeColor = "pink"
+	BadgeColorPurple  BadgeColor = "purple"
+	BadgeColorRed     BadgeColor = "red"
+	BadgeColorTeal    BadgeColor = "teal"
+	BadgeColorYellow  BadgeColor = "yellow"
+)
+
+// Valid indicates whether the value is a known member of the BadgeColor enum.
+func (e BadgeColor) Valid() bool {
+	switch e {
+	case BadgeColorBlue:
+		return true
+	case BadgeColorGreen:
+		return true
+	case BadgeColorNeutral:
+		return true
+	case BadgeColorOrange:
+		return true
+	case BadgeColorPink:
+		return true
+	case BadgeColorPurple:
+		return true
+	case BadgeColorRed:
+		return true
+	case BadgeColorTeal:
+		return true
+	case BadgeColorYellow:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BillingImportMethod.
 const (
 	BillingImportMethodBigquery     BillingImportMethod = "bigquery"
@@ -2043,6 +2082,8 @@ func (e ReportState) Valid() bool {
 
 // Defines values for RoleProblemReason.
 const (
+	RoleProblemReasonBadgeColor        RoleProblemReason = "badge_color"
+	RoleProblemReasonBadgeLabel        RoleProblemReason = "badge_label"
 	RoleProblemReasonBuiltin           RoleProblemReason = "builtin"
 	RoleProblemReasonHeld              RoleProblemReason = "held"
 	RoleProblemReasonKey               RoleProblemReason = "key"
@@ -2055,6 +2096,10 @@ const (
 // Valid indicates whether the value is a known member of the RoleProblemReason enum.
 func (e RoleProblemReason) Valid() bool {
 	switch e {
+	case RoleProblemReasonBadgeColor:
+		return true
+	case RoleProblemReasonBadgeLabel:
+		return true
 	case RoleProblemReasonBuiltin:
 		return true
 	case RoleProblemReasonHeld:
@@ -2366,6 +2411,12 @@ type Account struct {
 	// remote account, every size is its media proxy URL.
 	Avatar *MediaVariants `json:"avatar,omitempty"`
 
+	// Badges The role badges that the account shows on its profile, highest role first (ADR-0071).
+	// Filled on the account's own endpoints (`getAccount`, `lookupAccount`,
+	// `verifyAccountCredentials`) only, and empty where accounts are listed or embedded (posts,
+	// notifications, lists of accounts) and for remote accounts. Badges are never federated.
+	Badges []AccountBadge `json:"badges"`
+
 	// Bot Whether the account is automated.
 	Bot bool `json:"bot"`
 
@@ -2419,6 +2470,25 @@ type Account struct {
 
 	// Username The username, without the domain.
 	Username string `json:"username"`
+}
+
+// AccountBadge A badge that the account shows on its profile (ADR-0071): the badge of a role that the
+// account's user holds and chose to show. Clients show `label` as user content (`dir="auto"`),
+// never translated.
+type AccountBadge struct {
+	// Color The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+	// for its background and its text, which keep their contrast in the light and the dark theme.
+	// Server themes do not change them. The color is decoration; the badge's `label` carries its
+	// meaning.
+	Color BadgeColor `json:"color"`
+
+	// Label The name on the badge.
+	Label string `json:"label"`
+
+	// RoleId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	RoleId Id `json:"role_id"`
 }
 
 // AccountFieldSource A metadata field of a profile as the user typed it.
@@ -3610,6 +3680,9 @@ type AdminReportTargetHistory struct {
 // a user may grant, revoke, create, change, and delete only the roles at or below their
 // highest one, and give or take only the permissions they hold.
 type AdminRole struct {
+	// Badge The badge of the role, which its holders may show on their profile; omitted when it has none.
+	Badge *RoleBadge `json:"badge,omitempty"`
+
 	// Id The ID of a resource, a UUIDv7 in its canonical string form.
 	//
 	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -3984,6 +4057,39 @@ type AutoDeletePolicy struct {
 	// MinAgeDays How many days after its publication a post is deleted.
 	MinAgeDays int `json:"min_age_days"`
 }
+
+// BadgeChoice A role that the authenticated user holds and that has a badge, with whether the user shows
+// the badge on their profile (ADR-0071). A badge is hidden until the user shows it; losing the
+// role or its badge hides it again.
+type BadgeChoice struct {
+	// Color The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+	// for its background and its text, which keep their contrast in the light and the dark theme.
+	// Server themes do not change them. The color is decoration; the badge's `label` carries its
+	// meaning.
+	Color BadgeColor `json:"color"`
+
+	// Displayed Whether the user shows the badge on their profile.
+	Displayed bool `json:"displayed"`
+
+	// Label The name on the badge.
+	Label string `json:"label"`
+
+	// RoleId The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	RoleId Id `json:"role_id"`
+}
+
+// BadgeChoiceList The roles with a badge that the authenticated user holds, highest position first; empty when there are none.
+type BadgeChoiceList struct {
+	Items []BadgeChoice `json:"items"`
+}
+
+// BadgeColor The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+// for its background and its text, which keep their contrast in the light and the dark theme.
+// Server themes do not change them. The color is decoration; the badge's `label` carries its
+// meaning.
+type BadgeColor string
 
 // BillingImport The state of the imports of a billing source (ADR-0068 §9).
 type BillingImport struct {
@@ -4578,6 +4684,12 @@ type CredentialAccount struct {
 	// processed yet or could not be processed. Clients show a placeholder instead. For a
 	// remote account, every size is its media proxy URL.
 	Avatar *MediaVariants `json:"avatar,omitempty"`
+
+	// Badges The role badges that the account shows on its profile, highest role first (ADR-0071).
+	// Filled on the account's own endpoints (`getAccount`, `lookupAccount`,
+	// `verifyAccountCredentials`) only, and empty where accounts are listed or embedded (posts,
+	// notifications, lists of accounts) and for remote accounts. Badges are never federated.
+	Badges []AccountBadge `json:"badges"`
 
 	// Bot Whether the account is automated.
 	Bot bool `json:"bot"`
@@ -6394,6 +6506,20 @@ type ResolveReportRequest struct {
 	Outcome AdminReportOutcome `json:"outcome"`
 }
 
+// RoleBadge The badge of a role (ADR-0071), which its holders may show on their profile. The label is
+// the staff's own text, the same in every locale: clients show it as user content
+// (`dir="auto"`), never translated.
+type RoleBadge struct {
+	// Color The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+	// for its background and its text, which keep their contrast in the light and the dark theme.
+	// Server themes do not change them. The color is decoration; the badge's `label` carries its
+	// meaning.
+	Color BadgeColor `json:"color"`
+
+	// Label The name on the badge, 1 to 32 characters on one line; white space around it is removed.
+	Label string `json:"label"`
+}
+
 // RoleProblem The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
 // `reason` says which. Another 422 (a malformed request) has none.
 type RoleProblem struct {
@@ -6405,10 +6531,11 @@ type RoleProblem struct {
 
 	// Reason Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
 	// and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
-	// `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
-	// and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+	// `permissions`: an unknown permission, or one twice. `builtin`: `admin` changes only its
+	// badge, and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
 	// `missing_permission`: the change adds or removes permissions that the viewer's roles
-	// do not grant (`missing_permissions`).
+	// do not grant (`missing_permissions`). `badge_label`: a badge label that is not 1 to 32
+	// characters on one line. `badge_color`: an unknown badge color.
 	Reason *RoleProblemReason `json:"reason,omitempty"`
 
 	// RequestId The request ID (the `X-Request-Id` response header), for reporting the problem.
@@ -6427,10 +6554,11 @@ type RoleProblem struct {
 
 // RoleProblemReason Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
 // and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
-// `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
-// and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+// `permissions`: an unknown permission, or one twice. `builtin`: `admin` changes only its
+// badge, and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
 // `missing_permission`: the change adds or removes permissions that the viewer's roles
-// do not grant (`missing_permissions`).
+// do not grant (`missing_permissions`). `badge_label`: a badge label that is not 1 to 32
+// characters on one line. `badge_color`: an unknown badge color.
 type RoleProblemReason string
 
 // SearchIndexing Whether the instance lets search engines index its pages (the instance setting
@@ -6917,6 +7045,11 @@ type TwoFactorCodeRequest struct {
 	Code string `json:"code"`
 }
 
+// UpdateBadgeChoiceRequest Whether to show the badge of the role on the authenticated user's profile.
+type UpdateBadgeChoiceRequest struct {
+	Displayed bool `json:"displayed"`
+}
+
 // UpdateCredentialsRequest A change of the profile; properties left out keep their current values.
 type UpdateCredentialsRequest struct {
 	// AiOptOut Whether the account's pages state that AI may neither train on nor use them (FR-412).
@@ -7008,11 +7141,18 @@ type UpdatePreferencesRequest struct {
 
 // UpdateRoleRequest The changes to a role; what is omitted stays.
 type UpdateRoleRequest struct {
+	// Badge The new badge of the role (ADR-0071). Its holders keep their choice to show it.
+	Badge *RoleBadge `json:"badge,omitempty"`
+
 	// Permissions The new permissions of the role, each once; empty removes them all.
 	Permissions *[]Permission `json:"permissions,omitempty"`
 
 	// Position The new rank of the role, from 0 to 999.
 	Position *int `json:"position,omitempty"`
+
+	// RemoveBadge `true` removes the badge of the role, and every holder's choice to show it; a new badge
+	// starts hidden. Sending it with `badge` is a 422 whose `detail` names `remove_badge`.
+	RemoveBadge *bool `json:"remove_badge,omitempty"`
 }
 
 // UpdateWebhookRequest The changes to a webhook; what is omitted stays.
@@ -7222,6 +7362,11 @@ type AnnouncementId = Id
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AppealId = Id
+
+// BadgeRoleId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type BadgeRoleId = Id
 
 // CostItemId The ID of a resource, a UUIDv7 in its canonical string form.
 //
@@ -7921,6 +8066,9 @@ type UpdatePreferencesJSONRequestBody = UpdatePreferencesRequest
 // UpdateAutoDeletePolicyJSONRequestBody defines body for UpdateAutoDeletePolicy for application/json ContentType.
 type UpdateAutoDeletePolicyJSONRequestBody = AutoDeletePolicy
 
+// UpdateBadgeChoiceJSONRequestBody defines body for UpdateBadgeChoice for application/json ContentType.
+type UpdateBadgeChoiceJSONRequestBody = UpdateBadgeChoiceRequest
+
 // PutPushSubscriptionJSONRequestBody defines body for PutPushSubscription for application/json ContentType.
 type PutPushSubscriptionJSONRequestBody = PushSubscriptionRequest
 
@@ -8457,6 +8605,12 @@ type ServerInterface interface {
 	// UpdateAutoDeletePolicy Replace the authenticated user's automatic deletion of old posts
 	// (PUT /preferences/auto_delete)
 	UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.Request)
+	// ListBadgeChoices List the badges that the authenticated user may show
+	// (GET /preferences/badges)
+	ListBadgeChoices(w http.ResponseWriter, r *http.Request)
+	// UpdateBadgeChoice Show or hide the badge of a role on the authenticated user's profile
+	// (PUT /preferences/badges/{role_id})
+	UpdateBadgeChoice(w http.ResponseWriter, r *http.Request, roleId BadgeRoleId)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(w http.ResponseWriter, r *http.Request)
@@ -13453,6 +13607,46 @@ func (siw *ServerInterfaceWrapper) UpdateAutoDeletePolicy(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// ListBadgeChoices operation middleware
+func (siw *ServerInterfaceWrapper) ListBadgeChoices(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBadgeChoices(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateBadgeChoice operation middleware
+func (siw *ServerInterfaceWrapper) UpdateBadgeChoice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "role_id" -------------
+	var roleId BadgeRoleId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "role_id", r.PathValue("role_id"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateBadgeChoice(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeletePushSubscription operation middleware
 func (siw *ServerInterfaceWrapper) DeletePushSubscription(w http.ResponseWriter, r *http.Request) {
 
@@ -14615,6 +14809,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/preferences", wrapper.UpdatePreferences)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/auto_delete", wrapper.GetAutoDeletePolicy)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/auto_delete", wrapper.UpdateAutoDeletePolicy)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences/badges", wrapper.ListBadgeChoices)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/preferences/badges/{role_id}", wrapper.UpdateBadgeChoice)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/delete", wrapper.DeleteOwnAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/password", wrapper.GetPasswordStatus)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/accounts/password", wrapper.ChangePassword)
@@ -25049,6 +25245,130 @@ func (response UpdateAutoDeletePolicydefaultApplicationProblemPlusJSONResponse) 
 	return err
 }
 
+type ListBadgeChoicesRequestObject struct {
+}
+
+type ListBadgeChoicesResponseObject interface {
+	VisitListBadgeChoicesResponse(w http.ResponseWriter) error
+}
+
+type ListBadgeChoices200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListBadgeChoices200JSONResponse struct {
+	Body    BadgeChoiceList
+	Headers ListBadgeChoices200ResponseHeaders
+}
+
+func (response ListBadgeChoices200JSONResponse) VisitListBadgeChoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBadgeChoicesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListBadgeChoicesdefaultApplicationProblemPlusJSONResponse) VisitListBadgeChoicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateBadgeChoiceRequestObject struct {
+	RoleId BadgeRoleId `json:"role_id"`
+	Body   *UpdateBadgeChoiceJSONRequestBody
+}
+
+type UpdateBadgeChoiceResponseObject interface {
+	VisitUpdateBadgeChoiceResponse(w http.ResponseWriter) error
+}
+
+type UpdateBadgeChoice200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type UpdateBadgeChoice200JSONResponse struct {
+	Body    BadgeChoice
+	Headers UpdateBadgeChoice200ResponseHeaders
+}
+
+func (response UpdateBadgeChoice200JSONResponse) VisitUpdateBadgeChoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateBadgeChoicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateBadgeChoicedefaultApplicationProblemPlusJSONResponse) VisitUpdateBadgeChoiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DeletePushSubscriptionRequestObject struct {
 }
 
@@ -27625,6 +27945,12 @@ type StrictServerInterface interface {
 	// UpdateAutoDeletePolicy Replace the authenticated user's automatic deletion of old posts
 	// (PUT /preferences/auto_delete)
 	UpdateAutoDeletePolicy(ctx context.Context, request UpdateAutoDeletePolicyRequestObject) (UpdateAutoDeletePolicyResponseObject, error)
+	// ListBadgeChoices List the badges that the authenticated user may show
+	// (GET /preferences/badges)
+	ListBadgeChoices(ctx context.Context, request ListBadgeChoicesRequestObject) (ListBadgeChoicesResponseObject, error)
+	// UpdateBadgeChoice Show or hide the badge of a role on the authenticated user's profile
+	// (PUT /preferences/badges/{role_id})
+	UpdateBadgeChoice(ctx context.Context, request UpdateBadgeChoiceRequestObject) (UpdateBadgeChoiceResponseObject, error)
 	// DeletePushSubscription Delete the Web Push subscription of the grant
 	// (DELETE /push/subscription)
 	DeletePushSubscription(ctx context.Context, request DeletePushSubscriptionRequestObject) (DeletePushSubscriptionResponseObject, error)
@@ -32429,6 +32755,63 @@ func (sh *strictHandler) UpdateAutoDeletePolicy(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateAutoDeletePolicyResponseObject); ok {
 		if err := validResponse.VisitUpdateAutoDeletePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListBadgeChoices operation middleware
+func (sh *strictHandler) ListBadgeChoices(w http.ResponseWriter, r *http.Request) {
+	var request ListBadgeChoicesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListBadgeChoices(ctx, request.(ListBadgeChoicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListBadgeChoices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListBadgeChoicesResponseObject); ok {
+		if err := validResponse.VisitListBadgeChoicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateBadgeChoice operation middleware
+func (sh *strictHandler) UpdateBadgeChoice(w http.ResponseWriter, r *http.Request, roleId BadgeRoleId) {
+	var request UpdateBadgeChoiceRequestObject
+
+	request.RoleId = roleId
+
+	var body UpdateBadgeChoiceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateBadgeChoice(ctx, request.(UpdateBadgeChoiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateBadgeChoice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateBadgeChoiceResponseObject); ok {
+		if err := validResponse.VisitUpdateBadgeChoiceResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
