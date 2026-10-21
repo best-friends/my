@@ -201,7 +201,8 @@ type Backlog struct {
 }
 
 // BacklogReader reads the backlog of a queue that the server can count: the database queue.
-// The queues of the platforms (Cloud Tasks, SQS) have metrics of their own.
+// The queues of the platforms (Cloud Tasks, SQS) have metrics of their own. Adapters pass
+// testkit.QueueBacklogContract.
 type BacklogReader interface {
 	Backlog(ctx context.Context, now time.Time) (Backlog, error)
 }

@@ -83,14 +83,16 @@ type PushResult struct {
 }
 
 // PushSender encrypts and sends Web Push messages. The adapter (internal/adapter/webpush)
-// holds the server's VAPID key pair and sends through kernel.HTTPClient.
+// holds the server's VAPID key pair, sends through kernel.HTTPClient, and passes
+// testkit.PushSenderContract.
 type PushSender interface {
 	// ServerKey returns the server's VAPID public key, an uncompressed P-256 point in unpadded
 	// base64url: the applicationServerKey that browsers subscribe with (RFC 8292 §3.2).
 	ServerKey() string
 	// Send encrypts m.Payload for s (RFC 8291) and posts it to s.Endpoint with a VAPID
 	// authorization (RFC 8292). A transport failure is a PushRetry result, not an error; the
-	// error reports a message that cannot be built, such as invalid keys.
+	// error reports a message that cannot be built: invalid keys (ErrInvalidPushKey) or a
+	// payload beyond the 3993 bytes of one record (RFC 8291 §4).
 	Send(ctx context.Context, s notification.PushSubscription, m PushMessage) (PushResult, error)
 }
 
