@@ -110,6 +110,50 @@ describe("preferences", () => {
     expect((await screen.findAllByText("Saved")).length).toBeGreaterThan(0);
   });
 
+  test("the default post language is saved and the post form starts in it", async () => {
+    const prefs = preferencesServer({ default_post_language: "und" });
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const select = await screen.findByRole("button", { name: /Default language of your posts/ });
+    expect(select).toHaveTextContent("Not specified");
+    expect(select).toHaveAccessibleDescription(expect.stringContaining("You can still choose for each post.") as string);
+
+    await user.click(select);
+    const options = await screen.findAllByRole("option");
+    expect(options[0]).toHaveAccessibleName("Not specified");
+    await user.click(screen.getByRole("option", { name: "Japanese" }));
+
+    await waitFor(() => {
+      expect(prefs.changes).toEqual([{ default_post_language: "ja" }]);
+    });
+    expect(screen.getByRole("button", { name: /Default language of your posts/ })).toHaveTextContent("Japanese");
+    // The settings page has no new-post button; the home timeline has one.
+    await user.click(screen.getByRole("link", { name: "Home" }));
+    await user.click(await screen.findByRole("button", { name: "Write a post" }));
+    const sheet = await screen.findByRole("dialog", { name: "New post" });
+    expect(within(sheet).getByRole("button", { name: "Japanese Language" })).toBeInTheDocument();
+  });
+
+  test("the request for a description of every attachment is switched on and off", async () => {
+    const prefs = preferencesServer({ require_media_description: false });
+    const { user } = await renderApp({ path: "/settings/preferences" });
+    const ask = await screen.findByRole("switch", { name: "Ask me for a description of every attachment" });
+    expect(ask).not.toBeChecked();
+
+    await user.click(ask);
+    await waitFor(() => {
+      expect(ask).toBeChecked();
+    });
+    await waitFor(() => {
+      expect(prefs.current.require_media_description).toBe(true);
+    });
+    await user.click(ask);
+
+    await waitFor(() => {
+      expect(prefs.changes).toEqual([{ require_media_description: true }, { require_media_description: false }]);
+    });
+    expect(ask).not.toBeChecked();
+  });
+
   test("a change the server refuses is reported on its field", async () => {
     preferencesServer();
     server.use(
@@ -376,8 +420,11 @@ describe("moderator notifications by email", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Preferences" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Moderator notifications" })).not.toBeInTheDocument();
-    // The only switch left is this browser's autoplay of animations.
-    expect(screen.getAllByRole("switch")).toEqual([screen.getByRole("switch", { name: "Play animations automatically" })]);
+    // The switches left are this browser's autoplay of animations and the request for descriptions.
+    expect(screen.getAllByRole("switch")).toEqual([
+      screen.getByRole("switch", { name: "Play animations automatically" }),
+      screen.getByRole("switch", { name: "Ask me for a description of every attachment" }),
+    ]);
   });
 
   test("says why there is no switch when the server sends no email", async () => {

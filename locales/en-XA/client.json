@@ -7067,6 +7067,14 @@
     "defaultMessage": "[Ẏǿǿŭŭ ŭŭƞƀŀǿǿƈķḗḗḓ {name}.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.default_post_language.description": {
+    "defaultMessage": "[Ƞḗḗẇ ƥǿǿşŧş şŧȧȧřŧ īƞ īŧ. Ẏǿǿŭŭ ƈȧȧƞ şŧīŀŀ ƈħǿǿǿǿşḗḗ ƒǿǿř ḗḗȧȧƈħ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.default_post_language.label": {
+    "defaultMessage": "[Ḓḗḗƒȧȧŭŭŀŧ ŀȧȧƞɠŭŭȧȧɠḗḗ ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.default_visibility.description": {
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞ şŧīŀŀ ƈħǿǿǿǿşḗḗ ƒǿǿř ḗḗȧȧƈħ ƥǿǿşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7724,7 +7732,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ, ŧīḿḗḗ ẑǿǿƞḗḗ, ŧħḗḗḿḗḗ, ẇħǿǿ şḗḗḗḗş ẏǿǿŭŭř ƥǿǿşŧş ƀẏ ḓḗḗƒȧȧŭŭŀŧ, ȧȧƞḓ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ǿǿƒ ẏǿǿŭŭř ŧīḿḗḗŀīƞḗḗş]",
+    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ, ŧīḿḗḗ ẑǿǿƞḗḗ, ŧħḗḗḿḗḗ, ŧħḗḗ ḓḗḗƒȧȧŭŭŀŧş ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧş, ȧȧƞḓ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ǿǿƒ ẏǿǿŭŭř ŧīḿḗḗŀīƞḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.title": {
@@ -7961,6 +7969,14 @@
   },
   "settings.push.unsupported": {
     "defaultMessage": "[Ŧħīş ƀřǿǿẇşḗḗř ƈȧȧƞƞǿǿŧ řḗḗƈḗḗīṽḗḗ ƥŭŭşħ ƞǿǿŧīƒīƈȧȧŧīǿǿƞş. Ǿƞ īƤħǿǿƞḗḗ ȧȧƞḓ īƤȧȧḓ, ȧȧḓḓ ŧħīş şīŧḗḗ ŧǿǿ ŧħḗḗ Ħǿǿḿḗḗ Şƈřḗḗḗḗƞ ȧȧƞḓ ǿǿƥḗḗƞ īŧ ƒřǿǿḿ ŧħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.require_media_description.description": {
+    "defaultMessage": "[Ɓḗḗƒǿǿřḗḗ ẏǿǿŭŭ ƥǿǿşŧ, ŧħḗḗ ƥǿǿşŧ ƒǿǿřḿ ȧȧşķş ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ (ȧȧŀŧ ŧḗḗẋŧ) ǿǿƒ ḗḗȧȧƈħ īḿȧȧɠḗḗ, ṽīḓḗḗǿǿ ǿǿř ȧȧŭŭḓīǿǿ ƒīŀḗḗ ẇīŧħǿǿŭŭŧ ǿǿƞḗḗ, şǿǿ ŧħȧȧŧ ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ǿǿř ħḗḗȧȧř ŧħḗḗḿ ƈȧȧƞ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭř ƥǿǿşŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.require_media_description.label": {
+    "defaultMessage": "[Ȧşķ ḿḗḗ ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ ȧȧŧŧȧȧƈħḿḗḗƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.saved": {
