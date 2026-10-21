@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one audited component that renders HTML (web-client.md A8). Lint allows dangerouslySetInnerHTML
-// in this file only (app/.oxlintrc.json). The server sanitizes every post body to its allowlist
+// The one audited component that renders HTML (web-client.md A8), and the one function that parses it
+// (`sanitizedHtmlText`). Lint allows dangerouslySetInnerHTML and the other HTML sinks in this file only
+// (app/.oxlintrc.json). The server sanitizes every post body to its allowlist
 // before it reaches the client; this component trusts that and adds nothing of its own. The app's
 // Content-Security-Policy requires Trusted Types (`require-trusted-types-for 'script'`, ADR-0019 §9), under
-// which the browser refuses a plain string as innerHTML, so the HTML goes in as a TrustedHTML made by the
-// one policy below, the only place that turns a string into TrustedHTML. The shell's CSP allows this
+// which the browser refuses a plain string as innerHTML or to DOMParser, so the HTML goes in as a TrustedHTML
+// made by the one policy below, the only place that turns a string into TrustedHTML. The shell's CSP allows this
 // policy's name once (`trusted-types my-server-sanitized-html …`), so no other script can make a policy
 // of its own, and this module makes it once.
 //
@@ -59,6 +60,23 @@ function trustedHtml(html: SanitizedHtml): string {
   // React assigns the value of __html to innerHTML as it is, and innerHTML accepts the TrustedHTML in
   // place of the string its DOM type names.
   return policy.createHTML(html) as string;
+}
+
+/** DOMParser as it takes the TrustedHTML of `trustedHtml`, which its DOM type names a string. */
+type HtmlParser = { parseFromString: (html: string, type: "text/html") => Document };
+
+/**
+ * The text of server-sanitized HTML without its markup, with its paragraphs and line breaks kept as line
+ * breaks: for a place that quotes a post as plain text, such as a link to it. The HTML goes to DOMParser
+ * through the same policy as `PostContent`'s, so it parses under Trusted Types too, into an inert
+ * document in which nothing loads or runs.
+ */
+export function sanitizedHtmlText(html: SanitizedHtml): string {
+  const parser: HtmlParser = new DOMParser();
+  const doc = parser.parseFromString(trustedHtml(html), "text/html");
+  for (const br of doc.body.querySelectorAll("br")) br.replaceWith("\n");
+  const blocks = [...doc.body.children].map((element) => element.textContent.trim());
+  return (blocks.length > 0 ? blocks.join("\n") : doc.body.textContent).trim();
 }
 
 const postContent = tv({
