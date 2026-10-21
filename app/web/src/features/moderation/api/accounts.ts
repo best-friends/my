@@ -2,7 +2,8 @@
 // The queries and mutations of the moderators' account screens (FR-714, FR-703, FR-713): searching the local and
 // remote accounts, one account as the moderators see it, showing the email address and the IP addresses of a
 // local account (recorded in the audit log, so only on the moderator's explicit action: a mutation, never a
-// query that runs by itself or again), removing its two-factor authentication, and lifting a moderation action. The search follows the API's keyset
+// query that runs by itself or again), removing its two-factor authentication, issuing a password reset link for its
+// user (shown once), and lifting a moderation action. The search follows the API's keyset
 // pagination as an infinite query whose key ends with "pages" (web-client.md §10).
 import { type InfiniteData, infiniteQueryOptions, type Query, type QueryClient } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
@@ -20,6 +21,7 @@ export type AdminAccountState = Schemas["AdminAccountState"];
 export type AdminAccountRestriction = Schemas["AdminAccountRestriction"];
 export type AdminAccountRegistrationState = Schemas["AdminAccountRegistrationState"];
 export type AdminAccountPrivateData = Schemas["AdminAccountPrivateData"];
+export type AdminPasswordResetLink = Schemas["AdminPasswordResetLink"];
 
 /** The states of an account, in the order of the search's select. */
 export const adminAccountStates = ["active", "pending", "rejected", "limited", "disabled", "suspended", "deleted"] as const satisfies readonly AdminAccountState[];
@@ -123,6 +125,23 @@ export function disableAccountTwoFactorMutation(api: Api) {
       const { error } = await api.fetch.POST("/admin/accounts/{id}/two_factor/disable", { params: { path: { id } } });
       // The middleware throws an ApiError for every error status; this is only for the types.
       if (error !== undefined) throw new ApiError(error);
+    },
+  };
+}
+
+/**
+ * Issues a password reset link for the user of a local account (POST /admin/accounts/{id}/password_reset_link), as
+ * the options of useMutation. The server stores only the link's hash, so the answer is the only place it is shown;
+ * the server records the issuance in the audit log.
+ */
+export function issuePasswordResetLinkMutation(api: Api) {
+  return {
+    mutationKey: ["post", "/admin/accounts/{id}/password_reset_link"] as const,
+    mutationFn: async (id: string): Promise<AdminPasswordResetLink> => {
+      const { data, error } = await api.fetch.POST("/admin/accounts/{id}/password_reset_link", { params: { path: { id } } });
+      // The middleware throws an ApiError for every error status; this narrows the type.
+      if (data === undefined) throw new ApiError(error);
+      return data;
     },
   };
 }

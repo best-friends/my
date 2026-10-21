@@ -2,13 +2,15 @@
 // An account's admin page below its heading (FR-714, FR-703, FR-713): the account with its state, registration
 // and roles; what its actions take away now; its email address and IP addresses, which a local account shows only
 // when the moderator presses "show" (each time is recorded in the audit log, ADR-0038); whether its user has
-// two-factor authentication, with its removal, which asks first (recorded in the audit log); the moderation actions
+// two-factor authentication, with its removal, which asks first (recorded in the audit log); for manage_two_factor,
+// issuing a password reset link for its user, which asks first, is recorded in the audit log, and shows the link
+// once with a copy button; the moderation actions
 // on it, each in effect with a lift that asks for an optional reason first; its reports; and the form of a new
 // action, which offers a remote account only the kinds a remote account takes. What a change did stays on the
 // page in a StatusMessage (role="status") next to what caused it (web-client.md §14). A viewer with manage_roles
 // also has the account's roles, to grant and revoke (AccountRoles).
 import { Avatar, Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Link, ReasonField, RegionError, Spinner, StatusMessage } from "@my/ui";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFocusHeadingAfterLift } from "../../../lib/useFocusAfterRemoval";
@@ -22,6 +24,8 @@ import {
   useAdminAccount,
   useLiftAccountAction,
   usePrivateData,
+  useCopyPasswordResetLink,
+  useIssuePasswordResetLink,
   useRemoveTwoFactor,
 } from "../hooks/useAdminAccounts";
 import { useHasPermission } from "../hooks/usePermissions";
@@ -56,6 +60,8 @@ function AccountPage({ id }: { id: string }) {
   const [issued, setIssued] = useState<string | undefined>(undefined);
   const handle = handleOf(account.account);
   const canManageRoles = useHasPermission("manage_roles");
+  // Recovering a user's sign-in is server administration (ADR-0058).
+  const canRecoverSignIn = useHasPermission("manage_two_factor");
   return (
     <div className="flex flex-col gap-8">
       <DetailSection title={t("client:admin.account.summary.title")}>
@@ -76,6 +82,7 @@ function AccountPage({ id }: { id: string }) {
       {account.local && account.two_factor_enabled !== undefined && (
         <TwoFactorSection id={account.id} enabled={account.two_factor_enabled} handle={isolate(handle)} />
       )}
+      {account.local && account.two_factor_enabled !== undefined && canRecoverSignIn && <PasswordResetSection id={account.id} handle={isolate(handle)} />}
       {account.local && <PrivateDataSection id={account.id} />}
       <ActionHistory account={account} />
       <DetailSection title={t("client:admin.account.reports.title")}>
@@ -229,6 +236,72 @@ function TwoFactorSection({ id, enabled, handle }: { id: string; enabled: boolea
         }}
         isPending={remove.isPending}
         {...(remove.error === undefined ? {} : { errorMessage: t("client:admin.account.two_factor.failed", { reason: remove.error }) })}
+      />
+    </DetailSection>
+  );
+}
+
+/**
+ * Issuing a link that sets a new password for the user of a local account, to hand to them when email does not
+ * reach them (FR-002); it asks first, and the issuance is recorded in the audit log. The link is shown once, with
+ * a button that copies it; issuing again replaces it. Like removing two-factor authentication, it lets the holder of
+ * the link into the account, so it is server administration (ADR-0058): the region is only for manage_two_factor.
+ */
+function PasswordResetSection({ id, handle }: { id: string; handle: string }) {
+  const t = useT();
+  const intl = useIntl();
+  const issue = useIssuePasswordResetLink(id, handle);
+  const copy = useCopyPasswordResetLink();
+  const linkLabelId = useId();
+  const { link } = issue;
+  return (
+    <DetailSection title={t("client:admin.account.password_reset.title")}>
+      <StatusMessage tone="success">{issue.status}</StatusMessage>
+      {link !== undefined && (
+        <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+          <p id={linkLabelId} className="font-medium">
+            {t("client:admin.account.password_reset.link")}
+          </p>
+          <p className="text-sm text-fg-muted">
+            {t("client:admin.account.password_reset.link.notice", { expiresAt: intl.formatDate(link.expires_at, { dateStyle: "medium", timeStyle: "short" }) })}
+          </p>
+          {/* A URL reads left to right in every locale. */}
+          <p aria-labelledby={linkLabelId} dir="ltr" className="font-mono wrap-anywhere select-all">
+            {link.url}
+          </p>
+          <div>
+            <Button
+              size="sm"
+              onPress={() => {
+                copy(link.url);
+              }}
+            >
+              {t("client:admin.account.password_reset.copy")}
+            </Button>
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-sm text-fg-muted">{t("client:admin.account.password_reset.description")}</p>
+        <Button onPress={issue.open} isPending={issue.isPending}>
+          {t("client:admin.account.password_reset.issue")}
+        </Button>
+      </div>
+      <ConfirmDialog
+        isOpen={issue.isOpen}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) issue.cancel();
+        }}
+        title={t("client:admin.account.password_reset.confirm.title", { handle })}
+        description={t("client:admin.account.password_reset.confirm.description")}
+        confirmLabel={t("client:admin.account.password_reset.issue")}
+        cancelLabel={t("client:admin.account_actions.confirm.cancel")}
+        tone="primary"
+        onConfirm={() => {
+          issue.confirm();
+        }}
+        isPending={issue.isPending}
+        {...(issue.error === undefined ? {} : { errorMessage: t("client:admin.account.password_reset.failed", { reason: issue.error }) })}
       />
     </DetailSection>
   );

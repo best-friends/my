@@ -338,6 +338,30 @@ export interface MessageArgs {
   "client:admin.account.email_verified.yes": {};
   /** No email address */
   "client:admin.account.email.none": {};
+  /** The link is shown only once, here. It does not change the password until someone opens it and sets a new one. */
+  "client:admin.account.password_reset.confirm.description": {};
+  /** Issue a password reset link for {handle}? */
+  "client:admin.account.password_reset.confirm.title": { handle: string };
+  /** Copied the password reset link. */
+  "client:admin.account.password_reset.copied": {};
+  /** Copy link */
+  "client:admin.account.password_reset.copy": {};
+  /** Could not copy the link. */
+  "client:admin.account.password_reset.copy_failed": {};
+  /** Issues a link that sets a new password for this user, to hand to them when email does not reach them. The link works once, for an hour. Anyone who has it can set the password: confirm who is asking through another channel first, and give it to the account's owner only. The issuance is recorded in the audit log. */
+  "client:admin.account.password_reset.description": {};
+  /** Could not issue the link: {reason} */
+  "client:admin.account.password_reset.failed": { reason: string };
+  /** Issue password reset link */
+  "client:admin.account.password_reset.issue": {};
+  /** Issued a password reset link for {handle}. */
+  "client:admin.account.password_reset.issued": { handle: string };
+  /** Password reset link */
+  "client:admin.account.password_reset.link": {};
+  /** This link is not shown again. It works once, until {expiresAt}. */
+  "client:admin.account.password_reset.link.notice": { expiresAt: string };
+  /** Password reset */
+  "client:admin.account.password_reset.title": {};
   /** Shown only when you ask. Each time is recorded in the audit log. */
   "client:admin.account.private.description": {};
   /** Email address */
@@ -2000,7 +2024,7 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_rules": {};
   /** Server settings */
   "client:admin.roles.permission.manage_settings": {};
-  /** Removing two-factor authentication */
+  /** Sign-in recovery */
   "client:admin.roles.permission.manage_two_factor": {};
   /** Webhooks */
   "client:admin.roles.permission.manage_webhooks": {};

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The account search and an account's admin page through the whole app (web-client.md T4): a moderator with
 // manage_accounts searches the local and remote accounts, opens one, shows its email and IP addresses only by
-// pressing "show", and takes and lifts moderation actions on it, with MSW playing the admin API.
+// pressing "show", and takes and lifts moderation actions on it; an administrator also removes two-factor
+// authentication and issues a password reset link, shown once. MSW plays the admin API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { delay, http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
@@ -542,6 +543,67 @@ describe("an account's admin page", () => {
 
     expect(await screen.findByRole("region", { name: "Actions on the account" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Two-factor authentication" })).not.toBeInTheDocument();
+  });
+
+  test("issues a password reset link after its confirmation and shows it once, to copy", async () => {
+    const requests = recordAccountRequests();
+    const url = "https://my.example/auth/reset_password?token=rst_secret";
+    accountServer({ ...bobDetail, two_factor_enabled: false });
+    server.use(
+      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_two_factor"]),
+      http.post(`${apiBase}/admin/accounts/:id/password_reset_link`, () => HttpResponse.json({ url, expires_at: "2026-10-17T01:00:00Z" }, { status: 201 })),
+    );
+    const { user } = await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
+
+    const reset = await screen.findByRole("region", { name: "Password reset" });
+    expect(within(reset).queryByText(url)).not.toBeInTheDocument();
+    await user.click(within(reset).getByRole("button", { name: "Issue password reset link" }));
+    const dialog = await screen.findByRole("alertdialog", { name: `Issue a password reset link for ${isolated("@bob")}?` });
+    // Cancelling issues nothing.
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+    expect(requests.filter((request) => request.includes("password_reset_link"))).toEqual([]);
+
+    await user.click(within(reset).getByRole("button", { name: "Issue password reset link" }));
+    await user.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Issue password reset link" }));
+
+    expect(await within(reset).findByRole("status")).toHaveTextContent(`Issued a password reset link for ${isolated("@bob")}.`);
+    expect(within(reset).getByLabelText("Password reset link")).toHaveTextContent(url);
+    expect(within(reset).getByText(/^This link is not shown again\./)).toBeInTheDocument();
+    await user.click(within(reset).getByRole("button", { name: "Copy link" }));
+    // user-event's clipboard stands in for the browser's.
+    expect(await navigator.clipboard.readText()).toBe(url);
+    expect(requests.filter((request) => request.includes("password_reset_link"))).toEqual([`POST /admin/accounts/${bobDetail.id}/password_reset_link`]);
+  });
+
+  test("a password reset link the server refuses stays in the confirmation to try again", async () => {
+    accountServer({ ...bobDetail, two_factor_enabled: false });
+    server.use(
+      operatorHandler(["manage_accounts", "manage_reports", "view_audit", "manage_two_factor"]),
+      http.post(`${apiBase}/admin/accounts/:id/password_reset_link`, () => problem(503, "about:blank", "Service Unavailable")),
+    );
+    const { user } = await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
+
+    const reset = await screen.findByRole("region", { name: "Password reset" });
+    await user.click(within(reset).getByRole("button", { name: "Issue password reset link" }));
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "Issue password reset link" }));
+
+    expect(await within(dialog).findByText("Could not issue the link: Service Unavailable")).toBeInTheDocument();
+    expect(within(reset).queryByLabelText("Password reset link")).not.toBeInTheDocument();
+  });
+
+  test("a moderator without manage_two_factor cannot issue a password reset link", async () => {
+    const requests = recordAccountRequests();
+    accountServer({ ...bobDetail, two_factor_enabled: false });
+    await renderApp({ path: `/moderation/accounts/${bobDetail.id}` });
+
+    expect(await screen.findByRole("region", { name: "Two-factor authentication" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Password reset" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Issue password reset link" })).not.toBeInTheDocument();
+    expect(requests.filter((request) => request.includes("password_reset_link"))).toEqual([]);
   });
 
   test("an unknown account says it is not found", async () => {

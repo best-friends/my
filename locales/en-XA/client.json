@@ -419,6 +419,54 @@
     "defaultMessage": "[Ṽḗḗřīƒīḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.account.password_reset.confirm.description": {
+    "defaultMessage": "[Ŧħḗḗ ŀīƞķ īş şħǿǿẇƞ ǿǿƞŀẏ ǿǿƞƈḗḗ, ħḗḗřḗḗ. Īŧ ḓǿǿḗḗş ƞǿǿŧ ƈħȧȧƞɠḗḗ ŧħḗḗ ƥȧȧşşẇǿǿřḓ ŭŭƞŧīŀ şǿǿḿḗḗǿǿƞḗḗ ǿǿƥḗḗƞş īŧ ȧȧƞḓ şḗḗŧş ȧȧ ƞḗḗẇ ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.confirm.title": {
+    "defaultMessage": "[Īşşŭŭḗḗ ȧȧ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ ƒǿǿř {handle}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.copied": {
+    "defaultMessage": "[Ƈǿǿƥīḗḗḓ ŧħḗḗ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.copy": {
+    "defaultMessage": "[Ƈǿǿƥẏ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.copy_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈǿǿƥẏ ŧħḗḗ ŀīƞķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.description": {
+    "defaultMessage": "[Īşşŭŭḗḗş ȧȧ ŀīƞķ ŧħȧȧŧ şḗḗŧş ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ ƒǿǿř ŧħīş ŭŭşḗḗř, ŧǿǿ ħȧȧƞḓ ŧǿǿ ŧħḗḗḿ ẇħḗḗƞ ḗḗḿȧȧīŀ ḓǿǿḗḗş ƞǿǿŧ řḗḗȧȧƈħ ŧħḗḗḿ. Ŧħḗḗ ŀīƞķ ẇǿǿřķş ǿǿƞƈḗḗ, ƒǿǿř ȧȧƞ ħǿǿŭŭř. Ȧƞẏǿǿƞḗḗ ẇħǿǿ ħȧȧş īŧ ƈȧȧƞ şḗḗŧ ŧħḗḗ ƥȧȧşşẇǿǿřḓ: ƈǿǿƞƒīřḿ ẇħǿǿ īş ȧȧşķīƞɠ ŧħřǿǿŭŭɠħ ȧȧƞǿǿŧħḗḗř ƈħȧȧƞƞḗḗŀ ƒīřşŧ, ȧȧƞḓ ɠīṽḗḗ īŧ ŧǿǿ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ'ş ǿǿẇƞḗḗř ǿǿƞŀẏ. Ŧħḗḗ īşşŭŭȧȧƞƈḗḗ īş řḗḗƈǿǿřḓḗḗḓ īƞ ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ īşşŭŭḗḗ ŧħḗḗ ŀīƞķ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.issue": {
+    "defaultMessage": "[Īşşŭŭḗḗ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.issued": {
+    "defaultMessage": "[Īşşŭŭḗḗḓ ȧȧ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ ƒǿǿř {handle}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.link": {
+    "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.link.notice": {
+    "defaultMessage": "[Ŧħīş ŀīƞķ īş ƞǿǿŧ şħǿǿẇƞ ȧȧɠȧȧīƞ. Īŧ ẇǿǿřķş ǿǿƞƈḗḗ, ŭŭƞŧīŀ {expiresAt}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.title": {
+    "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account.private.description": {
     "defaultMessage": "[Şħǿǿẇƞ ǿǿƞŀẏ ẇħḗḗƞ ẏǿǿŭŭ ȧȧşķ. Ḗȧȧƈħ ŧīḿḗḗ īş řḗḗƈǿǿřḓḗḗḓ īƞ ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3996,7 +4044,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permission.manage_two_factor": {
-    "defaultMessage": "[Řḗḗḿǿǿṽīƞɠ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
+    "defaultMessage": "[Şīɠƞ-īƞ řḗḗƈǿǿṽḗḗřẏ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permission.manage_webhooks": {
