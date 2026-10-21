@@ -8,7 +8,8 @@
 // on it, each in effect with a lift that asks for an optional reason first; its reports; and the form of a new
 // action, which offers a remote account only the kinds a remote account takes. What a change did stays on the
 // page in a StatusMessage (role="status") next to what caused it (web-client.md §14). A viewer with manage_roles
-// also has the account's roles, to grant and revoke (AccountRoles).
+// also has the account's roles, to grant and revoke (AccountRoles); one with manage_domains, the refetch of a
+// remote account's posts from its server (RefetchStatusesSection).
 import { Avatar, Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Link, ReasonField, RegionError, Spinner, StatusMessage } from "@my/ui";
 import { useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
@@ -43,6 +44,7 @@ import { AccountActionForm } from "./AccountActionForm";
 import { AccountRoles } from "./AccountRoles";
 import { AccountOrigin } from "./AccountSearch";
 import { DateTime, DetailSection, RecordList, RequirePermission, useFocusAfterChange } from "./parts";
+import { RefetchStatusesSection } from "./RefetchStatuses";
 import { AccountLabel, AssigneeName } from "./reportParts";
 import { imageSources } from "../../../lib/images";
 
@@ -60,6 +62,8 @@ function AccountPage({ id }: { id: string }) {
   const [issued, setIssued] = useState<string | undefined>(undefined);
   const handle = handleOf(account.account);
   const canManageRoles = useHasPermission("manage_roles");
+  // Refetching a remote account's posts from its server (FR-407) is for a viewer with manage_domains.
+  const canRefetch = useHasPermission("manage_domains");
   // Recovering a user's sign-in is server administration (ADR-0058).
   const canRecoverSignIn = useHasPermission("manage_login_recovery");
   return (
@@ -78,6 +82,7 @@ function AccountPage({ id }: { id: string }) {
           </ul>
         )}
       </DetailSection>
+      {!account.local && account.state !== "deleted" && canRefetch && <RefetchStatusesSection target={{ kind: "account", id: account.id }} />}
       {account.local && canManageRoles && <AccountRoles accountId={account.id} handle={isolate(handle)} />}
       {account.local && account.two_factor_enabled !== undefined && (
         <TwoFactorSection id={account.id} enabled={account.two_factor_enabled} handle={isolate(handle)} />

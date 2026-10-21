@@ -4881,6 +4881,79 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of admin: relays (#667) ---
+  # --- admin: refetch remote posts (#812) ---
+  /admin/statuses/{id}/refetch:
+    post:
+      operationId: refetchStatus
+      summary: Refetch a remote post from its origin
+      description: |
+        Queues a fetch of the remote post from its server (FR-407). The job records what the
+        server serves now, as a received `Update` would: a newer revision, the counts of its
+        poll, or, when the server answers 410 Gone or serves a `Tombstone`, the post's
+        deletion. A post that cannot be fetched is left as it is. An unknown or deleted post is
+        a 404; a local post is a 422. Needs the `manage_domains` permission. The request is recorded in the audit log;
+        nothing schedules a refetch on its own.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the remote post.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The refetch is queued.
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/accounts/{id}/refetch_statuses:
+    post:
+      operationId: refetchAccountStatuses
+      summary: Refetch the posts of a remote account from its server
+      description: |
+        Queues the refetch, as `POST /admin/statuses/{id}/refetch` does, of the newest 1000
+        posts of the remote account that are stored and not deleted. The posts are fetched in
+        batches of 100, a minute apart. An unknown account is a 404; a local account is a 422.
+        Needs the `manage_domains` permission. The request is recorded in the audit log;
+        nothing schedules a refetch on its own.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the remote account.
+          schema:
+            $ref: "#/components/schemas/Id"
+      responses:
+        "204":
+          description: The refetch is queued.
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/instances/{domain}/refetch_statuses:
+    post:
+      operationId: refetchInstanceStatuses
+      summary: Refetch the posts of the accounts of a remote server
+      description: |
+        Queues the refetch, as `POST /admin/statuses/{id}/refetch` does, of the stored posts of
+        the server's accounts that are not deleted: the newest 20 of each account, newest
+        accounts first, 1000 in all, in batches of 5 accounts a minute apart. A domain that is
+        not a host name is a 400; this server's domain is a 422. Needs the `manage_domains` permission. The request is recorded in the audit log;
+        nothing schedules a refetch on its own.
+      tags: [admin-moderation]
+      security:
+        - oauth2: ["admin:write"]
+      parameters:
+        - $ref: "#/components/parameters/InstanceDomain"
+      responses:
+        "204":
+          description: The refetch is queued.
+        default:
+          $ref: "#/components/responses/Problem"
+  # --- end of admin: refetch remote posts (#812) ---
 components:
   securitySchemes:
     oauth2:
@@ -7957,7 +8030,10 @@ components:
         text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
         characters of its code, never the whole code. On a `relay`: `relay_added`,
         `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
-        `relay_rejected` (by the `remote` relay); the label is its URL.
+        `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
+        posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
+        `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
+        on a `domain`.
       type: string
       enum:
         - account_action_issued
@@ -8015,6 +8091,9 @@ components:
         - relay_removed
         - relay_accepted
         - relay_rejected
+        - status_refetch_queued
+        - account_statuses_refetch_queued
+        - domain_statuses_refetch_queued
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.

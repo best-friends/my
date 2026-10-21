@@ -3770,6 +3770,79 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/statuses/{id}/refetch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refetch a remote post from its origin
+         * @description Queues a fetch of the remote post from its server (FR-407). The job records what the
+         *     server serves now, as a received `Update` would: a newer revision, the counts of its
+         *     poll, or, when the server answers 410 Gone or serves a `Tombstone`, the post's
+         *     deletion. A post that cannot be fetched is left as it is. An unknown or deleted post is
+         *     a 404; a local post is a 422. Needs the `manage_domains` permission. The request is recorded in the audit log;
+         *     nothing schedules a refetch on its own.
+         */
+        post: operations["refetchStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{id}/refetch_statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refetch the posts of a remote account from its server
+         * @description Queues the refetch, as `POST /admin/statuses/{id}/refetch` does, of the newest 1000
+         *     posts of the remote account that are stored and not deleted. The posts are fetched in
+         *     batches of 100, a minute apart. An unknown account is a 404; a local account is a 422.
+         *     Needs the `manage_domains` permission. The request is recorded in the audit log;
+         *     nothing schedules a refetch on its own.
+         */
+        post: operations["refetchAccountStatuses"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/instances/{domain}/refetch_statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refetch the posts of the accounts of a remote server
+         * @description Queues the refetch, as `POST /admin/statuses/{id}/refetch` does, of the stored posts of
+         *     the server's accounts that are not deleted: the newest 20 of each account, newest
+         *     accounts first, 1000 in all, in batches of 5 accounts a minute apart. A domain that is
+         *     not a host name is a 400; this server's domain is a 422. Needs the `manage_domains` permission. The request is recorded in the audit log;
+         *     nothing schedules a refetch on its own.
+         */
+        post: operations["refetchInstanceStatuses"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5529,10 +5602,13 @@ export interface components {
          *     text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
          *     characters of its code, never the whole code. On a `relay`: `relay_added`,
          *     `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
-         *     `relay_rejected` (by the `remote` relay); the label is its URL.
+         *     `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
+         *     posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
+         *     `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
+         *     on a `domain`.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -11567,6 +11643,72 @@ export interface operations {
         responses: {
             200: components["responses"]["AdminRelay"];
             422: components["responses"]["RelayProblem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    refetchStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the remote post. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The refetch is queued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    refetchAccountStatuses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the remote account. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The refetch is queued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    refetchInstanceStatuses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The domain of the remote server, such as `mastodon.example`. */
+                domain: components["parameters"]["InstanceDomain"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The refetch is queued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             default: components["responses"]["Problem"];
         };
     };

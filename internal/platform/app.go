@@ -195,6 +195,9 @@ type App struct {
 	// (docs/architecture/federation.md §6.2, §6.3).
 	RemoteStatuses *federation.StatusHandlers
 	Resolver       *federation.Resolver
+	// Refetches queues the refetch of remote posts that operators request (FR-407,
+	// docs/architecture/federation.md §6.4).
+	Refetches *federation.Refetches
 	// Relays joins and leaves the relays and admits what they bring in (ADR-0061).
 	Relays *federation.Relays
 
@@ -677,7 +680,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Webhooks:     a.Webhooks,
 		WebhookReads: webhookReads{a},
 		// The relays the instance joins (ADR-0061).
-		Relays:      a.Relays,
+		Relays: a.Relays,
+		// The refetch of remote posts from their servers (FR-407).
+		Refetches:   a.Refetches,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})

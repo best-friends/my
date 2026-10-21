@@ -739,6 +739,10 @@
     "defaultMessage": "{reason, select, url {URL は 2048 バイト以内の https の URL にしてください。} exists {この URL のリレーはすでに登録されています。} domain_suspended {リレーのサーバーはドメインへの処分で停止されています。} not_actor {URL が、inbox を持つリレーの Actor を返しません。} state {リレーがこの操作をできる状態にありません。削除する前に脱退し、参加し直すのは脱退したか拒否されたリレーだけにしてください。} other {リレーをそのように変更できません。}}",
     "description": "API error detail for HTTP 422 when a relay operation is refused. {reason} is url, exists, domain_suspended, not_actor, or state."
   },
+  "errors.refetch.not_remote": {
+    "defaultMessage": "取り直せるのは、リモートの投稿・リモートのアカウント・ほかのサーバーだけです。",
+    "description": "API error detail for HTTP 422 when an administrator asks to refetch a local post, a local account, or this server's own domain from its origin."
+  },
   "errors.remote_account": {
     "defaultMessage": "他のサーバーのアカウントにはこの操作を行えません。",
     "description": "Detail of the HTTP 422 API error when a block targets an account on another server, which the operation does not support."

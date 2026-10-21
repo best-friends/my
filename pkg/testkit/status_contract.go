@@ -51,6 +51,7 @@ func StatusRepositoryContract(t *testing.T, newHarness StatusFactory) {
 		{"CountsPosts", statusCountsPosts},
 		{"CountsLocalPosts", statusCountsLocalPosts},
 		{"EnsuresTags", statusEnsuresTags},
+		{"ListsLiveRemoteStatusesOfAnAuthor", statusListsLiveRemote},
 		{"IncrementalProjectionEqualsRebuild", statusProjectionEqualsRebuild},
 	}
 	for _, tc := range cases {
@@ -360,6 +361,37 @@ func statusReportsMissing(t *testing.T, e *statusEnv) {
 }
 
 func second[T any](_ T, err error) error { return err }
+
+// statusListsLiveRemote checks ListLiveRemoteStatusIDs: the remote statuses of one author that
+// are not deleted, newest first, in keyset pages; local statuses and other authors are left out.
+func statusListsLiveRemote(t *testing.T, e *statusEnv) {
+	ctx := t.Context()
+	author, other := e.ids.NewID(), e.ids.NewID()
+	remote := func(author string) content.Status {
+		s := e.newStatus(author, content.VisibilityPublic)
+		s.IsLocal = false
+		s.URI = "https://remote.example/notes/" + s.ID
+		e.mustCreate(t, s)
+		return s
+	}
+	oldest, deleted, middle, newest := remote(author), remote(author), remote(author), remote(author)
+	e.mustRemove(t, deleted)
+	remote(other)
+	local := e.newStatus(author, content.VisibilityPublic)
+	e.mustCreate(t, local)
+
+	page, err := e.h.Statuses.ListLiveRemoteStatusIDs(ctx, author, "", 2)
+	if err != nil || !slices.Equal(page, []string{newest.ID, middle.ID}) {
+		t.Fatalf("first page = %v, %v; want [%s %s]", page, err, newest.ID, middle.ID)
+	}
+	page, err = e.h.Statuses.ListLiveRemoteStatusIDs(ctx, author, middle.ID, 2)
+	if err != nil || !slices.Equal(page, []string{oldest.ID}) {
+		t.Fatalf("second page = %v, %v; want [%s]", page, err, oldest.ID)
+	}
+	if page, err := e.h.Statuses.ListLiveRemoteStatusIDs(ctx, e.ids.NewID(), "", 2); err != nil || len(page) != 0 {
+		t.Errorf("unknown author = %v, %v; want none", page, err)
+	}
+}
 
 func statusRevises(t *testing.T, e *statusEnv) {
 	ctx := t.Context()

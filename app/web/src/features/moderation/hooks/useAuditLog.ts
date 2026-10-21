@@ -65,6 +65,9 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   relay_removed: "client:admin.audit_log.action.relay_removed",
   relay_accepted: "client:admin.audit_log.action.relay_accepted",
   relay_rejected: "client:admin.audit_log.action.relay_rejected",
+  status_refetch_queued: "client:admin.audit_log.action.status_refetch_queued",
+  account_statuses_refetch_queued: "client:admin.audit_log.action.account_statuses_refetch_queued",
+  domain_statuses_refetch_queued: "client:admin.audit_log.action.domain_statuses_refetch_queued",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {

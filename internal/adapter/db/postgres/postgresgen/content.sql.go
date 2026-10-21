@@ -768,6 +768,43 @@ func (q *Queries) ListAccountPostCounters(ctx context.Context) ([]AccountPostCou
 	return items, nil
 }
 
+const listLiveRemoteStatusIDsOfAuthor = `-- name: ListLiveRemoteStatusIDsOfAuthor :many
+SELECT s.id FROM statuses s
+WHERE s.author_account_id = $1 AND s.is_local = FALSE
+  AND ($2::text = '' OR s.id < $2::text)
+  AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+ORDER BY s.id DESC
+LIMIT $3
+`
+
+type ListLiveRemoteStatusIDsOfAuthorParams struct {
+	AuthorAccountID string
+	Before          string
+	Lim             int32
+}
+
+// The remote statuses of an author that are not deleted, newest first, below an ID (” for the
+// first page).
+func (q *Queries) ListLiveRemoteStatusIDsOfAuthor(ctx context.Context, arg ListLiveRemoteStatusIDsOfAuthorParams) ([]string, error) {
+	rows, err := q.db.Query(ctx, listLiveRemoteStatusIDsOfAuthor, arg.AuthorAccountID, arg.Before, arg.Lim)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLiveRepliesTo = `-- name: ListLiveRepliesTo :many
 SELECT s.id, s.uri, s.url, s.author_account_id, s.is_local, s.visibility, s.in_reply_to_uri,
   s.conversation_uri, s.published_at

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A remote server's page below its heading (federation.md §7.3): its health, why it is in its state, when
-// deliveries last resumed, the button that resumes them, the way to its moderation actions (FR-702), and the
-// history of its availability, newest first.
+// deliveries last resumed, the button that resumes them, the way to its moderation actions (FR-702), the refetch
+// of its accounts' posts (FR-407), and the history of its availability, newest first.
 import { Button, DescriptionItem, DescriptionList, EmptyState, Link } from "@my/ui";
 import { useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import type { AvailabilityEvent } from "../api/staff";
 import { useInstance } from "../hooks/useInstances";
 import { Day, DateTime, DetailSection, InstanceStateLabel, RecordList, RequirePermission } from "./parts";
+import { RefetchStatusesSection } from "./RefetchStatuses";
 
 const eventLabels: Readonly<Record<AvailabilityEvent["kind"], ClientMessageKey>> = {
   marked_unavailable: "client:admin.instance.event.marked_unavailable",
@@ -78,6 +79,7 @@ function InstanceView({ domain }: InstanceDetailProps) {
           </p>
         </div>
       </DetailSection>
+      <RefetchStatusesSection target={{ kind: "domain", domain }} />
       <DetailSection title={t("client:admin.instance.history.title")}>
         <RecordList list={events} getId={(event) => event.id} empty={<EmptyState headingLevel={3} heading={t("client:admin.instance.history.empty")} />}>
           {(event) => (

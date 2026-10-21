@@ -267,61 +267,64 @@ func (e AdminAnnouncementState) Valid() bool {
 
 // Defines values for AdminAuditAction.
 const (
-	AdminAuditActionAccountActionIssued      AdminAuditAction = "account_action_issued"
-	AdminAuditActionAccountActionLifted      AdminAuditAction = "account_action_lifted"
-	AdminAuditActionAccountDeletionCancelled AdminAuditAction = "account_deletion_cancelled"
-	AdminAuditActionAnnouncementCreated      AdminAuditAction = "announcement_created"
-	AdminAuditActionAnnouncementPublished    AdminAuditAction = "announcement_published"
-	AdminAuditActionAnnouncementUpdated      AdminAuditAction = "announcement_updated"
-	AdminAuditActionAnnouncementWithdrawn    AdminAuditAction = "announcement_withdrawn"
-	AdminAuditActionAppealOverturned         AdminAuditAction = "appeal_overturned"
-	AdminAuditActionAppealUpheld             AdminAuditAction = "appeal_upheld"
-	AdminAuditActionCustomEmojiCopied        AdminAuditAction = "custom_emoji_copied"
-	AdminAuditActionCustomEmojiCreated       AdminAuditAction = "custom_emoji_created"
-	AdminAuditActionCustomEmojiDeleted       AdminAuditAction = "custom_emoji_deleted"
-	AdminAuditActionCustomEmojiDisabled      AdminAuditAction = "custom_emoji_disabled"
-	AdminAuditActionCustomEmojiEnabled       AdminAuditAction = "custom_emoji_enabled"
-	AdminAuditActionCustomEmojiImageReplaced AdminAuditAction = "custom_emoji_image_replaced"
-	AdminAuditActionCustomEmojiUpdated       AdminAuditAction = "custom_emoji_updated"
-	AdminAuditActionDomainActionIssued       AdminAuditAction = "domain_action_issued"
-	AdminAuditActionDomainActionLifted       AdminAuditAction = "domain_action_lifted"
-	AdminAuditActionInviteCreated            AdminAuditAction = "invite_created"
-	AdminAuditActionInviteRevoked            AdminAuditAction = "invite_revoked"
-	AdminAuditActionPasswordResetLinkIssued  AdminAuditAction = "password_reset_link_issued"
-	AdminAuditActionRegistrationApproved     AdminAuditAction = "registration_approved"
-	AdminAuditActionRegistrationRejected     AdminAuditAction = "registration_rejected"
-	AdminAuditActionRelayAccepted            AdminAuditAction = "relay_accepted"
-	AdminAuditActionRelayAdded               AdminAuditAction = "relay_added"
-	AdminAuditActionRelayFollowed            AdminAuditAction = "relay_followed"
-	AdminAuditActionRelayRejected            AdminAuditAction = "relay_rejected"
-	AdminAuditActionRelayRemoved             AdminAuditAction = "relay_removed"
-	AdminAuditActionRelayUnfollowed          AdminAuditAction = "relay_unfollowed"
-	AdminAuditActionReportAssigned           AdminAuditAction = "report_assigned"
-	AdminAuditActionReportNoteAdded          AdminAuditAction = "report_note_added"
-	AdminAuditActionReportReopened           AdminAuditAction = "report_reopened"
-	AdminAuditActionReportResolved           AdminAuditAction = "report_resolved"
-	AdminAuditActionReportUnassigned         AdminAuditAction = "report_unassigned"
-	AdminAuditActionRevealedPrivateData      AdminAuditAction = "revealed_private_data"
-	AdminAuditActionRoleCreated              AdminAuditAction = "role_created"
-	AdminAuditActionRoleDeleted              AdminAuditAction = "role_deleted"
-	AdminAuditActionRoleGranted              AdminAuditAction = "role_granted"
-	AdminAuditActionRoleRevoked              AdminAuditAction = "role_revoked"
-	AdminAuditActionRoleUpdated              AdminAuditAction = "role_updated"
-	AdminAuditActionRuleAdded                AdminAuditAction = "rule_added"
-	AdminAuditActionRuleMoved                AdminAuditAction = "rule_moved"
-	AdminAuditActionRuleRetired              AdminAuditAction = "rule_retired"
-	AdminAuditActionRuleRevised              AdminAuditAction = "rule_revised"
-	AdminAuditActionSettingChanged           AdminAuditAction = "setting_changed"
-	AdminAuditActionSignupBlockAdded         AdminAuditAction = "signup_block_added"
-	AdminAuditActionSignupBlockLifted        AdminAuditAction = "signup_block_lifted"
-	AdminAuditActionTextChanged              AdminAuditAction = "text_changed"
-	AdminAuditActionTwoFactorDisabled        AdminAuditAction = "two_factor_disabled"
-	AdminAuditActionWebhookCreated           AdminAuditAction = "webhook_created"
-	AdminAuditActionWebhookDeleted           AdminAuditAction = "webhook_deleted"
-	AdminAuditActionWebhookDisabled          AdminAuditAction = "webhook_disabled"
-	AdminAuditActionWebhookEnabled           AdminAuditAction = "webhook_enabled"
-	AdminAuditActionWebhookSecretRotated     AdminAuditAction = "webhook_secret_rotated"
-	AdminAuditActionWebhookUpdated           AdminAuditAction = "webhook_updated"
+	AdminAuditActionAccountActionIssued          AdminAuditAction = "account_action_issued"
+	AdminAuditActionAccountActionLifted          AdminAuditAction = "account_action_lifted"
+	AdminAuditActionAccountDeletionCancelled     AdminAuditAction = "account_deletion_cancelled"
+	AdminAuditActionAccountStatusesRefetchQueued AdminAuditAction = "account_statuses_refetch_queued"
+	AdminAuditActionAnnouncementCreated          AdminAuditAction = "announcement_created"
+	AdminAuditActionAnnouncementPublished        AdminAuditAction = "announcement_published"
+	AdminAuditActionAnnouncementUpdated          AdminAuditAction = "announcement_updated"
+	AdminAuditActionAnnouncementWithdrawn        AdminAuditAction = "announcement_withdrawn"
+	AdminAuditActionAppealOverturned             AdminAuditAction = "appeal_overturned"
+	AdminAuditActionAppealUpheld                 AdminAuditAction = "appeal_upheld"
+	AdminAuditActionCustomEmojiCopied            AdminAuditAction = "custom_emoji_copied"
+	AdminAuditActionCustomEmojiCreated           AdminAuditAction = "custom_emoji_created"
+	AdminAuditActionCustomEmojiDeleted           AdminAuditAction = "custom_emoji_deleted"
+	AdminAuditActionCustomEmojiDisabled          AdminAuditAction = "custom_emoji_disabled"
+	AdminAuditActionCustomEmojiEnabled           AdminAuditAction = "custom_emoji_enabled"
+	AdminAuditActionCustomEmojiImageReplaced     AdminAuditAction = "custom_emoji_image_replaced"
+	AdminAuditActionCustomEmojiUpdated           AdminAuditAction = "custom_emoji_updated"
+	AdminAuditActionDomainActionIssued           AdminAuditAction = "domain_action_issued"
+	AdminAuditActionDomainActionLifted           AdminAuditAction = "domain_action_lifted"
+	AdminAuditActionDomainStatusesRefetchQueued  AdminAuditAction = "domain_statuses_refetch_queued"
+	AdminAuditActionInviteCreated                AdminAuditAction = "invite_created"
+	AdminAuditActionInviteRevoked                AdminAuditAction = "invite_revoked"
+	AdminAuditActionPasswordResetLinkIssued      AdminAuditAction = "password_reset_link_issued"
+	AdminAuditActionRegistrationApproved         AdminAuditAction = "registration_approved"
+	AdminAuditActionRegistrationRejected         AdminAuditAction = "registration_rejected"
+	AdminAuditActionRelayAccepted                AdminAuditAction = "relay_accepted"
+	AdminAuditActionRelayAdded                   AdminAuditAction = "relay_added"
+	AdminAuditActionRelayFollowed                AdminAuditAction = "relay_followed"
+	AdminAuditActionRelayRejected                AdminAuditAction = "relay_rejected"
+	AdminAuditActionRelayRemoved                 AdminAuditAction = "relay_removed"
+	AdminAuditActionRelayUnfollowed              AdminAuditAction = "relay_unfollowed"
+	AdminAuditActionReportAssigned               AdminAuditAction = "report_assigned"
+	AdminAuditActionReportNoteAdded              AdminAuditAction = "report_note_added"
+	AdminAuditActionReportReopened               AdminAuditAction = "report_reopened"
+	AdminAuditActionReportResolved               AdminAuditAction = "report_resolved"
+	AdminAuditActionReportUnassigned             AdminAuditAction = "report_unassigned"
+	AdminAuditActionRevealedPrivateData          AdminAuditAction = "revealed_private_data"
+	AdminAuditActionRoleCreated                  AdminAuditAction = "role_created"
+	AdminAuditActionRoleDeleted                  AdminAuditAction = "role_deleted"
+	AdminAuditActionRoleGranted                  AdminAuditAction = "role_granted"
+	AdminAuditActionRoleRevoked                  AdminAuditAction = "role_revoked"
+	AdminAuditActionRoleUpdated                  AdminAuditAction = "role_updated"
+	AdminAuditActionRuleAdded                    AdminAuditAction = "rule_added"
+	AdminAuditActionRuleMoved                    AdminAuditAction = "rule_moved"
+	AdminAuditActionRuleRetired                  AdminAuditAction = "rule_retired"
+	AdminAuditActionRuleRevised                  AdminAuditAction = "rule_revised"
+	AdminAuditActionSettingChanged               AdminAuditAction = "setting_changed"
+	AdminAuditActionSignupBlockAdded             AdminAuditAction = "signup_block_added"
+	AdminAuditActionSignupBlockLifted            AdminAuditAction = "signup_block_lifted"
+	AdminAuditActionStatusRefetchQueued          AdminAuditAction = "status_refetch_queued"
+	AdminAuditActionTextChanged                  AdminAuditAction = "text_changed"
+	AdminAuditActionTwoFactorDisabled            AdminAuditAction = "two_factor_disabled"
+	AdminAuditActionWebhookCreated               AdminAuditAction = "webhook_created"
+	AdminAuditActionWebhookDeleted               AdminAuditAction = "webhook_deleted"
+	AdminAuditActionWebhookDisabled              AdminAuditAction = "webhook_disabled"
+	AdminAuditActionWebhookEnabled               AdminAuditAction = "webhook_enabled"
+	AdminAuditActionWebhookSecretRotated         AdminAuditAction = "webhook_secret_rotated"
+	AdminAuditActionWebhookUpdated               AdminAuditAction = "webhook_updated"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditAction enum.
@@ -332,6 +335,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAccountActionLifted:
 		return true
 	case AdminAuditActionAccountDeletionCancelled:
+		return true
+	case AdminAuditActionAccountStatusesRefetchQueued:
 		return true
 	case AdminAuditActionAnnouncementCreated:
 		return true
@@ -362,6 +367,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionDomainActionIssued:
 		return true
 	case AdminAuditActionDomainActionLifted:
+		return true
+	case AdminAuditActionDomainStatusesRefetchQueued:
 		return true
 	case AdminAuditActionInviteCreated:
 		return true
@@ -420,6 +427,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionSignupBlockAdded:
 		return true
 	case AdminAuditActionSignupBlockLifted:
+		return true
+	case AdminAuditActionStatusRefetchQueued:
 		return true
 	case AdminAuditActionTextChanged:
 		return true
@@ -2447,7 +2456,10 @@ type AdminAppealPage struct {
 // text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
 // characters of its code, never the whole code. On a `relay`: `relay_added`,
 // `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
-// `relay_rejected` (by the `remote` relay); the label is its URL.
+// `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
+// posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
+// `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
+// on a `domain`.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -2488,7 +2500,10 @@ type AdminAuditEntry struct {
 	// text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
 	// characters of its code, never the whole code. On a `relay`: `relay_added`,
 	// `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
-	// `relay_rejected` (by the `remote` relay); the label is its URL.
+	// `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
+	// posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
+	// `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
+	// on a `domain`.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -7005,6 +7020,9 @@ type ServerInterface interface {
 	// IssueAdminAccountPasswordResetLink Issue a password reset link for a local account
 	// (POST /admin/accounts/{id}/password_reset_link)
 	IssueAdminAccountPasswordResetLink(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// RefetchAccountStatuses Refetch the posts of a remote account from its server
+	// (POST /admin/accounts/{id}/refetch_statuses)
+	RefetchAccountStatuses(w http.ResponseWriter, r *http.Request, id Id)
 	// RevealAdminAccount Show the email address and the IP addresses of a local account
 	// (POST /admin/accounts/{id}/reveal)
 	RevealAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId)
@@ -7122,6 +7140,9 @@ type ServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
+	// RefetchInstanceStatuses Refetch the posts of the accounts of a remote server
+	// (POST /admin/instances/{domain}/refetch_statuses)
+	RefetchInstanceStatuses(w http.ResponseWriter, r *http.Request, domain InstanceDomain)
 	// ListInvites List the invites
 	// (GET /admin/invites)
 	ListInvites(w http.ResponseWriter, r *http.Request, params ListInvitesParams)
@@ -7227,6 +7248,9 @@ type ServerInterface interface {
 	// LiftSignupBlock Lift a sign-up block
 	// (POST /admin/signup_blocks/{id}/lift)
 	LiftSignupBlock(w http.ResponseWriter, r *http.Request, id SignupBlockId)
+	// RefetchStatus Refetch a remote post from its origin
+	// (POST /admin/statuses/{id}/refetch)
+	RefetchStatus(w http.ResponseWriter, r *http.Request, id Id)
 	// GetAdminTheme Read the instance theme
 	// (GET /admin/theme)
 	GetAdminTheme(w http.ResponseWriter, r *http.Request)
@@ -8394,6 +8418,32 @@ func (siw *ServerInterfaceWrapper) IssueAdminAccountPasswordResetLink(w http.Res
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.IssueAdminAccountPasswordResetLink(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RefetchAccountStatuses operation middleware
+func (siw *ServerInterfaceWrapper) RefetchAccountStatuses(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RefetchAccountStatuses(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9619,6 +9669,32 @@ func (siw *ServerInterfaceWrapper) MarkInstanceAvailable(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// RefetchInstanceStatuses operation middleware
+func (siw *ServerInterfaceWrapper) RefetchInstanceStatuses(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "domain" -------------
+	var domain InstanceDomain
+
+	err = runtime.BindStyledParameterWithOptions("simple", "domain", r.PathValue("domain"), &domain, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "domain", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RefetchInstanceStatuses(w, r, domain)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListInvites operation middleware
 func (siw *ServerInterfaceWrapper) ListInvites(w http.ResponseWriter, r *http.Request) {
 
@@ -10526,6 +10602,32 @@ func (siw *ServerInterfaceWrapper) LiftSignupBlock(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LiftSignupBlock(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RefetchStatus operation middleware
+func (siw *ServerInterfaceWrapper) RefetchStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RefetchStatus(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13044,6 +13146,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/relays/{id}", wrapper.DeleteRelay)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/relays/{id}/follow", wrapper.FollowRelay)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/relays/{id}/unfollow", wrapper.UnfollowRelay)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/statuses/{id}/refetch", wrapper.RefetchStatus)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/refetch_statuses", wrapper.RefetchAccountStatuses)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/refetch_statuses", wrapper.RefetchInstanceStatuses)
 
 	return m
 }
@@ -14758,6 +14863,52 @@ type IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse
 }
 
 func (response IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse) VisitIssueAdminAccountPasswordResetLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefetchAccountStatusesRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type RefetchAccountStatusesResponseObject interface {
+	VisitRefetchAccountStatusesResponse(w http.ResponseWriter) error
+}
+
+type RefetchAccountStatuses204Response struct {
+}
+
+func (response RefetchAccountStatuses204Response) VisitRefetchAccountStatusesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RefetchAccountStatusesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RefetchAccountStatusesdefaultApplicationProblemPlusJSONResponse) VisitRefetchAccountStatusesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -17132,6 +17283,52 @@ func (response MarkInstanceAvailabledefaultApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type RefetchInstanceStatusesRequestObject struct {
+	Domain InstanceDomain `json:"domain"`
+}
+
+type RefetchInstanceStatusesResponseObject interface {
+	VisitRefetchInstanceStatusesResponse(w http.ResponseWriter) error
+}
+
+type RefetchInstanceStatuses204Response struct {
+}
+
+func (response RefetchInstanceStatuses204Response) VisitRefetchInstanceStatusesResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RefetchInstanceStatusesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RefetchInstanceStatusesdefaultApplicationProblemPlusJSONResponse) VisitRefetchInstanceStatusesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListInvitesRequestObject struct {
 	Params ListInvitesParams
 }
@@ -19223,6 +19420,52 @@ type LiftSignupBlockdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response LiftSignupBlockdefaultApplicationProblemPlusJSONResponse) VisitLiftSignupBlockResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RefetchStatusRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type RefetchStatusResponseObject interface {
+	VisitRefetchStatusResponse(w http.ResponseWriter) error
+}
+
+type RefetchStatus204Response struct {
+}
+
+func (response RefetchStatus204Response) VisitRefetchStatusResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RefetchStatusdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RefetchStatusdefaultApplicationProblemPlusJSONResponse) VisitRefetchStatusResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -24387,6 +24630,9 @@ type StrictServerInterface interface {
 	// IssueAdminAccountPasswordResetLink Issue a password reset link for a local account
 	// (POST /admin/accounts/{id}/password_reset_link)
 	IssueAdminAccountPasswordResetLink(ctx context.Context, request IssueAdminAccountPasswordResetLinkRequestObject) (IssueAdminAccountPasswordResetLinkResponseObject, error)
+	// RefetchAccountStatuses Refetch the posts of a remote account from its server
+	// (POST /admin/accounts/{id}/refetch_statuses)
+	RefetchAccountStatuses(ctx context.Context, request RefetchAccountStatusesRequestObject) (RefetchAccountStatusesResponseObject, error)
 	// RevealAdminAccount Show the email address and the IP addresses of a local account
 	// (POST /admin/accounts/{id}/reveal)
 	RevealAdminAccount(ctx context.Context, request RevealAdminAccountRequestObject) (RevealAdminAccountResponseObject, error)
@@ -24504,6 +24750,9 @@ type StrictServerInterface interface {
 	// MarkInstanceAvailable Mark a remote server available
 	// (POST /admin/instances/{domain}/mark_available)
 	MarkInstanceAvailable(ctx context.Context, request MarkInstanceAvailableRequestObject) (MarkInstanceAvailableResponseObject, error)
+	// RefetchInstanceStatuses Refetch the posts of the accounts of a remote server
+	// (POST /admin/instances/{domain}/refetch_statuses)
+	RefetchInstanceStatuses(ctx context.Context, request RefetchInstanceStatusesRequestObject) (RefetchInstanceStatusesResponseObject, error)
 	// ListInvites List the invites
 	// (GET /admin/invites)
 	ListInvites(ctx context.Context, request ListInvitesRequestObject) (ListInvitesResponseObject, error)
@@ -24609,6 +24858,9 @@ type StrictServerInterface interface {
 	// LiftSignupBlock Lift a sign-up block
 	// (POST /admin/signup_blocks/{id}/lift)
 	LiftSignupBlock(ctx context.Context, request LiftSignupBlockRequestObject) (LiftSignupBlockResponseObject, error)
+	// RefetchStatus Refetch a remote post from its origin
+	// (POST /admin/statuses/{id}/refetch)
+	RefetchStatus(ctx context.Context, request RefetchStatusRequestObject) (RefetchStatusResponseObject, error)
 	// GetAdminTheme Read the instance theme
 	// (GET /admin/theme)
 	GetAdminTheme(ctx context.Context, request GetAdminThemeRequestObject) (GetAdminThemeResponseObject, error)
@@ -25631,6 +25883,32 @@ func (sh *strictHandler) IssueAdminAccountPasswordResetLink(w http.ResponseWrite
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(IssueAdminAccountPasswordResetLinkResponseObject); ok {
 		if err := validResponse.VisitIssueAdminAccountPasswordResetLinkResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RefetchAccountStatuses operation middleware
+func (sh *strictHandler) RefetchAccountStatuses(w http.ResponseWriter, r *http.Request, id Id) {
+	var request RefetchAccountStatusesRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RefetchAccountStatuses(ctx, request.(RefetchAccountStatusesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RefetchAccountStatuses")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RefetchAccountStatusesResponseObject); ok {
+		if err := validResponse.VisitRefetchAccountStatusesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -26730,6 +27008,32 @@ func (sh *strictHandler) MarkInstanceAvailable(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// RefetchInstanceStatuses operation middleware
+func (sh *strictHandler) RefetchInstanceStatuses(w http.ResponseWriter, r *http.Request, domain InstanceDomain) {
+	var request RefetchInstanceStatusesRequestObject
+
+	request.Domain = domain
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RefetchInstanceStatuses(ctx, request.(RefetchInstanceStatusesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RefetchInstanceStatuses")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RefetchInstanceStatusesResponseObject); ok {
+		if err := validResponse.VisitRefetchInstanceStatusesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListInvites operation middleware
 func (sh *strictHandler) ListInvites(w http.ResponseWriter, r *http.Request, params ListInvitesParams) {
 	var request ListInvitesRequestObject
@@ -27717,6 +28021,32 @@ func (sh *strictHandler) LiftSignupBlock(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LiftSignupBlockResponseObject); ok {
 		if err := validResponse.VisitLiftSignupBlockResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RefetchStatus operation middleware
+func (sh *strictHandler) RefetchStatus(w http.ResponseWriter, r *http.Request, id Id) {
+	var request RefetchStatusRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RefetchStatus(ctx, request.(RefetchStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RefetchStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RefetchStatusResponseObject); ok {
+		if err := validResponse.VisitRefetchStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

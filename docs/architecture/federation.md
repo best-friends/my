@@ -312,6 +312,19 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 - 保持期間を過ぎたリモートの投稿は `content.purge_remote_statuses` が、関係の無くなったリモートのアカウントの過去のプロフィールは `account.prune_remote_profiles` が、受信の原本・記録と配送の記録は `federation.purge` が、どこからも参照されなくなったリモートのカスタム絵文字（管理者が無効にしたものを除く）は `content.purge_remote_emojis`（1 日ごと、ADR-0051 §1）が、件数を区切って消します（ADR-0034、[data-model §4.4 のリモート投稿の保持期間](data-model.md#リモート投稿の保持期間)、§4.2、§4.8）。
   保持期間で消えた投稿（`origin = retention`）は tombstone にならないので、同じ URI の `Create` や取得でまた取り込めます。コントラクトテストは `testkit.RetentionContract` です。
 
+### 6.4 投稿の取り直し
+
+- 保存したリモートの投稿は、受け取った `Update` で新しくします（§3.4）。オリジンから取り直すのは、運営者が管理 API（`POST /api/v1/admin/statuses/{id}/refetch`・`POST /api/v1/admin/accounts/{id}/refetch_statuses`・`POST /api/v1/admin/instances/{domain}/refetch_statuses`、権限 `manage_domains`）か CLI（`my admin refetch status|account|domain`）で頼んだときだけで、定期ジョブはありません（FR-407）。
+- 頼むユースケースは `federation.Refetches` です。対象を確かめ（未知・削除済みの投稿と未知のアカウントは `ErrNotFound`、ローカルの投稿・アカウントと自サーバーのドメインは `ErrNotRemote`、ホスト名でないドメインは `ErrInvalidHost`）、監査ログ（`status_refetch_queued`・`account_statuses_refetch_queued`・`domain_statuses_refetch_queued`）と最初のジョブを 1 つのトランザクションで `queue.Outbox` に書きます。
+- ジョブ `federation.refetch_status`（ペイロードは `status_id`、冪等キー `refetch_status:<status_id>`）は、`StatusHandlers.Refetch` で投稿を 1 件取り直します。取得は §6.1 の規則どおり（`Fetcher`。`federation` の制限・`unavailable` のドメイン・失敗の記憶）です。
+  - 文書が投稿で `id` が投稿の URI と同じで、`attributedTo` が投稿の作者なら、受け取った `Update` と同じく `content.ReviseRemoteStatus` で記録します（メンションの解決を含む）。版の時刻が新しければ版を足し、そうでなければ投票の票数だけを記録します。
+  - 410 Gone と、投稿の URI の `Tombstone` は、作者の `Delete` と同じく `content.DeleteRemoteStatus` で削除します（tombstone が残る）。404 は削除しません。フォロワー限定の投稿などはインスタンス Actor の取得に 404 を返すことがあるためです。
+  - 取得できない・ほかの作者の・投稿でない文書は `info` のログを残してジョブを完了にし、投稿をそのまま残します。ローカル・削除済み・未知の投稿は何もしません。ストアの失敗は `Retry` です。
+- ジョブ `federation.refetch_statuses` は、アカウントかドメインの投稿をたどって `federation.refetch_status` を投入します。ペイロードは頼んだ監査ログの ID（`request`）、`account_id` か `domain`、カーソル（`before`・`before_account`）、残りの件数（`remaining`）で、冪等キーは `refetch_statuses:<request>:<before_account>:<before>` です。
+  - アカウントは、削除されていないリモートの投稿を新しい順（`content.LiveRemoteStatusIDs`）に 100 件（`RefetchBatch`）ずつ、合わせて 1,000 件（`RefetchMaxStatuses`）までたどります。
+  - ドメインは、そのドメインのリモートのアカウントを新しい順（`account.Search`）に 5 件（`RefetchAccountsBatch`）ずつ読み、アカウントごとに新しい投稿 20 件（`RefetchStatusesPerAccount`）まで、合わせて 1,000 件までたどります。
+  - 続きのジョブは 1 分後（`RefetchBatchInterval`）に実行し、1 つのサーバーへの取得が一度に集まらないようにします。
+
 ## 7. 送信（配送）
 
 ### 7.1 記録
