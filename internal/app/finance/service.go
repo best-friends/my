@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	appmoderation "github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/finance"
@@ -58,9 +60,20 @@ type CreateInput struct {
 	Price  finance.Money
 }
 
-// Create records a cost item. byUserID is the administrator, "" for the CLI. It fails with the
-// errors of finance.Recurrence.Validate, finance.Label.Validate, finance.ValidatePrice, and
-// finance.ValidateDates.
+// audit returns the audit log entry of an operation on a cost item (ADR-0067 §7), labeled with
+// the item's name (at most finance.MaxName characters); sourceID is the row that the
+// operation recorded.
+func (s *Service) audit(action appmoderation.AuditAction, itemID, name, sourceID, byUserID string, at time.Time) appmoderation.AuditRecorded {
+	actor, user := appmoderation.AuditActor(byUserID)
+	return appmoderation.AuditRecorded{Entry: appmoderation.AuditEntry{
+		ID: s.d.IDs.NewID(), ActorKind: actor, ActorUserID: user, Action: action, TargetKind: appmoderation.AuditTargetCostItem,
+		TargetID: itemID, TargetLabel: name, SourceEventID: sourceID, OccurredAt: at,
+	}}
+}
+
+// Create records a cost item and its audit log entry. byUserID is the administrator, "" for the
+// CLI. It fails with the errors of finance.Recurrence.Validate, finance.Label.Validate,
+// finance.ValidatePrice, and finance.ValidateDates.
 func (s *Service) Create(ctx context.Context, in CreateInput, byUserID string) (finance.CostItem, error) {
 	label := in.Label.Normalize()
 	if err := in.Recurrence.Validate(); err != nil {
@@ -94,6 +107,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput, byUserID string) (
 	if in.EndsOn != nil {
 		end = &EndChange{ID: s.d.IDs.NewID(), CostItemID: item.ID, EndsOn: in.EndsOn, ChangedByUserID: byUserID, ChangedAt: now}
 	}
+	audit := s.audit(appmoderation.AuditCostItemCreated, item.ID, label.Name, item.ID, byUserID, now)
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		repo := s.d.Repository
 		if err := repo.InsertItem(ctx, tx, item); err != nil {
@@ -110,7 +124,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput, byUserID string) (
 				return err
 			}
 		}
-		return tx.Emit(ctx, CostItemChanged{Head: Head{CostItemID: item.ID, LabelRevisionID: rev.ID, EndsOn: in.EndsOn}})
+		if err := tx.Emit(ctx, CostItemChanged{Head: Head{CostItemID: item.ID, LabelRevisionID: rev.ID, EndsOn: in.EndsOn}}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit)
 	})
 	if err != nil {
 		return finance.CostItem{}, err
@@ -119,8 +136,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput, byUserID string) (
 }
 
 // change runs write on the current head of a cost item in one transaction and emits the head it
-// returns; it fails with ErrNotFound for an unknown or canceled item.
-func (s *Service) change(ctx context.Context, id string, write func(tx uow.Tx, cur Current) (Head, error)) (finance.CostItem, error) {
+// returns and the audit log entry that audit makes from the current state; it fails with
+// ErrNotFound for an unknown or canceled item.
+func (s *Service) change(ctx context.Context, id string, audit func(cur Current) appmoderation.AuditRecorded,
+	write func(tx uow.Tx, cur Current) (Head, error),
+) (finance.CostItem, error) {
 	err := s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		cur, err := s.d.Repository.CurrentForUpdate(ctx, tx, id)
 		if err != nil {
@@ -130,12 +150,24 @@ func (s *Service) change(ctx context.Context, id string, write func(tx uow.Tx, c
 		if err != nil {
 			return err
 		}
-		return tx.Emit(ctx, CostItemChanged{Head: head})
+		if err := tx.Emit(ctx, CostItemChanged{Head: head}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit(cur))
 	})
 	if err != nil {
 		return finance.CostItem{}, err
 	}
 	return s.Get(ctx, id)
+}
+
+// labeled returns e with the current name of the item as its label: the entry of a change that
+// keeps the name. The entry's ID is made before the transaction, so a retry writes the same row.
+func labeled(e appmoderation.AuditRecorded) func(cur Current) appmoderation.AuditRecorded {
+	return func(cur Current) appmoderation.AuditRecorded {
+		e.Entry.TargetLabel = cur.Name
+		return e
+	}
 }
 
 // Relabel records a new label of a cost item. It fails with ErrNotFound and the errors of
@@ -149,7 +181,8 @@ func (s *Service) Relabel(ctx context.Context, id string, label finance.Label, b
 		ID: s.d.IDs.NewID(), CostItemID: id, Label: label, ProviderNormalized: NormalizeProvider(label.Provider),
 		RevisedByUserID: byUserID, RevisedAt: kernel.Normalize(s.d.Clock.Now()),
 	}
-	return s.change(ctx, id, func(tx uow.Tx, cur Current) (Head, error) {
+	audit := s.audit(appmoderation.AuditCostItemRelabeled, id, label.Name, rev.ID, byUserID, rev.RevisedAt)
+	return s.change(ctx, id, func(Current) appmoderation.AuditRecorded { return audit }, func(tx uow.Tx, cur Current) (Head, error) {
 		if err := s.d.Repository.InsertLabelRevision(ctx, tx, rev); err != nil {
 			return Head{}, err
 		}
@@ -173,7 +206,8 @@ func (s *Service) RevisePrice(ctx context.Context, id string, effectiveOn financ
 		},
 		RevisedByUserID: byUserID,
 	}
-	return s.change(ctx, id, func(tx uow.Tx, cur Current) (Head, error) {
+	audit := s.audit(appmoderation.AuditCostItemPriceRevised, id, "", rev.Revision.ID, byUserID, rev.Revision.RevisedAt)
+	return s.change(ctx, id, labeled(audit), func(tx uow.Tx, cur Current) (Head, error) {
 		if err := finance.ValidateDates(cur.StartsOn, effectiveOn); err != nil {
 			return Head{}, err
 		}
@@ -185,7 +219,8 @@ func (s *Service) RevisePrice(ctx context.Context, id string, effectiveOn financ
 // It fails with ErrNotFound and the errors of finance.ValidateDates.
 func (s *Service) SetEnd(ctx context.Context, id string, endsOn *finance.Date, byUserID string) (finance.CostItem, error) {
 	change := EndChange{ID: s.d.IDs.NewID(), CostItemID: id, EndsOn: endsOn, ChangedByUserID: byUserID, ChangedAt: kernel.Normalize(s.d.Clock.Now())}
-	return s.change(ctx, id, func(tx uow.Tx, cur Current) (Head, error) {
+	audit := s.audit(appmoderation.AuditCostItemEndChanged, id, "", change.ID, byUserID, change.ChangedAt)
+	return s.change(ctx, id, labeled(audit), func(tx uow.Tx, cur Current) (Head, error) {
 		if endsOn != nil {
 			if err := finance.ValidateDates(cur.StartsOn, *endsOn); err != nil {
 				return Head{}, err
@@ -204,14 +239,19 @@ func (s *Service) SetEnd(ctx context.Context, id string, endsOn *finance.Date, b
 // with ErrNotFound for an unknown or already canceled item.
 func (s *Service) Cancel(ctx context.Context, id, byUserID string) error {
 	c := Cancellation{ID: s.d.IDs.NewID(), CostItemID: id, CanceledByUserID: byUserID, CanceledAt: kernel.Normalize(s.d.Clock.Now())}
+	audit := labeled(s.audit(appmoderation.AuditCostItemCanceled, id, "", c.ID, byUserID, c.CanceledAt))
 	return s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		if _, err := s.d.Repository.CurrentForUpdate(ctx, tx, id); err != nil {
+		cur, err := s.d.Repository.CurrentForUpdate(ctx, tx, id)
+		if err != nil {
 			return err
 		}
 		if err := s.d.Repository.InsertCancellation(ctx, tx, c); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, CostItemCanceled{CostItemID: id, CancellationID: c.ID, At: c.CanceledAt})
+		if err := tx.Emit(ctx, CostItemCanceled{CostItemID: id, CancellationID: c.ID, At: c.CanceledAt}); err != nil {
+			return err
+		}
+		return tx.Emit(ctx, audit(cur))
 	})
 }
 

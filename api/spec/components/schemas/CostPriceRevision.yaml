@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A price of a cost item for its payments on or after `effective_on`, until a later
+  revision; of revisions with the same date, the last recorded wins.
+type: object
+required: [effective_on, price, revised_at]
+properties:
+  effective_on:
+    $ref: ./CalendarDate.yaml
+  price:
+    $ref: ./Money.yaml
+  revised_at:
+    type: string
+    format: date-time

@@ -31,8 +31,9 @@ ON CONFLICT (cost_item_id) DO UPDATE SET label_revision_id = excluded.label_revi
 DELETE FROM cost_item_heads WHERE cost_item_id = ?;
 
 -- name: GetCostItemCurrent :one
-SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on
+SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on, l.name
 FROM cost_item_heads h JOIN cost_items i ON i.id = h.cost_item_id
+  JOIN cost_item_label_revisions l ON l.id = h.label_revision_id
 WHERE h.cost_item_id = ?;
 
 -- ListCostItems returns up to lim cost items that are not canceled, newest first, with their

@@ -278,6 +278,11 @@ const (
 	AdminAuditActionAppealOverturned             AdminAuditAction = "appeal_overturned"
 	AdminAuditActionAppealUpheld                 AdminAuditAction = "appeal_upheld"
 	AdminAuditActionBillingImportQueued          AdminAuditAction = "billing_import_queued"
+	AdminAuditActionCostItemCanceled             AdminAuditAction = "cost_item_canceled"
+	AdminAuditActionCostItemCreated              AdminAuditAction = "cost_item_created"
+	AdminAuditActionCostItemEndChanged           AdminAuditAction = "cost_item_end_changed"
+	AdminAuditActionCostItemPriceRevised         AdminAuditAction = "cost_item_price_revised"
+	AdminAuditActionCostItemRelabeled            AdminAuditAction = "cost_item_relabeled"
 	AdminAuditActionCustomEmojiCopied            AdminAuditAction = "custom_emoji_copied"
 	AdminAuditActionCustomEmojiCreated           AdminAuditAction = "custom_emoji_created"
 	AdminAuditActionCustomEmojiDeleted           AdminAuditAction = "custom_emoji_deleted"
@@ -352,6 +357,16 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAppealUpheld:
 		return true
 	case AdminAuditActionBillingImportQueued:
+		return true
+	case AdminAuditActionCostItemCanceled:
+		return true
+	case AdminAuditActionCostItemCreated:
+		return true
+	case AdminAuditActionCostItemEndChanged:
+		return true
+	case AdminAuditActionCostItemPriceRevised:
+		return true
+	case AdminAuditActionCostItemRelabeled:
 		return true
 	case AdminAuditActionCustomEmojiCopied:
 		return true
@@ -484,6 +499,7 @@ const (
 	AdminAuditTargetKindAnnouncement  AdminAuditTargetKind = "announcement"
 	AdminAuditTargetKindAppeal        AdminAuditTargetKind = "appeal"
 	AdminAuditTargetKindBillingSource AdminAuditTargetKind = "billing_source"
+	AdminAuditTargetKindCostItem      AdminAuditTargetKind = "cost_item"
 	AdminAuditTargetKindCustomEmoji   AdminAuditTargetKind = "custom_emoji"
 	AdminAuditTargetKindDomain        AdminAuditTargetKind = "domain"
 	AdminAuditTargetKindInvite        AdminAuditTargetKind = "invite"
@@ -508,6 +524,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindAppeal:
 		return true
 	case AdminAuditTargetKindBillingSource:
+		return true
+	case AdminAuditTargetKindCostItem:
 		return true
 	case AdminAuditTargetKindCustomEmoji:
 		return true
@@ -1036,6 +1054,120 @@ func (e BillingSourceName) Valid() bool {
 	case BillingSourceNameAws:
 		return true
 	case BillingSourceNameGcp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CostBasis.
+const (
+	CostBasisAmortized CostBasis = "amortized"
+	CostBasisCash      CostBasis = "cash"
+)
+
+// Valid indicates whether the value is a known member of the CostBasis enum.
+func (e CostBasis) Valid() bool {
+	switch e {
+	case CostBasisAmortized:
+		return true
+	case CostBasisCash:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CostCategory.
+const (
+	CostCategoryCompute  CostCategory = "compute"
+	CostCategoryDatabase CostCategory = "database"
+	CostCategoryDomain   CostCategory = "domain"
+	CostCategoryEmail    CostCategory = "email"
+	CostCategoryNetwork  CostCategory = "network"
+	CostCategoryOther    CostCategory = "other"
+	CostCategorySoftware CostCategory = "software"
+	CostCategoryStorage  CostCategory = "storage"
+)
+
+// Valid indicates whether the value is a known member of the CostCategory enum.
+func (e CostCategory) Valid() bool {
+	switch e {
+	case CostCategoryCompute:
+		return true
+	case CostCategoryDatabase:
+		return true
+	case CostCategoryDomain:
+		return true
+	case CostCategoryEmail:
+		return true
+	case CostCategoryNetwork:
+		return true
+	case CostCategoryOther:
+		return true
+	case CostCategorySoftware:
+		return true
+	case CostCategoryStorage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CostGranularity.
+const (
+	CostGranularityMonth CostGranularity = "month"
+	CostGranularityWeek  CostGranularity = "week"
+	CostGranularityYear  CostGranularity = "year"
+)
+
+// Valid indicates whether the value is a known member of the CostGranularity enum.
+func (e CostGranularity) Valid() bool {
+	switch e {
+	case CostGranularityMonth:
+		return true
+	case CostGranularityWeek:
+		return true
+	case CostGranularityYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CostSchedule.
+const (
+	CostScheduleMonths CostSchedule = "months"
+	CostScheduleOnce   CostSchedule = "once"
+	CostScheduleWeeks  CostSchedule = "weeks"
+	CostScheduleYears  CostSchedule = "years"
+)
+
+// Valid indicates whether the value is a known member of the CostSchedule enum.
+func (e CostSchedule) Valid() bool {
+	switch e {
+	case CostScheduleMonths:
+		return true
+	case CostScheduleOnce:
+		return true
+	case CostScheduleWeeks:
+		return true
+	case CostScheduleYears:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CostTotalsRulesWeekStart.
+const (
+	CostTotalsRulesWeekStartMonday CostTotalsRulesWeekStart = "monday"
+)
+
+// Valid indicates whether the value is a known member of the CostTotalsRulesWeekStart enum.
+func (e CostTotalsRulesWeekStart) Valid() bool {
+	switch e {
+	case CostTotalsRulesWeekStartMonday:
 		return true
 	default:
 		return false
@@ -2607,7 +2739,10 @@ type AdminAppealPage struct {
 // posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
 // `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
 // on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
-// the ID is the source (`aws`, `gcp`) and the label the provider's name.
+// the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
+// `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
+// `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
+// the item's name.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -2652,7 +2787,10 @@ type AdminAuditEntry struct {
 	// posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
 	// `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
 	// on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
-	// the ID is the source (`aws`, `gcp`) and the label the provider's name.
+	// the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
+	// `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
+	// `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
+	// the item's name.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -3823,6 +3961,10 @@ type BillingImportRunOutcome string
 // BillingSourceName A cloud provider of the billing imports (`billing_sources`).
 type BillingSourceName string
 
+// CalendarDate A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+// of a payment on a card statement or an invoice.
+type CalendarDate = string
+
 // ChangePasswordRequest A change of the user's password, confirmed with `current_password` or `passkey`.
 type ChangePasswordRequest struct {
 	// CurrentPassword The user's current password, which confirms the change.
@@ -3841,6 +3983,232 @@ type CopyCustomEmojiRequest struct {
 	// underscores; case matters. Absent, the remote emoji's.
 	Shortcode *string `json:"shortcode,omitempty"`
 }
+
+// CostBasis How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+// payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+// more weeks) by day over the days up to the next payment, with the cumulative rounding;
+// the other payments stay on their dates. `cash` places every payment on its date. Imported
+// usage charges spread by day over their billing period under both.
+type CostBasis string
+
+// CostBreakdownLine The amount of a provider (in NFKC and lower case, which groups the costs), category, and
+// currency in a period.
+type CostBreakdownLine struct {
+	// Amount An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Amount Money `json:"amount"`
+
+	// Category The fixed category of a cost (ADR-0067 §2); clients translate its name.
+	Category CostCategory `json:"category"`
+	Provider string       `json:"provider"`
+}
+
+// CostCategory The fixed category of a cost (ADR-0067 §2); clients translate its name.
+type CostCategory string
+
+// CostGranularity The periods of the totals: ISO 8601 weeks (Monday to Sunday), calendar months, or calendar
+// years, cut by date (ADR-0067 §5).
+type CostGranularity string
+
+// CostItem A cost of the instance that is not canceled (ADR-0067 §2), with its current label and end
+// and every price revision. Never published: the public totals carry no item.
+type CostItem struct {
+	// Category The fixed category of a cost (ADR-0067 §2); clients translate its name.
+	Category  CostCategory `json:"category"`
+	CreatedAt time.Time    `json:"created_at"`
+
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn *CalendarDate `json:"ends_on,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id Id `json:"id"`
+
+	// Interval The N of every N weeks, months, or years; 1 for `once`.
+	Interval int `json:"interval"`
+
+	// Memo The operator's note, never published; empty for none.
+	Memo string `json:"memo"`
+	Name string `json:"name"`
+
+	// Prices Every price revision, in the order they were recorded; the first one starts on
+	// `starts_on`. `ends_on` is the last date a payment can fall on (included), omitted for
+	// no end; `starts_on` is the first payment date, the payment date of `once`.
+	Prices []CostPriceRevision `json:"prices"`
+
+	// Provider Who is paid, as written; the breakdown groups it in NFKC and lower case.
+	Provider string `json:"provider"`
+
+	// Schedule The unit of a cost item's payment schedule (ADR-0067 §3): `once` (one payment on the start
+	// date), or every `interval` `weeks`, `months`, or `years`, counted from the start date. A
+	// monthly payment on a day that a month does not have falls on the month's last day.
+	Schedule CostSchedule `json:"schedule"`
+
+	// StartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	StartsOn CalendarDate `json:"starts_on"`
+}
+
+// CostItemCreateRequest A new cost item. The schedule and the start date never change: to change them, end the
+// item and record a new one. `ends_on` is the last date a payment can fall on, omitted for
+// no end; `price` is the price of every payment from the start date, 0 or more.
+type CostItemCreateRequest struct {
+	// Category The fixed category of a cost (ADR-0067 §2); clients translate its name.
+	Category CostCategory `json:"category"`
+
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn *CalendarDate `json:"ends_on,omitempty"`
+
+	// Interval The N of every N weeks, months, or years, 1 to 99; 1 for `once`.
+	Interval int `json:"interval"`
+
+	// Memo Up to 10,000 characters, never published.
+	Memo *string `json:"memo,omitempty"`
+
+	// Name 1 to 100 characters without control characters.
+	Name string `json:"name"`
+
+	// Price An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Price Money `json:"price"`
+
+	// Provider 1 to 100 characters without control characters.
+	Provider string `json:"provider"`
+
+	// Schedule The unit of a cost item's payment schedule (ADR-0067 §3): `once` (one payment on the start
+	// date), or every `interval` `weeks`, `months`, or `years`, counted from the start date. A
+	// monthly payment on a day that a month does not have falls on the month's last day.
+	Schedule CostSchedule `json:"schedule"`
+
+	// StartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	StartsOn CalendarDate `json:"starts_on"`
+}
+
+// CostItemEndRequest The end of a cost item: `ends_on` is the last date a payment can fall on (included), on or
+// after the start date, and omitted for no end. The last payment before it still covers the
+// days up to the next payment date.
+type CostItemEndRequest struct {
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn *CalendarDate `json:"ends_on,omitempty"`
+}
+
+// CostItemLabelRequest A change of a cost item's label; an omitted property keeps its value.
+type CostItemLabelRequest struct {
+	// Category The fixed category of a cost (ADR-0067 §2); clients translate its name.
+	Category *CostCategory `json:"category,omitempty"`
+
+	// Memo The note; empty removes it.
+	Memo     *string `json:"memo,omitempty"`
+	Name     *string `json:"name,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+}
+
+// CostItemPage A page of cost items, newest first.
+type CostItemPage struct {
+	Items []CostItem `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// CostPeriodTotal A week, month, or year of the totals (`label`: `2026-W17`, `2026-04`, or `2026`): the total
+// of each currency, never converted (ADR-0067 §6), sorted by currency code, and the breakdown
+// by provider, category, and currency. A currency appears when a cost meets the period, even
+// with a zero amount. `estimated` reports that an imported usage charge of a billing month
+// that its provider has not closed meets the period (ADR-0068 §3): its amount may still
+// change.
+type CostPeriodTotal struct {
+	Breakdown []CostBreakdownLine `json:"breakdown"`
+
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn    CalendarDate `json:"ends_on"`
+	Estimated bool         `json:"estimated"`
+	Label     string       `json:"label"`
+
+	// StartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	StartsOn CalendarDate `json:"starts_on"`
+	Totals   []Money      `json:"totals"`
+}
+
+// CostPriceRevision A price of a cost item for its payments on or after `effective_on`, until a later
+// revision; of revisions with the same date, the last recorded wins.
+type CostPriceRevision struct {
+	// EffectiveOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EffectiveOn CalendarDate `json:"effective_on"`
+
+	// Price An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Price     Money     `json:"price"`
+	RevisedAt time.Time `json:"revised_at"`
+}
+
+// CostPriceRevisionRequest A price for the payments on or after `effective_on`, on or after the start date: a raise,
+// a cut, or the correction of a mistake (`effective_on` = the start date corrects every
+// payment).
+type CostPriceRevisionRequest struct {
+	// EffectiveOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EffectiveOn CalendarDate `json:"effective_on"`
+
+	// Price An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Price Money `json:"price"`
+}
+
+// CostSchedule The unit of a cost item's payment schedule (ADR-0067 §3): `once` (one payment on the start
+// date), or every `interval` `weeks`, `months`, or `years`, counted from the start date. A
+// monthly payment on a day that a month does not have falls on the month's last day.
+type CostSchedule string
+
+// CostSourceRule The cut of an imported provider's billing months: the IANA time zone they are kept in
+// (`UTC`, `America/Los_Angeles`), as the provider bills them.
+type CostSourceRule struct {
+	Provider string `json:"provider"`
+
+	// Source A cloud provider of the billing imports (`billing_sources`).
+	Source   BillingSourceName `json:"source"`
+	TimeZone string            `json:"time_zone"`
+}
+
+// CostTotals The totals of the instance's costs over the periods from the one that holds `from` to the
+// one that holds `to`, oldest first.
+type CostTotals struct {
+	// Basis How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+	// payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+	// more weeks) by day over the days up to the next payment, with the cumulative rounding;
+	// the other payments stay on their dates. `cash` places every payment on its date. Imported
+	// usage charges spread by day over their billing period under both.
+	Basis CostBasis `json:"basis"`
+
+	// Granularity The periods of the totals: ISO 8601 weeks (Monday to Sunday), calendar months, or calendar
+	// years, cut by date (ADR-0067 §5).
+	Granularity CostGranularity   `json:"granularity"`
+	Periods     []CostPeriodTotal `json:"periods"`
+
+	// Rules How the totals cut the periods (ADR-0067 §5), to show next to them: by calendar date
+	// without a time zone, weeks from `week_start` (ISO 8601), and each imported provider's
+	// billing months in its own time zone (`billing_sources`, in its order).
+	Rules CostTotalsRules `json:"rules"`
+}
+
+// CostTotalsRules How the totals cut the periods (ADR-0067 §5), to show next to them: by calendar date
+// without a time zone, weeks from `week_start` (ISO 8601), and each imported provider's
+// billing months in its own time zone (`billing_sources`, in its order).
+type CostTotalsRules struct {
+	Sources   []CostSourceRule         `json:"sources"`
+	WeekStart CostTotalsRulesWeekStart `json:"week_start"`
+}
+
+// CostTotalsRulesWeekStart defines model for CostTotalsRules.WeekStart.
+type CostTotalsRulesWeekStart string
 
 // CreateAccountActionRequest A moderation action to take on an account.
 type CreateAccountActionRequest struct {
@@ -6617,6 +6985,11 @@ type AnnouncementId = Id
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
 type AppealId = Id
 
+// CostItemId The ID of a resource, a UUIDv7 in its canonical string form.
+//
+// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+type CostItemId = Id
+
 // CustomEmojiId The ID of a resource, a UUIDv7 in its canonical string form.
 //
 // Examples: 01890a5d-ac96-774b-bcce-b302099a8057
@@ -6823,6 +7196,29 @@ type ListAuditLogParams struct {
 
 	// Limit The maximum number of items in the page.
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCostItemsParams defines parameters for ListCostItems.
+type ListCostItemsParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// GetCostTotalsParams defines parameters for GetCostTotals.
+type GetCostTotalsParams struct {
+	Granularity CostGranularity `form:"granularity" json:"granularity"`
+
+	// From A date in the first period.
+	From CalendarDate `form:"from" json:"from"`
+
+	// To A date in the last period.
+	To CalendarDate `form:"to" json:"to"`
+
+	// Basis How the totals place a payment; `amortized` by default.
+	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
 }
 
 // ListAdminCustomEmojisParams defines parameters for ListAdminCustomEmojis.
@@ -7144,6 +7540,18 @@ type OverturnAppealJSONRequestBody = DecideAppealRequest
 // UpholdAppealJSONRequestBody defines body for UpholdAppeal for application/json ContentType.
 type UpholdAppealJSONRequestBody = DecideAppealRequest
 
+// CreateCostItemJSONRequestBody defines body for CreateCostItem for application/json ContentType.
+type CreateCostItemJSONRequestBody = CostItemCreateRequest
+
+// UpdateCostItemJSONRequestBody defines body for UpdateCostItem for application/json ContentType.
+type UpdateCostItemJSONRequestBody = CostItemLabelRequest
+
+// SetCostItemEndJSONRequestBody defines body for SetCostItemEnd for application/json ContentType.
+type SetCostItemEndJSONRequestBody = CostItemEndRequest
+
+// ReviseCostItemPriceJSONRequestBody defines body for ReviseCostItemPrice for application/json ContentType.
+type ReviseCostItemPriceJSONRequestBody = CostPriceRevisionRequest
+
 // CreateCustomEmojiJSONRequestBody defines body for CreateCustomEmoji for application/json ContentType.
 type CreateCustomEmojiJSONRequestBody = CreateCustomEmojiRequest
 
@@ -7416,6 +7824,30 @@ type ServerInterface interface {
 	// RunBillingImport Import a provider's usage charges now
 	// (POST /admin/billing_imports/{source}/runs)
 	RunBillingImport(w http.ResponseWriter, r *http.Request, source BillingSourceName)
+	// ListCostItems List the cost items
+	// (GET /admin/cost_items)
+	ListCostItems(w http.ResponseWriter, r *http.Request, params ListCostItemsParams)
+	// CreateCostItem Record a cost item
+	// (POST /admin/cost_items)
+	CreateCostItem(w http.ResponseWriter, r *http.Request)
+	// GetCostItem Get a cost item
+	// (GET /admin/cost_items/{id})
+	GetCostItem(w http.ResponseWriter, r *http.Request, id CostItemId)
+	// UpdateCostItem Change a cost item's label
+	// (PATCH /admin/cost_items/{id})
+	UpdateCostItem(w http.ResponseWriter, r *http.Request, id CostItemId)
+	// CancelCostItem Cancel a cost item
+	// (POST /admin/cost_items/{id}/cancel)
+	CancelCostItem(w http.ResponseWriter, r *http.Request, id CostItemId)
+	// SetCostItemEnd Set a cost item's end
+	// (PUT /admin/cost_items/{id}/end)
+	SetCostItemEnd(w http.ResponseWriter, r *http.Request, id CostItemId)
+	// ReviseCostItemPrice Revise a cost item's price
+	// (POST /admin/cost_items/{id}/price_revisions)
+	ReviseCostItemPrice(w http.ResponseWriter, r *http.Request, id CostItemId)
+	// GetCostTotals Total the costs by period
+	// (GET /admin/cost_totals)
+	GetCostTotals(w http.ResponseWriter, r *http.Request, params GetCostTotalsParams)
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(w http.ResponseWriter, r *http.Request)
@@ -9350,6 +9782,268 @@ func (siw *ServerInterfaceWrapper) RunBillingImport(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RunBillingImport(w, r, source)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCostItems operation middleware
+func (siw *ServerInterfaceWrapper) ListCostItems(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCostItemsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCostItems(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCostItem operation middleware
+func (siw *ServerInterfaceWrapper) CreateCostItem(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCostItem(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCostItem operation middleware
+func (siw *ServerInterfaceWrapper) GetCostItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CostItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCostItem(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCostItem operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCostItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CostItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCostItem(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelCostItem operation middleware
+func (siw *ServerInterfaceWrapper) CancelCostItem(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CostItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelCostItem(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCostItemEnd operation middleware
+func (siw *ServerInterfaceWrapper) SetCostItemEnd(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CostItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCostItemEnd(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReviseCostItemPrice operation middleware
+func (siw *ServerInterfaceWrapper) ReviseCostItemPrice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id CostItemId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReviseCostItemPrice(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCostTotals operation middleware
+func (siw *ServerInterfaceWrapper) GetCostTotals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCostTotalsParams
+
+	// ------------- Required query parameter "granularity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "granularity", r.URL.Query(), &params.Granularity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "granularity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "granularity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "basis" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "basis", r.URL.Query(), &params.Basis, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "basis"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "basis", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCostTotals(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13549,6 +14243,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/audit_log", wrapper.ListAuditLog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/billing_imports", wrapper.ListBillingImports)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/billing_imports/{source}/runs", wrapper.RunBillingImport)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/cost_items", wrapper.ListCostItems)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/cost_items", wrapper.CreateCostItem)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/cost_items/{id}", wrapper.GetCostItem)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/admin/cost_items/{id}", wrapper.UpdateCostItem)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/cost_items/{id}/price_revisions", wrapper.ReviseCostItemPrice)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/admin/cost_items/{id}/end", wrapper.SetCostItemEnd)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/cost_items/{id}/cancel", wrapper.CancelCostItem)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/cost_totals", wrapper.GetCostTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions", wrapper.ListDomainActions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions", wrapper.CreateDomainAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions/{id}", wrapper.GetDomainAction)
@@ -13830,6 +14532,15 @@ type AdminWebhookDeliveryJSONResponse struct {
 	Body AdminWebhookDelivery
 
 	Headers AdminWebhookDeliveryResponseHeaders
+}
+
+type CostItemResponseHeaders struct {
+	CacheControl *string
+}
+type CostItemJSONResponse struct {
+	Body CostItem
+
+	Headers CostItemResponseHeaders
 }
 
 type CustomEmojiProblemResponseHeaders struct {
@@ -16409,6 +17120,454 @@ type RunBillingImportdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response RunBillingImportdefaultApplicationProblemPlusJSONResponse) VisitRunBillingImportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCostItemsRequestObject struct {
+	Params ListCostItemsParams
+}
+
+type ListCostItemsResponseObject interface {
+	VisitListCostItemsResponse(w http.ResponseWriter) error
+}
+
+type ListCostItems200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListCostItems200JSONResponse struct {
+	Body    CostItemPage
+	Headers ListCostItems200ResponseHeaders
+}
+
+func (response ListCostItems200JSONResponse) VisitListCostItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCostItemsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListCostItemsdefaultApplicationProblemPlusJSONResponse) VisitListCostItemsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCostItemRequestObject struct {
+	Body *CreateCostItemJSONRequestBody
+}
+
+type CreateCostItemResponseObject interface {
+	VisitCreateCostItemResponse(w http.ResponseWriter) error
+}
+
+type CreateCostItem200JSONResponse struct{ CostItemJSONResponse }
+
+func (response CreateCostItem200JSONResponse) VisitCreateCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCostItemdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CreateCostItemdefaultApplicationProblemPlusJSONResponse) VisitCreateCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCostItemRequestObject struct {
+	Id CostItemId `json:"id"`
+}
+
+type GetCostItemResponseObject interface {
+	VisitGetCostItemResponse(w http.ResponseWriter) error
+}
+
+type GetCostItem200JSONResponse struct{ CostItemJSONResponse }
+
+func (response GetCostItem200JSONResponse) VisitGetCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCostItemdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetCostItemdefaultApplicationProblemPlusJSONResponse) VisitGetCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCostItemRequestObject struct {
+	Id   CostItemId `json:"id"`
+	Body *UpdateCostItemJSONRequestBody
+}
+
+type UpdateCostItemResponseObject interface {
+	VisitUpdateCostItemResponse(w http.ResponseWriter) error
+}
+
+type UpdateCostItem200JSONResponse struct{ CostItemJSONResponse }
+
+func (response UpdateCostItem200JSONResponse) VisitUpdateCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCostItemdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response UpdateCostItemdefaultApplicationProblemPlusJSONResponse) VisitUpdateCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelCostItemRequestObject struct {
+	Id CostItemId `json:"id"`
+}
+
+type CancelCostItemResponseObject interface {
+	VisitCancelCostItemResponse(w http.ResponseWriter) error
+}
+
+type CancelCostItem204Response struct {
+}
+
+func (response CancelCostItem204Response) VisitCancelCostItemResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type CancelCostItemdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response CancelCostItemdefaultApplicationProblemPlusJSONResponse) VisitCancelCostItemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCostItemEndRequestObject struct {
+	Id   CostItemId `json:"id"`
+	Body *SetCostItemEndJSONRequestBody
+}
+
+type SetCostItemEndResponseObject interface {
+	VisitSetCostItemEndResponse(w http.ResponseWriter) error
+}
+
+type SetCostItemEnd200JSONResponse struct{ CostItemJSONResponse }
+
+func (response SetCostItemEnd200JSONResponse) VisitSetCostItemEndResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCostItemEnddefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetCostItemEnddefaultApplicationProblemPlusJSONResponse) VisitSetCostItemEndResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviseCostItemPriceRequestObject struct {
+	Id   CostItemId `json:"id"`
+	Body *ReviseCostItemPriceJSONRequestBody
+}
+
+type ReviseCostItemPriceResponseObject interface {
+	VisitReviseCostItemPriceResponse(w http.ResponseWriter) error
+}
+
+type ReviseCostItemPrice200JSONResponse struct{ CostItemJSONResponse }
+
+func (response ReviseCostItemPrice200JSONResponse) VisitReviseCostItemPriceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReviseCostItemPricedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ReviseCostItemPricedefaultApplicationProblemPlusJSONResponse) VisitReviseCostItemPriceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCostTotalsRequestObject struct {
+	Params GetCostTotalsParams
+}
+
+type GetCostTotalsResponseObject interface {
+	VisitGetCostTotalsResponse(w http.ResponseWriter) error
+}
+
+type GetCostTotals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetCostTotals200JSONResponse struct {
+	Body    CostTotals
+	Headers GetCostTotals200ResponseHeaders
+}
+
+func (response GetCostTotals200JSONResponse) VisitGetCostTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCostTotalsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetCostTotalsdefaultApplicationProblemPlusJSONResponse) VisitGetCostTotalsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -25408,6 +26567,30 @@ type StrictServerInterface interface {
 	// RunBillingImport Import a provider's usage charges now
 	// (POST /admin/billing_imports/{source}/runs)
 	RunBillingImport(ctx context.Context, request RunBillingImportRequestObject) (RunBillingImportResponseObject, error)
+	// ListCostItems List the cost items
+	// (GET /admin/cost_items)
+	ListCostItems(ctx context.Context, request ListCostItemsRequestObject) (ListCostItemsResponseObject, error)
+	// CreateCostItem Record a cost item
+	// (POST /admin/cost_items)
+	CreateCostItem(ctx context.Context, request CreateCostItemRequestObject) (CreateCostItemResponseObject, error)
+	// GetCostItem Get a cost item
+	// (GET /admin/cost_items/{id})
+	GetCostItem(ctx context.Context, request GetCostItemRequestObject) (GetCostItemResponseObject, error)
+	// UpdateCostItem Change a cost item's label
+	// (PATCH /admin/cost_items/{id})
+	UpdateCostItem(ctx context.Context, request UpdateCostItemRequestObject) (UpdateCostItemResponseObject, error)
+	// CancelCostItem Cancel a cost item
+	// (POST /admin/cost_items/{id}/cancel)
+	CancelCostItem(ctx context.Context, request CancelCostItemRequestObject) (CancelCostItemResponseObject, error)
+	// SetCostItemEnd Set a cost item's end
+	// (PUT /admin/cost_items/{id}/end)
+	SetCostItemEnd(ctx context.Context, request SetCostItemEndRequestObject) (SetCostItemEndResponseObject, error)
+	// ReviseCostItemPrice Revise a cost item's price
+	// (POST /admin/cost_items/{id}/price_revisions)
+	ReviseCostItemPrice(ctx context.Context, request ReviseCostItemPriceRequestObject) (ReviseCostItemPriceResponseObject, error)
+	// GetCostTotals Total the costs by period
+	// (GET /admin/cost_totals)
+	GetCostTotals(ctx context.Context, request GetCostTotalsRequestObject) (GetCostTotalsResponseObject, error)
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(ctx context.Context, request GetAdminCountsRequestObject) (GetAdminCountsResponseObject, error)
@@ -27140,6 +28323,240 @@ func (sh *strictHandler) RunBillingImport(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RunBillingImportResponseObject); ok {
 		if err := validResponse.VisitRunBillingImportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCostItems operation middleware
+func (sh *strictHandler) ListCostItems(w http.ResponseWriter, r *http.Request, params ListCostItemsParams) {
+	var request ListCostItemsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCostItems(ctx, request.(ListCostItemsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCostItems")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCostItemsResponseObject); ok {
+		if err := validResponse.VisitListCostItemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCostItem operation middleware
+func (sh *strictHandler) CreateCostItem(w http.ResponseWriter, r *http.Request) {
+	var request CreateCostItemRequestObject
+
+	var body CreateCostItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCostItem(ctx, request.(CreateCostItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCostItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCostItemResponseObject); ok {
+		if err := validResponse.VisitCreateCostItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCostItem operation middleware
+func (sh *strictHandler) GetCostItem(w http.ResponseWriter, r *http.Request, id CostItemId) {
+	var request GetCostItemRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCostItem(ctx, request.(GetCostItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCostItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCostItemResponseObject); ok {
+		if err := validResponse.VisitGetCostItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCostItem operation middleware
+func (sh *strictHandler) UpdateCostItem(w http.ResponseWriter, r *http.Request, id CostItemId) {
+	var request UpdateCostItemRequestObject
+
+	request.Id = id
+
+	var body UpdateCostItemJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCostItem(ctx, request.(UpdateCostItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCostItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCostItemResponseObject); ok {
+		if err := validResponse.VisitUpdateCostItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelCostItem operation middleware
+func (sh *strictHandler) CancelCostItem(w http.ResponseWriter, r *http.Request, id CostItemId) {
+	var request CancelCostItemRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelCostItem(ctx, request.(CancelCostItemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelCostItem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelCostItemResponseObject); ok {
+		if err := validResponse.VisitCancelCostItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCostItemEnd operation middleware
+func (sh *strictHandler) SetCostItemEnd(w http.ResponseWriter, r *http.Request, id CostItemId) {
+	var request SetCostItemEndRequestObject
+
+	request.Id = id
+
+	var body SetCostItemEndJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCostItemEnd(ctx, request.(SetCostItemEndRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCostItemEnd")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCostItemEndResponseObject); ok {
+		if err := validResponse.VisitSetCostItemEndResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReviseCostItemPrice operation middleware
+func (sh *strictHandler) ReviseCostItemPrice(w http.ResponseWriter, r *http.Request, id CostItemId) {
+	var request ReviseCostItemPriceRequestObject
+
+	request.Id = id
+
+	var body ReviseCostItemPriceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReviseCostItemPrice(ctx, request.(ReviseCostItemPriceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReviseCostItemPrice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReviseCostItemPriceResponseObject); ok {
+		if err := validResponse.VisitReviseCostItemPriceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCostTotals operation middleware
+func (sh *strictHandler) GetCostTotals(w http.ResponseWriter, r *http.Request, params GetCostTotalsParams) {
+	var request GetCostTotalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCostTotals(ctx, request.(GetCostTotalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCostTotals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCostTotalsResponseObject); ok {
+		if err := validResponse.VisitGetCostTotalsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

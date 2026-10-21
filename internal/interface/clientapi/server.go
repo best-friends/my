@@ -176,6 +176,9 @@ type Options struct {
 	// BillingImports reads and starts the billing imports (admin_billing_imports.go); nil
 	// answers 404 to their operations.
 	BillingImports BillingImports
+	// Costs records the instance's costs and totals them (admin_finance.go); nil answers 404 to
+	// their operations.
+	Costs Costs
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

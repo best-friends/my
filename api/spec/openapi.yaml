@@ -246,6 +246,18 @@ paths:
     $ref: ./paths/admin_billing_imports.yaml
   /admin/billing_imports/{source}/runs:
     $ref: ./paths/admin_billing_imports_{source}_runs.yaml
+  /admin/cost_items:
+    $ref: ./paths/admin_cost_items.yaml
+  /admin/cost_items/{id}:
+    $ref: ./paths/admin_cost_items_{id}.yaml
+  /admin/cost_items/{id}/price_revisions:
+    $ref: ./paths/admin_cost_items_{id}_price_revisions.yaml
+  /admin/cost_items/{id}/end:
+    $ref: ./paths/admin_cost_items_{id}_end.yaml
+  /admin/cost_items/{id}/cancel:
+    $ref: ./paths/admin_cost_items_{id}_cancel.yaml
+  /admin/cost_totals:
+    $ref: ./paths/admin_cost_totals.yaml
   /admin/domain_actions:
     $ref: ./paths/admin_domain_actions.yaml
   /admin/domain_actions/{id}:
@@ -442,6 +454,8 @@ components:
       $ref: ./components/parameters/AnnouncementId.yaml
     AppealId:
       $ref: ./components/parameters/AppealId.yaml
+    CostItemId:
+      $ref: ./components/parameters/CostItemId.yaml
     Cursor:
       $ref: ./components/parameters/Cursor.yaml
     CustomEmojiId:
@@ -517,6 +531,8 @@ components:
       $ref: ./components/responses/AdminWebhook.yaml
     AdminWebhookDelivery:
       $ref: ./components/responses/AdminWebhookDelivery.yaml
+    CostItem:
+      $ref: ./components/responses/CostItem.yaml
     CustomEmojiProblem:
       $ref: ./components/responses/CustomEmojiProblem.yaml
     Problem:
@@ -740,10 +756,44 @@ components:
       $ref: ./components/schemas/BillingImportRun.yaml
     BillingSourceName:
       $ref: ./components/schemas/BillingSourceName.yaml
+    CalendarDate:
+      $ref: ./components/schemas/CalendarDate.yaml
     ChangePasswordRequest:
       $ref: ./components/schemas/ChangePasswordRequest.yaml
     CopyCustomEmojiRequest:
       $ref: ./components/schemas/CopyCustomEmojiRequest.yaml
+    CostBasis:
+      $ref: ./components/schemas/CostBasis.yaml
+    CostBreakdownLine:
+      $ref: ./components/schemas/CostBreakdownLine.yaml
+    CostCategory:
+      $ref: ./components/schemas/CostCategory.yaml
+    CostGranularity:
+      $ref: ./components/schemas/CostGranularity.yaml
+    CostItem:
+      $ref: ./components/schemas/CostItem.yaml
+    CostItemCreateRequest:
+      $ref: ./components/schemas/CostItemCreateRequest.yaml
+    CostItemEndRequest:
+      $ref: ./components/schemas/CostItemEndRequest.yaml
+    CostItemLabelRequest:
+      $ref: ./components/schemas/CostItemLabelRequest.yaml
+    CostItemPage:
+      $ref: ./components/schemas/CostItemPage.yaml
+    CostPeriodTotal:
+      $ref: ./components/schemas/CostPeriodTotal.yaml
+    CostPriceRevision:
+      $ref: ./components/schemas/CostPriceRevision.yaml
+    CostPriceRevisionRequest:
+      $ref: ./components/schemas/CostPriceRevisionRequest.yaml
+    CostSchedule:
+      $ref: ./components/schemas/CostSchedule.yaml
+    CostSourceRule:
+      $ref: ./components/schemas/CostSourceRule.yaml
+    CostTotals:
+      $ref: ./components/schemas/CostTotals.yaml
+    CostTotalsRules:
+      $ref: ./components/schemas/CostTotalsRules.yaml
     CreateAccountActionRequest:
       $ref: ./components/schemas/CreateAccountActionRequest.yaml
     CreateCustomEmojiRequest:

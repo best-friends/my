@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getCostItem
+  summary: Get a cost item
+  description: An unknown or canceled item is a 404. Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/CostItemId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/CostItem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updateCostItem
+  summary: Change a cost item's label
+  description: |
+    Records a new name, provider, category, or memo of a cost item; an omitted property keeps
+    its value. The values are checked as for a new item (422). An unknown or canceled item is
+    a 404. Recorded in the audit log. Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/CostItemId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CostItemLabelRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/CostItem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

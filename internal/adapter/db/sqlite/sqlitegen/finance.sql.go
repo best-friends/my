@@ -38,8 +38,9 @@ func (q *Queries) DeleteCostItemHead(ctx context.Context, costItemID string) err
 }
 
 const getCostItemCurrent = `-- name: GetCostItemCurrent :one
-SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on
+SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on, l.name
 FROM cost_item_heads h JOIN cost_items i ON i.id = h.cost_item_id
+  JOIN cost_item_label_revisions l ON l.id = h.label_revision_id
 WHERE h.cost_item_id = ?
 `
 
@@ -48,6 +49,7 @@ type GetCostItemCurrentRow struct {
 	LabelRevisionID string
 	EndsOn          sql.NullString
 	StartsOn        string
+	Name            string
 }
 
 func (q *Queries) GetCostItemCurrent(ctx context.Context, costItemID string) (GetCostItemCurrentRow, error) {
@@ -58,6 +60,7 @@ func (q *Queries) GetCostItemCurrent(ctx context.Context, costItemID string) (Ge
 		&i.LabelRevisionID,
 		&i.EndsOn,
 		&i.StartsOn,
+		&i.Name,
 	)
 	return i, err
 }

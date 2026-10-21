@@ -2251,11 +2251,13 @@ CREATE TABLE audit_log_entries (
     'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked',
     'relay_added', 'relay_followed', 'relay_unfollowed', 'relay_removed', 'relay_accepted', 'relay_rejected',
     'status_refetch_queued', 'account_statuses_refetch_queued', 'domain_statuses_refetch_queued',
-    'billing_import_queued'
+    'billing_import_queued',
+    'cost_item_created', 'cost_item_relabeled', 'cost_item_price_revised', 'cost_item_end_changed', 'cost_item_canceled'
   )),
   target_kind TEXT NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay', 'billing_source'
+    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay', 'billing_source',
+    'cost_item'
   )),
   target_id TEXT NOT NULL,
   target_label TEXT NOT NULL,

@@ -2101,6 +2101,153 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/cost_items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the cost items
+         * @description The instance's cost items that are not canceled, newest first (ADR-0067, FR-901).
+         *     Needs the `manage_finance` permission.
+         */
+        get: operations["listCostItems"];
+        put?: never;
+        /**
+         * Record a cost item
+         * @description Records a cost of the instance: once, or every N weeks, months, or years from the start
+         *     date (ADR-0067 §3). A value the server rejects is a 422 naming it: `interval` outside 1
+         *     to 99 (1 for `once`), an invalid date, `ends_on` before `starts_on`, an empty or too long
+         *     `name` or `provider`, a too long `memo`, an unknown currency, a negative amount, or an
+         *     amount with more digits than its currency (`price`). Recorded in the audit log.
+         *     Needs the `manage_finance` permission.
+         */
+        post: operations["createCostItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/cost_items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a cost item
+         * @description An unknown or canceled item is a 404. Needs the `manage_finance` permission.
+         */
+        get: operations["getCostItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Change a cost item's label
+         * @description Records a new name, provider, category, or memo of a cost item; an omitted property keeps
+         *     its value. The values are checked as for a new item (422). An unknown or canceled item is
+         *     a 404. Recorded in the audit log. Needs the `manage_finance` permission.
+         */
+        patch: operations["updateCostItem"];
+        trace?: never;
+    };
+    "/admin/cost_items/{id}/price_revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revise a cost item's price
+         * @description Records the price of the payments on or after `effective_on`. A date before the start
+         *     date (`effective_on`) and an invalid price (`price`) are a 422. An unknown or canceled
+         *     item is a 404. Recorded in the audit log. Needs the `manage_finance` permission.
+         */
+        post: operations["reviseCostItemPrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/cost_items/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set a cost item's end
+         * @description Ends a cost item on `ends_on` (a cancellation of the subscription: the payments after it
+         *     go away, the past ones stay), or makes it endless again without `ends_on`. A date before
+         *     the start date is a 422 naming `ends_on`. An unknown or canceled item is a 404. Recorded
+         *     in the audit log. Needs the `manage_finance` permission.
+         */
+        put: operations["setCostItemEnd"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/cost_items/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a cost item
+         * @description Removes a cost item recorded by mistake from every period, past ones included. There is
+         *     no undo: record the item again. An unknown or already canceled item is a 404. Recorded in
+         *     the audit log. Needs the `manage_finance` permission.
+         */
+        post: operations["cancelCostItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/cost_totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total the costs by period
+         * @description The totals of the cost items and the imported usage charges for each week, month, or
+         *     year from the one that holds `from` to the one that holds `to` (ADR-0067 §4, §5), by
+         *     currency and broken down by provider and category, with the rules that cut the periods.
+         *     The totals are computed on every read. More than 104 weeks, 60 months, or 20 years, and
+         *     `to` before `from`, are a 422 naming `to`. Needs the `manage_finance` permission.
+         */
+        get: operations["getCostTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/domain_actions": {
         parameters: {
             query?: never;
@@ -4378,10 +4525,13 @@ export interface components {
          *     posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
          *     `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
          *     on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
-         *     the ID is the source (`aws`, `gcp`) and the label the provider's name.
+         *     the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
+         *     `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
+         *     `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
+         *     the item's name.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued" | "cost_item_created" | "cost_item_relabeled" | "cost_item_price_revised" | "cost_item_end_changed" | "cost_item_canceled";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4438,7 +4588,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source" | "cost_item";
         /** @description The time a remote server was marked unavailable or available again, and why. */
         AdminAvailabilityEvent: {
             id: components["schemas"]["Id"];
@@ -5325,6 +5475,11 @@ export interface components {
          * @enum {string}
          */
         BillingSourceName: "aws" | "gcp";
+        /**
+         * @description A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+         *     of a payment on a card statement or an invoice.
+         */
+        CalendarDate: string;
         /** @description A change of the user's password, confirmed with `current_password` or `passkey`. */
         ChangePasswordRequest: {
             /** @description The user's current password, which confirms the change. */
@@ -5340,6 +5495,172 @@ export interface components {
              *     underscores; case matters. Absent, the remote emoji's.
              */
             shortcode?: string;
+        };
+        /**
+         * @description How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+         *     payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+         *     more weeks) by day over the days up to the next payment, with the cumulative rounding;
+         *     the other payments stay on their dates. `cash` places every payment on its date. Imported
+         *     usage charges spread by day over their billing period under both.
+         * @enum {string}
+         */
+        CostBasis: "amortized" | "cash";
+        /**
+         * @description The amount of a provider (in NFKC and lower case, which groups the costs), category, and
+         *     currency in a period.
+         */
+        CostBreakdownLine: {
+            provider: string;
+            category: components["schemas"]["CostCategory"];
+            amount: components["schemas"]["Money"];
+        };
+        /**
+         * @description The fixed category of a cost (ADR-0067 §2); clients translate its name.
+         * @enum {string}
+         */
+        CostCategory: "compute" | "database" | "storage" | "network" | "domain" | "email" | "software" | "other";
+        /**
+         * @description The periods of the totals: ISO 8601 weeks (Monday to Sunday), calendar months, or calendar
+         *     years, cut by date (ADR-0067 §5).
+         * @enum {string}
+         */
+        CostGranularity: "week" | "month" | "year";
+        /**
+         * @description A cost of the instance that is not canceled (ADR-0067 §2), with its current label and end
+         *     and every price revision. Never published: the public totals carry no item.
+         */
+        CostItem: {
+            id: components["schemas"]["Id"];
+            schedule: components["schemas"]["CostSchedule"];
+            /** @description The N of every N weeks, months, or years; 1 for `once`. */
+            interval: number;
+            starts_on: components["schemas"]["CalendarDate"];
+            ends_on?: components["schemas"]["CalendarDate"];
+            name: string;
+            /** @description Who is paid, as written; the breakdown groups it in NFKC and lower case. */
+            provider: string;
+            category: components["schemas"]["CostCategory"];
+            /** @description The operator's note, never published; empty for none. */
+            memo: string;
+            /**
+             * @description Every price revision, in the order they were recorded; the first one starts on
+             *     `starts_on`. `ends_on` is the last date a payment can fall on (included), omitted for
+             *     no end; `starts_on` is the first payment date, the payment date of `once`.
+             */
+            prices: components["schemas"]["CostPriceRevision"][];
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description A new cost item. The schedule and the start date never change: to change them, end the
+         *     item and record a new one. `ends_on` is the last date a payment can fall on, omitted for
+         *     no end; `price` is the price of every payment from the start date, 0 or more.
+         */
+        CostItemCreateRequest: {
+            schedule: components["schemas"]["CostSchedule"];
+            /** @description The N of every N weeks, months, or years, 1 to 99; 1 for `once`. */
+            interval: number;
+            starts_on: components["schemas"]["CalendarDate"];
+            ends_on?: components["schemas"]["CalendarDate"];
+            /** @description 1 to 100 characters without control characters. */
+            name: string;
+            /** @description 1 to 100 characters without control characters. */
+            provider: string;
+            category: components["schemas"]["CostCategory"];
+            /** @description Up to 10,000 characters, never published. */
+            memo?: string;
+            price: components["schemas"]["Money"];
+        };
+        /**
+         * @description The end of a cost item: `ends_on` is the last date a payment can fall on (included), on or
+         *     after the start date, and omitted for no end. The last payment before it still covers the
+         *     days up to the next payment date.
+         */
+        CostItemEndRequest: {
+            ends_on?: components["schemas"]["CalendarDate"];
+        };
+        /** @description A change of a cost item's label; an omitted property keeps its value. */
+        CostItemLabelRequest: {
+            name?: string;
+            provider?: string;
+            category?: components["schemas"]["CostCategory"];
+            /** @description The note; empty removes it. */
+            memo?: string;
+        };
+        /** @description A page of cost items, newest first. */
+        CostItemPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["CostItem"][];
+        };
+        /**
+         * @description A week, month, or year of the totals (`label`: `2026-W17`, `2026-04`, or `2026`): the total
+         *     of each currency, never converted (ADR-0067 §6), sorted by currency code, and the breakdown
+         *     by provider, category, and currency. A currency appears when a cost meets the period, even
+         *     with a zero amount. `estimated` reports that an imported usage charge of a billing month
+         *     that its provider has not closed meets the period (ADR-0068 §3): its amount may still
+         *     change.
+         */
+        CostPeriodTotal: {
+            label: string;
+            starts_on: components["schemas"]["CalendarDate"];
+            ends_on: components["schemas"]["CalendarDate"];
+            totals: components["schemas"]["Money"][];
+            breakdown: components["schemas"]["CostBreakdownLine"][];
+            estimated: boolean;
+        };
+        /**
+         * @description A price of a cost item for its payments on or after `effective_on`, until a later
+         *     revision; of revisions with the same date, the last recorded wins.
+         */
+        CostPriceRevision: {
+            effective_on: components["schemas"]["CalendarDate"];
+            price: components["schemas"]["Money"];
+            /** Format: date-time */
+            revised_at: string;
+        };
+        /**
+         * @description A price for the payments on or after `effective_on`, on or after the start date: a raise,
+         *     a cut, or the correction of a mistake (`effective_on` = the start date corrects every
+         *     payment).
+         */
+        CostPriceRevisionRequest: {
+            effective_on: components["schemas"]["CalendarDate"];
+            price: components["schemas"]["Money"];
+        };
+        /**
+         * @description The unit of a cost item's payment schedule (ADR-0067 §3): `once` (one payment on the start
+         *     date), or every `interval` `weeks`, `months`, or `years`, counted from the start date. A
+         *     monthly payment on a day that a month does not have falls on the month's last day.
+         * @enum {string}
+         */
+        CostSchedule: "once" | "weeks" | "months" | "years";
+        /**
+         * @description The cut of an imported provider's billing months: the IANA time zone they are kept in
+         *     (`UTC`, `America/Los_Angeles`), as the provider bills them.
+         */
+        CostSourceRule: {
+            source: components["schemas"]["BillingSourceName"];
+            provider: string;
+            time_zone: string;
+        };
+        /**
+         * @description The totals of the instance's costs over the periods from the one that holds `from` to the
+         *     one that holds `to`, oldest first.
+         */
+        CostTotals: {
+            granularity: components["schemas"]["CostGranularity"];
+            basis: components["schemas"]["CostBasis"];
+            periods: components["schemas"]["CostPeriodTotal"][];
+            rules: components["schemas"]["CostTotalsRules"];
+        };
+        /**
+         * @description How the totals cut the periods (ADR-0067 §5), to show next to them: by calendar date
+         *     without a time zone, weeks from `week_start` (ISO 8601), and each imported provider's
+         *     billing months in its own time zone (`billing_sources`, in its order).
+         */
+        CostTotalsRules: {
+            /** @enum {string} */
+            week_start: "monday";
+            sources: components["schemas"]["CostSourceRule"][];
         };
         /** @description A moderation action to take on an account. */
         CreateAccountActionRequest: {
@@ -7683,6 +8004,16 @@ export interface components {
                 "application/json": components["schemas"]["AdminWebhookDelivery"];
             };
         };
+        /** @description The cost item. */
+        CostItem: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["CostItem"];
+            };
+        };
         /** @description The custom emoji breaks a rule; nothing was changed. */
         CustomEmojiProblem: {
             headers: {
@@ -7796,6 +8127,8 @@ export interface components {
         AnnouncementId: components["schemas"]["Id"];
         /** @description The ID of the appeal. */
         AppealId: components["schemas"]["Id"];
+        /** @description The ID of the cost item. */
+        CostItemId: components["schemas"]["Id"];
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
         Cursor: components["schemas"]["Cursor"];
         /** @description The ID of the custom emoji. */
@@ -10190,6 +10523,178 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listCostItems: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of cost items. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostItemPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    createCostItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostItemCreateRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CostItem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCostItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the cost item. */
+                id: components["parameters"]["CostItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["CostItem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateCostItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the cost item. */
+                id: components["parameters"]["CostItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostItemLabelRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CostItem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    reviseCostItemPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the cost item. */
+                id: components["parameters"]["CostItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostPriceRevisionRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CostItem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    setCostItemEnd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the cost item. */
+                id: components["parameters"]["CostItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CostItemEndRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CostItem"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    cancelCostItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the cost item. */
+                id: components["parameters"]["CostItemId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The item is canceled. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getCostTotals: {
+        parameters: {
+            query: {
+                granularity: components["schemas"]["CostGranularity"];
+                /** @description A date in the first period. */
+                from: components["schemas"]["CalendarDate"];
+                /** @description A date in the last period. */
+                to: components["schemas"]["CalendarDate"];
+                /** @description How the totals place a payment; `amortized` by default. */
+                basis?: components["schemas"]["CostBasis"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The totals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostTotals"];
+                };
             };
             default: components["responses"]["Problem"];
         };

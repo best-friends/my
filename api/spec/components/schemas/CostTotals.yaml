@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The totals of the instance's costs over the periods from the one that holds `from` to the
+  one that holds `to`, oldest first.
+type: object
+required: [granularity, basis, periods, rules]
+properties:
+  granularity:
+    $ref: ./CostGranularity.yaml
+  basis:
+    $ref: ./CostBasis.yaml
+  periods:
+    type: array
+    items:
+      $ref: ./CostPeriodTotal.yaml
+  rules:
+    $ref: ./CostTotalsRules.yaml
