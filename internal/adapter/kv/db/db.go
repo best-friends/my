@@ -19,8 +19,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 )
@@ -43,16 +41,6 @@ type Store struct {
 }
 
 var _ kernel.KeyValueStore = (*Store)(nil)
-
-// NewSQLite returns the store kept in the SQLite database d, whose entries expire by clock.
-func NewSQLite(d *sqlite.DB, clock kernel.Clock) *Store {
-	return &Store{db: d, st: sqliteStore{}, clock: clock}
-}
-
-// NewPostgres returns the store kept in the PostgreSQL database d, whose entries expire by clock.
-func NewPostgres(d *postgres.DB, clock kernel.Clock) *Store {
-	return &Store{db: d, st: postgresStore{}, clock: clock}
-}
 
 func (s *Store) expiry(ttl time.Duration) *time.Time {
 	if ttl <= 0 {

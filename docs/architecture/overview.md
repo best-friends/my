@@ -121,6 +121,9 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format。Gauge は収集されないので、定期ジョブが `GaugeWriter` で書かせる）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは `Tracer` が持つ | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
 | `Tracer` | 分散トレースの span。span を名前・種類・許す属性のキー（`SpanSpec`）で宣言して始め、`Inject` で今の span の `traceparent` をジョブ（`queue.Job.TraceParent`）に書き、`Linked` でジョブの実行を link 付きの新しいトレースにし、`Continue` で信頼したプロキシの `traceparent` を親にし、`LogIDs` でログの行に `trace_id`・`span_id` を付ける。型は標準ライブラリだけで、OTel の型を出さない。span は HTTP のミドルウェア・ジョブの runner・`HTTPClient`・`UnitOfWork.Tx` とクエリ（`telemetry/dbtrace`、PostgreSQL は pgx の `QueryTracer`）・配送が作る。アダプタは `none` / `otel`（OpenTelemetry Go SDK の OTLP/HTTP） | none（`traces_exporter = none`。信頼したプロキシの trace ID をログに付けるだけ） | [0063](../adr/0063-distributed-tracing.md) |
 
+各ポートには `pkg/testkit` にアダプタ非依存のコントラクトテスト（`testkit.<名前>Contract`）があり、そのポートのアダプタはすべてそれを通す（NFR-PORT-3）。
+アダプタを包んで計測する `internal/adapter/telemetry/sysmetrics` のデコレータも、包むポートのコントラクトを通す。
+
 ## 4. 主要フロー
 
 ### 4.1 ローカル投稿 → 連合配送

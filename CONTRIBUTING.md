@@ -101,6 +101,7 @@ Web クライアント（`app/web`）は Vite でビルドし、`my serve` が�
 - `make web-build` は `app/web/dist` にビルドし、`internal/interface/web/dist` にコピーします。Go はそこを `//go:embed all:dist` で埋め込みます。
   コミットするのはプレースホルダの `.gitkeep` だけなので、Go のビルドとテストに Bun は要りません（そのバイナリはスクリプトのない外枠を返します）。
 - `make build` は `make web-build` を先に実行し、Web クライアント入りの単一バイナリを作ります。Docker イメージも同じビルドを埋め込みます。
+  `GO_TAGS` に[ビルドタグ](docs/reference/build-tags.md)を渡すと、使わないアダプタをバイナリから外せます。
 
 開発中は、Vite の開発サーバーを立て、`my serve` にその origin を渡します。ブラウザは `my serve` を開きます。
 外枠・ランタイム設定・API・ActivityPub は本番と同じく Go が返し、スクリプトだけを Vite から HMR 付きで読み込みます。

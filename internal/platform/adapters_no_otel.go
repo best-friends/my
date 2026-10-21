@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+//go:build no_otel
+
+package platform
+
+import (
+	"context"
+
+	"github.com/best-friends/my/internal/platform/config"
+)
+
+// setUpOTelMeter reports that the build tag no_otel left the OpenTelemetry adapter out.
+func (a *App) setUpOTelMeter(_ context.Context, cfg *config.Config, _ AppOptions) error {
+	return config.ExcludedError("metrics_exporter", cfg.MetricsExporter, "no_otel")
+}

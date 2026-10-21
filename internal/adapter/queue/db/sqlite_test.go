@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !no_sqlite
+
 package db_test
 
 import (
@@ -59,6 +61,12 @@ func sqliteHarness(t *testing.T, clock *testkit.Clock, path string, apply, relay
 		return sqliteHarness(t, clock, path, false, false)
 	}
 	return h
+}
+
+func TestSQLiteBacklogContract(t *testing.T) {
+	testkit.QueueBacklogContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
+		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, true)
+	})
 }
 
 func TestSQLiteQueueContract(t *testing.T) {

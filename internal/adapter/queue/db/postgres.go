@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !no_postgres
+
 package db
 
 import (
@@ -18,6 +20,18 @@ import (
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 )
+
+// NewPostgres returns the queue kept in the PostgreSQL database d.
+func NewPostgres(d *postgres.DB, opts Options) *Queue {
+	opts.check()
+	return &Queue{db: d, st: postgresStore{}, opts: opts}
+}
+
+// NewPostgresOutbox returns the outbox kept in the PostgreSQL database d.
+func NewPostgresOutbox(d *postgres.DB, opts Options) *Outbox {
+	opts.check()
+	return &Outbox{db: d, st: postgresStore{}, opts: opts}
+}
 
 type postgresStore struct{}
 

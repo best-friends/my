@@ -181,6 +181,39 @@ func TestStreamBusContractEmulator(t *testing.T) {
 	testkit.StreamBusContract(t, func(t *testing.T) testkit.StreamBus { return emulatorBroker(t).harness() })
 }
 
+// sweeper is the harness of the sweeper contract: a process's resources are its queue and
+// its subscription.
+func (b *broker) sweeper() testkit.StreamSweeper {
+	h := testkit.StreamSweeper{
+		NewBus: func(t *testing.T) (testkit.SweepingBus, string) {
+			bus := b.newBus(t)
+			return bus, bus.ProcessID()
+		},
+		Resources: func(t *testing.T, processID string) int {
+			n := 0
+			for _, name := range append(b.queues(t), b.subscriptions(t)...) {
+				if strings.Contains(name, processID) {
+					n++
+				}
+			}
+			return n
+		},
+		Timeout: b.timeout,
+	}
+	if b.clock != nil {
+		h.Advance = func(d time.Duration) { b.clock.Advance(d) }
+	}
+	return h
+}
+
+func TestStreamSweeperContract(t *testing.T) {
+	testkit.StreamSweeperContract(t, func(t *testing.T) testkit.StreamSweeper { return fakeBroker(t).sweeper() })
+}
+
+func TestStreamSweeperContractEmulator(t *testing.T) {
+	testkit.StreamSweeperContract(t, func(t *testing.T) testkit.StreamSweeper { return emulatorBroker(t).sweeper() })
+}
+
 func TestStreamBrokerContractRelay(t *testing.T) {
 	testkit.StreamBrokerContract(t, func(t *testing.T, o stream.HubOptions) testkit.StreamBroker {
 		b := fakeBroker(t)

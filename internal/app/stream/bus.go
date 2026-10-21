@@ -69,7 +69,8 @@ func NewProcessID() string {
 type Sweeper interface {
 	// Sweep deletes the per-process resources created at least minAge ago whose process is not
 	// alive, and returns how many it deleted. alive reports whether a process ID has a live
-	// marker; a resource whose process cannot be told is kept. A resource that is already gone
-	// is not an error, so that two sweeps may run at once.
+	// marker; a resource whose process cannot be told is kept, and the error of alive is
+	// returned with the count. A resource that is already gone is not an error, so that two
+	// sweeps may run at once. Adapters pass testkit.StreamSweeperContract.
 	Sweep(ctx context.Context, minAge time.Duration, alive func(ctx context.Context, processID string) (bool, error)) (int, error)
 }

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !no_postgres
+
 package db_test
 
 import (
@@ -63,5 +65,11 @@ func TestPostgresQueueContract(t *testing.T) {
 func TestPostgresOutboxContract(t *testing.T) {
 	testkit.QueueContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
 		return postgresHarness(t, clock, newDatabase(t), true)
+	})
+}
+
+func TestPostgresBacklogContract(t *testing.T) {
+	testkit.QueueBacklogContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
+		return postgresHarness(t, clock, newDatabase(t), false)
 	})
 }

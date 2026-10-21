@@ -20,6 +20,7 @@
 ## リファレンス
 
 - [設定リファレンス](reference/configuration.md)（設定スキーマから生成）
+- [ビルドタグ](reference/build-tags.md)（アダプタをバイナリから外すタグと、その検査）
 - [webhook リファレンス](reference/webhooks.md)（受け手が受け取るヘッダ・署名・イベント・本文）
 
 ## 運用

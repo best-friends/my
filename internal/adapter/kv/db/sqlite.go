@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !no_sqlite
+
 package db
 
 import (
@@ -10,8 +12,14 @@ import (
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/kv/db/internal/sqlitekv"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 )
+
+// NewSQLite returns the store kept in the SQLite database d, whose entries expire by clock.
+func NewSQLite(d *sqlite.DB, clock kernel.Clock) *Store {
+	return &Store{db: d, st: sqliteStore{}, clock: clock}
+}
 
 // sqliteStore stores timestamps as Unix milliseconds (data-model §1.2).
 type sqliteStore struct{}
