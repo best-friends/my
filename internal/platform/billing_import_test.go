@@ -112,14 +112,18 @@ func TestBillingImports(t *testing.T) {
 	}
 }
 
-// A billing source whose adapter is not in the build stops the start.
-func TestBillingSourceWithoutAdapter(t *testing.T) {
+// A billing source whose adapter cannot be built stops the start.
+func TestBillingSourceThatCannotBeBuilt(t *testing.T) {
 	t.Parallel()
-	cfg := loadConfig(t, map[string]string{"MY_DATABASE_URL": newDatabase(t, true), "MY_BILLING_SOURCES": "gcp"})
+	cfg := loadConfig(t, map[string]string{
+		"MY_DATABASE_URL": newDatabase(t, true), "MY_BILLING_SOURCES": "gcp",
+		"MY_BILLING_GCP_TABLE": "my-billing.billing_export.gcp_billing_export_v1_012345_6789AB_CDEF01",
+	})
+	cfg.BillingGCPTable = "" // past the validation of the configuration: the adapter refuses it
 	app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err == nil {
 		_ = app.Close()
-		t.Fatal("NewApp with billing_sources = gcp and no adapter succeeded")
+		t.Fatal("NewApp with billing_sources = gcp and no table succeeded")
 	}
 	if !strings.Contains(err.Error(), "billing_sources = gcp") {
 		t.Errorf("NewApp = %v, want the billing source named", err)

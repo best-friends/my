@@ -7,7 +7,7 @@
 事業者が月を締めるまでは見込み、締めた後は確定、確定の後に値が変わったら修正として記録し、過去の記録は書き換えません。
 取り込みの状態（最後の成功、最後の失敗の種類、今月の要求数）は管理画面の費用のページと `GET /api/v1/admin/billing_imports` で見られます。
 
-認証の鍵をこのサーバーの設定には置きません。各事業者の SDK の既定の認証の連鎖（AWS は実行ロール・環境変数・共有の認証ファイル）が読むものを、実行環境に渡します。
+認証の鍵をこのサーバーの設定には置きません。各事業者の SDK の既定の認証の連鎖（AWS は実行ロール・環境変数・共有の認証ファイル、Google Cloud は Application Default Credentials）が読むものを、実行環境に渡します。
 
 ## AWS（`billing_sources = aws`）
 
@@ -123,5 +123,82 @@ Cost Explorer の値と請求書は更新の時期と丸めで違うことがあ
 | `unavailable` | 5xx、ネットワークの失敗 | ジョブが時間を置いて再試行する（要求の上限に数える） |
 | `invalid_response` | 読めない応答、`ValidationException` など | 設定（タグ・アカウント ID）を確かめる |
 | `request_cap` | （呼ばない） | 上限の日・月が明けるのを待つか、上限を上げる |
+
+`throttled` と `unavailable` のほかは再試行しても直らないので、記録してそのまま終わり、翌日の定期の取り込みが再び試します。
+
+## Google Cloud（`billing_sources = gcp`）
+
+Google Cloud には実際の費用を返す API がないため、Cloud Billing の BigQuery への export（標準の使用料金）を、BigQuery の `jobs.query` で 1 日 1 回集計します（`billing_gcp_method = bigquery`、既定）。
+請求月は export の `invoice.month` で、米国太平洋時間（夏時間あり）の暦月です。日付も太平洋時間のまま記録します。
+金額は請求先アカウントの通貨で、請求月・サービス（`service.description`）・費用の種類（`cost_type`）ごとに `NUMERIC` で合計し、クレジット（`credits[]`）はサービスごとに 1 つのクレジットの行にします。export の訂正の打ち消しの行も合計に入ります。
+export には確定の印がないので、翌月の 5 日（太平洋時間）からの取り込みでその月を確定とし、それまでは月の初日から最後の利用の日までの見込みとして記録します。確定の後も 15 日までは取り直し、違いは修正として記録します。
+build tag `no_billing_gcp` で build したバイナリは `gcp` を拒みます（[ビルドタグ](../reference/build-tags.md)）。
+
+### 費用と上限
+
+1 回の取り込みは 1 回のクエリで、BigQuery はクエリごとにスキャンしたバイト数（最低 10 MB）を課金します。小さなアカウントなら月に 0.3 GB ほどで、毎月最初の 1 TiB の無料枠（請求先アカウントのほかの用途と共有）に収まり、$0 です。
+想定外のスキャンを防ぐため、クエリに必ず `maximumBytesBilled`（`billing_gcp_max_bytes_billed`、既定 1 GiB）を付けます。超えるクエリは課金されずに失敗し、`bytes_cap` の失敗として残ります。課金されたバイト数は管理画面に出ます。
+
+### BigQuery への export を有効にする
+
+運営者が一度だけ、コンソールで設定します（API での設定の方法は見つかっていません）。
+
+1. 請求先アカウントに紐づいたプロジェクトに、BigQuery のデータセット（例 `billing_export`）を作ります。場所はマルチリージョン（`US` か `EU`）にします。今月と先月の分が遡って入ります（リージョンだと有効にした日からになります）。場所は後で変えられません。
+   テーブルの有効期限は付けないでください。消えた行は戻りません。
+2. 「お支払い → 課金データのエクスポート → BigQuery Export」で「標準の使用料金」を有効にし、1. のデータセットを選びます。設定には請求先アカウントの「請求先アカウント費用管理者」か「請求先アカウント管理者」と、プロジェクトの BigQuery ユーザーの役割が要ります。
+3. 数時間から 1 日ほどでテーブル `gcp_billing_export_v1_<BILLING_ACCOUNT_ID>`（ID のハイフンは `_`）が作られます。
+4. `MY_BILLING_GCP_TABLE=<プロジェクト>.billing_export.gcp_billing_export_v1_<BILLING_ACCOUNT_ID>` を設定します。
+
+データセットやテーブルが見つからないときは `not_found` の失敗になります。
+
+### IAM の役割
+
+取り込むサーバーのサービスアカウントに、次の 2 つを付けます。
+
+| 役割 | 付ける場所 | 用途 |
+| --- | --- | --- |
+| `roles/bigquery.jobUser`（BigQuery ジョブユーザー） | クエリを実行するプロジェクト（`billing_gcp_query_project`、空ならテーブルのプロジェクト） | `bigquery.jobs.create`。スキャンのバイトはこのプロジェクトに課金されます |
+| `roles/bigquery.dataViewer`（BigQuery データ閲覧者） | export のデータセット | `bigquery.tables.getData` |
+
+```sh
+gcloud projects add-iam-policy-binding <クエリのプロジェクト> \
+  --member=serviceAccount:<サービスアカウント> --role=roles/bigquery.jobUser
+bq add-iam-policy-binding --member=serviceAccount:<サービスアカウント> \
+  --role=roles/bigquery.dataViewer <プロジェクト>:billing_export
+```
+
+クエリのプロジェクトで BigQuery API が有効でないときは `not_enabled`、役割が足りないときは `permission` の失敗になります。
+
+認証は Application Default Credentials（ADC）です。
+
+| 実行環境 | 認証 |
+| --- | --- |
+| Google Cloud（Cloud Run） | サービスのサービスアカウントで ADC。鍵も設定も要りません |
+| AWS Lambda | Workload Identity Federation（AWS の種類）の credential configuration のファイルを置き、`GOOGLE_APPLICATION_CREDENTIALS` でそのパスを渡します（実アカウントでの確認は #882） |
+| 自前のサーバー | Workload Identity Federation か、サービスアカウントの JSON 鍵を `GOOGLE_APPLICATION_CREDENTIALS` で渡します。鍵はシークレットストアから渡してください |
+
+### どの費用を取り込むか（絞り込み）
+
+既定では請求先アカウントのすべての費用を取り込みます。いちばん正確なのは、このサーバーだけのための請求先アカウントを使い、絞らずに取ることです。
+
+| 設定 | 取り込む費用 |
+| --- | --- |
+| `billing_gcp_projects`（プロジェクト ID、カンマ区切り） | 指定したプロジェクトの費用（`project.id`） |
+| `billing_gcp_label`（`key=value`、例 `app=my`） | 指定したラベルの付いたリソースの費用（`labels`） |
+
+両方を設定すると、両方に当てはまる費用だけを取り込みます。
+税など請求書の単位の費用はプロジェクトもラベルも持たないことがあり、そのときは絞り込みから漏れます（実アカウントでの確認は #882）。
+
+### 失敗の種類
+
+| 種類 | BigQuery の応答 | 直し方 |
+| --- | --- | --- |
+| `permission` | 401、403（`accessDenied`） | サービスアカウントの役割と認証情報の渡し方を確かめる |
+| `not_enabled` | 403（`accessNotConfigured` など） | クエリのプロジェクトで BigQuery API を有効にする |
+| `not_found` | 404 | `billing_gcp_table` と export の設定を確かめる |
+| `bytes_cap` | 400（`bytesBilledLimitExceeded`） | スキャンが `billing_gcp_max_bytes_billed` を超えた。テーブルが大きいなら上限を上げる |
+| `throttled` | 429、403（`rateLimitExceeded`・`quotaExceeded`） | ジョブが時間を置いて再試行する |
+| `unavailable` | 5xx、ネットワークの失敗、終わらないクエリ | ジョブが時間を置いて再試行する |
+| `invalid_response` | 読めない応答、月の中で通貨が混ざる行、ほかの 400 | export のテーブル（標準の使用料金か）を確かめる |
 
 `throttled` と `unavailable` のほかは再試行しても直らないので、記録してそのまま終わり、翌日の定期の取り込みが再び試します。

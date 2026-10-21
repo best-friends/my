@@ -15,6 +15,7 @@ func TestLoadRejectsExcludedAdapters(t *testing.T) {
 	exclude("no_postgres", "db", "postgres")
 	exclude("no_postgres", "stream", "postgres")
 	exclude("no_billing_aws", "billing_sources", "aws")
+	exclude("no_billing_gcp", "billing_sources", "gcp")
 
 	if _, _, err := Load(source(minimal(), nil)); err != nil {
 		t.Fatalf("Load() with db = sqlite: %v", err)
@@ -32,11 +33,17 @@ func TestLoadRejectsExcludedAdapters(t *testing.T) {
 	for _, want := range []string{
 		`db (MY_DB): "postgres" is not in this build: the build tag no_postgres left its adapter out (docs/reference/build-tags.md)`,
 		`stream (MY_STREAM): "postgres" is not in this build: the build tag no_postgres left its adapter out (docs/reference/build-tags.md)`,
-		`billing_sources (MY_BILLING_SOURCES): "aws" is not in this build: the build tag no_billing_aws left its adapter out (docs/reference/build-tags.md)`,
+		`billing_sources (MY_BILLING_SOURCES): "gcp" is not in this build: the build tag no_billing_gcp left its adapter out (docs/reference/build-tags.md)`,
 	} {
 		if !slices.Contains(got, want) {
 			t.Errorf("issues = %q, want %q among them", got, want)
 		}
+	}
+
+	_, _, err = Load(source(with(minimal(), "MY_BILLING_SOURCES", "aws"), nil))
+	want := `billing_sources (MY_BILLING_SOURCES): "aws" is not in this build: the build tag no_billing_aws left its adapter out (docs/reference/build-tags.md)`
+	if !errors.As(err, &ve) || len(ve.Issues) != 1 || ve.Issues[0].String() != want {
+		t.Errorf("Load() with billing_sources = aws: %v, want %q", err, want)
 	}
 }
 

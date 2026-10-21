@@ -3,6 +3,7 @@
 package config
 
 import (
+	"cmp"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -520,7 +521,7 @@ var schema = []field{
 	},
 	{
 		key:   "billing_sources",
-		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tag `no_billing_aws` leaves `aws` out. Empty imports nothing.",
+		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tags `no_billing_aws` and `no_billing_gcp` leave `aws` and `gcp` out. Empty imports nothing.",
 		check: checkBillingSources,
 		set: func(c *Config, v string) {
 			for s := range strings.SplitSeq(v, ",") {
@@ -588,6 +589,54 @@ var schema = []field{
 		doc:   "ARN of an IAM role that the imports of `billing_sources = aws` assume with the Google ID token of the instance's service account (`AssumeRoleWithWebIdentity`, audience: this ARN), for a server on Google Cloud (Cloud Run) without AWS keys (ADR-0068 §8). The role trusts the identity provider `accounts.google.com` for the service account (docs/operations/billing-import.md). Empty uses the AWS SDK's default chain (the execution role, `AWS_ACCESS_KEY_ID`, the shared files).",
 		check: checkBillingAWSRoleARN,
 		set:   func(c *Config, v string) { c.BillingAWSRoleARN = v },
+	},
+	{
+		key: "billing_gcp_method",
+		doc: "How the imports of `billing_sources = gcp` read the Google Cloud usage charges (ADR-0068 §7). The billing months are the invoice months of Cloud Billing, US Pacific calendar months; a month is final from the 5th of the next month on (Pacific time).",
+		def: "bigquery",
+		choices: []choice{
+			{value: "bigquery", inV0: true, doc: "Sum the standard usage cost export of Cloud Billing to BigQuery (`billing_gcp_table`) with one query a day, within the free tier of BigQuery (docs/operations/billing-import.md)."},
+			{value: "budget", inV0: false, doc: "Read the budget notifications of a Pub/Sub subscription: an estimate of the budget's total, without the services (#889)."},
+		},
+		set: func(c *Config, v string) { c.BillingGCPMethod = v },
+	},
+	{
+		key:          "billing_gcp_table",
+		doc:          "The table of the standard usage cost export of Cloud Billing to BigQuery, `project.dataset.table` such as `my-project.billing_export.gcp_billing_export_v1_012345_6789AB_CDEF01`. The service account of the server needs `roles/bigquery.dataViewer` on its dataset (docs/operations/billing-import.md).",
+		requiredWhen: "when `billing_sources` includes `gcp` and `billing_gcp_method = bigquery`",
+		check:        checkBillingGCPTable,
+		set:          func(c *Config, v string) { c.BillingGCPTable = strings.TrimSpace(v) },
+	},
+	{
+		key:   "billing_gcp_query_project",
+		doc:   "The Google Cloud project that runs the BigQuery queries of `billing_gcp_method = bigquery` and is billed for their bytes; the service account of the server needs `roles/bigquery.jobUser` on it. Empty uses the project of `billing_gcp_table`.",
+		check: checkBillingGCPProject,
+		set:   func(c *Config, v string) { c.BillingGCPQueryProject = strings.TrimSpace(v) },
+	},
+	{
+		key:   "billing_gcp_projects",
+		doc:   "Google Cloud project IDs, comma-separated, whose costs the imports of `billing_gcp_method = bigquery` take (`project.id` of the export). Empty takes every cost of the billing account. The taxes and the other charges of the invoice that carry no project may fall out of this filter (docs/operations/billing-import.md).",
+		check: checkBillingGCPProjects,
+		set: func(c *Config, v string) {
+			for s := range strings.SplitSeq(v, ",") {
+				if s = strings.TrimSpace(s); s != "" {
+					c.BillingGCPProjects = append(c.BillingGCPProjects, s)
+				}
+			}
+		},
+	},
+	{
+		key:   "billing_gcp_label",
+		doc:   "A label `key=value`, such as `app=my`, whose resources' costs the imports of `billing_gcp_method = bigquery` take (`labels` of the export). Empty takes the costs with or without labels. The taxes and the costs of resources without the label fall out of this filter.",
+		check: checkBillingGCPLabel,
+		set:   func(c *Config, v string) { c.BillingGCPLabel = strings.TrimSpace(v) },
+	},
+	{
+		key:   "billing_gcp_max_bytes_billed",
+		doc:   "The `maximumBytesBilled` of each BigQuery query of `billing_gcp_method = bigquery`, in bytes: a query that would bill more fails as `bytes_cap` and bills nothing (ADR-0068 §4). The default, 1 GiB, keeps a query a day well within the free tier of 1 TiB a month, which the billing account shares with its other uses; BigQuery bills at least 10 MB a query.",
+		def:   strconv.FormatInt(defaultBillingGCPMaxBytesBilled, 10),
+		check: checkPositiveInt64,
+		set:   func(c *Config, v string) { c.BillingGCPMaxBytesBilled, _ = strconv.ParseInt(v, 10, 64) },
 	},
 	{
 		key:   "dead_job_retention",
@@ -736,6 +785,9 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	if vals["billing_aws_filter"] == "linked_account" && !present["billing_aws_linked_accounts"] {
 		issues = append(issues, Issue{Key: "billing_aws_linked_accounts", Missing: true, Message: "required when billing_aws_filter is linked_account"})
 	}
+	if slices.Contains(splitList(vals["billing_sources"]), "gcp") && cmp.Or(vals["billing_gcp_method"], "bigquery") == "bigquery" && !present["billing_gcp_table"] {
+		issues = append(issues, Issue{Key: "billing_gcp_table", Missing: true, Message: "required when billing_sources includes gcp and billing_gcp_method is bigquery"})
+	}
 	if vals["http_allow_private_networks"] == "true" && vals["profile"] != "development" {
 		issues = append(issues, Issue{Key: "http_allow_private_networks", Message: "true is refused in the production profile; set profile = development"})
 	}
@@ -788,6 +840,29 @@ func checkBillingSources(v string) error {
 			return fmt.Errorf("%q is listed twice", s)
 		}
 		seen[s] = true
+	}
+	return nil
+}
+
+// defaultBillingGCPMaxBytesBilled is the default maximumBytesBilled of a BigQuery query, 1 GiB
+// (ADR-0068 §4).
+const defaultBillingGCPMaxBytesBilled int64 = 1 << 30
+
+// splitList splits a comma-separated value, dropping the blanks.
+func splitList(v string) []string {
+	var out []string
+	for s := range strings.SplitSeq(v, ",") {
+		if s = strings.TrimSpace(s); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+func checkPositiveInt64(v string) error {
+	n, err := strconv.ParseInt(v, 10, 64)
+	if err != nil || n <= 0 {
+		return fmt.Errorf("must be a whole number from 1 to %d", int64(math.MaxInt64))
 	}
 	return nil
 }
