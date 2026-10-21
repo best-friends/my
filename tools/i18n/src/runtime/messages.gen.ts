@@ -3536,6 +3536,10 @@ export interface MessageArgs {
   "client:settings.blocks.unblock": {};
   /** You unblocked {name}. */
   "client:settings.blocks.unblocked": { name: string };
+  /** New posts start in it. You can still choose for each post. */
+  "client:settings.default_post_language.description": {};
+  /** Default language of your posts */
+  "client:settings.default_post_language.label": {};
   /** You can still choose for each post. */
   "client:settings.default_visibility.description": {};
   /** Who sees your posts by default */
@@ -3864,7 +3868,7 @@ export interface MessageArgs {
   "client:settings.password.wrong_password": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
-  /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
+  /** Language, time zone, theme, the defaults of your posts, and the languages of your timelines */
   "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
@@ -3984,6 +3988,10 @@ export interface MessageArgs {
   "client:settings.push.types.label": {};
   /** This browser cannot receive push notifications. On iPhone and iPad, add this site to the Home Screen and open it from there. */
   "client:settings.push.unsupported": {};
+  /** Before you post, the post form asks for a description (alt text) of each image, video or audio file without one, so that people who cannot see or hear them can follow your posts. */
+  "client:settings.require_media_description.description": {};
+  /** Ask me for a description of every attachment */
+  "client:settings.require_media_description.label": {};
   /** Saved */
   "client:settings.saved": {};
   /** Dark */

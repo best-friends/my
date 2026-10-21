@@ -6491,6 +6491,14 @@
     "defaultMessage": "You unblocked {name}.",
     "description": "Announced after an account was unblocked. {name} is the account's display name."
   },
+  "settings.default_post_language.description": {
+    "defaultMessage": "New posts start in it. You can still choose for each post.",
+    "description": "Help text of the default post language select."
+  },
+  "settings.default_post_language.label": {
+    "defaultMessage": "Default language of your posts",
+    "description": "Label of the select of the language new posts start with."
+  },
   "settings.default_visibility.description": {
     "defaultMessage": "You can still choose for each post.",
     "description": "Help text of the default visibility radio group."
@@ -6820,12 +6828,12 @@
     "description": "Text at the top of the preferences page."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "Language, time zone, theme, who sees your posts by default, and the languages of your timelines",
+    "defaultMessage": "Language, time zone, theme, the defaults of your posts, and the languages of your timelines",
     "description": "Description of the preferences page in the list of settings pages."
   },
   "settings.preferences.title": {
     "defaultMessage": "Preferences",
-    "description": "Heading and document title of the settings page with the language, time zone, theme, default visibility and timeline languages."
+    "description": "Heading and document title of the settings page with the language, time zone, theme, post defaults and timeline languages."
   },
   "settings.profile.avatar": {
     "defaultMessage": "Avatar",
@@ -7050,6 +7058,14 @@
   "settings.push.unsupported": {
     "defaultMessage": "This browser cannot receive push notifications. On iPhone and iPad, add this site to the Home Screen and open it from there.",
     "description": "Shown in the push notification settings when the browser has no Push API."
+  },
+  "settings.require_media_description.description": {
+    "defaultMessage": "Before you post, the post form asks for a description (alt text) of each image, video or audio file without one, so that people who cannot see or hear them can follow your posts.",
+    "description": "Help text of the switch that asks for a description of every attachment."
+  },
+  "settings.require_media_description.label": {
+    "defaultMessage": "Ask me for a description of every attachment",
+    "description": "Label of the switch that makes the post form ask for an alternative text of every attached file before posting."
   },
   "settings.saved": {
     "defaultMessage": "Saved",

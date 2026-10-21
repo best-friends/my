@@ -28,27 +28,27 @@ func (l *stringList) Set(v string) error {
 	return nil
 }
 
-// runAdminEmoji implements `my admin emoji <subcommand>`: the custom emoji (ADR-0051 §5). The
-// CLI acts as no user: its operations are audited as the CLI's, and the images it registers are
-// uploads of the instance actor.
+// runAdminEmoji implements `my admin emoji <subcommand>`: the custom emoji (ADR-0051 §5, FR-111),
+// through the same operations as the admin API. The CLI acts as no user: its operations are
+// audited as the CLI's, and the images it registers are uploads of the instance actor.
 func runAdminEmoji(args []string, stdout, stderr io.Writer) int {
 	if len(args) == 0 {
 		adminEmojiUsage(stderr)
 		return 2
 	}
-	sub, code := dispatch("admin emoji", args, []string{"create", "list", "enable", "disable", "delete"}, stderr, adminEmojiUsage)
+	sub, code := dispatch("admin emoji", args, []string{"create", "list", "update", "replace-image", "enable", "disable", "copy", "delete"}, stderr, adminEmojiUsage)
 	if code >= 0 {
 		return code
 	}
 	var (
 		shortcode, category, domain, before string
 		aliases                             stringList
-		local, remote, hidden               bool
+		local, remote, hidden, noAliases    bool
 		limit                               = 50
 	)
-	nargs := 1
-	if sub == "list" {
-		nargs = 0
+	nargs := map[string]int{"list": 0, "replace-image": 2}[sub]
+	if sub != "list" && nargs == 0 {
+		nargs = 1
 	}
 	c, code := parseSubcommand("my admin emoji "+sub, args[1:], nargs, stderr, adminEmojiUsage, func(fs *flag.FlagSet) {
 		switch sub {
@@ -64,10 +64,35 @@ func runAdminEmoji(args []string, stdout, stderr io.Writer) int {
 			fs.StringVar(&shortcode, "shortcode", "", "show only the emoji whose shortcode contains this text")
 			fs.StringVar(&before, "before", "", "show the emoji older than this emoji ID")
 			fs.IntVar(&limit, "limit", limit, "number of emoji to show, newest first")
+		case "update":
+			fs.StringVar(&category, "category", "", `the category of the picker; "" removes it`)
+			fs.Var(&aliases, "alias", "another name that the picker finds the emoji by; repeat for more (replaces the aliases)")
+			fs.BoolVar(&noAliases, "no-aliases", false, "remove every alias")
+			fs.BoolVar(&hidden, "hidden", false, "keep the emoji out of the picker; -hidden=false shows it there again")
+		case "copy":
+			fs.StringVar(&shortcode, "shortcode", "", "the shortcode of the local emoji (default: the remote emoji's)")
 		}
 	})
 	if code >= 0 {
 		return code
+	}
+	var update appcontent.CustomEmojiUpdate
+	if sub == "update" {
+		c.fs.Visit(func(f *flag.Flag) {
+			switch f.Name {
+			case "category":
+				update.Category = &category
+			case "alias":
+				update.Aliases = (*[]string)(&aliases)
+			case "no-aliases":
+				if noAliases {
+					update.Aliases = &[]string{}
+				}
+			case "hidden":
+				visible := !hidden
+				update.VisibleInPicker = &visible
+			}
+		})
 	}
 	switch {
 	case sub == "create" && shortcode == "":
@@ -78,6 +103,12 @@ func runAdminEmoji(args []string, stdout, stderr io.Writer) int {
 		return 2
 	case limit < 1:
 		_, _ = fmt.Fprintf(stderr, "%s: -limit must be at least 1\n", c.name)
+		return 2
+	case noAliases && len(aliases) > 0:
+		_, _ = fmt.Fprintf(stderr, "%s: -alias and -no-aliases cannot be given together\n", c.name)
+		return 2
+	case sub == "update" && update.Category == nil && update.Aliases == nil && update.VisibleInPicker == nil:
+		_, _ = fmt.Fprintf(stderr, "%s: give at least one of -category, -alias, -no-aliases, and -hidden\n", c.name)
 		return 2
 	}
 	ctx := context.Background()
@@ -108,6 +139,24 @@ func runAdminEmoji(args []string, stdout, stderr io.Writer) int {
 		if list, err = app.CustomEmojis.List(ctx, q, limit); err == nil {
 			err = printEmojis(stdout, list)
 		}
+	case "update":
+		var e appcontent.AdminCustomEmoji
+		if e, err = app.CustomEmojis.Update(ctx, c.fs.Arg(0), update); err == nil {
+			_, _ = fmt.Fprintf(stdout, "updated %s (emoji %s)\n", e.Emoji.Label(), e.Emoji.ID)
+		}
+	case "replace-image":
+		var e appcontent.AdminCustomEmoji
+		if e, err = replaceEmojiImage(ctx, app, c.fs.Arg(0), c.fs.Arg(1)); err == nil {
+			_, _ = fmt.Fprintf(stdout, "replaced the image of %s (emoji %s)\n", e.Emoji.Label(), e.Emoji.ID)
+		}
+	case "copy":
+		var src, e appcontent.AdminCustomEmoji
+		if src, err = app.CustomEmojis.Get(ctx, c.fs.Arg(0)); err == nil {
+			e, err = copyEmoji(ctx, app, src.Emoji.ID, shortcode)
+		}
+		if err == nil {
+			_, _ = fmt.Fprintf(stdout, "copied %s as %s (emoji %s)\n", src.Emoji.Label(), e.Emoji.Label(), e.Emoji.ID)
+		}
 	case "enable", "disable":
 		enabled := sub == "enable"
 		var e appcontent.AdminCustomEmoji
@@ -131,35 +180,70 @@ func runAdminEmoji(args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-// createEmoji registers the image file at path as a local emoji: it uploads it as the instance
-// actor's, processes it at once for the emoji's variants, and registers it.
+// createEmoji registers the image file at path as a local emoji.
 func createEmoji(ctx context.Context, app *platform.App, path string, in appcontent.CreateCustomEmojiInput) (appcontent.AdminCustomEmoji, error) {
 	if !content.ValidLocalShortcode(in.Shortcode) {
 		return appcontent.AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiInvalidShortcode, Value: in.Shortcode}
 	}
-	f, err := os.Open(path) //nolint:gosec // the operator names the image to register
+	var err error
+	if in.MediaID, in.OwnerAccountID, err = uploadEmojiImage(ctx, app, path); err != nil {
+		return appcontent.AdminCustomEmoji{}, err
+	}
+	return app.CustomEmojis.Create(ctx, in)
+}
+
+// replaceEmojiImage makes the image file at path the new image of the local emoji id.
+func replaceEmojiImage(ctx context.Context, app *platform.App, id, path string) (appcontent.AdminCustomEmoji, error) {
+	// An unknown or remote emoji is refused before the image is uploaded.
+	e, err := app.CustomEmojis.Get(ctx, id)
 	if err != nil {
 		return appcontent.AdminCustomEmoji{}, err
 	}
-	defer func() { _ = f.Close() }()
-	if st, err := f.Stat(); err == nil && st.Size() > app.CustomEmojis.MaxBytes() {
-		return appcontent.AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiTooLarge, Value: path}
+	if !e.Emoji.Local() {
+		return appcontent.AdminCustomEmoji{}, &content.CustomEmojiError{Reason: content.EmojiRemote, Value: id}
 	}
+	mediaID, owner, err := uploadEmojiImage(ctx, app, path)
+	if err != nil {
+		return appcontent.AdminCustomEmoji{}, err
+	}
+	return app.CustomEmojis.ReplaceImage(ctx, e.Emoji.ID, owner, mediaID, "")
+}
+
+// copyEmoji registers the image of the remote emoji id as a new local emoji, uploaded as the
+// instance actor's.
+func copyEmoji(ctx context.Context, app *platform.App, id, shortcode string) (appcontent.AdminCustomEmoji, error) {
 	owner, err := app.Accounts.EnsureInstanceActor(ctx)
 	if err != nil {
 		return appcontent.AdminCustomEmoji{}, err
+	}
+	return app.CustomEmojis.Copy(ctx, appcontent.CopyCustomEmojiInput{ID: id, Shortcode: shortcode, OwnerAccountID: owner.ID})
+}
+
+// uploadEmojiImage uploads the image file at path as the instance actor's and processes it at
+// once for the emoji's variants. It returns the media file and the instance actor's account.
+func uploadEmojiImage(ctx context.Context, app *platform.App, path string) (mediaID, ownerAccountID string, err error) {
+	f, err := os.Open(path) //nolint:gosec // the operator names the image to register
+	if err != nil {
+		return "", "", err
+	}
+	defer func() { _ = f.Close() }()
+	if st, err := f.Stat(); err == nil && st.Size() > app.CustomEmojis.MaxBytes() {
+		return "", "", &content.CustomEmojiError{Reason: content.EmojiTooLarge, Value: path}
+	}
+	owner, err := app.Accounts.EnsureInstanceActor(ctx)
+	if err != nil {
+		return "", "", err
 	}
 	m, err := app.Media.Upload(ctx, appcontent.UploadInput{
 		OwnerAccountID: owner.ID, Content: f, Purpose: content.PurposeEmoji,
 	})
 	if err != nil {
-		return appcontent.AdminCustomEmoji{}, err
+		return "", "", err
 	}
 	if res := app.Media.Process(ctx, m.File.ID, content.PurposeEmoji); !res.IsDone() {
-		return appcontent.AdminCustomEmoji{}, fmt.Errorf("process the image: %v", res)
+		return "", "", fmt.Errorf("process the image: %v", res)
 	}
-	in.MediaID, in.OwnerAccountID = m.File.ID, owner.ID
-	return app.CustomEmojis.Create(ctx, in)
+	return m.File.ID, owner.ID, nil
 }
 
 // describeEmojiError explains a failure to the operator.
@@ -176,6 +260,10 @@ func describeEmojiError(err error, arg string) string {
 			content.EmojiTooLarge:          "the image is larger than custom_emoji_max_bytes",
 			content.EmojiTooBig:            "the image must be at most 1,024 pixels on each side",
 			content.EmojiRemote:            "this can be done only with the custom emoji of this instance",
+			content.EmojiLocal:             "only the custom emoji of other servers can be copied",
+			content.EmojiFetchFailed:       "the image could not be fetched from the emoji's server",
+			content.EmojiMediaNotFound:     "the image was not found",
+			content.EmojiMediaNotReady:     "the image is not processed yet",
 		}[ce.Reason] + "; nothing was changed"
 	case errors.Is(err, appcontent.ErrNotFound):
 		return fmt.Sprintf("no custom emoji has the ID %q", arg)
@@ -218,7 +306,11 @@ func adminEmojiUsage(w io.Writer) {
                         [-config <file>] <image file>
   my admin emoji list [-local | -remote] [-domain <domain>] [-shortcode <text>] [-before <id>]
                       [-limit <n>] [-config <file>]
+  my admin emoji update [-category <text>] [-alias <name>]... [-no-aliases]
+                        [-hidden | -hidden=false] [-config <file>] <emoji id>
+  my admin emoji replace-image [-config <file>] <emoji id> <image file>
   my admin emoji enable|disable [-config <file>] <emoji id>
+  my admin emoji copy [-shortcode <name>] [-config <file>] <emoji id>
   my admin emoji delete [-config <file>] <emoji id>
 
 The custom emoji of this instance (ADR-0051), which posts and profiles use as
@@ -230,11 +322,19 @@ image is re-encoded without metadata into variants of up to 256 pixels; an APNG
 shows only its first frame. GoToSocial does not fetch emoji larger than 100 KiB
 by default. -hidden keeps the emoji out of the picker.
 
-disable shows the emoji nowhere (its :shortcode: stays text) until enable;
-remote emoji can only be enabled and disabled. delete deletes a local emoji with
-its images for good; the posts that used it show its :shortcode: as text.
+update changes what it is given of a local emoji: -category ("" removes it), the
+aliases (-alias replaces them all, -no-aliases removes them), and whether the
+picker shows it (-hidden, or -hidden=false). replace-image gives a local emoji a
+new image, checked as for create; the servers that have the emoji fetch it again.
 
-Every operation is recorded in the audit log as the CLI's. The admin screen and
-the admin API (/api/v1/admin/custom_emojis) do the same and more.
+disable shows the emoji nowhere (its :shortcode: stays text) until enable; both
+work on remote emoji too. copy registers a new local emoji with the image of a
+remote one, fetched under the limits of the media proxy (never from a
+reject_media domain), with the remote shortcode or -shortcode, in the picker,
+without a category or aliases. delete deletes a local emoji with its images for
+good; the posts that used it show its :shortcode: as text.
+
+Every operation is recorded in the audit log as the CLI's, as the same operation
+of the admin screen and the admin API (/api/v1/admin/custom_emojis) is.
 `)
 }
