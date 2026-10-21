@@ -1,6 +1,6 @@
 # ADR-0066: クライアント API の仕様をファイルに分けてバンドルする
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: #868
@@ -20,6 +20,7 @@
 2026-10-01 以降の main の 1,583 コミットのうち 100 がこのファイルを変えており、並行作業（[workflow.md §9](../agents/workflow.md#9-parallel-batches)）の競合の多くがここで起きる。
 競合を減らすための `# --- ... (#621) ---` のような区切りのコメントが 224 行ある。エージェントも人もファイル全体を一度に読めず、検索と部分読みに頼っている。
 決定者は「@api/openapi.yaml が1ファイルなのに巨大すぎるので分割するべきじゃないかと思えてきたんですがどうでしょうか」と提案し、「進めてください」と判断した（#868）。
+PR #869 で、方式（選択肢 2）、ADR-0016・ADR-0029 の Status の行への注記、分割したファイルを置くディレクトリ `api/spec/`、分割をすぐに行うことを承認した。
 
 スパイク（[#868 の報告](https://github.com/best-friends/my/issues/868#issuecomment-6319895238)、ブランチ `spike/868-openapi-split`）で、
 今の spec を `redocly split` で分け、`redocly bundle` で 1 ファイルに戻し、生成物と検査が変わらないかを確かめた（2026-10-22、`origin/main` 876396d9）。
@@ -62,9 +63,7 @@
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案は選択肢 2。** パス 1 つ・`components` の項目 1 つを 1 ファイルにした `api/spec/` を正とし、
+**選択肢 2 を採用する。** パス 1 つ・`components` の項目 1 つを 1 ファイルにした `api/spec/` を正とし、
 Redocly CLI の `bundle` で作った `api/openapi.yaml` を生成物としてコミットする。生成器・`apitest`・第三者はバンドルを読む。
 
 ### ファイルの配置
@@ -119,7 +118,7 @@ api/
 - ADR-0016 Consequences「API の変更はまず `openapi.yaml` を編集する」と ADR-0029 Consequences「API を変えるときは、`api/openapi.yaml` を先に編集する」:
   `api/spec/` を先に編集し、`make generate` でバンドルと生成物を同じ PR で更新する。
 
-両 ADR の本文は書き換えない。部分的な置き換えをどう記録するか（両 ADR を Accepted のまま本 ADR を参照するか、状態を変えるか）は決定者が決める。
+両 ADR は Accepted のままで、本文は書き換えない。Status の行に、この一文を ADR-0066 が置き換えることを注記する。
 
 **覆す条件**: oapi-codegen が分割したファイルを 1 つのパッケージに直接生成でき、kin-openapi と openapi-typescript も同じ結果になるなら、選択肢 4（バンドルをコミットしない）を再検討する。
 バンドルが元の spec と食い違う不具合が Redocly CLI に見つかり、版を戻しても避けられないなら、選択肢 1 に戻す。
@@ -139,7 +138,7 @@ api/
 - 後続で必要になる作業（Issue 化する）
   - 移行: `redocly split` を基に `api/spec/` を作る。コメントのうち残すものを移し、ブロックスカラーの書き方を戻し、SPDX の見出しとルートの `components` の一覧を足す。
     元の `api/openapi.yaml` とデータとして一致し、`make generate-check` が差分なしで通ることを確かめる（パスと `components` の順序を保つ）。
-    続く別のコミットで `components` を名前の順に並べ替え、`make generate` の差分（`schema.gen.ts` の順序だけ）をコミットする。並行のバッチの区切りで行う。
+    続く別のコミットで `components` を名前の順に並べ替え、`make generate` の差分（`schema.gen.ts` の順序だけ）をコミットする。この ADR の直後に行う。
   - `scripts/generate.sh`・Makefile の `api-lint` と未列挙のファイルの検査・`api/redocly.yaml` の正規表現・`.gitattributes`。
   - 文書: [client-api.md](../architecture/client-api.md) の §1（配置と「分割しない」）と §3（追加の手順）、AGENTS.md の Commands の `make generate` の行、
     [CONTRIBUTING.md](../../CONTRIBUTING.md)、[overview.md §6](../architecture/overview.md#6-リポジトリ構成) の `api/` の行、
@@ -147,7 +146,7 @@ api/
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
-| 観点 | 1. 分割しない | 2. 項目ごと + バンドルをコミット（推奨） | 3. タグごと + バンドルをコミット | 4. 項目ごと + バンドルをコミットしない |
+| 観点 | 1. 分割しない | 2. 項目ごと + バンドルをコミット（採用） | 3. タグごと + バンドルをコミット | 4. 項目ごと + バンドルをコミットしない |
 | --- | --- | --- | --- | --- |
 | 競合 | 今のまま多い | 新しいファイルとルートの数行。バンドルは作り直し | 同じタグの PR どうしで競合する（`admin-server` は 54 操作） | 分割したファイルだけ。最も少ない |
 | 読みやすさ | 10,697 行を部分読み | 1 ファイル 1 項目。名前から場所が決まる | タグごとに数百〜数千行。参照に `paths/x.yaml#/~1statuses~1{id}` の JSON Pointer が要る | 2 と同じ |
@@ -163,6 +162,4 @@ api/
 
 ## Open Questions / 要検証
 
-- ADR-0016・ADR-0029 の部分的な置き換えの記録の仕方（両 ADR を Accepted のまま本 ADR から参照する／状態に注記を足す）。決定者が決める。
-- 分割したファイルを置くディレクトリ名（`api/spec/` と `api/src/` など）。
-- 移行の時期。開いている PR が少ないバッチの区切りに行う前提で、移行の issue で決める。
+なし。

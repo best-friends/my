@@ -1,6 +1,6 @@
 # ADR-0016: クライアント API の様式
 
-- Status: Accepted
+- Status: Accepted（Decision の「`api/openapi.yaml` を正とし」のうち正とするファイルと、Consequences の「API の変更はまず `openapi.yaml` を編集する」を ADR-0066（クライアント API の仕様をファイルに分けてバンドルする） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #32

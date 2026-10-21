@@ -1,6 +1,6 @@
 # ADR-0029: クライアント API のコード生成
 
-- Status: Accepted
+- Status: Accepted（Consequences の「API を変えるときは、`api/openapi.yaml` を先に編集する」を ADR-0066（クライアント API の仕様をファイルに分けてバンドルする） が置き換える）
 - Date: 2026-10-16
 - Deciders: @rosylilly
 - Issue: #89
