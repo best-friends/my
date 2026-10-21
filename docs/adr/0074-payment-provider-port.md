@@ -42,7 +42,7 @@ spike #909 の確認事項への決定者の回答（#913、原文）:
 
 - ADR-0072（#912、加入とプランとロール）は、モジュール `supporters`、こちらの加入の状態（申し込み中・有効・解約の予約・支払いの遅れ・猶予の切れ・失効・取り消し）、7 日の猶予、ロールの付け外し、プランの変更と価格の改定の規則を決める。
   この ADR はポートと、事業者の状態をこちらに運ぶ経路（webhook・照合）だけを決め、状態の導き方は決めない。
-- ADR-0073（#914、収入）は、`finance` の `RecordIncome(ctx, []IncomeMovement)` と、その契約（種類・元の支払い・期間・総額・手数料・net・事業者のレポートの日付）を決める。この ADR の `MoneyMovement`（§1）はそれを満たす。
+- ADR-0073（#914、収入。Accepted）は、`finance` の `RecordIncome(ctx, []IncomeMovement)` と、その契約（種類・元の支払い・期間・総額・手数料・net・事業者のレポートの日付）を決める。この ADR の `MoneyMovement`（§1）はそれを満たす。
 
 決めること: ポートの形と契約テスト、adapter と SDK、webhook の受け口、照合のジョブ、カード情報の扱い、設定と秘密、テストモードとローカルでの試し方、build tag、外向きの HTTP の分類、CSP。
 実装の #919（ポート・webhook・照合）・#920（`stripe` adapter）と、決定者のテストモードでの確認 #924 がこの ADR を待っている。
@@ -192,7 +192,7 @@ type MoneyMovement struct {
   `CancelScheduledChange` は、期間の終わりを待つ変更を取り下げる。`ScheduledPrice` が空なら何もしない。
 - 状態の名前は Stripe の語を事業者に依存しない意味で使う。`trialing` は試用期間を作らないので `active` に写し、知らない状態は `Status` を `unpaid`（ロールを付けない側）にして警告のログを出す。
 - `MoneyMovement` は ADR-0073 §1 の `IncomeMovement` に、`supporters` が `Subscription` をこちらの加入の ID に写して渡す。`ParentGross` は `supporters` が全額の返金と一部の返金を見分けるために使う（ADR-0072）。
-  `Final = false` の動きは `finance` に渡さず、次の照合で取り直す。
+  `ListMoney`・`GetMoney`・`Resolve` が返すのは、事業者の側で額が確定した動き（`Final = true`）だけで、まだ確定しない動きは返さず、次の照合で取り直す（ADR-0073 §1）。`Final` は ADR-0072 の判断が確かめるために残す。
 - 失敗は `supporters` が定義する種類の値で返す: `permission`（鍵の誤り・権限の不足）、`not_found`、`invalid_request`（`StartCheckout` の通貨の不一致など）、`throttled`（429）、`unavailable`（5xx・ネットワーク）、`invalid_signature`・`stale_signature`・`mode_mismatch`（`ParseWebhook`）。
 - **契約テスト**: `pkg/testkit.PaymentProviderContract(t, factory)` を置く。`factory` は、契約が渡す事業者の側の筋書き（プランと価格、申し込み、完了と期限切れ、更新、支払いの失敗と成功、解約の予約と取り消し、即時の解約、期間の終わりの変更、全額と一部の返金、チャージバックとその取り消し、独立した手数料、ページの数、権限の不足、レート制限）を受け、それを返す fake の上で動く `PaymentProvider` と、そのテスト用の webhook の署名器を作る。
   契約は次を確かめる。
@@ -210,7 +210,7 @@ type MoneyMovement struct {
 
 - `github.com/stripe/stripe-go/v87`（MIT）をこの adapter の中だけで使う（R1）。SDK の型は adapter の外に出さず、組み立ては `internal/platform`（`cmd/` から）が行う。API の版は SDK が固定する版を使う。
 - **プラン**: Product の `metadata.my_plan_id` で引き、なければ作る。Price は `lookup_key` を `my_<plan_id>_<interval>_<currency>` にし、金額が違えば新しい Price を `transfer_lookup_key=true` で作って古い Price を `active=false` にする（Stripe の Price は金額を変えられない）。
-  年の Price の金額は ADR-0072 が割引率から決めて渡す（クーポンを使わない）。アーカイブした Price のサブスクリプションは、その Price のまま更新され続ける。
+  年の Price の金額は ADR-0072 が割引率から決めて渡す（クーポンを使わない）。アーカイブした Price のサブスクリプションは、その Price のまま更新され続ける（ADR-0072 の価格の改定。**要検証**、#924 で確かめる）。
 - **最低額**: `MinimumAmount` は Stripe の最低の請求額の表（JPY 50、USD 0.50 など。表の全体は **要検証**）を adapter に持つ。
 - **Checkout**: `mode=subscription`、`ui_mode` はホスト型、`line_items` に Price を 1 つ、`client_reference_id` と `metadata.my_subscription_id` と `subscription_data.metadata.my_subscription_id`（正確な項目名は **要検証**）に `LocalID`、`customer` か `customer_email`、`locale`、`success_url`（`?checkout={CHECKOUT_SESSION_ID}` を付ける）、`cancel_url`、`expires_at` は 1 時間後。
   税（Stripe Tax、`automatic_tax`）は使わない。運営者が使うかは Stripe のダッシュボードの設定の範囲で、この ADR は扱わない。
@@ -226,7 +226,7 @@ type MoneyMovement struct {
 - **お金の動き**: `GET /v1/balance_transactions`（`created[gte]`、`starting_after`）を読み、`reporting_category` で種類に写す: `charge` → `payment`、`refund`・`refund_failure` → `refund`、`dispute` で負 → `chargeback`、`dispute_reversal` で正 → `chargeback_reversal`、`fee`（`type=stripe_fee`）→ `fee`。ほかは返さない。
   サブスクリプションと期間は `source` の charge → PaymentIntent → `invoice_payments` → invoice → `parent.subscription_details.subscription` と invoice の品目の期間から引く（API の版 basil 以降の形）。
   金額は Stripe の最小単位の整数を ISO 4217 の小数の桁で 10 進の文字列にする（Stripe が独自の桁を使う通貨は **要検証**）。balance transaction は作られた後に額が変わらないので `Final = true`。
-- **レポートのタイムゾーン**: `Location()` は設定 `payments_stripe_timezone` の値で、空なら起動時に Account の `settings.dashboard.timezone` を読む（読めるかは **要検証**）。どちらもなければ起動を拒む。
+- **レポートのタイムゾーン**: `Location()` は、起動時と照合のたびに Account の `settings.dashboard.timezone`（Stripe のアカウントのタイムゾーン）を読んだ値で、読めなければ UTC を返す（ADR-0073 §3。読めるかは **要検証**）。UTC にしたときは管理画面の事業者の状態に示す。
 
 ### 3. webhook の受け口（T1・W1）
 
@@ -281,7 +281,6 @@ type MoneyMovement struct {
 | `payments_provider` | | `none`（既定）か `stripe`。1 つだけ |
 | `payments_stripe_secret_key` | ✓ | API の鍵。権限を絞った制限付きの鍵（`rk_`）を勧め、必要な権限を docs に書く（**要検証**）。`sk_` も受ける |
 | `payments_stripe_webhook_secret` | ✓ | webhook のエンドポイントの署名の秘密（`whsec_`） |
-| `payments_stripe_timezone` | | レポートのタイムゾーン（IANA）。空なら Account から読む（§2） |
 
 - 秘密は環境変数か `<NAME>_FILE` から読み、`slog.LogValuer` で伏せる（ADR-0019 §6）。
 - **モード**: 鍵の接頭辞（`sk_test_`・`rk_test_` と `sk_live_`・`rk_live_`）で決め、`Mode()` が返す。`my config check` と管理画面に示し、テストのモードでは加入の画面に「テストのモード（課金されません）」を出す。webhook はモードの違うイベントを拒む（§3）。
@@ -330,8 +329,8 @@ type MoneyMovement struct {
   - webhook の受け口が匿名で叩ける経路を 1 つ増やす。署名の検証の前に読む本文を 1 MiB に限り、ADR-0019 §5 のレート制限の対象にする。
 - 後続で必要になる作業（Epic #925）
   - #919（ポート・webhook・照合）: §1 のポートと型と失敗の種類、`pkg/testkit.PaymentProviderContract`、`internal/adapter/payment/fake`、`internal/interface/payments` の `POST /payments/webhooks/{provider}`（本文の上限・レート制限・受信の記録と outbox）、ジョブ `supporters.payment_event` と `supporters.payment_reconcile`（`Every` 6 時間・手動）、受信の記録の掃除、§4 の 2 つの表と `schema/<dialect>.sql`・sqlc、`payments_provider` の設定、`GET /admin/payment_status`・`POST /admin/payment_reconciles` と管理画面の状態の表示、overview §3 のポートの表と data-model の所有の表
-  - #920（`stripe` adapter）: §2 の adapter（プランと価格・Checkout・顧客ポータルの設定・プランの変更と Subscription Schedule・解約・balance transaction の写し・最低額の表・レポートのタイムゾーン）、§3 の標準ライブラリの検証器、§7 の URL のホストの確かめ、`payments_stripe_*` の設定と `make config-docs`、`no_payments_stripe` と build-tags.md、`stripe-go` の go.mod と `make go-licenses`、docs（ダッシュボードの設定、制限付きの鍵の権限、登録するイベント、Stripe CLI でのローカルの試し方、テストモード、PCI の範囲）
-  - #924（決定者）: §6 の 4 の筋書きをテストモードで確かめ、要検証の項目（Subscription Schedule、`subscription_data.metadata`、Account のタイムゾーン、制限付きの鍵の権限、最低額）の結果を issue に書く
+  - #920（`stripe` adapter）: §2 の adapter（プランと価格・Checkout・顧客ポータルの設定・プランの変更と Subscription Schedule・解約・balance transaction の写し・最低額の表・レポートのタイムゾーン）、§3 の標準ライブラリの検証器、§7 の URL のホストの確かめ、`payments_stripe_secret_key`・`payments_stripe_webhook_secret` の設定と `make config-docs`、`no_payments_stripe` と build-tags.md、`stripe-go` の go.mod と `make go-licenses`、docs（ダッシュボードの設定、制限付きの鍵の権限、登録するイベント、Stripe CLI でのローカルの試し方、テストモード、PCI の範囲）
+  - #924（決定者）: §6 の 4 の筋書きをテストモードで確かめ、要検証の項目（Subscription Schedule、アーカイブした Price での更新、`subscription_data.metadata`、Account のタイムゾーン、制限付きの鍵の権限、最低額）の結果を issue に書く
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
@@ -370,6 +369,7 @@ type MoneyMovement struct {
 ## Open Questions / 要検証
 
 - Subscription Schedule で、既存のサブスクリプションの Price を期間の終わりに変え、取り下げられるか（#920・#924）。
+- アーカイブした Price のサブスクリプションが、その Price のまま更新され続けるか（#924）。
 - `subscription_data.metadata` の正確な項目名、Account の `settings.dashboard.timezone` を API で読めるか、制限付きの鍵（`rk_`）に要る権限の一覧（#920）。
 - 通貨ごとの最低の請求額の表と、Stripe が ISO 4217 と違う小数の桁で扱う通貨（#920）。
 - 加入者が数百人のときの照合の API の呼び出しが Stripe のレート制限に収まるか（#924）。
