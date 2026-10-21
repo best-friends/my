@@ -19,7 +19,7 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --ipc=host
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The image has neither make nor the unzip that setup-bun extracts Bun with.
       - name: Install make and unzip
         run: apt-get update && apt-get install -y --no-install-recommends make unzip
@@ -27,11 +27,11 @@ jobs:
         with:
           bun-version-file: .tool-versions
       # Use the Node.js from .tool-versions rather than the image's (ADR-0025).
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .tool-versions
       - name: Cache Bun packages
-        uses: actions/cache@v4
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.bun/install/cache
           key: bun-ui-${{ runner.os }}-${{ hashFiles('app/bun.lock') }}
@@ -41,7 +41,7 @@ jobs:
       # On a visual difference, the actual and diff images are under app/ui/.vitest/attachments/.
       - name: Upload the screenshot diffs
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ui-test-screenshots
           path: app/ui/.vitest/
