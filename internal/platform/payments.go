@@ -5,6 +5,7 @@ package platform
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/supporters"
@@ -15,7 +16,7 @@ import (
 // paymentProviderAdapters builds the PaymentProvider of each value of payments_provider whose
 // adapter is in this build (ADR-0074 §8): the files of the adapters, under their build tags,
 // add theirs.
-var paymentProviderAdapters = map[string]func(ctx context.Context, cfg *config.Config) (supporters.PaymentProvider, error){}
+var paymentProviderAdapters = map[string]func(ctx context.Context, cfg *config.Config, logger *slog.Logger) (supporters.PaymentProvider, error){}
 
 // setUpPayments builds what carries the payment provider's facts to the supporters module
 // (ADR-0074 §3, §4) when payments_provider names a provider, or AppOptions.PaymentProvider
@@ -33,7 +34,7 @@ func (a *App) setUpPayments(ctx context.Context, cfg *config.Config, repo suppor
 			return fmt.Errorf("payments_provider = %s: this build has no adapter of %s", cfg.PaymentsProvider, cfg.PaymentsProvider)
 		}
 		var err error
-		if prov, err = build(ctx, cfg); err != nil {
+		if prov, err = build(ctx, cfg, a.Logger); err != nil {
 			return fmt.Errorf("payments_provider = %s: %w", cfg.PaymentsProvider, err)
 		}
 	}

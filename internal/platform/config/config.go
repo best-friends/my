@@ -138,7 +138,11 @@ type Config struct {
 	// PaymentsProvider is the payment provider of the supporters (ADR-0074 §5): "none" or a
 	// provider's name. PaymentsReconcileInterval and PaymentsReconcileMaxRequests bound the
 	// reconciliation with it (§4).
-	PaymentsProvider             string
+	PaymentsProvider string
+	// PaymentsStripeSecretKey and PaymentsStripeWebhookSecret are the API key and the webhook
+	// endpoint's signing secret of payments_provider = stripe (ADR-0074 §5).
+	PaymentsStripeSecretKey      string
+	PaymentsStripeWebhookSecret  string
 	PaymentsReconcileInterval    time.Duration
 	PaymentsReconcileMaxRequests int
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
@@ -249,6 +253,8 @@ func (c *Config) LogValue() slog.Value {
 		slog.Int64("billing_gcp_max_bytes_billed", c.BillingGCPMaxBytesBilled),
 		slog.String("billing_gcp_budget_subscription", c.BillingGCPBudgetSubscription),
 		slog.String("payments_provider", c.PaymentsProvider),
+		slog.String("payments_stripe_secret_key", redact(c.PaymentsStripeSecretKey != "")),
+		slog.String("payments_stripe_webhook_secret", redact(c.PaymentsStripeWebhookSecret != "")),
 		slog.Duration("payments_reconcile_interval", c.PaymentsReconcileInterval),
 		slog.Int("payments_reconcile_max_requests", c.PaymentsReconcileMaxRequests),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),

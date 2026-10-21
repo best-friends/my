@@ -652,8 +652,25 @@ var schema = []field{
 		def: "none",
 		choices: []choice{
 			{value: "none", inV0: true, doc: "No payments: the webhook endpoint and the reconciliation do not run."},
+			{value: "stripe", inV0: true, doc: "Stripe Billing: Checkout in subscription mode and the customer portal, with `payments_stripe_secret_key` and `payments_stripe_webhook_secret` (docs/operations/payments-stripe.md). The build tag `no_payments_stripe` leaves it out."},
 		},
 		set: func(c *Config, v string) { c.PaymentsProvider = v },
+	},
+	{
+		key:          "payments_stripe_secret_key",
+		doc:          "The API key of the Stripe account of `payments_provider = stripe` (ADR-0074 §5): a restricted key (`rk_test_` / `rk_live_`) with the permissions of docs/operations/payments-stripe.md, or a secret key (`sk_test_` / `sk_live_`). Its prefix sets the mode: a test key charges nothing, and the webhook endpoint refuses live events with it (and test events with a live key).",
+		secret:       true,
+		requiredWhen: "when `payments_provider = stripe`",
+		check:        checkStripeSecretKey,
+		set:          func(c *Config, v string) { c.PaymentsStripeSecretKey = v },
+	},
+	{
+		key:          "payments_stripe_webhook_secret",
+		doc:          "The signing secret (`whsec_`) of the webhook endpoint `https://<domain>/payments/webhooks/stripe` that the operator registers on Stripe's dashboard, or of `stripe listen` for local tests (ADR-0074 §3). While a secret is rolled, Stripe signs with the old and the new one, so one is enough.",
+		secret:       true,
+		requiredWhen: "when `payments_provider = stripe`",
+		check:        checkStripeWebhookSecret,
+		set:          func(c *Config, v string) { c.PaymentsStripeWebhookSecret = v },
 	},
 	{
 		key:   "payments_reconcile_interval",
@@ -810,6 +827,13 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 			}
 		}
 	}
+	if vals["payments_provider"] == "stripe" {
+		for _, k := range []string{"payments_stripe_secret_key", "payments_stripe_webhook_secret"} {
+			if !present[k] {
+				issues = append(issues, Issue{Key: k, Missing: true, Message: "required when payments_provider is stripe"})
+			}
+		}
+	}
 	if vals["billing_aws_filter"] == "tag" && !present["billing_aws_tag"] {
 		issues = append(issues, Issue{Key: "billing_aws_tag", Missing: true, Message: "required when billing_aws_filter is tag"})
 	}
@@ -905,6 +929,24 @@ func checkPositiveInt(v string) error {
 	n, err := strconv.ParseInt(v, 10, 64)
 	if err != nil || n <= 0 || n > math.MaxInt32 {
 		return fmt.Errorf("must be a whole number from 1 to %d", math.MaxInt32)
+	}
+	return nil
+}
+
+// checkStripeSecretKey accepts the prefixes of Stripe's secret and restricted keys, which set
+// the mode (ADR-0074 §5); publishable keys (pk_) are refused.
+func checkStripeSecretKey(v string) error {
+	for _, p := range []string{"sk_test_", "rk_test_", "sk_live_", "rk_live_"} {
+		if strings.HasPrefix(v, p) && len(v) > len(p) {
+			return nil
+		}
+	}
+	return errors.New("must be a Stripe secret key (sk_test_, sk_live_) or restricted key (rk_test_, rk_live_)")
+}
+
+func checkStripeWebhookSecret(v string) error {
+	if !strings.HasPrefix(v, "whsec_") || len(v) == len("whsec_") {
+		return errors.New("must be a Stripe webhook signing secret (whsec_)")
 	}
 	return nil
 }
