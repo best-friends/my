@@ -13,6 +13,7 @@ The adapters that need nothing beyond the standard library and the packages the 
 | `no_valkey` | The Valkey client (`valkey-go`): the key-value store and the broker on `valkey_url` | `kv = valkey`, `stream = valkey` |
 | `no_sns` | The Amazon SNS / SQS broker (AWS SDK) | `stream = sns` |
 | `no_pubsub` | The Google Cloud Pub/Sub broker (Google Cloud client libraries) | `stream = pubsub` |
+| `no_billing_aws` | The import of the AWS usage charges (AWS Cost Explorer SDK) | `billing_sources = aws` |
 | `no_otel` | The OpenTelemetry SDK and its Prometheus and OTLP exporters, of the metrics and of the traces | `metrics_exporter = prometheus`, `metrics_exporter = otlp`, `traces_exporter = otlp` |
 
 Leave out the database that the instance does not use, but keep at least one of `no_sqlite` and `no_postgres` off:
@@ -23,7 +24,7 @@ a binary without a database adapter cannot start.
 Pass the tags, separated by commas, to the Go build, to `make build`, or to the container build:
 
 ```sh
-CGO_ENABLED=0 go build -tags no_postgres,no_valkey,no_sns,no_pubsub,no_otel ./cmd/my
+CGO_ENABLED=0 go build -tags no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws ./cmd/my
 make build GO_TAGS=no_sqlite,no_valkey,no_pubsub
 make docker-build GO_TAGS=no_sqlite,no_valkey,no_sns            # docker build --build-arg GO_TAGS=...
 ```
@@ -43,9 +44,9 @@ and fails when `cmd/my` still depends on a package that a tag of the set leaves 
 
 | Set | Fits |
 | --- | --- |
-| `no_postgres,no_valkey,no_sns,no_pubsub,no_otel` | A self-hosted instance on SQLite |
+| `no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws` | A self-hosted instance on SQLite |
 | `no_sqlite,no_valkey,no_pubsub,no_otel` | AWS: PostgreSQL, the SNS broker, and the EMF metrics |
-| `no_sqlite,no_valkey,no_sns` | Google Cloud: PostgreSQL and the Pub/Sub broker |
+| `no_sqlite,no_valkey,no_sns,no_billing_aws` | Google Cloud: PostgreSQL and the Pub/Sub broker |
 
 `scripts/go-build-tags.sh SET...` checks other sets. The tests (`make go-test`) run without tags, on every adapter.
 

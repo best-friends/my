@@ -117,6 +117,14 @@ type Config struct {
 	BillingSources                []string
 	BillingAWSMaxRequestsPerDay   int
 	BillingAWSMaxRequestsPerMonth int
+	// The AWS adapter's Cost Explorer metric, filter (none, linked_account, tag) with its tag
+	// key=value or linked account IDs, and the IAM role assumed with the Google ID token on Cloud
+	// Run (ADR-0068 §6, §8).
+	BillingAWSMetric         string
+	BillingAWSFilter         string
+	BillingAWSTag            string
+	BillingAWSLinkedAccounts []string
+	BillingAWSRoleARN        string
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
 	DeadJobRetention time.Duration
 	// JobAttemptRetention is how long the record of a job's run that did not succeed is kept
@@ -212,6 +220,11 @@ func (c *Config) LogValue() slog.Value {
 		slog.Any("billing_sources", c.BillingSources),
 		slog.Int("billing_aws_max_requests_per_day", c.BillingAWSMaxRequestsPerDay),
 		slog.Int("billing_aws_max_requests_per_month", c.BillingAWSMaxRequestsPerMonth),
+		slog.String("billing_aws_metric", c.BillingAWSMetric),
+		slog.String("billing_aws_filter", c.BillingAWSFilter),
+		slog.String("billing_aws_tag", c.BillingAWSTag),
+		slog.Any("billing_aws_linked_accounts", c.BillingAWSLinkedAccounts),
+		slog.String("billing_aws_role_arn", c.BillingAWSRoleARN),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.Duration("job_attempt_retention", c.JobAttemptRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),
