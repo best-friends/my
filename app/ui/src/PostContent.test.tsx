@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ariaSnapshot } from "../test/aria-snapshot";
 import { ExternalLinkContext } from "./ExternalLink";
-import { PostContent, serverSanitizedHtml } from "./PostContent";
+import { PostContent, sanitizedHtmlText, serverSanitizedHtml } from "./PostContent";
 
 /**
  * The name of a link followed by the hidden "(opens in a new tab)". jsdom lays nothing out, so the name it computes
@@ -106,5 +106,36 @@ describe("PostContent", () => {
     expect(screen.getByText("again")).toBeInTheDocument();
     expect(createPolicy).toHaveBeenCalledOnce();
     expect(createHTML).toHaveBeenCalledWith("<p>trusted</p>");
+  });
+});
+
+describe("sanitizedHtmlText", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("returns the text without markup, with paragraphs and line breaks as line breaks", () => {
+    expect(sanitizedHtmlText(serverSanitizedHtml('<p>one<br>two</p><p> <a href="https://example.com/">three</a> </p>'))).toBe("one\ntwo\nthree");
+    expect(sanitizedHtmlText(serverSanitizedHtml("plain &amp; text"))).toBe("plain & text");
+    expect(sanitizedHtmlText(serverSanitizedHtml(""))).toBe("");
+  });
+
+  it("parses the HTML as a TrustedHTML of PostContent's policy where the browser has Trusted Types", () => {
+    // A stand-in for the browser's factory: its TrustedHTML is an object that DOMParser turns into its string.
+    const createHTML = vi.fn((html: string) => ({ toString: () => html }));
+    const createPolicy = vi.fn((_name: string, rules: { createHTML: (html: string) => string }) => ({
+      createHTML: (html: string) => createHTML(rules.createHTML(html)),
+    }));
+    vi.stubGlobal("trustedTypes", { createPolicy });
+    const parseFromString = vi.spyOn(DOMParser.prototype, "parseFromString");
+
+    expect(sanitizedHtmlText(serverSanitizedHtml("<p>trusted</p>"))).toBe("trusted");
+    render(<PostContent html={serverSanitizedHtml("<p>shown</p>")} />);
+
+    expect(screen.getByText("shown")).toBeInTheDocument();
+    expect(createPolicy).toHaveBeenCalledOnce();
+    expect(createPolicy).toHaveBeenCalledWith("my-server-sanitized-html", expect.anything());
+    expect(parseFromString.mock.calls[0]?.[0]).toBe(createHTML.mock.results[0]?.value);
   });
 });

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a notification's row shows, as plain values for the slots of @my/ui's PostCard (web-client.md A4):
 // the hook decides what to show and formats it; the component only places it. It returns no JSX.
-import type { CustomEmojiImage, ImageSources } from "@my/ui";
+import { type CustomEmojiImage, type ImageSources, sanitizedHtmlText, serverSanitizedHtml } from "@my/ui";
 import { useIntl } from "react-intl";
 import type { ClientMessageKey } from "../../../lib/i18n";
 import { accountStatusPath, moderationAppealPath, moderationReportPath, followListPath, profilePath } from "../../../lib/paths";
@@ -112,23 +112,13 @@ function actorOf(account: NotificationAccount): NotificationActor {
   return { name: account.display_name || account.username, emojis: account.emojis, href: profilePath(account.acct), avatar: imageSources(account.avatar) };
 }
 
-/**
- * The text of sanitized post HTML (api/openapi.yaml, Status.content), with its paragraphs and line breaks
- * kept as line breaks. The parsed document is inert: nothing in it loads or runs.
- */
-function textOf(html: string): string {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  for (const br of doc.body.querySelectorAll("br")) br.replaceWith("\n");
-  const blocks = [...doc.body.children].map((element) => element.textContent.trim());
-  return (blocks.length > 0 ? blocks.join("\n") : doc.body.textContent).trim();
-}
-
 function postOf(status: NotificationStatus): NonNullable<NotificationView["post"]> {
   const contentWarning = status.spoiler_text === "" ? null : status.spoiler_text;
   return {
     href: statusPath(status),
-    // Behind a content warning, the text stays on the post's page.
-    text: contentWarning === null ? textOf(status.content) : "",
+    // Behind a content warning, the text stays on the post's page. Status.content is the server-sanitized
+    // HTML of the post (api/openapi.yaml), parsed by @my/ui under the app's Trusted Types.
+    text: contentWarning === null ? sanitizedHtmlText(serverSanitizedHtml(status.content)) : "",
     lang: status.language === "und" ? undefined : status.language,
     contentWarning,
   };

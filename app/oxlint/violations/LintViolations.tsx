@@ -150,6 +150,7 @@ export function Styled({ size }: { size: string }) {
   const el = document.body;
   el.setAttribute("style", "color: red"); // expect: restrict(syntax)
   el.style.cssText = ""; // expect: restrict(syntax) react(immutability)
+  el.innerHTML = size; // expect: restrict(html) react(immutability)
   void IndexRoute;
   void useComposeForm;
   void PiStar;

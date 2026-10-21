@@ -3,7 +3,7 @@
 // @playwright/test, so every spec gets the same axe configuration.
 import AxeBuilder from "@axe-core/playwright";
 import { test as base, expect, type Locator, type Page } from "@playwright/test";
-import { previewOrigin } from "./server-origin.ts";
+import { previewOrigin, serverURL } from "./server-origin.ts";
 
 /** The axe rule tags for WCAG 2.2 AA (ADR-0027, web-client.md Y1). */
 const axeTags = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"] as const;
@@ -16,10 +16,52 @@ type Fixtures = {
    * <html lang dir>, as `my serve` writes the instance's default locale into its shell (ADR-0028);
    * `vite preview` serves index.html as it is. The runtime config's `apiOrigin` becomes the preview's own
    * origin, which the run picks (server-origin.ts), so that the client's API and OAuth requests stay on it,
-   * where specs can answer them with `page.route`. Pages of a real `my serve` are left alone.
+   * where specs can answer them with `page.route`. The documents carry the Content-Security-Policy of the
+   * server's shell (`shellPolicy`), and the images of `servedImage` are answered on the preview's origin.
+   * Pages of a real `my serve` are left alone.
    */
   shellLocale: string;
 };
+
+/** The Content-Security-Policy of `shellPolicy`, fetched once per worker. */
+let shellPolicyCache: Promise<string> | undefined;
+
+/**
+ * The Content-Security-Policy that `my serve` sends with the app's shell (ADR-0019 §9; e2e/server.ts), which
+ * `vite preview` does not send: the pages of the client run under the same Trusted Types and sources as in
+ * production, so a sink that the policy refuses (a string to DOMParser or innerHTML) fails the specs, as it
+ * fails the app. The server is the one source of the policy, so nothing here copies it.
+ */
+function shellPolicy(): Promise<string> {
+  shellPolicyCache ??= fetch(new URL("/home", serverURL)).then((response) => {
+    const policy = response.headers.get("content-security-policy");
+    if (policy === null) throw new Error(`${serverURL}/home sent no Content-Security-Policy`);
+    return policy;
+  });
+  return shellPolicyCache;
+}
+
+/** The path under which the `shellLocale` fixture serves the images of `servedImage`. */
+const imagePath = "/e2e-image/";
+
+/**
+ * A URL on the preview's own origin that serves the image of the `data:` URL `dataURL`, for the images that
+ * specs make up. The shell's CSP takes images only from the app's own origin and `blob:` (`img-src 'self'
+ * blob:`), as the server serves its media, so a `data:` URL in an API response would not load.
+ */
+export function servedImage(dataURL: string): string {
+  return `${previewOrigin}${imagePath}${Buffer.from(dataURL).toString("base64url")}`;
+}
+
+/** The response of a URL of `servedImage`; null for any other URL. */
+function imageOf(url: URL): { contentType: string; body: Buffer } | null {
+  if (!url.pathname.startsWith(imagePath)) return null;
+  const dataURL = Buffer.from(url.pathname.slice(imagePath.length), "base64url").toString();
+  const match = /^data:([^;,]+)(;base64)?,(.*)$/s.exec(dataURL);
+  if (match === null) throw new Error(`not a data: URL: ${dataURL}`);
+  const [, contentType = "", base64, data = ""] = match;
+  return { contentType, body: base64 === undefined ? Buffer.from(decodeURIComponent(data)) : Buffer.from(data, "base64") };
+}
 
 /** Pseudo-locale and right-to-left languages the projects use; the rest are left to right. */
 const rtlLocales: ReadonlySet<string> = new Set(["ar-XB"]);
@@ -88,6 +130,11 @@ export const test = base.extend<Fixtures>({
         return;
       }
       await page.route((url) => url.origin === previewOrigin, async (route) => {
+        const image = imageOf(new URL(route.request().url()));
+        if (image !== null) {
+          await route.fulfill(image);
+          return;
+        }
         if (route.request().resourceType() !== "document") {
           await route.fallback();
           return;
@@ -104,7 +151,8 @@ export const test = base.extend<Fixtures>({
           .replace(/<html [^>]*>/, `<html lang="${lang}" dir="${localeDir(lang)}">`)
           .replace(/"apiOrigin":"[^"]*"/, `"apiOrigin":"${previewOrigin}"`)
           .replaceAll(/(src|href)="\.\//g, '$1="/');
-        await route.fulfill({ response, body });
+        const headers = { ...response.headers(), "content-security-policy": await shellPolicy() };
+        await route.fulfill({ response, body, headers });
       });
       await use(lang);
     },

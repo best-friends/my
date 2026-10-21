@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The SPA under the real Content-Security-Policy of `my serve` (e2e/server.ts; ADR-0019 §9, ADR-0028):
 // it loads, signs in through the server's sign-in screen and reaches the client API, and no page on the
-// way reports a CSP violation. `vite preview` sends no CSP, so only a real server shows a library that
-// reaches for eval or injects a <style> element.
+// way reports a CSP violation. The pages of `vite preview` get the same policy from the fixture
+// (e2e/fixtures.ts), so every spec fails on a sink the policy refuses; this one checks the server's own shell.
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 import { admin, serverURL } from "./server-origin.ts";

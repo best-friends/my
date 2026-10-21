@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import type { Page, Route } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, servedImage, test } from "./fixtures";
 
 type Account = components["schemas"]["Account"];
 type MediaAttachment = components["schemas"]["MediaAttachment"];
@@ -58,8 +58,8 @@ const carol: Account = {
   created_at: "2026-09-01T00:00:00Z",
 };
 
-/** A picture as a data URL, so that no request leaves the page; it stands in for the media proxy URL. */
-const picture = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#4f6d8f"/></svg>')}`;
+/** A picture served by the page's fixture, so that no request leaves the preview; it stands in for the media proxy URL. */
+const picture = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 90"><rect width="160" height="90" fill="#4f6d8f"/></svg>')}`);
 
 /** An image of a remote post: no renditions here, the proxy's URL as `url` and `preview_url`. */
 function remoteMedia(id: string, description: string | undefined): MediaAttachment {
