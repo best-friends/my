@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/otlptranslator v1.0.0
 	github.com/rivo/uniseg v0.4.7
-	github.com/shibukawa/pgmem v1.18.1
+	github.com/shibukawa/pgmem v1.18.2
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/gcloud v0.44.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
