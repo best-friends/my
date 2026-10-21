@@ -233,12 +233,18 @@ echo '{"tokens":[],"custom_css":""}' | my instance theme set   # 既定に戻す
 - 複製は、ほかのサーバーの絵文字の画像をメディアプロキシと同じ制限で取得し（`reject_media` のドメインの画像は取得しない）、上と同じ検査をして、新しいローカルの絵文字として登録します。
   shortcode は元の絵文字のものか、指定したものです。画像は 256 px の箱に縮み、取得できない・検査に通らない画像は何も残しません。
 - 削除は取り消せません。過去の投稿の絵文字も文字に戻り、同じ shortcode で登録し直しても別の絵文字です。連合先が複製した画像は消せません。
-- 管理画面（「カスタム絵文字」、`/admin/custom-emojis`）とクライアント API（`/api/v1/admin/custom_emojis`）と CLI で管理できます。
-  管理画面とクライアント API はロールの権限 `manage_custom_emojis`（組み込みの `admin` だけが持つ）が要り、登録・複製・画像の差し替え・設定と別名の変更・有効化と無効化・削除が監査ログ（対象 `custom_emoji`）に残ります。
+- 管理画面（「カスタム絵文字」、`/admin/custom-emojis`）とクライアント API（`/api/v1/admin/custom_emojis`）と CLI で、同じ操作ができます。
+  管理画面とクライアント API はロールの権限 `manage_custom_emojis`（組み込みの `admin` だけが持つ）が要ります。
+  登録・複製・画像の差し替え・設定と別名の変更・有効化と無効化・削除は、どこから行っても監査ログ（対象 `custom_emoji`）に残ります（CLI の操作は CLI の操作として）。
 
 ```sh
 my admin emoji create -shortcode blobcat -category Cats -alias neko blobcat.png   # 登録する
 my admin emoji list -local                                                        # ローカルの絵文字を新しい順に出す
-my admin emoji disable <emoji id>                                                 # 無効にする（enable で戻す）
+my admin emoji update -category Animals -alias cat -alias neko <emoji id>         # カテゴリと別名を変える（別名は置き換え。-no-aliases で消す）
+my admin emoji update -hidden <emoji id>                                          # ピッカーに出さない（-hidden=false で戻す）
+my admin emoji replace-image <emoji id> blobcat2.png                              # 画像を差し替える
+my admin emoji disable <emoji id>                                                 # 無効にする（enable で戻す。リモートの絵文字も）
+my admin emoji list -remote -domain mastodon.example                              # ほかのサーバーの絵文字を出す
+my admin emoji copy [-shortcode <name>] <emoji id>                                # リモートの絵文字をローカルへ複製する
 my admin emoji delete <emoji id>                                                  # 削除する
 ```
