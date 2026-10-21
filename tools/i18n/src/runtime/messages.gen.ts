@@ -3306,6 +3306,26 @@ export interface MessageArgs {
   "client:compose.poll.toggle": {};
   /** Posted. */
   "client:compose.posted": {};
+  /** Followers */
+  "client:compose.quote_policy.followers": {};
+  /** Only your followers can quote it. */
+  "client:compose.quote_policy.followers.description": {};
+  /** Who can quote */
+  "client:compose.quote_policy.label": {};
+  /** Only you */
+  "client:compose.quote_policy.nobody": {};
+  /** Nobody but you can quote it. */
+  "client:compose.quote_policy.nobody.description": {};
+  /** Anyone */
+  "client:compose.quote_policy.public": {};
+  /** Anyone who can see the post can quote it. */
+  "client:compose.quote_policy.public.description": {};
+  /** Don't quote */
+  "client:compose.quote.cancel": {};
+  /** Quoting {name} */
+  "client:compose.quote.label": { name: string };
+  /** The post to quote could not be loaded. */
+  "client:compose.quote.unavailable": {};
   /** {count, plural, one {# character left} other {# characters left}} */
   "client:compose.remaining": { count: number };
   /** Cancel reply */
@@ -3954,6 +3974,10 @@ export interface MessageArgs {
   "client:settings.default_post_language.description": {};
   /** Default language of your posts */
   "client:settings.default_post_language.label": {};
+  /** You can choose it for each post too. */
+  "client:settings.default_quote_policy.description": {};
+  /** Who can quote your new posts */
+  "client:settings.default_quote_policy.label": {};
   /** You can still choose for each post. */
   "client:settings.default_visibility.description": {};
   /** Who sees your posts by default */
@@ -4394,6 +4418,8 @@ export interface MessageArgs {
   "client:settings.push.type.mention": {};
   /** Notices from the moderators */
   "client:settings.push.type.moderation": {};
+  /** Quotes */
+  "client:settings.push.type.quote": {};
   /** Emoji reactions */
   "client:settings.push.type.reaction": {};
   /** Choose what this device notifies you of. */
@@ -4642,6 +4668,8 @@ export interface MessageArgs {
   "client:status.action.favourite": {};
   /** More actions */
   "client:status.action.more": {};
+  /** Quote */
+  "client:status.action.quote": {};
   /** Reply */
   "client:status.action.reply": {};
   /** Bookmark removed */
@@ -4678,6 +4706,10 @@ export interface MessageArgs {
   "client:status.edit.load_failed": { reason: string };
   /** Loading the post */
   "client:status.edit.loading": {};
+  /** Remove the quoted post */
+  "client:status.edit.remove_quote": {};
+  /** A quote that is removed cannot be added back. */
+  "client:status.edit.remove_quote.description": {};
   /** Try again */
   "client:status.edit.retry": {};
   /** Save */
@@ -4764,6 +4796,20 @@ export interface MessageArgs {
   "client:status.poll.voters": { count: number };
   /** {count, plural, one {# vote} other {# votes}} */
   "client:status.poll.votes": { count: number };
+  /** Change who can quote */
+  "client:status.quote_policy.action": {};
+  /** Close */
+  "client:status.quote_policy.close": {};
+  /** Quotes approved before stay. To take your post out of one, use the menu of the post that quotes it. */
+  "client:status.quote_policy.description": {};
+  /** Changed who can quote the post */
+  "client:status.quote_policy.done": {};
+  /** Could not change who can quote the post: {reason} */
+  "client:status.quote_policy.failed": { reason: string };
+  /** Who can quote */
+  "client:status.quote_policy.label": {};
+  /** Who can quote this post */
+  "client:status.quote_policy.title": {};
   /** The quoted post is hidden because of a block. */
   "client:status.quote.blocked_account": {};
   /** You muted the server of the quoted post. */
@@ -4780,10 +4826,20 @@ export interface MessageArgs {
   "client:status.quote.rejected": {};
   /** Show the quoted post */
   "client:status.quote.reveal": {};
+  /** Remove my post from this quote */
+  "client:status.quote.revoke.action": {};
+  /** Your post was removed from the quote */
+  "client:status.quote.revoke.done": {};
+  /** Could not remove your post from the quote: {reason} */
+  "client:status.quote.revoke.failed": { reason: string };
   /** The author of the quoted post withdrew it from this quote. */
   "client:status.quote.revoked": {};
   /** You cannot see the quoted post. */
   "client:status.quote.unauthorized": {};
+  /** Posts that quote this */
+  "client:status.quotes.action": {};
+  /** Quotes of your post */
+  "client:status.quotes.title": {};
   /** Reaction removed */
   "client:status.reaction.off": {};
   /** Reacted with {emoji} */
@@ -4844,6 +4900,10 @@ export interface MessageArgs {
   "client:timeline.empty.public.description": {};
   /** No posts yet */
   "client:timeline.empty.public.heading": {};
+  /** Posts that quote this post appear here. */
+  "client:timeline.empty.quotes.description": {};
+  /** No quotes yet */
+  "client:timeline.empty.quotes.heading": {};
   /** Public posts with #{tag} appear here. */
   "client:timeline.empty.tag.description": { tag: string };
   /** No posts with #{tag} */

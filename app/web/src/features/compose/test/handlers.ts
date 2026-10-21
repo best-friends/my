@@ -22,6 +22,8 @@ export const handlers = [
         visibility: body.visibility,
         language: body.language ?? preferencesFixture.default_post_language,
         ...(body.in_reply_to_id === undefined ? {} : { in_reply_to_id: body.in_reply_to_id }),
+        ...(body.quoted_status_id === undefined ? {} : { quote: { state: "pending" } }),
+        quote_policy: body.quote_policy ?? preferencesFixture.default_quote_policy,
         media_attachments: (body.media ?? []).map((m) => mediaFixture(m.id, "ready", m.description)),
       }),
     );

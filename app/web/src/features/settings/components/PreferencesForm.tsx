@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, Checkbox, Radio, RadioGroup, Select, SelectItem, Switch } from "@my/ui";
 import { useId, useRef } from "react";
-import { languageOptions } from "../../compose";
+import { languageOptions, quotePolicies, quotePolicyDescription, quotePolicyLabel } from "../../compose";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useDisplaySettings } from "../../../lib/locale";
 import type { Visibility } from "../api/me";
@@ -29,8 +29,16 @@ const visibilities: readonly { id: Visibility; label: ClientMessageKey; descript
  */
 export function PreferencesForm() {
   const t = useT();
-  const { locale, timeZone, defaultVisibility, defaultPostLanguage, requireMediaDescription, timelineLanguages, emailModeratorNotifications } =
-    usePreferences();
+  const {
+    locale,
+    timeZone,
+    defaultVisibility,
+    defaultQuotePolicy,
+    defaultPostLanguage,
+    requireMediaDescription,
+    timelineLanguages,
+    emailModeratorNotifications,
+  } = usePreferences();
   return (
     <div className="flex flex-col gap-8">
       <p className="text-fg-muted">{t("client:settings.preferences.autosave")}</p>
@@ -53,6 +61,23 @@ export function PreferencesForm() {
         {visibilities.map((visibility) => (
           <Radio key={visibility.id} value={visibility.id} description={t(visibility.description)}>
             {t(visibility.label)}
+          </Radio>
+        ))}
+      </RadioGroup>
+      <RadioGroup
+        label={t("client:settings.default_quote_policy.label")}
+        description={t("client:settings.default_quote_policy.description")}
+        value={defaultQuotePolicy.value}
+        onChange={(value) => {
+          const policy = quotePolicies.find((p) => p === value);
+          if (policy !== undefined) defaultQuotePolicy.onChange(policy);
+        }}
+        isInvalid={defaultQuotePolicy.error !== undefined}
+        errorMessage={defaultQuotePolicy.error}
+      >
+        {quotePolicies.map((policy) => (
+          <Radio key={policy} value={policy} description={t(quotePolicyDescription[policy])}>
+            {t(quotePolicyLabel[policy])}
           </Radio>
         ))}
       </RadioGroup>

@@ -67,6 +67,7 @@ import { Route as ModerationAppealsIdRouteImport } from './routes/moderation.app
 import { Route as ModerationInstancesDomainRouteImport } from './routes/moderation.instances_.$domain'
 import { Route as ModerationReportsIdRouteImport } from './routes/moderation.reports_.$id'
 import { Route as AtChar123acctChar125StatusIdHistoryRouteImport } from './routes/@{$acct}_.status.$id_.history'
+import { Route as AtChar123acctChar125StatusIdQuotesRouteImport } from './routes/@{$acct}_.status.$id_.quotes'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -363,6 +364,12 @@ const AtChar123acctChar125StatusIdHistoryRoute =
     path: '/@{$acct}/status/$id/history',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AtChar123acctChar125StatusIdQuotesRoute =
+  AtChar123acctChar125StatusIdQuotesRouteImport.update({
+    id: '/@{$acct}_/status/$id_/quotes',
+    path: '/@{$acct}/status/$id/quotes',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -423,6 +430,7 @@ export interface FileRoutesByFullPath {
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
   '/moderation/reports/$id': typeof ModerationReportsIdRoute
   '/@{$acct}/status/$id/history': typeof AtChar123acctChar125StatusIdHistoryRoute
+  '/@{$acct}/status/$id/quotes': typeof AtChar123acctChar125StatusIdQuotesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -483,6 +491,7 @@ export interface FileRoutesByTo {
   '/moderation/instances/$domain': typeof ModerationInstancesDomainRoute
   '/moderation/reports/$id': typeof ModerationReportsIdRoute
   '/@{$acct}/status/$id/history': typeof AtChar123acctChar125StatusIdHistoryRoute
+  '/@{$acct}/status/$id/quotes': typeof AtChar123acctChar125StatusIdQuotesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -544,6 +553,7 @@ export interface FileRoutesById {
   '/moderation/instances_/$domain': typeof ModerationInstancesDomainRoute
   '/moderation/reports_/$id': typeof ModerationReportsIdRoute
   '/@{$acct}_/status/$id_/history': typeof AtChar123acctChar125StatusIdHistoryRoute
+  '/@{$acct}_/status/$id_/quotes': typeof AtChar123acctChar125StatusIdQuotesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -606,6 +616,7 @@ export interface FileRouteTypes {
     | '/moderation/instances/$domain'
     | '/moderation/reports/$id'
     | '/@{$acct}/status/$id/history'
+    | '/@{$acct}/status/$id/quotes'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -666,6 +677,7 @@ export interface FileRouteTypes {
     | '/moderation/instances/$domain'
     | '/moderation/reports/$id'
     | '/@{$acct}/status/$id/history'
+    | '/@{$acct}/status/$id/quotes'
   id:
     | '__root__'
     | '/'
@@ -726,6 +738,7 @@ export interface FileRouteTypes {
     | '/moderation/instances_/$domain'
     | '/moderation/reports_/$id'
     | '/@{$acct}_/status/$id_/history'
+    | '/@{$acct}_/status/$id_/quotes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -787,6 +800,7 @@ export interface RootRouteChildren {
   ModerationInstancesDomainRoute: typeof ModerationInstancesDomainRoute
   ModerationReportsIdRoute: typeof ModerationReportsIdRoute
   AtChar123acctChar125StatusIdHistoryRoute: typeof AtChar123acctChar125StatusIdHistoryRoute
+  AtChar123acctChar125StatusIdQuotesRoute: typeof AtChar123acctChar125StatusIdQuotesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1197,6 +1211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AtChar123acctChar125StatusIdHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/@{$acct}_/status/$id_/quotes': {
+      id: '/@{$acct}_/status/$id_/quotes'
+      path: '/@{$acct}/status/$id/quotes'
+      fullPath: '/@{$acct}/status/$id/quotes'
+      preLoaderRoute: typeof AtChar123acctChar125StatusIdQuotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1260,6 +1281,8 @@ const rootRouteChildren: RootRouteChildren = {
   ModerationReportsIdRoute: ModerationReportsIdRoute,
   AtChar123acctChar125StatusIdHistoryRoute:
     AtChar123acctChar125StatusIdHistoryRoute,
+  AtChar123acctChar125StatusIdQuotesRoute:
+    AtChar123acctChar125StatusIdQuotesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

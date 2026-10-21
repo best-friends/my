@@ -8,6 +8,7 @@ import {
   MenuItem,
   MenuTrigger,
   MoreIcon,
+  QuoteIcon,
   ReplyIcon,
   StarIcon,
   ToggleButton,
@@ -21,6 +22,7 @@ import { ReportDialog } from "../../report";
 import type { ReactionEmoji, Status } from "../api/status";
 import { type RelationToggle, useStatusActions } from "../hooks/useStatusActions";
 import { EditStatusDialog } from "./EditStatusDialog";
+import { QuotePolicyDialog } from "./QuotePolicyDialog";
 
 export type StatusActionsProps = {
   status: Status;
@@ -36,9 +38,10 @@ function reactionEmojiOf(choice: ReactionChoice): ReactionEmoji {
 }
 
 /**
- * The action bar of a post: reply, boost, favourite, the picker of emoji reactions (ADR-0052 §5), bookmark, and a menu with the link, the report of
- * another account's post (features/report) and, for the viewer's own posts, edit (EditStatusDialog), pin or
- * unpin, and delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
+ * The action bar of a post: reply, boost, quote (FR-114), favourite, the picker of emoji reactions (ADR-0052 §5), bookmark, and a menu with
+ * the link, the report of another account's post (features/report), the revocation of this post's approved quote of a post of the
+ * viewer (ADR-0069 §3) and, for the viewer's own posts, edit (EditStatusDialog), who may quote it (QuotePolicyDialog), the posts that
+ * quote it, pin or unpin, and delete behind a confirmation (WAI-ARIA APG, alert dialog pattern). Nothing while
  * nobody is signed in. The toggles keep their names in both states and expose the state with
  * `aria-pressed` (APG, button pattern); a count is the toggle's description.
  */
@@ -49,6 +52,7 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isChoosingQuotePolicy, setIsChoosingQuotePolicy] = useState(false);
   if (actions === null) return null;
   const post = status.boost ?? status;
   const remove = actions.delete;
@@ -67,6 +71,16 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
         <Count id={repliesId} value={post.replies_count} />
       </Button>
       <RelationButton label={t("client:status.action.boost")} toggle={actions.boost} tone="success" icon={(on) => <BoostIcon filled={on} />} />
+      <Button
+        variant="ghost"
+        size="toolbar"
+        aria-label={t("client:status.action.quote")}
+        onPress={actions.quote.onPress}
+        isDisabled={actions.quote.isDisabled}
+        className="text-fg-muted"
+      >
+        <QuoteIcon />
+      </Button>
       <RelationButton label={t("client:status.action.favourite")} toggle={actions.favourite} tone="warning" icon={(on) => <StarIcon filled={on} />} />
       <ReactionPickerButton
         onSelect={(choice) => {
@@ -98,6 +112,17 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
               {t("client:status.action.edit")}
             </MenuItem>
           )}
+          {actions.revokeQuote !== null && <MenuItem onAction={actions.revokeQuote}>{t("client:status.quote.revoke.action")}</MenuItem>}
+          {actions.quotePolicy !== null && (
+            <MenuItem
+              onAction={() => {
+                setIsChoosingQuotePolicy(true);
+              }}
+            >
+              {t("client:status.quote_policy.action")}
+            </MenuItem>
+          )}
+          {actions.quotePolicy !== null && <MenuItem href={actions.quotePolicy.quotesPath}>{t("client:status.quotes.action")}</MenuItem>}
           {actions.pin !== null && (
             <MenuItem onAction={actions.pin.toggle}>{actions.pin.isPinned ? t("client:status.unpin.action") : t("client:status.pin.action")}</MenuItem>
           )}
@@ -115,6 +140,15 @@ export function StatusActions({ status, onDeleted }: StatusActionsProps) {
       </MenuTrigger>
       {actions.canReport && <ReportDialog account={post.account} status={post} isOpen={isReporting} onOpenChange={setIsReporting} />}
       {actions.canEdit && <EditStatusDialog status={post} isOpen={isEditing} onOpenChange={setIsEditing} />}
+      {actions.quotePolicy !== null && (
+        <QuotePolicyDialog
+          value={actions.quotePolicy.value}
+          onChange={actions.quotePolicy.set}
+          isPending={actions.quotePolicy.isPending}
+          isOpen={isChoosingQuotePolicy}
+          onOpenChange={setIsChoosingQuotePolicy}
+        />
+      )}
       {remove !== null && (
         <Dialog
           role="alertdialog"

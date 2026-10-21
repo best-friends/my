@@ -59,12 +59,16 @@ type EditDraft = {
   language: string;
   /** The description of each attachment, by its ID. */
   descriptions: Readonly<Record<string, string>>;
+  /** Whether the edit takes the post's quote away, for good (ADR-0069 §3). */
+  removeQuote: boolean;
 };
 
 export type EditStatusForm = EditDraft & {
   edit: (change: Partial<Omit<EditDraft, "descriptions">>) => void;
   /** The attachments with their descriptions, as the compose form's image list shows them. */
   attachments: AttachmentView[];
+  /** Whether the post quotes another, which the edit can take away. */
+  hasQuote: boolean;
   describe: (id: string, description: string) => void;
   /** The characters the text may have: the instance's limit less the content warning. */
   textLimit: number;
@@ -86,6 +90,7 @@ function initialDraft(post: Status, source: StatusSource): EditDraft {
     sensitive: post.sensitive,
     language: source.language,
     descriptions: Object.fromEntries(post.media_attachments.map((media) => [media.id, media.description ?? ""])),
+    removeQuote: false,
   };
 }
 
@@ -100,6 +105,7 @@ function requestBody(post: Status, draft: EditDraft): EditStatusRequest {
     spoiler_text: draft.hasWarning ? draft.spoilerText.trim() : "",
     language: draft.language,
     ...(media.length > 0 ? { media, sensitive: draft.sensitive } : {}),
+    ...(draft.removeQuote ? { remove_quote: true } : {}),
   };
 }
 
@@ -137,6 +143,7 @@ export function useEditStatusForm(post: Status, source: StatusSource, maxCharact
   const canSave = draft.text.trim() !== "" && countCharacters(draft.text) <= textLimit && !save.isPending;
 
   return {
+    hasQuote: post.quote !== undefined,
     ...draft,
     edit: (change) => {
       setDraft((current) => ({ ...current, ...change }));

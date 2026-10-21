@@ -11,6 +11,7 @@ type PreferenceKey =
   | "locale"
   | "time_zone"
   | "default_visibility"
+  | "default_quote_policy"
   | "default_post_language"
   | "require_media_description"
   | "timeline_languages"
@@ -30,6 +31,7 @@ export type PreferencesControls = {
   locale: PreferenceControl<string>;
   timeZone: PreferenceControl<string>;
   defaultVisibility: PreferenceControl<Preferences["default_visibility"]>;
+  defaultQuotePolicy: PreferenceControl<Preferences["default_quote_policy"]>;
   defaultPostLanguage: PreferenceControl<string>;
   requireMediaDescription: PreferenceControl<boolean>;
   timelineLanguages: PreferenceControl<string[]>;
@@ -48,6 +50,7 @@ export function usePreferences(): PreferencesControls {
     locale: usePreferenceControl("locale", data.locale),
     timeZone: usePreferenceControl("time_zone", data.time_zone),
     defaultVisibility: usePreferenceControl("default_visibility", data.default_visibility),
+    defaultQuotePolicy: usePreferenceControl("default_quote_policy", data.default_quote_policy),
     defaultPostLanguage: usePreferenceControl("default_post_language", data.default_post_language),
     requireMediaDescription: usePreferenceControl("require_media_description", data.require_media_description),
     timelineLanguages: usePreferenceControl("timeline_languages", data.timeline_languages),
