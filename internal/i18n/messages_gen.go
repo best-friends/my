@@ -1572,6 +1572,20 @@ func (l *Localizer) ServerErrorsStatusPostingRestricted() string {
 	return l.format("server:errors.status.posting_restricted", nil)
 }
 
+// ServerErrorsStatusQuoteNotAllowed formats "server:errors.status.quote_not_allowed". Detail of the HTTP 422 API error when a post quotes a post whose quote policy or visibility does not let the user quote it.
+//
+//	en: You cannot quote this post.
+func (l *Localizer) ServerErrorsStatusQuoteNotAllowed() string {
+	return l.format("server:errors.status.quote_not_allowed", nil)
+}
+
+// ServerErrorsStatusQuoteNotFound formats "server:errors.status.quote_not_found". Detail of the HTTP 422 API error when a post quotes a post that does not exist, was deleted, or that the user cannot see.
+//
+//	en: The post you are quoting was not found.
+func (l *Localizer) ServerErrorsStatusQuoteNotFound() string {
+	return l.format("server:errors.status.quote_not_found", nil)
+}
+
 // ServerErrorsStatusReplyNotFound formats "server:errors.status.reply_not_found". Detail of the HTTP 422 API error when a reply targets a post that does not exist, was deleted, or that the user cannot see.
 //
 //	en: The post you are replying to was not found.
@@ -1969,6 +1983,13 @@ func (l *Localizer) ServerPushOther(instance string) string {
 //	en: A poll you took part in has ended
 func (l *Localizer) ServerPushPollClosed() string {
 	return l.format("server:push.poll_closed", nil)
+}
+
+// ServerPushQuote formats "server:push.quote". Web Push notification. {name} is the display name, or the @handle, of the account that quoted the user's post in a post of its own.
+//
+//	en: {name} quoted your post
+func (l *Localizer) ServerPushQuote(name string) string {
+	return l.format("server:push.quote", map[string]any{"name": name})
 }
 
 // ServerPushReaction formats "server:push.reaction". Web Push notification. {name} is the display name, or the @handle, of the account that reacted to the user's post with an emoji.

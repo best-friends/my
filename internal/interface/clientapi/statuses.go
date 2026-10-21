@@ -22,6 +22,7 @@ type Statuses interface {
 	Create(ctx context.Context, in appcontent.CreateInput) (appcontent.Post, error)
 	Edit(ctx context.Context, in appcontent.EditInput) (appcontent.Post, error)
 	Delete(ctx context.Context, accountID, statusID string) (content.Deletion, error)
+	SetQuotePolicy(ctx context.Context, accountID, statusID string, policy content.QuotePolicy) (content.StatusQuotePolicy, error)
 }
 
 // OutboxFetcher starts fetching the recent posts of a remote account whose profile a viewer
@@ -46,6 +47,7 @@ type StatusReader interface {
 	Bookmarks(ctx context.Context, accountID, before string, limit int) (appcontent.BookmarkPage, error)
 	Reactions(ctx context.Context, viewer appcontent.Viewer, statusID, emoji, before string, limit int) (appcontent.ReactedPage, error)
 	ReactionEmoji(ctx context.Context, e appcontent.ReactionEmoji) (appcontent.EmojiView, error)
+	Quotes(ctx context.Context, accountID, statusID, before string, limit int) (appcontent.QuotesPage, error)
 }
 
 // Interactions runs boosts, favourites, bookmarks, and pins. *appcontent.Interactions
@@ -62,6 +64,7 @@ type Interactions interface {
 	Pin(ctx context.Context, accountID, statusID string) error
 	Unpin(ctx context.Context, accountID, statusID string) error
 	VotePoll(ctx context.Context, accountID, statusID, pollID string, choices []int) ([]content.PollVote, error)
+	RevokeQuote(ctx context.Context, accountID, quotedStatusID, quotingStatusID string) error
 }
 
 // defaultLimit is the page size of collections without a limit parameter.
@@ -136,6 +139,12 @@ func (s *Server) statusProblem(ctx context.Context, err error) (problem, bool) {
 		return unprocessable("")
 	case errors.Is(err, appcontent.ErrReplyTargetNotFound):
 		return unprocessable(l.ServerErrorsStatusReplyNotFound())
+	case errors.Is(err, appcontent.ErrQuoteTargetNotFound):
+		return unprocessable(l.ServerErrorsStatusQuoteNotFound())
+	case errors.Is(err, appcontent.ErrQuoteNotAllowed):
+		return unprocessable(l.ServerErrorsStatusQuoteNotAllowed())
+	case errors.Is(err, appcontent.ErrInvalidQuotePolicy):
+		return unprocessable(l.ServerErrorsInvalidValue("quote_policy"))
 	case errors.Is(err, appcontent.ErrTooManyMedia):
 		return unprocessable(l.ServerErrorsStatusTooManyMedia(appcontent.MaxAttachments))
 	case errors.Is(err, appcontent.ErrMediaNotFound):
@@ -302,6 +311,13 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 		p := newPoll(*v.Poll, v.Relation != nil)
 		out.Poll = &p
 	}
+	if v.Relation != nil {
+		out.Quotable = &v.Quotable
+	}
+	if v.QuotePolicy != "" {
+		policy := QuotePolicy(v.QuotePolicy)
+		out.QuotePolicy = &policy
+	}
 	if q := v.Quote; q != nil {
 		out.Quote = &StatusQuote{State: QuoteState(q.State)}
 		if q.Status != nil {
@@ -437,6 +453,7 @@ func (s *Server) CreateStatus(ctx context.Context, req CreateStatusRequestObject
 		},
 		AuthorAccountID: v.AccountID, Visibility: content.Visibility(body.Visibility), InReplyToID: deref(body.InReplyToId),
 		ClientID: v.ClientID, IdempotencyKey: deref(req.Params.IdempotencyKey), Poll: pollInput(body.Poll),
+		QuotedStatusID: deref(body.QuotedStatusId), QuotePolicy: content.QuotePolicy(deref(body.QuotePolicy)),
 	})
 	if err == nil {
 		var out Status
@@ -492,7 +509,7 @@ func (s *Server) EditStatus(ctx context.Context, req EditStatusRequestObject) (E
 			Text: body.Text, SpoilerText: deref(body.SpoilerText), Sensitive: deref(body.Sensitive),
 			Language: deref(body.Language), Media: mediaInput(body.Media),
 		},
-		AccountID: v.AccountID, StatusID: req.Id,
+		AccountID: v.AccountID, StatusID: req.Id, DetachQuote: deref(body.RemoveQuote),
 	})
 	if err == nil {
 		var out Status
@@ -742,4 +759,66 @@ func (s *Server) UnpinStatus(ctx context.Context, req UnpinStatusRequestObject) 
 		return UnpinStatusdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	return UnpinStatus200JSONResponse{res}, err
+}
+
+// SetStatusQuotePolicy serves PUT /api/v1/statuses/{id}/quote_policy.
+func (s *Server) SetStatusQuotePolicy(ctx context.Context, req SetStatusQuotePolicyRequestObject) (SetStatusQuotePolicyResponseObject, error) {
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.o.Statuses.SetQuotePolicy(ctx, v.AccountID, req.Id, content.QuotePolicy(req.Body.QuotePolicy))
+	if err == nil {
+		var out Status
+		if out, err = s.viewStatus(ctx, req.Id); err == nil {
+			return SetStatusQuotePolicy200JSONResponse{StatusAfterActionJSONResponse{Body: out, Headers: StatusAfterActionResponseHeaders{CacheControl: statusCache(ctx)}}}, nil
+		}
+	}
+	if p, ok := s.authorProblem(ctx, v, req.Id, err); ok {
+		return SetStatusQuotePolicydefaultApplicationProblemPlusJSONResponse(p), nil
+	}
+	return nil, err
+}
+
+// ListStatusQuotes serves GET /api/v1/statuses/{id}/quotes.
+func (s *Server) ListStatusQuotes(ctx context.Context, req ListStatusQuotesRequestObject) (ListStatusQuotesResponseObject, error) {
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	limit := defaultLimit
+	if req.Params.Limit != nil {
+		limit = *req.Params.Limit
+	}
+	page, err := s.o.StatusReader.Quotes(ctx, v.AccountID, req.Id, deref(req.Params.Cursor), limit)
+	if err != nil {
+		if p, ok := s.statusProblem(ctx, err); ok {
+			return ListStatusQuotesdefaultApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+	items, err := s.presentStatuses(ctx, page.Statuses)
+	if err != nil {
+		return nil, err
+	}
+	out := StatusPage{Items: items}
+	if page.Next != "" {
+		out.NextCursor = &page.Next
+	}
+	return ListStatusQuotes200JSONResponse{StatusPageJSONResponse{Body: out, Headers: StatusPageResponseHeaders{CacheControl: statusCache(ctx)}}}, nil
+}
+
+// RevokeStatusQuote serves POST /api/v1/statuses/{id}/quotes/{quote_id}/revoke.
+func (s *Server) RevokeStatusQuote(ctx context.Context, req RevokeStatusQuoteRequestObject) (RevokeStatusQuoteResponseObject, error) {
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.o.Interactions.RevokeQuote(ctx, v.AccountID, req.Id, req.QuoteId); err != nil {
+		if p, ok := s.authorProblem(ctx, v, req.Id, err); ok {
+			return RevokeStatusQuotedefaultApplicationProblemPlusJSONResponse(p), nil
+		}
+		return nil, err
+	}
+	return RevokeStatusQuote204Response{}, nil
 }

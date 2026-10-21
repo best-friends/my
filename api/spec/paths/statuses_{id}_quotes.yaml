@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+get:
+  operationId: listStatusQuotes
+  summary: List the statuses that quote the authenticated user's status
+  description: |
+    The statuses that quote a status of the user, newest first, each with its `quote` and
+    its state (ADR-0069 §5). Statuses the user may not see, and quotes taken away, are left
+    out, so a page may hold fewer than `limit` statuses before the last. Another account's
+    status is a 404.
+  tags: [statuses]
+  security:
+    - oauth2: ["read:statuses"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/StatusPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

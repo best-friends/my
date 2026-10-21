@@ -96,6 +96,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/statuses/{id}":                                           {Operation: "getStatus", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/statuses/{id}/context":                                   {Operation: "getStatusContext", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/statuses/{id}/history":                                   {Operation: "getStatusHistory", Anonymous: true, Scopes: []string{"read:statuses"}},
+	"GET /api/v1/statuses/{id}/quotes":                                    {Operation: "listStatusQuotes", Scopes: []string{"read:statuses"}},
 	"GET /api/v1/statuses/{id}/reactions":                                 {Operation: "listStatusReactions", Anonymous: true, Scopes: []string{"read:statuses"}},
 	"GET /api/v1/statuses/{id}/source":                                    {Operation: "getStatusSource", Scopes: []string{"read:statuses"}},
 	"GET /api/v1/streaming":                                               {Operation: "streamEvents", Scopes: []string{"read:notifications", "read:statuses"}},
@@ -193,6 +194,7 @@ var operationSecurity = map[string]operationAccess{
 	"POST /api/v1/statuses/{id}/favourite":                                {Operation: "favouriteStatus", Scopes: []string{"write:favourites"}},
 	"POST /api/v1/statuses/{id}/pin":                                      {Operation: "pinStatus", Scopes: []string{"write:statuses"}},
 	"POST /api/v1/statuses/{id}/poll/votes":                               {Operation: "voteInPoll", Scopes: []string{"write:statuses"}},
+	"POST /api/v1/statuses/{id}/quotes/{quote_id}/revoke":                 {Operation: "revokeStatusQuote", Scopes: []string{"write:statuses"}},
 	"POST /api/v1/two_factor/recovery_codes":                              {Operation: "regenerateRecoveryCodes", Scopes: []string{"write:accounts"}},
 	"POST /api/v1/two_factor/totp":                                        {Operation: "enableTotp", Scopes: []string{"write:accounts"}},
 	"POST /api/v1/two_factor/totp/disable":                                {Operation: "disableTotp", Scopes: []string{"write:accounts"}},
@@ -207,5 +209,6 @@ var operationSecurity = map[string]operationAccess{
 	"PUT /api/v1/preferences/auto_delete":                                 {Operation: "updateAutoDeletePolicy", Scopes: []string{"write:accounts"}},
 	"PUT /api/v1/push/subscription":                                       {Operation: "putPushSubscription", Scopes: []string{"push"}},
 	"PUT /api/v1/statuses/{id}":                                           {Operation: "editStatus", Scopes: []string{"write:statuses"}},
+	"PUT /api/v1/statuses/{id}/quote_policy":                              {Operation: "setStatusQuotePolicy", Scopes: []string{"write:statuses"}},
 	"PUT /api/v1/statuses/{id}/reaction":                                  {Operation: "reactToStatus", Scopes: []string{"write:favourites"}},
 }

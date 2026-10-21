@@ -863,6 +863,14 @@
     "defaultMessage": "現在、あなたのアカウントは投稿できません。",
     "description": "Detail of the HTTP 403 API error when a moderator restricted the account from posting."
   },
+  "errors.status.quote_not_found": {
+    "defaultMessage": "引用する投稿が見つかりません。",
+    "description": "Detail of the HTTP 422 API error when a post quotes a post that does not exist, was deleted, or that the user cannot see."
+  },
+  "errors.status.quote_not_allowed": {
+    "defaultMessage": "この投稿は引用できません。",
+    "description": "Detail of the HTTP 422 API error when a post quotes a post whose quote policy or visibility does not let the user quote it."
+  },
   "errors.status.reply_not_found": {
     "defaultMessage": "返信先の投稿が見つかりません。",
     "description": "Detail of the HTTP 422 API error when a reply targets a post that does not exist, was deleted, or that the user cannot see."
@@ -1082,6 +1090,10 @@
   "push.poll_closed": {
     "defaultMessage": "参加した投票が終了しました",
     "description": "Web Push notification: a poll that the user created or voted in has ended."
+  },
+  "push.quote": {
+    "defaultMessage": "{name}さんがあなたの投稿を引用しました",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that quoted the user's post in a post of its own."
   },
   "push.reaction": {
     "defaultMessage": "{name}さんがあなたの投稿にリアクションしました",

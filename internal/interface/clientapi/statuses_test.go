@@ -51,6 +51,22 @@ func (f *fakeStatuses) Edit(_ context.Context, in appcontent.EditInput) (appcont
 	return f.edit(in)
 }
 
+func (f *fakeStatuses) SetQuotePolicy(_ context.Context, accountID, id string, p content.QuotePolicy) (content.StatusQuotePolicy, error) {
+	return content.StatusQuotePolicy{StatusID: id, Policy: p}, f.do("quote_policy:"+string(p), accountID, id)
+}
+
+func (f *fakeStatuses) Quotes(_ context.Context, accountID, id, _ string, _ int) (appcontent.QuotesPage, error) {
+	view, err := f.View(context.Background(), appcontent.Viewer{Kind: appcontent.ViewerLocal, AccountID: accountID}, sampleStatusID)
+	if err != nil {
+		return appcontent.QuotesPage{}, err
+	}
+	return appcontent.QuotesPage{Statuses: []appcontent.StatusView{view}}, f.do("quotes", accountID, id)
+}
+
+func (f *fakeStatuses) RevokeQuote(_ context.Context, accountID, quoted, quoting string) error {
+	return f.do("revoke_quote:"+quoting, accountID, quoted)
+}
+
 func (f *fakeStatuses) Delete(_ context.Context, accountID, id string) (content.Deletion, error) {
 	if f.del == nil {
 		return content.Deletion{}, errNotFound
@@ -498,6 +514,59 @@ func TestInteractionsReturnTheStatus(t *testing.T) {
 		}
 	}
 	if want := "boost unboost favourite unfavourite bookmark unbookmark pin unpin"; strings.Join(ops, " ") != want {
+		t.Errorf("operations = %v, want %s", ops, want)
+	}
+}
+
+// The quote operations (ADR-0069 §5): a quote and its policy on posting, the policy of a status,
+// the list of its quotes, and the revocation of an approval.
+func TestQuoteOperations(t *testing.T) {
+	var ops []string
+	var created appcontent.CreateInput
+	f := &fakeStatuses{
+		interact: func(op, accountID, id string) error {
+			if accountID != aliceAccountID || id != sampleStatusID {
+				return fmt.Errorf("unexpected %s by %s of %s", op, accountID, id)
+			}
+			ops = append(ops, op)
+			return nil
+		},
+		create: func(in appcontent.CreateInput) (appcontent.Post, error) {
+			created = in
+			return appcontent.Post{Status: content.Status{ID: sampleStatusID}}, nil
+		},
+		view: func(v appcontent.Viewer, _ string) (appcontent.StatusView, error) {
+			view := sampleView(v)
+			view.Quotable, view.QuotePolicy = true, content.QuotePolicyFollowers
+			return view, nil
+		},
+	}
+	e := newStatusEnv(t, f)
+
+	res := e.send(t, http.MethodPost, "/statuses", "write", `{"text":"look","visibility":"public","quoted_status_id":"`+sampleStatusID+`","quote_policy":"nobody"}`)
+	if res.StatusCode != http.StatusOK || created.QuotedStatusID != sampleStatusID || created.QuotePolicy != content.QuotePolicyNobody {
+		t.Errorf("create = %d with %+v, want the quote and its policy", res.StatusCode, created)
+	}
+	if s := decodeStatus(t, res); s.Quotable == nil || !*s.Quotable || s.QuotePolicy == nil || *s.QuotePolicy != clientapi.QuotePolicyFollowers {
+		t.Errorf("status = quotable %v, policy %v; want true and followers", s.Quotable, s.QuotePolicy)
+	}
+	if s := decodeStatus(t, e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "", "")); s.Quotable != nil {
+		t.Errorf("an anonymous status says whether it is quotable: %v", *s.Quotable)
+	}
+	res = e.send(t, http.MethodPut, "/statuses/"+sampleStatusID+"/quote_policy", "write", `{"quote_policy":"followers"}`)
+	if res.StatusCode != http.StatusOK || decodeStatus(t, res).Id != sampleStatusID {
+		t.Errorf("set quote policy = %d", res.StatusCode)
+	}
+	res = e.send(t, http.MethodGet, "/statuses/"+sampleStatusID+"/quotes", "read", "")
+	var page clientapi.StatusPage
+	if err := json.NewDecoder(res.Body).Decode(&page); err != nil || res.StatusCode != http.StatusOK || len(page.Items) != 1 {
+		t.Errorf("quotes = %d %+v, %v", res.StatusCode, page, err)
+	}
+	const quoting = "01890a5d-ac96-774b-bcce-b302099a9004"
+	if res := e.send(t, http.MethodPost, "/statuses/"+sampleStatusID+"/quotes/"+quoting+"/revoke", "write", ""); res.StatusCode != http.StatusNoContent {
+		t.Errorf("revoke = %d, want 204", res.StatusCode)
+	}
+	if want := "quote_policy:followers quotes revoke_quote:" + quoting; strings.Join(ops, " ") != want {
 		t.Errorf("operations = %v, want %s", ops, want)
 	}
 }

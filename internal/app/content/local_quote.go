@@ -217,6 +217,29 @@ func (s *Service) FindQuotePolicy(ctx context.Context, statusID string) (content
 	return s.d.Quotes.FindQuotePolicy(ctx, statusID)
 }
 
+// QuotedPageURL returns the HTML page of the quoted status uri, which the fallback of a quote
+// links (ADR-0069 §3): the page of a stored status, or uri itself for one not stored or without
+// a page.
+func (s *Service) QuotedPageURL(ctx context.Context, uri string) (string, error) {
+	st, err := s.d.Repository.FindStatusByURI(ctx, uri)
+	if errors.Is(err, ErrNotFound) {
+		return uri, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	var author appaccount.Actor
+	if st.IsLocal {
+		if author, err = s.d.Accounts.FindByID(ctx, st.AuthorAccountID); err != nil && !errors.Is(err, appaccount.ErrNotFound) {
+			return "", err
+		}
+	}
+	if page := StatusPageURL(s.d.Host, st, author); page != "" {
+		return page, nil
+	}
+	return uri, nil
+}
+
 // RejectQuote records that the quoted author's server refused the quote of the live status
 // statusID (a Reject of its QuoteRequest). It reports whether the state changed.
 func (s *Service) RejectQuote(ctx context.Context, statusID string) (bool, error) {

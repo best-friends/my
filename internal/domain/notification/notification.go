@@ -12,7 +12,7 @@ import (
 type Type string
 
 // Notification types. The notification module generates follow, follow_request,
-// follow_accepted, mention, boost, favourite, reaction, and poll_closed from the graph and
+// follow_accepted, mention, boost, favourite, reaction, quote, and poll_closed from the graph and
 // content events, and moderation_notice, appeal_decided, report_resolved, and
 // relationships_severed from the moderation events. admin_report,
 // admin_sign_up, and admin_appeal go to the moderators whose roles grant the permission they
@@ -25,7 +25,10 @@ const (
 	TypeBoost          Type = "boost"
 	TypeFavourite      Type = "favourite"
 	// TypeReaction is an emoji reaction to a status of the recipient (FR-116, ADR-0052 §5).
-	TypeReaction         Type = "reaction"
+	TypeReaction Type = "reaction"
+	// TypeQuote is a quote of a status of the recipient that is shown: approved, or a legacy
+	// quote (FR-114, ADR-0069 §5). StatusID is the quoting status.
+	TypeQuote            Type = "quote"
 	TypePollClosed       Type = "poll_closed"
 	TypeModerationNotice Type = "moderation_notice"
 	TypeReportResolved   Type = "report_resolved"
@@ -44,7 +47,7 @@ const (
 // Types are every notification type, in a stable order.
 var Types = []Type{
 	TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-	TypeReaction, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
+	TypeReaction, TypeQuote, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 	TypeRelationshipsSevered,
 	TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled,
 }
@@ -53,7 +56,7 @@ var Types = []Type{
 func (t Type) Valid() bool {
 	switch t {
 	case TypeFollow, TypeFollowRequest, TypeFollowAccepted, TypeMention, TypeBoost, TypeFavourite,
-		TypeReaction, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
+		TypeReaction, TypeQuote, TypePollClosed, TypeModerationNotice, TypeReportResolved, TypeAdminReport, TypeAdminSignUp,
 		TypeRelationshipsSevered, TypeAppealDecided, TypeAdminAppeal, TypeAdminWebhookDisabled:
 		return true
 	}

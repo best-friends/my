@@ -138,3 +138,12 @@ properties:
       `quoted_status`.
     allOf:
       - $ref: ./StatusQuote.yaml
+  quotable:
+    description: |
+      Whether the authenticated user may quote the status (its `quote_policy`, its visibility,
+      and the user's follow of the author decide it); omitted for anonymous requests.
+    type: boolean
+  quote_policy:
+    description: Who may quote the status; given only to its author.
+    allOf:
+      - $ref: ./QuotePolicy.yaml

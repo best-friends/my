@@ -3526,6 +3526,8 @@ export interface MessageArgs {
   "client:notifications.type.moderation_notice": {};
   /** A poll you took part in has ended */
   "client:notifications.type.poll_closed": {};
+  /** {name} quoted your post */
+  "client:notifications.type.quote": { name: string };
   /** {name} reacted to your post with {emoji} */
   "client:notifications.type.reaction": { emoji: string; name: string };
   /** A suspension by the moderators ended some of your follows */
@@ -5328,6 +5330,10 @@ export interface MessageArgs {
   "server:errors.status.poll_with_media": {};
   /** Your account may not post right now. */
   "server:errors.status.posting_restricted": {};
+  /** You cannot quote this post. */
+  "server:errors.status.quote_not_allowed": {};
+  /** The post you are quoting was not found. */
+  "server:errors.status.quote_not_found": {};
   /** The post you are replying to was not found. */
   "server:errors.status.reply_not_found": {};
   /** {max, plural, one {The text and content warning must be at most # character.} other {The text and content warning must be at most # characters.}} */
@@ -5442,6 +5448,8 @@ export interface MessageArgs {
   "server:push.other": { instance: string };
   /** A poll you took part in has ended */
   "server:push.poll_closed": {};
+  /** {name} quoted your post */
+  "server:push.quote": { name: string };
   /** {name} reacted to your post */
   "server:push.reaction": { name: string };
   /** A suspension by the moderators of {instance} ended some of your follows */

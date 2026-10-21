@@ -42,6 +42,9 @@ type FanOutDeps struct {
 	IDs         kernel.IDGenerator
 	// Parts resolves the media, mentions, and hashtags of the revisions that Notes present.
 	Parts NoteParts
+	// Quotes reads the quotes and quote policies that Notes present (ADR-0069); nil presents
+	// none.
+	Quotes NoteQuotes
 	// Images reads the avatars and headers of the actors that Updates carry; nil sends none.
 	Images ProfileImages
 	// EmojiTags reads the custom emoji of the profiles of the actors that Updates carry; nil
@@ -108,7 +111,7 @@ func NewFanOut(d FanOutDeps) *FanOut {
 	if d.AccountDomain == "" {
 		d.AccountDomain = d.Host
 	}
-	return &FanOut{d: d, notes: notes{parts: d.Parts, graph: d.Graph, host: d.Host, accountDomain: d.AccountDomain}}
+	return &FanOut{d: d, notes: notes{parts: d.Parts, graph: d.Graph, quotes: d.Quotes, host: d.Host, accountDomain: d.AccountDomain}}
 }
 
 // RegisterJobs registers the JobFanOut handler.
@@ -254,7 +257,8 @@ const (
 	phaseSharedInboxes phase = "shared_inboxes"
 	// phaseReported is the remote account a forwarded report is about, in one batch.
 	phaseReported phase = "reported"
-	// phaseRelay is the inbox of an activity of the relay membership, in one batch.
+	// phaseRelay is the one inbox of the payload, in one batch: of an activity of the relay
+	// membership or of the approval of a quote.
 	phaseRelay phase = "relay"
 	// phaseRelays are the inboxes of the accepted relays, in one batch.
 	phaseRelays phase = "relays"
@@ -318,10 +322,11 @@ type subject struct {
 //   - Like and Undo Like: the author of the favourited status.
 //   - Create of a vote: the author of the poll's status.
 //   - Flag: the reported account.
-//   - Follow, Undo, Accept, and Reject of the relay membership: the inbox of the payload.
+//   - Follow, Undo, Accept, and Reject of the relay membership, and the activities of the
+//     approval of a quote: the inbox of the payload.
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
-	case federation.OutboundRelay:
+	case federation.OutboundRelay, federation.OutboundQuote:
 		return []phase{phaseRelay}
 	case federation.OutboundReport:
 		return []phase{phaseReported}
@@ -368,6 +373,9 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 	}
 	if act.ObjectKind == federation.OutboundRelay {
 		return relaySubject(s, p)
+	}
+	if act.ObjectKind == federation.OutboundQuote {
+		return quoteSubject(s, p)
 	}
 	if act.ObjectKind == federation.OutboundFollow {
 		s.followURI = federation.IRI(p.FollowURI)

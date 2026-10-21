@@ -28,6 +28,8 @@ type (
 	QuoteState = content.QuoteState
 	// QuoteApproval is content.QuoteApproval.
 	QuoteApproval = content.QuoteApproval
+	// StatusQuotePolicy is content.StatusQuotePolicy.
+	StatusQuotePolicy = content.StatusQuotePolicy
 )
 
 // The values of the quotes' types that other modules use.
@@ -36,6 +38,7 @@ const (
 	QuoteFormLegacy       = content.QuoteFormLegacy
 	QuoteApprovalAccepted = content.QuoteApprovalAccepted
 	QuoteApprovalDetached = content.QuoteApprovalDetached
+	QuoteEventAccepted    = content.QuoteEventAccepted
 )
 
 // QuoteRepository stores the quotes of statuses; the status repositories implement it.
@@ -93,8 +96,11 @@ type QuoteRepository interface {
 
 // Event types of the quotes (data-model §4.4):
 //   - EventQuoteRecorded: the quote of a status was recorded with the status. This module
-//     projects its initial state.
-//   - EventQuoteChanged: the approval of a quote changed. This module projects the new state.
+//     projects its initial state; the notification module notifies the local author of the
+//     quoted status of a legacy quote, and the federation module sends the QuoteRequest of a
+//     local status's quote of a remote one.
+//   - EventQuoteChanged: the approval of a quote changed. This module projects the new state;
+//     the notification module notifies the local author of the quoted status of an approval.
 const (
 	EventQuoteRecorded = "content.quote_recorded"
 	EventQuoteChanged  = "content.quote_changed"
@@ -104,6 +110,10 @@ const (
 type QuoteRecorded struct {
 	Quote  content.Quote
 	Status StatusRef
+	// Quoted is the quoted status, nil while it is not stored.
+	Quoted *StatusRef
+	// RecordedAt is when the quote was recorded.
+	RecordedAt time.Time
 }
 
 // EventType implements uow.Event.
@@ -114,6 +124,8 @@ type QuoteChanged struct {
 	Quote  content.Quote
 	Event  content.QuoteEvent
 	Status StatusRef
+	// Quoted is the quoted status, nil while it is not stored.
+	Quoted *StatusRef
 }
 
 // EventType implements uow.Event.
@@ -195,18 +207,22 @@ func (s *Service) recordQuote(ctx context.Context, tx uow.Tx, st content.Status,
 	if err != nil || !inserted {
 		return err
 	}
-	return tx.Emit(ctx, QuoteRecorded{Quote: q, Status: RefOf(st)})
+	quoted, err := quotedRef(ctx, tx, s.d.Repository, q)
+	if err != nil {
+		return err
+	}
+	return tx.Emit(ctx, QuoteRecorded{Quote: q, Status: RefOf(st), Quoted: quoted, RecordedAt: s.d.Clock.Now()})
 }
 
 // changeQuote records in tx an event of kind (with the QuoteAuthorization authorizationURI) of
 // the quote of st, unless it changes nothing: the state stays the same. It reports whether the
 // state changed. A status that quotes nothing fails with ErrNotFound.
 func (s *Service) changeQuote(ctx context.Context, tx uow.Tx, st content.Status, kind content.QuoteEventKind, authorizationURI string) (bool, error) {
-	return changeQuote(ctx, tx, s.d.Quotes, s.d.IDs, s.d.Clock, st, kind, authorizationURI)
+	return changeQuote(ctx, tx, s.d.Quotes, s.d.Repository, s.d.IDs, s.d.Clock, st, kind, authorizationURI)
 }
 
-// changeQuote is Service.changeQuote on repo.
-func changeQuote(ctx context.Context, tx uow.Tx, repo QuoteRepository, ids kernel.IDGenerator, clock kernel.Clock, st content.Status, kind content.QuoteEventKind, authorizationURI string) (bool, error) {
+// changeQuote is Service.changeQuote on repo, reading the quoted status from statuses.
+func changeQuote(ctx context.Context, tx uow.Tx, repo QuoteRepository, statuses Repository, ids kernel.IDGenerator, clock kernel.Clock, st content.Status, kind content.QuoteEventKind, authorizationURI string) (bool, error) {
 	q, err := repo.FindQuoteTx(ctx, tx, st.ID)
 	if err != nil {
 		return false, err
@@ -227,7 +243,24 @@ func changeQuote(ctx context.Context, tx uow.Tx, repo QuoteRepository, ids kerne
 	if err := repo.InsertQuoteEvent(ctx, tx, e); err != nil {
 		return false, err
 	}
-	return true, tx.Emit(ctx, QuoteChanged{Quote: q, Event: e, Status: RefOf(st)})
+	quoted, err := quotedRef(ctx, tx, statuses, q)
+	if err != nil {
+		return false, err
+	}
+	return true, tx.Emit(ctx, QuoteChanged{Quote: q, Event: e, Status: RefOf(st), Quoted: quoted})
+}
+
+// quotedRef returns the status that q quotes when it is stored and not deleted, nil otherwise.
+func quotedRef(ctx context.Context, tx uow.Tx, statuses Repository, q content.Quote) (*StatusRef, error) {
+	st, err := statuses.FindLiveStatusByURI(ctx, tx, q.QuotedURI)
+	if errors.Is(err, ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	ref := RefOf(st)
+	return &ref, nil
 }
 
 // detachQuote records in tx that a revision of st has no quote: the quote is taken away for

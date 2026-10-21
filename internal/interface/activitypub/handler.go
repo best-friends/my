@@ -33,6 +33,7 @@ type Objects interface {
 	Authenticate(ctx context.Context, r *appfederation.SignedRequest) (appfederation.Requester, error)
 	Status(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
 	StatusActivity(ctx context.Context, req appfederation.Requester, statusID string) (appfederation.Object, error)
+	QuoteAuthorization(ctx context.Context, id string) (appfederation.Object, error)
 	PageStatusURI(ctx context.Context, statusID string) (string, error)
 	OutboxTotal(ctx context.Context, accountID string) (int64, error)
 	Outbox(ctx context.Context, accountID, before string) (appfederation.OutboxPage, error)
@@ -154,6 +155,7 @@ func (h *Handler) Register(r Router) {
 	r.Handle("GET "+objectsPrefix+"{id}", http.HandlerFunc(h.object))
 	r.Handle("GET "+objectsPrefix+"{id}/"+activitySegment, http.HandlerFunc(h.object))
 	r.Handle("GET "+emojisPrefix+"{id}", http.HandlerFunc(h.emoji))
+	r.Handle("GET "+quoteAuthorizationsPrefix+"{id}", http.HandlerFunc(h.quoteAuthorization))
 	// A wildcard cannot share a path segment with "@", so every single-segment GET that no
 	// more specific pattern serves comes here; profilePage passes those that are not profile
 	// pages to the HTML handler.

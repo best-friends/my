@@ -518,6 +518,7 @@ func TestRemoteInteractionContract(t *testing.T) {
 				Timeline:       db.TimelineRepository(),
 				Notifications:  db.NotificationRepository(),
 				Inbox:          feds,
+				Quotes:         db.StatusRepository(),
 			},
 			Interactions: db.InteractionRepository(),
 			Federation:   feds,

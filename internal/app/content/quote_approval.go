@@ -141,7 +141,7 @@ func (s *Interactions) RevokeQuote(ctx context.Context, accountID, quotedStatusI
 		}
 		auth.RevokedAt = &now
 		uri := content.QuoteAuthorizationURI(s.d.Host, auth.ID)
-		if _, err := changeQuote(ctx, tx, s.d.Quotes, s.d.IDs, s.d.Clock, quoting, content.QuoteEventRevoked, uri); err != nil && !errors.Is(err, ErrNotFound) {
+		if _, err := changeQuote(ctx, tx, s.d.Quotes, s.d.Statuses, s.d.IDs, s.d.Clock, quoting, content.QuoteEventRevoked, uri); err != nil && !errors.Is(err, ErrNotFound) {
 			return err
 		}
 		return tx.Emit(ctx, QuoteAuthorizationRevoked{Authorization: auth, Quoted: RefOf(quoted)})

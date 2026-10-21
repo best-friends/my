@@ -21,6 +21,15 @@ type NoteParts interface {
 	Parts(ctx context.Context, rev appcontent.Revision) (appcontent.RevisionParts, error)
 }
 
+// NoteQuotes reads what the Note of a status says of quotes (ADR-0069 §3): its quote, who may
+// quote it, and the page of the quoted status that the fallback links. *appcontent.Service
+// implements it.
+type NoteQuotes interface {
+	FindQuote(ctx context.Context, statusID string) (appcontent.Quote, appcontent.QuoteState, error)
+	FindQuotePolicy(ctx context.Context, statusID string) (appcontent.StatusQuotePolicy, error)
+	QuotedPageURL(ctx context.Context, uri string) (string, error)
+}
+
 // Relationships reads the relationship of an account with another; *appgraph.Service
 // implements it.
 type Relationships interface {
@@ -32,6 +41,8 @@ type Relationships interface {
 type notes struct {
 	parts NoteParts
 	graph Relationships
+	// quotes reads the quotes of statuses; nil leaves quotes and interactionPolicy out.
+	quotes NoteQuotes
 	// host serves the hashtag pages; accountDomain is the domain of local handles.
 	host, accountDomain string
 }
@@ -64,7 +75,51 @@ func (n notes) note(ctx context.Context, st appcontent.Status, rev appcontent.Re
 		}
 		parts.Mentions = kept
 	}
-	return statusNote(st, rev, author, vis, parts, updated, n.host, n.accountDomain), nil
+	note := statusNote(st, rev, author, vis, parts, updated, n.host, n.accountDomain)
+	if n.quotes == nil {
+		return note, nil
+	}
+	return n.withQuotes(ctx, note, st, author, vis)
+}
+
+// withQuotes adds to the Note of the local status st its quote, unless the author took it away,
+// and its interactionPolicy (ADR-0069 §3): its quote policy for a public or unlisted status,
+// the author alone for the others, which remote servers see as followers-only.
+func (n notes) withQuotes(ctx context.Context, note federation.NoteDocument, st appcontent.Status, author appaccount.Actor, vis appcontent.Visibility) (federation.NoteDocument, error) {
+	switch q, state, err := n.quotes.FindQuote(ctx, st.ID); {
+	case errors.Is(err, appcontent.ErrNotFound):
+	case err != nil:
+		return federation.NoteDocument{}, err
+	case state.Approval != appcontent.QuoteApprovalDetached:
+		page, err := n.quotes.QuotedPageURL(ctx, q.QuotedURI)
+		if err != nil {
+			return federation.NoteDocument{}, err
+		}
+		auth := ""
+		if state.Approval == appcontent.QuoteApprovalAccepted {
+			auth = state.AuthorizationURI
+		}
+		note = note.WithQuote(federation.IRI(q.QuotedURI), federation.IRI(auth), page)
+	}
+	actor := federation.IRI(author.Account.URI)
+	approved := []federation.IRI{actor}
+	if vis == appcontent.VisibilityPublic || vis == appcontent.VisibilityUnlisted {
+		policy := appcontent.QuotePolicyPublic
+		switch p, err := n.quotes.FindQuotePolicy(ctx, st.ID); {
+		case err == nil:
+			policy = p.Policy
+		case !errors.Is(err, appcontent.ErrNotFound):
+			return federation.NoteDocument{}, err
+		}
+		switch policy {
+		case appcontent.QuotePolicyPublic:
+			approved = []federation.IRI{federation.PublicIRI}
+		case appcontent.QuotePolicyFollowers:
+			approved = []federation.IRI{federation.FollowersOf(actor)}
+		}
+	}
+	note.InteractionPolicy = &federation.InteractionPolicy{CanQuote: federation.QuoteApprovalPolicy{AutomaticApproval: approved}}
+	return note, nil
 }
 
 // statusNote returns the Note of a local status st as of rev by author, addressed by the
@@ -219,7 +274,7 @@ func (f *FanOut) document(ctx context.Context, act federation.OutboundActivity, 
 		return accountDocument(f.d.Host, act, s.actor, images, s.suspended)
 	}
 	if act.ObjectKind == federation.OutboundFavourite || act.ObjectKind == federation.OutboundPollVote ||
-		act.ObjectKind == federation.OutboundRelay ||
+		act.ObjectKind == federation.OutboundRelay || act.ObjectKind == federation.OutboundQuote ||
 		(act.ObjectKind == federation.OutboundStatus && act.Type == federation.ActivityDelete) {
 		return nil, nil
 	}

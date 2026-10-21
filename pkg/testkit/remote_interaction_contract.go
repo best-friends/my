@@ -72,6 +72,9 @@ func RemoteInteractionContract(t *testing.T, newHarness RemoteInteractionFactory
 		{"SendsReactionsInTheLikeSlot", remoteSendsReactions},
 		{"SendsPollVotes", remoteSendsPollVotes},
 		{"VotesInLocalPolls", remoteVotesInLocalPolls},
+		{"QuotesLocalPostsWithApprovals", remoteQuotesLocalPosts},
+		{"SendsQuoteRequestsAndTakesTheAnswers", remoteSendsQuoteRequests},
+		{"AnswersQuoteRequestsAndRevokesApprovals", remoteAnswersQuoteRequests},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteInteractionEnv(t, newHarness)) })
@@ -93,6 +96,9 @@ type remoteInteractionEnv struct {
 	pollUpdates *appfederation.PollUpdates
 	// reader presents statuses to viewers and resolves the parts of the Notes the fan-out builds.
 	reader *appcontent.Reader
+	// quotes sends and receives the approvals of quotes (ADR-0069), nil when the harness stores
+	// no quotes.
+	quotes *appfederation.QuoteHandlers
 }
 
 func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) *remoteInteractionEnv {
@@ -109,7 +115,7 @@ func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) 
 	appcontent.RegisterInteractionProjectors(rs.projectors, ih.Interactions)
 	e.interactions = appcontent.NewInteractions(appcontent.InteractionDeps{
 		UnitOfWork: ih.UnitOfWork, Statuses: ih.Statuses, Interactions: ih.Interactions, Accounts: rs.accounts,
-		Relationships: rs.graph, RecordRemoteEmojis: rs.content.RecordRemoteEmojis, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
+		Relationships: rs.graph, RecordRemoteEmojis: rs.content.RecordRemoteEmojis, Quotes: ih.Quotes, Clock: rs.clock, IDs: rs.ids, Host: contractHost,
 		EmojiTags: func(_ context.Context, ids []string) ([]appcontent.EmojiTag, error) {
 			var out []appcontent.EmojiTag
 			for _, id := range ids {
@@ -138,11 +144,24 @@ func newRemoteInteractionEnv(t *testing.T, newHarness RemoteInteractionFactory) 
 	})
 	e.reader = appcontent.NewReader(appcontent.ReaderDeps{
 		Statuses: ih.Statuses, Interactions: ih.Interactions, Accounts: rs.accounts, Relationships: rs.graph, Clock: rs.clock,
+		Quotes: ih.Quotes,
 	})
+	var noteQuotes appfederation.NoteQuotes
+	if ih.Quotes != nil {
+		noteQuotes = rs.content
+		e.quotes = appfederation.NewQuoteHandlers(appfederation.QuoteHandlersDeps{
+			UnitOfWork: ih.UnitOfWork,
+			Recorder:   appfederation.RecorderDeps{Repository: ih.Federation, Outbox: outbox, IDs: rs.ids, Host: contractHost},
+			Approvals:  e.interactions, Quotes: rs.content, Statuses: rs.content, Accounts: rs.accounts, Fetcher: rs.fetcher, Clock: rs.clock,
+		})
+		e.quotes.RegisterProjectors(rs.projectors)
+		e.quotes.Register(rs.processor)
+		appfederation.RegisterFollowHandlers(rs.processor, appfederation.FollowHandlerDeps{Graph: rs.graph, Accounts: rs.remote, Quotes: e.quotes})
+	}
 	appfederation.NewFanOut(appfederation.FanOutDeps{
 		UnitOfWork: ih.UnitOfWork, Repository: ih.Federation, Outbox: outbox,
 		Statuses: appfederation.ContentStatuses{Service: rs.content, Interactions: e.interactions},
-		Accounts: rs.accounts, Graph: rs.graph, Clock: rs.clock, IDs: rs.ids, Host: contractHost, Parts: e.reader,
+		Accounts: rs.accounts, Graph: rs.graph, Clock: rs.clock, IDs: rs.ids, Host: contractHost, Parts: e.reader, Quotes: noteQuotes,
 	}).RegisterJobs(e.handlers)
 	return e
 }

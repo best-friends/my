@@ -59,3 +59,32 @@ func (h *Handler) object(w http.ResponseWriter, r *http.Request) {
 	}
 	writeBody(w, typeActivityJSON, acc.cache(obj.Public), status, obj.Document)
 }
+
+// quoteAuthorization serves GET /ap/quote_authorizations/{id}, the approval of a quote of a local
+// status (FEP-044f, ADR-0069 §1): to anyone, as the quoting post shows it; a revoked one gets 410
+// with a Tombstone. Authorized fetch still asks for a signature.
+func (h *Handler) quoteAuthorization(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if !validID(id) {
+		h.notFound(w, r)
+		return
+	}
+	acc, ok := h.authorize(w, r, true)
+	if !ok {
+		return
+	}
+	if acc.refused() {
+		h.unauthorized(w, r)
+		return
+	}
+	obj, err := h.o.Objects.QuoteAuthorization(r.Context(), id)
+	if err != nil {
+		h.fail(w, r, err)
+		return
+	}
+	status := http.StatusOK
+	if obj.Gone {
+		status = http.StatusGone
+	}
+	writeBody(w, typeActivityJSON, acc.cache(obj.Public), status, obj.Document)
+}

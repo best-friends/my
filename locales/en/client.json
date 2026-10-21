@@ -6063,6 +6063,10 @@
     "defaultMessage": "A poll you took part in has ended",
     "description": "Notification sentence: a poll that the user created or voted in has closed."
   },
+  "notifications.type.quote": {
+    "defaultMessage": "{name} quoted your post",
+    "description": "Notification sentence. {name} is the display name of the account that quoted the user's post in a post of its own, which the notification shows."
+  },
   "notifications.type.reaction": {
     "defaultMessage": "{name} reacted to your post with {emoji}",
     "description": "Notification sentence. {name} is the display name of the account that reacted to the user's post with an emoji; {emoji} is the emoji, or the :shortcode: of a custom emoji."

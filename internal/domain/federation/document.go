@@ -4,6 +4,7 @@ package federation
 
 import (
 	"encoding/json"
+	"html"
 	"strconv"
 	"time"
 )
@@ -13,7 +14,9 @@ import (
 // depend on its kind are built by the caller and passed as the activity's object.
 
 // LDContext returns the JSON-LD context of the documents this server publishes: ActivityStreams,
-// the security vocabulary of publicKey, and the Mastodon extensions in use (ADR-0006). Actor
+// the security vocabulary of publicKey, the Mastodon extensions in use (ADR-0006), and the
+// vocabulary of quotes (FEP-044f, GoToSocial's interaction policies, and the quote properties of
+// Misskey and Fedibird; ADR-0069 §3). Actor
 // documents and outbound activities share it. Each call returns a new value, so callers may not
 // change what others send.
 func LDContext() []any {
@@ -37,6 +40,19 @@ func LDContext() []any {
 			"blurhash":                  "toot:blurhash",
 			"focalPoint":                map[string]string{"@container": "@list", "@id": "toot:focalPoint"},
 			"votersCount":               "toot:votersCount",
+			"gts":                       "https://gotosocial.org/ns#",
+			"interactionPolicy":         map[string]string{"@id": "gts:interactionPolicy", "@type": "@id"},
+			"canQuote":                  map[string]string{"@id": "gts:canQuote", "@type": "@id"},
+			"automaticApproval":         map[string]string{"@id": "gts:automaticApproval", "@type": "@id"},
+			"interactingObject":         map[string]string{"@id": "gts:interactingObject", "@type": "@id"},
+			"interactionTarget":         map[string]string{"@id": "gts:interactionTarget", "@type": "@id"},
+			"quote":                     map[string]string{"@id": "https://w3id.org/fep/044f#quote", "@type": "@id"},
+			"quoteAuthorization":        map[string]string{"@id": "https://w3id.org/fep/044f#quoteAuthorization", "@type": "@id"},
+			"QuoteRequest":              "https://w3id.org/fep/044f#QuoteRequest",
+			"QuoteAuthorization":        "https://w3id.org/fep/044f#QuoteAuthorization",
+			"_misskey_quote":            "https://misskey-hub.net/ns#_misskey_quote",
+			"quoteUrl":                  "as:quoteUrl",
+			"quoteUri":                  "http://fedibird.com/ns#quoteUri",
 		},
 	}
 }
@@ -65,6 +81,10 @@ type ActivityDocument struct {
 	Cc        []IRI        `json:"cc"`
 	// Object is an IRI or an embedded document.
 	Object any `json:"object"`
+	// Instrument is the quoting post of a QuoteRequest; Result the QuoteAuthorization of the
+	// Accept of one (FEP-044f). Other activities have neither.
+	Instrument IRI `json:"instrument,omitempty"`
+	Result     IRI `json:"result,omitempty"`
 }
 
 // NewActivityDocument returns the top-level document of an activity with its context. A zero
@@ -222,6 +242,62 @@ type NoteDocument struct {
 	EndTime     string           `json:"endTime,omitempty"`
 	Closed      string           `json:"closed,omitempty"`
 	VotersCount *int64           `json:"votersCount,omitempty"`
+	// The quote of the status (ADR-0069 §3): FEP-044f's quote with the same IRI in the spellings
+	// of Misskey, Akkoma, and Fedibird, and the QuoteAuthorization that approves it.
+	Quote              IRI `json:"quote,omitempty"`
+	MisskeyQuote       IRI `json:"_misskey_quote,omitempty"`
+	QuoteURL           IRI `json:"quoteUrl,omitempty"`
+	QuoteURI           IRI `json:"quoteUri,omitempty"`
+	QuoteAuthorization IRI `json:"quoteAuthorization,omitempty"`
+	// InteractionPolicy says who may quote the status.
+	InteractionPolicy *InteractionPolicy `json:"interactionPolicy,omitempty"`
+}
+
+// InteractionPolicy is the interactionPolicy of a status (GoToSocial's interaction policies,
+// FEP-044f): only canQuote.
+type InteractionPolicy struct {
+	CanQuote QuoteApprovalPolicy `json:"canQuote"`
+}
+
+// QuoteApprovalPolicy is the canQuote of an interactionPolicy: whose quotes are approved
+// automatically. This server approves no quote by hand.
+type QuoteApprovalPolicy struct {
+	AutomaticApproval []IRI `json:"automaticApproval"`
+}
+
+// WithQuote returns n quoting target: with quote and its aliases, the QuoteAuthorization
+// authorization ("" for none), and the fallback of FEP-044f before its content, a paragraph of
+// the class quote-inline that links page, the quoted post's HTML page (Mastodon's form).
+func (n NoteDocument) WithQuote(target, authorization IRI, page string) NoteDocument {
+	n.Quote, n.MisskeyQuote, n.QuoteURL, n.QuoteURI, n.QuoteAuthorization = target, target, target, target, authorization
+	fallback := `<p class="quote-inline">RE: <a href="` + html.EscapeString(page) + `">` + html.EscapeString(page) + `</a></p>`
+	n.Content = fallback + n.Content
+	if len(n.ContentMap) > 0 {
+		m := make(map[string]string, len(n.ContentMap))
+		for lang, c := range n.ContentMap {
+			m[lang] = fallback + c
+		}
+		n.ContentMap = m
+	}
+	return n
+}
+
+// QuoteAuthorizationDocument is this server's approval of a quote (FEP-044f), served at its IRI.
+type QuoteAuthorizationDocument struct {
+	Context           []any      `json:"@context"`
+	ID                IRI        `json:"id"`
+	Type              ObjectType `json:"type"`
+	AttributedTo      IRI        `json:"attributedTo"`
+	InteractingObject IRI        `json:"interactingObject"`
+	InteractionTarget IRI        `json:"interactionTarget"`
+}
+
+// NewQuoteAuthorizationDocument returns the QuoteAuthorization id by which author approves the
+// quote quoting of quoted.
+func NewQuoteAuthorizationDocument(id, author, quoting, quoted IRI) QuoteAuthorizationDocument {
+	return QuoteAuthorizationDocument{
+		Context: LDContext(), ID: id, Type: ObjectQuoteAuthorization, AttributedTo: author, InteractingObject: quoting, InteractionTarget: quoted,
+	}
 }
 
 // QuestionOption is one choice of a Question: a Note named after it, whose replies count its

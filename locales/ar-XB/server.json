@@ -895,6 +895,14 @@
     "defaultMessage": "‮⅄onɹ ɐɔɔonuʇ ɯɐʎ uoʇ dosʇ ɹıƃɥʇ uoʍ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.status.quote_not_allowed": {
+    "defaultMessage": "‮⅄on ɔɐuuoʇ bnoʇǝ ʇɥıs dosʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.status.quote_not_found": {
+    "defaultMessage": "‮⊥ɥǝ dosʇ ʎon ɐɹǝ bnoʇıuƃ ʍɐs uoʇ ɟonup.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.status.reply_not_found": {
     "defaultMessage": "‮⊥ɥǝ dosʇ ʎon ɐɹǝ ɹǝdʅʎıuƃ ʇo ʍɐs uoʇ ɟonup.‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1121,6 +1129,10 @@
   },
   "push.poll_closed": {
     "defaultMessage": "‮∀ doʅʅ ʎon ʇooʞ dɐɹʇ ıu ɥɐs ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "push.quote": {
+    "defaultMessage": "‮{name} bnoʇǝp ʎonɹ dosʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "push.reaction": {

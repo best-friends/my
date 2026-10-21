@@ -1681,6 +1681,7 @@ const (
 	NotificationTypeMention              NotificationType = "mention"
 	NotificationTypeModerationNotice     NotificationType = "moderation_notice"
 	NotificationTypePollClosed           NotificationType = "poll_closed"
+	NotificationTypeQuote                NotificationType = "quote"
 	NotificationTypeReaction             NotificationType = "reaction"
 	NotificationTypeRelationshipsSevered NotificationType = "relationships_severed"
 	NotificationTypeReportResolved       NotificationType = "report_resolved"
@@ -1714,6 +1715,8 @@ func (e NotificationType) Valid() bool {
 	case NotificationTypeModerationNotice:
 		return true
 	case NotificationTypePollClosed:
+		return true
+	case NotificationTypeQuote:
 		return true
 	case NotificationTypeReaction:
 		return true
@@ -1774,6 +1777,27 @@ func (e Permission) Valid() bool {
 	case PermissionManageWebhooks:
 		return true
 	case PermissionViewAudit:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for QuotePolicy.
+const (
+	QuotePolicyFollowers QuotePolicy = "followers"
+	QuotePolicyNobody    QuotePolicy = "nobody"
+	QuotePolicyPublic    QuotePolicy = "public"
+)
+
+// Valid indicates whether the value is a known member of the QuotePolicy enum.
+func (e QuotePolicy) Valid() bool {
+	switch e {
+	case QuotePolicyFollowers:
+		return true
+	case QuotePolicyNobody:
+		return true
+	case QuotePolicyPublic:
 		return true
 	default:
 		return false
@@ -4444,6 +4468,13 @@ type CreateStatusRequest struct {
 	// posted; the author and the users who voted are notified then.
 	Poll *PollInput `json:"poll,omitempty"`
 
+	// QuotePolicy Who may quote the new status; the user's `default_quote_policy` when left out.
+	QuotePolicy *QuotePolicy `json:"quote_policy,omitempty"`
+
+	// QuotedStatusId The status to quote (FR-114, ADR-0069). It must be one the user may see and may quote
+	// (`Status.quotable`); a quote of a boost is a quote of the boosted status.
+	QuotedStatusId *Id `json:"quoted_status_id,omitempty"`
+
 	// Sensitive Whether the media are sensitive.
 	Sensitive *bool `json:"sensitive,omitempty"`
 
@@ -4879,6 +4910,10 @@ type EditStatusRequest struct {
 
 	// Media The media to attach, in order.
 	Media *StatusMediaInput `json:"media,omitempty"`
+
+	// RemoveQuote Takes the status's quote away for good (ADR-0069 §3). A status keeps the status it
+	// quotes otherwise: an edit cannot change it.
+	RemoveQuote *bool `json:"remove_quote,omitempty"`
 
 	// Sensitive Whether the media are sensitive.
 	Sensitive *bool `json:"sensitive,omitempty"`
@@ -5590,8 +5625,10 @@ type Notification struct {
 	// (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
 	// (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
 	// account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
-	// with another emoji is another notification). `status` is the post that `mention`,
-	// `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
+	// with another emoji is another notification), or the account that quoted a post of the
+	// user (`quote`, once the quote is approved or, from software without approvals, received).
+	// `status` is the post that `mention`, `boost`, `favourite`, `reaction`, and `poll_closed`
+	// are about, and for `quote` the post that quotes. `moderation_notice` comes from the instance and has no `account`; its
 	// `moderation_action` is the action on the user's account, with its kind, reason, and end.
 	// `report_resolved` also comes from the instance: its `report` is the user's report that
 	// the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -5642,8 +5679,10 @@ type NotificationPage struct {
 // (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
 // (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
 // account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
-// with another emoji is another notification). `status` is the post that `mention`,
-// `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
+// with another emoji is another notification), or the account that quoted a post of the
+// user (`quote`, once the quote is approved or, from software without approvals, received).
+// `status` is the post that `mention`, `boost`, `favourite`, `reaction`, and `poll_closed`
+// are about, and for `quote` the post that quotes. `moderation_notice` comes from the instance and has no `account`; its
 // `moderation_action` is the action on the user's account, with its kind, reason, and end.
 // `report_resolved` also comes from the instance: its `report` is the user's report that
 // the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -5863,6 +5902,9 @@ type Preferences struct {
 	// DefaultPostLanguage The language of new posts that name none, a BCP 47 language tag; `und` when undetermined.
 	DefaultPostLanguage string `json:"default_post_language"`
 
+	// DefaultQuotePolicy Who may quote the user's new statuses that name no `quote_policy`.
+	DefaultQuotePolicy QuotePolicy `json:"default_quote_policy"`
+
 	// DefaultVisibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
 	// `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
 	// public timelines; `private` followers and mentioned accounts; `direct` mentioned
@@ -6046,6 +6088,12 @@ type QrCode struct {
 	// Size The width and height of the view box, in modules.
 	Size int `json:"size"`
 }
+
+// QuotePolicy Who may quote a status (FR-114, ADR-0069): `public` anyone who may see it, `followers`
+// the author's followers, `nobody` the author alone. A followers-only status is quoted only
+// by its author, in a followers-only or direct status, and a direct one by nobody, whatever
+// its policy.
+type QuotePolicy string
 
 // QuoteState The state of a quote as the viewer sees it (ADR-0069), with the values of Mastodon's
 // `Quote.state` and `legacy`. The quoted status is shown for `accepted` and `legacy`, and
@@ -6324,6 +6372,15 @@ type SetInstanceTextRequest struct {
 	Body string `json:"body"`
 }
 
+// SetQuotePolicyRequest Who may quote the status from now on. Approvals given before stay.
+type SetQuotePolicyRequest struct {
+	// QuotePolicy Who may quote a status (FR-114, ADR-0069): `public` anyone who may see it, `followers`
+	// the author's followers, `nobody` the author alone. A followers-only status is quoted only
+	// by its author, in a followers-only or direct status, and a direct one by nobody, whatever
+	// its policy.
+	QuotePolicy QuotePolicy `json:"quote_policy"`
+}
+
 // SetThemeRequest The whole theme; tokens left out go back to their defaults.
 type SetThemeRequest struct {
 	CustomCss string            `json:"custom_css"`
@@ -6460,9 +6517,16 @@ type Status struct {
 	// `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
 	Poll *Poll `json:"poll,omitempty"`
 
+	// Quotable Whether the authenticated user may quote the status (its `quote_policy`, its visibility,
+	// and the user's follow of the author decide it); omitted for anonymous requests.
+	Quotable *bool `json:"quotable,omitempty"`
+
 	// Quote The status that this status quotes; omitted when it quotes none, and in a
 	// `quoted_status`.
 	Quote *StatusQuote `json:"quote,omitempty"`
+
+	// QuotePolicy Who may quote the status; given only to its author.
+	QuotePolicy *QuotePolicy `json:"quote_policy,omitempty"`
 
 	// Reactions The emoji reactions to the status, counted per emoji: the 20 emoji with the most
 	// reactions, the most first. The others are seen in `listStatusReactions`. Favourites
@@ -6840,6 +6904,12 @@ type UpdateInstanceSettingsRequest struct {
 type UpdatePreferencesRequest struct {
 	// DefaultPostLanguage The language of new posts that name none; `und` for undetermined.
 	DefaultPostLanguage *string `json:"default_post_language,omitempty"`
+
+	// DefaultQuotePolicy Who may quote a status (FR-114, ADR-0069): `public` anyone who may see it, `followers`
+	// the author's followers, `nobody` the author alone. A followers-only status is quoted only
+	// by its author, in a followers-only or direct status, and a direct one by nobody, whatever
+	// its policy.
+	DefaultQuotePolicy *QuotePolicy `json:"default_quote_policy,omitempty"`
 
 	// DefaultVisibility Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
 	// `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
@@ -7550,6 +7620,15 @@ type CreateStatusParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// ListStatusQuotesParams defines parameters for ListStatusQuotes.
+type ListStatusQuotesParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListStatusReactionsParams defines parameters for ListStatusReactions.
 type ListStatusReactionsParams struct {
 	// Emoji The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
@@ -7769,6 +7848,9 @@ type EditStatusJSONRequestBody = EditStatusRequest
 
 // VoteInPollJSONRequestBody defines body for VoteInPoll for application/json ContentType.
 type VoteInPollJSONRequestBody = VoteInPollRequest
+
+// SetStatusQuotePolicyJSONRequestBody defines body for SetStatusQuotePolicy for application/json ContentType.
+type SetStatusQuotePolicyJSONRequestBody = SetQuotePolicyRequest
 
 // ReactToStatusJSONRequestBody defines body for ReactToStatus for application/json ContentType.
 type ReactToStatusJSONRequestBody = ReactToStatusRequest
@@ -8345,6 +8427,15 @@ type ServerInterface interface {
 	// VoteInPoll Vote in the poll of a status
 	// (POST /statuses/{id}/poll/votes)
 	VoteInPoll(w http.ResponseWriter, r *http.Request, id StatusId)
+	// SetStatusQuotePolicy Change who may quote the authenticated user's status
+	// (PUT /statuses/{id}/quote_policy)
+	SetStatusQuotePolicy(w http.ResponseWriter, r *http.Request, id StatusId)
+	// ListStatusQuotes List the statuses that quote the authenticated user's status
+	// (GET /statuses/{id}/quotes)
+	ListStatusQuotes(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusQuotesParams)
+	// RevokeStatusQuote Revoke the approval of a quote of the authenticated user's status
+	// (POST /statuses/{id}/quotes/{quote_id}/revoke)
+	RevokeStatusQuote(w http.ResponseWriter, r *http.Request, id StatusId, quoteId Id)
 	// UnreactToStatus Take back the emoji reaction to a status
 	// (DELETE /statuses/{id}/reaction)
 	UnreactToStatus(w http.ResponseWriter, r *http.Request, id StatusId)
@@ -13707,6 +13798,122 @@ func (siw *ServerInterfaceWrapper) VoteInPoll(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// SetStatusQuotePolicy operation middleware
+func (siw *ServerInterfaceWrapper) SetStatusQuotePolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetStatusQuotePolicy(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListStatusQuotes operation middleware
+func (siw *ServerInterfaceWrapper) ListStatusQuotes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListStatusQuotesParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListStatusQuotes(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeStatusQuote operation middleware
+func (siw *ServerInterfaceWrapper) RevokeStatusQuote(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id StatusId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "quote_id" -------------
+	var quoteId Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "quote_id", r.PathValue("quote_id"), &quoteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "quote_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeStatusQuote(w, r, id, quoteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // UnreactToStatus operation middleware
 func (siw *ServerInterfaceWrapper) UnreactToStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -14317,6 +14524,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/statuses/{id}/reaction", wrapper.UnreactToStatus)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/statuses/{id}/reaction", wrapper.ReactToStatus)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/reactions", wrapper.ListStatusReactions)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/statuses/{id}/quote_policy", wrapper.SetStatusQuotePolicy)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/quotes", wrapper.ListStatusQuotes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/statuses/{id}/quotes/{quote_id}/revoke", wrapper.RevokeStatusQuote)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/statuses/{id}/source", wrapper.GetStatusSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/{id}/statuses", wrapper.ListAccountStatuses)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/timelines/home", wrapper.GetHomeTimeline)
@@ -25760,6 +25970,165 @@ func (response VoteInPolldefaultApplicationProblemPlusJSONResponse) VisitVoteInP
 	return err
 }
 
+type SetStatusQuotePolicyRequestObject struct {
+	Id   StatusId `json:"id"`
+	Body *SetStatusQuotePolicyJSONRequestBody
+}
+
+type SetStatusQuotePolicyResponseObject interface {
+	VisitSetStatusQuotePolicyResponse(w http.ResponseWriter) error
+}
+
+type SetStatusQuotePolicy200JSONResponse struct{ StatusAfterActionJSONResponse }
+
+func (response SetStatusQuotePolicy200JSONResponse) VisitSetStatusQuotePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetStatusQuotePolicydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response SetStatusQuotePolicydefaultApplicationProblemPlusJSONResponse) VisitSetStatusQuotePolicyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListStatusQuotesRequestObject struct {
+	Id     StatusId `json:"id"`
+	Params ListStatusQuotesParams
+}
+
+type ListStatusQuotesResponseObject interface {
+	VisitListStatusQuotesResponse(w http.ResponseWriter) error
+}
+
+type ListStatusQuotes200JSONResponse struct{ StatusPageJSONResponse }
+
+func (response ListStatusQuotes200JSONResponse) VisitListStatusQuotesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListStatusQuotesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListStatusQuotesdefaultApplicationProblemPlusJSONResponse) VisitListStatusQuotesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeStatusQuoteRequestObject struct {
+	Id      StatusId `json:"id"`
+	QuoteId Id       `json:"quote_id"`
+}
+
+type RevokeStatusQuoteResponseObject interface {
+	VisitRevokeStatusQuoteResponse(w http.ResponseWriter) error
+}
+
+type RevokeStatusQuote204Response struct {
+}
+
+func (response RevokeStatusQuote204Response) VisitRevokeStatusQuoteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeStatusQuotedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RevokeStatusQuotedefaultApplicationProblemPlusJSONResponse) VisitRevokeStatusQuoteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type UnreactToStatusRequestObject struct {
 	Id StatusId `json:"id"`
 }
@@ -27088,6 +27457,15 @@ type StrictServerInterface interface {
 	// VoteInPoll Vote in the poll of a status
 	// (POST /statuses/{id}/poll/votes)
 	VoteInPoll(ctx context.Context, request VoteInPollRequestObject) (VoteInPollResponseObject, error)
+	// SetStatusQuotePolicy Change who may quote the authenticated user's status
+	// (PUT /statuses/{id}/quote_policy)
+	SetStatusQuotePolicy(ctx context.Context, request SetStatusQuotePolicyRequestObject) (SetStatusQuotePolicyResponseObject, error)
+	// ListStatusQuotes List the statuses that quote the authenticated user's status
+	// (GET /statuses/{id}/quotes)
+	ListStatusQuotes(ctx context.Context, request ListStatusQuotesRequestObject) (ListStatusQuotesResponseObject, error)
+	// RevokeStatusQuote Revoke the approval of a quote of the authenticated user's status
+	// (POST /statuses/{id}/quotes/{quote_id}/revoke)
+	RevokeStatusQuote(ctx context.Context, request RevokeStatusQuoteRequestObject) (RevokeStatusQuoteResponseObject, error)
 	// UnreactToStatus Take back the emoji reaction to a status
 	// (DELETE /statuses/{id}/reaction)
 	UnreactToStatus(ctx context.Context, request UnreactToStatusRequestObject) (UnreactToStatusResponseObject, error)
@@ -32344,6 +32722,93 @@ func (sh *strictHandler) VoteInPoll(w http.ResponseWriter, r *http.Request, id S
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(VoteInPollResponseObject); ok {
 		if err := validResponse.VisitVoteInPollResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetStatusQuotePolicy operation middleware
+func (sh *strictHandler) SetStatusQuotePolicy(w http.ResponseWriter, r *http.Request, id StatusId) {
+	var request SetStatusQuotePolicyRequestObject
+
+	request.Id = id
+
+	var body SetStatusQuotePolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetStatusQuotePolicy(ctx, request.(SetStatusQuotePolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetStatusQuotePolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetStatusQuotePolicyResponseObject); ok {
+		if err := validResponse.VisitSetStatusQuotePolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListStatusQuotes operation middleware
+func (sh *strictHandler) ListStatusQuotes(w http.ResponseWriter, r *http.Request, id StatusId, params ListStatusQuotesParams) {
+	var request ListStatusQuotesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListStatusQuotes(ctx, request.(ListStatusQuotesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListStatusQuotes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListStatusQuotesResponseObject); ok {
+		if err := validResponse.VisitListStatusQuotesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeStatusQuote operation middleware
+func (sh *strictHandler) RevokeStatusQuote(w http.ResponseWriter, r *http.Request, id StatusId, quoteId Id) {
+	var request RevokeStatusQuoteRequestObject
+
+	request.Id = id
+	request.QuoteId = quoteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeStatusQuote(ctx, request.(RevokeStatusQuoteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeStatusQuote")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeStatusQuoteResponseObject); ok {
+		if err := validResponse.VisitRevokeStatusQuoteResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

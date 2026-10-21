@@ -863,6 +863,14 @@
     "defaultMessage": "Your account may not post right now.",
     "description": "Detail of the HTTP 403 API error when a moderator restricted the account from posting."
   },
+  "errors.status.quote_not_found": {
+    "defaultMessage": "The post you are quoting was not found.",
+    "description": "Detail of the HTTP 422 API error when a post quotes a post that does not exist, was deleted, or that the user cannot see."
+  },
+  "errors.status.quote_not_allowed": {
+    "defaultMessage": "You cannot quote this post.",
+    "description": "Detail of the HTTP 422 API error when a post quotes a post whose quote policy or visibility does not let the user quote it."
+  },
   "errors.status.reply_not_found": {
     "defaultMessage": "The post you are replying to was not found.",
     "description": "Detail of the HTTP 422 API error when a reply targets a post that does not exist, was deleted, or that the user cannot see."
@@ -1082,6 +1090,10 @@
   "push.poll_closed": {
     "defaultMessage": "A poll you took part in has ended",
     "description": "Web Push notification: a poll that the user created or voted in has ended."
+  },
+  "push.quote": {
+    "defaultMessage": "{name} quoted your post",
+    "description": "Web Push notification. {name} is the display name, or the @handle, of the account that quoted the user's post in a post of its own."
   },
   "push.reaction": {
     "defaultMessage": "{name} reacted to your post",

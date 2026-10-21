@@ -33,12 +33,18 @@ const (
 	// leave it, and the Accept or Reject of a Follow of the instance actor. Its object is the
 	// relay, or the remote actor whose Follow of the instance actor is rejected.
 	OutboundRelay OutboundObjectKind = "relay"
+	// OutboundQuote is an activity of the approval of a quote (FEP-044f, ADR-0069 §3): the
+	// QuoteRequest of a local status's quote of a remote one, the Accept or Reject of a remote
+	// QuoteRequest, and the Delete of a revoked QuoteAuthorization. Its document is stored when
+	// it is recorded, and it goes to one inbox (the payload's).
+	OutboundQuote OutboundObjectKind = "quote"
 )
 
 // Valid reports whether k is one of the outbound object kinds.
 func (k OutboundObjectKind) Valid() bool {
 	switch k {
-	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundPollVote, OutboundRelay:
+	case OutboundStatus, OutboundBoost, OutboundFavourite, OutboundFollow, OutboundBlock, OutboundAccount, OutboundReport, OutboundPollVote, OutboundRelay,
+		OutboundQuote:
 		return true
 	}
 	return false

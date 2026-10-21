@@ -136,6 +136,8 @@ type App struct {
 	Content  *content.Service
 	// Interactions runs boosts, favourites, bookmarks, and pins (FR-107, FR-113).
 	Interactions *content.Interactions
+	// QuoteHandlers send and receive the approvals of quotes (ADR-0069).
+	QuoteHandlers *federation.QuoteHandlers
 	// Statuses presents statuses, their threads and history, and bookmarks to a viewer.
 	Statuses *content.Reader
 	// AutoDelete holds the users' automatic deletion of their old posts and runs it (FR-118).
@@ -525,6 +527,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Sanitizer:               newHTMLSanitizer(),
 		RemoteMedia:             remoteMediaRecorder{a}, // reads a.Media, built by setMedia
 		Quotes:                  quotes,
+		DefaultQuotePolicy:      a.defaultQuotePolicy,
 		MaxStatusLength:         a.Instance.MaxStatusLength,
 		RequireMediaDescription: a.Instance.RequireMediaDescription,
 		DefaultLanguage:         a.defaultPostLanguage,
@@ -540,6 +543,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		UnitOfWork: a.UnitOfWork, Statuses: statuses, Interactions: interactions,
 		Accounts: a.Accounts, Relationships: a.Graph, Restrictions: a.AccountPolicy.Content(),
 		RecordRemoteEmojis: a.Content.RecordRemoteEmojis,
+		Quotes:             quotes,
 		// Reads a.Media, built by setMedia.
 		EmojiTags: func(ctx context.Context, ids []string) ([]content.EmojiTag, error) {
 			return a.Media.EmojiTags(ctx, ids)
@@ -753,7 +757,24 @@ func (a *App) setUpFederation(cfg *config.Config, repo federation.Repository) qu
 	federation.RegisterReportProjectors(a.Projectors, federation.RecorderDeps{
 		Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host,
 	}, a.Accounts)
+	// The approvals of quotes (ADR-0069): the QuoteRequests, the answers, and the revocations.
+	a.QuoteHandlers = federation.NewQuoteHandlers(federation.QuoteHandlersDeps{
+		UnitOfWork: a.UnitOfWork,
+		Recorder:   federation.RecorderDeps{Repository: repo, Outbox: outbox, IDs: a.IDs, Host: cfg.Host},
+		Approvals:  a.Interactions, Quotes: a.Content, Statuses: a.Content, Accounts: a.Accounts,
+		Fetcher: remoteDocuments{a}, // reads a.RemoteActors, built by setUpRemoteActors
+		Clock:   a.Clock, Logger: a.Logger,
+	})
+	a.QuoteHandlers.RegisterProjectors(a.Projectors)
 	return outbox
+}
+
+// remoteDocuments fetches remote documents through a.RemoteActors, which setUpRemoteActors
+// builds after the projectors that read it are registered.
+type remoteDocuments struct{ a *App }
+
+func (r remoteDocuments) Fetch(ctx context.Context, uri string) (*federation.Fetched, error) {
+	return r.a.RemoteActors.Fetch(ctx, uri)
 }
 
 // setUpPolls registers the end of polls and the Updates of local polls (FR-112): the jobs that
@@ -778,12 +799,12 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 		UnitOfWork: a.UnitOfWork, Repository: repo, Outbox: outbox,
 		Statuses: federation.ContentStatuses{Service: a.Content, Interactions: a.Interactions},
 		Accounts: a.Accounts, Graph: a.Graph, Parts: a.Statuses, Follows: a.Graph, Images: a.Media.Images,
-		EmojiTags: a.Media.EmojiTags,
-		Blocks:    a.Graph,
-		Reports:   a.Moderation,
-		Relays:    a.Relays,
-		Domains:   a.ModerationPolicy,
-		Clock:     a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
+		EmojiTags: a.Media.EmojiTags, Quotes: a.Content,
+		Blocks:  a.Graph,
+		Reports: a.Moderation,
+		Relays:  a.Relays,
+		Domains: a.ModerationPolicy,
+		Clock:   a.Clock, IDs: a.IDs, Host: cfg.Host, AccountDomain: cfg.AccountDomain, Logger: a.Logger,
 		Suspensions: a.ModerationPolicy,
 	})
 	a.FanOut.RegisterJobs(a.Handlers)
@@ -795,6 +816,7 @@ func (a *App) setUpFanOut(cfg *config.Config, repo federation.Repository, outbox
 func (a *App) newObjects(cfg *config.Config) *federation.Objects {
 	return federation.NewObjects(federation.ObjectsDeps{
 		Statuses: a.Content, Accounts: a.Accounts, Graph: a.Graph, Timeline: a.Timeline, Reader: a.Statuses, Images: a.Media.Images,
+		Quotes:     federation.ContentQuotes{Service: a.Content, Interactions: a.Interactions},
 		Signatures: federation.NewSignatureVerifier(httpsig.New(), a.RemoteActors, a.KV, a.Clock),
 		Domains:    a.ModerationPolicy,
 		// Authorized fetch (FR-408) is the instance setting, read per request.
@@ -973,6 +995,19 @@ func newMediaProxy(cfg *config.Config, repo content.MediaRepository, cards conte
 
 // defaultPostLanguage returns the default post language of a user's preferences, or "" for a
 // user without preferences.
+// defaultQuotePolicy returns who may quote the new statuses of a user (ADR-0069 §1): the
+// default of their preferences.
+func (a *App) defaultQuotePolicy(ctx context.Context, userID string) (content.QuotePolicy, error) {
+	p, err := a.Identity.Preferences(ctx, userID)
+	if errors.Is(err, identity.ErrNotFound) {
+		return content.QuotePolicyPublic, nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return content.QuotePolicy(p.DefaultQuotePolicy), nil
+}
+
 func (a *App) defaultPostLanguage(ctx context.Context, userID string) (string, error) {
 	p, err := a.Identity.Preferences(ctx, userID)
 	if errors.Is(err, identity.ErrNotFound) {

@@ -27,6 +27,7 @@ func newPreferences(p appidentity.UserPreferences) Preferences {
 	}
 	return Preferences{
 		Locale: p.Locale, TimeZone: p.TimeZone, TimeZoneChosen: p.TimeZoneChosen, DefaultVisibility: Visibility(p.DefaultVisibility),
+		DefaultQuotePolicy:  QuotePolicy(p.DefaultQuotePolicy),
 		DefaultPostLanguage: p.DefaultPostLanguage, RequireMediaDescription: p.RequireMediaDescription,
 		EmailModeratorNotifications: p.EmailModeratorNotifications, TimelineLanguages: langs,
 	}
@@ -62,6 +63,10 @@ func (s *Server) UpdatePreferences(ctx context.Context, req UpdatePreferencesReq
 		if b.DefaultVisibility != nil {
 			vis := identity.Visibility(*b.DefaultVisibility)
 			in.DefaultVisibility = &vis
+		}
+		if b.DefaultQuotePolicy != nil {
+			policy := identity.QuotePolicy(*b.DefaultQuotePolicy)
+			in.DefaultQuotePolicy = &policy
 		}
 	}
 	p, err := s.o.Preferences.UpdatePreferences(ctx, v.UserID, in)

@@ -91,6 +91,7 @@ const sentences: Readonly<Record<NotificationType, ClientMessageKey>> = {
   boost: "client:notifications.type.boost",
   favourite: "client:notifications.type.favourite",
   reaction: "client:notifications.type.reaction",
+  quote: "client:notifications.type.quote",
   poll_closed: "client:notifications.type.poll_closed",
   moderation_notice: "client:notifications.type.moderation_notice",
   report_resolved: "client:notifications.type.report_resolved",

@@ -64,6 +64,8 @@ func (s *Service) FindStatus(ctx context.Context, id string) (Status, error) {
 // LiveRevision returns a status that is not deleted with one of its revisions, the revision an
 // outbound Create or Update presents. A missing or deleted status, and a revision of another
 // status, fail with ErrNotFound.
+// An empty revisionID reads the current revision: the Update of a status whose quote or quote
+// policy changed without a new revision (ADR-0069 §3).
 func (s *Service) LiveRevision(ctx context.Context, statusID, revisionID string) (Status, Revision, error) {
 	st, err := s.d.Repository.FindStatus(ctx, statusID)
 	if err != nil {
@@ -75,7 +77,12 @@ func (s *Service) LiveRevision(ctx context.Context, statusID, revisionID string)
 	case !errors.Is(err, ErrNotFound):
 		return Status{}, Revision{}, err
 	}
-	rev, err := s.d.Repository.FindRevision(ctx, revisionID)
+	var rev Revision
+	if revisionID == "" {
+		rev, err = s.d.Repository.FindCurrentRevision(ctx, statusID)
+	} else {
+		rev, err = s.d.Repository.FindRevision(ctx, revisionID)
+	}
 	if err != nil {
 		return Status{}, Revision{}, err
 	}
