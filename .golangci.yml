@@ -213,6 +213,24 @@ linters:
             - github.com/best-friends/my/internal/domain/webhook
             - github.com/best-friends/my/internal/app
             - github.com/best-friends/my/internal/i18n
+        domain-finance:
+          list-mode: strict
+          files:
+            - "**/internal/domain/finance/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/finance
+        app-finance:
+          list-mode: strict
+          files:
+            - "**/internal/app/finance/**"
+          allow:
+            - $gostd
+            - github.com/best-friends/my/internal/domain/finance
+            - github.com/best-friends/my/internal/app
+            - github.com/best-friends/my/internal/i18n
+            # NFKC normalization of the providers (ADR-0067 §2, cost_item_label_revisions.provider_normalized): pure-Go Unicode data, not an external resource.
+            - golang.org/x/text/unicode/norm
         # app/kernel holds the ports and helpers shared by every module (Clock, IDGenerator, KeyManager);
         # it depends on nothing in the repository so that any module can import it.
         app-kernel:

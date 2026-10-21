@@ -30,6 +30,17 @@ func (q *Queries) DeleteAllAppealStates(ctx context.Context) error {
 	return err
 }
 
+const deleteAllCostItemHeads = `-- name: DeleteAllCostItemHeads :exec
+
+DELETE FROM cost_item_heads
+`
+
+// Finance -------------------------------------------------------------------------------------
+func (q *Queries) DeleteAllCostItemHeads(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllCostItemHeads)
+	return err
+}
+
 const deleteAllDomainRestrictions = `-- name: DeleteAllDomainRestrictions :exec
 DELETE FROM domain_restrictions
 `
@@ -371,6 +382,22 @@ FROM moderation_appeals a LEFT JOIN moderation_appeal_decisions d ON d.appeal_id
 // then the decision since it was made.
 func (q *Queries) RebuildAppealStates(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, rebuildAppealStates)
+	return err
+}
+
+const rebuildCostItemHeads = `-- name: RebuildCostItemHeads :exec
+INSERT INTO cost_item_heads (cost_item_id, label_revision_id, ends_on)
+SELECT i.id,
+  (SELECT l.id FROM cost_item_label_revisions l WHERE l.cost_item_id = i.id ORDER BY l.id DESC LIMIT 1),
+  (SELECT e.ends_on FROM cost_item_end_changes e WHERE e.cost_item_id = i.id ORDER BY e.id DESC LIMIT 1)
+FROM cost_items i
+WHERE NOT EXISTS (SELECT 1 FROM cost_item_cancellations c WHERE c.cost_item_id = i.id)
+`
+
+// RebuildCostItemHeads states the rule of the cost item commands: every item that is not
+// canceled, with its newest label revision and end change (no end without one).
+func (q *Queries) RebuildCostItemHeads(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, rebuildCostItemHeads)
 	return err
 }
 

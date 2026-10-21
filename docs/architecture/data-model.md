@@ -34,6 +34,7 @@
 | `real` | 倍精度の浮動小数点数（メディアの焦点など、誤差を許す量だけ） | `REAL` | `double precision` |
 | `bool` | 真偽値 | `INTEGER`（0/1） | `boolean` |
 | `timestamp` | UTC・ミリ秒精度の時刻 | `INTEGER`（Unix ミリ秒、#17 の推奨） | `timestamptz` |
+| `date` | 時刻とタイムゾーンを持たない暦の日付（`YYYY-MM-DD`、0001-01-01〜9999-12-31） | `TEXT` + `CHECK (date(x) IS x)` | `date` |
 | `lang` | BCP 47 言語タグ。不明は `und` | `TEXT` | `text` |
 | `enum(…)` | 英小文字スネークケースの列挙 | `TEXT` + `CHECK` | `text` + `CHECK` |
 | `bytes` | バイナリ（暗号化済みの秘密など） | `BLOB` | `bytea` |
@@ -43,6 +44,10 @@
   - `jsonb` はキーの順序と空白を変え、重複したキーは最後の値だけを残します。AS2 の正規化（[federation §4](federation.md#4-as2-の正規化)）は最初の値を読み、`contentMap` の順序にも意味を持たせるので、方言によって処理の結果が変わってしまいます。
   - `jsonb` は `\u0000` と対になっていないサロゲートのエスケープを、`text` はヌル文字を受け付けません。そのような受信を `500` で返すと、送信側は再送し続けます。
   - 受信した文書の原本は、障害調査とフィクスチャの採取のため、受け取ったバイト列のまま残します。
+- `date` は支払日のように、カードの明細や請求書に書かれた日付そのものです（[ADR-0067 §5](../adr/0067-finance-cost-records.md)）。時刻の値ではないので、`timestamp` の「UTC で保持」は当たりません。
+  SQLite の `date()` は実在する `YYYY-MM-DD` だけを同じ文字列で返すので、`CHECK` は `2026-02-30` や時刻つきの値を拒みます。`TEXT` のままの比較と並べ替えは日付の順と一致します。
+  PostgreSQL の `date` はテストの pgmem（[ADR-0041](../adr/0041-postgres-tests-on-pgmem.md)）でも実際の PostgreSQL と同じに動き、`testkit.FinanceRepositoryContract` が両方言で確かめます。
+  Go では `finance.Date`（`internal/domain/finance`）で持ち、方言のアダプタが `YYYY-MM-DD` の文字列と `pgtype.Date` に変えます。
 - 文字列の論理型（`id`・`string(n)`・`text`・`iri`・`lang`・`enum`）の値は、妥当な UTF-8 でヌル文字（U+0000）を含みません。
   PostgreSQL の `text` はヌル文字を保存できず、SQLite は保存できるので、方言で結果が変わらないようにアプリが書く前に守ります。
   ローカルの入力（クライアント API・CLI・認証画面から文字列の列に書く値）は、モジュールのドメインの検証で拒否します。
@@ -198,6 +203,7 @@ flowchart LR
 | `federation` | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `remote_instances`, `instance_nodeinfo_observations`, `instance_availability_events` | `instance_health` |
 | `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_retirements`, `announcements`, `announcement_revisions`, `announcement_state_changes` | `instance_settings`, `instance_texts`, `instance_rule_heads`, `announcement_heads`, `announcement_reads` |
 | `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
+| `finance` | `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations` | `cost_item_heads` |
 | 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `job_attempts`, `kv_entries` |
 
 ### 4.1 identity
@@ -1295,6 +1301,31 @@ flowchart LR
 - `webhook_messages` と、その配送・試行は、作成から 14 日（固定）で 1 時間ごとの消去ジョブ `webhook.purge` が消します（FR-803）。本文は通報のコメントなどの個人データを含みます。
 - `url` は Discord や Slack のように経路やクエリに秘密を含むことがあるので、ログと監査ログ（`target_label`）にはホスト名と説明だけを出します。
 
+### 4.12 finance
+
+サーバーの維持費用（FR-901・FR-902、[ADR-0067](../adr/0067-finance-cost-records.md)）。`internal/app/finance` が所有します。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `cost_items` | リソース | `id`, `schedule`（`enum(once, weeks, months, years)`）, `interval`（`int`）, `starts_on`（`date`。単発は支払日）, `created_by_user_id`（NULL 可 = CLI）, `created_at` | `CHECK`: `once` は `interval = 1`、ほかは 1〜99 |
+| `cost_item_label_revisions` | イベント（版） | `id`, `cost_item_id`, `name`（`string(100)`）, `provider`（`string(100)`）, `provider_normalized`, `category`（`enum(compute, database, storage, network, domain, email, software, other)`）, `memo`（`text`。なしは `''`。公開しない）, `revised_by_user_id`（NULL 可）, `revised_at` | インデックス `(cost_item_id, id DESC)` |
+| `cost_item_price_revisions` | イベント（版） | `id`, `cost_item_id`, `effective_on`（`date`）, `amount_minor`（`bigint`）, `currency`（`string(3)`。ISO 4217）, `revised_by_user_id`（NULL 可）, `revised_at` | `amount_minor >= 0`。インデックス `(cost_item_id, id)` |
+| `cost_item_end_changes` | イベント | `id`, `cost_item_id`, `ends_on`（`date`。NULL 可 = 無期限）, `changed_by_user_id`（NULL 可）, `changed_at` | インデックス `(cost_item_id, id DESC)` |
+| `cost_item_cancellations` | イベント | `id`, `cost_item_id`, `canceled_by_user_id`（NULL 可）, `canceled_at` | 一意 `(cost_item_id)` |
+| `cost_item_heads` | 投影 | `cost_item_id`（PK）, `label_revision_id`, `ends_on`（`date`。NULL 可 = 無期限） | 行がある = 取り消されていない |
+
+- 作成は項目・最初のラベルの版・`starts_on` から効く最初の価格の版（と終了日を渡したときは終了の変更）を 1 つのトランザクションで書き、`finance.cost_item_changed` を発行します。
+  ラベルの変更と終了の変更も `finance.cost_item_changed` を発行し、その射影が `cost_item_heads` を書きます。取り消しは `finance.cost_item_canceled` を発行し、射影が行を消します。
+  価格の改定は投影を持たず、読み取りが項目の改定をすべて読みます。
+- 周期と開始日は項目の不変の事実です。周期を変えるときは、項目を終了して新しい項目を作ります。改定の `effective_on` と終了日は開始日より前にできません（`finance.ValidateDates`）。
+- 支払日は開始日から数えます（`finance.Recurrence.Occurrence`）。月ごとはその月にない日を月の最終日に、年ごとの 2/29 はうるう年でない年の 2/28 にします。終了日は含みます。
+  各回の価格は、その日以前で最も新しい `effective_on` の改定で、同じ日の改定は最後に記録した行（ID の最も大きい行）です。
+- 週・月・年の集計は投影に持たず、読み取りのたびに取り消されていない項目をすべて読んで `internal/domain/finance` の純粋な関数（`Payments`・`Entries`・`Spread`・`Summarize`）で計算します（ADR-0067 §1）。
+  按分（既定）は 1 か月より長い周期（N ≥ 2 の月、年、N ≥ 5 の週）の各回を、その回が覆う日（次の支払日の前日まで）に累積の丸めで日割りし、現金主義と 1 か月以下の周期は支払日に載せます。
+  期間は暦の日付で区切り、週は ISO 8601（月曜〜日曜）です。合計は通貨ごとで、内訳は `provider_normalized`・区分・通貨でまとめます。
+- 金額は通貨の最小単位の整数で、小数の桁は `internal/domain/finance` の ISO 4217 の表（`finance.Currency.MinorUnits`。JPY は 0、USD は 2）にあります。表は ISO 4217 の現行の通貨と基金のコードのうち、小数の桁を持つもの（N.A. の貴金属・SDR・試験用のコードを除く）です。
+- `provider_normalized` は事業者の NFKC・小文字の形（`finance.NormalizeProvider`）で、表記の揺れ（全角・大文字）を内訳で 1 つにまとめます。
+
 ## 5. 状態とポリシー
 
 ### 5.1 アカウントの状態の軸
@@ -1525,11 +1556,12 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `instance_settings` / `instance_texts` / `instance_rule_heads` / `instance_theme` / `announcement_heads` | `instance_setting_revisions`、`instance_text_revisions`、`instance_rules` と `instance_rule_revisions`・`instance_rule_retirements`、`instance_theme_revisions`、`announcement_revisions`・`announcement_state_changes` | 同期 |
 | `webhook_endpoint_heads` / `webhook_endpoint_failures` | `webhook_endpoint_revisions`・`webhook_endpoint_state_changes`・`webhook_secrets`、`webhook_delivery_attempts` | 同期 |
 | `relay_states` | `relay_events` | 同期 |
+| `cost_item_heads` | `cost_items`, `cost_item_label_revisions`, `cost_item_end_changes`, `cost_item_cancellations` | 同期 |
 | カウンタ類 | 元のイベントの件数 | 同期（加算）＋定期検証 |
 
 - CLI: `my projection list` は投影と所有モジュールと表を示します。投影の名前は所有モジュールの再構築関数の単位です
   （`instance`、`account`、`identity`、`moderation`、`graph`、`content`、`status_sensitivity_overrides`、`boost_edges`、`feeds`、`feed_restrictions`、
-  `notification_exclusions`、`notification_deleted_statuses`、`relay_states`、`webhook`）。
+  `notification_exclusions`、`notification_deleted_statuses`、`relay_states`、`webhook`、`finance`）。
   `<name>` には投影の名前か、その表の名前を渡します。省略するとすべての投影です。
   - `my projection verify [<name>]` は、1 つのトランザクションの中で現在の表を読み、所有モジュールの再構築関数を実行し、結果の表を読んでロールバックします。
     差分の行（現在の表にあって作り直した結果にない行、その逆）を表示し、差分があれば 1 で終了します。何も変えません。
@@ -1556,6 +1588,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
     `webhook_endpoint_failures` は、宛先の最新の成功した試行より後の失敗した試行から、その最初の試行と件数で作ります。
     試行は 14 日で消えるので、最初の失敗が消えた連続の行は作り直せません。再構築はその行を、残っている成功が連続を終えていないかぎり、表にあるまま残します。
   - `relay_states` はリレーごとに最新（ID の最も大きい）の `relay_events` の種類から状態を、その行から `Follow`・主体・時刻を作ります。
+  - `cost_item_heads` は取り消しのない費用の項目ごとに、最新（ID の最も大きい）のラベルの版と、最新の終了の変更の `ends_on`（変更がなければ無期限）から作ります。
   - `instance_health` は投影ではなく【現在値】で、再構築・検証の対象ではありません（§4.8）。失敗の日数を 0 に戻す署名付きの受信と probe の成功は、
     `unavailable` からの復帰でないかぎり記録せず（間引き）、`delivery_attempts` は 30 日で消えるので、イベントから作り直せません。
 - コントラクトテスト: 各 projector に「イベント列を与えて投影を作る」テストと、「インクリメンタル更新の結果 = 一括再構築の結果」の性質テストを書きます。
@@ -1618,6 +1651,8 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-720 ロール | S | `user_role_grants`, `user_role_revocations`, `user_roles` |
 | FR-722 サーバー単位の webhook | S | §4.11 の `webhook_*`, `audit_log_entries`, `notifications`（`admin_webhook_disabled`） |
 | FR-724 リレーの参加と脱退の管理 | S | `relays`, `relay_events`, `relay_states`, `outbound_activities`（`relay`）, `audit_log_entries` |
+| FR-901 費用の記録 | S | §4.12 の `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `cost_item_heads` |
+| FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
 | FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |

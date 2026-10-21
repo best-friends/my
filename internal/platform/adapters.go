@@ -7,6 +7,7 @@ import (
 
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
+	"github.com/best-friends/my/internal/app/finance"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
@@ -42,6 +43,7 @@ type repositories struct {
 	feds         federationRepository
 	mods         moderation.Repository
 	hooks        webhook.Repository
+	finance      finance.Repository
 	retention    retentionRepositories
 	projections  projection.Store
 }

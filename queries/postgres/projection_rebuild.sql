@@ -184,3 +184,18 @@ FROM (
   GROUP BY d.endpoint_id
 ) g JOIN webhook_delivery_attempts f ON f.id = g.first_id
 WHERE NOT EXISTS (SELECT 1 FROM webhook_endpoint_failures x WHERE x.endpoint_id = g.endpoint_id);
+
+-- Finance -------------------------------------------------------------------------------------
+
+-- name: DeleteAllCostItemHeads :exec
+DELETE FROM cost_item_heads;
+
+-- RebuildCostItemHeads states the rule of the cost item commands: every item that is not
+-- canceled, with its newest label revision and end change (no end without one).
+-- name: RebuildCostItemHeads :exec
+INSERT INTO cost_item_heads (cost_item_id, label_revision_id, ends_on)
+SELECT i.id,
+  (SELECT l.id FROM cost_item_label_revisions l WHERE l.cost_item_id = i.id ORDER BY l.id DESC LIMIT 1),
+  (SELECT e.ends_on FROM cost_item_end_changes e WHERE e.cost_item_id = i.id ORDER BY e.id DESC LIMIT 1)
+FROM cost_items i
+WHERE NOT EXISTS (SELECT 1 FROM cost_item_cancellations c WHERE c.cost_item_id = i.id);
