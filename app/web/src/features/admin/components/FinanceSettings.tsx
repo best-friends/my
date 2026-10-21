@@ -729,6 +729,7 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
   return (
     <div className="flex flex-col gap-3">
       <h3 className="font-semibold">{source.provider}</h3>
+      {source.method === "budget" && <p className="text-fg-muted">{t("client:admin.finance.imports.method.budget")}</p>}
       <DescriptionList>
         <DescriptionItem term={t("client:admin.finance.imports.time_zone")}>{source.time_zone}</DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.imports.last_success")}>
@@ -746,7 +747,7 @@ function BillingImportRow({ source, isPending, onRun }: { source: BillingImport;
         </DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.imports.requests_today")}>{count(source.requests_today, source.max_requests_per_day)}</DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.imports.requests_month")}>{count(source.requests_this_month, source.max_requests_per_month)}</DescriptionItem>
-        {source.source === "gcp" && (
+        {source.method === "bigquery" && (
           <DescriptionItem term={t("client:admin.finance.imports.bytes")}>
             {intl.formatNumber(source.bytes_billed_this_month, { style: "unit", unit: "byte", notation: "compact", unitDisplay: "narrow" })}
           </DescriptionItem>

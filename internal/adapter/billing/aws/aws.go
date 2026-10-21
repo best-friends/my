@@ -197,6 +197,9 @@ func (s *Source) Name() string { return "aws" }
 // Location implements appfinance.BillingSource: Cost Explorer's periods are UTC calendar dates.
 func (s *Source) Location() *time.Location { return time.UTC }
 
+// Method implements appfinance.BillingSource.
+func (s *Source) Method() string { return appfinance.MethodCostExplorer }
+
 // Fetch implements appfinance.BillingSource. It asks for the months from the first day of the
 // oldest through today (End is tomorrow, exclusive), counts each page as a billed request, and
 // stops with ErrRequestCap rather than take a page beyond req.MaxRequests, keeping no line.

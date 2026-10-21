@@ -177,6 +177,9 @@ func billingMonthsAskedFor(t *testing.T, factory BillingSourceFactory, totals bo
 	if want := billingLocations[src.Name()]; src.Location() == nil || src.Location().String() != want {
 		t.Errorf("Location() = %v, want %s for %s", src.Location(), want, src.Name())
 	}
+	if m := src.Method(); m != appfinance.MethodCostExplorer && m != appfinance.MethodBigQuery && m != appfinance.MethodBudget {
+		t.Errorf("Method() = %q, want %s, %s, or %s", m, appfinance.MethodCostExplorer, appfinance.MethodBigQuery, appfinance.MethodBudget)
+	}
 	snap, err := billingFetch(t, src, 10, "2026-09", "2026-10")
 	if err != nil {
 		t.Fatalf("Fetch = %v", err)

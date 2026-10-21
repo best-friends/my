@@ -9707,6 +9707,10 @@
     "defaultMessage": "今月の課金されたバイト数",
     "description": "Term of the BigQuery bytes billed this month on the costs screen."
   },
+  "admin.finance.imports.method.budget": {
+    "defaultMessage": "予算の通知による概算です。見込みに基づく合計で、サービスごとの内訳はありません。",
+    "description": "Note under a provider on the costs screen when Google Cloud is imported from its budget notifications (billing_gcp_method = budget): the figures are approximate."
+  },
   "admin.finance.imports.months": {
     "defaultMessage": "{provider}の請求月",
     "description": "Accessible name of the list of a provider's imported billing months on the costs screen."

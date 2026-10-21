@@ -424,6 +424,8 @@ type ImportStatus struct {
 	Source   string
 	Provider string
 	Location *time.Location
+	// Method is the source's BillingSource.Method.
+	Method string
 	// LastRun is the newest attempt, and LastSuccess the newest success; nil without one.
 	LastRun     *Run
 	LastSuccess *Run
@@ -453,7 +455,7 @@ func (s *Service) ImportStatuses(ctx context.Context) ([]ImportStatus, error) {
 	now := kernel.Normalize(s.d.Clock.Now())
 	out := make([]ImportStatus, 0, len(s.d.Sources))
 	for _, src := range s.d.Sources {
-		st := ImportStatus{Source: src.Name(), Provider: SourceProvider(src.Name()), Location: src.Location()}
+		st := ImportStatus{Source: src.Name(), Provider: SourceProvider(src.Name()), Location: src.Location(), Method: src.Method()}
 		if caps, ok := s.d.Caps[src.Name()]; ok {
 			st.Caps = &caps
 		}

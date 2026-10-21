@@ -964,6 +964,27 @@ func (e AdminWebhookStateReason) Valid() bool {
 	}
 }
 
+// Defines values for BillingImportMethod.
+const (
+	BillingImportMethodBigquery     BillingImportMethod = "bigquery"
+	BillingImportMethodBudget       BillingImportMethod = "budget"
+	BillingImportMethodCostExplorer BillingImportMethod = "cost_explorer"
+)
+
+// Valid indicates whether the value is a known member of the BillingImportMethod enum.
+func (e BillingImportMethod) Valid() bool {
+	switch e {
+	case BillingImportMethodBigquery:
+		return true
+	case BillingImportMethodBudget:
+		return true
+	case BillingImportMethodCostExplorer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BillingImportMonthKind.
 const (
 	BillingImportMonthKindCorrection BillingImportMonthKind = "correction"
@@ -3959,6 +3980,13 @@ type BillingImport struct {
 	// omitted for a source without caps.
 	MaxRequestsPerMonth *int `json:"max_requests_per_month,omitempty"`
 
+	// Method How the source reads the provider's data (ADR-0068 §1, §7): `cost_explorer` (AWS Cost
+	// Explorer) and `bigquery` (the Cloud Billing export to BigQuery, `billing_gcp_method =
+	// bigquery`) by service and charge type; `budget` (the notifications of a Cloud Billing budget,
+	// `billing_gcp_method = budget`) an approximation, one estimated total per budget and month
+	// without a breakdown by service.
+	Method BillingImportMethod `json:"method"`
+
 	// Months The billing months of the last year with imported costs, newest first.
 	Months []BillingImportMonth `json:"months"`
 
@@ -3978,6 +4006,13 @@ type BillingImport struct {
 	// kept as the provider reports them.
 	TimeZone string `json:"time_zone"`
 }
+
+// BillingImportMethod How the source reads the provider's data (ADR-0068 §1, §7): `cost_explorer` (AWS Cost
+// Explorer) and `bigquery` (the Cloud Billing export to BigQuery, `billing_gcp_method =
+// bigquery`) by service and charge type; `budget` (the notifications of a Cloud Billing budget,
+// `billing_gcp_method = budget`) an approximation, one estimated total per budget and month
+// without a breakdown by service.
+type BillingImportMethod string
 
 // BillingImportList The billing sources and the state of their imports.
 type BillingImportList struct {

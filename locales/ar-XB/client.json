@@ -3063,6 +3063,10 @@
     "defaultMessage": "‮⅂ɐsʇ snɔɔǝssɟnʅ ıɯdoɹʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.finance.imports.method.budget": {
+    "defaultMessage": "‮∀u ɐddɹoxıɯɐʇıou ɟɹoɯ ʇɥǝ qnpƃǝʇ uoʇıɟıɔɐʇıous: ʇoʇɐʅs qɐsǝp ou ǝsʇıɯɐʇǝs, ʍıʇɥonʇ ɐ qɹǝɐʞpoʍu qʎ sǝɹʌıɔǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.finance.imports.months": {
     "defaultMessage": "‮Ԑıʅʅıuƃ ɯouʇɥs oɟ {provider}‬",
     "description": "Generated from en by tools/i18n; do not edit."

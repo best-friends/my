@@ -5431,6 +5431,15 @@ export interface components {
             /** @description The provider's name, as the breakdown of the totals shows it. */
             provider: string;
             /**
+             * @description How the source reads the provider's data (ADR-0068 §1, §7): `cost_explorer` (AWS Cost
+             *     Explorer) and `bigquery` (the Cloud Billing export to BigQuery, `billing_gcp_method =
+             *     bigquery`) by service and charge type; `budget` (the notifications of a Cloud Billing budget,
+             *     `billing_gcp_method = budget`) an approximation, one estimated total per budget and month
+             *     without a breakdown by service.
+             * @enum {string}
+             */
+            method: "cost_explorer" | "bigquery" | "budget";
+            /**
              * @description The IANA time zone of the provider's billing months (`UTC`, `America/Los_Angeles`),
              *     kept as the provider reports them.
              */
