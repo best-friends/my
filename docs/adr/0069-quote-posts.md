@@ -1,6 +1,6 @@
 # ADR-0069: 引用投稿（FEP-044f）
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: #891
@@ -13,6 +13,15 @@
 >
 > - FR-114 の優先度を W から M / S に上げるかどうかと、要件の書き直し : S
 > - 連合の形式。Mastodon 4.5 の FEP-044f（quote / QuoteRequest / QuoteAuthorization） : もっとも標準的なものを採用
+
+決定者の回答（PR #895、原文）:
+
+> 1. Misskey・Akkoma からの承認の無い引用 : 推奨で OK
+> 2. 承認の方式: 承認は自動だけにします。 : OK
+> 3. 公開範囲 : OK
+> 4. 通知: 引用されたときの通知 quote を足します。 : OK
+>
+> ADR Accepted
 
 FR-114（引用投稿）は S になります。M4 の完了条件は Must / Should の FR が使えることです（[00-vision.md](../requirements/00-vision.md)）。
 
@@ -66,9 +75,7 @@ FEP-044f の実装の一覧には、ほかに Bonfire・Friendica・Iceshrimp.NE
 
 ## Decision（決定）
 
-> 推奨案です。Accepted にするのは決定者です。
-
-**形式は A、同意の仕組みを持たない引用の受信は X を推奨します。**
+**形式は A、同意の仕組みを持たない引用の受信は X にします。**
 
 FEP-044f は Draft です。ただし、同意の手順を持つ形式はこれだけで、Mastodon を含む多くの実装が採っています。そのため、事実上もっとも標準的な形式と判断します（判断基準 1・2）。
 FEP-e232 は Final ですが、リンク一般の仕組みです。Mastodon・Misskey・Akkoma は読まないので、主にしても相互運用が得られません。
@@ -189,7 +196,7 @@ FEP-e232 は Final ですが、リンク一般の仕組みです。Mastodon・Mi
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
-| | A: FEP-044f + 方言の併記（推奨） | B: Misskey の方言だけ | C: FEP-e232 |
+| | A: FEP-044f + 方言の併記（採用） | B: Misskey の方言だけ | C: FEP-e232 |
 | --- | --- | --- | --- |
 | Mastodon で引用として見える | ○ | ✕（承認待ちとして本文のリンクだけ） | ✕（読まない） |
 | Misskey・Akkoma で引用として見える | ○（併記） | ○ | ✕（読まない） |
@@ -200,7 +207,7 @@ FEP-e232 は Final ですが、リンク一般の仕組みです。Mastodon・Mi
 B の一番の利点は実装の小ささです。Misskey 系との往復だけを見れば、B で足ります。
 ただし Mastodon 4.4 以降は、`quote` と承認の無い引用を埋め込みません。そのため M4 の完了条件の相互運用（Mastodon）を満たせず、引用される人の同意も守れません。
 
-| | X: リモートの作者なら埋め込む（推奨） | Y: 承認の無い引用は埋め込まない |
+| | X: リモートの作者なら埋め込む（採用） | Y: 承認の無い引用は埋め込まない |
 | --- | --- | --- |
 | Misskey・Akkoma の人どうしの引用 | 引用として見える | 本文のリンクだけ |
 | ローカルの人の投稿への方言の引用 | 本人の許可で判定 | 埋め込まない |
