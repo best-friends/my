@@ -50,9 +50,10 @@ type Queue struct {
 type drainKey struct{ q *Queue }
 
 var (
-	_ queue.JobQueue = (*Queue)(nil)
-	_ queue.Source   = (*Queue)(nil)
-	_ queue.DeadJobs = (*Queue)(nil)
+	_ queue.JobQueue     = (*Queue)(nil)
+	_ queue.Source       = (*Queue)(nil)
+	_ queue.DeadJobs     = (*Queue)(nil)
+	_ queue.JobInspector = (*Queue)(nil)
 )
 
 // New returns an empty queue.
@@ -286,13 +287,16 @@ func (q *Queue) Bury(_ context.Context, worker string, j queue.Job, lastErr stri
 }
 
 // ListDeadJobs implements queue.DeadJobs.
-func (q *Queue) ListDeadJobs(_ context.Context, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
+func (q *Queue) ListDeadJobs(_ context.Context, jobType string, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	out := slices.Clone(q.dead)
+	if jobType != "" {
+		out = slices.DeleteFunc(out, func(d queue.DeadJob) bool { return d.Type != jobType })
+	}
 	slices.SortStableFunc(out, func(a, b queue.DeadJob) int {
 		if c := b.FailedAt.Compare(a.FailedAt); c != 0 {
 			return c
@@ -383,4 +387,84 @@ func (q *Queue) RequeueDeadJob(_ context.Context, id string) error {
 		visibleAt: now,
 	}
 	return nil
+}
+
+// pending returns the job of e as JobInspector shows it at now.
+func (e *entry) pending(now time.Time) queue.PendingJob {
+	j := queue.PendingJob{
+		ID:             e.job.ID,
+		Type:           e.job.Type,
+		Payload:        slices.Clone(e.job.Payload),
+		IdempotencyKey: e.job.IdempotencyKey,
+		OrderingKey:    e.job.OrderingKey,
+		State:          queue.StateAt(now, e.job.Attempt, e.lockedUntil),
+		Attempt:        e.job.Attempt,
+		RunAt:          e.job.RunAt,
+		LastError:      e.job.LastError,
+		CreatedAt:      e.job.CreatedAt,
+	}
+	if j.State == queue.JobStateRunning {
+		j.Worker, j.LockedUntil = e.lockedBy, e.lockedUntil
+	}
+	return j
+}
+
+// ListJobs implements queue.JobInspector.
+func (q *Queue) ListJobs(_ context.Context, now time.Time, f queue.JobFilter, after queue.JobPosition, limit int) ([]queue.PendingJob, error) {
+	if limit <= 0 || f.State == queue.JobStateDead {
+		return nil, nil
+	}
+	q.mu.Lock()
+	out := make([]queue.PendingJob, 0, len(q.jobs))
+	for _, e := range q.jobs {
+		j := e.pending(now)
+		if (f.State != "" && j.State != f.State) || (f.Type != "" && j.Type != f.Type) {
+			continue
+		}
+		if after.ID != "" {
+			if c := j.RunAt.Compare(after.RunAt); c < 0 || (c == 0 && j.ID <= after.ID) {
+				continue
+			}
+		}
+		out = append(out, j)
+	}
+	q.mu.Unlock()
+	slices.SortFunc(out, func(a, b queue.PendingJob) int {
+		if c := a.RunAt.Compare(b.RunAt); c != 0 {
+			return c
+		}
+		return strings.Compare(a.ID, b.ID)
+	})
+	if len(out) > limit {
+		out = out[:limit]
+	}
+	return out, nil
+}
+
+// SummarizeJobs implements queue.JobInspector.
+func (q *Queue) SummarizeJobs(_ context.Context, now time.Time) (queue.JobSummary, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	type key struct {
+		state queue.JobState
+		typ   string
+	}
+	counts := map[key]int64{}
+	var s queue.JobSummary
+	for _, e := range q.jobs {
+		state := queue.StateAt(now, e.job.Attempt, e.lockedUntil)
+		counts[key{state, e.job.Type}]++
+		if state != queue.JobStateRunning && !e.job.RunAt.After(now) && (s.OldestReadyAt.IsZero() || e.job.RunAt.Before(s.OldestReadyAt)) {
+			s.OldestReadyAt = e.job.RunAt
+		}
+	}
+	for _, d := range q.dead {
+		counts[key{queue.JobStateDead, d.Type}]++
+	}
+	s.Counts = make([]queue.JobCount, 0, len(counts))
+	for k, n := range counts {
+		s.Counts = append(s.Counts, queue.JobCount{State: k.state, Type: k.typ, Count: n})
+	}
+	s.Counts = queue.SortJobCounts(s.Counts)
+	return s, nil
 }

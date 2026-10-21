@@ -22,6 +22,31 @@ type DeadJob struct {
 	FailedAt       int64
 }
 
+type Job struct {
+	ID             string
+	Type           string
+	Payload        []byte
+	IdempotencyKey sql.NullString
+	OrderingKey    sql.NullString
+	Attempt        int64
+	RunAt          int64
+	LockedBy       sql.NullString
+	LockedUntil    sql.NullInt64
+	LastError      sql.NullString
+	CreatedAt      int64
+}
+
+type JobAttempt struct {
+	JobID      string
+	Attempt    int64
+	JobType    string
+	Outcome    string
+	Error      string
+	Worker     string
+	StartedAt  int64
+	FinishedAt int64
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string

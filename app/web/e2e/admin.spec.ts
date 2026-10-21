@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin screens in every width × locale project (ADR-0027): the remote servers and their history, resuming
-// deliveries, and running a failed job again, each passing axe without scrolling sideways. `vite preview` has
+// deliveries, and the queue dashboard with a job's attempt history and running a failed job again, each passing axe
+// without scrolling sideways. `vite preview` has
 // no API, so each test plays the server of a signed-in operator with page.route; names change with the
 // locale, so the structure is checked by role, the names in the project's locale catalog and the identifiers the
 // server sends (domains, job types).
@@ -56,6 +57,7 @@ async function operatorServer(page: Page) {
     {
       id: "0192f0c4-7a8e-7000-8000-0000000000d1",
       type: "federation.deliver",
+      state: "dead",
       payload: JSON.stringify({ delivery_id: "0192f0c4-7a8e-7000-8000-0000000000aa", inbox: `https://${longDomain}/users/someone-with-a-long-name/inbox` }),
       idempotency_key: "deliver:0192f0c4-7a8e-7000-8000-0000000000aa",
       attempts: 9,
@@ -63,7 +65,40 @@ async function operatorServer(page: Page) {
       created_at: "2026-10-13T10:00:00Z",
       failed_at: "2026-10-17T10:00:00Z",
     },
-    { id: "0192f0c4-7a8e-7000-8000-0000000000d0", type: "kv.cleanup", payload: "null", attempts: 3, last_error: "db down", created_at: "2026-10-16T10:00:00Z", failed_at: "2026-10-16T11:00:00Z" },
+    {
+      id: "0192f0c4-7a8e-7000-8000-0000000000d0",
+      type: "kv.cleanup",
+      state: "dead",
+      payload: "null",
+      attempts: 3,
+      last_error: "db down",
+      created_at: "2026-10-16T10:00:00Z",
+      failed_at: "2026-10-16T11:00:00Z",
+    },
+  ];
+  const pending = [
+    {
+      id: "0192f0c4-7a8e-7000-8000-0000000000c1",
+      type: "federation.deliver",
+      state: "retrying",
+      payload: JSON.stringify({ delivery_id: "0192f0c4-7a8e-7000-8000-0000000000ab" }),
+      ordering_key: `inbox:https://${longDomain}/users/someone-with-a-long-name/inbox`,
+      attempts: 2,
+      last_error: `Post "https://${longDomain}/users/someone-with-a-long-name/inbox": dial tcp: connection refused`,
+      run_at: "2026-10-17T10:05:00Z",
+      created_at: "2026-10-17T09:00:00Z",
+    },
+  ];
+  const attempts = [
+    {
+      attempt: 2,
+      type: "federation.deliver",
+      outcome: "retry",
+      error: `Post "https://${longDomain}/users/someone-with-a-long-name/inbox": dial tcp: connection refused`,
+      worker: "worker-0123456789abcdef",
+      started_at: "2026-10-17T10:00:00Z",
+      finished_at: "2026-10-17T10:00:01Z",
+    },
   ];
   const actions: string[] = [];
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow admin" }));
@@ -90,8 +125,20 @@ async function operatorServer(page: Page) {
       events = [{ id: "0192f0c4-7a8e-7000-8000-0000000000e2", kind: "marked_available", reason: "operator", occurred_at: "2026-10-17T00:00:00Z" }, ...events];
       return json(route, paused);
     }
-    if (key === "GET /admin/dead_jobs") return json(route, { items: dead });
-    const retry = /^POST \/admin\/dead_jobs\/([^/]+)\/retry$/.exec(key);
+    if (key === "GET /admin/queue") {
+      return json(route, {
+        adapter: "db",
+        pending_listing: true,
+        counts: [
+          { state: "retrying", type: "federation.deliver", count: pending.length },
+          ...dead.map((job) => ({ state: "dead", type: job.type, count: 1 })),
+        ],
+        oldest_ready_at: "2026-10-17T09:30:00Z",
+      });
+    }
+    if (key === "GET /admin/jobs") return json(route, { items: new URL(request.url()).searchParams.get("state") === "dead" ? dead : pending });
+    if (/^GET \/admin\/jobs\/[^/]+\/attempts$/.test(key)) return json(route, { items: attempts });
+    const retry = /^POST \/admin\/jobs\/([^/]+)\/retry$/.exec(key);
     if (retry) {
       actions.push(key);
       dead = dead.filter((job) => job.id !== retry[1]);
@@ -102,7 +149,7 @@ async function operatorServer(page: Page) {
   return actions;
 }
 
-const pages = ["/settings", "/moderation/instances", `/moderation/instances/${longDomain}`, "/admin/dead-jobs"] as const;
+const pages = ["/settings", "/moderation/instances", `/moderation/instances/${longDomain}`, "/admin/jobs", "/admin/jobs?state=dead"] as const;
 
 for (const path of pages) {
   test.describe(`page ${path}`, () => {
@@ -177,56 +224,44 @@ test.describe("remote servers", () => {
   });
 });
 
-test.describe("failed jobs", () => {
-  test("runs a job again: it leaves the list and focus moves to the next job", async ({ page, makeAxeBuilder }) => {
-    const actions = await operatorServer(page);
-    await page.goto("/admin/dead-jobs");
-    const main = page.getByRole("main");
-    await expect(main.getByRole("heading", { level: 2, name: "federation.deliver" })).toBeVisible();
+test.describe("queue dashboard", () => {
+  test("opens a job's attempt history", async ({ page, makeAxeBuilder }) => {
+    await operatorServer(page);
+    await page.goto("/admin/jobs");
+    const panel = page.getByRole("main").getByRole("tabpanel");
+    const job = panel.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: "federation.deliver" }) });
+    await expect(job).toBeVisible();
 
-    await expect(main.getByRole("list").first()).toMatchAriaSnapshot(`
+    const history = job.getByRole("button", { name: new RegExp(message("admin.jobs.history.toggle")) });
+    await expect(history).toHaveAttribute("aria-expanded", "false");
+    await history.click();
+    await expect(history).toHaveAttribute("aria-expanded", "true");
+    await expect(job.getByRole("heading", { level: 4 })).toHaveCount(1);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+
+  test("runs a failed job again: it leaves the list and focus moves to the next job", async ({ page, makeAxeBuilder }) => {
+    const actions = await operatorServer(page);
+    await page.goto("/admin/jobs?state=dead");
+    const panel = page.getByRole("main").getByRole("tabpanel");
+    await expect(panel.getByRole("heading", { level: 3, name: "federation.deliver" })).toBeVisible();
+
+    await expect(panel.getByRole("list").first()).toMatchAriaSnapshot(`
       - list:
         - listitem:
-          - heading "federation.deliver" [level=2]
+          - heading "federation.deliver" [level=3]
           - button
-          - term
-          - definition:
-            - time
-          - term
-          - definition:
-            - time
-          - term
-          - definition
-          - term
-          - definition:
-            - code
-          - term
-          - definition: 502 Bad Gateway
-          - term
-          - definition:
-            - code
         - listitem:
-          - heading "kv.cleanup" [level=2]
+          - heading "kv.cleanup" [level=3]
           - button
-          - term
-          - definition:
-            - time
-          - term
-          - definition:
-            - time
-          - term
-          - definition
-          - term
-          - definition: db down
-          - term
-          - definition:
-            - code: "null"
     `);
 
-    await main.getByRole("button", { name: /federation\.deliver/ }).click();
-    await expect(main.getByRole("heading", { level: 2, name: "federation.deliver" })).toBeHidden();
-    await expect(main.getByRole("button", { name: /kv\.cleanup/ })).toBeFocused();
-    expect(actions).toEqual(["POST /admin/dead_jobs/0192f0c4-7a8e-7000-8000-0000000000d1/retry"]);
+    const row = (type: string) => panel.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: type }) });
+    await row("federation.deliver").getByRole("button").first().click();
+    await expect(panel.getByRole("heading", { level: 3, name: "federation.deliver" })).toBeHidden();
+    await expect(row("kv.cleanup").getByRole("button").first()).toBeFocused();
+    expect(actions).toEqual(["POST /admin/jobs/0192f0c4-7a8e-7000-8000-0000000000d1/retry"]);
     await expectNoAxeViolations(makeAxeBuilder);
   });
 });

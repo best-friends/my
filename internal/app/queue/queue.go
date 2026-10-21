@@ -162,9 +162,10 @@ type DeadJobPosition struct {
 
 // DeadJobs gives the admin API and the CLI access to dead jobs.
 type DeadJobs interface {
-	// ListDeadJobs returns up to limit dead jobs, most recently failed first, starting after the
-	// position after (the zero value for the first); none when limit <= 0.
-	ListDeadJobs(ctx context.Context, after DeadJobPosition, limit int) ([]DeadJob, error)
+	// ListDeadJobs returns up to limit dead jobs of the type jobType (every type when empty),
+	// most recently failed first, starting after the position after (the zero value for the
+	// first); none when limit <= 0.
+	ListDeadJobs(ctx context.Context, jobType string, after DeadJobPosition, limit int) ([]DeadJob, error)
 	// RequeueDeadJob enqueues the dead job id again with a fresh attempt count, to run now,
 	// and removes it from the dead jobs. When a job with the same IdempotencyKey is pending,
 	// that job stands in for it. It returns ErrDeadJobNotFound when there is no such dead job.

@@ -310,6 +310,7 @@ const instanceSettings: Schemas["AdminSettingList"] = {
 const deadJob = {
   id: "0192f0c4-7a8e-7000-8000-0000000000d1",
   type: "federation.deliver",
+  state: "dead",
   payload: JSON.stringify({ delivery_id: "0192f0c4-7a8e-7000-8000-0000000000aa", inbox: `https://${longDomain}/users/someone-with-a-long-name/inbox` }),
   idempotency_key: "deliver:0192f0c4-7a8e-7000-8000-0000000000aa",
   attempts: 9,
@@ -413,7 +414,8 @@ async function moderatorServer(page: Page) {
     if (key === `GET /admin/instances/${longDomain}/availability_events`) {
       return json(route, { items: [{ id: "0192f0c4-7a8e-7000-8000-0000000000e1", kind: "marked_unavailable", reason: "failure_days", occurred_at: "2026-10-10T08:00:00Z" }] });
     }
-    if (key === "GET /admin/dead_jobs") return json(route, { items: [deadJob] });
+    if (key === "GET /admin/queue") return json(route, { adapter: "db", pending_listing: true, counts: [{ state: "dead", type: deadJob.type, count: 1 }] });
+    if (key === "GET /admin/jobs") return json(route, { items: [deadJob] });
     if (key === "GET /admin/instance_texts") return json(route, { items: [documentText, instanceName] });
     if (key === "GET /admin/theme") return json(route, adminTheme);
     if (key === "GET /admin/settings") return json(route, instanceSettings);
@@ -470,7 +472,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "moderation.instances": { path: "/moderation/instances", ready: longDomain },
   "moderation.instances_.$domain": { path: `/moderation/instances/${longDomain}`, ready: longDomain },
   "admin.custom-emojis": { path: "/admin/custom-emojis", ready: customEmoji.category ?? "" },
-  "admin.dead-jobs": { path: "/admin/dead-jobs", ready: deadJob.type },
+  "admin.jobs": { path: "/admin/jobs?state=dead", ready: deadJob.type },
   "admin.webhooks": { path: "/admin/webhooks", ready: webhook.description ?? "" },
   "admin.webhooks_.$id": { path: `/admin/webhooks/${webhook.id}`, ready: webhookDelivery.message_id },
   "admin.announcements": { path: "/admin/announcements", ready: "the status page" },

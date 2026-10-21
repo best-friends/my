@@ -79,6 +79,72 @@ func (q *Queries) CountDeadJobs(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const countDeadJobsByType = `-- name: CountDeadJobsByType :many
+SELECT type, COUNT(*) AS jobs FROM dead_jobs GROUP BY type ORDER BY type
+`
+
+type CountDeadJobsByTypeRow struct {
+	Type string
+	Jobs int64
+}
+
+func (q *Queries) CountDeadJobsByType(ctx context.Context) ([]CountDeadJobsByTypeRow, error) {
+	rows, err := q.db.Query(ctx, countDeadJobsByType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountDeadJobsByTypeRow{}
+	for rows.Next() {
+		var i CountDeadJobsByTypeRow
+		if err := rows.Scan(&i.Type, &i.Jobs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countJobsByState = `-- name: CountJobsByState :many
+SELECT type,
+  CAST(CASE WHEN locked_until > $1::timestamptz THEN 'running' WHEN attempt = 0 THEN 'queued' ELSE 'retrying' END AS text) AS state,
+  COUNT(*) AS jobs
+FROM jobs
+GROUP BY 1, 2
+ORDER BY 1, 2
+`
+
+type CountJobsByStateRow struct {
+	Type  string
+	State string
+	Jobs  int64
+}
+
+// CountJobsByState counts the jobs by type and by their state at @now, as ListPendingJobs
+// derives it.
+func (q *Queries) CountJobsByState(ctx context.Context, now time.Time) ([]CountJobsByStateRow, error) {
+	rows, err := q.db.Query(ctx, countJobsByState, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []CountJobsByStateRow{}
+	for rows.Next() {
+		var i CountJobsByStateRow
+		if err := rows.Scan(&i.Type, &i.State, &i.Jobs); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const countReadyJobs = `-- name: CountReadyJobs :many
 SELECT type, COUNT(*) AS ready, CAST(MIN(run_at) AS timestamptz) AS oldest_run_at
 FROM jobs
@@ -169,6 +235,30 @@ func (q *Queries) DeleteDeadJobsBefore(ctx context.Context, arg DeleteDeadJobsBe
 	return result.RowsAffected(), nil
 }
 
+const deleteJobAttemptsBefore = `-- name: DeleteJobAttemptsBefore :execrows
+DELETE FROM job_attempts
+WHERE (job_id, attempt, finished_at) IN (
+  SELECT a.job_id, a.attempt, a.finished_at FROM job_attempts AS a
+  WHERE a.finished_at < $1::timestamptz
+  ORDER BY a.finished_at LIMIT $2
+)
+`
+
+type DeleteJobAttemptsBeforeParams struct {
+	FinishedBefore time.Time
+	BatchLimit     int32
+}
+
+// DeleteJobAttemptsBefore removes at most @batch_limit records that finished before
+// @finished_before, the oldest first.
+func (q *Queries) DeleteJobAttemptsBefore(ctx context.Context, arg DeleteJobAttemptsBeforeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteJobAttemptsBefore, arg.FinishedBefore, arg.BatchLimit)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteOutboxEvent = `-- name: DeleteOutboxEvent :exec
 DELETE FROM outbox_events WHERE id = $1
 `
@@ -240,6 +330,37 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 	return err
 }
 
+const insertJobAttempt = `-- name: InsertJobAttempt :exec
+INSERT INTO job_attempts (job_id, attempt, job_type, outcome, error, worker, started_at, finished_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (job_id, attempt, finished_at) DO NOTHING
+`
+
+type InsertJobAttemptParams struct {
+	JobID      string
+	Attempt    int32
+	JobType    string
+	Outcome    string
+	Error      string
+	Worker     string
+	StartedAt  time.Time
+	FinishedAt time.Time
+}
+
+func (q *Queries) InsertJobAttempt(ctx context.Context, arg InsertJobAttemptParams) error {
+	_, err := q.db.Exec(ctx, insertJobAttempt,
+		arg.JobID,
+		arg.Attempt,
+		arg.JobType,
+		arg.Outcome,
+		arg.Error,
+		arg.Worker,
+		arg.StartedAt,
+		arg.FinishedAt,
+	)
+	return err
+}
+
 const insertOutboxEvent = `-- name: InsertOutboxEvent :exec
 INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, run_at, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -271,23 +392,31 @@ func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventPa
 const listDeadJobs = `-- name: ListDeadJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at
 FROM dead_jobs
-WHERE $1::text = ''
-  OR failed_at < $2::timestamptz
-  OR (failed_at = $2::timestamptz AND id < $1::text)
+WHERE ($1::text = '' OR type = $1::text)
+  AND ($2::text = ''
+    OR failed_at < $3::timestamptz
+    OR (failed_at = $3::timestamptz AND id < $2::text))
 ORDER BY failed_at DESC, id DESC
-LIMIT $3
+LIMIT $4
 `
 
 type ListDeadJobsParams struct {
+	JobType       string
 	AfterID       string
 	AfterFailedAt time.Time
 	BatchLimit    int32
 }
 
-// ListDeadJobs returns the dead jobs most recently failed first, after the position
-// (@after_failed_at, @after_id); an empty @after_id starts at the first.
+// ListDeadJobs returns the dead jobs of the type @job_type (every type when empty), most
+// recently failed first, after the position (@after_failed_at, @after_id); an empty @after_id
+// starts at the first.
 func (q *Queries) ListDeadJobs(ctx context.Context, arg ListDeadJobsParams) ([]DeadJob, error) {
-	rows, err := q.db.Query(ctx, listDeadJobs, arg.AfterID, arg.AfterFailedAt, arg.BatchLimit)
+	rows, err := q.db.Query(ctx, listDeadJobs,
+		arg.JobType,
+		arg.AfterID,
+		arg.AfterFailedAt,
+		arg.BatchLimit,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +434,61 @@ func (q *Queries) ListDeadJobs(ctx context.Context, arg ListDeadJobsParams) ([]D
 			&i.LastError,
 			&i.CreatedAt,
 			&i.FailedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listJobAttempts = `-- name: ListJobAttempts :many
+SELECT job_id, attempt, job_type, outcome, error, worker, started_at, finished_at
+FROM job_attempts
+WHERE job_id = $1
+  AND ($2::integer = 0
+    OR finished_at < $3::timestamptz
+    OR (finished_at = $3::timestamptz AND attempt < $2::integer))
+ORDER BY finished_at DESC, attempt DESC
+LIMIT $4
+`
+
+type ListJobAttemptsParams struct {
+	JobID           string
+	AfterAttempt    int32
+	AfterFinishedAt time.Time
+	BatchLimit      int32
+}
+
+// ListJobAttempts returns the records of the job @job_id, the most recently finished first,
+// after the position (@after_finished_at, @after_attempt); an @after_attempt of 0 starts at the
+// first.
+func (q *Queries) ListJobAttempts(ctx context.Context, arg ListJobAttemptsParams) ([]JobAttempt, error) {
+	rows, err := q.db.Query(ctx, listJobAttempts,
+		arg.JobID,
+		arg.AfterAttempt,
+		arg.AfterFinishedAt,
+		arg.BatchLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []JobAttempt{}
+	for rows.Next() {
+		var i JobAttempt
+		if err := rows.Scan(
+			&i.JobID,
+			&i.Attempt,
+			&i.JobType,
+			&i.Outcome,
+			&i.Error,
+			&i.Worker,
+			&i.StartedAt,
+			&i.FinishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -339,6 +523,73 @@ func (q *Queries) ListOutboxEvents(ctx context.Context, limit int32) ([]OutboxEv
 			&i.IdempotencyKey,
 			&i.OrderingKey,
 			&i.RunAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingJobs = `-- name: ListPendingJobs :many
+SELECT id, type, payload, idempotency_key, ordering_key, attempt, run_at, locked_by, locked_until, last_error, created_at
+FROM jobs
+WHERE ($1::text = '' OR type = $1::text)
+  AND ($2::text = ''
+    OR ($2::text = 'running' AND locked_until > $3::timestamptz)
+    OR ($2::text = 'queued' AND (locked_until IS NULL OR locked_until <= $3::timestamptz) AND attempt = 0)
+    OR ($2::text = 'retrying' AND (locked_until IS NULL OR locked_until <= $3::timestamptz) AND attempt > 0))
+  AND ($4::text = ''
+    OR run_at > $5::timestamptz
+    OR (run_at = $5::timestamptz AND id > $4::text))
+ORDER BY run_at, id
+LIMIT $6
+`
+
+type ListPendingJobsParams struct {
+	JobType    string
+	State      string
+	Now        time.Time
+	AfterID    string
+	AfterRunAt time.Time
+	BatchLimit int32
+}
+
+// ListPendingJobs returns the jobs of the type @job_type (every type when empty) in the state
+// @state at @now (every state when empty; the states of ADR-0064 section 3: running while the
+// lease holds, otherwise queued before the first run and retrying after it), the earliest run_at
+// first, after the position (@after_run_at, @after_id); an empty @after_id starts at the first.
+func (q *Queries) ListPendingJobs(ctx context.Context, arg ListPendingJobsParams) ([]Job, error) {
+	rows, err := q.db.Query(ctx, listPendingJobs,
+		arg.JobType,
+		arg.State,
+		arg.Now,
+		arg.AfterID,
+		arg.AfterRunAt,
+		arg.BatchLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Job{}
+	for rows.Next() {
+		var i Job
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Payload,
+			&i.IdempotencyKey,
+			&i.OrderingKey,
+			&i.Attempt,
+			&i.RunAt,
+			&i.LockedBy,
+			&i.LockedUntil,
+			&i.LastError,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err

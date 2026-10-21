@@ -1128,34 +1128,6 @@ export interface MessageArgs {
   "client:admin.custom_emojis.visible_in_picker": {};
   /** An emoji hidden from the picker can still be typed as its :shortcode:. */
   "client:admin.custom_emojis.visible_in_picker.description": {};
-  /** Attempts */
-  "client:admin.dead_jobs.attempts": {};
-  /** Created */
-  "client:admin.dead_jobs.created_at": {};
-  /** No failed jobs */
-  "client:admin.dead_jobs.empty": {};
-  /** Failed */
-  "client:admin.dead_jobs.failed_at": {};
-  /** Idempotency key */
-  "client:admin.dead_jobs.idempotency_key": {};
-  /** Last error */
-  "client:admin.dead_jobs.last_error": {};
-  /** Ordering key */
-  "client:admin.dead_jobs.ordering_key": {};
-  /** Payload */
-  "client:admin.dead_jobs.payload": {};
-  /** The job {type} is queued to run again. */
-  "client:admin.dead_jobs.retried": { type: string };
-  /** Run again */
-  "client:admin.dead_jobs.retry": {};
-  /** Could not run the job again: {reason} */
-  "client:admin.dead_jobs.retry_failed": { reason: string };
-  /** Run again: {type}, failed {date} */
-  "client:admin.dead_jobs.retry_job": { date: string; type: string };
-  /** Background jobs that failed for good, and running them again. */
-  "client:admin.dead_jobs.summary": {};
-  /** Failed jobs */
-  "client:admin.dead_jobs.title": {};
   /** Text */
   "client:admin.documents.body": {};
   /** Write in Markdown: headings (#), lists (-), links ([text](URL)) and emphasis (**bold**). Each line break starts a new line. Write it once, in any language: everyone reads the same text, whatever the language of their app. Save it empty to remove the text. */
@@ -1544,6 +1516,102 @@ export interface MessageArgs {
   "client:admin.invites.used.unlimited": { uses: number };
   /** {count, plural, one {# person} other {# people}} */
   "client:admin.invites.uses": { count: number };
+  /** Attempts */
+  "client:admin.jobs.attempts": {};
+  /** Created */
+  "client:admin.jobs.created_at": {};
+  /** No jobs */
+  "client:admin.jobs.empty": {};
+  /** No failed jobs */
+  "client:admin.jobs.empty.dead": {};
+  /** Failed */
+  "client:admin.jobs.failed_at": {};
+  /** Job state */
+  "client:admin.jobs.filter.label": {};
+  /** Pending */
+  "client:admin.jobs.filter.pending": {};
+  /** Attempt {number, number}: {outcome} */
+  "client:admin.jobs.history.attempt": { number: number; outcome: string };
+  /** No failed attempts recorded */
+  "client:admin.jobs.history.empty": {};
+  /** Runs that succeed are not recorded, and the records are deleted after a while. */
+  "client:admin.jobs.history.empty.description": {};
+  /** Error */
+  "client:admin.jobs.history.error": {};
+  /** Couldn't load the attempts */
+  "client:admin.jobs.history.failed": {};
+  /** Finished */
+  "client:admin.jobs.history.finished_at": {};
+  /** Loading the attempts */
+  "client:admin.jobs.history.loading": {};
+  /** Couldn't load more attempts */
+  "client:admin.jobs.history.more_failed": {};
+  /** Try again */
+  "client:admin.jobs.history.retry": {};
+  /** Started */
+  "client:admin.jobs.history.started_at": {};
+  /** Attempt history */
+  "client:admin.jobs.history.toggle": {};
+  /** Attempt history: {type} */
+  "client:admin.jobs.history.toggle_job": { type: string };
+  /** Idempotency key */
+  "client:admin.jobs.idempotency_key": {};
+  /** Last error */
+  "client:admin.jobs.last_error": {};
+  /** Jobs */
+  "client:admin.jobs.list.heading": {};
+  /** Lease ends */
+  "client:admin.jobs.locked_until": {};
+  /** Ordering key */
+  "client:admin.jobs.ordering_key": {};
+  /** failed for good */
+  "client:admin.jobs.outcome.dead": {};
+  /** retried */
+  "client:admin.jobs.outcome.retry": {};
+  /** Payload */
+  "client:admin.jobs.payload": {};
+  /** Queue */
+  "client:admin.jobs.queue.adapter": {};
+  /** Jobs by type */
+  "client:admin.jobs.queue.by_type": {};
+  /** Queue */
+  "client:admin.jobs.queue.heading": {};
+  /** This queue cannot list its waiting, running and retrying jobs: see their backlog in the metrics of the platform. Failed jobs and the history of their attempts are listed. */
+  "client:admin.jobs.queue.no_listing": {};
+  /** No job is waiting */
+  "client:admin.jobs.queue.none_waiting": {};
+  /** Oldest waiting job due */
+  "client:admin.jobs.queue.oldest_ready": {};
+  /** The job {type} is queued to run again. */
+  "client:admin.jobs.retried": { type: string };
+  /** Run again */
+  "client:admin.jobs.retry": {};
+  /** Could not run the job again: {reason} */
+  "client:admin.jobs.retry_failed": { reason: string };
+  /** Run again: {type}, failed {date} */
+  "client:admin.jobs.retry_job": { date: string; type: string };
+  /** Due */
+  "client:admin.jobs.run_at": {};
+  /** State */
+  "client:admin.jobs.state": {};
+  /** Failed */
+  "client:admin.jobs.state.dead": {};
+  /** Waiting */
+  "client:admin.jobs.state.queued": {};
+  /** Retrying */
+  "client:admin.jobs.state.retrying": {};
+  /** Running */
+  "client:admin.jobs.state.running": {};
+  /** Background jobs waiting, running, retrying and failed, why they failed, and running failed ones again. */
+  "client:admin.jobs.summary": {};
+  /** Jobs */
+  "client:admin.jobs.title": {};
+  /** This queue cannot list these jobs */
+  "client:admin.jobs.unlisted": {};
+  /** See the backlog in the metrics of the platform. Failed jobs are listed under Failed. */
+  "client:admin.jobs.unlisted.description": {};
+  /** Worker */
+  "client:admin.jobs.worker": {};
   /** Show more */
   "client:admin.list.more": {};
   /** {count, plural, one {# open report} other {# open reports}} */

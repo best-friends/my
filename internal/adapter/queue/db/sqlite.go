@@ -116,7 +116,7 @@ func (sqliteStore) insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, worke
 	})
 }
 
-func (sqliteStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
+func (sqliteStore) listDead(ctx context.Context, tx uow.Tx, jobType string, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	q, err := sqliteQueries(tx)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (sqliteStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobP
 	if after.ID != "" {
 		afterFailedAt = millis(after.FailedAt)
 	}
-	rows, err := q.ListDeadJobs(ctx, sqlitequeue.ListDeadJobsParams{AfterID: after.ID, AfterFailedAt: afterFailedAt, BatchLimit: int64(limit)})
+	rows, err := q.ListDeadJobs(ctx, sqlitequeue.ListDeadJobsParams{JobType: jobType, AfterID: after.ID, AfterFailedAt: afterFailedAt, BatchLimit: int64(limit)})
 	if err != nil {
 		return nil, err
 	}
@@ -237,4 +237,113 @@ func (sqliteStore) backlog(ctx context.Context, tx uow.Tx, now time.Time) (queue
 	}
 	b.Dead, err = q.CountDeadJobs(ctx)
 	return b, err
+}
+
+func (sqliteStore) listPending(ctx context.Context, tx uow.Tx, now time.Time, f queue.JobFilter, after queue.JobPosition, limit int) ([]queue.PendingJob, error) {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return nil, err
+	}
+	var afterRunAt int64
+	if after.ID != "" {
+		afterRunAt = millis(after.RunAt)
+	}
+	rows, err := q.ListPendingJobs(ctx, sqlitequeue.ListPendingJobsParams{
+		JobType: f.Type, State: string(f.State), Now: millis(now), AfterID: after.ID, AfterRunAt: afterRunAt, BatchLimit: int64(limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]queue.PendingJob, len(rows))
+	for i, r := range rows {
+		var lockedUntil time.Time
+		if r.LockedUntil.Valid {
+			lockedUntil = fromMillis(r.LockedUntil.Int64)
+		}
+		out[i] = pendingJob(now, queue.PendingJob{
+			ID:             r.ID,
+			Type:           r.Type,
+			Payload:        json.RawMessage(r.Payload),
+			IdempotencyKey: r.IdempotencyKey.String,
+			OrderingKey:    r.OrderingKey.String,
+			Attempt:        int(r.Attempt),
+			RunAt:          fromMillis(r.RunAt),
+			LastError:      r.LastError.String,
+			Worker:         r.LockedBy.String,
+			LockedUntil:    lockedUntil,
+			CreatedAt:      fromMillis(r.CreatedAt),
+		})
+	}
+	return out, nil
+}
+
+func (s sqliteStore) summarize(ctx context.Context, tx uow.Tx, now time.Time) (queue.JobSummary, error) {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	pending, err := q.CountJobsByState(ctx, millis(now))
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	dead, err := q.CountDeadJobsByType(ctx)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	b, err := s.backlog(ctx, tx, now)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	counts := make([]queue.JobCount, 0, len(pending)+len(dead))
+	for _, r := range pending {
+		counts = append(counts, queue.JobCount{State: queue.JobState(r.State), Type: r.Type, Count: r.Jobs})
+	}
+	for _, r := range dead {
+		counts = append(counts, queue.JobCount{State: queue.JobStateDead, Type: r.Type, Count: r.Jobs})
+	}
+	return queue.JobSummary{Counts: sortCounts(counts), OldestReadyAt: b.OldestReadyAt}, nil
+}
+
+func (sqliteStore) insertAttempt(ctx context.Context, tx uow.Tx, a queue.Attempt) error {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return err
+	}
+	return q.InsertJobAttempt(ctx, sqlitequeue.InsertJobAttemptParams{
+		JobID: a.JobID, Attempt: int64(a.Attempt), JobType: a.JobType, Outcome: a.Outcome, Error: a.Error, Worker: a.Worker,
+		StartedAt: millis(a.StartedAt), FinishedAt: millis(a.FinishedAt),
+	})
+}
+
+func (sqliteStore) listAttempts(ctx context.Context, tx uow.Tx, jobID string, after queue.AttemptPosition, limit int) ([]queue.Attempt, error) {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return nil, err
+	}
+	var afterFinishedAt int64
+	if after.Attempt != 0 {
+		afterFinishedAt = millis(after.FinishedAt)
+	}
+	rows, err := q.ListJobAttempts(ctx, sqlitequeue.ListJobAttemptsParams{
+		JobID: jobID, AfterAttempt: int64(after.Attempt), AfterFinishedAt: afterFinishedAt, BatchLimit: int64(limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]queue.Attempt, len(rows))
+	for i, r := range rows {
+		out[i] = queue.Attempt{
+			JobID: r.JobID, JobType: r.JobType, Attempt: int(r.Attempt), Outcome: r.Outcome, Error: r.Error, Worker: r.Worker,
+			StartedAt: fromMillis(r.StartedAt), FinishedAt: fromMillis(r.FinishedAt),
+		}
+	}
+	return out, nil
+}
+
+func (sqliteStore) deleteAttemptsBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error) {
+	q, err := sqliteQueries(tx)
+	if err != nil {
+		return 0, err
+	}
+	return q.DeleteJobAttemptsBefore(ctx, sqlitequeue.DeleteJobAttemptsBeforeParams{FinishedBefore: millis(before), BatchLimit: int64(limit)})
 }

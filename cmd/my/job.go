@@ -62,7 +62,7 @@ func runJob(args []string, stdout, stderr io.Writer) int {
 		return 1
 	}
 	if sub == "list" {
-		jobs, err := app.DeadJobs.ListDeadJobs(ctx, queue.DeadJobPosition{}, limit)
+		jobs, err := app.DeadJobs.ListDeadJobs(ctx, "", queue.DeadJobPosition{}, limit)
 		if err != nil {
 			_, _ = fmt.Fprintf(stderr, "%s: %v\n", name, err)
 			return 1

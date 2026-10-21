@@ -37,6 +37,12 @@ type QueueHarness struct {
 	// MaxDelay is the adapter's delay limit, or 0 for none. With a limit, the contract checks
 	// the re-enqueue chain.
 	MaxDelay time.Duration
+	// Inspector, when set, is the adapter's JobInspector, and the contract checks the listing
+	// and the counts of its jobs (ADR-0064 §3).
+	Inspector queue.JobInspector
+	// Attempts, when set, is an AttemptLog that the contract's runners record into, and the
+	// contract checks the records (ADR-0064 §1).
+	Attempts queue.AttemptLog
 }
 
 // QueueFactory returns a harness on new, empty storage whose adapter reads time from clock.
@@ -64,7 +70,8 @@ func FixedRandom(v float64) func() float64 { return func() float64 { return v } 
 // is claimed again once its lease expires (at-least-once), and the stale worker's result is
 // dropped; concurrent workers run each job once; jobs of one ordering key run one at a time,
 // in enqueue order, even across retries, delays, and concurrent workers; and, where the harness enables them,
-// transactional enqueue, survival of a restart, and the re-enqueue chain beyond a delay limit.
+// transactional enqueue, survival of a restart, and the re-enqueue chain beyond a delay limit, and
+// the listing of the jobs and the records of the attempts for the queue dashboard.
 func QueueContract(t *testing.T, newHarness QueueFactory) {
 	t.Helper()
 	cases := []struct {
@@ -92,6 +99,8 @@ func QueueContract(t *testing.T, newHarness QueueFactory) {
 		{"EnqueuesAtomicallyWithTheTransaction", queueTransactionalEnqueue},
 		{"KeepsJobsAcrossARestart", queueSurvivesRestart},
 		{"ReenqueuesJobsBeyondTheDelayLimit", queueReenqueueChain},
+		{"InspectsJobsByState", queueInspectsJobsByState},
+		{"RecordsUnsuccessfulAttempts", queueRecordsUnsuccessfulAttempts},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newHarness) })
@@ -142,11 +151,12 @@ func newQueueFixture(t *testing.T, newHarness QueueFactory, results ...queue.Res
 
 func (f *queueFixture) runner(worker string) *queue.PullRunner {
 	return queue.NewPullRunner(f.h.Source, f.reg, queue.RunnerOptions{
-		Clock:  f.clock,
-		Worker: worker,
-		Lease:  contractLease,
-		Retry:  contractPolicy,
-		Random: FixedRandom(0.5),
+		Clock:    f.clock,
+		Worker:   worker,
+		Lease:    contractLease,
+		Retry:    contractPolicy,
+		Random:   FixedRandom(0.5),
+		Attempts: f.h.Attempts,
 	})
 }
 
@@ -184,7 +194,7 @@ func (f *queueFixture) wantRuns(n int) []queue.Job {
 
 func (f *queueFixture) dead() []queue.DeadJob {
 	f.t.Helper()
-	d, err := f.h.DeadJobs.ListDeadJobs(f.t.Context(), queue.DeadJobPosition{}, 100)
+	d, err := f.h.DeadJobs.ListDeadJobs(f.t.Context(), "", queue.DeadJobPosition{}, 100)
 	if err != nil {
 		f.t.Fatalf("ListDeadJobs: %v", err)
 	}
@@ -486,7 +496,7 @@ func queuePagesDeadJobs(t *testing.T, newHarness QueueFactory) {
 	var paged []queue.DeadJob
 	after := queue.DeadJobPosition{}
 	for range len(all) {
-		page, err := f.h.DeadJobs.ListDeadJobs(t.Context(), after, 2)
+		page, err := f.h.DeadJobs.ListDeadJobs(t.Context(), "", after, 2)
 		if err != nil {
 			t.Fatalf("ListDeadJobs(%+v): %v", after, err)
 		}
@@ -504,7 +514,7 @@ func queuePagesDeadJobs(t *testing.T, newHarness QueueFactory) {
 			t.Fatalf("paged order = %+v, want %+v", paged, all)
 		}
 	}
-	if none, err := f.h.DeadJobs.ListDeadJobs(t.Context(), queue.DeadJobPosition{}, 0); err != nil || len(none) != 0 {
+	if none, err := f.h.DeadJobs.ListDeadJobs(t.Context(), "", queue.DeadJobPosition{}, 0); err != nil || len(none) != 0 {
 		t.Errorf("ListDeadJobs(limit 0) = %+v, %v; want none", none, err)
 	}
 }

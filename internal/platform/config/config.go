@@ -114,6 +114,9 @@ type Config struct {
 	RelayIngestHourlyLimit int
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
 	DeadJobRetention time.Duration
+	// JobAttemptRetention is how long the record of a job's run that did not succeed is kept
+	// after the run (ADR-0064 §2).
+	JobAttemptRetention time.Duration
 	// MetricsExporter is the Meter adapter (ADR-0055 §2); MetricsListen is the address of the
 	// scrape of prometheus, and the EMF fields configure emf.
 	MetricsExporter      string
@@ -197,6 +200,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Duration("relay_status_retention", c.RelayStatusRetention),
 		slog.Int("relay_ingest_hourly_limit", c.RelayIngestHourlyLimit),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
+		slog.Duration("job_attempt_retention", c.JobAttemptRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),
 		slog.String("metrics_listen", c.MetricsListen),
 		slog.String("metrics_emf_namespace", c.MetricsEMFNamespace),

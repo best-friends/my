@@ -25,8 +25,8 @@ import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$a
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
-import { Route as AdminDeadJobsRouteImport } from './routes/admin.dead-jobs'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
+import { Route as AdminJobsRouteImport } from './routes/admin.jobs'
 import { Route as AdminRelaysRouteImport } from './routes/admin.relays'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminRulesRouteImport } from './routes/admin.rules'
@@ -149,14 +149,14 @@ const AdminCustomEmojisRoute = AdminCustomEmojisRouteImport.update({
   path: '/admin/custom-emojis',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminDeadJobsRoute = AdminDeadJobsRouteImport.update({
-  id: '/admin/dead-jobs',
-  path: '/admin/dead-jobs',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
   id: '/admin/documents',
   path: '/admin/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminJobsRoute = AdminJobsRouteImport.update({
+  id: '/admin/jobs',
+  path: '/admin/jobs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRelaysRoute = AdminRelaysRouteImport.update({
@@ -374,8 +374,8 @@ export interface FileRoutesByFullPath {
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
-  '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/jobs': typeof AdminJobsRoute
   '/admin/relays': typeof AdminRelaysRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
@@ -433,8 +433,8 @@ export interface FileRoutesByTo {
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
-  '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/jobs': typeof AdminJobsRoute
   '/admin/relays': typeof AdminRelaysRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
@@ -493,8 +493,8 @@ export interface FileRoutesById {
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
-  '/admin/dead-jobs': typeof AdminDeadJobsRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/jobs': typeof AdminJobsRoute
   '/admin/relays': typeof AdminRelaysRoute
   '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
@@ -554,8 +554,8 @@ export interface FileRouteTypes {
     | '/@{$acct}/following'
     | '/admin/announcements'
     | '/admin/custom-emojis'
-    | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/jobs'
     | '/admin/relays'
     | '/admin/roles'
     | '/admin/rules'
@@ -613,8 +613,8 @@ export interface FileRouteTypes {
     | '/@{$acct}/following'
     | '/admin/announcements'
     | '/admin/custom-emojis'
-    | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/jobs'
     | '/admin/relays'
     | '/admin/roles'
     | '/admin/rules'
@@ -672,8 +672,8 @@ export interface FileRouteTypes {
     | '/@{$acct}_/following'
     | '/admin/announcements'
     | '/admin/custom-emojis'
-    | '/admin/dead-jobs'
     | '/admin/documents'
+    | '/admin/jobs'
     | '/admin/relays'
     | '/admin/roles'
     | '/admin/rules'
@@ -732,8 +732,8 @@ export interface RootRouteChildren {
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
-  AdminDeadJobsRoute: typeof AdminDeadJobsRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
+  AdminJobsRoute: typeof AdminJobsRoute
   AdminRelaysRoute: typeof AdminRelaysRoute
   AdminRolesRoute: typeof AdminRolesRoute
   AdminRulesRoute: typeof AdminRulesRoute
@@ -890,18 +890,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomEmojisRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/dead-jobs': {
-      id: '/admin/dead-jobs'
-      path: '/admin/dead-jobs'
-      fullPath: '/admin/dead-jobs'
-      preLoaderRoute: typeof AdminDeadJobsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/documents': {
       id: '/admin/documents'
       path: '/admin/documents'
       fullPath: '/admin/documents'
       preLoaderRoute: typeof AdminDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/jobs': {
+      id: '/admin/jobs'
+      path: '/admin/jobs'
+      fullPath: '/admin/jobs'
+      preLoaderRoute: typeof AdminJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/relays': {
@@ -1196,8 +1196,8 @@ const rootRouteChildren: RootRouteChildren = {
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
-  AdminDeadJobsRoute: AdminDeadJobsRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
+  AdminJobsRoute: AdminJobsRoute,
   AdminRelaysRoute: AdminRelaysRoute,
   AdminRolesRoute: AdminRolesRoute,
   AdminRulesRoute: AdminRulesRoute,

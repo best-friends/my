@@ -8,6 +8,8 @@ package postgresqueue
 
 import (
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type DeadJob struct {
@@ -20,6 +22,31 @@ type DeadJob struct {
 	LastError      string
 	CreatedAt      time.Time
 	FailedAt       time.Time
+}
+
+type Job struct {
+	ID             string
+	Type           string
+	Payload        []byte
+	IdempotencyKey *string
+	OrderingKey    *string
+	Attempt        int32
+	RunAt          time.Time
+	LockedBy       *string
+	LockedUntil    pgtype.Timestamptz
+	LastError      *string
+	CreatedAt      time.Time
+}
+
+type JobAttempt struct {
+	JobID      string
+	Attempt    int32
+	JobType    string
+	Outcome    string
+	Error      string
+	Worker     string
+	StartedAt  time.Time
+	FinishedAt time.Time
 }
 
 type OutboxEvent struct {

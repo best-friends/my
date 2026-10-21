@@ -411,7 +411,7 @@ func TestShutdownWaitsForRequestsAndJobs(t *testing.T) {
 	if jobCtxErr != nil {
 		t.Errorf("the job's context ended during the graceful shutdown: %v", jobCtxErr)
 	}
-	dead, err := s.app.DeadJobs.ListDeadJobs(context.Background(), queue.DeadJobPosition{}, 10)
+	dead, err := s.app.DeadJobs.ListDeadJobs(context.Background(), "", queue.DeadJobPosition{}, 10)
 	if err != nil || len(dead) != 0 {
 		t.Errorf("dead jobs = %v (%v), want none", dead, err)
 	}

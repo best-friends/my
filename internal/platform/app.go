@@ -95,7 +95,11 @@ type App struct {
 	// transactional enqueue.
 	Outbox   queue.Outbox
 	DeadJobs queue.DeadJobs
-	Handlers *queue.JobHandlerRegistry
+	// JobAttempts records the runs of jobs that did not succeed, in the database whatever the
+	// queue (ADR-0064 §1); JobInspector lists the pending jobs, nil for a queue that cannot.
+	JobAttempts  queue.AttemptLog
+	JobInspector queue.JobInspector
+	Handlers     *queue.JobHandlerRegistry
 	// Runner runs the jobs of the queue for the worker role.
 	Runner *queue.PullRunner
 	// runJobs runs the jobs of the worker role until stop is closed: Runner.RunUntil, or for
@@ -349,8 +353,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
+		dbQueue := queuedb.NewSQLite(d, queueOpts)
+		a.JobAttempts = dbQueue
 		if cfg.Queue == "db" {
-			a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
+			a.setDBQueue(dbQueue)
 		}
 		if cfg.KV == "db" {
 			a.KV = kvdb.NewSQLite(d, a.Clock)
@@ -377,8 +383,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 			autoDeletes: d.StatusRepository(),
 		}
 		projections = d.ProjectionStore()
+		dbQueue := queuedb.NewPostgres(d, queueOpts)
+		a.JobAttempts = dbQueue
 		if cfg.Queue == "db" {
-			a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
+			a.setDBQueue(dbQueue)
 		}
 		if cfg.KV == "db" {
 			a.KV = kvdb.NewPostgres(d, a.Clock)
@@ -387,13 +395,13 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
 	}
 
-	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger, Meter: a.Meter}
+	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger, Meter: a.Meter, Attempts: a.JobAttempts}
 	switch cfg.Queue {
 	case "db":
 		// Set with the database above.
 	case "inline":
 		q := inline.New(inline.Options{Clock: a.Clock, IDs: a.IDs})
-		a.Jobs, a.DeadJobs = q, q
+		a.Jobs, a.DeadJobs, a.JobInspector = q, q, q
 		a.Runner = queue.NewPullRunner(q, a.Handlers, runnerOpts)
 		q.RunSynchronously(a.Runner)
 		a.runJobs = func(ctx context.Context, stop <-chan struct{}) error {
@@ -431,6 +439,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.registerKVCleanup()
 	queue.NewDeadJobPurger(queue.DeadJobPurgeDeps{
 		DeadJobs: a.DeadJobs, Clock: a.Clock, Retention: cfg.DeadJobRetention,
+		Attempts: a.JobAttempts, AttemptRetention: cfg.JobAttemptRetention,
 	}).RegisterJobs(a.Handlers, a.Scheduler)
 
 	account.RegisterProjectors(a.Projectors, accounts)
@@ -708,6 +717,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Timelines: a.Timeline, TimelineReader: a.Statuses, TimelineLanguages: a.timelineLanguages,
 		Streams: a.Streams, HomeEntries: a.Timeline,
 		Permissions: a.Identity, InstanceHealth: a.InstanceHealth, DeadJobs: a.DeadJobs,
+		Queue:      clientapi.QueueDashboard{Adapter: cfg.Queue, Inspector: a.JobInspector, Attempts: a.JobAttempts, Clock: a.Clock},
 		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation, Severances: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
 		AccountAdmin: a.AccountAdmin, AccountReports: a.Moderation,
@@ -1020,7 +1030,7 @@ func (m instanceMedia) CheckImage(ctx context.Context, mediaID string) error {
 }
 
 func (a *App) setDBQueue(q *queuedb.Queue) {
-	a.Jobs, a.Outbox, a.DeadJobs, a.source = q, q, q, q
+	a.Jobs, a.Outbox, a.DeadJobs, a.JobInspector, a.source = q, q, q, q, q
 }
 
 func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {

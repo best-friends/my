@@ -44,7 +44,7 @@ func sqliteHarness(t *testing.T, clock *testkit.Clock, path string, apply, relay
 	d := openSQLite(t, path, apply)
 	opts := queuedb.Options{Clock: clock, IDs: testkit.NewIDGenerator(clock)}
 	q := queuedb.NewSQLite(d, opts)
-	h := testkit.QueueHarness{Queue: q, Source: q, DeadJobs: q, UnitOfWork: d, Outbox: q}
+	h := testkit.QueueHarness{Queue: q, Source: q, DeadJobs: q, UnitOfWork: d, Outbox: q, Inspector: q, Attempts: q}
 	if relay {
 		o := queuedb.NewSQLiteOutbox(d, opts)
 		h.Outbox = o

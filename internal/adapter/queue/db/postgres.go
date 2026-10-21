@@ -167,12 +167,12 @@ func (postgresStore) insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, wor
 	})
 }
 
-func (postgresStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
+func (postgresStore) listDead(ctx context.Context, tx uow.Tx, jobType string, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	q, err := postgresQueries(tx)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := q.ListDeadJobs(ctx, postgresqueue.ListDeadJobsParams{AfterID: after.ID, AfterFailedAt: after.FailedAt, BatchLimit: int32Of(limit)})
+	rows, err := q.ListDeadJobs(ctx, postgresqueue.ListDeadJobsParams{JobType: jobType, AfterID: after.ID, AfterFailedAt: after.FailedAt, BatchLimit: int32Of(limit)})
 	if err != nil {
 		return nil, err
 	}
@@ -284,4 +284,105 @@ func (postgresStore) backlog(ctx context.Context, tx uow.Tx, now time.Time) (que
 	}
 	b.Dead, err = q.CountDeadJobs(ctx)
 	return b, err
+}
+
+func (postgresStore) listPending(ctx context.Context, tx uow.Tx, now time.Time, f queue.JobFilter, after queue.JobPosition, limit int) ([]queue.PendingJob, error) {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListPendingJobs(ctx, postgresqueue.ListPendingJobsParams{
+		JobType: f.Type, State: string(f.State), Now: now, AfterID: after.ID, AfterRunAt: after.RunAt, BatchLimit: int32Of(limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]queue.PendingJob, len(rows))
+	for i, r := range rows {
+		var lockedUntil time.Time
+		if r.LockedUntil.Valid {
+			lockedUntil = kernel.Normalize(r.LockedUntil.Time)
+		}
+		out[i] = pendingJob(now, queue.PendingJob{
+			ID:             r.ID,
+			Type:           r.Type,
+			Payload:        json.RawMessage(r.Payload),
+			IdempotencyKey: deref(r.IdempotencyKey),
+			OrderingKey:    deref(r.OrderingKey),
+			Attempt:        int(r.Attempt),
+			RunAt:          kernel.Normalize(r.RunAt),
+			LastError:      deref(r.LastError),
+			Worker:         deref(r.LockedBy),
+			LockedUntil:    lockedUntil,
+			CreatedAt:      kernel.Normalize(r.CreatedAt),
+		})
+	}
+	return out, nil
+}
+
+func (s postgresStore) summarize(ctx context.Context, tx uow.Tx, now time.Time) (queue.JobSummary, error) {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	pending, err := q.CountJobsByState(ctx, now)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	dead, err := q.CountDeadJobsByType(ctx)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	b, err := s.backlog(ctx, tx, now)
+	if err != nil {
+		return queue.JobSummary{}, err
+	}
+	counts := make([]queue.JobCount, 0, len(pending)+len(dead))
+	for _, r := range pending {
+		counts = append(counts, queue.JobCount{State: queue.JobState(r.State), Type: r.Type, Count: r.Jobs})
+	}
+	for _, r := range dead {
+		counts = append(counts, queue.JobCount{State: queue.JobStateDead, Type: r.Type, Count: r.Jobs})
+	}
+	return queue.JobSummary{Counts: sortCounts(counts), OldestReadyAt: kernel.Normalize(b.OldestReadyAt)}, nil
+}
+
+func (postgresStore) insertAttempt(ctx context.Context, tx uow.Tx, a queue.Attempt) error {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return err
+	}
+	return q.InsertJobAttempt(ctx, postgresqueue.InsertJobAttemptParams{
+		JobID: a.JobID, Attempt: int32Of(a.Attempt), JobType: a.JobType, Outcome: a.Outcome, Error: a.Error, Worker: a.Worker,
+		StartedAt: a.StartedAt, FinishedAt: a.FinishedAt,
+	})
+}
+
+func (postgresStore) listAttempts(ctx context.Context, tx uow.Tx, jobID string, after queue.AttemptPosition, limit int) ([]queue.Attempt, error) {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListJobAttempts(ctx, postgresqueue.ListJobAttemptsParams{
+		JobID: jobID, AfterAttempt: int32Of(after.Attempt), AfterFinishedAt: after.FinishedAt, BatchLimit: int32Of(limit),
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]queue.Attempt, len(rows))
+	for i, r := range rows {
+		out[i] = queue.Attempt{
+			JobID: r.JobID, JobType: r.JobType, Attempt: int(r.Attempt), Outcome: r.Outcome, Error: r.Error, Worker: r.Worker,
+			StartedAt: kernel.Normalize(r.StartedAt), FinishedAt: kernel.Normalize(r.FinishedAt),
+		}
+	}
+	return out, nil
+}
+
+func (postgresStore) deleteAttemptsBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error) {
+	q, err := postgresQueries(tx)
+	if err != nil {
+		return 0, err
+	}
+	return q.DeleteJobAttemptsBefore(ctx, postgresqueue.DeleteJobAttemptsBeforeParams{FinishedBefore: before, BatchLimit: int32Of(limit)})
 }
