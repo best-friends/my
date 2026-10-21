@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The totals of the instance's costs (ADR-0067 §4, §5, §9, web-client.md S1): the types and the dates that the
-// administrators' costs screen and the public costs page share, and the public totals (GET /instance/cost_totals),
-// which the instance setting `finance_visibility` publishes: nothing (404), the totals only, or their breakdown by
-// provider and category.
+// administrators' costs screen, the public costs page and the finances page share; the public totals
+// (GET /instance/cost_totals), which the instance setting `finance_visibility` publishes: nothing (404), the totals
+// only, or their breakdown by provider and category; and the totals of the finances page (GET /finance/cost_totals,
+// ADR-0070 §5), for the holders of view_finance, with the lines of the items as far as the instance settings show.
 import { queryOptions } from "@tanstack/react-query";
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
@@ -16,6 +17,9 @@ export type CostGranularity = Schemas["CostGranularity"];
 export type CostTotals = Schemas["CostTotals"];
 export type CostPeriodTotal = Schemas["CostPeriodTotal"];
 export type Money = Schemas["Money"];
+export type FinanceCostTotals = Schemas["FinanceCostTotals"];
+export type FinanceCostItemLine = Schemas["FinanceCostItemLine"];
+export type FinanceViewerSettings = Schemas["FinanceViewerSettings"];
 
 /** The categories, in the order of the API (ADR-0067 §2). */
 export const costCategories = [
@@ -78,6 +82,24 @@ export function publicCostTotalsQueryOptions(api: Api, granularity: CostGranular
     queryKey: ["get", "/instance/cost_totals", query] as const,
     queryFn: async ({ signal }) => {
       const { data, error } = await api.fetch.GET("/instance/cost_totals", { params: { query }, signal });
+      // The middleware throws an ApiError for every error status; this narrows the type.
+      if (data === undefined) throw new ApiError(error);
+      return data;
+    },
+  });
+}
+
+/**
+ * The totals of the shown periods up to `today` for the holders of view_finance or manage_finance
+ * (GET /finance/cost_totals): always with their breakdown, with the lines of the items while the instance shows their
+ * names or memos, and the instance settings that decide it.
+ */
+export function financeCostTotalsQueryOptions(api: Api, granularity: CostGranularity, basis: CostBasis, today: string) {
+  const query = totalsQuery(granularity, basis, today);
+  return queryOptions({
+    queryKey: ["get", "/finance/cost_totals", query] as const,
+    queryFn: async ({ signal }) => {
+      const { data, error } = await api.fetch.GET("/finance/cost_totals", { params: { query }, signal });
       // The middleware throws an ApiError for every error status; this narrows the type.
       if (data === undefined) throw new ApiError(error);
       return data;

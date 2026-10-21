@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The totals of the instance's costs as the holders of `view_finance` read them over the
+  periods from the one that holds `from` to the one that holds `to`, oldest first, and the
+  instance settings that decide what they read (ADR-0070 §5).
+type: object
+required: [granularity, basis, periods, rules, viewer]
+properties:
+  granularity:
+    $ref: ./CostGranularity.yaml
+  basis:
+    $ref: ./CostBasis.yaml
+  periods:
+    type: array
+    items:
+      $ref: ./FinanceCostPeriodTotal.yaml
+  rules:
+    $ref: ./CostTotalsRules.yaml
+  viewer:
+    $ref: ./FinanceViewerSettings.yaml

@@ -148,6 +148,7 @@ const (
 	ScopeReadBlocks         = "read:blocks"
 	ScopeReadBookmarks      = "read:bookmarks"
 	ScopeReadFavourites     = "read:favourites"
+	ScopeReadFinance        = "read:finance"
 	ScopeReadFollows        = "read:follows"
 	ScopeReadMutes          = "read:mutes"
 	ScopeReadNotifications  = "read:notifications"
@@ -172,7 +173,7 @@ var broadScopes = []string{ScopeAdmin, ScopeFollow, ScopePush, ScopeRead, ScopeW
 var knownScopes = []string{
 	ScopeAdmin, ScopeAdminRead, ScopeAdminWrite,
 	ScopeFollow, ScopePush, ScopeRead,
-	ScopeReadAccounts, ScopeReadBlocks, ScopeReadBookmarks, ScopeReadFavourites, ScopeReadFollows,
+	ScopeReadAccounts, ScopeReadBlocks, ScopeReadBookmarks, ScopeReadFavourites, ScopeReadFinance, ScopeReadFollows,
 	ScopeReadMutes, ScopeReadNotifications, ScopeReadReports, ScopeReadStatuses,
 	ScopeWrite,
 	ScopeWriteAccounts, ScopeWriteBlocks, ScopeWriteBookmarks, ScopeWriteFavourites, ScopeWriteFollows,

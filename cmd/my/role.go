@@ -124,15 +124,16 @@ func listRoles(ctx context.Context, app *platform.App, w io.Writer, username str
 		for _, r := range held {
 			ids[r.ID] = true
 		}
-		_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tMODERATION\tSERVER")
+		_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tMODERATION\tSERVER\tMEMBER")
 		for _, r := range roles {
 			if ids[r.ID] {
-				_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\n", r.Key, r.Position, permissionList(r.Permissions, identity.CategoryModeration), permissionList(r.Permissions, identity.CategoryServer))
+				_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\n", r.Key, r.Position, permissionList(r.Permissions, identity.CategoryModeration),
+					permissionList(r.Permissions, identity.CategoryServer), permissionList(r.Permissions, identity.CategoryMember))
 			}
 		}
 		return tw.Flush()
 	}
-	_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tMODERATION\tSERVER\tHOLDERS")
+	_, _ = fmt.Fprintln(tw, "ROLE\tPOSITION\tMODERATION\tSERVER\tMEMBER\tHOLDERS")
 	for _, r := range roles {
 		holders, err := app.Identity.RoleHolders(ctx, r.Key)
 		if err != nil {
@@ -154,8 +155,9 @@ func listRoles(ctx context.Context, app *platform.App, w io.Writer, username str
 		if list == "" {
 			list = "-"
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\n", r.Key, r.Position,
-			permissionList(r.Permissions, identity.CategoryModeration), permissionList(r.Permissions, identity.CategoryServer), list)
+		_, _ = fmt.Fprintf(tw, "%s\t%d\t%s\t%s\t%s\t%s\n", r.Key, r.Position,
+			permissionList(r.Permissions, identity.CategoryModeration), permissionList(r.Permissions, identity.CategoryServer),
+			permissionList(r.Permissions, identity.CategoryMember), list)
 	}
 	return tw.Flush()
 }

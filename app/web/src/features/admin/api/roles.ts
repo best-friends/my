@@ -37,15 +37,16 @@ export const maxRolePosition = 999;
 export const roleKeyPattern = /^[a-z0-9_-]+$/;
 
 /**
- * The permissions by the area of the staff's work they belong to (ADR-0058, `Permission.Category` of the server),
+ * The permissions by the area they belong to (ADR-0058, ADR-0070, `Permission.Category` of the server),
  * each in the order of the API's `Permission`.
  */
-export const permissionCategories: readonly { category: "moderation" | "server"; permissions: readonly Permission[] }[] = [
+export const permissionCategories: readonly { category: "moderation" | "server" | "member"; permissions: readonly Permission[] }[] = [
   { category: "moderation", permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_invites", "view_audit"] },
   {
     category: "server",
     permissions: ["manage_rules", "manage_settings", "manage_roles", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance"],
   },
+  { category: "member", permissions: ["view_finance"] },
 ];
 
 /** Every permission, in the order of the API's `Permission`. */
@@ -64,6 +65,7 @@ export const allPermissions: readonly Permission[] = [
   "manage_webhooks",
   "manage_announcements",
   "manage_finance",
+  "view_finance",
 ];
 
 /** The reason of an `invalid-role` problem and the permissions it names, or undefined for another error. */

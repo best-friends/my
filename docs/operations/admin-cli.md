@@ -34,14 +34,14 @@ my admin create -username alice -email alice@example.com
 `moderator`（`position` 100、`manage_reports`・`manage_accounts`・`view_audit`）です（FR-720）。
 
 ```sh
-my admin role list                 # ロールごとの position・権限（モデレーションとサーバー管理に分けて）・持っている利用者
+my admin role list                 # ロールごとの position・権限（モデレーション・サーバー管理・利用者の機能に分けて）・持っている利用者
 my admin role list -user alice     # alice のロール
 my admin role grant alice moderator
 my admin role revoke alice moderator
 ```
 
-- 権限はモデレーション（`manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`）とサーバー管理（`manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs`・`manage_login_recovery`・`manage_custom_emojis`・`manage_webhooks`・`manage_announcements`・`manage_finance`）の区分を持ち、
-  `list` は区分ごとの列（`MODERATION`・`SERVER`）に出します。Web クライアントは区分ごとに「モデレーション」と「管理」を出します（[ADR-0058](../adr/0058-moderation-admin-separation.md)、[モデレーション](moderation.md#web-クライアントのモデレーションとサーバー管理)）。
+- 権限はモデレーション（`manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`）とサーバー管理（`manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs`・`manage_login_recovery`・`manage_custom_emojis`・`manage_webhooks`・`manage_announcements`・`manage_finance`）と利用者の機能（`view_finance`）の区分を持ち、
+  `list` は区分ごとの列（`MODERATION`・`SERVER`・`MEMBER`）に出します。Web クライアントは区分ごとに「モデレーション」と「管理」を出し、利用者の機能はどちらにも数えません（[ADR-0058](../adr/0058-moderation-admin-separation.md)、[ADR-0070](../adr/0070-permission-split-emoji-finance.md)、[モデレーション](moderation.md#web-クライアントのモデレーションとサーバー管理)）。
 - 変更は利用者の次の要求から効きます。モデレーター向けの通知は、通知を作るときに権限を持つ人に届きます。
 - 付与と剥奪は監査ログに `role_granted`・`role_revoked`（対象の種類 `role`）で残ります。CLI の操作者は `cli` です（`my admin audit list -target-kind role`）。
 - 持っているロールの付与と持っていないロールの剥奪は何も変えず、記録もしません。

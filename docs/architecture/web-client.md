@@ -356,6 +356,8 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
     動かすとフォーカスは動かした項目の同じボタン（端に着いて押せなくなったときはもう一方のボタン）に残り、新しい位置を `useAnnouncer` で知らせる（「ホームを 8 項目中 2 番目に移動しました」）。各項目の説明は、電話でタブバーとメニューのどちらに出るか・隠していること・サーバーが提供していないことを言う。
     スタッフの画面は「モデレーション」と「サーバー管理」の 2 つの区分に分ける（[ADR-0058](../adr/0058-moderation-admin-separation.md)、§14）。ロールがモデレーションの画面の権限（`manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit`）のどれかを持つ閲覧者には「モデレーション」（`/moderation`）を、
     サーバー管理の画面の権限（`manage_settings`・`manage_rules`・`manage_custom_emojis`・`manage_announcements`・`manage_webhooks`・`manage_roles`・`manage_jobs`・`manage_finance`）のどれかを持つ閲覧者には「管理」（`/admin`）を、設定の後にこの順で足す。どちらも、その区分に閲覧者の使える画面があるときだけ出すので、組み込みのモデレーターには「管理」が出ない。レールとサイドバーとメニューのシートに出し、タブバーには出さない。
+    権限の 3 つめの区分「利用者の機能」（`member`。`view_finance` など、[ADR-0070](../adr/0070-permission-split-emoji-finance.md)）はこの規則に数えないので、それだけを持つ閲覧者には「モデレーション」も「管理」も出ない。
+    `view_finance` を持つ閲覧者には、利用者の項目の後、スタッフの区分の前に「会計」（`/finance`）を足す。スタッフの区分と同じく並べ替えの対象にせず、レールとサイドバーとメニューのシートに出し、タブバーには出さない。
     jsdom はスタイルを当てないので、統合テストでは両方の項目が文書にあり、どの幅で何が出るかは E2E（`e2e/shell.spec.ts`・`e2e/federated.spec.ts`）で確かめる。
   - **サインインしていないときのナビゲーション**: 上の 8 つの項目とスタッフの区分はセッションが要るので出さず、セッションなしで使える画面とサインイン・登録への導線だけを出す（[#781](https://github.com/best-friends/my/issues/781)）。
     項目は、ローカル（`/local`）・連合（`/public`）・検索（`/search`）・サーバー情報（`/about`）・ログイン（`/login`）の 5 つと、サーバーが新しいアカウントを受け付けている（`GET /instance` の `registrations.mode` が `closed` 以外）ときの新規登録（サーバーが描画する `/auth/sign_up`、§8）で、この順に並べる。
@@ -411,9 +413,13 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
   管理画面の費用の集計（下の「費用」）と同じ部品（`CostTotalsPanel`・`CostTotalsView`）で、計上のしかたと週・月・年のタブ（どちらも URL に置く。S3）、新しい期間が先の合計の表、期間の区切りの規則を出し、`GET /instance/cost_totals` を読む。今日の日付は端末のタイムゾーンでルートの loader が決める。
   今の期間の事業者・区分ごとの内訳は `finance_visibility` が `breakdown` のときだけ出し、`totals` のときは合計だけを公開していることを書く。API が 404（公開しない）を返すときは、表の代わりにそのことと `/about` へのリンクを出す。これは設定の答えなので再試行しない。
   loader は `GET /instance` と合計を待つが、どちらの失敗もページの失敗にはせず、合計の失敗はタブの中に出す。
+- **会計のページ**（`routes/finance.tsx`、`features/costs` の `FinanceCosts`、[ADR-0070](../adr/0070-permission-split-emoji-finance.md) §5）: `/finance` は `view_finance` を持つ人（`manage_finance` を持つ人も読める）の、利用者の側の画面で、スタッフの画面（`/admin/*`）の外に置く。
+  見出し（`h1`）は「会計」で、ナビゲーションの項目の画面なので見た目からは消す。`GET /finance/cost_totals`（スコープ `read:finance`。`admin:*` を要さない）を読み、運営の費用のページと同じ部品（`CostTotalsPanel`・`CostTotalsView`）で、計上のしかたと週・月・年のタブ（URL に置く。S3）、合計の表、今の期間の事業者・区分ごとの内訳（設定によらずいつも）、期間の区切りの規則を「費用」の区画（`h2` の `section`）に出す。
+  インスタンス設定 `finance_viewer_item_names`・`finance_viewer_item_memos` のどちらかが有効なら、今の期間の項目の行（名前・事業者・区分・額・メモ。名前とメモはサーバーが返したときだけ。`dir="auto"`）を内訳の下に出し、画面の説明の下に、項目の名前とメモのどちらを見せているかを書く。`manage_finance` を持つ人にはサーバーがすべての行を返すので、この文を出さない。
+  収入（`finance_viewer_income`）はまだ出さない。権限のない閲覧者には、要求を送らずに理由（権限の名前）を出す。loader は閲覧者を待ち、権限があるときだけ合計を待つが、合計の失敗はページの失敗にはせず、タブの中に出す。
 - **フォーカスとタイトル**（`routes/-layout/useViewChange.ts`、Y5）: ルーターが画面を描画するたびに、`main` の `h1` の文字列から `document.title` を `client:shell.document_title`（画面名とサーバー名）で作る。サーバーの名前が変わったときも作り直す（フォーカスは動かさない）。
   パスが変わったときだけ、その `h1` にフォーカスを移す。最初の画面と、検索条件やハッシュだけの変化（タブ・絞り込み）ではフォーカスを動かさない。画面の見出しは `PageHeading`（`tabindex="-1"` の `h1`）で書く。
-  ナビゲーションの項目の画面で、見出しが場所を言うだけのもの（ホーム・ローカル・連合・通知・検索・ブックマーク・設定・モデレーション・サーバー管理）は、
+  ナビゲーションの項目の画面で、見出しが場所を言うだけのもの（ホーム・ローカル・連合・通知・検索・ブックマーク・設定・会計・モデレーション・サーバー管理）は、
   どこにいるかをナビゲーションの現在の項目（`aria-current="page"`）が見せているので、`h1` を見た目から消す。ルートの `staticData.hideHeading` を真にすると、`PageHeading` が `sr-only`（Tailwind の視覚的に隠すクラス）を付け、
   `h1` はアクセシビリティツリー・フォーカスの移動・`document.title` のためにそのまま残る。同じルートの読み込み中（pending component）と失敗（`RouteError`）の見出しも隠し、失敗の理由は `RegionError` の `h2` が見せる。
   場所より多くを言う見出し（サーバーがタイムラインを提供していないときの 404 の「ローカルタイムラインは提供されていません」など）は `visuallyHidden={false}` で見せる。名前がパラメータで決まる画面（ハッシュタグ・プロフィール・投稿）、設定の下の画面（`SettingsHeading`。設定へ戻るリンクが見出しの後にある）、情報ページとランディングページは見出しを見せる。
@@ -697,6 +703,7 @@ Web App Manifest と HTML は Go が返すので、プラグインはどちら�
 API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の管理の操作、タグ `admin-moderation` / `admin-server`）、Web の経路とは一致しない。
 
 - **出し分け**: 閲覧者の `CredentialAccount.permissions` で、ナビゲーションの「モデレーション」と「管理」（§9）・各区分の画面（`/moderation`・`/admin`）・設定の画面の「モデレーション」と「管理」の区画と各画面を出す。`manage_domains` が連合先とドメインへの処分、`manage_jobs` がジョブのキュー、`view_audit` が監査ログ、`manage_accounts` が登録の審査と登録の拒否リストと異議申し立ての審査とアカウント、`manage_invites` が招待、`manage_reports` が通報の画面、`manage_rules` がルールの画面、`manage_roles` がロールの画面とアカウントの管理画面のロールの区画、`manage_settings` が規約とポリシーの画面とサーバーの設定とテーマとリレーの画面、`manage_custom_emojis` がカスタム絵文字の画面、`manage_announcements` がお知らせの画面、`manage_webhooks` が webhook の画面、`manage_finance` が費用の画面に要る。
+  利用者の機能の区分の権限（`view_finance`）はスタッフの画面を出さず、ナビゲーションの「会計」と会計のページ（`/finance`、§9）を出す。
   ルートは `requireSignIn` のあと、loader で閲覧者を読み、権限があるときだけ一覧を読み込む（`routes/-admin/adminRoute.tsx`）。権限がなければ、要求を送らずに理由（権限の名前）を出す。
   守るのはサーバーで、権限が途中で外れて 403 `missing-permission` が返ったときは、ルートの `errorComponent` が同じ理由を出す。
 - **モデレーターへの通知のメール**（設定の「表示と投稿」、`features/settings` の `useModeratorEmail`）: モデレーターへの通知が届く権限（`manage_reports` か `manage_accounts`）を持つ閲覧者にだけ、
@@ -779,12 +786,13 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   - **利用料金の取り込み**（`GET /admin/billing_imports`）: 取り込み元ごとに、事業者の見出し（`h3`）と、請求月の基準のタイムゾーン・最後に成功した取り込み・最後の試行（日時と、失敗の種類ごとの直し方の文）・今日と今月の課金される要求の数と上限・BigQuery の課金されたバイト数（Google Cloud だけ）の説明リスト、請求月ごとの見込み・確定・確定後の修正と合計の一覧。
     「今すぐ取り込む」（アクセシブルネームに事業者）は確かめずに `POST /admin/billing_imports/{source}/runs` を送り、取り込みの状態と監査ログを取り直してから結果を区画の `StatusMessage` に出す。1 時間以内に取り込んだ取り込み元の 429 はその旨を、ほかの失敗は理由を同じ場所（`role="alert"`）に出す。取り込み元がなければ、デプロイの設定 `billing_sources` で有効にすることを `EmptyState` で出す。
   - 公開範囲（`finance_visibility`）はサーバーの設定（`manage_settings`）に置くので、この画面は変えない。画面の説明の下に、`GET /instance` から読んだいまの公開範囲を書き、`manage_settings` を持つ閲覧者には `/admin/settings` へのリンクを付ける。
+    その下に、`view_finance` を持つ人に見せる範囲（`finance_viewer_*`、ADR-0070 §5。項目の名前とメモを見せるか、収入を合計だけか、プランごとの人数までか）を、`GET /finance/cost_totals` の `viewer` から読んで書く。
   - 集計の表・内訳・規則は運営の費用のページと同じ部品（`features/costs`）で出す。
 - **ロール**（`/admin/roles`、`manage_roles`、FR-720）: 「ロールを作成する」と「このサーバーのロール」の 2 つの区画（`h2` の `section`）。閲覧者のいちばん高いロールは `GET /admin/accounts/{閲覧者の ID}/roles` で読む。
   - **作成**: キー（必須、64 文字までの英小文字・数字・`_`・`-`）・位置（必須、0 から閲覧者のいちばん高いロールの位置（999 まで）の整数）・権限（区分ごとの `role="group"` の中の `Checkbox`。閲覧者のロールにない権限は選べない）のフォーム。
     キーと位置は送る前に確かめて欄のエラーにする。サーバーの拒否（422 `invalid-role`）は `reason` の項目（キー・位置・権限）に `detail` を出し、`missing_permission` では足りない権限（`missing_permissions`）も並べて、入力を残す。
     成功したら入力を空にし、ロールの一覧・アカウントのロール・閲覧者・監査ログに無効化の印を付けてから、結果をフォームの `StatusMessage` に出す。作ったロールはアカウントの管理画面（下の「アカウントの管理画面」の「ロール」）で付与するので、アカウントの検索へリンクする。
-  - **一覧**: 位置の高い順。各ロールはキーの見出し（`h3`、`dir="ltr"`）と、位置・モデレーションの権限・サーバー管理の権限（権限の名前を区分ごとに並べる）・バッジ（`@my/ui` の `RoleBadge` の見本か「バッジなし」）の説明リスト。
+  - **一覧**: 位置の高い順。各ロールはキーの見出し（`h3`、`dir="ltr"`）と、位置・モデレーションの権限・サーバー管理の権限・利用者の機能の権限（権限の名前を区分ごとに並べる）・バッジ（`@my/ui` の `RoleBadge` の見本か「バッジなし」）の説明リスト。
     閲覧者のいちばん高いロール以下のロールには「編集」（位置と権限のダイアログ。保存したら閉じ、拒否はダイアログの項目に出す）と「削除」（元に戻せないので `ConfirmDialog`（`danger`）で確かめ、持っている人がいるロールの拒否はダイアログの中に出す。成功したらフォーカスを次の行に移す）を出す。
     `admin` はバッジのほかは変えられず（すべての権限と位置 1000）、`admin` と `moderator` は削除できないので、そのボタンを出さずにその旨を書く。閲覧者のいちばん高いロールより上のロールは、それを挙げて変えられない理由を書く。
   - **バッジ**（[ADR-0071](../adr/0071-role-badges-and-supporter-list.md)）: 閲覧者のいちばん高いロール以下のロール（`admin` を含む）に「バッジ」のボタンを出し、ダイアログで名前（1〜32 文字。送る前に確かめる）と色（9 色の `RadioGroup`、色の名前はカタログの文言）を選ぶ。
@@ -846,8 +854,9 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     成功したら設定のキャッシュを応答で置き換え、`GET /instance`・`GET /admin/instance_texts`・監査ログを取り直してから、区画の `StatusMessage` に出す。変えたものがなければ何も送らずにその旨を出し、失敗はボタンの上（`role="alert"`）に出して入力を残す（E2）。
   - **設定**: `GET /admin/settings` の値で、登録モード（`RadioGroup`、各モードの説明付き）、既定の言語（`Select`。カタログのある言語と保存されている言語。新しい利用者の UI の言語の初期値）、ローカルと連合のタイムライン（`Checkbox`）、
     すべての画像に代替テキストを必須にするか（`require_media_description`、`Checkbox`）、Authorized Fetch（`Checkbox`）、リモートのメディアの複製（`RadioGroup`）と持つ期間（`Select`。1 時間〜365 日と保存されている値）、処分したドメインの一覧と公開コメントを見られる人（`RadioGroup`、誰にも・ログインした利用者・誰にでも）、
-    運営の費用の公開範囲（`finance_visibility`、`RadioGroup`、公開しない・合計だけ・合計と内訳。内訳の選択肢の説明に、どの事業者で動いているかが知られることを書く。FR-903）を出す。
-    1 つのフォームで、「設定を保存する」は変えた設定だけを `PATCH /admin/settings` でまとめて送る（サーバーはすべてか何も変えない）。成功したら応答で設定のキャッシュを置き換え、`GET /instance`（登録モードとタイムライン）・`GET /instance/cost_totals`・監査ログを取り直してから
+    運営の費用の公開範囲（`finance_visibility`、`RadioGroup`、公開しない・合計だけ・合計と内訳。内訳の選択肢の説明に、どの事業者で動いているかが知られることを書く。FR-903）と、同じ区画に、会計を閲覧できる人に見せる範囲
+    （項目の名前・メモを見せるか（`finance_viewer_item_names`・`finance_viewer_item_memos`、`Checkbox`、既定は見せない。メモの説明に運営者だけに向けた書き込みがあるかもしれないことを書く）、収入の見せ方（`finance_viewer_income`、`RadioGroup`、合計だけ・合計とプランごとの人数）。ADR-0070 §5）を出す。
+    1 つのフォームで、「設定を保存する」は変えた設定だけを `PATCH /admin/settings` でまとめて送る（サーバーはすべてか何も変えない）。成功したら応答で設定のキャッシュを置き換え、`GET /instance`（登録モードとタイムライン）・`GET /instance/cost_totals`・`GET /finance/cost_totals`・監査ログを取り直してから
     結果をボタンの下の `StatusMessage` に出す。変えた設定がなければ何も送らずにその旨を出し、失敗はボタンの上（`role="alert"`）に出して選択を残す（E2）。
 - **ルール**（`/admin/rules`、`manage_rules`、FR-705）: 「ルールを追加する」と「有効なルール」の区画（`h2` の `section`）。
   - **追加**: ルール（`TextField`、1 行、300 文字、必須）と補足（`TextArea`、1,000 文字、任意）を 1 つずつ置く。どちらもどのロケールでも同じ値を出す。文が空なら文の欄のエラーにして送らない。
