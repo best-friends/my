@@ -34,6 +34,7 @@ const files = {
   icons: "ui/src/Icons.tsx",
   component: "ui/src/Button.tsx",
   svgControl: "ui/src/Checkbox.tsx",
+  postContent: "ui/src/PostContent.tsx",
   story: "ui/src/EmptyState.stories.tsx",
 };
 
@@ -53,6 +54,10 @@ describe("where the restrictions apply", () => {
   it("keeps the browser's storage to lib/storage and the tests (S11)", () => {
     for (const file of [files.route, files.lib, files.featureHook, files.component]) assert.ok(ruleOptions("restrict/storage", file).length > 0);
     for (const file of [files.storage, files.testSetup, files.featureTest]) assert.equal(ruleValue("restrict/storage", file), "off");
+  });
+  it("keeps the Trusted Types sinks to PostContent and the tests (A8)", () => {
+    for (const file of [files.route, files.lib, files.featureHook, files.component, files.story]) assert.ok(ruleOptions("restrict/html", file).length > 0);
+    for (const file of [files.postContent, files.featureTest, files.featureComponentTest]) assert.equal(ruleValue("restrict/html", file), "off");
   });
   it("allows the API client and fetch in features/<x>/api and lib/ (S1)", () => {
     for (const file of [files.featureApi, files.lib]) {
@@ -179,6 +184,36 @@ ruleTester.run("restrict/storage (S11)", restrict.rules.storage, {
     { ...fails("window.localStorage.clear();"), options: storage },
     { ...fails("const storage = globalThis['sessionStorage'];"), options: storage },
     { ...fails("const { localStorage: kept } = window;"), options: storage },
+  ],
+});
+
+const html = ruleOptions("restrict/html", files.featureHook);
+ruleTester.run("restrict/html (A8)", restrict.rules.html, {
+  valid: [
+    { code: "const text = sanitizedHtmlText(serverSanitizedHtml(status.content));", options: html },
+    { code: "<PostContent html={serverSanitizedHtml(status.content)} />", options: html },
+    { code: "const markup = element.innerHTML;", options: html },
+    { code: "label.textContent = name;", options: html },
+    { code: "const image = document.createElement('img'); image.src = url;", options: html },
+    { code: "await writer.write(chunk);", options: html },
+    { code: "const fn = new Map();", options: html },
+  ],
+  invalid: [
+    { ...fails("const doc = new DOMParser().parseFromString(html, 'text/html');", 2), options: html },
+    { ...fails("parser.parseFromString(html, 'text/html');"), options: html },
+    { ...fails("element.innerHTML = html;"), options: html },
+    { ...fails("element.outerHTML += html;"), options: html },
+    { ...fails("frame.srcdoc = html;"), options: html },
+    { ...fails("<iframe srcDoc={html} />"), options: html },
+    { ...fails("frame.setAttribute('srcdoc', html);"), options: html },
+    { ...fails("element.insertAdjacentHTML('beforeend', html);"), options: html },
+    { ...fails("document.createRange().createContextualFragment(html);"), options: html },
+    { ...fails("element.setHTMLUnsafe(html);"), options: html },
+    { ...fails("Document.parseHTMLUnsafe(html);"), options: html },
+    { ...fails("document.write(html);"), options: html },
+    { ...fails("document.createElement('script');"), options: html },
+    { ...fails("eval(code);"), options: html },
+    { ...fails("const f = new Function('a', code);"), options: html },
   ],
 });
 

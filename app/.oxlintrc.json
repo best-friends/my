@@ -430,7 +430,7 @@
     // Client source (@my/ui and app/web). R1–R6, R9, R11: React Compiler rules (react/*), all at error. R11–R13:
     // @eslint-react, without the rules that duplicate react/* and without no-unstable-context-value (R4, R5:
     // React Compiler memoizes a context value built during render; the rule asks for the useMemo that R5
-    // forbids). A7: no-restricted-types. A8: dom-no-dangerously-set-innerhtml (PostContent below). A9: formatjs.
+    // forbids). A7: no-restricted-types. A8: dom-no-dangerously-set-innerhtml and restrict/html (PostContent below). A9: formatjs.
     // D8, D9: better-tailwindcss; D5–D7: its no-restricted-classes. A5, D5, D10, R4, R5, R13, S7, Y12, G10: restrict/syntax
     // and restrict/svg. S11: restrict/storage. R5, S1, G10: no-restricted-imports / -globals / -properties.
     {
@@ -724,6 +724,23 @@
             "selector": "MemberExpression[computed=true][property.value=/^(localStorage|sessionStorage)$/]",
             "message": "Do not use the browser's storage directly; read and write a key declared in lib/storage (web-client.md S11)."
           }
+        ],
+        // The sinks that the shell's Trusted Types (`require-trusted-types-for 'script'`) refuse a string in: only
+        // PostContent.tsx passes them the TrustedHTML of its policy.
+        "restrict/html": [
+          "error",
+          {
+            "selector": "NewExpression[callee.name='DOMParser'], CallExpression > MemberExpression.callee[property.name=/^(parseFromString|insertAdjacentHTML|createContextualFragment|setHTMLUnsafe|parseHTMLUnsafe)$/]",
+            "message": "Do not parse or insert HTML; render server-sanitized HTML with PostContent and take its text with sanitizedHtmlText of @my/ui, which pass it through the Trusted Types policy (web-client.md A8)."
+          },
+          {
+            "selector": "AssignmentExpression > MemberExpression.left[property.name=/^(innerHTML|outerHTML|srcdoc)$/], JSXAttribute[name.name='srcDoc'], CallExpression[callee.property.name='setAttribute'][arguments.0.value=/^srcdoc$/i]",
+            "message": "Do not assign HTML; the app's Trusted Types refuse a string. Render server-sanitized HTML with PostContent of @my/ui, and build other DOM with React or textContent (web-client.md A8)."
+          },
+          {
+            "selector": "CallExpression > MemberExpression.callee[object.name='document'][property.name=/^(write|writeln)$/], CallExpression[callee.property.name='createElement'][arguments.0.value=/^script$/i], CallExpression[callee.name='eval'], NewExpression[callee.name='Function']",
+            "message": "Do not write a document, create a script, or compile code from a string; the app's Trusted Types refuse it (web-client.md A8)."
+          }
         ]
       },
       "plugins": [
@@ -907,16 +924,18 @@
         "restrict/svg": "off"
       }
     },
-    // A8: the single audited component that renders server-sanitized post HTML.
+    // A8: the single audited component that renders and parses server-sanitized post HTML.
     {
       "files": [
         "ui/src/PostContent.tsx"
       ],
       "rules": {
-        "@eslint-react/dom-no-dangerously-set-innerhtml": "off"
+        "@eslint-react/dom-no-dangerously-set-innerhtml": "off",
+        "restrict/html": "off"
       },
       "jsPlugins": [
-        "@eslint-react/eslint-plugin"
+        "@eslint-react/eslint-plugin",
+        "./oxlint/restrictions.js"
       ]
     },
     // Server state and routing (S1, S7).
@@ -1321,7 +1340,9 @@
         ],
         "restrict/svg": "off",
         // S11: a test prepares and inspects the stored text itself (a broken value, the format of a key).
-        "restrict/storage": "off"
+        "restrict/storage": "off",
+        // A8: a test builds the document it runs on (jsdom has no Trusted Types).
+        "restrict/html": "off"
       },
       "jsPlugins": [
         "eslint-plugin-testing-library",
