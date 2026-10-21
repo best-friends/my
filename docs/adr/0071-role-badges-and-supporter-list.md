@@ -1,6 +1,6 @@
 # ADR-0071: ロールのバッジと参加者の一覧
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: #911
@@ -94,9 +94,7 @@ M4.2（Supporters、epic #925）で、課金のプランに結び付いたロー
 
 ## Decision（決定）
 
-> 推奨案。Accepted にするのは Decider のみ。
-
-**C1・I1・R1・P1・D1・N1** を推奨する。R1（運用者のロールも本人に任せる）・P1・C1・N1 は決定者の回答 1・2・4・5 のとおりである。
+**C1・I1・R1・P1・D1・N1** を採る。R1（運用者のロールも本人に任せる）・P1・C1・N1 は決定者の回答 1・2・4・5 のとおりである。
 
 ### 1. バッジの属性
 
