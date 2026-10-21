@@ -2,7 +2,8 @@
 // The account search and an account's admin page in every width × locale project (ADR-0027, FR-714, FR-703,
 // FR-713): a local account with a long name and a remote one on a long domain, showing the email and IP
 // addresses only when asked, lifting an action after its alert dialog, the kinds of action a remote account
-// takes, and a ban that blocks sign-ups with the account's email address and shows in the sign-up blocks, each passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
+// takes, a ban that blocks sign-ups with the account's email address and shows in the sign-up blocks, and an
+// administrator's password reset link for a local account, shown once (FR-002), each passing axe without scrolling sideways. `vite preview` has no API, so each test plays the server of
 // a signed-in moderator with page.route; names change with the locale, so the structure is checked by role and by
 // what the server sends (names, handles, addresses).
 import type { Page, Route } from "@playwright/test";
@@ -104,8 +105,16 @@ function json(route: Route, body: unknown, status = 200) {
  */
 const slowSearchMs = 1500;
 
-/** Plays the API of a signed-in moderator; returns the requests to the account operations. */
-async function moderatorServer(page: Page) {
+/** A password reset link as long as the server makes them. */
+const resetLink = "https://my.example/auth/reset_password?token=rst_3q2Ybq7mJXkQ9sV0nWfLzT4uHcR8pE1aKdG6oNiB5yMx";
+
+/**
+ * Plays the API of a signed-in moderator with `permissions`; returns the requests to the account operations. With
+ * manage_login_recovery, the local account's user shows without two-factor authentication.
+ */
+async function moderatorServer(page: Page, permissions: readonly string[] = moderator.permissions) {
+  const viewer = { ...moderator, permissions };
+  const recovers = permissions.includes("manage_login_recovery");
   const locale = test.info().project.use.locale ?? "en";
   let actions = [limit];
   let blocks: Schemas["AdminSignupBlock"][] = [];
@@ -120,6 +129,7 @@ async function moderatorServer(page: Page) {
   const detail = (account: Schemas["AdminAccount"]): Schemas["AdminAccountDetail"] => ({
     ...current(account),
     ...(account.local ? { registration: { submitted_at: "2026-10-01T00:00:00Z", state_changed_at: "2026-10-01T01:00:00Z" }, email_verified: true } : {}),
+    ...(account.local && recovers ? { two_factor_enabled: false } : {}),
     roles: [],
     actions: [],
     reports: [],
@@ -135,7 +145,7 @@ async function moderatorServer(page: Page) {
     if (key === "GET /instance") {
       return json(route, { domain: "my.example", name: "my example", version: "0.0.0", source_url: "https://github.com/best-friends/my", registrations: { mode: "open" }, limits: { max_post_characters: 500, require_media_description: false }, timelines: { local: true, federated: true }, rules: [] });
     }
-    if (key === "GET /accounts/verify_credentials" || key === `GET /accounts/${moderator.id}`) return json(route, moderator);
+    if (key === "GET /accounts/verify_credentials" || key === `GET /accounts/${moderator.id}`) return json(route, viewer);
     if (key === "GET /preferences") {
       return json(route, { locale, time_zone: "UTC", default_visibility: "public", default_post_language: "und", require_media_description: false, timeline_languages: [] });
     }
@@ -149,6 +159,7 @@ async function moderatorServer(page: Page) {
     if (key === `GET /admin/accounts/${local.id}/actions`) return json(route, { items: actions });
     if (key === `GET /admin/accounts/${remote.id}/actions`) return json(route, { items: [] });
     if (key === `POST /admin/accounts/${local.id}/reveal`) return json(route, privateData);
+    if (key === `POST /admin/accounts/${local.id}/password_reset_link`) return json(route, { url: resetLink, expires_at: "2026-10-17T01:00:00Z" }, 201);
     if (key === `POST /admin/accounts/${local.id}/actions`) {
       const body = request.postDataJSON() as Schemas["CreateAccountActionRequest"];
       requests.push(`${key} ${body.kind}${body.block_email === true ? " block_email" : ""}`);
@@ -336,5 +347,39 @@ test.describe("accounts", () => {
     await expect(page.getByRole("main").getByRole("tabpanel").getByRole("heading", { level: 3, name: emailHash })).toBeVisible();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+
+  test("an administrator issues a password reset link for a local account after its confirmation, shown once", async ({ page, makeAxeBuilder }) => {
+    const requests = await moderatorServer(page, [...moderator.permissions, "manage_login_recovery"]);
+    await page.goto(`/moderation/accounts/${local.id}`);
+    const main = page.getByRole("main");
+    await expect(main.getByRole("heading", { level: 3 }).first()).toBeVisible();
+    await expect(page.getByText(resetLink)).toHaveCount(0);
+
+    // Account, restrictions, two-factor authentication, password reset: the fourth region.
+    const reset = main.getByRole("region").nth(3);
+    await reset.getByRole("button").focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("alertdialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("heading", { level: 2 })).toContainText("@maximiliana");
+    await expect(page.locator("[data-entering]")).toHaveCount(0);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+    expect(requests.filter((request) => request.endsWith("/password_reset_link"))).toEqual([]);
+
+    await dialog.locator('button[type="submit"]').click();
+    await expect(dialog).toBeHidden();
+    await expect(reset.getByText(resetLink)).toBeVisible();
+    await expect(reset.getByRole("status").filter({ hasText: /\S/ })).toBeVisible();
+    expect(requests.filter((request) => request.endsWith("/password_reset_link"))).toEqual([`POST /admin/accounts/${local.id}/password_reset_link`]);
+    await expect(page.locator("[data-exiting]")).toHaveCount(0);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // The link is not kept anywhere: the page opened again does not show it.
+    await page.reload();
+    await expect(main.getByRole("heading", { level: 3 }).first()).toBeVisible();
+    await expect(page.getByText(resetLink)).toHaveCount(0);
   });
 });

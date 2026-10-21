@@ -19,9 +19,10 @@ const (
 	PermViewAudit      Permission = "view_audit"
 	// PermManageJobs: read and requeue the dead jobs of the job queue.
 	PermManageJobs Permission = "manage_jobs"
-	// PermManageTwoFactor: remove the two-factor authentication of a local user (FR-005). It is
-	// server administration (ADR-0058 §4): only the built-in admin role has it by default.
-	PermManageTwoFactor Permission = "manage_two_factor"
+	// PermManageLoginRecovery: recover a local user's sign-in, by removing their two-factor
+	// authentication (FR-005) or issuing a password reset link for them (FR-002). It is server
+	// administration (ADR-0058 §4): only the built-in admin role has it by default.
+	PermManageLoginRecovery Permission = "manage_login_recovery"
 	// PermManageCustomEmojis: register, change, disable, and delete the custom emoji, local and
 	// remote (ADR-0051 §5). It is server administration (ADR-0058 §4).
 	PermManageCustomEmojis Permission = "manage_custom_emojis"
@@ -38,7 +39,7 @@ func AllPermissions() []Permission {
 	return []Permission{
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
-		PermManageTwoFactor, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
+		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
 	}
 }
 
