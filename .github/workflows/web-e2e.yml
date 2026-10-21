@@ -86,7 +86,7 @@ jobs:
       # Artifacts drop file modes, so the build travels as a tarball that keeps bin/my executable.
       - name: Pack the build
         run: tar -cf "$RUNNER_TEMP/e2e-build.tar" bin/my app/web/dist
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-build-${{ inputs.matrix }}-w${{ inputs.workers }}
           path: ${{ runner.temp }}/e2e-build.tar
@@ -141,7 +141,7 @@ jobs:
           SHARD: ${{ matrix.shard }}/${{ needs.build.outputs.total }}
           WORKERS: ${{ inputs.workers }}
         run: bun run playwright test --shard="$SHARD" --workers="$WORKERS" --reporter=github,blob
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: e2e-blob-${{ inputs.matrix }}-w${{ inputs.workers }}-${{ matrix.shard }}
@@ -181,7 +181,7 @@ jobs:
       # The merged report holds every shard's results and the traces of the failed tests.
       - name: Upload the Playwright report
         if: ${{ needs.shard.result != 'success' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report-${{ inputs.matrix }}
           path: app/web/playwright-report/
