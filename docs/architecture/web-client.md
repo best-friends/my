@@ -694,7 +694,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
 - **連合先の詳細**（`/moderation/instances/{domain}`）: 状態と、最新の `instance_availability_events` の理由、最後に配送を再開した日時（最新の `marked_available`）、新しい順の履歴。
   データモデルは成功した配送の日時を持たない（`instance_health` は失敗の間だけ更新する。[data-model §4.8](data-model.md#48-federation)）ので、「最後の成功」は配送の再開の日時で示す。
   失敗の日数があるか停止中なら「配送を再開する」を出し、成功したら詳細の答えを置き換え、一覧と履歴を無効にして結果を知らせる。失敗はトーストで知らせ、状態とボタンを残す（E2）。
-  「モデレーション」の区画から、そのドメインのドメインへの処分の画面（`/moderation/domain-actions?domain=…`）へリンクする。
+  「モデレーション」の区画から、そのドメインのドメインへの処分の画面（`/moderation/domain-actions?domain=…`）へリンクする。「投稿の取り直し」の区画（下の「投稿の取り直し」）を持つ。
 - **ドメインへの処分**（`/moderation/domain-actions`、FR-702）: 新しい処分のフォームと、新しい順の処分の一覧と、Mastodon の CSV（FR-706）の 3 つの区画。一覧は「有効」（`active=true`）と「すべて」のタブ（`?filter=all`、URL に置く。S3）で、
   `?domain=` があればそのドメインの処分だけを出し、フォームのドメインにも入れ、「すべてのドメインを表示」のリンクで外せる。各処分は見出し（ドメイン）と、種類・状態・処分した日時・終了（なければ「解除するまで」）・解除した日時・公開の一覧での伏せ字の説明リスト、公開コメントと非公開のメモにする。
   - **ドメインの 2 つの形**: サーバーはドメインを IDNA の A-label（`xn--r8jz45g.jp`）で記録して返す。画面は `lib/idn.ts`（RFC 3492 の Punycode の復号。表示専用）で U-label（`例え.jp`）に戻し、違うときは A-label を括弧で後に添える（`features/admin` の `DomainName`、連合先の一覧と詳細の見出しも同じ）。
@@ -824,6 +824,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   担当はアカウントの ID しか返らないので、閲覧者なら「あなた」、ほかは `GET /accounts/{id}` で名前を出す。
 - **通報の詳細**（`/moderation/reports/{id}`、NFR-MOD-4）: 1 つの画面に、通報の内容（状態・カテゴリ・日時・通報者・通報元・転送・引用するルール・コメント）、通報された投稿、通報されたアカウントとその履歴（ほかの通報と処分の件数、`manage_accounts` があれば処分の履歴）、担当、メモ、対応の区画を `h2` の `section` で並べる。
   - **投稿**: `GET /statuses/{id}` で読み、`StatusCard` を操作の列なし（`withActions={false}`）で出す。モデレーターにも公開範囲が効くので、読めない投稿（削除済み・公開範囲の外）はその旨を出す。
+    `manage_domains` があれば、削除されていないリモートの投稿の下に「{日時} の投稿を取り直す」（下の「投稿の取り直し」）を出し、結果を投稿の一覧の上の `StatusMessage` に出す。
   - **ルール**: `GET /instance` の `rules` から文を引き、今のルールにないもの（廃止されたもの）はその旨を出す。
   - **担当とメモ**: 「自分が担当する」（担当がほかの人なら「担当を引き継ぐ」）と「担当を外す」は位置を変えずに名前だけを変え、押したボタンにフォーカスが残る。メモは古い順で、新しいメモは `ReasonField`（必須、2,000 文字）から追加する。空白だけのメモと失敗は入力欄のエラーにして、文を残す。
   - **対応**: 未解決なら、対象のアカウントへの処分のフォーム（`components/AccountActionForm.tsx`。`manage_accounts` がなければ理由を出す）と、「処分せずに解決する」「処分済みとして解決する」を出す。解決済みなら結果と解決日時と「再開する」を出す。
@@ -853,12 +854,17 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
     有効な処分には「解除」（アクセシブルネームに種類と処分した日時を含める）を出す。BAN は解除できない（API が断る）ので出さない。解除は `ConfirmDialog`（`primary`）で確かめ、ダイアログは任意の解除の理由（`ReasonField`、5,000 文字）を持ち、開くとそこにフォーカスが移る。
     失敗はダイアログの中に出す。成功したらダイアログを閉じ、キャッシュの一覧の処分を解除済みに置き換え、フォーカスをその行の見出しに移し（`lib/useFocusAfterRemoval.ts` の `useFocusHeadingAfterLift`）、結果を区画の `StatusMessage` に出して、アカウントの状態と制限と検索を読み直す。
   - **通報**: 新しい 20 件の通報の、通報の日時の見出し（`manage_reports` があれば通報の詳細へのリンク）と、状態（解決済みなら結果）・カテゴリ・通報者の説明リスト、コメント（`dir="auto"`、2 行に省略）。
+  - **投稿の取り直し**: 削除されていないリモートのアカウントで、閲覧者が `manage_domains` を持つときだけ出す（下の「投稿の取り直し」）。
   - **処分する**: 通報の詳細と同じ処分のフォーム（`AccountActionForm`。通報なし、理由の種類の最初は `other`）。リモートのアカウントには `force_sensitive`・`limit`・`suspend` だけを出し、知らせるかのチェックボックスを出さない。
     投稿への処分は投稿を選ぶ通報の詳細から行うので、この画面では出さず、その旨をフォームの上に書く。成功したら区画の `StatusMessage` に結果を出し、処分の履歴・アカウント・検索・通報を無効にする。削除済みのアカウントにはフォームを出さない。
 - **規約とポリシー**（`/admin/documents`、FR-705、#489）: 利用規約・プライバシーポリシーの 2 つの区画（`h2` の `section`）。文書はどのロケールでも同じ 1 つの値で、言語を選ぶ欄はない。
   各区画は、最後に保存した日時、公開ページへのリンク（公開しているときだけ）、本文（Markdown の `TextArea`、100,000 文字）と「保存する」の `form` で、文書ごとに別に保存する。
   成功したら本文・`GET /instance`（リンク）・監査ログを取り直してから、監査ログに記録したことを区画の `StatusMessage` に出す。失敗はフォームの下（`role="alert"`）に出して入力を残す。保存してある本文を空にして保存すると削除になるので、`ConfirmDialog`（`danger`）で確かめる。
   下書きは文書ごとに持つ。下書きがあるまま別の画面へ移るときは、`features/settings` の `useUnsavedChangesGuard` で確かめる（§9 の未保存の変更）。
+- **投稿の取り直し**（FR-407、[federation.md §6.4](federation.md#64-投稿の取り直し)、`components/RefetchStatuses.tsx`・`hooks/useRefetch.ts`）: 保存したリモートの投稿を相手のサーバーから取り直すよう頼む。
+  連合先の詳細とリモートのアカウントの管理画面は「投稿の取り直し」の区画（`h2` の `section`）に、何をするか（件数の上限と、裏で 1 分ごとに進むこと）の説明を `aria-describedby` にした「投稿を取り直す」を置く。
+  押すと `POST /admin/instances/{domain}/refetch_statuses` か `POST /admin/accounts/{id}/refetch_statuses`（通報の投稿は `POST /admin/statuses/{id}/refetch`）を送り、監査ログに無効化の印を付けてから、頼んで監査ログに記録したことを区画の `StatusMessage` に出す。
+  ボタンは残るのでフォーカスも残る。投稿は取り直したときに変わるので、投稿の一覧は取り直さない。失敗はトーストで知らせ、ボタンを残す（E2）。
 - **共通の部品**: 管理画面の一覧と詳細は同じ型で組む。権限の出し分けは `RequirePermission`、記録の一覧（区切り線の行・空の状態・「さらに読み込む」、行の `data-row-id`）は `RecordList`、詳細の画面の区画（`h2` で名前を付けた `section`）は `DetailSection`、区画の中身が入れ替わって押したボタンが消えるときに区画の見出しへフォーカスを移すのは `useFocusAfterChange` にし（`features/moderation/components/parts.tsx`）、
   記録の項目と値は `@my/ui` の `DescriptionList` / `DescriptionItem` にする。
 - **取り消せない操作**（BAN・ドメインの凍結・投稿の削除。NFR-MOD-7）: `@my/ui` の `ConfirmDialog`（APG の alertdialog）を挟む。理由は `ReasonField`、期限は `DurationSelect` をダイアログの中に置く。
@@ -866,6 +872,7 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   操作で開いたボタンが消えるとき（一覧から行が消えるなど）は、`lib/useFocusAfterRemoval.ts` でフォーカスの行き先を決める。
 - **テスト**: `features/admin/admin.test.tsx` が設定の画面の 2 つの区画の出し分けと dead job の再実行・失敗・権限を、`features/moderation/instances.test.tsx` が連合先の一覧と絞り込み・ページの読み足し・再開・失敗・403 を MSW で検査する。
   既定の閲覧者は権限を持たないので、テストは `test/msw/http.ts` の `operatorHandler()` で権限を与える。
+  `features/moderation/refetch.test.tsx` は、連合先の詳細・リモートのアカウント・通報のリモートの投稿からの取り直しと送る要求、結果の `StatusMessage`、失敗のトーストとボタン、`manage_domains` のない閲覧者とローカルのアカウントに出さないことを検査する。
   `features/moderation/domainActions.test.tsx` は、IDN のドメインの処分（A-label で記録され、両方の形で出る）、必須の入力、`suspend` の確認と取り消し、ダイアログの中とフォームの下の失敗、解除とフォーカス、連合先の詳細からのリンクとドメインの絞り込みを検査する。
   `features/moderation/domainBlockCsv.test.tsx` は、Mastodon の CSV のプレビュー（行ごとの名前と説明、処分を出さない行の理由）・行の選択を外してメモ付きでインポートすることと送る内容・一覧の取り直し・見出しへのフォーカス、`suspend` を含む行の確認と取り消し、ファイルからの読み込み、空の CSV と選んだ行のないインポート、プレビューの失敗、エクスポートの保存とその失敗を検査する。
   `features/moderation/signupBlocks.test.tsx` は、IDN のメールのドメインの拒否（A-label で記録され、両方の形で出る）、種類で変わる値の欄、必須の入力、フォームの下の失敗、解除とフォーカス、解除の失敗、管理の画面のリンク、権限を検査する。

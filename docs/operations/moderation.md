@@ -215,6 +215,26 @@ my instance set domain_actions_rationale_visibility users
 - `reject_media`・`reject_reports`・`force_sensitive` の処分と、解除・期限切れの処分は公開しません。
 - Web クライアントのインスタンスの情報ページ（`https://<host>/about`）は、この一覧を同じ設定に従って出します。`none` では一覧の区画を出さず、`users` ではサインインしていない人に、ログインした利用者だけが見られることを出します。
 
+## リモートの投稿の取り直し
+
+保存したリモートの投稿を、相手のサーバーから取り直せます（FR-407、[federation.md §6.4](../architecture/federation.md#64-投稿の取り直し)）。
+取り直しは、管理 API・CLI・Web クライアントから頼んだときだけ行い、定期的には行いません。
+
+```sh
+my admin refetch status <投稿の ID か URI>
+my admin refetch account @bob@remote.example
+my admin refetch domain remote.example
+```
+
+管理 API では `POST /api/v1/admin/statuses/{id}/refetch`・`POST /api/v1/admin/accounts/{id}/refetch_statuses`・`POST /api/v1/admin/instances/{domain}/refetch_statuses` で、権限 `manage_domains` を要します。
+Web クライアントでは、アカウントの画面（`/moderation/accounts/{id}`、リモートのアカウント）と連合先の画面（`/moderation/instances/{domain}`）の「投稿を取り直す」で行います。
+
+- 投稿は、受け取った `Update` と同じく扱います。新しい版があれば版を足し、投票の票数を更新し、変わっていなければ何もしません。相手が 410 Gone か `Tombstone` を返した投稿は削除します。取得できない投稿（404 を含む）はそのまま残します。
+- アカウントは、削除されていない保存済みの投稿の新しいものから 1,000 件までを、100 件ずつ 1 分おきに取り直します。
+- ドメインは、そのドメインのアカウントの新しいものから、アカウントごとに新しい投稿 20 件まで、合わせて 1,000 件までを、5 アカウントずつ 1 分おきに取り直します。
+- ドメインへの `suspend` があるドメインと、配送の失敗で `unavailable` のドメインからは取得しません。同じ URI の取得の失敗は 1 時間覚えているので、その間は取り直しても取得しません。
+- 頼んだことは監査ログに `status_refetch_queued`・`account_statuses_refetch_queued`・`domain_statuses_refetch_queued` として残ります。
+
 ## 通報
 
 他のサーバーから受信した通報（`Flag`）は、未解決（`open`）として通報の一覧に入ります。
@@ -269,8 +289,9 @@ my admin report reopen <report id>
 
 | 対象の種類 | 操作 |
 | --- | --- |
-| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し）・`revealed_private_data`（IP アドレスとメールアドレスの表示）・`two_factor_disabled`（二要素認証の解除）・`password_reset_link_issued`（パスワードリセットのリンクの発行） |
-| `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除） |
+| `account` | `account_action_issued`・`account_action_lifted`（アカウントへの処分の発行・解除）・`account_deletion_cancelled`（`ban` の異議申し立てを覆したことによる削除の取り消し）・`revealed_private_data`（IP アドレスとメールアドレスの表示）・`two_factor_disabled`（二要素認証の解除）・`password_reset_link_issued`（パスワードリセットのリンクの発行）・`account_statuses_refetch_queued`（リモートのアカウントの投稿の取り直し） |
+| `status` | `status_refetch_queued`（リモートの投稿の取り直し。対象の名前は投稿の URI） |
+| `domain` | `domain_action_issued`・`domain_action_lifted`（ドメイン単位の処分の発行・解除）・`domain_statuses_refetch_queued`（ドメインのアカウントの投稿の取り直し） |
 | `report` | `report_assigned`・`report_unassigned`・`report_resolved`・`report_reopened`・`report_note_added`（通報の担当・担当の解除・解決・再開・メモ） |
 | `user` | `registration_approved`・`registration_rejected`（登録審査） |
 | `setting` | `setting_changed`（インスタンス設定）・`text_changed`（インスタンスの文章） |
