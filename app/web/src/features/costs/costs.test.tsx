@@ -78,6 +78,11 @@ describe("a server that publishes its totals", () => {
 
     await user.click(screen.getByRole("tab", { name: "Weeks" }));
     expect(await screen.findByRole("table", { name: "Totals by Weeks, Spread over the period paid for" })).toBeInTheDocument();
+    // The panel of the selected tab is the one its aria-controls names, labeled by it.
+    const weeks = screen.getByRole("tab", { name: "Weeks" });
+    const panel = screen.getByRole("tabpanel");
+    expect(weeks).toHaveAttribute("aria-controls", panel.id);
+    expect(panel).toHaveAttribute("aria-labelledby", weeks.id);
     await user.click(screen.getByRole("radio", { name: /On the payment date/u }));
     expect(await screen.findByRole("table", { name: "Totals by Weeks, On the payment date" })).toBeInTheDocument();
     expect(router.state.location.search).toEqual({ granularity: "week", basis: "cash" });

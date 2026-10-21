@@ -82,4 +82,5 @@
 | [0068](0068-billing-import.md) | 利用料金の自動取り込み（BillingSource ポート） | Accepted |
 | [0069](0069-quote-posts.md) | 引用投稿（FEP-044f） | Accepted |
 | [0070](0070-permission-split-emoji-finance.md) | 権限の分割: 絵文字の作成と会計の閲覧 | Accepted |
+| [0071](0071-role-badges-and-supporter-list.md) | ロールのバッジと参加者の一覧 | Accepted |
 <!-- adr-index:end -->
