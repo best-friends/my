@@ -12,9 +12,9 @@ set -euo pipefail
 # The representative sets: together they use every tag.
 sets=(
   # A self-hosted instance on SQLite, without a broker or a metrics exporter.
-  "no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws"
+  "no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws,no_billing_gcp"
   # AWS: PostgreSQL, the SNS broker, the EMF metrics.
-  "no_sqlite,no_valkey,no_pubsub,no_otel"
+  "no_sqlite,no_valkey,no_pubsub,no_otel,no_billing_gcp"
   # Google Cloud: PostgreSQL, the Pub/Sub broker.
   "no_sqlite,no_valkey,no_sns,no_billing_aws"
 )
@@ -32,6 +32,7 @@ excluded_packages() {
     no_sns) echo "$m/stream/sns github.com/aws/aws-sdk-go-v2/service/sns" ;;
     no_pubsub) echo "$m/stream/pubsub cloud.google.com/go/pubsub/v2" ;;
     no_billing_aws) echo "$m/billing/aws github.com/aws/aws-sdk-go-v2/service/costexplorer" ;;
+    no_billing_gcp) echo "$m/billing/gcp google.golang.org/api/bigquery/v2" ;;
     no_otel) echo "$m/telemetry/otel $m/telemetry/otel/otlptest go.opentelemetry.io/otel/sdk/metric go.opentelemetry.io/otel/sdk/trace go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp" ;;
     *)
       echo "unknown build tag: $1 (see docs/reference/build-tags.md)" >&2
