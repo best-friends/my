@@ -17,7 +17,7 @@
     "@tanstack/eslint-plugin-query": "5.104.1",
     "@tanstack/eslint-plugin-router": "1.162.0",
     "eslint-import-resolver-typescript": "4.4.5",
-    "eslint-plugin-better-tailwindcss": "4.7.0",
+    "eslint-plugin-better-tailwindcss": "4.9.0",
     "eslint-plugin-boundaries": "7.2.0",
     "eslint-plugin-formatjs": "8.1.0",
     "eslint-plugin-testing-library": "7.16.2",
