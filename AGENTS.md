@@ -18,6 +18,9 @@ a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OS
 - **M4.1 — Finance** follows on the same footing: recording, aggregating and publishing the server's running costs
   (one-off, weekly, monthly and yearly payments) and importing AWS / Google Cloud usage costs (FR-901–FR-904,
   epic [#883](https://github.com/best-friends/my/issues/883)). Its ADRs come first; implementation issues wait for them to be Accepted.
+- **M4.2 — Supporters** follows M4.1: paid supporter plans that grant roles (badges, custom emoji creation with approval,
+  finance read access), through Stripe or Paddle, off unless the admin enables it, with an opt-in member list and published
+  income (FR-910–FR-917, epic [#925](https://github.com/best-friends/my/issues/925)). Spike and ADRs come first.
 - The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md)); clients are TypeScript under `app/` with Bun.
   Cloudflare Workers is **not** a target.
 - **Web client work must follow [docs/architecture/web-client.md](docs/architecture/web-client.md).** Do not write React from memory or
