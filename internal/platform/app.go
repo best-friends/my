@@ -720,7 +720,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Queue:      clientapi.QueueDashboard{Adapter: cfg.Queue, Inspector: a.JobInspector, Attempts: a.JobAttempts, Clock: a.Clock},
 		Moderation: a.Moderation, UserAccounts: a.Accounts, FiledReports: a.Moderation, Severances: a.Moderation,
 		AccountModeration: a.Moderation, ProfileRestrictions: a.AccountPolicy, OwnModeration: a.Moderation,
-		AccountAdmin: a.AccountAdmin, AccountReports: a.Moderation,
+		AccountAdmin: a.AccountAdmin, AccountReports: a.Moderation, PasswordResetLinks: a.Identity,
 		AuditLog: a.Moderation,
 		Rules:    a.Instance,
 		// The server-wide announcements (FR-726).

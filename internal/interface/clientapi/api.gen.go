@@ -1491,11 +1491,11 @@ const (
 	PermissionManageDomains       Permission = "manage_domains"
 	PermissionManageInvites       Permission = "manage_invites"
 	PermissionManageJobs          Permission = "manage_jobs"
+	PermissionManageLoginRecovery Permission = "manage_login_recovery"
 	PermissionManageReports       Permission = "manage_reports"
 	PermissionManageRoles         Permission = "manage_roles"
 	PermissionManageRules         Permission = "manage_rules"
 	PermissionManageSettings      Permission = "manage_settings"
-	PermissionManageTwoFactor     Permission = "manage_two_factor"
 	PermissionManageWebhooks      Permission = "manage_webhooks"
 	PermissionViewAudit           Permission = "view_audit"
 )
@@ -1515,6 +1515,8 @@ func (e Permission) Valid() bool {
 		return true
 	case PermissionManageJobs:
 		return true
+	case PermissionManageLoginRecovery:
+		return true
 	case PermissionManageReports:
 		return true
 	case PermissionManageRoles:
@@ -1522,8 +1524,6 @@ func (e Permission) Valid() bool {
 	case PermissionManageRules:
 		return true
 	case PermissionManageSettings:
-		return true
-	case PermissionManageTwoFactor:
 		return true
 	case PermissionManageWebhooks:
 		return true
@@ -2926,6 +2926,16 @@ type AdminJobPage struct {
 // `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
 // failed for good (its handler gave up, or it used up its attempts).
 type AdminJobState string
+
+// AdminPasswordResetLink A password reset link that an administrator issued for a local account (FR-002). It is
+// shown once.
+type AdminPasswordResetLink struct {
+	// ExpiresAt When the link stops working.
+	ExpiresAt time.Time `json:"expires_at"`
+
+	// Url The link that sets a new password; it works once.
+	Url string `json:"url"`
+}
 
 // AdminQueue The state of the job queue (ADR-0064).
 type AdminQueue struct {
@@ -5112,8 +5122,9 @@ type PasswordStatus struct {
 // `manage_domains`: the health of remote servers and the moderation actions on domains.
 // `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
 // roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-// log. `manage_two_factor`: removing the two-factor authentication of a local user (only
-// the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
+// log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
+// authentication or issuing a password reset link (only the built-in admin role by
+// default). `manage_custom_emojis`: the custom emoji, local and
 // remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
 // server's announcements to every local user. The others guard no client API operation
 // yet.
@@ -7128,6 +7139,9 @@ type ServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(w http.ResponseWriter, r *http.Request, id AdminAccountId)
+	// IssueAdminAccountPasswordResetLink Issue a password reset link for a local account
+	// (POST /admin/accounts/{id}/password_reset_link)
+	IssueAdminAccountPasswordResetLink(w http.ResponseWriter, r *http.Request, id AdminAccountId)
 	// RevealAdminAccount Show the email address and the IP addresses of a local account
 	// (POST /admin/accounts/{id}/reveal)
 	RevealAdminAccount(w http.ResponseWriter, r *http.Request, id AdminAccountId)
@@ -8497,6 +8511,32 @@ func (siw *ServerInterfaceWrapper) CreateAccountAction(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccountAction(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueAdminAccountPasswordResetLink operation middleware
+func (siw *ServerInterfaceWrapper) IssueAdminAccountPasswordResetLink(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id AdminAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueAdminAccountPasswordResetLink(w, r, id)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13200,6 +13240,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/accounts/{id}", wrapper.GetAdminAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/reveal", wrapper.RevealAdminAccount)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/two_factor/disable", wrapper.DisableAdminAccountTwoFactor)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/accounts/{id}/password_reset_link", wrapper.IssueAdminAccountPasswordResetLink)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/roles", wrapper.ListRoles)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/roles", wrapper.CreateRole)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/admin/roles/{role}", wrapper.DeleteRole)
@@ -14895,6 +14936,68 @@ type CreateAccountActiondefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response CreateAccountActiondefaultApplicationProblemPlusJSONResponse) VisitCreateAccountActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueAdminAccountPasswordResetLinkRequestObject struct {
+	Id AdminAccountId `json:"id"`
+}
+
+type IssueAdminAccountPasswordResetLinkResponseObject interface {
+	VisitIssueAdminAccountPasswordResetLinkResponse(w http.ResponseWriter) error
+}
+
+type IssueAdminAccountPasswordResetLink201ResponseHeaders struct {
+	CacheControl *string
+}
+
+type IssueAdminAccountPasswordResetLink201JSONResponse struct {
+	Body    AdminPasswordResetLink
+	Headers IssueAdminAccountPasswordResetLink201ResponseHeaders
+}
+
+func (response IssueAdminAccountPasswordResetLink201JSONResponse) VisitIssueAdminAccountPasswordResetLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse) VisitIssueAdminAccountPasswordResetLinkResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -24645,6 +24748,9 @@ type StrictServerInterface interface {
 	// CreateAccountAction Take a moderation action on an account
 	// (POST /admin/accounts/{id}/actions)
 	CreateAccountAction(ctx context.Context, request CreateAccountActionRequestObject) (CreateAccountActionResponseObject, error)
+	// IssueAdminAccountPasswordResetLink Issue a password reset link for a local account
+	// (POST /admin/accounts/{id}/password_reset_link)
+	IssueAdminAccountPasswordResetLink(ctx context.Context, request IssueAdminAccountPasswordResetLinkRequestObject) (IssueAdminAccountPasswordResetLinkResponseObject, error)
 	// RevealAdminAccount Show the email address and the IP addresses of a local account
 	// (POST /admin/accounts/{id}/reveal)
 	RevealAdminAccount(ctx context.Context, request RevealAdminAccountRequestObject) (RevealAdminAccountResponseObject, error)
@@ -25869,6 +25975,32 @@ func (sh *strictHandler) CreateAccountAction(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountActionResponseObject); ok {
 		if err := validResponse.VisitCreateAccountActionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueAdminAccountPasswordResetLink operation middleware
+func (sh *strictHandler) IssueAdminAccountPasswordResetLink(w http.ResponseWriter, r *http.Request, id AdminAccountId) {
+	var request IssueAdminAccountPasswordResetLinkRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueAdminAccountPasswordResetLink(ctx, request.(IssueAdminAccountPasswordResetLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueAdminAccountPasswordResetLink")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueAdminAccountPasswordResetLinkResponseObject); ok {
+		if err := validResponse.VisitIssueAdminAccountPasswordResetLinkResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

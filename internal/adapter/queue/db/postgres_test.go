@@ -65,3 +65,9 @@ func TestPostgresOutboxContract(t *testing.T) {
 		return postgresHarness(t, clock, newDatabase(t), true)
 	})
 }
+
+func TestPostgresBacklogContract(t *testing.T) {
+	testkit.QueueBacklogContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
+		return postgresHarness(t, clock, newDatabase(t), false)
+	})
+}

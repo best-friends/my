@@ -1,24 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package db_test
+package testkit
 
 import (
 	"maps"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/best-friends/my/internal/app/queue"
-	"github.com/best-friends/my/pkg/testkit"
 )
 
-var backlogStart = time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
-
-// testBacklog checks queue.BacklogReader: it counts the due jobs that no worker holds by
-// type, with the earliest due time, and the dead jobs.
-func testBacklog(t *testing.T, newHarness testkit.QueueFactory) {
+// QueueBacklogContract verifies a queue adapter whose harness Queue is a queue.BacklogReader:
+// Backlog counts the due jobs that no worker holds by type, with the earliest due time, and the
+// dead jobs, and counts a held job as ready again once its lease expires.
+func QueueBacklogContract(t *testing.T, newHarness QueueFactory) {
 	t.Helper()
-	clock := testkit.NewClock(backlogStart)
+	clock := NewClock(contractStart)
 	h := newHarness(t, clock)
 	reader, ok := h.Queue.(queue.BacklogReader)
 	if !ok {
@@ -36,7 +33,7 @@ func testBacklog(t *testing.T, newHarness testkit.QueueFactory) {
 
 	if err := h.Queue.Enqueue(ctx,
 		queue.NewJob{Type: "test.a"}, queue.NewJob{Type: "test.a"}, queue.NewJob{Type: "test.b"},
-		queue.NewJob{Type: "test.c", RunAt: backlogStart.Add(time.Hour)},
+		queue.NewJob{Type: "test.c", RunAt: contractStart.Add(time.Hour)},
 	); err != nil {
 		t.Fatalf("Enqueue: %v", err)
 	}
@@ -63,8 +60,8 @@ func testBacklog(t *testing.T, newHarness testkit.QueueFactory) {
 	if err != nil {
 		t.Fatalf("Backlog: %v", err)
 	}
-	if !maps.Equal(b.Ready, want) || !b.OldestReadyAt.Equal(backlogStart) || b.Dead != 1 {
-		t.Fatalf("Backlog = %+v, want Ready %v, OldestReadyAt %v, Dead 1", b, want, backlogStart)
+	if !maps.Equal(b.Ready, want) || !b.OldestReadyAt.Equal(contractStart) || b.Dead != 1 {
+		t.Fatalf("Backlog = %+v, want Ready %v, OldestReadyAt %v, Dead 1", b, want, contractStart)
 	}
 
 	// Once the lease expires, the held job is ready again.
@@ -77,16 +74,4 @@ func testBacklog(t *testing.T, newHarness testkit.QueueFactory) {
 	if !maps.Equal(b.Ready, want) {
 		t.Fatalf("after the lease: Ready = %v, want %v", b.Ready, want)
 	}
-}
-
-func TestSQLiteBacklog(t *testing.T) {
-	testBacklog(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
-		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, true)
-	})
-}
-
-func TestPostgresBacklog(t *testing.T) {
-	testBacklog(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
-		return postgresHarness(t, clock, newDatabase(t), false)
-	})
 }

@@ -119,6 +119,9 @@ type Options struct {
 	// reads the reports of an account for its details (admin_accounts.go).
 	AccountAdmin   AccountAdmin
 	AccountReports AccountReports
+	// PasswordResetLinks issues the password reset links that administrators hand to users
+	// (admin_accounts.go); nil answers 404 to the operation.
+	PasswordResetLinks PasswordResetLinks
 	// OwnModeration reads the actions on the viewer's own account, for GET /moderation/actions
 	// and the moderation notices (moderation.go); nil leaves the action out of the notices.
 	OwnModeration OwnModeration

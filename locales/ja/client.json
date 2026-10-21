@@ -691,6 +691,54 @@
     "defaultMessage": "二要素認証を解除できませんでした：{reason}",
     "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
   },
+  "admin.account.password_reset.title": {
+    "defaultMessage": "パスワードのリセット",
+    "description": "Heading of the region of a local account's admin page about issuing a password reset link."
+  },
+  "admin.account.password_reset.description": {
+    "defaultMessage": "この利用者の新しいパスワードを設定するリンクを発行します。メールが届かないときに本人に渡すためのものです。リンクは 1 時間・1 回だけ使えます。リンクを持つ人は誰でもパスワードを設定できるので、本人であることを別の経路で確かめてから、本人にだけ渡してください。発行は監査ログに記録されます。",
+    "description": "Explanation above the button that issues a password reset link for an account."
+  },
+  "admin.account.password_reset.issue": {
+    "defaultMessage": "パスワードリセットのリンクを発行",
+    "description": "Button (and the confirmation's button) that issues a password reset link for the account."
+  },
+  "admin.account.password_reset.confirm.title": {
+    "defaultMessage": "{handle} のパスワードリセットのリンクを発行しますか？",
+    "description": "Title of the confirmation of issuing a password reset link. {handle} is the account's handle."
+  },
+  "admin.account.password_reset.confirm.description": {
+    "defaultMessage": "リンクはこの画面に一度だけ表示されます。リンクを開いて新しいパスワードを設定するまで、パスワードは変わりません。",
+    "description": "Body of the confirmation of issuing a password reset link."
+  },
+  "admin.account.password_reset.issued": {
+    "defaultMessage": "{handle} のパスワードリセットのリンクを発行しました。",
+    "description": "Status message after issuing a password reset link for the account {handle}."
+  },
+  "admin.account.password_reset.failed": {
+    "defaultMessage": "リンクを発行できませんでした：{reason}",
+    "description": "Error in the confirmation when issuing the link failed. {reason} is the server's explanation."
+  },
+  "admin.account.password_reset.link": {
+    "defaultMessage": "パスワードリセットのリンク",
+    "description": "Label of the password reset link that was just issued."
+  },
+  "admin.account.password_reset.link.notice": {
+    "defaultMessage": "このリンクは二度と表示されません。{expiresAt} まで、1 回だけ使えます。",
+    "description": "Note under the label of the issued link. {expiresAt} is the formatted date and time when the link stops working."
+  },
+  "admin.account.password_reset.copy": {
+    "defaultMessage": "リンクをコピー",
+    "description": "Button that copies the issued password reset link to the clipboard."
+  },
+  "admin.account.password_reset.copied": {
+    "defaultMessage": "パスワードリセットのリンクをコピーしました。",
+    "description": "Toast after copying the password reset link."
+  },
+  "admin.account.password_reset.copy_failed": {
+    "defaultMessage": "リンクをコピーできませんでした。",
+    "description": "Toast when copying the password reset link failed."
+  },
   "admin.account_actions.block_email": {
     "defaultMessage": "このメールアドレスでの登録を拒否する",
     "description": "Checkbox of a ban of a local account: whether it also rejects sign-ups with the email address of the account's user."
@@ -3787,9 +3835,9 @@
     "defaultMessage": "サーバーの設定",
     "description": "Name of the permission manage_settings: the instance's settings, theme, terms, and privacy policy."
   },
-  "admin.roles.permission.manage_two_factor": {
-    "defaultMessage": "二要素認証の解除",
-    "description": "Name of the permission manage_two_factor: removing the two-factor authentication of a user."
+  "admin.roles.permission.manage_login_recovery": {
+    "defaultMessage": "ログインの回復",
+    "description": "Name of the permission manage_login_recovery: recovering a user's sign-in, by removing their two-factor authentication or issuing a password reset link."
   },
   "admin.roles.permission.manage_webhooks": {
     "defaultMessage": "Webhook",

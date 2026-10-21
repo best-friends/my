@@ -691,6 +691,54 @@
     "defaultMessage": "Could not remove two-factor authentication: {reason}",
     "description": "Error in the confirmation when the removal failed. {reason} is the server's explanation."
   },
+  "admin.account.password_reset.title": {
+    "defaultMessage": "Password reset",
+    "description": "Heading of the region of a local account's admin page about issuing a password reset link."
+  },
+  "admin.account.password_reset.description": {
+    "defaultMessage": "Issues a link that sets a new password for this user, to hand to them when email does not reach them. The link works once, for an hour. Anyone who has it can set the password: confirm who is asking through another channel first, and give it to the account's owner only. The issuance is recorded in the audit log.",
+    "description": "Explanation above the button that issues a password reset link for an account."
+  },
+  "admin.account.password_reset.issue": {
+    "defaultMessage": "Issue password reset link",
+    "description": "Button (and the confirmation's button) that issues a password reset link for the account."
+  },
+  "admin.account.password_reset.confirm.title": {
+    "defaultMessage": "Issue a password reset link for {handle}?",
+    "description": "Title of the confirmation of issuing a password reset link. {handle} is the account's handle."
+  },
+  "admin.account.password_reset.confirm.description": {
+    "defaultMessage": "The link is shown only once, here. It does not change the password until someone opens it and sets a new one.",
+    "description": "Body of the confirmation of issuing a password reset link."
+  },
+  "admin.account.password_reset.issued": {
+    "defaultMessage": "Issued a password reset link for {handle}.",
+    "description": "Status message after issuing a password reset link for the account {handle}."
+  },
+  "admin.account.password_reset.failed": {
+    "defaultMessage": "Could not issue the link: {reason}",
+    "description": "Error in the confirmation when issuing the link failed. {reason} is the server's explanation."
+  },
+  "admin.account.password_reset.link": {
+    "defaultMessage": "Password reset link",
+    "description": "Label of the password reset link that was just issued."
+  },
+  "admin.account.password_reset.link.notice": {
+    "defaultMessage": "This link is not shown again. It works once, until {expiresAt}.",
+    "description": "Note under the label of the issued link. {expiresAt} is the formatted date and time when the link stops working."
+  },
+  "admin.account.password_reset.copy": {
+    "defaultMessage": "Copy link",
+    "description": "Button that copies the issued password reset link to the clipboard."
+  },
+  "admin.account.password_reset.copied": {
+    "defaultMessage": "Copied the password reset link.",
+    "description": "Toast after copying the password reset link."
+  },
+  "admin.account.password_reset.copy_failed": {
+    "defaultMessage": "Could not copy the link.",
+    "description": "Toast when copying the password reset link failed."
+  },
   "admin.account_actions.block_email": {
     "defaultMessage": "Block sign-ups with this email address",
     "description": "Checkbox of a ban of a local account: whether it also rejects sign-ups with the email address of the account's user."
@@ -3787,9 +3835,9 @@
     "defaultMessage": "Server settings",
     "description": "Name of the permission manage_settings: the instance's settings, theme, terms, and privacy policy."
   },
-  "admin.roles.permission.manage_two_factor": {
-    "defaultMessage": "Removing two-factor authentication",
-    "description": "Name of the permission manage_two_factor: removing the two-factor authentication of a user."
+  "admin.roles.permission.manage_login_recovery": {
+    "defaultMessage": "Sign-in recovery",
+    "description": "Name of the permission manage_login_recovery: recovering a user's sign-in, by removing their two-factor authentication or issuing a password reset link."
   },
   "admin.roles.permission.manage_webhooks": {
     "defaultMessage": "Webhooks",
