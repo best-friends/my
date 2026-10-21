@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, Checkbox, Radio, RadioGroup, Select, SelectItem, Switch } from "@my/ui";
 import { useId, useRef } from "react";
+import { languageOptions } from "../../compose";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useDisplaySettings } from "../../../lib/locale";
 import type { Visibility } from "../api/me";
@@ -28,7 +29,8 @@ const visibilities: readonly { id: Visibility; label: ClientMessageKey; descript
  */
 export function PreferencesForm() {
   const t = useT();
-  const { locale, timeZone, defaultVisibility, timelineLanguages, emailModeratorNotifications } = usePreferences();
+  const { locale, timeZone, defaultVisibility, defaultPostLanguage, requireMediaDescription, timelineLanguages, emailModeratorNotifications } =
+    usePreferences();
   return (
     <div className="flex flex-col gap-8">
       <p className="text-fg-muted">{t("client:settings.preferences.autosave")}</p>
@@ -54,6 +56,16 @@ export function PreferencesForm() {
           </Radio>
         ))}
       </RadioGroup>
+      <DefaultPostLanguageSelect control={defaultPostLanguage} />
+      <Switch
+        isSelected={requireMediaDescription.value}
+        onChange={requireMediaDescription.onChange}
+        description={t("client:settings.require_media_description.description")}
+        isInvalid={requireMediaDescription.error !== undefined}
+        errorMessage={requireMediaDescription.error}
+      >
+        {t("client:settings.require_media_description.label")}
+      </Switch>
       <TimelineLanguages control={timelineLanguages} />
       <PushNotifications />
       <ModeratorNotifications control={emailModeratorNotifications} />
@@ -173,6 +185,34 @@ function DisplayLanguageSelect({ control }: { control: PreferenceControl<string>
         // The name is in its own language, so a screen reader reads it in that language.
         <SelectItem id={item.id} textValue={item.name}>
           <span lang={item.id}>{item.name}</span>
+        </SelectItem>
+      )}
+    </Select>
+  );
+}
+
+/**
+ * The language new posts start in (FR-007): the choices of the post form's language select, "undetermined"
+ * (`und`) first, so that what is chosen here is what the form starts with.
+ */
+function DefaultPostLanguageSelect({ control }: { control: PreferenceControl<string> }) {
+  const t = useT();
+  const { i18n } = useDisplaySettings();
+  return (
+    <Select
+      label={t("client:settings.default_post_language.label")}
+      description={t("client:settings.default_post_language.description")}
+      value={control.value}
+      onChange={(key) => {
+        if (typeof key === "string" && key !== control.value) control.onChange(key);
+      }}
+      isInvalid={control.error !== undefined}
+      errorMessage={control.error}
+      items={languageOptions(i18n.locale, [control.value], t("client:compose.language.und"))}
+    >
+      {(item) => (
+        <SelectItem id={item.id} textValue={item.name}>
+          {item.name}
         </SelectItem>
       )}
     </Select>

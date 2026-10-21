@@ -35,7 +35,7 @@ const permissionLabels: Readonly<Record<Permission, ClientMessageKey>> = {
   manage_invites: "client:admin.roles.permission.manage_invites",
   view_audit: "client:admin.roles.permission.view_audit",
   manage_jobs: "client:admin.roles.permission.manage_jobs",
-  manage_two_factor: "client:admin.roles.permission.manage_two_factor",
+  manage_login_recovery: "client:admin.roles.permission.manage_login_recovery",
   manage_custom_emojis: "client:admin.roles.permission.manage_custom_emojis",
   manage_webhooks: "client:admin.roles.permission.manage_webhooks",
   manage_announcements: "client:admin.roles.permission.manage_announcements",

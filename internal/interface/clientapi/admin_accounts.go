@@ -18,7 +18,9 @@ import (
 
 // The admin operations of the account management (FR-714, manage_accounts): the search, the
 // details of an account, and showing the email address and the IP addresses of a local one,
-// which only revealAdminAccount returns and the identity module records in the audit log.
+// which only revealAdminAccount returns and the identity module records in the audit log; and,
+// with manage_login_recovery, removing a user's two-factor authentication and issuing a password
+// reset link for them (FR-005, FR-002), which the audit log records too.
 
 // AccountAdmin runs the moderators' account management. *appidentity.AccountAdmin implements it.
 type AccountAdmin interface {
@@ -26,6 +28,12 @@ type AccountAdmin interface {
 	Detail(ctx context.Context, accountID string) (appidentity.AdminAccountDetail, error)
 	Reveal(ctx context.Context, accountID, byUserID string) (appidentity.PrivateData, error)
 	DisableTwoFactor(ctx context.Context, accountID, byUserID string) error
+}
+
+// PasswordResetLinks issues the password reset links that administrators hand to users
+// (FR-002). *appidentity.Service implements it.
+type PasswordResetLinks interface {
+	IssuePasswordResetLink(ctx context.Context, accountID, byUserID string) (appidentity.PasswordResetLink, error)
 }
 
 // AccountReports reads the reports of an account for its details. *appmoderation.Service
@@ -195,7 +203,7 @@ func (s *Server) GetAdminAccount(ctx context.Context, req GetAdminAccountRequest
 
 // DisableAdminAccountTwoFactor serves POST /api/v1/admin/accounts/{id}/two_factor/disable.
 func (s *Server) DisableAdminAccountTwoFactor(ctx context.Context, req DisableAdminAccountTwoFactorRequestObject) (DisableAdminAccountTwoFactorResponseObject, error) {
-	if p, err := s.requirePermission(ctx, identity.PermManageTwoFactor); err != nil {
+	if p, err := s.requirePermission(ctx, identity.PermManageLoginRecovery); err != nil {
 		return nil, err
 	} else if p != nil {
 		return DisableAdminAccountTwoFactordefaultApplicationProblemPlusJSONResponse(*p), nil
@@ -219,6 +227,40 @@ func (s *Server) DisableAdminAccountTwoFactor(ctx context.Context, req DisableAd
 		return nil, fmt.Errorf("clientapi: remove the two-factor authentication of account %s: %w", req.Id, err)
 	}
 	return DisableAdminAccountTwoFactor204Response{}, nil
+}
+
+// IssueAdminAccountPasswordResetLink serves POST /api/v1/admin/accounts/{id}/password_reset_link.
+// Like removing two-factor authentication, it lets the holder of the link into the account, so it
+// needs manage_login_recovery (server administration, ADR-0058) rather than manage_accounts.
+func (s *Server) IssueAdminAccountPasswordResetLink(ctx context.Context, req IssueAdminAccountPasswordResetLinkRequestObject) (IssueAdminAccountPasswordResetLinkResponseObject, error) {
+	if p, err := s.requirePermission(ctx, identity.PermManageLoginRecovery); err != nil {
+		return nil, err
+	} else if p != nil {
+		return IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	if s.o.PasswordResetLinks == nil {
+		return IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	v, err := requireViewer(ctx)
+	if err != nil {
+		return nil, err
+	}
+	link, err := s.o.PasswordResetLinks.IssuePasswordResetLink(ctx, req.Id, v.UserID)
+	switch {
+	case errors.Is(err, appaccount.ErrNotFound):
+		return IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	case errors.Is(err, appidentity.ErrNotLocalAccount):
+		l := s.Localizer(ctx)
+		return IssueAdminAccountPasswordResetLinkdefaultApplicationProblemPlusJSONResponse(
+			s.problem(ctx, http.StatusUnprocessableEntity, ProblemTypeBlank, l.ServerErrorsUnprocessable(), l.ServerErrorsInvalidValue("id"))), nil
+	case err != nil:
+		return nil, fmt.Errorf("clientapi: issue a password reset link for account %s: %w", req.Id, err)
+	}
+	cache := cacheNoStore
+	return IssueAdminAccountPasswordResetLink201JSONResponse{
+		Body:    AdminPasswordResetLink{Url: link.URL, ExpiresAt: link.ExpiresAt.UTC()},
+		Headers: IssueAdminAccountPasswordResetLink201ResponseHeaders{CacheControl: &cache},
+	}, nil
 }
 
 // RevealAdminAccount serves POST /api/v1/admin/accounts/{id}/reveal.

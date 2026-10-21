@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The moderators' account screens (FR-714, FR-703, FR-713): the search form and its results, one account, showing
 // its email address and IP addresses only when the moderator asks (each time is recorded in the audit log, ADR-0038),
-// removing its two-factor authentication, and lifting the moderation actions on it. Failures of what the moderator does are toasts or stay in the
+// removing its two-factor authentication, issuing a password reset link for its user (shown once), and lifting the
+// moderation actions on it. Failures of what the moderator does are toasts or stay in the
 // confirmation; a failure to load the results stays in their region (web-client.md E2, G16).
 import { useToast } from "@my/ui";
 import { useInfiniteQuery, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -26,7 +27,9 @@ import {
   type AdminAccountState,
   adminAccountStates,
   cacheLiftedAccountAction,
+  type AdminPasswordResetLink,
   disableAccountTwoFactorMutation,
+  issuePasswordResetLinkMutation,
   liftAccountActionMutation,
   refreshAccountTwoFactor,
   refreshLiftedAccountAction,
@@ -363,5 +366,82 @@ export function useRemoveTwoFactor(accountId: string, handle: string, onRemoved:
     isPending: mutation.isPending,
     error: isOpen && mutation.isError ? errorMessage(mutation.error) : undefined,
     status,
+  };
+}
+
+/** Issuing a password reset link for the user of a local account, which asks first in a confirmation. */
+export type IssuePasswordResetLink = {
+  open: () => void;
+  isOpen: boolean;
+  /** Issues it; on success the confirmation closes and the link is shown. */
+  confirm: () => void;
+  cancel: () => void;
+  isPending: boolean;
+  /** Why issuing failed, localized, for the confirmation (which stays open). */
+  error: string | undefined;
+  /** The link just issued, to show once: kept only in this state, until the page closes or another is issued. */
+  link: AdminPasswordResetLink | undefined;
+  /** What issuing did, for the region's StatusMessage; undefined before it. */
+  status: string | undefined;
+};
+
+/**
+ * Issuing a password reset link for the user of local account `accountId`, whose handle (isolated) is `handle`, for
+ * an administrator to hand to the user (FR-002). The server stores only the link's hash, so the answer is the only
+ * place it is shown: it is kept in component state, never in the query cache, and the mutation drops it as soon as
+ * the page closes. The audit log, which records the issuance, is marked stale.
+ */
+export function useIssuePasswordResetLink(accountId: string, handle: string): IssuePasswordResetLink {
+  const api = useApi();
+  const t = useT();
+  const queryClient = useQueryClient();
+  const [isOpen, setIsOpen] = useState(false);
+  const [link, setLink] = useState<AdminPasswordResetLink | undefined>(undefined);
+  const [status, setStatus] = useState<string | undefined>(undefined);
+  const mutation = useMutation({
+    ...issuePasswordResetLinkMutation(api),
+    gcTime: 0,
+    onSuccess: (issued) => {
+      void refreshAuditLog(queryClient);
+      setIsOpen(false);
+      setLink(issued);
+      setStatus(t("client:admin.account.password_reset.issued", { handle }));
+    },
+  });
+  return {
+    open: () => {
+      mutation.reset();
+      setIsOpen(true);
+    },
+    isOpen,
+    confirm: () => {
+      if (!isOpen || mutation.isPending) return;
+      mutation.mutate(accountId);
+    },
+    cancel: () => {
+      setIsOpen(false);
+      mutation.reset();
+    },
+    isPending: mutation.isPending,
+    error: isOpen && mutation.isError ? errorMessage(mutation.error) : undefined,
+    link,
+    status,
+  };
+}
+
+/** Copies a password reset link to the clipboard and says whether that worked in a toast. */
+export function useCopyPasswordResetLink(): (url: string) => void {
+  const t = useT();
+  const toast = useToast();
+  return (url) => {
+    navigator.clipboard.writeText(url).then(
+      () => {
+        // The toast is announced too.
+        toast.show({ message: t("client:admin.account.password_reset.copied"), tone: "success" });
+      },
+      () => {
+        toast.show({ message: t("client:admin.account.password_reset.copy_failed"), tone: "danger" });
+      },
+    );
   };
 }

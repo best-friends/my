@@ -63,6 +63,12 @@ func sqliteHarness(t *testing.T, clock *testkit.Clock, path string, apply, relay
 	return h
 }
 
+func TestSQLiteBacklogContract(t *testing.T) {
+	testkit.QueueBacklogContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
+		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, true)
+	})
+}
+
 func TestSQLiteQueueContract(t *testing.T) {
 	testkit.QueueContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
 		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, false)
@@ -73,12 +79,6 @@ func TestSQLiteQueueContract(t *testing.T) {
 // outbox_events and relayed into the queue.
 func TestSQLiteOutboxContract(t *testing.T) {
 	testkit.QueueContract(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
-		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, true)
-	})
-}
-
-func TestSQLiteBacklog(t *testing.T) {
-	testBacklog(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
 		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, true)
 	})
 }

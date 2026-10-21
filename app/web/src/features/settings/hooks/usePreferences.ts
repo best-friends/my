@@ -7,7 +7,14 @@ import { useT } from "../../../lib/i18n";
 import { cacheSavedPreferences, type Preferences, preferencesQueryOptions, updatePreferencesMutation } from "../api/me";
 
 /** The preferences that the settings page changes, by their API name. */
-type PreferenceKey = "locale" | "time_zone" | "default_visibility" | "timeline_languages" | "email_moderator_notifications";
+type PreferenceKey =
+  | "locale"
+  | "time_zone"
+  | "default_visibility"
+  | "default_post_language"
+  | "require_media_description"
+  | "timeline_languages"
+  | "email_moderator_notifications";
 
 /** One preference as a control shows it: it is saved as soon as it changes. */
 export type PreferenceControl<T> = {
@@ -23,6 +30,8 @@ export type PreferencesControls = {
   locale: PreferenceControl<string>;
   timeZone: PreferenceControl<string>;
   defaultVisibility: PreferenceControl<Preferences["default_visibility"]>;
+  defaultPostLanguage: PreferenceControl<string>;
+  requireMediaDescription: PreferenceControl<boolean>;
   timelineLanguages: PreferenceControl<string[]>;
   emailModeratorNotifications: PreferenceControl<boolean>;
 };
@@ -39,6 +48,8 @@ export function usePreferences(): PreferencesControls {
     locale: usePreferenceControl("locale", data.locale),
     timeZone: usePreferenceControl("time_zone", data.time_zone),
     defaultVisibility: usePreferenceControl("default_visibility", data.default_visibility),
+    defaultPostLanguage: usePreferenceControl("default_post_language", data.default_post_language),
+    requireMediaDescription: usePreferenceControl("require_media_description", data.require_media_description),
     timelineLanguages: usePreferenceControl("timeline_languages", data.timeline_languages),
     emailModeratorNotifications: usePreferenceControl("email_moderator_notifications", data.email_moderator_notifications),
   };

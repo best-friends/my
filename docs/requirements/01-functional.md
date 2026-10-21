@@ -72,7 +72,7 @@
 | FR-404 | HTTP Signatures（draft-cavage-12 と RFC 9421、double-knocking）による署名・検証 | M |
 | FR-405 | 受信アクティビティ: `Follow` `Accept` `Reject` `Undo` `Create` `Update` `Delete` `Announce` `Like` `Block` `Flag`、絵文字リアクションの `EmojiReact` と `_misskey_reaction` 付きの `Like`（FR-116） | M |
 | FR-406 | 配送: 非同期キュー経由、指数バックオフでリトライ、恒久失敗したドメインを一時停止 | M |
-| FR-407 | リモート Actor / Object の取得とキャッシュ、定期リフレッシュ | M |
+| FR-407 | リモート Actor / Object の取得とキャッシュ。Actor は定期リフレッシュ、Object は管理画面・CLI からの取り直し | M |
 | FR-408 | Authorized Fetch（secure mode）を設定で有効化できる | S |
 | FR-409 | リモートメディアのキャッシュ方針を選べる（キャッシュしない / TTL 付きでキャッシュ） | M |
 | FR-410 | Object Integrity Proofs（FEP-8b32） | C |

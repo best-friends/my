@@ -305,7 +305,8 @@ test.describe("display language", () => {
     const before = await heading.textContent();
 
     // The form: the display language and time zone selects, the theme radio group, the autoplay switch, the
-    // visibility radio group and the languages group.
+    // visibility radio group, the default post language select, the switch that asks for descriptions, and the
+    // languages group.
     await expect(page.getByRole("main")).toMatchAriaSnapshot(`
       - heading [level=1]
       - link
@@ -323,6 +324,8 @@ test.describe("display language", () => {
         - radio
         - radio
         - radio
+      - button
+      - switch
       - group:
         - list
     `);
@@ -464,6 +467,36 @@ test.describe("profile form", () => {
     await settingsLink.click();
     await dialog.getByRole("button").last().click();
     await expect(page).toHaveURL(/\/settings$/);
+  });
+});
+
+test.describe("post defaults", () => {
+  test("the default post language and the request for descriptions are saved from the keyboard", async ({ page, makeAxeBuilder }) => {
+    const changes = await signedInServer(page, projectLocale());
+    await page.goto("/settings/preferences");
+    const language = page.getByRole("main").getByRole("button", { name: message("settings.default_post_language.label") });
+    await expect(language).toContainText(message("compose.language.und"));
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    // A select opens on Enter (React Aria Select, the APG listbox pattern); the languages are named in the display language.
+    const japanese = new Intl.DisplayNames([projectLocale()], { type: "language" }).of("ja") ?? "ja";
+    await language.focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("option", { name: japanese, exact: true }).click();
+    await expect(language).toContainText(japanese);
+
+    // Space toggles a switch (WAI-ARIA APG, Switch pattern).
+    const ask = page.getByRole("main").getByRole("switch", { name: message("settings.require_media_description.label") });
+    await expect(ask).not.toBeChecked();
+    await ask.focus();
+    await page.keyboard.press("Space");
+    await expect(ask).toBeChecked();
+    await expect.poll(() => changes).toEqual([{ default_post_language: "ja" }, { require_media_description: true }]);
+
+    await page.reload();
+    await expect(page.getByRole("main").getByRole("button", { name: message("settings.default_post_language.label") })).toContainText(japanese);
+    await expect(page.getByRole("main").getByRole("switch", { name: message("settings.require_media_description.label") })).toBeChecked();
   });
 });
 

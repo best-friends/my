@@ -338,6 +338,30 @@ export interface MessageArgs {
   "client:admin.account.email_verified.yes": {};
   /** No email address */
   "client:admin.account.email.none": {};
+  /** The link is shown only once, here. It does not change the password until someone opens it and sets a new one. */
+  "client:admin.account.password_reset.confirm.description": {};
+  /** Issue a password reset link for {handle}? */
+  "client:admin.account.password_reset.confirm.title": { handle: string };
+  /** Copied the password reset link. */
+  "client:admin.account.password_reset.copied": {};
+  /** Copy link */
+  "client:admin.account.password_reset.copy": {};
+  /** Could not copy the link. */
+  "client:admin.account.password_reset.copy_failed": {};
+  /** Issues a link that sets a new password for this user, to hand to them when email does not reach them. The link works once, for an hour. Anyone who has it can set the password: confirm who is asking through another channel first, and give it to the account's owner only. The issuance is recorded in the audit log. */
+  "client:admin.account.password_reset.description": {};
+  /** Could not issue the link: {reason} */
+  "client:admin.account.password_reset.failed": { reason: string };
+  /** Issue password reset link */
+  "client:admin.account.password_reset.issue": {};
+  /** Issued a password reset link for {handle}. */
+  "client:admin.account.password_reset.issued": { handle: string };
+  /** Password reset link */
+  "client:admin.account.password_reset.link": {};
+  /** This link is not shown again. It works once, until {expiresAt}. */
+  "client:admin.account.password_reset.link.notice": { expiresAt: string };
+  /** Password reset */
+  "client:admin.account.password_reset.title": {};
   /** Shown only when you ask. Each time is recorded in the audit log. */
   "client:admin.account.private.description": {};
   /** Email address */
@@ -1992,6 +2016,8 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_invites": {};
   /** Failed jobs */
   "client:admin.roles.permission.manage_jobs": {};
+  /** Sign-in recovery */
+  "client:admin.roles.permission.manage_login_recovery": {};
   /** Reports */
   "client:admin.roles.permission.manage_reports": {};
   /** Roles */
@@ -2000,8 +2026,6 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_rules": {};
   /** Server settings */
   "client:admin.roles.permission.manage_settings": {};
-  /** Removing two-factor authentication */
-  "client:admin.roles.permission.manage_two_factor": {};
   /** Webhooks */
   "client:admin.roles.permission.manage_webhooks": {};
   /** Audit log */
@@ -3536,6 +3560,10 @@ export interface MessageArgs {
   "client:settings.blocks.unblock": {};
   /** You unblocked {name}. */
   "client:settings.blocks.unblocked": { name: string };
+  /** New posts start in it. You can still choose for each post. */
+  "client:settings.default_post_language.description": {};
+  /** Default language of your posts */
+  "client:settings.default_post_language.label": {};
   /** You can still choose for each post. */
   "client:settings.default_visibility.description": {};
   /** Who sees your posts by default */
@@ -3864,7 +3892,7 @@ export interface MessageArgs {
   "client:settings.password.wrong_password": {};
   /** Changes are saved as soon as you make them. */
   "client:settings.preferences.autosave": {};
-  /** Language, time zone, theme, who sees your posts by default, and the languages of your timelines */
+  /** Language, time zone, theme, the defaults of your posts, and the languages of your timelines */
   "client:settings.preferences.summary": {};
   /** Preferences */
   "client:settings.preferences.title": {};
@@ -3984,6 +4012,10 @@ export interface MessageArgs {
   "client:settings.push.types.label": {};
   /** This browser cannot receive push notifications. On iPhone and iPad, add this site to the Home Screen and open it from there. */
   "client:settings.push.unsupported": {};
+  /** Before you post, the post form asks for a description (alt text) of each image, video or audio file without one, so that people who cannot see or hear them can follow your posts. */
+  "client:settings.require_media_description.description": {};
+  /** Ask me for a description of every attachment */
+  "client:settings.require_media_description.label": {};
   /** Saved */
   "client:settings.saved": {};
   /** Dark */

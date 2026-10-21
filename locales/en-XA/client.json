@@ -419,6 +419,54 @@
     "defaultMessage": "[Ṽḗḗřīƒīḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.account.password_reset.confirm.description": {
+    "defaultMessage": "[Ŧħḗḗ ŀīƞķ īş şħǿǿẇƞ ǿǿƞŀẏ ǿǿƞƈḗḗ, ħḗḗřḗḗ. Īŧ ḓǿǿḗḗş ƞǿǿŧ ƈħȧȧƞɠḗḗ ŧħḗḗ ƥȧȧşşẇǿǿřḓ ŭŭƞŧīŀ şǿǿḿḗḗǿǿƞḗḗ ǿǿƥḗḗƞş īŧ ȧȧƞḓ şḗḗŧş ȧȧ ƞḗḗẇ ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.confirm.title": {
+    "defaultMessage": "[Īşşŭŭḗḗ ȧȧ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ ƒǿǿř {handle}?]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.copied": {
+    "defaultMessage": "[Ƈǿǿƥīḗḗḓ ŧħḗḗ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.copy": {
+    "defaultMessage": "[Ƈǿǿƥẏ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.copy_failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈǿǿƥẏ ŧħḗḗ ŀīƞķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.description": {
+    "defaultMessage": "[Īşşŭŭḗḗş ȧȧ ŀīƞķ ŧħȧȧŧ şḗḗŧş ȧȧ ƞḗḗẇ ƥȧȧşşẇǿǿřḓ ƒǿǿř ŧħīş ŭŭşḗḗř, ŧǿǿ ħȧȧƞḓ ŧǿǿ ŧħḗḗḿ ẇħḗḗƞ ḗḗḿȧȧīŀ ḓǿǿḗḗş ƞǿǿŧ řḗḗȧȧƈħ ŧħḗḗḿ. Ŧħḗḗ ŀīƞķ ẇǿǿřķş ǿǿƞƈḗḗ, ƒǿǿř ȧȧƞ ħǿǿŭŭř. Ȧƞẏǿǿƞḗḗ ẇħǿǿ ħȧȧş īŧ ƈȧȧƞ şḗḗŧ ŧħḗḗ ƥȧȧşşẇǿǿřḓ: ƈǿǿƞƒīřḿ ẇħǿǿ īş ȧȧşķīƞɠ ŧħřǿǿŭŭɠħ ȧȧƞǿǿŧħḗḗř ƈħȧȧƞƞḗḗŀ ƒīřşŧ, ȧȧƞḓ ɠīṽḗḗ īŧ ŧǿǿ ŧħḗḗ ȧȧƈƈǿǿŭŭƞŧ'ş ǿǿẇƞḗḗř ǿǿƞŀẏ. Ŧħḗḗ īşşŭŭȧȧƞƈḗḗ īş řḗḗƈǿǿřḓḗḗḓ īƞ ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ īşşŭŭḗḗ ŧħḗḗ ŀīƞķ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.issue": {
+    "defaultMessage": "[Īşşŭŭḗḗ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.issued": {
+    "defaultMessage": "[Īşşŭŭḗḗḓ ȧȧ ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ ƒǿǿř {handle}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.link": {
+    "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ ŀīƞķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.link.notice": {
+    "defaultMessage": "[Ŧħīş ŀīƞķ īş ƞǿǿŧ şħǿǿẇƞ ȧȧɠȧȧīƞ. Īŧ ẇǿǿřķş ǿǿƞƈḗḗ, ŭŭƞŧīŀ {expiresAt}.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.account.password_reset.title": {
+    "defaultMessage": "[Ƥȧȧşşẇǿǿřḓ řḗḗşḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.account.private.description": {
     "defaultMessage": "[Şħǿǿẇƞ ǿǿƞŀẏ ẇħḗḗƞ ẏǿǿŭŭ ȧȧşķ. Ḗȧȧƈħ ŧīḿḗḗ īş řḗḗƈǿǿřḓḗḗḓ īƞ ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3979,6 +4027,10 @@
     "defaultMessage": "[Ƒȧȧīŀḗḗḓ ĵǿǿƀş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.permission.manage_login_recovery": {
+    "defaultMessage": "[Şīɠƞ-īƞ řḗḗƈǿǿṽḗḗřẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.permission.manage_reports": {
     "defaultMessage": "[Řḗḗƥǿǿřŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3993,10 +4045,6 @@
   },
   "admin.roles.permission.manage_settings": {
     "defaultMessage": "[Şḗḗřṽḗḗř şḗḗŧŧīƞɠş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.roles.permission.manage_two_factor": {
-    "defaultMessage": "[Řḗḗḿǿǿṽīƞɠ ŧẇǿǿ-ƒȧȧƈŧǿǿř ȧȧŭŭŧħḗḗƞŧīƈȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permission.manage_webhooks": {
@@ -7067,6 +7115,14 @@
     "defaultMessage": "[Ẏǿǿŭŭ ŭŭƞƀŀǿǿƈķḗḗḓ {name}.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.default_post_language.description": {
+    "defaultMessage": "[Ƞḗḗẇ ƥǿǿşŧş şŧȧȧřŧ īƞ īŧ. Ẏǿǿŭŭ ƈȧȧƞ şŧīŀŀ ƈħǿǿǿǿşḗḗ ƒǿǿř ḗḗȧȧƈħ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.default_post_language.label": {
+    "defaultMessage": "[Ḓḗḗƒȧȧŭŭŀŧ ŀȧȧƞɠŭŭȧȧɠḗḗ ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.default_visibility.description": {
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞ şŧīŀŀ ƈħǿǿǿǿşḗḗ ƒǿǿř ḗḗȧȧƈħ ƥǿǿşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7724,7 +7780,7 @@
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ, ŧīḿḗḗ ẑǿǿƞḗḗ, ŧħḗḗḿḗḗ, ẇħǿǿ şḗḗḗḗş ẏǿǿŭŭř ƥǿǿşŧş ƀẏ ḓḗḗƒȧȧŭŭŀŧ, ȧȧƞḓ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ǿǿƒ ẏǿǿŭŭř ŧīḿḗḗŀīƞḗḗş]",
+    "defaultMessage": "[Ŀȧȧƞɠŭŭȧȧɠḗḗ, ŧīḿḗḗ ẑǿǿƞḗḗ, ŧħḗḗḿḗḗ, ŧħḗḗ ḓḗḗƒȧȧŭŭŀŧş ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧş, ȧȧƞḓ ŧħḗḗ ŀȧȧƞɠŭŭȧȧɠḗḗş ǿǿƒ ẏǿǿŭŭř ŧīḿḗḗŀīƞḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.preferences.title": {
@@ -7961,6 +8017,14 @@
   },
   "settings.push.unsupported": {
     "defaultMessage": "[Ŧħīş ƀřǿǿẇşḗḗř ƈȧȧƞƞǿǿŧ řḗḗƈḗḗīṽḗḗ ƥŭŭşħ ƞǿǿŧīƒīƈȧȧŧīǿǿƞş. Ǿƞ īƤħǿǿƞḗḗ ȧȧƞḓ īƤȧȧḓ, ȧȧḓḓ ŧħīş şīŧḗḗ ŧǿǿ ŧħḗḗ Ħǿǿḿḗḗ Şƈřḗḗḗḗƞ ȧȧƞḓ ǿǿƥḗḗƞ īŧ ƒřǿǿḿ ŧħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.require_media_description.description": {
+    "defaultMessage": "[Ɓḗḗƒǿǿřḗḗ ẏǿǿŭŭ ƥǿǿşŧ, ŧħḗḗ ƥǿǿşŧ ƒǿǿřḿ ȧȧşķş ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ (ȧȧŀŧ ŧḗḗẋŧ) ǿǿƒ ḗḗȧȧƈħ īḿȧȧɠḗḗ, ṽīḓḗḗǿǿ ǿǿř ȧȧŭŭḓīǿǿ ƒīŀḗḗ ẇīŧħǿǿŭŭŧ ǿǿƞḗḗ, şǿǿ ŧħȧȧŧ ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ǿǿř ħḗḗȧȧř ŧħḗḗḿ ƈȧȧƞ ƒǿǿŀŀǿǿẇ ẏǿǿŭŭř ƥǿǿşŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.require_media_description.label": {
+    "defaultMessage": "[Ȧşķ ḿḗḗ ƒǿǿř ȧȧ ḓḗḗşƈřīƥŧīǿǿƞ ǿǿƒ ḗḗṽḗḗřẏ ȧȧŧŧȧȧƈħḿḗḗƞŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.saved": {
