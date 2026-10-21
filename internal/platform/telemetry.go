@@ -71,7 +71,7 @@ var ReadinessFailures = kernel.Instrument{
 // not prometheus.
 func (a *App) MetricsHandler() http.Handler { return a.metricsHandler }
 
-// The surfaces of the HTTP server, the my.surface label (ADR-0055 §3).
+// The surfaces of the HTTP server, the my.surface label (ADR-0055 §3, ADR-0075).
 const (
 	surfaceClientAPI   = "client_api"
 	surfaceActivityPub = "activitypub"
