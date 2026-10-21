@@ -162,7 +162,7 @@ A は ADR-0018 の「`id` は UUIDv7 だけで、名前を含めない」をそ�
 - 監査ログ（ADR-0037）に、作成・画像の差し替え・設定と別名の変更・無効化と有効化・削除・リモートの複製を記録する。
   同じ操作で ADR-0060 の webhook のイベントを出す: 作成とリモートの複製は `custom_emoji.created`、画像の差し替え・設定と別名の変更・無効化と有効化は `custom_emoji.updated`、削除は `custom_emoji.deleted`。`data` は管理 API `/admin/custom_emojis` の表現。受信でリモートの絵文字を記録したときは出さない。
   **ADR-0037 への追加**: `target_kind` に `custom_emoji` を加え、`target_label` は `:shortcode:`（リモートは `:shortcode:@domain`）にする。ADR-0037 の他の規則は変えない。
-- CLI は `my admin emoji` の下に、作成（ファイルと shortcode）・一覧・無効化・削除を持つ。
+- CLI は `my admin emoji` の下に、作成（ファイルと shortcode）・一覧・画像の差し替え・カテゴリと別名とピッカーへの表示の変更・無効化と有効化（リモートの絵文字を含む）・削除・リモートの絵文字のローカルへの複製を持ち、管理 API と同じアプリ層の操作で行う。
 
 ## Consequences（影響）
 
