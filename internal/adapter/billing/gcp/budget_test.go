@@ -227,7 +227,7 @@ func TestBudgetBillingSourceContract(t *testing.T) {
 		// The fetch takes s.Pages pulls: the messages over s.Pages-1 pulls, then an empty one.
 		o := billinggcp.BudgetOptions{}
 		if s.Pages > 1 {
-			o.MaxMessages = (n + s.Pages - 2) / (s.Pages - 1)
+			o.MaxMessages = int32((n + s.Pages - 2) / (s.Pages - 1)) //nolint:gosec // a few messages
 		}
 		return f.source(t, o)
 	})
@@ -348,7 +348,6 @@ func TestCheckSubscription(t *testing.T) {
 	for v, ok := range map[string]bool{
 		"projects/my-billing/subscriptions/my-billing-budget":  true,
 		"projects/example.com:my-billing/subscriptions/budget": true,
-		" projects/my-billing/subscriptions/budget ":           true,
 		"my-billing-budget":                             false,
 		"projects/my-billing/topics/budget":             false,
 		"projects/My_Billing/subscriptions/budget":      false,

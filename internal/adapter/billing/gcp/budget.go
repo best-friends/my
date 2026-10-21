@@ -54,8 +54,9 @@ type BudgetOptions struct {
 	// Subscription is the pull subscription of the budget's topic,
 	// projects/{project}/subscriptions/{subscription}.
 	Subscription string
-	// MaxMessages is the most messages of a pull; DefaultMaxMessages when 0.
-	MaxMessages int
+	// MaxMessages is the most messages of a pull, at most DefaultMaxMessages; DefaultMaxMessages
+	// when 0.
+	MaxMessages int32
 	// PullWait is how long a pull waits for messages; DefaultPullWait when 0.
 	PullWait time.Duration
 	// Now returns the current time; time.Now when nil.
@@ -83,7 +84,7 @@ type BudgetOptions struct {
 type BudgetSource struct {
 	client      *pubsubv2.Client
 	sub         string
-	maxMessages int
+	maxMessages int32
 	wait        time.Duration
 	loc         *time.Location
 	now         func() time.Time
@@ -101,8 +102,8 @@ func NewBudget(ctx context.Context, o BudgetOptions, opts ...option.ClientOption
 	if err := CheckSubscription(o.Subscription); err != nil {
 		return nil, fmt.Errorf("billing gcp: subscription: %w", err)
 	}
-	if o.MaxMessages < 0 || o.PullWait < 0 {
-		return nil, fmt.Errorf("billing gcp: negative max messages %d or pull wait %s", o.MaxMessages, o.PullWait)
+	if o.MaxMessages < 0 || o.MaxMessages > DefaultMaxMessages || o.PullWait < 0 {
+		return nil, fmt.Errorf("billing gcp: max messages %d outside 0 to 1000 or a negative pull wait %s", o.MaxMessages, o.PullWait)
 	}
 	loc, err := Location()
 	if err != nil {
@@ -302,7 +303,7 @@ func (s *BudgetSource) pull(ctx context.Context) ([]*pubsubpb.ReceivedMessage, e
 	pullCtx, cancel := context.WithTimeout(ctx, s.wait)
 	defer cancel()
 	res, err := s.client.SubscriptionAdminClient.Pull(pullCtx, &pubsubpb.PullRequest{
-		Subscription: s.sub, MaxMessages: int32(min(s.maxMessages, DefaultMaxMessages)),
+		Subscription: s.sub, MaxMessages: s.maxMessages,
 	}, noRetry)
 	if err != nil {
 		if ctx.Err() == nil && (errors.Is(err, context.DeadlineExceeded) || status.Code(err) == codes.DeadlineExceeded) {
