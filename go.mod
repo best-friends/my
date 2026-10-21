@@ -8,7 +8,7 @@ require (
 	github.com/alicebob/miniredis/v2 v2.39.0
 	github.com/aws/aws-sdk-go-v2 v1.47.1
 	github.com/aws/aws-sdk-go-v2/config v1.33.7
-	github.com/aws/aws-sdk-go-v2/service/sns v1.47.2
+	github.com/aws/aws-sdk-go-v2/service/sns v1.47.3
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.2
 	github.com/aws/smithy-go v1.28.1
 	github.com/dadrus/httpsig v0.9.0
