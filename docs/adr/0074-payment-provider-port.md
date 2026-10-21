@@ -42,7 +42,7 @@ spike #909 の確認事項への決定者の回答（#913、原文）:
 
 - ADR-0072（#912、加入とプランとロール）は、モジュール `supporters`、こちらの加入の状態（申し込み中・有効・解約の予約・支払いの遅れ・猶予の切れ・失効・取り消し）、7 日の猶予、ロールの付け外し、プランの変更と価格の改定の規則を決める。
   この ADR はポートと、事業者の状態をこちらに運ぶ経路（webhook・照合）だけを決め、状態の導き方は決めない。
-- ADR-0073（#914、収入。Accepted）は、`finance` の `RecordIncome(ctx, []IncomeMovement)` と、その契約（種類・元の支払い・期間・総額・手数料・net・事業者のレポートの日付）を決める。この ADR の `MoneyMovement`（§1）はそれを満たす。
+- [ADR-0073](0073-income-records-and-publication.md)（#914、収入）は、`finance` の `RecordIncome(ctx, []IncomeMovement)` と、その契約（種類・元の支払い・期間・総額・手数料・net・事業者のレポートの日付）を決める。この ADR の `MoneyMovement`（§1）はそれを満たす。
 
 決めること: ポートの形と契約テスト、adapter と SDK、webhook の受け口、照合のジョブ、カード情報の扱い、設定と秘密、テストモードとローカルでの試し方、build tag、外向きの HTTP の分類、CSP。
 実装の #919（ポート・webhook・照合）・#920（`stripe` adapter）と、決定者のテストモードでの確認 #924 がこの ADR を待っている。
