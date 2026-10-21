@@ -23,6 +23,11 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
+    ignore:
+      # @types/node follows the Node.js major in .tool-versions: its major is raised together with Node.js,
+      # so the types never offer APIs that the runtime lacks.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   # Workflows pin every action, GitHub's own included, to a release's commit SHA with the full version in a
   # trailing comment (`uses: owner/repo@<sha> # vX.Y.Z`): a moving major tag can point at a release younger
   # than two weeks, and Dependabot updates the SHA and the comment together.
