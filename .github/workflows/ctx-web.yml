@@ -54,7 +54,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vitest runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
       - name: make ui-check
@@ -76,7 +76,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vite and Vitest run on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
       - name: make web-check (static checks, except the ones decided file by file)
@@ -103,7 +103,7 @@ jobs:
           key: bun-${{ runner.os }}-${{ hashFiles('app/bun.lock', 'tools/i18n/bun.lock') }}
           restore-keys: bun-${{ runner.os }}-
       # Vitest runs on Node.js; Bun only installs packages and runs scripts (ADR-0025).
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .tool-versions
       - name: make web-test
