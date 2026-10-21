@@ -62,14 +62,16 @@ SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.trace_paren
 FROM jobs AS j
 WHERE j.id = sqlc.arg(id) AND j.locked_by = sqlc.arg(worker) AND j.attempt = sqlc.arg(attempt);
 
--- ListDeadJobs returns the dead jobs most recently failed first, after the position
--- (@after_failed_at, @after_id); an empty @after_id starts at the first.
+-- ListDeadJobs returns the dead jobs of the type @job_type (every type when empty), most
+-- recently failed first, after the position (@after_failed_at, @after_id); an empty @after_id
+-- starts at the first.
 -- name: ListDeadJobs :many
 SELECT id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at
 FROM dead_jobs
-WHERE sqlc.arg(after_id)::text = ''
-  OR failed_at < sqlc.arg(after_failed_at)::timestamptz
-  OR (failed_at = sqlc.arg(after_failed_at)::timestamptz AND id < sqlc.arg(after_id)::text)
+WHERE (sqlc.arg(job_type)::text = '' OR type = sqlc.arg(job_type)::text)
+  AND (sqlc.arg(after_id)::text = ''
+    OR failed_at < sqlc.arg(after_failed_at)::timestamptz
+    OR (failed_at = sqlc.arg(after_failed_at)::timestamptz AND id < sqlc.arg(after_id)::text))
 ORDER BY failed_at DESC, id DESC
 LIMIT sqlc.arg(batch_limit);
 
@@ -117,3 +119,62 @@ ORDER BY type;
 
 -- name: CountDeadJobs :one
 SELECT COUNT(*) FROM dead_jobs;
+
+-- ListPendingJobs returns the jobs of the type @job_type (every type when empty) in the state
+-- @state at @now (every state when empty; the states of ADR-0064 section 3: running while the
+-- lease holds, otherwise queued before the first run and retrying after it), the earliest run_at
+-- first, after the position (@after_run_at, @after_id); an empty @after_id starts at the first.
+-- name: ListPendingJobs :many
+SELECT id, type, payload, idempotency_key, ordering_key, attempt, run_at, locked_by, locked_until, last_error, created_at
+FROM jobs
+WHERE (sqlc.arg(job_type)::text = '' OR type = sqlc.arg(job_type)::text)
+  AND (sqlc.arg(state)::text = ''
+    OR (sqlc.arg(state)::text = 'running' AND locked_until > sqlc.arg(now)::timestamptz)
+    OR (sqlc.arg(state)::text = 'queued' AND (locked_until IS NULL OR locked_until <= sqlc.arg(now)::timestamptz) AND attempt = 0)
+    OR (sqlc.arg(state)::text = 'retrying' AND (locked_until IS NULL OR locked_until <= sqlc.arg(now)::timestamptz) AND attempt > 0))
+  AND (sqlc.arg(after_id)::text = ''
+    OR run_at > sqlc.arg(after_run_at)::timestamptz
+    OR (run_at = sqlc.arg(after_run_at)::timestamptz AND id > sqlc.arg(after_id)::text))
+ORDER BY run_at, id
+LIMIT sqlc.arg(batch_limit);
+
+-- CountJobsByState counts the jobs by type and by their state at @now, as ListPendingJobs
+-- derives it.
+-- name: CountJobsByState :many
+SELECT type,
+  CAST(CASE WHEN locked_until > sqlc.arg(now)::timestamptz THEN 'running' WHEN attempt = 0 THEN 'queued' ELSE 'retrying' END AS text) AS state,
+  COUNT(*) AS jobs
+FROM jobs
+GROUP BY 1, 2
+ORDER BY 1, 2;
+
+-- name: CountDeadJobsByType :many
+SELECT type, COUNT(*) AS jobs FROM dead_jobs GROUP BY type ORDER BY type;
+
+-- name: InsertJobAttempt :exec
+INSERT INTO job_attempts (job_id, attempt, job_type, outcome, error, worker, started_at, finished_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (job_id, attempt, finished_at) DO NOTHING;
+
+-- ListJobAttempts returns the records of the job @job_id, the most recently finished first,
+-- after the position (@after_finished_at, @after_attempt); an @after_attempt of 0 starts at the
+-- first.
+-- name: ListJobAttempts :many
+SELECT job_id, attempt, job_type, outcome, error, worker, started_at, finished_at
+FROM job_attempts
+WHERE job_id = sqlc.arg(job_id)
+  AND (sqlc.arg(after_attempt)::integer = 0
+    OR finished_at < sqlc.arg(after_finished_at)::timestamptz
+    OR (finished_at = sqlc.arg(after_finished_at)::timestamptz AND attempt < sqlc.arg(after_attempt)::integer))
+ORDER BY finished_at DESC, attempt DESC
+LIMIT sqlc.arg(batch_limit);
+
+-- DeleteJobAttemptsBefore removes at most @batch_limit records that finished before
+-- @finished_before, the oldest first.
+-- name: DeleteJobAttemptsBefore :execrows
+DELETE FROM job_attempts
+WHERE (job_id, attempt, finished_at) IN (
+  SELECT a.job_id, a.attempt, a.finished_at FROM job_attempts AS a
+  WHERE a.finished_at < sqlc.arg(finished_before)::timestamptz
+  ORDER BY a.finished_at LIMIT sqlc.arg(batch_limit)
+);

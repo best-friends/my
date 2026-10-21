@@ -525,6 +525,13 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.DeadJobRetention, _ = time.ParseDuration(v) },
 	},
 	{
+		key:   "job_attempt_retention",
+		doc:   "How long the record of a job's run that did not succeed (a retry, or the run that made it a dead job; ADR-0064) is kept after the run, for the queue dashboard of the admin screen; the hourly purge then deletes it. Successful runs are not recorded. A Go duration such as `720h` (30 days).",
+		def:   "720h",
+		check: checkPositiveDuration,
+		set:   func(c *Config, v string) { c.JobAttemptRetention, _ = time.ParseDuration(v) },
+	},
+	{
 		key: "metrics_exporter",
 		doc: "Where the service metrics go (ADR-0055 §2): the request, federation, delivery, job, and stream metrics, named after the OpenTelemetry semantic conventions or with the prefix `my.`. Labels never carry a remote domain, an account, a URL, or a client IP.",
 		def: "none",

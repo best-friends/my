@@ -37,7 +37,7 @@ func postgresHarness(t *testing.T, clock *testkit.Clock, dsn string, relay bool)
 	t.Cleanup(d.Close)
 	opts := queuedb.Options{Clock: clock, IDs: testkit.NewIDGenerator(clock)}
 	q := queuedb.NewPostgres(d, opts)
-	h := testkit.QueueHarness{Queue: q, Source: q, DeadJobs: q, UnitOfWork: d, Outbox: q}
+	h := testkit.QueueHarness{Queue: q, Source: q, DeadJobs: q, UnitOfWork: d, Outbox: q, Inspector: q, Attempts: q}
 	if relay {
 		o := queuedb.NewPostgresOutbox(d, opts)
 		h.Outbox = o

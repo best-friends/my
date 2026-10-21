@@ -213,10 +213,19 @@ SIGTERM または SIGINT で graceful shutdown する。
 3. 25 秒を過ぎたら、残ったリクエストとジョブのコンテキストを取り消して接続を閉じ、終了コード 1 で終わる。
    取り消されたジョブは再試行され、途中で強制終了されたジョブもリースが切れると別のワーカーが拾い直す（[ADR-0004](../adr/0004-job-queue-abstraction.md)）。
 
-## 失敗したジョブ（dead job）
+## ジョブのキューと失敗したジョブ（dead job）
+
+管理画面のジョブの画面（`/admin/jobs`、権限 `manage_jobs`、[ADR-0064](../adr/0064-queue-job-dashboard.md)）で、キューのジョブを状態ごと（待ち・実行中・リトライ待ち・失敗）に一覧し、
+型と状態ごとの件数、最も古い待ちのジョブの予定、各ジョブの最後のエラー・キー・ペイロードと、成功しなかった試行の履歴（試行ごとの結果・エラー・ワーカー・開始と終了の時刻）を確かめられる。
+管理 API は `GET /api/v1/admin/queue`、`GET /api/v1/admin/jobs?state=&type=`、`GET /api/v1/admin/jobs/{id}/attempts`、`POST /api/v1/admin/jobs/{id}/retry`。
+
+- 待ち・実行中・リトライ待ちのジョブを一覧できるのは、DB キュー（`queue = db`）と `queue = inline` だけ。Cloud Tasks・SQS のキューでは画面がそう表示し、滞留はプラットフォームの指標で見る。失敗したジョブと試行の履歴は、どのキューでもアプリの DB にあるので一覧できる。
+- 試行の履歴に残るのは成功しなかった試行（リトライと、失敗が確定した試行）だけ。成功した実行は、1 回ごとの構造化ログの `job` の行（`job_id` を持つ）で辿る。
+  履歴は試行の終了から `job_attempt_retention`（既定 30 日、[設定](../reference/configuration.md#job_attempt_retention)）が過ぎると毎時の掃除で消える。
+  履歴にペイロードとハンドラのログは入らず、エラーの文は先頭の 2,000 バイトまで。ジョブのハンドラは、エラーの文にメールアドレス・IP アドレス・トークン・投稿の本文を入れない。
 
 ハンドラが失敗を確定したジョブと、再試行の回数を使い切ったジョブは、DB キュー（`queue = db`）の dead job になる（ADR-0004）。
-`my job` で一覧・再実行・削除ができる（FR-801）。管理画面（`/admin/dead-jobs`）と管理 API（`GET /api/v1/admin/dead_jobs`、`POST /api/v1/admin/dead_jobs/{id}/retry`、権限 `manage_jobs`）でも一覧と再実行ができる。
+`my job` で一覧・再実行・削除ができる（FR-801）。ジョブの画面の「失敗」と管理 API でも一覧と再実行ができる。
 
 ```sh
 my job list                 # 新しく失敗した順に ID・型・実行回数・失敗した時刻・最後のエラー（-limit で件数、既定 50）

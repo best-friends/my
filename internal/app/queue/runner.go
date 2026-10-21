@@ -74,6 +74,9 @@ type RunnerOptions struct {
 	Meter kernel.Meter
 	// Tracer records the span of each run (JobSpan, ADR-0063 §2); nil records nothing.
 	Tracer kernel.Tracer
+	// Attempts records the runs that did not succeed (ADR-0064 §1); nil records nothing. A
+	// failure to record is logged and does not change the job's result.
+	Attempts AttemptLog
 }
 
 // PullRunner claims jobs from a Source, runs their handlers, and records the results. It
@@ -246,18 +249,40 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 		return true, r.src.Complete(recordCtx, r.opts.Worker, j)
 	case res.IsFail():
 		ran(OutcomeDead)
-		return true, r.src.Bury(recordCtx, r.opts.Worker, j, errorText(res.Err(), "failed"), done)
+		lastErr := errorText(res.Err(), "failed")
+		r.recordAttempt(recordCtx, j, OutcomeDead, lastErr, now, done)
+		return true, r.src.Bury(recordCtx, r.opts.Worker, j, lastErr, done)
 	case j.Attempt >= policy.MaxAttempts:
 		ran(OutcomeDead)
-		return true, r.src.Bury(recordCtx, r.opts.Worker, j, errorText(res.Err(), "retried")+
-			fmt.Sprintf(" (gave up after %d attempts)", j.Attempt), done)
+		lastErr := errorText(res.Err(), "retried") + fmt.Sprintf(" (gave up after %d attempts)", j.Attempt)
+		r.recordAttempt(recordCtx, j, OutcomeDead, lastErr, now, done)
+		return true, r.src.Bury(recordCtx, r.opts.Worker, j, lastErr, done)
 	default:
 		ran(OutcomeRetry)
 		after := res.After()
 		if after <= 0 {
 			after = policy.Backoff(j.Attempt, r.opts.Random)
 		}
-		return true, r.src.Release(recordCtx, r.opts.Worker, j, j.Attempt, done.Add(after), errorText(res.Err(), "retried"))
+		lastErr := errorText(res.Err(), "retried")
+		r.recordAttempt(recordCtx, j, OutcomeRetry, lastErr, now, done)
+		return true, r.src.Release(recordCtx, r.opts.Worker, j, j.Attempt, done.Add(after), lastErr)
+	}
+}
+
+// recordAttempt stores the record of a run that did not succeed (ADR-0064 §1). The record is
+// written before the result, so that a job listed as retrying or dead has the record of its
+// last run; a failure to write it is logged and leaves the result alone.
+func (r *PullRunner) recordAttempt(ctx context.Context, j Job, outcome, lastErr string, started, finished time.Time) {
+	if r.opts.Attempts == nil {
+		return
+	}
+	err := r.opts.Attempts.RecordAttempt(ctx, Attempt{
+		JobID: j.ID, JobType: j.Type, Attempt: j.Attempt, Outcome: outcome, Error: TruncateAttemptError(lastErr),
+		Worker: r.opts.Worker, StartedAt: kernel.Normalize(started), FinishedAt: kernel.Normalize(finished),
+	})
+	if err != nil {
+		r.opts.Logger.ErrorContext(ctx, "job runner: record attempt", slog.String("worker", r.opts.Worker),
+			slog.String(logJobID, j.ID), slog.Int(logAttempt, j.Attempt), slog.Any("error", err))
 	}
 }
 

@@ -4,7 +4,6 @@ package clientapi
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,12 +13,12 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	appfederation "github.com/best-friends/my/internal/app/federation"
-	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/domain/federation"
 	"github.com/best-friends/my/internal/domain/identity"
 )
 
-// The admin operations (tag admin): the health of remote servers and the dead jobs. Their
+// The admin operations (tag admin): the health of remote servers and the queue dashboard
+// (admin_jobs.go). Their
 // scopes (admin:read, admin:write) are checked before the handler runs, like every operation's;
 // the handler then checks that the viewer's roles grant the operation's permission
 // (requirePermission).
@@ -197,87 +196,4 @@ func (s *Server) MarkInstanceAvailable(ctx context.Context, req MarkInstanceAvai
 	return MarkInstanceAvailable200JSONResponse{AdminInstanceHealthJSONResponse{
 		Body: newAdminInstanceHealth(h), Headers: AdminInstanceHealthResponseHeaders{CacheControl: &cache},
 	}}, nil
-}
-
-// encodeDeadJobCursor returns the cursor of the page after the dead job at p.
-func encodeDeadJobCursor(p queue.DeadJobPosition) *Cursor {
-	c := base64.RawURLEncoding.EncodeToString([]byte(p.FailedAt.UTC().Format(time.RFC3339Nano) + " " + p.ID))
-	return &c
-}
-
-func decodeDeadJobCursor(c string) (queue.DeadJobPosition, bool) {
-	b, err := base64.RawURLEncoding.DecodeString(c)
-	if err != nil {
-		return queue.DeadJobPosition{}, false
-	}
-	at, id, ok := strings.Cut(string(b), " ")
-	if !ok || id == "" {
-		return queue.DeadJobPosition{}, false
-	}
-	failedAt, err := time.Parse(time.RFC3339Nano, at)
-	if err != nil {
-		return queue.DeadJobPosition{}, false
-	}
-	return queue.DeadJobPosition{FailedAt: failedAt, ID: id}, true
-}
-
-// ListDeadJobs serves GET /api/v1/admin/dead_jobs: the dead jobs, most recently failed first.
-// The cursor is the failure time and ID of the last job of the previous page.
-func (s *Server) ListDeadJobs(ctx context.Context, req ListDeadJobsRequestObject) (ListDeadJobsResponseObject, error) {
-	if p, err := s.requirePermission(ctx, identity.PermManageJobs); err != nil {
-		return nil, err
-	} else if p != nil {
-		return ListDeadJobsdefaultApplicationProblemPlusJSONResponse(*p), nil
-	}
-	limit, ok := pageLimit(req.Params.Limit)
-	if !ok {
-		return ListDeadJobsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "limit")), nil
-	}
-	var after queue.DeadJobPosition
-	if req.Params.Cursor != nil {
-		if after, ok = decodeDeadJobCursor(*req.Params.Cursor); !ok {
-			return ListDeadJobsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "cursor")), nil
-		}
-	}
-	jobs, err := s.o.DeadJobs.ListDeadJobs(ctx, after, limit+1)
-	if err != nil {
-		return nil, fmt.Errorf("clientapi: list dead jobs: %w", err)
-	}
-	jobs, last := trim(jobs, limit)
-	page := AdminDeadJobPage{Items: make([]AdminDeadJob, 0, len(jobs))}
-	for _, j := range jobs {
-		item := AdminDeadJob{
-			Id: j.ID, Type: j.Type, Payload: string(j.Payload), Attempts: j.Attempt, LastError: j.LastError,
-			CreatedAt: j.CreatedAt.UTC(), FailedAt: j.FailedAt.UTC(),
-		}
-		if j.IdempotencyKey != "" {
-			item.IdempotencyKey = &j.IdempotencyKey
-		}
-		if j.OrderingKey != "" {
-			item.OrderingKey = &j.OrderingKey
-		}
-		page.Items = append(page.Items, item)
-	}
-	if last >= 0 {
-		page.NextCursor = encodeDeadJobCursor(jobs[last].Position())
-	}
-	cache := cacheNoStore
-	return ListDeadJobs200JSONResponse{Body: page, Headers: ListDeadJobs200ResponseHeaders{CacheControl: &cache}}, nil
-}
-
-// RetryDeadJob serves POST /api/v1/admin/dead_jobs/{id}/retry.
-func (s *Server) RetryDeadJob(ctx context.Context, req RetryDeadJobRequestObject) (RetryDeadJobResponseObject, error) {
-	if p, err := s.requirePermission(ctx, identity.PermManageJobs); err != nil {
-		return nil, err
-	} else if p != nil {
-		return RetryDeadJobdefaultApplicationProblemPlusJSONResponse(*p), nil
-	}
-	err := s.o.DeadJobs.RequeueDeadJob(ctx, req.Id)
-	if errors.Is(err, queue.ErrDeadJobNotFound) {
-		return RetryDeadJobdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("clientapi: requeue dead job %s: %w", req.Id, err)
-	}
-	return RetryDeadJob204Response{}, nil
 }

@@ -597,6 +597,23 @@ CREATE TABLE dead_jobs (
 );
 CREATE INDEX dead_jobs_failed_at ON dead_jobs (failed_at);
 
+-- Event: a run of a job that did not succeed (ADR-0064 §1), written by the runner whatever the
+-- queue adapter. outcome is retry (the job runs again) or dead (it failed for good). error is
+-- at most 2,000 bytes; no payload and no handler log. A requeued dead job counts its attempts
+-- again, so finished_at is part of the key. Purged job_attempt_retention after finished_at.
+CREATE TABLE job_attempts (
+  job_id text NOT NULL,
+  attempt integer NOT NULL CHECK (attempt >= 1),
+  job_type text NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('retry', 'dead')),
+  error text NOT NULL CHECK (length(error) <= 2000),
+  worker text NOT NULL,
+  started_at timestamptz NOT NULL,
+  finished_at timestamptz NOT NULL,
+  PRIMARY KEY (job_id, attempt, finished_at)
+);
+CREATE INDEX job_attempts_finished_at ON job_attempts (finished_at);
+
 -- ---------------------------------------------------------------------------------------------
 -- identity: user preferences (data-model.md §4.1, FR-007, FR-208).
 -- ---------------------------------------------------------------------------------------------

@@ -135,14 +135,14 @@ describe("the navigation's Administration", () => {
     expect(admin).toHaveAttribute("aria-current", "page");
     expect(within(navigation()).getByRole("link", { name: "Moderation, 2 pending" })).not.toHaveAttribute("aria-current");
     const main = within(screen.getByRole("main"));
-    expect(main.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/settings", "/admin/theme", "/admin/documents", "/admin/relays", "/admin/dead-jobs"]);
+    expect(main.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/admin/settings", "/admin/theme", "/admin/documents", "/admin/relays", "/admin/jobs"]);
   });
 
   test("is the only staff entry of a user with server administration permissions alone", async () => {
     server.use(operatorHandler(["manage_jobs"]));
     const requests = recordCountRequests();
-    await renderApp({ path: "/admin/dead-jobs" });
-    await screen.findByRole("heading", { level: 1, name: "Failed jobs" });
+    await renderApp({ path: "/admin/jobs" });
+    await screen.findByRole("heading", { level: 1, name: "Jobs" });
 
     expect(await within(navigation()).findByRole("link", { name: "Administration" })).toHaveAttribute("aria-current", "page");
     expect(within(navigation()).queryByRole("link", { name: /^Moderation/ })).not.toBeInTheDocument();

@@ -2425,41 +2425,119 @@ paths:
         default:
           $ref: "#/components/responses/Problem"
   # --- end of streaming (#116) ---
-  # --- admin: remote servers and dead jobs (#261) ---
-  /admin/dead_jobs:
+  # --- admin: remote servers (#261) and the queue dashboard (ADR-0064) ---
+  /admin/queue:
     get:
-      operationId: listDeadJobs
-      summary: List the dead jobs
+      operationId: getAdminQueue
+      summary: Get the state of the job queue
       description: |
-        The jobs of the job queue that failed for good (their handler gave up, or they used up
-        their attempts), most recently failed first. Needs the `manage_jobs` permission; a user
-        without it gets a 403 `/api/v1/problems/missing-permission`.
+        The jobs of the job queue by state and type, when the oldest due job has been waiting
+        since, and what the queue can list (ADR-0064). The database queue and the inline queue
+        list their pending jobs (`queued`, `running`, `retrying`); the queues of the platforms
+        (Cloud Tasks, SQS) do not (`pending_listing` is `false`): then `counts` is empty and the
+        backlog is read from the platform's metrics, while `GET /admin/jobs?state=dead` and the
+        attempts still list the dead jobs and the failed runs, which are in the database with
+        every queue. Needs the `manage_jobs`
+        permission; a user without it gets a 403 `/api/v1/problems/missing-permission`.
       tags: [admin-server]
       security:
         - oauth2: ["admin:read"]
-      parameters:
-        - $ref: "#/components/parameters/Cursor"
-        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          description: A page of dead jobs.
+          description: The state of the queue.
           headers:
             Cache-Control:
               $ref: "#/components/headers/CacheControl"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminDeadJobPage"
+                $ref: "#/components/schemas/AdminQueue"
         default:
           $ref: "#/components/responses/Problem"
-  /admin/dead_jobs/{id}/retry:
+  /admin/jobs:
+    get:
+      operationId: listAdminJobs
+      summary: List the jobs of the job queue
+      description: |
+        The jobs in one state, or the pending jobs of every state when `state` is omitted.
+        Pending jobs (`queued`, `running`, `retrying`) come the earliest `run_at` first; on a
+        queue that cannot list them (`pending_listing` of `GET /admin/queue` is `false`) the page
+        is empty. Dead jobs (`state=dead`) come the most recently failed first. Needs the
+        `manage_jobs` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: state
+          in: query
+          required: false
+          description: Keep only the jobs in this state; omitted keeps the pending ones.
+          schema:
+            $ref: "#/components/schemas/AdminJobState"
+        - name: type
+          in: query
+          required: false
+          description: Keep only the jobs of this type, such as `federation.deliver`.
+          schema:
+            type: string
+            maxLength: 200
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of jobs.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/jobs/{id}/attempts:
+    get:
+      operationId: listAdminJobAttempts
+      summary: List the attempts of a job that did not succeed
+      description: |
+        The records of the runs of the job that did not succeed (a retry, or the run that made
+        it a dead job), the most recently finished first. Successful runs are not recorded, and
+        records are deleted after the server's `job_attempt_retention`, so a job without
+        failures, or an unknown ID, has an empty page. A requeued dead job counts its attempts
+        again from 1. Needs the `manage_jobs` permission.
+      tags: [admin-server]
+      security:
+        - oauth2: ["admin:read"]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the job.
+          schema:
+            $ref: "#/components/schemas/Id"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of attempts.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminJobAttemptPage"
+        default:
+          $ref: "#/components/responses/Problem"
+  /admin/jobs/{id}/retry:
     post:
-      operationId: retryDeadJob
+      operationId: retryAdminJob
       summary: Run a dead job again
       description: |
         Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
         the dead jobs. When a pending job has the same idempotency key, that job stands in for
-        it. An unknown ID, or one already retried, is a 404. Needs the `manage_jobs` permission.
+        it. An unknown ID, one that is not a dead job, or one already retried, is a 404. Needs
+        the `manage_jobs` permission.
       tags: [admin-server]
       security:
         - oauth2: ["admin:write"]
@@ -7916,16 +7994,25 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/AdminAvailabilityEvent"
-    AdminDeadJob:
-      description: A job that failed for good.
+    AdminJobState:
+      description: |
+        The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
+        `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
+        failed for good (its handler gave up, or it used up its attempts).
+      type: string
+      enum: [queued, running, retrying, dead]
+    AdminJob:
+      description: A job of the job queue.
       type: object
-      required: [id, type, payload, attempts, last_error, created_at, failed_at]
+      required: [id, type, state, payload, attempts, created_at]
       properties:
         id:
           $ref: "#/components/schemas/Id"
         type:
           description: The job type, such as `federation.deliver`.
           type: string
+        state:
+          $ref: "#/components/schemas/AdminJobState"
         payload:
           description: The job's payload, a JSON document as text.
           type: string
@@ -7934,20 +8021,32 @@ components:
         ordering_key:
           type: string
         attempts:
-          description: The number of runs the job had.
+          description: The number of runs the job had, the one in progress included.
           type: integer
           minimum: 0
         last_error:
-          description: Why the last run failed.
+          description: Why the last run failed; omitted for a job whose runs did not fail.
           type: string
+        run_at:
+          description: When a pending job is due; omitted for a dead job.
+          type: string
+          format: date-time
+        worker:
+          description: The worker that runs a `running` job.
+          type: string
+        locked_until:
+          description: When the lease of a `running` job ends; another worker may run it after.
+          type: string
+          format: date-time
         created_at:
           type: string
           format: date-time
         failed_at:
+          description: When a dead job failed.
           type: string
           format: date-time
-    AdminDeadJobPage:
-      description: A page of dead jobs, most recently failed first.
+    AdminJobPage:
+      description: A page of jobs.
       allOf:
         - $ref: "#/components/schemas/PageInfo"
         - type: object
@@ -7956,7 +8055,83 @@ components:
             items:
               type: array
               items:
-                $ref: "#/components/schemas/AdminDeadJob"
+                $ref: "#/components/schemas/AdminJob"
+    AdminJobCount:
+      description: The number of jobs of one type in one state.
+      type: object
+      required: [state, type, count]
+      properties:
+        state:
+          $ref: "#/components/schemas/AdminJobState"
+        type:
+          type: string
+        count:
+          type: integer
+          format: int64
+          minimum: 1
+    AdminQueue:
+      description: The state of the job queue (ADR-0064).
+      type: object
+      required: [adapter, pending_listing, counts]
+      properties:
+        adapter:
+          description: The queue the server runs, the `queue` setting (`db`, `inline`, `sqs`, `cloudtasks`).
+          type: string
+        pending_listing:
+          description: Whether the queue lists its pending jobs (`queued`, `running`, `retrying`).
+          type: boolean
+        counts:
+          description: |
+            The jobs by state (`queued`, `running`, `retrying`, `dead`) then type; states and
+            types without jobs are left out. Empty without `pending_listing`.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminJobCount"
+        oldest_ready_at:
+          description: |
+            The earliest `run_at` among the due jobs that no worker holds: how long the queue
+            has kept a job waiting. Omitted when no job waits, or without `pending_listing`.
+          type: string
+          format: date-time
+    AdminJobAttempt:
+      description: A run of a job that did not succeed.
+      type: object
+      required: [attempt, type, outcome, error, worker, started_at, finished_at]
+      properties:
+        attempt:
+          description: The number of the run, from 1.
+          type: integer
+          minimum: 1
+        type:
+          description: The job type.
+          type: string
+        outcome:
+          description: "`retry`: the job runs again. `dead`: it failed for good."
+          type: string
+          enum: [retry, dead]
+        error:
+          description: Why the run failed, at most 2,000 bytes.
+          type: string
+        worker:
+          description: The worker that ran it.
+          type: string
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+    AdminJobAttemptPage:
+      description: A page of attempts, the most recently finished first.
+      allOf:
+        - $ref: "#/components/schemas/PageInfo"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/AdminJobAttempt"
     AdminInstanceHealth:
       description: Whether deliveries go to a remote server (federation.md §7.3).
       type: object

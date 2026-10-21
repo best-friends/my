@@ -667,6 +667,48 @@ func (e AdminInviteState) Valid() bool {
 	}
 }
 
+// Defines values for AdminJobAttemptOutcome.
+const (
+	AdminJobAttemptOutcomeDead  AdminJobAttemptOutcome = "dead"
+	AdminJobAttemptOutcomeRetry AdminJobAttemptOutcome = "retry"
+)
+
+// Valid indicates whether the value is a known member of the AdminJobAttemptOutcome enum.
+func (e AdminJobAttemptOutcome) Valid() bool {
+	switch e {
+	case AdminJobAttemptOutcomeDead:
+		return true
+	case AdminJobAttemptOutcomeRetry:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminJobState.
+const (
+	AdminJobStateDead     AdminJobState = "dead"
+	AdminJobStateQueued   AdminJobState = "queued"
+	AdminJobStateRetrying AdminJobState = "retrying"
+	AdminJobStateRunning  AdminJobState = "running"
+)
+
+// Valid indicates whether the value is a known member of the AdminJobState enum.
+func (e AdminJobState) Valid() bool {
+	switch e {
+	case AdminJobStateDead:
+		return true
+	case AdminJobStateQueued:
+		return true
+	case AdminJobStateRetrying:
+		return true
+	case AdminJobStateRunning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminReportCategory.
 const (
 	AdminReportCategoryLegal     AdminReportCategory = "legal"
@@ -2658,38 +2700,6 @@ type AdminCustomEmojiPage struct {
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
 }
 
-// AdminDeadJob A job that failed for good.
-type AdminDeadJob struct {
-	// Attempts The number of runs the job had.
-	Attempts  int       `json:"attempts"`
-	CreatedAt time.Time `json:"created_at"`
-	FailedAt  time.Time `json:"failed_at"`
-
-	// Id The ID of a resource, a UUIDv7 in its canonical string form.
-	//
-	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
-	Id             Id      `json:"id"`
-	IdempotencyKey *string `json:"idempotency_key,omitempty"`
-
-	// LastError Why the last run failed.
-	LastError   string  `json:"last_error"`
-	OrderingKey *string `json:"ordering_key,omitempty"`
-
-	// Payload The job's payload, a JSON document as text.
-	Payload string `json:"payload"`
-
-	// Type The job type, such as `federation.deliver`.
-	Type string `json:"type"`
-}
-
-// AdminDeadJobPage A page of dead jobs, most recently failed first.
-type AdminDeadJobPage struct {
-	Items []AdminDeadJob `json:"items"`
-
-	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
-	NextCursor *Cursor `json:"next_cursor,omitempty"`
-}
-
 // AdminDomainAction A moderation action on a remote domain and its subdomains (FR-702).
 type AdminDomainAction struct {
 	// Domain The domain, in IDNA A-labels.
@@ -2837,6 +2847,101 @@ type AdminInvitePage struct {
 // `max_uses` times.
 type AdminInviteState string
 
+// AdminJob A job of the job queue.
+type AdminJob struct {
+	// Attempts The number of runs the job had, the one in progress included.
+	Attempts  int       `json:"attempts"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// FailedAt When a dead job failed.
+	FailedAt *time.Time `json:"failed_at,omitempty"`
+
+	// Id The ID of a resource, a UUIDv7 in its canonical string form.
+	//
+	// Examples: 01890a5d-ac96-774b-bcce-b302099a8057
+	Id             Id      `json:"id"`
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
+	// LastError Why the last run failed; omitted for a job whose runs did not fail.
+	LastError *string `json:"last_error,omitempty"`
+
+	// LockedUntil When the lease of a `running` job ends; another worker may run it after.
+	LockedUntil *time.Time `json:"locked_until,omitempty"`
+	OrderingKey *string    `json:"ordering_key,omitempty"`
+
+	// Payload The job's payload, a JSON document as text.
+	Payload string `json:"payload"`
+
+	// RunAt When a pending job is due; omitted for a dead job.
+	RunAt *time.Time `json:"run_at,omitempty"`
+
+	// State The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
+	// `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
+	// failed for good (its handler gave up, or it used up its attempts).
+	State AdminJobState `json:"state"`
+
+	// Type The job type, such as `federation.deliver`.
+	Type string `json:"type"`
+
+	// Worker The worker that runs a `running` job.
+	Worker *string `json:"worker,omitempty"`
+}
+
+// AdminJobAttempt A run of a job that did not succeed.
+type AdminJobAttempt struct {
+	// Attempt The number of the run, from 1.
+	Attempt int `json:"attempt"`
+
+	// Error Why the run failed, at most 2,000 bytes.
+	Error      string    `json:"error"`
+	FinishedAt time.Time `json:"finished_at"`
+
+	// Outcome `retry`: the job runs again. `dead`: it failed for good.
+	Outcome   AdminJobAttemptOutcome `json:"outcome"`
+	StartedAt time.Time              `json:"started_at"`
+
+	// Type The job type.
+	Type string `json:"type"`
+
+	// Worker The worker that ran it.
+	Worker string `json:"worker"`
+}
+
+// AdminJobAttemptOutcome `retry`: the job runs again. `dead`: it failed for good.
+type AdminJobAttemptOutcome string
+
+// AdminJobAttemptPage A page of attempts, the most recently finished first.
+type AdminJobAttemptPage struct {
+	Items []AdminJobAttempt `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminJobCount The number of jobs of one type in one state.
+type AdminJobCount struct {
+	Count int64 `json:"count"`
+
+	// State The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
+	// `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
+	// failed for good (its handler gave up, or it used up its attempts).
+	State AdminJobState `json:"state"`
+	Type  string        `json:"type"`
+}
+
+// AdminJobPage A page of jobs.
+type AdminJobPage struct {
+	Items []AdminJob `json:"items"`
+
+	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// AdminJobState The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
+// `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
+// failed for good (its handler gave up, or it used up its attempts).
+type AdminJobState string
+
 // AdminPasswordResetLink A password reset link that an administrator issued for a local account (FR-002). It is
 // shown once.
 type AdminPasswordResetLink struct {
@@ -2845,6 +2950,23 @@ type AdminPasswordResetLink struct {
 
 	// Url The link that sets a new password; it works once.
 	Url string `json:"url"`
+}
+
+// AdminQueue The state of the job queue (ADR-0064).
+type AdminQueue struct {
+	// Adapter The queue the server runs, the `queue` setting (`db`, `inline`, `sqs`, `cloudtasks`).
+	Adapter string `json:"adapter"`
+
+	// Counts The jobs by state (`queued`, `running`, `retrying`, `dead`) then type; states and
+	// types without jobs are left out. Empty without `pending_listing`.
+	Counts []AdminJobCount `json:"counts"`
+
+	// OldestReadyAt The earliest `run_at` among the due jobs that no worker holds: how long the queue
+	// has kept a job waiting. Omitted when no job waits, or without `pending_listing`.
+	OldestReadyAt *time.Time `json:"oldest_ready_at,omitempty"`
+
+	// PendingListing Whether the queue lists its pending jobs (`queued`, `running`, `retrying`).
+	PendingListing bool `json:"pending_listing"`
 }
 
 // AdminRegistration A user's registration as the moderators review it (FR-721).
@@ -6519,15 +6641,6 @@ type ListAdminCustomEmojisParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListDeadJobsParams defines parameters for ListDeadJobs.
-type ListDeadJobsParams struct {
-	// Cursor The `next_cursor` of the previous page; omitted for the first page.
-	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
-
-	// Limit The maximum number of items in the page.
-	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
 // ListDomainActionsParams defines parameters for ListDomainActions.
 type ListDomainActionsParams struct {
 	// Domain Keep only the actions on this domain (not those on its parent domains). It is
@@ -6567,6 +6680,30 @@ type ListInstanceAvailabilityEventsParams struct {
 
 // ListInvitesParams defines parameters for ListInvites.
 type ListInvitesParams struct {
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAdminJobsParams defines parameters for ListAdminJobs.
+type ListAdminJobsParams struct {
+	// State Keep only the jobs in this state; omitted keeps the pending ones.
+	State *AdminJobState `form:"state,omitempty" json:"state,omitempty"`
+
+	// Type Keep only the jobs of this type, such as `federation.deliver`.
+	Type *string `form:"type,omitempty" json:"type,omitempty"`
+
+	// Cursor The `next_cursor` of the previous page; omitted for the first page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit The maximum number of items in the page.
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListAdminJobAttemptsParams defines parameters for ListAdminJobAttempts.
+type ListAdminJobAttemptsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -7095,12 +7232,6 @@ type ServerInterface interface {
 	// ReplaceCustomEmojiImage Replace the image of a local custom emoji
 	// (PUT /admin/custom_emojis/{id}/image)
 	ReplaceCustomEmojiImage(w http.ResponseWriter, r *http.Request, id CustomEmojiId)
-	// ListDeadJobs List the dead jobs
-	// (GET /admin/dead_jobs)
-	ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams)
-	// RetryDeadJob Run a dead job again
-	// (POST /admin/dead_jobs/{id}/retry)
-	RetryDeadJob(w http.ResponseWriter, r *http.Request, id Id)
 	// ListDomainActions List the moderation actions on domains
 	// (GET /admin/domain_actions)
 	ListDomainActions(w http.ResponseWriter, r *http.Request, params ListDomainActionsParams)
@@ -7152,6 +7283,18 @@ type ServerInterface interface {
 	// RevokeInvite Revoke an invite
 	// (POST /admin/invites/{id}/revoke)
 	RevokeInvite(w http.ResponseWriter, r *http.Request, id InviteId)
+	// ListAdminJobs List the jobs of the job queue
+	// (GET /admin/jobs)
+	ListAdminJobs(w http.ResponseWriter, r *http.Request, params ListAdminJobsParams)
+	// ListAdminJobAttempts List the attempts of a job that did not succeed
+	// (GET /admin/jobs/{id}/attempts)
+	ListAdminJobAttempts(w http.ResponseWriter, r *http.Request, id Id, params ListAdminJobAttemptsParams)
+	// RetryAdminJob Run a dead job again
+	// (POST /admin/jobs/{id}/retry)
+	RetryAdminJob(w http.ResponseWriter, r *http.Request, id Id)
+	// GetAdminQueue Get the state of the job queue
+	// (GET /admin/queue)
+	GetAdminQueue(w http.ResponseWriter, r *http.Request)
 	// ListPendingRegistrations List the registrations that await approval
 	// (GET /admin/registrations)
 	ListPendingRegistrations(w http.ResponseWriter, r *http.Request, params ListPendingRegistrationsParams)
@@ -9211,78 +9354,6 @@ func (siw *ServerInterfaceWrapper) ReplaceCustomEmojiImage(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
-// ListDeadJobs operation middleware
-func (siw *ServerInterfaceWrapper) ListDeadJobs(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params ListDeadJobsParams
-
-	// ------------- Optional query parameter "cursor" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
-		}
-		return
-	}
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
-	if err != nil {
-		var requiredError *runtime.RequiredParameterError
-		if errors.As(err, &requiredError) {
-			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
-		} else {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
-		}
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListDeadJobs(w, r, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// RetryDeadJob operation middleware
-func (siw *ServerInterfaceWrapper) RetryDeadJob(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "id" -------------
-	var id Id
-
-	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RetryDeadJob(w, r, id)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // ListDomainActions operation middleware
 func (siw *ServerInterfaceWrapper) ListDomainActions(w http.ResponseWriter, r *http.Request) {
 
@@ -9772,6 +9843,173 @@ func (siw *ServerInterfaceWrapper) RevokeInvite(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RevokeInvite(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminJobs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAdminJobsParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminJobs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminJobAttempts operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminJobAttempts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAdminJobAttemptsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminJobAttempts(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryAdminJob operation middleware
+func (siw *ServerInterfaceWrapper) RetryAdminJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Id
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", r.PathValue("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryAdminJob(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminQueue operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminQueue(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminQueue(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13052,8 +13290,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/reports", wrapper.CreateReport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/announcements", wrapper.ListAnnouncements)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/announcements/{id}/read", wrapper.MarkAnnouncementRead)
-	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/dead_jobs", wrapper.ListDeadJobs)
-	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/dead_jobs/{id}/retry", wrapper.RetryDeadJob)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/queue", wrapper.GetAdminQueue)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/jobs", wrapper.ListAdminJobs)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/jobs/{id}/attempts", wrapper.ListAdminJobAttempts)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/jobs/{id}/retry", wrapper.RetryAdminJob)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances", wrapper.ListInstanceHealth)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}", wrapper.GetInstanceHealth)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}/availability_events", wrapper.ListInstanceAvailabilityEvents)
@@ -16392,114 +16632,6 @@ func (response ReplaceCustomEmojiImagedefaultApplicationProblemPlusJSONResponse)
 	return err
 }
 
-type ListDeadJobsRequestObject struct {
-	Params ListDeadJobsParams
-}
-
-type ListDeadJobsResponseObject interface {
-	VisitListDeadJobsResponse(w http.ResponseWriter) error
-}
-
-type ListDeadJobs200ResponseHeaders struct {
-	CacheControl *string
-}
-
-type ListDeadJobs200JSONResponse struct {
-	Body    AdminDeadJobPage
-	Headers ListDeadJobs200ResponseHeaders
-}
-
-func (response ListDeadJobs200JSONResponse) VisitListDeadJobsResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if response.Headers.CacheControl != nil {
-		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
-	}
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type ListDeadJobsdefaultApplicationProblemPlusJSONResponse struct {
-	Body       Problem
-	Headers    ProblemResponseHeaders
-	StatusCode int
-}
-
-func (response ListDeadJobsdefaultApplicationProblemPlusJSONResponse) VisitListDeadJobsResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/problem+json")
-	if response.Headers.CacheControl != nil {
-		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
-	}
-	if response.Headers.ContentLanguage != nil {
-		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
-	}
-	if response.Headers.RetryAfter != nil {
-		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
-	}
-	if response.Headers.WWWAuthenticate != nil {
-		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
-	}
-	w.WriteHeader(response.StatusCode)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type RetryDeadJobRequestObject struct {
-	Id Id `json:"id"`
-}
-
-type RetryDeadJobResponseObject interface {
-	VisitRetryDeadJobResponse(w http.ResponseWriter) error
-}
-
-type RetryDeadJob204Response struct {
-}
-
-func (response RetryDeadJob204Response) VisitRetryDeadJobResponse(w http.ResponseWriter) error {
-	w.WriteHeader(204)
-	return nil
-}
-
-type RetryDeadJobdefaultApplicationProblemPlusJSONResponse struct {
-	Body       Problem
-	Headers    ProblemResponseHeaders
-	StatusCode int
-}
-
-func (response RetryDeadJobdefaultApplicationProblemPlusJSONResponse) VisitRetryDeadJobResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/problem+json")
-	if response.Headers.CacheControl != nil {
-		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
-	}
-	if response.Headers.ContentLanguage != nil {
-		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
-	}
-	if response.Headers.RetryAfter != nil {
-		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
-	}
-	if response.Headers.WWWAuthenticate != nil {
-		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
-	}
-	w.WriteHeader(response.StatusCode)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
 type ListDomainActionsRequestObject struct {
 	Params ListDomainActionsParams
 }
@@ -17478,6 +17610,238 @@ type RevokeInvitedefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response RevokeInvitedefaultApplicationProblemPlusJSONResponse) VisitRevokeInviteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminJobsRequestObject struct {
+	Params ListAdminJobsParams
+}
+
+type ListAdminJobsResponseObject interface {
+	VisitListAdminJobsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminJobs200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminJobs200JSONResponse struct {
+	Body    AdminJobPage
+	Headers ListAdminJobs200ResponseHeaders
+}
+
+func (response ListAdminJobs200JSONResponse) VisitListAdminJobsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminJobsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminJobsdefaultApplicationProblemPlusJSONResponse) VisitListAdminJobsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminJobAttemptsRequestObject struct {
+	Id     Id `json:"id"`
+	Params ListAdminJobAttemptsParams
+}
+
+type ListAdminJobAttemptsResponseObject interface {
+	VisitListAdminJobAttemptsResponse(w http.ResponseWriter) error
+}
+
+type ListAdminJobAttempts200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListAdminJobAttempts200JSONResponse struct {
+	Body    AdminJobAttemptPage
+	Headers ListAdminJobAttempts200ResponseHeaders
+}
+
+func (response ListAdminJobAttempts200JSONResponse) VisitListAdminJobAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAdminJobAttemptsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListAdminJobAttemptsdefaultApplicationProblemPlusJSONResponse) VisitListAdminJobAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RetryAdminJobRequestObject struct {
+	Id Id `json:"id"`
+}
+
+type RetryAdminJobResponseObject interface {
+	VisitRetryAdminJobResponse(w http.ResponseWriter) error
+}
+
+type RetryAdminJob204Response struct {
+}
+
+func (response RetryAdminJob204Response) VisitRetryAdminJobResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RetryAdminJobdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RetryAdminJobdefaultApplicationProblemPlusJSONResponse) VisitRetryAdminJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminQueueRequestObject struct {
+}
+
+type GetAdminQueueResponseObject interface {
+	VisitGetAdminQueueResponse(w http.ResponseWriter) error
+}
+
+type GetAdminQueue200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetAdminQueue200JSONResponse struct {
+	Body    AdminQueue
+	Headers GetAdminQueue200ResponseHeaders
+}
+
+func (response GetAdminQueue200JSONResponse) VisitGetAdminQueueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminQueuedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetAdminQueuedefaultApplicationProblemPlusJSONResponse) VisitGetAdminQueueResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -24705,12 +25069,6 @@ type StrictServerInterface interface {
 	// ReplaceCustomEmojiImage Replace the image of a local custom emoji
 	// (PUT /admin/custom_emojis/{id}/image)
 	ReplaceCustomEmojiImage(ctx context.Context, request ReplaceCustomEmojiImageRequestObject) (ReplaceCustomEmojiImageResponseObject, error)
-	// ListDeadJobs List the dead jobs
-	// (GET /admin/dead_jobs)
-	ListDeadJobs(ctx context.Context, request ListDeadJobsRequestObject) (ListDeadJobsResponseObject, error)
-	// RetryDeadJob Run a dead job again
-	// (POST /admin/dead_jobs/{id}/retry)
-	RetryDeadJob(ctx context.Context, request RetryDeadJobRequestObject) (RetryDeadJobResponseObject, error)
 	// ListDomainActions List the moderation actions on domains
 	// (GET /admin/domain_actions)
 	ListDomainActions(ctx context.Context, request ListDomainActionsRequestObject) (ListDomainActionsResponseObject, error)
@@ -24762,6 +25120,18 @@ type StrictServerInterface interface {
 	// RevokeInvite Revoke an invite
 	// (POST /admin/invites/{id}/revoke)
 	RevokeInvite(ctx context.Context, request RevokeInviteRequestObject) (RevokeInviteResponseObject, error)
+	// ListAdminJobs List the jobs of the job queue
+	// (GET /admin/jobs)
+	ListAdminJobs(ctx context.Context, request ListAdminJobsRequestObject) (ListAdminJobsResponseObject, error)
+	// ListAdminJobAttempts List the attempts of a job that did not succeed
+	// (GET /admin/jobs/{id}/attempts)
+	ListAdminJobAttempts(ctx context.Context, request ListAdminJobAttemptsRequestObject) (ListAdminJobAttemptsResponseObject, error)
+	// RetryAdminJob Run a dead job again
+	// (POST /admin/jobs/{id}/retry)
+	RetryAdminJob(ctx context.Context, request RetryAdminJobRequestObject) (RetryAdminJobResponseObject, error)
+	// GetAdminQueue Get the state of the job queue
+	// (GET /admin/queue)
+	GetAdminQueue(ctx context.Context, request GetAdminQueueRequestObject) (GetAdminQueueResponseObject, error)
 	// ListPendingRegistrations List the registrations that await approval
 	// (GET /admin/registrations)
 	ListPendingRegistrations(ctx context.Context, request ListPendingRegistrationsRequestObject) (ListPendingRegistrationsResponseObject, error)
@@ -26599,58 +26969,6 @@ func (sh *strictHandler) ReplaceCustomEmojiImage(w http.ResponseWriter, r *http.
 	}
 }
 
-// ListDeadJobs operation middleware
-func (sh *strictHandler) ListDeadJobs(w http.ResponseWriter, r *http.Request, params ListDeadJobsParams) {
-	var request ListDeadJobsRequestObject
-
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.ListDeadJobs(ctx, request.(ListDeadJobsRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "ListDeadJobs")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(ListDeadJobsResponseObject); ok {
-		if err := validResponse.VisitListDeadJobsResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// RetryDeadJob operation middleware
-func (sh *strictHandler) RetryDeadJob(w http.ResponseWriter, r *http.Request, id Id) {
-	var request RetryDeadJobRequestObject
-
-	request.Id = id
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.RetryDeadJob(ctx, request.(RetryDeadJobRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "RetryDeadJob")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(RetryDeadJobResponseObject); ok {
-		if err := validResponse.VisitRetryDeadJobResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ListDomainActions operation middleware
 func (sh *strictHandler) ListDomainActions(w http.ResponseWriter, r *http.Request, params ListDomainActionsParams) {
 	var request ListDomainActionsRequestObject
@@ -27110,6 +27428,109 @@ func (sh *strictHandler) RevokeInvite(w http.ResponseWriter, r *http.Request, id
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RevokeInviteResponseObject); ok {
 		if err := validResponse.VisitRevokeInviteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminJobs operation middleware
+func (sh *strictHandler) ListAdminJobs(w http.ResponseWriter, r *http.Request, params ListAdminJobsParams) {
+	var request ListAdminJobsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminJobs(ctx, request.(ListAdminJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminJobsResponseObject); ok {
+		if err := validResponse.VisitListAdminJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminJobAttempts operation middleware
+func (sh *strictHandler) ListAdminJobAttempts(w http.ResponseWriter, r *http.Request, id Id, params ListAdminJobAttemptsParams) {
+	var request ListAdminJobAttemptsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminJobAttempts(ctx, request.(ListAdminJobAttemptsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminJobAttempts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminJobAttemptsResponseObject); ok {
+		if err := validResponse.VisitListAdminJobAttemptsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetryAdminJob operation middleware
+func (sh *strictHandler) RetryAdminJob(w http.ResponseWriter, r *http.Request, id Id) {
+	var request RetryAdminJobRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetryAdminJob(ctx, request.(RetryAdminJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetryAdminJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetryAdminJobResponseObject); ok {
+		if err := validResponse.VisitRetryAdminJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminQueue operation middleware
+func (sh *strictHandler) GetAdminQueue(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminQueueRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminQueue(ctx, request.(GetAdminQueueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminQueue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminQueueResponseObject); ok {
+		if err := validResponse.VisitGetAdminQueueResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -5,7 +5,9 @@
 //
 // Queue keeps jobs in the jobs table and implements queue.JobQueue, queue.Outbox (it inserts
 // into jobs in the caller's transaction, so no relay is needed), queue.Source for
-// queue.PullRunner, and queue.DeadJobs. Claims are leases recorded in jobs.locked_by and
+// queue.PullRunner, queue.DeadJobs, and, for the queue dashboard (ADR-0064), queue.JobInspector and
+// queue.AttemptLog. The attempt log is in the application database whatever queue the server runs, so the
+// server uses a Queue as its attempt log with every queue adapter. Claims are leases recorded in jobs.locked_by and
 // jobs.locked_until: a worker that stops while running a job leaves the lease to expire, and
 // another worker claims the job again.
 //

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the server administration feature (web-client.md §7): the dead jobs, the settings, the rules, the
+// The default MSW handlers of the server administration feature (web-client.md §7): the job queue, the settings, the rules, the
 // server's texts, the custom emoji, the webhooks, the announcements, and the relays, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
@@ -174,9 +174,11 @@ export const handlers = [
     return withViewer(request, () => HttpResponse.json(role));
   }),
   http.delete(`${apiBase}/admin/roles/:role`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
-  // operationIds listDeadJobs, retryDeadJob.
-  http.get(`${apiBase}/admin/dead_jobs`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
-  http.post(`${apiBase}/admin/dead_jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  // operationIds getAdminQueue, listAdminJobs, listAdminJobAttempts, retryAdminJob: a database queue without jobs.
+  http.get(`${apiBase}/admin/queue`, ({ request }) => withViewer(request, () => HttpResponse.json({ adapter: "db", pending_listing: true, counts: [] }))),
+  http.get(`${apiBase}/admin/jobs`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.get(`${apiBase}/admin/jobs/:id/attempts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
+  http.post(`${apiBase}/admin/jobs/:id/retry`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds listInstanceTexts, setInstanceText: no texts; a new text is recorded as sent, at 2026-10-17T00:00:00Z.
   http.get(`${apiBase}/admin/instance_texts`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),
   http.put(`${apiBase}/admin/instance_texts/:key`, async ({ request, params }) => {

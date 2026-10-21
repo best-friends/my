@@ -35,7 +35,7 @@ type store interface {
 	deleteClaimed(ctx context.Context, tx uow.Tx, id, worker string, attempt int) (int64, error)
 	release(ctx context.Context, tx uow.Tx, id, worker string, attempt, newAttempt int, runAt time.Time, lastErr string) (int64, error)
 	insertDeadFromClaim(ctx context.Context, tx uow.Tx, id, worker string, attempt int, lastErr string, failedAt time.Time) (int64, error)
-	listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error)
+	listDead(ctx context.Context, tx uow.Tx, jobType string, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error)
 	requeueDead(ctx context.Context, tx uow.Tx, id string, runAt time.Time) error
 	deleteDead(ctx context.Context, tx uow.Tx, id string) (int64, error)
 	deleteDeadBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error)
@@ -43,6 +43,11 @@ type store interface {
 	listOutbox(ctx context.Context, tx uow.Tx, limit int) ([]queue.Job, error)
 	deleteOutbox(ctx context.Context, tx uow.Tx, id string) error
 	backlog(ctx context.Context, tx uow.Tx, now time.Time) (queue.Backlog, error)
+	listPending(ctx context.Context, tx uow.Tx, now time.Time, f queue.JobFilter, after queue.JobPosition, limit int) ([]queue.PendingJob, error)
+	summarize(ctx context.Context, tx uow.Tx, now time.Time) (queue.JobSummary, error)
+	insertAttempt(ctx context.Context, tx uow.Tx, a queue.Attempt) error
+	listAttempts(ctx context.Context, tx uow.Tx, jobID string, after queue.AttemptPosition, limit int) ([]queue.Attempt, error)
+	deleteAttemptsBefore(ctx context.Context, tx uow.Tx, before time.Time, limit int) (int64, error)
 }
 
 // Queue is the database job queue.
@@ -58,6 +63,8 @@ var (
 	_ queue.Source        = (*Queue)(nil)
 	_ queue.DeadJobs      = (*Queue)(nil)
 	_ queue.BacklogReader = (*Queue)(nil)
+	_ queue.JobInspector  = (*Queue)(nil)
+	_ queue.AttemptLog    = (*Queue)(nil)
 )
 
 // build turns new jobs into stored jobs with fresh IDs, traced from the span of ctx.
@@ -160,14 +167,14 @@ func claimResult(op string, rows int64, err error) error {
 }
 
 // ListDeadJobs implements queue.DeadJobs.
-func (q *Queue) ListDeadJobs(ctx context.Context, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
+func (q *Queue) ListDeadJobs(ctx context.Context, jobType string, after queue.DeadJobPosition, limit int) ([]queue.DeadJob, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
 	var out []queue.DeadJob
 	err := q.db.Tx(ctx, func(tx uow.Tx) error {
 		var err error
-		out, err = q.st.listDead(ctx, tx, after, limit)
+		out, err = q.st.listDead(ctx, tx, jobType, after, limit)
 		return err
 	})
 	if err != nil {
@@ -241,4 +248,94 @@ func (q *Queue) Backlog(ctx context.Context, now time.Time) (queue.Backlog, erro
 		return queue.Backlog{}, fmt.Errorf("queue/db: backlog: %w", err)
 	}
 	return b, nil
+}
+
+// ListJobs implements queue.JobInspector.
+func (q *Queue) ListJobs(ctx context.Context, now time.Time, f queue.JobFilter, after queue.JobPosition, limit int) ([]queue.PendingJob, error) {
+	if limit <= 0 || f.State == queue.JobStateDead {
+		return nil, nil
+	}
+	var out []queue.PendingJob
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		out, err = q.st.listPending(ctx, tx, kernel.Normalize(now), f, queue.JobPosition{RunAt: kernel.Normalize(after.RunAt), ID: after.ID}, limit)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("queue/db: list jobs: %w", err)
+	}
+	return out, nil
+}
+
+// SummarizeJobs implements queue.JobInspector.
+func (q *Queue) SummarizeJobs(ctx context.Context, now time.Time) (queue.JobSummary, error) {
+	var s queue.JobSummary
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		s, err = q.st.summarize(ctx, tx, kernel.Normalize(now))
+		return err
+	})
+	if err != nil {
+		return queue.JobSummary{}, fmt.Errorf("queue/db: summarize jobs: %w", err)
+	}
+	return s, nil
+}
+
+// pendingJob sets the state of j at now.
+func pendingJob(now time.Time, j queue.PendingJob) queue.PendingJob {
+	j.State = queue.StateAt(now, j.Attempt, j.LockedUntil)
+	if j.State != queue.JobStateRunning {
+		// An expired lease is no longer the job's: another worker may claim it.
+		j.Worker, j.LockedUntil = "", time.Time{}
+	}
+	return j
+}
+
+func sortCounts(c []queue.JobCount) []queue.JobCount { return queue.SortJobCounts(c) }
+
+// RecordAttempt implements queue.AttemptLog, in a transaction of its own. The records live in
+// the application database whatever queue the server runs, so the server uses a Queue as the
+// attempt log with every queue adapter (ADR-0064 §1).
+func (q *Queue) RecordAttempt(ctx context.Context, a queue.Attempt) error {
+	a.Error = queue.TruncateAttemptError(a.Error)
+	a.StartedAt, a.FinishedAt = kernel.Normalize(a.StartedAt), kernel.Normalize(a.FinishedAt)
+	err := q.db.Tx(ctx, func(tx uow.Tx) error { return q.st.insertAttempt(ctx, tx, a) })
+	if err != nil {
+		return fmt.Errorf("queue/db: record attempt: %w", err)
+	}
+	return nil
+}
+
+// ListAttempts implements queue.AttemptLog.
+func (q *Queue) ListAttempts(ctx context.Context, jobID string, after queue.AttemptPosition, limit int) ([]queue.Attempt, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	var out []queue.Attempt
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		out, err = q.st.listAttempts(ctx, tx, jobID, queue.AttemptPosition{FinishedAt: kernel.Normalize(after.FinishedAt), Attempt: after.Attempt}, limit)
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("queue/db: list attempts: %w", err)
+	}
+	return out, nil
+}
+
+// DeleteAttemptsBefore implements queue.AttemptLog, in one short transaction.
+func (q *Queue) DeleteAttemptsBefore(ctx context.Context, before time.Time, limit int) (int64, error) {
+	if limit <= 0 {
+		return 0, nil
+	}
+	var n int64
+	err := q.db.Tx(ctx, func(tx uow.Tx) error {
+		var err error
+		n, err = q.st.deleteAttemptsBefore(ctx, tx, kernel.Normalize(before), limit)
+		return err
+	})
+	if err != nil {
+		return 0, fmt.Errorf("queue/db: delete attempts: %w", err)
+	}
+	return n, nil
 }

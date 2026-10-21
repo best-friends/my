@@ -1967,61 +1967,197 @@
     "defaultMessage": "監査ログ",
     "description": "Heading of the admin screen that lists what moderators and administrators did."
   },
-  "admin.dead_jobs.attempts": {
+  "admin.jobs.attempts": {
     "defaultMessage": "試行回数",
-    "description": "Term in a failed job's details: how many times the job ran."
+    "description": "Term in a job's details: how many times the job ran."
   },
-  "admin.dead_jobs.created_at": {
+  "admin.jobs.created_at": {
     "defaultMessage": "作成日時",
-    "description": "Term in a failed job's details: when the job was enqueued first."
+    "description": "Term in a job's details: when the job was enqueued first."
   },
-  "admin.dead_jobs.empty": {
+  "admin.jobs.empty": {
+    "defaultMessage": "ジョブはありません",
+    "description": "Heading of the job list when no job is in the selected state."
+  },
+  "admin.jobs.empty.dead": {
     "defaultMessage": "失敗したジョブはありません",
-    "description": "Heading of the failed jobs screen when no job failed for good."
+    "description": "Heading of the job list of failed jobs when no job failed for good."
   },
-  "admin.dead_jobs.failed_at": {
+  "admin.jobs.failed_at": {
     "defaultMessage": "失敗した日時",
     "description": "Term in a failed job's details: when the job failed for good."
   },
-  "admin.dead_jobs.idempotency_key": {
+  "admin.jobs.filter.label": {
+    "defaultMessage": "ジョブの状態",
+    "description": "Accessible name of the tabs that filter the jobs by state."
+  },
+  "admin.jobs.filter.pending": {
+    "defaultMessage": "未完了",
+    "description": "Tab of the jobs screen with the jobs not done yet: waiting, running and retrying."
+  },
+  "admin.jobs.history.attempt": {
+    "defaultMessage": "{number, number} 回目の試行：{outcome}",
+    "description": "Heading of one record of a job's attempt history. {number} is the number of the run, from 1, formatted; {outcome} is admin.jobs.outcome.retry or admin.jobs.outcome.dead."
+  },
+  "admin.jobs.history.empty": {
+    "defaultMessage": "失敗した試行の記録はありません",
+    "description": "Heading of a job's attempt history when no failed run is recorded."
+  },
+  "admin.jobs.history.empty.description": {
+    "defaultMessage": "成功した実行は記録しません。記録は一定の期間の後に消えます。",
+    "description": "Description of an empty attempt history: why a job may have no records."
+  },
+  "admin.jobs.history.error": {
+    "defaultMessage": "エラー",
+    "description": "Term in a record of a job's attempt: why the run failed."
+  },
+  "admin.jobs.history.failed": {
+    "defaultMessage": "試行の記録を読み込めませんでした",
+    "description": "Heading in place of a job's attempt history when it failed to load."
+  },
+  "admin.jobs.history.finished_at": {
+    "defaultMessage": "終了",
+    "description": "Term in a record of a job's attempt: when the run ended."
+  },
+  "admin.jobs.history.loading": {
+    "defaultMessage": "試行の記録を読み込んでいます",
+    "description": "Accessible name of the spinner while the records of a job's attempts load."
+  },
+  "admin.jobs.history.more_failed": {
+    "defaultMessage": "続きの試行の記録を読み込めませんでした",
+    "description": "Message under a job's attempt history when its next page failed to load."
+  },
+  "admin.jobs.history.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that loads a job's attempt history again after it failed to load."
+  },
+  "admin.jobs.history.started_at": {
+    "defaultMessage": "開始",
+    "description": "Term in a record of a job's attempt: when the run started."
+  },
+  "admin.jobs.history.toggle": {
+    "defaultMessage": "試行の履歴",
+    "description": "Button of a job that shows or hides the records of its runs that failed."
+  },
+  "admin.jobs.history.toggle_job": {
+    "defaultMessage": "試行の履歴：{type}",
+    "description": "Accessible name of the attempt history button of a job, which names the job. {type} is the job type."
+  },
+  "admin.jobs.idempotency_key": {
     "defaultMessage": "冪等キー",
-    "description": "Term in a failed job's details: the key that keeps the job from being enqueued twice."
+    "description": "Term in a job's details: the key that keeps the job from being enqueued twice."
   },
-  "admin.dead_jobs.last_error": {
+  "admin.jobs.last_error": {
     "defaultMessage": "最後のエラー",
-    "description": "Term in a failed job's details: why the job's last run failed."
+    "description": "Term in a job's details: why the job's last run failed."
   },
-  "admin.dead_jobs.ordering_key": {
+  "admin.jobs.list.heading": {
+    "defaultMessage": "ジョブの一覧",
+    "description": "Heading of the region of the jobs screen with the list of jobs."
+  },
+  "admin.jobs.locked_until": {
+    "defaultMessage": "リースの期限",
+    "description": "Term in a running job's details: when the worker's hold on it ends, after which another worker may run it."
+  },
+  "admin.jobs.ordering_key": {
     "defaultMessage": "順序キー",
-    "description": "Term in a failed job's details: the key that runs the jobs with the same key one after another."
+    "description": "Term in a job's details: the key that runs the jobs with the same key one after another."
   },
-  "admin.dead_jobs.payload": {
+  "admin.jobs.outcome.dead": {
+    "defaultMessage": "失敗が確定",
+    "description": "Outcome of the failed run that made a job fail for good, in the heading of its record."
+  },
+  "admin.jobs.outcome.retry": {
+    "defaultMessage": "リトライ",
+    "description": "Outcome of a failed run of a job that runs again, in the heading of its record."
+  },
+  "admin.jobs.payload": {
     "defaultMessage": "ペイロード",
-    "description": "Term in a failed job's details: the job's input data, as JSON."
+    "description": "Term in a job's details: the job's input data, as JSON."
   },
-  "admin.dead_jobs.retried": {
+  "admin.jobs.queue.adapter": {
+    "defaultMessage": "キュー",
+    "description": "Term in the queue's details: the kind of job queue the server runs, such as db or sqs."
+  },
+  "admin.jobs.queue.by_type": {
+    "defaultMessage": "型ごとのジョブ",
+    "description": "Accessible name of the list of the counts of the jobs of each job type."
+  },
+  "admin.jobs.queue.heading": {
+    "defaultMessage": "キューの状態",
+    "description": "Heading of the region of the jobs screen with the counts of the jobs of the queue."
+  },
+  "admin.jobs.queue.no_listing": {
+    "defaultMessage": "このキューでは、待っている・実行中・リトライを待つジョブを一覧できません。滞留はプラットフォームの指標で確かめてください。失敗したジョブと試行の履歴は一覧できます。",
+    "description": "Note of the queue region when the queue (Cloud Tasks or SQS) cannot list its pending jobs."
+  },
+  "admin.jobs.queue.none_waiting": {
+    "defaultMessage": "待っているジョブはありません",
+    "description": "Value of the oldest waiting job when no due job waits."
+  },
+  "admin.jobs.queue.oldest_ready": {
+    "defaultMessage": "最も古い待ちのジョブの予定",
+    "description": "Term in the queue's details: since when the oldest due job that no worker runs has been waiting."
+  },
+  "admin.jobs.retried": {
     "defaultMessage": "ジョブ {type} をもう一度実行するようにキューに入れました。",
     "description": "Announcement after an operator ran a failed job again. {type} is the job type, such as federation.deliver."
   },
-  "admin.dead_jobs.retry": {
+  "admin.jobs.retry": {
     "defaultMessage": "再実行",
     "description": "Button of a failed job that runs it again."
   },
-  "admin.dead_jobs.retry_failed": {
+  "admin.jobs.retry_failed": {
     "defaultMessage": "ジョブを再実行できませんでした：{reason}",
     "description": "Error toast when a failed job could not be run again. {reason} is the server's localized reason."
   },
-  "admin.dead_jobs.retry_job": {
+  "admin.jobs.retry_job": {
     "defaultMessage": "再実行：{type}（{date} に失敗）",
     "description": "Accessible name of the run-again button of a failed job, which names the job. {type} is the job type; {date} is when it failed, formatted."
   },
-  "admin.dead_jobs.summary": {
-    "defaultMessage": "失敗したまま止まったバックグラウンドのジョブと、その再実行。",
-    "description": "Description of the failed jobs screen in the administration menu of the settings."
+  "admin.jobs.run_at": {
+    "defaultMessage": "実行予定",
+    "description": "Term in a job's details: when a pending job is due to run."
   },
-  "admin.dead_jobs.title": {
-    "defaultMessage": "失敗したジョブ",
-    "description": "Heading of the screen of background jobs that failed for good, and its link in the administration menu."
+  "admin.jobs.state": {
+    "defaultMessage": "状態",
+    "description": "Term in a job's details: its state, such as waiting or failed."
+  },
+  "admin.jobs.state.dead": {
+    "defaultMessage": "失敗",
+    "description": "State of a job that failed for good; also a tab and a count."
+  },
+  "admin.jobs.state.queued": {
+    "defaultMessage": "待ち",
+    "description": "State of a job that has not run yet; also a tab and a count."
+  },
+  "admin.jobs.state.retrying": {
+    "defaultMessage": "リトライ待ち",
+    "description": "State of a job that ran, failed, and waits to run again; also a tab and a count."
+  },
+  "admin.jobs.state.running": {
+    "defaultMessage": "実行中",
+    "description": "State of a job that a worker runs now; also a tab and a count."
+  },
+  "admin.jobs.summary": {
+    "defaultMessage": "待っている・実行中・リトライを待つ・失敗したバックグラウンドのジョブと、失敗の理由、失敗したジョブの再実行。",
+    "description": "Description of the jobs screen in the administration menu of the settings."
+  },
+  "admin.jobs.title": {
+    "defaultMessage": "ジョブ",
+    "description": "Heading of the admin screen of the background job queue (waiting, running, retrying and failed jobs), and its link in the administration menu."
+  },
+  "admin.jobs.unlisted": {
+    "defaultMessage": "このキューではこのジョブを一覧できません",
+    "description": "Heading in place of the list of pending jobs when the queue (Cloud Tasks or SQS) cannot list them."
+  },
+  "admin.jobs.unlisted.description": {
+    "defaultMessage": "滞留はプラットフォームの指標で確かめてください。失敗したジョブは「失敗」で一覧できます。",
+    "description": "Description in place of the list of pending jobs when the queue cannot list them."
+  },
+  "admin.jobs.worker": {
+    "defaultMessage": "ワーカー",
+    "description": "Term in a job's or an attempt's details: the name of the worker that runs or ran it."
   },
   "admin.documents.body": {
     "defaultMessage": "本文",

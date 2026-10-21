@@ -198,7 +198,7 @@ flowchart LR
 | `federation` | `received_activities`, `received_activity_documents`, `remote_object_tombstones`, `remote_follow_tombstones`, `outbound_activities`, `outbound_activity_documents`, `deliveries`, `delivery_attempts`, `remote_instances`, `instance_nodeinfo_observations`, `instance_availability_events` | `instance_health` |
 | `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_retirements`, `announcements`, `announcement_revisions`, `announcement_state_changes` | `instance_settings`, `instance_texts`, `instance_rule_heads`, `announcement_heads`, `announcement_reads` |
 | `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
-| 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `kv_entries` |
+| 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `job_attempts`, `kv_entries` |
 
 ### 4.1 identity
 
@@ -1237,6 +1237,7 @@ flowchart LR
 | `outbox_events` | `id`, `job_type`, `payload`（`document`）, `idempotency_key`（NULL 可）, `ordering_key`（NULL 可）, `trace_parent`（NULL 可）, `run_at`, `created_at` | — | PK 順に読み、キュー投入後に削除 |
 | `jobs`（`queue/db`） | `id`, `type`, `payload`（`document`）, `idempotency_key`（NULL 可）, `ordering_key`（NULL 可）, `trace_parent`（NULL 可）, `attempt`, `run_at`, `locked_by`（NULL 可）, `locked_until`（NULL 可）, `last_error`（NULL 可）, `created_at` | `(idempotency_key)` | `(run_at)`, `(ordering_key, run_at)` |
 | `dead_jobs` | `id`, `type`, `payload`（`document`）, `idempotency_key`（NULL 可）, `ordering_key`（NULL 可）, `trace_parent`（NULL 可）, `attempt`, `last_error`, `created_at`, `failed_at` | — | `(failed_at)` |
+| `job_attempts`（イベント） | `job_id`, `attempt`, `job_type`, `outcome`（`enum(retry, dead)`）, `error`（`text`、2,000 バイトまで）, `worker`, `started_at`, `finished_at` | PK `(job_id, attempt, finished_at)` | `(finished_at)` |
 | `kv_entries`（`kv/db`） | `namespace`, `key`, `value`（`bytes`）, `expires_at`（NULL 可 = 無期限） | PK `(namespace, key)` | `(expires_at)` |
 
 - ジョブのペイロードはアダプタ間を渡る「解釈しない文書」なので `document` 型です（ドメインのデータは入れず、ID を渡します）。
@@ -1247,6 +1248,12 @@ flowchart LR
   そのため `jobs (idempotency_key)` の一意制約は「未完了のジョブの間での一意」を表します。
 - `dead_jobs` は管理 API から再実行するまで残り、`failed_at` から設定 `dead_job_retention`（既定 30 日）を過ぎた行を 1 時間ごとの消去ジョブ `queue.purge_dead_jobs` が
   `DeadJobs.DeleteDeadJobsBefore` で古い順に、1 回 1,000 件・20 回まで消します（FR-803）。続きは次の回が消します。
+- `job_attempts` は【イベント】で、成功しなかったジョブの試行（`retry` と `dead`）を 1 試行 1 行で記録します（[ADR-0064](../adr/0064-queue-job-dashboard.md)）。
+  成功した試行は記録しないので、書き込みは失敗の数にだけ比例します。runner が `queue.AttemptLog` を通して、キューのアダプタによらずアプリの DB に書き、記録の失敗はジョブの結果を変えません。
+  ペイロードとハンドラのログは持たず、`error` はハンドラが返したエラーの先頭 2,000 バイト（UTF-8 の境界で切る）で、ハンドラはエラーにメールアドレス・IP アドレス・トークン・本文を入れません。
+  dead job の再実行は試行回数を数え直すので、同じ `attempt` が 2 回現れることがあり、`finished_at` を主キーに含めて区別します。同じ試行を繰り返し記録しても 1 行です。
+  `finished_at` から設定 `job_attempt_retention`（既定 30 日）を過ぎた行は、`queue.purge_dead_jobs` が dead job と同じ上限で古い順に消します。
+- ジョブの状態（待ち・実行中・リトライ待ち）は列を持たず、`jobs` の今の値から導きます（`locked_until > now` なら実行中、そうでなく `attempt = 0` なら待ち、`attempt > 0` ならリトライ待ち）。
 - `kv_entries` は `KeyValueStore` ポートの値です。`expires_at` を過ぎた行は無いものとして扱い、1 時間ごとの消去ジョブ `kv.cleanup` が `DeleteExpired` で物理削除します。
   `DeleteExpired` は 1 回（1 トランザクション）で消す件数に上限を取り、ジョブは上限の回数まで繰り返して、残りを次の回に回します（FR-803）。
   カウンタ（`IncrBy`、レート制限）は値を 10 進の文字列で持ち、1 文の upsert で加算します。

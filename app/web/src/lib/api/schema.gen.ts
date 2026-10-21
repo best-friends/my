@@ -1841,7 +1841,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/dead_jobs": {
+    "/admin/queue": {
         parameters: {
             query?: never;
             header?: never;
@@ -1849,12 +1849,17 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the dead jobs
-         * @description The jobs of the job queue that failed for good (their handler gave up, or they used up
-         *     their attempts), most recently failed first. Needs the `manage_jobs` permission; a user
-         *     without it gets a 403 `/api/v1/problems/missing-permission`.
+         * Get the state of the job queue
+         * @description The jobs of the job queue by state and type, when the oldest due job has been waiting
+         *     since, and what the queue can list (ADR-0064). The database queue and the inline queue
+         *     list their pending jobs (`queued`, `running`, `retrying`); the queues of the platforms
+         *     (Cloud Tasks, SQS) do not (`pending_listing` is `false`): then `counts` is empty and the
+         *     backlog is read from the platform's metrics, while `GET /admin/jobs?state=dead` and the
+         *     attempts still list the dead jobs and the failed runs, which are in the database with
+         *     every queue. Needs the `manage_jobs`
+         *     permission; a user without it gets a 403 `/api/v1/problems/missing-permission`.
          */
-        get: operations["listDeadJobs"];
+        get: operations["getAdminQueue"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1863,7 +1868,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/dead_jobs/{id}/retry": {
+    "/admin/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the jobs of the job queue
+         * @description The jobs in one state, or the pending jobs of every state when `state` is omitted.
+         *     Pending jobs (`queued`, `running`, `retrying`) come the earliest `run_at` first; on a
+         *     queue that cannot list them (`pending_listing` of `GET /admin/queue` is `false`) the page
+         *     is empty. Dead jobs (`state=dead`) come the most recently failed first. Needs the
+         *     `manage_jobs` permission.
+         */
+        get: operations["listAdminJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/jobs/{id}/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the attempts of a job that did not succeed
+         * @description The records of the runs of the job that did not succeed (a retry, or the run that made
+         *     it a dead job), the most recently finished first. Successful runs are not recorded, and
+         *     records are deleted after the server's `job_attempt_retention`, so a job without
+         *     failures, or an unknown ID, has an empty page. A requeued dead job counts its attempts
+         *     again from 1. Needs the `manage_jobs` permission.
+         */
+        get: operations["listAdminJobAttempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/jobs/{id}/retry": {
         parameters: {
             query?: never;
             header?: never;
@@ -1876,9 +1929,10 @@ export interface paths {
          * Run a dead job again
          * @description Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
          *     the dead jobs. When a pending job has the same idempotency key, that job stands in for
-         *     it. An unknown ID, or one already retried, is a 404. Needs the `manage_jobs` permission.
+         *     it. An unknown ID, one that is not a dead job, or one already retried, is a 404. Needs
+         *     the `manage_jobs` permission.
          */
-        post: operations["retryDeadJob"];
+        post: operations["retryAdminJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5521,27 +5575,99 @@ export interface components {
         AdminAvailabilityEventPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["AdminAvailabilityEvent"][];
         };
-        /** @description A job that failed for good. */
-        AdminDeadJob: {
+        /**
+         * @description The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
+         *     `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
+         *     failed for good (its handler gave up, or it used up its attempts).
+         * @enum {string}
+         */
+        AdminJobState: "queued" | "running" | "retrying" | "dead";
+        /** @description A job of the job queue. */
+        AdminJob: {
             id: components["schemas"]["Id"];
             /** @description The job type, such as `federation.deliver`. */
             type: string;
+            state: components["schemas"]["AdminJobState"];
             /** @description The job's payload, a JSON document as text. */
             payload: string;
             idempotency_key?: string;
             ordering_key?: string;
-            /** @description The number of runs the job had. */
+            /** @description The number of runs the job had, the one in progress included. */
             attempts: number;
-            /** @description Why the last run failed. */
-            last_error: string;
+            /** @description Why the last run failed; omitted for a job whose runs did not fail. */
+            last_error?: string;
+            /**
+             * Format: date-time
+             * @description When a pending job is due; omitted for a dead job.
+             */
+            run_at?: string;
+            /** @description The worker that runs a `running` job. */
+            worker?: string;
+            /**
+             * Format: date-time
+             * @description When the lease of a `running` job ends; another worker may run it after.
+             */
+            locked_until?: string;
             /** Format: date-time */
             created_at: string;
-            /** Format: date-time */
-            failed_at: string;
+            /**
+             * Format: date-time
+             * @description When a dead job failed.
+             */
+            failed_at?: string;
         };
-        /** @description A page of dead jobs, most recently failed first. */
-        AdminDeadJobPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminDeadJob"][];
+        /** @description A page of jobs. */
+        AdminJobPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminJob"][];
+        };
+        /** @description The number of jobs of one type in one state. */
+        AdminJobCount: {
+            state: components["schemas"]["AdminJobState"];
+            type: string;
+            /** Format: int64 */
+            count: number;
+        };
+        /** @description The state of the job queue (ADR-0064). */
+        AdminQueue: {
+            /** @description The queue the server runs, the `queue` setting (`db`, `inline`, `sqs`, `cloudtasks`). */
+            adapter: string;
+            /** @description Whether the queue lists its pending jobs (`queued`, `running`, `retrying`). */
+            pending_listing: boolean;
+            /**
+             * @description The jobs by state (`queued`, `running`, `retrying`, `dead`) then type; states and
+             *     types without jobs are left out. Empty without `pending_listing`.
+             */
+            counts: components["schemas"]["AdminJobCount"][];
+            /**
+             * Format: date-time
+             * @description The earliest `run_at` among the due jobs that no worker holds: how long the queue
+             *     has kept a job waiting. Omitted when no job waits, or without `pending_listing`.
+             */
+            oldest_ready_at?: string;
+        };
+        /** @description A run of a job that did not succeed. */
+        AdminJobAttempt: {
+            /** @description The number of the run, from 1. */
+            attempt: number;
+            /** @description The job type. */
+            type: string;
+            /**
+             * @description `retry`: the job runs again. `dead`: it failed for good.
+             * @enum {string}
+             */
+            outcome: "retry" | "dead";
+            /** @description Why the run failed, at most 2,000 bytes. */
+            error: string;
+            /** @description The worker that ran it. */
+            worker: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            finished_at: string;
+        };
+        /** @description A page of attempts, the most recently finished first. */
+        AdminJobAttemptPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminJobAttempt"][];
         };
         /** @description Whether deliveries go to a remote server (federation.md §7.3). */
         AdminInstanceHealth: {
@@ -9654,9 +9780,35 @@ export interface operations {
             default: components["responses"]["Problem"];
         };
     };
-    listDeadJobs: {
+    getAdminQueue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The state of the queue. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminQueue"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listAdminJobs: {
         parameters: {
             query?: {
+                /** @description Keep only the jobs in this state; omitted keeps the pending ones. */
+                state?: components["schemas"]["AdminJobState"];
+                /** @description Keep only the jobs of this type, such as `federation.deliver`. */
+                type?: string;
                 /** @description The `next_cursor` of the previous page; omitted for the first page. */
                 cursor?: components["parameters"]["Cursor"];
                 /** @description The maximum number of items in the page. */
@@ -9668,20 +9820,50 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A page of dead jobs. */
+            /** @description A page of jobs. */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControl"];
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminDeadJobPage"];
+                    "application/json": components["schemas"]["AdminJobPage"];
                 };
             };
             default: components["responses"]["Problem"];
         };
     };
-    retryDeadJob: {
+    listAdminJobAttempts: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the job. */
+                id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of attempts. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminJobAttemptPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    retryAdminJob: {
         parameters: {
             query?: never;
             header?: never;

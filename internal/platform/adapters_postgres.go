@@ -30,8 +30,11 @@ func (a *App) openPostgres(ctx context.Context, cfg *config.Config, queueOpts qu
 	}
 	d.RegisterMetrics(a.Meter)
 	d.SetTracer(a.Tracer)
+	// The attempt log is in the database whatever the queue (ADR-0064 §1).
+	dbQueue := queuedb.NewPostgres(d, queueOpts)
+	a.JobAttempts = dbQueue
 	if cfg.Queue == "db" {
-		a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
+		a.setDBQueue(dbQueue)
 	}
 	if cfg.KV == "db" {
 		a.KV = kvdb.NewPostgres(d, a.Clock)

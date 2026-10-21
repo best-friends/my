@@ -23,6 +23,17 @@ type DeadJob struct {
 	FailedAt       time.Time
 }
 
+type JobAttempt struct {
+	JobID      string
+	Attempt    int32
+	JobType    string
+	Outcome    string
+	Error      string
+	Worker     string
+	StartedAt  time.Time
+	FinishedAt time.Time
+}
+
 type OutboxEvent struct {
 	ID             string
 	JobType        string

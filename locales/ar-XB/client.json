@@ -2311,62 +2311,6 @@
     "defaultMessage": "‮∀u ǝɯoɾı ɥıppǝu ɟɹoɯ ʇɥǝ dıɔʞǝɹ ɔɐu sʇıʅʅ qǝ ʇʎdǝp ɐs ıʇs :sɥoɹʇɔopǝ:.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "admin.dead_jobs.attempts": {
-    "defaultMessage": "‮∀ʇʇǝɯdʇs‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.created_at": {
-    "defaultMessage": "‮Ↄɹǝɐʇǝp‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.empty": {
-    "defaultMessage": "‮No ɟɐıʅǝp ɾoqs‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.failed_at": {
-    "defaultMessage": "‮Ⅎɐıʅǝp‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.idempotency_key": {
-    "defaultMessage": "‮Ipǝɯdoʇǝuɔʎ ʞǝʎ‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.last_error": {
-    "defaultMessage": "‮⅂ɐsʇ ǝɹɹoɹ‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.ordering_key": {
-    "defaultMessage": "‮Oɹpǝɹıuƃ ʞǝʎ‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.payload": {
-    "defaultMessage": "‮Ԁɐʎʅoɐp‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.retried": {
-    "defaultMessage": "‮⊥ɥǝ ɾoq {type} ıs bnǝnǝp ʇo ɹnu ɐƃɐıu.‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.retry": {
-    "defaultMessage": "‮ᴚnu ɐƃɐıu‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.retry_failed": {
-    "defaultMessage": "‮Ↄonʅp uoʇ ɹnu ʇɥǝ ɾoq ɐƃɐıu: {reason}‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.retry_job": {
-    "defaultMessage": "‮ᴚnu ɐƃɐıu: {type}, ɟɐıʅǝp {date}‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.summary": {
-    "defaultMessage": "‮Ԑɐɔʞƃɹonup ɾoqs ʇɥɐʇ ɟɐıʅǝp ɟoɹ ƃoop, ɐup ɹnuuıuƃ ʇɥǝɯ ɐƃɐıu.‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.dead_jobs.title": {
-    "defaultMessage": "‮Ⅎɐıʅǝp ɾoqs‬",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "admin.documents.body": {
     "defaultMessage": "‮⊥ǝxʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3141,6 +3085,198 @@
   },
   "admin.invites.uses": {
     "defaultMessage": "‮{count,plural,one{# dǝɹsou} other{# dǝodʅǝ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.attempts": {
+    "defaultMessage": "‮∀ʇʇǝɯdʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.created_at": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.empty": {
+    "defaultMessage": "‮No ɾoqs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.empty.dead": {
+    "defaultMessage": "‮No ɟɐıʅǝp ɾoqs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.failed_at": {
+    "defaultMessage": "‮Ⅎɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.filter.label": {
+    "defaultMessage": "‮ſoq sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.filter.pending": {
+    "defaultMessage": "‮Ԁǝupıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.attempt": {
+    "defaultMessage": "‮∀ʇʇǝɯdʇ {number, number}: {outcome}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.empty": {
+    "defaultMessage": "‮No ɟɐıʅǝp ɐʇʇǝɯdʇs ɹǝɔoɹpǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.empty.description": {
+    "defaultMessage": "‮ᴚnus ʇɥɐʇ snɔɔǝǝp ɐɹǝ uoʇ ɹǝɔoɹpǝp, ɐup ʇɥǝ ɹǝɔoɹps ɐɹǝ pǝʅǝʇǝp ɐɟʇǝɹ ɐ ʍɥıʅǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.error": {
+    "defaultMessage": "‮Ǝɹɹoɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.failed": {
+    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ʇɥǝ ɐʇʇǝɯdʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.finished_at": {
+    "defaultMessage": "‮Ⅎıuısɥǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ʇɥǝ ɐʇʇǝɯdʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.more_failed": {
+    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ɯoɹǝ ɐʇʇǝɯdʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.retry": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.started_at": {
+    "defaultMessage": "‮Sʇɐɹʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.toggle": {
+    "defaultMessage": "‮∀ʇʇǝɯdʇ ɥısʇoɹʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.history.toggle_job": {
+    "defaultMessage": "‮∀ʇʇǝɯdʇ ɥısʇoɹʎ: {type}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.idempotency_key": {
+    "defaultMessage": "‮Ipǝɯdoʇǝuɔʎ ʞǝʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.last_error": {
+    "defaultMessage": "‮⅂ɐsʇ ǝɹɹoɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.list.heading": {
+    "defaultMessage": "‮ſoqs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.locked_until": {
+    "defaultMessage": "‮⅂ǝɐsǝ ǝups‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.ordering_key": {
+    "defaultMessage": "‮Oɹpǝɹıuƃ ʞǝʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.outcome.dead": {
+    "defaultMessage": "‮ɟɐıʅǝp ɟoɹ ƃoop‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.outcome.retry": {
+    "defaultMessage": "‮ɹǝʇɹıǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.payload": {
+    "defaultMessage": "‮Ԁɐʎʅoɐp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.queue.adapter": {
+    "defaultMessage": "‮Ònǝnǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.queue.by_type": {
+    "defaultMessage": "‮ſoqs qʎ ʇʎdǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.queue.heading": {
+    "defaultMessage": "‮Ònǝnǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.queue.no_listing": {
+    "defaultMessage": "‮⊥ɥıs bnǝnǝ ɔɐuuoʇ ʅısʇ ıʇs ʍɐıʇıuƃ, ɹnuuıuƃ ɐup ɹǝʇɹʎıuƃ ɾoqs: sǝǝ ʇɥǝıɹ qɐɔʞʅoƃ ıu ʇɥǝ ɯǝʇɹıɔs oɟ ʇɥǝ dʅɐʇɟoɹɯ. Ⅎɐıʅǝp ɾoqs ɐup ʇɥǝ ɥısʇoɹʎ oɟ ʇɥǝıɹ ɐʇʇǝɯdʇs ɐɹǝ ʅısʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.queue.none_waiting": {
+    "defaultMessage": "‮No ɾoq ıs ʍɐıʇıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.queue.oldest_ready": {
+    "defaultMessage": "‮Oʅpǝsʇ ʍɐıʇıuƃ ɾoq pnǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.retried": {
+    "defaultMessage": "‮⊥ɥǝ ɾoq {type} ıs bnǝnǝp ʇo ɹnu ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.retry": {
+    "defaultMessage": "‮ᴚnu ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.retry_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɹnu ʇɥǝ ɾoq ɐƃɐıu: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.retry_job": {
+    "defaultMessage": "‮ᴚnu ɐƃɐıu: {type}, ɟɐıʅǝp {date}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.run_at": {
+    "defaultMessage": "‮ᗡnǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.state.dead": {
+    "defaultMessage": "‮Ⅎɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.state.queued": {
+    "defaultMessage": "‮Mɐıʇıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.state.retrying": {
+    "defaultMessage": "‮ᴚǝʇɹʎıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.state.running": {
+    "defaultMessage": "‮ᴚnuuıuƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.summary": {
+    "defaultMessage": "‮Ԑɐɔʞƃɹonup ɾoqs ʍɐıʇıuƃ, ɹnuuıuƃ, ɹǝʇɹʎıuƃ ɐup ɟɐıʅǝp, ʍɥʎ ʇɥǝʎ ɟɐıʅǝp, ɐup ɹnuuıuƃ ɟɐıʅǝp ouǝs ɐƃɐıu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.title": {
+    "defaultMessage": "‮ſoqs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.unlisted": {
+    "defaultMessage": "‮⊥ɥıs bnǝnǝ ɔɐuuoʇ ʅısʇ ʇɥǝsǝ ɾoqs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.unlisted.description": {
+    "defaultMessage": "‮Sǝǝ ʇɥǝ qɐɔʞʅoƃ ıu ʇɥǝ ɯǝʇɹıɔs oɟ ʇɥǝ dʅɐʇɟoɹɯ. Ⅎɐıʅǝp ɾoqs ɐɹǝ ʅısʇǝp nupǝɹ Ⅎɐıʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.jobs.worker": {
+    "defaultMessage": "‮Moɹʞǝɹ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.list.more": {

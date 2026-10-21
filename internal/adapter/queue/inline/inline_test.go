@@ -18,7 +18,7 @@ import (
 func factory(maxDelay time.Duration) testkit.QueueFactory {
 	return func(_ *testing.T, clock *testkit.Clock) testkit.QueueHarness {
 		q := inline.New(inline.Options{Clock: clock, IDs: testkit.NewIDGenerator(clock), MaxDelay: maxDelay})
-		return testkit.QueueHarness{Queue: q, Source: q, DeadJobs: q, MaxDelay: maxDelay}
+		return testkit.QueueHarness{Queue: q, Source: q, DeadJobs: q, MaxDelay: maxDelay, Inspector: q}
 	}
 }
 

@@ -101,10 +101,12 @@ type Options struct {
 	StreamHeartbeat time.Duration
 	// Permissions reads the permissions of the viewer's roles, which the admin operations need
 	// (admin.go); nil grants none. InstanceHealth reads and clears the health of remote servers,
-	// and DeadJobs lists and requeues the dead jobs, for the admin operations.
+	// and DeadJobs lists and requeues the dead jobs, for the admin operations; Queue reads the
+	// rest of the queue dashboard (admin_jobs.go, ADR-0064).
 	Permissions    Permissions
 	InstanceHealth InstanceHealth
 	DeadJobs       queue.DeadJobs
+	Queue          QueueDashboard
 	// Moderation runs the moderators' use cases on domain actions and reports for the admin
 	// operations (admin_moderation.go); UserAccounts presents the moderator of a report by
 	// account, and nil leaves it out.
