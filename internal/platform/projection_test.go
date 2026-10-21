@@ -31,6 +31,7 @@ import (
 	"github.com/best-friends/my/internal/domain/moderation"
 	domwebhook "github.com/best-friends/my/internal/domain/webhook"
 	"github.com/best-friends/my/internal/platform"
+	"github.com/best-friends/my/pkg/testkit"
 )
 
 // TestProjectionsVerifyAndRebuild fills every projection through the services, on both
@@ -48,9 +49,11 @@ func TestProjectionsVerifyAndRebuild(t *testing.T) {
 				dbURL = newPostgresDatabase(t)
 			}
 			cfg := loadConfig(t, map[string]string{
-				"MY_DB": dialect, "MY_DATABASE_URL": dbURL, "MY_WEB_ORIGIN": webOrigin, "MY_MAIL": "none",
+				"MY_DB": dialect, "MY_DATABASE_URL": dbURL, "MY_WEB_ORIGIN": webOrigin, "MY_MAIL": "none", "MY_BILLING_SOURCES": "aws",
 			})
-			app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{Logger: slog.New(slog.DiscardHandler)})
+			app, err := platform.NewApp(t.Context(), cfg, platform.AppOptions{
+				Logger: slog.New(slog.DiscardHandler), BillingSources: map[string]appfinance.BillingSource{"aws": billingFixture()},
+			})
 			if err != nil {
 				t.Fatalf("NewApp: %v", err)
 			}
@@ -183,10 +186,24 @@ func fillWebhooks(t *testing.T, a *platform.App) {
 	}
 }
 
-// fillFinance fills cost_item_heads: an item relabeled and ended, and one canceled.
+// billingFixture is a source with two costs this month.
+func billingFixture() *testkit.FakeBillingSource {
+	src := testkit.NewFakeBillingSource("aws", time.UTC)
+	src.SetMonth(domfinance.YearMonthOf(domfinance.DateOf(time.Now().UTC())), testkit.FakeBillingMonth{Rows: []testkit.FakeBillingRow{
+		{Service: "Amazon Simple Storage Service", ChargeType: domfinance.ChargeUsage, Amount: "1.25", Currency: "USD"},
+		{Service: "Tax", ChargeType: domfinance.ChargeTax, Amount: "0.10", Currency: "USD"},
+	}})
+	return src
+}
+
+// fillFinance fills cost_item_heads: an item relabeled and ended, and one canceled; and
+// imported_cost_heads with an import of billingFixture.
 func fillFinance(t *testing.T, a *platform.App) {
 	t.Helper()
 	ctx := t.Context()
+	if r := a.Finance.Import(ctx, "aws", "fill"); !r.IsDone() {
+		t.Fatalf("Import = %v", r.Err())
+	}
 	start, err := domfinance.ParseDate("2026-04-10")
 	if err != nil {
 		t.Fatal(err)
@@ -422,7 +439,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 		"notification_exclusions", "notification_deleted_statuses", "poll_tallies",
 		"account_restrictions", "domain_restrictions", "report_states", "appeal_states", "status_sensitivity_overrides",
 		"feed_author_restrictions", "feed_domain_restrictions", "user_roles", "user_registration_states", "user_primary_emails",
-		"webhook_endpoint_heads", "webhook_endpoint_failures", "relay_states", "cost_item_heads",
+		"webhook_endpoint_heads", "webhook_endpoint_failures", "relay_states", "cost_item_heads", "imported_cost_heads",
 	} {
 		if held[table] == 0 {
 			t.Errorf("%s holds no rows", table)
@@ -451,6 +468,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("UPDATE webhook_endpoint_failures SET consecutive_failures = consecutive_failures + 3")
 	exec("UPDATE relay_states SET state = 'left'")
 	exec("UPDATE cost_item_heads SET ends_on = NULL")
+	exec("DELETE FROM imported_cost_heads WHERE service = 'Tax'")
 
 	drifted := []string{}
 	for _, p := range svc.List() {
@@ -467,7 +485,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	slices.Sort(drifted)
 	want := []string{
 		"account_restrictions", "appeal_states", "cost_item_heads", "domain_restrictions", "feed_author_restrictions", "feed_domain_restrictions",
-		"feed_tag_entries", "follow_counters", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
+		"feed_tag_entries", "follow_counters", "imported_cost_heads", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
 		"poll_tallies", "relay_states", "remote_account_heads", "report_states", "status_counters", "status_sensitivity_overrides",
 		"user_primary_emails", "user_registration_states", "user_roles", "webhook_endpoint_failures", "webhook_endpoint_heads",
 	}

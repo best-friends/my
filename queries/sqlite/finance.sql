@@ -55,3 +55,50 @@ LIMIT sqlc.arg(lim);
 SELECT id, cost_item_id, effective_on, amount_minor, currency, revised_at FROM cost_item_price_revisions
 WHERE cost_item_id IN (SELECT value FROM json_each(CAST(sqlc.arg(ids) AS TEXT)))
 ORDER BY cost_item_id, id;
+
+-- The billing imports (ADR-0068 section 5). billing_import_runs and imported_cost_revisions are
+-- written once; imported_cost_heads is the projection of the revisions.
+
+-- name: InsertBillingImportRun :exec
+INSERT INTO billing_import_runs (id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+-- SumBillingImportRuns sums the requests and the bytes billed of the attempts of a source that
+-- occurred in [from, until).
+-- name: SumBillingImportRuns :one
+SELECT CAST(COALESCE(SUM(requests), 0) AS INTEGER) AS requests, CAST(COALESCE(SUM(bytes_billed), 0) AS INTEGER) AS bytes_billed
+FROM billing_import_runs
+WHERE source = sqlc.arg(source) AND occurred_at >= sqlc.arg(from_at) AND occurred_at < sqlc.arg(until_at);
+
+-- name: CountBillingImportRunsByKey :one
+SELECT COUNT(*) FROM billing_import_runs WHERE source = ? AND run_key = ?;
+
+-- LastBillingImportRun returns the newest attempt of a source, only among the successes unless
+-- include_failed is true.
+-- name: LastBillingImportRun :one
+SELECT id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at FROM billing_import_runs
+WHERE source = sqlc.arg(source) AND (CAST(sqlc.arg(include_failed) AS INTEGER) = 1 OR outcome = 'succeeded')
+ORDER BY occurred_at DESC, id DESC
+LIMIT 1;
+
+-- InsertImportedCostRevision writes nothing when an attempt of the same job wrote the key.
+-- name: InsertImportedCostRevision :execrows
+INSERT INTO imported_cost_revisions (
+  id, source, billing_month, service, charge_type, category, starts_on, ends_on, amount_minor, currency, kind,
+  run_id, run_key, recorded_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT (source, billing_month, service, charge_type, run_key) DO NOTHING;
+
+-- name: UpsertImportedCostHead :exec
+INSERT INTO imported_cost_heads (source, billing_month, service, charge_type, revision_id) VALUES (?, ?, ?, ?, ?)
+ON CONFLICT (source, billing_month, service, charge_type) DO UPDATE SET revision_id = excluded.revision_id;
+
+-- ListImportedCostHeads returns the newest revision of every key, of one source unless source is
+-- empty and of the billing months months (a JSON array of YYYY-MM) unless it is '[]'.
+-- name: ListImportedCostHeads :many
+SELECT r.id, r.source, r.billing_month, r.service, r.charge_type, r.category, r.starts_on, r.ends_on, r.amount_minor,
+  r.currency, r.kind, r.run_id, r.run_key, r.recorded_at
+FROM imported_cost_heads h JOIN imported_cost_revisions r ON r.id = h.revision_id
+WHERE (CAST(sqlc.arg(source) AS TEXT) = '' OR h.source = sqlc.arg(source))
+  AND (CAST(sqlc.arg(months) AS TEXT) = '[]' OR h.billing_month IN (SELECT value FROM json_each(CAST(sqlc.arg(months) AS TEXT))))
+ORDER BY h.source, h.billing_month, h.service, h.charge_type;

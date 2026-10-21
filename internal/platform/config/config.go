@@ -112,6 +112,11 @@ type Config struct {
 	// RelayIngestHourlyLimit how many activities each relay may bring in per hour (ADR-0061).
 	RelayStatusRetention   time.Duration
 	RelayIngestHourlyLimit int
+	// BillingSources are the providers whose usage charges are imported (billing_sources,
+	// ADR-0068), and the AWS caps bound the billed requests by UTC day and month (§4).
+	BillingSources                []string
+	BillingAWSMaxRequestsPerDay   int
+	BillingAWSMaxRequestsPerMonth int
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
 	DeadJobRetention time.Duration
 	// JobAttemptRetention is how long the record of a job's run that did not succeed is kept
@@ -204,6 +209,9 @@ func (c *Config) LogValue() slog.Value {
 		slog.Duration("remote_status_max_retention", c.RemoteStatusMaxRetention),
 		slog.Duration("relay_status_retention", c.RelayStatusRetention),
 		slog.Int("relay_ingest_hourly_limit", c.RelayIngestHourlyLimit),
+		slog.Any("billing_sources", c.BillingSources),
+		slog.Int("billing_aws_max_requests_per_day", c.BillingAWSMaxRequestsPerDay),
+		slog.Int("billing_aws_max_requests_per_month", c.BillingAWSMaxRequestsPerMonth),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.Duration("job_attempt_retention", c.JobAttemptRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),

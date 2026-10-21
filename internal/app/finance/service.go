@@ -5,11 +5,13 @@ package finance
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"golang.org/x/text/unicode/norm"
 
 	"github.com/best-friends/my/internal/app/kernel"
+	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/finance"
 )
@@ -20,6 +22,15 @@ type Deps struct {
 	Repository Repository
 	Clock      kernel.Clock
 	IDs        kernel.IDGenerator
+	// Sources are the billing sources of billing_sources, in its order (ADR-0068); none imports
+	// nothing.
+	Sources []BillingSource
+	// Caps bounds the billed requests of the sources it names (the AWS caps of ADR-0068 §4).
+	Caps map[string]RequestCaps
+	// Outbox enqueues the manual imports; nil refuses them.
+	Outbox queue.Outbox
+	// Logger logs the imports; nil means slog.Default().
+	Logger *slog.Logger
 }
 
 // Service runs the use cases of the instance's costs.
@@ -223,9 +234,10 @@ type TotalsQuery struct {
 	Basis       finance.Basis
 }
 
-// Totals returns the totals of the cost items that are not canceled over the periods of q,
-// computed on read (ADR-0067 §1). It fails with finance.ErrInvalidBasis and the errors of
-// finance.Granularity.Periods.
+// Totals returns the totals of the cost items that are not canceled and of the newest revision of
+// every imported cost over the periods of q, computed on read (ADR-0067 §1); a period that an
+// estimated imported cost meets is Estimated (ADR-0068 §3). It fails with finance.ErrInvalidBasis
+// and the errors of finance.Granularity.Periods.
 func (s *Service) Totals(ctx context.Context, q TotalsQuery) ([]finance.PeriodTotal, error) {
 	if err := q.Basis.Validate(); err != nil {
 		return nil, err
@@ -238,5 +250,9 @@ func (s *Service) Totals(ctx context.Context, q TotalsQuery) ([]finance.PeriodTo
 	if err != nil {
 		return nil, fmt.Errorf("finance: read the cost items: %w", err)
 	}
-	return finance.Totals(items, q.Basis, periods), nil
+	imported, err := s.importedEntries(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("finance: read the imported costs: %w", err)
+	}
+	return finance.Totals(items, imported, q.Basis, periods), nil
 }

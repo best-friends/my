@@ -57,7 +57,7 @@ Remote servers ──AP──►│                               │
 | `moderation` | 通報・ドメインブロック・凍結・監査ログ | Report, DomainBlock, AuditLog |
 | `instance` | インスタンス設定・規約・ルール・テーマ・お知らせ・NodeInfo | InstanceSettings |
 | `webhook` | サーバー単位の webhook（宛先・署名・配送と再送、ADR-0060） | WebhookEndpoint, WebhookMessage, WebhookDelivery |
-| `finance` | サーバーの維持費用（費用の項目・支払いの周期・改定・終了・取り消し、週・月・年の集計。集計は読み取りのときに計算する。ADR-0067） | CostItem, PriceRevision |
+| `finance` | サーバーの維持費用（費用の項目・支払いの周期・改定・終了・取り消し、週・月・年の集計。集計は読み取りのときに計算する。ADR-0067）と、クラウドの利用料金の取り込み（見込み・確定・修正の版。ADR-0068） | CostItem, PriceRevision, ImportedRevision |
 | `i18n` | ロケール解決・メッセージカタログ・整形 | （横断。`internal/i18n` の 1 パッケージで、`domain` / `app` の層を持たない） |
 
 ### 依存ルール
@@ -120,6 +120,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `KeyManager` | 秘密（アクター秘密鍵など）を包む DEK の wrap / unwrap。暗号化は `kernel.Sealer` が行う | local（設定の KEK） | [0019](../adr/0019-security-baseline.md) |
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
 | `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format。Gauge は収集されないので、定期ジョブが `GaugeWriter` で書かせる）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは `Tracer` が持つ | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
+| `BillingSource` | クラウドの事業者の利用料金を請求月・サービス・費用の種類ごとに返す（`internal/app/finance`）。型は標準ライブラリと finance のドメインだけで、SDK の型を出さない。課金される要求の数を `MaxRequests` までに抑え、失敗を種類に分ける。事業者のアダプタは `internal/adapter/billing/<source>` に置き、テスト用の fake は `testkit.FakeBillingSource` | なし（`billing_sources` が空） | [0068](../adr/0068-billing-import.md) |
 | `Tracer` | 分散トレースの span。span を名前・種類・許す属性のキー（`SpanSpec`）で宣言して始め、`Inject` で今の span の `traceparent` をジョブ（`queue.Job.TraceParent`）に書き、`Linked` でジョブの実行を link 付きの新しいトレースにし、`Continue` で信頼したプロキシの `traceparent` を親にし、`LogIDs` でログの行に `trace_id`・`span_id` を付ける。型は標準ライブラリだけで、OTel の型を出さない。span は HTTP のミドルウェア・ジョブの runner・`HTTPClient`・`UnitOfWork.Tx` とクエリ（`telemetry/dbtrace`、PostgreSQL は pgx の `QueryTracer`）・配送が作る。アダプタは `none` / `otel`（OpenTelemetry Go SDK の OTLP/HTTP） | none（`traces_exporter = none`。信頼したプロキシの trace ID をログに付けるだけ） | [0063](../adr/0063-distributed-tracing.md) |
 
 各ポートには `pkg/testkit` にアダプタ非依存のコントラクトテスト（`testkit.<名前>Contract`）があり、そのポートのアダプタはすべてそれを通す（NFR-PORT-3）。

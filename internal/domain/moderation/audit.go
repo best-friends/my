@@ -69,12 +69,16 @@ const (
 	AuditTargetInvite AuditTargetKind = "invite"
 	// AuditTargetRelay is a relay (ADR-0061); its label is its registered URL.
 	AuditTargetRelay AuditTargetKind = "relay"
+	// AuditTargetBillingSource is a source of the billing imports (ADR-0068); its ID is the
+	// source's name (aws, gcp) and its label the provider's name.
+	AuditTargetBillingSource AuditTargetKind = "billing_source"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
 	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite, AuditTargetRelay,
+	AuditTargetBillingSource,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -222,6 +226,9 @@ const (
 	// AuditDomainStatusesRefetchQueued: the refetch of the posts of the accounts of a remote
 	// domain was queued; the operation has no row of its own.
 	AuditDomainStatusesRefetchQueued AuditAction = "domain_statuses_refetch_queued"
+	// AuditBillingImportQueued: an administrator queued an import of a billing source now
+	// (ADR-0068 §2); the operation has no row of its own.
+	AuditBillingImportQueued AuditAction = "billing_import_queued"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -287,6 +294,7 @@ var auditActions = []struct {
 	{AuditStatusRefetchQueued, AuditTargetStatus},
 	{AuditAccountStatusesRefetchQueued, AuditTargetAccount},
 	{AuditDomainStatusesRefetchQueued, AuditTargetDomain},
+	{AuditBillingImportQueued, AuditTargetBillingSource},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

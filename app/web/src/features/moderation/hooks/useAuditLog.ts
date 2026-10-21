@@ -68,6 +68,7 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   status_refetch_queued: "client:admin.audit_log.action.status_refetch_queued",
   account_statuses_refetch_queued: "client:admin.audit_log.action.account_statuses_refetch_queued",
   domain_statuses_refetch_queued: "client:admin.audit_log.action.domain_statuses_refetch_queued",
+  billing_import_queued: "client:admin.audit_log.action.billing_import_queued",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -86,6 +87,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   announcement: "client:admin.audit_log.target_kind.announcement",
   invite: "client:admin.audit_log.target_kind.invite",
   relay: "client:admin.audit_log.target_kind.relay",
+  billing_source: "client:admin.audit_log.target_kind.billing_source",
 };
 
 /** Who performed an operation without a user's account to show. */

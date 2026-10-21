@@ -68,6 +68,15 @@ func (q *Queries) DeleteAllFeedDomainRestrictions(ctx context.Context) error {
 	return err
 }
 
+const deleteAllImportedCostHeads = `-- name: DeleteAllImportedCostHeads :exec
+DELETE FROM imported_cost_heads
+`
+
+func (q *Queries) DeleteAllImportedCostHeads(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, deleteAllImportedCostHeads)
+	return err
+}
+
 const deleteAllPollTallies = `-- name: DeleteAllPollTallies :exec
 DELETE FROM poll_tallies
 `
@@ -398,6 +407,20 @@ WHERE NOT EXISTS (SELECT 1 FROM cost_item_cancellations c WHERE c.cost_item_id =
 // canceled, with its newest label revision and end change (no end without one).
 func (q *Queries) RebuildCostItemHeads(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, rebuildCostItemHeads)
+	return err
+}
+
+const rebuildImportedCostHeads = `-- name: RebuildImportedCostHeads :exec
+INSERT INTO imported_cost_heads (source, billing_month, service, charge_type, revision_id)
+SELECT r.source, r.billing_month, r.service, r.charge_type, MAX(r.id)
+FROM imported_cost_revisions r
+GROUP BY r.source, r.billing_month, r.service, r.charge_type
+`
+
+// RebuildImportedCostHeads states the rule of the billing imports: the newest revision of each
+// key (the largest id, a UUIDv7 that follows the recording order).
+func (q *Queries) RebuildImportedCostHeads(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, rebuildImportedCostHeads)
 	return err
 }
 

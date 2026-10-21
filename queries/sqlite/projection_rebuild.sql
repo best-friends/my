@@ -199,3 +199,14 @@ SELECT i.id,
   (SELECT e.ends_on FROM cost_item_end_changes e WHERE e.cost_item_id = i.id ORDER BY e.id DESC LIMIT 1)
 FROM cost_items i
 WHERE NOT EXISTS (SELECT 1 FROM cost_item_cancellations c WHERE c.cost_item_id = i.id);
+
+-- name: DeleteAllImportedCostHeads :exec
+DELETE FROM imported_cost_heads;
+
+-- RebuildImportedCostHeads states the rule of the billing imports: the newest revision of each
+-- key (the largest id, a UUIDv7 that follows the recording order).
+-- name: RebuildImportedCostHeads :exec
+INSERT INTO imported_cost_heads (source, billing_month, service, charge_type, revision_id)
+SELECT r.source, r.billing_month, r.service, r.charge_type, MAX(r.id)
+FROM imported_cost_revisions r
+GROUP BY r.source, r.billing_month, r.service, r.charge_type;

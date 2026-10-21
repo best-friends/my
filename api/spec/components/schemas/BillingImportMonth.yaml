@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A billing month of a source: an `estimate` while the provider has not closed it, `final`
+  once it has, `correction` once a value changed after that; with its totals by currency.
+type: object
+required: [month, kind, totals]
+properties:
+  month:
+    description: The billing month, `YYYY-MM` in the source's time zone.
+    type: string
+    pattern: "^[0-9]{4}-[0-9]{2}$"
+  kind:
+    type: string
+    enum: [estimate, final, correction]
+  totals:
+    type: array
+    items:
+      $ref: ./Money.yaml

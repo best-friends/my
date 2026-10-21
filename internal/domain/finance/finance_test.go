@@ -417,7 +417,7 @@ func TestTotals(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := Totals(tc.items, tc.basis, periods)
+			got := Totals(tc.items, nil, tc.basis, periods)
 			if len(got) != len(tc.want) {
 				t.Fatalf("%d periods, want %d", len(got), len(tc.want))
 			}
@@ -431,7 +431,7 @@ func TestTotals(t *testing.T) {
 
 	// The breakdown groups by provider, category, and currency.
 	periods, _ := GranularityYear.Periods(date(t, "2026-01-01"), date(t, "2026-12-31"))
-	got := Totals([]CostItem{domain, vps}, BasisCash, periods)
+	got := Totals([]CostItem{domain, vps}, nil, BasisCash, periods)
 	wantLines := []Line{
 		{Key: BreakdownKey{Provider: "provider domain", Category: CategoryDomain, Currency: "JPY"}, Amount: 1650},
 		{Key: BreakdownKey{Provider: "provider vps", Category: CategoryCompute, Currency: "USD"}, Amount: 4 * 1234},
@@ -477,7 +477,7 @@ func TestTotalsSumToThePayments(t *testing.T) {
 				d = p.Range.End.AddDays(1)
 			}
 			var sum int64
-			for _, pt := range Totals([]CostItem{c}, BasisAmortized, periods) {
+			for _, pt := range Totals([]CostItem{c}, nil, BasisAmortized, periods) {
 				for _, m := range pt.Totals {
 					sum += m.Minor
 				}

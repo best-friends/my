@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The state of the imports of a billing source (ADR-0068 §9).
+type: object
+required: [source, provider, time_zone, requests_today, requests_this_month, bytes_billed_this_month, months]
+properties:
+  source:
+    $ref: ./BillingSourceName.yaml
+  provider:
+    description: The provider's name, as the breakdown of the totals shows it.
+    type: string
+  time_zone:
+    description: |
+      The IANA time zone of the provider's billing months (`UTC`, `America/Los_Angeles`),
+      kept as the provider reports them.
+    type: string
+  last_run:
+    $ref: ./BillingImportRun.yaml
+  last_success_at:
+    description: When the last successful import ran; omitted before the first.
+    type: string
+    format: date-time
+  requests_today:
+    description: The billed requests of the imports this UTC day.
+    type: integer
+    minimum: 0
+  requests_this_month:
+    description: The billed requests of the imports this UTC month.
+    type: integer
+    minimum: 0
+  max_requests_per_day:
+    description: |
+      The cap of the billed requests per UTC day (`billing_aws_max_requests_per_day`);
+      omitted for a source without caps.
+    type: integer
+    minimum: 1
+  max_requests_per_month:
+    description: |
+      The cap of the billed requests per UTC month (`billing_aws_max_requests_per_month`);
+      omitted for a source without caps.
+    type: integer
+    minimum: 1
+  bytes_billed_this_month:
+    description: The BigQuery bytes billed this UTC month; 0 for the other sources.
+    type: integer
+    format: int64
+    minimum: 0
+  months:
+    description: The billing months of the last year with imported costs, newest first.
+    type: array
+    items:
+      $ref: ./BillingImportMonth.yaml

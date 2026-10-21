@@ -55,3 +55,57 @@ LIMIT sqlc.arg(lim);
 SELECT id, cost_item_id, effective_on, amount_minor, currency, revised_at FROM cost_item_price_revisions
 WHERE cost_item_id = ANY(sqlc.arg(ids)::text[])
 ORDER BY cost_item_id, id;
+
+-- The billing imports (ADR-0068 section 5). billing_import_runs and imported_cost_revisions are
+-- written once; imported_cost_heads is the projection of the revisions.
+
+-- name: InsertBillingImportRun :exec
+INSERT INTO billing_import_runs (id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+
+-- SumBillingImportRuns sums the requests and the bytes billed of the attempts of a source that
+-- occurred in [from, until).
+-- name: SumBillingImportRuns :one
+SELECT COALESCE(SUM(requests), 0)::bigint AS requests, COALESCE(SUM(bytes_billed), 0)::bigint AS bytes_billed
+FROM billing_import_runs
+WHERE source = sqlc.arg(source) AND occurred_at >= sqlc.arg(from_at) AND occurred_at < sqlc.arg(until_at);
+
+-- name: CountBillingImportRunsByKey :one
+SELECT COUNT(*) FROM billing_import_runs WHERE source = $1 AND run_key = $2;
+
+-- LastBillingImportRun returns the newest attempt of a source, only among the successes unless
+-- include_failed is true.
+-- name: LastBillingImportRun :one
+SELECT id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at FROM billing_import_runs
+WHERE source = sqlc.arg(source) AND (sqlc.arg(include_failed)::boolean OR outcome = 'succeeded')
+ORDER BY occurred_at DESC, id DESC
+LIMIT 1;
+
+-- InsertImportedCostRevision writes nothing when an attempt of the same job wrote the key.
+-- name: InsertImportedCostRevision :execrows
+INSERT INTO imported_cost_revisions (
+  id, source, billing_month, service, charge_type, category, starts_on, ends_on, amount_minor, currency, kind,
+  run_id, run_key, recorded_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+ON CONFLICT (source, billing_month, service, charge_type, run_key) DO NOTHING;
+
+-- name: UpsertImportedCostHead :exec
+INSERT INTO imported_cost_heads (source, billing_month, service, charge_type, revision_id) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (source, billing_month, service, charge_type) DO UPDATE SET revision_id = excluded.revision_id;
+
+-- ListImportedCostHeads returns the newest revision of every key, of one source unless source is
+-- empty and of the billing months months unless it is empty.
+-- name: ListImportedCostHeads :many
+SELECT r.id, r.source, r.billing_month, r.service, r.charge_type, r.category, r.starts_on, r.ends_on, r.amount_minor,
+  r.currency, r.kind, r.run_id, r.run_key, r.recorded_at
+FROM imported_cost_heads h JOIN imported_cost_revisions r ON r.id = h.revision_id
+WHERE (sqlc.arg(source)::text = '' OR h.source = sqlc.arg(source))
+  AND (cardinality(sqlc.arg(months)::text[]) = 0 OR h.billing_month = ANY(sqlc.arg(months)::text[]))
+ORDER BY h.source, h.billing_month, h.service, h.charge_type;
+
+-- LockImportedCostHeads locks the heads of a source's billing months, so that two imports of
+-- the source compare and write one after the other.
+-- name: LockImportedCostHeads :exec
+SELECT 1 FROM imported_cost_heads
+WHERE source = sqlc.arg(source) AND billing_month = ANY(sqlc.arg(months)::text[])
+FOR UPDATE;

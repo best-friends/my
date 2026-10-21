@@ -242,6 +242,10 @@ paths:
     $ref: ./paths/admin_instances_{domain}_mark_available.yaml
   /admin/audit_log:
     $ref: ./paths/admin_audit_log.yaml
+  /admin/billing_imports:
+    $ref: ./paths/admin_billing_imports.yaml
+  /admin/billing_imports/{source}/runs:
+    $ref: ./paths/admin_billing_imports_{source}_runs.yaml
   /admin/domain_actions:
     $ref: ./paths/admin_domain_actions.yaml
   /admin/domain_actions/{id}:
@@ -726,6 +730,16 @@ components:
       $ref: ./components/schemas/AppealModerationActionRequest.yaml
     AutoDeletePolicy:
       $ref: ./components/schemas/AutoDeletePolicy.yaml
+    BillingImport:
+      $ref: ./components/schemas/BillingImport.yaml
+    BillingImportList:
+      $ref: ./components/schemas/BillingImportList.yaml
+    BillingImportMonth:
+      $ref: ./components/schemas/BillingImportMonth.yaml
+    BillingImportRun:
+      $ref: ./components/schemas/BillingImportRun.yaml
+    BillingSourceName:
+      $ref: ./components/schemas/BillingSourceName.yaml
     ChangePasswordRequest:
       $ref: ./components/schemas/ChangePasswordRequest.yaml
     CopyCustomEmojiRequest:
@@ -874,6 +888,8 @@ components:
       $ref: ./components/schemas/ModerationAppeal.yaml
     ModerationAppealState:
       $ref: ./components/schemas/ModerationAppealState.yaml
+    Money:
+      $ref: ./components/schemas/Money.yaml
     MoveInstanceRuleRequest:
       $ref: ./components/schemas/MoveInstanceRuleRequest.yaml
     MuteAccountRequest:

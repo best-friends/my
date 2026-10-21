@@ -40,6 +40,8 @@ type Entry struct {
 	// Provider is the normalized provider that groups the breakdown, and Category its category.
 	Provider string
 	Category Category
+	// Estimated marks an imported cost of a month that its provider has not closed (ADR-0068 §3).
+	Estimated bool
 }
 
 // Entries returns the entries of the item's payments that meet window under basis: on the
@@ -75,11 +77,13 @@ type Line struct {
 
 // PeriodTotal is what a period carries: the total of each currency, by currency code, and the
 // breakdown by provider, category, and currency, sorted by provider, category, and currency.
-// A currency appears when an entry meets the period, even with a zero amount.
+// A currency appears when an entry meets the period, even with a zero amount. Estimated reports
+// that an estimated entry meets the period (ADR-0068 §3).
 type PeriodTotal struct {
 	Period    Period
 	Totals    []Money
 	Breakdown []Line
+	Estimated bool
 }
 
 // Summarize spreads entries over periods (Spread) and totals each period by currency, never
@@ -89,15 +93,17 @@ func Summarize(entries []Entry, periods []Period) []PeriodTotal {
 	for i, p := range periods {
 		totals := map[Currency]int64{}
 		lines := map[BreakdownKey]int64{}
+		estimated := false
 		for _, e := range entries {
 			if _, ok := e.Range.Intersect(p.Range); !ok {
 				continue
 			}
+			estimated = estimated || e.Estimated
 			amount := Spread(e.Amount.Minor, e.Range, p.Range)
 			totals[e.Amount.Currency] += amount
 			lines[BreakdownKey{Provider: e.Provider, Category: e.Category, Currency: e.Amount.Currency}] += amount
 		}
-		t := PeriodTotal{Period: p, Totals: make([]Money, 0, len(totals)), Breakdown: make([]Line, 0, len(lines))}
+		t := PeriodTotal{Period: p, Totals: make([]Money, 0, len(totals)), Breakdown: make([]Line, 0, len(lines)), Estimated: estimated}
 		for c, amount := range totals {
 			t.Totals = append(t.Totals, Money{Minor: amount, Currency: c})
 		}
@@ -115,8 +121,9 @@ func Summarize(entries []Entry, periods []Period) []PeriodTotal {
 }
 
 // Totals returns the totals of items under basis over periods: the entries of the items' payments
-// that meet the periods, summarized.
-func Totals(items []CostItem, basis Basis, periods []Period) []PeriodTotal {
+// that meet the periods, summarized with the entries of the imported costs, which every basis
+// spreads by day over their billing periods (ADR-0067 §5).
+func Totals(items []CostItem, imported []Entry, basis Basis, periods []Period) []PeriodTotal {
 	if len(periods) == 0 {
 		return nil
 	}
@@ -124,6 +131,11 @@ func Totals(items []CostItem, basis Basis, periods []Period) []PeriodTotal {
 	var entries []Entry
 	for _, c := range items {
 		entries = append(entries, c.Entries(basis, window)...)
+	}
+	for _, e := range imported {
+		if _, ok := e.Range.Intersect(window); ok {
+			entries = append(entries, e)
+		}
 	}
 	return Summarize(entries, periods)
 }

@@ -92,7 +92,72 @@ type Repository interface {
 	// AllItems returns every cost item that is not canceled, newest first: what the totals read.
 	AllItems(ctx context.Context) ([]finance.CostItem, error)
 
+	ImportRepository
 	ProjectionRepository
+}
+
+// Run is one attempt of a billing import (billing_import_runs): a success when ErrorKind is
+// ImportErrorNone.
+type Run struct {
+	ID     string
+	Source string
+	// RunKey is the idempotency key of the attempt's job, which its retries share.
+	RunKey      string
+	ErrorKind   ImportErrorKind
+	Requests    int
+	BytesBilled int64
+	OccurredAt  time.Time
+}
+
+// Succeeded reports whether the attempt recorded what the source reported.
+func (r Run) Succeeded() bool { return r.ErrorKind == ImportErrorNone }
+
+// ImportedKey identifies the cost of a source's billing month, service, and charge type.
+type ImportedKey struct {
+	Source     string
+	Month      finance.YearMonth
+	Service    string
+	ChargeType finance.ChargeType
+}
+
+// ImportedRevision is one revision of an imported cost (imported_cost_revisions): its amount in
+// minor units spread over Covered, and its kind.
+type ImportedRevision struct {
+	ID       string
+	Key      ImportedKey
+	Category finance.Category
+	Covered  finance.DateRange
+	Amount   finance.Money
+	Kind     finance.RevisionKind
+	// RunID is the attempt that recorded it, and RunKey the key of its job.
+	RunID      string
+	RunKey     string
+	RecordedAt time.Time
+}
+
+// ImportRepository is the part of Repository that records the billing imports (ADR-0068 §5).
+type ImportRepository interface {
+	// InsertRun records an attempt.
+	InsertRun(ctx context.Context, tx uow.Tx, r Run) error
+	// SumRuns returns the requests and the bytes billed of the attempts of source that occurred
+	// in [from, until).
+	SumRuns(ctx context.Context, source string, from, until time.Time) (requests int, bytesBilled int64, err error)
+	// RunKeyUsed reports whether an attempt of source recorded runKey.
+	RunKeyUsed(ctx context.Context, source, runKey string) (bool, error)
+	// LastRun returns the newest attempt of source, or its newest success when succeeded is
+	// true; it fails with ErrNotFound when there is none.
+	LastRun(ctx context.Context, source string, succeeded bool) (Run, error)
+	// ImportedHeads returns the newest revision of every key, of source unless it is "" and of
+	// months unless it is empty, ordered by source, month, service, and charge type.
+	ImportedHeads(ctx context.Context, source string, months []finance.YearMonth) ([]ImportedRevision, error)
+	// ImportedHeadsForUpdate returns the newest revision of every key of source and months in tx,
+	// locking the heads on the databases that lock rows.
+	ImportedHeadsForUpdate(ctx context.Context, tx uow.Tx, source string, months []finance.YearMonth) ([]ImportedRevision, error)
+	// InsertImportedRevision records a revision and reports whether it did: an attempt of the
+	// same job (RunKey) that already wrote the key writes nothing.
+	InsertImportedRevision(ctx context.Context, tx uow.Tx, r ImportedRevision) (bool, error)
+	// UpsertImportedHead makes r the newest revision of its key (imported_cost_heads).
+	UpsertImportedHead(ctx context.Context, tx uow.Tx, r ImportedRevision) error
 }
 
 // ProjectionRepository is the part of Repository that rebuilds the finance projection
@@ -101,4 +166,7 @@ type ProjectionRepository interface {
 	// RebuildHeads empties cost_item_heads and derives it from the cost items that are not
 	// canceled, with the newest label revision and end change of each.
 	RebuildHeads(ctx context.Context, tx uow.Tx) error
+	// RebuildImportedHeads empties imported_cost_heads and derives it from the newest revision
+	// of each key.
+	RebuildImportedHeads(ctx context.Context, tx uow.Tx) error
 }

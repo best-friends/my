@@ -121,6 +121,17 @@ type AuditLogEntry struct {
 	OccurredAt    int64
 }
 
+type BillingImportRun struct {
+	ID          string
+	Source      string
+	RunKey      string
+	Outcome     string
+	ErrorKind   string
+	Requests    int64
+	BytesBilled int64
+	OccurredAt  int64
+}
+
 type Block struct {
 	ID               string
 	Uri              sql.NullString
@@ -330,6 +341,23 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts int64
 	Notify     int64
+}
+
+type ImportedCostRevision struct {
+	ID           string
+	Source       string
+	BillingMonth string
+	Service      string
+	ChargeType   string
+	Category     string
+	StartsOn     string
+	EndsOn       string
+	AmountMinor  int64
+	Currency     string
+	Kind         string
+	RunID        string
+	RunKey       string
+	RecordedAt   int64
 }
 
 type InstanceAvailabilityEvent struct {

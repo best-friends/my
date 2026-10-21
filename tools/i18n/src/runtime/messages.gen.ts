@@ -820,6 +820,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.appeal_overturned": {};
   /** Appeal upheld */
   "client:admin.audit_log.action.appeal_upheld": {};
+  /** Billing import started */
+  "client:admin.audit_log.action.billing_import_queued": {};
   /** Custom emoji copied from another server */
   "client:admin.audit_log.action.custom_emoji_copied": {};
   /** Custom emoji registered */
@@ -978,6 +980,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.announcement": {};
   /** Appeal */
   "client:admin.audit_log.target_kind.appeal": {};
+  /** Billing source */
+  "client:admin.audit_log.target_kind.billing_source": {};
   /** Custom emoji */
   "client:admin.audit_log.target_kind.custom_emoji": {};
   /** Domain */
@@ -2102,6 +2106,8 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_custom_emojis": {};
   /** Other servers */
   "client:admin.roles.permission.manage_domains": {};
+  /** Costs */
+  "client:admin.roles.permission.manage_finance": {};
   /** Invites */
   "client:admin.roles.permission.manage_invites": {};
   /** Failed jobs */

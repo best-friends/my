@@ -8,6 +8,8 @@ package postgresgen
 
 import (
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Account struct {
@@ -119,6 +121,17 @@ type AuditLogEntry struct {
 	TargetLabel   string
 	SourceEventID *string
 	OccurredAt    time.Time
+}
+
+type BillingImportRun struct {
+	ID          string
+	Source      string
+	RunKey      string
+	Outcome     string
+	ErrorKind   string
+	Requests    int32
+	BytesBilled int64
+	OccurredAt  time.Time
 }
 
 type Block struct {
@@ -330,6 +343,23 @@ type FollowPreference struct {
 	FollowID   string
 	ShowBoosts bool
 	Notify     bool
+}
+
+type ImportedCostRevision struct {
+	ID           string
+	Source       string
+	BillingMonth string
+	Service      string
+	ChargeType   string
+	Category     string
+	StartsOn     pgtype.Date
+	EndsOn       pgtype.Date
+	AmountMinor  int64
+	Currency     string
+	Kind         string
+	RunID        string
+	RunKey       string
+	RecordedAt   time.Time
 }
 
 type InstanceAvailabilityEvent struct {

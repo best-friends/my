@@ -1635,6 +1635,10 @@
     "defaultMessage": "[Ȧƥƥḗḗȧȧŀ ŭŭƥħḗḗŀḓ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.billing_import_queued": {
+    "defaultMessage": "[Ɓīŀŀīƞɠ īḿƥǿǿřŧ şŧȧȧřŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.custom_emoji_copied": {
     "defaultMessage": "[Ƈŭŭşŧǿǿḿ ḗḗḿǿǿĵī ƈǿǿƥīḗḗḓ ƒřǿǿḿ ȧȧƞǿǿŧħḗḗř şḗḗřṽḗḗř]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1949,6 +1953,10 @@
   },
   "admin.audit_log.target_kind.appeal": {
     "defaultMessage": "[Ȧƥƥḗḗȧȧŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.billing_source": {
+    "defaultMessage": "[Ɓīŀŀīƞɠ şǿǿŭŭřƈḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.target_kind.custom_emoji": {
@@ -4197,6 +4205,10 @@
   },
   "admin.roles.permission.manage_domains": {
     "defaultMessage": "[Ǿŧħḗḗř şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.manage_finance": {
+    "defaultMessage": "[Ƈǿǿşŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permission.manage_invites": {

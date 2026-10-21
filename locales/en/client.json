@@ -1675,6 +1675,10 @@
     "defaultMessage": "Refetch of a server's posts requested",
     "description": "Kind of an audited operation: a moderator asked to fetch the stored posts of the accounts of a remote server again."
   },
+  "admin.audit_log.action.billing_import_queued": {
+    "defaultMessage": "Billing import started",
+    "description": "Kind of an audited operation: an administrator started an import of a cloud provider's usage charges (AWS, Google Cloud) now, besides the daily one."
+  },
   "admin.audit_log.action.relay_removed": {
     "defaultMessage": "Relay deleted",
     "description": "Kind of an audited operation: an administrator deleted the registration of a relay."
@@ -1926,6 +1930,10 @@
   "admin.audit_log.target_kind.relay": {
     "defaultMessage": "Relay",
     "description": "Kind of target of an audited operation: a federation relay, shown by its URL."
+  },
+  "admin.audit_log.target_kind.billing_source": {
+    "defaultMessage": "Billing source",
+    "description": "Kind of target of an audited operation: a cloud provider whose usage charges are imported into the costs, shown by its name (AWS, Google Cloud)."
   },
   "admin.audit_log.target_kind.report": {
     "defaultMessage": "Report",
@@ -3846,6 +3854,10 @@
   "admin.roles.permission.manage_announcements": {
     "defaultMessage": "Announcements",
     "description": "Name of the permission manage_announcements: the server's announcements to every local user."
+  },
+  "admin.roles.permission.manage_finance": {
+    "defaultMessage": "Costs",
+    "description": "Name of the permission manage_finance: the instance's costs, their totals, and the imports of the cloud providers' usage charges."
   },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "Custom emoji",

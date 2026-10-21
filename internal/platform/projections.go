@@ -149,7 +149,7 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 			},
 			{
 				Name: "finance", Module: "finance",
-				Tables: []string{"cost_item_heads"},
+				Tables: []string{"cost_item_heads", "imported_cost_heads"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return finance.RebuildProjections(ctx, u, r.finance)
 				},

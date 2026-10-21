@@ -39,6 +39,7 @@ const permissionLabels: Readonly<Record<Permission, ClientMessageKey>> = {
   manage_custom_emojis: "client:admin.roles.permission.manage_custom_emojis",
   manage_webhooks: "client:admin.roles.permission.manage_webhooks",
   manage_announcements: "client:admin.roles.permission.manage_announcements",
+  manage_finance: "client:admin.roles.permission.manage_finance",
 };
 
 const categoryLabels: Readonly<Record<"moderation" | "server", ClientMessageKey>> = {
