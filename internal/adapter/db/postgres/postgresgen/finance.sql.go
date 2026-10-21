@@ -40,8 +40,9 @@ func (q *Queries) DeleteCostItemHead(ctx context.Context, costItemID string) err
 }
 
 const getCostItemCurrentForUpdate = `-- name: GetCostItemCurrentForUpdate :one
-SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on
+SELECT h.cost_item_id, h.label_revision_id, h.ends_on, i.starts_on, l.name
 FROM cost_item_heads h JOIN cost_items i ON i.id = h.cost_item_id
+  JOIN cost_item_label_revisions l ON l.id = h.label_revision_id
 WHERE h.cost_item_id = $1
 FOR UPDATE OF h
 `
@@ -51,6 +52,7 @@ type GetCostItemCurrentForUpdateRow struct {
 	LabelRevisionID string
 	EndsOn          pgtype.Date
 	StartsOn        pgtype.Date
+	Name            string
 }
 
 func (q *Queries) GetCostItemCurrentForUpdate(ctx context.Context, costItemID string) (GetCostItemCurrentForUpdateRow, error) {
@@ -61,6 +63,7 @@ func (q *Queries) GetCostItemCurrentForUpdate(ctx context.Context, costItemID st
 		&i.LabelRevisionID,
 		&i.EndsOn,
 		&i.StartsOn,
+		&i.Name,
 	)
 	return i, err
 }

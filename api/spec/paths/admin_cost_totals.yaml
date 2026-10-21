@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getCostTotals
+  summary: Total the costs by period
+  description: |
+    The totals of the cost items and the imported usage charges for each week, month, or
+    year from the one that holds `from` to the one that holds `to` (ADR-0067 §4, §5), by
+    currency and broken down by provider and category, with the rules that cut the periods.
+    The totals are computed on every read. More than 104 weeks, 60 months, or 20 years, and
+    `to` before `from`, are a 422 naming `to`. Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: granularity
+      in: query
+      required: true
+      schema:
+        $ref: ../components/schemas/CostGranularity.yaml
+    - name: from
+      in: query
+      required: true
+      description: A date in the first period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: to
+      in: query
+      required: true
+      description: A date in the last period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: basis
+      in: query
+      required: false
+      description: How the totals place a payment; `amortized` by default.
+      schema:
+        $ref: ../components/schemas/CostBasis.yaml
+  responses:
+    "200":
+      description: The totals.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CostTotals.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 )
 
 // ErrInvalidCurrency reports a currency that is not an ISO 4217 code with minor units.
@@ -87,4 +88,30 @@ func Currencies() []Currency {
 type Money struct {
 	Minor    int64
 	Currency Currency
+}
+
+// ErrTooManyDigits reports an amount with more digits after the decimal point than its currency
+// has (ADR-0067 §9).
+var ErrTooManyDigits = errors.New("finance: more digits than the currency has")
+
+// ParseMoney parses an amount that a person enters: a decimal in major units with at most the
+// digits of its currency ("12.34" USD, "1650" JPY), never rounded. It fails with
+// ErrInvalidCurrency, ErrInvalidDecimal, and ErrTooManyDigits.
+func ParseMoney(amount, currency string) (Money, error) {
+	c, err := ParseCurrency(currency)
+	if err != nil {
+		return Money{}, err
+	}
+	if _, err := ParseDecimal(amount); err != nil {
+		return Money{}, err
+	}
+	digits, _ := c.MinorUnits()
+	if _, frac, ok := strings.Cut(amount, "."); ok && len(frac) > digits {
+		return Money{}, fmt.Errorf("%w: %q in %s", ErrTooManyDigits, amount, c)
+	}
+	minor, err := MinorUnitsOf(amount, c)
+	if err != nil {
+		return Money{}, err
+	}
+	return Money{Minor: minor, Currency: c}, nil
 }

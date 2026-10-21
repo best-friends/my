@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: reviseCostItemPrice
+  summary: Revise a cost item's price
+  description: |
+    Records the price of the payments on or after `effective_on`. A date before the start
+    date (`effective_on`) and an invalid price (`price`) are a 422. An unknown or canceled
+    item is a 404. Recorded in the audit log. Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/CostItemId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CostPriceRevisionRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/CostItem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

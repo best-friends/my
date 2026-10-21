@@ -69,6 +69,11 @@ export const auditActionLabels: Readonly<Record<AuditAction, ClientMessageKey>> 
   account_statuses_refetch_queued: "client:admin.audit_log.action.account_statuses_refetch_queued",
   domain_statuses_refetch_queued: "client:admin.audit_log.action.domain_statuses_refetch_queued",
   billing_import_queued: "client:admin.audit_log.action.billing_import_queued",
+  cost_item_created: "client:admin.audit_log.action.cost_item_created",
+  cost_item_relabeled: "client:admin.audit_log.action.cost_item_relabeled",
+  cost_item_price_revised: "client:admin.audit_log.action.cost_item_price_revised",
+  cost_item_end_changed: "client:admin.audit_log.action.cost_item_end_changed",
+  cost_item_canceled: "client:admin.audit_log.action.cost_item_canceled",
 };
 
 export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessageKey>> = {
@@ -88,6 +93,7 @@ export const auditTargetKindLabels: Readonly<Record<AuditTargetKind, ClientMessa
   invite: "client:admin.audit_log.target_kind.invite",
   relay: "client:admin.audit_log.target_kind.relay",
   billing_source: "client:admin.audit_log.target_kind.billing_source",
+  cost_item: "client:admin.audit_log.target_kind.cost_item",
 };
 
 /** Who performed an operation without a user's account to show. */
@@ -100,7 +106,7 @@ export const auditActorKindLabels: Readonly<Record<AuditActorKind, ClientMessage
 
 /**
  * The admin screen of an operation's target, where it has one; an account, a report, a domain, a sign-up block, a
- * role, a custom emoji, a webhook, an announcement, an invite or a relay.
+ * role, a custom emoji, a webhook, an announcement, an invite, a relay, a billing source or a cost item.
  * The other kinds of target (settings, rules, registrations) have no screen of their own, and a target that is
  * gone (erased past its retention, or deleted) has nothing left to show, so their entries show the label only.
  */
@@ -135,6 +141,10 @@ export function auditTargetHref(entry: Pick<AuditEntry, "target_kind" | "target_
     case "relay":
       // The list, which a deleted relay has left; a relay has no screen of its own.
       return "/admin/relays";
+    case "billing_source":
+    case "cost_item":
+      // The costs screen lists the items that are not canceled and the state of every billing source.
+      return "/admin/finance";
     default:
       return undefined;
   }

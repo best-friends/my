@@ -9130,5 +9130,589 @@
   "settings.import_export.kind.domain_mutes": {
     "defaultMessage": "ミュートしたドメイン",
     "description": "Name of the list of domains the user mutes, as one kind of CSV file to export or import."
+  },
+  "admin.finance.title": {
+    "defaultMessage": "費用",
+    "description": "Heading of the costs screen (the instance's running costs), and its link in the administration menu."
+  },
+  "admin.finance.summary": {
+    "defaultMessage": "サーバーの運営にかかる費用を記録し、週・月・年の合計を見ます。",
+    "description": "Description of the costs screen in the administration menu of the settings."
+  },
+  "admin.finance.description": {
+    "defaultMessage": "このサーバーの運営にかかる費用（単発の支払いと定期的な支払い）を記録し、合計を見ます。項目とその名前・メモは公開されません。",
+    "description": "Introduction of the costs screen."
+  },
+  "admin.finance.totals.title": {
+    "defaultMessage": "集計",
+    "description": "Heading of the section with the totals by period on the costs screen."
+  },
+  "admin.finance.basis": {
+    "defaultMessage": "計上のしかた",
+    "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen."
+  },
+  "admin.finance.basis.amortized": {
+    "defaultMessage": "按分",
+    "description": "Choice of counting a payment for more than a month (a yearly domain) by day over the days it pays for, on the costs screen. The default."
+  },
+  "admin.finance.basis.amortized.description": {
+    "defaultMessage": "1 か月や 1 週間あたりの費用を見ます。年払いは次の支払いまで日割りで載ります。",
+    "description": "Explanation of the spread choice on the costs screen."
+  },
+  "admin.finance.basis.cash": {
+    "defaultMessage": "現金主義",
+    "description": "Choice of counting each payment on the date it is paid, on the costs screen."
+  },
+  "admin.finance.basis.cash.description": {
+    "defaultMessage": "いつ何を払ったかを見ます。明細との照合に使います。",
+    "description": "Explanation of the payment-date choice on the costs screen."
+  },
+  "admin.finance.granularity": {
+    "defaultMessage": "期間",
+    "description": "Accessible name of the tabs that choose weeks, months, or years for the totals on the costs screen."
+  },
+  "admin.finance.granularity.week": {
+    "defaultMessage": "週",
+    "description": "Tab of the totals by ISO week on the costs screen."
+  },
+  "admin.finance.granularity.month": {
+    "defaultMessage": "月",
+    "description": "Tab of the totals by calendar month on the costs screen."
+  },
+  "admin.finance.granularity.year": {
+    "defaultMessage": "年",
+    "description": "Tab of the totals by calendar year on the costs screen."
+  },
+  "admin.finance.totals.caption": {
+    "defaultMessage": "{granularity}ごとの合計（{basis}）",
+    "description": "Accessible caption of the table of totals on the costs screen: the chosen period kind and the way payments are counted."
+  },
+  "admin.finance.totals.period": {
+    "defaultMessage": "期間",
+    "description": "Column header of the period in the table of totals on the costs screen."
+  },
+  "admin.finance.totals.total": {
+    "defaultMessage": "合計",
+    "description": "Column header of the total in the table of totals on the costs screen."
+  },
+  "admin.finance.totals.none": {
+    "defaultMessage": "なし",
+    "description": "Total of a period without any cost on the costs screen."
+  },
+  "admin.finance.totals.plus": {
+    "defaultMessage": "{sum} + {amount}",
+    "description": "Totals in different currencies, which are never converted, put together on the costs screen: an amount added to the amounts before it."
+  },
+  "admin.finance.totals.estimated": {
+    "defaultMessage": "見込みを含む",
+    "description": "Badge of a period whose total includes imported charges that the cloud provider has not closed yet and may still change, on the costs screen."
+  },
+  "admin.finance.period.week": {
+    "defaultMessage": "{range}（{week}）",
+    "description": "A week of the totals on the costs screen: its dates and its ISO week number such as 2026-W17."
+  },
+  "admin.finance.breakdown.title": {
+    "defaultMessage": "{period}の内訳",
+    "description": "Heading of the breakdown of the current period by provider and category on the costs screen."
+  },
+  "admin.finance.breakdown.empty": {
+    "defaultMessage": "この期間の費用はありません。",
+    "description": "What the breakdown says for a period without costs on the costs screen."
+  },
+  "admin.finance.rules.title": {
+    "defaultMessage": "期間の区切り方",
+    "description": "Heading of the rules that cut the periods of the totals on the costs screen."
+  },
+  "admin.finance.rules.dates": {
+    "defaultMessage": "費用は明細のとおり暦の日付で数え、タイムゾーンで区切りません。誰が見ても同じ合計になります。",
+    "description": "Rule of the totals on the costs screen: dates without time zones."
+  },
+  "admin.finance.rules.week_start": {
+    "defaultMessage": "週は月曜から日曜です（ISO 8601）。年をまたぐ週は、年の集計では 2 つの年に分かれます。",
+    "description": "Rule of the totals on the costs screen: the first day of a week."
+  },
+  "admin.finance.rules.amortized": {
+    "defaultMessage": "1 か月より長い周期の支払いは、支払日から次の支払日の前日まで日割りで載せ、合計が支払額に一致するように端数を丸めます。ほかの支払いは支払日に載せます。",
+    "description": "Rule of the spread totals on the costs screen."
+  },
+  "admin.finance.rules.cash": {
+    "defaultMessage": "各回の支払いを支払日の期間に載せます。",
+    "description": "Rule of the payment-date totals on the costs screen."
+  },
+  "admin.finance.rules.currencies": {
+    "defaultMessage": "通貨ごとに合計し、換算しません。",
+    "description": "Rule of the totals on the costs screen: currencies."
+  },
+  "admin.finance.rules.source": {
+    "defaultMessage": "{provider} の請求月は {timeZone} のタイムゾーンで区切られます。取り込んだ料金は請求月の日数に日割りで載ります。",
+    "description": "Rule of the totals on the costs screen: the time zone of an imported cloud provider's billing months (UTC, America/Los_Angeles)."
+  },
+  "admin.finance.rules.estimated": {
+    "defaultMessage": "事業者がまだ締めていない月の料金は見込みで、まだ変わることがあります。",
+    "description": "Rule of the totals on the costs screen: estimates of imported charges."
+  },
+  "admin.finance.new.title": {
+    "defaultMessage": "費用を登録する",
+    "description": "Heading of the form of a new cost on the costs screen."
+  },
+  "admin.finance.name": {
+    "defaultMessage": "名前",
+    "description": "Label of the name of a cost (such as a domain or a server plan) on the costs screen."
+  },
+  "admin.finance.name.description": {
+    "defaultMessage": "何の費用か（example.com、メインのサーバーなど）。{max} 文字まで。",
+    "description": "Explanation of the name of a cost on the costs screen."
+  },
+  "admin.finance.provider": {
+    "defaultMessage": "事業者",
+    "description": "Label of who is paid for a cost on the costs screen."
+  },
+  "admin.finance.provider.description": {
+    "defaultMessage": "支払い先。内訳は大文字と小文字の違いを区別せずにまとめます。",
+    "description": "Explanation of the provider of a cost on the costs screen."
+  },
+  "admin.finance.category": {
+    "defaultMessage": "区分",
+    "description": "Label of the category of a cost on the costs screen."
+  },
+  "admin.finance.category.compute": {
+    "defaultMessage": "サーバー",
+    "description": "Category of a cost: compute, the servers or functions that run the instance."
+  },
+  "admin.finance.category.database": {
+    "defaultMessage": "データベース",
+    "description": "Category of a cost: the database."
+  },
+  "admin.finance.category.storage": {
+    "defaultMessage": "ストレージ",
+    "description": "Category of a cost: storage of media and backups."
+  },
+  "admin.finance.category.network": {
+    "defaultMessage": "ネットワーク",
+    "description": "Category of a cost: network, CDN, and data transfer."
+  },
+  "admin.finance.category.domain": {
+    "defaultMessage": "ドメイン",
+    "description": "Category of a cost: domain registration and renewal."
+  },
+  "admin.finance.category.email": {
+    "defaultMessage": "メール",
+    "description": "Category of a cost: sending email."
+  },
+  "admin.finance.category.software": {
+    "defaultMessage": "ソフトウェア",
+    "description": "Category of a cost: software and services."
+  },
+  "admin.finance.category.other": {
+    "defaultMessage": "その他",
+    "description": "Category of a cost: anything else, and taxes."
+  },
+  "admin.finance.memo": {
+    "defaultMessage": "メモ",
+    "description": "Label of the operator's note on a cost, never published, on the costs screen."
+  },
+  "admin.finance.memo.description": {
+    "defaultMessage": "管理者だけが見ます。公開されません。",
+    "description": "Explanation of the memo of a cost on the costs screen."
+  },
+  "admin.finance.schedule": {
+    "defaultMessage": "支払いの周期",
+    "description": "Label of how often a cost is paid on the costs screen."
+  },
+  "admin.finance.schedule.description": {
+    "defaultMessage": "定期の支払いは開始日から数えます。31 日に始まる毎月の支払いは、短い月では月末になります。周期を後で変えるときは、終了日を設定して新しく登録します。",
+    "description": "Explanation of the payment schedule on the costs screen."
+  },
+  "admin.finance.schedule.once": {
+    "defaultMessage": "単発",
+    "description": "Choice of a cost paid once."
+  },
+  "admin.finance.schedule.weeks": {
+    "defaultMessage": "週ごと",
+    "description": "Choice of a cost paid every N weeks."
+  },
+  "admin.finance.schedule.months": {
+    "defaultMessage": "月ごと",
+    "description": "Choice of a cost paid every N months."
+  },
+  "admin.finance.schedule.years": {
+    "defaultMessage": "年ごと",
+    "description": "Choice of a cost paid every N years, such as a domain renewal."
+  },
+  "admin.finance.interval": {
+    "defaultMessage": "間隔",
+    "description": "Label of the N of a payment every N weeks, months, or years on the costs screen."
+  },
+  "admin.finance.interval.description": {
+    "defaultMessage": "毎週・毎月・毎年は 1、3 か月ごとは 3。{max} まで。",
+    "description": "Explanation of the interval of a payment on the costs screen."
+  },
+  "admin.finance.interval.invalid": {
+    "defaultMessage": "1 から {max} までの整数を入れてください。",
+    "description": "Error of an interval that is not a whole number in range on the costs screen."
+  },
+  "admin.finance.starts_on": {
+    "defaultMessage": "最初の支払日",
+    "description": "Label of the date of the first payment of a regular cost on the costs screen."
+  },
+  "admin.finance.starts_on.description": {
+    "defaultMessage": "明細や請求書に書かれた日付。",
+    "description": "Explanation of the first payment date on the costs screen."
+  },
+  "admin.finance.paid_on": {
+    "defaultMessage": "支払日",
+    "description": "Label of the date of a cost paid once on the costs screen."
+  },
+  "admin.finance.paid_on.description": {
+    "defaultMessage": "明細や請求書に書かれた日付。",
+    "description": "Explanation of the date of a cost paid once on the costs screen."
+  },
+  "admin.finance.ends_on": {
+    "defaultMessage": "終了日",
+    "description": "Label of the last date a regular payment can fall on, after which it stops, on the costs screen."
+  },
+  "admin.finance.ends_on.description": {
+    "defaultMessage": "任意。この日より後の支払いはなくなります。払い続ける間は空にします。",
+    "description": "Explanation of the end of a regular cost on the costs screen."
+  },
+  "admin.finance.ends_on.before_start": {
+    "defaultMessage": "終了日は最初の支払日より前にできません。",
+    "description": "Error of an end before the start on the costs screen."
+  },
+  "admin.finance.no_end": {
+    "defaultMessage": "終了日なし",
+    "description": "Value of the end of a regular cost without one on the costs screen."
+  },
+  "admin.finance.amount": {
+    "defaultMessage": "金額",
+    "description": "Label of the amount of a payment on the costs screen."
+  },
+  "admin.finance.amount.description": {
+    "defaultMessage": "通貨の主単位で（円なら 1650、ドルなら 12.34）。",
+    "description": "Explanation of the amount of a payment on the costs screen."
+  },
+  "admin.finance.amount.invalid": {
+    "defaultMessage": "1650 や 12.34 のように金額を入れてください。",
+    "description": "Error of an amount that is not a plain decimal number on the costs screen."
+  },
+  "admin.finance.currency": {
+    "defaultMessage": "通貨",
+    "description": "Label of the currency code of a payment on the costs screen."
+  },
+  "admin.finance.currency.description": {
+    "defaultMessage": "3 文字のコード（JPY、USD など）。",
+    "description": "Explanation of the ISO 4217 currency code on the costs screen."
+  },
+  "admin.finance.currency.invalid": {
+    "defaultMessage": "JPY のような 3 文字の通貨コードを入れてください。",
+    "description": "Error of a currency that is not three letters on the costs screen."
+  },
+  "admin.finance.required": {
+    "defaultMessage": "入力してください。",
+    "description": "Error of a required field left empty on the costs screen."
+  },
+  "admin.finance.too_long": {
+    "defaultMessage": "{max} 文字以内にしてください。",
+    "description": "Error of a text that is too long on the costs screen."
+  },
+  "admin.finance.create": {
+    "defaultMessage": "費用を登録する",
+    "description": "Button that records a new cost on the costs screen."
+  },
+  "admin.finance.create_failed": {
+    "defaultMessage": "費用を登録できませんでした：{reason}",
+    "description": "Error below the form of a new cost on the costs screen, with the server's reason."
+  },
+  "admin.finance.created": {
+    "defaultMessage": "{name}を登録しました。監査ログに記録しました。",
+    "description": "Result of recording a cost on the costs screen."
+  },
+  "admin.finance.list.title": {
+    "defaultMessage": "登録した費用",
+    "description": "Heading of the list of recorded costs on the costs screen."
+  },
+  "admin.finance.empty": {
+    "defaultMessage": "費用はまだありません",
+    "description": "Heading of the empty list of costs on the costs screen."
+  },
+  "admin.finance.empty.description": {
+    "defaultMessage": "上のフォームからサーバーの費用を登録します。",
+    "description": "Explanation of the empty list of costs on the costs screen."
+  },
+  "admin.finance.every.once": {
+    "defaultMessage": "単発",
+    "description": "How often a cost is paid: once."
+  },
+  "admin.finance.every.weeks": {
+    "defaultMessage": "{count, plural, other {#週ごと}}",
+    "description": "How often a cost is paid: every N weeks."
+  },
+  "admin.finance.every.months": {
+    "defaultMessage": "{count, plural, other {#か月ごと}}",
+    "description": "How often a cost is paid: every N months."
+  },
+  "admin.finance.every.years": {
+    "defaultMessage": "{count, plural, other {#年ごと}}",
+    "description": "How often a cost is paid: every N years."
+  },
+  "admin.finance.price": {
+    "defaultMessage": "今の金額",
+    "description": "Term of the price of a payment today on the costs screen."
+  },
+  "admin.finance.prices": {
+    "defaultMessage": "金額の改定",
+    "description": "Term of the list of the prices of a cost by date on the costs screen."
+  },
+  "admin.finance.price_from": {
+    "defaultMessage": "{date}から {amount}",
+    "description": "A price of a cost from a date on on the costs screen."
+  },
+  "admin.finance.created_at": {
+    "defaultMessage": "登録日時",
+    "description": "Term of when a cost was recorded on the costs screen."
+  },
+  "admin.finance.edit": {
+    "defaultMessage": "編集",
+    "description": "Button that opens the dialog that changes the name, provider, category, and memo of a cost on the costs screen."
+  },
+  "admin.finance.edit_one": {
+    "defaultMessage": "編集：{name}",
+    "description": "Accessible name of the edit button of a cost on the costs screen."
+  },
+  "admin.finance.edit.title": {
+    "defaultMessage": "費用を編集する",
+    "description": "Title of the dialog that changes the label of a cost on the costs screen."
+  },
+  "admin.finance.revise": {
+    "defaultMessage": "金額を改定",
+    "description": "Button that opens the dialog of a new price from a date on on the costs screen."
+  },
+  "admin.finance.revise_one": {
+    "defaultMessage": "金額を改定：{name}",
+    "description": "Accessible name of the price button of a cost on the costs screen."
+  },
+  "admin.finance.revise.title": {
+    "defaultMessage": "{name}の金額を改定する",
+    "description": "Title of the dialog of a new price on the costs screen."
+  },
+  "admin.finance.effective_on": {
+    "defaultMessage": "改定日",
+    "description": "Label of the date from which a new price applies on the costs screen."
+  },
+  "admin.finance.effective_on.description": {
+    "defaultMessage": "この日以降の支払いが新しい金額になります。誤りを全期間で直すときは、最初の支払日にします。",
+    "description": "Explanation of the date of a new price on the costs screen."
+  },
+  "admin.finance.effective_on.before_start": {
+    "defaultMessage": "改定日は最初の支払日より前にできません。",
+    "description": "Error of a price change before the start on the costs screen."
+  },
+  "admin.finance.end": {
+    "defaultMessage": "終了日を設定",
+    "description": "Button that opens the dialog of the end of a regular cost on the costs screen."
+  },
+  "admin.finance.end_one": {
+    "defaultMessage": "終了日を設定：{name}",
+    "description": "Accessible name of the end button of a cost on the costs screen."
+  },
+  "admin.finance.end.title": {
+    "defaultMessage": "{name}の終了日",
+    "description": "Title of the dialog of the end of a cost on the costs screen."
+  },
+  "admin.finance.end.description": {
+    "defaultMessage": "この日より後の支払いがなくなり、過去の支払いは集計に残ります。払い続けるときは空にします。",
+    "description": "Explanation of the end in its dialog on the costs screen."
+  },
+  "admin.finance.ended": {
+    "defaultMessage": "{name}の終了日を設定しました。監査ログに記録しました。",
+    "description": "Result of setting the end of a cost on the costs screen."
+  },
+  "admin.finance.end_removed": {
+    "defaultMessage": "{name}の終了日を外しました。監査ログに記録しました。",
+    "description": "Result of removing the end of a cost on the costs screen."
+  },
+  "admin.finance.relabeled": {
+    "defaultMessage": "{name}を変更しました。監査ログに記録しました。",
+    "description": "Result of changing the label of a cost on the costs screen."
+  },
+  "admin.finance.revised": {
+    "defaultMessage": "{name}の金額を改定しました。監査ログに記録しました。",
+    "description": "Result of a new price on the costs screen."
+  },
+  "admin.finance.cancel_item": {
+    "defaultMessage": "取り消す",
+    "description": "Button that removes a cost recorded by mistake from every period on the costs screen."
+  },
+  "admin.finance.cancel_one": {
+    "defaultMessage": "取り消す：{name}",
+    "description": "Accessible name of the delete button of a cost on the costs screen."
+  },
+  "admin.finance.cancel.title": {
+    "defaultMessage": "{name}を取り消しますか？",
+    "description": "Title of the confirmation of deleting a cost on the costs screen."
+  },
+  "admin.finance.cancel.description": {
+    "defaultMessage": "過去の期間を含むすべての期間から消え、元に戻せません。解約して過去の支払いを残すときは、代わりに終了日を設定します。",
+    "description": "Explanation in the confirmation of deleting a cost on the costs screen."
+  },
+  "admin.finance.canceled": {
+    "defaultMessage": "{name}を取り消しました。監査ログに記録しました。",
+    "description": "Result of deleting a cost on the costs screen."
+  },
+  "admin.finance.change_failed": {
+    "defaultMessage": "費用を変更できませんでした：{reason}",
+    "description": "Error of a change of a cost on the costs screen, with the server's reason."
+  },
+  "admin.finance.cancel_dialog": {
+    "defaultMessage": "キャンセル",
+    "description": "Button that closes a dialog without saving on the costs screen."
+  },
+  "admin.finance.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of a dialog on the costs screen."
+  },
+  "admin.finance.save": {
+    "defaultMessage": "保存する",
+    "description": "Button that saves a dialog on the costs screen."
+  },
+  "admin.finance.imports.title": {
+    "defaultMessage": "利用料金の取り込み",
+    "description": "Heading of the section with the state of the imports of the cloud providers' usage charges on the costs screen."
+  },
+  "admin.finance.imports.none": {
+    "defaultMessage": "利用料金を取り込んでいません",
+    "description": "Heading when no cloud provider's charges are imported on the costs screen."
+  },
+  "admin.finance.imports.none.description": {
+    "defaultMessage": "サーバーの運営者がデプロイの設定（billing_sources）で有効にします。",
+    "description": "Explanation of how to turn the billing imports on on the costs screen."
+  },
+  "admin.finance.imports.time_zone": {
+    "defaultMessage": "請求月の基準",
+    "description": "Term of the time zone that cuts a provider's billing months on the costs screen."
+  },
+  "admin.finance.imports.last_success": {
+    "defaultMessage": "最後に成功した取り込み",
+    "description": "Term of when the charges were last imported on the costs screen."
+  },
+  "admin.finance.imports.last_run": {
+    "defaultMessage": "最後の試行",
+    "description": "Term of the last attempt to import the charges and its result on the costs screen."
+  },
+  "admin.finance.imports.never": {
+    "defaultMessage": "まだありません",
+    "description": "Value of an import that has not happened on the costs screen."
+  },
+  "admin.finance.imports.requests_today": {
+    "defaultMessage": "今日の課金される要求（UTC）",
+    "description": "Term of the billed requests to the provider this UTC day, with the cap, on the costs screen."
+  },
+  "admin.finance.imports.requests_month": {
+    "defaultMessage": "今月の課金される要求（UTC）",
+    "description": "Term of the billed requests to the provider this UTC month, with the cap, on the costs screen."
+  },
+  "admin.finance.imports.used_of": {
+    "defaultMessage": "{max} 回中 {used} 回",
+    "description": "Requests made and their cap on the costs screen."
+  },
+  "admin.finance.imports.bytes": {
+    "defaultMessage": "今月の課金されたバイト数",
+    "description": "Term of the BigQuery bytes billed this month on the costs screen."
+  },
+  "admin.finance.imports.months": {
+    "defaultMessage": "{provider}の請求月",
+    "description": "Accessible name of the list of a provider's imported billing months on the costs screen."
+  },
+  "admin.finance.imports.kind.estimate": {
+    "defaultMessage": "見込み",
+    "description": "State of an imported billing month that its provider has not closed."
+  },
+  "admin.finance.imports.kind.final": {
+    "defaultMessage": "確定",
+    "description": "State of an imported billing month that its provider has closed."
+  },
+  "admin.finance.imports.kind.correction": {
+    "defaultMessage": "確定後に修正",
+    "description": "State of an imported billing month whose amount changed after it was closed."
+  },
+  "admin.finance.imports.error.none": {
+    "defaultMessage": "成功",
+    "description": "Result of an import attempt that succeeded."
+  },
+  "admin.finance.imports.error.permission": {
+    "defaultMessage": "失敗：認証情報に請求データを読む権限がありません。サーバーのロールかサービスアカウントに権限を付けてください。",
+    "description": "Result of an import attempt refused for lack of permission, with how to fix it."
+  },
+  "admin.finance.imports.error.not_enabled": {
+    "defaultMessage": "失敗：アカウントで請求データが有効になっていません。事業者の画面で有効にしてください。",
+    "description": "Result of an import attempt whose billing data is not enabled, with how to fix it."
+  },
+  "admin.finance.imports.error.not_found": {
+    "defaultMessage": "失敗：請求データが見つかりません。デプロイの設定のデータセットやテーブルを確かめてください。",
+    "description": "Result of an import attempt that found no billing data, with how to fix it."
+  },
+  "admin.finance.imports.error.throttled": {
+    "defaultMessage": "失敗：事業者が要求を制限しました。もう一度試します。",
+    "description": "Result of an import attempt that was throttled; it is retried."
+  },
+  "admin.finance.imports.error.request_cap": {
+    "defaultMessage": "見送り：課金される要求の上限に達しました。翌日か翌月の取り込みが再び試します。",
+    "description": "Result of an import attempt that called nothing because the cap of billed requests is reached."
+  },
+  "admin.finance.imports.error.bytes_cap": {
+    "defaultMessage": "失敗：問い合わせが課金されるバイト数の上限を超えます。",
+    "description": "Result of an import attempt whose query would scan too much."
+  },
+  "admin.finance.imports.error.invalid_response": {
+    "defaultMessage": "失敗：事業者の応答を読めませんでした。",
+    "description": "Result of an import attempt with an unusable answer."
+  },
+  "admin.finance.imports.error.unavailable": {
+    "defaultMessage": "失敗：事業者が応答しませんでした。もう一度試します。",
+    "description": "Result of an import attempt whose provider did not answer; it is retried."
+  },
+  "admin.finance.imports.run": {
+    "defaultMessage": "今すぐ取り込む",
+    "description": "Button that imports a provider's charges now, besides the daily import, on the costs screen."
+  },
+  "admin.finance.imports.run_one": {
+    "defaultMessage": "今すぐ取り込む：{provider}",
+    "description": "Accessible name of the import button of a provider on the costs screen."
+  },
+  "admin.finance.imports.queued": {
+    "defaultMessage": "{provider}の取り込みを始めました。監査ログに記録しました。",
+    "description": "Result of starting an import on the costs screen."
+  },
+  "admin.finance.imports.too_soon": {
+    "defaultMessage": "この事業者の取り込みは 1 時間以内に実行されています。しばらくしてから試してください。",
+    "description": "Error of an import started again within the hour on the costs screen."
+  },
+  "admin.finance.imports.failed": {
+    "defaultMessage": "取り込みを始められませんでした：{reason}",
+    "description": "Error of starting an import on the costs screen, with the server's reason."
+  },
+  "admin.audit_log.action.cost_item_created": {
+    "defaultMessage": "費用の登録",
+    "description": "Kind of an audited operation: an administrator recorded a cost of the instance."
+  },
+  "admin.audit_log.action.cost_item_relabeled": {
+    "defaultMessage": "費用の変更",
+    "description": "Kind of an audited operation: an administrator changed the name, provider, category, or memo of a cost."
+  },
+  "admin.audit_log.action.cost_item_price_revised": {
+    "defaultMessage": "費用の金額の改定",
+    "description": "Kind of an audited operation: an administrator changed the price of a cost from a date on."
+  },
+  "admin.audit_log.action.cost_item_end_changed": {
+    "defaultMessage": "費用の終了日の変更",
+    "description": "Kind of an audited operation: an administrator set or removed the end of a regular cost."
+  },
+  "admin.audit_log.action.cost_item_canceled": {
+    "defaultMessage": "費用の取り消し",
+    "description": "Kind of an audited operation: an administrator removed a cost recorded by mistake from every period."
+  },
+  "admin.audit_log.target_kind.cost_item": {
+    "defaultMessage": "費用",
+    "description": "Kind of target of an audited operation: a cost of the instance, shown by its name."
   }
 }

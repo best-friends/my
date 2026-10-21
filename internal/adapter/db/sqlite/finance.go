@@ -152,6 +152,7 @@ func (r *FinanceRepository) CurrentForUpdate(ctx context.Context, tx uow.Tx, cos
 	return appfinance.Current{
 		Head:     appfinance.Head{CostItemID: row.CostItemID, LabelRevisionID: row.LabelRevisionID, EndsOn: ends},
 		StartsOn: starts,
+		Name:     row.Name,
 	}, nil
 }
 

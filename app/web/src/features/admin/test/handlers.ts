@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the server administration feature (web-client.md §7): the job queue, the settings, the rules, the
-// server's texts, the custom emoji, the webhooks, the announcements, and the relays, none by default. The default viewer has no permissions, so the screens' tests start with
+// server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, and the billing imports, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
 import type { Schemas } from "../../../test/fixtures";
@@ -140,6 +140,39 @@ export function ruleFixture(id: string, position: number, overrides: Partial<Sch
     ...overrides,
   };
 }
+
+/** A cost item as the admin API answers it: a yearly domain from 2026-04-10 at 1,650 yen, recorded then, with `overrides`. */
+export function costItemFixture(id: string, overrides: Partial<Schemas["CostItem"]> = {}): Schemas["CostItem"] {
+  return {
+    id,
+    schedule: "years",
+    interval: 1,
+    starts_on: "2026-04-10",
+    name: "example.com",
+    provider: "Registrar",
+    category: "domain",
+    memo: "",
+    prices: [{ effective_on: "2026-04-10", price: { amount: "1650", currency: "JPY" }, revised_at: "2026-04-10T00:00:00Z" }],
+    created_at: "2026-04-10T00:00:00Z",
+    ...overrides,
+  };
+}
+
+/** The totals that the default handler answers: the periods of the query, each without costs. */
+function emptyTotals(url: URL): Schemas["CostTotals"] {
+  const granularity = (url.searchParams.get("granularity") ?? "month") as Schemas["CostGranularity"];
+  const basis = (url.searchParams.get("basis") ?? "amortized") as Schemas["CostBasis"];
+  const to = url.searchParams.get("to") ?? "2026-10-22";
+  return {
+    granularity,
+    basis,
+    periods: [{ label: to.slice(0, 7), starts_on: `${to.slice(0, 7)}-01`, ends_on: to, totals: [], breakdown: [], estimated: false }],
+    rules: { week_start: "monday", sources: [] },
+  };
+}
+
+/** The ID the default POST /admin/cost_items handler gives a new cost item. */
+const createdCostItemId = "0199f0e0-0000-7000-8000-0000000000a1";
 
 /** The ID the default POST /admin/rules handler gives a new rule. */
 const createdRuleId = "0199f0e0-0000-7000-8000-0000000000f1";
@@ -308,4 +341,39 @@ export const handlers = [
   http.post(`${apiBase}/admin/announcements/:id/withdraw`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(adminAnnouncementFixture(String(params["id"]), { state: "withdrawn" }))),
   ),
+  // operationIds listCostItems, createCostItem, getCostItem, updateCostItem, reviseCostItemPrice, setCostItemEnd,
+  // cancelCostItem, getCostTotals, listBillingImports, runBillingImport: no items, no costs in the periods asked for,
+  // and no billing sources; a new or changed item is answered as sent.
+  http.get(`${apiBase}/admin/cost_items`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["CostItemPage"]))),
+  http.post(`${apiBase}/admin/cost_items`, async ({ request }) => {
+    const { price, ends_on, memo, ...body } = (await request.clone().json()) as Schemas["CostItemCreateRequest"];
+    return withViewer(request, () =>
+      HttpResponse.json(
+        costItemFixture(createdCostItemId, {
+          ...body,
+          memo: memo ?? "",
+          ...(ends_on === undefined ? {} : { ends_on }),
+          prices: [{ effective_on: body.starts_on, price, revised_at: "2026-10-22T00:00:00Z" }],
+        }),
+      ),
+    );
+  }),
+  http.get(`${apiBase}/admin/cost_items/:id`, ({ request, params }) => withViewer(request, () => HttpResponse.json(costItemFixture(String(params["id"]))))),
+  http.patch(`${apiBase}/admin/cost_items/:id`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["CostItemLabelRequest"];
+    return withViewer(request, () => HttpResponse.json(costItemFixture(String(params["id"]), body)));
+  }),
+  http.post(`${apiBase}/admin/cost_items/:id/price_revisions`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["CostPriceRevisionRequest"];
+    const item = costItemFixture(String(params["id"]));
+    return withViewer(request, () => HttpResponse.json({ ...item, prices: [...item.prices, { ...body, revised_at: "2026-10-22T00:00:00Z" }] }));
+  }),
+  http.put(`${apiBase}/admin/cost_items/:id/end`, async ({ request, params }) => {
+    const body = (await request.clone().json()) as Schemas["CostItemEndRequest"];
+    return withViewer(request, () => HttpResponse.json(costItemFixture(String(params["id"]), body)));
+  }),
+  http.post(`${apiBase}/admin/cost_items/:id/cancel`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.get(`${apiBase}/admin/cost_totals`, ({ request }) => withViewer(request, () => HttpResponse.json(emptyTotals(new URL(request.url))))),
+  http.get(`${apiBase}/admin/billing_imports`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["BillingImportList"]))),
+  http.post(`${apiBase}/admin/billing_imports/:source/runs`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
 ];

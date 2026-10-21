@@ -60,10 +60,13 @@ type Head struct {
 	EndsOn          *finance.Date // nil for no end
 }
 
-// Current is the head of a cost item with its start date, read in the transaction of a change.
+// Current is the head of a cost item with its start date and current name, read in the
+// transaction of a change.
 type Current struct {
 	Head     Head
 	StartsOn finance.Date
+	// Name is the name of the current label, which labels the change in the audit log.
+	Name string
 }
 
 // Repository is the persistence port of the finance module.
