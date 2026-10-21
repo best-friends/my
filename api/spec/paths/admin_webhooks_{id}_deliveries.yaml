@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listWebhookDeliveries
+  summary: List the deliveries of a webhook
+  description: |
+    The messages sent to the endpoint in the last 14 days, newest first, with their
+    attempts. An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/WebhookId.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the deliveries.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminWebhookDeliveryPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

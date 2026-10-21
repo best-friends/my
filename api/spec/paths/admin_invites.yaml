@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listInvites
+  summary: List the invites
+  description: |
+    The invites that let people sign up while the registration mode is `invite` (FR-001),
+    newest first, with how they have been used. Needs the `manage_invites` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of invites.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminInvitePage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createInvite
+  summary: Create an invite
+  description: |
+    Creates an invite with a new random code. It works only while the registration mode is
+    `invite`. `max_uses` outside 1 to 1,000,000 or `expires_in` outside 1 second to 10
+    years is a 422 naming it. Needs the `manage_invites` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateInviteRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminInvite.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

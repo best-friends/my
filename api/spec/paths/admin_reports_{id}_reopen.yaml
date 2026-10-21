@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: reopenReport
+  summary: Reopen a resolved report
+  description: |
+    Puts a resolved report back in the queue as `open`, keeping its assignee. Resolving it
+    again does not notify the reporter again. An open report is a 409, an unknown ID a
+    404. Needs the `manage_reports` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/ReportId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminReportDetail.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An announcement with its Markdown text and its state.
+type: object
+required: [id, text, content, state, created_at, updated_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  text:
+    description: The text, in Markdown.
+    type: string
+  content:
+    description: The text as the users get it, an HTML fragment (`Announcement.content`).
+    type: string
+  state:
+    $ref: ./AdminAnnouncementState.yaml
+  starts_at:
+    description: When it starts to show once published; omitted to show it from its publication.
+    type: string
+    format: date-time
+  ends_at:
+    description: When it stops showing; omitted to show it until it is withdrawn.
+    type: string
+    format: date-time
+  published_at:
+    description: When it was last published; omitted for a draft.
+    type: string
+    format: date-time
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    description: When its text or window last changed.
+    type: string
+    format: date-time

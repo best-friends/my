@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+put:
+  operationId: grantAccountRole
+  summary: Grant a role to a local account
+  description: |
+    Grants the role to the user of a local account; its permissions apply from the user's
+    next request, and the audit log records `role_granted`. Granting a role that the user
+    holds changes nothing and records nothing. A role whose position is above every role
+    of the viewer is a 403. An unknown account, one that is not local, or an unknown role
+    is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+    permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AdminAccountId.yaml
+    - $ref: ../components/parameters/RoleKey.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRoleList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: revokeAccountRole
+  summary: Revoke a role from a local account
+  description: |
+    Revokes the role from the user of a local account; its permissions stop applying from
+    the user's next request, and the audit log records `role_revoked`. Revoking a role
+    that the user does not hold changes nothing and records nothing. A role whose
+    position is above every role of the viewer is a 403, and revoking `admin` from its
+    only holder is a 409. An unknown account, one that is not local, or an unknown role
+    is a 404. Answers the roles that the user holds afterwards. Needs the `manage_roles`
+    permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AdminAccountId.yaml
+    - $ref: ../components/parameters/RoleKey.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRoleList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

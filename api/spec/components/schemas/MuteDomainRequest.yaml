@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The domain to mute.
+type: object
+required: [domain]
+properties:
+  domain:
+    description: A remote domain, such as `mastodon.example`; its subdomains are muted too.
+    type: string
+    minLength: 1
+    maxLength: 253

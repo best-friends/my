@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A run of a job that did not succeed.
+type: object
+required: [attempt, type, outcome, error, worker, started_at, finished_at]
+properties:
+  attempt:
+    description: The number of the run, from 1.
+    type: integer
+    minimum: 1
+  type:
+    description: The job type.
+    type: string
+  outcome:
+    description: "`retry`: the job runs again. `dead`: it failed for good."
+    type: string
+    enum: [retry, dead]
+  error:
+    description: Why the run failed, at most 2,000 bytes.
+    type: string
+  worker:
+    description: The worker that ran it.
+    type: string
+  started_at:
+    type: string
+    format: date-time
+  finished_at:
+    type: string
+    format: date-time

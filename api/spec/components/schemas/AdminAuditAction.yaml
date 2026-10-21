@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The kind of an audited operation, each on one kind of target. On an `account`:
+  `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
+  `revealed_private_data` (a moderator was shown the account's email address and IP
+  addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+  authentication), `password_reset_link_issued` (an administrator issued a link that sets
+  a new password for the account's user). On a `domain`:
+  `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
+  `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+  `user` (a registration):
+  `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
+  (an instance setting), `text_changed` (an instance text). On a `rule`:
+  `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+  `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+  `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+  an `appeal`:
+  `appeal_upheld`, `appeal_overturned` (which also records the action's
+  `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
+  `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
+  `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+  `custom_emoji_copied` (a new local emoji copied from a remote one),
+  `custom_emoji_updated` (its category, aliases, or place in the picker),
+  `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
+  `webhook_created`, `webhook_updated` (its URL, description, or events),
+  `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
+  endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
+  description and the host name of its URL, never the URL. On an `announcement`:
+  `announcement_created`, `announcement_updated` (its text or window),
+  `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+  text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+  characters of its code, never the whole code. On a `relay`: `relay_added`,
+  `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
+  `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
+  posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
+  `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
+  on a `domain`.
+type: string
+enum:
+  - account_action_issued
+  - account_action_lifted
+  - domain_action_issued
+  - domain_action_lifted
+  - report_assigned
+  - report_unassigned
+  - report_resolved
+  - report_reopened
+  - report_note_added
+  - registration_approved
+  - registration_rejected
+  - setting_changed
+  - text_changed
+  - rule_added
+  - rule_revised
+  - rule_moved
+  - rule_retired
+  - role_granted
+  - role_revoked
+  - role_created
+  - role_updated
+  - role_deleted
+  - appeal_upheld
+  - appeal_overturned
+  - account_deletion_cancelled
+  - revealed_private_data
+  - signup_block_added
+  - signup_block_lifted
+  - two_factor_disabled
+  - password_reset_link_issued
+  - custom_emoji_created
+  - custom_emoji_image_replaced
+  - custom_emoji_copied
+  - custom_emoji_updated
+  - custom_emoji_enabled
+  - custom_emoji_disabled
+  - custom_emoji_deleted
+  - webhook_created
+  - webhook_updated
+  - webhook_deleted
+  - webhook_enabled
+  - webhook_disabled
+  - webhook_secret_rotated
+  - announcement_created
+  - announcement_updated
+  - announcement_published
+  - announcement_withdrawn
+  - invite_created
+  - invite_revoked
+  - relay_added
+  - relay_followed
+  - relay_unfollowed
+  - relay_removed
+  - relay_accepted
+  - relay_rejected
+  - status_refetch_queued
+  - account_statuses_refetch_queued
+  - domain_statuses_refetch_queued

@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listReports
+  summary: List the reports
+  description: |
+    The reports in the moderators' queue (FR-701), newest first. Needs the `manage_reports`
+    permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: state
+      in: query
+      required: false
+      description: Keep only the reports in this state; omitted keeps both.
+      schema:
+        $ref: ../components/schemas/AdminReportState.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of reports.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminReportPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

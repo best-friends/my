@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The authenticated user's preferences.
+type: object
+required: [locale, time_zone, time_zone_chosen, default_visibility, default_post_language, require_media_description, email_moderator_notifications, timeline_languages]
+properties:
+  locale:
+    description: The UI locale, a BCP 47 language tag.
+    type: string
+  time_zone:
+    description: The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen.
+    type: string
+  time_zone_chosen:
+    description: |
+      Whether a time zone has been chosen: false for a new user until a request sets
+      `time_zone`. Clients may then set it to the device's time zone.
+    type: boolean
+  default_visibility:
+    $ref: ./Visibility.yaml
+  default_post_language:
+    description: The language of new posts that name none, a BCP 47 language tag; `und` when undetermined.
+    type: string
+  require_media_description:
+    description: Whether clients ask for a description before posting media without one.
+    type: boolean
+  email_moderator_notifications:
+    description: |
+      Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+      also come by email, to the primary address. Off for a new user.
+    type: boolean
+  timeline_languages:
+    description: The languages that timelines show, sorted; empty shows every language.
+    type: array
+    items:
+      type: string

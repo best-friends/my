@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: downloadDataExport
+  summary: Download the archive of a data export
+  description: |
+    Returns the ZIP archive of one of the user's exports. An export that is not `ready` is
+    a 409 `/api/v1/problems/export-not-ready`; another user's export is a 404.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:accounts"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the export.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  responses:
+    "200":
+      description: The archive.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+        Content-Disposition:
+          description: Names the file to save the archive as.
+          schema:
+            type: string
+      content:
+        application/zip:
+          schema:
+            type: string
+            format: binary
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: dismissNotification
+  summary: Dismiss a notification
+  description: |
+    Removes the notification from the list and the unread count. Dismissing it again
+    changes nothing; a notification that is not the user's is a 404.
+  tags: [notifications]
+  security:
+    - oauth2: ["write:notifications"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the notification.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  responses:
+    "204":
+      description: The notification is dismissed.
+    default:
+      $ref: ../components/responses/Problem.yaml

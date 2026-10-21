@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new TOTP secret to add to an authenticator app.
+type: object
+required: [secret, uri, qr_code, setup_token, expires_at]
+properties:
+  secret:
+    description: The secret in base32, for typing it into the app.
+    type: string
+  uri:
+    description: The `otpauth://totp/...` URI of the secret.
+    type: string
+  qr_code:
+    $ref: ./QrCode.yaml
+  setup_token:
+    description: An opaque token that carries the secret to `POST /two_factor/totp`.
+    type: string
+  expires_at:
+    description: When `setup_token` stops working.
+    type: string
+    format: date-time

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A row of a domain block CSV and what importing it would do.
+type: object
+required: [line, written_domain, status, issue]
+properties:
+  line:
+    description: The line of the file the row starts on, from 1.
+    type: integer
+    minimum: 1
+  written_domain:
+    description: The domain as written in the row.
+    type: string
+  block:
+    description: |
+      The row, with its domain normalized (IDNA A-labels in lower case); absent when
+      the row is `invalid`. The import takes it as it is.
+    $ref: ./DomainBlock.yaml
+  status:
+    $ref: ./DomainBlockImportStatus.yaml
+  issue:
+    description: The kinds of the actions the import would issue; empty unless `importable`.
+    type: array
+    items:
+      $ref: ./AdminDomainActionKind.yaml

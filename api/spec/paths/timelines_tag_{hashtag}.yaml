@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getHashtagTimeline
+  summary: Get the timeline of a hashtag
+  description: |
+    The public posts with the hashtag, newest first, and its local posts for a logged-in
+    viewer, in the viewer's timeline languages. A hashtag that no post uses has an empty
+    timeline.
+  tags: [timelines]
+  security:
+    - {}
+    - oauth2: ["read:statuses"]
+  parameters:
+    - name: hashtag
+      in: path
+      required: true
+      description: The hashtag without the `#`, matched case-insensitively.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/StatusPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

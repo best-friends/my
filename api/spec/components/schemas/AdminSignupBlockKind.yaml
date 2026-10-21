@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+  email address, compared in lower case without the part of the local part from its first
+  `+`. `ip_range`: the client addresses in a CIDR prefix.
+type: string
+enum: [email_domain, email_hash, ip_range]

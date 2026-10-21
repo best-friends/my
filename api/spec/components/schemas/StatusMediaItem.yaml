@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A media file to attach, with its alternative text.
+type: object
+required: [id]
+properties:
+  id:
+    $ref: ./Id.yaml
+  description:
+    description: |
+      The alternative text; omitted or empty for none. While the instance requires alt
+      text (`limits.require_media_description` of `GET /instance`), a post or an edit
+      whose media file has none, or only spaces, is a 422.
+    type: string
+    maxLength: 1500

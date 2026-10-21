@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
+  `custom_emoji.deleted` message presents the emoji as it was before the deletion.
+allOf:
+  - $ref: ./AdminCustomEmoji.yaml
+  - type: object
+    required: [operation]
+    properties:
+      operation:
+        description: |
+          The operation, named as in the audit log: `custom_emoji_created`,
+          `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+          `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
+        type: string

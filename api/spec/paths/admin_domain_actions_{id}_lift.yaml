@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: liftDomainAction
+  summary: Lift a moderation action on a domain
+  description: |
+    Ends the action's restrictions at once; those of other actions on the domain stay.
+    Lifting a lifted action changes nothing. An unknown ID is a 404. Needs the
+    `manage_domains` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/DomainActionId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminDomainAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

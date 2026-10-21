@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: upholdAppeal
+  summary: Uphold an appeal, keeping its action
+  description: |
+    Rejects the appeal; the action stays as it is. The user who appealed gets an `appeal_decided` notification with
+    `decision_reason`. Deciding a decided appeal the same way again changes nothing and
+    keeps the first reason; deciding it the other way is a 409
+    `/api/v1/problems/appeal-decided`. A `public_reason` that is too long or contains
+    U+0000 is a 422 naming `public_reason`. An unknown ID is a 404. Needs the
+    `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AppealId.yaml
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/DecideAppealRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminAppeal.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

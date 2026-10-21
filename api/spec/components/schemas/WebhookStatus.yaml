@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The post of a `status.created` message, always `public` and local.
+type: object
+required: [id, uri, account_id, visibility, spoiler_text, sensitive, language, content, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  uri:
+    type: string
+  account_id:
+    $ref: ./Id.yaml
+  visibility:
+    type: string
+  in_reply_to_uri:
+    type: string
+  spoiler_text:
+    type: string
+  sensitive:
+    type: boolean
+  language:
+    type: string
+  content:
+    description: Sanitized HTML.
+    type: string
+  created_at:
+    type: string
+    format: date-time

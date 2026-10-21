@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A message to a webhook and its attempts.
+type: object
+required: [id, message_id, event_type, status, attempts, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  message_id:
+    description: The `webhook-id` of the message, the same on every attempt.
+    allOf:
+      - $ref: ./Id.yaml
+  event_type:
+    $ref: ./WebhookMessageType.yaml
+  status:
+    $ref: ./AdminWebhookDeliveryStatus.yaml
+  attempts:
+    description: How many times it was sent.
+    type: integer
+    minimum: 0
+  last_attempt:
+    $ref: ./AdminWebhookAttempt.yaml
+  created_at:
+    type: string
+    format: date-time

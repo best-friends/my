@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new status.
+type: object
+required: [text, visibility]
+properties:
+  text:
+    $ref: ./StatusText.yaml
+  spoiler_text:
+    $ref: ./SpoilerText.yaml
+  sensitive:
+    description: Whether the media are sensitive.
+    type: boolean
+  language:
+    $ref: ./StatusLanguageInput.yaml
+  visibility:
+    $ref: ./Visibility.yaml
+  in_reply_to_id:
+    $ref: ./Id.yaml
+  media:
+    $ref: ./StatusMediaInput.yaml
+  poll:
+    $ref: ./PollInput.yaml

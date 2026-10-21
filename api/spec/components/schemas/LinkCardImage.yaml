@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The image of a link card, served by this server's media proxy in the small size of an
+  attachment's image. An animated image is its first frame.
+type: object
+required: [url, width, height]
+properties:
+  url:
+    description: The image through the media proxy.
+    type: string
+    format: uri
+  width:
+    description: The width of the original image in pixels.
+    type: integer
+    minimum: 1
+  height:
+    description: The height of the original image in pixels.
+    type: integer
+    minimum: 1
+  blurhash:
+    description: The blurhash (https://blurha.sh) of the image, to show while it loads.
+    type: string
+  description:
+    description: The alternative text of the image (`og:image:alt`); omitted when it has none.
+    type: string

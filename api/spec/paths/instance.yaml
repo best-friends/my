@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getInstance
+  summary: Get the public information of the instance
+  tags: [instance]
+  security: []
+  responses:
+    "200":
+      description: |
+        The instance. The texts that its administrators write (the name, the descriptions,
+        the rules, the alternative text of the thumbnail) hold one value each, which is the
+        same in every locale. Like every response of the API, it varies with
+        `Accept-Language`.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Instance.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

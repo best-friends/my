@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listDataExports
+  summary: List the authenticated user's data exports
+  description: |
+    Lists the user's latest 10 data exports, newest first. An archive can be downloaded
+    while its export is `ready`; exports are removed 7 days after they end.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      description: The exports.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DataExportList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: requestDataExport
+  summary: Request an archive of the authenticated user's data
+  description: |
+    Starts building a ZIP archive of the user's data (FR-008): `actor.json` (the actor),
+    `outbox.json` (every post as an ActivityStreams `OrderedCollection` of `Create`
+    activities), `moderation.json` (the moderation actions on the account, its appeals, and
+    the reports it filed), and the CSV files of `exportCsv` (`following_accounts.csv`,
+    `blocked_accounts.csv`, `muted_accounts.csv`, `bookmarks.csv`). The export is
+    `pending` until the archive is built. While
+    another export is `pending` the request is a 409 `/api/v1/problems/export-in-progress`;
+    at most 3 requests per account are accepted every day.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:accounts"]
+  responses:
+    "202":
+      description: The export, being built.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DataExport.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: removeAccountFromFollowers
+  summary: Remove an account from the viewer's followers
+  description: |
+    Ends the account's active follow of the viewer. Without one it changes nothing; a
+    pending request is declined with `rejectFollowRequest` instead.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:follows"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/Relationship.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

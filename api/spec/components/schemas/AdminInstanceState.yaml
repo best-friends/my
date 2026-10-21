@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
+  `Reject`.
+type: string
+enum: [available, unavailable]

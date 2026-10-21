@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: One operation of a moderator or an administrator (FR-704).
+type: object
+required: [id, actor_kind, action, target_kind, target_id, target_label, target_exists, occurred_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  actor_kind:
+    $ref: ./AdminAuditActorKind.yaml
+  actor_account_id:
+    description: |
+      The local account of the user who performed the operation; omitted unless
+      `actor_kind` is `user`, and when the user has no account.
+    allOf:
+      - $ref: ./Id.yaml
+  actor_account:
+    description: The account of `actor_account_id`; omitted when it is gone.
+    allOf:
+      - $ref: ./Account.yaml
+  action:
+    $ref: ./AdminAuditAction.yaml
+  target_kind:
+    $ref: ./AdminAuditTargetKind.yaml
+  target_id:
+    description: |
+      The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+      sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+      or the key of a setting or a text.
+    type: string
+  target_label:
+    description: |
+      The target's display name when the operation happened, such as `@alice`,
+      `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
+      kind and value (`email_domain spam.example`); up to 512 characters.
+    type: string
+  target_exists:
+    description: |
+      Whether the target is still there to look at. It is `false` for an account, a report,
+      an appeal, or a sign-up block that is gone (erased past its retention), and for a
+      role, a custom emoji, a webhook, or a relay that was deleted, which only `target_label`
+      names now. It is `true` for the other kinds of targets, which are never removed.
+    type: boolean
+  source_event_id:
+    description: |
+      The ID of the record of the operation (the domain action, the assignment, the
+      resolution, the reopening, the note, the decision, the revision), which holds its
+      reasons and notes; omitted when the operation has none.
+    type: string
+  occurred_at:
+    type: string
+    format: date-time

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
+  `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
+  `forbidden_destination`: the server may not reach the URL (a loopback or private address
+  that `webhook_allowed_destinations` does not list).
+type: string
+enum: [succeeded, http_error, timeout, connection_error, forbidden_destination]

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: domain
+in: path
+required: true
+description: The domain of the remote server, such as `mastodon.example`.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 253

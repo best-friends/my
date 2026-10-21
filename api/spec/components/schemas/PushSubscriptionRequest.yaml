@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A browser's push subscription and the notification types to push to it.
+type: object
+required: [endpoint, keys, alerts]
+properties:
+  endpoint:
+    description: The push service URL (`PushSubscription.endpoint`), an `https` URL.
+    type: string
+    maxLength: 2048
+  keys:
+    $ref: ./PushSubscriptionKeys.yaml
+  alerts:
+    description: The notification types to push; empty pushes none.
+    type: array
+    maxItems: 14
+    items:
+      $ref: ./NotificationType.yaml

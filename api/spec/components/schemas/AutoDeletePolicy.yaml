@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+  deleted once it was published more than `min_age_days` days ago, unless one of the
+  exceptions (the `keep_` properties) keeps it.
+type: object
+required: [enabled, min_age_days, keep_pinned, keep_bookmarked, keep_favourited, keep_media, keep_polls, keep_visibilities, keep_min_boosts, keep_min_favourites]
+properties:
+  enabled:
+    description: Whether old posts are deleted.
+    type: boolean
+  min_age_days:
+    description: How many days after its publication a post is deleted.
+    type: integer
+    minimum: 1
+    maximum: 3650
+  keep_pinned:
+    description: Keep the posts pinned to the profile.
+    type: boolean
+  keep_bookmarked:
+    description: Keep the posts that the user bookmarked.
+    type: boolean
+  keep_favourited:
+    description: Keep the posts that the user favourited.
+    type: boolean
+  keep_media:
+    description: Keep the posts with media attachments.
+    type: boolean
+  keep_polls:
+    description: Keep the posts with a poll.
+    type: boolean
+  keep_visibilities:
+    description: Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility.
+    type: array
+    maxItems: 5
+    items:
+      $ref: ./Visibility.yaml
+  keep_min_boosts:
+    description: Keep the posts boosted at least this many times; 0 keeps none for their boosts.
+    type: integer
+    minimum: 0
+    maximum: 1000000
+  keep_min_favourites:
+    description: Keep the posts favourited at least this many times; 0 keeps none for their favourites.
+    type: integer
+    minimum: 0
+    maximum: 1000000

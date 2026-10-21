@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A request for an archive of the user's data.
+type: object
+required: [id, state, requested_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  state:
+    description: |
+      `pending` while the archive is being built, `ready` while it can be downloaded,
+      `failed` when it could not be built (request another one).
+    type: string
+    enum: [pending, ready, failed]
+  requested_at:
+    description: When the user asked for the export.
+    type: string
+    format: date-time
+  completed_at:
+    description: When the build ended; omitted while `pending`.
+    type: string
+    format: date-time
+  expires_at:
+    description: When the export and its archive are removed; omitted while `pending`.
+    type: string
+    format: date-time
+  file_size:
+    description: The size of the archive in bytes; only for `ready`.
+    type: integer
+    format: int64
+    minimum: 0

@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A line of an imported list whose block was not added.
+type: object
+required: [line, value, reason]
+properties:
+  line:
+    description: The line of the list, from 1.
+    type: integer
+    minimum: 1
+  value:
+    description: The value as written on the line.
+    type: string
+  reason:
+    description: |
+      `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
+      value in canonical form. `already_blocked`: a block in effect of the same kind and
+      value with a severity at least as strong covers it.
+    type: string
+    enum: [invalid, duplicate, already_blocked]

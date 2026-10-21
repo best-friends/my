@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAccountFollowing
+  summary: List the accounts that an account follows
+  description: |
+    The accounts that the account actively follows, newest follow first, leaving out the
+    same accounts as `listAccountFollowers`.
+  tags: [accounts]
+  security:
+    - {}
+    - oauth2: ["read:accounts"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AccountPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

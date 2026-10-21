@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718).
+type: object
+required: [domain, digest, kind]
+properties:
+  domain:
+    description: |
+      The domain, in IDNA A-labels. When the moderators chose to obfuscate it, the
+      characters of its middle half other than dots are replaced with `*`.
+    type: string
+  digest:
+    description: The SHA-256 of the domain (not obfuscated) in lower-case hexadecimal, to check a known domain against an obfuscated item.
+    type: string
+    pattern: "^[0-9a-f]{64}$"
+  kind:
+    description: |
+      `suspend`: no federation with the domain at all. `limit`: its posts stay off the
+      public timelines and its accounts reach only their followers.
+    type: string
+    enum: [limit, suspend]
+  comment:
+    description: The public reason for the action; omitted when there is none or the viewer may not read it.
+    type: string

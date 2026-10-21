@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: markInstanceAvailable
+  summary: Mark a remote server available
+  description: |
+    Clears the failure days of the server and, when it is unavailable, marks it available
+    again with the reason `operator`, so that deliveries to it resume. A server that is
+    already available without failures stays as it is. Needs the `manage_domains`
+    permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/InstanceDomain.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminInstanceHealth.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

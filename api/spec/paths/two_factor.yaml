@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getTwoFactor
+  summary: Get where the authenticated user's two-factor authentication stands
+  tags: [two_factor]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      description: The two-factor authentication of the user.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/TwoFactor.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

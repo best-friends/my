@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: How a report is resolved.
+type: object
+required: [outcome]
+properties:
+  outcome:
+    $ref: ./AdminReportOutcome.yaml

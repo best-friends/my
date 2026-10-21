@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A post that a report points at, as a moderator reviews it. `status` is the post as it
+  was last, without the moderator's own relation to it (`favourited`, `boosted`,
+  `bookmarked`, and `pinned` are omitted).
+type: object
+required: [status]
+properties:
+  status:
+    $ref: ./Status.yaml
+  deleted_at:
+    description: When the post was deleted, by its author or otherwise; omitted when it is not.
+    type: string
+    format: date-time

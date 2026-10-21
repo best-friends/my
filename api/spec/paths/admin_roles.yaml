@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listRoles
+  summary: List the roles
+  description: |
+    The roles of the instance, highest position first, with the permissions they grant
+    (FR-720). Every instance has `admin` (position 1000, every permission, never changed)
+    and `moderator` (position 100 with `manage_reports`, `manage_accounts`, and
+    `view_audit` until an administrator changes them). Needs the `manage_roles` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRoleList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createRole
+  summary: Create a role
+  description: |
+    Creates a role with a key, a position below `admin` (0 to 999), and permissions; the
+    audit log records `role_created`. A position above every role of the viewer is a 403.
+    A key, position, or permissions that break a rule, a key that another role has
+    (`admin` and `moderator` included), or a permission that the viewer's roles do not
+    grant is a 422 `/api/v1/problems/invalid-role` whose `reason` says which. Needs the
+    `manage_roles` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateRoleRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRole.yaml
+    "422":
+      $ref: ../components/responses/RoleProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

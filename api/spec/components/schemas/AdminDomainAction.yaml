@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A moderation action on a remote domain and its subdomains (FR-702).
+type: object
+required: [id, domain, kind, obfuscate, state, issued_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  domain:
+    description: The domain, in IDNA A-labels.
+    type: string
+  kind:
+    $ref: ./AdminDomainActionKind.yaml
+  public_comment:
+    description: The reason that may be shown publicly; omitted when there is none.
+    type: string
+  private_note:
+    description: The moderators' note; omitted when there is none.
+    type: string
+  obfuscate:
+    description: Whether a public list of the domain actions hides part of the domain.
+    type: boolean
+  state:
+    $ref: ./AdminDomainActionState.yaml
+  issued_at:
+    type: string
+    format: date-time
+  expires_at:
+    description: When the action ends by itself; omitted for one that lasts until lifted.
+    type: string
+    format: date-time
+  lifted_at:
+    description: When the action was lifted; omitted until it is.
+    type: string
+    format: date-time

@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: One revision of a status.
+type: object
+required: [content, spoiler_text, sensitive, created_at, media_attachments, emojis]
+properties:
+  content:
+    description: The text of the revision as sanitized HTML.
+    type: string
+  spoiler_text:
+    description: The content warning of the revision; empty when there is none.
+    type: string
+  sensitive:
+    description: Whether the media of the revision are sensitive.
+    type: boolean
+  created_at:
+    description: When the revision was made; the first one is when the status was posted.
+    type: string
+    format: date-time
+  media_attachments:
+    description: The media the revision attaches, in order.
+    type: array
+    items:
+      $ref: ./MediaAttachment.yaml
+  emojis:
+    description: The custom emoji of the revision's text and content warning, as `Status.emojis`.
+    type: array
+    items:
+      $ref: ./CustomEmoji.yaml

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A page of the statuses of an account.
+allOf:
+  - $ref: ./StatusPage.yaml
+  - type: object
+    properties:
+      remote_fetch_started:
+        description: |
+          `true` when this request started fetching the remote account's recent public
+          posts from its server (ADR-0044). The fetch runs in the background; read the
+          first page again a few seconds later to see what it stored. Absent otherwise,
+          including when a fetch started in the last day.
+        type: boolean

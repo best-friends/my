@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: key
+in: path
+required: true
+description: The key of the text.
+schema:
+  $ref: ../schemas/InstanceTextKey.yaml

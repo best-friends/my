@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What an import of domain blocks did.
+type: object
+required: [issued, skipped]
+properties:
+  issued:
+    description: The actions issued, in the order of the blocks.
+    type: array
+    items:
+      $ref: ./AdminDomainAction.yaml
+  skipped:
+    description: The blocks that issued nothing, in their order.
+    type: array
+    items:
+      $ref: ./DomainBlockImportSkipped.yaml

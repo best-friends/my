@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The authenticated user's passkeys, oldest first.
+type: object
+required: [items]
+properties:
+  items:
+    type: array
+    maxItems: 20
+    items:
+      $ref: ./Passkey.yaml

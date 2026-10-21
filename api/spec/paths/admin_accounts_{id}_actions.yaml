@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAccountActions
+  summary: List the moderation actions on an account
+  description: |
+    The actions that moderators took on an account (FR-703), newest first, lifted and
+    expired ones included unless `active` is set. An unknown account is a 404. Needs the
+    `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/AdminAccountId.yaml
+    - name: active
+      in: query
+      required: false
+      description: Keep only the actions in effect now, neither lifted nor expired.
+      schema:
+        type: boolean
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of account actions.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminAccountActionPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createAccountAction
+  summary: Take a moderation action on an account
+  description: |
+    Records an action on an account (FR-703), in effect at once and until it expires or is
+    lifted; several actions on one account add up. On a local account: `warn` only tells
+    the account; `force_sensitive` shows its media as sensitive; `limit` makes its posts,
+    past ones included, followers-only and keeps them off the public timelines;
+    `restrict_posting` stops it posting, replying, boosting, and editing;
+    `restrict_interaction` stops it following, favouriting, boosting, and replying;
+    `disable_login` ends its sessions and tokens and stops it logging in; `suspend` does all
+    of these and hides its profile and posts from everyone else; `ban` is a `suspend` that
+    is never lifted and deletes the account 30 days later. `delete_statuses` deletes the
+    posts of the account that `status_ids` names, for everyone, the account included, and
+    sends their deletion like the account's own; `mark_statuses_sensitive` shows their
+    media as sensitive until it is lifted. A remote account takes `limit`, `suspend`, and
+    `force_sensitive`, with the same effects here: a `suspend` also drops what the account
+    sends, and its lift brings the profile and posts back. An action on a remote account is
+    not sent to its server, and `notify_target` does not apply to it. Another kind, the instance actor, or a `report_id` that is not a
+    report of the account is a 422 naming `kind`, `id`, or `report_id`. `status_ids` on
+    another kind, missing, repeated, or too many on an action on posts, or naming a post
+    that does not exist, is deleted, or is of another account is a 422 naming `status_ids`;
+    `expires_in` on a `ban` or an action on posts is a 422 naming `expires_in`. A text that
+    is too long or contains U+0000 is a 422 naming it. An unknown account is a 404. Needs
+    the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AdminAccountId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateAccountActionRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminAccountAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

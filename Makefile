@@ -132,21 +132,26 @@ sqlc:## Regenerate Go code from sqlc.yaml with the pinned sqlc (ADR-0003)
 sqlc-check: ## Fail if the committed sqlc-generated code is stale
 	scripts/sqlc.sh --check
 
-# --- Client API (ADR-0016, ADR-0029) ----------------------------------------------------------
-# api/openapi.yaml is the source of truth; oapi-codegen is pinned in tools/go.mod and Redocly CLI here.
-REDOCLY := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@2.57.0
+# --- Client API (ADR-0016, ADR-0029, ADR-0066) ------------------------------------------------
+# The split spec in api/spec/ is the source of truth and api/openapi.yaml is its bundle;
+# oapi-codegen is pinned in tools/go.mod and Redocly CLI here.
+REDOCLY_VERSION := 2.57.0
+REDOCLY := REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true bunx --bun @redocly/cli@$(REDOCLY_VERSION)
 
-.PHONY: generate generate-check api-lint api-check
-generate: web-install ## Regenerate the client API code from api/openapi.yaml (scripts/generate.sh)
-	scripts/generate.sh
+.PHONY: generate generate-check api-lint api-spec-check api-check
+generate: web-install ## Bundle api/spec into api/openapi.yaml and regenerate the client API code from it (scripts/generate.sh)
+	REDOCLY_VERSION=$(REDOCLY_VERSION) scripts/generate.sh
 
-generate-check: web-install ## Fail if the committed client API code is stale
-	scripts/generate.sh --check
+generate-check: web-install ## Fail if the committed bundle or client API code is stale
+	REDOCLY_VERSION=$(REDOCLY_VERSION) scripts/generate.sh --check
 
-api-lint: ## Lint api/openapi.yaml, including the supported OpenAPI 3.1 subset (api/redocly.yaml)
-	$(REDOCLY) lint --config api/redocly.yaml api/openapi.yaml
+api-lint: ## Lint the split spec api/spec, including the supported OpenAPI 3.1 subset (api/redocly.yaml)
+	$(REDOCLY) lint --config api/redocly.yaml api/spec/openapi.yaml
 
-api-check: api-lint generate-check ## Lint the client API spec and fail on stale generated code
+api-spec-check: ## Fail if api/spec/openapi.yaml does not list every file of api/spec (scripts/api-spec-check.sh)
+	scripts/api-spec-check.sh
+
+api-check: api-spec-check api-lint generate-check ## Check and lint the client API spec and fail on a stale bundle or generated code
 
 go-check: go-mod-check go-vet go-lint go-test go-build go-build-tags go-licenses sqlc-check ## Run all offline Go checks
 

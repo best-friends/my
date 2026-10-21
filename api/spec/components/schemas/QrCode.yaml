@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+  zone of four modules included) on a light background.
+type: object
+required: [size, path]
+properties:
+  size:
+    description: The width and height of the view box, in modules.
+    type: integer
+    minimum: 1
+  path:
+    description: The path data (`d`) of the dark modules, one unit per module.
+    type: string

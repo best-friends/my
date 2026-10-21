@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+post:
+  operationId: pinStatus
+  summary: Pin the authenticated user's status to the profile
+  description: |
+    Pinning a status that is already pinned changes nothing. Another account's status, a
+    direct status, or a pin beyond the limit is a 422.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:statuses"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: unpinStatus
+  summary: Unpin a status
+  description: Without a pin it changes nothing.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:statuses"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

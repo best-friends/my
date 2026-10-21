@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAccountStatuses
+  summary: List the posts and boosts of an account
+  description: |
+    The account's posts and boosts that the viewer may see, newest first: its public posts
+    for everyone, its local posts for logged-in viewers, its followers-only posts for its
+    followers, and its direct posts addressed to the viewer. With `pinned`, the page lists
+    the account's pinned posts instead, newest pin first, in a single page.
+
+    The page lists only the posts this server has received. For a remote account, the first
+    page (no `cursor`, no `pinned`) of a logged-in viewer may start fetching the account's
+    recent public posts from its server in the background; `remote_fetch_started` tells
+    that it did. It does at most once a day per account, for at most 30 accounts per viewer
+    in 5 minutes, and never for an account that the viewer blocks or that blocks the viewer.
+  tags: [timelines]
+  security:
+    - {}
+    - oauth2: ["read:statuses"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The account.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+    - name: exclude_replies
+      in: query
+      required: false
+      description: Leave out the account's replies.
+      schema:
+        type: boolean
+        default: false
+    - name: exclude_boosts
+      in: query
+      required: false
+      description: Leave out the account's boosts.
+      schema:
+        type: boolean
+        default: false
+    - name: pinned
+      in: query
+      required: false
+      description: List only the account's pinned posts.
+      schema:
+        type: boolean
+        default: false
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AccountStatusPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

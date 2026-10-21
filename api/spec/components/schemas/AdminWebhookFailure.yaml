@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The attempts that failed since the last success; omitted when the last attempt
+  succeeded. The server disables the webhook once they span 72 hours and number 20.
+type: object
+required: [consecutive_failures, first_failed_at]
+properties:
+  consecutive_failures:
+    type: integer
+    minimum: 1
+  first_failed_at:
+    type: string
+    format: date-time

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+  An emoji that is disabled or deleted, or whose images come from a domain whose media the
+  instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+  `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+  otherwise.
+type: object
+required: [shortcode, url, static_url]
+properties:
+  shortcode:
+    description: The shortcode, without the colons around it.
+    type: string
+  url:
+    description: The URL of the image, animated when the emoji is.
+    type: string
+    format: uri
+  static_url:
+    description: The URL of a still image of the emoji; the same as `url` when no still version is served.
+    type: string
+    format: uri

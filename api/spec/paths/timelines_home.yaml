@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getHomeTimeline
+  summary: Get the home timeline
+  description: |
+    The viewer's own posts and boosts and those of the accounts the viewer follows, newest
+    first, in the viewer's timeline languages.
+  tags: [timelines]
+  security:
+    - oauth2: ["read:statuses"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/StatusPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

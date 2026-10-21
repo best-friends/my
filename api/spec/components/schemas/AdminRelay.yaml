@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A relay that the instance joins or joined (ADR-0061).
+type: object
+required: [id, protocol, url, inbox_url, receive, state, state_changed_at, taken_last_day, dropped_last_day, domain_suspended, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  protocol:
+    $ref: ./RelayProtocol.yaml
+  url:
+    description: The URL it was registered with, its inbox or its actor.
+    type: string
+  inbox_url:
+    description: Where the public posts are delivered.
+    type: string
+  receive:
+    description: Whether the public posts it relays are taken in; `false` only sends.
+    type: boolean
+  state:
+    $ref: ./RelayState.yaml
+  state_changed_at:
+    type: string
+    format: date-time
+  actor_uri:
+    description: The relay's actor, which accepted the `Follow`; omitted unless `accepted`.
+    type: string
+  taken_last_day:
+    description: The activities it brought in during the last 24 hours that were taken in.
+    type: integer
+    minimum: 0
+  dropped_last_day:
+    description: |
+      The activities it brought in during the last 24 hours that were dropped over the
+      hourly limit (`relay_ingest_hourly_limit`).
+    type: integer
+    minimum: 0
+  domain_suspended:
+    description: |
+      Whether a domain action suspends its server: nothing goes to it or comes from it
+      while it does, whatever `state` says.
+    type: boolean
+  created_at:
+    type: string
+    format: date-time

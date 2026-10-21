@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The reactions to a status with one emoji.
+allOf:
+  - $ref: ./ReactionEmoji.yaml
+  - type: object
+    required: [count]
+    properties:
+      count:
+        description: The number of the reactions with the emoji.
+        type: integer
+        minimum: 1
+      me:
+        description: |
+          Whether the authenticated user reacted with the emoji; omitted for anonymous
+          requests.
+        type: boolean

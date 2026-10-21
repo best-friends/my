@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listPasskeys
+  summary: List the authenticated user's passkeys
+  description: The passkeys that sign the user in, oldest first; there are at most 20.
+  tags: [passkeys]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      description: The passkeys.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PasskeyList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createPasskey
+  summary: Register a passkey with the browser's response to a registration
+  description: |
+    Verifies `credential`, the browser's answer to the `options` of
+    `POST /passkeys/registration`, and stores the passkey under the name given there. From
+    then on the passkey signs in on the server's sign-in page instead of the password; a
+    user with two-factor authentication still enters a code after it. A response that does
+    not verify (another origin, no user verification, a credential that is registered
+    already) is a 422 `/api/v1/problems/invalid-passkey`, an expired or unknown
+    `registration_token` a 422 `/api/v1/problems/passkey-registration-expired`, and a user
+    with 20 passkeys a 409 `/api/v1/problems/too-many-passkeys`.
+  tags: [passkeys]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreatePasskeyRequest.yaml
+  responses:
+    "201":
+      description: The new passkey.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Passkey.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

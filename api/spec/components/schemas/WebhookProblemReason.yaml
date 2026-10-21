@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
+  bytes without user info or a fragment. `description`: longer than 200 characters or with
+  control characters. `events`: none, or one twice. `missing_permission`: the user lacks
+  the permission of an event (`missing_permissions`).
+type: string
+enum: [url, description, events, missing_permission]

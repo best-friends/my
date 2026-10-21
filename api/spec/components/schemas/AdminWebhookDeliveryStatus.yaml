@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
+  attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
+  sent again by hand after that.
+type: string
+enum: [pending, succeeded, failing]

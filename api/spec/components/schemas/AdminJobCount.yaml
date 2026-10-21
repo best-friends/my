@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The number of jobs of one type in one state.
+type: object
+required: [state, type, count]
+properties:
+  state:
+    $ref: ./AdminJobState.yaml
+  type:
+    type: string
+  count:
+    type: integer
+    format: int64
+    minimum: 1

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+put:
+  operationId: replaceCustomEmojiImage
+  summary: Replace the image of a local custom emoji
+  description: |
+    Makes the image of a media file the new image of a local emoji, checked as for a new
+    emoji; the servers that have the emoji fetch it again (its `updated_at` changes). A
+    remote emoji is a 422 with the reason `remote_emoji`. The change is recorded in the
+    audit log. An unknown ID is a 404. Needs the `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/CustomEmojiId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ReplaceCustomEmojiImageRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminCustomEmoji.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

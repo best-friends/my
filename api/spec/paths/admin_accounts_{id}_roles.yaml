@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAccountRoles
+  summary: List the roles of a local account
+  description: |
+    The roles that the user of a local account holds, highest position first. An unknown
+    account, or one that is not local, is a 404. Needs the `manage_roles` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/AdminAccountId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRoleList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

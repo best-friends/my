@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: One metadata field of a profile.
+type: object
+required: [name, value]
+properties:
+  name:
+    description: The field's name, as plain text.
+    type: string
+  value:
+    description: The field's value as sanitized HTML.
+    type: string

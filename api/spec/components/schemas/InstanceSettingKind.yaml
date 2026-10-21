@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
+  `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
+  `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+  the username of a local account, or empty for none. `email`: an email address such as
+  `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+  none.
+type: string
+enum: [bool, int, enum, locale, media, account, email, uri]

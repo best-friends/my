@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A block on sign-ups from the registration page (FR-719).
+type: object
+required: [id, kind, value, severity, state, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  kind:
+    $ref: ./AdminSignupBlockKind.yaml
+  value:
+    description: |
+      What the block matches, in canonical form: a domain in IDNA A-labels
+      (`email_domain`), the hex SHA-256 of a canonical email address (`email_hash`), or a
+      masked CIDR prefix (`ip_range`).
+    type: string
+  severity:
+    $ref: ./AdminSignupBlockSeverity.yaml
+  comment:
+    description: The moderators' comment; omitted when there is none.
+    type: string
+  moderation_action_id:
+    description: The ban the block was made from; omitted for a block added on its own.
+    allOf:
+      - $ref: ./Id.yaml
+  state:
+    $ref: ./AdminSignupBlockState.yaml
+  created_at:
+    type: string
+    format: date-time
+  expires_at:
+    description: When the block ends by itself; omitted for one that lasts until lifted.
+    type: string
+    format: date-time
+  lifted_at:
+    description: When the block was lifted; omitted until it is.
+    type: string
+    format: date-time

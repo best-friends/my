@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What importing each row of a domain block CSV would do, in row order.
+type: object
+required: [rows]
+properties:
+  rows:
+    type: array
+    items:
+      $ref: ./DomainBlockImportRow.yaml

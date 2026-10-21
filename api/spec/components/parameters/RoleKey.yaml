@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: role
+in: path
+required: true
+description: The key of the role, such as `moderator`.
+schema:
+  type: string
+  minLength: 1
+  maxLength: 64

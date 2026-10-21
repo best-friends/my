@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: Idempotency-Key
+in: header
+description: |
+  A key the client chooses per new status; a retry with the same key returns the status
+  posted with it instead of posting again. A key longer than 256 characters, or one
+  that is not UTF-8 without U+0000, is a 422.
+required: false
+schema:
+  type: string
+  minLength: 1
+  maxLength: 256

@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAdminWebhooks
+  summary: List the webhooks
+  description: |
+    The webhook endpoints of the instance that are not deleted, newest first (ADR-0060).
+    Needs the `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      description: The webhooks.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminWebhookList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createWebhook
+  summary: Set up a webhook
+  description: |
+    Sets up an endpoint, enabled, that receives the messages of the `events` it subscribes
+    to, signed with Standard Webhooks v1 (`docs/reference/webhooks.md`). The answer carries
+    its secret, which is shown only now. The user needs the permission of every event
+    besides `manage_webhooks` (`WebhookEventType`). A URL, a description, or events that
+    break a rule, or an event whose permission the user lacks, is a 422
+    `/api/v1/problems/invalid-webhook` whose `reason` says which. The URL may name any
+    destination: whether the server may reach it is decided on every delivery, which a
+    refused destination fails. The setup is recorded in the audit log under the
+    description and the host name of the URL. Needs the `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateWebhookRequest.yaml
+  responses:
+    "200":
+      description: The new webhook and its secret.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminWebhookCreated.yaml
+    "422":
+      $ref: ../components/responses/WebhookProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

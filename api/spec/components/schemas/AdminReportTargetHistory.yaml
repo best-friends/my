@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What the moderators had about the target of a report.
+type: object
+required: [reports_count, actions_count]
+properties:
+  reports_count:
+    description: The number of the target's other reports, open and resolved.
+    type: integer
+    format: int64
+    minimum: 0
+  actions_count:
+    description: The number of moderation actions on the target, ended ones included.
+    type: integer
+    format: int64
+    minimum: 0

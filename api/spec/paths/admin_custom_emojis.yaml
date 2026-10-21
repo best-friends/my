@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAdminCustomEmojis
+  summary: List the custom emoji
+  description: |
+    The custom emoji, local and remote, newest first (ADR-0051 §4). `local` keeps the
+    emoji of this instance (`true`) or of other servers (`false`); `domain` keeps those of
+    one remote domain; `shortcode` keeps those whose shortcode contains it, ignoring case.
+    Needs the `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: local
+      in: query
+      required: false
+      description: Keep the local emoji (`true`) or the remote ones (`false`).
+      schema:
+        type: boolean
+    - name: domain
+      in: query
+      required: false
+      description: Keep the emoji of this remote domain.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 253
+    - name: shortcode
+      in: query
+      required: false
+      description: Keep the emoji whose shortcode contains this text, ignoring case.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the custom emoji.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCustomEmojiPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createCustomEmoji
+  summary: Register a local custom emoji
+  description: |
+    Registers a local emoji with the image of a media file that the user uploaded and that
+    finished processing (upload it with the `emoji` purpose). The image must be a PNG, a
+    GIF, or a WebP, at most `custom_emoji_max_bytes` (256 KiB by default) and 1,024 pixels
+    on its longer side; an APNG shows only its first frame. A shortcode that breaks the
+    rules or that a local emoji has, an alias or a category that breaks the rules, or an
+    image that does not qualify is a 422 `/api/v1/problems/invalid-custom-emoji` whose
+    `reason` says which. The registration is recorded in the audit log. Needs the
+    `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateCustomEmojiRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminCustomEmoji.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new block on sign-ups.
+type: object
+required: [kind, value, severity]
+properties:
+  kind:
+    $ref: ./AdminSignupBlockKind.yaml
+  value:
+    description: |
+      A domain such as `spam.example` or `例え.jp` (`email_domain`), an email address or
+      the hex SHA-256 of a canonical one (`email_hash`), or a CIDR prefix such as
+      `192.0.2.0/24` or a single IP address (`ip_range`).
+    type: string
+    minLength: 1
+    maxLength: 320
+  severity:
+    $ref: ./AdminSignupBlockSeverity.yaml
+  comment:
+    type: string
+    maxLength: 1000
+  expires_in:
+    description: The seconds the block lasts; omitted, it lasts until it is lifted.
+    type: integer
+    minimum: 1

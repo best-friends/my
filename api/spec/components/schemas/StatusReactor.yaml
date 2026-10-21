@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: One emoji reaction to a status, with the account that reacted.
+type: object
+required: [account, emoji, created_at]
+properties:
+  account:
+    $ref: ./Account.yaml
+  emoji:
+    $ref: ./ReactionEmoji.yaml
+  created_at:
+    description: When the account reacted.
+    type: string
+    format: date-time

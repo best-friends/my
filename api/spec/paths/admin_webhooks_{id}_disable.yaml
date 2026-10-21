@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: disableWebhook
+  summary: Disable a webhook
+  description: |
+    The endpoint receives nothing until it is enabled again, also of the deliveries waiting
+    to be retried. Disabling a disabled webhook changes nothing. The change is recorded in
+    the audit log. An unknown or deleted ID is a 404. Needs the `manage_webhooks`
+    permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/WebhookId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminWebhook.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

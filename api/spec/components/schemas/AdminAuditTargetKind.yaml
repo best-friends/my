@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The kind of what an audited operation acted on.
+type: string
+enum: [account, status, domain, report, appeal, user, role, setting, rule, signup_block, custom_emoji, webhook, announcement, invite, relay]

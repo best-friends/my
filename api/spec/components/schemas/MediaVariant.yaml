@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A rendition of a media file, without metadata. Its URL never serves other content, so
+  it may be cached for good. `content_type`, `width`, `height`, and `size` are present
+  for an upload, and absent where unknown for a remote file served through the media
+  proxy.
+type: object
+required: [url]
+properties:
+  url:
+    description: Where the rendition is served.
+    type: string
+    format: uri
+  content_type:
+    description: The media type of the rendition.
+    type: string
+  width:
+    description: The width in pixels.
+    type: integer
+    minimum: 1
+  height:
+    description: The height in pixels.
+    type: integer
+    minimum: 1
+  size:
+    description: The size of the file in bytes.
+    type: integer
+    format: int64
+    minimum: 1

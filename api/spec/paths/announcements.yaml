@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAnnouncements
+  summary: List the announcements
+  description: |
+    The server's announcements that every local user sees now (FR-726): published, and
+    within their window. The ones whose `published_at` is the latest come first, each with
+    whether the user has read it. The list is not paginated.
+  tags: [announcements]
+  security:
+    - oauth2: ["read:notifications"]
+  responses:
+    "200":
+      description: The announcements.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AnnouncementList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

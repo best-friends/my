@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: copyCustomEmoji
+  summary: Copy a remote custom emoji into a local one
+  description: |
+    Registers a new local emoji with the image of a remote emoji, under the shortcode of the
+    request or the remote one's. The image is fetched through the media proxy, so the
+    instance does not fetch the media of a domain whose media it rejects, and is checked as
+    the image of a new emoji (`createCustomEmoji`); it shrinks into the boxes of an emoji.
+    The new emoji is in the picker, without a category or aliases. A local emoji is a 422
+    with the reason `local_emoji`; an image that cannot be fetched is a 422 with the reason
+    `fetch_failed`; a shortcode or an image that does not qualify is a 422 whose `reason`
+    says which, and keeps nothing of the copy. The copy is recorded in the audit log
+    (`custom_emoji_copied` on the new emoji). An unknown ID is a 404. Needs the
+    `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/CustomEmojiId.yaml
+  requestBody:
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CopyCustomEmojiRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminCustomEmoji.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listNotifications
+  summary: List the authenticated user's notifications
+  description: |
+    The user's notifications, newest first. Dismissed notifications, notifications about
+    deleted posts, and notifications from accounts that the user blocks, is blocked by, or
+    mutes with notifications hidden are left out, also those that came before the block or
+    mute. The moderator notifications (`admin_report`, `admin_sign_up`) are left out once
+    the user's roles no longer grant the permission they need.
+  tags: [notifications]
+  security:
+    - oauth2: ["read:notifications"]
+  parameters:
+    - name: types
+      in: query
+      description: Keep only notifications of these types; omitted keeps every type.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        maxItems: 11
+        items:
+          $ref: ../components/schemas/NotificationType.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of notifications.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NotificationPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

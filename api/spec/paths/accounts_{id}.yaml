@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getAccount
+  summary: Get an account
+  description: |
+    An account that blocks the viewer, is deactivated, or is deleted is a 404, the same as
+    an unknown one.
+  tags: [accounts]
+  security:
+    - {}
+    - oauth2: ["read:accounts"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AccountProfile.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

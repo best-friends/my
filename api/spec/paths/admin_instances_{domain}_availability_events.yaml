@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listInstanceAvailabilityEvents
+  summary: List the times a remote server was marked unavailable or available
+  description: |
+    Why and when the server was marked unavailable or available again, newest first. Needs
+    the `manage_domains` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/InstanceDomain.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of availability events.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminAvailabilityEventPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

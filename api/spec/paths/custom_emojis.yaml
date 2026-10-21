@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listCustomEmojis
+  summary: List the custom emoji of the picker
+  description: |
+    The custom emoji of the instance that the picker offers (FR-111, ADR-0051 §4): every
+    enabled local emoji that is not hidden from the picker, by category (those without one
+    first) and shortcode. A text can use every enabled local emoji, hidden or not. The list
+    is not paginated.
+  tags: [instance]
+  security:
+    - {}
+    - oauth2: ["read"]
+  responses:
+    "200":
+      description: The custom emoji.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PickerCustomEmojiList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

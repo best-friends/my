@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An import of a CSV file, with its progress.
+type: object
+required: [id, kind, mode, state, created_at, total, processed, failed]
+properties:
+  id:
+    $ref: ./Id.yaml
+  kind:
+    $ref: ./DataImportKind.yaml
+  mode:
+    $ref: ./DataImportMode.yaml
+  state:
+    description: "`in_progress` until every entry and removal is done, then `finished`."
+    type: string
+    enum: [in_progress, finished]
+  created_at:
+    description: When the import started.
+    type: string
+    format: date-time
+  total:
+    description: The number of entries to add and things to remove.
+    type: integer
+    minimum: 0
+  processed:
+    description: How many of them are done, including the failed ones.
+    type: integer
+    minimum: 0
+  failed:
+    description: |
+      How many of them could not be carried out: an account or post that cannot be found
+      or acted on, a follow that a block stops, or a domain that cannot be muted (this
+      server's own, or one beyond the most muted domains allowed).
+    type: integer
+    minimum: 0

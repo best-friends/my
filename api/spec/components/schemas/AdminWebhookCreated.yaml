@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new webhook and its secret.
+type: object
+required: [webhook, secret]
+properties:
+  webhook:
+    $ref: ./AdminWebhook.yaml
+  secret:
+    description: |
+      The secret that signs the messages, `whsec_` and the base64 of 32 bytes, as the
+      Standard Webhooks libraries take it. It is shown only now.
+    type: string

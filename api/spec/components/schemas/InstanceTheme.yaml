@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
+  stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
+  instance has no theme.
+type: object
+required: [revision, stylesheet_url, tokens]
+properties:
+  revision:
+    type: string
+  stylesheet_url:
+    type: string
+    format: uri
+  tokens:
+    type: array
+    items:
+      $ref: ./ThemeTokenValue.yaml

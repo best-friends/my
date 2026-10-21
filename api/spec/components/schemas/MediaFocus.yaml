@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The focal point that previews keep in view when they crop the image, from -1.0 (left,
+  bottom) to 1.0 (right, top) on each axis; (0, 0) is the center.
+type: object
+required: [x, y]
+properties:
+  x:
+    type: number
+    format: double
+    minimum: -1
+    maximum: 1
+  y:
+    type: number
+    format: double
+    minimum: -1
+    maximum: 1

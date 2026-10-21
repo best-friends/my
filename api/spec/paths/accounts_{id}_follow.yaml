@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: followAccount
+  summary: Follow an account
+  description: |
+    Follows the account at once, or sends a follow request when the account is locked:
+    then `requested` is true until the account accepts it (FR-301, FR-302). Following an
+    account that the viewer already follows or has requested to follow changes only the
+    preferences in the body. Following an account that the viewer blocks is a 409
+    `/api/v1/problems/blocking`. A follow of an account on another server is a request
+    until that server accepts it.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:follows"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/FollowAccountRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/Relationship.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

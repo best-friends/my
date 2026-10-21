@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: unblockAccount
+  summary: Unblock an account
+  description: The follows that the block ended stay ended. Without a block it changes nothing.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:blocks"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/Relationship.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

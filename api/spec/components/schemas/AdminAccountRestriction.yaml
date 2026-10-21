@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A capability that an action takes away (data-model §5.2). `login`: logging in and the
+  API. `post`: posting, replying, boosting, editing. `interact`: following, favouriting,
+  boosting, voting. `visibility_ceiling_private`: posts are followers-only.
+  `public_discovery`: posts stay off the public timelines and search.
+  `unsolicited_reach`: notifications reach followers only. `media_sensitive`: media shows
+  as sensitive. `profile_view`: the profile and posts are hidden. `federation`: nothing is
+  delivered or received.
+type: string
+enum:
+  - login
+  - post
+  - interact
+  - visibility_ceiling_private
+  - public_discovery
+  - unsolicited_reach
+  - media_sensitive
+  - profile_view
+  - federation

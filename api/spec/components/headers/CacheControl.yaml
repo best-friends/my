@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The caching policy. Anonymous public GETs are cacheable by shared caches (ADR-0016).
+schema:
+  type: string

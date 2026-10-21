@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listOwnReports
+  summary: List the reports that the authenticated user filed
+  description: |
+    The reports that the user filed, newest first, each with whether it is still open or
+    resolved (FR-711). A report reopened by the moderators is open again. It never tells how
+    a report was resolved, which actions it led to, the reasons given to the account, or
+    who handles it.
+  tags: [reports]
+  security:
+    - oauth2: ["read:reports"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the user's reports.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ReportPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createReport
+  summary: Report an account
+  description: |
+    Reports an account, and optionally some of its posts, to the moderators (FR-701). The
+    report waits, open, in the moderators' queue; nothing tells the account of it, and
+    nothing that the account can read names the reporter. 422 when the account does not
+    exist or is the user's own (`account_id`), when a post is not the account's or the
+    user may not see it (`status_ids`), when `rule_ids` cite a rule that is not in effect
+    or the category is not `violation`, or when the comment is too long. Reports are
+    limited to 30 per hour per account (429 beyond).
+  tags: [reports]
+  security:
+    - oauth2: ["write:reports"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateReportRequest.yaml
+  responses:
+    "200":
+      description: The filed report.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Report.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

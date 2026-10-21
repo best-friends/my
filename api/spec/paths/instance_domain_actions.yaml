@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listInstanceDomainActions
+  summary: List the domains that the instance moderates
+  description: |
+    The moderation actions in effect on remote domains that the instance lists publicly
+    (FR-718): `limit` and `suspend`, one item per action, newest first. The instance
+    setting `domain_actions_visibility` decides who may read it: `none` makes it a 404,
+    `users` a 401 `/api/v1/problems/unauthenticated` for a request without an access
+    token, and `all` serves everyone. The setting `domain_actions_rationale_visibility`
+    decides, in the same way, who gets each action's public comment. The moderators'
+    private notes are never listed.
+  tags: [instance]
+  security: []
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of domain actions.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/InstanceDomainActionPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,134 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
+  describe the authenticated user's relation to it and are omitted for anonymous
+  requests; `pinned` is only given to the author.
+
+  In a timeline, a boost is a status of the booster with `boost` set to the boosted
+  status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+  `visibility` and `language` are those of the boosted status, its `content`,
+  `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+  empty, its `card` is omitted, and its counts are zero.
+type: object
+required:
+  - id
+  - uri
+  - account
+  - content
+  - spoiler_text
+  - sensitive
+  - visibility
+  - language
+  - created_at
+  - media_attachments
+  - mentions
+  - tags
+  - emojis
+  - replies_count
+  - boosts_count
+  - favourites_count
+  - reactions
+properties:
+  id:
+    $ref: ./Id.yaml
+  uri:
+    description: The ActivityPub ID of the status.
+    type: string
+    format: uri
+  url:
+    description: |
+      The HTML page of the status, on the server it belongs to for a remote status; omitted
+      when it has none.
+    type: string
+    format: uri
+  account:
+    $ref: ./Account.yaml
+  content:
+    description: |
+      The text as sanitized HTML, with mentions, hashtags, and URLs linked. The HTML of a
+      remote status is what the server's sanitizer kept of the received document (ADR-0019 §2).
+    type: string
+  spoiler_text:
+    description: The content warning; empty when there is none.
+    type: string
+  sensitive:
+    description: Whether the media are sensitive.
+    type: boolean
+  visibility:
+    $ref: ./Visibility.yaml
+  language:
+    description: The BCP 47 language tag of the text; `und` when it is unknown.
+    type: string
+  in_reply_to_id:
+    $ref: ./Id.yaml
+  in_reply_to_account_id:
+    $ref: ./Id.yaml
+  created_at:
+    description: When the status was posted.
+    type: string
+    format: date-time
+  boost:
+    $ref: ./Status.yaml
+  edited_at:
+    description: When the status was last edited; omitted when it never was.
+    type: string
+    format: date-time
+  media_attachments:
+    description: The attached media, in order.
+    type: array
+    items:
+      $ref: ./MediaAttachment.yaml
+  mentions:
+    description: The accounts the text mentions.
+    type: array
+    items:
+      $ref: ./StatusMention.yaml
+  tags:
+    description: The hashtags of the text.
+    type: array
+    items:
+      $ref: ./StatusTag.yaml
+  emojis:
+    description: |
+      The custom emoji of the text, the content warning, and the poll's choices
+      (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+      image, and the rest as text. Empty for a boost, whose emoji are those of `boost`.
+    type: array
+    items:
+      $ref: ./CustomEmoji.yaml
+  replies_count:
+    description: The number of replies.
+    type: integer
+    minimum: 0
+  boosts_count:
+    description: The number of boosts.
+    type: integer
+    minimum: 0
+  favourites_count:
+    description: The number of favourites.
+    type: integer
+    minimum: 0
+  reactions:
+    description: |
+      The emoji reactions to the status, counted per emoji: the 20 emoji with the most
+      reactions, the most first. The others are seen in `listStatusReactions`. Favourites
+      are counted apart, in `favourites_count`.
+    type: array
+    items:
+      $ref: ./StatusReaction.yaml
+  favourited:
+    description: Whether the authenticated user favourited the status.
+    type: boolean
+  boosted:
+    description: Whether the authenticated user boosts the status.
+    type: boolean
+  bookmarked:
+    description: Whether the authenticated user bookmarked the status.
+    type: boolean
+  pinned:
+    description: Whether the status is pinned to the author's profile; given only to the author.
+    type: boolean
+  poll:
+    $ref: ./Poll.yaml
+  card:
+    $ref: ./LinkCard.yaml

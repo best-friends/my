@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: withdrawAdminAnnouncement
+  summary: Withdraw an announcement
+  description: |
+    Withdraws an announcement for good: no user sees it again, and it can no longer change
+    or be published. Withdrawing a withdrawn announcement changes nothing. An unknown ID is
+    a 404. Recorded in the audit log. Needs the `manage_announcements` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AnnouncementId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminAnnouncement.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

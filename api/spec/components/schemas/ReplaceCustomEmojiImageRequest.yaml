@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The new image of a local custom emoji.
+type: object
+required: [media_id]
+properties:
+  media_id:
+    $ref: ./Id.yaml

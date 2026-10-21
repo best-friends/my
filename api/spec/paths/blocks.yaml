@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listBlocks
+  summary: List the accounts that the viewer blocks
+  description: Newest block first. Deactivated and deleted accounts are left out.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:blocks"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AccountPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

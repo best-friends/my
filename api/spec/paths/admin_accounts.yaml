@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAdminAccounts
+  summary: Search the accounts
+  description: |
+    The local and remote accounts (FR-714), newest first, without the instance actor:
+    those whose handle's username starts with `username` (case-insensitively; a remote
+    account whose handle is not verified has none), on a `domain`, local or remote
+    (`origin`), in a `state`, and, for local accounts, of a primary email address (`email`,
+    case-insensitively), an email domain (`email_domain`), or an IP address that the
+    account registered or signed in from (`ip`). At most one of `email`, `email_domain`,
+    and `ip` is given. The results never include an email or IP address. A search reads at
+    most 400 accounts per page, so a page can be short, or empty, and still have a
+    `next_cursor`. An unknown `origin` or `state`, an `ip` that is not an IP address, an
+    `email_domain` with an `@` inside, more than one of `email`, `email_domain`, and `ip`,
+    or a parameter longer than 320 characters is a 400 naming it. Needs the
+    `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: username
+      in: query
+      required: false
+      description: Keep the accounts whose username starts with this.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 320
+    - name: domain
+      in: query
+      required: false
+      description: Keep the remote accounts of this domain (its punycode form).
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 320
+    - name: origin
+      in: query
+      required: false
+      description: Keep the local or the remote accounts.
+      schema:
+        type: string
+        enum: [local, remote]
+    - name: state
+      in: query
+      required: false
+      description: Keep the accounts in this state.
+      schema:
+        $ref: ../components/schemas/AdminAccountState.yaml
+    - name: email
+      in: query
+      required: false
+      description: Keep the local account whose primary email address is this.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 320
+    - name: email_domain
+      in: query
+      required: false
+      description: |
+        Keep the local accounts whose primary email address is at this domain
+        (`example.com` or `@example.com`).
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 320
+    - name: ip
+      in: query
+      required: false
+      description: |
+        Keep the local accounts that registered or signed in from this IP address, within
+        the retention of the sign-in and registration origins.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 320
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of accounts.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminAccountPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The time a remote server was marked unavailable or available again, and why.
+type: object
+required: [id, kind, reason, occurred_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  kind:
+    type: string
+    enum: [marked_unavailable, marked_available]
+  reason:
+    description: |
+      `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
+      succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
+      daily probe fetched its NodeInfo. `operator`: an operator marked it.
+    type: string
+    enum: [failure_days, delivery_succeeded, inbound_request, probe_succeeded, operator]
+  occurred_at:
+    type: string
+    format: date-time

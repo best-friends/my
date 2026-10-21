@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The browser's answer to a confirmation with a passkey, which confirms an operation.
+type: object
+required: [confirmation_token, credential]
+properties:
+  confirmation_token:
+    description: The `confirmation_token` of `POST /passkeys/confirmation`.
+    type: string
+    maxLength: 4096
+  credential:
+    description: |
+      The `AuthenticationResponseJSON` of WebAuthn Level 3 (§5.1): what
+      `PublicKeyCredential.toJSON()` returns for the passkey.
+    type: object
+    additionalProperties: true

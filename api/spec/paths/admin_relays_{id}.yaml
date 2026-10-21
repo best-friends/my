@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/RelayId.yaml
+delete:
+  operationId: deleteRelay
+  summary: Delete a relay
+  description: |
+    Deletes the registration of a relay that the instance left or that rejected it, with the
+    history of its membership. The edits and deletions of the posts that went to it still go
+    there. A relay that is `pending` or `accepted` is a 422
+    `/api/v1/problems/invalid-relay` (`state`): leave it first. The deletion is recorded in
+    the audit log. An unknown ID is a 404. Needs the `manage_settings` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  responses:
+    "204":
+      description: The relay is deleted.
+    "422":
+      $ref: ../components/responses/RelayProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

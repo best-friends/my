@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Public information about the instance.
+type: object
+required: [domain, name, version, source_url, registrations, limits, timelines, sends_email, rules, search_indexing, ai_usage]
+properties:
+  domain:
+    description: The domain that serves the instance.
+    type: string
+  name:
+    description: The display name of the instance; the domain when the instance has none.
+    type: string
+  short_description:
+    description: A one-paragraph summary of the instance, as plain text; omitted when there is none.
+    type: string
+  description:
+    description: The full description of the instance, as plain text; omitted when there is none.
+    type: string
+  registrations:
+    $ref: ./InstanceRegistrations.yaml
+  version:
+    description: The server version.
+    type: string
+  source_url:
+    description: Where users get the source code of the running server (AGPL-3.0 section 13), as an https URL to read it at or a mailto URI to request it by email.
+    type: string
+    format: uri
+  limits:
+    $ref: ./InstanceLimits.yaml
+  timelines:
+    $ref: ./InstanceTimelines.yaml
+  sends_email:
+    description: |
+      Whether the instance sends email (the server setting `mail` is not `none`). Without
+      email, the moderator notifications come only in the app, so clients do not offer
+      the preference `email_moderator_notifications`.
+    type: boolean
+  push_server_key:
+    description: |
+      The instance's VAPID public key (RFC 8292), an uncompressed P-256 point in unpadded
+      base64url: the `applicationServerKey` that browsers subscribe with before
+      `putPushSubscription`. Omitted when the instance sends no Web Push.
+    type: string
+  rules:
+    description: The rules in effect, in order.
+    type: array
+    items:
+      $ref: ./InstanceRule.yaml
+  terms_url:
+    description: |
+      The public page of the instance's terms of service, which needs no sign-in; omitted
+      when the instance has none, so that clients do not link to it.
+    type: string
+    format: uri
+  privacy_policy_url:
+    description: |
+      The public page of the instance's privacy policy, which needs no sign-in; omitted
+      when the instance has none.
+    type: string
+    format: uri
+  theme:
+    $ref: ./InstanceTheme.yaml
+  contact:
+    $ref: ./InstanceContact.yaml
+  thumbnail:
+    $ref: ./InstanceThumbnail.yaml
+  search_indexing:
+    $ref: ./SearchIndexing.yaml
+  ai_usage:
+    $ref: ./AIUsage.yaml

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
+  `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
+  suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
+  inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
+  `accepted` relay, leaving or deleting one that is not).
+type: string
+enum: [url, exists, domain_suspended, not_actor, state]

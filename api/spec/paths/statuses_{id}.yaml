@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+get:
+  operationId: getStatus
+  summary: Get a status
+  description: A status that the viewer may not see is a 404, the same as a missing one.
+  tags: [statuses]
+  security:
+    - {}
+    - oauth2: ["read:statuses"]
+  responses:
+    "200":
+      description: The status.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Status.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+put:
+  operationId: editStatus
+  summary: Edit the authenticated user's status
+  description: |
+    Replaces the text, content warning, sensitivity, language, and media of a status; the
+    previous content stays in the edit history. The visibility and reply target never
+    change. Attached media must be the user's own uploads that finished processing (422
+    otherwise). A status with a poll cannot be edited (422): its votes belong to its poll.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:statuses"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/EditStatusRequest.yaml
+  responses:
+    "200":
+      description: The edited status.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Status.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: deleteStatus
+  summary: Delete the authenticated user's status
+  tags: [statuses]
+  security:
+    - oauth2: ["write:statuses"]
+  responses:
+    "204":
+      description: The status is deleted.
+    default:
+      $ref: ../components/responses/Problem.yaml

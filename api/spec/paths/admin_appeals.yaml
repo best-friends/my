@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAppeals
+  summary: List the appeals of moderation actions
+  description: |
+    The appeals that local users made of the actions on their accounts (FR-707), newest
+    first, each with its action. Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: state
+      in: query
+      required: false
+      description: Keep only the appeals in this state; omitted keeps every state.
+      schema:
+        $ref: ../components/schemas/ModerationAppealState.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of appeals.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminAppealPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

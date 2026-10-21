@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getNotificationMarker
+  summary: Get the read marker and the unread count
+  tags: [notifications]
+  security:
+    - oauth2: ["read:notifications"]
+  responses:
+    "200":
+      description: The read marker.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NotificationMarker.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+put:
+  operationId: updateNotificationMarker
+  summary: Mark notifications read
+  description: |
+    Marks the notifications up to and including `last_read_id` as read. The marker only
+    moves forward: a `last_read_id` older than the current marker changes nothing, so
+    clients that report their positions concurrently never move it back. A
+    `last_read_id` that is not one of the user's notifications is a 404.
+  tags: [notifications]
+  security:
+    - oauth2: ["write:notifications"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/NotificationMarkerUpdate.yaml
+  responses:
+    "200":
+      description: The read marker after the update.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/NotificationMarker.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

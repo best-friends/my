@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The profile as the user typed it, for editing.
+type: object
+required: [note, fields]
+properties:
+  note:
+    description: The profile text as plain text; empty when there is none.
+    type: string
+  fields:
+    description: The metadata fields as typed, in the order of the account's `fields`.
+    type: array
+    items:
+      $ref: ./AccountFieldSource.yaml
+  avatar_media_id:
+    description: The media file of the avatar; omitted when there is none.
+    type: string
+  header_media_id:
+    description: The media file of the header image; omitted when there is none.
+    type: string

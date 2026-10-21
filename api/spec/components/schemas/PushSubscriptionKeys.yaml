@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The keys of a browser's push subscription (RFC 8291 §3), in base64url.
+type: object
+required: [p256dh, auth]
+properties:
+  p256dh:
+    description: The browser's P-256 public key, an uncompressed point.
+    type: string
+    maxLength: 128
+  auth:
+    description: The 16-byte authentication secret.
+    type: string
+    maxLength: 32

@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The ID of a resource, a UUIDv7 in its canonical string form.
+type: string
+format: uuid
+examples: ["01890a5d-ac96-774b-bcce-b302099a8057"]
+# The application layer passes IDs as strings (kernel.IDGenerator).
+x-go-type: string

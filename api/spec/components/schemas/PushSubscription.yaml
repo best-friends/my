@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The Web Push subscription of a grant.
+type: object
+required: [id, endpoint, alerts, server_key]
+properties:
+  id:
+    $ref: ./Id.yaml
+  endpoint:
+    description: The push service URL of the browser's subscription.
+    type: string
+    format: uri
+  alerts:
+    description: The notification types that are pushed, in a stable order.
+    type: array
+    items:
+      $ref: ./NotificationType.yaml
+  server_key:
+    description: |
+      The instance's VAPID public key now. When it differs from the key the browser
+      subscribed with, the subscription receives nothing; subscribe again.
+    type: string

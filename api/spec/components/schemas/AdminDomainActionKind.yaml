@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+  timelines and its accounts reach only their followers. `reject_media`: its media are
+  not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+  are marked sensitive.
+type: string
+enum: [limit, suspend, reject_media, reject_reports, force_sensitive]

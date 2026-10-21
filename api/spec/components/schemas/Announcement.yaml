@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An announcement of the server to every local user (FR-726), as the user sees it.
+type: object
+required: [id, content, published_at, updated_at, read]
+properties:
+  id:
+    $ref: ./Id.yaml
+  content:
+    description: |
+      The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
+      headings from `h2`, and `http`, `https`, and `mailto` links).
+    type: string
+  published_at:
+    description: When it started to show to the users, its publication or the start of its window.
+    type: string
+    format: date-time
+  ends_at:
+    description: When it stops showing; omitted when it shows until it is withdrawn.
+    type: string
+    format: date-time
+  updated_at:
+    description: When its text or window last changed.
+    type: string
+    format: date-time
+  read:
+    description: Whether the user has marked it read.
+    type: boolean

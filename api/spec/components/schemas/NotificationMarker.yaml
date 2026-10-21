@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: How far the authenticated user has read the notifications.
+type: object
+required: [unread_count]
+properties:
+  last_read_id:
+    description: The newest notification read; omitted when the user has read none.
+    $ref: ./Id.yaml
+  unread_count:
+    description: The number of listed notifications newer than `last_read_id`.
+    type: integer
+    format: int64
+    minimum: 0

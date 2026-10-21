@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+  for a moderator, whatever the registration mode.
+type: string
+enum: [reject, require_approval]

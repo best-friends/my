@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The state of the job queue (ADR-0064).
+type: object
+required: [adapter, pending_listing, counts]
+properties:
+  adapter:
+    description: The queue the server runs, the `queue` setting (`db`, `inline`, `sqs`, `cloudtasks`).
+    type: string
+  pending_listing:
+    description: Whether the queue lists its pending jobs (`queued`, `running`, `retrying`).
+    type: boolean
+  counts:
+    description: |
+      The jobs by state (`queued`, `running`, `retrying`, `dead`) then type; states and
+      types without jobs are left out. Empty without `pending_listing`.
+    type: array
+    items:
+      $ref: ./AdminJobCount.yaml
+  oldest_ready_at:
+    description: |
+      The earliest `run_at` among the due jobs that no worker holds: how long the queue
+      has kept a job waiting. Omitted when no job waits, or without `pending_listing`.
+    type: string
+    format: date-time

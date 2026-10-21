@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The last attempt of a delivery.
+type: object
+required: [outcome, duration_ms, attempted_at]
+properties:
+  outcome:
+    $ref: ./AdminWebhookAttemptOutcome.yaml
+  status_code:
+    description: The status code of the answer; omitted without one.
+    type: integer
+  duration_ms:
+    type: integer
+    minimum: 0
+  attempted_at:
+    type: string
+    format: date-time

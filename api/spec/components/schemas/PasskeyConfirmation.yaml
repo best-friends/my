@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The start of a confirmation with a passkey.
+type: object
+required: [options, confirmation_token, expires_at]
+properties:
+  options:
+    description: |
+      The `PublicKeyCredentialRequestOptionsJSON` of WebAuthn Level 3 (§5.1.9): binary
+      values in base64url, for `PublicKeyCredential.parseRequestOptionsFromJSON()`.
+    type: object
+    additionalProperties: true
+  confirmation_token:
+    description: An opaque token that carries the confirmation to the operation it confirms.
+    type: string
+  expires_at:
+    description: When `confirmation_token` stops working.
+    type: string
+    format: date-time

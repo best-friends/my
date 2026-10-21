@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getAdminAccount
+  summary: Get the details of an account
+  description: |
+    An account as the moderators see it (FR-714): its state, the restrictions of its own
+    actions, and, for a local account, its registration, whether its email address is
+    verified, and its roles, with its newest 20 actions and reports. The email address and
+    the IP addresses are not included; `POST .../reveal` shows them. An unknown account is
+    a 404. Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/AdminAccountId.yaml
+  responses:
+    "200":
+      description: The account.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminAccountDetail.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
