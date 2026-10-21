@@ -15,6 +15,9 @@ a PWA web client, a Tauri 2 mobile app, and i18n from day one. Distributed as OS
   that federate with Mastodon, Misskey and Pleroma (Akkoma), and the remaining unimplemented Must / Should
   [functional requirements](docs/requirements/01-functional.md) — on the server, the client API and the web client
   ([vision](docs/requirements/00-vision.md)). Deployment templates for GCP / AWS / microk8s belong to M6.
+- **M4.1 — Finance** follows on the same footing: recording, aggregating and publishing the server's running costs
+  (one-off, weekly, monthly and yearly payments) and importing AWS / Google Cloud usage costs (FR-901–FR-904,
+  epic [#883](https://github.com/best-friends/my/issues/883)). Its ADRs come first; implementation issues wait for them to be Accepted.
 - The server is Go ([ADR-0001](docs/adr/0001-server-language-and-runtime.md)); clients are TypeScript under `app/` with Bun.
   Cloudflare Workers is **not** a target.
 - **Web client work must follow [docs/architecture/web-client.md](docs/architecture/web-client.md).** Do not write React from memory or
