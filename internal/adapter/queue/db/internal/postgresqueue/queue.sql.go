@@ -24,7 +24,7 @@ WHERE j.id = $3
     WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
       AND (k.locked_until > $4 OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
   )
-RETURNING j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, j.run_at, j.last_error, j.created_at
+RETURNING j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.trace_parent, j.attempt, j.run_at, j.last_error, j.created_at
 `
 
 type ClaimJobParams struct {
@@ -40,6 +40,7 @@ type ClaimJobRow struct {
 	Payload        []byte
 	IdempotencyKey *string
 	OrderingKey    *string
+	TraceParent    *string
 	Attempt        int32
 	RunAt          time.Time
 	LastError      *string
@@ -60,6 +61,7 @@ func (q *Queries) ClaimJob(ctx context.Context, arg ClaimJobParams) (ClaimJobRow
 		&i.Payload,
 		&i.IdempotencyKey,
 		&i.OrderingKey,
+		&i.TraceParent,
 		&i.Attempt,
 		&i.RunAt,
 		&i.LastError,
@@ -179,8 +181,8 @@ func (q *Queries) DeleteOutboxEvent(ctx context.Context, id string) error {
 }
 
 const insertDeadJobFromClaim = `-- name: InsertDeadJobFromClaim :execrows
-INSERT INTO dead_jobs (id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at)
-SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, $1, j.created_at, $2
+INSERT INTO dead_jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at)
+SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.trace_parent, j.attempt, $1, j.created_at, $2
 FROM jobs AS j
 WHERE j.id = $3 AND j.locked_by = $4 AND j.attempt = $5
 `
@@ -209,8 +211,8 @@ func (q *Queries) InsertDeadJobFromClaim(ctx context.Context, arg InsertDeadJobF
 
 const insertJob = `-- name: InsertJob :exec
 
-INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)
-VALUES ($1, $2, $3, $4, $5, 0, $6, $7)
+INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8)
 ON CONFLICT (idempotency_key) DO NOTHING
 `
 
@@ -220,6 +222,7 @@ type InsertJobParams struct {
 	Payload        []byte
 	IdempotencyKey *string
 	OrderingKey    *string
+	TraceParent    *string
 	RunAt          time.Time
 	CreatedAt      time.Time
 }
@@ -234,6 +237,7 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 		arg.Payload,
 		arg.IdempotencyKey,
 		arg.OrderingKey,
+		arg.TraceParent,
 		arg.RunAt,
 		arg.CreatedAt,
 	)
@@ -241,8 +245,8 @@ func (q *Queries) InsertJob(ctx context.Context, arg InsertJobParams) error {
 }
 
 const insertOutboxEvent = `-- name: InsertOutboxEvent :exec
-INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, run_at, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, trace_parent, run_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type InsertOutboxEventParams struct {
@@ -251,6 +255,7 @@ type InsertOutboxEventParams struct {
 	Payload        []byte
 	IdempotencyKey *string
 	OrderingKey    *string
+	TraceParent    *string
 	RunAt          time.Time
 	CreatedAt      time.Time
 }
@@ -262,6 +267,7 @@ func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventPa
 		arg.Payload,
 		arg.IdempotencyKey,
 		arg.OrderingKey,
+		arg.TraceParent,
 		arg.RunAt,
 		arg.CreatedAt,
 	)
@@ -269,7 +275,7 @@ func (q *Queries) InsertOutboxEvent(ctx context.Context, arg InsertOutboxEventPa
 }
 
 const listDeadJobs = `-- name: ListDeadJobs :many
-SELECT id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at
+SELECT id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at
 FROM dead_jobs
 WHERE $1::text = ''
   OR failed_at < $2::timestamptz
@@ -301,6 +307,7 @@ func (q *Queries) ListDeadJobs(ctx context.Context, arg ListDeadJobsParams) ([]D
 			&i.Payload,
 			&i.IdempotencyKey,
 			&i.OrderingKey,
+			&i.TraceParent,
 			&i.Attempt,
 			&i.LastError,
 			&i.CreatedAt,
@@ -317,7 +324,7 @@ func (q *Queries) ListDeadJobs(ctx context.Context, arg ListDeadJobsParams) ([]D
 }
 
 const listOutboxEvents = `-- name: ListOutboxEvents :many
-SELECT id, job_type, payload, idempotency_key, ordering_key, run_at, created_at
+SELECT id, job_type, payload, idempotency_key, ordering_key, trace_parent, run_at, created_at
 FROM outbox_events
 ORDER BY id
 LIMIT $1
@@ -338,6 +345,7 @@ func (q *Queries) ListOutboxEvents(ctx context.Context, limit int32) ([]OutboxEv
 			&i.Payload,
 			&i.IdempotencyKey,
 			&i.OrderingKey,
+			&i.TraceParent,
 			&i.RunAt,
 			&i.CreatedAt,
 		); err != nil {
@@ -430,8 +438,8 @@ func (q *Queries) ReleaseJob(ctx context.Context, arg ReleaseJobParams) (int64, 
 }
 
 const requeueDeadJob = `-- name: RequeueDeadJob :execrows
-INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)
-SELECT d.id, d.type, d.payload, d.idempotency_key, d.ordering_key, 0, $1, d.created_at
+INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)
+SELECT d.id, d.type, d.payload, d.idempotency_key, d.ordering_key, d.trace_parent, 0, $1, d.created_at
 FROM dead_jobs AS d
 WHERE d.id = $2
 ON CONFLICT (idempotency_key) DO NOTHING

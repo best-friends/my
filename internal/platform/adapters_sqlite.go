@@ -23,6 +23,7 @@ func (a *App) openSQLite(ctx context.Context, cfg *config.Config, queueOpts queu
 	}
 	a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
 	d.RegisterMetrics(a.Meter)
+	d.SetTracer(a.Tracer)
 	if cfg.Queue == "db" {
 		a.setDBQueue(queuedb.NewSQLite(d, queueOpts))
 	}

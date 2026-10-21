@@ -25,7 +25,7 @@ var _ queue.Outbox = (*Outbox)(nil)
 // EnqueueTx implements queue.Outbox: it writes the jobs to outbox_events in tx. Idempotency
 // keys take effect when Relay enqueues the jobs.
 func (o *Outbox) EnqueueTx(ctx context.Context, tx uow.Tx, jobs ...queue.NewJob) error {
-	built, err := build(o.opts, jobs)
+	built, err := build(ctx, o.opts, jobs)
 	if err != nil {
 		return err
 	}
@@ -68,6 +68,7 @@ func (o *Outbox) Relay(ctx context.Context, target queue.JobQueue, limit int) (i
 			IdempotencyKey: e.IdempotencyKey,
 			OrderingKey:    e.OrderingKey,
 			RunAt:          e.RunAt,
+			TraceParent:    e.TraceParent,
 		}
 	}
 	if err := target.Enqueue(ctx, jobs...); err != nil {

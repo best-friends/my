@@ -74,6 +74,7 @@ func TestLoadValid(t *testing.T) {
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -95,6 +96,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -108,6 +110,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -120,6 +123,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 				PreviousKEKs: [][]byte{bytes.Repeat([]byte{1}, kekSize), bytes.Repeat([]byte{2}, kekSize)},
 			},
 		},
@@ -135,6 +139,7 @@ listen = "127.0.0.1:9000"
 				KeyManager: "local", KEK: kek, Mail: "smtp", MailFrom: "noreply@social.example.org", SMTPHost: "smtp.example.org",
 				SMTPPort: 2525, SMTPUsername: "mailer", SMTPPassword: "hunter3", Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -149,6 +154,7 @@ listen = "127.0.0.1:9000"
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587,
 				Captcha: "turnstile", CaptchaSiteKey: "0x4AAA-site", CaptchaSecretKey: "0x4AAA-secret", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -161,6 +167,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -179,6 +186,7 @@ listen = "127.0.0.1:9000"
 				},
 				TrustedProxyHeader: "forwarded",
 				MetricsExporter:    "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -193,6 +201,7 @@ listen = "127.0.0.1:9000"
 				WebhookAllowedHosts:    []string{"n8n.internal", "chat.corp.example"},
 				WebhookAllowedPrefixes: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8"), netip.MustParsePrefix("192.0.2.10/32")},
 				MetricsExporter:        "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -207,6 +216,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -221,6 +231,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 		{
@@ -235,6 +246,7 @@ listen = "127.0.0.1:9000"
 				MediaMaxAVBytes: 100 << 20, MediaMaxVideoDuration: 5 * time.Minute, MediaMaxAudioDuration: 10 * time.Minute, CustomEmojiMaxBytes: 256 << 10, RemoteCustomEmojiMaxBytes: 1 << 20, RemoteMediaCacheMaxBytes: 1 << 30, RemoteStatusRetention: 90 * 24 * time.Hour, RelayStatusRetention: 7 * 24 * time.Hour, RelayIngestHourlyLimit: 1000, DeadJobRetention: 30 * 24 * time.Hour,
 				KeyManager: "local", KEK: kek, Mail: "none", SMTPPort: 587, Captcha: "none", Profile: "production", TrustedProxyHeader: "x-forwarded-for",
 				MetricsExporter: "none", MetricsListen: "127.0.0.1:9464", MetricsEMFNamespace: "my",
+				TracesExporter: "none", TracesSampleRatio: 0.01, TracesFlush: "batch",
 			},
 		},
 	}
@@ -475,6 +487,16 @@ func TestLoadInvalid(t *testing.T) {
 			name: "bad emf dimensions",
 			env:  with(minimal(), "MY_METRICS_EMF_DIMENSIONS", "my.surface, Account"),
 			want: []string{"metrics_emf_dimensions (MY_METRICS_EMF_DIMENSIONS): must be comma-separated label keys of lower-case letters, digits, dots, and underscores, such as my.surface"},
+		},
+		{
+			name: "trace sample ratio above 1",
+			env:  with(minimal(), "MY_TRACES_SAMPLE_RATIO", "1.5"),
+			want: []string{"traces_sample_ratio (MY_TRACES_SAMPLE_RATIO): must be a number from 0 to 1, for example 0.01"},
+		},
+		{
+			name: "trace sample ratio not a number",
+			env:  with(minimal(), "MY_TRACES_SAMPLE_RATIO", "NaN"),
+			want: []string{"traces_sample_ratio (MY_TRACES_SAMPLE_RATIO): must be a number from 0 to 1, for example 0.01"},
 		},
 		{
 			name: "private networks in the production profile",

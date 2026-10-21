@@ -349,8 +349,8 @@ linters:
           deny:
             - pkg: github.com/go-webauthn
               desc: run WebAuthn ceremonies through identity.PasskeyCeremonies (internal/adapter/webauthn)
-        # The OpenTelemetry SDK and the Prometheus client stay inside the adapters of kernel.Meter
-        # (ADR-0055 §1), so that the core, the interfaces, and the other adapters measure through the port.
+        # The OpenTelemetry SDK and the Prometheus client stay inside the adapters of kernel.Meter and kernel.Tracer
+        # (ADR-0055 §1, ADR-0063 §1), so that the core, the interfaces, and the other adapters measure and trace through the ports.
         opentelemetry:
           list-mode: lax
           files:
@@ -358,9 +358,9 @@ linters:
             - "!**/internal/adapter/telemetry/**"
           deny:
             - pkg: go.opentelemetry.io
-              desc: measure through kernel.Meter (internal/adapter/telemetry)
+              desc: measure and trace through kernel.Meter and kernel.Tracer (internal/adapter/telemetry)
             - pkg: github.com/prometheus
-              desc: measure through kernel.Meter (internal/adapter/telemetry)
+              desc: measure and trace through kernel.Meter and kernel.Tracer (internal/adapter/telemetry)
         interface:
           list-mode: lax
           files:

@@ -94,8 +94,8 @@ M6 のデプロイのテンプレートより前に、ジョブのモデルと�
 ### 1. 計測の port（ADR-0002 の依存の向き）
 
 - `internal/app/kernel` に `Tracer` port を置く。型は標準ライブラリだけで書き、OTel の型を出さない:
-  - `Start(ctx, SpanSpec, Attrs) (context.Context, Span)`・`Span.Set(key, value)`・`Span.End(errorType string)`
-  - `Inject(ctx) string`（現在の span の W3C `traceparent`。記録していなければ空）と `Linked(ctx, traceparent) context.Context`（次の `Start` に link を足す）
+  - `Start(ctx, SpanSpec, Attrs) (context.Context, Span)`・`Span.Set(key, value)`・`Span.SetName(name)`（ルートが決まってから HTTP の span の名前を付ける）・`Span.End(errorType string)`
+  - `Inject(ctx) string`（現在の span の W3C `traceparent`。記録していなければ空）と `Linked(ctx, traceparent) context.Context`（次の `Start` に link を足す）、`Continue(ctx, traceparent) context.Context`（信頼したプロキシから受けた `traceparent` を次の `Start` の親にする。§3）
   - `LogIDs(ctx) (traceID, spanID string)`（ログの相関用。§6）
 - span は ADR-0055 の計器と同じく、名前・種類（server / client / internal / consumer / producer）・**許す属性のキーの一覧** を `SpanSpec` で宣言してから使う。
   宣言にない属性のキーはアダプタが捨て、`testkit` の Tracer がテストを落とす

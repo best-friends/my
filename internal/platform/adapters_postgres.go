@@ -29,6 +29,7 @@ func (a *App) openPostgres(ctx context.Context, cfg *config.Config, queueOpts qu
 		return pgstream.New(pgstream.Options{Pool: pool, ListenURL: listenURL})
 	}
 	d.RegisterMetrics(a.Meter)
+	d.SetTracer(a.Tracer)
 	if cfg.Queue == "db" {
 		a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
 	}

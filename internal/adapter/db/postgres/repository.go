@@ -41,7 +41,7 @@ func (d *DB) in(tx uow.Tx) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DB{pool: d.pool, opts: d.opts, tx: pgTx}, nil
+	return &DB{pool: d.pool, opts: d.opts, tx: pgTx, tracer: d.tracer}, nil
 }
 
 // Timestamps read back from timestamptz are in the session's time zone; the domain uses UTC.

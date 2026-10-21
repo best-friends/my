@@ -113,6 +113,9 @@ type DeliverDeps struct {
 	// Meter records my.delivery.attempts and my.delivery.duration (ADR-0055 §3); nil records
 	// nothing.
 	Meter kernel.Meter
+	// Tracer records the span of each POST to an inbox (DeliverySpan, ADR-0063 §1); nil records
+	// nothing.
+	Tracer kernel.Tracer
 }
 
 // Deliverer runs JobDeliver: one POST of an outbound activity's document to one inbox
@@ -146,6 +149,7 @@ func NewDeliverer(d DeliverDeps) *Deliverer {
 	if d.Logger == nil {
 		d.Logger = slog.Default()
 	}
+	d.Tracer = kernel.TracerOrNop(d.Tracer)
 	m := kernel.MeterOrNop(d.Meter)
 	return &Deliverer{d: d, attempts: m.Counter(DeliveryAttempts), duration: m.Histogram(DeliveryDuration)}
 }
@@ -226,10 +230,14 @@ func (d *Deliverer) Deliver(ctx context.Context, deliveryID string) queue.Result
 	}
 
 	started := time.Now()
-	attempt, retryAfter := d.send(ctx, del, document, key)
+	sctx, span := d.d.Tracer.Start(ctx, DeliverySpan, kernel.NewAttrs(kernel.StringAttr(LabelActivityType, string(act.Type))))
+	attempt, retryAfter := d.send(sctx, del, document, key)
 	if attempt.Outcome != "" {
-		d.duration.Record(ctx, time.Since(started).Seconds(), kernel.NewLabels(LabelOutcome, deliveryOutcome(attempt)))
+		outcome := deliveryOutcome(attempt)
+		d.duration.Record(ctx, time.Since(started).Seconds(), kernel.NewLabels(LabelOutcome, outcome))
+		span.Set(kernel.StringAttr(LabelOutcome, outcome))
 	}
+	span.End(deliveryErrorType(attempt, ctx.Err()))
 	if attempt.Outcome == "" {
 		// The job's context ended (lease or shutdown) before an answer: try again without
 		// counting an attempt against the server.

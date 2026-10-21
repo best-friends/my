@@ -104,6 +104,8 @@ type App struct {
 	HTTPClient kernel.HTTPClient
 	// Meter is the metrics adapter that cfg.MetricsExporter selects (ADR-0055).
 	Meter kernel.Meter
+	// Tracer is the tracing adapter that cfg.TracesExporter selects (ADR-0063).
+	Tracer kernel.Tracer
 	// MetricsSnapshot reports the instance-wide gauges (ADR-0055 §4); nil when Meter records
 	// nothing.
 	MetricsSnapshot *metrics.Service
@@ -224,6 +226,8 @@ type App struct {
 	// metrics_exporter = prometheus. closeMeter flushes and stops the exporter.
 	metricsHandler http.Handler
 	closeMeter     func(ctx context.Context) error
+	// closeTracer flushes and stops the exporter of traces_exporter = otlp.
+	closeTracer func(ctx context.Context) error
 	// page serves the web client's HTML at the GET paths that no route serves.
 	page http.Handler
 	// webStylesheet is the URL of the server-rendered pages' stylesheet from the web build, empty without one.
@@ -265,6 +269,9 @@ type AppOptions struct {
 	// Meter, when set, records the metrics instead of the adapter that cfg.MetricsExporter
 	// selects. Tests only, to inspect the measurements with testkit.Meter.
 	Meter kernel.Meter
+	// Tracer, when set, records the spans instead of the adapter that cfg.TracesExporter
+	// selects. Tests only, to inspect the spans with testkit.Tracer.
+	Tracer kernel.Tracer
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -295,7 +302,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	if opts.Version == "" {
 		opts.Version = "dev"
 	}
+	if err := a.setUpTracer(ctx, cfg, opts); err != nil {
+		return nil, err
+	}
 	if err := a.setUpMeter(ctx, cfg, opts); err != nil {
+		_ = a.Close()
 		return nil, err
 	}
 	if a.KeyManager, err = newKeyManager(cfg); err != nil {
@@ -304,7 +315,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	a.Sealer = kernel.NewSealer(a.KeyManager)
 
-	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
+	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs, Tracer: a.Tracer}
 	var repos *repositories
 	switch cfg.DB {
 	case "sqlite":
@@ -337,12 +348,12 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		projections  = repos.projections
 	)
 
-	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger, Meter: a.Meter}
+	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger, Meter: a.Meter, Tracer: a.Tracer}
 	switch cfg.Queue {
 	case "db":
 		// Set with the database above.
 	case "inline":
-		q := inline.New(inline.Options{Clock: a.Clock, IDs: a.IDs})
+		q := inline.New(inline.Options{Clock: a.Clock, IDs: a.IDs, Tracer: a.Tracer})
 		a.Jobs, a.DeadJobs = q, q
 		a.Runner = queue.NewPullRunner(q, a.Handlers, runnerOpts)
 		q.RunSynchronously(a.Runner)
@@ -420,7 +431,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	a.HTTPClient = opts.HTTPClient
 	if a.HTTPClient == nil {
-		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger, a.Meter)
+		a.HTTPClient = newHTTPClient(cfg, opts.Version, a.Logger, a.Meter, a.Tracer)
 	}
 	// The identity module's sign-in and registration check the CAPTCHA through it (ADR-0042 §3).
 	if a.HumanVerifier, a.HumanCheckWidget, err = newHumanVerifier(cfg, a.HTTPClient, a.Logger); err != nil {
@@ -989,9 +1000,9 @@ func newMailer(cfg *config.Config, logger *slog.Logger) (kernel.Mailer, error) {
 
 // newHTTPClient returns the SSRF-guarded HTTPClient. http_allow_private_networks, which the
 // configuration accepts only in the development profile, turns the guard off with a warning.
-func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger, meter kernel.Meter) kernel.HTTPClient {
+func newHTTPClient(cfg *config.Config, version string, logger *slog.Logger, meter kernel.Meter, tracer kernel.Tracer) kernel.HTTPClient {
 	opts := httpclient.Options{
-		UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host), Meter: meter,
+		UserAgent: fmt.Sprintf("my/%s (+https://%s/)", version, cfg.Host), Meter: meter, Tracer: tracer,
 		// The webhooks alone may reach the internal destinations that the operator lists (ADR-0060).
 		Webhook: httpclient.WebhookDestinations{Hosts: cfg.WebhookAllowedHosts, Prefixes: cfg.WebhookAllowedPrefixes},
 	}
@@ -1077,6 +1088,12 @@ func (a *App) Close() error {
 		_ = a.closeMeter(ctx) // the last measurements are lost when the collector is down
 		cancel()
 		a.closeMeter = nil
+	}
+	if a.closeTracer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), meterCloseTimeout)
+		_ = a.closeTracer(ctx) // the last spans are lost when the collector is down
+		cancel()
+		a.closeTracer = nil
 	}
 	if a.closer == nil {
 		return nil

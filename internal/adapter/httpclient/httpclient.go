@@ -69,6 +69,9 @@ type Options struct {
 	ExemptAddrPorts []netip.AddrPort
 	// Meter records the outbound HTTP metrics of ADR-0056 §1; nil records nothing.
 	Meter kernel.Meter
+	// Tracer records a client span of each request (RequestSpan, ADR-0063 §1); nil records
+	// nothing. No request carries a traceparent (§3).
+	Tracer kernel.Tracer
 	// Webhook lists the destinations that the requests of kernel.HTTPPurposeWebhook may reach
 	// although the guard refuses them (webhook_allowed_destinations, ADR-0060).
 	Webhook WebhookDestinations
@@ -122,6 +125,8 @@ type Client struct {
 	// duration is nil when opts.Meter records nothing; conns is then nil too.
 	duration kernel.Histogram
 	conns    *sysmetrics.ConnCounter
+	// traced is whether opts.Tracer records spans.
+	traced bool
 }
 
 var _ kernel.HTTPClient = (*Client)(nil)
@@ -139,7 +144,8 @@ func New(opts Options) *Client {
 			return net.DefaultResolver.LookupNetIP(ctx, "ip", host)
 		}
 	}
-	c := &Client{opts: opts}
+	opts.Tracer = kernel.TracerOrNop(opts.Tracer)
+	c := &Client{opts: opts, traced: !kernel.IsNopTracer(opts.Tracer)}
 	if !kernel.IsNop(opts.Meter) {
 		c.duration = opts.Meter.Histogram(sysmetrics.HTTPClientRequestDuration)
 		c.conns = sysmetrics.NewOpenConnCounter(opts.Meter, sysmetrics.HTTPClientOpenConnections)
@@ -174,12 +180,21 @@ func (c *Client) transport(dial func(ctx context.Context, network, address strin
 
 // Do implements kernel.HTTPClient.
 func (c *Client) Do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPResponse, error) {
-	if c.duration == nil {
+	if c.duration == nil && !c.traced {
 		return c.do(ctx, r)
+	}
+	var span kernel.Span
+	if c.traced {
+		ctx, span = c.startSpan(ctx, r)
 	}
 	start := time.Now()
 	resp, err := c.do(ctx, r)
-	c.record(ctx, r, resp, err, time.Since(start))
+	if c.duration != nil {
+		c.record(ctx, r, resp, err, time.Since(start))
+	}
+	if span != nil {
+		endSpan(span, resp, err)
+	}
 	return resp, err
 }
 
@@ -223,6 +238,9 @@ func (c *Client) do(ctx context.Context, r *kernel.HTTPRequest) (*kernel.HTTPRes
 	// The transport asks for gzip and decompresses it only when the caller does not set
 	// Accept-Encoding, and the body limit must apply to the decompressed size.
 	req.Header.Del("Accept-Encoding")
+	// The trace context never leaves for a remote server (ADR-0063 §3).
+	req.Header.Del("Traceparent")
+	req.Header.Del("Tracestate")
 	req.Header.Set("User-Agent", c.opts.UserAgent)
 	resp, err := client.Do(req)
 	if err != nil {

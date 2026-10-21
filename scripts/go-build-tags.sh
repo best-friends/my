@@ -31,7 +31,7 @@ excluded_packages() {
     no_valkey) echo "$m/valkey $m/kv/valkey $m/stream/valkey github.com/valkey-io/valkey-go" ;;
     no_sns) echo "$m/stream/sns github.com/aws/aws-sdk-go-v2/service/sns" ;;
     no_pubsub) echo "$m/stream/pubsub cloud.google.com/go/pubsub/v2" ;;
-    no_otel) echo "$m/telemetry/otel go.opentelemetry.io/otel/sdk/metric" ;;
+    no_otel) echo "$m/telemetry/otel $m/telemetry/otel/otlptest go.opentelemetry.io/otel/sdk/metric go.opentelemetry.io/otel/sdk/trace go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp" ;;
     *)
       echo "unknown build tag: $1 (see docs/reference/build-tags.md)" >&2
       return 1

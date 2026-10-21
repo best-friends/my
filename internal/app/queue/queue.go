@@ -68,7 +68,10 @@ type Job struct {
 	RunAt time.Time
 	// LastError describes why the previous attempt did not finish, or is empty.
 	LastError string
-	CreatedAt time.Time
+	// TraceParent is the W3C traceparent of the span that enqueued the job, or empty: the span
+	// of each run is the root of a new trace with a link to it (ADR-0063 §2).
+	TraceParent string
+	CreatedAt   time.Time
 }
 
 // NewJob describes a job to enqueue.
@@ -80,6 +83,10 @@ type NewJob struct {
 	// RunAt delays the job; the zero value means now. The job runs no earlier than RunAt;
 	// adapters do not guarantee how much later.
 	RunAt time.Time
+	// TraceParent is the traceparent of the job (Job.TraceParent). Callers leave it empty: the
+	// adapter fills it from the span of the context of Enqueue or EnqueueTx (TraceJobs). The
+	// outbox relay passes on the one it stored.
+	TraceParent string
 }
 
 // Build validates n and turns it into the Job that adapters store, with the given ID, the
@@ -107,8 +114,27 @@ func (n NewJob) Build(id string, now time.Time) (Job, error) {
 		IdempotencyKey: n.IdempotencyKey,
 		OrderingKey:    n.OrderingKey,
 		RunAt:          runAt,
+		TraceParent:    n.TraceParent,
 		CreatedAt:      now,
 	}, nil
+}
+
+// TraceJobs sets the TraceParent of the jobs that have none to the span of ctx (Tracer.Inject),
+// for the adapters to call in Enqueue and EnqueueTx (ADR-0063 §2). A nil tracer, or a span that
+// is not recorded, leaves them empty.
+func TraceJobs(ctx context.Context, t kernel.Tracer, jobs []Job) {
+	if kernel.IsNopTracer(t) {
+		return
+	}
+	tp := t.Inject(ctx)
+	if tp == "" {
+		return
+	}
+	for i := range jobs {
+		if jobs[i].TraceParent == "" {
+			jobs[i].TraceParent = tp
+		}
+	}
 }
 
 // JobQueue enqueues jobs. Enqueue is external I/O: never call it inside UnitOfWork.Tx; use
@@ -145,8 +171,10 @@ type DeadJob struct {
 	// Attempt is the number of runs the job had.
 	Attempt   int
 	LastError string
-	CreatedAt time.Time
-	FailedAt  time.Time
+	// TraceParent is the job's Job.TraceParent, which a requeued job keeps.
+	TraceParent string
+	CreatedAt   time.Time
+	FailedAt    time.Time
 }
 
 // Position returns the position of d in the order of DeadJobs.ListDeadJobs.

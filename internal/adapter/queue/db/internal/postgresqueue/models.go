@@ -16,6 +16,7 @@ type DeadJob struct {
 	Payload        []byte
 	IdempotencyKey *string
 	OrderingKey    *string
+	TraceParent    *string
 	Attempt        int32
 	LastError      string
 	CreatedAt      time.Time
@@ -28,6 +29,7 @@ type OutboxEvent struct {
 	Payload        []byte
 	IdempotencyKey *string
 	OrderingKey    *string
+	TraceParent    *string
 	RunAt          time.Time
 	CreatedAt      time.Time
 }

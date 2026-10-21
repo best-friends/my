@@ -19,6 +19,8 @@ import (
 	msqlite "modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 
+	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/schema"
 )
@@ -33,6 +35,8 @@ type DB struct {
 	opts uow.Options
 	// tx is the transaction that the reads of a copy made by in run in, nil for the pool.
 	tx *sql.Tx
+	// tracer records the spans of the transactions and the queries (SetTracer).
+	tracer kernel.Tracer
 }
 
 var _ uow.UnitOfWork = (*DB)(nil)
@@ -57,8 +61,12 @@ func Open(ctx context.Context, dsn string, opts uow.Options) (*DB, error) {
 		_ = db.Close()
 		return nil, fmt.Errorf("sqlite: open: %w", err)
 	}
-	return &DB{db: db, opts: opts}, nil
+	return &DB{db: db, opts: opts, tracer: kernel.NopTracer{}}, nil
 }
+
+// SetTracer records a span of every transaction attempt and every query of the repositories
+// and of the database job queue on t (ADR-0063 §1). Call it before the first transaction.
+func (d *DB) SetTracer(t kernel.Tracer) { d.tracer = kernel.TracerOrNop(t) }
 
 // normalizeDSN turns a path or file: URI into a file: URI with the required parameters.
 func normalizeDSN(dsn string) (string, error) {
@@ -141,7 +149,9 @@ func (d *DB) Tx(ctx context.Context, fn func(tx uow.Tx) error) error {
 }
 
 func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) (err error) {
-	sqlTx, err := d.db.BeginTx(ctx, nil)
+	sctx, span := dbtrace.StartTx(ctx, d.tracer, dbtrace.SystemSQLite)
+	defer func() { dbtrace.End(span, err) }()
+	sqlTx, err := d.db.BeginTx(sctx, nil)
 	if err != nil {
 		return fmt.Errorf("sqlite: begin: %w", err)
 	}
@@ -151,7 +161,7 @@ func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) (err error) 
 			_ = sqlTx.Rollback()
 		}
 	}()
-	tx := &Tx{tx: sqlTx, projectors: d.opts.Projectors}
+	tx := &Tx{tx: sqlTx, db: dbtrace.Wrap(sqlTx, d.tracer, dbtrace.SystemSQLite), projectors: d.opts.Projectors}
 	if err := fn(tx); err != nil {
 		return err
 	}
@@ -178,7 +188,9 @@ func isRetryable(err error) bool {
 
 // Tx is a SQLite transaction. It implements uow.Tx.
 type Tx struct {
-	tx         *sql.Tx
+	tx *sql.Tx
+	// db runs the queries of tx, with their spans.
+	db         dbtrace.DBTX
 	projectors *uow.Projectors
 	// events are the events emitted so far, for the commit hooks.
 	events []uow.Event
@@ -205,3 +217,14 @@ func txOf(tx uow.Tx) (*sql.Tx, error) {
 // keep their tables in this database (the database job queue, internal/adapter/queue/db).
 // It fails for a Tx of another adapter.
 func SQLTx(tx uow.Tx) (*sql.Tx, error) { return txOf(tx) }
+
+// QueryTx returns what runs the queries of tx with their spans (SetTracer), for the sqlc code
+// of the adapters of other ports that keep their tables in this database. It fails for a Tx of
+// another adapter.
+func QueryTx(tx uow.Tx) (dbtrace.DBTX, error) {
+	t, ok := tx.(*Tx)
+	if !ok {
+		return nil, fmt.Errorf("sqlite: transaction %T does not belong to this adapter", tx)
+	}
+	return t.db, nil
+}

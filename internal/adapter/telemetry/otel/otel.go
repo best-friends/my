@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package otel is the kernel.Meter adapter on the OpenTelemetry Go SDK (ADR-0055 §1, §2): it
-// aggregates the measurements in the process and exports them in the Prometheus text format,
-// which Handler serves for a scrape (metrics_exporter = prometheus), or pushes them over
-// OTLP/HTTP to a collector (metrics_exporter = otlp), configured by the standard OTEL_EXPORTER_OTLP_*
-// and OTEL_METRIC_EXPORT_* environment variables.
+// Package otel holds the kernel.Meter and kernel.Tracer adapters on the OpenTelemetry Go SDK.
+//
+// The Meter (ADR-0055 §1, §2) aggregates the measurements in the process and exports them in
+// the Prometheus text format, which Handler serves for a scrape (metrics_exporter = prometheus),
+// or pushes them over OTLP/HTTP to a collector (metrics_exporter = otlp), configured by the
+// standard OTEL_EXPORTER_OTLP_* and OTEL_METRIC_EXPORT_* environment variables.
 //
 // Besides the instruments declared through kernel.Meter, the Meter reports the Go runtime
 // metrics of ADR-0056 §1 (go.memory.*, go.goroutine.count, go.processor.limit, go.config.gogc,
 // go.schedule.duration, and the GC cycles and pauses) from the OpenTelemetry contrib runtime
 // instrumentation and runtime/metrics.
+//
+// The Tracer (ADR-0063) exports the spans over OTLP/HTTP; see Tracer.
 //
 // The resource carries service.name, service.version, and my.role, and the attributes of
 // OTEL_RESOURCE_ATTRIBUTES, through which a platform can add the instance's identifier
@@ -69,18 +72,7 @@ var _ kernel.Meter = (*Meter)(nil)
 // New returns the Meter that exports through opts.Exporter. Shut it down to flush and stop
 // the exporter.
 func New(ctx context.Context, opts Options) (*Meter, error) {
-	if opts.ServiceName == "" {
-		opts.ServiceName = "my"
-	}
-	res, err := resource.New(ctx,
-		resource.WithFromEnv(),
-		resource.WithTelemetrySDK(),
-		resource.WithAttributes(
-			attribute.String("service.name", opts.ServiceName),
-			attribute.String("service.version", opts.ServiceVersion),
-			attribute.String("my.role", opts.Role),
-		),
-	)
+	res, err := newResource(ctx, opts.ServiceName, opts.ServiceVersion, opts.Role)
 	if err != nil {
 		return nil, fmt.Errorf("metrics resource: %w", err)
 	}
@@ -123,6 +115,24 @@ func New(ctx context.Context, opts Options) (*Meter, error) {
 		return nil, fmt.Errorf("runtime metrics: %w", err)
 	}
 	return m, nil
+}
+
+// newResource returns the resource of the metrics and the traces (ADR-0055 §6, ADR-0063 §1):
+// service.name (default "my"), service.version, my.role, and the attributes of
+// OTEL_RESOURCE_ATTRIBUTES.
+func newResource(ctx context.Context, name, version, role string) (*resource.Resource, error) {
+	if name == "" {
+		name = "my"
+	}
+	return resource.New(ctx,
+		resource.WithFromEnv(),
+		resource.WithTelemetrySDK(),
+		resource.WithAttributes(
+			attribute.String("service.name", name),
+			attribute.String("service.version", version),
+			attribute.String("my.role", role),
+		),
+	)
 }
 
 // Handler serves the metrics in the Prometheus text format; nil for the OTLP exporter.

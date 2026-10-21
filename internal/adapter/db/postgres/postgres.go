@@ -17,6 +17,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/schema"
 )
@@ -27,6 +29,9 @@ type DB struct {
 	opts uow.Options
 	// tx is the transaction that the reads of a copy made by in run in, nil for the pool.
 	tx pgx.Tx
+	// tracer records the spans of the transactions and, through the pool's QueryTracer, of
+	// every query (SetTracer).
+	tracer *tracerRef
 }
 
 var _ uow.UnitOfWork = (*DB)(nil)
@@ -41,6 +46,8 @@ func Open(ctx context.Context, url string, opts uow.Options) (*DB, error) {
 		// The error may quote the URL, which can hold a password; keep only its kind.
 		return nil, errors.New("postgres: database_url is not a valid connection string")
 	}
+	ref := &tracerRef{}
+	cfg.ConnConfig.Tracer = queryTracer{ref: ref}
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("postgres: open: %w", err)
@@ -49,8 +56,12 @@ func Open(ctx context.Context, url string, opts uow.Options) (*DB, error) {
 		pool.Close()
 		return nil, fmt.Errorf("postgres: open: %w", err)
 	}
-	return &DB{pool: pool, opts: opts}, nil
+	return &DB{pool: pool, opts: opts, tracer: ref}, nil
 }
+
+// SetTracer records a span of every transaction attempt and every query on the pool, of the
+// repositories and of the adapters that share it, on t (ADR-0063 §1).
+func (d *DB) SetTracer(t kernel.Tracer) { d.tracer.set(t) }
 
 // Close closes every connection of the pool.
 func (d *DB) Close() { d.pool.Close() }
@@ -101,8 +112,10 @@ func (d *DB) Tx(ctx context.Context, fn func(tx uow.Tx) error) error {
 	})
 }
 
-func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) error {
-	pgTx, err := d.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+func (d *DB) attempt(ctx context.Context, fn func(tx uow.Tx) error) (err error) {
+	sctx, span := dbtrace.StartTx(ctx, d.tracer.get(), dbtrace.SystemPostgreSQL)
+	defer func() { dbtrace.End(span, err) }()
+	pgTx, err := d.pool.BeginTx(sctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
 	if err != nil {
 		return fmt.Errorf("postgres: begin: %w", err)
 	}

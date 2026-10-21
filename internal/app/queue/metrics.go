@@ -22,6 +22,15 @@ const (
 	LabelOutcome = "my.outcome"
 )
 
+// AttrJobAttempt is the span attribute of the number of a run, Job.Attempt (ADR-0063 §2).
+const AttrJobAttempt = "my.job.attempt"
+
+// JobSpan is the span of one run of a job (ADR-0063 §1, §2), named after the job's type: the
+// root of a new trace, linked to the span that enqueued the job.
+var JobSpan = kernel.SpanSpec{
+	Name: "my.job", Kind: kernel.SpanConsumer, AttrKeys: []string{LabelJobType, AttrJobAttempt, LabelOutcome},
+}
+
 // JobTypeOther is the my.job.type of a job whose type has no handler, which is not one of the
 // finite set of registered types.
 const JobTypeOther = "other"
