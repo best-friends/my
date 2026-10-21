@@ -4,8 +4,8 @@
 -- Timestamps are Unix milliseconds (see docs/architecture/data-model.md, section 1.2).
 
 -- name: InsertJob :exec
-INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)
-VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)
+VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
 ON CONFLICT (idempotency_key) DO NOTHING;
 
 -- ClaimJob leases the due, unleased job with the earliest run_at that its ordering key does
@@ -26,7 +26,7 @@ WHERE id = (
   ORDER BY j.run_at, j.id
   LIMIT 1
 )
-RETURNING id, type, payload, idempotency_key, ordering_key, attempt, run_at, last_error, created_at;
+RETURNING id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, last_error, created_at;
 
 -- name: DeleteClaimedJob :execrows
 DELETE FROM jobs WHERE id = ? AND locked_by = ? AND attempt = ?;
@@ -38,8 +38,8 @@ SET locked_by = NULL, locked_until = NULL,
 WHERE id = @id AND locked_by = @worker AND attempt = @attempt;
 
 -- name: InsertDeadJobFromClaim :execrows
-INSERT INTO dead_jobs (id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at)
-SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, @last_error, j.created_at, @failed_at
+INSERT INTO dead_jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at)
+SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.trace_parent, j.attempt, @last_error, j.created_at, @failed_at
 FROM jobs AS j
 WHERE j.id = @id AND j.locked_by = @worker AND j.attempt = @attempt;
 
@@ -47,7 +47,7 @@ WHERE j.id = @id AND j.locked_by = @worker AND j.attempt = @attempt;
 -- recently failed first, after the position (@after_failed_at, @after_id); an empty @after_id
 -- starts at the first.
 -- name: ListDeadJobs :many
-SELECT id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at
+SELECT id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at
 FROM dead_jobs
 WHERE (CAST(sqlc.arg(job_type) AS TEXT) = '' OR type = CAST(sqlc.arg(job_type) AS TEXT))
   AND (CAST(sqlc.arg(after_id) AS TEXT) = ''
@@ -57,8 +57,8 @@ ORDER BY failed_at DESC, id DESC
 LIMIT sqlc.arg(batch_limit);
 
 -- name: RequeueDeadJob :execrows
-INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)
-SELECT d.id, d.type, d.payload, d.idempotency_key, d.ordering_key, 0, @run_at, d.created_at
+INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)
+SELECT d.id, d.type, d.payload, d.idempotency_key, d.ordering_key, d.trace_parent, 0, @run_at, d.created_at
 FROM dead_jobs AS d
 WHERE d.id = @id
 ON CONFLICT (idempotency_key) DO NOTHING;
@@ -76,11 +76,11 @@ WHERE id IN (
 );
 
 -- name: InsertOutboxEvent :exec
-INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, run_at, created_at)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, trace_parent, run_at, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 -- name: ListOutboxEvents :many
-SELECT id, job_type, payload, idempotency_key, ordering_key, run_at, created_at
+SELECT id, job_type, payload, idempotency_key, ordering_key, trace_parent, run_at, created_at
 FROM outbox_events
 ORDER BY id
 LIMIT ?;

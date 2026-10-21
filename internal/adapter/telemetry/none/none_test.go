@@ -29,3 +29,40 @@ func BenchmarkRecord(b *testing.B) {
 		end()
 	}
 }
+
+func TestTracerContract(t *testing.T) {
+	testkit.TracerContract(t, func(*testing.T) kernel.Tracer { return none.NewTracer() })
+}
+
+// spanSpec is a span as the job runner declares it.
+var spanSpec = kernel.SpanSpec{Name: "federation.deliver", Kind: kernel.SpanConsumer, AttrKeys: []string{"my.job.type", "my.job.attempt", "my.outcome"}}
+
+// TestTracerAllocatesNothing checks that a span costs no allocation with traces_exporter = none
+// (ADR-0063 §5), so that tracing adds next to nothing to an instance that does not export.
+func TestTracerAllocatesNothing(t *testing.T) {
+	tr := none.NewTracer()
+	ctx := t.Context()
+	allocs := testing.AllocsPerRun(100, func() {
+		sctx, s := tr.Start(ctx, spanSpec, kernel.NewAttrs(kernel.StringAttr("my.job.type", "federation.deliver"), kernel.IntAttr("my.job.attempt", 1)))
+		s.Set(kernel.StringAttr("my.outcome", "success"))
+		_ = tr.Inject(sctx)
+		_, _ = tr.LogIDs(sctx)
+		s.End("")
+	})
+	if allocs != 0 {
+		t.Errorf("allocations per span = %v, want 0", allocs)
+	}
+}
+
+// BenchmarkSpan measures what a span costs with traces_exporter = none.
+func BenchmarkSpan(b *testing.B) {
+	tr := none.NewTracer()
+	ctx := b.Context()
+	b.ReportAllocs()
+	for b.Loop() {
+		sctx, s := tr.Start(ctx, spanSpec, kernel.NewAttrs(kernel.StringAttr("my.job.type", "federation.deliver"), kernel.IntAttr("my.job.attempt", 1)))
+		s.Set(kernel.StringAttr("my.outcome", "success"))
+		_ = tr.Inject(sctx)
+		s.End("")
+	}
+}

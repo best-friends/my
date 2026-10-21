@@ -13,7 +13,7 @@ The adapters that need nothing beyond the standard library and the packages the 
 | `no_valkey` | The Valkey client (`valkey-go`): the key-value store and the broker on `valkey_url` | `kv = valkey`, `stream = valkey` |
 | `no_sns` | The Amazon SNS / SQS broker (AWS SDK) | `stream = sns` |
 | `no_pubsub` | The Google Cloud Pub/Sub broker (Google Cloud client libraries) | `stream = pubsub` |
-| `no_otel` | The OpenTelemetry SDK and its Prometheus and OTLP exporters | `metrics_exporter = prometheus`, `metrics_exporter = otlp` |
+| `no_otel` | The OpenTelemetry SDK and its Prometheus and OTLP exporters, of the metrics and of the traces | `metrics_exporter = prometheus`, `metrics_exporter = otlp`, `traces_exporter = otlp` |
 
 Leave out the database that the instance does not use, but keep at least one of `no_sqlite` and `no_postgres` off:
 a binary without a database adapter cannot start.

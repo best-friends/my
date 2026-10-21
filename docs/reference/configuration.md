@@ -96,6 +96,9 @@ An instance setting that has never been set reads as its default, which is defin
 | [`metrics_listen`](#metrics_listen) | `MY_METRICS_LISTEN` | `127.0.0.1:9464` | no | no |
 | [`metrics_emf_namespace`](#metrics_emf_namespace) | `MY_METRICS_EMF_NAMESPACE` | `my` | no | no |
 | [`metrics_emf_dimensions`](#metrics_emf_dimensions) | `MY_METRICS_EMF_DIMENSIONS` | none | no | no |
+| [`traces_exporter`](#traces_exporter) | `MY_TRACES_EXPORTER` | `none` | no | no |
+| [`traces_sample_ratio`](#traces_sample_ratio) | `MY_TRACES_SAMPLE_RATIO` | `0.01` | no | no |
+| [`traces_flush`](#traces_flush) | `MY_TRACES_FLUSH` | `batch` | no | no |
 
 ## Settings
 
@@ -664,3 +667,37 @@ Labels that become CloudWatch dimensions with `metrics_exporter = emf`, comma-se
 - Environment variable: `MY_METRICS_EMF_DIMENSIONS`
 - Default: none
 - Required: no
+
+### `traces_exporter`
+
+Where the distributed traces go (ADR-0063): the spans of the HTTP requests, the job runs (each the root of a new trace linked to the request that enqueued it), the transactions and queries, the deliveries, and the outbound requests. Span attributes never carry an account, a URL or a path, a client IP, a User-Agent, an SQL text, or an error message; the outbound requests carry the destination's host name. No outbound request carries a `traceparent`, and an incoming `traceparent` is taken only from `trusted_proxies`.
+
+- Environment variable: `MY_TRACES_EXPORTER`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | No spans; tracing costs next to nothing. The log lines still carry `trace_id` and `span_id` of a `traceparent` from `trusted_proxies`, which correlates them with the platform's traces (Cloud Run). |
+| `otlp` | yes | OTLP over HTTP (protobuf, gzip) to an OpenTelemetry Collector or another receiver, configured by the standard environment variables `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` or `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`) and `OTEL_EXPORTER_OTLP_HEADERS`. The server does not authenticate to Cloud Trace or X-Ray itself: send to a collector next to it, which does (docs/operations/running.md). The build tag `no_otel` leaves it out. |
+
+### `traces_sample_ratio`
+
+Share of the traces recorded with `traces_exporter = otlp`, from `0` to `1`, among the requests and jobs without a sampled parent: a request follows the sampling of a `traceparent` from `trusted_proxies`, and a job is recorded when the request that enqueued it was. The default records about 1,000 traces a day of an instance that serves 100,000 requests a day.
+
+- Environment variable: `MY_TRACES_SAMPLE_RATIO`
+- Default: `0.01`
+- Required: no
+
+### `traces_flush`
+
+When the spans of `traces_exporter = otlp` are sent.
+
+- Environment variable: `MY_TRACES_FLUSH`
+- Default: `batch`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `batch` | yes | In batches, every few seconds, in the background; for processes that keep running (self-hosted). |
+| `unit` | yes | Also at the end of every recorded HTTP request and job, before it returns, to a collector on the same host; for the platforms that throttle or freeze an idle instance (Cloud Run with request-based billing, AWS Lambda). A request that is not recorded sends nothing. |

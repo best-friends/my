@@ -20,3 +20,15 @@ func (a *App) setUpOTelMeter(ctx context.Context, cfg *config.Config, opts AppOp
 	a.Meter, a.metricsHandler, a.closeMeter = m, m.Handler(), m.Shutdown
 	return nil
 }
+
+// setUpOTelTracer sets the Tracer of traces_exporter = otlp (ADR-0063 §5).
+func (a *App) setUpOTelTracer(ctx context.Context, cfg *config.Config, opts AppOptions) error {
+	t, err := otel.NewTracer(ctx, otel.TracerOptions{
+		ServiceVersion: opts.Version, Role: string(cfg.Role), SampleRatio: cfg.TracesSampleRatio, Flush: cfg.TracesFlush,
+	})
+	if err != nil {
+		return err
+	}
+	a.Tracer, a.closeTracer = t, t.Shutdown
+	return nil
+}

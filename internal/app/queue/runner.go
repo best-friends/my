@@ -72,6 +72,8 @@ type RunnerOptions struct {
 	Logger *slog.Logger
 	// Meter records my.job.duration and my.job.wait (ADR-0055 §3); nil records nothing.
 	Meter kernel.Meter
+	// Tracer records the span of each run (JobSpan, ADR-0063 §2); nil records nothing.
+	Tracer kernel.Tracer
 	// Attempts records the runs that did not succeed (ADR-0064 §1); nil records nothing. A
 	// failure to record is logged and does not change the job's result.
 	Attempts AttemptLog
@@ -115,6 +117,7 @@ func NewPullRunner(src Source, reg *JobHandlerRegistry, opts RunnerOptions) *Pul
 	if reg == nil {
 		reg = &JobHandlerRegistry{}
 	}
+	opts.Tracer = kernel.TracerOrNop(opts.Tracer)
 	return &PullRunner{src: src, reg: reg, opts: opts, metrics: newJobMetrics(opts.Meter)}
 }
 
@@ -206,6 +209,11 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 	if !found {
 		jobType = JobTypeOther // a type no handler knows is not a finite label value
 	}
+	// Each run is the root of a new trace, linked to the span that enqueued the job (ADR-0063 §2).
+	tracer := r.opts.Tracer
+	ctx, span := tracer.Start(tracer.Linked(ctx, j.TraceParent), JobSpan.Named(jobType),
+		kernel.NewAttrs(kernel.StringAttr(LabelJobType, jobType), kernel.IntAttr(AttrJobAttempt, int64(j.Attempt))))
+	recordCtx = context.WithoutCancel(ctx)
 	mctx, end := r.metrics.meter.Begin(ctx)
 	defer end()
 	wait := max(now.Sub(j.RunAt), 0)
@@ -223,7 +231,18 @@ func (r *PullRunner) RunOnce(ctx context.Context) (bool, error) {
 		d := time.Since(started)
 		r.metrics.ran(mctx, jobType, outcome, d)
 		r.logRun(mctx, j, jobType, outcome, res.Err(), d, wait)
+		span.Set(kernel.StringAttr(LabelOutcome, outcome))
 	}
+	// The span ends once the result is recorded, so that it covers the result's transaction.
+	defer func() {
+		errorType := ""
+		if !res.IsDone() {
+			if errorType = kernel.ErrorType(res.Err()); errorType == "" {
+				errorType = "_OTHER"
+			}
+		}
+		span.End(errorType)
+	}()
 	switch {
 	case res.IsDone():
 		ran(OutcomeSuccess)

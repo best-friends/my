@@ -69,7 +69,8 @@ func FixedRandom(v float64) func() float64 { return func() float64 { return v } 
 // deleted, the oldest first in bounded batches, once they failed before a given time; a job whose worker stopped
 // is claimed again once its lease expires (at-least-once), and the stale worker's result is
 // dropped; concurrent workers run each job once; jobs of one ordering key run one at a time,
-// in enqueue order, even across retries, delays, and concurrent workers; and, where the harness enables them,
+// in enqueue order, even across retries, delays, and concurrent workers; a job keeps its TraceParent
+// (ADR-0063 §2) through runs, retries, the dead jobs, and a requeue; and, where the harness enables them,
 // transactional enqueue, survival of a restart, and the re-enqueue chain beyond a delay limit, and
 // the listing of the jobs and the records of the attempts for the queue dashboard.
 func QueueContract(t *testing.T, newHarness QueueFactory) {
@@ -97,6 +98,7 @@ func QueueContract(t *testing.T, newHarness QueueFactory) {
 		{"KeepsEnqueueOrderWithinAnOrderingKey", queueKeepsOrderWithinKey},
 		{"SerializesOrderingKeysUnderConcurrentWorkers", queueSerializesKeysUnderConcurrency},
 		{"EnqueuesAtomicallyWithTheTransaction", queueTransactionalEnqueue},
+		{"KeepsTheTraceParent", queueKeepsTraceParent},
 		{"KeepsJobsAcrossARestart", queueSurvivesRestart},
 		{"ReenqueuesJobsBeyondTheDelayLimit", queueReenqueueChain},
 		{"InspectsJobsByState", queueInspectsJobsByState},
@@ -960,5 +962,48 @@ func queueReenqueueChain(t *testing.T, newHarness QueueFactory) {
 	f.drain()
 	if run := f.wantRuns(1)[0]; run.Attempt != 1 || !run.RunAt.Equal(j.RunAt) {
 		t.Errorf("job = %+v, want Attempt 1 (re-enqueues do not count) and RunAt %v", run, j.RunAt)
+	}
+}
+
+// contractTraceParent is the TraceParent of the jobs of queueKeepsTraceParent.
+const contractTraceParent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01"
+
+func queueKeepsTraceParent(t *testing.T, newHarness QueueFactory) {
+	f := newQueueFixture(t, newHarness, queue.Retry(0, errors.New("again")), queue.Fail(errors.New("bug")))
+	traced := probe(`{"N":"traced"}`)
+	traced.TraceParent = contractTraceParent
+	f.enqueue(traced)
+	f.drain()
+	f.clock.Advance(time.Hour)
+	f.drain()
+	dead := f.dead()
+	if len(dead) != 1 || dead[0].TraceParent != contractTraceParent {
+		t.Fatalf("dead jobs = %+v, want one with TraceParent %s", dead, contractTraceParent)
+	}
+	if err := f.h.DeadJobs.RequeueDeadJob(t.Context(), dead[0].ID); err != nil {
+		t.Fatalf("RequeueDeadJob: %v", err)
+	}
+	f.drain()
+	for i, j := range f.wantRuns(3) {
+		if j.TraceParent != contractTraceParent {
+			t.Errorf("run %d TraceParent = %q, want %q", i+1, j.TraceParent, contractTraceParent)
+		}
+	}
+	f.enqueue(probe(`{"N":"untraced"}`))
+	f.drain()
+	if j := f.wantRuns(4)[3]; j.TraceParent != "" {
+		t.Errorf("TraceParent of a job enqueued without a span = %q, want empty", j.TraceParent)
+	}
+	if f.h.UnitOfWork == nil || f.h.Outbox == nil {
+		return
+	}
+	if err := f.h.UnitOfWork.Tx(t.Context(), func(tx uow.Tx) error {
+		return f.h.Outbox.EnqueueTx(t.Context(), tx, traced)
+	}); err != nil {
+		t.Fatalf("Tx = %v", err)
+	}
+	f.drain()
+	if j := f.wantRuns(5)[4]; j.TraceParent != contractTraceParent {
+		t.Errorf("TraceParent of a job enqueued in a transaction = %q, want %q", j.TraceParent, contractTraceParent)
 	}
 }

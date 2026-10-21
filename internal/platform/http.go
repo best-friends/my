@@ -379,12 +379,17 @@ func validRequestID(id string) bool {
 // when the request reached no route (the health checks, the requests refused before routing),
 // which the metric does not measure either. With the HTTP metrics, it also records the request's
 // http.server.request.duration in a unit of work of the Meter (ADR-0055 §3), which the line
-// carries with metrics_exporter = emf (§5).
+// carries with metrics_exporter = emf (§5). The request is a span of the Tracer
+// (HTTPServerSpan, ADR-0063 §1), which the line names by trace_id and span_id.
 func (a *App) accessLog(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 		rr := &requestRoute{}
+		r, endSpan := a.startHTTPSpan(r)
+		if endSpan != nil {
+			defer func() { endSpan(rr, rw.status) }()
+		}
 		ctx := r.Context()
 		recorded := false
 		if a.http != nil {
