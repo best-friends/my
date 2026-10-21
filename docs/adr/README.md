@@ -79,4 +79,5 @@
 | [0065](0065-react-compiler-oxc.md) | React Compiler を Oxc の移植で動かし、Babel を外す | Accepted |
 | [0066](0066-openapi-split-and-bundle.md) | クライアント API の仕様をファイルに分けてバンドルする | Accepted |
 | [0067](0067-finance-cost-records.md) | 費用の記録・支払いの周期・期間の集計・公開範囲 | Accepted |
+| [0068](0068-billing-import.md) | 利用料金の自動取り込み（BillingSource ポート） | Accepted |
 <!-- adr-index:end -->
