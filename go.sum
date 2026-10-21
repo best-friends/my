@@ -300,8 +300,8 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 h1:1EYB5IzjZawrrnELUi78f9fPu57HuXjmddZPjrls/28=
 github.com/santhosh-tekuri/jsonschema/v6 v6.0.3/go.mod h1:JXeL+ps8p7/KNMjDQk3TCwPpBy0wYklyWTfbkIzdIFU=
-github.com/shibukawa/pgmem v1.18.1 h1:f4/mbw2f7nkyWg8utq7yzHU4j8FD1+U+vRZ3khm9T6E=
-github.com/shibukawa/pgmem v1.18.1/go.mod h1:STngHQfWG6aPSCb8vtJS25sPLipLbkXjPr5uHWZ+y7A=
+github.com/shibukawa/pgmem v1.18.2 h1:5jHuODcqyBUWsNJbddYN4gArmueFq6Td7m+mpR6XK4k=
+github.com/shibukawa/pgmem v1.18.2/go.mod h1:STngHQfWG6aPSCb8vtJS25sPLipLbkXjPr5uHWZ+y7A=
 github.com/shirou/gopsutil/v4 v4.26.6 h1:Mzr/npDtQC/xpeEuQKHZt8Zo9CmPvhTj8nkR8w5TLDs=
 github.com/shirou/gopsutil/v4 v4.26.6/go.mod h1:LZ6ewCSkBqUpvSOf+LsTGnRinC6iaNUNMGBtDkJBaLQ=
 github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
