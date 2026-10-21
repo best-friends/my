@@ -71,6 +71,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/instance/cost_totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total the instance's public costs by period
+         * @description The totals of the instance's costs that the instance setting `finance_visibility`
+         *     publishes (FR-903, ADR-0067 §8, §9). It takes the query of `GET /admin/cost_totals` and
+         *     answers the same shape: `private` makes it a 404; `totals` leaves every `breakdown` empty
+         *     and the `rules` without `sources`, which would name the providers; `breakdown` gives the
+         *     breakdown by provider, category, and currency, and the providers' rules. No level returns
+         *     the names, memos, or individual payments of the cost items. The periods stop at the one
+         *     that holds today (UTC): a `to` after today reads as today, and a `from` after today gives
+         *     no period. More than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422
+         *     naming `to`.
+         */
+        get: operations["getInstanceCostTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/verify_credentials": {
         parameters: {
             query?: never;
@@ -6115,6 +6143,15 @@ export interface components {
             /** @description The six-digit code that the app shows now. */
             code: string;
         };
+        /**
+         * @description How much of the instance's costs everyone may read (the instance setting
+         *     `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
+         *     `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
+         *     `breakdown`: the totals and their breakdown by provider and category. No level publishes
+         *     the names, memos, or individual payments of the cost items.
+         * @enum {string}
+         */
+        FinanceVisibility: "private" | "totals" | "breakdown";
         /** @description The viewer's preferences of the follow; a preference left out keeps its value. */
         FollowAccountRequest: {
             /** @description Show the account's boosts in the home timeline. New follows show them. */
@@ -6199,6 +6236,7 @@ export interface components {
             thumbnail?: components["schemas"]["InstanceThumbnail"];
             search_indexing: components["schemas"]["SearchIndexing"];
             ai_usage: components["schemas"]["AIUsage"];
+            finance_visibility: components["schemas"]["FinanceVisibility"];
         };
         /**
          * @description How people reach the instance's operators (the instance settings `contact_account` and
@@ -6281,7 +6319,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
@@ -8278,6 +8316,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InstanceDomainActionPage"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getInstanceCostTotals: {
+        parameters: {
+            query: {
+                granularity: components["schemas"]["CostGranularity"];
+                /** @description A date in the first period. */
+                from: components["schemas"]["CalendarDate"];
+                /** @description A date in the last period; a date after today reads as today. */
+                to: components["schemas"]["CalendarDate"];
+                /** @description How the totals place a payment; `amortized` by default. */
+                basis?: components["schemas"]["CostBasis"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The public totals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CostTotals"];
                 };
             };
             default: components["responses"]["Problem"];

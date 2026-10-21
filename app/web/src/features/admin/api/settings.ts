@@ -88,7 +88,12 @@ export function updateInstanceSettingsMutation(api: Api) {
  */
 export async function cacheSavedSettings(queryClient: QueryClient, api: Api, settings: InstanceSettingList): Promise<void> {
   queryClient.setQueryData(instanceSettingsQueryOptions(api).queryKey, settings);
-  await Promise.all([queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }), refreshAuditLog(queryClient)]);
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }),
+    // What finance_visibility publishes (FR-903).
+    queryClient.invalidateQueries({ queryKey: ["get", "/instance/cost_totals"] }),
+    refreshAuditLog(queryClient),
+  ]);
 }
 
 /** A change of the server's contact and thumbnail: the settings that changed, and the alt text when it changed. */

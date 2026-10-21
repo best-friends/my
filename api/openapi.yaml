@@ -156,6 +156,59 @@ paths:
                 $ref: '#/components/schemas/InstanceDomainActionPage'
         default:
           $ref: '#/components/responses/Problem'
+  /instance/cost_totals:
+    get:
+      operationId: getInstanceCostTotals
+      summary: Total the instance's public costs by period
+      description: |
+        The totals of the instance's costs that the instance setting `finance_visibility`
+        publishes (FR-903, ADR-0067 §8, §9). It takes the query of `GET /admin/cost_totals` and
+        answers the same shape: `private` makes it a 404; `totals` leaves every `breakdown` empty
+        and the `rules` without `sources`, which would name the providers; `breakdown` gives the
+        breakdown by provider, category, and currency, and the providers' rules. No level returns
+        the names, memos, or individual payments of the cost items. The periods stop at the one
+        that holds today (UTC): a `to` after today reads as today, and a `from` after today gives
+        no period. More than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422
+        naming `to`.
+      tags:
+        - instance
+      security: []
+      parameters:
+        - name: granularity
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CostGranularity'
+        - name: from
+          in: query
+          required: true
+          description: A date in the first period.
+          schema:
+            $ref: '#/components/schemas/CalendarDate'
+        - name: to
+          in: query
+          required: true
+          description: A date in the last period; a date after today reads as today.
+          schema:
+            $ref: '#/components/schemas/CalendarDate'
+        - name: basis
+          in: query
+          required: false
+          description: How the totals place a payment; `amortized` by default.
+          schema:
+            $ref: '#/components/schemas/CostBasis'
+      responses:
+        '200':
+          description: The public totals.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostTotals'
+        default:
+          $ref: '#/components/responses/Problem'
   /accounts/verify_credentials:
     get:
       operationId: verifyAccountCredentials
@@ -9619,6 +9672,18 @@ components:
           description: The six-digit code that the app shows now.
           type: string
           maxLength: 64
+    FinanceVisibility:
+      description: |
+        How much of the instance's costs everyone may read (the instance setting
+        `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
+        `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
+        `breakdown`: the totals and their breakdown by provider and category. No level publishes
+        the names, memos, or individual payments of the cost items.
+      type: string
+      enum:
+        - private
+        - totals
+        - breakdown
     FollowAccountRequest:
       description: The viewer's preferences of the follow; a preference left out keeps its value.
       type: object
@@ -9691,6 +9756,7 @@ components:
         - rules
         - search_indexing
         - ai_usage
+        - finance_visibility
       properties:
         domain:
           description: The domain that serves the instance.
@@ -9756,6 +9822,8 @@ components:
           $ref: '#/components/schemas/SearchIndexing'
         ai_usage:
           $ref: '#/components/schemas/AIUsage'
+        finance_visibility:
+          $ref: '#/components/schemas/FinanceVisibility'
     InstanceContact:
       description: |
         How people reach the instance's operators (the instance settings `contact_account` and
@@ -9910,6 +9978,7 @@ components:
         - security_contact
         - require_media_description
         - link_cards_enabled
+        - finance_visibility
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from

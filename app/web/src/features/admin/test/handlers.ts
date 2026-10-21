@@ -117,6 +117,7 @@ const settingDefaults: readonly Omit<Schemas["AdminSetting"], "value" | "stored"
   { key: "security_contact", kind: "uri", default: "" },
   { key: "require_media_description", kind: "bool", default: "false" },
   { key: "link_cards_enabled", kind: "bool", default: "true" },
+  { key: "finance_visibility", kind: "enum", default: "private", choices: ["private", "totals", "breakdown"] },
 ];
 
 /** The instance settings as GET /admin/settings answers them, with the `stored` values set and the others at their defaults. */

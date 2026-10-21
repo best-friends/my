@@ -217,6 +217,11 @@ const choices = {
     { value: "users", label: "client:admin.settings.audience.users", description: "client:admin.settings.domain_actions.comments.users" },
     { value: "all", label: "client:admin.settings.audience.all", description: "client:admin.settings.domain_actions.comments.all" },
   ],
+  finance_visibility: [
+    { value: "private", label: "client:admin.settings.finance.private", description: "client:admin.settings.finance.private.description" },
+    { value: "totals", label: "client:admin.settings.finance.totals", description: "client:admin.settings.finance.totals.description" },
+    { value: "breakdown", label: "client:admin.settings.finance.breakdown", description: "client:admin.settings.finance.breakdown.description" },
+  ],
   search_indexing: [
     { value: "allow", label: "client:admin.settings.crawlers.search.allow", description: "client:admin.settings.crawlers.search.allow.description" },
     { value: "deny", label: "client:admin.settings.crawlers.search.deny", description: "client:admin.settings.crawlers.search.deny.description" },
@@ -345,6 +350,10 @@ function PoliciesForm() {
         <p className="text-fg-muted">{t("client:admin.settings.domain_actions.description")}</p>
         <PolicyRadios form={form} setting="domain_actions_visibility" label={t("client:admin.settings.domain_actions.list")} />
         <PolicyRadios form={form} setting="domain_actions_rationale_visibility" label={t("client:admin.settings.domain_actions.comments")} />
+      </DetailSection>
+      <DetailSection title={t("client:admin.settings.finance.title")}>
+        <p className="text-fg-muted">{t("client:admin.settings.finance.description")}</p>
+        <PolicyRadios form={form} setting="finance_visibility" label={t("client:admin.settings.finance.visibility")} />
       </DetailSection>
       <DetailSection title={t("client:admin.settings.crawlers.title")}>
         <p className="text-fg-muted">{t("client:admin.settings.crawlers.description")}</p>

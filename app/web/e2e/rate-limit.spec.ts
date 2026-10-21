@@ -89,6 +89,7 @@ const instance: Schemas["Instance"] = {
   sends_email: false,
   search_indexing: "deny",
   ai_usage: "deny",
+  finance_visibility: "private",
   rules: [],
 };
 

@@ -22,6 +22,7 @@ import { Route as PublicRouteImport } from './routes/public'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as AtChar123acctChar125FollowersRouteImport } from './routes/@{$acct}_.followers'
 import { Route as AtChar123acctChar125FollowingRouteImport } from './routes/@{$acct}_.following'
+import { Route as AboutCostsRouteImport } from './routes/about_.costs'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
@@ -135,6 +136,11 @@ const AtChar123acctChar125FollowingRoute =
     path: '/@{$acct}/following',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AboutCostsRoute = AboutCostsRouteImport.update({
+  id: '/about_/costs',
+  path: '/about/costs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -378,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/about/costs': typeof AboutCostsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -438,6 +445,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/@{$acct}/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}/following': typeof AtChar123acctChar125FollowingRoute
+  '/about/costs': typeof AboutCostsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -499,6 +507,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/@{$acct}_/followers': typeof AtChar123acctChar125FollowersRoute
   '/@{$acct}_/following': typeof AtChar123acctChar125FollowingRoute
+  '/about_/costs': typeof AboutCostsRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
@@ -561,6 +570,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/about/costs'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}/followers'
     | '/@{$acct}/following'
+    | '/about/costs'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -681,6 +692,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/@{$acct}_/followers'
     | '/@{$acct}_/following'
+    | '/about_/costs'
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
@@ -742,6 +754,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   AtChar123acctChar125FollowersRoute: typeof AtChar123acctChar125FollowersRoute
   AtChar123acctChar125FollowingRoute: typeof AtChar123acctChar125FollowingRoute
+  AboutCostsRoute: typeof AboutCostsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
@@ -880,6 +893,13 @@ declare module '@tanstack/react-router' {
       path: '/@{$acct}/following'
       fullPath: '/@{$acct}/following'
       preLoaderRoute: typeof AtChar123acctChar125FollowingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about_/costs': {
+      id: '/about_/costs'
+      path: '/about/costs'
+      fullPath: '/about/costs'
+      preLoaderRoute: typeof AboutCostsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -1214,6 +1234,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   AtChar123acctChar125FollowersRoute: AtChar123acctChar125FollowersRoute,
   AtChar123acctChar125FollowingRoute: AtChar123acctChar125FollowingRoute,
+  AboutCostsRoute: AboutCostsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,

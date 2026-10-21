@@ -15,41 +15,44 @@ import {
   Dialog,
   DialogTrigger,
   EmptyState,
+  Link,
   Radio,
   RadioGroup,
   Select,
   SelectItem,
   StatusMessage,
-  Tab,
-  TabList,
-  TabPanel,
-  Tabs,
   TextArea,
   TextField,
 } from "@my/ui";
-import { type ReactNode, useId, useRef, useState } from "react";
+import { type ReactNode, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
+import { useApi } from "../../../lib/auth/SessionProvider";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
+import { shellQueryReader } from "../../../lib/query";
 import { useFocusAfterRemoval, useFocusHeadingAfterMove } from "../../../lib/useFocusAfterRemoval";
-import { DateTime, DetailSection, RecordList, RequirePermission } from "../../moderation";
 import {
-  type BillingImport,
+  categoryLabels,
   type CostBasis,
-  costBases,
-  type CostCategory,
   costCategories,
   type CostGranularity,
-  costGranularities,
+  CostTotalsPanel,
+  CostTotalsView,
+  useFormatMoney,
+  useFormatTotals,
+  utcDate,
+} from "../../costs";
+import { DateTime, DetailSection, RecordList, RequirePermission, useHasPermission } from "../../moderation";
+import { instanceQueryOptions } from "../api/documents";
+import {
+  type BillingImport,
   type CostItem,
   costMemoLimit,
   costNameLimit,
-  type CostPeriodTotal,
   type CostSchedule,
   costSchedules,
-  type CostTotals,
   maxCostInterval,
   priceOn,
-  utcDate,
 } from "../api/finance";
 import {
   type CostItemActions,
@@ -60,39 +63,15 @@ import {
   useCostItems,
   useCostTotals,
   useFormatDay,
-  useFormatMoney,
-  useFormatTotals,
   useNewCostItemForm,
   useRunBillingImport,
 } from "../hooks/useFinance";
-
-const granularityLabels: Readonly<Record<CostGranularity, ClientMessageKey>> = {
-  week: "client:admin.finance.granularity.week",
-  month: "client:admin.finance.granularity.month",
-  year: "client:admin.finance.granularity.year",
-};
-
-const basisLabels: Readonly<Record<CostBasis, { label: ClientMessageKey; description: ClientMessageKey }>> = {
-  amortized: { label: "client:admin.finance.basis.amortized", description: "client:admin.finance.basis.amortized.description" },
-  cash: { label: "client:admin.finance.basis.cash", description: "client:admin.finance.basis.cash.description" },
-};
 
 const scheduleLabels: Readonly<Record<CostSchedule, ClientMessageKey>> = {
   once: "client:admin.finance.schedule.once",
   weeks: "client:admin.finance.schedule.weeks",
   months: "client:admin.finance.schedule.months",
   years: "client:admin.finance.schedule.years",
-};
-
-const categoryLabels: Readonly<Record<CostCategory, ClientMessageKey>> = {
-  compute: "client:admin.finance.category.compute",
-  database: "client:admin.finance.category.database",
-  storage: "client:admin.finance.category.storage",
-  network: "client:admin.finance.category.network",
-  domain: "client:admin.finance.category.domain",
-  email: "client:admin.finance.category.email",
-  software: "client:admin.finance.category.software",
-  other: "client:admin.finance.category.other",
 };
 
 const monthKindLabels: Readonly<Record<BillingImport["months"][number]["kind"], ClientMessageKey>> = {
@@ -113,14 +92,6 @@ const errorKindLabels: Readonly<Record<NonNullable<BillingImport["last_run"]>["e
   unavailable: "client:admin.finance.imports.error.unavailable",
 };
 
-function isGranularity(key: unknown): key is CostGranularity {
-  return costGranularities.some((item) => item === key);
-}
-
-function isBasis(key: unknown): key is CostBasis {
-  return costBases.some((item) => item === key);
-}
-
 export type FinanceSettingsProps = {
   /** The granularity and the basis of the totals, from the URL. */
   granularity: CostGranularity;
@@ -136,7 +107,10 @@ export function FinanceSettings(props: FinanceSettingsProps) {
   return (
     <RequirePermission permission="manage_finance">
       <div className="flex flex-col gap-8">
-        <p className="text-fg-muted">{t("client:admin.finance.description")}</p>
+        <div className="flex flex-col gap-2">
+          <p className="text-fg-muted">{t("client:admin.finance.description")}</p>
+          <Publication />
+        </div>
         <DetailSection title={t("client:admin.finance.totals.title")}>
           <TotalsSection {...props} />
         </DetailSection>
@@ -154,154 +128,40 @@ export function FinanceSettings(props: FinanceSettingsProps) {
   );
 }
 
-function TotalsSection({ granularity, basis, today, onTotalsChange }: FinanceSettingsProps) {
+/**
+ * What the instance publishes of these costs (the instance setting `finance_visibility`, ADR-0067 §8), read from
+ * GET /instance. It is a server setting (manage_settings), not one of the costs: a viewer who may change it gets a link
+ * to the server settings.
+ */
+function Publication() {
   const t = useT();
+  const api = useApi();
+  const { data: instance } = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
+  const maySet = useHasPermission("manage_settings");
+  if (instance === undefined) return null;
   return (
-    <div className="flex flex-col gap-4">
-      <RadioGroup
-        label={t("client:admin.finance.basis")}
-        orientation="horizontal"
-        value={basis}
-        onChange={(value) => {
-          if (isBasis(value)) onTotalsChange({ granularity, basis: value });
-        }}
-      >
-        {costBases.map((item) => (
-          <Radio key={item} value={item} description={t(basisLabels[item].description)}>
-            {t(basisLabels[item].label)}
-          </Radio>
-        ))}
-      </RadioGroup>
-      <Tabs
-        selectedKey={granularity}
-        onSelectionChange={(key) => {
-          if (isGranularity(key)) onTotalsChange({ granularity: key, basis });
-        }}
-      >
-        <TabList aria-label={t("client:admin.finance.granularity")}>
-          {costGranularities.map((item) => (
-            <Tab key={item} id={item}>
-              {t(granularityLabels[item])}
-            </Tab>
-          ))}
-        </TabList>
-        <TabPanel id={granularity}>
-          <Totals granularity={granularity} basis={basis} today={today} />
-        </TabPanel>
-      </Tabs>
-    </div>
+    <p className="flex flex-wrap gap-x-2">
+      <span>{t("client:admin.finance.visibility", { visibility: instance.finance_visibility })}</span>
+      {maySet && (
+        <Link href="/admin/settings" variant="standalone">
+          {t("client:admin.finance.visibility.change")}
+        </Link>
+      )}
+    </p>
   );
 }
 
-/** The name of a period in the viewer's locale: the month and year, the year, or the dates of an ISO week with its number. */
-function usePeriodName() {
-  const intl = useIntl();
-  const t = useT();
-  return (granularity: CostGranularity, period: CostPeriodTotal): string => {
-    const start = utcDate(period.starts_on);
-    if (granularity === "year") return intl.formatDate(start, { year: "numeric", timeZone: "UTC" });
-    if (granularity === "month") return intl.formatDate(start, { year: "numeric", month: "long", timeZone: "UTC" });
-    const range = intl.formatDateTimeRange(start, utcDate(period.ends_on), { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
-    return t("client:admin.finance.period.week", { range, week: period.label });
-  };
+function TotalsSection({ granularity, basis, today, onTotalsChange }: FinanceSettingsProps) {
+  return (
+    <CostTotalsPanel granularity={granularity} basis={basis} onTotalsChange={onTotalsChange}>
+      <Totals granularity={granularity} basis={basis} today={today} />
+    </CostTotalsPanel>
+  );
 }
 
 function Totals({ granularity, basis, today }: { granularity: CostGranularity; basis: CostBasis; today: string }) {
-  const t = useT();
   const totals = useCostTotals(granularity, basis, today);
-  const periodName = usePeriodName();
-  const formatTotals = useFormatTotals();
-  const captionId = useId();
-  const newestFirst = totals.periods.toReversed();
-  const current = newestFirst[0];
-  return (
-    <div className="flex flex-col gap-4">
-      <table aria-labelledby={captionId} className="w-full text-start">
-        <caption id={captionId} className="sr-only">
-          {t("client:admin.finance.totals.caption", { granularity: t(granularityLabels[granularity]), basis: t(basisLabels[basis].label) })}
-        </caption>
-        <thead>
-          <tr className="border-b border-border">
-            <th scope="col" className="py-2 pe-3 text-start font-semibold">
-              {t("client:admin.finance.totals.period")}
-            </th>
-            <th scope="col" className="py-2 text-start font-semibold">
-              {t("client:admin.finance.totals.total")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {newestFirst.map((period) => (
-            <tr key={period.label} className="border-b border-border align-top">
-              <th scope="row" className="py-2 pe-3 text-start font-normal">
-                {periodName(granularity, period)}
-              </th>
-              <td className="py-2 tabular-nums wrap-anywhere">
-                <span className="flex flex-wrap items-center gap-2">
-                  {formatTotals(period.totals)}
-                  {period.estimated && <span className="rounded-sm border border-border px-1 text-sm text-fg-muted">{t("client:admin.finance.totals.estimated")}</span>}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {current !== undefined && <Breakdown name={periodName(granularity, current)} period={current} />}
-      <PeriodRules totals={totals} />
-    </div>
-  );
-}
-
-/** The breakdown of the current period by provider and category. */
-function Breakdown({ name, period }: { name: string; period: CostPeriodTotal }) {
-  const t = useT();
-  const format = useFormatMoney();
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2">
-      <h3 id={headingId} className="font-semibold">
-        {t("client:admin.finance.breakdown.title", { period: name })}
-      </h3>
-      {period.breakdown.length === 0 ? (
-        <p className="text-fg-muted">{t("client:admin.finance.breakdown.empty")}</p>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {period.breakdown.map((line) => (
-            <li key={`${line.provider} ${line.category} ${line.amount.currency}`} className="flex flex-wrap gap-x-2">
-              <span dir="auto" className="wrap-anywhere">
-                {line.provider}
-              </span>
-              <span className="text-fg-muted">{t(categoryLabels[line.category])}</span>
-              <span className="tabular-nums">{format(line.amount)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-/** How the totals cut their periods and place the payments (ADR-0067 §5, FR-902). */
-function PeriodRules({ totals }: { totals: CostTotals }) {
-  const t = useT();
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-2 text-fg-muted">
-      <h3 id={headingId} className="font-semibold text-fg">
-        {t("client:admin.finance.rules.title")}
-      </h3>
-      <ul className="flex list-disc flex-col gap-1 ps-6">
-        <li>{t("client:admin.finance.rules.dates")}</li>
-        <li>{t("client:admin.finance.rules.week_start")}</li>
-        <li>{t(totals.basis === "amortized" ? "client:admin.finance.rules.amortized" : "client:admin.finance.rules.cash")}</li>
-        <li>{t("client:admin.finance.rules.currencies")}</li>
-        {totals.rules.sources.map((source) => (
-          <li key={source.source}>{t("client:admin.finance.rules.source", { provider: source.provider, timeZone: source.time_zone })}</li>
-        ))}
-        {totals.rules.sources.length > 0 && <li>{t("client:admin.finance.rules.estimated")}</li>}
-      </ul>
-    </section>
-  );
+  return <CostTotalsView totals={totals} breakdown />;
 }
 
 /** The fields of a label: name, provider, category and memo. */
@@ -342,7 +202,7 @@ function LabelFields({
         {...(errors.provider !== undefined && { isInvalid: true, errorMessage: errors.provider })}
       />
       <Select
-        label={t("client:admin.finance.category")}
+        label={t("client:costs.category")}
         value={label.category}
         onChange={(key) => {
           const choice = categories.find((item) => item.id === key);
@@ -564,7 +424,7 @@ function CostItemRow({ item, today, actions }: { item: CostItem; today: string; 
         <DescriptionItem term={t("client:admin.finance.provider")}>
           <span dir="auto">{item.provider}</span>
         </DescriptionItem>
-        <DescriptionItem term={t("client:admin.finance.category")}>{t(categoryLabels[item.category])}</DescriptionItem>
+        <DescriptionItem term={t("client:costs.category")}>{t(categoryLabels[item.category])}</DescriptionItem>
         <DescriptionItem term={t("client:admin.finance.schedule")}>{scheduleText(item)}</DescriptionItem>
         <DescriptionItem term={t(item.schedule === "once" ? "client:admin.finance.paid_on" : "client:admin.finance.starts_on")}>
           {formatDay(item.starts_on)}

@@ -30,3 +30,4 @@ enum:
   - security_contact
   - require_media_description
   - link_cards_enabled
+  - finance_visibility

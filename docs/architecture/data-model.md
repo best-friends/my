@@ -1207,7 +1207,7 @@ flowchart LR
 
 | テーブル | 分類 | カラム | 制約 |
 | --- | --- | --- | --- |
-| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, require_media_description, link_cards_enabled)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
+| `instance_setting_revisions` | イベント（版） | `id`, `key`（`enum(registration_mode, max_status_length, default_locale, local_timeline_enabled, federated_timeline_enabled, preview_image, contact_account, contact_email, thumbnail, remote_media_policy, remote_media_cache_ttl, authorized_fetch, domain_actions_visibility, domain_actions_rationale_visibility, appeal_window, retention_session_origins, retention_registration_origins, retention_reports, retention_moderation_actions, retention_audit_log, search_indexing, ai_usage, indexable_default, security_contact, require_media_description, link_cards_enabled, finance_visibility)`）, `value`（スカラー値の正規形の文字列表現。型はキーごとにコードで定義）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)` |
 | `instance_settings` | 投影 | `key`（PK）, `revision_id`, `value` | |
 | `instance_text_revisions` | イベント（版） | `id`, `key`（`enum(name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt)`）, `body`（空 = 文章を消す）, `revised_by_user_id`（NULL 可 = CLI による変更）, `revised_at` | インデックス `(key, id DESC)`。文章はキーごとに 1 つの値で、どのロケールでも同じ値を表示する（ADR-0009） |
 | `instance_texts` | 投影 | `key`（PK）, `revision_id` | |
@@ -1680,6 +1680,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-724 リレーの参加と脱退の管理 | S | `relays`, `relay_events`, `relay_states`, `outbound_activities`（`relay`）, `audit_log_entries` |
 | FR-901 費用の記録 | S | §4.12 の `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `cost_item_heads` |
 | FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
+| FR-903 費用の公開範囲 | S | `instance_settings`（`finance_visibility`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-904 利用料金の自動取り込み | S | §4.12 の `billing_import_runs`, `imported_cost_revisions`, `imported_cost_heads`, `audit_log_entries`（手動の取り込み） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |

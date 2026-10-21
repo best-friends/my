@@ -20,6 +20,7 @@ export const instanceFixture: Schemas["Instance"] = {
   sends_email: true,
   search_indexing: "deny",
   ai_usage: "deny",
+  finance_visibility: "private",
   rules: [],
 };
 

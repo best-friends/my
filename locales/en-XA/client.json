@@ -11,6 +11,18 @@
     "defaultMessage": "[Ƈǿǿƞŧȧȧƈŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "about.costs.description": {
+    "defaultMessage": "[{visibility,select,breakdown{Ŧħīş şḗḗřṽḗḗř ƥŭŭƀŀīşħḗḗş ẇħȧȧŧ īŧ ƈǿǿşŧş ŧǿǿ řŭŭƞ ƀẏ ẇḗḗḗḗķ, ḿǿǿƞŧħ, ȧȧƞḓ ẏḗḗȧȧř, ẇīŧħ ȧȧ ƀřḗḗȧȧķḓǿǿẇƞ ƀẏ ƥřǿǿṽīḓḗḗř ȧȧƞḓ ƈȧȧŧḗḗɠǿǿřẏ. Ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş, ŧħḗḗīř ƞǿǿŧḗḗş, ȧȧƞḓ ŧħḗḗ īƞḓīṽīḓŭŭȧȧŀ ƥȧȧẏḿḗḗƞŧş ȧȧřḗḗ ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ.} other{Ŧħīş şḗḗřṽḗḗř ƥŭŭƀŀīşħḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ẇħȧȧŧ īŧ ƈǿǿşŧş ŧǿǿ řŭŭƞ ƀẏ ẇḗḗḗḗķ, ḿǿǿƞŧħ, ȧȧƞḓ ẏḗḗȧȧř. Ẇħȧȧŧ ŧħḗḗẏ ȧȧřḗḗ şƥḗḗƞŧ ǿǿƞ, ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş, ȧȧƞḓ ŧħḗḗ īƞḓīṽīḓŭŭȧȧŀ ƥȧȧẏḿḗḗƞŧş ȧȧřḗḗ ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.costs.link": {
+    "defaultMessage": "[Şḗḗḗḗ ŧħḗḗ řŭŭƞƞīƞɠ ƈǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.costs.title": {
+    "defaultMessage": "[Řŭŭƞƞīƞɠ ƈǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "about.crawlers.accounts": {
     "defaultMessage": "[Ḗȧȧƈħ ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞ ȧȧŀşǿǿ ķḗḗḗḗƥ īŧş ƥřǿǿƒīŀḗḗ ȧȧƞḓ ƥǿǿşŧş ǿǿŭŭŧ ǿǿƒ şḗḗȧȧřƈħ ḗḗƞɠīƞḗḗş, ǿǿř ḓḗḗƞẏ ȦĪ, ƒǿǿř īŧş ǿǿẇƞ ƥȧȧɠḗḗş ǿǿƞ ŧħīş şḗḗřṽḗḗř. Ȧƞ ȧȧƈƈǿǿŭŭƞŧ ƈȧȧƞƞǿǿŧ ȧȧŀŀǿǿẇ ẇħȧȧŧ ŧħḗḗ şḗḗřṽḗḗř ḓḗḗƞīḗḗş. Ḿḗḗḓīȧȧ ƒīŀḗḗş ȧȧƞḓ ƈǿǿƥīḗḗş ǿǿƒ ƥǿǿşŧş ǿǿƞ ǿǿŧħḗḗř şḗḗřṽḗḗřş ḓǿǿ ƞǿǿŧ ƈȧȧřřẏ ȧȧƞ ȧȧƈƈǿǿŭŭƞŧ'ş ƈħǿǿīƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2839,34 +2851,6 @@
     "defaultMessage": "[Ḗƞŧḗḗř ȧȧƞ ȧȧḿǿǿŭŭƞŧ şŭŭƈħ ȧȧş 1650 ǿǿř 12.34.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "admin.finance.basis": {
-    "defaultMessage": "[Ħǿǿẇ ƥȧȧẏḿḗḗƞŧş ȧȧřḗḗ ƈǿǿŭŭƞŧḗḗḓ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.basis.amortized": {
-    "defaultMessage": "[Şƥřḗḗȧȧḓ ǿǿṽḗḗř ŧħḗḗ ƥḗḗřīǿǿḓ ƥȧȧīḓ ƒǿǿř]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.basis.amortized.description": {
-    "defaultMessage": "[Şħǿǿẇş ẇħȧȧŧ ȧȧ ḿǿǿƞŧħ ǿǿř ȧȧ ẇḗḗḗḗķ ƈǿǿşŧş: ȧȧ ẏḗḗȧȧřŀẏ ƥȧȧẏḿḗḗƞŧ ƈǿǿŭŭƞŧş ƀẏ ḓȧȧẏ ŭŭƞŧīŀ ŧħḗḗ ƞḗḗẋŧ ǿǿƞḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.basis.cash": {
-    "defaultMessage": "[Ǿƞ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ḓȧȧŧḗḗ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.basis.cash.description": {
-    "defaultMessage": "[Şħǿǿẇş ẇħȧȧŧ ẇȧȧş ƥȧȧīḓ ẇħḗḗƞ: ƈǿǿḿƥȧȧřḗḗ īŧ ẇīŧħ ẏǿǿŭŭř şŧȧȧŧḗḗḿḗḗƞŧş.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.breakdown.empty": {
-    "defaultMessage": "[Ƞǿǿ ƈǿǿşŧş īƞ ŧħīş ƥḗḗřīǿǿḓ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.breakdown.title": {
-    "defaultMessage": "[Ɓřḗḗȧȧķḓǿǿẇƞ ǿǿƒ {period}]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "admin.finance.cancel.description": {
     "defaultMessage": "[Īŧ ŀḗḗȧȧṽḗḗş ḗḗṽḗḗřẏ ƥḗḗřīǿǿḓ, ƥȧȧşŧ ǿǿƞḗḗş īƞƈŀŭŭḓḗḗḓ, ȧȧƞḓ ƈȧȧƞƞǿǿŧ ƀḗḗ ŭŭƞḓǿǿƞḗḗ. Ŧǿǿ şŧǿǿƥ ȧȧ şŭŭƀşƈřīƥŧīǿǿƞ ȧȧƞḓ ķḗḗḗḗƥ īŧş ƥȧȧşŧ ƥȧȧẏḿḗḗƞŧş, şḗḗŧ īŧş ḗḗƞḓ īƞşŧḗḗȧȧḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2889,42 +2873,6 @@
   },
   "admin.finance.canceled": {
     "defaultMessage": "[Ḓḗḗŀḗḗŧḗḗḓ {name}. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş ŧħḗḗ ƈħȧȧƞɠḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category": {
-    "defaultMessage": "[Ƈȧȧŧḗḗɠǿǿřẏ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.compute": {
-    "defaultMessage": "[Şḗḗřṽḗḗřş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.database": {
-    "defaultMessage": "[Ḓȧȧŧȧȧƀȧȧşḗḗ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.domain": {
-    "defaultMessage": "[Ḓǿǿḿȧȧīƞ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.email": {
-    "defaultMessage": "[Ḗḿȧȧīŀ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.network": {
-    "defaultMessage": "[Ƞḗḗŧẇǿǿřķ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.other": {
-    "defaultMessage": "[Ǿŧħḗḗř]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.software": {
-    "defaultMessage": "[Şǿǿƒŧẇȧȧřḗḗ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.category.storage": {
-    "defaultMessage": "[Şŧǿǿřȧȧɠḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.finance.change_failed": {
@@ -3049,22 +2997,6 @@
   },
   "admin.finance.every.years": {
     "defaultMessage": "[{count,plural,one{Ḗṽḗḗřẏ ẏḗḗȧȧř} other{Ḗṽḗḗřẏ # ẏḗḗȧȧřş}}]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.granularity": {
-    "defaultMessage": "[Ƥḗḗřīǿǿḓ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.granularity.month": {
-    "defaultMessage": "[Ḿǿǿƞŧħş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.granularity.week": {
-    "defaultMessage": "[Ẇḗḗḗḗķş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.granularity.year": {
-    "defaultMessage": "[Ẏḗḗȧȧřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.finance.imports.bytes": {
@@ -3231,10 +3163,6 @@
     "defaultMessage": "[Ŧħḗḗ ḓȧȧŧḗḗ ǿǿƞ ŧħḗḗ şŧȧȧŧḗḗḿḗḗƞŧ ǿǿř īƞṽǿǿīƈḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "admin.finance.period.week": {
-    "defaultMessage": "[{range} ({week})]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "admin.finance.price": {
     "defaultMessage": "[Ƈŭŭřřḗḗƞŧ ƥřīƈḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -3277,38 +3205,6 @@
   },
   "admin.finance.revised": {
     "defaultMessage": "[Ƈħȧȧƞɠḗḗḓ ŧħḗḗ ƥřīƈḗḗ ǿǿƒ {name}. Ŧħḗḗ ȧȧŭŭḓīŧ ŀǿǿɠ řḗḗƈǿǿřḓş ŧħḗḗ ƈħȧȧƞɠḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.amortized": {
-    "defaultMessage": "[Ȧ ƥȧȧẏḿḗḗƞŧ ƒǿǿř ḿǿǿřḗḗ ŧħȧȧƞ ȧȧ ḿǿǿƞŧħ īş şƥřḗḗȧȧḓ ƀẏ ḓȧȧẏ ƒřǿǿḿ īŧş ḓȧȧŧḗḗ ŭŭƞŧīŀ ŧħḗḗ ḓȧȧẏ ƀḗḗƒǿǿřḗḗ ŧħḗḗ ƞḗḗẋŧ ƥȧȧẏḿḗḗƞŧ, řǿǿŭŭƞḓḗḗḓ şǿǿ ŧħȧȧŧ ŧħḗḗ ḓȧȧẏş ȧȧḓḓ ŭŭƥ ŧǿǿ ŧħḗḗ ȧȧḿǿǿŭŭƞŧ ƥȧȧīḓ. Ǿŧħḗḗř ƥȧȧẏḿḗḗƞŧş ƈǿǿŭŭƞŧ ǿǿƞ ŧħḗḗīř ḓȧȧŧḗḗş.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.cash": {
-    "defaultMessage": "[Ḗṽḗḗřẏ ƥȧȧẏḿḗḗƞŧ ƈǿǿŭŭƞŧş ǿǿƞ īŧş ƥȧȧẏḿḗḗƞŧ ḓȧȧŧḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.currencies": {
-    "defaultMessage": "[Ḗȧȧƈħ ƈŭŭřřḗḗƞƈẏ īş ŧǿǿŧȧȧŀḗḗḓ ǿǿƞ īŧş ǿǿẇƞ ȧȧƞḓ ƞḗḗṽḗḗř ƈǿǿƞṽḗḗřŧḗḗḓ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.dates": {
-    "defaultMessage": "[Ƈǿǿşŧş ȧȧřḗḗ ḓȧȧŧḗḗḓ ƀẏ ƈȧȧŀḗḗƞḓȧȧř ḓȧȧẏ, ȧȧş ǿǿƞ ŧħḗḗ şŧȧȧŧḗḗḿḗḗƞŧ, ẇīŧħǿǿŭŭŧ ȧȧ ŧīḿḗḗ ẑǿǿƞḗḗ: ŧħḗḗ ŧǿǿŧȧȧŀş ȧȧřḗḗ ŧħḗḗ şȧȧḿḗḗ ƒǿǿř ḗḗṽḗḗřẏǿǿƞḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.estimated": {
-    "defaultMessage": "[Ȧ ḿǿǿƞŧħ ŧħȧȧŧ īŧş ƥřǿǿṽīḓḗḗř ħȧȧş ƞǿǿŧ ƈŀǿǿşḗḗḓ īş ȧȧƞ ḗḗşŧīḿȧȧŧḗḗ ȧȧƞḓ ḿȧȧẏ şŧīŀŀ ƈħȧȧƞɠḗḗ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.source": {
-    "defaultMessage": "[{provider} ƀīŀŀş ƀẏ ḿǿǿƞŧħ īƞ ŧħḗḗ {timeZone} ŧīḿḗḗ ẑǿǿƞḗḗ; īŧş ƈħȧȧřɠḗḗş ȧȧřḗḗ şƥřḗḗȧȧḓ ƀẏ ḓȧȧẏ ǿǿṽḗḗř ḗḗȧȧƈħ ƀīŀŀīƞɠ ḿǿǿƞŧħ.]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.title": {
-    "defaultMessage": "[Ħǿǿẇ ŧħḗḗ ƥḗḗřīǿǿḓş ȧȧřḗḗ ƈǿǿŭŭƞŧḗḗḓ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.rules.week_start": {
-    "defaultMessage": "[Ẇḗḗḗḗķş řŭŭƞ ƒřǿǿḿ Ḿǿǿƞḓȧȧẏ ŧǿǿ Şŭŭƞḓȧȧẏ (ĪŞǾ 8601). Ȧ ẇḗḗḗḗķ ȧȧƈřǿǿşş ŧħḗḗ ƞḗḗẇ ẏḗḗȧȧř īş şƥŀīŧ ƀḗḗŧẇḗḗḗḗƞ ŧħḗḗ ŧẇǿǿ ẏḗḗȧȧřş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.finance.save": {
@@ -3359,32 +3255,16 @@
     "defaultMessage": "[Ŭşḗḗ ȧȧŧ ḿǿǿşŧ {max} ƈħȧȧřȧȧƈŧḗḗřş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "admin.finance.totals.caption": {
-    "defaultMessage": "[Ŧǿǿŧȧȧŀş ƀẏ {granularity}, {basis}]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.totals.estimated": {
-    "defaultMessage": "[Īƞƈŀŭŭḓḗḗş ḗḗşŧīḿȧȧŧḗḗş]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.totals.none": {
-    "defaultMessage": "[Ƞǿǿŧħīƞɠ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.totals.period": {
-    "defaultMessage": "[Ƥḗḗřīǿǿḓ]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
-  "admin.finance.totals.plus": {
-    "defaultMessage": "[{sum} + {amount}]",
-    "description": "Generated from en by tools/i18n; do not edit."
-  },
   "admin.finance.totals.title": {
     "defaultMessage": "[Ŧǿǿŧȧȧŀş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
-  "admin.finance.totals.total": {
-    "defaultMessage": "[Ŧǿǿŧȧȧŀ]",
+  "admin.finance.visibility": {
+    "defaultMessage": "[{visibility,select,breakdown{Ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ƥŭŭƀŀīşħḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗşḗḗ ƈǿǿşŧş ȧȧƞḓ ŧħḗḗīř ƀřḗḗȧȧķḓǿǿẇƞ ƀẏ ƥřǿǿṽīḓḗḗř ȧȧƞḓ ƈȧȧŧḗḗɠǿǿřẏ.} other{Ŧħḗḗşḗḗ ƈǿǿşŧş ȧȧřḗḗ ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ.} totals{Ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ƥŭŭƀŀīşħḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗşḗḗ ƈǿǿşŧş, ẇīŧħǿǿŭŭŧ ŧħḗḗīř ƀřḗḗȧȧķḓǿǿẇƞ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.finance.visibility.change": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ īƞ ŧħḗḗ şḗḗřṽḗḗř şḗḗŧŧīƞɠş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.home.none.description": {
@@ -5279,6 +5159,42 @@
     "defaultMessage": "[Ƒḗḗḓḗḗřȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.settings.finance.breakdown": {
+    "defaultMessage": "[Ŧǿǿŧȧȧŀş ȧȧƞḓ ƀřḗḗȧȧķḓǿǿẇƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.breakdown.description": {
+    "defaultMessage": "[Ḗṽḗḗřẏǿǿƞḗḗ ȧȧŀşǿǿ şḗḗḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ƀẏ ƥřǿǿṽīḓḗḗř ȧȧƞḓ ƈȧȧŧḗḗɠǿǿřẏ. Ŧħīş řḗḗṽḗḗȧȧŀş ẇħīƈħ ƥřǿǿṽīḓḗḗřş, şŭŭƈħ ȧȧş ƈŀǿǿŭŭḓ şḗḗřṽīƈḗḗş, řŭŭƞ ŧħīş şḗḗřṽḗḗř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.description": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ȧȧƞḓ ŧħḗḗ ȦƤĪ ƈȧȧƞ ƥŭŭƀŀīşħ ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗ ƈǿǿşŧş řḗḗƈǿǿřḓḗḗḓ ǿǿƞ ŧħḗḗ Ƈǿǿşŧş şƈřḗḗḗḗƞ. Ŧħḗḗ ƞȧȧḿḗḗş ȧȧƞḓ ƞǿǿŧḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş ȧȧƞḓ ŧħḗḗ īƞḓīṽīḓŭŭȧȧŀ ƥȧȧẏḿḗḗƞŧş ȧȧřḗḗ ƞḗḗṽḗḗř ƥŭŭƀŀīşħḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.private": {
+    "defaultMessage": "[Ƞǿǿŧħīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.private.description": {
+    "defaultMessage": "[Ǿƞŀẏ ŧħḗḗ ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ḿȧȧƞȧȧɠḗḗ ŧħḗḗ ƈǿǿşŧş şḗḗḗḗ ŧħḗḗḿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.title": {
+    "defaultMessage": "[Řŭŭƞƞīƞɠ ƈǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.totals": {
+    "defaultMessage": "[Ŧǿǿŧȧȧŀş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.totals.description": {
+    "defaultMessage": "[Ḗṽḗḗřẏǿǿƞḗḗ şḗḗḗḗş ŧħḗḗ ŧǿǿŧȧȧŀ ǿǿƒ ḗḗȧȧƈħ ƈŭŭřřḗḗƞƈẏ ƀẏ ẇḗḗḗḗķ, ḿǿǿƞŧħ, ȧȧƞḓ ẏḗḗȧȧř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.visibility": {
+    "defaultMessage": "[Ẇħȧȧŧ ŧǿǿ ƥŭŭƀŀīşħ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.settings.language.default": {
     "defaultMessage": "[Ḓḗḗƒȧȧŭŭŀŧ ŀȧȧƞɠŭŭȧȧɠḗḗ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -6713,6 +6629,178 @@
   },
   "compose.warning.toggle": {
     "defaultMessage": "[Ȧḓḓ ȧȧ ƈǿǿƞŧḗḗƞŧ ẇȧȧřƞīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.basis": {
+    "defaultMessage": "[Ħǿǿẇ ƥȧȧẏḿḗḗƞŧş ȧȧřḗḗ ƈǿǿŭŭƞŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.basis.amortized": {
+    "defaultMessage": "[Şƥřḗḗȧȧḓ ǿǿṽḗḗř ŧħḗḗ ƥḗḗřīǿǿḓ ƥȧȧīḓ ƒǿǿř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.basis.amortized.description": {
+    "defaultMessage": "[Şħǿǿẇş ẇħȧȧŧ ȧȧ ḿǿǿƞŧħ ǿǿř ȧȧ ẇḗḗḗḗķ ƈǿǿşŧş: ȧȧ ẏḗḗȧȧřŀẏ ƥȧȧẏḿḗḗƞŧ ƈǿǿŭŭƞŧş ƀẏ ḓȧȧẏ ŭŭƞŧīŀ ŧħḗḗ ƞḗḗẋŧ ǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.basis.cash": {
+    "defaultMessage": "[Ǿƞ ŧħḗḗ ƥȧȧẏḿḗḗƞŧ ḓȧȧŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.basis.cash.description": {
+    "defaultMessage": "[Şħǿǿẇş ẇħȧȧŧ ẇȧȧş ƥȧȧīḓ ẇħḗḗƞ: ƈǿǿḿƥȧȧřḗḗ īŧ ẇīŧħ ẏǿǿŭŭř şŧȧȧŧḗḗḿḗḗƞŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.breakdown.empty": {
+    "defaultMessage": "[Ƞǿǿ ƈǿǿşŧş īƞ ŧħīş ƥḗḗřīǿǿḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.breakdown.title": {
+    "defaultMessage": "[Ɓřḗḗȧȧķḓǿǿẇƞ ǿǿƒ {period}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category": {
+    "defaultMessage": "[Ƈȧȧŧḗḗɠǿǿřẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.compute": {
+    "defaultMessage": "[Şḗḗřṽḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.database": {
+    "defaultMessage": "[Ḓȧȧŧȧȧƀȧȧşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.domain": {
+    "defaultMessage": "[Ḓǿǿḿȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.email": {
+    "defaultMessage": "[Ḗḿȧȧīŀ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.network": {
+    "defaultMessage": "[Ƞḗḗŧẇǿǿřķ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.other": {
+    "defaultMessage": "[Ǿŧħḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.software": {
+    "defaultMessage": "[Şǿǿƒŧẇȧȧřḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.category.storage": {
+    "defaultMessage": "[Şŧǿǿřȧȧɠḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.granularity": {
+    "defaultMessage": "[Ƥḗḗřīǿǿḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.granularity.month": {
+    "defaultMessage": "[Ḿǿǿƞŧħş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.granularity.week": {
+    "defaultMessage": "[Ẇḗḗḗḗķş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.granularity.year": {
+    "defaultMessage": "[Ẏḗḗȧȧřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.period.week": {
+    "defaultMessage": "[{range} ({week})]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.about": {
+    "defaultMessage": "[Ȧƀǿǿŭŭŧ ŧħīş şḗḗřṽḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.description": {
+    "defaultMessage": "[Ẇħȧȧŧ řŭŭƞƞīƞɠ ŧħīş şḗḗřṽḗḗř ƈǿǿşŧş, ȧȧş īŧş ǿǿƥḗḗřȧȧŧǿǿřş řḗḗƈǿǿřḓ īŧ. Ȧḿǿǿŭŭƞŧş īƞ ḓīƒƒḗḗřḗḗƞŧ ƈŭŭřřḗḗƞƈīḗḗş ȧȧřḗḗ ŧǿǿŧȧȧŀḗḗḓ şḗḗƥȧȧřȧȧŧḗḗŀẏ ȧȧƞḓ ƞḗḗṽḗḗř ƈǿǿƞṽḗḗřŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓƞ'ŧ ŀǿǿȧȧḓ ŧħḗḗ řŭŭƞƞīƞɠ ƈǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.hidden": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ ƥŭŭƀŀīşħ īŧş řŭŭƞƞīƞɠ ƈǿǿşŧş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.loading": {
+    "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ŧħḗḗ řŭŭƞƞīƞɠ ƈǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.retry": {
+    "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.title": {
+    "defaultMessage": "[Řŭŭƞƞīƞɠ ƈǿǿşŧş ǿǿƒ {instance}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.public.totals_only": {
+    "defaultMessage": "[Ŧħīş şḗḗřṽḗḗř ƥŭŭƀŀīşħḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƞŀẏ, ƞǿǿŧ ẇħȧȧŧ ŧħḗḗẏ ȧȧřḗḗ şƥḗḗƞŧ ǿǿƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.amortized": {
+    "defaultMessage": "[Ȧ ƥȧȧẏḿḗḗƞŧ ƒǿǿř ḿǿǿřḗḗ ŧħȧȧƞ ȧȧ ḿǿǿƞŧħ īş şƥřḗḗȧȧḓ ƀẏ ḓȧȧẏ ƒřǿǿḿ īŧş ḓȧȧŧḗḗ ŭŭƞŧīŀ ŧħḗḗ ḓȧȧẏ ƀḗḗƒǿǿřḗḗ ŧħḗḗ ƞḗḗẋŧ ƥȧȧẏḿḗḗƞŧ, řǿǿŭŭƞḓḗḗḓ şǿǿ ŧħȧȧŧ ŧħḗḗ ḓȧȧẏş ȧȧḓḓ ŭŭƥ ŧǿǿ ŧħḗḗ ȧȧḿǿǿŭŭƞŧ ƥȧȧīḓ. Ǿŧħḗḗř ƥȧȧẏḿḗḗƞŧş ƈǿǿŭŭƞŧ ǿǿƞ ŧħḗḗīř ḓȧȧŧḗḗş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.cash": {
+    "defaultMessage": "[Ḗṽḗḗřẏ ƥȧȧẏḿḗḗƞŧ ƈǿǿŭŭƞŧş ǿǿƞ īŧş ƥȧȧẏḿḗḗƞŧ ḓȧȧŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.currencies": {
+    "defaultMessage": "[Ḗȧȧƈħ ƈŭŭřřḗḗƞƈẏ īş ŧǿǿŧȧȧŀḗḗḓ ǿǿƞ īŧş ǿǿẇƞ ȧȧƞḓ ƞḗḗṽḗḗř ƈǿǿƞṽḗḗřŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.dates": {
+    "defaultMessage": "[Ƈǿǿşŧş ȧȧřḗḗ ḓȧȧŧḗḗḓ ƀẏ ƈȧȧŀḗḗƞḓȧȧř ḓȧȧẏ, ȧȧş ǿǿƞ ŧħḗḗ şŧȧȧŧḗḗḿḗḗƞŧ, ẇīŧħǿǿŭŭŧ ȧȧ ŧīḿḗḗ ẑǿǿƞḗḗ: ŧħḗḗ ŧǿǿŧȧȧŀş ȧȧřḗḗ ŧħḗḗ şȧȧḿḗḗ ƒǿǿř ḗḗṽḗḗřẏǿǿƞḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.estimated": {
+    "defaultMessage": "[Ȧ ḿǿǿƞŧħ ŧħȧȧŧ īŧş ƥřǿǿṽīḓḗḗř ħȧȧş ƞǿǿŧ ƈŀǿǿşḗḗḓ īş ȧȧƞ ḗḗşŧīḿȧȧŧḗḗ ȧȧƞḓ ḿȧȧẏ şŧīŀŀ ƈħȧȧƞɠḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.source": {
+    "defaultMessage": "[{provider} ƀīŀŀş ƀẏ ḿǿǿƞŧħ īƞ ŧħḗḗ {timeZone} ŧīḿḗḗ ẑǿǿƞḗḗ; īŧş ƈħȧȧřɠḗḗş ȧȧřḗḗ şƥřḗḗȧȧḓ ƀẏ ḓȧȧẏ ǿǿṽḗḗř ḗḗȧȧƈħ ƀīŀŀīƞɠ ḿǿǿƞŧħ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.title": {
+    "defaultMessage": "[Ħǿǿẇ ŧħḗḗ ƥḗḗřīǿǿḓş ȧȧřḗḗ ƈǿǿŭŭƞŧḗḗḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.rules.week_start": {
+    "defaultMessage": "[Ẇḗḗḗḗķş řŭŭƞ ƒřǿǿḿ Ḿǿǿƞḓȧȧẏ ŧǿǿ Şŭŭƞḓȧȧẏ (ĪŞǾ 8601). Ȧ ẇḗḗḗḗķ ȧȧƈřǿǿşş ŧħḗḗ ƞḗḗẇ ẏḗḗȧȧř īş şƥŀīŧ ƀḗḗŧẇḗḗḗḗƞ ŧħḗḗ ŧẇǿǿ ẏḗḗȧȧřş.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.totals.caption": {
+    "defaultMessage": "[Ŧǿǿŧȧȧŀş ƀẏ {granularity}, {basis}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.totals.estimated": {
+    "defaultMessage": "[Īƞƈŀŭŭḓḗḗş ḗḗşŧīḿȧȧŧḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.totals.none": {
+    "defaultMessage": "[Ƞǿǿŧħīƞɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.totals.period": {
+    "defaultMessage": "[Ƥḗḗřīǿǿḓ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.totals.plus": {
+    "defaultMessage": "[{sum} + {amount}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.totals.total": {
+    "defaultMessage": "[Ŧǿǿŧȧȧŀ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "documents.label": {

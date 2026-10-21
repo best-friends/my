@@ -1,15 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { createFileRoute, type ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
-import {
-  billingImportsQueryOptions,
-  type CostBasis,
-  costItemsQueryOptions,
-  costTotalsQueryOptions,
-  deviceToday,
-  type CostGranularity,
-  FinanceSettings,
-} from "../features/admin";
+import { billingImportsQueryOptions, costItemsQueryOptions, costTotalsQueryOptions, FinanceSettings } from "../features/admin";
+import { type CostBasis, type CostGranularity, deviceToday } from "../features/costs";
 import { requireSignIn } from "../lib/auth/requireSignIn";
 import { useT } from "../lib/i18n";
 import { AdminError, loadWithPermission } from "./-admin/adminRoute";

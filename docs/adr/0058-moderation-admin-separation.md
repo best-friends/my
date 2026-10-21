@@ -101,6 +101,7 @@ M4 では、運用者の機能がいくつも足される: インスタンス設
 | サーバー管理 | webhook（`/admin/webhooks`、[ADR-0060](0060-instance-webhooks.md)） | `manage_webhooks`（新設） |
 | サーバー管理 | リレー（`/admin/relays`、ADR-0061） | `manage_settings` |
 | サーバー管理 | dead job（`/admin/dead-jobs`） | `manage_jobs` |
+| サーバー管理 | 費用（`/admin/finance`。費用の項目の一覧とフォーム、週・月・年の集計、請求の取り込みの状態、[ADR-0067](0067-finance-cost-records.md)） | `manage_finance`（新設） |
 
 どちらにも関わるものの置き場所:
 

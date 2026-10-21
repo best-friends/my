@@ -65,6 +65,7 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "indexable_default", kind: "bool", default: "false" },
     { key: "security_contact", kind: "uri", default: "" },
     { key: "link_cards_enabled", kind: "bool", default: "true" },
+    { key: "finance_visibility", kind: "enum", default: "private", choices: ["private", "totals", "breakdown"] },
   ];
   return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
 }

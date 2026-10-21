@@ -168,20 +168,20 @@ test.describe("costs", () => {
     const main = page.getByRole("main");
     const totalsRegion = main.getByRole("region", { name: message("admin.finance.totals.title"), exact: true });
     await expect(totalsRegion.getByRole("table")).toBeVisible();
-    await expect(totalsRegion.getByRole("radio", { name: new RegExp(message("admin.finance.basis.amortized"), "u") })).toBeChecked();
-    await expect(totalsRegion.getByText(message("admin.finance.totals.estimated"), { exact: true })).toBeVisible();
-    await expect(totalsRegion.getByText(message("admin.finance.rules.week_start"), { exact: true })).toBeVisible();
+    await expect(totalsRegion.getByRole("radio", { name: new RegExp(message("costs.basis.amortized"), "u") })).toBeChecked();
+    await expect(totalsRegion.getByText(message("costs.totals.estimated"), { exact: true })).toBeVisible();
+    await expect(totalsRegion.getByText(message("costs.rules.week_start"), { exact: true })).toBeVisible();
     await expect(main.getByText("الخادم الرئيسي")).toHaveAttribute("dir", "auto");
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
 
     // The tabs follow the APG with automatic activation: the arrow key selects the weeks.
-    await totalsRegion.getByRole("tab", { name: message("admin.finance.granularity.month"), exact: true }).focus();
+    await totalsRegion.getByRole("tab", { name: message("costs.granularity.month"), exact: true }).focus();
     await page.keyboard.press(test.info().project.use.locale === "ar-XB" ? "ArrowRight" : "ArrowLeft");
-    await expect(totalsRegion.getByRole("tab", { name: message("admin.finance.granularity.week"), exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(totalsRegion.getByRole("tab", { name: message("costs.granularity.week"), exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(totalsRegion.getByRole("row", { name: /2026-W43/u })).toBeVisible();
-    await totalsRegion.getByRole("radio", { name: new RegExp(message("admin.finance.basis.cash"), "u") }).check();
-    await expect(totalsRegion.getByText(message("admin.finance.rules.cash"), { exact: true })).toBeVisible();
+    await totalsRegion.getByRole("radio", { name: new RegExp(message("costs.basis.cash"), "u") }).check();
+    await expect(totalsRegion.getByText(message("costs.rules.cash"), { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/granularity=week/u);
     await expect(page).toHaveURL(/basis=cash/u);
     expect(sent).toContain("totals week cash");
