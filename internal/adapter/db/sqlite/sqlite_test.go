@@ -95,6 +95,13 @@ func TestWebhookRepositoryContract(t *testing.T) {
 	})
 }
 
+func TestFinanceRepositoryContract(t *testing.T) {
+	testkit.FinanceRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FinanceHarness {
+		db, _ := newTestDB(t, "", opts)
+		return testkit.FinanceHarness{UnitOfWork: db, Finance: db.FinanceRepository()}
+	})
+}
+
 func TestStatusRepositoryContract(t *testing.T) {
 	testkit.StatusRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.StatusHarness {
 		db, _ := newTestDB(t, "", opts)

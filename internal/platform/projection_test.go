@@ -15,6 +15,7 @@ import (
 	appaccount "github.com/best-friends/my/internal/app/account"
 	appcontent "github.com/best-friends/my/internal/app/content"
 	appfederation "github.com/best-friends/my/internal/app/federation"
+	appfinance "github.com/best-friends/my/internal/app/finance"
 	appgraph "github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	appinstance "github.com/best-friends/my/internal/app/instance"
@@ -24,6 +25,7 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 	domcontent "github.com/best-friends/my/internal/domain/content"
 	domfederation "github.com/best-friends/my/internal/domain/federation"
+	domfinance "github.com/best-friends/my/internal/domain/finance"
 	domidentity "github.com/best-friends/my/internal/domain/identity"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/internal/domain/moderation"
@@ -122,6 +124,7 @@ func fillProjections(t *testing.T, a *platform.App) {
 	fillRemotePoll(t, a, dave)
 	fillModeration(t, a, ids, dave, hello)
 	fillWebhooks(t, a)
+	fillFinance(t, a)
 	fillIdentity(t, a, bob)
 }
 
@@ -177,6 +180,40 @@ func fillWebhooks(t *testing.T, a *platform.App) {
 	}
 	if res := a.Webhooks.Deliver(ctx, d.Delivery.ID, false); res.IsDone() {
 		t.Fatalf("Deliver to loopback = %+v, want a failure", res)
+	}
+}
+
+// fillFinance fills cost_item_heads: an item relabeled and ended, and one canceled.
+func fillFinance(t *testing.T, a *platform.App) {
+	t.Helper()
+	ctx := t.Context()
+	start, err := domfinance.ParseDate("2026-04-10")
+	if err != nil {
+		t.Fatal(err)
+	}
+	in := appfinance.CreateInput{
+		Recurrence: domfinance.Recurrence{Schedule: domfinance.ScheduleYears, Interval: 1}, StartsOn: start,
+		Label: domfinance.Label{Name: "example.org", Provider: "Registrar", Category: domfinance.CategoryDomain},
+		Price: domfinance.Money{Minor: 1650, Currency: "JPY"},
+	}
+	kept, err := a.Finance.Create(ctx, in, "")
+	if err != nil {
+		t.Fatalf("Create the cost item = %v", err)
+	}
+	in.Label.Name = "example.net"
+	if _, err := a.Finance.Relabel(ctx, kept.ID, in.Label, ""); err != nil {
+		t.Fatalf("Relabel = %v", err)
+	}
+	end := start.AddDays(1000)
+	if _, err := a.Finance.SetEnd(ctx, kept.ID, &end, ""); err != nil {
+		t.Fatalf("SetEnd = %v", err)
+	}
+	canceled, err := a.Finance.Create(ctx, in, "")
+	if err != nil {
+		t.Fatalf("Create the cost item = %v", err)
+	}
+	if err := a.Finance.Cancel(ctx, canceled.ID, ""); err != nil {
+		t.Fatalf("Cancel = %v", err)
 	}
 }
 
@@ -385,7 +422,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 		"notification_exclusions", "notification_deleted_statuses", "poll_tallies",
 		"account_restrictions", "domain_restrictions", "report_states", "appeal_states", "status_sensitivity_overrides",
 		"feed_author_restrictions", "feed_domain_restrictions", "user_roles", "user_registration_states", "user_primary_emails",
-		"webhook_endpoint_heads", "webhook_endpoint_failures", "relay_states",
+		"webhook_endpoint_heads", "webhook_endpoint_failures", "relay_states", "cost_item_heads",
 	} {
 		if held[table] == 0 {
 			t.Errorf("%s holds no rows", table)
@@ -413,6 +450,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	exec("DELETE FROM webhook_endpoint_heads")
 	exec("UPDATE webhook_endpoint_failures SET consecutive_failures = consecutive_failures + 3")
 	exec("UPDATE relay_states SET state = 'left'")
+	exec("UPDATE cost_item_heads SET ends_on = NULL")
 
 	drifted := []string{}
 	for _, p := range svc.List() {
@@ -428,7 +466,7 @@ func checkProjections(t *testing.T, a *platform.App, exec func(string), count fu
 	}
 	slices.Sort(drifted)
 	want := []string{
-		"account_restrictions", "appeal_states", "domain_restrictions", "feed_author_restrictions", "feed_domain_restrictions",
+		"account_restrictions", "appeal_states", "cost_item_heads", "domain_restrictions", "feed_author_restrictions", "feed_domain_restrictions",
 		"feed_tag_entries", "follow_counters", "local_post_counters", "notification_deleted_statuses", "notification_exclusions",
 		"poll_tallies", "relay_states", "remote_account_heads", "report_states", "status_counters", "status_sensitivity_overrides",
 		"user_primary_emails", "user_registration_states", "user_roles", "webhook_endpoint_failures", "webhook_endpoint_heads",

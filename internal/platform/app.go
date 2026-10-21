@@ -32,6 +32,7 @@ import (
 	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/federation"
+	"github.com/best-friends/my/internal/app/finance"
 	"github.com/best-friends/my/internal/app/graph"
 	"github.com/best-friends/my/internal/app/identity"
 	"github.com/best-friends/my/internal/app/instance"
@@ -176,6 +177,8 @@ type App struct {
 	Previews *content.Previews
 	// Webhooks sends the events of the other modules to the instance's webhooks (ADR-0060).
 	Webhooks *webhook.Service
+	// Finance records the instance's costs and totals them by week, month, and year (ADR-0067).
+	Finance *finance.Service
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
 	// Projections rebuilds and verifies the projections (`my projection`, data-model §9).
@@ -348,6 +351,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		feds         = repos.feds
 		mods         = repos.mods
 		hooks        = repos.hooks
+		costs        = repos.finance
 		retention    = repos.retention
 		projections  = repos.projections
 	)
@@ -556,6 +560,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
 		feeds: feeds, notifications: notifs, moderation: mods, identities: identities, webhooks: hooks, relays: feds,
+		finance: costs,
 	})
 	if err := a.setUpStreams(ctx, cfg, opts.StreamBus); err != nil {
 		_ = a.Close()
@@ -606,6 +611,8 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
 	a.setUpWebhooks(hooks)
+	finance.RegisterProjectors(a.Projectors, costs)
+	a.Finance = finance.NewService(finance.Deps{UnitOfWork: a.UnitOfWork, Repository: costs, Clock: a.Clock, IDs: a.IDs})
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
 		Repository: statuses, Accounts: a.Accounts, Restrictions: a.AccountPolicy.Content(), Media: a.Media,

@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/best-friends/my/internal/domain/finance"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/schema"
 )
@@ -42,6 +43,29 @@ func TestThemeTokenCheckMatchesTheTokenList(t *testing.T) {
 		m := check.FindStringSubmatch(sql)
 		if m == nil {
 			t.Fatalf("%s: no CHECK on instance_theme_tokens.token", name)
+		}
+		var got []string
+		for _, q := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(m[1], -1) {
+			got = append(got, q[1])
+		}
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: CHECK lists %v, want %v", name, got, want)
+		}
+	}
+}
+
+// The CHECK constraint of cost_item_label_revisions.category lists exactly the categories of the
+// finance domain (ADR-0067 §2).
+func TestCostCategoryCheckMatchesTheDomain(t *testing.T) {
+	var want []string
+	for _, c := range finance.Categories() {
+		want = append(want, string(c))
+	}
+	check := regexp.MustCompile(`(?s)CREATE TABLE cost_item_label_revisions \(.*?category [^\n]*CHECK \(category IN \((.*?)\)\)`)
+	for name, sql := range map[string]string{"sqlite": schema.SQLite, "postgres": schema.Postgres} {
+		m := check.FindStringSubmatch(sql)
+		if m == nil {
+			t.Fatalf("%s: no CHECK on cost_item_label_revisions.category", name)
 		}
 		var got []string
 		for _, q := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(m[1], -1) {

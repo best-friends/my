@@ -2538,3 +2538,82 @@ CREATE TABLE webhook_endpoint_failures (
   first_failed_at INTEGER NOT NULL,
   consecutive_failures INTEGER NOT NULL CHECK (consecutive_failures > 0)
 ) STRICT;
+
+-- ---------------------------------------------------------------------------------------------
+-- finance: the instance's costs (data-model §4.12, FR-901, FR-902, ADR-0067). Owned by
+-- internal/app/finance. Dates are calendar dates (the logical type date): TEXT as YYYY-MM-DD,
+-- which date() gives back unchanged only for a real date.
+-- ---------------------------------------------------------------------------------------------
+
+-- Resource: a cost item, paid once on starts_on or every interval weeks, months, or years from
+-- it. The schedule and the start never change. created_by_user_id is NULL for the CLI.
+CREATE TABLE cost_items (
+  id TEXT NOT NULL PRIMARY KEY,
+  schedule TEXT NOT NULL CHECK (schedule IN ('once', 'weeks', 'months', 'years')),
+  interval INTEGER NOT NULL,
+  starts_on TEXT NOT NULL CHECK (date(starts_on) IS starts_on),
+  created_by_user_id TEXT,
+  created_at INTEGER NOT NULL,
+  CHECK ((schedule = 'once' AND interval = 1) OR (schedule <> 'once' AND interval BETWEEN 1 AND 99))
+) STRICT;
+
+-- Event (revision): the name, provider, category, and memo of a cost item; the newest row is
+-- current (cost_item_heads). provider_normalized groups the breakdown (NFKC, lower case). memo is
+-- '' for none.
+CREATE TABLE cost_item_label_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  cost_item_id TEXT NOT NULL,
+  name TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 100),
+  provider TEXT NOT NULL CHECK (length(provider) BETWEEN 1 AND 100),
+  provider_normalized TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN (
+    'compute', 'database', 'storage', 'network', 'domain', 'email', 'software', 'other'
+  )),
+  memo TEXT NOT NULL,
+  revised_by_user_id TEXT,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX cost_item_label_revisions_cost_item_id_id ON cost_item_label_revisions (cost_item_id, id DESC);
+
+-- Event (revision): the price of the payments of a cost item on or after effective_on, in the
+-- minor unit of an ISO 4217 currency. Of the rows of the same effective_on, the last recorded
+-- (the largest id) applies. The first row starts on the item's starts_on.
+CREATE TABLE cost_item_price_revisions (
+  id TEXT NOT NULL PRIMARY KEY,
+  cost_item_id TEXT NOT NULL,
+  effective_on TEXT NOT NULL CHECK (date(effective_on) IS effective_on),
+  amount_minor INTEGER NOT NULL CHECK (amount_minor >= 0),
+  currency TEXT NOT NULL CHECK (currency GLOB '[A-Z][A-Z][A-Z]'),
+  revised_by_user_id TEXT,
+  revised_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX cost_item_price_revisions_cost_item_id_id ON cost_item_price_revisions (cost_item_id, id);
+
+-- Event: the end of a cost item changed: no payment after ends_on (included), or no end for
+-- NULL. The newest row is current (cost_item_heads).
+CREATE TABLE cost_item_end_changes (
+  id TEXT NOT NULL PRIMARY KEY,
+  cost_item_id TEXT NOT NULL,
+  ends_on TEXT CHECK (ends_on IS NULL OR date(ends_on) IS ends_on),
+  changed_by_user_id TEXT,
+  changed_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX cost_item_end_changes_cost_item_id_id ON cost_item_end_changes (cost_item_id, id DESC);
+
+-- Event: a cost item was canceled, which removes it from every period, past ones included.
+-- There is no undo.
+CREATE TABLE cost_item_cancellations (
+  id TEXT NOT NULL PRIMARY KEY,
+  cost_item_id TEXT NOT NULL,
+  canceled_by_user_id TEXT,
+  canceled_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX cost_item_cancellations_cost_item_id ON cost_item_cancellations (cost_item_id);
+
+-- Projection of the label revisions, end changes, and cancellations: the current label and end
+-- of each cost item. A row means the item is not canceled; ends_on is NULL for no end.
+CREATE TABLE cost_item_heads (
+  cost_item_id TEXT NOT NULL PRIMARY KEY,
+  label_revision_id TEXT NOT NULL,
+  ends_on TEXT CHECK (ends_on IS NULL OR date(ends_on) IS ends_on)
+) STRICT;
