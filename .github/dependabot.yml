@@ -23,11 +23,6 @@ updates:
       interval: weekly
     cooldown:
       default-days: 14
-    ignore:
-      # Babel only hosts babel-plugin-react-compiler (ADR-0025), whose releases depend on Babel 7
-      # (@babel/types ^7); a Babel major update waits for a compiler release that supports it.
-      - dependency-name: "@babel/*"
-        update-types: ["version-update:semver-major"]
   # Workflows pin every action, GitHub's own included, to a release's commit SHA with the full version in a
   # trailing comment (`uses: owner/repo@<sha> # vX.Y.Z`): a moving major tag can point at a release younger
   # than two weeks, and Dependabot updates the SHA and the comment together.

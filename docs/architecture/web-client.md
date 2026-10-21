@@ -20,7 +20,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | R1 | コンポーネントとフックは純粋にする。レンダリング中に副作用・変更・`Date.now()` / `Math.random()` を書かない | `react/purity`、`react/globals` |
 | R2 | props・state・フックに渡した値・JSX に渡した値を変更しない（`push` / `sort` ではなく `toSorted` / スプレッド） | `react/immutability`（代入を検出する。`push` / `sort` などのメソッド呼び出しはレビュー） |
 | R3 | フックはコンポーネントか `use*` 関数のトップレベルでだけ呼ぶ | `react/rules-of-hooks` |
-| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint とビルドで失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | Oxlint の React Compiler の規則（`react/*`。`react/incompatible-library`・`react/unsupported-syntax` も error）、`vite build`（`app/web/vite-plugins/react-compiler-check.ts`。コンパイラが関数を 1 つでも諦めると、場所と理由を出して失敗する。`"use no memo"` で外した関数は除く。1 つも関数を変換しなくても失敗）、`restrict/syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント。API クライアントのフック `api.query.useQuery` / `api.query.useMutation` の呼び出し、§10） |
+| R4 | React Compiler を全コードに適用する。コンパイラが最適化を諦めるコードは lint とビルドで失敗させる。コンパイラから外す（`"use no memo"`）のは、コンパイルできないライブラリを包む 1 つのフックだけにし、理由を書く（`@my/ui` の `Feed` が TanStack Virtual の仮想化を読むフック） | Oxlint の React Compiler の規則（`react/*`。`react/incompatible-library`・`react/unsupported-syntax` も error）、`vite build`（`app/web/vite-plugins/react-compiler.ts`。React Compiler の Oxc の移植 `oxc-transform-react` が診断を 1 つでも出すと、場所と理由を出して失敗する。`"use no memo"` で外した関数の中の診断は除く。1 つも関数を変換しなくても失敗。ADR-0065）、`restrict/syntax`（`"use no memo"` / `"use no forget"`。必要なときは理由付きの無効化コメント。API クライアントのフック `api.query.useQuery` / `api.query.useMutation` の呼び出し、§10） |
 | R5 | `useMemo` / `useCallback` / `memo` は書かない。必要なとき（Effect の依存に安定した参照が要るなど）は理由をコメントに書く | `no-restricted-imports`・`restrict/syntax`（`useMemo` / `useCallback` / `memo` の使用。必要なときは理由付きの無効化コメント）、`react/use-memo` |
 | R6 | 他の値から計算できるものは state にせず、レンダリング中に計算する | `react/set-state-in-effect`、`react/no-deriving-state-in-effects` |
 | R7 | 利用者の操作で起きる処理（送信・通知・計測）はイベントハンドラに書く。Effect に書かない | レビュー |
@@ -133,7 +133,7 @@ Oxlint は警告でも失敗します（`options.denyWarnings`）。
 | T3 | ネットワークは MSW だけでモックする。`fetch` や API のモジュールをモックしない | テストの `restrict/test`（`api` を含むモジュールと `openapi-fetch` の `vi.mock` / `vi.doMock`、`fetch` の `vi.spyOn` / `vi.stubGlobal` / 代入）、レビュー |
 | T4 | 既定は統合テスト（本物の QueryClient とルーター + MSW）にする。純粋なロジックは単体テスト、主要な流れは 4 ロケールの E2E にする | レビュー |
 | T5 | `@my/ui` の部品は必ずストーリーを持つ。ストーリーはアクセシビリティ・見た目・RTL のテストの入力になる | レビュー、`knip`（使われないファイル・export・依存） |
-| T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler の preset はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |
+| T6 | 部品のテストは jsdom かブラウザモードで動かす。React Compiler（`app/web` の `react-compiler.ts`、`app/ui` の `@vitejs/plugin-react` の `compiler` オプション）はクライアント向けの変換にだけ効くので、Vitest の `node` 環境では本番と違うコードをテストすることになる | Vitest の設定 |
 | T7 | 非同期の結果は Testing Library の `findBy` / `waitFor` で待つ。`vi.waitFor` は使わない。待ち時間の上限はテストごとに変えず、setup の `asyncUtilTimeout` と Vitest の `testTimeout` にまとめる（待ちは実時間なので、負荷の高い機械では既定の 1 秒・5 秒を超える）。React の描画の外で動くフォーカス（React Aria のフォーカスの復帰は `requestAnimationFrame`、ルート変更の見出しへのフォーカスはルーターの `onRendered`）は `waitFor` の中で `toHaveFocus()` を検証する。遷移の後は遷移先にしかないもの（タブなら名前で選んだ `tabpanel` とその中身）を待つ。読み込みの間は前のページが残り、`defaultPendingMs` を超えると pending component に置き換わるので、どのページにもある要素や「ないこと」の確認は遷移の前の画面でも通ってしまう | テストの `restrict/test`（`vi.waitFor`）、Vitest の設定、レビュー |
 
 ### テストの置き場所と道具
