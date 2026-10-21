@@ -3,8 +3,10 @@
 package content
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/best-friends/my/internal/domain/content"
 )
@@ -101,10 +103,10 @@ func (r *Reader) quote(ctx context.Context, viewer Viewer, st content.Status) (*
 	} else if err != nil {
 		return nil, err
 	}
-	// A legacy quote of a local status is shown only when the quoting author may see the status
-	// (ADR-0069 §2): no approval tells otherwise.
-	if shown == QuoteViewLegacy && quoted.IsLocal && !st.IsLocal && quoted.AuthorAccountID != st.AuthorAccountID {
-		ok, err := r.aud.remoteVisible(ctx, st.AuthorAccountID, quoted)
+	// A legacy quote of a local status is shown only when its policy would approve the quoting
+	// author's quote (ADR-0069 §2): no approval tells otherwise.
+	if shown == QuoteViewLegacy && quoted.IsLocal && !st.IsLocal {
+		ok, err := r.remoteMayQuote(ctx, st.AuthorAccountID, quoted)
 		if err != nil {
 			return nil, err
 		}
@@ -150,4 +152,107 @@ func (r *Reader) quote(ctx context.Context, viewer Viewer, st content.Status) (*
 		shown = QuoteViewBlockedDomain
 	}
 	return &QuoteView{State: shown, Status: &view}, nil
+}
+
+// remoteMayQuote reports whether the policy of the local status quoted approves a quote of it by
+// the remote account accountID, as AnswerQuoteRequest decides.
+func (r *Reader) remoteMayQuote(ctx context.Context, accountID string, quoted content.Status) (bool, error) {
+	visible, err := r.aud.remoteVisible(ctx, accountID, quoted)
+	if err != nil || !visible {
+		return false, err
+	}
+	rel, err := r.d.Relationships.Relationship(ctx, accountID, quoted.AuthorAccountID)
+	if err != nil {
+		return false, err
+	}
+	policy, err := r.quotePolicy(ctx, quoted.ID)
+	if err != nil {
+		return false, err
+	}
+	return content.MayQuote(content.QuoteFacts{
+		QuoterAccountID: accountID, QuoterVisible: !rel.Blocking && !rel.BlockedBy, QuoterFollows: rel.ActivelyFollowing(),
+		Quoted: quoted, Policy: policy,
+	}) == content.QuoteApproved, nil
+}
+
+// quotable reports whether viewer may quote st, which they may see, and returns its quote
+// policy for its author (ADR-0069 §5).
+func (r *Reader) quotable(ctx context.Context, viewer Viewer, st content.Status) (bool, content.QuotePolicy, error) {
+	if r.d.Quotes == nil || viewer.Kind != ViewerLocal || viewer.AccountID == "" {
+		return false, "", nil
+	}
+	policy, err := r.quotePolicy(ctx, st.ID)
+	if err != nil {
+		return false, "", err
+	}
+	var follows bool
+	if viewer.AccountID != st.AuthorAccountID {
+		rel, err := r.d.Relationships.Relationship(ctx, viewer.AccountID, st.AuthorAccountID)
+		if err != nil {
+			return false, "", err
+		}
+		follows = rel.ActivelyFollowing()
+	}
+	allowance := content.MayQuote(content.QuoteFacts{
+		QuoterAccountID: viewer.AccountID, QuoterIsLocal: true, QuoterVisible: true, QuoterFollows: follows, Quoted: st, Policy: policy,
+	})
+	own := content.QuotePolicy("")
+	if viewer.AccountID == st.AuthorAccountID && st.IsLocal {
+		own = cmp.Or(policy, content.DefaultQuotePolicy)
+	}
+	return allowance != content.QuoteDenied, own, nil
+}
+
+// quotePolicy returns who may quote statusID, "" when it declares nobody.
+func (r *Reader) quotePolicy(ctx context.Context, statusID string) (content.QuotePolicy, error) {
+	p, err := r.d.Quotes.FindQuotePolicy(ctx, statusID)
+	if errors.Is(err, ErrNotFound) {
+		return "", nil
+	}
+	return p.Policy, err
+}
+
+// QuotesPage is a page of the statuses that quote a status.
+type QuotesPage struct {
+	Statuses []StatusView
+	// Next is the cursor of the next page, "" on the last page.
+	Next string
+}
+
+// Quotes returns a page of the statuses that quote the local status statusID of the viewer
+// accountID, newest first (ADR-0069 §5): up to limit quotes older than the cursor before ("" for
+// the newest), with the state of each quote. Only the author lists them; another account's
+// status fails with ErrNotFound, like a missing one. Statuses the author may not see are left
+// out, so a page may be shorter than limit and still have a next page.
+func (r *Reader) Quotes(ctx context.Context, accountID, statusID, before string, limit int) (QuotesPage, error) {
+	viewer := Viewer{Kind: ViewerLocal, AccountID: accountID}
+	st, _, err := r.aud.visibleStatus(ctx, viewer, statusID)
+	if err != nil {
+		return QuotesPage{}, err
+	}
+	if r.d.Quotes == nil || !st.IsLocal || st.AuthorAccountID != accountID {
+		return QuotesPage{}, fmt.Errorf("quotes of %s: %w", statusID, ErrNotFound)
+	}
+	quotes, err := r.d.Quotes.ListQuotesOf(ctx, st.URI, before, limit)
+	if err != nil {
+		return QuotesPage{}, err
+	}
+	var out QuotesPage
+	for _, q := range quotes {
+		view, err := r.View(ctx, viewer, q.StatusID)
+		if errors.Is(err, ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return QuotesPage{}, err
+		}
+		if view.Quote == nil {
+			continue // taken away
+		}
+		out.Statuses = append(out.Statuses, view)
+	}
+	if len(quotes) == limit && limit > 0 {
+		out.Next = quotes[len(quotes)-1].StatusID
+	}
+	return out, nil
 }

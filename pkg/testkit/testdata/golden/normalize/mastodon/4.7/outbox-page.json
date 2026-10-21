@@ -34,6 +34,11 @@
                         "Language": "en"
                       }
                     ],
+                    "CanQuote": {
+                      "AutomaticApproval": [
+                        "https://www.w3.org/ns/activitystreams#Public"
+                      ]
+                    },
                     "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454936765897454",
                     "Published": "2026-10-17T06:55:04Z",
                     "RawType": "Note",
@@ -135,6 +140,11 @@
                         "Language": "en"
                       }
                     ],
+                    "CanQuote": {
+                      "AutomaticApproval": [
+                        "https://www.w3.org/ns/activitystreams#Public"
+                      ]
+                    },
                     "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454927899945619",
                     "InReplyTo": "https://remote.example/ap/objects/01a148a2-753a-7b02-b9bc-71380ccdfdd0",
                     "Mentions": [
@@ -214,6 +224,11 @@
                         "Language": "en"
                       }
                     ],
+                    "CanQuote": {
+                      "AutomaticApproval": [
+                        "https://www.w3.org/ns/activitystreams#Public"
+                      ]
+                    },
                     "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168351",
                     "Published": "2026-10-17T06:52:12Z",
                     "RawType": "Note",

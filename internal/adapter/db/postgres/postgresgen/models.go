@@ -940,6 +940,12 @@ type StatusQuoteEvent struct {
 	OccurredAt       time.Time
 }
 
+type StatusQuotePolicy struct {
+	StatusID  string
+	Policy    string
+	UpdatedAt time.Time
+}
+
 type StatusQuoteState struct {
 	StatusID         string
 	State            string
@@ -1011,6 +1017,7 @@ type UserPreference struct {
 	UserID                      string
 	Locale                      string
 	DefaultVisibility           string
+	DefaultQuotePolicy          string
 	DefaultPostLanguage         string
 	RequireMediaDescription     bool
 	EmailModeratorNotifications bool

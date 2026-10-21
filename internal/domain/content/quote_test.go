@@ -52,6 +52,80 @@ func TestQuoteStateOf(t *testing.T) {
 	}
 }
 
+func TestMayQuote(t *testing.T) {
+	local := func(v content.Visibility) content.Status {
+		return content.Status{ID: "q", AuthorAccountID: "author", IsLocal: true, Visibility: v}
+	}
+	remote := func(v content.Visibility) content.Status {
+		return content.Status{ID: "q", AuthorAccountID: "author", Visibility: v}
+	}
+	base := func(q content.Status, p content.QuotePolicy) content.QuoteFacts {
+		return content.QuoteFacts{QuoterAccountID: "quoter", QuoterIsLocal: true, QuoterVisible: true, Quoted: q, Policy: p}
+	}
+	for _, tc := range []struct {
+		name string
+		f    func() content.QuoteFacts
+		want content.QuoteAllowance
+	}{
+		{"public local status", func() content.QuoteFacts { return base(local(content.VisibilityPublic), content.QuotePolicyPublic) }, content.QuoteApproved},
+		{"local status without a policy takes the default", func() content.QuoteFacts { return base(local(content.VisibilityPublic), "") }, content.QuoteApproved},
+		{"not visible", func() content.QuoteFacts {
+			f := base(local(content.VisibilityPublic), content.QuotePolicyPublic)
+			f.QuoterVisible = false
+			return f
+		}, content.QuoteDenied},
+		{"nobody", func() content.QuoteFacts { return base(local(content.VisibilityPublic), content.QuotePolicyNobody) }, content.QuoteDenied},
+		{"nobody, by the author", func() content.QuoteFacts {
+			f := base(local(content.VisibilityPublic), content.QuotePolicyNobody)
+			f.QuoterAccountID = "author"
+			return f
+		}, content.QuoteApproved},
+		{"followers, not following", func() content.QuoteFacts {
+			return base(local(content.VisibilityUnlisted), content.QuotePolicyFollowers)
+		}, content.QuoteDenied},
+		{"followers, following", func() content.QuoteFacts {
+			f := base(local(content.VisibilityUnlisted), content.QuotePolicyFollowers)
+			f.QuoterFollows = true
+			return f
+		}, content.QuoteApproved},
+		{"direct", func() content.QuoteFacts {
+			f := base(local(content.VisibilityDirect), content.QuotePolicyPublic)
+			f.QuoterAccountID = "author"
+			return f
+		}, content.QuoteDenied},
+		{"private, by someone else", func() content.QuoteFacts {
+			f := base(local(content.VisibilityPrivate), content.QuotePolicyPublic)
+			f.QuoterFollows = true
+			return f
+		}, content.QuoteDenied},
+		{"private, by the author in a private status", func() content.QuoteFacts {
+			f := base(local(content.VisibilityPrivate), content.QuotePolicyNobody)
+			f.QuoterAccountID, f.QuotingVisibility = "author", content.VisibilityPrivate
+			return f
+		}, content.QuoteApproved},
+		{"private, by the author in a public status", func() content.QuoteFacts {
+			f := base(local(content.VisibilityPrivate), content.QuotePolicyPublic)
+			f.QuoterAccountID, f.QuotingVisibility = "author", content.VisibilityPublic
+			return f
+		}, content.QuoteDenied},
+		{"local-only, by a remote account", func() content.QuoteFacts {
+			f := base(local(content.VisibilityLocal), content.QuotePolicyPublic)
+			f.QuoterIsLocal = false
+			return f
+		}, content.QuoteDenied},
+		{"local-only, by a local account", func() content.QuoteFacts { return base(local(content.VisibilityLocal), content.QuotePolicyPublic) }, content.QuoteApproved},
+		{"remote status with a policy", func() content.QuoteFacts { return base(remote(content.VisibilityPublic), content.QuotePolicyPublic) }, content.QuoteRequested},
+		{"remote status without a policy", func() content.QuoteFacts { return base(remote(content.VisibilityPublic), "") }, content.QuoteLegacy},
+		{"remote status of nobody", func() content.QuoteFacts { return base(remote(content.VisibilityPublic), content.QuotePolicyNobody) }, content.QuoteDenied},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := content.MayQuote(tc.f()); got != tc.want {
+				t.Errorf("MayQuote = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestQuoteApprovalShown(t *testing.T) {
 	for a, want := range map[content.QuoteApproval]bool{
 		content.QuoteApprovalAccepted: true, content.QuoteApprovalLegacy: true, content.QuoteApprovalPending: false,

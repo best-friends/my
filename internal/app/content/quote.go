@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/domain/content"
 )
@@ -52,6 +54,27 @@ type QuoteRepository interface {
 	InsertQuoteEvent(ctx context.Context, tx uow.Tx, e content.QuoteEvent) error
 	// ListQuoteEvents returns the events of the quote of a status in the order they occurred.
 	ListQuoteEvents(ctx context.Context, tx uow.Tx, statusID string) ([]content.QuoteEvent, error)
+	// ListQuotesOf returns up to limit quotes of the status uri whose status ID is below before
+	// ("" for the newest), newest first.
+	ListQuotesOf(ctx context.Context, uri, before string, limit int) ([]content.Quote, error)
+
+	// UpsertQuotePolicy sets who may quote a status; DeleteQuotePolicy removes the policy of a
+	// remote status that declares none any more.
+	UpsertQuotePolicy(ctx context.Context, tx uow.Tx, p content.StatusQuotePolicy) error
+	DeleteQuotePolicy(ctx context.Context, tx uow.Tx, statusID string) error
+	// FindQuotePolicy returns who may quote a status, ErrNotFound when it declares nobody.
+	FindQuotePolicy(ctx context.Context, statusID string) (content.StatusQuotePolicy, error)
+
+	// InsertQuoteAuthorization records this server's approval of a quote. It reports false,
+	// writing nothing, when the quoting status has one for the quoted status.
+	InsertQuoteAuthorization(ctx context.Context, tx uow.Tx, a content.QuoteAuthorization) (bool, error)
+	// FindQuoteAuthorization returns an approval with its revocation, ErrNotFound when there is
+	// none; FindQuoteAuthorizationFor finds it by the quoting URI and the quoted status.
+	FindQuoteAuthorization(ctx context.Context, id string) (content.QuoteAuthorization, error)
+	FindQuoteAuthorizationFor(ctx context.Context, quotingURI, quotedStatusID string) (content.QuoteAuthorization, error)
+	// InsertQuoteAuthorizationRevocation records the revocation of an approval, and reports
+	// false, writing nothing, when it is revoked already.
+	InsertQuoteAuthorizationRevocation(ctx context.Context, tx uow.Tx, authorizationID string, at time.Time) (bool, error)
 
 	// Projection, written only by this module's projectors and rebuild.
 
@@ -179,11 +202,16 @@ func (s *Service) recordQuote(ctx context.Context, tx uow.Tx, st content.Status,
 // the quote of st, unless it changes nothing: the state stays the same. It reports whether the
 // state changed. A status that quotes nothing fails with ErrNotFound.
 func (s *Service) changeQuote(ctx context.Context, tx uow.Tx, st content.Status, kind content.QuoteEventKind, authorizationURI string) (bool, error) {
-	q, err := s.d.Quotes.FindQuoteTx(ctx, tx, st.ID)
+	return changeQuote(ctx, tx, s.d.Quotes, s.d.IDs, s.d.Clock, st, kind, authorizationURI)
+}
+
+// changeQuote is Service.changeQuote on repo.
+func changeQuote(ctx context.Context, tx uow.Tx, repo QuoteRepository, ids kernel.IDGenerator, clock kernel.Clock, st content.Status, kind content.QuoteEventKind, authorizationURI string) (bool, error) {
+	q, err := repo.FindQuoteTx(ctx, tx, st.ID)
 	if err != nil {
 		return false, err
 	}
-	cur, err := s.d.Quotes.FindQuoteStateTx(ctx, tx, st.ID)
+	cur, err := repo.FindQuoteStateTx(ctx, tx, st.ID)
 	switch {
 	case errors.Is(err, ErrNotFound):
 		cur = content.InitialQuoteState(q)
@@ -191,12 +219,12 @@ func (s *Service) changeQuote(ctx context.Context, tx uow.Tx, st content.Status,
 		return false, err
 	}
 	e := content.QuoteEvent{
-		ID: s.d.IDs.NewID(), StatusID: st.ID, Kind: kind, AuthorizationURI: authorizationURI, OccurredAt: s.d.Clock.Now(),
+		ID: ids.NewID(), StatusID: st.ID, Kind: kind, AuthorizationURI: authorizationURI, OccurredAt: clock.Now(),
 	}
 	if cur.Apply(q, e) == cur {
 		return false, nil
 	}
-	if err := s.d.Quotes.InsertQuoteEvent(ctx, tx, e); err != nil {
+	if err := repo.InsertQuoteEvent(ctx, tx, e); err != nil {
 		return false, err
 	}
 	return true, tx.Emit(ctx, QuoteChanged{Quote: q, Event: e, Status: RefOf(st)})

@@ -34,8 +34,11 @@ type InteractionDeps struct {
 	// EmojiTags reads the enabled custom emoji that local accounts react with, with their images
 	// (MediaService.EmojiTags); nil refuses the reactions with custom emoji.
 	EmojiTags func(ctx context.Context, ids []string) ([]EmojiTag, error)
-	Clock     kernel.Clock
-	IDs       kernel.IDGenerator
+	// Quotes stores the quotes and the approvals this server gives (ADR-0069); nil answers
+	// every QuoteRequest with ErrNotFound.
+	Quotes QuoteRepository
+	Clock  kernel.Clock
+	IDs    kernel.IDGenerator
 	// Host is the serving domain of the Announce and Like activity URIs (ADR-0018).
 	Host string
 }

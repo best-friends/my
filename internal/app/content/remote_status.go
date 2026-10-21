@@ -58,6 +58,9 @@ type RemoteStatusInput struct {
 	// Quote is the post that the post quotes, nil for none (ADR-0069). It is recorded with the
 	// status; a revision without one takes the quote away, and one with another is ignored.
 	Quote *RemoteQuoteInput
+	// QuotePolicy is who may quote the post, nil when it declares nobody (ADR-0069 §3); every
+	// Update replaces it.
+	QuotePolicy *RemoteQuotePolicyInput
 }
 
 // RemoteBody is the HTML of a remote post in one language (a canonical BCP 47 tag or "und").
@@ -156,6 +159,11 @@ func (s *Service) IngestRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteSt
 	if err := s.recordQuote(ctx, tx, st, in.Quote); err != nil {
 		return Post{}, err
 	}
+	if in.QuotePolicy != nil {
+		if err := s.recordRemoteQuotePolicy(ctx, tx, st, in.QuotePolicy); err != nil {
+			return Post{}, err
+		}
+	}
 	if err := s.observePoll(ctx, tx, rev.Poll, in.Poll, now); err != nil {
 		return Post{}, err
 	}
@@ -184,6 +192,9 @@ func (s *Service) ReviseRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteSt
 		return false, err
 	}
 	now := s.d.Clock.Now()
+	if err := s.recordRemoteQuotePolicy(ctx, tx, st, in.QuotePolicy); err != nil {
+		return false, err
+	}
 	revisedAt := remoteRevisedAt(in.RevisedAt, st.PublishedAt, now)
 	if !revisedAt.After(head.LastRevisedAt) {
 		current, err := s.d.Repository.FindRevision(ctx, head.RevisionID)

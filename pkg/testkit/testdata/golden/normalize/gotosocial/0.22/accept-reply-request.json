@@ -29,6 +29,7 @@
       }
     ],
     "RawType": "Accept",
+    "Result": "http://remote.example/users/foss_satan/authorizations/1234",
     "Type": "Accept"
   }
 }
