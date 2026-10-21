@@ -86,4 +86,5 @@
 | [0072](0072-supporter-plans-and-roles.md) | 課金のプランとロールの連動 | Accepted |
 | [0073](0073-income-records-and-publication.md) | 収入の記録と公開 | Accepted |
 | [0074](0074-payment-provider-port.md) | 決済の PaymentProvider ポート（Stripe） | Accepted |
+| [0075](0075-metrics-surface-payments.md) | my.surface に payments を加える | Accepted |
 <!-- adr-index:end -->

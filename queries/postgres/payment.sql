@@ -1,0 +1,43 @@
+-- SPDX-License-Identifier: AGPL-3.0-only
+
+-- The records of the payment provider's facts (ADR-0074 section 4): the webhook receipts and the
+-- attempts of the reconciliation, written once.
+
+-- InsertPaymentWebhookReceipt writes nothing when the event of the provider is recorded.
+-- name: InsertPaymentWebhookReceipt :execrows
+INSERT INTO payment_webhook_receipts (id, provider, event_id, event_type, object_id, received_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (provider, event_id) DO NOTHING;
+
+-- name: LastPaymentWebhookReceipt :one
+SELECT id, provider, event_id, event_type, object_id, received_at FROM payment_webhook_receipts
+WHERE provider = $1
+ORDER BY received_at DESC, id DESC
+LIMIT 1;
+
+-- PurgePaymentWebhookReceipts deletes up to lim receipts received before before_at.
+-- name: PurgePaymentWebhookReceipts :execrows
+DELETE FROM payment_webhook_receipts WHERE id IN (
+  SELECT r.id FROM payment_webhook_receipts r WHERE r.received_at < sqlc.arg(before_at) ORDER BY r.received_at LIMIT sqlc.arg(lim)
+);
+
+-- InsertPaymentReconcileRun writes nothing when an attempt of the job is recorded.
+-- name: InsertPaymentReconcileRun :execrows
+INSERT INTO payment_reconcile_runs (
+  id, provider, run_key, outcome, error_kind, changes_until, changes_cursor, money_cursor, sweep_cursor,
+  requests, checked_subscriptions, corrected_subscriptions, occurred_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+ON CONFLICT (provider, run_key) DO NOTHING;
+
+-- name: CountPaymentReconcileRunsByKey :one
+SELECT COUNT(*) FROM payment_reconcile_runs WHERE provider = $1 AND run_key = $2;
+
+-- LastPaymentReconcileRun returns the newest attempt of a provider, only among the succeeded and
+-- partial ones unless include_failed is true.
+-- name: LastPaymentReconcileRun :one
+SELECT id, provider, run_key, outcome, error_kind, changes_until, changes_cursor, money_cursor, sweep_cursor,
+  requests, checked_subscriptions, corrected_subscriptions, occurred_at
+FROM payment_reconcile_runs
+WHERE provider = sqlc.arg(provider) AND (sqlc.arg(include_failed)::boolean OR outcome <> 'failed')
+ORDER BY occurred_at DESC, id DESC
+LIMIT 1;

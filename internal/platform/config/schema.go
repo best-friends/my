@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/best-friends/my/internal/adapter/webpush"
+	"github.com/best-friends/my/internal/app/supporters"
 )
 
 // EnvPrefix is prepended to the upper-cased key to form a setting's environment variable.
@@ -646,6 +647,29 @@ var schema = []field{
 		set:          func(c *Config, v string) { c.BillingGCPBudgetSubscription = strings.TrimSpace(v) },
 	},
 	{
+		key: "payments_provider",
+		doc: "The payment provider of the supporters (ADR-0072, ADR-0074, FR-910): local users subscribe to paid plans on its hosted checkout, and the roles of the plans follow the state of their payments. Only one provider is active on a server; switching to another one needs the subscribers to subscribe again. The provider calls `POST /payments/webhooks/{provider}` (signed, at most 1 MiB, recorded once per event), and a reconciliation reads its lists every `payments_reconcile_interval`. Card details never reach the server. An administrator still enables the supporters and sets up the plans on the admin screen.",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "No payments: the webhook endpoint and the reconciliation do not run."},
+		},
+		set: func(c *Config, v string) { c.PaymentsProvider = v },
+	},
+	{
+		key:   "payments_reconcile_interval",
+		doc:   "How often the reconciliation with `payments_provider` runs (ADR-0074 §4): it reads the provider's changes since the previous run, the checkouts in progress, the money movements, and a sweep of every subscription, and corrects what the webhooks missed. A Go duration from `15m` to `168h`; raise it, or `payments_reconcile_max_requests`, when the runs often stop at the cap.",
+		def:   "6h",
+		check: checkReconcileInterval,
+		set:   func(c *Config, v string) { c.PaymentsReconcileInterval, _ = time.ParseDuration(v) },
+	},
+	{
+		key:   "payments_reconcile_max_requests",
+		doc:   "How many requests one reconciliation sends to `payments_provider` (ADR-0074 §4), a page of a list counting as one. A run that reaches it records where it stopped and a continuation picks up the rest a minute later. The provider's adapter also keeps the requests within its rate limits.",
+		def:   strconv.Itoa(supporters.DefaultReconcileMaxRequests),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.PaymentsReconcileMaxRequests, _ = strconv.Atoi(v) },
+	},
+	{
 		key:   "dead_job_retention",
 		doc:   "How long a dead job (a job that failed for good or used up its attempts, ADR-0004) is kept after it failed, for an operator to inspect and requeue it; the hourly purge then deletes it (FR-803). A Go duration such as `720h` (30 days).",
 		def:   "720h",
@@ -881,6 +905,14 @@ func checkPositiveInt(v string) error {
 	n, err := strconv.ParseInt(v, 10, 64)
 	if err != nil || n <= 0 || n > math.MaxInt32 {
 		return fmt.Errorf("must be a whole number from 1 to %d", math.MaxInt32)
+	}
+	return nil
+}
+
+func checkReconcileInterval(v string) error {
+	d, err := time.ParseDuration(v)
+	if err != nil || d < supporters.MinReconcileInterval || d > supporters.MaxReconcileInterval {
+		return fmt.Errorf("must be a Go duration from %s to %s", supporters.MinReconcileInterval, supporters.MaxReconcileInterval)
 	}
 	return nil
 }
