@@ -78,4 +78,5 @@
 | [0064](0064-queue-job-dashboard.md) | キューとジョブのダッシュボード（ジョブの一覧と試行の記録） | Accepted |
 | [0065](0065-react-compiler-oxc.md) | React Compiler を Oxc の移植で動かし、Babel を外す | Accepted |
 | [0066](0066-openapi-split-and-bundle.md) | クライアント API の仕様をファイルに分けてバンドルする | Accepted |
+| [0067](0067-finance-cost-records.md) | 費用の記録・支払いの周期・期間の集計・公開範囲 | Accepted |
 <!-- adr-index:end -->
