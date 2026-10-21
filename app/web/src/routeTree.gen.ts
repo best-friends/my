@@ -26,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
 import { Route as AdminCustomEmojisRouteImport } from './routes/admin.custom-emojis'
 import { Route as AdminDocumentsRouteImport } from './routes/admin.documents'
+import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as AdminJobsRouteImport } from './routes/admin.jobs'
 import { Route as AdminRelaysRouteImport } from './routes/admin.relays'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
@@ -152,6 +153,11 @@ const AdminCustomEmojisRoute = AdminCustomEmojisRouteImport.update({
 const AdminDocumentsRoute = AdminDocumentsRouteImport.update({
   id: '/admin/documents',
   path: '/admin/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminFinanceRoute = AdminFinanceRouteImport.update({
+  id: '/admin/finance',
+  path: '/admin/finance',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminJobsRoute = AdminJobsRouteImport.update({
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/jobs': typeof AdminJobsRoute
   '/admin/relays': typeof AdminRelaysRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/jobs': typeof AdminJobsRoute
   '/admin/relays': typeof AdminRelaysRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -494,6 +502,7 @@ export interface FileRoutesById {
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/custom-emojis': typeof AdminCustomEmojisRoute
   '/admin/documents': typeof AdminDocumentsRoute
+  '/admin/finance': typeof AdminFinanceRoute
   '/admin/jobs': typeof AdminJobsRoute
   '/admin/relays': typeof AdminRelaysRoute
   '/admin/roles': typeof AdminRolesRoute
@@ -555,6 +564,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
+    | '/admin/finance'
     | '/admin/jobs'
     | '/admin/relays'
     | '/admin/roles'
@@ -614,6 +624,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
+    | '/admin/finance'
     | '/admin/jobs'
     | '/admin/relays'
     | '/admin/roles'
@@ -673,6 +684,7 @@ export interface FileRouteTypes {
     | '/admin/announcements'
     | '/admin/custom-emojis'
     | '/admin/documents'
+    | '/admin/finance'
     | '/admin/jobs'
     | '/admin/relays'
     | '/admin/roles'
@@ -733,6 +745,7 @@ export interface RootRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminCustomEmojisRoute: typeof AdminCustomEmojisRoute
   AdminDocumentsRoute: typeof AdminDocumentsRoute
+  AdminFinanceRoute: typeof AdminFinanceRoute
   AdminJobsRoute: typeof AdminJobsRoute
   AdminRelaysRoute: typeof AdminRelaysRoute
   AdminRolesRoute: typeof AdminRolesRoute
@@ -895,6 +908,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/documents'
       fullPath: '/admin/documents'
       preLoaderRoute: typeof AdminDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/finance': {
+      id: '/admin/finance'
+      path: '/admin/finance'
+      fullPath: '/admin/finance'
+      preLoaderRoute: typeof AdminFinanceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/jobs': {
@@ -1197,6 +1217,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminCustomEmojisRoute: AdminCustomEmojisRoute,
   AdminDocumentsRoute: AdminDocumentsRoute,
+  AdminFinanceRoute: AdminFinanceRoute,
   AdminJobsRoute: AdminJobsRoute,
   AdminRelaysRoute: AdminRelaysRoute,
   AdminRolesRoute: AdminRolesRoute,

@@ -72,13 +72,16 @@ const (
 	// AuditTargetBillingSource is a source of the billing imports (ADR-0068); its ID is the
 	// source's name (aws, gcp) and its label the provider's name.
 	AuditTargetBillingSource AuditTargetKind = "billing_source"
+	// AuditTargetCostItem is a cost item of the instance (ADR-0067 §7); its label is the item's
+	// name.
+	AuditTargetCostItem AuditTargetKind = "cost_item"
 )
 
 var auditTargetKinds = []AuditTargetKind{
 	AuditTargetAccount, AuditTargetStatus, AuditTargetDomain, AuditTargetReport, AuditTargetAppeal,
 	AuditTargetUser, AuditTargetRole, AuditTargetSetting, AuditTargetRule, AuditTargetSignupBlock,
 	AuditTargetCustomEmoji, AuditTargetWebhook, AuditTargetAnnouncement, AuditTargetInvite, AuditTargetRelay,
-	AuditTargetBillingSource,
+	AuditTargetBillingSource, AuditTargetCostItem,
 }
 
 // AuditTargetKinds returns every kind of target, in the order of the schema's CHECK.
@@ -229,6 +232,15 @@ const (
 	// AuditBillingImportQueued: an administrator queued an import of a billing source now
 	// (ADR-0068 §2); the operation has no row of its own.
 	AuditBillingImportQueued AuditAction = "billing_import_queued"
+	// AuditCostItemCreated, AuditCostItemRelabeled, AuditCostItemPriceRevised,
+	// AuditCostItemEndChanged, AuditCostItemCanceled: an administrator recorded a cost item,
+	// changed its name, provider, category, or memo, revised its price, changed its end, or
+	// canceled it (ADR-0067 §7).
+	AuditCostItemCreated      AuditAction = "cost_item_created"
+	AuditCostItemRelabeled    AuditAction = "cost_item_relabeled"
+	AuditCostItemPriceRevised AuditAction = "cost_item_price_revised"
+	AuditCostItemEndChanged   AuditAction = "cost_item_end_changed"
+	AuditCostItemCanceled     AuditAction = "cost_item_canceled"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -295,6 +307,11 @@ var auditActions = []struct {
 	{AuditAccountStatusesRefetchQueued, AuditTargetAccount},
 	{AuditDomainStatusesRefetchQueued, AuditTargetDomain},
 	{AuditBillingImportQueued, AuditTargetBillingSource},
+	{AuditCostItemCreated, AuditTargetCostItem},
+	{AuditCostItemRelabeled, AuditTargetCostItem},
+	{AuditCostItemPriceRevised, AuditTargetCostItem},
+	{AuditCostItemEndChanged, AuditTargetCostItem},
+	{AuditCostItemCanceled, AuditTargetCostItem},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.

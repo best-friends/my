@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A week, month, or year of the totals (`label`: `2026-W17`, `2026-04`, or `2026`): the total
+  of each currency, never converted (ADR-0067 §6), sorted by currency code, and the breakdown
+  by provider, category, and currency. A currency appears when a cost meets the period, even
+  with a zero amount. `estimated` reports that an imported usage charge of a billing month
+  that its provider has not closed meets the period (ADR-0068 §3): its amount may still
+  change.
+type: object
+required: [label, starts_on, ends_on, totals, breakdown, estimated]
+properties:
+  label:
+    type: string
+  starts_on:
+    $ref: ./CalendarDate.yaml
+  ends_on:
+    $ref: ./CalendarDate.yaml
+  totals:
+    type: array
+    items:
+      $ref: ./Money.yaml
+  breakdown:
+    type: array
+    items:
+      $ref: ./CostBreakdownLine.yaml
+  estimated:
+    type: boolean

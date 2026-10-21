@@ -9130,5 +9130,589 @@
   "settings.import_export.kind.domain_mutes": {
     "defaultMessage": "Muted domains",
     "description": "Name of the list of domains the user mutes, as one kind of CSV file to export or import."
+  },
+  "admin.finance.title": {
+    "defaultMessage": "Costs",
+    "description": "Heading of the costs screen (the instance's running costs), and its link in the administration menu."
+  },
+  "admin.finance.summary": {
+    "defaultMessage": "Record what running the server costs and see the totals by week, month, and year.",
+    "description": "Description of the costs screen in the administration menu of the settings."
+  },
+  "admin.finance.description": {
+    "defaultMessage": "Record the costs of running this server, paid once or regularly, and see their totals. The items, their names and memos are never published.",
+    "description": "Introduction of the costs screen."
+  },
+  "admin.finance.totals.title": {
+    "defaultMessage": "Totals",
+    "description": "Heading of the section with the totals by period on the costs screen."
+  },
+  "admin.finance.basis": {
+    "defaultMessage": "How payments are counted",
+    "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen."
+  },
+  "admin.finance.basis.amortized": {
+    "defaultMessage": "Spread over the period paid for",
+    "description": "Choice of counting a payment for more than a month (a yearly domain) by day over the days it pays for, on the costs screen. The default."
+  },
+  "admin.finance.basis.amortized.description": {
+    "defaultMessage": "Shows what a month or a week costs: a yearly payment counts by day until the next one.",
+    "description": "Explanation of the spread choice on the costs screen."
+  },
+  "admin.finance.basis.cash": {
+    "defaultMessage": "On the payment date",
+    "description": "Choice of counting each payment on the date it is paid, on the costs screen."
+  },
+  "admin.finance.basis.cash.description": {
+    "defaultMessage": "Shows what was paid when: compare it with your statements.",
+    "description": "Explanation of the payment-date choice on the costs screen."
+  },
+  "admin.finance.granularity": {
+    "defaultMessage": "Period",
+    "description": "Accessible name of the tabs that choose weeks, months, or years for the totals on the costs screen."
+  },
+  "admin.finance.granularity.week": {
+    "defaultMessage": "Weeks",
+    "description": "Tab of the totals by ISO week on the costs screen."
+  },
+  "admin.finance.granularity.month": {
+    "defaultMessage": "Months",
+    "description": "Tab of the totals by calendar month on the costs screen."
+  },
+  "admin.finance.granularity.year": {
+    "defaultMessage": "Years",
+    "description": "Tab of the totals by calendar year on the costs screen."
+  },
+  "admin.finance.totals.caption": {
+    "defaultMessage": "Totals by {granularity}, {basis}",
+    "description": "Accessible caption of the table of totals on the costs screen: the chosen period kind and the way payments are counted."
+  },
+  "admin.finance.totals.period": {
+    "defaultMessage": "Period",
+    "description": "Column header of the period in the table of totals on the costs screen."
+  },
+  "admin.finance.totals.total": {
+    "defaultMessage": "Total",
+    "description": "Column header of the total in the table of totals on the costs screen."
+  },
+  "admin.finance.totals.none": {
+    "defaultMessage": "Nothing",
+    "description": "Total of a period without any cost on the costs screen."
+  },
+  "admin.finance.totals.plus": {
+    "defaultMessage": "{sum} + {amount}",
+    "description": "Totals in different currencies, which are never converted, put together on the costs screen: an amount added to the amounts before it."
+  },
+  "admin.finance.totals.estimated": {
+    "defaultMessage": "Includes estimates",
+    "description": "Badge of a period whose total includes imported charges that the cloud provider has not closed yet and may still change, on the costs screen."
+  },
+  "admin.finance.period.week": {
+    "defaultMessage": "{range} ({week})",
+    "description": "A week of the totals on the costs screen: its dates and its ISO week number such as 2026-W17."
+  },
+  "admin.finance.breakdown.title": {
+    "defaultMessage": "Breakdown of {period}",
+    "description": "Heading of the breakdown of the current period by provider and category on the costs screen."
+  },
+  "admin.finance.breakdown.empty": {
+    "defaultMessage": "No costs in this period.",
+    "description": "What the breakdown says for a period without costs on the costs screen."
+  },
+  "admin.finance.rules.title": {
+    "defaultMessage": "How the periods are counted",
+    "description": "Heading of the rules that cut the periods of the totals on the costs screen."
+  },
+  "admin.finance.rules.dates": {
+    "defaultMessage": "Costs are dated by calendar day, as on the statement, without a time zone: the totals are the same for everyone.",
+    "description": "Rule of the totals on the costs screen: dates without time zones."
+  },
+  "admin.finance.rules.week_start": {
+    "defaultMessage": "Weeks run from Monday to Sunday (ISO 8601). A week across the new year is split between the two years.",
+    "description": "Rule of the totals on the costs screen: the first day of a week."
+  },
+  "admin.finance.rules.amortized": {
+    "defaultMessage": "A payment for more than a month is spread by day from its date until the day before the next payment, rounded so that the days add up to the amount paid. Other payments count on their dates.",
+    "description": "Rule of the spread totals on the costs screen."
+  },
+  "admin.finance.rules.cash": {
+    "defaultMessage": "Every payment counts on its payment date.",
+    "description": "Rule of the payment-date totals on the costs screen."
+  },
+  "admin.finance.rules.currencies": {
+    "defaultMessage": "Each currency is totaled on its own and never converted.",
+    "description": "Rule of the totals on the costs screen: currencies."
+  },
+  "admin.finance.rules.source": {
+    "defaultMessage": "{provider} bills by month in the {timeZone} time zone; its charges are spread by day over each billing month.",
+    "description": "Rule of the totals on the costs screen: the time zone of an imported cloud provider's billing months (UTC, America/Los_Angeles)."
+  },
+  "admin.finance.rules.estimated": {
+    "defaultMessage": "A month that its provider has not closed is an estimate and may still change.",
+    "description": "Rule of the totals on the costs screen: estimates of imported charges."
+  },
+  "admin.finance.new.title": {
+    "defaultMessage": "Record a cost",
+    "description": "Heading of the form of a new cost on the costs screen."
+  },
+  "admin.finance.name": {
+    "defaultMessage": "Name",
+    "description": "Label of the name of a cost (such as a domain or a server plan) on the costs screen."
+  },
+  "admin.finance.name.description": {
+    "defaultMessage": "What it is, such as example.com or the main server. Up to {max} characters.",
+    "description": "Explanation of the name of a cost on the costs screen."
+  },
+  "admin.finance.provider": {
+    "defaultMessage": "Provider",
+    "description": "Label of who is paid for a cost on the costs screen."
+  },
+  "admin.finance.provider.description": {
+    "defaultMessage": "Who you pay. The breakdown groups the same provider however it is capitalized.",
+    "description": "Explanation of the provider of a cost on the costs screen."
+  },
+  "admin.finance.category": {
+    "defaultMessage": "Category",
+    "description": "Label of the category of a cost on the costs screen."
+  },
+  "admin.finance.category.compute": {
+    "defaultMessage": "Servers",
+    "description": "Category of a cost: compute, the servers or functions that run the instance."
+  },
+  "admin.finance.category.database": {
+    "defaultMessage": "Database",
+    "description": "Category of a cost: the database."
+  },
+  "admin.finance.category.storage": {
+    "defaultMessage": "Storage",
+    "description": "Category of a cost: storage of media and backups."
+  },
+  "admin.finance.category.network": {
+    "defaultMessage": "Network",
+    "description": "Category of a cost: network, CDN, and data transfer."
+  },
+  "admin.finance.category.domain": {
+    "defaultMessage": "Domain",
+    "description": "Category of a cost: domain registration and renewal."
+  },
+  "admin.finance.category.email": {
+    "defaultMessage": "Email",
+    "description": "Category of a cost: sending email."
+  },
+  "admin.finance.category.software": {
+    "defaultMessage": "Software",
+    "description": "Category of a cost: software and services."
+  },
+  "admin.finance.category.other": {
+    "defaultMessage": "Other",
+    "description": "Category of a cost: anything else, and taxes."
+  },
+  "admin.finance.memo": {
+    "defaultMessage": "Memo",
+    "description": "Label of the operator's note on a cost, never published, on the costs screen."
+  },
+  "admin.finance.memo.description": {
+    "defaultMessage": "Only for the administrators; never published.",
+    "description": "Explanation of the memo of a cost on the costs screen."
+  },
+  "admin.finance.schedule": {
+    "defaultMessage": "Payment",
+    "description": "Label of how often a cost is paid on the costs screen."
+  },
+  "admin.finance.schedule.description": {
+    "defaultMessage": "Regular payments are counted from the start date: a monthly payment on the 31st falls on the last day of shorter months. To change the schedule later, end the cost and record a new one.",
+    "description": "Explanation of the payment schedule on the costs screen."
+  },
+  "admin.finance.schedule.once": {
+    "defaultMessage": "Once",
+    "description": "Choice of a cost paid once."
+  },
+  "admin.finance.schedule.weeks": {
+    "defaultMessage": "Every few weeks",
+    "description": "Choice of a cost paid every N weeks."
+  },
+  "admin.finance.schedule.months": {
+    "defaultMessage": "Every few months",
+    "description": "Choice of a cost paid every N months."
+  },
+  "admin.finance.schedule.years": {
+    "defaultMessage": "Every few years",
+    "description": "Choice of a cost paid every N years, such as a domain renewal."
+  },
+  "admin.finance.interval": {
+    "defaultMessage": "Every how many",
+    "description": "Label of the N of a payment every N weeks, months, or years on the costs screen."
+  },
+  "admin.finance.interval.description": {
+    "defaultMessage": "1 for every week, month, or year; 3 for every 3 months. Up to {max}.",
+    "description": "Explanation of the interval of a payment on the costs screen."
+  },
+  "admin.finance.interval.invalid": {
+    "defaultMessage": "Enter a whole number from 1 to {max}.",
+    "description": "Error of an interval that is not a whole number in range on the costs screen."
+  },
+  "admin.finance.starts_on": {
+    "defaultMessage": "First payment",
+    "description": "Label of the date of the first payment of a regular cost on the costs screen."
+  },
+  "admin.finance.starts_on.description": {
+    "defaultMessage": "The date on the statement or invoice.",
+    "description": "Explanation of the first payment date on the costs screen."
+  },
+  "admin.finance.paid_on": {
+    "defaultMessage": "Payment date",
+    "description": "Label of the date of a cost paid once on the costs screen."
+  },
+  "admin.finance.paid_on.description": {
+    "defaultMessage": "The date on the statement or invoice.",
+    "description": "Explanation of the date of a cost paid once on the costs screen."
+  },
+  "admin.finance.ends_on": {
+    "defaultMessage": "Last payment by",
+    "description": "Label of the last date a regular payment can fall on, after which it stops, on the costs screen."
+  },
+  "admin.finance.ends_on.description": {
+    "defaultMessage": "Optional. Payments after this date stop; leave it empty while you keep paying.",
+    "description": "Explanation of the end of a regular cost on the costs screen."
+  },
+  "admin.finance.ends_on.before_start": {
+    "defaultMessage": "The end cannot be before the first payment.",
+    "description": "Error of an end before the start on the costs screen."
+  },
+  "admin.finance.no_end": {
+    "defaultMessage": "Until it is ended",
+    "description": "Value of the end of a regular cost without one on the costs screen."
+  },
+  "admin.finance.amount": {
+    "defaultMessage": "Amount",
+    "description": "Label of the amount of a payment on the costs screen."
+  },
+  "admin.finance.amount.description": {
+    "defaultMessage": "In the currency's main unit, such as 1650 for yen or 12.34 for dollars.",
+    "description": "Explanation of the amount of a payment on the costs screen."
+  },
+  "admin.finance.amount.invalid": {
+    "defaultMessage": "Enter an amount such as 1650 or 12.34.",
+    "description": "Error of an amount that is not a plain decimal number on the costs screen."
+  },
+  "admin.finance.currency": {
+    "defaultMessage": "Currency",
+    "description": "Label of the currency code of a payment on the costs screen."
+  },
+  "admin.finance.currency.description": {
+    "defaultMessage": "Its three-letter code, such as JPY or USD.",
+    "description": "Explanation of the ISO 4217 currency code on the costs screen."
+  },
+  "admin.finance.currency.invalid": {
+    "defaultMessage": "Enter a three-letter currency code such as JPY.",
+    "description": "Error of a currency that is not three letters on the costs screen."
+  },
+  "admin.finance.required": {
+    "defaultMessage": "Fill this in.",
+    "description": "Error of a required field left empty on the costs screen."
+  },
+  "admin.finance.too_long": {
+    "defaultMessage": "Use at most {max} characters.",
+    "description": "Error of a text that is too long on the costs screen."
+  },
+  "admin.finance.create": {
+    "defaultMessage": "Record the cost",
+    "description": "Button that records a new cost on the costs screen."
+  },
+  "admin.finance.create_failed": {
+    "defaultMessage": "Could not record the cost: {reason}",
+    "description": "Error below the form of a new cost on the costs screen, with the server's reason."
+  },
+  "admin.finance.created": {
+    "defaultMessage": "Recorded {name}. The audit log records the change.",
+    "description": "Result of recording a cost on the costs screen."
+  },
+  "admin.finance.list.title": {
+    "defaultMessage": "Recorded costs",
+    "description": "Heading of the list of recorded costs on the costs screen."
+  },
+  "admin.finance.empty": {
+    "defaultMessage": "No costs yet",
+    "description": "Heading of the empty list of costs on the costs screen."
+  },
+  "admin.finance.empty.description": {
+    "defaultMessage": "Record what the server costs with the form above.",
+    "description": "Explanation of the empty list of costs on the costs screen."
+  },
+  "admin.finance.every.once": {
+    "defaultMessage": "Once",
+    "description": "How often a cost is paid: once."
+  },
+  "admin.finance.every.weeks": {
+    "defaultMessage": "{count, plural, one {Every week} other {Every # weeks}}",
+    "description": "How often a cost is paid: every N weeks."
+  },
+  "admin.finance.every.months": {
+    "defaultMessage": "{count, plural, one {Every month} other {Every # months}}",
+    "description": "How often a cost is paid: every N months."
+  },
+  "admin.finance.every.years": {
+    "defaultMessage": "{count, plural, one {Every year} other {Every # years}}",
+    "description": "How often a cost is paid: every N years."
+  },
+  "admin.finance.price": {
+    "defaultMessage": "Current price",
+    "description": "Term of the price of a payment today on the costs screen."
+  },
+  "admin.finance.prices": {
+    "defaultMessage": "Price changes",
+    "description": "Term of the list of the prices of a cost by date on the costs screen."
+  },
+  "admin.finance.price_from": {
+    "defaultMessage": "{amount} from {date}",
+    "description": "A price of a cost from a date on on the costs screen."
+  },
+  "admin.finance.created_at": {
+    "defaultMessage": "Recorded",
+    "description": "Term of when a cost was recorded on the costs screen."
+  },
+  "admin.finance.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog that changes the name, provider, category, and memo of a cost on the costs screen."
+  },
+  "admin.finance.edit_one": {
+    "defaultMessage": "Edit: {name}",
+    "description": "Accessible name of the edit button of a cost on the costs screen."
+  },
+  "admin.finance.edit.title": {
+    "defaultMessage": "Edit the cost",
+    "description": "Title of the dialog that changes the label of a cost on the costs screen."
+  },
+  "admin.finance.revise": {
+    "defaultMessage": "Change the price",
+    "description": "Button that opens the dialog of a new price from a date on on the costs screen."
+  },
+  "admin.finance.revise_one": {
+    "defaultMessage": "Change the price: {name}",
+    "description": "Accessible name of the price button of a cost on the costs screen."
+  },
+  "admin.finance.revise.title": {
+    "defaultMessage": "Change the price of {name}",
+    "description": "Title of the dialog of a new price on the costs screen."
+  },
+  "admin.finance.effective_on": {
+    "defaultMessage": "From",
+    "description": "Label of the date from which a new price applies on the costs screen."
+  },
+  "admin.finance.effective_on.description": {
+    "defaultMessage": "Payments on or after this date use the new price. To correct a mistake everywhere, use the first payment date.",
+    "description": "Explanation of the date of a new price on the costs screen."
+  },
+  "admin.finance.effective_on.before_start": {
+    "defaultMessage": "The date cannot be before the first payment.",
+    "description": "Error of a price change before the start on the costs screen."
+  },
+  "admin.finance.end": {
+    "defaultMessage": "Set the end",
+    "description": "Button that opens the dialog of the end of a regular cost on the costs screen."
+  },
+  "admin.finance.end_one": {
+    "defaultMessage": "Set the end: {name}",
+    "description": "Accessible name of the end button of a cost on the costs screen."
+  },
+  "admin.finance.end.title": {
+    "defaultMessage": "End {name}",
+    "description": "Title of the dialog of the end of a cost on the costs screen."
+  },
+  "admin.finance.end.description": {
+    "defaultMessage": "Payments after this date stop; the past ones stay in the totals. Leave it empty to keep paying.",
+    "description": "Explanation of the end in its dialog on the costs screen."
+  },
+  "admin.finance.ended": {
+    "defaultMessage": "Set the end of {name}. The audit log records the change.",
+    "description": "Result of setting the end of a cost on the costs screen."
+  },
+  "admin.finance.end_removed": {
+    "defaultMessage": "{name} has no end now. The audit log records the change.",
+    "description": "Result of removing the end of a cost on the costs screen."
+  },
+  "admin.finance.relabeled": {
+    "defaultMessage": "Changed {name}. The audit log records the change.",
+    "description": "Result of changing the label of a cost on the costs screen."
+  },
+  "admin.finance.revised": {
+    "defaultMessage": "Changed the price of {name}. The audit log records the change.",
+    "description": "Result of a new price on the costs screen."
+  },
+  "admin.finance.cancel_item": {
+    "defaultMessage": "Delete",
+    "description": "Button that removes a cost recorded by mistake from every period on the costs screen."
+  },
+  "admin.finance.cancel_one": {
+    "defaultMessage": "Delete: {name}",
+    "description": "Accessible name of the delete button of a cost on the costs screen."
+  },
+  "admin.finance.cancel.title": {
+    "defaultMessage": "Delete {name}?",
+    "description": "Title of the confirmation of deleting a cost on the costs screen."
+  },
+  "admin.finance.cancel.description": {
+    "defaultMessage": "It leaves every period, past ones included, and cannot be undone. To stop a subscription and keep its past payments, set its end instead.",
+    "description": "Explanation in the confirmation of deleting a cost on the costs screen."
+  },
+  "admin.finance.canceled": {
+    "defaultMessage": "Deleted {name}. The audit log records the change.",
+    "description": "Result of deleting a cost on the costs screen."
+  },
+  "admin.finance.change_failed": {
+    "defaultMessage": "Could not change the cost: {reason}",
+    "description": "Error of a change of a cost on the costs screen, with the server's reason."
+  },
+  "admin.finance.cancel_dialog": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes a dialog without saving on the costs screen."
+  },
+  "admin.finance.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of a dialog on the costs screen."
+  },
+  "admin.finance.save": {
+    "defaultMessage": "Save",
+    "description": "Button that saves a dialog on the costs screen."
+  },
+  "admin.finance.imports.title": {
+    "defaultMessage": "Billing imports",
+    "description": "Heading of the section with the state of the imports of the cloud providers' usage charges on the costs screen."
+  },
+  "admin.finance.imports.none": {
+    "defaultMessage": "No billing imports",
+    "description": "Heading when no cloud provider's charges are imported on the costs screen."
+  },
+  "admin.finance.imports.none.description": {
+    "defaultMessage": "The server operator turns them on in the deployment settings (billing_sources).",
+    "description": "Explanation of how to turn the billing imports on on the costs screen."
+  },
+  "admin.finance.imports.time_zone": {
+    "defaultMessage": "Billing months",
+    "description": "Term of the time zone that cuts a provider's billing months on the costs screen."
+  },
+  "admin.finance.imports.last_success": {
+    "defaultMessage": "Last successful import",
+    "description": "Term of when the charges were last imported on the costs screen."
+  },
+  "admin.finance.imports.last_run": {
+    "defaultMessage": "Last attempt",
+    "description": "Term of the last attempt to import the charges and its result on the costs screen."
+  },
+  "admin.finance.imports.never": {
+    "defaultMessage": "Never",
+    "description": "Value of an import that has not happened on the costs screen."
+  },
+  "admin.finance.imports.requests_today": {
+    "defaultMessage": "Billed requests today (UTC)",
+    "description": "Term of the billed requests to the provider this UTC day, with the cap, on the costs screen."
+  },
+  "admin.finance.imports.requests_month": {
+    "defaultMessage": "Billed requests this month (UTC)",
+    "description": "Term of the billed requests to the provider this UTC month, with the cap, on the costs screen."
+  },
+  "admin.finance.imports.used_of": {
+    "defaultMessage": "{used} of {max}",
+    "description": "Requests made and their cap on the costs screen."
+  },
+  "admin.finance.imports.bytes": {
+    "defaultMessage": "Bytes billed this month",
+    "description": "Term of the BigQuery bytes billed this month on the costs screen."
+  },
+  "admin.finance.imports.months": {
+    "defaultMessage": "Billing months of {provider}",
+    "description": "Accessible name of the list of a provider's imported billing months on the costs screen."
+  },
+  "admin.finance.imports.kind.estimate": {
+    "defaultMessage": "Estimate",
+    "description": "State of an imported billing month that its provider has not closed."
+  },
+  "admin.finance.imports.kind.final": {
+    "defaultMessage": "Final",
+    "description": "State of an imported billing month that its provider has closed."
+  },
+  "admin.finance.imports.kind.correction": {
+    "defaultMessage": "Corrected",
+    "description": "State of an imported billing month whose amount changed after it was closed."
+  },
+  "admin.finance.imports.error.none": {
+    "defaultMessage": "Succeeded",
+    "description": "Result of an import attempt that succeeded."
+  },
+  "admin.finance.imports.error.permission": {
+    "defaultMessage": "Failed: the credentials may not read the billing data. Grant the permission to the server's role or service account.",
+    "description": "Result of an import attempt refused for lack of permission, with how to fix it."
+  },
+  "admin.finance.imports.error.not_enabled": {
+    "defaultMessage": "Failed: the billing data is not enabled for the account. Turn it on at the provider.",
+    "description": "Result of an import attempt whose billing data is not enabled, with how to fix it."
+  },
+  "admin.finance.imports.error.not_found": {
+    "defaultMessage": "Failed: the billing data was not found. Check the dataset or table in the deployment settings.",
+    "description": "Result of an import attempt that found no billing data, with how to fix it."
+  },
+  "admin.finance.imports.error.throttled": {
+    "defaultMessage": "Failed: the provider throttled the requests. It is tried again.",
+    "description": "Result of an import attempt that was throttled; it is retried."
+  },
+  "admin.finance.imports.error.request_cap": {
+    "defaultMessage": "Skipped: the cap of billed requests is reached. The next day's or month's import tries again.",
+    "description": "Result of an import attempt that called nothing because the cap of billed requests is reached."
+  },
+  "admin.finance.imports.error.bytes_cap": {
+    "defaultMessage": "Failed: the query would scan more than its cap of billed bytes.",
+    "description": "Result of an import attempt whose query would scan too much."
+  },
+  "admin.finance.imports.error.invalid_response": {
+    "defaultMessage": "Failed: the provider's answer could not be read.",
+    "description": "Result of an import attempt with an unusable answer."
+  },
+  "admin.finance.imports.error.unavailable": {
+    "defaultMessage": "Failed: the provider did not answer. It is tried again.",
+    "description": "Result of an import attempt whose provider did not answer; it is retried."
+  },
+  "admin.finance.imports.run": {
+    "defaultMessage": "Import now",
+    "description": "Button that imports a provider's charges now, besides the daily import, on the costs screen."
+  },
+  "admin.finance.imports.run_one": {
+    "defaultMessage": "Import now: {provider}",
+    "description": "Accessible name of the import button of a provider on the costs screen."
+  },
+  "admin.finance.imports.queued": {
+    "defaultMessage": "Started an import of {provider}. The audit log records it.",
+    "description": "Result of starting an import on the costs screen."
+  },
+  "admin.finance.imports.too_soon": {
+    "defaultMessage": "An import of this provider ran in the last hour. Try again later.",
+    "description": "Error of an import started again within the hour on the costs screen."
+  },
+  "admin.finance.imports.failed": {
+    "defaultMessage": "Could not start the import: {reason}",
+    "description": "Error of starting an import on the costs screen, with the server's reason."
+  },
+  "admin.audit_log.action.cost_item_created": {
+    "defaultMessage": "Cost recorded",
+    "description": "Kind of an audited operation: an administrator recorded a cost of the instance."
+  },
+  "admin.audit_log.action.cost_item_relabeled": {
+    "defaultMessage": "Cost changed",
+    "description": "Kind of an audited operation: an administrator changed the name, provider, category, or memo of a cost."
+  },
+  "admin.audit_log.action.cost_item_price_revised": {
+    "defaultMessage": "Cost price changed",
+    "description": "Kind of an audited operation: an administrator changed the price of a cost from a date on."
+  },
+  "admin.audit_log.action.cost_item_end_changed": {
+    "defaultMessage": "Cost end changed",
+    "description": "Kind of an audited operation: an administrator set or removed the end of a regular cost."
+  },
+  "admin.audit_log.action.cost_item_canceled": {
+    "defaultMessage": "Cost deleted",
+    "description": "Kind of an audited operation: an administrator removed a cost recorded by mistake from every period."
+  },
+  "admin.audit_log.target_kind.cost_item": {
+    "defaultMessage": "Cost",
+    "description": "Kind of target of an audited operation: a cost of the instance, shown by its name."
   }
 }

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The cut of an imported provider's billing months: the IANA time zone they are kept in
+  (`UTC`, `America/Los_Angeles`), as the provider bills them.
+type: object
+required: [source, provider, time_zone]
+properties:
+  source:
+    $ref: ./BillingSourceName.yaml
+  provider:
+    type: string
+  time_zone:
+    type: string

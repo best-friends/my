@@ -15,7 +15,7 @@ Web クライアントは、スタッフの画面を 2 つに分けます（[ADR
 | 区分 | 権限 | 画面 |
 | --- | --- | --- |
 | モデレーション（`/moderation`） | `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit` | 通報（`/moderation/reports`）・異議申し立て（`/moderation/appeals`）・アカウント（`/moderation/accounts`）・登録の審査（`/moderation/registrations`）・登録の拒否リスト（`/moderation/signup-blocks`）・招待（`/moderation/invites`）・ドメインへの処分（`/moderation/domain-actions`）・連合先（`/moderation/instances`）・監査ログ（`/moderation/audit-log`） |
-| サーバー管理（`/admin`） | `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs`・`manage_login_recovery`・`manage_custom_emojis`・`manage_webhooks`・`manage_announcements`・`manage_finance` | サーバーの設定（`/admin/settings`）・ルール（`/admin/rules`）・規約とポリシー（`/admin/documents`）・ジョブのキューと失敗したジョブ（`/admin/jobs`）・カスタム絵文字（`/admin/custom-emojis`）・お知らせ（`/admin/announcements`）・Webhook（`/admin/webhooks`）。`manage_login_recovery`（ログインの回復: 二要素認証の解除とパスワードリセットのリンクの発行）はアカウントのページ（`/moderation/accounts/{id}`、`manage_accounts` も要る）の区画に出ます。`manage_finance`（費用と利用料金の取り込み）は管理 API（`/admin/billing_imports`）で使います |
+| サーバー管理（`/admin`） | `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs`・`manage_login_recovery`・`manage_custom_emojis`・`manage_webhooks`・`manage_announcements`・`manage_finance` | サーバーの設定（`/admin/settings`）・ルール（`/admin/rules`）・規約とポリシー（`/admin/documents`）・ジョブのキューと失敗したジョブ（`/admin/jobs`）・カスタム絵文字（`/admin/custom-emojis`）・お知らせ（`/admin/announcements`）・Webhook（`/admin/webhooks`）・費用と利用料金の取り込み（`/admin/finance`、`manage_finance`）。`manage_login_recovery`（ログインの回復: 二要素認証の解除とパスワードリセットのリンクの発行）はアカウントのページ（`/moderation/accounts/{id}`、`manage_accounts` も要る）の区画に出ます |
 
 - 「モデレーション」のバッジは、未解決の通報・承認待ちの登録・審査待ちの異議申し立ての合計です（[モデレーターへの通知と未対応の件数](#モデレーターへの通知と未対応の件数)）。「管理」には件数を出しません。
 - 組み込みの `moderator` は `manage_reports`・`manage_accounts`・`view_audit` だけを持ち、「管理」は出ません。ドメインへの処分と連合先の画面（`manage_domains`）も出ないので、
@@ -308,6 +308,7 @@ my admin report reopen <report id>
 | `announcement` | `announcement_created`・`announcement_updated`・`announcement_published`・`announcement_withdrawn`（お知らせの作成・変更・公開・取り下げ） |
 | `invite` | `invite_created`・`invite_revoked`（招待の作成・失効。対象の名前はコードの先頭 4 文字） |
 | `billing_source` | `billing_import_queued`（利用料金の取り込みを手で始めた。対象の名前は事業者の名前） |
+| `cost_item` | `cost_item_created`・`cost_item_relabeled`・`cost_item_price_revised`・`cost_item_end_changed`・`cost_item_canceled`（費用の登録・名前などの変更・金額の改定・終了日の変更・取り消し。対象の名前は項目の名前） |
 
 一覧は、対象が今もあるかを示します。保持期間を過ぎて消えたアカウント・通報・異議申し立て・登録の拒否と、削除されたロール・カスタム絵文字・webhook は、記録時の名前だけを出し、画面へのリンクを出しません。
 

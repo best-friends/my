@@ -295,6 +295,11 @@ export const auditActions = [
   "account_statuses_refetch_queued",
   "domain_statuses_refetch_queued",
   "billing_import_queued",
+  "cost_item_created",
+  "cost_item_relabeled",
+  "cost_item_price_revised",
+  "cost_item_end_changed",
+  "cost_item_canceled",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -315,6 +320,7 @@ export const auditTargetKinds = [
   "invite",
   "relay",
   "billing_source",
+  "cost_item",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

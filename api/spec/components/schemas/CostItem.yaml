@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A cost of the instance that is not canceled (ADR-0067 §2), with its current label and end
+  and every price revision. Never published: the public totals carry no item.
+type: object
+required: [id, schedule, interval, starts_on, name, provider, category, memo, prices, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  schedule:
+    $ref: ./CostSchedule.yaml
+  interval:
+    description: The N of every N weeks, months, or years; 1 for `once`.
+    type: integer
+    minimum: 1
+    maximum: 99
+  starts_on:
+    $ref: ./CalendarDate.yaml
+  ends_on:
+    $ref: ./CalendarDate.yaml
+  name:
+    type: string
+  provider:
+    description: Who is paid, as written; the breakdown groups it in NFKC and lower case.
+    type: string
+  category:
+    $ref: ./CostCategory.yaml
+  memo:
+    description: The operator's note, never published; empty for none.
+    type: string
+  prices:
+    description: |
+      Every price revision, in the order they were recorded; the first one starts on
+      `starts_on`. `ends_on` is the last date a payment can fall on (included), omitted for
+      no end; `starts_on` is the first payment date, the payment date of `once`.
+    type: array
+    items:
+      $ref: ./CostPriceRevision.yaml
+  created_at:
+    type: string
+    format: date-time

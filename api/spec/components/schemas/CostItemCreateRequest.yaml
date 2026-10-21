@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A new cost item. The schedule and the start date never change: to change them, end the
+  item and record a new one. `ends_on` is the last date a payment can fall on, omitted for
+  no end; `price` is the price of every payment from the start date, 0 or more.
+type: object
+required: [schedule, interval, starts_on, name, provider, category, price]
+properties:
+  schedule:
+    $ref: ./CostSchedule.yaml
+  interval:
+    description: The N of every N weeks, months, or years, 1 to 99; 1 for `once`.
+    type: integer
+  starts_on:
+    $ref: ./CalendarDate.yaml
+  ends_on:
+    $ref: ./CalendarDate.yaml
+  name:
+    description: 1 to 100 characters without control characters.
+    type: string
+  provider:
+    description: 1 to 100 characters without control characters.
+    type: string
+  category:
+    $ref: ./CostCategory.yaml
+  memo:
+    description: Up to 10,000 characters, never published.
+    type: string
+  price:
+    $ref: ./Money.yaml

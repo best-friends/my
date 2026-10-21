@@ -69,6 +69,11 @@ const (
 	AuditAccountStatusesRefetchQueued = moderation.AuditAccountStatusesRefetchQueued
 	AuditDomainStatusesRefetchQueued  = moderation.AuditDomainStatusesRefetchQueued
 	AuditBillingImportQueued          = moderation.AuditBillingImportQueued
+	AuditCostItemCreated              = moderation.AuditCostItemCreated
+	AuditCostItemRelabeled            = moderation.AuditCostItemRelabeled
+	AuditCostItemPriceRevised         = moderation.AuditCostItemPriceRevised
+	AuditCostItemEndChanged           = moderation.AuditCostItemEndChanged
+	AuditCostItemCanceled             = moderation.AuditCostItemCanceled
 
 	AuditTargetUser          = moderation.AuditTargetUser
 	AuditTargetSetting       = moderation.AuditTargetSetting
@@ -82,6 +87,7 @@ const (
 	AuditTargetStatus        = moderation.AuditTargetStatus
 	AuditTargetDomain        = moderation.AuditTargetDomain
 	AuditTargetBillingSource = moderation.AuditTargetBillingSource
+	AuditTargetCostItem      = moderation.AuditTargetCostItem
 )
 
 // AuditActorSystem is moderation.AuditActorSystem, the server itself, and AuditActorRemote
@@ -185,7 +191,8 @@ type AuditTarget struct {
 // appeals, and sign-up blocks erased (past their retention, ADR-0038), and roles, custom emoji,
 // webhooks, and relays deleted (through Deps.AuditTargets). It looks up each kind of target once for all
 // the entries. A domain, a user, a setting, a rule, an announcement, and an invite are never
-// removed, and a status has no operation recorded on it; none of these is reported gone.
+// removed, a canceled cost item keeps its rows, and a status has no operation recorded on it;
+// none of these is reported gone.
 func (s *Service) GoneAuditTargets(ctx context.Context, entries []moderation.AuditEntry) (map[AuditTarget]bool, error) {
 	ids := map[moderation.AuditTargetKind][]string{}
 	seen := map[AuditTarget]bool{}

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+  payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+  more weeks) by day over the days up to the next payment, with the cumulative rounding;
+  the other payments stay on their dates. `cash` places every payment on its date. Imported
+  usage charges spread by day over their billing period under both.
+type: string
+enum: [amortized, cash]

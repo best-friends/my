@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listCostItems
+  summary: List the cost items
+  description: |
+    The instance's cost items that are not canceled, newest first (ADR-0067, FR-901).
+    Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of cost items.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CostItemPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createCostItem
+  summary: Record a cost item
+  description: |
+    Records a cost of the instance: once, or every N weeks, months, or years from the start
+    date (ADR-0067 §3). A value the server rejects is a 422 naming it: `interval` outside 1
+    to 99 (1 for `once`), an invalid date, `ends_on` before `starts_on`, an empty or too long
+    `name` or `provider`, a too long `memo`, an unknown currency, a negative amount, or an
+    amount with more digits than its currency (`price`). Recorded in the audit log.
+    Needs the `manage_finance` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CostItemCreateRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/CostItem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

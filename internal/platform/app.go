@@ -714,7 +714,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Refetches: a.Refetches,
 		// The billing imports (ADR-0068).
 		BillingImports: a.Finance,
-		RateLimiter:    a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+		// The instance's costs (ADR-0067).
+		Costs:       a.Finance,
+		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})
 	// The data of the webhook messages is the admin API's representation (ADR-0060).

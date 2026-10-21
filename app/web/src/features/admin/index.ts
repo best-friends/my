@@ -38,3 +38,7 @@ export { RelaySettings } from "./components/RelaySettings";
 // The roles: creating them and changing their positions and permissions (FR-720), for manage_roles. Their queries
 // are those of the moderation feature, which shows an account's roles.
 export { RoleSettings } from "./components/RoleSettings";
+// The instance's costs: recording them, their totals by week, month and year, and the state of the billing imports
+// (ADR-0067, ADR-0068), for manage_finance.
+export { billingImportsQueryOptions, type CostBasis, type CostGranularity, costItemsQueryOptions, costTotalsQueryOptions, deviceToday } from "./api/finance";
+export { FinanceSettings } from "./components/FinanceSettings";

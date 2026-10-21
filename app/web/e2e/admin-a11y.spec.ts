@@ -34,7 +34,7 @@ const moderator = {
   ai_opt_out: false,
   source: { note: "", fields: [] },
   posting: { visibility_ceiling: "public", visibilities: ["public", "local", "unlisted", "private", "direct"] },
-  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks", "manage_roles", "manage_announcements"],
+  permissions: ["manage_reports", "manage_accounts", "view_audit", "manage_domains", "manage_invites", "manage_jobs", "manage_settings", "manage_rules", "manage_custom_emojis", "manage_webhooks", "manage_roles", "manage_announcements", "manage_finance"],
 };
 
 /** The reported account: a long display name, local. */
@@ -428,11 +428,48 @@ async function moderatorServer(page: Page) {
     if (key === `GET /admin/webhooks/${webhook.id}/deliveries`) return json(route, { items: [webhookDelivery] });
     if (key === "GET /admin/relays") return json(route, { items: [relay] });
     if (key === "GET /admin/roles") return json(route, { items: roles });
+    if (key === "GET /admin/cost_items") return json(route, { items: [costItem] });
+    if (key === "GET /admin/cost_totals") return json(route, costTotals);
+    if (key === "GET /admin/billing_imports") return json(route, { items: [] });
     if (/^GET \/admin\/accounts\/[^/]+\/roles$/.test(key)) return json(route, { items: key.includes(moderator.id) ? roles.slice(0, 1) : [] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);
   });
   return issued;
 }
+
+/** A yearly cost with a long provider name, as GET /admin/cost_items lists it. */
+const costItem: Schemas["CostItem"] = {
+  id: "0192f0c4-7a8e-7000-8000-0000000000a1",
+  schedule: "years",
+  interval: 1,
+  starts_on: "2026-04-10",
+  name: "example.com",
+  provider: "the-registrar-of-a-very-long-domain-name-that-does-not-wrap.example",
+  category: "domain",
+  memo: "",
+  prices: [{ effective_on: "2026-04-10", price: { amount: "1650", currency: "JPY" }, revised_at: "2026-04-10T00:00:00Z" }],
+  created_at: "2026-04-10T00:00:00Z",
+};
+
+/** The totals of the costs screen: one month in two currencies with an estimate. */
+const costTotals: Schemas["CostTotals"] = {
+  granularity: "month",
+  basis: "amortized",
+  periods: [
+    {
+      label: "2026-10",
+      starts_on: "2026-10-01",
+      ends_on: "2026-10-31",
+      totals: [
+        { amount: "140", currency: "JPY" },
+        { amount: "31.24", currency: "USD" },
+      ],
+      breakdown: [{ provider: "registrar", category: "domain", amount: { amount: "140", currency: "JPY" } }],
+      estimated: true,
+    },
+  ],
+  rules: { week_start: "monday", sources: [{ source: "aws", provider: "AWS", time_zone: "UTC" }] },
+};
 
 /** The terms of service, as GET /admin/instance_texts lists them. */
 const documentText: Schemas["AdminInstanceText"] = { key: "terms", body: "# Accounts\n\nBe kind.", revised_at: "2026-10-12T08:00:00Z" };
@@ -482,6 +519,7 @@ const adminPages: Readonly<Record<string, { path: string; ready: string | { valu
   "admin.theme": { path: "/admin/theme", ready: { value: "#fdfdf6" } },
   "admin.rules": { path: "/admin/rules", ready: rule.hint ?? "" },
   "admin.roles": { path: "/admin/roles", ready: roles[2]?.key ?? "" },
+  "admin.finance": { path: "/admin/finance", ready: costItem.provider },
   "moderation.invites": { path: "/moderation/invites", ready: invite.code },
 };
 

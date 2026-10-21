@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The amount of a provider (in NFKC and lower case, which groups the costs), category, and
+  currency in a period.
+type: object
+required: [provider, category, amount]
+properties:
+  provider:
+    type: string
+  category:
+    $ref: ./CostCategory.yaml
+  amount:
+    $ref: ./Money.yaml

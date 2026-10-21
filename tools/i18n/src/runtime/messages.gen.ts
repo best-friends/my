@@ -822,6 +822,16 @@ export interface MessageArgs {
   "client:admin.audit_log.action.appeal_upheld": {};
   /** Billing import started */
   "client:admin.audit_log.action.billing_import_queued": {};
+  /** Cost deleted */
+  "client:admin.audit_log.action.cost_item_canceled": {};
+  /** Cost recorded */
+  "client:admin.audit_log.action.cost_item_created": {};
+  /** Cost end changed */
+  "client:admin.audit_log.action.cost_item_end_changed": {};
+  /** Cost price changed */
+  "client:admin.audit_log.action.cost_item_price_revised": {};
+  /** Cost changed */
+  "client:admin.audit_log.action.cost_item_relabeled": {};
   /** Custom emoji copied from another server */
   "client:admin.audit_log.action.custom_emoji_copied": {};
   /** Custom emoji registered */
@@ -982,6 +992,8 @@ export interface MessageArgs {
   "client:admin.audit_log.target_kind.appeal": {};
   /** Billing source */
   "client:admin.audit_log.target_kind.billing_source": {};
+  /** Cost */
+  "client:admin.audit_log.target_kind.cost_item": {};
   /** Custom emoji */
   "client:admin.audit_log.target_kind.custom_emoji": {};
   /** Domain */
@@ -1404,6 +1416,286 @@ export interface MessageArgs {
   "client:admin.domain.ascii": { domain: string };
   /** {unicode} ({ascii}) */
   "client:admin.domain.both": { ascii: string; unicode: string };
+  /** Amount */
+  "client:admin.finance.amount": {};
+  /** In the currency's main unit, such as 1650 for yen or 12.34 for dollars. */
+  "client:admin.finance.amount.description": {};
+  /** Enter an amount such as 1650 or 12.34. */
+  "client:admin.finance.amount.invalid": {};
+  /** How payments are counted */
+  "client:admin.finance.basis": {};
+  /** Spread over the period paid for */
+  "client:admin.finance.basis.amortized": {};
+  /** Shows what a month or a week costs: a yearly payment counts by day until the next one. */
+  "client:admin.finance.basis.amortized.description": {};
+  /** On the payment date */
+  "client:admin.finance.basis.cash": {};
+  /** Shows what was paid when: compare it with your statements. */
+  "client:admin.finance.basis.cash.description": {};
+  /** No costs in this period. */
+  "client:admin.finance.breakdown.empty": {};
+  /** Breakdown of {period} */
+  "client:admin.finance.breakdown.title": { period: string };
+  /** Cancel */
+  "client:admin.finance.cancel_dialog": {};
+  /** Delete */
+  "client:admin.finance.cancel_item": {};
+  /** Delete: {name} */
+  "client:admin.finance.cancel_one": { name: string };
+  /** It leaves every period, past ones included, and cannot be undone. To stop a subscription and keep its past payments, set its end instead. */
+  "client:admin.finance.cancel.description": {};
+  /** Delete {name}? */
+  "client:admin.finance.cancel.title": { name: string };
+  /** Deleted {name}. The audit log records the change. */
+  "client:admin.finance.canceled": { name: string };
+  /** Category */
+  "client:admin.finance.category": {};
+  /** Servers */
+  "client:admin.finance.category.compute": {};
+  /** Database */
+  "client:admin.finance.category.database": {};
+  /** Domain */
+  "client:admin.finance.category.domain": {};
+  /** Email */
+  "client:admin.finance.category.email": {};
+  /** Network */
+  "client:admin.finance.category.network": {};
+  /** Other */
+  "client:admin.finance.category.other": {};
+  /** Software */
+  "client:admin.finance.category.software": {};
+  /** Storage */
+  "client:admin.finance.category.storage": {};
+  /** Could not change the cost: {reason} */
+  "client:admin.finance.change_failed": { reason: string };
+  /** Close */
+  "client:admin.finance.close": {};
+  /** Record the cost */
+  "client:admin.finance.create": {};
+  /** Could not record the cost: {reason} */
+  "client:admin.finance.create_failed": { reason: string };
+  /** Recorded {name}. The audit log records the change. */
+  "client:admin.finance.created": { name: string };
+  /** Recorded */
+  "client:admin.finance.created_at": {};
+  /** Currency */
+  "client:admin.finance.currency": {};
+  /** Its three-letter code, such as JPY or USD. */
+  "client:admin.finance.currency.description": {};
+  /** Enter a three-letter currency code such as JPY. */
+  "client:admin.finance.currency.invalid": {};
+  /** Record the costs of running this server, paid once or regularly, and see their totals. The items, their names and memos are never published. */
+  "client:admin.finance.description": {};
+  /** Edit */
+  "client:admin.finance.edit": {};
+  /** Edit: {name} */
+  "client:admin.finance.edit_one": { name: string };
+  /** Edit the cost */
+  "client:admin.finance.edit.title": {};
+  /** From */
+  "client:admin.finance.effective_on": {};
+  /** The date cannot be before the first payment. */
+  "client:admin.finance.effective_on.before_start": {};
+  /** Payments on or after this date use the new price. To correct a mistake everywhere, use the first payment date. */
+  "client:admin.finance.effective_on.description": {};
+  /** No costs yet */
+  "client:admin.finance.empty": {};
+  /** Record what the server costs with the form above. */
+  "client:admin.finance.empty.description": {};
+  /** Set the end */
+  "client:admin.finance.end": {};
+  /** Set the end: {name} */
+  "client:admin.finance.end_one": { name: string };
+  /** {name} has no end now. The audit log records the change. */
+  "client:admin.finance.end_removed": { name: string };
+  /** Payments after this date stop; the past ones stay in the totals. Leave it empty to keep paying. */
+  "client:admin.finance.end.description": {};
+  /** End {name} */
+  "client:admin.finance.end.title": { name: string };
+  /** Set the end of {name}. The audit log records the change. */
+  "client:admin.finance.ended": { name: string };
+  /** Last payment by */
+  "client:admin.finance.ends_on": {};
+  /** The end cannot be before the first payment. */
+  "client:admin.finance.ends_on.before_start": {};
+  /** Optional. Payments after this date stop; leave it empty while you keep paying. */
+  "client:admin.finance.ends_on.description": {};
+  /** {count, plural, one {Every month} other {Every # months}} */
+  "client:admin.finance.every.months": { count: number };
+  /** Once */
+  "client:admin.finance.every.once": {};
+  /** {count, plural, one {Every week} other {Every # weeks}} */
+  "client:admin.finance.every.weeks": { count: number };
+  /** {count, plural, one {Every year} other {Every # years}} */
+  "client:admin.finance.every.years": { count: number };
+  /** Period */
+  "client:admin.finance.granularity": {};
+  /** Months */
+  "client:admin.finance.granularity.month": {};
+  /** Weeks */
+  "client:admin.finance.granularity.week": {};
+  /** Years */
+  "client:admin.finance.granularity.year": {};
+  /** Bytes billed this month */
+  "client:admin.finance.imports.bytes": {};
+  /** Failed: the query would scan more than its cap of billed bytes. */
+  "client:admin.finance.imports.error.bytes_cap": {};
+  /** Failed: the provider's answer could not be read. */
+  "client:admin.finance.imports.error.invalid_response": {};
+  /** Succeeded */
+  "client:admin.finance.imports.error.none": {};
+  /** Failed: the billing data is not enabled for the account. Turn it on at the provider. */
+  "client:admin.finance.imports.error.not_enabled": {};
+  /** Failed: the billing data was not found. Check the dataset or table in the deployment settings. */
+  "client:admin.finance.imports.error.not_found": {};
+  /** Failed: the credentials may not read the billing data. Grant the permission to the server's role or service account. */
+  "client:admin.finance.imports.error.permission": {};
+  /** Skipped: the cap of billed requests is reached. The next day's or month's import tries again. */
+  "client:admin.finance.imports.error.request_cap": {};
+  /** Failed: the provider throttled the requests. It is tried again. */
+  "client:admin.finance.imports.error.throttled": {};
+  /** Failed: the provider did not answer. It is tried again. */
+  "client:admin.finance.imports.error.unavailable": {};
+  /** Could not start the import: {reason} */
+  "client:admin.finance.imports.failed": { reason: string };
+  /** Corrected */
+  "client:admin.finance.imports.kind.correction": {};
+  /** Estimate */
+  "client:admin.finance.imports.kind.estimate": {};
+  /** Final */
+  "client:admin.finance.imports.kind.final": {};
+  /** Last attempt */
+  "client:admin.finance.imports.last_run": {};
+  /** Last successful import */
+  "client:admin.finance.imports.last_success": {};
+  /** Billing months of {provider} */
+  "client:admin.finance.imports.months": { provider: string };
+  /** Never */
+  "client:admin.finance.imports.never": {};
+  /** No billing imports */
+  "client:admin.finance.imports.none": {};
+  /** The server operator turns them on in the deployment settings (billing_sources). */
+  "client:admin.finance.imports.none.description": {};
+  /** Started an import of {provider}. The audit log records it. */
+  "client:admin.finance.imports.queued": { provider: string };
+  /** Billed requests this month (UTC) */
+  "client:admin.finance.imports.requests_month": {};
+  /** Billed requests today (UTC) */
+  "client:admin.finance.imports.requests_today": {};
+  /** Import now */
+  "client:admin.finance.imports.run": {};
+  /** Import now: {provider} */
+  "client:admin.finance.imports.run_one": { provider: string };
+  /** Billing months */
+  "client:admin.finance.imports.time_zone": {};
+  /** Billing imports */
+  "client:admin.finance.imports.title": {};
+  /** An import of this provider ran in the last hour. Try again later. */
+  "client:admin.finance.imports.too_soon": {};
+  /** {used} of {max} */
+  "client:admin.finance.imports.used_of": { max: string; used: string };
+  /** Every how many */
+  "client:admin.finance.interval": {};
+  /** 1 for every week, month, or year; 3 for every 3 months. Up to {max}. */
+  "client:admin.finance.interval.description": { max: string };
+  /** Enter a whole number from 1 to {max}. */
+  "client:admin.finance.interval.invalid": { max: string };
+  /** Recorded costs */
+  "client:admin.finance.list.title": {};
+  /** Memo */
+  "client:admin.finance.memo": {};
+  /** Only for the administrators; never published. */
+  "client:admin.finance.memo.description": {};
+  /** Name */
+  "client:admin.finance.name": {};
+  /** What it is, such as example.com or the main server. Up to {max} characters. */
+  "client:admin.finance.name.description": { max: string };
+  /** Record a cost */
+  "client:admin.finance.new.title": {};
+  /** Until it is ended */
+  "client:admin.finance.no_end": {};
+  /** Payment date */
+  "client:admin.finance.paid_on": {};
+  /** The date on the statement or invoice. */
+  "client:admin.finance.paid_on.description": {};
+  /** {range} ({week}) */
+  "client:admin.finance.period.week": { range: string; week: string };
+  /** Current price */
+  "client:admin.finance.price": {};
+  /** {amount} from {date} */
+  "client:admin.finance.price_from": { amount: string; date: string };
+  /** Price changes */
+  "client:admin.finance.prices": {};
+  /** Provider */
+  "client:admin.finance.provider": {};
+  /** Who you pay. The breakdown groups the same provider however it is capitalized. */
+  "client:admin.finance.provider.description": {};
+  /** Changed {name}. The audit log records the change. */
+  "client:admin.finance.relabeled": { name: string };
+  /** Fill this in. */
+  "client:admin.finance.required": {};
+  /** Change the price */
+  "client:admin.finance.revise": {};
+  /** Change the price: {name} */
+  "client:admin.finance.revise_one": { name: string };
+  /** Change the price of {name} */
+  "client:admin.finance.revise.title": { name: string };
+  /** Changed the price of {name}. The audit log records the change. */
+  "client:admin.finance.revised": { name: string };
+  /** A payment for more than a month is spread by day from its date until the day before the next payment, rounded so that the days add up to the amount paid. Other payments count on their dates. */
+  "client:admin.finance.rules.amortized": {};
+  /** Every payment counts on its payment date. */
+  "client:admin.finance.rules.cash": {};
+  /** Each currency is totaled on its own and never converted. */
+  "client:admin.finance.rules.currencies": {};
+  /** Costs are dated by calendar day, as on the statement, without a time zone: the totals are the same for everyone. */
+  "client:admin.finance.rules.dates": {};
+  /** A month that its provider has not closed is an estimate and may still change. */
+  "client:admin.finance.rules.estimated": {};
+  /** {provider} bills by month in the {timeZone} time zone; its charges are spread by day over each billing month. */
+  "client:admin.finance.rules.source": { provider: string; timeZone: string };
+  /** How the periods are counted */
+  "client:admin.finance.rules.title": {};
+  /** Weeks run from Monday to Sunday (ISO 8601). A week across the new year is split between the two years. */
+  "client:admin.finance.rules.week_start": {};
+  /** Save */
+  "client:admin.finance.save": {};
+  /** Payment */
+  "client:admin.finance.schedule": {};
+  /** Regular payments are counted from the start date: a monthly payment on the 31st falls on the last day of shorter months. To change the schedule later, end the cost and record a new one. */
+  "client:admin.finance.schedule.description": {};
+  /** Every few months */
+  "client:admin.finance.schedule.months": {};
+  /** Once */
+  "client:admin.finance.schedule.once": {};
+  /** Every few weeks */
+  "client:admin.finance.schedule.weeks": {};
+  /** Every few years */
+  "client:admin.finance.schedule.years": {};
+  /** First payment */
+  "client:admin.finance.starts_on": {};
+  /** The date on the statement or invoice. */
+  "client:admin.finance.starts_on.description": {};
+  /** Record what running the server costs and see the totals by week, month, and year. */
+  "client:admin.finance.summary": {};
+  /** Costs */
+  "client:admin.finance.title": {};
+  /** Use at most {max} characters. */
+  "client:admin.finance.too_long": { max: string };
+  /** Totals by {granularity}, {basis} */
+  "client:admin.finance.totals.caption": { basis: string; granularity: string };
+  /** Includes estimates */
+  "client:admin.finance.totals.estimated": {};
+  /** Nothing */
+  "client:admin.finance.totals.none": {};
+  /** Period */
+  "client:admin.finance.totals.period": {};
+  /** {sum} + {amount} */
+  "client:admin.finance.totals.plus": { amount: string; sum: string };
+  /** Totals */
+  "client:admin.finance.totals.title": {};
+  /** Total */
+  "client:admin.finance.totals.total": {};
   /** Your roles grant none of the permissions that the server administration screens need. An administrator can grant them. */
   "client:admin.home.none.description": {};
   /** No server administration screens for your roles */
