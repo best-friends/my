@@ -59,6 +59,10 @@
     "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ƒȧȧṽǿǿŭŭřīŧḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.authorize.scope.read_finance": {
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗ īƞşŧȧȧƞƈḗḗ'ş ƈǿǿşŧş, ȧȧş ƒȧȧř ȧȧş ẏǿǿŭŭř řǿǿŀḗḗş ȧȧŀŀǿǿẇ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.authorize.scope.read_follows": {
     "defaultMessage": "[Řḗḗȧȧḓ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇş ȧȧƞḓ ƒǿǿŀŀǿǿẇ řḗḗɋŭŭḗḗşŧş]",
     "description": "Generated from en by tools/i18n; do not edit."

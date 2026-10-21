@@ -61,6 +61,11 @@ tags:
     description: Real-time updates of the home timeline, the notifications, and the announcements.
   - name: announcements
     description: The server's announcements to every local user and which of them the user has read.
+  - name: finance
+    description: |
+      The instance's finances as the holders of the `view_finance` permission read them, as far
+      as the instance settings show (ADR-0070 §5). The operations need a `read` scope and the
+      `view_finance` or the `manage_finance` permission, never an `admin` scope.
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
@@ -2759,6 +2764,64 @@ paths:
             text/event-stream:
               schema:
                 type: string
+        default:
+          $ref: '#/components/responses/Problem'
+  /finance/cost_totals:
+    get:
+      operationId: getFinanceCostTotals
+      summary: Total the costs by period for the finance viewers
+      description: |
+        The totals of the instance's costs for the holders of `view_finance` (ADR-0070 §5). It
+        takes the query of `GET /admin/cost_totals` and always answers its totals, their breakdown
+        by provider, category, and currency, and the rules that cut the periods. Each period adds
+        `items`, the amount of each cost item and each service of the imported costs, only while
+        the instance setting `finance_viewer_item_names` or `finance_viewer_item_memos` is on: an
+        item line carries `name` while names are shown and `memo` while memos are shown, so with
+        memos only it has a memo and no name. A holder of `manage_finance` reads every item line
+        with its name and memo whatever the settings. `viewer` reports the three settings. No
+        answer carries who paid what, the revisions of the prices, or who recorded the items. More
+        than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422 naming `to`.
+        Needs the `view_finance` or the `manage_finance` permission (a 403
+        `/api/v1/problems/missing-permission` otherwise).
+      tags:
+        - finance
+      security:
+        - oauth2:
+            - read:finance
+      parameters:
+        - name: granularity
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CostGranularity'
+        - name: from
+          in: query
+          required: true
+          description: A date in the first period.
+          schema:
+            $ref: '#/components/schemas/CalendarDate'
+        - name: to
+          in: query
+          required: true
+          description: A date in the last period.
+          schema:
+            $ref: '#/components/schemas/CalendarDate'
+        - name: basis
+          in: query
+          required: false
+          description: How the totals place a payment; `amortized` by default.
+          schema:
+            $ref: '#/components/schemas/CostBasis'
+      responses:
+        '200':
+          description: The totals.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceCostTotals'
         default:
           $ref: '#/components/responses/Problem'
   /admin/queue:
@@ -5824,6 +5887,7 @@ components:
             read:blocks: Read the accounts the user blocks.
             read:bookmarks: Read the user's bookmarks.
             read:favourites: Read the user's favourites.
+            read:finance: Read the totals of the instance's costs, as far as the user's roles allow.
             read:follows: Read follows and follow requests.
             read:mutes: Read the accounts and domains the user mutes.
             read:notifications: Read the user's notifications.
@@ -9925,6 +9989,120 @@ components:
           description: The six-digit code that the app shows now.
           type: string
           maxLength: 64
+    FinanceCostItemLine:
+      description: |
+        The amount of a cost item, or of a service of the imported costs, in a currency over a
+        period, with the provider (in NFKC and lower case) and the category of its breakdown line.
+        `name` is the item's name or the service, present only while the instance shows the names;
+        `memo` is the item's memo, present only while the instance shows the memos and the item has
+        one (an imported cost has none).
+      type: object
+      required:
+        - provider
+        - category
+        - amount
+      properties:
+        provider:
+          type: string
+        category:
+          $ref: '#/components/schemas/CostCategory'
+        amount:
+          $ref: '#/components/schemas/Money'
+        name:
+          type: string
+        memo:
+          type: string
+    FinanceCostPeriodTotal:
+      description: |
+        A week, month, or year of the totals, as in `CostPeriodTotal`, with the item lines of the
+        period: empty unless the instance shows the names or the memos of the items, and sorted by
+        provider, category, name, and currency; without the names, by provider,
+        category, currency, and the larger amount first.
+      type: object
+      required:
+        - label
+        - starts_on
+        - ends_on
+        - totals
+        - breakdown
+        - estimated
+        - items
+      properties:
+        label:
+          type: string
+        starts_on:
+          $ref: '#/components/schemas/CalendarDate'
+        ends_on:
+          $ref: '#/components/schemas/CalendarDate'
+        totals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Money'
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostBreakdownLine'
+        estimated:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinanceCostItemLine'
+    FinanceCostTotals:
+      description: |
+        The totals of the instance's costs as the holders of `view_finance` read them over the
+        periods from the one that holds `from` to the one that holds `to`, oldest first, and the
+        instance settings that decide what they read (ADR-0070 §5).
+      type: object
+      required:
+        - granularity
+        - basis
+        - periods
+        - rules
+        - viewer
+      properties:
+        granularity:
+          $ref: '#/components/schemas/CostGranularity'
+        basis:
+          $ref: '#/components/schemas/CostBasis'
+        periods:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinanceCostPeriodTotal'
+        rules:
+          $ref: '#/components/schemas/CostTotalsRules'
+        viewer:
+          $ref: '#/components/schemas/FinanceViewerSettings'
+    FinanceViewerIncome:
+      description: |
+        How much of the income the holders of `view_finance` read (the instance setting
+        `finance_viewer_income`, ADR-0070 §5). `totals`: the total of each currency by period;
+        `plans`: also the number of members of each plan. No value shows the amounts of each plan or
+        who paid.
+      type: string
+      enum:
+        - totals
+        - plans
+    FinanceViewerSettings:
+      description: |
+        What the holders of `view_finance` read of the instance's finances beyond the totals and
+        their breakdown (the instance settings of ADR-0070 §5): `item_names`
+        (`finance_viewer_item_names`) shows the names of the cost items and the services of the
+        imported costs, `item_memos` (`finance_viewer_item_memos`) the memos of the cost items, and
+        `income` (`finance_viewer_income`) the income as totals only or with the number of members
+        of each plan.
+      type: object
+      required:
+        - item_names
+        - item_memos
+        - income
+      properties:
+        item_names:
+          type: boolean
+        item_memos:
+          type: boolean
+        income:
+          $ref: '#/components/schemas/FinanceViewerIncome'
     FinanceVisibility:
       description: |
         How much of the instance's costs everyone may read (the instance setting
@@ -10232,6 +10410,9 @@ components:
         - require_media_description
         - link_cards_enabled
         - finance_visibility
+        - finance_viewer_item_names
+        - finance_viewer_item_memos
+        - finance_viewer_income
     InstanceSettingKind:
       description: |
         The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
@@ -11085,7 +11266,9 @@ components:
         default). `manage_custom_emojis`: the custom emoji, local and
         remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
         server's announcements to every local user. `manage_finance`: the instance's costs and
-        the state of the billing imports (only the built-in admin role by default). The others guard no client API operation
+        the state of the billing imports (only the built-in admin role by default). `view_finance`:
+        reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
+        permission outside the staff's areas (ADR-0070). The others guard no client API operation
         yet.
       type: string
       enum:
@@ -11103,6 +11286,7 @@ components:
         - manage_webhooks
         - manage_announcements
         - manage_finance
+        - view_finance
     PickerCustomEmoji:
       description: |
         A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts

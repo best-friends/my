@@ -26,7 +26,7 @@ export { isMissingPermission, pageQuery, type Permission, refreshAuditLog } from
 export { DateTime, DetailSection, DomainName, MissingPermission, RecordList, RequirePermission } from "./components/parts";
 export { type StaffPage, StaffMenuSection, StaffPages, useShownStaffPages } from "./components/StaffPages";
 export { type PagedList, toPagedList } from "./hooks/pagedList";
-export { useHasPermission } from "./hooks/usePermissions";
+export { useHasPermission, useViewerPermissions } from "./hooks/usePermissions";
 // The roles of the instance and of an account, which the roles screen (manage_roles) shares.
 export { accountRolesQueryOptions, rolesQueryOptions } from "./api/roles";
 // Remote servers, domain actions and the audit log, for manage_domains and view_audit.

@@ -1996,6 +1996,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/finance/cost_totals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Total the costs by period for the finance viewers
+         * @description The totals of the instance's costs for the holders of `view_finance` (ADR-0070 §5). It
+         *     takes the query of `GET /admin/cost_totals` and always answers its totals, their breakdown
+         *     by provider, category, and currency, and the rules that cut the periods. Each period adds
+         *     `items`, the amount of each cost item and each service of the imported costs, only while
+         *     the instance setting `finance_viewer_item_names` or `finance_viewer_item_memos` is on: an
+         *     item line carries `name` while names are shown and `memo` while memos are shown, so with
+         *     memos only it has a memo and no name. A holder of `manage_finance` reads every item line
+         *     with its name and memo whatever the settings. `viewer` reports the three settings. No
+         *     answer carries who paid what, the revisions of the prices, or who recorded the items. More
+         *     than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422 naming `to`.
+         *     Needs the `view_finance` or the `manage_finance` permission (a 403
+         *     `/api/v1/problems/missing-permission` otherwise).
+         */
+        get: operations["getFinanceCostTotals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/queue": {
         parameters: {
             query?: never;
@@ -6339,6 +6370,68 @@ export interface components {
             code: string;
         };
         /**
+         * @description The amount of a cost item, or of a service of the imported costs, in a currency over a
+         *     period, with the provider (in NFKC and lower case) and the category of its breakdown line.
+         *     `name` is the item's name or the service, present only while the instance shows the names;
+         *     `memo` is the item's memo, present only while the instance shows the memos and the item has
+         *     one (an imported cost has none).
+         */
+        FinanceCostItemLine: {
+            provider: string;
+            category: components["schemas"]["CostCategory"];
+            amount: components["schemas"]["Money"];
+            name?: string;
+            memo?: string;
+        };
+        /**
+         * @description A week, month, or year of the totals, as in `CostPeriodTotal`, with the item lines of the
+         *     period: empty unless the instance shows the names or the memos of the items, and sorted by
+         *     provider, category, name, and currency; without the names, by provider,
+         *     category, currency, and the larger amount first.
+         */
+        FinanceCostPeriodTotal: {
+            label: string;
+            starts_on: components["schemas"]["CalendarDate"];
+            ends_on: components["schemas"]["CalendarDate"];
+            totals: components["schemas"]["Money"][];
+            breakdown: components["schemas"]["CostBreakdownLine"][];
+            estimated: boolean;
+            items: components["schemas"]["FinanceCostItemLine"][];
+        };
+        /**
+         * @description The totals of the instance's costs as the holders of `view_finance` read them over the
+         *     periods from the one that holds `from` to the one that holds `to`, oldest first, and the
+         *     instance settings that decide what they read (ADR-0070 §5).
+         */
+        FinanceCostTotals: {
+            granularity: components["schemas"]["CostGranularity"];
+            basis: components["schemas"]["CostBasis"];
+            periods: components["schemas"]["FinanceCostPeriodTotal"][];
+            rules: components["schemas"]["CostTotalsRules"];
+            viewer: components["schemas"]["FinanceViewerSettings"];
+        };
+        /**
+         * @description How much of the income the holders of `view_finance` read (the instance setting
+         *     `finance_viewer_income`, ADR-0070 §5). `totals`: the total of each currency by period;
+         *     `plans`: also the number of members of each plan. No value shows the amounts of each plan or
+         *     who paid.
+         * @enum {string}
+         */
+        FinanceViewerIncome: "totals" | "plans";
+        /**
+         * @description What the holders of `view_finance` read of the instance's finances beyond the totals and
+         *     their breakdown (the instance settings of ADR-0070 §5): `item_names`
+         *     (`finance_viewer_item_names`) shows the names of the cost items and the services of the
+         *     imported costs, `item_memos` (`finance_viewer_item_memos`) the memos of the cost items, and
+         *     `income` (`finance_viewer_income`) the income as totals only or with the number of members
+         *     of each plan.
+         */
+        FinanceViewerSettings: {
+            item_names: boolean;
+            item_memos: boolean;
+            income: components["schemas"]["FinanceViewerIncome"];
+        };
+        /**
          * @description How much of the instance's costs everyone may read (the instance setting
          *     `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
          *     `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
@@ -6514,7 +6607,7 @@ export interface components {
          *     added; clients show the ones they know.
          * @enum {string}
          */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility";
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled" | "finance_visibility" | "finance_viewer_item_names" | "finance_viewer_item_memos" | "finance_viewer_income";
         /**
          * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
          *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
@@ -7077,11 +7170,13 @@ export interface components {
          *     default). `manage_custom_emojis`: the custom emoji, local and
          *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
          *     server's announcements to every local user. `manage_finance`: the instance's costs and
-         *     the state of the billing imports (only the built-in admin role by default). The others guard no client API operation
+         *     the state of the billing imports (only the built-in admin role by default). `view_finance`:
+         *     reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
+         *     permission outside the staff's areas (ADR-0070). The others guard no client API operation
          *     yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements" | "manage_finance";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements" | "manage_finance" | "view_finance";
         /**
          * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
          *     `:shortcode:` into the text.
@@ -10703,6 +10798,36 @@ export interface operations {
                 };
                 content: {
                     "text/event-stream": string;
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    getFinanceCostTotals: {
+        parameters: {
+            query: {
+                granularity: components["schemas"]["CostGranularity"];
+                /** @description A date in the first period. */
+                from: components["schemas"]["CalendarDate"];
+                /** @description A date in the last period. */
+                to: components["schemas"]["CalendarDate"];
+                /** @description How the totals place a payment; `amortized` by default. */
+                basis?: components["schemas"]["CostBasis"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The totals. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinanceCostTotals"];
                 };
             };
             default: components["responses"]["Problem"];

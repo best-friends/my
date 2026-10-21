@@ -387,6 +387,28 @@ describe("what the costs screen says of their publication", () => {
     expect(screen.getByRole("link", { name: "Change in the server settings" })).toHaveAttribute("href", "/admin/settings");
   });
 
+  test("shows what the holders of view_finance see", async () => {
+    server.use(
+      signedInHandler,
+      operatorHandler(["manage_finance"]),
+      http.get(`${apiBase}/finance/cost_totals`, () =>
+        HttpResponse.json({
+          ...monthTotals,
+          periods: monthTotals.periods.map((period) => ({ ...period, items: [] })),
+          viewer: { item_names: true, item_memos: false, income: "plans" },
+        } satisfies Schemas["FinanceCostTotals"]),
+      ),
+    );
+    serveVisibility("private");
+    await renderApp({ path: "/admin/finance" });
+
+    expect(
+      await screen.findByText(
+        "People who may read the finances see the names of the items, do not see their memos, and see the income with the members of each plan.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   test("shows that nothing is published, without the link for a viewer who may not change it", async () => {
     server.use(signedInHandler, operatorHandler(["manage_finance"]));
     serveVisibility("private");

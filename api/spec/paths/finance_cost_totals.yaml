@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getFinanceCostTotals
+  summary: Total the costs by period for the finance viewers
+  description: |
+    The totals of the instance's costs for the holders of `view_finance` (ADR-0070 §5). It
+    takes the query of `GET /admin/cost_totals` and always answers its totals, their breakdown
+    by provider, category, and currency, and the rules that cut the periods. Each period adds
+    `items`, the amount of each cost item and each service of the imported costs, only while
+    the instance setting `finance_viewer_item_names` or `finance_viewer_item_memos` is on: an
+    item line carries `name` while names are shown and `memo` while memos are shown, so with
+    memos only it has a memo and no name. A holder of `manage_finance` reads every item line
+    with its name and memo whatever the settings. `viewer` reports the three settings. No
+    answer carries who paid what, the revisions of the prices, or who recorded the items. More
+    than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422 naming `to`.
+    Needs the `view_finance` or the `manage_finance` permission (a 403
+    `/api/v1/problems/missing-permission` otherwise).
+  tags: [finance]
+  security:
+    - oauth2: ["read:finance"]
+  parameters:
+    - name: granularity
+      in: query
+      required: true
+      schema:
+        $ref: ../components/schemas/CostGranularity.yaml
+    - name: from
+      in: query
+      required: true
+      description: A date in the first period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: to
+      in: query
+      required: true
+      description: A date in the last period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: basis
+      in: query
+      required: false
+      description: How the totals place a payment; `amortized` by default.
+      schema:
+        $ref: ../components/schemas/CostBasis.yaml
+  responses:
+    "200":
+      description: The totals.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/FinanceCostTotals.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

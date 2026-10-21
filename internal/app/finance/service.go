@@ -275,6 +275,8 @@ type TotalsQuery struct {
 	// UntilToday stops the periods at the one that holds today in UTC, for the public totals
 	// (ADR-0067 §8): a To after today reads as today, and a From after today gives no period.
 	UntilToday bool
+	// Items adds the item lines to each period (finance.ItemizedTotals, ADR-0070 §5).
+	Items bool
 }
 
 // Totals returns the totals of the cost items that are not canceled and of the newest revision of
@@ -308,6 +310,9 @@ func (s *Service) Totals(ctx context.Context, q TotalsQuery) ([]finance.PeriodTo
 	imported, err := s.importedEntries(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("finance: read the imported costs: %w", err)
+	}
+	if q.Items {
+		return finance.ItemizedTotals(items, imported, q.Basis, periods), nil
 	}
 	return finance.Totals(items, imported, q.Basis, periods), nil
 }

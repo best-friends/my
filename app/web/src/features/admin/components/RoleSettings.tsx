@@ -59,6 +59,7 @@ const permissionLabels: Readonly<Record<Permission, ClientMessageKey>> = {
   manage_webhooks: "client:admin.roles.permission.manage_webhooks",
   manage_announcements: "client:admin.roles.permission.manage_announcements",
   manage_finance: "client:admin.roles.permission.manage_finance",
+  view_finance: "client:admin.roles.permission.view_finance",
 };
 
 /** The name of each badge color. */
@@ -74,9 +75,10 @@ const badgeColorLabels: Readonly<Record<BadgeColor, ClientMessageKey>> = {
   pink: "client:admin.roles.badge.color.pink",
 };
 
-const categoryLabels: Readonly<Record<"moderation" | "server", ClientMessageKey>> = {
+const categoryLabels: Readonly<Record<"moderation" | "server" | "member", ClientMessageKey>> = {
   moderation: "client:admin.roles.category.moderation",
   server: "client:admin.roles.category.server",
+  member: "client:admin.roles.category.member",
 };
 
 /** A role's key, an identifier that reads left to right in every locale. */

@@ -437,6 +437,9 @@ async function moderatorServer(page: Page) {
     if (key === "GET /admin/roles") return json(route, { items: roles });
     if (key === "GET /admin/cost_items") return json(route, { items: [costItem] });
     if (key === "GET /admin/cost_totals") return json(route, costTotals);
+    if (key === "GET /finance/cost_totals") {
+      return json(route, { ...costTotals, periods: costTotals.periods.map((period) => ({ ...period, items: [] })), viewer: { item_names: false, item_memos: false, income: "totals" } });
+    }
     if (key === "GET /admin/billing_imports") return json(route, { items: [] });
     if (/^GET \/admin\/accounts\/[^/]+\/roles$/.test(key)) return json(route, { items: key.includes(moderator.id) ? roles.slice(0, 1) : [] });
     return json(route, { type: "about:blank", title: "Not Found", status: 404 }, 404);

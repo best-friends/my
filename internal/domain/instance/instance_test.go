@@ -183,6 +183,30 @@ func TestDomainActionsVisibilitySettings(t *testing.T) {
 	}
 }
 
+// The finance viewers read neither the names nor the memos of the cost items, and the income as
+// totals, until the settings say otherwise (ADR-0070 §5).
+func TestFinanceViewerSettings(t *testing.T) {
+	var zero instance.Settings
+	if got, want := zero.FinanceViewer(), (instance.FinanceViewer{Income: instance.FinanceViewerIncomeTotals}); got != want {
+		t.Errorf("zero Settings FinanceViewer() = %+v, want %+v", got, want)
+	}
+	s := instance.NewSettings([]instance.CurrentSetting{
+		{Key: instance.SettingFinanceViewerItemNames, RevisionID: "r1", Value: "true"},
+		{Key: instance.SettingFinanceViewerItemMemos, RevisionID: "r2", Value: "true"},
+		{Key: instance.SettingFinanceViewerIncome, RevisionID: "r3", Value: "plans"},
+	})
+	if got, want := s.FinanceViewer(), (instance.FinanceViewer{ItemNames: true, ItemMemos: true, Income: instance.FinanceViewerIncomePlans}); got != want {
+		t.Errorf("FinanceViewer() = %+v, want %+v", got, want)
+	}
+	def, err := instance.Lookup(instance.SettingFinanceViewerIncome)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := def.Parse("amounts"); !errors.Is(err, instance.ErrInvalidValue) {
+		t.Errorf("Parse(amounts) = %v, want ErrInvalidValue", err)
+	}
+}
+
 func TestSupersedes(t *testing.T) {
 	rev := instance.SettingRevision{ID: "b"}
 	for _, tc := range []struct {

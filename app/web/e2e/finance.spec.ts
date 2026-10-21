@@ -136,6 +136,10 @@ async function serveApi(page: Page) {
       sent.push(`totals ${url.searchParams.get("granularity") ?? ""} ${url.searchParams.get("basis") ?? ""}`);
       return json(route, totals(url));
     }
+    if (key === "GET /finance/cost_totals") {
+      const viewer: Schemas["FinanceViewerSettings"] = { item_names: true, item_memos: false, income: "totals" };
+      return json(route, { ...totals(url), periods: totals(url).periods.map((period) => ({ ...period, items: [] })), viewer });
+    }
     if (key === "GET /admin/cost_items") return json(route, { items });
     if (key === "GET /admin/billing_imports") return json(route, { items: [awsImport] });
     if (key === "POST /admin/cost_items") {

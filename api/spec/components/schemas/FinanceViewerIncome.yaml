@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  How much of the income the holders of `view_finance` read (the instance setting
+  `finance_viewer_income`, ADR-0070 §5). `totals`: the total of each currency by period;
+  `plans`: also the number of members of each plan. No value shows the amounts of each plan or
+  who paid.
+type: string
+enum: [totals, plans]

@@ -353,13 +353,15 @@ type costTotalsQuery struct {
 	from, to    CalendarDate
 	basis       *CostBasis
 	// breakdown is whether the answer shows the breakdown by provider and category and the
-	// providers' rules; untilToday stops the periods at the one that holds today (ADR-0067 §8).
-	breakdown, untilToday bool
+	// providers' rules; untilToday stops the periods at the one that holds today (ADR-0067 §8);
+	// items adds the item lines to the periods (ADR-0070 §5).
+	breakdown, untilToday, items bool
 }
 
-// costTotals validates q and presents its totals, or returns the problem of an invalid query.
-func (s *Server) costTotals(ctx context.Context, q costTotalsQuery) (CostTotals, *problem, error) {
-	reject := func(p problem) (CostTotals, *problem, error) { return CostTotals{}, &p, nil }
+// readCostTotals validates q and reads its totals and the basis they use, or returns the
+// problem of an invalid query.
+func (s *Server) readCostTotals(ctx context.Context, q costTotalsQuery) ([]finance.PeriodTotal, CostBasis, *problem, error) {
+	reject := func(p problem) ([]finance.PeriodTotal, CostBasis, *problem, error) { return nil, "", &p, nil }
 	if !q.granularity.Valid() {
 		return reject(s.invalidParameterResponse(ctx, "granularity"))
 	}
@@ -380,12 +382,22 @@ func (s *Server) costTotals(ctx context.Context, q costTotalsQuery) (CostTotals,
 	}
 	totals, err := s.o.Costs.Totals(ctx, appfinance.TotalsQuery{
 		Granularity: finance.Granularity(q.granularity), From: from, To: to, Basis: finance.Basis(basis), UntilToday: q.untilToday,
+		Items: q.items,
 	})
 	switch {
 	case errors.Is(err, finance.ErrInvalidPeriod), errors.Is(err, finance.ErrTooManyPeriods):
 		return reject(s.unprocessable(ctx, "to"))
 	case err != nil:
-		return CostTotals{}, nil, fmt.Errorf("clientapi: total the costs: %w", err)
+		return nil, "", nil, fmt.Errorf("clientapi: total the costs: %w", err)
+	}
+	return totals, basis, nil, nil
+}
+
+// costTotals validates q and presents its totals, or returns the problem of an invalid query.
+func (s *Server) costTotals(ctx context.Context, q costTotalsQuery) (CostTotals, *problem, error) {
+	totals, basis, p, err := s.readCostTotals(ctx, q)
+	if err != nil || p != nil {
+		return CostTotals{}, p, err
 	}
 	rules := CostTotalsRules{WeekStart: CostTotalsRulesWeekStartMonday, Sources: []CostSourceRule{}}
 	if q.breakdown {
@@ -393,24 +405,30 @@ func (s *Server) costTotals(ctx context.Context, q costTotalsQuery) (CostTotals,
 	}
 	out := CostTotals{Granularity: q.granularity, Basis: basis, Periods: make([]CostPeriodTotal, 0, len(totals)), Rules: rules}
 	for _, t := range totals {
-		p := CostPeriodTotal{
-			Label: t.Period.Label, StartsOn: t.Period.Range.Start.String(), EndsOn: t.Period.Range.End.String(), Estimated: t.Estimated,
-			Totals: make([]Money, 0, len(t.Totals)), Breakdown: []CostBreakdownLine{},
-		}
-		for _, m := range t.Totals {
-			p.Totals = append(p.Totals, newMoney(m))
-		}
-		if q.breakdown {
-			for _, line := range t.Breakdown {
-				p.Breakdown = append(p.Breakdown, CostBreakdownLine{
-					Provider: line.Key.Provider, Category: CostCategory(line.Key.Category),
-					Amount: newMoney(finance.Money{Minor: line.Amount, Currency: line.Key.Currency}),
-				})
-			}
-		}
-		out.Periods = append(out.Periods, p)
+		out.Periods = append(out.Periods, newCostPeriodTotal(t, q.breakdown))
 	}
 	return out, nil, nil
+}
+
+// newCostPeriodTotal presents the totals of a period, with their breakdown by provider and
+// category when breakdown is true.
+func newCostPeriodTotal(t finance.PeriodTotal, breakdown bool) CostPeriodTotal {
+	p := CostPeriodTotal{
+		Label: t.Period.Label, StartsOn: t.Period.Range.Start.String(), EndsOn: t.Period.Range.End.String(), Estimated: t.Estimated,
+		Totals: make([]Money, 0, len(t.Totals)), Breakdown: []CostBreakdownLine{},
+	}
+	for _, m := range t.Totals {
+		p.Totals = append(p.Totals, newMoney(m))
+	}
+	if breakdown {
+		for _, line := range t.Breakdown {
+			p.Breakdown = append(p.Breakdown, CostBreakdownLine{
+				Provider: line.Key.Provider, Category: CostCategory(line.Key.Category),
+				Amount: newMoney(finance.Money{Minor: line.Amount, Currency: line.Key.Currency}),
+			})
+		}
+	}
+	return p
 }
 
 // GetInstanceCostTotals serves GET /api/v1/instance/cost_totals: the totals that the instance

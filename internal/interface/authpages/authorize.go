@@ -213,6 +213,7 @@ var scopeDescriptions = map[string]func(*i18n.Localizer) string{
 	identity.ScopeReadBlocks:         (*i18n.Localizer).ServerAuthAuthorizeScopeReadBlocks,
 	identity.ScopeReadBookmarks:      (*i18n.Localizer).ServerAuthAuthorizeScopeReadBookmarks,
 	identity.ScopeReadFavourites:     (*i18n.Localizer).ServerAuthAuthorizeScopeReadFavourites,
+	identity.ScopeReadFinance:        (*i18n.Localizer).ServerAuthAuthorizeScopeReadFinance,
 	identity.ScopeReadFollows:        (*i18n.Localizer).ServerAuthAuthorizeScopeReadFollows,
 	identity.ScopeReadMutes:          (*i18n.Localizer).ServerAuthAuthorizeScopeReadMutes,
 	identity.ScopeReadNotifications:  (*i18n.Localizer).ServerAuthAuthorizeScopeReadNotifications,

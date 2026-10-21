@@ -35,6 +35,10 @@ const (
 	// PermManageFinance: record the instance's costs, read their totals, and see and start the
 	// billing imports (ADR-0067 §7, ADR-0068 §9). It is server administration (ADR-0058 §4).
 	PermManageFinance Permission = "manage_finance"
+	// PermViewFinance: read the totals of the instance's costs, with as much of the cost items as
+	// the instance settings finance_viewer_* show, without recording or changing anything
+	// (ADR-0070 §5). It is a member permission (ADR-0070 §1).
+	PermViewFinance Permission = "view_finance"
 )
 
 // AllPermissions lists every permission.
@@ -43,27 +47,31 @@ func AllPermissions() []Permission {
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
-		PermManageFinance,
+		PermManageFinance, PermViewFinance,
 	}
 }
 
-// PermissionCategory is the area of the staff's work that a permission belongs to (ADR-0058):
+// PermissionCategory is the area that a permission belongs to (ADR-0058 §4, ADR-0070 §1):
 // moderation decides on people, posts and remote servers case by case; server administration
-// changes the server itself as a whole.
+// changes the server itself as a whole; a member permission lets its holder make and change
+// their own things or only read, never change the rows of others or the whole server.
 type PermissionCategory string
 
 // Permission categories.
 const (
 	CategoryModeration PermissionCategory = "moderation"
 	CategoryServer     PermissionCategory = "server"
+	CategoryMember     PermissionCategory = "member"
 )
 
-// Category returns the area that p belongs to. The web client's navigation and `my admin role`
-// group the permissions by it.
+// Category returns the area that p belongs to; a permission of no known area is server
+// administration. The web client's navigation and `my admin role` group the permissions by it.
 func (p Permission) Category() PermissionCategory {
 	switch p {
 	case PermManageReports, PermManageAccounts, PermManageDomains, PermManageInvites, PermViewAudit:
 		return CategoryModeration
+	case PermViewFinance:
+		return CategoryMember
 	default:
 		return CategoryServer
 	}

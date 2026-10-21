@@ -1634,6 +1634,8 @@ export interface MessageArgs {
   "client:admin.finance.too_long": { max: string };
   /** Totals */
   "client:admin.finance.totals.title": {};
+  /** {names, select, shown {People who may read the finances see the names of the items,} other {People who may read the finances do not see the names of the items,}} {memos, select, shown {see their memos,} other {do not see their memos,}} {income, select, plans {and see the income with the members of each plan.} other {and see the totals of the income only.}} */
+  "client:admin.finance.viewer": { income: "plans" | (string & {}); memos: "shown" | (string & {}); names: "shown" | (string & {}) };
   /** {visibility, select, totals {The about page publishes the totals of these costs, without their breakdown.} breakdown {The about page publishes the totals of these costs and their breakdown by provider and category.} other {These costs are not published.}} */
   "client:admin.finance.visibility": { visibility: "breakdown" | "totals" | (string & {}) };
   /** Change in the server settings */
@@ -2330,6 +2332,8 @@ export interface MessageArgs {
   "client:admin.roles.builtin.moderator": {};
   /** Cancel */
   "client:admin.roles.cancel": {};
+  /** Member features */
+  "client:admin.roles.category.member": {};
   /** Moderation */
   "client:admin.roles.category.moderation": {};
   /** Server administration */
@@ -2406,6 +2410,8 @@ export interface MessageArgs {
   "client:admin.roles.permission.manage_webhooks": {};
   /** Audit log */
   "client:admin.roles.permission.view_audit": {};
+  /** Read the finances */
+  "client:admin.roles.permission.view_finance": {};
   /** Choose the permissions the role grants. You can give or take only the permissions your own roles grant. */
   "client:admin.roles.permissions.description": {};
   /** None */
@@ -2646,6 +2652,26 @@ export interface MessageArgs {
   "client:admin.settings.finance.totals": {};
   /** Everyone sees the total of each currency by week, month, and year. */
   "client:admin.settings.finance.totals.description": {};
+  /** People whose roles let them read the finances see the totals and their breakdown by provider and category on the finances page, whatever is published. Choose what else they see. */
+  "client:admin.settings.finance.viewer.description": {};
+  /** Income */
+  "client:admin.settings.finance.viewer.income": {};
+  /** Totals and members of each plan */
+  "client:admin.settings.finance.viewer.income.plans": {};
+  /** Also how many members each plan has, never its amounts or who they are. */
+  "client:admin.settings.finance.viewer.income.plans.description": {};
+  /** Totals only */
+  "client:admin.settings.finance.viewer.income.totals": {};
+  /** The total of each currency by week, month, and year. */
+  "client:admin.settings.finance.viewer.income.totals.description": {};
+  /** Show the memos of the items */
+  "client:admin.settings.finance.viewer.item_memos": {};
+  /** The memos of the recorded costs, with their amounts. Memos may hold notes meant for the operators only. */
+  "client:admin.settings.finance.viewer.item_memos.description": {};
+  /** Show the names of the items */
+  "client:admin.settings.finance.viewer.item_names": {};
+  /** The names of the recorded costs and the services of the imported charges, with their amounts. */
+  "client:admin.settings.finance.viewer.item_names.description": {};
   /** What to publish */
   "client:admin.settings.finance.visibility": {};
   /** Default language */
@@ -3426,6 +3452,10 @@ export interface MessageArgs {
   "client:costs.granularity.week": {};
   /** Years */
   "client:costs.granularity.year": {};
+  /** No item has a cost in this period. */
+  "client:costs.items.empty": {};
+  /** Items of {period} */
+  "client:costs.items.title": { period: string };
   /** {range} ({week}) */
   "client:costs.period.week": { range: string; week: string };
   /** About this server */
@@ -3492,6 +3522,20 @@ export interface MessageArgs {
   "client:emoji.picker.title": {};
   /** Other */
   "client:emoji.picker.uncategorized": {};
+  /** Costs */
+  "client:finance.costs.title": {};
+  /** The running costs of this server, totaled from the operators' records, with what they are spent on by provider and category. Amounts in different currencies are totaled on their own and never converted. Nobody's payments are shown. */
+  "client:finance.description": {};
+  /** Couldn't load the finances */
+  "client:finance.failed": {};
+  /** {shown, select, both {This server shows the names and memos of the items.} names {This server shows the names of the items, not their memos.} memos {This server shows the memos of the items, not their names.} other {This server does not show the names or memos of the items.}} */
+  "client:finance.items_shown": { shown: "both" | "memos" | "names" | (string & {}) };
+  /** Loading the finances */
+  "client:finance.loading": {};
+  /** Try again */
+  "client:finance.retry": {};
+  /** Finances */
+  "client:finance.title": {};
   /** Home */
   "client:home.title": {};
   /** About this server */
@@ -4696,6 +4740,8 @@ export interface MessageArgs {
   "client:shell.nav.admin": {};
   /** Bookmarks */
   "client:shell.nav.bookmarks": {};
+  /** Finances */
+  "client:shell.nav.finance": {};
   /** Home */
   "client:shell.nav.home": {};
   /** Main */
@@ -5076,6 +5122,8 @@ export interface MessageArgs {
   "server:auth.authorize.scope.read_bookmarks": {};
   /** Read your favourites */
   "server:auth.authorize.scope.read_favourites": {};
+  /** Read the totals of the instance's costs, as far as your roles allow */
+  "server:auth.authorize.scope.read_finance": {};
   /** Read your follows and follow requests */
   "server:auth.authorize.scope.read_follows": {};
   /** Read the accounts and domains you mute */

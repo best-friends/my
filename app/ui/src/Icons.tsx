@@ -24,6 +24,7 @@ import {
   PiCaretRight,
   PiChartBarHorizontal,
   PiChartBarHorizontalFill,
+  PiCoins,
   PiDotsThreeBold,
   PiEye,
   PiEyeSlash,
@@ -125,6 +126,7 @@ export const iconTable = {
   SettingsIcon: { off: glyph(PiSlidersHorizontal, "PiSlidersHorizontal") },
   ModerationIcon: { off: glyph(PiShieldCheck, "PiShieldCheck") },
   AdminIcon: { off: glyph(PiWrench, "PiWrench") },
+  FinanceIcon: { off: glyph(PiCoins, "PiCoins") },
   MenuIcon: { off: glyph(PiList, "PiList") },
   AboutIcon: { off: glyph(PiInfo, "PiInfo") },
   // The arrow points into the door along the line, so it mirrors in right-to-left text.
@@ -303,6 +305,11 @@ export function ModerationIcon() {
 /** A wrench, for the server administration. */
 export function AdminIcon() {
   return renderIcon(iconTable.AdminIcon);
+}
+
+/** A stack of coins, for the finances of the server. */
+export function FinanceIcon() {
+  return renderIcon(iconTable.FinanceIcon);
 }
 
 /** Three lines, for the button that opens the menu with the rest of the navigation. */
