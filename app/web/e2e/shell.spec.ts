@@ -4,7 +4,7 @@
 // locale, so elements are found by role and position, and texts are compared with each other. The user's
 // navigation needs a session: `vite preview` has no API, so serveSignedIn answers as a signed-in user's server.
 import type { Page, Route } from "@playwright/test";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, imageVariants, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, imageVariants, servedImage, test } from "./fixtures";
 
 /** Alice, the signed-in user. */
 const alice = {
@@ -235,7 +235,7 @@ ${items.map((role) => `          - listitem:\n            - ${role}`).join("\n")
 test.describe("the sidebar of desktops", () => {
   /** A long name, which the sidebar cuts to one line; the link is still named by all of it. */
   const displayName = "Bartholomew Montgomery-Fitzwilliam the Third";
-  const avatar = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`;
+  const avatar = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`);
 
   test.beforeEach(async ({ page }) => {
     // vite preview has no API: answer the session refresh and the viewer's account as a signed-in user's server.

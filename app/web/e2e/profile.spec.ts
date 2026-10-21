@@ -6,7 +6,7 @@
 // role and position.
 import type { Page } from "@playwright/test";
 import type { components } from "../src/lib/api/schema.gen.ts";
-import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectTabWhollyVisible, imageVariants, localeDir, test } from "./fixtures";
+import { expect, expectNoAxeViolations, expectNoHorizontalScroll, expectTabWhollyVisible, imageVariants, localeDir, servedImage, test } from "./fixtures";
 
 type Account = components["schemas"]["Account"];
 type Relationship = components["schemas"]["Relationship"];
@@ -28,9 +28,9 @@ const alice: Account = {
   created_at: "2026-10-01T00:00:00Z",
 };
 
-/** Pictures as data URLs, so that no request leaves the page. */
-const avatar = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`;
-const header = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100"><rect width="300" height="100" fill="#4f6d8f"/></svg>')}`;
+/** Pictures that the fixture serves on the preview's origin (servedImage), so that no request leaves it. */
+const avatar = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#8f4f6d"/></svg>')}`);
+const header = servedImage(`data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 100"><rect width="300" height="100" fill="#4f6d8f"/></svg>')}`);
 
 /** A profile that tests the layout: a long name, a long unbroken link, fields in two scripts, and images. */
 const bob: Account = {
