@@ -20,6 +20,14 @@ export type ColorPair = { fg: string; bg: string; use: ContrastUse };
 /** The backgrounds that text and controls sit on. */
 export const surfaces = ["surface", "surface-raised", "surface-sunken"] as const;
 
+/**
+ * The colors of role badges (ADR-0071), in the order the staff choose from: the BadgeColor enum of the
+ * client API. Each is a pair of tokens, `badge-<color>` (background) and `badge-<color>-fg` (text).
+ */
+export const badgeColors = ["neutral", "red", "orange", "yellow", "green", "teal", "blue", "purple", "pink"] as const;
+
+export type BadgeColor = (typeof badgeColors)[number];
+
 const onEverySurface = (fg: string, use: ContrastUse): ColorPair[] => surfaces.map((bg) => ({ fg, bg, use }));
 
 export const colorPairs: readonly ColorPair[] = [
@@ -37,6 +45,7 @@ export const colorPairs: readonly ColorPair[] = [
   { fg: "danger-fg", bg: "danger", use: "text" },
   { fg: "success-fg", bg: "success", use: "text" },
   { fg: "warning-fg", bg: "warning", use: "text" },
+  ...badgeColors.map((c): ColorPair => ({ fg: `badge-${c}-fg`, bg: `badge-${c}`, use: "text" })),
 ];
 
 /**
@@ -82,7 +91,16 @@ export const tokenRules: readonly TokenRule[] = [
 
 /**
  * Tokens of theme.css that a server theme cannot override: the primitive palette, an implementation
- * detail of the semantic colors (override those instead), and `--shadow-*`, whose values Tailwind copies
- * into its utilities (override `--elevation-*`, which they refer to).
+ * detail of the semantic colors (override those instead), `--shadow-*`, whose values Tailwind copies
+ * into its utilities (override `--elevation-*`, which they refer to), and the badge colors, whose
+ * pairs keep their contrast only as they are (ADR-0071).
  */
-export const fixedTokens: readonly RegExp[] = [/^palette-/, /^shadow-/];
+export const fixedTokens: readonly RegExp[] = [/^palette-/, /^shadow-/, /^color-badge-/];
+
+/**
+ * The pairs of colorPairs that a server theme can change, which the server checks when it saves a theme
+ * (ADR-0059): those whose two colors are overridable. The badge pairs are fixed, so no theme breaks them.
+ */
+export const themeColorPairs: readonly ColorPair[] = colorPairs.filter(
+  ({ fg, bg }) => !fixedTokens.some((p) => p.test(`color-${fg}`) || p.test(`color-${bg}`)),
+);

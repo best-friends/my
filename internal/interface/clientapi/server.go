@@ -59,6 +59,9 @@ type Options struct {
 	Posting PostingPolicy
 	// Preferences reads and changes the viewer's preferences.
 	Preferences UserPreferences
+	// Badges reads the role badges that users show on their profiles and changes the viewer's
+	// choice of them (ADR-0071); nil shows none and answers updateBadgeChoice 404.
+	Badges RoleBadges
 	// AutoDelete reads and replaces the viewer's automatic deletion of their old posts (FR-118);
 	// nil answers its operations 404.
 	AutoDelete AutoDeletePolicies

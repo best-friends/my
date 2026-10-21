@@ -839,6 +839,13 @@ type Role struct {
 	CreatedAt time.Time
 }
 
+type RoleBadge struct {
+	RoleID    string
+	Label     string
+	Color     string
+	UpdatedAt time.Time
+}
+
 type RolePermission struct {
 	RoleID     string
 	Permission string

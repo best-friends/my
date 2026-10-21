@@ -21,6 +21,7 @@ const viewer = {
   note: "",
   fields: [],
   emojis: [],
+  badges: [],
   url: "https://my.example/@alice",
   locked: false,
   bot: false,

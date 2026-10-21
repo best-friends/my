@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: role_id
+in: path
+required: true
+description: The ID of the role whose badge it is.
+schema:
+  $ref: ../schemas/Id.yaml

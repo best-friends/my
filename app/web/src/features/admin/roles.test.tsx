@@ -83,8 +83,9 @@ describe("the roles screen", () => {
     expect(rows).toHaveLength(3);
     const [adminRow, moderatorRow, helperRow] = rows as [HTMLElement, HTMLElement, HTMLElement];
     expect(within(adminRow).getByRole("heading", { level: 3, name: "admin" })).toBeInTheDocument();
-    expect(within(adminRow).getByText(/cannot be changed or deleted/)).toBeInTheDocument();
-    expect(within(adminRow).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(adminRow).getByText(/Only its badge can be changed/)).toBeInTheDocument();
+    // Admin changes only its badge (ADR-0071).
+    expect(within(adminRow).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Change the badge of ⁦admin⁩"]);
     expect(within(moderatorRow).getByText("Reports, Accounts and registrations, Audit log")).toBeInTheDocument();
     expect(within(moderatorRow).getByText("None")).toBeInTheDocument();
     expect(within(moderatorRow).getByRole("button", { name: "Edit ⁦moderator⁩" })).toBeInTheDocument();
@@ -250,5 +251,80 @@ describe("the roles screen", () => {
     const list = screen.getByRole("region", { name: "Roles of this server" });
     expect(await within(list).findByRole("status")).toHaveTextContent("Deleted the role ⁦helper⁩.");
     expect(within(list).queryByRole("heading", { level: 3, name: "helper" })).not.toBeInTheDocument();
+  });
+});
+
+describe("the badge of a role", () => {
+  beforeEach(() => {
+    server.use(signedInHandler, operatorHandler(everyPermission));
+  });
+
+  test("is set with a name and a color, with a sample, and shown in the list", async () => {
+    let current = helper;
+    const sent: Schemas["UpdateRoleRequest"][] = [];
+    server.use(
+      ...rolesHandlers(() => [admin, moderator, current]),
+      http.patch(`${apiBase}/admin/roles/:role`, async ({ request }) => {
+        const change = (await request.json()) as Schemas["UpdateRoleRequest"];
+        sent.push(change);
+        const { badge: _, ...rest } = current;
+        current = change.remove_badge === true ? rest : { ...current, ...(change.badge === undefined ? {} : { badge: change.badge }) };
+        return HttpResponse.json(current);
+      }),
+    );
+    const { user } = await renderApp({ path: "/admin/roles" });
+    const list = await screen.findByRole("region", { name: "Roles of this server" });
+    const helperRow = within(list).getAllByRole("listitem")[2] as HTMLElement;
+    expect(within(helperRow).getByText("No badge")).toBeInTheDocument();
+
+    await user.click(within(helperRow).getByRole("button", { name: "Change the badge of ⁦helper⁩" }));
+    const dialog = await screen.findByRole("dialog", { name: "Badge of ⁦helper⁩" });
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    // Nothing is sent without a name.
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(name).toHaveAccessibleDescription(/Enter a name of 1 to 32 characters\./);
+    expect(sent).toEqual([]);
+
+    await user.type(name, "  Helper  ");
+    await user.click(within(dialog).getByRole("radio", { name: "Teal" }));
+    // The sample is drawn as the badge will be, from the trimmed name.
+    expect(within(dialog).getByText("Helper")).toHaveAttribute("dir", "auto");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(sent).toEqual([{ badge: { label: "Helper", color: "teal" } }]);
+    expect(await within(helperRow).findByText("Helper")).toHaveClass("bg-badge-teal");
+
+    // Removing it hides it from every profile.
+    await user.click(within(helperRow).getByRole("button", { name: "Change the badge of ⁦helper⁩" }));
+    const again = await screen.findByRole("dialog", { name: "Badge of ⁦helper⁩" });
+    expect(within(again).getByRole("textbox", { name: "Name" })).toHaveValue("Helper");
+    expect(within(again).getByRole("radio", { name: "Teal" })).toBeChecked();
+    await user.click(within(again).getByRole("button", { name: "Remove the badge" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+    expect(sent[1]).toEqual({ remove_badge: true });
+    expect(await within(helperRow).findByText("No badge")).toBeInTheDocument();
+  });
+
+  test("keeps a refusal of the server on the name", async () => {
+    server.use(
+      ...rolesHandlers(() => [admin, moderator, helper]),
+      http.patch(`${apiBase}/admin/roles/:role`, () => problem("badge_label", "The badge name must be 1 to 32 characters on one line.")),
+    );
+    const { user } = await renderApp({ path: "/admin/roles" });
+    await user.click(await screen.findByRole("button", { name: "Change the badge of ⁦helper⁩" }));
+    const dialog = await screen.findByRole("dialog", { name: "Badge of ⁦helper⁩" });
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    await user.type(name, "Helper");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(name).toHaveAccessibleDescription(/The badge name must be 1 to 32 characters on one line\./);
+    });
+    expect(dialog).toBeInTheDocument();
   });
 });

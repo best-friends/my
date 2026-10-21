@@ -34,7 +34,9 @@ type Roles interface {
 
 // newAdminRole presents a role with its permissions.
 func newAdminRole(r appidentity.RoleWithPermissions) AdminRole {
-	item := AdminRole{Id: r.ID, Key: r.Key, Position: r.Position, Permissions: make([]Permission, len(r.Permissions))}
+	item := AdminRole{
+		Id: r.ID, Key: r.Key, Position: r.Position, Permissions: make([]Permission, len(r.Permissions)), Badge: newRoleBadge(r.Badge),
+	}
 	for i, p := range r.Permissions {
 		item.Permissions[i] = Permission(p)
 	}

@@ -4551,8 +4551,100 @@
     "defaultMessage": "‮ᴚǝdoɹʇs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.badge": {
+    "defaultMessage": "‮Ԑɐpƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color": {
+    "defaultMessage": "‮Ↄoʅoɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.blue": {
+    "defaultMessage": "‮Ԑʅnǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.description": {
+    "defaultMessage": "‮⊥ɥǝ ɔoʅoɹ ouʅʎ pǝɔoɹɐʇǝs ʇɥǝ qɐpƃǝ; ıʇs uɐɯǝ sɐʎs ʍɥɐʇ ıʇ ɯǝɐus.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.green": {
+    "defaultMessage": "‮⅁ɹǝǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.neutral": {
+    "defaultMessage": "‮⅁ɹɐʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.orange": {
+    "defaultMessage": "‮Oɹɐuƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.pink": {
+    "defaultMessage": "‮Ԁıuʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.purple": {
+    "defaultMessage": "‮Ԁnɹdʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.red": {
+    "defaultMessage": "‮ᴚǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.teal": {
+    "defaultMessage": "‮⊥ǝɐʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.color.yellow": {
+    "defaultMessage": "‮⅄ǝʅʅoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.description": {
+    "defaultMessage": "‮Hoʅpǝɹs oɟ ʇɥǝ ɹoʅǝ ɔɐu sɥoʍ ʇɥǝ qɐpƃǝ ou ʇɥǝıɹ dɹoɟıʅǝ. Iʇ sʇɐʎs ɥıppǝu nuʇıʅ ǝɐɔɥ oɟ ʇɥǝɯ ɔɥoosǝs ʇo sɥoʍ ıʇ, ɐup oʇɥǝɹ sǝɹʌǝɹs uǝʌǝɹ sǝǝ ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.edit": {
+    "defaultMessage": "‮Ԑɐpƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.edit.title": {
+    "defaultMessage": "‮Ԑɐpƃǝ oɟ {role}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.edit_role": {
+    "defaultMessage": "‮Ↄɥɐuƃǝ ʇɥǝ qɐpƃǝ oɟ {role}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.label": {
+    "defaultMessage": "‮Nɐɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.label.description": {
+    "defaultMessage": "‮∩d ʇo {max} ɔɥɐɹɐɔʇǝɹs ou ouǝ ʅıuǝ. Iʇ ıs sɥoʍu ɐs ʍɹıʇʇǝu ıu ǝʌǝɹʎ ʅɐuƃnɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.label.invalid": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ uɐɯǝ oɟ 1 ʇo {max} ɔɥɐɹɐɔʇǝɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.none": {
+    "defaultMessage": "‮No qɐpƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.remove": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ ʇɥǝ qɐpƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.sample": {
+    "defaultMessage": "‮Sɐɯdʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.badge.sample.empty": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ uɐɯǝ ʇo sǝǝ ʇɥǝ qɐpƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.builtin.admin": {
-    "defaultMessage": "‮Ԑnıʅʇ-ıu ɹoʅǝ ʍıʇɥ ǝʌǝɹʎ dǝɹɯıssıou. Iʇ ɔɐuuoʇ qǝ ɔɥɐuƃǝp oɹ pǝʅǝʇǝp.‬",
+    "defaultMessage": "‮Ԑnıʅʇ-ıu ɹoʅǝ ʍıʇɥ ǝʌǝɹʎ dǝɹɯıssıou. Ouʅʎ ıʇs qɐpƃǝ ɔɐu qǝ ɔɥɐuƃǝp, ɐup ıʇ ɔɐuuoʇ qǝ pǝʅǝʇǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.builtin.moderator": {
@@ -7207,6 +7299,10 @@
     "defaultMessage": "‮⊥ɥıs sɔɹǝǝu ıs uoʇ ɹǝɐpʎ ʎǝʇ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "profile.badges": {
+    "defaultMessage": "‮Ԑɐpƃǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "profile.change_failed": {
     "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʎonɹ ɹǝʅɐʇıousɥıd ʍıʇɥ ʇɥǝ ɐɔɔonuʇ: {reason}‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8721,6 +8817,26 @@
   },
   "settings.profile.avatar": {
     "defaultMessage": "‮∀ʌɐʇɐɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges": {
+    "defaultMessage": "‮Ԑɐpƃǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.description": {
+    "defaultMessage": "‮Ↄɥoosǝ ʍɥıɔɥ qɐpƃǝs oɟ ʎonɹ ɹoʅǝs ʇo sɥoʍ ou ʎonɹ dɹoɟıʅǝ. ∀ qɐpƃǝ sʇɐʎs ɥıppǝu nuʇıʅ ʎon sɥoʍ ıʇ, ɐup sɥoʍs ou ʎonɹ dɹoɟıʅǝ ouʅʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʇɥǝ qɐpƃǝ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.hidden": {
+    "defaultMessage": "‮{badge} ıs uo ʅouƃǝɹ sɥoʍu ou ʎonɹ dɹoɟıʅǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.profile.badges.shown": {
+    "defaultMessage": "‮{badge} ıs sɥoʍu ou ʎonɹ dɹoɟıʅǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "settings.profile.bot": {

@@ -29,6 +29,9 @@ const viewer = {
   permissions: [],
 };
 
+/** The role whose badge the profile settings show and hide (ADR-0071). */
+const supporterBadgeId = "0192f0c4-7a8e-7000-8000-0000000000b1";
+
 /** Another account, as the lists of the settings show it. */
 const bob = { ...viewer, id: "0192f0c4-7a8e-7000-8000-000000000002", username: "bob", acct: "bob@remote.example", display_name: "Bob" };
 
@@ -69,6 +72,11 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
     keep_min_boosts: 0,
     keep_min_favourites: 0,
   };
+  // The badges of the viewer's roles (ADR-0071): a long name, and one in a right-to-left script.
+  let badgeChoices = [
+    { role_id: supporterBadgeId, label: "Supporter of the medium plan", color: "green", displayed: false },
+    { role_id: "0192f0c4-7a8e-7000-8000-0000000000b2", label: "داعم", color: "pink", displayed: true },
+  ];
   const changes: unknown[] = [];
   await page.route("**/oauth/token/refresh", (route) => json(route, { access_token: "e2e-token", token_type: "Bearer", expires_in: 3600, scope: "read write follow" }));
   await page.route("**/api/v1/**", async (route) => {
@@ -138,6 +146,14 @@ async function signedInServer(page: Page, locale: string, { permissions = [], se
           removals: 4,
           skipped: [{ line: 7, value: "a-very-long-line-that-is-not-an-address-and-goes-on-and-on@", reason: "invalid" }],
         });
+      case "GET /preferences/badges":
+        return json(route, { items: badgeChoices });
+      case `PUT /preferences/badges/${supporterBadgeId}`: {
+        const { displayed } = request.postDataJSON() as { displayed: boolean };
+        changes.push({ badge: displayed });
+        badgeChoices = badgeChoices.map((c) => (c.role_id === supporterBadgeId ? { ...c, displayed } : c));
+        return json(route, badgeChoices.find((c) => c.role_id === supporterBadgeId));
+      }
       case "GET /preferences/auto_delete":
         return json(route, autoDeletePolicy);
       case "PUT /preferences/auto_delete":
@@ -539,6 +555,36 @@ test.describe("moderator notifications by email", () => {
     await expect(section.getByRole("switch")).toHaveCount(0);
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("badges on the profile", () => {
+  test("a badge is shown from the keyboard, each switch named by its badge, and stays after a reload", async ({ page, makeAxeBuilder }) => {
+    const changes = await signedInServer(page, projectLocale());
+    await page.goto("/settings/profile");
+    const section = page.getByRole("main").getByRole("region", { name: message("settings.profile.badges"), exact: true });
+    // The badges' names are the staff's text in any script, the same in every locale (ADR-0071).
+    await expect(section).toMatchAriaSnapshot(`
+      - region:
+        - heading [level=2]
+        - paragraph
+        - list:
+          - listitem:
+            - switch "Supporter of the medium plan"
+          - listitem:
+            - switch "داعم" [checked]
+    `);
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+
+    const supporter = section.getByRole("switch", { name: "Supporter of the medium plan" });
+    await supporter.focus();
+    await page.keyboard.press("Space");
+    await expect(supporter).toBeChecked();
+    await expect.poll(() => changes).toEqual([{ badge: true }]);
+
+    await page.reload();
+    await expect(page.getByRole("main").getByRole("switch", { name: "Supporter of the medium plan" })).toBeChecked();
   });
 });
 

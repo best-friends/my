@@ -3752,7 +3752,7 @@
     "description": "Heading and title of the report queue."
   },
   "admin.roles.builtin.admin": {
-    "defaultMessage": "Built-in role with every permission. It cannot be changed or deleted.",
+    "defaultMessage": "Built-in role with every permission. Only its badge can be changed, and it cannot be deleted.",
     "description": "Note on the built-in admin role in the list of roles."
   },
   "admin.roles.builtin.moderator": {
@@ -3962,6 +3962,98 @@
   "admin.roles.updated": {
     "defaultMessage": "Changed the role {role}. Its holders get the change from their next request. The audit log records it.",
     "description": "Result after changing a role. {role} is its key (isolated)."
+  },
+  "admin.roles.badge": {
+    "defaultMessage": "Badge",
+    "description": "Term of a role's badge (ADR-0071) on the roles screen, and the heading of its field."
+  },
+  "admin.roles.badge.none": {
+    "defaultMessage": "No badge",
+    "description": "The value of the badge term when a role has no badge."
+  },
+  "admin.roles.badge.edit": {
+    "defaultMessage": "Badge",
+    "description": "Button of a role that opens the dialog to change its badge."
+  },
+  "admin.roles.badge.edit_role": {
+    "defaultMessage": "Change the badge of {role}",
+    "description": "Accessible name of the button that opens the badge dialog. {role} is the role's key."
+  },
+  "admin.roles.badge.edit.title": {
+    "defaultMessage": "Badge of {role}",
+    "description": "Title of the dialog that changes a role's badge. {role} is the role's key."
+  },
+  "admin.roles.badge.description": {
+    "defaultMessage": "Holders of the role can show the badge on their profile. It stays hidden until each of them chooses to show it, and other servers never see it.",
+    "description": "Explanation at the top of the badge dialog."
+  },
+  "admin.roles.badge.label": {
+    "defaultMessage": "Name",
+    "description": "Label of the field of the badge's name."
+  },
+  "admin.roles.badge.label.description": {
+    "defaultMessage": "Up to {max} characters on one line. It is shown as written in every language.",
+    "description": "Hint of the badge's name. {max} is the longest name, 32."
+  },
+  "admin.roles.badge.label.invalid": {
+    "defaultMessage": "Enter a name of 1 to {max} characters.",
+    "description": "Error when the badge's name is empty or too long. {max} is the longest name, 32."
+  },
+  "admin.roles.badge.color": {
+    "defaultMessage": "Color",
+    "description": "Label of the radio group of the badge's color."
+  },
+  "admin.roles.badge.color.description": {
+    "defaultMessage": "The color only decorates the badge; its name says what it means.",
+    "description": "Hint of the badge's color."
+  },
+  "admin.roles.badge.color.neutral": {
+    "defaultMessage": "Gray",
+    "description": "Name of the badge color neutral, a choice of the radio group."
+  },
+  "admin.roles.badge.color.red": {
+    "defaultMessage": "Red",
+    "description": "Name of the badge color red, a choice of the radio group."
+  },
+  "admin.roles.badge.color.orange": {
+    "defaultMessage": "Orange",
+    "description": "Name of the badge color orange, a choice of the radio group."
+  },
+  "admin.roles.badge.color.yellow": {
+    "defaultMessage": "Yellow",
+    "description": "Name of the badge color yellow, a choice of the radio group."
+  },
+  "admin.roles.badge.color.green": {
+    "defaultMessage": "Green",
+    "description": "Name of the badge color green, a choice of the radio group."
+  },
+  "admin.roles.badge.color.teal": {
+    "defaultMessage": "Teal",
+    "description": "Name of the badge color teal, a choice of the radio group."
+  },
+  "admin.roles.badge.color.blue": {
+    "defaultMessage": "Blue",
+    "description": "Name of the badge color blue, a choice of the radio group."
+  },
+  "admin.roles.badge.color.purple": {
+    "defaultMessage": "Purple",
+    "description": "Name of the badge color purple, a choice of the radio group."
+  },
+  "admin.roles.badge.color.pink": {
+    "defaultMessage": "Pink",
+    "description": "Name of the badge color pink, a choice of the radio group."
+  },
+  "admin.roles.badge.sample": {
+    "defaultMessage": "Sample",
+    "description": "Label above the sample of the badge being edited."
+  },
+  "admin.roles.badge.sample.empty": {
+    "defaultMessage": "Enter a name to see the badge.",
+    "description": "Shown instead of the sample while the badge's name is empty."
+  },
+  "admin.roles.badge.remove": {
+    "defaultMessage": "Remove the badge",
+    "description": "Button of the badge dialog that removes the role's badge, which hides it from every profile."
   },
   "admin.rules.add": {
     "defaultMessage": "Add the rule",
@@ -6282,6 +6374,10 @@
   "profile.joined": {
     "defaultMessage": "Joined on {date}",
     "description": "When the account was created, on its profile. {date} is the formatted date, for example 'October 1, 2026'."
+  },
+  "profile.badges": {
+    "defaultMessage": "Badges",
+    "description": "Accessible name of the list of the role badges on a profile (ADR-0071)."
   },
   "profile.list.back": {
     "defaultMessage": "Back to the profile of {name}",
@@ -9050,6 +9146,26 @@
   "settings.profile.note.emoji": {
     "defaultMessage": "Add emoji to the bio",
     "description": "Accessible name and tooltip of the button that opens the custom emoji picker for the bio."
+  },
+  "settings.profile.badges": {
+    "defaultMessage": "Badges",
+    "description": "Heading of the section of the profile settings that chooses which role badges the profile shows (ADR-0071)."
+  },
+  "settings.profile.badges.description": {
+    "defaultMessage": "Choose which badges of your roles to show on your profile. A badge stays hidden until you show it, and shows on your profile only.",
+    "description": "Explanation of the badges section."
+  },
+  "settings.profile.badges.shown": {
+    "defaultMessage": "{badge} is shown on your profile.",
+    "description": "Announced when a badge is shown. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.hidden": {
+    "defaultMessage": "{badge} is no longer shown on your profile.",
+    "description": "Announced when a badge is hidden. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.failed": {
+    "defaultMessage": "Could not change the badge: {reason}",
+    "description": "Error under a badge's switch when the change was not saved. {reason} is the localized reason."
   },
   "reaction.picker.button": {
     "defaultMessage": "React",

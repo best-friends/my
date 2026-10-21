@@ -370,6 +370,65 @@ paths:
                 $ref: '#/components/schemas/AutoDeletePolicy'
         default:
           $ref: '#/components/responses/Problem'
+  /preferences/badges:
+    get:
+      operationId: listBadgeChoices
+      summary: List the badges that the authenticated user may show
+      description: |
+        The roles that the user holds and that have a badge, highest position first, with whether
+        the user shows each badge on their profile (ADR-0071). Every badge is hidden until the user
+        shows it.
+      tags:
+        - preferences
+      security:
+        - oauth2:
+            - read:accounts
+      responses:
+        '200':
+          description: The badges.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadgeChoiceList'
+        default:
+          $ref: '#/components/responses/Problem'
+  /preferences/badges/{role_id}:
+    parameters:
+      - $ref: '#/components/parameters/BadgeRoleId'
+    put:
+      operationId: updateBadgeChoice
+      summary: Show or hide the badge of a role on the authenticated user's profile
+      description: |
+        Shows or hides the badge of a role that the user holds on their profile (ADR-0071). The
+        badge appears in `Account.badges` of the user's own account endpoints only, never on
+        posts, in lists of accounts, or to other servers. A role that the user does not hold, or
+        that has no badge, is a 404.
+      tags:
+        - preferences
+      security:
+        - oauth2:
+            - write:accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBadgeChoiceRequest'
+      responses:
+        '200':
+          description: The choice as saved.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadgeChoice'
+        default:
+          $ref: '#/components/responses/Problem'
   /accounts/delete:
     post:
       operationId: deleteOwnAccount
@@ -4591,14 +4650,16 @@ paths:
       operationId: updateRole
       summary: Change a role
       description: |
-        Changes the position, the permissions, or both of a role; the change applies to its
-        holders from their next request, and the audit log records `role_updated`. A request
-        that changes nothing records nothing. The key never changes. `admin` is never changed
-        (a 422 `builtin`); `moderator` takes a new position and permissions like any other
-        role. A role, or a new position, above every role of the viewer is a 403. A position or
-        permissions that break a rule, or adding or removing a permission that the viewer's
-        roles do not grant, is a 422 `/api/v1/problems/invalid-role` whose `reason` says
-        which. An unknown role is a 404. Needs the `manage_roles` permission.
+        Changes the position, the permissions, the badge, or several of them of a role; the
+        change applies to its holders from their next request, and the audit log records
+        `role_updated`. A request that changes nothing records nothing. The key never changes.
+        `admin` changes only its badge (a new position or permissions is a 422 `builtin`);
+        `moderator` takes a new position and permissions like any other role. Removing the badge
+        hides it from every holder's profile (ADR-0071). A role, or a new position, above every
+        role of the viewer is a 403. A position, permissions, or badge that break a rule, or
+        adding or removing a permission that the viewer's roles do not grant, is a 422
+        `/api/v1/problems/invalid-role` whose `reason` says which. An unknown role is a 404.
+        Needs the `manage_roles` permission.
       tags:
         - admin-server
       security:
@@ -5819,6 +5880,13 @@ components:
       description: The ID of the appeal.
       schema:
         $ref: '#/components/schemas/Id'
+    BadgeRoleId:
+      name: role_id
+      in: path
+      required: true
+      description: The ID of the role whose badge it is.
+      schema:
+        $ref: '#/components/schemas/Id'
     CostItemId:
       name: id
       in: path
@@ -6281,6 +6349,7 @@ components:
         - note
         - fields
         - emojis
+        - badges
         - url
         - locked
         - bot
@@ -6339,6 +6408,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CustomEmoji'
+        badges:
+          description: |
+            The role badges that the account shows on its profile, highest role first (ADR-0071).
+            Filled on the account's own endpoints (`getAccount`, `lookupAccount`,
+            `verifyAccountCredentials`) only, and empty where accounts are listed or embedded (posts,
+            notifications, lists of accounts) and for remote accounts. Badges are never federated.
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountBadge'
         avatar:
           description: |
             The avatar image, square; omitted when the account has none, or its image is not
@@ -6359,6 +6437,24 @@ components:
           description: The number of accounts that the account actively follows; present where `followers_count` is.
           type: integer
           minimum: 0
+    AccountBadge:
+      description: |
+        A badge that the account shows on its profile (ADR-0071): the badge of a role that the
+        account's user holds and chose to show. Clients show `label` as user content (`dir="auto"`),
+        never translated.
+      type: object
+      required:
+        - role_id
+        - label
+        - color
+      properties:
+        role_id:
+          $ref: '#/components/schemas/Id'
+        label:
+          description: The name on the badge.
+          type: string
+        color:
+          $ref: '#/components/schemas/BadgeColor'
     AccountFieldSource:
       description: A metadata field of a profile as the user typed it.
       type: object
@@ -7954,6 +8050,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Permission'
+        badge:
+          description: The badge of the role, which its holders may show on their profile; omitted when it has none.
+          $ref: '#/components/schemas/RoleBadge'
     AdminRoleList:
       description: Roles, highest position first.
       type: object
@@ -8479,6 +8578,55 @@ components:
           type: integer
           minimum: 0
           maximum: 1000000
+    BadgeChoice:
+      description: |
+        A role that the authenticated user holds and that has a badge, with whether the user shows
+        the badge on their profile (ADR-0071). A badge is hidden until the user shows it; losing the
+        role or its badge hides it again.
+      type: object
+      required:
+        - role_id
+        - label
+        - color
+        - displayed
+      properties:
+        role_id:
+          $ref: '#/components/schemas/Id'
+        label:
+          description: The name on the badge.
+          type: string
+        color:
+          $ref: '#/components/schemas/BadgeColor'
+        displayed:
+          description: Whether the user shows the badge on their profile.
+          type: boolean
+    BadgeChoiceList:
+      description: The roles with a badge that the authenticated user holds, highest position first; empty when there are none.
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeChoice'
+    BadgeColor:
+      description: |
+        The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+        for its background and its text, which keep their contrast in the light and the dark theme.
+        Server themes do not change them. The color is decoration; the badge's `label` carries its
+        meaning.
+      type: string
+      enum:
+        - neutral
+        - red
+        - orange
+        - yellow
+        - green
+        - teal
+        - blue
+        - purple
+        - pink
     BillingImport:
       description: The state of the imports of a billing source (ADR-0068 §9).
       type: object
@@ -11681,6 +11829,23 @@ components:
       properties:
         outcome:
           $ref: '#/components/schemas/AdminReportOutcome'
+    RoleBadge:
+      description: |
+        The badge of a role (ADR-0071), which its holders may show on their profile. The label is
+        the staff's own text, the same in every locale: clients show it as user content
+        (`dir="auto"`), never translated.
+      type: object
+      required:
+        - label
+        - color
+      properties:
+        label:
+          description: The name on the badge, 1 to 32 characters on one line; white space around it is removed.
+          type: string
+          minLength: 1
+          maxLength: 32
+        color:
+          $ref: '#/components/schemas/BadgeColor'
     RoleProblem:
       description: |
         The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
@@ -11700,10 +11865,11 @@ components:
       description: |
         Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
         and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
-        `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
-        and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+        `permissions`: an unknown permission, or one twice. `builtin`: `admin` changes only its
+        badge, and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
         `missing_permission`: the change adds or removes permissions that the viewer's roles
-        do not grant (`missing_permissions`).
+        do not grant (`missing_permissions`). `badge_label`: a badge label that is not 1 to 32
+        characters on one line. `badge_color`: an unknown badge color.
       type: string
       enum:
         - key
@@ -11713,6 +11879,8 @@ components:
         - builtin
         - held
         - missing_permission
+        - badge_label
+        - badge_color
     SearchIndexing:
       description: |
         Whether the instance lets search engines index its pages (the instance setting
@@ -12293,6 +12461,14 @@ components:
           description: A six-digit code of the app or an unused recovery code.
           type: string
           maxLength: 64
+    UpdateBadgeChoiceRequest:
+      description: Whether to show the badge of the role on the authenticated user's profile.
+      type: object
+      required:
+        - displayed
+      properties:
+        displayed:
+          type: boolean
     UpdateCredentialsRequest:
       description: A change of the profile; properties left out keep their current values.
       type: object
@@ -12410,6 +12586,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Permission'
+        badge:
+          description: |
+            The new badge of the role (ADR-0071). Its holders keep their choice to show it.
+          $ref: '#/components/schemas/RoleBadge'
+        remove_badge:
+          description: |
+            `true` removes the badge of the role, and every holder's choice to show it; a new badge
+            starts hidden. Sending it with `badge` is a 422 whose `detail` names `remove_badge`.
+          type: boolean
     UpdateWebhookRequest:
       description: The changes to a webhook; what is omitted stays.
       type: object

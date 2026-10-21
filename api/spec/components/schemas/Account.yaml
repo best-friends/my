@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: An account, as clients show it (FR-006).
 type: object
-required: [id, username, acct, domain, uri, display_name, note, fields, emojis, url, locked, bot, created_at]
+required: [id, username, acct, domain, uri, display_name, note, fields, emojis, badges, url, locked, bot, created_at]
 properties:
   id:
     $ref: ./Id.yaml
@@ -56,6 +56,15 @@ properties:
     type: array
     items:
       $ref: ./CustomEmoji.yaml
+  badges:
+    description: |
+      The role badges that the account shows on its profile, highest role first (ADR-0071).
+      Filled on the account's own endpoints (`getAccount`, `lookupAccount`,
+      `verifyAccountCredentials`) only, and empty where accounts are listed or embedded (posts,
+      notifications, lists of accounts) and for remote accounts. Badges are never federated.
+    type: array
+    items:
+      $ref: ./AccountBadge.yaml
   avatar:
     description: |
       The avatar image, square; omitted when the account has none, or its image is not

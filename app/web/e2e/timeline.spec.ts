@@ -19,6 +19,7 @@ const account: Status["account"] = {
   note: "",
   fields: [],
   emojis: [],
+  badges: [],
   url: "https://my.example/@bob",
   locked: false,
   bot: false,

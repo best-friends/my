@@ -8,7 +8,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { toHex } from "../src/color";
-import { colorPairs, fixedTokens, minimumContrast, type TokenKind, tokenRules } from "../src/tokens";
+import { fixedTokens, minimumContrast, themeColorPairs, type TokenKind, tokenRules } from "../src/tokens";
 import { colorResolver, readTheme, readThemeDeclarations } from "./theme-source";
 
 const root = resolve(import.meta.dir, "../../..");
@@ -93,7 +93,7 @@ function renderGo(tokens: Token[]): string {
     lines.push(`\t{${fields.join(", ")}},`);
   }
   lines.push("}", "", "// themeContrastPairs are the foreground / background pairs of the color tokens and their minimum", "// contrast ratios (WCAG 2.2 AA).", "var themeContrastPairs = []ContrastPair{");
-  for (const p of colorPairs) {
+  for (const p of themeColorPairs) {
     lines.push(`\t{FG: ${goString(`color-${p.fg}`)}, BG: ${goString(`color-${p.bg}`)}, Minimum: ${minimumContrast[p.use]}},`);
   }
   lines.push("}", "");

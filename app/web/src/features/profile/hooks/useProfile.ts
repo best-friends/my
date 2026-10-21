@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What a profile's header shows, as plain values for the components (web-client.md A4). The hook returns
 // no JSX.
-import { type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
+import { type BadgeColor, type SanitizedHtml, serverSanitizedHtml } from "@my/ui";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
@@ -19,6 +19,8 @@ export type ProfileView = {
   handle: string;
   /** The profile text as the server sanitized it, or null when there is none. */
   note: SanitizedHtml | null;
+  /** The role badges that the account shows, highest role first (ADR-0071); their labels are the staff's text. */
+  badges: { id: string; label: string; color: BadgeColor }[];
   /** The metadata fields: a plain-text name and a sanitized value. */
   fields: { key: string; name: string; value: SanitizedHtml }[];
   /** Opens the links of the profile text and fields to this instance's pages through the router. */
@@ -58,6 +60,7 @@ export function useProfile(acct: string): ProfileView {
     handle: handleOf(account.acct),
     // `note` and the field values are sanitized HTML (api/openapi.yaml, Account.note and ProfileField.value).
     note: account.note === "" ? null : serverSanitizedHtml(account.note),
+    badges: account.badges.map((b) => ({ id: b.role_id, label: b.label, color: b.color })),
     // A profile's fields have no IDs; their order is their identity, and the list only changes as a whole.
     fields: account.fields.map((field, index) => ({ key: `${String(index)}:${field.name}`, name: field.name, value: serverSanitizedHtml(field.value) })),
     onLinkClick,

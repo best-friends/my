@@ -2278,7 +2278,53 @@ export interface MessageArgs {
   "client:admin.reports.summary": {};
   /** Reports */
   "client:admin.reports.title": {};
-  /** Built-in role with every permission. It cannot be changed or deleted. */
+  /** Badge */
+  "client:admin.roles.badge": {};
+  /** Color */
+  "client:admin.roles.badge.color": {};
+  /** Blue */
+  "client:admin.roles.badge.color.blue": {};
+  /** The color only decorates the badge; its name says what it means. */
+  "client:admin.roles.badge.color.description": {};
+  /** Green */
+  "client:admin.roles.badge.color.green": {};
+  /** Gray */
+  "client:admin.roles.badge.color.neutral": {};
+  /** Orange */
+  "client:admin.roles.badge.color.orange": {};
+  /** Pink */
+  "client:admin.roles.badge.color.pink": {};
+  /** Purple */
+  "client:admin.roles.badge.color.purple": {};
+  /** Red */
+  "client:admin.roles.badge.color.red": {};
+  /** Teal */
+  "client:admin.roles.badge.color.teal": {};
+  /** Yellow */
+  "client:admin.roles.badge.color.yellow": {};
+  /** Holders of the role can show the badge on their profile. It stays hidden until each of them chooses to show it, and other servers never see it. */
+  "client:admin.roles.badge.description": {};
+  /** Badge */
+  "client:admin.roles.badge.edit": {};
+  /** Change the badge of {role} */
+  "client:admin.roles.badge.edit_role": { role: string };
+  /** Badge of {role} */
+  "client:admin.roles.badge.edit.title": { role: string };
+  /** Name */
+  "client:admin.roles.badge.label": {};
+  /** Up to {max} characters on one line. It is shown as written in every language. */
+  "client:admin.roles.badge.label.description": { max: string };
+  /** Enter a name of 1 to {max} characters. */
+  "client:admin.roles.badge.label.invalid": { max: string };
+  /** No badge */
+  "client:admin.roles.badge.none": {};
+  /** Remove the badge */
+  "client:admin.roles.badge.remove": {};
+  /** Sample */
+  "client:admin.roles.badge.sample": {};
+  /** Enter a name to see the badge. */
+  "client:admin.roles.badge.sample.empty": {};
+  /** Built-in role with every permission. Only its badge can be changed, and it cannot be deleted. */
   "client:admin.roles.builtin.admin": {};
   /** Built-in role. Its position and permissions can be changed, but it cannot be deleted. */
   "client:admin.roles.builtin.moderator": {};
@@ -3606,6 +3652,8 @@ export interface MessageArgs {
   "client:notifications.unread_count": { count: number };
   /** This screen is not ready yet. */
   "client:page.not_built": {};
+  /** Badges */
+  "client:profile.badges": {};
   /** Could not change your relationship with the account: {reason} */
   "client:profile.change_failed": { reason: string };
   /** Block */
@@ -4364,6 +4412,16 @@ export interface MessageArgs {
   "client:settings.profile.ai_opt_out.server_denies": { usage: "deny_training" | (string & {}) };
   /** Avatar */
   "client:settings.profile.avatar": {};
+  /** Badges */
+  "client:settings.profile.badges": {};
+  /** Choose which badges of your roles to show on your profile. A badge stays hidden until you show it, and shows on your profile only. */
+  "client:settings.profile.badges.description": {};
+  /** Could not change the badge: {reason} */
+  "client:settings.profile.badges.failed": { reason: string };
+  /** {badge} is no longer shown on your profile. */
+  "client:settings.profile.badges.hidden": { badge: string };
+  /** {badge} is shown on your profile. */
+  "client:settings.profile.badges.shown": { badge: string };
   /** This is a bot */
   "client:settings.profile.bot": {};
   /** The account posts automatically, and others see that it may not be watched. */
@@ -5384,8 +5442,8 @@ export interface MessageArgs {
   "server:errors.request_too_large": {};
   /** The role cannot be saved. */
   "server:errors.role.invalid": {};
-  /** {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} other {The change breaks a rule.}} */
-  "server:errors.role.invalid_detail": { reason: "builtin" | "held" | "key" | "key_taken" | "missing_permission" | "permissions" | "position" | (string & {}) };
+  /** {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} badge_label {The badge name must be 1 to 32 characters on one line.} badge_color {Choose one of the badge colors.} other {The change breaks a rule.}} */
+  "server:errors.role.invalid_detail": { reason: "badge_color" | "badge_label" | "builtin" | "held" | "key" | "key_taken" | "missing_permission" | "permissions" | "position" | (string & {}) };
   /** You cannot do this to your own account. */
   "server:errors.self_relationship": {};
   /** The service is temporarily unavailable. Please try again later. */

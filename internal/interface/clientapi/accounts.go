@@ -158,7 +158,7 @@ func (s *Server) readAccountPartsWith(ctx context.Context, reads presentReads, a
 func (s *Server) newAccount(a appaccount.Actor, parts accountParts) Account {
 	out := Account{
 		Id: a.Account.ID, CreatedAt: a.Account.CreatedAt, Uri: a.Account.URI, Url: a.Account.URI,
-		Domain: a.Account.Domain, Fields: []ProfileField{}, Emojis: []CustomEmoji{},
+		Domain: a.Account.Domain, Fields: []ProfileField{}, Emojis: []CustomEmoji{}, Badges: []AccountBadge{},
 	}
 	if a.Account.IsLocal() {
 		out.Domain = s.accountDomain()
@@ -207,8 +207,8 @@ func (s *Server) newAccountsWith(ctx context.Context, reads presentReads, actors
 	return out, nil
 }
 
-// newProfile presents an actor as the Account schema with its follow counts, the answer of
-// the account's own endpoints.
+// newProfile presents an actor as the Account schema with its follow counts and, for a local
+// account, the role badges its user shows (ADR-0071): the answer of the account's own endpoints.
 func (s *Server) newProfile(ctx context.Context, a appaccount.Actor) (Account, error) {
 	parts, err := s.accountParts(ctx, a)
 	if err != nil {
@@ -221,6 +221,11 @@ func (s *Server) newProfile(ctx context.Context, a appaccount.Actor) (Account, e
 	}
 	followers, following := int(c.FollowersCount), int(c.FollowingCount)
 	out.FollowersCount, out.FollowingCount = &followers, &following
+	if a.Local != nil {
+		if out.Badges, err = s.profileBadges(ctx, a.Local.UserID); err != nil {
+			return Account{}, err
+		}
+	}
 	return out, nil
 }
 

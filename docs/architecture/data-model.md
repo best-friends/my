@@ -193,7 +193,7 @@ flowchart LR
 
 | モジュール | リソース / イベント | 投影 / 現在値 |
 | --- | --- | --- |
-| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
+| `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `role_badges`, `user_role_badge_displays`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
 | `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts`, `status_quotes`, `status_quote_events`, `quote_authorizations`, `quote_authorization_revocations` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `status_quote_states`, `status_quote_policies`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
@@ -314,6 +314,8 @@ flowchart LR
 | `user_role_grants` | イベント | `id`, `user_id`, `role_id`, `granted_by_user_id`（NULL 可 = CLI による付与。最初の管理者など）, `granted_at` | |
 | `user_role_revocations` | イベント | `grant_id`（PK）, `revoked_by_user_id`（NULL 可 = CLI による剥奪）, `revoked_at` | |
 | `user_roles` | 投影 | `user_id`, `role_id`, `grant_id` | PK `(user_id, role_id)` |
+| `role_badges` | 現在値 | `role_id`（PK）, `label`（`string(32)`）, `color`（`enum(neutral, red, orange, yellow, green, teal, blue, purple, pink)`）, `updated_at` | 行がある = バッジがある |
+| `user_role_badge_displays` | 現在値 | `user_id`, `role_id`, `created_at` | PK `(user_id, role_id)`。行がある = プロフィールに出す |
 
 - 付与は `user_role_grants` に 1 行足して `user_roles` に加え、剥奪は `user_role_revocations` に 1 行足して `user_roles` から除きます。どちらも同じトランザクションで監査ログ（`role_granted`・`role_revoked`）を書きます。
   持っているロールの付与と持っていないロールの剥奪は何もしません。
@@ -322,9 +324,16 @@ flowchart LR
 - 権限は要求ごとに `user_roles` から読むので、変更は次の要求から効きます。モデレーター向けの通知の宛先も、通知を作るときの `user_roles` で決まります。
 - ロールの作成・変更・削除（FR-720）は `roles` と `role_permissions` を書き、同じトランザクションで監査ログ（`role_created`・`role_updated`・`role_deleted`）を書きます。
   キーは 1〜64 文字の英小文字・数字・`_`・`-` で、変えられません。`admin` 以外のロールの `position` は 0〜999 で、`admin` がいつもいちばん上にあります。
-  `admin` は変えられず（すべての権限と `position` 1000。権限を取り戻す道のため）、`admin` と `moderator` は削除できません。`moderator` の権限と位置は変えられます。
+  `admin` はバッジのほかは変えられず（すべての権限と `position` 1000。権限を取り戻す道のため）、`admin` と `moderator` は削除できません。`moderator` の権限と位置は変えられます。
   持っている人がいるロールは削除できない（先に剥奪する）ので、`user_roles` が消えたロールを指すことはありません。消えたロールを指すのは剥奪済みの `user_role_grants` だけです。
   利用者は自分のいちばん高いロール以下のロールだけを作り・変え・消せ（新しい位置も同じ）、自分のロールが持つ権限だけを付け外しできます。CLI は何でもできます。
+- ロールのバッジ（[ADR-0071](../adr/0071-role-badges-and-supporter-list.md)、FR-913）は `role_badges` の行で、名前（1〜32 文字の 1 行。管理者が書く文字列で、どのロケールでも同じ値）と色（`@my/ui` のトークンの 9 色の名前）だけを持ちます。
+  組み込みのロールを含めどのロールにも付けられ、既定ではどのロールも持ちません。設定・変更・削除はロールの変更（`role_updated`）で、ロールを削除すると `role_badges` の行も消えます。
+- 利用者は、持っていてバッジのあるロールごとに、プロフィールに出すかを選びます（`user_role_badge_displays`。既定は出さない）。
+  剥奪（`user_role_revocations` を足す処理）とバッジの削除は、同じトランザクションでその選択の行を消します。付与も同じトランザクションで古い行を消すので、もう一度付与されれば既定の「出さない」から始まります。
+  プランの変更でロールが入れ替わるときは、`identity.Service.ReplaceRole` が古いロールの剥奪と新しいロールの付与を 1 つのトランザクションで行い、古いロールの選択を新しいロールに移します。新しいロールにバッジが無ければ選択は消えます。
+- プロフィールのバッジは `user_role_badge_displays`・`user_roles`・`role_badges`・`roles` の結合 1 回で、ロールの `position` の高い順に読みます。読むのはアカウント自身の取得だけで、タイムラインや一覧のアカウントでは読みません。
+  バッジは ActivityPub・NodeInfo・WebFinger に載せず、リモートのバッジも取り込みません。アカウントの消去（§8）は本人の選択の行を消します。
 
 #### セッション・OAuth
 
@@ -1687,6 +1696,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
 | FR-903 費用の公開範囲 | S | `instance_settings`（`finance_visibility`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-904 利用料金の自動取り込み | S | §4.12 の `billing_import_runs`, `imported_cost_revisions`, `imported_cost_heads`, `audit_log_entries`（手動の取り込み） |
+| FR-913 ロールのバッジ | S | `role_badges`, `user_role_badge_displays`, `user_roles` |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
 | FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |

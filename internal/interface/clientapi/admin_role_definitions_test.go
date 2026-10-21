@@ -46,6 +46,14 @@ func (f *fakeRoles) UpdateRole(_ context.Context, in appidentity.UpdateRoleInput
 		r.Permissions = in.Permissions
 		change += fmt.Sprintf(" with %v", in.Permissions)
 	}
+	if in.SetBadge {
+		r.Badge = nil
+		change += " without a badge"
+		if b := in.Badge; b != nil {
+			r.Badge = &identity.RoleBadge{Label: b.Label, Color: b.Color}
+			change = strings.TrimSuffix(change, " without a badge") + fmt.Sprintf(" with the badge %s in %s", b.Label, b.Color)
+		}
+	}
 	f.changes = append(f.changes, change+" by "+in.ByUserID)
 	return r, nil
 }
@@ -106,6 +114,19 @@ func TestCreateUpdateAndDeleteRoles(t *testing.T) {
 	if got := decodeJSON[clientapi.AdminRole](t, res); res.StatusCode != http.StatusOK || got.Position != 120 || len(got.Permissions) != 0 {
 		t.Errorf("update moderator = %d %+v, want 120 without permissions", res.StatusCode, got)
 	}
+	res = e.send(t, http.MethodPatch, "/admin/roles/moderator", "admin", `{"badge":{"label":"Staff","color":"purple"}}`)
+	if got := decodeJSON[clientapi.AdminRole](t, res); res.StatusCode != http.StatusOK ||
+		got.Badge == nil || *got.Badge != (clientapi.RoleBadge{Label: "Staff", Color: clientapi.BadgeColorPurple}) {
+		t.Errorf("set moderator's badge = %d %+v, want Staff in purple", res.StatusCode, got)
+	}
+	res = e.send(t, http.MethodPatch, "/admin/roles/moderator", "admin", `{"remove_badge":true}`)
+	if got := decodeJSON[clientapi.AdminRole](t, res); res.StatusCode != http.StatusOK || got.Badge != nil {
+		t.Errorf("remove moderator's badge = %d %+v, want no badge", res.StatusCode, got)
+	}
+	res = e.send(t, http.MethodPatch, "/admin/roles/moderator", "admin", `{"remove_badge":true,"badge":{"label":"Staff","color":"red"}}`)
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, "remove_badge") {
+		t.Errorf("badge with remove_badge = %d %+v, want 422 naming remove_badge", res.StatusCode, p)
+	}
 	if res := e.send(t, http.MethodDelete, "/admin/roles/helper", "admin", ""); res.StatusCode != http.StatusNoContent {
 		t.Errorf("delete = %d, want 204", res.StatusCode)
 	}
@@ -113,6 +134,8 @@ func TestCreateUpdateAndDeleteRoles(t *testing.T) {
 		"create helper at 50 with [view_audit manage_reports] by " + alice,
 		"update moderator with [manage_reports] by " + alice,
 		"update moderator to 120 with [] by " + alice,
+		"update moderator with the badge Staff in purple by " + alice,
+		"update moderator without a badge by " + alice,
 		"delete helper by " + alice,
 	}
 	if !reflect.DeepEqual(f.changes, wantChanges) {
@@ -142,6 +165,8 @@ func TestRoleDefinitionProblems(t *testing.T) {
 		{"permissions", fmt.Errorf("x: %w", appidentity.ErrInvalidRolePermissions), http.StatusUnprocessableEntity, "permissions", nil},
 		{"built-in", fmt.Errorf("x: %w", appidentity.ErrBuiltinRole), http.StatusUnprocessableEntity, "builtin", nil},
 		{"held", fmt.Errorf("x: %w", appidentity.ErrRoleHeld), http.StatusUnprocessableEntity, "held", nil},
+		{"badge label", appidentity.ErrInvalidBadgeLabel, http.StatusUnprocessableEntity, "badge_label", nil},
+		{"badge color", fmt.Errorf("x: %w", appidentity.ErrInvalidBadgeColor), http.StatusUnprocessableEntity, "badge_color", nil},
 		{
 			"missing permission", &appidentity.MissingPermissionsError{Missing: []identity.Permission{identity.PermManageJobs}},
 			http.StatusUnprocessableEntity, "missing_permission", []clientapi.Permission{"manage_jobs"},

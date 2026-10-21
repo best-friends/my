@@ -837,6 +837,13 @@ type Role struct {
 	CreatedAt int64
 }
 
+type RoleBadge struct {
+	RoleID    string
+	Label     string
+	Color     string
+	UpdatedAt int64
+}
+
 type RolePermission struct {
 	RoleID     string
 	Permission string
