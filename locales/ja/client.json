@@ -6491,6 +6491,14 @@
     "defaultMessage": "{name} さんのブロックを解除しました。",
     "description": "Announced after an account was unblocked. {name} is the account's display name."
   },
+  "settings.default_post_language.description": {
+    "defaultMessage": "新しい投稿はこの言語で始まります。投稿ごとに変えることもできます。",
+    "description": "Help text of the default post language select."
+  },
+  "settings.default_post_language.label": {
+    "defaultMessage": "投稿の既定の言語",
+    "description": "Label of the select of the language new posts start with."
+  },
   "settings.default_visibility.description": {
     "defaultMessage": "投稿ごとに変えることもできます。",
     "description": "Help text of the default visibility radio group."
@@ -6820,12 +6828,12 @@
     "description": "Text at the top of the preferences page."
   },
   "settings.preferences.summary": {
-    "defaultMessage": "表示言語・タイムゾーン・テーマ・投稿の既定の公開範囲・タイムラインの言語",
+    "defaultMessage": "表示言語・タイムゾーン・テーマ・投稿の既定・タイムラインの言語",
     "description": "Description of the preferences page in the list of settings pages."
   },
   "settings.preferences.title": {
     "defaultMessage": "表示と投稿",
-    "description": "Heading and document title of the settings page with the language, time zone, theme, default visibility and timeline languages."
+    "description": "Heading and document title of the settings page with the language, time zone, theme, post defaults and timeline languages."
   },
   "settings.profile.avatar": {
     "defaultMessage": "アイコン",
@@ -7050,6 +7058,14 @@
   "settings.push.unsupported": {
     "defaultMessage": "このブラウザはプッシュ通知を受け取れません。iPhone と iPad では、このサイトをホーム画面に追加して、そこから開いてください。",
     "description": "Shown in the push notification settings when the browser has no Push API."
+  },
+  "settings.require_media_description.description": {
+    "defaultMessage": "投稿する前に、説明（代替テキスト）のない画像・動画・音声に説明を付けるよう求めます。見られない人・聞こえない人もあなたの投稿を追えるようにするためです。",
+    "description": "Help text of the switch that asks for a description of every attachment."
+  },
+  "settings.require_media_description.label": {
+    "defaultMessage": "すべての添付に説明を求める",
+    "description": "Label of the switch that makes the post form ask for an alternative text of every attached file before posting."
   },
   "settings.saved": {
     "defaultMessage": "保存しました",
