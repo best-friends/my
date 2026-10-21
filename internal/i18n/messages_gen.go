@@ -1341,6 +1341,13 @@ func (l *Localizer) ServerErrorsRateLimitedDetail(seconds int) string {
 	return l.format("server:errors.rate_limited_detail", map[string]any{"seconds": seconds})
 }
 
+// ServerErrorsRefetchNotRemote formats "server:errors.refetch.not_remote". API error detail for HTTP 422 when an administrator asks to refetch a local post, a local account, or this server's own domain from its origin.
+//
+//	en: Only remote posts, remote accounts, and other servers can be refetched.
+func (l *Localizer) ServerErrorsRefetchNotRemote() string {
+	return l.format("server:errors.refetch.not_remote", nil)
+}
+
 // ServerErrorsRelayInvalid formats "server:errors.relay.invalid". API error title for HTTP 422 when a relay cannot be registered, joined, left, or deleted; the detail says why.
 //
 //	en: The relay cannot be changed that way.

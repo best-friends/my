@@ -782,6 +782,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.account_action_lifted": {};
   /** Account deletion cancelled */
   "client:admin.audit_log.action.account_deletion_cancelled": {};
+  /** Refetch of an account's posts requested */
+  "client:admin.audit_log.action.account_statuses_refetch_queued": {};
   /** Announcement written */
   "client:admin.audit_log.action.announcement_created": {};
   /** Announcement published */
@@ -812,6 +814,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.domain_action_issued": {};
   /** Domain action lifted */
   "client:admin.audit_log.action.domain_action_lifted": {};
+  /** Refetch of a server's posts requested */
+  "client:admin.audit_log.action.domain_statuses_refetch_queued": {};
   /** Invite created */
   "client:admin.audit_log.action.invite_created": {};
   /** Invite revoked */
@@ -870,6 +874,8 @@ export interface MessageArgs {
   "client:admin.audit_log.action.signup_block_added": {};
   /** Sign-up block lifted */
   "client:admin.audit_log.action.signup_block_lifted": {};
+  /** Refetch of a post requested */
+  "client:admin.audit_log.action.status_refetch_queued": {};
   /** Text changed */
   "client:admin.audit_log.action.text_changed": {};
   /** Two-factor authentication removed */
@@ -1566,6 +1572,22 @@ export interface MessageArgs {
   "client:admin.moderation.title": {};
   /** {count, plural, one {# pending} other {# pending}} */
   "client:admin.pending_count": { count: number };
+  /** Fetches the newest stored posts of this account, up to 1,000, again from its server and records their edits, poll counts, and deletions. The posts are fetched in the background, a batch every minute. */
+  "client:admin.refetch.account.description": {};
+  /** Refetch posts */
+  "client:admin.refetch.button": {};
+  /** Fetches the stored posts of this server's accounts again, the newest 20 of each account and up to 1,000 in all, and records their edits, poll counts, and deletions. The posts are fetched in the background, a batch every minute. */
+  "client:admin.refetch.domain.description": {};
+  /** The refetch could not be requested: {reason} */
+  "client:admin.refetch.failed": { reason: string };
+  /** Refetch the post of {date} */
+  "client:admin.refetch.post.button": { date: string };
+  /** The refetch of the post is requested and recorded in the audit log. */
+  "client:admin.refetch.post.queued": {};
+  /** The refetch is requested and recorded in the audit log. The posts change as they are fetched. */
+  "client:admin.refetch.queued": {};
+  /** Refetch posts */
+  "client:admin.refetch.title": {};
   /** A removed account */
   "client:admin.registrations.account_gone": {};
   /** {applicant} was already approved by another moderator. That decision stands. */
@@ -4822,6 +4844,8 @@ export interface MessageArgs {
   "server:errors.rate_limited": {};
   /** {seconds, plural, one {Try again in # second.} other {Try again in # seconds.}} */
   "server:errors.rate_limited_detail": { seconds: number };
+  /** Only remote posts, remote accounts, and other servers can be refetched. */
+  "server:errors.refetch.not_remote": {};
   /** The relay cannot be changed that way. */
   "server:errors.relay.invalid": {};
   /** {reason, select, url {The URL must be an https URL of at most 2048 bytes.} exists {A relay with this URL is already registered.} domain_suspended {The relay's server is suspended by a domain action.} not_actor {The URL does not serve the actor of a relay with an inbox.} state {The relay is not in a state that allows this: leave a relay before you delete it, and join only one that you left or that rejected you.} other {The relay cannot be changed that way.}} */

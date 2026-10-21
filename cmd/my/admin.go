@@ -41,6 +41,8 @@ func runAdmin(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 		return runAdminDomain(args[1:], stdin, stdout, stderr)
 	case args[0] == "emoji":
 		return runAdminEmoji(args[1:], stdout, stderr)
+	case args[0] == "refetch":
+		return runAdminRefetch(args[1:], stdout, stderr)
 	case args[0] == "relay":
 		return runAdminRelay(args[1:], stdout, stderr)
 	case args[0] == "report":
@@ -190,6 +192,7 @@ func adminUsage(w io.Writer) {
        my admin appeal list|uphold|overturn ...   (my admin appeal -help)
        my admin domain list|issue|lift ...   (my admin domain -help)
        my admin emoji create|list|enable|disable|delete ...   (my admin emoji -help)
+       my admin refetch status|account|domain ...   (my admin refetch -help)
        my admin relay add|follow|unfollow|remove|list ...   (my admin relay -help)
        my admin report list|show|assign|unassign|resolve ...   (my admin report -help)
        my admin audit list ...   (my admin audit -help)
@@ -208,6 +211,7 @@ my admin account password-reset-link prints a link that sets a new password for
 a user who forgot theirs.
 my admin role grants and revokes the roles of local users.
 my admin emoji registers and manages the custom emoji.
+my admin refetch queues the refetch of remote posts from their servers.
 my admin relay joins and leaves the relays that pass public posts between servers.
 my admin signup-block blocks sign-ups by email domain, email address, or IP range.
 

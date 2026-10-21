@@ -229,6 +229,13 @@ func (s *Service) DeleteRemoteStatus(ctx context.Context, tx uow.Tx, uri, author
 	return tx.Emit(ctx, StatusDeleted{Deletion: d, Status: st})
 }
 
+// LiveRemoteStatusIDs returns up to limit remote statuses of an author that are not deleted,
+// newest first, by ID, whose ID is below before ("" for the first page): the statuses that an
+// operator refetches from their origin (federation.md §6.4).
+func (s *Service) LiveRemoteStatusIDs(ctx context.Context, authorAccountID, before string, limit int) ([]string, error) {
+	return s.d.Repository.ListLiveRemoteStatusIDs(ctx, authorAccountID, before, limit)
+}
+
 // FindStatusByURI returns the status with a URI, deleted or not. It fails with ErrNotFound when
 // there is none.
 func (s *Service) FindStatusByURI(ctx context.Context, uri string) (Status, error) {

@@ -82,6 +82,16 @@ FROM statuses s
 WHERE s.in_reply_to_uri = $1 AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
 ORDER BY s.id;
 
+-- name: ListLiveRemoteStatusIDsOfAuthor :many
+-- The remote statuses of an author that are not deleted, newest first, below an ID ('' for the
+-- first page).
+SELECT s.id FROM statuses s
+WHERE s.author_account_id = sqlc.arg(author_account_id) AND s.is_local = FALSE
+  AND (sqlc.arg(before)::text = '' OR s.id < sqlc.arg(before)::text)
+  AND NOT EXISTS (SELECT 1 FROM status_deletions d WHERE d.status_id = s.id)
+ORDER BY s.id DESC
+LIMIT sqlc.arg(lim);
+
 -- name: UpsertStatusReplyLink :exec
 INSERT INTO status_reply_links (status_id, parent_status_id, parent_author_account_id) VALUES ($1, $2, $3)
 ON CONFLICT (status_id) DO UPDATE SET

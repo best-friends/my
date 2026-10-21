@@ -650,6 +650,21 @@ func (r *StatusRepository) ListReplies(ctx context.Context, uri string) ([]conte
 	return out, nil
 }
 
+// ListLiveRemoteStatusIDs implements content.Repository.
+func (r *StatusRepository) ListLiveRemoteStatusIDs(ctx context.Context, authorAccountID, before string, limit int) ([]string, error) {
+	lim, err := toInt32(limit, "limit")
+	if err != nil {
+		return nil, err
+	}
+	ids, err := r.db.reader().ListLiveRemoteStatusIDsOfAuthor(ctx, postgresgen.ListLiveRemoteStatusIDsOfAuthorParams{
+		AuthorAccountID: authorAccountID, Before: before, Lim: lim,
+	})
+	if err != nil {
+		return nil, wrap(err, "list remote statuses of "+authorAccountID)
+	}
+	return ids, nil
+}
+
 // FindCounters implements content.Repository.
 func (r *StatusRepository) FindCounters(ctx context.Context, statusID string) (content.Counters, error) {
 	row, err := r.db.reader().GetStatusCounters(ctx, statusID)

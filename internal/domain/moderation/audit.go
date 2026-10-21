@@ -213,6 +213,15 @@ const (
 	// (relay_events, accepted and rejected), as the remote actor.
 	AuditRelayAccepted AuditAction = "relay_accepted"
 	AuditRelayRejected AuditAction = "relay_rejected"
+	// AuditStatusRefetchQueued: the refetch of a remote post from its origin was queued
+	// (FR-407); the operation has no row of its own.
+	AuditStatusRefetchQueued AuditAction = "status_refetch_queued"
+	// AuditAccountStatusesRefetchQueued: the refetch of the posts of a remote account was
+	// queued; the operation has no row of its own.
+	AuditAccountStatusesRefetchQueued AuditAction = "account_statuses_refetch_queued"
+	// AuditDomainStatusesRefetchQueued: the refetch of the posts of the accounts of a remote
+	// domain was queued; the operation has no row of its own.
+	AuditDomainStatusesRefetchQueued AuditAction = "domain_statuses_refetch_queued"
 )
 
 // auditActions maps each action to the kind of its target, in the order of the schema's CHECK.
@@ -275,6 +284,9 @@ var auditActions = []struct {
 	{AuditRelayRemoved, AuditTargetRelay},
 	{AuditRelayAccepted, AuditTargetRelay},
 	{AuditRelayRejected, AuditTargetRelay},
+	{AuditStatusRefetchQueued, AuditTargetStatus},
+	{AuditAccountStatusesRefetchQueued, AuditTargetAccount},
+	{AuditDomainStatusesRefetchQueued, AuditTargetDomain},
 }
 
 // AuditActions returns every audited operation, in the order of the schema's CHECK.
