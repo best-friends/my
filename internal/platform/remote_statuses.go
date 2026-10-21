@@ -25,7 +25,8 @@ func (r remoteMediaRecorder) RecordRemoteMedia(ctx context.Context, tx uow.Tx, i
 // local accounts are ingested through the content module (ADR-0034). The boosts and favourites
 // (Announce, Like, EmojiReact, and their Undo) go through the same posts. It also registers the
 // fetches of remote posts, threads, outboxes, and featured collections (federation.fetch_object,
-// federation.fetch_outbox, and federation.fetch_featured, §6.2, §6.3) and builds the Resolver.
+// federation.fetch_outbox, and federation.fetch_featured, §6.2, §6.3), builds the Resolver, and
+// the refetches of remote posts that operators request (federation.refetch_status, §6.4).
 func (a *App) registerStatusHandlers(repo federation.InboxRepository) {
 	outbox := a.Outbox
 	if outbox == nil {
@@ -45,4 +46,10 @@ func (a *App) registerStatusHandlers(repo federation.InboxRepository) {
 		Interactions: a.Interactions, Statuses: a.RemoteStatuses,
 	})
 	a.Resolver = federation.NewResolver(a.RemoteActors, a.RemoteStatuses)
+	// The refetch of remote posts that operators request; nothing schedules it (FR-407, §6.4).
+	a.Refetches = federation.NewRefetches(federation.RefetchesDeps{
+		UnitOfWork: a.UnitOfWork, Statuses: a.Content, Accounts: a.Accounts, Outbox: outbox, Jobs: a.Jobs,
+		Clock: a.Clock, IDs: a.IDs, Host: a.Config.Host,
+	})
+	a.Refetches.RegisterJobs(a.Handlers, a.RemoteStatuses)
 }

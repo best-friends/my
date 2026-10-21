@@ -13,6 +13,7 @@ Secrets are read only from the environment: either the variable itself or `<NAME
 
 Adapters are always selected by an explicit key; nothing is inferred from a URL scheme.
 Values marked "not in v0" are decided in an ADR but not shipped in v0, and are rejected.
+A binary built with a build tag that leaves an adapter out rejects the values that select it ([build tags](build-tags.md)).
 
 `my config check` validates the configuration and lists every problem at once; the server refuses to start on any of them.
 The problems are described in the language of the process locale (`LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`; English for `C` or an unsupported language),
@@ -183,9 +184,9 @@ Database adapter (ADR-0003). The adapter is never inferred from `database_url`.
 
 | Value | In v0 | Description |
 | --- | --- | --- |
-| `sqlite` | yes | Local SQLite file (`modernc.org/sqlite`). |
+| `sqlite` | yes | Local SQLite file (`modernc.org/sqlite`). The build tag `no_sqlite` leaves it out. |
 | `libsql` | yes | libSQL / Turso. |
-| `postgres` | yes | PostgreSQL and compatible services (`pgx/v5`). |
+| `postgres` | yes | PostgreSQL and compatible services (`pgx/v5`). The build tag `no_postgres` leaves it out. |
 
 ### `database_url`
 
@@ -338,7 +339,7 @@ Key-value store adapter for caches and rate limits (ADR-0003, ADR-0019 §5).
 | --- | --- | --- |
 | `db` | yes | Table in the database. |
 | `memory` | yes | In-process memory; limits are per process. |
-| `valkey` | yes | Valkey or another server that speaks the Redis protocol (`valkey_url`); entries are shared by every process on the server. |
+| `valkey` | yes | Valkey or another server that speaks the Redis protocol (`valkey_url`); entries are shared by every process on the server. The build tag `no_valkey` leaves it out. |
 
 ### `valkey_url`
 
@@ -375,10 +376,10 @@ Broker that carries the signals of the real-time updates (`GET /api/v1/streaming
 | Value | In v0 | Description |
 | --- | --- | --- |
 | `hub` | yes | In-process only; for one process with `role = all` (SQLite, or one PostgreSQL server process). |
-| `postgres` | yes | PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`. |
-| `valkey` | yes | Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`. |
-| `sns` | yes | An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain. |
-| `pubsub` | yes | A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`. |
+| `postgres` | yes | PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`. The build tag `no_postgres` leaves it out. |
+| `valkey` | yes | Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`. The build tag `no_valkey` leaves it out. |
+| `sns` | yes | An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain. The build tag `no_sns` leaves it out. |
+| `pubsub` | yes | A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`. The build tag `no_pubsub` leaves it out. |
 
 ### `stream_postgres_url`
 
@@ -636,8 +637,8 @@ Where the service metrics go (ADR-0055 §2): the request, federation, delivery, 
 | Value | In v0 | Description |
 | --- | --- | --- |
 | `none` | yes | No metrics; measuring costs next to nothing. On Cloud Run the platform's metrics and log-based metrics stand in for them. |
-| `prometheus` | yes | The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances. |
-| `otlp` | yes | OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds). |
+| `prometheus` | yes | The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances. The build tag `no_otel` leaves it out. |
+| `otlp` | yes | OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds). The build tag `no_otel` leaves it out. |
 | `emf` | yes | CloudWatch Embedded Metric Format lines, which CloudWatch Logs turns into metrics; for AWS Lambda. The log line that ends each request and job carries its duration metrics, and the other measurements are written on standard output, one line per label set, at the end of each request and job. Requests in progress and open streams are not written. |
 
 ### `metrics_listen`

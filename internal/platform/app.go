@@ -14,18 +14,12 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	blobfs "github.com/best-friends/my/internal/adapter/blob/fs"
 	"github.com/best-friends/my/internal/adapter/captcha/siteverify"
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/adapter/httpclient"
 	"github.com/best-friends/my/internal/adapter/httpsig"
 	"github.com/best-friends/my/internal/adapter/keymanager/local"
-	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
 	kvmemory "github.com/best-friends/my/internal/adapter/kv/memory"
-	kvvalkey "github.com/best-friends/my/internal/adapter/kv/valkey"
 	mailnone "github.com/best-friends/my/internal/adapter/mail/none"
 	mailsmtp "github.com/best-friends/my/internal/adapter/mail/smtp"
 	"github.com/best-friends/my/internal/adapter/markdown"
@@ -34,7 +28,6 @@ import (
 	"github.com/best-friends/my/internal/adapter/queue/inline"
 	"github.com/best-friends/my/internal/adapter/system"
 	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
-	"github.com/best-friends/my/internal/adapter/valkey"
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/blob"
 	"github.com/best-friends/my/internal/app/content"
@@ -206,6 +199,9 @@ type App struct {
 	// (docs/architecture/federation.md §6.2, §6.3).
 	RemoteStatuses *federation.StatusHandlers
 	Resolver       *federation.Resolver
+	// Refetches queues the refetch of remote posts that operators request (FR-407,
+	// docs/architecture/federation.md §6.4).
+	Refetches *federation.Refetches
 	// Relays joins and leaves the relays and admits what they bring in (ADR-0061).
 	Relays *federation.Relays
 
@@ -215,11 +211,12 @@ type App struct {
 	closer func() error
 	// closeBlobs releases the blob store.
 	closeBlobs func() error
-	// valkey is the client of the Valkey server that the adapters configured with valkey_url
-	// share, nil until valkeyClient connects it.
-	valkey valkey.Client
-	// postgresPool is the connection pool of db = postgres, nil with another db.
-	postgresPool *pgxpool.Pool
+	// valkey is the connection to the Valkey server that the adapters configured with
+	// valkey_url share, nil until one of them connects it.
+	valkey valkeyServer
+	// newPostgresBus returns the stream.Bus of stream = postgres on the database of db =
+	// postgres, listening on listenURL; nil with another db.
+	newPostgresBus func(listenURL string) (stream.Bus, error)
 	// closeStreams closes Streams within its context, once.
 	closeStreams func(ctx context.Context) error
 	routes       []route
@@ -311,89 +308,38 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	}
 	a.Sealer = kernel.NewSealer(a.KeyManager)
 
-	var (
-		identities   identity.Repository
-		accounts     account.Repository
-		instances    instance.Repository
-		follows      graph.Repository
-		statuses     content.Repository
-		linkCards    content.LinkCardRepository
-		interactions content.InteractionRepository
-		feeds        timeline.Repository
-		notifs       notification.Repository
-		pushes       notification.PushRepository
-		medias       content.MediaRepository
-		emojis       content.CustomEmojiRepository
-		feds         federationRepository
-		mods         moderation.Repository
-		hooks        webhook.Repository
-		retention    retentionRepositories
-		projections  projection.Store
-	)
 	queueOpts := queuedb.Options{Clock: a.Clock, IDs: a.IDs}
+	var repos *repositories
 	switch cfg.DB {
 	case "sqlite":
-		d, err := sqlite.Open(ctx, cfg.DatabaseURL, uow.Options{Projectors: a.Projectors})
-		if err != nil {
-			return nil, err
-		}
-		a.UnitOfWork, a.ready, a.closer = d, d.Ready, d.Close
-		d.RegisterMetrics(a.Meter)
-		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
-		linkCards = d.StatusRepository()
-		emojis = d.CustomEmojiRepository()
-		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
-		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
-		feds = d.FederationRepository()
-		mods = d.ModerationRepository()
-		hooks = d.WebhookRepository()
-		retention = retentionRepositories{
-			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
-			autoDeletes: d.StatusRepository(),
-		}
-		projections = d.ProjectionStore()
-		dbQueue := queuedb.NewSQLite(d, queueOpts)
-		a.JobAttempts = dbQueue
-		if cfg.Queue == "db" {
-			a.setDBQueue(dbQueue)
-		}
-		if cfg.KV == "db" {
-			a.KV = kvdb.NewSQLite(d, a.Clock)
-		}
+		repos, err = a.openSQLite(ctx, cfg, queueOpts)
 	case "postgres":
-		d, err := postgres.Open(ctx, cfg.DatabaseURL, uow.Options{Projectors: a.Projectors})
-		if err != nil {
-			return nil, err
-		}
-		a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
-		a.postgresPool = d.Pool()
-		d.RegisterMetrics(a.Meter)
-		identities, accounts, instances = d.IdentityRepository(), d.AccountRepository(), d.InstanceRepository()
-		follows, statuses, medias = d.GraphRepository(), d.StatusRepository(), d.MediaRepository()
-		linkCards = d.StatusRepository()
-		emojis = d.CustomEmojiRepository()
-		interactions, feeds = d.InteractionRepository(), d.TimelineRepository()
-		notifs, pushes = d.NotificationRepository(), d.NotificationRepository()
-		feds = d.FederationRepository()
-		mods = d.ModerationRepository()
-		hooks = d.WebhookRepository()
-		retention = retentionRepositories{
-			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
-			autoDeletes: d.StatusRepository(),
-		}
-		projections = d.ProjectionStore()
-		dbQueue := queuedb.NewPostgres(d, queueOpts)
-		a.JobAttempts = dbQueue
-		if cfg.Queue == "db" {
-			a.setDBQueue(dbQueue)
-		}
-		if cfg.KV == "db" {
-			a.KV = kvdb.NewPostgres(d, a.Clock)
-		}
+		repos, err = a.openPostgres(ctx, cfg, queueOpts)
 	default:
-		return nil, fmt.Errorf("db %q is not implemented yet", cfg.DB)
+		err = fmt.Errorf("db %q is not implemented yet", cfg.DB)
 	}
+	if err != nil {
+		return nil, err
+	}
+	var (
+		identities   = repos.identities
+		accounts     = repos.accounts
+		instances    = repos.instances
+		follows      = repos.follows
+		statuses     = repos.statuses
+		linkCards    = repos.linkCards
+		interactions = repos.interactions
+		feeds        = repos.feeds
+		notifs       = repos.notifs
+		pushes       = repos.pushes
+		medias       = repos.medias
+		emojis       = repos.emojis
+		feds         = repos.feds
+		mods         = repos.mods
+		hooks        = repos.hooks
+		retention    = repos.retention
+		projections  = repos.projections
+	)
 
 	runnerOpts := queue.RunnerOptions{Clock: a.Clock, Logger: a.Logger, Meter: a.Meter, Attempts: a.JobAttempts}
 	switch cfg.Queue {
@@ -424,12 +370,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	case "memory":
 		a.KV = kvmemory.New(a.Clock)
 	case "valkey":
-		c, err := a.valkeyClient(ctx)
-		if err != nil {
+		if a.KV, err = a.newValkeyKV(ctx, cfg); err != nil {
 			_ = a.Close()
 			return nil, err
 		}
-		a.KV = kvvalkey.New(c, cfg.ValkeyKeyPrefix, a.Clock)
 	default:
 		_ = a.Close()
 		return nil, fmt.Errorf("kv %q is not implemented yet", cfg.KV)
@@ -742,7 +686,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		Webhooks:     a.Webhooks,
 		WebhookReads: webhookReads{a},
 		// The relays the instance joins (ADR-0061).
-		Relays:      a.Relays,
+		Relays: a.Relays,
+		// The refetch of remote posts from their servers (FR-407).
+		Refetches:   a.Refetches,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})
@@ -1106,21 +1052,9 @@ func (a *App) Ready(ctx context.Context) error {
 		return err
 	}
 	if a.valkey != nil {
-		return valkey.Ping(ctx, a.valkey)
+		return a.valkey.Ping(ctx)
 	}
 	return nil
-}
-
-// valkeyClient returns the client of valkey_url, connecting it on the first call; Close closes it.
-func (a *App) valkeyClient(ctx context.Context) (valkey.Client, error) {
-	if a.valkey == nil {
-		c, err := valkey.Open(ctx, valkey.Options{URL: a.Config.ValkeyURL, TLSCAFile: a.Config.ValkeyTLSCAFile, Meter: a.Meter})
-		if err != nil {
-			return nil, err
-		}
-		a.valkey = c
-	}
-	return a.valkey, nil
 }
 
 // Handle registers h for pattern (an http.ServeMux pattern) on the HTTP server of the web role,

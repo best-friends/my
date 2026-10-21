@@ -94,6 +94,7 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"MirrorsFeaturedCollectionsWithinBounds", remoteMirrorsFeaturedWithinBounds},
 		{"AppliesAddAndRemoveOfFeaturedCollections", remoteAppliesFeaturedChanges},
 		{"StoresStringsWithNUL", remoteStatusStoresStringsWithNUL},
+		{"RefetchesStoredPostsOnRequest", remoteRefetches},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteStatusEnv(t, newHarness)) })

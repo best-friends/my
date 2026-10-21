@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
@@ -65,18 +63,6 @@ var (
 	_ queue.JobInspector  = (*Queue)(nil)
 	_ queue.AttemptLog    = (*Queue)(nil)
 )
-
-// NewSQLite returns the queue kept in the SQLite database d.
-func NewSQLite(d *sqlite.DB, opts Options) *Queue {
-	opts.check()
-	return &Queue{db: d, st: sqliteStore{}, opts: opts}
-}
-
-// NewPostgres returns the queue kept in the PostgreSQL database d.
-func NewPostgres(d *postgres.DB, opts Options) *Queue {
-	opts.check()
-	return &Queue{db: d, st: postgresStore{}, opts: opts}
-}
 
 // build turns new jobs into stored jobs with fresh IDs.
 func build(opts Options, jobs []queue.NewJob) ([]queue.Job, error) {

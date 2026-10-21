@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !no_sqlite
+
 package db
 
 import (
@@ -14,6 +16,18 @@ import (
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 )
+
+// NewSQLite returns the queue kept in the SQLite database d.
+func NewSQLite(d *sqlite.DB, opts Options) *Queue {
+	opts.check()
+	return &Queue{db: d, st: sqliteStore{}, opts: opts}
+}
+
+// NewSQLiteOutbox returns the outbox kept in the SQLite database d.
+func NewSQLiteOutbox(d *sqlite.DB, opts Options) *Outbox {
+	opts.check()
+	return &Outbox{db: d, st: sqliteStore{}, opts: opts}
+}
 
 // sqliteStore stores timestamps as Unix milliseconds (data-model.md §1.2).
 type sqliteStore struct{}

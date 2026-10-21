@@ -143,6 +143,9 @@ type Repository interface {
 	FindTag(ctx context.Context, id string) (content.Tag, error)
 	// ListReplies returns the statuses that reply to uri and are not deleted, ordered by ID.
 	ListReplies(ctx context.Context, uri string) ([]content.Status, error)
+	// ListLiveRemoteStatusIDs returns up to limit remote statuses of an author that are not
+	// deleted, newest first, by ID, whose ID is below before ("" for the first page).
+	ListLiveRemoteStatusIDs(ctx context.Context, authorAccountID, before string, limit int) ([]string, error)
 	FindCounters(ctx context.Context, statusID string) (content.Counters, error)
 	// SensitivityOverridden reports whether an action shows a status as sensitive.
 	SensitivityOverridden(ctx context.Context, statusID string) (bool, error)

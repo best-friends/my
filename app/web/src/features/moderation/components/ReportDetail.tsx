@@ -23,6 +23,7 @@ import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { StatusCard } from "../../status";
 import { type AccountAction, type ReportDetail, reportNoteLimit } from "../api/reports";
 import { useHasPermission } from "../hooks/usePermissions";
+import { useRefetch } from "../hooks/useRefetch";
 import {
   accountActionKindLabels,
   accountActionStateLabels,
@@ -294,26 +295,46 @@ function ReportSummary({ report }: { report: ReportDetail }) {
 function ReportedPosts({ posts }: { posts: readonly ReportedStatus[] }) {
   const t = useT();
   const intl = useIntl();
+  // Refetching a remote post from its server (FR-407) is for a viewer with manage_domains.
+  const canRefetch = useHasPermission("manage_domains");
+  const refetch = useRefetch();
   if (posts.length === 0) return <p>{t("client:admin.report.posts.none")}</p>;
   return (
-    <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
-      {posts.map((post) => (
-        <li key={post.id}>
-          {post.status === "found" ? (
-            <>
-              {post.deletedAt !== undefined && (
-                <p className="px-4 pt-3 text-sm font-semibold text-fg-muted">
-                  {t("client:admin.report.posts.deleted", { date: intl.formatDate(post.deletedAt, { dateStyle: "medium", timeStyle: "short" }) })}
-                </p>
-              )}
-              <StatusCard status={post.value} withActions={false} />
-            </>
-          ) : (
-            <p className="px-4 py-3 text-fg-muted">{t("client:admin.report.posts.missing")}</p>
-          )}
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-3">
+      {canRefetch && <StatusMessage tone="success">{refetch.status}</StatusMessage>}
+      <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
+        {posts.map((post) => (
+          <li key={post.id}>
+            {post.status === "found" ? (
+              <>
+                {post.deletedAt !== undefined && (
+                  <p className="px-4 pt-3 text-sm font-semibold text-fg-muted">
+                    {t("client:admin.report.posts.deleted", { date: intl.formatDate(post.deletedAt, { dateStyle: "medium", timeStyle: "short" }) })}
+                  </p>
+                )}
+                <StatusCard status={post.value} withActions={false} />
+                {canRefetch && post.deletedAt === undefined && isRemote(post.value.account) && (
+                  <div className="px-4 pb-3">
+                    <Button
+                      isPending={refetch.isPending({ kind: "status", id: post.value.id })}
+                      onPress={() => {
+                        refetch.request({ kind: "status", id: post.value.id });
+                      }}
+                    >
+                      {t("client:admin.refetch.post.button", {
+                        date: intl.formatDate(post.value.created_at, { dateStyle: "medium", timeStyle: "short" }),
+                      })}
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="px-4 py-3 text-fg-muted">{t("client:admin.report.posts.missing")}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

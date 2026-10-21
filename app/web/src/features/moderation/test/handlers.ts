@@ -341,6 +341,10 @@ export const handlers = [
   http.post(`${apiBase}/admin/instances/:domain/mark_available`, ({ request, params }) =>
     withViewer(request, () => HttpResponse.json(availableHealth(String(params["domain"])))),
   ),
+  // operationIds refetchStatus, refetchAccountStatuses, refetchInstanceStatuses: every refetch is queued.
+  http.post(`${apiBase}/admin/statuses/:id/refetch`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.post(`${apiBase}/admin/accounts/:id/refetch_statuses`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.post(`${apiBase}/admin/instances/:domain/refetch_statuses`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds listDomainActions, createDomainAction, getDomainAction, liftDomainAction. A new action keeps the
   // domain as sent (the real server converts U-labels to A-labels).
   http.get(`${apiBase}/admin/domain_actions`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] }))),

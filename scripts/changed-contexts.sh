@@ -84,7 +84,7 @@ classify() {
   esac
   case "$path" in
     # go test fails when the generated configuration reference is stale (make config-docs).
-    *.go | cmd/* | internal/* | pkg/* | queries/* | sqlc.yaml | .golangci.yml | scripts/sqlc.sh | \
+    *.go | cmd/* | internal/* | pkg/* | queries/* | sqlc.yaml | .golangci.yml | scripts/sqlc.sh | scripts/go-build-tags.sh | \
       docs/reference/configuration.md)
       select_contexts go
       known=1

@@ -2250,7 +2250,8 @@ CREATE TABLE audit_log_entries (
     'webhook_created', 'webhook_updated', 'webhook_deleted', 'webhook_enabled', 'webhook_disabled',
     'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
     'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked',
-    'relay_added', 'relay_followed', 'relay_unfollowed', 'relay_removed', 'relay_accepted', 'relay_rejected'
+    'relay_added', 'relay_followed', 'relay_unfollowed', 'relay_removed', 'relay_accepted', 'relay_rejected',
+    'status_refetch_queued', 'account_statuses_refetch_queued', 'domain_statuses_refetch_queued'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',

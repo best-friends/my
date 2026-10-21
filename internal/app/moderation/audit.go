@@ -34,37 +34,40 @@ type AuditActorKind = moderation.AuditActorKind
 
 // The audited operations and their targets that other modules emit.
 const (
-	AuditRegistrationApproved  = moderation.AuditRegistrationApproved
-	AuditRegistrationRejected  = moderation.AuditRegistrationRejected
-	AuditSettingChanged        = moderation.AuditSettingChanged
-	AuditTextChanged           = moderation.AuditTextChanged
-	AuditRuleAdded             = moderation.AuditRuleAdded
-	AuditRuleRevised           = moderation.AuditRuleRevised
-	AuditRuleMoved             = moderation.AuditRuleMoved
-	AuditRuleRetired           = moderation.AuditRuleRetired
-	AuditRoleGranted           = moderation.AuditRoleGranted
-	AuditRoleRevoked           = moderation.AuditRoleRevoked
-	AuditRoleCreated           = moderation.AuditRoleCreated
-	AuditRoleUpdated           = moderation.AuditRoleUpdated
-	AuditRoleDeleted           = moderation.AuditRoleDeleted
-	AuditWebhookCreated        = moderation.AuditWebhookCreated
-	AuditWebhookUpdated        = moderation.AuditWebhookUpdated
-	AuditWebhookDeleted        = moderation.AuditWebhookDeleted
-	AuditWebhookEnabled        = moderation.AuditWebhookEnabled
-	AuditWebhookDisabled       = moderation.AuditWebhookDisabled
-	AuditWebhookSecretRotated  = moderation.AuditWebhookSecretRotated
-	AuditAnnouncementCreated   = moderation.AuditAnnouncementCreated
-	AuditAnnouncementUpdated   = moderation.AuditAnnouncementUpdated
-	AuditAnnouncementPublished = moderation.AuditAnnouncementPublished
-	AuditAnnouncementWithdrawn = moderation.AuditAnnouncementWithdrawn
-	AuditInviteCreated         = moderation.AuditInviteCreated
-	AuditInviteRevoked         = moderation.AuditInviteRevoked
-	AuditRelayAdded            = moderation.AuditRelayAdded
-	AuditRelayFollowed         = moderation.AuditRelayFollowed
-	AuditRelayUnfollowed       = moderation.AuditRelayUnfollowed
-	AuditRelayRemoved          = moderation.AuditRelayRemoved
-	AuditRelayAccepted         = moderation.AuditRelayAccepted
-	AuditRelayRejected         = moderation.AuditRelayRejected
+	AuditRegistrationApproved         = moderation.AuditRegistrationApproved
+	AuditRegistrationRejected         = moderation.AuditRegistrationRejected
+	AuditSettingChanged               = moderation.AuditSettingChanged
+	AuditTextChanged                  = moderation.AuditTextChanged
+	AuditRuleAdded                    = moderation.AuditRuleAdded
+	AuditRuleRevised                  = moderation.AuditRuleRevised
+	AuditRuleMoved                    = moderation.AuditRuleMoved
+	AuditRuleRetired                  = moderation.AuditRuleRetired
+	AuditRoleGranted                  = moderation.AuditRoleGranted
+	AuditRoleRevoked                  = moderation.AuditRoleRevoked
+	AuditRoleCreated                  = moderation.AuditRoleCreated
+	AuditRoleUpdated                  = moderation.AuditRoleUpdated
+	AuditRoleDeleted                  = moderation.AuditRoleDeleted
+	AuditWebhookCreated               = moderation.AuditWebhookCreated
+	AuditWebhookUpdated               = moderation.AuditWebhookUpdated
+	AuditWebhookDeleted               = moderation.AuditWebhookDeleted
+	AuditWebhookEnabled               = moderation.AuditWebhookEnabled
+	AuditWebhookDisabled              = moderation.AuditWebhookDisabled
+	AuditWebhookSecretRotated         = moderation.AuditWebhookSecretRotated
+	AuditAnnouncementCreated          = moderation.AuditAnnouncementCreated
+	AuditAnnouncementUpdated          = moderation.AuditAnnouncementUpdated
+	AuditAnnouncementPublished        = moderation.AuditAnnouncementPublished
+	AuditAnnouncementWithdrawn        = moderation.AuditAnnouncementWithdrawn
+	AuditInviteCreated                = moderation.AuditInviteCreated
+	AuditInviteRevoked                = moderation.AuditInviteRevoked
+	AuditRelayAdded                   = moderation.AuditRelayAdded
+	AuditRelayFollowed                = moderation.AuditRelayFollowed
+	AuditRelayUnfollowed              = moderation.AuditRelayUnfollowed
+	AuditRelayRemoved                 = moderation.AuditRelayRemoved
+	AuditRelayAccepted                = moderation.AuditRelayAccepted
+	AuditRelayRejected                = moderation.AuditRelayRejected
+	AuditStatusRefetchQueued          = moderation.AuditStatusRefetchQueued
+	AuditAccountStatusesRefetchQueued = moderation.AuditAccountStatusesRefetchQueued
+	AuditDomainStatusesRefetchQueued  = moderation.AuditDomainStatusesRefetchQueued
 
 	AuditTargetUser         = moderation.AuditTargetUser
 	AuditTargetSetting      = moderation.AuditTargetSetting
@@ -75,6 +78,8 @@ const (
 	AuditTargetInvite       = moderation.AuditTargetInvite
 	AuditTargetCustomEmoji  = moderation.AuditTargetCustomEmoji
 	AuditTargetRelay        = moderation.AuditTargetRelay
+	AuditTargetStatus       = moderation.AuditTargetStatus
+	AuditTargetDomain       = moderation.AuditTargetDomain
 )
 
 // AuditActorSystem is moderation.AuditActorSystem, the server itself, and AuditActorRemote

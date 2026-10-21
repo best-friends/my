@@ -291,6 +291,9 @@ export const auditActions = [
   "relay_removed",
   "relay_accepted",
   "relay_rejected",
+  "status_refetch_queued",
+  "account_statuses_refetch_queued",
+  "domain_statuses_refetch_queued",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */

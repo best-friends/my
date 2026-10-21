@@ -170,6 +170,9 @@ type Options struct {
 	// Relays runs the admin operations on the relays (admin_relays.go); nil answers 404 to
 	// them.
 	Relays Relays
+	// Refetches queues the refetch of remote posts (admin_refetch.go); nil answers 404 to its
+	// operations.
+	Refetches Refetches
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

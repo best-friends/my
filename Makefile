@@ -12,11 +12,14 @@ GO_ALLOWED_LICENSES := 0BSD,AGPL-3.0,Apache-2.0,BSD-2-Clause,BSD-3-Clause,BSL-1.
 # npm dependencies of tools/i18n and of the client workspace app/ must satisfy the same allowlist, plus the
 # permissive BlueOak-1.0.0 and MIT-0 (no attribution clause), which jsdom's dependencies use.
 NPM_ALLOWED_LICENSES := $(GO_ALLOWED_LICENSES),BlueOak-1.0.0,MIT-0
+# Comma-separated build tags of `make build` and `make docker-build` that leave adapters out of the server
+# (docs/reference/build-tags.md); empty builds every adapter.
+GO_TAGS ?=
 # Version that `make build` stamps into cmd/my.
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 
 .PHONY: help check lint-docs lint-shell adr-index adr-index-check adr-new build \
-	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-test-stream go-build go-licenses \
+	go-check go-mod-check go-vet go-lint go-test go-test-postgres go-test-stream go-build go-build-tags go-licenses \
 	i18n-install i18n-gen i18n-check
 
 help: ## Show available targets
@@ -89,8 +92,8 @@ adr-new: ## Create a new ADR: make adr-new TITLE="..." [SLUG=...]
 	@test -n "$(TITLE)" || { echo 'usage: make adr-new TITLE="..." [SLUG=kebab-slug]'; exit 2; }
 	scripts/adr-new.sh "$(TITLE)" $(SLUG)
 
-build: web-build ## Build bin/my, with the web client embedded, and the version from git (override: make build VERSION=v1.2.3)
-	CGO_ENABLED=0 go build -trimpath -ldflags "-X main.version=$(VERSION)" -o bin/my ./cmd/my
+build: web-build ## Build bin/my, with the web client embedded, and the version from git (override: make build VERSION=v1.2.3; leave adapters out: GO_TAGS=no_postgres,no_valkey)
+	CGO_ENABLED=0 go build -trimpath -tags "$(GO_TAGS)" -ldflags "-X main.version=$(VERSION)" -o bin/my ./cmd/my
 
 .PHONY: config-docs
 config-docs: ## Regenerate docs/reference/configuration.md from the config schema (go-test fails when it is stale)
@@ -145,7 +148,7 @@ api-lint: ## Lint api/openapi.yaml, including the supported OpenAPI 3.1 subset (
 
 api-check: api-lint generate-check ## Lint the client API spec and fail on stale generated code
 
-go-check: go-mod-check go-vet go-lint go-test go-build go-licenses sqlc-check ## Run all offline Go checks
+go-check: go-mod-check go-vet go-lint go-test go-build go-build-tags go-licenses sqlc-check ## Run all offline Go checks
 
 go-mod-check: ## Fail if go.mod/go.sum are not tidy
 	go mod tidy -diff
@@ -171,6 +174,9 @@ go-test-stream: ## Run the stream.Bus contracts on broker containers instead of 
 
 go-build: ## Build all packages statically (CGO_ENABLED=0)
 	CGO_ENABLED=0 go build ./...
+
+go-build-tags: ## Build (CGO_ENABLED=0) and vet with the representative sets of the build tags that leave adapters out, and fail when cmd/my still links one (docs/reference/build-tags.md)
+	scripts/go-build-tags.sh
 
 go-licenses: ## Fail on dependency licenses incompatible with AGPL-3.0
 	$(GO_TOOL) go-licenses check --allowed_licenses=$(GO_ALLOWED_LICENSES) ./...
@@ -242,8 +248,8 @@ db-check: db-reset ## Reset DB_URL, apply the schema, and fail if any diff remai
 
 .PHONY: docker-build docker-smoke dockerfile-check
 
-docker-build: ## Build the server image my:$(VERSION) for the local platform
-	docker build --build-arg VERSION=$(VERSION) -t my:$(VERSION) .
+docker-build: ## Build the server image my:$(VERSION) for the local platform (GO_TAGS as in build)
+	docker build --build-arg VERSION=$(VERSION) --build-arg GO_TAGS=$(GO_TAGS) -t my:$(VERSION) .
 
 docker-smoke: ## Start deploy/docker/compose.yaml, create an admin, check WebFinger / Actor / NodeInfo, tear down
 	MY_VERSION=$(VERSION) scripts/docker-smoke.sh

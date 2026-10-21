@@ -623,8 +623,10 @@ flowchart LR
   | `webhook_created`, `webhook_updated`, `webhook_deleted`, `webhook_enabled`, `webhook_disabled`, `webhook_secret_rotated` | `webhook` | `webhook_endpoints.id` | 説明と URL のホスト名（`Moderation chat (hooks.example.com)`）。URL は写さない | `webhook_endpoint_revisions.id` / `webhook_endpoint_state_changes.id` / `webhook_secrets.id` |
   | `announcement_created`, `announcement_updated`, `announcement_published`, `announcement_withdrawn` | `announcement` | `announcements.id` | 本文の最初の行（80 文字まで） | `announcement_revisions.id` / `announcement_state_changes.id` |
   | `invite_created`, `invite_revoked` | `invite` | `invites.id` | コードの先頭 4 文字と `…`（`ABCD…`）。使える間は登録に使えるコード全体は写さない | `invites.id` / `invite_revocations.invite_id`（= `invites.id`） |
-
   | `relay_added`, `relay_followed`, `relay_unfollowed`, `relay_removed`, `relay_accepted`, `relay_rejected` | `relay` | `relays.id` | 登録した URL | `relay_events.id`（登録と削除はなし） |
+  | `status_refetch_queued` | `status` | `statuses.id` | 投稿の URI | なし（元の記録を持たない操作） |
+  | `account_statuses_refetch_queued` | `account` | `accounts.id` | リモートのアカウントのハンドル | なし（元の記録を持たない操作） |
+  | `domain_statuses_refetch_queued` | `domain` | ドメイン | ドメイン | なし（元の記録を持たない操作） |
 
   サーバーが 410 Gone や失敗の継続で宛先を無効にした `webhook_disabled` は `actor_kind = system` です（ADR-0060）。リレーが送った `Accept` / `Reject` の `relay_accepted` / `relay_rejected` は `actor_kind = remote` です（ADR-0061）。
 

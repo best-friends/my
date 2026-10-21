@@ -36,6 +36,8 @@ FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS build
 ARG TARGETOS TARGETARCH
 # Version stamped into `my version` and NodeInfo.
 ARG VERSION=dev
+# Comma-separated build tags that leave adapters out of the server (docs/reference/build-tags.md); empty builds every adapter.
+ARG GO_TAGS=""
 ENV GOTOOLCHAIN=local CGO_ENABLED=0
 WORKDIR /src
 RUN --mount=type=bind,source=go.mod,target=go.mod \
@@ -47,7 +49,7 @@ RUN --mount=type=bind,target=. \
     --mount=type=bind,from=web,source=/src/app/web/dist,target=internal/interface/web/dist \
     --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
-    GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/my ./cmd/my \
+    GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -tags "${GO_TAGS}" -ldflags "-s -w -X main.version=${VERSION}" -o /out/my ./cmd/my \
     && mkdir -p /out/data
 
 # Atlas Community Edition for the target platform, at the version and checksum pinned in scripts/install-atlas.sh.

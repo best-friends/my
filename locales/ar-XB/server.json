@@ -763,6 +763,10 @@
     "defaultMessage": "‮{seconds,plural,one{⊥ɹʎ ɐƃɐıu ıu # sǝɔoup.} other{⊥ɹʎ ɐƃɐıu ıu # sǝɔoups.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.refetch.not_remote": {
+    "defaultMessage": "‮Ouʅʎ ɹǝɯoʇǝ dosʇs, ɹǝɯoʇǝ ɐɔɔonuʇs, ɐup oʇɥǝɹ sǝɹʌǝɹs ɔɐu qǝ ɹǝɟǝʇɔɥǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.relay.invalid": {
     "defaultMessage": "‮⊥ɥǝ ɹǝʅɐʎ ɔɐuuoʇ qǝ ɔɥɐuƃǝp ʇɥɐʇ ʍɐʎ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

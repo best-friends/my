@@ -10,12 +10,6 @@ import (
 	"sync"
 	"time"
 
-	awsconfig "github.com/aws/aws-sdk-go-v2/config"
-
-	pgstream "github.com/best-friends/my/internal/adapter/stream/postgres"
-	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
-	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
-	valkeystream "github.com/best-friends/my/internal/adapter/stream/valkey"
 	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
 	"github.com/best-friends/my/internal/app/stream"
 	"github.com/best-friends/my/internal/platform/config"
@@ -92,40 +86,19 @@ func (a *App) setUpStreams(ctx context.Context, cfg *config.Config, bus stream.B
 func (a *App) newStreamBus(ctx context.Context, cfg *config.Config, processID string) (stream.Bus, func() error, error) {
 	switch cfg.Stream {
 	case "postgres":
-		if a.postgresPool == nil {
+		if a.newPostgresBus == nil {
 			return nil, nil, errors.New("stream = postgres requires db = postgres")
 		}
-		b, err := pgstream.New(pgstream.Options{Pool: a.postgresPool, ListenURL: cfg.StreamPostgresURL})
+		b, err := a.newPostgresBus(cfg.StreamPostgresURL)
 		return b, nil, err
 	case "valkey":
-		c, err := a.valkeyClient(ctx)
-		if err != nil {
-			return nil, nil, err
-		}
-		return valkeystream.New(c, cfg.ValkeyKeyPrefix), nil, nil
+		b, err := a.newValkeyBus(ctx, cfg)
+		return b, nil, err
 	case "sns":
-		// The credentials and the HTTP client come from the SDK's default chain: the execution
-		// role, the environment, the shared files. The SDK reaches only the AWS endpoints, so it
-		// does not go through the SSRF-guarded kernel.HTTPClient, whose guard is for the
-		// destinations that others choose.
-		awsCfg, err := awsconfig.LoadDefaultConfig(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("stream = sns: load the AWS configuration: %w", err)
-		}
-		b, err := snsstream.NewFromConfig(awsCfg, snsstream.Options{
-			TopicARN: cfg.StreamSNSTopicARN, QueuePrefix: cfg.StreamSQSQueuePrefix, ProcessID: processID,
-			Logger: a.Logger.With(slog.String("component", "stream")),
-		})
+		b, err := a.newSNSBus(ctx, cfg, processID)
 		return b, nil, err
 	case "pubsub":
-		b, err := pubsubstream.New(ctx, pubsubstream.Options{
-			Topic: cfg.StreamPubSubTopic, SubscriptionPrefix: cfg.StreamPubSubSubscriptionPrefix, ProcessID: processID,
-			Logger: a.Logger.With(slog.String("component", "stream")),
-		})
-		if err != nil {
-			return nil, nil, fmt.Errorf("stream = pubsub: %w", err)
-		}
-		return b, b.Close, nil
+		return a.newPubSubBus(ctx, cfg, processID)
 	default:
 		return nil, nil, fmt.Errorf("stream %q is not implemented yet", cfg.Stream)
 	}
