@@ -76,5 +76,5 @@
 | [0062](0062-link-preview-cards.md) | 投稿中のリンクのカード | Accepted |
 | [0063](0063-distributed-tracing.md) | 分散トレースの方式 | Accepted |
 | [0064](0064-queue-job-dashboard.md) | キューとジョブのダッシュボード（ジョブの一覧と試行の記録） | Accepted |
-| [0065](0065-react-compiler-oxc.md) | React Compiler を Oxc の移植で動かし、Babel を外す | Proposed |
+| [0065](0065-react-compiler-oxc.md) | React Compiler を Oxc の移植で動かし、Babel を外す | Accepted |
 <!-- adr-index:end -->

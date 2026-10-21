@@ -1,6 +1,6 @@
 # ADR-0065: React Compiler を Oxc の移植で動かし、Babel を外す
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-21
 - Deciders: @rosylilly
 - Issue: #845
@@ -66,9 +66,7 @@ Oxc（`oxc-project/oxc`、MIT）はそれを取り込んだ `oxc-transform-react
 
 ## Decision（決定）
 
-> 推奨案（Proposed）。採否は決定者が決める。
-
-**選択肢 2 を推奨する。** React Compiler は `oxc-transform-react` で動かし、`app/web` と `app/ui` の直接の依存から Babel を外す。
+**選択肢 2 を採用する。** React Compiler は `oxc-transform-react` で動かし、`app/web` と `app/ui` の直接の依存から Babel を外す。
 
 - この ADR は、[ADR-0025](0025-web-client-stack.md) の技術スタックの表の「メモ化」の行のうち、コンパイラの実装（`babel-plugin-react-compiler`）を置き換える。
   React Compiler 1.0 の規則を全コードに適用し、手動の `useMemo` / `useCallback` / `memo` を原則書かないことは変えない。
@@ -79,8 +77,9 @@ Oxc（`oxc-project/oxc`、MIT）はそれを取り込んだ `oxc-transform-react
   - R4 のゲートは同じプラグインが持つ。`reportDiagnostics` の診断が 1 つでもあれば、場所と理由を挙げて `vite build` を失敗させる。
     `"use no memo"` / `"use no forget"` で始まる関数の中の診断は除く。関数の範囲は Vite が出す `parseSync`（Rolldown の Oxc のパーサ）で求め、
     診断の UTF-8 のバイト位置を UTF-16 の位置に直して比べる。出力の `_c(N)` が 1 つもなければ失敗させる。
-  - Babel 版のゲートは位置のない検証を数えないが、このゲートは診断のすべてを失敗にするので、より厳しい。今のコードでの差は 0 件。
+  - Babel 版のゲートは位置のない検証を数えないが、このゲートは診断のすべてを失敗にするので、より厳しい。決定者はこの厳しさを受け入れている。今のコードでの差は 0 件。
 - `app/ui`（Storybook と Vitest）は、`@vitejs/plugin-react` の `compiler` オプションで同じ `oxc-transform-react` を使う。ゲートは `app/web` のビルドが持つ。
+- 0.x の experimental な `oxc-transform-react` を本番のビルドに使う。決定者はこれを受け入れている。
 - 版は、`app/web` と `app/ui` で同じ `oxc-transform-react` の版に固定し、`@vitejs/plugin-react` の peer の範囲に入る版にそろえる。
 - 版を上げるときは、`app/web` のビルドが出すメモ化した関数の数と、`make web-check`・`make ui-test`・`make web-e2e` の結果を PR に書く。
   数が変わったら、変わったファイルの出力を読んで確かめる。
@@ -101,8 +100,8 @@ Oxc（`oxc-project/oxc`、MIT）はそれを取り込んだ `oxc-transform-react
 - lint の React Compiler の規則はすでに Oxlint で動き（[ADR-0049](0049-client-lint-oxlint.md)）、Oxlint の規則も同じ `oxc_react_compiler` クレートを使う
   （[`crates/oxc_linter/Cargo.toml`](https://github.com/oxc-project/oxc/blob/main/crates/oxc_linter/Cargo.toml)、2026-10-21 に確認）。
   ビルドもこのクレートになり、lint とビルドが同じコンパイラで諦める関数を判断する。
-- これを覆す条件: 移行のときに `make ui-test`・`make web-e2e` が Babel 版と違う結果になる、`@vitejs/plugin-react` の peer の範囲に入る版で
-  スパイクと同じ結果にならない、または決定者が 0.x の experimental な変換を本番のビルドに使わないと決める。
+- 移行のときに `make ui-test`・`make web-e2e` が Babel 版と違う結果になる、または `@vitejs/plugin-react` の peer の範囲に入る版で
+  スパイクと同じ結果にならないときは、移行を止めてこの ADR を見直す。
 
 ## Consequences（影響）
 
@@ -133,7 +132,5 @@ Oxc（`oxc-project/oxc`、MIT）はそれを取り込んだ `oxc-transform-react
 
 ## Open Questions / 要検証
 
-- 0.x の experimental な `oxc-transform-react` を本番のビルドに使うことを受け入れるか（決定者）
-- R4 のゲートを、Oxc の診断のすべてで失敗させる（今の Babel 版より厳しい）形でよいか（決定者）
 - 要検証: `@vitejs/plugin-react` の peer の範囲に入る版（6.1.2 と `oxc-transform-react` 0.152.x）でも、スパイクの 0.153.0 と同じ出力と結果になるか（移行の Issue）
 - 要検証: `make ui-test`（ストーリーのスクリーンショット）と `make web-e2e` が Oxc 版でも通るか。スパイクでは回していない（移行の Issue）
