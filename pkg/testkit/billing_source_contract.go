@@ -17,6 +17,8 @@ import (
 // months with their raw rows, which may offset each other and include credits, whether each month
 // is final, how many billed pages a fetch of everything takes, and a failure of the provider.
 type BillingScenario struct {
+	// Location is UTC. The dates of the scenario are calendar dates in the source's own Location
+	// (UTC for aws, America/Los_Angeles for gcp): the fake provider of a source serves them there.
 	Location *time.Location
 	Months   []BillingScenarioMonth
 	// Pages is the number of billed pages (Cost Explorer pages, BigQuery queries) that a fetch of
@@ -68,6 +70,9 @@ func BillingSourceContract(t *testing.T, factory BillingSourceFactory) {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, factory) })
 	}
 }
+
+// billingLocations are the time zones of the billing months of each source (ADR-0068 §1).
+var billingLocations = map[string]string{"aws": "UTC", "gcp": "America/Los_Angeles"}
 
 func billingMonth(t *testing.T, s string) finance.YearMonth {
 	t.Helper()
@@ -145,8 +150,8 @@ func billingMonthsAskedFor(t *testing.T, factory BillingSourceFactory) {
 	if n := src.Name(); n != "aws" && n != "gcp" {
 		t.Errorf("Name() = %q, want aws or gcp", n)
 	}
-	if src.Location() == nil || src.Location().String() != s.Location.String() {
-		t.Errorf("Location() = %v, want %v", src.Location(), s.Location)
+	if want := billingLocations[src.Name()]; src.Location() == nil || src.Location().String() != want {
+		t.Errorf("Location() = %v, want %s for %s", src.Location(), want, src.Name())
 	}
 	snap, err := billingFetch(t, src, 10, "2026-09", "2026-10")
 	if err != nil {
