@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+//go:build !no_postgres
+
 package db
 
 import (
@@ -12,8 +14,14 @@ import (
 
 	"github.com/best-friends/my/internal/adapter/db/postgres"
 	"github.com/best-friends/my/internal/adapter/kv/db/internal/postgreskv"
+	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/app/uow"
 )
+
+// NewPostgres returns the store kept in the PostgreSQL database d, whose entries expire by clock.
+func NewPostgres(d *postgres.DB, clock kernel.Clock) *Store {
+	return &Store{db: d, st: postgresStore{}, clock: clock}
+}
 
 type postgresStore struct{}
 

@@ -28,6 +28,7 @@ Secrets are read only from the environment: either the variable itself or ` + "`
 
 Adapters are always selected by an explicit key; nothing is inferred from a URL scheme.
 Values marked "not in v0" are decided in an ADR but not shipped in v0, and are rejected.
+A binary built with a build tag that leaves an adapter out rejects the values that select it ([build tags](build-tags.md)).
 
 ` + "`my config check`" + ` validates the configuration and lists every problem at once; the server refuses to start on any of them.
 The problems are described in the language of the process locale (` + "`LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`" + `; English for ` + "`C`" + ` or an unsupported language),

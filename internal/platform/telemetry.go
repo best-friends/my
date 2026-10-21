@@ -13,7 +13,6 @@ import (
 
 	"github.com/best-friends/my/internal/adapter/telemetry/emf"
 	"github.com/best-friends/my/internal/adapter/telemetry/none"
-	"github.com/best-friends/my/internal/adapter/telemetry/otel"
 	"github.com/best-friends/my/internal/adapter/telemetry/sysmetrics"
 	"github.com/best-friends/my/internal/app/account"
 	"github.com/best-friends/my/internal/app/content"
@@ -37,12 +36,10 @@ func (a *App) setUpMeter(ctx context.Context, cfg *config.Config, opts AppOption
 		a.Meter = opts.Meter
 	case cfg.MetricsExporter == "" || cfg.MetricsExporter == "none":
 		a.Meter = none.New()
-	case cfg.MetricsExporter == otel.ExporterPrometheus || cfg.MetricsExporter == otel.ExporterOTLP:
-		m, err := otel.New(ctx, otel.Options{Exporter: cfg.MetricsExporter, ServiceVersion: opts.Version, Role: string(cfg.Role)})
-		if err != nil {
+	case cfg.MetricsExporter == "prometheus" || cfg.MetricsExporter == "otlp":
+		if err := a.setUpOTelMeter(ctx, cfg, opts); err != nil {
 			return err
 		}
-		a.Meter, a.metricsHandler, a.closeMeter = m, m.Handler(), m.Shutdown
 	case cfg.MetricsExporter == "emf":
 		w := opts.MetricsWriter
 		if w == nil {
