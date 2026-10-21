@@ -18,7 +18,10 @@
 // The staff's screens are two areas (ADR-0058). A viewer whose roles have a permission of a moderation screen
 // also has Moderation, and one with a permission of a server administration screen has Administration, in that
 // order after the user's items in the rail and the sidebar and in the menu's sheet; a moderator never sees
-// Administration. While open reports, registrations or appeals await the moderators (FR-712), Moderation shows
+// Administration. Only the permissions of those screens count: a permission of the user's side (ADR-0070, the
+// member category, such as view_finance) shows neither. A viewer with view_finance has Finances, after the user's
+// items and before the staff's areas, in the rail, the sidebar and the menu's sheet, never in the tab bar.
+// While open reports, registrations or appeals await the moderators (FR-712), Moderation shows
 // their number as a badge the same way ("Moderation, 3 pending"), and so does the tab bar's Menu button, which
 // leads there ("Menu, 3 pending in moderation"): the count is in the names and drawn as digits, never shown by
 // color alone (WCAG 1.4.1). Administration has no count.
@@ -37,10 +40,26 @@
 // in the menu's sheet, while the server takes new accounts. Sign in opens the sign-in page, which comes back to the
 // page it was opened from. While the session resumes, the list has no items yet, so that neither set shows to the
 // wrong person; a session that cannot be resumed because the server is not reached (offline) keeps the user's items.
-import { AboutIcon, AdminIcon, Avatar, Badge, Button, DialogTrigger, Link, MenuIcon, ModerationIcon, PostCardAuthor, Sheet, SignInIcon, SignUpIcon } from "@my/ui";
+import {
+  AboutIcon,
+  AdminIcon,
+  Avatar,
+  Badge,
+  Button,
+  DialogTrigger,
+  FinanceIcon,
+  Link,
+  MenuIcon,
+  ModerationIcon,
+  PostCardAuthor,
+  Sheet,
+  SignInIcon,
+  SignUpIcon,
+} from "@my/ui";
 import { useLocation, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { useAdminEntry } from "../../features/admin";
+import { useFinanceEntry } from "../../features/costs";
 import { DocumentLinks } from "../../features/documents";
 import { useSignUpHref } from "../../features/landing";
 import { useModerationEntry } from "../../features/moderation";
@@ -71,6 +90,7 @@ type Section =
   | "/profile"
   | "/bookmarks"
   | "/settings"
+  | "/finance"
   | "/moderation"
   | "/admin"
   | "/about"
@@ -103,6 +123,19 @@ const entryTargets: Record<NavigationEntryId, { section: Section; timeline?: key
   profile: { section: "/profile" },
   bookmarks: { section: "/bookmarks" },
   settings: { section: "/settings" },
+};
+
+/**
+ * The page of the user's side that the member permission view_finance opens (ADR-0070): after the user's items and
+ * before the staff's areas in the rail and in the menu's sheet, never in the tab bar.
+ */
+const financeItem: NavigationItem = {
+  id: "finance",
+  href: "/finance",
+  section: "/finance",
+  label: "client:shell.nav.finance",
+  icon: <FinanceIcon />,
+  shows: "rail",
 };
 
 /** The staff's areas, after the user's items in the rail and in the menu's sheet, never in the tab bar. */
@@ -192,6 +225,7 @@ export function Navigation() {
   const unread = useUnreadNotificationCount();
   const moderationEntry = useModerationEntry();
   const adminEntry = useAdminEntry();
+  const financeEntry = useFinanceEntry();
   const staffAvailable = (item: NavigationItem) =>
     item.staff === undefined || (item.staff === "moderation" ? moderationEntry.available : adminEntry.available);
   const viewer = useViewer();
@@ -214,7 +248,7 @@ export function Navigation() {
   const signedOut = status === "signed-out" && !unreachable;
   let items: readonly NavigationItem[] = [];
   if (signedOut) items = signedOutItems(signInHref, signUpHref);
-  else if (status !== "unknown") items = [...userItems, ...staffItems];
+  else if (status !== "unknown") items = [...userItems, ...(financeEntry.available ? [financeItem] : []), ...staffItems];
   const shown = items.filter((item) => (item.timeline === undefined || timelines[item.timeline]) && staffAvailable(item));
   const badgeOf = (section: Section | undefined): ItemBadge => {
     if (section === "/notifications" && unread > 0) {

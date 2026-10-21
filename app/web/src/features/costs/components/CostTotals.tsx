@@ -1,12 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The totals of the instance's costs as the administrators' costs screen and the public costs page show them
-// (ADR-0067 §4, §5, FR-902, FR-903): the choice of the basis and the tabs of the granularity, the table of the periods,
-// newest first, with their totals by currency, the breakdown of the current period by provider and category when it
-// may be shown, and the rules that cut the periods. Providers are the operators' words, shown with dir="auto".
+// The totals of the instance's costs as the administrators' costs screen, the public costs page and the finances page
+// show them (ADR-0067 §4, §5, FR-902, FR-903, ADR-0070 §5): the choice of the basis and the tabs of the granularity,
+// the table of the periods, newest first, with their totals by currency, the breakdown of the current period by
+// provider and category when it may be shown, the lines of its items on the finances page, and the rules that cut the
+// periods. Providers, names and memos are the operators' words, shown with dir="auto".
 import { Radio, RadioGroup, Tab, TabList, TabPanel, Tabs } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
-import { type CostBasis, costBases, type CostCategory, type CostGranularity, costGranularities, type CostPeriodTotal, type CostTotals } from "../api/costs";
+import {
+  type CostBasis,
+  costBases,
+  type CostCategory,
+  type CostGranularity,
+  costGranularities,
+  type CostPeriodTotal,
+  type CostTotals,
+  type FinanceCostItemLine,
+} from "../api/costs";
 import { useFormatMoney, useFormatTotals, usePeriodName } from "../hooks/useCostFormat";
 
 const granularityLabels: Readonly<Record<CostGranularity, ClientMessageKey>> = {
@@ -93,11 +103,22 @@ export function CostTotalsPanel({ granularity, basis, onTotalsChange, children }
   );
 }
 
-/**
- * The totals of the shown periods, newest first, and the rules that cut them. `breakdown` shows the breakdown of the
- * current period by provider and category: the public page shows it only when the instance publishes it.
- */
-export function CostTotalsView({ totals, breakdown }: { totals: CostTotals; breakdown: boolean }) {
+/** A period of the totals, with the lines of its items when the finances page reads them. */
+type ShownPeriod = CostPeriodTotal & { items?: readonly FinanceCostItemLine[] };
+
+/** The totals of any of the screens: the finances page's periods also have the lines of their items. */
+type ShownTotals = Omit<CostTotals, "periods"> & { periods: readonly ShownPeriod[] };
+
+export type CostTotalsViewProps = {
+  totals: ShownTotals;
+  /** Shows the breakdown of the current period by provider and category: the public page only when the instance publishes it. */
+  breakdown: boolean;
+  /** Shows the lines of the current period's items: the finances page while the instance shows their names or memos. */
+  items?: boolean;
+};
+
+/** The totals of the shown periods, newest first, and the rules that cut them. */
+export function CostTotalsView({ totals, breakdown, items = false }: CostTotalsViewProps) {
   const t = useT();
   const periodName = usePeriodName();
   const formatTotals = useFormatTotals();
@@ -138,6 +159,7 @@ export function CostTotalsView({ totals, breakdown }: { totals: CostTotals; brea
         </tbody>
       </table>
       {breakdown && current !== undefined && <Breakdown name={periodName(granularity, current)} period={current} />}
+      {items && current !== undefined && <ItemLines name={periodName(granularity, current)} lines={current.items ?? []} />}
       <PeriodRules totals={totals} />
     </div>
   );
@@ -172,8 +194,53 @@ function Breakdown({ name, period }: { name: string; period: CostPeriodTotal }) 
   );
 }
 
+/**
+ * The items of the current period, each cost item and each service of the imported costs with its amount: the name
+ * and the memo only where the instance shows them, so a line may have neither. The lines carry no ID, and two of them
+ * may show the same words, so they are keyed by their place in the answer, which is replaced whole.
+ */
+function ItemLines({ name, lines }: { name: string; lines: readonly FinanceCostItemLine[] }) {
+  const t = useT();
+  const format = useFormatMoney();
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="flex flex-col gap-2">
+      <h3 id={headingId} className="font-semibold">
+        {t("client:costs.items.title", { period: name })}
+      </h3>
+      {lines.length === 0 ? (
+        <p className="text-fg-muted">{t("client:costs.items.empty")}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {lines.map((line, index) => (
+            <li key={`${String(index)} ${line.provider} ${line.category} ${line.amount.currency}`} className="flex flex-col">
+              <span className="flex flex-wrap gap-x-2">
+                {line.name !== undefined && (
+                  <span dir="auto" className="font-medium wrap-anywhere">
+                    {line.name}
+                  </span>
+                )}
+                <span dir="auto" className="wrap-anywhere">
+                  {line.provider}
+                </span>
+                <span className="text-fg-muted">{t(categoryLabels[line.category])}</span>
+                <span className="tabular-nums">{format(line.amount)}</span>
+              </span>
+              {line.memo !== undefined && (
+                <span dir="auto" className="text-sm whitespace-pre-line text-fg-muted wrap-anywhere">
+                  {line.memo}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /** How the totals cut their periods and place the payments (ADR-0067 §5, FR-902). */
-function PeriodRules({ totals }: { totals: CostTotals }) {
+function PeriodRules({ totals }: { totals: ShownTotals }) {
   const t = useT();
   const headingId = useId();
   return (

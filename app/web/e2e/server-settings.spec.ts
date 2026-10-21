@@ -66,6 +66,9 @@ function instanceSettings(stored: Readonly<Record<string, string>>) {
     { key: "security_contact", kind: "uri", default: "" },
     { key: "link_cards_enabled", kind: "bool", default: "true" },
     { key: "finance_visibility", kind: "enum", default: "private", choices: ["private", "totals", "breakdown"] },
+    { key: "finance_viewer_item_names", kind: "bool", default: "false" },
+    { key: "finance_viewer_item_memos", kind: "bool", default: "false" },
+    { key: "finance_viewer_income", kind: "enum", default: "totals", choices: ["totals", "plans"] },
   ];
   return { items: items.map((item) => ({ ...item, value: stored[item.key] ?? item.default, stored: item.key in stored })) };
 }

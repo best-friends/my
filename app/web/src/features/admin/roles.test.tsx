@@ -25,6 +25,7 @@ const everyPermission: Schemas["Permission"][] = [
   "manage_login_recovery",
   "manage_custom_emojis",
   "manage_webhooks",
+  "view_finance",
 ];
 const admin: Schemas["AdminRole"] = { id: "0199f0e0-0000-7000-8000-0000000000a1", key: "admin", position: 1000, permissions: everyPermission };
 const moderator: Schemas["AdminRole"] = {
@@ -87,7 +88,8 @@ describe("the roles screen", () => {
     // Admin changes only its badge (ADR-0071).
     expect(within(adminRow).getAllByRole("button").map((b) => b.getAttribute("aria-label"))).toEqual(["Change the badge of ⁦admin⁩"]);
     expect(within(moderatorRow).getByText("Reports, Accounts and registrations, Audit log")).toBeInTheDocument();
-    expect(within(moderatorRow).getByText("None")).toBeInTheDocument();
+    // No server administration permission and no member permission.
+    expect(within(moderatorRow).getAllByText("None")).toHaveLength(2);
     expect(within(moderatorRow).getByRole("button", { name: "Edit ⁦moderator⁩" })).toBeInTheDocument();
     expect(within(moderatorRow).queryByRole("button", { name: /Delete/ })).not.toBeInTheDocument();
     expect(within(helperRow).getByText("50")).toBeInTheDocument();
@@ -128,10 +130,12 @@ describe("the roles screen", () => {
     const moderation = within(form).getByRole("group", { name: "Moderation" });
     await user.click(within(moderation).getByRole("checkbox", { name: "Audit log" }));
     await user.click(within(moderation).getByRole("checkbox", { name: "Reports" }));
+    // A member permission is a group of its own, outside the staff's areas (ADR-0070).
+    await user.click(within(within(form).getByRole("group", { name: "Member features" })).getByRole("checkbox", { name: "Read the finances" }));
     await user.click(within(form).getByRole("button", { name: "Create role" }));
 
     expect(await within(form).findByRole("status")).toHaveTextContent("Created the role ⁦triage⁩.");
-    expect(sent).toEqual({ key: "triage", position: 40, permissions: ["manage_reports", "view_audit"] });
+    expect(sent).toEqual({ key: "triage", position: 40, permissions: ["manage_reports", "view_audit", "view_finance"] });
     expect(within(form).getByRole("textbox", { name: "Key" })).toHaveValue("");
     const list = screen.getByRole("region", { name: "Roles of this server" });
     expect(await within(list).findByRole("heading", { level: 3, name: "triage" })).toBeInTheDocument();

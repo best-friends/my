@@ -124,7 +124,7 @@ CREATE TABLE role_permissions (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
     'manage_login_recovery', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements',
-    'manage_finance', 'manage_supporters'
+    'manage_finance', 'view_finance', 'manage_supporters'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -693,7 +693,7 @@ CREATE TABLE instance_setting_revisions (
     'retention_session_origins', 'retention_registration_origins', 'retention_reports',
     'retention_moderation_actions', 'retention_audit_log',
     'search_indexing', 'ai_usage', 'indexable_default', 'security_contact', 'require_media_description', 'link_cards_enabled',
-    'finance_visibility'
+    'finance_visibility', 'finance_viewer_item_names', 'finance_viewer_item_memos', 'finance_viewer_income'
   )),
   value text NOT NULL,
   revised_by_user_id text COLLATE "C",

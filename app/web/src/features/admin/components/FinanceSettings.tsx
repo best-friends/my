@@ -38,6 +38,7 @@ import {
   type CostGranularity,
   CostTotalsPanel,
   CostTotalsView,
+  financeCostTotalsQueryOptions,
   useFormatMoney,
   useFormatTotals,
   utcDate,
@@ -110,6 +111,7 @@ export function FinanceSettings(props: FinanceSettingsProps) {
         <div className="flex flex-col gap-2">
           <p className="text-fg-muted">{t("client:admin.finance.description")}</p>
           <Publication />
+          <ViewerSettings granularity={props.granularity} basis={props.basis} today={props.today} />
         </div>
         <DetailSection title={t("client:admin.finance.totals.title")}>
           <TotalsSection {...props} />
@@ -147,6 +149,28 @@ function Publication() {
           {t("client:admin.finance.visibility.change")}
         </Link>
       )}
+    </p>
+  );
+}
+
+/**
+ * What the holders of view_finance read of these costs on the finances page (the instance settings
+ * `finance_viewer_*`, ADR-0070 §5), read from GET /finance/cost_totals with the totals of the screen. They are server
+ * settings (manage_settings) too, changed through the link above.
+ */
+function ViewerSettings({ granularity, basis, today }: { granularity: CostGranularity; basis: CostBasis; today: string }) {
+  const t = useT();
+  const api = useApi();
+  const { data } = useQuery({ ...financeCostTotalsQueryOptions(api, granularity, basis, today), ...shellQueryReader });
+  if (data === undefined) return null;
+  const { viewer } = data;
+  return (
+    <p>
+      {t("client:admin.finance.viewer", {
+        names: viewer.item_names ? "shown" : "hidden",
+        memos: viewer.item_memos ? "shown" : "hidden",
+        income: viewer.income,
+      })}
     </p>
   );
 }

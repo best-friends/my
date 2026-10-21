@@ -1459,6 +1459,24 @@ func (e DomainBlockSeverity) Valid() bool {
 	}
 }
 
+// Defines values for FinanceViewerIncome.
+const (
+	FinanceViewerIncomePlans  FinanceViewerIncome = "plans"
+	FinanceViewerIncomeTotals FinanceViewerIncome = "totals"
+)
+
+// Valid indicates whether the value is a known member of the FinanceViewerIncome enum.
+func (e FinanceViewerIncome) Valid() bool {
+	switch e {
+	case FinanceViewerIncomePlans:
+		return true
+	case FinanceViewerIncomeTotals:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FinanceVisibility.
 const (
 	FinanceVisibilityBreakdown FinanceVisibility = "breakdown"
@@ -1533,6 +1551,9 @@ const (
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyFinanceViewerIncome              InstanceSettingKey = "finance_viewer_income"
+	InstanceSettingKeyFinanceViewerItemMemos           InstanceSettingKey = "finance_viewer_item_memos"
+	InstanceSettingKeyFinanceViewerItemNames           InstanceSettingKey = "finance_viewer_item_names"
 	InstanceSettingKeyFinanceVisibility                InstanceSettingKey = "finance_visibility"
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
@@ -1573,6 +1594,12 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyDomainActionsVisibility:
 		return true
 	case InstanceSettingKeyFederatedTimelineEnabled:
+		return true
+	case InstanceSettingKeyFinanceViewerIncome:
+		return true
+	case InstanceSettingKeyFinanceViewerItemMemos:
+		return true
+	case InstanceSettingKeyFinanceViewerItemNames:
 		return true
 	case InstanceSettingKeyFinanceVisibility:
 		return true
@@ -1860,6 +1887,7 @@ const (
 	PermissionManageSupporters    Permission = "manage_supporters"
 	PermissionManageWebhooks      Permission = "manage_webhooks"
 	PermissionViewAudit           Permission = "view_audit"
+	PermissionViewFinance         Permission = "view_finance"
 )
 
 // Valid indicates whether the value is a known member of the Permission enum.
@@ -1894,6 +1922,8 @@ func (e Permission) Valid() bool {
 	case PermissionManageWebhooks:
 		return true
 	case PermissionViewAudit:
+		return true
+	case PermissionViewFinance:
 		return true
 	default:
 		return false
@@ -5511,6 +5541,95 @@ type EnableTotpRequest struct {
 	SetupToken string `json:"setup_token"`
 }
 
+// FinanceCostItemLine The amount of a cost item, or of a service of the imported costs, in a currency over a
+// period, with the provider (in NFKC and lower case) and the category of its breakdown line.
+// `name` is the item's name or the service, present only while the instance shows the names;
+// `memo` is the item's memo, present only while the instance shows the memos and the item has
+// one (an imported cost has none).
+type FinanceCostItemLine struct {
+	// Amount An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+	// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+	Amount Money `json:"amount"`
+
+	// Category The fixed category of a cost (ADR-0067 §2); clients translate its name.
+	Category CostCategory `json:"category"`
+	Memo     *string      `json:"memo,omitempty"`
+	Name     *string      `json:"name,omitempty"`
+	Provider string       `json:"provider"`
+}
+
+// FinanceCostPeriodTotal A week, month, or year of the totals, as in `CostPeriodTotal`, with the item lines of the
+// period: empty unless the instance shows the names or the memos of the items, and sorted by
+// provider, category, name, and currency; without the names, by provider,
+// category, currency, and the larger amount first.
+type FinanceCostPeriodTotal struct {
+	Breakdown []CostBreakdownLine `json:"breakdown"`
+
+	// EndsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	EndsOn    CalendarDate          `json:"ends_on"`
+	Estimated bool                  `json:"estimated"`
+	Items     []FinanceCostItemLine `json:"items"`
+	Label     string                `json:"label"`
+
+	// StartsOn A calendar date `YYYY-MM-DD` without a time or a time zone (ADR-0067 §5), such as the day
+	// of a payment on a card statement or an invoice.
+	StartsOn CalendarDate `json:"starts_on"`
+	Totals   []Money      `json:"totals"`
+}
+
+// FinanceCostTotals The totals of the instance's costs as the holders of `view_finance` read them over the
+// periods from the one that holds `from` to the one that holds `to`, oldest first, and the
+// instance settings that decide what they read (ADR-0070 §5).
+type FinanceCostTotals struct {
+	// Basis How the totals place a payment (ADR-0067 §4). `amortized` (the default) spreads each
+	// payment of a schedule longer than a month (every 2 or more months, every year, every 5 or
+	// more weeks) by day over the days up to the next payment, with the cumulative rounding;
+	// the other payments stay on their dates. `cash` places every payment on its date. Imported
+	// usage charges spread by day over their billing period under both.
+	Basis CostBasis `json:"basis"`
+
+	// Granularity The periods of the totals: ISO 8601 weeks (Monday to Sunday), calendar months, or calendar
+	// years, cut by date (ADR-0067 §5).
+	Granularity CostGranularity          `json:"granularity"`
+	Periods     []FinanceCostPeriodTotal `json:"periods"`
+
+	// Rules How the totals cut the periods (ADR-0067 §5), to show next to them: by calendar date
+	// without a time zone, weeks from `week_start` (ISO 8601), and each imported provider's
+	// billing months in its own time zone (`billing_sources`, in its order).
+	Rules CostTotalsRules `json:"rules"`
+
+	// Viewer What the holders of `view_finance` read of the instance's finances beyond the totals and
+	// their breakdown (the instance settings of ADR-0070 §5): `item_names`
+	// (`finance_viewer_item_names`) shows the names of the cost items and the services of the
+	// imported costs, `item_memos` (`finance_viewer_item_memos`) the memos of the cost items, and
+	// `income` (`finance_viewer_income`) the income as totals only or with the number of members
+	// of each plan.
+	Viewer FinanceViewerSettings `json:"viewer"`
+}
+
+// FinanceViewerIncome How much of the income the holders of `view_finance` read (the instance setting
+// `finance_viewer_income`, ADR-0070 §5). `totals`: the total of each currency by period;
+// `plans`: also the number of members of each plan. No value shows the amounts of each plan or
+// who paid.
+type FinanceViewerIncome string
+
+// FinanceViewerSettings What the holders of `view_finance` read of the instance's finances beyond the totals and
+// their breakdown (the instance settings of ADR-0070 §5): `item_names`
+// (`finance_viewer_item_names`) shows the names of the cost items and the services of the
+// imported costs, `item_memos` (`finance_viewer_item_memos`) the memos of the cost items, and
+// `income` (`finance_viewer_income`) the income as totals only or with the number of members
+// of each plan.
+type FinanceViewerSettings struct {
+	// Income How much of the income the holders of `view_finance` read (the instance setting
+	// `finance_viewer_income`, ADR-0070 §5). `totals`: the total of each currency by period;
+	// `plans`: also the number of members of each plan. No value shows the amounts of each plan or
+	// who paid.
+	Income    FinanceViewerIncome `json:"income"`
+	ItemMemos bool                `json:"item_memos"`
+	ItemNames bool                `json:"item_names"`
+}
+
 // FinanceVisibility How much of the instance's costs everyone may read (the instance setting
 // `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
 // `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
@@ -6392,9 +6511,10 @@ type PasswordStatus struct {
 // default). `manage_custom_emojis`: the custom emoji, local and
 // remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
 // server's announcements to every local user. `manage_finance`: the instance's costs and
-// the state of the billing imports (only the built-in admin role by default).
-// `manage_supporters`: the supporter program, its plans, and their subscriptions (only the
-// built-in admin role by default). The others guard no client API operation
+// the state of the billing imports (only the built-in admin role by default). `view_finance`:
+// reading the totals of the instance's costs on `GET /finance/cost_totals`, a member
+// permission outside the staff's areas (ADR-0070). `manage_supporters`: the supporter program, its plans, and their
+// subscriptions (only the built-in admin role by default). The others guard no client API operation
 // yet.
 type Permission string
 
@@ -8320,6 +8440,20 @@ type ListDomainMutesParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetFinanceCostTotalsParams defines parameters for GetFinanceCostTotals.
+type GetFinanceCostTotalsParams struct {
+	Granularity CostGranularity `form:"granularity" json:"granularity"`
+
+	// From A date in the first period.
+	From CalendarDate `form:"from" json:"from"`
+
+	// To A date in the last period.
+	To CalendarDate `form:"to" json:"to"`
+
+	// Basis How the totals place a payment; `amortized` by default.
+	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
+}
+
 // ListFollowRequestsParams defines parameters for ListFollowRequests.
 type ListFollowRequestsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -9104,6 +9238,9 @@ type ServerInterface interface {
 	// DownloadDataExport Download the archive of a data export
 	// (GET /exports/{id}/archive)
 	DownloadDataExport(w http.ResponseWriter, r *http.Request, id Id)
+	// GetFinanceCostTotals Total the costs by period for the finance viewers
+	// (GET /finance/cost_totals)
+	GetFinanceCostTotals(w http.ResponseWriter, r *http.Request, params GetFinanceCostTotalsParams)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(w http.ResponseWriter, r *http.Request, params ListFollowRequestsParams)
@@ -13679,6 +13816,78 @@ func (siw *ServerInterfaceWrapper) DownloadDataExport(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetFinanceCostTotals operation middleware
+func (siw *ServerInterfaceWrapper) GetFinanceCostTotals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetFinanceCostTotalsParams
+
+	// ------------- Required query parameter "granularity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "granularity", r.URL.Query(), &params.Granularity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "granularity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "granularity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "basis" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "basis", r.URL.Query(), &params.Basis, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "basis"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "basis", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFinanceCostTotals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListFollowRequests operation middleware
 func (siw *ServerInterfaceWrapper) ListFollowRequests(w http.ResponseWriter, r *http.Request) {
 
@@ -15703,6 +15912,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/reports", wrapper.CreateReport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/announcements", wrapper.ListAnnouncements)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/announcements/{id}/read", wrapper.MarkAnnouncementRead)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/finance/cost_totals", wrapper.GetFinanceCostTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/queue", wrapper.GetAdminQueue)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/jobs", wrapper.ListAdminJobs)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/jobs/{id}/attempts", wrapper.ListAdminJobAttempts)
@@ -24903,6 +25113,68 @@ func (response DownloadDataExportdefaultApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type GetFinanceCostTotalsRequestObject struct {
+	Params GetFinanceCostTotalsParams
+}
+
+type GetFinanceCostTotalsResponseObject interface {
+	VisitGetFinanceCostTotalsResponse(w http.ResponseWriter) error
+}
+
+type GetFinanceCostTotals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetFinanceCostTotals200JSONResponse struct {
+	Body    FinanceCostTotals
+	Headers GetFinanceCostTotals200ResponseHeaders
+}
+
+func (response GetFinanceCostTotals200JSONResponse) VisitGetFinanceCostTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetFinanceCostTotalsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetFinanceCostTotalsdefaultApplicationProblemPlusJSONResponse) VisitGetFinanceCostTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListFollowRequestsRequestObject struct {
 	Params ListFollowRequestsParams
 }
@@ -29272,6 +29544,9 @@ type StrictServerInterface interface {
 	// DownloadDataExport Download the archive of a data export
 	// (GET /exports/{id}/archive)
 	DownloadDataExport(ctx context.Context, request DownloadDataExportRequestObject) (DownloadDataExportResponseObject, error)
+	// GetFinanceCostTotals Total the costs by period for the finance viewers
+	// (GET /finance/cost_totals)
+	GetFinanceCostTotals(ctx context.Context, request GetFinanceCostTotalsRequestObject) (GetFinanceCostTotalsResponseObject, error)
 	// ListFollowRequests List the follow requests to the viewer
 	// (GET /follow_requests)
 	ListFollowRequests(ctx context.Context, request ListFollowRequestsRequestObject) (ListFollowRequestsResponseObject, error)
@@ -33622,6 +33897,32 @@ func (sh *strictHandler) DownloadDataExport(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DownloadDataExportResponseObject); ok {
 		if err := validResponse.VisitDownloadDataExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetFinanceCostTotals operation middleware
+func (sh *strictHandler) GetFinanceCostTotals(w http.ResponseWriter, r *http.Request, params GetFinanceCostTotalsParams) {
+	var request GetFinanceCostTotalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetFinanceCostTotals(ctx, request.(GetFinanceCostTotalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetFinanceCostTotals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetFinanceCostTotalsResponseObject); ok {
+		if err := validResponse.VisitGetFinanceCostTotalsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -109,6 +109,13 @@ func (l *Localizer) ServerAuthAuthorizeScopeReadFavourites() string {
 	return l.format("server:auth.authorize.scope.read_favourites", nil)
 }
 
+// ServerAuthAuthorizeScopeReadFinance formats "server:auth.authorize.scope.read_finance". Permission (OAuth scope read:finance) listed on the authorization page.
+//
+//	en: Read the totals of the instance's costs, as far as your roles allow
+func (l *Localizer) ServerAuthAuthorizeScopeReadFinance() string {
+	return l.format("server:auth.authorize.scope.read_finance", nil)
+}
+
 // ServerAuthAuthorizeScopeReadFollows formats "server:auth.authorize.scope.read_follows". Permission (OAuth scope read:follows) listed on the authorization page.
 //
 //	en: Read your follows and follow requests

@@ -258,6 +258,28 @@ describe("the server's policies", () => {
     expect(breakdown).toBeChecked();
   });
 
+  test("chooses what the holders of view_finance see, nothing of the items by default", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const costs = await screen.findByRole("region", { name: "Running costs" });
+    const names = within(costs).getByRole("checkbox", { name: "Show the names of the items" });
+    const memos = within(costs).getByRole("checkbox", { name: "Show the memos of the items" });
+    const income = within(costs).getByRole("radiogroup", { name: "Income" });
+    expect(names).not.toBeChecked();
+    expect(memos).not.toBeChecked();
+    expect(memos).toHaveAccessibleDescription(/meant for the operators only/u);
+    expect(within(income).getByRole("radio", { name: "Totals only" })).toBeChecked();
+
+    await user.click(memos);
+    await user.click(within(income).getByRole("radio", { name: "Totals and members of each plan" }));
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { finance_viewer_item_memos: "true", finance_viewer_income: "plans" } }]);
+    expect(names).not.toBeChecked();
+    expect(memos).toBeChecked();
+  });
+
   test("requires a description of every image", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });

@@ -59,6 +59,10 @@
     "defaultMessage": "Read your favourites",
     "description": "Permission (OAuth scope read:favourites) listed on the authorization page."
   },
+  "auth.authorize.scope.read_finance": {
+    "defaultMessage": "Read the totals of the instance's costs, as far as your roles allow",
+    "description": "Permission (OAuth scope read:finance) listed on the authorization page."
+  },
   "auth.authorize.scope.read_follows": {
     "defaultMessage": "Read your follows and follow requests",
     "description": "Permission (OAuth scope read:follows) listed on the authorization page."

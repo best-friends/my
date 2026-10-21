@@ -2,10 +2,7 @@
 
 package identity
 
-import (
-	"slices"
-	"time"
-)
+import "time"
 
 // Permission is a capability that a role grants.
 type Permission string
@@ -38,6 +35,10 @@ const (
 	// PermManageFinance: record the instance's costs, read their totals, and see and start the
 	// billing imports (ADR-0067 §7, ADR-0068 §9). It is server administration (ADR-0058 §4).
 	PermManageFinance Permission = "manage_finance"
+	// PermViewFinance: read the totals of the instance's costs, with as much of the cost items as
+	// the instance settings finance_viewer_* show, without recording or changing anything
+	// (ADR-0070 §5). It is a member permission (ADR-0070 §1).
+	PermViewFinance Permission = "view_finance"
 	// PermManageSupporters: enable and disable the supporter program, create, change, and retire
 	// its plans, and see and cancel the subscriptions (ADR-0072 §2). It is server administration
 	// (ADR-0058 §4).
@@ -50,15 +51,15 @@ func AllPermissions() []Permission {
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
-		PermManageFinance, PermManageSupporters,
+		PermManageFinance, PermViewFinance, PermManageSupporters,
 	}
 }
 
-// PermissionCategory is the area of the work that a permission belongs to (ADR-0058, ADR-0070
-// §1): moderation decides on people, posts and remote servers case by case; server
-// administration changes the server itself as a whole; member permissions let a user make or
-// change their own things, or only read, and never act on other people's rows or the whole
-// server. Only member permissions may be on a role that a supporter plan manages (ADR-0072 §5).
+// PermissionCategory is the area that a permission belongs to (ADR-0058 §4, ADR-0070 §1):
+// moderation decides on people, posts and remote servers case by case; server administration
+// changes the server itself as a whole; a member permission lets its holder make and change
+// their own things or only read, never change the rows of others or the whole server. Only
+// member permissions may be on a role that a supporter plan manages (ADR-0072 §5).
 type PermissionCategory string
 
 // Permission categories.
@@ -68,18 +69,13 @@ const (
 	CategoryMember     PermissionCategory = "member"
 )
 
-// memberPermissions are the permissions of CategoryMember.
-var memberPermissions = []Permission{}
-
-// Category returns the area that p belongs to. The web client's navigation and `my admin role`
-// group the permissions by it.
+// Category returns the area that p belongs to; a permission of no known area is server
+// administration. The web client's navigation and `my admin role` group the permissions by it.
 func (p Permission) Category() PermissionCategory {
 	switch p {
 	case PermManageReports, PermManageAccounts, PermManageDomains, PermManageInvites, PermViewAudit:
 		return CategoryModeration
-	}
-	switch {
-	case slices.Contains(memberPermissions, p):
+	case PermViewFinance:
 		return CategoryMember
 	default:
 		return CategoryServer

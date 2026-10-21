@@ -63,6 +63,11 @@ tags:
     description: Real-time updates of the home timeline, the notifications, and the announcements.
   - name: announcements
     description: The server's announcements to every local user and which of them the user has read.
+  - name: finance
+    description: |
+      The instance's finances as the holders of the `view_finance` permission read them, as far
+      as the instance settings show (ADR-0070 §5). The operations need a `read` scope and the
+      `view_finance` or the `manage_finance` permission, never an `admin` scope.
   - name: admin-moderation
     description: |
       The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
@@ -238,6 +243,8 @@ paths:
     $ref: ./paths/announcements_{id}_read.yaml
   /streaming:
     $ref: ./paths/streaming.yaml
+  /finance/cost_totals:
+    $ref: ./paths/finance_cost_totals.yaml
   /admin/queue:
     $ref: ./paths/admin_queue.yaml
   /admin/jobs:
@@ -451,6 +458,7 @@ components:
             "read:blocks": Read the accounts the user blocks.
             "read:bookmarks": Read the user's bookmarks.
             "read:favourites": Read the user's favourites.
+            "read:finance": Read the totals of the instance's costs, as far as the user's roles allow.
             "read:follows": Read follows and follow requests.
             "read:mutes": Read the accounts and domains the user mutes.
             "read:notifications": Read the user's notifications.
@@ -936,6 +944,16 @@ components:
       $ref: ./components/schemas/EditStatusRequest.yaml
     EnableTotpRequest:
       $ref: ./components/schemas/EnableTotpRequest.yaml
+    FinanceCostItemLine:
+      $ref: ./components/schemas/FinanceCostItemLine.yaml
+    FinanceCostPeriodTotal:
+      $ref: ./components/schemas/FinanceCostPeriodTotal.yaml
+    FinanceCostTotals:
+      $ref: ./components/schemas/FinanceCostTotals.yaml
+    FinanceViewerIncome:
+      $ref: ./components/schemas/FinanceViewerIncome.yaml
+    FinanceViewerSettings:
+      $ref: ./components/schemas/FinanceViewerSettings.yaml
     FinanceVisibility:
       $ref: ./components/schemas/FinanceVisibility.yaml
     FollowAccountRequest:

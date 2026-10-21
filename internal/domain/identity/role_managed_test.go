@@ -7,15 +7,8 @@ import (
 	"testing"
 )
 
-// testMemberPermission stands in for a member permission (ADR-0070 §1) while the tests run.
-const testMemberPermission Permission = "test_member"
-
-func withMemberPermission(t *testing.T) {
-	t.Helper()
-	saved := memberPermissions
-	memberPermissions = append([]Permission{testMemberPermission}, saved...)
-	t.Cleanup(func() { memberPermissions = saved })
-}
+// testMemberPermission is a member permission (ADR-0070 §1).
+const testMemberPermission = PermViewFinance
 
 func managedRoleFixtures() []RoleFacts {
 	return []RoleFacts{
@@ -31,7 +24,6 @@ func managedRoleFixtures() []RoleFacts {
 // A plan links only a role that nobody holds, that is not built in nor linked already, whose
 // permissions are member permissions, and that is below every staff role (ADR-0072 §5).
 func TestCheckManageable(t *testing.T) {
-	withMemberPermission(t)
 	roles := managedRoleFixtures()
 	byID := map[string]RoleFacts{}
 	for _, r := range roles {
@@ -72,7 +64,6 @@ func TestCheckManageable(t *testing.T) {
 
 // The plan form keeps a managed role to member permissions below every staff role.
 func TestCheckManagedShape(t *testing.T) {
-	withMemberPermission(t)
 	roles := managedRoleFixtures()
 	if err := CheckManagedShape("plan", 49, []Permission{testMemberPermission}, roles); err != nil {
 		t.Errorf("below the lowest staff role: %v", err)
@@ -87,7 +78,6 @@ func TestCheckManagedShape(t *testing.T) {
 
 // A change to a role that is not managed never puts a staff role at or below a managed one.
 func TestCheckUnmanagedChange(t *testing.T) {
-	withMemberPermission(t)
 	roles := managedRoleFixtures()
 	for _, tc := range []struct {
 		name     string

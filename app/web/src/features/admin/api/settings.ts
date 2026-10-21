@@ -90,8 +90,9 @@ export async function cacheSavedSettings(queryClient: QueryClient, api: Api, set
   queryClient.setQueryData(instanceSettingsQueryOptions(api).queryKey, settings);
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ["get", "/instance"] }),
-    // What finance_visibility publishes (FR-903).
+    // What finance_visibility publishes (FR-903), and what the finance_viewer_* settings show (ADR-0070 §5).
     queryClient.invalidateQueries({ queryKey: ["get", "/instance/cost_totals"] }),
+    queryClient.invalidateQueries({ queryKey: ["get", "/finance/cost_totals"] }),
     refreshAuditLog(queryClient),
   ]);
 }

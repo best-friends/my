@@ -489,6 +489,57 @@ func TestTotalsSumToThePayments(t *testing.T) {
 	}
 }
 
+// The item lines of a period are the amount of each item and each imported service in it, and
+// sum to the period's totals; the totals do not change (ADR-0070 §5).
+func TestItemizedTotals(t *testing.T) {
+	vps := CostItem{
+		ID: "vps", Recurrence: Recurrence{ScheduleMonths, 1}, StartsOn: date(t, "2026-04-15"), ProviderNormalized: "hetzner",
+		Label:  Label{Name: "VPS", Provider: "Hetzner", Category: CategoryCompute, Memo: "fsn1"},
+		Prices: []PriceRevision{{EffectiveOn: date(t, "2026-04-15"), Price: jpy(1000)}},
+	}
+	backup := vps
+	backup.ID, backup.Label.Name, backup.Label.Memo = "backup", "Backup", ""
+	backup.Prices = []PriceRevision{{EffectiveOn: date(t, "2026-04-15"), Price: jpy(300)}}
+	imported := []Entry{
+		{
+			Range: DateRange{Start: date(t, "2026-05-01"), End: date(t, "2026-05-31")}, Amount: Money{Minor: 250, Currency: "USD"},
+			Provider: "google cloud", Category: CategoryStorage, Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"},
+		},
+		{
+			Range: DateRange{Start: date(t, "2026-05-01"), End: date(t, "2026-05-31")}, Amount: Money{Minor: -50, Currency: "USD"},
+			Provider: "google cloud", Category: CategoryStorage, Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"},
+		},
+	}
+	periods, err := GranularityMonth.Periods(date(t, "2026-04-01"), date(t, "2026-05-31"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := []CostItem{vps, backup}
+	got := ItemizedTotals(items, imported, BasisCash, periods)
+	plain := Totals(items, imported, BasisCash, periods)
+	for i := range got {
+		if !slices.Equal(got[i].Totals, plain[i].Totals) || !slices.Equal(got[i].Breakdown, plain[i].Breakdown) || plain[i].Items != nil {
+			t.Errorf("period %s: itemized %+v, totals %+v", got[i].Period.Label, got[i], plain[i])
+		}
+	}
+	want := [][]ItemLine{
+		{
+			{Item: ItemRef{Key: "item:backup", Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
+			{Item: ItemRef{Key: "item:vps", Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
+		},
+		{
+			{Item: ItemRef{Key: "import:gcp:Cloud Storage", Name: "Cloud Storage"}, Provider: "google cloud", Category: CategoryStorage, Amount: Money{Minor: 200, Currency: "USD"}},
+			{Item: ItemRef{Key: "item:backup", Name: "Backup"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(300)},
+			{Item: ItemRef{Key: "item:vps", Name: "VPS", Memo: "fsn1"}, Provider: "hetzner", Category: CategoryCompute, Amount: jpy(1000)},
+		},
+	}
+	for i := range want {
+		if !slices.Equal(got[i].Items, want[i]) {
+			t.Errorf("period %s items = %+v, want %+v", got[i].Period.Label, got[i].Items, want[i])
+		}
+	}
+}
+
 func TestLabelValidate(t *testing.T) {
 	ok := Label{Name: "example.org", Provider: "Registrar", Category: CategoryDomain}
 	if err := ok.Validate(); err != nil {

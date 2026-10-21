@@ -3795,6 +3795,10 @@
     "defaultMessage": "Server administration",
     "description": "Label of the group of server administration permissions, and the term of them in the list of roles."
   },
+  "admin.roles.category.member": {
+    "defaultMessage": "Member features",
+    "description": "Label of the group of member permissions (features of the user's side, such as reading the finances), and the term of them in the list of roles."
+  },
   "admin.roles.created": {
     "defaultMessage": "Created the role {role}. The audit log records it.",
     "description": "Result after creating a role. {role} is its key (isolated)."
@@ -3894,6 +3898,10 @@
   "admin.roles.permission.manage_finance": {
     "defaultMessage": "Costs",
     "description": "Name of the permission manage_finance: the instance's costs, their totals, and the imports of the cloud providers' usage charges."
+  },
+  "admin.roles.permission.view_finance": {
+    "defaultMessage": "Read the finances",
+    "description": "Name of the permission view_finance: reading the totals of the instance's costs on the finances page, without recording or changing them."
   },
   "admin.roles.permission.manage_supporters": {
     "defaultMessage": "Supporters",
@@ -4382,6 +4390,46 @@
   "admin.settings.finance.breakdown.description": {
     "defaultMessage": "Everyone also sees the totals by provider and category. This reveals which providers, such as cloud services, run this server.",
     "description": "Description of publishing the running costs with their breakdown, which reveals the providers that run the server."
+  },
+  "admin.settings.finance.viewer.description": {
+    "defaultMessage": "People whose roles let them read the finances see the totals and their breakdown by provider and category on the finances page, whatever is published. Choose what else they see.",
+    "description": "Introduction of the settings of what the holders of the view_finance permission see, in the costs section of the server settings."
+  },
+  "admin.settings.finance.viewer.item_names": {
+    "defaultMessage": "Show the names of the items",
+    "description": "Checkbox of the server setting finance_viewer_item_names."
+  },
+  "admin.settings.finance.viewer.item_names.description": {
+    "defaultMessage": "The names of the recorded costs and the services of the imported charges, with their amounts.",
+    "description": "Description of the checkbox of the server setting finance_viewer_item_names."
+  },
+  "admin.settings.finance.viewer.item_memos": {
+    "defaultMessage": "Show the memos of the items",
+    "description": "Checkbox of the server setting finance_viewer_item_memos."
+  },
+  "admin.settings.finance.viewer.item_memos.description": {
+    "defaultMessage": "The memos of the recorded costs, with their amounts. Memos may hold notes meant for the operators only.",
+    "description": "Description of the checkbox of the server setting finance_viewer_item_memos."
+  },
+  "admin.settings.finance.viewer.income": {
+    "defaultMessage": "Income",
+    "description": "Label of the choice of the server setting finance_viewer_income: how much of the income the holders of view_finance see."
+  },
+  "admin.settings.finance.viewer.income.totals": {
+    "defaultMessage": "Totals only",
+    "description": "Choice of showing the totals of the income only to the holders of view_finance."
+  },
+  "admin.settings.finance.viewer.income.totals.description": {
+    "defaultMessage": "The total of each currency by week, month, and year.",
+    "description": "Description of showing the totals of the income only."
+  },
+  "admin.settings.finance.viewer.income.plans": {
+    "defaultMessage": "Totals and members of each plan",
+    "description": "Choice of showing the totals of the income and the number of members of each plan to the holders of view_finance."
+  },
+  "admin.settings.finance.viewer.income.plans.description": {
+    "defaultMessage": "Also how many members each plan has, never its amounts or who they are.",
+    "description": "Description of showing the number of members of each plan too."
   },
   "admin.settings.crawlers.title": {
     "defaultMessage": "Search engines and AI",
@@ -8179,6 +8227,10 @@
     "defaultMessage": "Administration",
     "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
   },
+  "shell.nav.finance": {
+    "defaultMessage": "Finances",
+    "description": "Navigation item to the finances page, shown only to users whose roles have the view_finance permission."
+  },
   "shell.nav.bookmarks": {
     "defaultMessage": "Bookmarks",
     "description": "Navigation item that opens the list of the posts the user bookmarked. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
@@ -9347,6 +9399,10 @@
     "defaultMessage": "Change in the server settings",
     "description": "Link from the costs screen to the server settings, where the publication of the costs is chosen; shown to the viewers who may change the server settings."
   },
+  "admin.finance.viewer": {
+    "defaultMessage": "{names, select, shown {People who may read the finances see the names of the items,} other {People who may read the finances do not see the names of the items,}} {memos, select, shown {see their memos,} other {do not see their memos,}} {income, select, plans {and see the income with the members of each plan.} other {and see the totals of the income only.}}",
+    "description": "What the holders of the view_finance permission see on the finances page, on the costs screen, by the server settings finance_viewer_item_names and finance_viewer_item_memos (shown or hidden) and finance_viewer_income (totals or plans)."
+  },
   "admin.finance.totals.title": {
     "defaultMessage": "Totals",
     "description": "Heading of the section with the totals by period on the costs screen."
@@ -9423,6 +9479,14 @@
     "defaultMessage": "No costs in this period.",
     "description": "What the breakdown says for a period without costs on the costs screen and the public costs page."
   },
+  "costs.items.title": {
+    "defaultMessage": "Items of {period}",
+    "description": "Heading of the list of the cost items and imported services of the current period on the finances page. {period} is the period's name, such as October 2026."
+  },
+  "costs.items.empty": {
+    "defaultMessage": "No item has a cost in this period.",
+    "description": "What the list of the items of the current period says when no item has a cost in it."
+  },
   "costs.rules.title": {
     "defaultMessage": "How the periods are counted",
     "description": "Heading of the rules that cut the periods of the totals on the costs screen and the public costs page."
@@ -9486,6 +9550,34 @@
   "costs.public.retry": {
     "defaultMessage": "Try again",
     "description": "Button that tries again to load the totals of the running costs after a failure."
+  },
+  "finance.title": {
+    "defaultMessage": "Finances",
+    "description": "Heading and document title of the finances page, where the holders of the view_finance permission read the server's costs."
+  },
+  "finance.description": {
+    "defaultMessage": "The running costs of this server, totaled from the operators' records, with what they are spent on by provider and category. Amounts in different currencies are totaled on their own and never converted. Nobody's payments are shown.",
+    "description": "Introduction of the finances page."
+  },
+  "finance.items_shown": {
+    "defaultMessage": "{shown, select, both {This server shows the names and memos of the items.} names {This server shows the names of the items, not their memos.} memos {This server shows the memos of the items, not their names.} other {This server does not show the names or memos of the items.}}",
+    "description": "What the finances page shows of the cost items, by the server settings finance_viewer_item_names and finance_viewer_item_memos: both, names, memos, or none."
+  },
+  "finance.costs.title": {
+    "defaultMessage": "Costs",
+    "description": "Heading of the section of the totals of the costs on the finances page."
+  },
+  "finance.loading": {
+    "defaultMessage": "Loading the finances",
+    "description": "Accessible name of the progress indicator while the totals load on the finances page."
+  },
+  "finance.failed": {
+    "defaultMessage": "Couldn't load the finances",
+    "description": "Heading shown in place of the totals on the finances page when they could not be loaded."
+  },
+  "finance.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that tries again to load the totals of the finances page after a failure."
   },
   "admin.finance.new.title": {
     "defaultMessage": "Record a cost",

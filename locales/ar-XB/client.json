@@ -3323,6 +3323,10 @@
     "defaultMessage": "‮⊥oʇɐʅs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.finance.viewer": {
+    "defaultMessage": "‮{names,select,other{Ԁǝodʅǝ ʍɥo ɯɐʎ ɹǝɐp ʇɥǝ ɟıuɐuɔǝs po uoʇ sǝǝ ʇɥǝ uɐɯǝs oɟ ʇɥǝ ıʇǝɯs,} shown{Ԁǝodʅǝ ʍɥo ɯɐʎ ɹǝɐp ʇɥǝ ɟıuɐuɔǝs sǝǝ ʇɥǝ uɐɯǝs oɟ ʇɥǝ ıʇǝɯs,}} {memos,select,other{po uoʇ sǝǝ ʇɥǝıɹ ɯǝɯos,} shown{sǝǝ ʇɥǝıɹ ɯǝɯos,}} {income,select,other{ɐup sǝǝ ʇɥǝ ʇoʇɐʅs oɟ ʇɥǝ ıuɔoɯǝ ouʅʎ.} plans{ɐup sǝǝ ʇɥǝ ıuɔoɯǝ ʍıʇɥ ʇɥǝ ɯǝɯqǝɹs oɟ ǝɐɔɥ dʅɐu.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.finance.visibility": {
     "defaultMessage": "‮{visibility,select,breakdown{⊥ɥǝ ɐqonʇ dɐƃǝ dnqʅısɥǝs ʇɥǝ ʇoʇɐʅs oɟ ʇɥǝsǝ ɔosʇs ɐup ʇɥǝıɹ qɹǝɐʞpoʍu qʎ dɹoʌıpǝɹ ɐup ɔɐʇǝƃoɹʎ.} other{⊥ɥǝsǝ ɔosʇs ɐɹǝ uoʇ dnqʅısɥǝp.} totals{⊥ɥǝ ɐqonʇ dɐƃǝ dnqʅısɥǝs ʇɥǝ ʇoʇɐʅs oɟ ʇɥǝsǝ ɔosʇs, ʍıʇɥonʇ ʇɥǝıɹ qɹǝɐʞpoʍu.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4715,6 +4719,10 @@
     "defaultMessage": "‮Ↄɐuɔǝʅ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.category.member": {
+    "defaultMessage": "‮Wǝɯqǝɹ ɟǝɐʇnɹǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.category.moderation": {
     "defaultMessage": "‮Wopǝɹɐʇıou‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4869,6 +4877,10 @@
   },
   "admin.roles.permission.view_audit": {
     "defaultMessage": "‮∀npıʇ ʅoƃ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.view_finance": {
+    "defaultMessage": "‮ᴚǝɐp ʇɥǝ ɟıuɐuɔǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permissions.description": {
@@ -5349,6 +5361,46 @@
   },
   "admin.settings.finance.totals.description": {
     "defaultMessage": "‮Ǝʌǝɹʎouǝ sǝǝs ʇɥǝ ʇoʇɐʅ oɟ ǝɐɔɥ ɔnɹɹǝuɔʎ qʎ ʍǝǝʞ, ɯouʇɥ, ɐup ʎǝɐɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.description": {
+    "defaultMessage": "‮Ԁǝodʅǝ ʍɥosǝ ɹoʅǝs ʅǝʇ ʇɥǝɯ ɹǝɐp ʇɥǝ ɟıuɐuɔǝs sǝǝ ʇɥǝ ʇoʇɐʅs ɐup ʇɥǝıɹ qɹǝɐʞpoʍu qʎ dɹoʌıpǝɹ ɐup ɔɐʇǝƃoɹʎ ou ʇɥǝ ɟıuɐuɔǝs dɐƃǝ, ʍɥɐʇǝʌǝɹ ıs dnqʅısɥǝp. Ↄɥoosǝ ʍɥɐʇ ǝʅsǝ ʇɥǝʎ sǝǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income": {
+    "defaultMessage": "‮Iuɔoɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.plans": {
+    "defaultMessage": "‮⊥oʇɐʅs ɐup ɯǝɯqǝɹs oɟ ǝɐɔɥ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.plans.description": {
+    "defaultMessage": "‮∀ʅso ɥoʍ ɯɐuʎ ɯǝɯqǝɹs ǝɐɔɥ dʅɐu ɥɐs, uǝʌǝɹ ıʇs ɐɯonuʇs oɹ ʍɥo ʇɥǝʎ ɐɹǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.totals": {
+    "defaultMessage": "‮⊥oʇɐʅs ouʅʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.totals.description": {
+    "defaultMessage": "‮⊥ɥǝ ʇoʇɐʅ oɟ ǝɐɔɥ ɔnɹɹǝuɔʎ qʎ ʍǝǝʞ, ɯouʇɥ, ɐup ʎǝɐɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_memos": {
+    "defaultMessage": "‮Sɥoʍ ʇɥǝ ɯǝɯos oɟ ʇɥǝ ıʇǝɯs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_memos.description": {
+    "defaultMessage": "‮⊥ɥǝ ɯǝɯos oɟ ʇɥǝ ɹǝɔoɹpǝp ɔosʇs, ʍıʇɥ ʇɥǝıɹ ɐɯonuʇs. Wǝɯos ɯɐʎ ɥoʅp uoʇǝs ɯǝɐuʇ ɟoɹ ʇɥǝ odǝɹɐʇoɹs ouʅʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_names": {
+    "defaultMessage": "‮Sɥoʍ ʇɥǝ uɐɯǝs oɟ ʇɥǝ ıʇǝɯs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_names.description": {
+    "defaultMessage": "‮⊥ɥǝ uɐɯǝs oɟ ʇɥǝ ɹǝɔoɹpǝp ɔosʇs ɐup ʇɥǝ sǝɹʌıɔǝs oɟ ʇɥǝ ıɯdoɹʇǝp ɔɥɐɹƃǝs, ʍıʇɥ ʇɥǝıɹ ɐɯonuʇs.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.finance.visibility": {
@@ -7359,6 +7411,14 @@
     "defaultMessage": "‮⅄ǝɐɹs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "costs.items.empty": {
+    "defaultMessage": "‮No ıʇǝɯ ɥɐs ɐ ɔosʇ ıu ʇɥıs dǝɹıop.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.items.title": {
+    "defaultMessage": "‮Iʇǝɯs oɟ {period}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "costs.period.week": {
     "defaultMessage": "‮{range} ({week})‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7489,6 +7549,34 @@
   },
   "emoji.picker.uncategorized": {
     "defaultMessage": "‮Oʇɥǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.costs.title": {
+    "defaultMessage": "‮Ↄosʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.description": {
+    "defaultMessage": "‮⊥ɥǝ ɹnuuıuƃ ɔosʇs oɟ ʇɥıs sǝɹʌǝɹ, ʇoʇɐʅǝp ɟɹoɯ ʇɥǝ odǝɹɐʇoɹs' ɹǝɔoɹps, ʍıʇɥ ʍɥɐʇ ʇɥǝʎ ɐɹǝ sdǝuʇ ou qʎ dɹoʌıpǝɹ ɐup ɔɐʇǝƃoɹʎ. ∀ɯonuʇs ıu pıɟɟǝɹǝuʇ ɔnɹɹǝuɔıǝs ɐɹǝ ʇoʇɐʅǝp ou ʇɥǝıɹ oʍu ɐup uǝʌǝɹ ɔouʌǝɹʇǝp. Noqopʎ's dɐʎɯǝuʇs ɐɹǝ sɥoʍu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.failed": {
+    "defaultMessage": "‮Ↄonʅpu'ʇ ʅoɐp ʇɥǝ ɟıuɐuɔǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.items_shown": {
+    "defaultMessage": "‮{shown,select,both{⊥ɥıs sǝɹʌǝɹ sɥoʍs ʇɥǝ uɐɯǝs ɐup ɯǝɯos oɟ ʇɥǝ ıʇǝɯs.} memos{⊥ɥıs sǝɹʌǝɹ sɥoʍs ʇɥǝ ɯǝɯos oɟ ʇɥǝ ıʇǝɯs, uoʇ ʇɥǝıɹ uɐɯǝs.} names{⊥ɥıs sǝɹʌǝɹ sɥoʍs ʇɥǝ uɐɯǝs oɟ ʇɥǝ ıʇǝɯs, uoʇ ʇɥǝıɹ ɯǝɯos.} other{⊥ɥıs sǝɹʌǝɹ poǝs uoʇ sɥoʍ ʇɥǝ uɐɯǝs oɹ ɯǝɯos oɟ ʇɥǝ ıʇǝɯs.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.loading": {
+    "defaultMessage": "‮⅂oɐpıuƃ ʇɥǝ ɟıuɐuɔǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.retry": {
+    "defaultMessage": "‮⊥ɹʎ ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.title": {
+    "defaultMessage": "‮Ⅎıuɐuɔǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "home.title": {
@@ -9897,6 +9985,10 @@
   },
   "shell.nav.bookmarks": {
     "defaultMessage": "‮Ԑooʞɯɐɹʞs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.finance": {
+    "defaultMessage": "‮Ⅎıuɐuɔǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.nav.home": {

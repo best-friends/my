@@ -82,6 +82,7 @@ var operationSecurity = map[string]operationAccess{
 	"GET /api/v1/domain_mutes":                                            {Operation: "listDomainMutes", Scopes: []string{"read:mutes"}},
 	"GET /api/v1/exports":                                                 {Operation: "listDataExports", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/exports/{id}/archive":                                    {Operation: "downloadDataExport", Scopes: []string{"read:accounts"}},
+	"GET /api/v1/finance/cost_totals":                                     {Operation: "getFinanceCostTotals", Scopes: []string{"read:finance"}},
 	"GET /api/v1/follow_requests":                                         {Operation: "listFollowRequests", Scopes: []string{"read:follows"}},
 	"GET /api/v1/imports":                                                 {Operation: "listDataImports", Scopes: []string{"read:accounts"}},
 	"GET /api/v1/instance":                                                {Operation: "getInstance", Anonymous: true},

@@ -3795,6 +3795,10 @@
     "defaultMessage": "サーバー管理",
     "description": "Label of the group of server administration permissions, and the term of them in the list of roles."
   },
+  "admin.roles.category.member": {
+    "defaultMessage": "利用者の機能",
+    "description": "Label of the group of member permissions (features of the user's side, such as reading the finances), and the term of them in the list of roles."
+  },
   "admin.roles.created": {
     "defaultMessage": "ロール {role} を作成しました。監査ログに記録しました。",
     "description": "Result after creating a role. {role} is its key (isolated)."
@@ -3894,6 +3898,10 @@
   "admin.roles.permission.manage_finance": {
     "defaultMessage": "費用",
     "description": "Name of the permission manage_finance: the instance's costs, their totals, and the imports of the cloud providers' usage charges."
+  },
+  "admin.roles.permission.view_finance": {
+    "defaultMessage": "会計の閲覧",
+    "description": "Name of the permission view_finance: reading the totals of the instance's costs on the finances page, without recording or changing them."
   },
   "admin.roles.permission.manage_supporters": {
     "defaultMessage": "サポーター",
@@ -4382,6 +4390,46 @@
   "admin.settings.finance.breakdown.description": {
     "defaultMessage": "誰でも、事業者と区分ごとの合計も見られます。どの事業者（クラウドなど）でこのサーバーを動かしているかが知られます。",
     "description": "Description of publishing the running costs with their breakdown, which reveals the providers that run the server."
+  },
+  "admin.settings.finance.viewer.description": {
+    "defaultMessage": "ロールで会計の閲覧を許された人は、公開の範囲にかかわらず、会計の画面で合計と事業者・区分ごとの内訳を見られます。ほかに見せるものを選びます。",
+    "description": "Introduction of the settings of what the holders of the view_finance permission see, in the costs section of the server settings."
+  },
+  "admin.settings.finance.viewer.item_names": {
+    "defaultMessage": "項目の名前を見せる",
+    "description": "Checkbox of the server setting finance_viewer_item_names."
+  },
+  "admin.settings.finance.viewer.item_names.description": {
+    "defaultMessage": "登録した費用の名前と、取り込んだ料金のサービス名を、その金額とともに見せます。",
+    "description": "Description of the checkbox of the server setting finance_viewer_item_names."
+  },
+  "admin.settings.finance.viewer.item_memos": {
+    "defaultMessage": "項目のメモを見せる",
+    "description": "Checkbox of the server setting finance_viewer_item_memos."
+  },
+  "admin.settings.finance.viewer.item_memos.description": {
+    "defaultMessage": "登録した費用のメモを、その金額とともに見せます。メモには運営者だけに向けた書き込みがあるかもしれません。",
+    "description": "Description of the checkbox of the server setting finance_viewer_item_memos."
+  },
+  "admin.settings.finance.viewer.income": {
+    "defaultMessage": "収入",
+    "description": "Label of the choice of the server setting finance_viewer_income: how much of the income the holders of view_finance see."
+  },
+  "admin.settings.finance.viewer.income.totals": {
+    "defaultMessage": "合計だけ",
+    "description": "Choice of showing the totals of the income only to the holders of view_finance."
+  },
+  "admin.settings.finance.viewer.income.totals.description": {
+    "defaultMessage": "週・月・年ごとの通貨ごとの合計を見せます。",
+    "description": "Description of showing the totals of the income only."
+  },
+  "admin.settings.finance.viewer.income.plans": {
+    "defaultMessage": "合計とプランごとの人数",
+    "description": "Choice of showing the totals of the income and the number of members of each plan to the holders of view_finance."
+  },
+  "admin.settings.finance.viewer.income.plans.description": {
+    "defaultMessage": "加えて、プランごとの加入者の数を見せます。プランごとの金額と、誰が加入しているかは見せません。",
+    "description": "Description of showing the number of members of each plan too."
   },
   "admin.settings.crawlers.title": {
     "defaultMessage": "検索エンジンと AI",
@@ -8179,6 +8227,10 @@
     "defaultMessage": "管理",
     "description": "Navigation item to the server administration screens, shown only to users whose roles have a server administration permission."
   },
+  "shell.nav.finance": {
+    "defaultMessage": "会計",
+    "description": "Navigation item to the finances page, shown only to users whose roles have the view_finance permission."
+  },
   "shell.nav.bookmarks": {
     "defaultMessage": "ブックマーク",
     "description": "Navigation item that opens the list of the posts the user bookmarked. Keep it short: it is shown under an icon in the side rail of tablets and in the menu sheet of phones."
@@ -9347,6 +9399,10 @@
     "defaultMessage": "サーバーの設定で変える",
     "description": "Link from the costs screen to the server settings, where the publication of the costs is chosen; shown to the viewers who may change the server settings."
   },
+  "admin.finance.viewer": {
+    "defaultMessage": "{names, select, shown {会計を閲覧できる人には、項目の名前を見せ、} other {会計を閲覧できる人には、項目の名前を見せず、}}{memos, select, shown {メモを見せ、} other {メモを見せず、}}{income, select, plans {収入は合計とプランごとの人数を見せています。} other {収入は合計だけを見せています。}}",
+    "description": "What the holders of the view_finance permission see on the finances page, on the costs screen, by the server settings finance_viewer_item_names and finance_viewer_item_memos (shown or hidden) and finance_viewer_income (totals or plans)."
+  },
   "admin.finance.totals.title": {
     "defaultMessage": "集計",
     "description": "Heading of the section with the totals by period on the costs screen."
@@ -9423,6 +9479,14 @@
     "defaultMessage": "この期間の費用はありません。",
     "description": "What the breakdown says for a period without costs on the costs screen and the public costs page."
   },
+  "costs.items.title": {
+    "defaultMessage": "{period} の項目",
+    "description": "Heading of the list of the cost items and imported services of the current period on the finances page. {period} is the period's name, such as October 2026."
+  },
+  "costs.items.empty": {
+    "defaultMessage": "この期間に費用のある項目はありません。",
+    "description": "What the list of the items of the current period says when no item has a cost in it."
+  },
   "costs.rules.title": {
     "defaultMessage": "期間の区切り方",
     "description": "Heading of the rules that cut the periods of the totals on the costs screen and the public costs page."
@@ -9486,6 +9550,34 @@
   "costs.public.retry": {
     "defaultMessage": "もう一度試す",
     "description": "Button that tries again to load the totals of the running costs after a failure."
+  },
+  "finance.title": {
+    "defaultMessage": "会計",
+    "description": "Heading and document title of the finances page, where the holders of the view_finance permission read the server's costs."
+  },
+  "finance.description": {
+    "defaultMessage": "このサーバーの運営にかかる費用を運営者の記録から集計し、事業者・区分ごとの内訳とともに示します。通貨の違う金額は別々に合計し、換算しません。誰がいくら払ったかは出しません。",
+    "description": "Introduction of the finances page."
+  },
+  "finance.items_shown": {
+    "defaultMessage": "{shown, select, both {このサーバーは項目の名前とメモを見せています。} names {このサーバーは項目の名前を見せ、メモは見せていません。} memos {このサーバーは項目のメモを見せ、名前は見せていません。} other {このサーバーは項目の名前もメモも見せていません。}}",
+    "description": "What the finances page shows of the cost items, by the server settings finance_viewer_item_names and finance_viewer_item_memos: both, names, memos, or none."
+  },
+  "finance.costs.title": {
+    "defaultMessage": "費用",
+    "description": "Heading of the section of the totals of the costs on the finances page."
+  },
+  "finance.loading": {
+    "defaultMessage": "会計を読み込んでいます",
+    "description": "Accessible name of the progress indicator while the totals load on the finances page."
+  },
+  "finance.failed": {
+    "defaultMessage": "会計を読み込めませんでした",
+    "description": "Heading shown in place of the totals on the finances page when they could not be loaded."
+  },
+  "finance.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the totals of the finances page after a failure."
   },
   "admin.finance.new.title": {
     "defaultMessage": "費用を登録する",

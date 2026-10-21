@@ -76,6 +76,7 @@ export {
   ExternalLinkIcon,
   EyeIcon,
   FederatedIcon,
+  FinanceIcon,
   HomeIcon,
   ImageIcon,
   LanguageIcon,

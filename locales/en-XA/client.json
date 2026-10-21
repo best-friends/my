@@ -3323,6 +3323,10 @@
     "defaultMessage": "[Ŧǿǿŧȧȧŀş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.finance.viewer": {
+    "defaultMessage": "[{names,select,other{Ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ḿȧȧẏ řḗḗȧȧḓ ŧħḗḗ ƒīƞȧȧƞƈḗḗş ḓǿǿ ƞǿǿŧ şḗḗḗḗ ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş,} shown{Ƥḗḗǿǿƥŀḗḗ ẇħǿǿ ḿȧȧẏ řḗḗȧȧḓ ŧħḗḗ ƒīƞȧȧƞƈḗḗş şḗḗḗḗ ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş,}} {memos,select,other{ḓǿǿ ƞǿǿŧ şḗḗḗḗ ŧħḗḗīř ḿḗḗḿǿǿş,} shown{şḗḗḗḗ ŧħḗḗīř ḿḗḗḿǿǿş,}} {income,select,other{ȧȧƞḓ şḗḗḗḗ ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗ īƞƈǿǿḿḗḗ ǿǿƞŀẏ.} plans{ȧȧƞḓ şḗḗḗḗ ŧħḗḗ īƞƈǿǿḿḗḗ ẇīŧħ ŧħḗḗ ḿḗḗḿƀḗḗřş ǿǿƒ ḗḗȧȧƈħ ƥŀȧȧƞ.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.finance.visibility": {
     "defaultMessage": "[{visibility,select,breakdown{Ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ƥŭŭƀŀīşħḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗşḗḗ ƈǿǿşŧş ȧȧƞḓ ŧħḗḗīř ƀřḗḗȧȧķḓǿǿẇƞ ƀẏ ƥřǿǿṽīḓḗḗř ȧȧƞḓ ƈȧȧŧḗḗɠǿǿřẏ.} other{Ŧħḗḗşḗḗ ƈǿǿşŧş ȧȧřḗḗ ƞǿǿŧ ƥŭŭƀŀīşħḗḗḓ.} totals{Ŧħḗḗ ȧȧƀǿǿŭŭŧ ƥȧȧɠḗḗ ƥŭŭƀŀīşħḗḗş ŧħḗḗ ŧǿǿŧȧȧŀş ǿǿƒ ŧħḗḗşḗḗ ƈǿǿşŧş, ẇīŧħǿǿŭŭŧ ŧħḗḗīř ƀřḗḗȧȧķḓǿǿẇƞ.}}]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4715,6 +4719,10 @@
     "defaultMessage": "[Ƈȧȧƞƈḗḗŀ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.category.member": {
+    "defaultMessage": "[Ḿḗḗḿƀḗḗř ƒḗḗȧȧŧŭŭřḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.category.moderation": {
     "defaultMessage": "[Ḿǿǿḓḗḗřȧȧŧīǿǿƞ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -4869,6 +4877,10 @@
   },
   "admin.roles.permission.view_audit": {
     "defaultMessage": "[Ȧŭŭḓīŧ ŀǿǿɠ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.roles.permission.view_finance": {
+    "defaultMessage": "[Řḗḗȧȧḓ ŧħḗḗ ƒīƞȧȧƞƈḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.roles.permissions.description": {
@@ -5349,6 +5361,46 @@
   },
   "admin.settings.finance.totals.description": {
     "defaultMessage": "[Ḗṽḗḗřẏǿǿƞḗḗ şḗḗḗḗş ŧħḗḗ ŧǿǿŧȧȧŀ ǿǿƒ ḗḗȧȧƈħ ƈŭŭřřḗḗƞƈẏ ƀẏ ẇḗḗḗḗķ, ḿǿǿƞŧħ, ȧȧƞḓ ẏḗḗȧȧř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.description": {
+    "defaultMessage": "[Ƥḗḗǿǿƥŀḗḗ ẇħǿǿşḗḗ řǿǿŀḗḗş ŀḗḗŧ ŧħḗḗḿ řḗḗȧȧḓ ŧħḗḗ ƒīƞȧȧƞƈḗḗş şḗḗḗḗ ŧħḗḗ ŧǿǿŧȧȧŀş ȧȧƞḓ ŧħḗḗīř ƀřḗḗȧȧķḓǿǿẇƞ ƀẏ ƥřǿǿṽīḓḗḗř ȧȧƞḓ ƈȧȧŧḗḗɠǿǿřẏ ǿǿƞ ŧħḗḗ ƒīƞȧȧƞƈḗḗş ƥȧȧɠḗḗ, ẇħȧȧŧḗḗṽḗḗř īş ƥŭŭƀŀīşħḗḗḓ. Ƈħǿǿǿǿşḗḗ ẇħȧȧŧ ḗḗŀşḗḗ ŧħḗḗẏ şḗḗḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income": {
+    "defaultMessage": "[Īƞƈǿǿḿḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.plans": {
+    "defaultMessage": "[Ŧǿǿŧȧȧŀş ȧȧƞḓ ḿḗḗḿƀḗḗřş ǿǿƒ ḗḗȧȧƈħ ƥŀȧȧƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.plans.description": {
+    "defaultMessage": "[Ȧŀşǿǿ ħǿǿẇ ḿȧȧƞẏ ḿḗḗḿƀḗḗřş ḗḗȧȧƈħ ƥŀȧȧƞ ħȧȧş, ƞḗḗṽḗḗř īŧş ȧȧḿǿǿŭŭƞŧş ǿǿř ẇħǿǿ ŧħḗḗẏ ȧȧřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.totals": {
+    "defaultMessage": "[Ŧǿǿŧȧȧŀş ǿǿƞŀẏ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.income.totals.description": {
+    "defaultMessage": "[Ŧħḗḗ ŧǿǿŧȧȧŀ ǿǿƒ ḗḗȧȧƈħ ƈŭŭřřḗḗƞƈẏ ƀẏ ẇḗḗḗḗķ, ḿǿǿƞŧħ, ȧȧƞḓ ẏḗḗȧȧř.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_memos": {
+    "defaultMessage": "[Şħǿǿẇ ŧħḗḗ ḿḗḗḿǿǿş ǿǿƒ ŧħḗḗ īŧḗḗḿş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_memos.description": {
+    "defaultMessage": "[Ŧħḗḗ ḿḗḗḿǿǿş ǿǿƒ ŧħḗḗ řḗḗƈǿǿřḓḗḗḓ ƈǿǿşŧş, ẇīŧħ ŧħḗḗīř ȧȧḿǿǿŭŭƞŧş. Ḿḗḗḿǿǿş ḿȧȧẏ ħǿǿŀḓ ƞǿǿŧḗḗş ḿḗḗȧȧƞŧ ƒǿǿř ŧħḗḗ ǿǿƥḗḗřȧȧŧǿǿřş ǿǿƞŀẏ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_names": {
+    "defaultMessage": "[Şħǿǿẇ ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.settings.finance.viewer.item_names.description": {
+    "defaultMessage": "[Ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ řḗḗƈǿǿřḓḗḗḓ ƈǿǿşŧş ȧȧƞḓ ŧħḗḗ şḗḗřṽīƈḗḗş ǿǿƒ ŧħḗḗ īḿƥǿǿřŧḗḗḓ ƈħȧȧřɠḗḗş, ẇīŧħ ŧħḗḗīř ȧȧḿǿǿŭŭƞŧş.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.settings.finance.visibility": {
@@ -7359,6 +7411,14 @@
     "defaultMessage": "[Ẏḗḗȧȧřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "costs.items.empty": {
+    "defaultMessage": "[Ƞǿǿ īŧḗḗḿ ħȧȧş ȧȧ ƈǿǿşŧ īƞ ŧħīş ƥḗḗřīǿǿḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "costs.items.title": {
+    "defaultMessage": "[Īŧḗḗḿş ǿǿƒ {period}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "costs.period.week": {
     "defaultMessage": "[{range} ({week})]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7489,6 +7549,34 @@
   },
   "emoji.picker.uncategorized": {
     "defaultMessage": "[Ǿŧħḗḗř]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.costs.title": {
+    "defaultMessage": "[Ƈǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.description": {
+    "defaultMessage": "[Ŧħḗḗ řŭŭƞƞīƞɠ ƈǿǿşŧş ǿǿƒ ŧħīş şḗḗřṽḗḗř, ŧǿǿŧȧȧŀḗḗḓ ƒřǿǿḿ ŧħḗḗ ǿǿƥḗḗřȧȧŧǿǿřş' řḗḗƈǿǿřḓş, ẇīŧħ ẇħȧȧŧ ŧħḗḗẏ ȧȧřḗḗ şƥḗḗƞŧ ǿǿƞ ƀẏ ƥřǿǿṽīḓḗḗř ȧȧƞḓ ƈȧȧŧḗḗɠǿǿřẏ. Ȧḿǿǿŭŭƞŧş īƞ ḓīƒƒḗḗřḗḗƞŧ ƈŭŭřřḗḗƞƈīḗḗş ȧȧřḗḗ ŧǿǿŧȧȧŀḗḗḓ ǿǿƞ ŧħḗḗīř ǿǿẇƞ ȧȧƞḓ ƞḗḗṽḗḗř ƈǿǿƞṽḗḗřŧḗḗḓ. Ƞǿǿƀǿǿḓẏ'ş ƥȧȧẏḿḗḗƞŧş ȧȧřḗḗ şħǿǿẇƞ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓƞ'ŧ ŀǿǿȧȧḓ ŧħḗḗ ƒīƞȧȧƞƈḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.items_shown": {
+    "defaultMessage": "[{shown,select,both{Ŧħīş şḗḗřṽḗḗř şħǿǿẇş ŧħḗḗ ƞȧȧḿḗḗş ȧȧƞḓ ḿḗḗḿǿǿş ǿǿƒ ŧħḗḗ īŧḗḗḿş.} memos{Ŧħīş şḗḗřṽḗḗř şħǿǿẇş ŧħḗḗ ḿḗḗḿǿǿş ǿǿƒ ŧħḗḗ īŧḗḗḿş, ƞǿǿŧ ŧħḗḗīř ƞȧȧḿḗḗş.} names{Ŧħīş şḗḗřṽḗḗř şħǿǿẇş ŧħḗḗ ƞȧȧḿḗḗş ǿǿƒ ŧħḗḗ īŧḗḗḿş, ƞǿǿŧ ŧħḗḗīř ḿḗḗḿǿǿş.} other{Ŧħīş şḗḗřṽḗḗř ḓǿǿḗḗş ƞǿǿŧ şħǿǿẇ ŧħḗḗ ƞȧȧḿḗḗş ǿǿř ḿḗḗḿǿǿş ǿǿƒ ŧħḗḗ īŧḗḗḿş.}}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.loading": {
+    "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ŧħḗḗ ƒīƞȧȧƞƈḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.retry": {
+    "defaultMessage": "[Ŧřẏ ȧȧɠȧȧīƞ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "finance.title": {
+    "defaultMessage": "[Ƒīƞȧȧƞƈḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "home.title": {
@@ -9897,6 +9985,10 @@
   },
   "shell.nav.bookmarks": {
     "defaultMessage": "[Ɓǿǿǿǿķḿȧȧřķş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "shell.nav.finance": {
+    "defaultMessage": "[Ƒīƞȧȧƞƈḗḗş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "shell.nav.home": {

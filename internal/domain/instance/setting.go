@@ -75,6 +75,13 @@ const (
 	// SettingFinanceVisibility decides how much of the instance's costs the public API and the
 	// about page show (FR-903, ADR-0067 §8).
 	SettingFinanceVisibility SettingKey = "finance_visibility"
+	// SettingFinanceViewerItemNames, SettingFinanceViewerItemMemos, and SettingFinanceViewerIncome
+	// decide how much of the instance's finances the holders of view_finance read on /finance
+	// (ADR-0070 §5): the names of the cost items and the services of the imported costs, the
+	// memos of the cost items, and the income as totals only or with the members of each plan.
+	SettingFinanceViewerItemNames SettingKey = "finance_viewer_item_names"
+	SettingFinanceViewerItemMemos SettingKey = "finance_viewer_item_memos"
+	SettingFinanceViewerIncome    SettingKey = "finance_viewer_income"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -129,6 +136,24 @@ const (
 	FinanceTotals    FinanceVisibility = "totals"    // the total of each currency by period
 	FinanceBreakdown FinanceVisibility = "breakdown" // the totals and their breakdown by provider and category
 )
+
+// FinanceViewerIncome is the value of SettingFinanceViewerIncome (ADR-0070 §5): how much of the
+// income the holders of view_finance read. No value shows the amounts of each plan or who paid.
+type FinanceViewerIncome string
+
+// Finance viewer income values.
+const (
+	FinanceViewerIncomeTotals FinanceViewerIncome = "totals" // the total of each currency by period
+	FinanceViewerIncomePlans  FinanceViewerIncome = "plans"  // the totals and the number of members of each plan
+)
+
+// FinanceViewer is what the holders of view_finance read of the instance's finances beyond the
+// totals and their breakdown by provider and category, which they always read (ADR-0070 §5).
+type FinanceViewer struct {
+	ItemNames bool
+	ItemMemos bool
+	Income    FinanceViewerIncome
+}
 
 // SearchIndexing is the value of SettingSearchIndexing (ADR-0057): whether search engines may
 // index the instance's pages.
@@ -329,6 +354,19 @@ var definitions = []Definition{
 		Key: SettingFinanceVisibility, Kind: KindEnum, Default: string(FinancePrivate),
 		Choices: []string{string(FinancePrivate), string(FinanceTotals), string(FinanceBreakdown)},
 		Doc:     "How much of the instance's costs GET /instance/cost_totals and the about page show: private (nothing), totals (the total of each currency by period), or breakdown (also by provider and category); item names, memos, and individual payments are never shown (FR-903, ADR-0067 §8).",
+	},
+	{
+		Key: SettingFinanceViewerItemNames, Kind: KindBool, Default: "false",
+		Doc: "Whether the holders of the view_finance permission read the names of the cost items and the services of the imported costs on /finance (ADR-0070 §5).",
+	},
+	{
+		Key: SettingFinanceViewerItemMemos, Kind: KindBool, Default: "false",
+		Doc: "Whether the holders of the view_finance permission read the memos of the cost items on /finance (ADR-0070 §5).",
+	},
+	{
+		Key: SettingFinanceViewerIncome, Kind: KindEnum, Default: string(FinanceViewerIncomeTotals),
+		Choices: []string{string(FinanceViewerIncomeTotals), string(FinanceViewerIncomePlans)},
+		Doc:     "How much of the income the holders of the view_finance permission read on /finance: totals (the total of each currency by period) or plans (also the number of members of each plan, never its amounts) (ADR-0070 §5).",
 	},
 }
 
@@ -696,6 +734,19 @@ func (s Settings) FinanceVisibility() FinanceVisibility {
 		return FinanceBreakdown
 	}
 	return FinancePrivate
+}
+
+// FinanceViewer returns the values of SettingFinanceViewerItemNames,
+// SettingFinanceViewerItemMemos, and SettingFinanceViewerIncome; an unexpected income value is
+// totals.
+func (s Settings) FinanceViewer() FinanceViewer {
+	income := FinanceViewerIncomeTotals
+	if v, _ := s.Value(SettingFinanceViewerIncome); v == string(FinanceViewerIncomePlans) {
+		income = FinanceViewerIncomePlans
+	}
+	return FinanceViewer{
+		ItemNames: s.boolValue(SettingFinanceViewerItemNames), ItemMemos: s.boolValue(SettingFinanceViewerItemMemos), Income: income,
+	}
 }
 
 // LinkCardsEnabled returns the value of SettingLinkCardsEnabled.
