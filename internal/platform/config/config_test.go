@@ -567,6 +567,23 @@ func TestLoadInvalid(t *testing.T) {
 			},
 		},
 		{
+			name: "stripe without keys",
+			env:  with(minimal(), "MY_PAYMENTS_PROVIDER", "stripe"),
+			want: []string{
+				"payments_stripe_secret_key (MY_PAYMENTS_STRIPE_SECRET_KEY): required when payments_provider is stripe",
+				"payments_stripe_webhook_secret (MY_PAYMENTS_STRIPE_WEBHOOK_SECRET): required when payments_provider is stripe",
+			},
+		},
+		{
+			name: "stripe with a publishable key and a bare secret",
+			env: with(with(with(minimal(), "MY_PAYMENTS_PROVIDER", "stripe"),
+				"MY_PAYMENTS_STRIPE_SECRET_KEY", "pk_live_abc"), "MY_PAYMENTS_STRIPE_WEBHOOK_SECRET", "whsec_"),
+			want: []string{
+				"payments_stripe_secret_key (MY_PAYMENTS_STRIPE_SECRET_KEY): must be a Stripe secret key",
+				"payments_stripe_webhook_secret (MY_PAYMENTS_STRIPE_WEBHOOK_SECRET): must be a Stripe webhook signing secret",
+			},
+		},
+		{
 			name: "vapid private key that is not a P-256 key",
 			env:  with(minimal(), "MY_VAPID_PRIVATE_KEY", "c2hvcnQ"),
 			want: []string{"vapid_private_key (MY_VAPID_PRIVATE_KEY): "},
@@ -683,7 +700,8 @@ func TestLoadSettingsRedactSecrets(t *testing.T) {
 		"MY_CAPTCHA", "turnstile", "MY_CAPTCHA_SITE_KEY", "site", "MY_CAPTCHA_SECRET_KEY", "0x5eCrE7",
 		"MY_VAPID_PRIVATE_KEY", "yfWPiYE-n46HLnH0KqZOF1fJJU3MYrct3AELtAQ-oRw",
 		"MY_KV", "valkey", "MY_VALKEY_URL", "valkey://user:pass@cache:6379/0",
-		"MY_STREAM_POSTGRES_URL", "postgres://user:pass@db/my"), nil))
+		"MY_STREAM_POSTGRES_URL", "postgres://user:pass@db/my",
+		"MY_PAYMENTS_PROVIDER", "stripe", "MY_PAYMENTS_STRIPE_SECRET_KEY", "rk_test_abc", "MY_PAYMENTS_STRIPE_WEBHOOK_SECRET", "whsec_abc"), nil))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+//go:build no_payments_stripe
+
+package platform
+
+import (
+	"context"
+	"log/slog"
+
+	"github.com/best-friends/my/internal/app/supporters"
+	"github.com/best-friends/my/internal/platform/config"
+)
+
+func init() { paymentProviderAdapters["stripe"] = newStripePaymentProvider }
+
+// newStripePaymentProvider reports that the build tag no_payments_stripe left the Stripe adapter
+// out.
+func newStripePaymentProvider(context.Context, *config.Config, *slog.Logger) (supporters.PaymentProvider, error) {
+	return nil, config.ExcludedError("payments_provider", "stripe", "no_payments_stripe")
+}

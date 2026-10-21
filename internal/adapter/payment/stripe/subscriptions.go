@@ -1,0 +1,365 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+package stripe
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"time"
+
+	stripe "github.com/stripe/stripe-go/v87"
+
+	"github.com/best-friends/my/internal/app/supporters"
+)
+
+// subscriptionExpand are the objects that a snapshot reads with the subscription: the latest
+// invoice (a failed payment) and the schedule (a change at the period's end).
+var subscriptionExpand = []string{"latest_invoice", "schedule"}
+
+func expand(prefix string, paths []string) []*string {
+	out := make([]*string, len(paths))
+	for i, p := range paths {
+		out[i] = stripe.String(prefix + p)
+	}
+	return out
+}
+
+// statuses maps Stripe's states of a subscription to the port's (ADR-0074 §1). A trial is
+// active: the plans have none.
+var statuses = map[stripe.SubscriptionStatus]supporters.SubscriptionStatus{
+	stripe.SubscriptionStatusIncomplete:        supporters.StatusIncomplete,
+	stripe.SubscriptionStatusIncompleteExpired: supporters.StatusIncompleteExpired,
+	stripe.SubscriptionStatusTrialing:          supporters.StatusActive,
+	stripe.SubscriptionStatusActive:            supporters.StatusActive,
+	stripe.SubscriptionStatusPastDue:           supporters.StatusPastDue,
+	stripe.SubscriptionStatusUnpaid:            supporters.StatusUnpaid,
+	stripe.SubscriptionStatusPaused:            supporters.StatusPaused,
+	stripe.SubscriptionStatusCanceled:          supporters.StatusCanceled,
+}
+
+// snapshot returns the port's snapshot of a subscription read with subscriptionExpand.
+func (p *Provider) snapshot(ctx context.Context, s *stripe.Subscription) (supporters.SubscriptionSnapshot, error) {
+	if err := checkItems(s); err != nil {
+		return supporters.SubscriptionSnapshot{}, err
+	}
+	item := s.Items.Data[0]
+	snap := supporters.SubscriptionSnapshot{
+		Ref: supporters.SubscriptionRef(s.ID), LocalID: s.Metadata[metaSubscriptionID], Price: supporters.PriceRef(item.Price.ID),
+		PeriodStart: unixTime(item.CurrentPeriodStart), PeriodEnd: unixTime(item.CurrentPeriodEnd),
+		CancelAtPeriodEnd: s.CancelAtPeriodEnd,
+	}
+	if s.Customer != nil {
+		snap.Customer = supporters.CustomerRef(s.Customer.ID)
+	}
+	status, ok := statuses[s.Status]
+	if !ok {
+		p.log.WarnContext(ctx, "unknown state of a Stripe subscription; it gets no role",
+			slog.String("subscription", s.ID), slog.String("status", string(s.Status)))
+		status = supporters.StatusUnpaid
+	}
+	snap.Status = status
+	snap.ScheduledPrice = scheduledPrice(s, item.CurrentPeriodEnd)
+	snap.LatestPaymentFailed = paymentFailed(s.LatestInvoice)
+	return snap, nil
+}
+
+// pendingSchedule returns the subscription's schedule while it still waits to change it.
+func pendingSchedule(s *stripe.Subscription) *stripe.SubscriptionSchedule {
+	sch := s.Schedule
+	if sch == nil || sch.ID == "" {
+		return nil
+	}
+	if sch.Status != "" && sch.Status != stripe.SubscriptionScheduleStatusActive && sch.Status != stripe.SubscriptionScheduleStatusNotStarted {
+		return nil
+	}
+	return sch
+}
+
+// scheduledPrice returns the price of the schedule's phase that starts at or after periodEnd,
+// when it differs from the current one.
+func scheduledPrice(s *stripe.Subscription, periodEnd int64) supporters.PriceRef {
+	sch := pendingSchedule(s)
+	if sch == nil {
+		return ""
+	}
+	for _, ph := range sch.Phases {
+		if ph.StartDate < periodEnd || len(ph.Items) == 0 || ph.Items[0].Price == nil {
+			continue
+		}
+		if price := ph.Items[0].Price.ID; price != s.Items.Data[0].Price.ID {
+			return supporters.PriceRef(price)
+		}
+		return ""
+	}
+	return ""
+}
+
+// paymentFailed returns when the payment of an invoice that is still open first failed: Stripe
+// attempts an invoice of a subscription when it finalizes it, so the first failure is at the
+// finalization. Zero when the invoice is paid, not attempted yet, or not read.
+func paymentFailed(inv *stripe.Invoice) time.Time {
+	if inv == nil || inv.Status != stripe.InvoiceStatusOpen || !inv.Attempted || inv.AttemptCount == 0 || inv.StatusTransitions == nil {
+		return time.Time{}
+	}
+	return unixTime(inv.StatusTransitions.FinalizedAt)
+}
+
+// GetSubscription implements supporters.PaymentProvider.
+func (p *Provider) GetSubscription(ctx context.Context, ref supporters.SubscriptionRef) (supporters.SubscriptionSnapshot, error) {
+	s, err := p.subscription(ctx, ref)
+	if err != nil {
+		return supporters.SubscriptionSnapshot{}, err
+	}
+	return p.snapshot(ctx, s)
+}
+
+func (p *Provider) subscription(ctx context.Context, ref supporters.SubscriptionRef) (*stripe.Subscription, error) {
+	if ref == "" {
+		return nil, fmt.Errorf("stripe: %w: no subscription", supporters.ErrPaymentNotFound)
+	}
+	var s *stripe.Subscription
+	err := p.do(ctx, "read the subscription "+string(ref), func() (err error) {
+		s, err = p.sc.V1Subscriptions.Retrieve(ctx, string(ref), &stripe.SubscriptionRetrieveParams{Expand: expand("", subscriptionExpand)})
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s, checkItems(s)
+}
+
+// checkItems refuses a subscription without the one priced item of the plans.
+func checkItems(s *stripe.Subscription) error {
+	if s.Items == nil || len(s.Items.Data) == 0 || s.Items.Data[0].Price == nil {
+		return fmt.Errorf("stripe: %w: subscription %s has no price", supporters.ErrInvalidPaymentResponse, s.ID)
+	}
+	return nil
+}
+
+// ListSubscriptions implements supporters.PaymentProvider: every subscription of the account
+// (status=all), canceled ones included, newest first, with their latest invoices and schedules.
+// The cursor is the ID of the last subscription of the previous page.
+func (p *Provider) ListSubscriptions(ctx context.Context, cursor string) (supporters.SubscriptionPage, error) {
+	params := &stripe.SubscriptionListParams{
+		ListParams: stripe.ListParams{Limit: stripe.Int64(supporters.PageSize), Single: true},
+		Status:     stripe.String("all"),
+		Expand:     expand("data.", subscriptionExpand),
+	}
+	if cursor != "" {
+		params.StartingAfter = stripe.String(cursor)
+	}
+	var list *stripe.V1List[*stripe.Subscription]
+	err := p.do(ctx, "list the subscriptions", func() error {
+		list = p.sc.V1Subscriptions.List(ctx, params)
+		return list.Err()
+	})
+	if err != nil {
+		return supporters.SubscriptionPage{}, err
+	}
+	var page supporters.SubscriptionPage
+	for _, s := range list.Data() {
+		snap, err := p.snapshot(ctx, s)
+		if err != nil {
+			return supporters.SubscriptionPage{}, err
+		}
+		page.Subscriptions = append(page.Subscriptions, snap)
+	}
+	if data := list.Data(); list.Meta().HasMore && len(data) > 0 {
+		page.Next = data[len(data)-1].ID
+	}
+	return page, nil
+}
+
+// ChangePrice implements supporters.PaymentProvider (ADR-0074 §2). ChangeNowProrated replaces
+// the price of the subscription's item and invoices the prorated difference at once
+// (proration_behavior=always_invoice), dropping a change that waited for the period's end.
+// ChangeAtPeriodEnd puts the subscription on a schedule whose next phase, from the end of the
+// current period, has the new price; the schedule releases the subscription after that phase.
+func (p *Provider) ChangePrice(ctx context.Context, ref supporters.SubscriptionRef, to supporters.PriceRef, when supporters.ChangeTiming, key string) error {
+	if to == "" {
+		return fmt.Errorf("stripe: %w: no price", supporters.ErrPaymentInvalidRequest)
+	}
+	s, err := p.subscription(ctx, ref)
+	if err != nil {
+		return err
+	}
+	if ended(s) {
+		return fmt.Errorf("stripe: %w: subscription %s ended", supporters.ErrPaymentInvalidRequest, ref)
+	}
+	item := s.Items.Data[0]
+	current := supporters.PriceRef(item.Price.ID)
+	switch when {
+	case supporters.ChangeNowProrated:
+		if current == to {
+			// The same price: only a change waiting for the period's end may be left to drop.
+			return p.release(ctx, s, key)
+		}
+		if err := p.release(ctx, s, key); err != nil {
+			return err
+		}
+		return p.do(ctx, "change the price of "+string(ref), func() (err error) {
+			_, err = p.sc.V1Subscriptions.Update(ctx, s.ID, &stripe.SubscriptionUpdateParams{
+				Params:            idempotency(key, "change_now"),
+				Items:             []*stripe.SubscriptionUpdateItemParams{{ID: stripe.String(item.ID), Price: stripe.String(string(to))}},
+				ProrationBehavior: stripe.String("always_invoice"),
+			})
+			return err
+		})
+	case supporters.ChangeAtPeriodEnd:
+		if current == to {
+			return p.release(ctx, s, key)
+		}
+		if scheduledPrice(s, item.CurrentPeriodEnd) == to {
+			return nil
+		}
+		return p.scheduleChange(ctx, s, to, key)
+	default:
+		return fmt.Errorf("stripe: %w: unknown timing %q", supporters.ErrPaymentInvalidRequest, when)
+	}
+}
+
+// scheduleChange sets the schedule of s to two phases: the current price until the period's
+// end, then to for one interval of it, after which the schedule releases the subscription.
+func (p *Provider) scheduleChange(ctx context.Context, s *stripe.Subscription, to supporters.PriceRef, key string) error {
+	var target *stripe.Price
+	err := p.do(ctx, "read the price "+string(to), func() (err error) {
+		target, err = p.sc.V1Prices.Retrieve(ctx, string(to), &stripe.PriceRetrieveParams{})
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	if target.Recurring == nil {
+		return fmt.Errorf("stripe: %w: price %s does not recur", supporters.ErrPaymentInvalidRequest, to)
+	}
+	sch := pendingSchedule(s)
+	if sch == nil {
+		err := p.do(ctx, "create a schedule of "+s.ID, func() (err error) {
+			sch, err = p.sc.V1SubscriptionSchedules.Create(ctx, &stripe.SubscriptionScheduleCreateParams{
+				Params: idempotency(key, "schedule"), FromSubscription: stripe.String(s.ID),
+			})
+			return err
+		})
+		if err != nil {
+			return err
+		}
+	}
+	item := s.Items.Data[0]
+	start := item.CurrentPeriodStart
+	if sch.CurrentPhase != nil && sch.CurrentPhase.StartDate != 0 {
+		start = sch.CurrentPhase.StartDate
+	} else if len(sch.Phases) > 0 && sch.Phases[0].StartDate != 0 {
+		start = sch.Phases[0].StartDate
+	}
+	interval := string(target.Recurring.Interval)
+	count := max(target.Recurring.IntervalCount, 1)
+	return p.do(ctx, "schedule the change of "+s.ID, func() (err error) {
+		_, err = p.sc.V1SubscriptionSchedules.Update(ctx, sch.ID, &stripe.SubscriptionScheduleUpdateParams{
+			Params:            idempotency(key, "schedule_phases"),
+			EndBehavior:       stripe.String("release"),
+			ProrationBehavior: stripe.String("none"),
+			Phases: []*stripe.SubscriptionScheduleUpdatePhaseParams{
+				{
+					Items:     []*stripe.SubscriptionScheduleUpdatePhaseItemParams{{Price: stripe.String(item.Price.ID), Quantity: stripe.Int64(max(item.Quantity, 1))}},
+					StartDate: stripe.Int64(start), EndDate: stripe.Int64(item.CurrentPeriodEnd),
+					ProrationBehavior: stripe.String("none"),
+				},
+				{
+					Items:             []*stripe.SubscriptionScheduleUpdatePhaseItemParams{{Price: stripe.String(string(to)), Quantity: stripe.Int64(1)}},
+					Duration:          &stripe.SubscriptionScheduleUpdatePhaseDurationParams{Interval: stripe.String(interval), IntervalCount: stripe.Int64(count)},
+					ProrationBehavior: stripe.String("none"),
+				},
+			},
+		})
+		return err
+	})
+}
+
+// release releases the schedule of s that still waits to change it; nothing without one.
+func (p *Provider) release(ctx context.Context, s *stripe.Subscription, key string) error {
+	sch := pendingSchedule(s)
+	if sch == nil {
+		return nil
+	}
+	return p.do(ctx, "release the schedule of "+s.ID, func() (err error) {
+		_, err = p.sc.V1SubscriptionSchedules.Release(ctx, sch.ID, &stripe.SubscriptionScheduleReleaseParams{
+			Params: idempotency(key, "release"), PreserveCancelDate: stripe.Bool(true),
+		})
+		return err
+	})
+}
+
+// CancelScheduledChange implements supporters.PaymentProvider: it releases the schedule.
+func (p *Provider) CancelScheduledChange(ctx context.Context, ref supporters.SubscriptionRef, key string) error {
+	s, err := p.subscription(ctx, ref)
+	if err != nil {
+		return err
+	}
+	return p.release(ctx, s, key)
+}
+
+// CancelAtPeriodEnd implements supporters.PaymentProvider. Stripe refuses to change the
+// cancellation of a subscription on a schedule, so a change waiting for the period's end is
+// dropped first: the subscription ends before it would take effect.
+func (p *Provider) CancelAtPeriodEnd(ctx context.Context, ref supporters.SubscriptionRef, key string) error {
+	s, err := p.subscription(ctx, ref)
+	if err != nil {
+		return err
+	}
+	if ended(s) || s.CancelAtPeriodEnd {
+		return nil
+	}
+	if err := p.release(ctx, s, key); err != nil {
+		return err
+	}
+	return p.setCancelAtPeriodEnd(ctx, s.ID, true, key)
+}
+
+// ResumeCancellation implements supporters.PaymentProvider.
+func (p *Provider) ResumeCancellation(ctx context.Context, ref supporters.SubscriptionRef, key string) error {
+	s, err := p.subscription(ctx, ref)
+	if err != nil {
+		return err
+	}
+	if ended(s) || !s.CancelAtPeriodEnd {
+		return nil
+	}
+	return p.setCancelAtPeriodEnd(ctx, s.ID, false, key)
+}
+
+func (p *Provider) setCancelAtPeriodEnd(ctx context.Context, id string, cancel bool, key string) error {
+	op := "resume"
+	if cancel {
+		op = "cancel_at_period_end"
+	}
+	return p.do(ctx, op+" "+id, func() (err error) {
+		_, err = p.sc.V1Subscriptions.Update(ctx, id, &stripe.SubscriptionUpdateParams{
+			Params: idempotency(key, op), CancelAtPeriodEnd: stripe.Bool(cancel),
+		})
+		return err
+	})
+}
+
+// CancelNow implements supporters.PaymentProvider: the subscription ends now, without
+// prorating or invoicing what is left (prorate=false, invoice_now=false).
+func (p *Provider) CancelNow(ctx context.Context, ref supporters.SubscriptionRef, key string) error {
+	s, err := p.subscription(ctx, ref)
+	if err != nil {
+		return err
+	}
+	if ended(s) {
+		return nil
+	}
+	return p.do(ctx, "cancel "+s.ID, func() (err error) {
+		_, err = p.sc.V1Subscriptions.Cancel(ctx, s.ID, &stripe.SubscriptionCancelParams{
+			Params: idempotency(key, "cancel_now"), Prorate: stripe.Bool(false), InvoiceNow: stripe.Bool(false),
+		})
+		return err
+	})
+}
+
+// ended reports whether a subscription can no longer change.
+func ended(s *stripe.Subscription) bool {
+	return s.Status == stripe.SubscriptionStatusCanceled || s.Status == stripe.SubscriptionStatusIncompleteExpired
+}

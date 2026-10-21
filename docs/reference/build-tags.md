@@ -15,6 +15,7 @@ The adapters that need nothing beyond the standard library and the packages the 
 | `no_pubsub` | The Google Cloud Pub/Sub broker; with `no_billing_gcp`, the Pub/Sub client library too | `stream = pubsub` |
 | `no_billing_aws` | The import of the AWS usage charges (AWS Cost Explorer SDK) | `billing_sources = aws` |
 | `no_billing_gcp` | The import of the Google Cloud usage charges (BigQuery REST client; with `no_pubsub`, the Pub/Sub client library of `billing_gcp_method = budget`) | `billing_sources = gcp` |
+| `no_payments_stripe` | The Stripe adapter of the supporters' payments (`stripe-go`) | `payments_provider = stripe` |
 | `no_otel` | The OpenTelemetry SDK and its Prometheus and OTLP exporters, of the metrics and of the traces | `metrics_exporter = prometheus`, `metrics_exporter = otlp`, `traces_exporter = otlp` |
 
 Leave out the database that the instance does not use, but keep at least one of `no_sqlite` and `no_postgres` off:
@@ -25,7 +26,7 @@ a binary without a database adapter cannot start.
 Pass the tags, separated by commas, to the Go build, to `make build`, or to the container build:
 
 ```sh
-CGO_ENABLED=0 go build -tags no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws,no_billing_gcp ./cmd/my
+CGO_ENABLED=0 go build -tags no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws,no_billing_gcp,no_payments_stripe ./cmd/my
 make build GO_TAGS=no_sqlite,no_valkey,no_pubsub
 make docker-build GO_TAGS=no_sqlite,no_valkey,no_sns            # docker build --build-arg GO_TAGS=...
 ```
@@ -45,7 +46,7 @@ and fails when `cmd/my` still depends on a package that a tag of the set leaves 
 
 | Set | Fits |
 | --- | --- |
-| `no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws,no_billing_gcp` | A self-hosted instance on SQLite |
+| `no_postgres,no_valkey,no_sns,no_pubsub,no_otel,no_billing_aws,no_billing_gcp,no_payments_stripe` | A self-hosted instance on SQLite |
 | `no_sqlite,no_valkey,no_pubsub,no_otel,no_billing_gcp` | AWS: PostgreSQL, the SNS broker, and the EMF metrics |
 | `no_sqlite,no_valkey,no_sns,no_billing_aws` | Google Cloud: PostgreSQL and the Pub/Sub broker |
 

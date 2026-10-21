@@ -106,6 +106,8 @@ An instance setting that has never been set reads as its default, which is defin
 | [`billing_gcp_max_bytes_billed`](#billing_gcp_max_bytes_billed) | `MY_BILLING_GCP_MAX_BYTES_BILLED` | `1073741824` | no | no |
 | [`billing_gcp_budget_subscription`](#billing_gcp_budget_subscription) | `MY_BILLING_GCP_BUDGET_SUBSCRIPTION` | none | when `billing_sources` includes `gcp` and `billing_gcp_method = budget` | no |
 | [`payments_provider`](#payments_provider) | `MY_PAYMENTS_PROVIDER` | `none` | no | no |
+| [`payments_stripe_secret_key`](#payments_stripe_secret_key) | `MY_PAYMENTS_STRIPE_SECRET_KEY` | none | when `payments_provider = stripe` | yes |
+| [`payments_stripe_webhook_secret`](#payments_stripe_webhook_secret) | `MY_PAYMENTS_STRIPE_WEBHOOK_SECRET` | none | when `payments_provider = stripe` | yes |
 | [`payments_reconcile_interval`](#payments_reconcile_interval) | `MY_PAYMENTS_RECONCILE_INTERVAL` | `6h` | no | no |
 | [`payments_reconcile_max_requests`](#payments_reconcile_max_requests) | `MY_PAYMENTS_RECONCILE_MAX_REQUESTS` | `1000` | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
@@ -778,6 +780,23 @@ The payment provider of the supporters (ADR-0072, ADR-0074, FR-910): local users
 | Value | In v0 | Description |
 | --- | --- | --- |
 | `none` | yes | No payments: the webhook endpoint and the reconciliation do not run. |
+| `stripe` | yes | Stripe Billing: Checkout in subscription mode and the customer portal, with `payments_stripe_secret_key` and `payments_stripe_webhook_secret` (docs/operations/payments-stripe.md). The build tag `no_payments_stripe` leaves it out. |
+
+### `payments_stripe_secret_key`
+
+The API key of the Stripe account of `payments_provider = stripe` (ADR-0074 §5): a restricted key (`rk_test_` / `rk_live_`) with the permissions of docs/operations/payments-stripe.md, or a secret key (`sk_test_` / `sk_live_`). Its prefix sets the mode: a test key charges nothing, and the webhook endpoint refuses live events with it (and test events with a live key).
+
+- Environment variable: `MY_PAYMENTS_STRIPE_SECRET_KEY` or `MY_PAYMENTS_STRIPE_SECRET_KEY_FILE`
+- Default: none
+- Required: when `payments_provider = stripe`
+
+### `payments_stripe_webhook_secret`
+
+The signing secret (`whsec_`) of the webhook endpoint `https://<domain>/payments/webhooks/stripe` that the operator registers on Stripe's dashboard, or of `stripe listen` for local tests (ADR-0074 §3). While a secret is rolled, Stripe signs with the old and the new one, so one is enough.
+
+- Environment variable: `MY_PAYMENTS_STRIPE_WEBHOOK_SECRET` or `MY_PAYMENTS_STRIPE_WEBHOOK_SECRET_FILE`
+- Default: none
+- Required: when `payments_provider = stripe`
 
 ### `payments_reconcile_interval`
 
