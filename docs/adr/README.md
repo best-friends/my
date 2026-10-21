@@ -84,5 +84,5 @@
 | [0070](0070-permission-split-emoji-finance.md) | 権限の分割: 絵文字の作成と会計の閲覧 | Accepted |
 | [0071](0071-role-badges-and-supporter-list.md) | ロールのバッジと参加者の一覧 | Accepted |
 | [0073](0073-income-records-and-publication.md) | 収入の記録と公開 | Accepted |
-| [0074](0074-payment-provider-port.md) | 決済の PaymentProvider ポート（Stripe） | Proposed |
+| [0074](0074-payment-provider-port.md) | 決済の PaymentProvider ポート（Stripe） | Accepted |
 <!-- adr-index:end -->

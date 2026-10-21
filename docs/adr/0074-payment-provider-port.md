@@ -1,6 +1,6 @@
 # ADR-0074: 決済の PaymentProvider ポート（Stripe）
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-22
 - Deciders: @rosylilly
 - Issue: #913
@@ -22,7 +22,15 @@ spike #909 の確認事項への決定者の回答（#913、原文）:
 > 4. Stripe の Billing の手数料 : 収入から差し引く
 > 5. プランを変えたときの日割り: 推奨案で OK
 
-「推奨」は次のとおり。1 = 事業者は Stripe だけ。決済はポートを通し、事業者に依存しない形に保つ。
+決定者の回答（PR #933、原文）:
+
+> 1. Stripe の鍵の置き場所: 設定(環境変数)におく。
+> 2. プランの変更: 推奨案で OK
+> 3. 照合の周期: 既定を6時間とし、設定で変えられる。6時間固定だと加入者が10,000人を越えている場合などに問題が起こる
+>
+> ADR Accepted
+
+issue #913 の回答の「推奨」は次のとおり。1 = 事業者は Stripe だけ。決済はポートを通し、事業者に依存しない形に保つ。
 2 = 全額の返金とチャージバックはロールを外し、事業者のサブスクリプションもすぐ解約する。一部の返金ではロールを外さない。dispute に勝ってもロールは自動で戻さない。
 5 = 上げる変更はすぐ日割りで請求し、下げる変更と年払いから月払いへの変更は期間の終わりに切り替える。
 
@@ -55,24 +63,25 @@ spike #909 の確認事項への決定者の回答（#913、原文）:
 4. ポートが事業者に依存せず、別の事業者の adapter を後から同じ契約テストで足せること（決定者の回答 1）
 5. 運用の費用がほぼ $0 で、使わないときは何も動かず、adapter を build tag で外せること（NFR-COST、ADR-0010）
 6. 依存が AGPL と両立し、`CGO_ENABLED=0` で build でき、SDK の版の追従が webhook を壊さないこと（ADR-0011）
-7. 実装が小さいこと: 加入者は数十〜数百人の規模
+7. 照合の費用が加入者の数に比例して膨らまず、1 万人を越えても事業者のレート制限の内で回ること（決定者の回答 3）
+8. 実装が小さいこと
 
 ## Considered Options（選択肢）
 
-論点ごとに比べる。各論点の 1 つめを推奨する。
+論点ごとに比べる。各論点の 1 つめを採用する。
 
 - **状態の正**: T1 webhook は合図として受け、ジョブが事業者の API からサブスクリプションを取り直して状態を導く / T2 イベントの本文から状態を順に適用する
 - **事業者の数**: N1 Stripe の adapter だけを作り、ポートは事業者に依存しない形にする / N2 2 つめの事業者の adapter も作る（Paddle は利用規約が支援・寄付・コミュニティへのアクセスを禁じるので外れ、ほかの候補は調べていない）
 - **API の呼び出し**: R1 `stripe-go` を adapter の中で使う / R2 `net/http` で REST を直接呼ぶ
 - **webhook の検証**: W1 標準ライブラリで検証し、イベントは必要な項目だけを読む / W2 `stripe-go` の `webhook.ConstructEvent`
 - **プランの変更**: P1 こちらの画面と API から `ChangePrice` で変え、顧客ポータルではプランを変えさせない / P2 顧客ポータルの `subscription_update` に任せる
-- **照合**: C1 こちらの記録（未完了の申し込み・終わっていない加入・お金の動きのカーソル）から取り直す / C2 `GET /v1/events` を前回から遡る
+- **照合**: C1 一覧の API でまとめて読み（変わったもの・お金の動き・全件の見回し）、カーソルと 1 回の要求の上限で複数の回に分ける / C2 終わっていない加入を毎回 1 件ずつ取り直す / C3 `GET /v1/events` を遡るだけ
 - **設定と秘密**: S1 デプロイの設定（TOML と `MY_*`、秘密は環境変数か `_FILE`）/ S2 管理画面で設定し、秘密を `Sealer` で暗号化して DB に持つ
 - **外向きの HTTP**: H1 運営者が設定した事業者の API として SDK の HTTP クライアントを使う / H2 SSRF ガード付きの `kernel.HTTPClient` を通す
 
 ## Decision（決定）
 
-> 推奨案: **T1・N1・R1・W1・P1・C1・S1・H1。**
+**T1・N1・R1・W1・P1・C1・S1・H1 を採用する。** 鍵の置き場所（S1）・プランの変更（P1）・照合の周期を設定で変えられること（C1）は決定者の回答（PR #933）による。
 
 ### 1. `PaymentProvider` ポート
 
@@ -116,6 +125,11 @@ type PaymentProvider interface {
 
     // GetSubscription re-reads the provider's current state of one subscription.
     GetSubscription(ctx context.Context, sub SubscriptionRef) (SubscriptionSnapshot, error)
+    // ListSubscriptions pages through every subscription of the account, 100 at a time.
+    ListSubscriptions(ctx context.Context, cursor string) (SubscriptionPage, error)
+    // ListChanges pages through the notices of changes since a time, oldest first; it fails with
+    // ErrChangesWindow when since is older than the provider keeps them.
+    ListChanges(ctx context.Context, since time.Time, cursor string) (ChangePage, error)
     // ListMoney pages through money movements booked at or after since, oldest first.
     ListMoney(ctx context.Context, since time.Time, cursor string) (MoneyPage, error)
     // GetMoney re-reads one money movement (a refund's original payment, for example).
@@ -188,6 +202,7 @@ type MoneyMovement struct {
 ```
 
 - `Notice` は `EventID`・`Type`（事業者の種類の名前）・`Kind`（`subscription`・`checkout`・`money`・`ignored`）・`ObjectID` を持つ。`Change` は取り直す `[]SubscriptionRef`、`CheckoutRef`、`[]MoneyMovement` を持つ。
+  `SubscriptionPage` は `[]SubscriptionSnapshot` と次のカーソル（空は最後）、`ChangePage` は `[]Notice` と次のカーソルと読み終えた時刻を持つ。一覧の 1 ページは 1 要求で、照合が要求を数える（§4）。
 - `ChangeTiming` は `now_prorated`（すぐ切り替え、差額を日割りですぐ請求する）と `period_end`（期間の終わりに切り替える）。どちらを使うかは ADR-0072 が決め（決定者の回答 5）、adapter は事業者の機能に写す（§6）。
   `CancelScheduledChange` は、期間の終わりを待つ変更を取り下げる。`ScheduledPrice` が空なら何もしない。
 - 状態の名前は Stripe の語を事業者に依存しない意味で使う。`trialing` は試用期間を作らないので `active` に写し、知らない状態は `Status` を `unpaid`（ロールを付けない側）にして警告のログを出す。
@@ -252,18 +267,36 @@ type MoneyMovement struct {
 
 ### 4. 照合のジョブ（C1）とデータモデル
 
-- `Scheduler`（ADR-0004）の定期ジョブ `supporters.payment_reconcile`（`Every` 6 時間）を、課金が有効なときだけ載せる。冪等キーは既存の `schedule:<name>:<slot>`。webhook を落としても 6 時間で追いつき、7 日の猶予の判定には十分に短い。
-  照合はこちらの記録から取り直し、`GET /v1/events` の 30 日の窓に頼らない（C1）。止まっていた期間の長さによらず追いつく。
-  1. 期限の切れていない申し込みごとに `GetCheckout`（webhook の `checkout.session.completed` を落としたとき）。
-  2. 終わっていない加入ごとに `GetSubscription` を呼び、`supporters.sync` に渡す。数百件なら Stripe のレート制限（**要検証**）に収まり、adapter は 1 秒に 20 件までに抑える。
-  3. `ListMoney` を、前回の成功の照合の開始の 1 日前から読む（重なりは `(provider, provider_id)` の一意で吸収する、ADR-0073 §2）。`stripe_fee` もここで入る（決定者の回答 4）。
+- `Scheduler`（ADR-0004）の定期ジョブ `supporters.payment_reconcile` を、課金が有効なときだけ載せる。周期は設定 `payments_reconcile_interval`（既定 6 時間、15 分〜7 日。決定者の回答 3）で、冪等キーは既存の `schedule:<name>:<slot>`。
+  既定の 6 時間なら、webhook を落としても 6 時間で追いつき、7 日の猶予の判定には十分に短い。
+- 1 回の照合が事業者に送る要求は、設定 `payments_reconcile_max_requests`（既定 1,000）までにする。adapter は要求を 1 秒に 20 件まで（テストのモードでは 10 件まで）に抑え、`429` には `Retry-After` に従って待つ。
+  Stripe の読み取りのレート制限（ライブで 1 秒に 100 件ほど、テストで 25 件ほど）の内に収めるための値で、制限の正確な値は **要検証**。既定の上限と速さなら、1 回の照合は 1 分ほどで終わる。
+- 照合は次の 4 段を順に行い、上限に達した段でカーソルを記録して止まる。続きは、続きのジョブ（冪等キー `continue:<run_id>`、1 分後）が同じ上限で引き継ぐ。どの段も一覧の API でまとめて読み、1 件ずつの取り直しは変わったものに限る（C1）。
+  1. **変わったもの**: `ListChanges` で、前回の成功の照合が読み終えた時刻の 5 分前からのイベントを 100 件ずつ読む（Stripe は `GET /v1/events`、§3 の種類だけ）。
+     イベントが指すサブスクリプションを重ねずに集め、それぞれ `GetSubscription` で取り直して `supporters.sync` に渡す。webhook を落としたものはここで直る。
+  2. **未完了の申し込み**: 期限の切れていない申し込みごとに `GetCheckout`（期限は 1 時間なので、件数は少ない）。
+  3. **お金の動き**: `ListMoney` を前回のカーソルから 100 件ずつ読む（重なりは `(provider, provider_id)` の一意で吸収する、ADR-0073 §2）。`stripe_fee` もここで入る（決定者の回答 4）。balance transaction の一覧には遡る期間の制限がない。
+  4. **全件の見回し**: 残りの上限で、`ListSubscriptions` で事業者の側のすべてのサブスクリプションを、前回の見回しのカーソルから 100 件ずつ読み、こちらの `LocalID` を持つものを `supporters.sync` に渡す。
+     最後のページを読んだらカーソルを先頭に戻す。1〜3 で拾えない食い違い（イベントの漏れ、30 日を越えて照合が止まったとき）も、見回しの 1 周で直る。
+- 要求の数の見積もり（既定の 6 時間・上限 1,000、1 ページ 100 件）:
+
+| 加入者の数 | 1 の変わったもの | 2 と 3 | 4 の見回し | 1 回の要求 | 見回しの 1 周 |
+| --- | --- | --- | --- | --- | --- |
+| 300 | 1〜2 ページと数件の取り直し | 数件 | 3 ページ | 10 件ほど | 毎回 |
+| 10,000 | 5 ページほどと 100〜150 件の取り直し（6 時間に更新を迎えるのは 1 万 ÷ 30 日 ÷ 4 ≒ 85 件） | 数件 | 100 ページ | 260 件ほど | 毎回 |
+| 100,000 | 40 ページほどと 1,000 件ほどの取り直し | 10 ページほど | 残りの上限 | 1,000 件（上限）と続きのジョブ 2〜3 回 | 続きのジョブを合わせて数分 |
+
+- 1 回の要求の上限は事業者への負荷をならすためのもので、続きのジョブが残りを引き継ぐ。運営者は、上限に当たる回が多ければ `payments_reconcile_max_requests` を上げるか周期を延ばす。webhook が届いていれば状態はそれで直るので、照合が遅れても加入者に見える影響は取りこぼしの直りが遅れることだけである。
+- `ListChanges` の起点が Stripe の events の 30 日の窓より古いとき（照合が長く止まっていたとき）、adapter は `ErrChangesWindow` を返し、照合は 1 を飛ばして 4 の見回しに任せる。
 - 管理画面の「今すぐ照合する」は、同じジョブを冪等キー `manual:<provider>:<UTC の時>` で積む（1 時間に 1 回まで）。
 - データモデル（ADR-0020）。`supporters` が所有する。加入・顧客の結び付き・価格の対応の表は ADR-0072 が決める。
 
 | テーブル | 分類 | 内容 |
 | --- | --- | --- |
 | `payment_webhook_receipts` | イベント | `id`, `provider`（`enum(stripe)`）, `event_id`（`string(255)`）, `event_type`（`string(100)`）, `object_id`（`string(255)`）, `received_at`。一意 `(provider, event_id)`。本文は持たない（§5） |
-| `payment_reconcile_runs` | イベント | `id`, `provider`, `run_key`, `outcome`（`enum(succeeded, failed)`）, `error_kind`（§1 の種類と `none`）, `money_since`（`timestamp`）, `checked_subscriptions`（`int`）, `occurred_at`。一意 `(provider, run_key)` |
+| `payment_reconcile_runs` | イベント | `id`, `provider`, `run_key`, `outcome`（`enum(succeeded, partial, failed)`）, `error_kind`（§1 の種類と `none`・`request_cap`）, `changes_until`（`timestamp`）, `changes_cursor`・`money_cursor`・`sweep_cursor`（`string(255)`、空は先頭）, `requests`・`checked_subscriptions`・`corrected_subscriptions`（`int`）, `occurred_at`。一意 `(provider, run_key)` |
+
+- 次の照合は、最新の `succeeded` か `partial`（上限で止まった）の行のカーソルから始める。カーソルは試行ごとの行に残し、上書きする現在値の列を持たない（規約 4）。
 
 - `payment_webhook_receipts` は 45 日を過ぎた行を定期ジョブで消す（Stripe の手での再送は CLI で 30 日まで遡れる）。消した後に同じイベントが来ても、ジョブが取り直して適用するだけで状態は変わらない。
 - 管理画面 `/admin/supporters`（ADR-0072）に事業者の状態を出す: 事業者とモード（テスト・ライブ）、最後に webhook を受けた時刻、最後の照合の結果と失敗の種類（`client*` のメッセージで直し方を案内する）。
@@ -274,13 +307,15 @@ type MoneyMovement struct {
 - **カード情報はこのサーバーを通らない**: 支払いの入力は Stripe のホスト型の Checkout と顧客ポータルだけで行い、こちらの Web クライアントは Stripe のスクリプトも iframe も読み込まない。
   サーバーが持つのは Stripe のオブジェクトの ID（`cus_`・`sub_`・`price_`・`prod_`・`cs_`・`txn_`）と、金額・期間・状態だけで、カードの番号・下 4 桁・有効期限・請求先の住所を保存しない。
   webhook の本文と事業者の応答はログにも DB にも残さない（受信の記録は ID と種類だけ）。運営者の PCI の範囲は SAQ A 相当になる（運営者が確かめる事項として docs に書く）。
-- **設定**（S1、ADR-0010）: デプロイの設定に置き、`make config-docs` の表に載せる。インスタンス設定（DB）には置かない。課金を有効にすることとプランは、管理者がインスタンス設定で行う（ADR-0072）。
+- **設定**（S1、ADR-0010。決定者の回答 1）: デプロイの設定（鍵と秘密は環境変数）に置き、`make config-docs` の表に載せる。インスタンス設定（DB）には置かない。課金を有効にすることとプランは、管理者がインスタンス設定で行う（ADR-0072）。
 
 | キー | 秘密 | 内容 |
 | --- | --- | --- |
 | `payments_provider` | | `none`（既定）か `stripe`。1 つだけ |
 | `payments_stripe_secret_key` | ✓ | API の鍵。権限を絞った制限付きの鍵（`rk_`）を勧め、必要な権限を docs に書く（**要検証**）。`sk_` も受ける |
 | `payments_stripe_webhook_secret` | ✓ | webhook のエンドポイントの署名の秘密（`whsec_`） |
+| `payments_reconcile_interval` | | 照合の周期（既定 `6h`、`15m`〜`168h`、§4） |
+| `payments_reconcile_max_requests` | | 1 回の照合が事業者に送る要求の上限（既定 1,000、§4） |
 
 - 秘密は環境変数か `<NAME>_FILE` から読み、`slog.LogValuer` で伏せる（ADR-0019 §6）。
 - **モード**: 鍵の接頭辞（`sk_test_`・`rk_test_` と `sk_live_`・`rk_live_`）で決め、`Mode()` が返す。`my config check` と管理画面に示し、テストのモードでは加入の画面に「テストのモード（課金されません）」を出す。webhook はモードの違うイベントを拒む（§3）。
@@ -309,7 +344,7 @@ type MoneyMovement struct {
 
 ### この決定を覆す条件
 
-- Stripe のサブスクリプションの取り直しが規模に対して遅い・レート制限に当たると分かったら、照合を C2（`GET /v1/events` を遡り、変わったものだけを取り直す）に変え、30 日を越えて止まったときだけ全件を取り直す。
+- 見回しの 1 ページに `latest_invoice` を展開できず、支払いの失敗をスナップショットに入れられないと分かったら（#920）、見回しは状態と期間だけを直し、支払いの失敗は 1 の変わったものに任せる。
 - Subscription Schedule で期間の終わりの変更を組めないと分かったら（#920）、P2（顧客ポータルの `subscription_update` の `schedule_at_period_end`）に変え、ポータルの設定をプランに合わせて同期する。
 - 再デプロイなしに管理画面から鍵を設定したいという要望が多ければ、S2（秘密を `Sealer` で暗号化して DB に持つ）を別の ADR で検討する。
 - 2 つめの事業者が要るときは、同じ契約テストを通す adapter を足し、`payments_provider` の値と各表の `provider` の enum に足す。
@@ -322,47 +357,49 @@ type MoneyMovement struct {
   - webhook の検証が SDK の版によらないので、`stripe-go` の major の版を上げても既存のエンドポイントのイベントを受け続ける。
   - ポートが事業者の側の事実だけを返すので、ほかの事業者の adapter を同じ契約テストで足せる。課金が無効なら定期ジョブも経路も動かない。
 - 悪い影響・トレードオフ
-  - webhook ごと・照合ごとに Stripe の API を呼ぶ（加入者の数 × 1 日 4 回の取り直し）。Stripe の API の呼び出しは無料だが、レート制限に気を配る。
+  - webhook ごと・照合ごとに Stripe の API を呼ぶ。全件の見回しは 1 ページ 100 件の一覧なので、1 万人で 1 回 100 要求ほどだが、10 万人を越えると見回しの 1 周が数回の照合にまたがり、取りこぼしの直りが遅れる。
   - `stripe-go` は半年ほどで major の版が上がり、API の版（basil 以降の項目の場所など）の追従が adapter に要る。
   - プランの変更をこちらの画面で持つので、Subscription Schedule の扱いを adapter が持つ（P2 よりコードが多い）。
   - 鍵と webhook の秘密をデプロイの設定に置くので、Stripe を有効にするには再デプロイが要る。webhook のエンドポイントの登録は運営者の手作業になる。
   - webhook の受け口が匿名で叩ける経路を 1 つ増やす。署名の検証の前に読む本文を 1 MiB に限り、ADR-0019 §5 のレート制限の対象にする。
 - 後続で必要になる作業（Epic #925）
-  - #919（ポート・webhook・照合）: §1 のポートと型と失敗の種類、`pkg/testkit.PaymentProviderContract`、`internal/adapter/payment/fake`、`internal/interface/payments` の `POST /payments/webhooks/{provider}`（本文の上限・レート制限・受信の記録と outbox）、ジョブ `supporters.payment_event` と `supporters.payment_reconcile`（`Every` 6 時間・手動）、受信の記録の掃除、§4 の 2 つの表と `schema/<dialect>.sql`・sqlc、`payments_provider` の設定、`GET /admin/payment_status`・`POST /admin/payment_reconciles` と管理画面の状態の表示、overview §3 のポートの表と data-model の所有の表
-  - #920（`stripe` adapter）: §2 の adapter（プランと価格・Checkout・顧客ポータルの設定・プランの変更と Subscription Schedule・解約・balance transaction の写し・最低額の表・レポートのタイムゾーン）、§3 の標準ライブラリの検証器、§7 の URL のホストの確かめ、`payments_stripe_secret_key`・`payments_stripe_webhook_secret` の設定と `make config-docs`、`no_payments_stripe` と build-tags.md、`stripe-go` の go.mod と `make go-licenses`、docs（ダッシュボードの設定、制限付きの鍵の権限、登録するイベント、Stripe CLI でのローカルの試し方、テストモード、PCI の範囲）
+  - #919（ポート・webhook・照合）: §1 のポートと型と失敗の種類、`pkg/testkit.PaymentProviderContract`、`internal/adapter/payment/fake`、`internal/interface/payments` の `POST /payments/webhooks/{provider}`（本文の上限・レート制限・受信の記録と outbox）、ジョブ `supporters.payment_event` と `supporters.payment_reconcile`（4 段・カーソル・要求の上限・続きのジョブ・手動）、`payments_reconcile_interval`・`payments_reconcile_max_requests` の設定、受信の記録の掃除、§4 の 2 つの表と `schema/<dialect>.sql`・sqlc、`payments_provider` の設定、`GET /admin/payment_status`・`POST /admin/payment_reconciles` と管理画面の状態の表示、overview §3 のポートの表と data-model の所有の表
+  - #920（`stripe` adapter）: §2 の adapter（プランと価格・Checkout・顧客ポータルの設定・プランの変更と Subscription Schedule・解約・balance transaction の写し・`ListSubscriptions`（`latest_invoice` の展開）と `ListChanges`（events）・要求の速さの制御・最低額の表・レポートのタイムゾーン）、§3 の標準ライブラリの検証器、§7 の URL のホストの確かめ、`payments_stripe_secret_key`・`payments_stripe_webhook_secret` の設定と `make config-docs`、`no_payments_stripe` と build-tags.md、`stripe-go` の go.mod と `make go-licenses`、docs（ダッシュボードの設定、制限付きの鍵の権限、登録するイベント、Stripe CLI でのローカルの試し方、テストモード、PCI の範囲）
   - #924（決定者）: §6 の 4 の筋書きをテストモードで確かめ、要検証の項目（Subscription Schedule、アーカイブした Price での更新、`subscription_data.metadata`、Account のタイムゾーン、制限付きの鍵の権限、最低額）の結果を issue に書く
 
 ## Pros and Cons of the Options（詳細比較・任意）
 
-### 状態の正: T1 取り直し（推奨）/ T2 イベントを順に適用
+### 状態の正: T1 取り直し（採用）/ T2 イベントを順に適用
 
 - T2 の最も強い論点: webhook ごとに API を呼ばずに済み、事業者が止まっていても受け取れる。悪い点: Stripe は順序を保証せず `created` は 1 秒の分解能なので順序を決められず、イベントの形が API の版で変わり、取りこぼしは別の仕組みで直す必要がある。Stripe 自身も取り直しを勧めている。
 
-### 事業者の数: N1 Stripe だけ（推奨）/ N2 2 つめも作る
+### 事業者の数: N1 Stripe だけ（採用）/ N2 2 つめも作る
 
 - N2 の最も強い論点: 決定者の当初の意図（どちらかにロックインされない）に沿い、ポートの抽象が 2 つの実装で確かめられる。悪い点: 候補の Paddle は利用規約が支援・寄付・コミュニティへのアクセスを禁じ、ほかの候補は調べていない。N1 でも fake と契約テストがポートを Stripe の型から切り離す。
 
-### API の呼び出し: R1 `stripe-go`（推奨）/ R2 REST を直接
+### API の呼び出し: R1 `stripe-go`（採用）/ R2 REST を直接
 
 - R2 の最も強い論点: 依存が増えず、API の版を自分で固定でき、SDK の major の版の追従が要らない。悪い点: 使う 10 ほどの API の型・ページ送り・エラー・冪等キー・再試行を自分で持つ。R1 の依存は MIT の 2 つで、`CGO_ENABLED=0` と `go-licenses` を通る。
 
-### webhook の検証: W1 標準ライブラリ（推奨）/ W2 `webhook.ConstructEvent`
+### webhook の検証: W1 標準ライブラリ（採用）/ W2 `webhook.ConstructEvent`
 
 - W2 の良い点: 公式の実装で、自分で書くコードがない。悪い点: イベントの API の版の系列が SDK と違うと拒むので、SDK を上げるとエンドポイントの API の版も同時に上げる必要がある（`IgnoreAPIVersionMismatch` で外せるが、そのとき型付きの本文の形が合う保証はない）。W1 は 40 行ほどで、契約テストで確かめる。
 
-### プランの変更: P1 こちらの画面と `ChangePrice`（推奨）/ P2 顧客ポータル
+### プランの変更: P1 こちらの画面と `ChangePrice`（採用）/ P2 顧客ポータル
 
 - P2 の最も強い論点: 期間の終わりへの変更（`schedule_at_period_end` の `decreasing_item_amount`・`shortening_interval`）と日割りを Stripe が実装し、adapter のコードが減る。悪い点: 変更先は 10 個の Product まで、プランの名前と説明は Stripe の表示で i18n（ADR-0009）の外になり、ポータルの設定をプランの作成・廃止のたびに同期する。プランの規則（ADR-0072）がポータルの設定に分かれ、ほかの事業者に移せない。
 
-### 照合: C1 こちらの記録から（推奨）/ C2 events を遡る
+### 照合: C1 一覧とカーソルと上限（採用）/ C2 毎回 1 件ずつ取り直す / C3 events だけ
 
-- C2 の最も強い論点: 変わったものだけを取り直すので、加入者が多くても API の呼び出しが少ない。悪い点: 30 日しか遡れず、照合が 30 日以上止まると追いつけない。数百人の規模では C1 の全件の取り直しで足りる。
+- C2 の最も強い論点: こちらの記録だけで決まり、コードが最も少ない。悪い点: 要求の数が加入者の数に比例し、1 万人で 1 回 1 万要求・1 秒 20 件で 8 分を越え、レート制限に当たる（決定者の回答 3）。
+- C3 の最も強い論点: 変わったものだけを取り直すので最も安い。悪い点: 30 日しか遡れず、照合が長く止まると追いつけず、イベントの漏れを直せない。C1 はこれを 1 の段に使い、見回しで補う。
+- C1 の悪い点: 4 段とカーソルと続きのジョブの分だけコードが増え、ごく大きなサーバーでは見回しの 1 周が 1 回に収まらない。
 
-### 設定: S1 デプロイの設定（推奨）/ S2 管理画面と DB
+### 設定: S1 デプロイの設定（採用）/ S2 管理画面と DB
 
 - S2 の最も強い論点: FR-910 の「権限を持つ人が事業者を設定して課金を有効にする」を再デプロイなしに管理画面だけで満たし、`Sealer`（TOTP の秘密で使っている）がもうある。悪い点: 返金や解約ができる鍵が DB に入り、DB と KEK が両方漏れると使われる。CAPTCHA の秘密（ADR-0042）や ADR-0068 の設定とも場所が違う。S1 でも、有効化とプランは管理画面で行う。
 
-### 外向きの HTTP: H1 SDK の HTTP クライアント（推奨）/ H2 `kernel.HTTPClient`
+### 外向きの HTTP: H1 SDK の HTTP クライアント（採用）/ H2 `kernel.HTTPClient`
 
 - H2 の最も強い論点: 外向きの HTTP の方針が 1 か所になり、CAPTCHA の検証（固定の公開エンドポイント）も `kernel.HTTPClient` を通している。悪い点: 宛先は SDK が固定する Stripe のホストだけで、利用者もリモートのサーバーも変えられないので、SSRF ガードが守るものがない。SDK は `*http.Client` を受けるので、`kernel.HTTPClient` を `http.RoundTripper` に包む橋と、一覧のページに合う新しい用途の上限が要る。
 
@@ -372,4 +409,4 @@ type MoneyMovement struct {
 - アーカイブした Price のサブスクリプションが、その Price のまま更新され続けるか（#924）。
 - `subscription_data.metadata` の正確な項目名、Account の `settings.dashboard.timezone` を API で読めるか、制限付きの鍵（`rk_`）に要る権限の一覧（#920）。
 - 通貨ごとの最低の請求額の表と、Stripe が ISO 4217 と違う小数の桁で扱う通貨（#920）。
-- 加入者が数百人のときの照合の API の呼び出しが Stripe のレート制限に収まるか（#924）。
+- Stripe の読み取りのレート制限の正確な値と、`GET /v1/subscriptions` の一覧で `latest_invoice` を展開できるか（#920）。
