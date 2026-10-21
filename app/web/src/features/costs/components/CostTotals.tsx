@@ -82,7 +82,12 @@ export function CostTotalsPanel({ granularity, basis, onTotalsChange, children }
             </Tab>
           ))}
         </TabList>
-        <TabPanel id={granularity}>{children}</TabPanel>
+        {/* One panel per tab: React Aria mounts only the selected one, and each keeps the id its tab's aria-controls names. */}
+        {costGranularities.map((item) => (
+          <TabPanel key={item} id={item}>
+            {children}
+          </TabPanel>
+        ))}
       </Tabs>
     </div>
   );
