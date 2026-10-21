@@ -134,6 +134,10 @@ func (s *BudgetSource) Name() string { return Name }
 // time.
 func (s *BudgetSource) Location() *time.Location { return s.loc }
 
+// Method implements appfinance.BillingSource: the budget notifications give one estimated total
+// per budget and month, without a breakdown by service.
+func (s *BudgetSource) Method() string { return appfinance.MethodBudget }
+
 // noRetry turns off the retries of the client library, so that every call is one request.
 var noRetry = gax.WithRetry(func() gax.Retryer { return nil })
 
