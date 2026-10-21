@@ -232,7 +232,7 @@ test.describe("queue dashboard", () => {
     const job = panel.getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3, name: "federation.deliver" }) });
     await expect(job).toBeVisible();
 
-    const history = job.getByRole("button", { name: new RegExp(message("admin.jobs.history.toggle")) });
+    const history = job.getByRole("button", { name: message("admin.jobs.history.toggle_job").replace("{type}", "federation.deliver"), exact: true });
     await expect(history).toHaveAttribute("aria-expanded", "false");
     await history.click();
     await expect(history).toHaveAttribute("aria-expanded", "true");
