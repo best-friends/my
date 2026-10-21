@@ -93,6 +93,11 @@ An instance setting that has never been set reads as its default, which is defin
 | [`billing_sources`](#billing_sources) | `MY_BILLING_SOURCES` | none | no | no |
 | [`billing_aws_max_requests_per_day`](#billing_aws_max_requests_per_day) | `MY_BILLING_AWS_MAX_REQUESTS_PER_DAY` | `4` | no | no |
 | [`billing_aws_max_requests_per_month`](#billing_aws_max_requests_per_month) | `MY_BILLING_AWS_MAX_REQUESTS_PER_MONTH` | `120` | no | no |
+| [`billing_aws_metric`](#billing_aws_metric) | `MY_BILLING_AWS_METRIC` | `NetUnblendedCost` | no | no |
+| [`billing_aws_filter`](#billing_aws_filter) | `MY_BILLING_AWS_FILTER` | `none` | no | no |
+| [`billing_aws_tag`](#billing_aws_tag) | `MY_BILLING_AWS_TAG` | none | when `billing_aws_filter = tag` | no |
+| [`billing_aws_linked_accounts`](#billing_aws_linked_accounts) | `MY_BILLING_AWS_LINKED_ACCOUNTS` | none | when `billing_aws_filter = linked_account` | no |
+| [`billing_aws_role_arn`](#billing_aws_role_arn) | `MY_BILLING_AWS_ROLE_ARN` | none | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`job_attempt_retention`](#job_attempt_retention) | `MY_JOB_ATTEMPT_RETENTION` | `720h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
@@ -618,7 +623,7 @@ How many activities each relay may bring in per hour (ADR-0061). The ones over i
 
 ### `billing_sources`
 
-Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider. Empty imports nothing.
+Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tag `no_billing_aws` leaves `aws` out. Empty imports nothing.
 
 - Environment variable: `MY_BILLING_SOURCES`
 - Default: none
@@ -638,6 +643,57 @@ How many billed AWS Cost Explorer requests the imports may make per UTC calendar
 
 - Environment variable: `MY_BILLING_AWS_MAX_REQUESTS_PER_MONTH`
 - Default: `120`
+- Required: no
+
+### `billing_aws_metric`
+
+Cost Explorer metric that the imports of `billing_sources = aws` record (ADR-0068 §6).
+
+- Environment variable: `MY_BILLING_AWS_METRIC`
+- Default: `NetUnblendedCost`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `NetUnblendedCost` | yes | The cost after the discounts (Savings Plans, Reserved Instances, private pricing), the closest to the invoice. |
+| `UnblendedCost` | yes | The cost before the discounts. |
+
+### `billing_aws_filter`
+
+Which costs of the AWS account the imports of `billing_sources = aws` take (ADR-0068 §6). The most accurate is an AWS account that serves this instance alone, with `none`: the taxes and the support fees carry no tag and may fall out of a tag filter (docs/operations/billing-import.md).
+
+- Environment variable: `MY_BILLING_AWS_FILTER`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | Every cost that the credentials can see: the account's own, or, from the management account of an organization, every member account's. |
+| `linked_account` | yes | The costs of the member accounts of `billing_aws_linked_accounts` (the `LINKED_ACCOUNT` dimension). |
+| `tag` | yes | The costs of the resources that carry the cost allocation tag `billing_aws_tag`, which must be activated in the Billing console first. |
+
+### `billing_aws_tag`
+
+The activated cost allocation tag of `billing_aws_filter = tag`, `key=value` such as `app=my`. A tag shows in the billing data from its activation on, up to 24 hours after it is activated; older costs need a backfill in the Billing console (docs/operations/billing-import.md).
+
+- Environment variable: `MY_BILLING_AWS_TAG`
+- Default: none
+- Required: when `billing_aws_filter = tag`
+
+### `billing_aws_linked_accounts`
+
+The 12-digit IDs of the member accounts of `billing_aws_filter = linked_account`, comma-separated. Reading them from a member account needs Linked Account Access, which the management account turns on in the Cost Explorer preferences.
+
+- Environment variable: `MY_BILLING_AWS_LINKED_ACCOUNTS`
+- Default: none
+- Required: when `billing_aws_filter = linked_account`
+
+### `billing_aws_role_arn`
+
+ARN of an IAM role that the imports of `billing_sources = aws` assume with the Google ID token of the instance's service account (`AssumeRoleWithWebIdentity`, audience: this ARN), for a server on Google Cloud (Cloud Run) without AWS keys (ADR-0068 §8). The role trusts the identity provider `accounts.google.com` for the service account (docs/operations/billing-import.md). Empty uses the AWS SDK's default chain (the execution role, `AWS_ACCESS_KEY_ID`, the shared files).
+
+- Environment variable: `MY_BILLING_AWS_ROLE_ARN`
+- Default: none
 - Required: no
 
 ### `dead_job_retention`

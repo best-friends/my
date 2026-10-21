@@ -37,6 +37,7 @@
 - [検索エンジンと AI クローラー（robots.txt・noindex・AI の拒否の表明）](operations/crawlers.md)
 - [サーバー単位の webhook](operations/webhooks.md)
 - [連合リレー](operations/relays.md)
+- [クラウドの利用料金の取り込み（AWS Cost Explorer）](operations/billing-import.md)
 
 ## 開発プロセス
 

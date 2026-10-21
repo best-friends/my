@@ -232,6 +232,7 @@ internal/
     stream/sns/      # stream.Bus と stream.Sweeper の Amazon SNS → プロセスごとの SQS キュー（ADR-0050）
     stream/pubsub/   # stream.Bus と stream.Sweeper の Google Cloud Pub/Sub（プロセスごとの subscription。ADR-0050）
     valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
+    billing/aws/     # finance.BillingSource の AWS Cost Explorer（GetCostAndUsage の MONTHLY、SERVICE × RECORD_TYPE。ADR-0068 §6）
     mail/{none,smtp,ses}/
     telemetry/{none,otel,emf}/ # kernel.Meter（ADR-0055）と kernel.Tracer（none・otel、ADR-0063）の実装。OpenTelemetry と Prometheus のライブラリはここだけが import する
     telemetry/dbtrace/ # DB のアダプタが共有するトランザクションとクエリの span（ADR-0063 §1）
