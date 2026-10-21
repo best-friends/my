@@ -8,8 +8,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/best-friends/my/internal/adapter/db/postgres"
-	"github.com/best-friends/my/internal/adapter/db/sqlite"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/uow"
 )
@@ -23,18 +21,6 @@ type Outbox struct {
 }
 
 var _ queue.Outbox = (*Outbox)(nil)
-
-// NewSQLiteOutbox returns the outbox kept in the SQLite database d.
-func NewSQLiteOutbox(d *sqlite.DB, opts Options) *Outbox {
-	opts.check()
-	return &Outbox{db: d, st: sqliteStore{}, opts: opts}
-}
-
-// NewPostgresOutbox returns the outbox kept in the PostgreSQL database d.
-func NewPostgresOutbox(d *postgres.DB, opts Options) *Outbox {
-	opts.check()
-	return &Outbox{db: d, st: postgresStore{}, opts: opts}
-}
 
 // EnqueueTx implements queue.Outbox: it writes the jobs to outbox_events in tx. Idempotency
 // keys take effect when Relay enqueues the jobs.

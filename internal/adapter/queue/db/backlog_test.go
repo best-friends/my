@@ -4,7 +4,6 @@ package db_test
 
 import (
 	"maps"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -77,16 +76,4 @@ func testBacklog(t *testing.T, newHarness testkit.QueueFactory) {
 	if !maps.Equal(b.Ready, want) {
 		t.Fatalf("after the lease: Ready = %v, want %v", b.Ready, want)
 	}
-}
-
-func TestSQLiteBacklog(t *testing.T) {
-	testBacklog(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
-		return sqliteHarness(t, clock, filepath.Join(t.TempDir(), "queue.db"), true, true)
-	})
-}
-
-func TestPostgresBacklog(t *testing.T) {
-	testBacklog(t, func(t *testing.T, clock *testkit.Clock) testkit.QueueHarness {
-		return postgresHarness(t, clock, newDatabase(t), false)
-	})
 }

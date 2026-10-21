@@ -15,9 +15,6 @@ import (
 	"strings"
 	"time"
 
-	pubsubstream "github.com/best-friends/my/internal/adapter/stream/pubsub"
-	snsstream "github.com/best-friends/my/internal/adapter/stream/sns"
-	"github.com/best-friends/my/internal/adapter/valkey"
 	"github.com/best-friends/my/internal/adapter/webpush"
 )
 
@@ -146,9 +143,9 @@ var schema = []field{
 		doc: "Database adapter (ADR-0003). The adapter is never inferred from `database_url`.",
 		def: "sqlite",
 		choices: []choice{
-			{value: "sqlite", inV0: true, doc: "Local SQLite file (`modernc.org/sqlite`)."},
+			{value: "sqlite", inV0: true, doc: "Local SQLite file (`modernc.org/sqlite`). The build tag `no_sqlite` leaves it out."},
 			{value: "libsql", inV0: true, doc: "libSQL / Turso."},
-			{value: "postgres", inV0: true, doc: "PostgreSQL and compatible services (`pgx/v5`)."},
+			{value: "postgres", inV0: true, doc: "PostgreSQL and compatible services (`pgx/v5`). The build tag `no_postgres` leaves it out."},
 		},
 		set: func(c *Config, v string) { c.DB = v },
 	},
@@ -277,7 +274,7 @@ var schema = []field{
 		choices: []choice{
 			{value: "db", inV0: true, doc: "Table in the database."},
 			{value: "memory", inV0: true, doc: "In-process memory; limits are per process."},
-			{value: "valkey", inV0: true, doc: "Valkey or another server that speaks the Redis protocol (`valkey_url`); entries are shared by every process on the server."},
+			{value: "valkey", inV0: true, doc: "Valkey or another server that speaks the Redis protocol (`valkey_url`); entries are shared by every process on the server. The build tag `no_valkey` leaves it out."},
 		},
 		set: func(c *Config, v string) { c.KV = v },
 	},
@@ -286,7 +283,7 @@ var schema = []field{
 		doc:          "Valkey server of the adapters that use one (`kv = valkey`, `stream = valkey`):`valkey://[user:password@]host[:port][/db]` (`redis://` is the same), `valkeys://` or `rediss://` for TLS, or `unix:///path/to/socket`. The path selects the database number. A cluster is found by itself.",
 		secret:       true,
 		requiredWhen: "when `kv = valkey` or `stream = valkey`",
-		check:        valkey.CheckURL,
+		check:        checkValkeyURL,
 		set:          func(c *Config, v string) { c.ValkeyURL = v },
 	},
 	{
@@ -308,10 +305,10 @@ var schema = []field{
 		def: "hub",
 		choices: []choice{
 			{value: "hub", inV0: true, doc: "In-process only; for one process with `role = all` (SQLite, or one PostgreSQL server process)."},
-			{value: "postgres", inV0: true, doc: "PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`."},
-			{value: "valkey", inV0: true, doc: "Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`."},
-			{value: "sns", inV0: true, doc: "An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain."},
-			{value: "pubsub", inV0: true, doc: "A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`."},
+			{value: "postgres", inV0: true, doc: "PostgreSQL `LISTEN` / `NOTIFY` on the database of `database_url` (or `stream_postgres_url`). Requires `db = postgres`. The build tag `no_postgres` leaves it out."},
+			{value: "valkey", inV0: true, doc: "Valkey Pub/Sub on `valkey_url`, with the channel `{valkey_key_prefix}stream`. The build tag `no_valkey` leaves it out."},
+			{value: "sns", inV0: true, doc: "An Amazon SNS standard topic (`stream_sns_topic_arn`) that fans out to one SQS queue per listening process (`stream_sqs_queue_prefix`); credentials and settings from the AWS SDK's default chain. The build tag `no_sns` leaves it out."},
+			{value: "pubsub", inV0: true, doc: "A Google Cloud Pub/Sub topic (`stream_pubsub_topic`) with one subscription per listening process (`stream_pubsub_subscription_prefix`); Application Default Credentials, or the emulator at `PUBSUB_EMULATOR_HOST`. The build tag `no_pubsub` leaves it out."},
 		},
 		set: func(c *Config, v string) { c.Stream = v },
 	},
@@ -326,28 +323,28 @@ var schema = []field{
 		key:          "stream_sns_topic_arn",
 		doc:          "ARN of the Amazon SNS standard topic of `stream = sns`, which the deployment template creates. The queues are created in its account and region.",
 		requiredWhen: "when `stream = sns`",
-		check:        snsstream.CheckTopicARN,
+		check:        checkSNSTopicARN,
 		set:          func(c *Config, v string) { c.StreamSNSTopicARN = v },
 	},
 	{
 		key:          "stream_sqs_queue_prefix",
 		doc:          "Start of the names of the per-process SQS queues of `stream = sns`, `{prefix}-{process id}-{n}`: at most 40 letters, digits, hyphens, and underscores. The `stream.sweep` job deletes the queues under it that ended processes left behind, so it belongs to one instance.",
 		requiredWhen: "when `stream = sns`",
-		check:        snsstream.CheckQueuePrefix,
+		check:        checkSQSQueuePrefix,
 		set:          func(c *Config, v string) { c.StreamSQSQueuePrefix = v },
 	},
 	{
 		key:          "stream_pubsub_topic",
 		doc:          "Full name of the Google Cloud Pub/Sub topic of `stream = pubsub`, `projects/{project}/topics/{topic}`, which the deployment template creates. The subscriptions are created in its project.",
 		requiredWhen: "when `stream = pubsub`",
-		check:        pubsubstream.CheckTopic,
+		check:        checkPubSubTopic,
 		set:          func(c *Config, v string) { c.StreamPubSubTopic = v },
 	},
 	{
 		key:          "stream_pubsub_subscription_prefix",
 		doc:          "Start of the IDs of the per-process subscriptions of `stream = pubsub`, `{prefix}-{process id}-{n}`: a letter, then letters, digits, and `-_.~+%`, not starting with `goog`. The `stream.sweep` job deletes the subscriptions under it that ended processes left behind, so it belongs to one instance.",
 		requiredWhen: "when `stream = pubsub`",
-		check:        pubsubstream.CheckSubscriptionPrefix,
+		check:        checkPubSubSubscriptionPrefix,
 		set:          func(c *Config, v string) { c.StreamPubSubSubscriptionPrefix = v },
 	},
 	{
@@ -533,8 +530,8 @@ var schema = []field{
 		def: "none",
 		choices: []choice{
 			{value: "none", inV0: true, doc: "No metrics; measuring costs next to nothing. On Cloud Run the platform's metrics and log-based metrics stand in for them."},
-			{value: "prometheus", inV0: true, doc: "The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances."},
-			{value: "otlp", inV0: true, doc: "OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds)."},
+			{value: "prometheus", inV0: true, doc: "The Prometheus text format at `GET /metrics` on `metrics_listen`, a listener of its own, for a Prometheus-compatible server (and KEDA) to scrape; for self-hosted instances. The build tag `no_otel` leaves it out."},
+			{value: "otlp", inV0: true, doc: "OTLP over HTTP (protobuf) to an OpenTelemetry Collector, configured by the standard environment variables `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`), `OTEL_EXPORTER_OTLP_HEADERS`, and `OTEL_METRIC_EXPORT_INTERVAL` (default 60 seconds). The build tag `no_otel` leaves it out."},
 			{value: "emf", inV0: true, doc: "CloudWatch Embedded Metric Format lines, which CloudWatch Logs turns into metrics; for AWS Lambda. The log line that ends each request and job carries its duration metrics, and the other measurements are written on standard output, one line per label set, at the end of each request and job. Requests in progress and open streams are not written."},
 		},
 		set: func(c *Config, v string) { c.MetricsExporter = v },

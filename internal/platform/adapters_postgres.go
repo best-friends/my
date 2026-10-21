@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+//go:build !no_postgres
+
+package platform
+
+import (
+	"context"
+
+	"github.com/best-friends/my/internal/adapter/db/postgres"
+	kvdb "github.com/best-friends/my/internal/adapter/kv/db"
+	queuedb "github.com/best-friends/my/internal/adapter/queue/db"
+	pgstream "github.com/best-friends/my/internal/adapter/stream/postgres"
+	"github.com/best-friends/my/internal/app/stream"
+	"github.com/best-friends/my/internal/app/uow"
+	"github.com/best-friends/my/internal/platform/config"
+)
+
+// openPostgres opens the PostgreSQL database of db = postgres and, when cfg selects them, the
+// queue and the key-value store kept in it.
+func (a *App) openPostgres(ctx context.Context, cfg *config.Config, queueOpts queuedb.Options) (*repositories, error) {
+	d, err := postgres.Open(ctx, cfg.DatabaseURL, uow.Options{Projectors: a.Projectors})
+	if err != nil {
+		return nil, err
+	}
+	a.UnitOfWork, a.ready, a.closer = d, d.Ready, func() error { d.Close(); return nil }
+	pool := d.Pool()
+	a.newPostgresBus = func(listenURL string) (stream.Bus, error) {
+		return pgstream.New(pgstream.Options{Pool: pool, ListenURL: listenURL})
+	}
+	d.RegisterMetrics(a.Meter)
+	if cfg.Queue == "db" {
+		a.setDBQueue(queuedb.NewPostgres(d, queueOpts))
+	}
+	if cfg.KV == "db" {
+		a.KV = kvdb.NewPostgres(d, a.Clock)
+	}
+	return &repositories{
+		identities: d.IdentityRepository(), accounts: d.AccountRepository(), instances: d.InstanceRepository(),
+		follows: d.GraphRepository(), statuses: d.StatusRepository(), linkCards: d.StatusRepository(),
+		interactions: d.InteractionRepository(), feeds: d.TimelineRepository(),
+		notifs: d.NotificationRepository(), pushes: d.NotificationRepository(),
+		medias: d.MediaRepository(), emojis: d.CustomEmojiRepository(),
+		feds: d.FederationRepository(), mods: d.ModerationRepository(), hooks: d.WebhookRepository(),
+		retention: retentionRepositories{
+			statuses: d.StatusRepository(), purges: d.FederationRepository(), profiles: d.AccountRepository(), emojis: d.CustomEmojiRepository(),
+			autoDeletes: d.StatusRepository(),
+		},
+		projections: d.ProjectionStore(),
+	}, nil
+}

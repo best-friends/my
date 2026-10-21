@@ -404,6 +404,9 @@ func validate(f *field, v string) error {
 		if !f.choices[i].inV0 {
 			return fmt.Errorf("%q is not available in v0; want one of %s", v, strings.Join(v0Values(f), ", "))
 		}
+		if tag, ok := excludedValues[f.key][v]; ok {
+			return excludedError(v, tag)
+		}
 	}
 	if f.check != nil {
 		return f.check(v)
