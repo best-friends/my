@@ -1,6 +1,6 @@
 # ADR-0055: サービスメトリクスの可観測性
 
-- Status: Accepted
+- Status: Accepted（§3 の `my.surface` の値の一覧を ADR-0075（my.surface に payments を加える） が置き換える）
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #645

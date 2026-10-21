@@ -135,6 +135,12 @@ type Config struct {
 	BillingGCPLabel              string
 	BillingGCPMaxBytesBilled     int64
 	BillingGCPBudgetSubscription string
+	// PaymentsProvider is the payment provider of the supporters (ADR-0074 §5): "none" or a
+	// provider's name. PaymentsReconcileInterval and PaymentsReconcileMaxRequests bound the
+	// reconciliation with it (§4).
+	PaymentsProvider             string
+	PaymentsReconcileInterval    time.Duration
+	PaymentsReconcileMaxRequests int
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
 	DeadJobRetention time.Duration
 	// JobAttemptRetention is how long the record of a job's run that did not succeed is kept
@@ -242,6 +248,9 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("billing_gcp_label", c.BillingGCPLabel),
 		slog.Int64("billing_gcp_max_bytes_billed", c.BillingGCPMaxBytesBilled),
 		slog.String("billing_gcp_budget_subscription", c.BillingGCPBudgetSubscription),
+		slog.String("payments_provider", c.PaymentsProvider),
+		slog.Duration("payments_reconcile_interval", c.PaymentsReconcileInterval),
+		slog.Int("payments_reconcile_max_requests", c.PaymentsReconcileMaxRequests),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.Duration("job_attempt_retention", c.JobAttemptRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),

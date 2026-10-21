@@ -44,6 +44,7 @@ import (
 	"github.com/best-friends/my/internal/app/projection"
 	"github.com/best-friends/my/internal/app/queue"
 	"github.com/best-friends/my/internal/app/stream"
+	"github.com/best-friends/my/internal/app/supporters"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/internal/app/webhook"
@@ -181,6 +182,9 @@ type App struct {
 	Webhooks *webhook.Service
 	// Finance records the instance's costs and totals them by week, month, and year (ADR-0067).
 	Finance *finance.Service
+	// Payments carries the payment provider's facts to the supporters (ADR-0074); nil with
+	// payments_provider = none.
+	Payments *supporters.Payments
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
 	// Projections rebuilds and verifies the projections (`my projection`, data-model §9).
@@ -286,6 +290,11 @@ type AppOptions struct {
 	// BillingSources, by name, stand in for the adapters of the names of cfg.BillingSources.
 	// Tests only, to import from testkit.FakeBillingSource.
 	BillingSources map[string]finance.BillingSource
+	// PaymentProvider stands in for the adapter of payments_provider, and SupporterSync for the
+	// subscriptions of the supporters module that apply its facts. Tests only, with the fake
+	// adapter of internal/adapter/payment/fake.
+	PaymentProvider supporters.PaymentProvider
+	SupporterSync   supporters.Syncer
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -360,6 +369,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		mods         = repos.mods
 		hooks        = repos.hooks
 		costs        = repos.finance
+		payments     = repos.payments
 		retention    = repos.retention
 		projections  = repos.projections
 	)
@@ -625,6 +635,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpFanOut(cfg, feds, fedOutbox)
 	a.setUpWebhooks(hooks)
 	if err := a.setUpFinance(ctx, cfg, costs, opts); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
+	if err := a.setUpPayments(ctx, cfg, payments, opts); err != nil {
 		_ = a.Close()
 		return nil, err
 	}

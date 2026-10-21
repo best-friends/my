@@ -105,6 +105,9 @@ An instance setting that has never been set reads as its default, which is defin
 | [`billing_gcp_label`](#billing_gcp_label) | `MY_BILLING_GCP_LABEL` | none | no | no |
 | [`billing_gcp_max_bytes_billed`](#billing_gcp_max_bytes_billed) | `MY_BILLING_GCP_MAX_BYTES_BILLED` | `1073741824` | no | no |
 | [`billing_gcp_budget_subscription`](#billing_gcp_budget_subscription) | `MY_BILLING_GCP_BUDGET_SUBSCRIPTION` | none | when `billing_sources` includes `gcp` and `billing_gcp_method = budget` | no |
+| [`payments_provider`](#payments_provider) | `MY_PAYMENTS_PROVIDER` | `none` | no | no |
+| [`payments_reconcile_interval`](#payments_reconcile_interval) | `MY_PAYMENTS_RECONCILE_INTERVAL` | `6h` | no | no |
+| [`payments_reconcile_max_requests`](#payments_reconcile_max_requests) | `MY_PAYMENTS_RECONCILE_MAX_REQUESTS` | `1000` | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`job_attempt_retention`](#job_attempt_retention) | `MY_JOB_ATTEMPT_RETENTION` | `720h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
@@ -763,6 +766,34 @@ The pull subscription of the Pub/Sub topic of a monthly Cloud Billing budget tha
 - Environment variable: `MY_BILLING_GCP_BUDGET_SUBSCRIPTION`
 - Default: none
 - Required: when `billing_sources` includes `gcp` and `billing_gcp_method = budget`
+
+### `payments_provider`
+
+The payment provider of the supporters (ADR-0072, ADR-0074, FR-910): local users subscribe to paid plans on its hosted checkout, and the roles of the plans follow the state of their payments. Only one provider is active on a server; switching to another one needs the subscribers to subscribe again. The provider calls `POST /payments/webhooks/{provider}` (signed, at most 1 MiB, recorded once per event), and a reconciliation reads its lists every `payments_reconcile_interval`. Card details never reach the server. An administrator still enables the supporters and sets up the plans on the admin screen.
+
+- Environment variable: `MY_PAYMENTS_PROVIDER`
+- Default: `none`
+- Required: no
+
+| Value | In v0 | Description |
+| --- | --- | --- |
+| `none` | yes | No payments: the webhook endpoint and the reconciliation do not run. |
+
+### `payments_reconcile_interval`
+
+How often the reconciliation with `payments_provider` runs (ADR-0074 §4): it reads the provider's changes since the previous run, the checkouts in progress, the money movements, and a sweep of every subscription, and corrects what the webhooks missed. A Go duration from `15m` to `168h`; raise it, or `payments_reconcile_max_requests`, when the runs often stop at the cap.
+
+- Environment variable: `MY_PAYMENTS_RECONCILE_INTERVAL`
+- Default: `6h`
+- Required: no
+
+### `payments_reconcile_max_requests`
+
+How many requests one reconciliation sends to `payments_provider` (ADR-0074 §4), a page of a list counting as one. A run that reaches it records where it stopped and a continuation picks up the rest a minute later. The provider's adapter also keeps the requests within its rate limits.
+
+- Environment variable: `MY_PAYMENTS_RECONCILE_MAX_REQUESTS`
+- Default: `1000`
+- Required: no
 
 ### `dead_job_retention`
 

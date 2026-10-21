@@ -14,6 +14,7 @@ import (
 	"github.com/best-friends/my/internal/app/moderation"
 	"github.com/best-friends/my/internal/app/notification"
 	"github.com/best-friends/my/internal/app/projection"
+	"github.com/best-friends/my/internal/app/supporters"
 	"github.com/best-friends/my/internal/app/timeline"
 	"github.com/best-friends/my/internal/app/webhook"
 )
@@ -45,6 +46,7 @@ type repositories struct {
 	mods         moderation.Repository
 	hooks        webhook.Repository
 	finance      finance.Repository
+	payments     supporters.PaymentRepository
 	retention    retentionRepositories
 	projections  projection.Store
 }

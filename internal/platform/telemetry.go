@@ -71,7 +71,7 @@ var ReadinessFailures = kernel.Instrument{
 // not prometheus.
 func (a *App) MetricsHandler() http.Handler { return a.metricsHandler }
 
-// The surfaces of the HTTP server, the my.surface label (ADR-0055 §3).
+// The surfaces of the HTTP server, the my.surface label (ADR-0055 §3, ADR-0075).
 const (
 	surfaceClientAPI   = "client_api"
 	surfaceActivityPub = "activitypub"
@@ -79,6 +79,8 @@ const (
 	surfaceWeb         = "web"
 	surfaceMedia       = "media"
 	surfaceAdmin       = "admin"
+	// surfacePayments is the endpoint that the payment provider calls (ADR-0074 §3).
+	surfacePayments = "payments"
 )
 
 // routeOther is the http.route of a request that no route pattern matched.

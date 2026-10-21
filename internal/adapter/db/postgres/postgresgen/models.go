@@ -621,6 +621,31 @@ type PasskeyCredential struct {
 	CreatedAt      time.Time
 }
 
+type PaymentReconcileRun struct {
+	ID                     string
+	Provider               string
+	RunKey                 string
+	Outcome                string
+	ErrorKind              string
+	ChangesUntil           time.Time
+	ChangesCursor          string
+	MoneyCursor            string
+	SweepCursor            string
+	Requests               int32
+	CheckedSubscriptions   int32
+	CorrectedSubscriptions int32
+	OccurredAt             time.Time
+}
+
+type PaymentWebhookReceipt struct {
+	ID         string
+	Provider   string
+	EventID    string
+	EventType  string
+	ObjectID   string
+	ReceivedAt time.Time
+}
+
 type Poll struct {
 	ID         string
 	RevisionID string

@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/best-friends/my/internal/adapter/db/postgres/postgresgen"
+	"github.com/best-friends/my/internal/adapter/payment/fake"
 	"github.com/best-friends/my/internal/app/uow"
 	"github.com/best-friends/my/pkg/testkit"
 	"github.com/best-friends/my/pkg/testkit/pgtest"
@@ -95,6 +96,18 @@ func TestFinanceRepositoryContract(t *testing.T) {
 	testkit.FinanceRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.FinanceHarness {
 		db := newTestDB(t, opts)
 		return testkit.FinanceHarness{UnitOfWork: db, Finance: db.FinanceRepository()}
+	})
+}
+
+// newPaymentWorld is the provider's side of PaymentRepositoryContract: the fake adapter.
+func newPaymentWorld(o testkit.PaymentWorldOptions) testkit.PaymentWorld {
+	return fake.New(fake.Options{Name: o.Name, Mode: o.Mode, Now: o.Now, PageSize: o.PageSize})
+}
+
+func TestPaymentRepositoryContract(t *testing.T) {
+	testkit.PaymentRepositoryContract(t, func(t *testing.T, opts uow.Options) testkit.PaymentHarness {
+		db := newTestDB(t, opts)
+		return testkit.PaymentHarness{UnitOfWork: db, Payments: db.PaymentRepository(), NewWorld: newPaymentWorld}
 	})
 }
 
