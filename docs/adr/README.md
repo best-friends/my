@@ -74,4 +74,5 @@
 | [0060](0060-instance-webhooks.md) | サーバー単位の webhook | Accepted |
 | [0061](0061-federation-relays.md) | 連合リレーへの参加と脱退 | Accepted |
 | [0062](0062-link-preview-cards.md) | 投稿中のリンクのカード | Accepted |
+| [0064](0064-queue-job-dashboard.md) | キューとジョブのダッシュボード（ジョブの一覧と試行の記録） | Proposed |
 <!-- adr-index:end -->
