@@ -84,4 +84,5 @@
 | [0070](0070-permission-split-emoji-finance.md) | 権限の分割: 絵文字の作成と会計の閲覧 | Accepted |
 | [0071](0071-role-badges-and-supporter-list.md) | ロールのバッジと参加者の一覧 | Accepted |
 | [0072](0072-supporter-plans-and-roles.md) | 課金のプランとロールの連動 | Proposed |
+| [0073](0073-income-records-and-publication.md) | 収入の記録と公開 | Accepted |
 <!-- adr-index:end -->
