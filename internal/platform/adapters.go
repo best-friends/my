@@ -34,6 +34,7 @@ type repositories struct {
 	follows      graph.Repository
 	statuses     content.Repository
 	linkCards    content.LinkCardRepository
+	quotes       content.QuoteRepository
 	interactions content.InteractionRepository
 	feeds        timeline.Repository
 	notifs       notification.Repository

@@ -345,6 +345,53 @@ func TestNormalizeDialects(t *testing.T) {
 	})
 }
 
+// The spellings of a quote (ADR-0069 §2): FEP-044f's quote comes first, then the dialects, then
+// an FEP-e232 Link.
+func TestNormalizeQuote(t *testing.T) {
+	for _, tc := range []struct {
+		name, props string
+		want        *federation.Quote
+	}{
+		{"none", ``, nil},
+		{"FEP-044f with its dialect aliases", `"quote":"https://b.example/n/1","_misskey_quote":"https://b.example/n/2","quoteUri":"https://b.example/n/2",
+			"quoteAuthorization":"https://b.example/u/b/quote_authorizations/1"`,
+			&federation.Quote{Target: "https://b.example/n/1", Consent: true, Authorization: "https://b.example/u/b/quote_authorizations/1"}},
+		{"FEP-044f without an authorization", `"quote":"https://b.example/n/1"`, &federation.Quote{Target: "https://b.example/n/1", Consent: true}},
+		{"Misskey", `"_misskey_quote":"https://b.example/n/1","quoteUrl":"https://b.example/n/1","quoteAuthorization":"https://b.example/q/1"`,
+			&federation.Quote{Target: "https://b.example/n/1"}},
+		{"Akkoma quoteUrl", `"quoteUrl":"https://b.example/n/1"`, &federation.Quote{Target: "https://b.example/n/1"}},
+		{"quoteURL", `"quoteURL":"https://b.example/n/1"`, &federation.Quote{Target: "https://b.example/n/1"}},
+		{"Fedibird quoteUri", `"quoteUri":"https://b.example/n/1"`, &federation.Quote{Target: "https://b.example/n/1"}},
+		{"invalid IRI falls through", `"quote":"not an iri","quoteUrl":"https://b.example/n/1"`, &federation.Quote{Target: "https://b.example/n/1"}},
+		{"FEP-e232 Link", `"tag":[{"type":"Link","mediaType":"application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"",
+			"rel":"https://misskey-hub.net/ns#_misskey_quote","href":"https://b.example/n/1","name":"RE: https://b.example/n/1"}]`,
+			&federation.Quote{Target: "https://b.example/n/1"}},
+		{"FEP-e232 Link with FEP-044f's rel spelling", `"tag":[{"type":"Link","mediaType":"application/activity+json",
+			"rel":["https://misskey-hub.net/ns/#_misskey_quote"],"href":"https://b.example/n/1"}]`, &federation.Quote{Target: "https://b.example/n/1"}},
+		{"FEP-e232 Link without the quote rel", `"tag":[{"type":"Link","mediaType":"application/activity+json","href":"https://b.example/n/1"}]`, nil},
+		{"Link to a web page", `"tag":[{"type":"Link","mediaType":"text/html","rel":"https://misskey-hub.net/ns#_misskey_quote","href":"https://b.example/n/1"}]`, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			props := tc.props
+			if props != "" {
+				props = "," + props
+			}
+			o := object(t, `{"type":"Note","id":"https://a.example/n/1","attributedTo":"https://a.example/u/a"`+props+`}`)
+			equal(t, "Quote", o.Quote, tc.want)
+		})
+	}
+	t.Run("QuoteAuthorization", func(t *testing.T) {
+		o := object(t, `{"@context":["https://www.w3.org/ns/activitystreams",{"QuoteAuthorization":"https://w3id.org/fep/044f#QuoteAuthorization",
+			"gts":"https://gotosocial.org/ns#","interactingObject":{"@id":"gts:interactingObject","@type":"@id"},"interactionTarget":{"@id":"gts:interactionTarget","@type":"@id"}}],
+			"type":"QuoteAuthorization","id":"https://b.example/u/b/quote_authorizations/1","attributedTo":"https://b.example/u/b",
+			"interactingObject":"https://a.example/n/1","interactionTarget":"https://b.example/n/1"}`)
+		equal(t, "Type", o.Type, federation.ObjectQuoteAuthorization)
+		equal(t, "AttributedTo", o.AttributedTo, federation.IRI("https://b.example/u/b"))
+		equal(t, "InteractingObject", o.InteractingObject, federation.IRI("https://a.example/n/1"))
+		equal(t, "InteractionTarget", o.InteractionTarget, federation.IRI("https://b.example/n/1"))
+	})
+}
+
 func TestNormalizeUnknown(t *testing.T) {
 	a := activity(t, `{"type":"Arrive","actor":"https://a.example/u/a","object":"https://a.example/place"}`)
 	equal(t, "unknown activity", [2]any{a.Type, a.RawType}, [2]any{federation.ActivityUnknown, "Arrive"})

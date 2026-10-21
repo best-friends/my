@@ -1,0 +1,22 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    {
+      "QuoteAuthorization": "https://w3id.org/fep/044f#QuoteAuthorization",
+      "gts": "https://gotosocial.org/ns#",
+      "interactingObject": {
+        "@id": "gts:interactingObject",
+        "@type": "@id"
+      },
+      "interactionTarget": {
+        "@id": "gts:interactionTarget",
+        "@type": "@id"
+      }
+    }
+  ],
+  "type": "QuoteAuthorization",
+  "id": "https://mastodon.example/ap/users/117454922805771614/quote_authorizations/117454925496168360",
+  "attributedTo": "https://mastodon.example/ap/users/117454922805771614",
+  "interactingObject": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353",
+  "interactionTarget": "https://mastodon.example/ap/users/117454922805771614/statuses/117454925496168340"
+}

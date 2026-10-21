@@ -8,7 +8,7 @@ description: |
   status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
   `visibility` and `language` are those of the boosted status, its `content`,
   `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-  empty, its `card` is omitted, and its counts are zero.
+  empty, its `card` and `quote` are omitted, and its counts are zero.
 type: object
 required:
   - id
@@ -132,3 +132,9 @@ properties:
     $ref: ./Poll.yaml
   card:
     $ref: ./LinkCard.yaml
+  quote:
+    description: |
+      The status that this status quotes; omitted when it quotes none, and in a
+      `quoted_status`.
+    allOf:
+      - $ref: ./StatusQuote.yaml

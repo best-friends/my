@@ -55,6 +55,9 @@ type RemoteStatusInput struct {
 	Emojis      []RemoteEmojiInput
 	Attachments []RemoteAttachmentInput
 	Poll        *RemotePollInput
+	// Quote is the post that the post quotes, nil for none (ADR-0069). It is recorded with the
+	// status; a revision without one takes the quote away, and one with another is ignored.
+	Quote *RemoteQuoteInput
 }
 
 // RemoteBody is the HTML of a remote post in one language (a canonical BCP 47 tag or "und").
@@ -150,6 +153,9 @@ func (s *Service) IngestRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteSt
 	if err := tx.Emit(ctx, StatusCreated{Status: st, Revision: rev}); err != nil {
 		return Post{}, err
 	}
+	if err := s.recordQuote(ctx, tx, st, in.Quote); err != nil {
+		return Post{}, err
+	}
 	if err := s.observePoll(ctx, tx, rev.Poll, in.Poll, now); err != nil {
 		return Post{}, err
 	}
@@ -158,7 +164,8 @@ func (s *Service) IngestRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteSt
 
 // ReviseRemoteStatus records a new revision of a remote post inside tx (federation.md §3.3,
 // §3.4): only when its RevisedAt is later than the current revision's, so that an Update that
-// arrives late or twice makes no revision. The counts of the current poll are recorded either
+// arrives late or twice makes no revision. A revision without a quote takes the status's quote
+// away (ADR-0069 §3). The counts of the current poll are recorded either
 // way, when they are higher. It reports whether a revision was made. A status that does not
 // exist or is deleted fails with ErrNotFound; one of another author with ErrNotAuthor.
 func (s *Service) ReviseRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteStatusInput) (bool, error) {
@@ -194,6 +201,11 @@ func (s *Service) ReviseRemoteStatus(ctx context.Context, tx uow.Tx, in RemoteSt
 	}
 	if err := tx.Emit(ctx, StatusRevised{Status: st, Revision: rev}); err != nil {
 		return false, err
+	}
+	if in.Quote == nil {
+		if err := s.detachQuote(ctx, tx, st); err != nil {
+			return false, err
+		}
 	}
 	return true, s.observePoll(ctx, tx, rev.Poll, in.Poll, now)
 }

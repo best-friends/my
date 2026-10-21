@@ -77,3 +77,16 @@ func domainMutesFrom(rows []sqlitegen.AccountDomainMute) []graph.DomainMute {
 	}
 	return out
 }
+
+// MutesAnyDomain implements graph.Repository.
+func (r *GraphRepository) MutesAnyDomain(ctx context.Context, accountID string, domains []string) (bool, error) {
+	if len(domains) == 0 {
+		return false, nil
+	}
+	list, err := jsonList(domains)
+	if err != nil {
+		return false, err
+	}
+	muted, err := r.db.reader().MutesAnyDomain(ctx, sqlitegen.MutesAnyDomainParams{AccountID: accountID, Domains: list})
+	return muted, wrap(err, "look up domain mutes")
+}

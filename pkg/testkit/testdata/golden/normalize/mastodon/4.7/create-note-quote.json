@@ -1,0 +1,73 @@
+{
+  "Activity": {
+    "Actor": "https://mastodon.example/ap/users/117454922805771612",
+    "Audience": {
+      "Cc": [
+        "https://mastodon.example/ap/users/117454922805771612/followers"
+      ],
+      "To": [
+        "https://www.w3.org/ns/activitystreams#Public"
+      ]
+    },
+    "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353/activity",
+    "Objects": [
+      {
+        "Embedded": {
+          "Object": {
+            "AttributedTo": "https://mastodon.example/ap/users/117454922805771612",
+            "Audience": {
+              "Cc": [
+                "https://mastodon.example/ap/users/117454922805771612/followers"
+              ],
+              "To": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
+            "Bodies": [
+              {
+                "HTML": "<p class=\"quote-inline\">RE: <a href=\"https://mastodon.example/@carol/117454925496168340\" target=\"_blank\" rel=\"nofollow noopener\" translate=\"no\"><span class=\"invisible\">https://</span><span class=\"ellipsis\">mastodon.example/@carol/117454</span><span class=\"invisible\">925496168340</span></a></p><p>quoting carol 1792219932297590021</p>",
+                "Language": "en"
+              }
+            ],
+            "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353",
+            "Published": "2026-10-17T06:54:40Z",
+            "Quote": {
+              "Authorization": "https://mastodon.example/ap/users/117454922805771614/quote_authorizations/117454925496168360",
+              "Consent": true,
+              "Target": "https://mastodon.example/ap/users/117454922805771614/statuses/117454925496168340"
+            },
+            "RawType": "Note",
+            "Replies": {
+              "Embedded": {
+                "Collection": {
+                  "First": {
+                    "Embedded": {
+                      "Collection": {
+                        "Next": {
+                          "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353/replies?only_other_accounts=true&page=true"
+                        },
+                        "Page": true
+                      }
+                    },
+                    "ID": "",
+                    "Trusted": true
+                  },
+                  "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353/replies"
+                }
+              },
+              "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353/replies",
+              "Trusted": true
+            },
+            "Type": "Note",
+            "URL": "https://mastodon.example/@bob/117454925496168353"
+          }
+        },
+        "ID": "https://mastodon.example/ap/users/117454922805771612/statuses/117454925496168353",
+        "Trusted": true
+      }
+    ],
+    "Published": "2026-10-17T06:54:40Z",
+    "RawType": "Create",
+    "Type": "Create"
+  }
+}

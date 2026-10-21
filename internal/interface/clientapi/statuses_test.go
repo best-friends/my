@@ -295,6 +295,38 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
+// A status presents its quote with the quoted status one level deep, or only the state when the
+// quoted status is not shown (ADR-0069 §5).
+func TestGetStatusPresentsTheQuote(t *testing.T) {
+	const quotedID, pendingID = "01890a5d-ac96-774b-bcce-b302099a9002", "01890a5d-ac96-774b-bcce-b302099a9003"
+	f := &fakeStatuses{view: func(v appcontent.Viewer, id string) (appcontent.StatusView, error) {
+		view := sampleView(v)
+		switch id {
+		case sampleStatusID:
+			quoted := sampleView(v)
+			quoted.Status.ID = quotedID
+			view.Quote = &appcontent.QuoteView{State: appcontent.QuoteViewLegacy, Status: &quoted}
+		case pendingID:
+			view.Status.ID = pendingID
+			view.Quote = &appcontent.QuoteView{State: appcontent.QuoteViewPending}
+		default:
+			return appcontent.StatusView{}, errNotFound
+		}
+		return view, nil
+	}}
+	e := newStatusEnv(t, f)
+
+	s := decodeStatus(t, e.send(t, http.MethodGet, "/statuses/"+sampleStatusID, "", ""))
+	if q := s.Quote; q == nil || q.State != clientapi.QuoteStateLegacy || q.QuotedStatus == nil || q.QuotedStatus.Id != quotedID ||
+		q.QuotedStatus.Account.Username != "alice" || q.QuotedStatus.Quote != nil {
+		t.Errorf("quote = %+v, want legacy with the quoted status and no quote of its own", q)
+	}
+	s = decodeStatus(t, e.send(t, http.MethodGet, "/statuses/"+pendingID, "", ""))
+	if q := s.Quote; q == nil || q.State != clientapi.QuoteStatePending || q.QuotedStatus != nil {
+		t.Errorf("quote = %+v, want pending without the quoted status", q)
+	}
+}
+
 func TestCreateStatus(t *testing.T) {
 	var got appcontent.CreateInput
 	f := &fakeStatuses{

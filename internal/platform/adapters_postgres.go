@@ -41,7 +41,7 @@ func (a *App) openPostgres(ctx context.Context, cfg *config.Config, queueOpts qu
 	}
 	return &repositories{
 		identities: d.IdentityRepository(), accounts: d.AccountRepository(), instances: d.InstanceRepository(),
-		follows: d.GraphRepository(), statuses: d.StatusRepository(), linkCards: d.StatusRepository(),
+		follows: d.GraphRepository(), statuses: d.StatusRepository(), linkCards: d.StatusRepository(), quotes: d.StatusRepository(),
 		interactions: d.InteractionRepository(), feeds: d.TimelineRepository(),
 		notifs: d.NotificationRepository(), pushes: d.NotificationRepository(),
 		medias: d.MediaRepository(), emojis: d.CustomEmojiRepository(),

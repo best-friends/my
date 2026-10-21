@@ -37,7 +37,7 @@ func (a *App) registerStatusHandlers(repo federation.InboxRepository) {
 		Fetcher: a.RemoteActors, Followers: a.Graph, Tombstones: repo, Outbox: outbox, Jobs: a.Jobs, KV: a.KV,
 		Profiles: a.Accounts, Relationships: a.Graph, Restrictions: a.ModerationPolicy, Pins: a.Interactions, Votes: a.Interactions,
 		// The posts that only relays bring in are kept for relay_status_retention (ADR-0061).
-		Relayed: a.Content, RelayPolicy: a.ModerationPolicy,
+		Relayed: a.Content, RelayPolicy: a.ModerationPolicy, Quotes: a.Content,
 		Clock: a.Clock, Host: a.Config.Host, Logger: a.Logger,
 	})
 	a.RemoteStatuses.Register(a.InboxProcessor)

@@ -17,6 +17,9 @@
     ],
     "ID": "https://misskey.example/notes/934gok3482",
     "Published": "2022-07-25T15:21:48.208Z",
+    "Quote": {
+      "Target": "https://remote.example/objects/43479e20-c0f8-4f49-bf7f-13fab8234924"
+    },
     "RawType": "Note",
     "Type": "Note"
   }
