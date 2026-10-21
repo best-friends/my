@@ -2870,6 +2870,60 @@ paths:
                 $ref: '#/components/schemas/AdminAuditEntryPage'
         default:
           $ref: '#/components/responses/Problem'
+  /admin/billing_imports:
+    get:
+      operationId: listBillingImports
+      summary: List the state of the billing imports
+      description: |
+        The state of the imports of every cloud provider of `billing_sources` (ADR-0068), in its
+        order: the last attempt and its failure, the last success, the billed requests of the UTC
+        day and month with their caps, the bytes billed this month, and the billing months of the
+        last year with imported costs, each an estimate, final, or corrected, with its totals. The
+        list is empty when nothing is imported. Needs the `manage_finance` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:read
+      responses:
+        '200':
+          description: The billing sources.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingImportList'
+        default:
+          $ref: '#/components/responses/Problem'
+  /admin/billing_imports/{source}/runs:
+    post:
+      operationId: runBillingImport
+      summary: Import a provider's usage charges now
+      description: |
+        Queues an import of the billing source now, besides the daily one (ADR-0068 §2). Its
+        billed requests count toward the caps like the others. One import per source and UTC
+        hour: another request in the hour after its import ran is a 429. A source that
+        `billing_sources` does not enable is a 404. The request is recorded in the audit log.
+        Needs the `manage_finance` permission.
+      tags:
+        - admin-server
+      security:
+        - oauth2:
+            - admin:write
+      parameters:
+        - name: source
+          in: path
+          required: true
+          description: The billing source.
+          schema:
+            $ref: '#/components/schemas/BillingSourceName'
+      responses:
+        '204':
+          description: The import is queued.
+        default:
+          $ref: '#/components/responses/Problem'
   /admin/domain_actions:
     get:
       operationId: listDomainActions
@@ -6505,7 +6559,8 @@ components:
         `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
         posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
         `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
-        on a `domain`.
+        on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
+        the ID is the source (`aws`, `gcp`) and the label the provider's name.
       type: string
       enum:
         - account_action_issued
@@ -6566,6 +6621,7 @@ components:
         - status_refetch_queued
         - account_statuses_refetch_queued
         - domain_statuses_refetch_queued
+        - billing_import_queued
     AdminAuditActorKind:
       description: |
         Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -6667,6 +6723,7 @@ components:
         - announcement
         - invite
         - relay
+        - billing_source
     AdminAvailabilityEvent:
       description: The time a remote server was marked unavailable or available again, and why.
       type: object
@@ -8048,6 +8105,148 @@ components:
           type: integer
           minimum: 0
           maximum: 1000000
+    BillingImport:
+      description: The state of the imports of a billing source (ADR-0068 §9).
+      type: object
+      required:
+        - source
+        - provider
+        - time_zone
+        - requests_today
+        - requests_this_month
+        - bytes_billed_this_month
+        - months
+      properties:
+        source:
+          $ref: '#/components/schemas/BillingSourceName'
+        provider:
+          description: The provider's name, as the breakdown of the totals shows it.
+          type: string
+        time_zone:
+          description: |
+            The IANA time zone of the provider's billing months (`UTC`, `America/Los_Angeles`),
+            kept as the provider reports them.
+          type: string
+        last_run:
+          $ref: '#/components/schemas/BillingImportRun'
+        last_success_at:
+          description: When the last successful import ran; omitted before the first.
+          type: string
+          format: date-time
+        requests_today:
+          description: The billed requests of the imports this UTC day.
+          type: integer
+          minimum: 0
+        requests_this_month:
+          description: The billed requests of the imports this UTC month.
+          type: integer
+          minimum: 0
+        max_requests_per_day:
+          description: |
+            The cap of the billed requests per UTC day (`billing_aws_max_requests_per_day`);
+            omitted for a source without caps.
+          type: integer
+          minimum: 1
+        max_requests_per_month:
+          description: |
+            The cap of the billed requests per UTC month (`billing_aws_max_requests_per_month`);
+            omitted for a source without caps.
+          type: integer
+          minimum: 1
+        bytes_billed_this_month:
+          description: The BigQuery bytes billed this UTC month; 0 for the other sources.
+          type: integer
+          format: int64
+          minimum: 0
+        months:
+          description: The billing months of the last year with imported costs, newest first.
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingImportMonth'
+    BillingImportList:
+      description: The billing sources and the state of their imports.
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingImport'
+    BillingImportMonth:
+      description: |
+        A billing month of a source: an `estimate` while the provider has not closed it, `final`
+        once it has, `correction` once a value changed after that; with its totals by currency.
+      type: object
+      required:
+        - month
+        - kind
+        - totals
+      properties:
+        month:
+          description: The billing month, `YYYY-MM` in the source's time zone.
+          type: string
+          pattern: ^[0-9]{4}-[0-9]{2}$
+        kind:
+          type: string
+          enum:
+            - estimate
+            - final
+            - correction
+        totals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Money'
+    BillingImportRun:
+      description: The last attempt of a billing import; omitted before the first.
+      type: object
+      required:
+        - outcome
+        - error_kind
+        - requests
+        - bytes_billed
+        - occurred_at
+      properties:
+        outcome:
+          type: string
+          enum:
+            - succeeded
+            - failed
+        error_kind:
+          description: |
+            Why it failed: `permission` (the credentials may not read the billing data),
+            `not_enabled` (the billing data is not enabled), `not_found` (the dataset, table, or
+            subscription does not exist), `throttled` and `unavailable` (retried), `request_cap`
+            (the cap of the day or the month is reached; nothing was called), `bytes_cap` (the
+            query would scan too much), `invalid_response`; `none` for a success.
+          type: string
+          enum:
+            - none
+            - permission
+            - not_enabled
+            - not_found
+            - throttled
+            - request_cap
+            - bytes_cap
+            - invalid_response
+            - unavailable
+        requests:
+          description: The billed requests it made.
+          type: integer
+          minimum: 0
+        bytes_billed:
+          type: integer
+          format: int64
+          minimum: 0
+        occurred_at:
+          type: string
+          format: date-time
+    BillingSourceName:
+      description: A cloud provider of the billing imports (`billing_sources`).
+      type: string
+      enum:
+        - aws
+        - gcp
     ChangePasswordRequest:
       description: |
         A change of the user's password, confirmed with `current_password` or `passkey`.
@@ -9677,6 +9876,21 @@ components:
         - pending
         - upheld
         - overturned
+    Money:
+      description: |
+        An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+        its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: string
+          pattern: ^-?[0-9]+(\.[0-9]+)?$
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
     MoveInstanceRuleRequest:
       description: The new place of a rule.
       type: object
@@ -9995,7 +10209,8 @@ components:
         authentication or issuing a password reset link (only the built-in admin role by
         default). `manage_custom_emojis`: the custom emoji, local and
         remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
-        server's announcements to every local user. The others guard no client API operation
+        server's announcements to every local user. `manage_finance`: the instance's costs and
+        the state of the billing imports (only the built-in admin role by default). The others guard no client API operation
         yet.
       type: string
       enum:
@@ -10012,6 +10227,7 @@ components:
         - manage_custom_emojis
         - manage_webhooks
         - manage_announcements
+        - manage_finance
     PickerCustomEmoji:
       description: |
         A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts

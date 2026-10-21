@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+  its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+type: object
+required: [amount, currency]
+properties:
+  amount:
+    type: string
+    pattern: "^-?[0-9]+(\\.[0-9]+)?$"
+  currency:
+    type: string
+    pattern: "^[A-Z]{3}$"

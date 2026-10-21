@@ -32,6 +32,9 @@ const (
 	// PermManageAnnouncements: write, publish, and withdraw the server-wide announcements
 	// (FR-726). It is server administration (ADR-0058 §4).
 	PermManageAnnouncements Permission = "manage_announcements"
+	// PermManageFinance: record the instance's costs, read their totals, and see and start the
+	// billing imports (ADR-0067 §7, ADR-0068 §9). It is server administration (ADR-0058 §4).
+	PermManageFinance Permission = "manage_finance"
 )
 
 // AllPermissions lists every permission.
@@ -40,6 +43,7 @@ func AllPermissions() []Permission {
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
+		PermManageFinance,
 	}
 }
 

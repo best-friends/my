@@ -2053,6 +2053,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/billing_imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the state of the billing imports
+         * @description The state of the imports of every cloud provider of `billing_sources` (ADR-0068), in its
+         *     order: the last attempt and its failure, the last success, the billed requests of the UTC
+         *     day and month with their caps, the bytes billed this month, and the billing months of the
+         *     last year with imported costs, each an estimate, final, or corrected, with its totals. The
+         *     list is empty when nothing is imported. Needs the `manage_finance` permission.
+         */
+        get: operations["listBillingImports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/billing_imports/{source}/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a provider's usage charges now
+         * @description Queues an import of the billing source now, besides the daily one (ADR-0068 §2). Its
+         *     billed requests count toward the caps like the others. One import per source and UTC
+         *     hour: another request in the hour after its import ran is a 429. A source that
+         *     `billing_sources` does not enable is a 404. The request is recorded in the audit log.
+         *     Needs the `manage_finance` permission.
+         */
+        post: operations["runBillingImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/domain_actions": {
         parameters: {
             query?: never;
@@ -4329,10 +4377,11 @@ export interface components {
          *     `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
          *     posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
          *     `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
-         *     on a `domain`.
+         *     on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
+         *     the ID is the source (`aws`, `gcp`) and the label the provider's name.
          * @enum {string}
          */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued";
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued" | "billing_import_queued";
         /**
          * @description Who performed the operation. `user`: a signed-in moderator or administrator.
          *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
@@ -4389,7 +4438,7 @@ export interface components {
          * @description The kind of what an audited operation acted on.
          * @enum {string}
          */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay";
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay" | "billing_source";
         /** @description The time a remote server was marked unavailable or available again, and why. */
         AdminAvailabilityEvent: {
             id: components["schemas"]["Id"];
@@ -5198,6 +5247,84 @@ export interface components {
             /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
             keep_min_favourites: number;
         };
+        /** @description The state of the imports of a billing source (ADR-0068 §9). */
+        BillingImport: {
+            source: components["schemas"]["BillingSourceName"];
+            /** @description The provider's name, as the breakdown of the totals shows it. */
+            provider: string;
+            /**
+             * @description The IANA time zone of the provider's billing months (`UTC`, `America/Los_Angeles`),
+             *     kept as the provider reports them.
+             */
+            time_zone: string;
+            last_run?: components["schemas"]["BillingImportRun"];
+            /**
+             * Format: date-time
+             * @description When the last successful import ran; omitted before the first.
+             */
+            last_success_at?: string;
+            /** @description The billed requests of the imports this UTC day. */
+            requests_today: number;
+            /** @description The billed requests of the imports this UTC month. */
+            requests_this_month: number;
+            /**
+             * @description The cap of the billed requests per UTC day (`billing_aws_max_requests_per_day`);
+             *     omitted for a source without caps.
+             */
+            max_requests_per_day?: number;
+            /**
+             * @description The cap of the billed requests per UTC month (`billing_aws_max_requests_per_month`);
+             *     omitted for a source without caps.
+             */
+            max_requests_per_month?: number;
+            /**
+             * Format: int64
+             * @description The BigQuery bytes billed this UTC month; 0 for the other sources.
+             */
+            bytes_billed_this_month: number;
+            /** @description The billing months of the last year with imported costs, newest first. */
+            months: components["schemas"]["BillingImportMonth"][];
+        };
+        /** @description The billing sources and the state of their imports. */
+        BillingImportList: {
+            items: components["schemas"]["BillingImport"][];
+        };
+        /**
+         * @description A billing month of a source: an `estimate` while the provider has not closed it, `final`
+         *     once it has, `correction` once a value changed after that; with its totals by currency.
+         */
+        BillingImportMonth: {
+            /** @description The billing month, `YYYY-MM` in the source's time zone. */
+            month: string;
+            /** @enum {string} */
+            kind: "estimate" | "final" | "correction";
+            totals: components["schemas"]["Money"][];
+        };
+        /** @description The last attempt of a billing import; omitted before the first. */
+        BillingImportRun: {
+            /** @enum {string} */
+            outcome: "succeeded" | "failed";
+            /**
+             * @description Why it failed: `permission` (the credentials may not read the billing data),
+             *     `not_enabled` (the billing data is not enabled), `not_found` (the dataset, table, or
+             *     subscription does not exist), `throttled` and `unavailable` (retried), `request_cap`
+             *     (the cap of the day or the month is reached; nothing was called), `bytes_cap` (the
+             *     query would scan too much), `invalid_response`; `none` for a success.
+             * @enum {string}
+             */
+            error_kind: "none" | "permission" | "not_enabled" | "not_found" | "throttled" | "request_cap" | "bytes_cap" | "invalid_response" | "unavailable";
+            /** @description The billed requests it made. */
+            requests: number;
+            /** Format: int64 */
+            bytes_billed: number;
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        /**
+         * @description A cloud provider of the billing imports (`billing_sources`).
+         * @enum {string}
+         */
+        BillingSourceName: "aws" | "gcp";
         /** @description A change of the user's password, confirmed with `current_password` or `passkey`. */
         ChangePasswordRequest: {
             /** @description The user's current password, which confirms the change. */
@@ -6179,6 +6306,14 @@ export interface components {
          * @enum {string}
          */
         ModerationAppealState: "pending" | "upheld" | "overturned";
+        /**
+         * @description An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+         *     its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+         */
+        Money: {
+            amount: string;
+            currency: string;
+        };
         /** @description The new place of a rule. */
         MoveInstanceRuleRequest: {
             /** @description The place among the rules in effect, from 1. */
@@ -6385,11 +6520,12 @@ export interface components {
          *     authentication or issuing a password reset link (only the built-in admin role by
          *     default). `manage_custom_emojis`: the custom emoji, local and
          *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
-         *     server's announcements to every local user. The others guard no client API operation
+         *     server's announcements to every local user. `manage_finance`: the instance's costs and
+         *     the state of the billing imports (only the built-in admin role by default). The others guard no client API operation
          *     yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements" | "manage_finance";
         /**
          * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
          *     `:shortcode:` into the text.
@@ -10010,6 +10146,50 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AdminAuditEntryPage"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listBillingImports: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The billing sources. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingImportList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    runBillingImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The billing source. */
+                source: components["schemas"]["BillingSourceName"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The import is queued. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

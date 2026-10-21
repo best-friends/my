@@ -11,6 +11,7 @@ import (
 	"net/mail"
 	"net/netip"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -518,6 +519,30 @@ var schema = []field{
 		set:   func(c *Config, v string) { c.RelayIngestHourlyLimit, _ = strconv.Atoi(v) },
 	},
 	{
+		key:   "billing_sources",
+		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider. Empty imports nothing.",
+		check: checkBillingSources,
+		set: func(c *Config, v string) {
+			for s := range strings.SplitSeq(v, ",") {
+				c.BillingSources = append(c.BillingSources, strings.TrimSpace(s))
+			}
+		},
+	},
+	{
+		key:   "billing_aws_max_requests_per_day",
+		doc:   "How many billed AWS Cost Explorer requests (one per page, $0.01 each) the imports of `billing_sources = aws` may make per UTC day, counting the scheduled imports, their retries, and the imports that an administrator starts (ADR-0068 §4). An import with none left calls nothing and is recorded as `request_cap`; the next day's import tries again.",
+		def:   strconv.Itoa(defaultBillingAWSRequestsPerDay),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.BillingAWSMaxRequestsPerDay, _ = strconv.Atoi(v) },
+	},
+	{
+		key:   "billing_aws_max_requests_per_month",
+		doc:   "How many billed AWS Cost Explorer requests the imports may make per UTC calendar month, the bound of the cost of the imports (the default is $1.20 a month: four imports a day for thirty days). An import with none left calls nothing and is recorded as `request_cap` until the next month.",
+		def:   strconv.Itoa(defaultBillingAWSRequestsPerMonth),
+		check: checkPositiveInt,
+		set:   func(c *Config, v string) { c.BillingAWSMaxRequestsPerMonth, _ = strconv.Atoi(v) },
+	},
+	{
 		key:   "dead_job_retention",
 		doc:   "How long a dead job (a job that failed for good or used up its attempts, ADR-0004) is kept after it failed, for an operator to inspect and requeue it; the hourly purge then deletes it (FR-803). A Go duration such as `720h` (30 days).",
 		def:   "720h",
@@ -681,6 +706,32 @@ func checkRatio(v string) error {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil || math.IsNaN(f) || f < 0 || f > 1 {
 		return errors.New("must be a number from 0 to 1, for example 0.01")
+	}
+	return nil
+}
+
+// billingSourceNames are the values of billing_sources (ADR-0068).
+var billingSourceNames = []string{"aws", "gcp"}
+
+// The defaults of the AWS request caps (ADR-0068 §4); finance.DefaultAWSRequestsPerDay and
+// _PerMonth are the same.
+const (
+	defaultBillingAWSRequestsPerDay   = 4
+	defaultBillingAWSRequestsPerMonth = 120
+)
+
+// checkBillingSources accepts comma-separated names of billingSourceNames, each once.
+func checkBillingSources(v string) error {
+	seen := map[string]bool{}
+	for s := range strings.SplitSeq(v, ",") {
+		s = strings.TrimSpace(s)
+		if !slices.Contains(billingSourceNames, s) {
+			return fmt.Errorf("%q is not a billing source; use aws or gcp, comma-separated", s)
+		}
+		if seen[s] {
+			return fmt.Errorf("%q is listed twice", s)
+		}
+		seen[s] = true
 	}
 	return nil
 }

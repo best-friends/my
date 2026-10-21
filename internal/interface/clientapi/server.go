@@ -173,6 +173,9 @@ type Options struct {
 	// Refetches queues the refetch of remote posts (admin_refetch.go); nil answers 404 to its
 	// operations.
 	Refetches Refetches
+	// BillingImports reads and starts the billing imports (admin_billing_imports.go); nil
+	// answers 404 to their operations.
+	BillingImports BillingImports
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

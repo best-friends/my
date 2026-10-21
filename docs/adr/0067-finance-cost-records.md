@@ -84,7 +84,7 @@ AWS と Google Cloud の利用料金の自動の取り込み（FR-904）の方�
   `effective_on` と `revised_at` は、効く日（業務の日付）と記録した時刻で、`moderation_actions` の開始・期限と同じく、イベントの日時属性は `revised_at` の 1 つである。
 - 支払いの周期と開始日は項目の不変の事実にする。周期を変えるときは、項目を終了して新しい項目を作る。1 回だけの支払いを抜く例外（スキップ）は持たない。
 - 取り込んだ費用の行（事業者・請求期間・サービス・見込みと確定・取り込みの世代）のテーブルは #875 が `finance` の中に決める。この ADR は §5 の境界の契約だけを決める。
-- 新しい論理型 `date`（暦の日付 `YYYY-MM-DD`）を data-model §1.2 に足す。SQLite は `TEXT` と形の `CHECK`、PostgreSQL は `date`（pgmem で扱えなければ `text` と `CHECK`。**要検証**、#876）。
+- 新しい論理型 `date`（暦の日付 `YYYY-MM-DD`）を data-model §1.2 に足す。SQLite は `TEXT` と形の `CHECK`、PostgreSQL は `date`（data-model §1.2）。
 
 ### 3. 支払いの周期
 
@@ -237,4 +237,4 @@ AWS と Google Cloud の利用料金の自動の取り込み（FR-904）の方�
 
 ## Open Questions / 要検証
 
-- 論理型 `date` を PostgreSQL の `date` にできるか（pgmem の対応、#876）。
+- 無し。

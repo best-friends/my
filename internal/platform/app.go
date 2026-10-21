@@ -279,6 +279,9 @@ type AppOptions struct {
 	// Tracer, when set, records the spans instead of the adapter that cfg.TracesExporter
 	// selects. Tests only, to inspect the spans with testkit.Tracer.
 	Tracer kernel.Tracer
+	// BillingSources, by name, stand in for the adapters of the names of cfg.BillingSources.
+	// Tests only, to import from testkit.FakeBillingSource.
+	BillingSources map[string]finance.BillingSource
 }
 
 // NewApp connects the adapters that cfg selects and builds the application services on them.
@@ -611,8 +614,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
 	a.setUpWebhooks(hooks)
-	finance.RegisterProjectors(a.Projectors, costs)
-	a.Finance = finance.NewService(finance.Deps{UnitOfWork: a.UnitOfWork, Repository: costs, Clock: a.Clock, IDs: a.IDs})
+	if err := a.setUpFinance(ctx, cfg, costs, opts); err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	// Link previews read statuses and their images, so the web client comes after media.
 	a.Previews = content.NewPreviews(content.PreviewDeps{
 		Repository: statuses, Accounts: a.Accounts, Restrictions: a.AccountPolicy.Content(), Media: a.Media,
@@ -706,8 +711,10 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The relays the instance joins (ADR-0061).
 		Relays: a.Relays,
 		// The refetch of remote posts from their servers (FR-407).
-		Refetches:   a.Refetches,
-		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
+		Refetches: a.Refetches,
+		// The billing imports (ADR-0068).
+		BillingImports: a.Finance,
+		RateLimiter:    a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})
 	// The data of the webhook messages is the admin API's representation (ADR-0060).

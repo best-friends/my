@@ -123,7 +123,8 @@ CREATE TABLE role_permissions (
   permission text NOT NULL CHECK (permission IN (
     'manage_reports', 'manage_accounts', 'manage_domains', 'manage_rules',
     'manage_settings', 'manage_roles', 'manage_invites', 'view_audit', 'manage_jobs',
-    'manage_login_recovery', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements'
+    'manage_login_recovery', 'manage_custom_emojis', 'manage_webhooks', 'manage_announcements',
+    'manage_finance'
   )),
   PRIMARY KEY (role_id, permission)
 );
@@ -2255,11 +2256,12 @@ CREATE TABLE audit_log_entries (
     'webhook_secret_rotated', 'announcement_created', 'announcement_updated',
     'announcement_published', 'announcement_withdrawn', 'invite_created', 'invite_revoked',
     'relay_added', 'relay_followed', 'relay_unfollowed', 'relay_removed', 'relay_accepted', 'relay_rejected',
-    'status_refetch_queued', 'account_statuses_refetch_queued', 'domain_statuses_refetch_queued'
+    'status_refetch_queued', 'account_statuses_refetch_queued', 'domain_statuses_refetch_queued',
+    'billing_import_queued'
   )),
   target_kind text NOT NULL CHECK (target_kind IN (
     'account', 'status', 'domain', 'report', 'appeal', 'user', 'role', 'setting', 'rule',
-    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay'
+    'signup_block', 'custom_emoji', 'webhook', 'announcement', 'invite', 'relay', 'billing_source'
   )),
   target_id text COLLATE "C" NOT NULL,
   target_label text NOT NULL,
@@ -2621,4 +2623,63 @@ CREATE TABLE cost_item_heads (
   cost_item_id text COLLATE "C" NOT NULL PRIMARY KEY,
   label_revision_id text COLLATE "C" NOT NULL,
   ends_on date
+);
+
+-- Event: one attempt of a billing import (ADR-0068 §5), succeeded or failed with error_kind
+-- ('none' for a success). run_key is the idempotency key of its job, which every retry shares.
+-- requests counts the billed API requests the attempt made: the caps of §4 sum them by UTC day
+-- and UTC month of occurred_at.
+CREATE TABLE billing_import_runs (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  source text NOT NULL CHECK (source IN ('aws', 'gcp')),
+  run_key text COLLATE "C" NOT NULL,
+  outcome text NOT NULL CHECK (outcome IN ('succeeded', 'failed')),
+  error_kind text NOT NULL CHECK (error_kind IN (
+    'none', 'permission', 'not_enabled', 'not_found', 'throttled', 'request_cap', 'bytes_cap',
+    'invalid_response', 'unavailable'
+  )),
+  requests integer NOT NULL CHECK (requests >= 0),
+  bytes_billed bigint NOT NULL CHECK (bytes_billed >= 0),
+  occurred_at timestamptz NOT NULL,
+  CHECK ((outcome = 'succeeded') = (error_kind = 'none'))
+);
+CREATE INDEX billing_import_runs_source_occurred_at ON billing_import_runs (source, occurred_at);
+CREATE INDEX billing_import_runs_run_key ON billing_import_runs (run_key);
+
+-- Event (revision): the amount of a provider's charges of one billing month (YYYY-MM in the
+-- provider's time zone), service, and charge type, spread over [starts_on, ends_on], recorded
+-- when the value or its kind changed. The newest row of a key is current (imported_cost_heads).
+-- The attempts of one job write a key once (the unique run_key).
+CREATE TABLE imported_cost_revisions (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  source text NOT NULL CHECK (source IN ('aws', 'gcp')),
+  billing_month text COLLATE "C" NOT NULL CHECK (billing_month ~ '^[0-9]{4}-[0-1][0-9]$'),
+  service text COLLATE "C" NOT NULL CHECK (length(service) BETWEEN 1 AND 200),
+  charge_type text NOT NULL CHECK (charge_type IN (
+    'usage', 'credit', 'refund', 'tax', 'support', 'fee', 'adjustment', 'other'
+  )),
+  category text NOT NULL CHECK (category IN (
+    'compute', 'database', 'storage', 'network', 'domain', 'email', 'software', 'other'
+  )),
+  starts_on date NOT NULL,
+  ends_on date NOT NULL,
+  amount_minor bigint NOT NULL,
+  currency text NOT NULL CHECK (currency ~ '^[A-Z]{3}$'),
+  kind text NOT NULL CHECK (kind IN ('estimate', 'final', 'correction')),
+  run_id text COLLATE "C" NOT NULL,
+  run_key text COLLATE "C" NOT NULL,
+  recorded_at timestamptz NOT NULL,
+  CHECK (starts_on <= ends_on)
+);
+CREATE UNIQUE INDEX imported_cost_revisions_key_run_key ON imported_cost_revisions (source, billing_month, service, charge_type, run_key);
+
+-- Projection of imported_cost_revisions: the newest revision of each key, updated in the
+-- transaction that adds the revision.
+CREATE TABLE imported_cost_heads (
+  source text NOT NULL,
+  billing_month text COLLATE "C" NOT NULL,
+  service text COLLATE "C" NOT NULL,
+  charge_type text NOT NULL,
+  revision_id text COLLATE "C" NOT NULL,
+  PRIMARY KEY (source, billing_month, service, charge_type)
 );

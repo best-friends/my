@@ -47,9 +47,16 @@ func RegisterProjectors(r *uow.Projectors, repo Repository) {
 }
 
 // RebuildProjections derives cost_item_heads again from the cost items, their label revisions,
-// end changes, and cancellations, in one transaction (data-model §9).
+// end changes, and cancellations, and imported_cost_heads from the imported cost revisions, in
+// one transaction (data-model §9).
 func RebuildProjections(ctx context.Context, u uow.UnitOfWork, repo Repository) error {
-	if err := u.Tx(ctx, func(tx uow.Tx) error { return repo.RebuildHeads(ctx, tx) }); err != nil {
+	err := u.Tx(ctx, func(tx uow.Tx) error {
+		if err := repo.RebuildHeads(ctx, tx); err != nil {
+			return err
+		}
+		return repo.RebuildImportedHeads(ctx, tx)
+	})
+	if err != nil {
 		return fmt.Errorf("rebuild the finance projections: %w", err)
 	}
 	return nil

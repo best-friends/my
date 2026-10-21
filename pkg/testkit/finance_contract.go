@@ -26,14 +26,18 @@ type FinanceHarness struct {
 type FinanceFactory func(t *testing.T, opts uow.Options) FinanceHarness
 
 // FinanceRepositoryContract verifies the finance repository of a database adapter through the
-// finance use cases (ADR-0067, FR-901, FR-902): cost items paid once, every N weeks, months, or
+// finance use cases (ADR-0067, ADR-0068, FR-901, FR-902, FR-904): cost items paid once, every N weeks, months, or
 // years are recorded with their label, prices, and end, keep their calendar dates as written, and
 // list newest first; invalid input writes nothing; the totals of any week, month, or year follow
 // the rules of ADR-0067 (payment dates from the start date, month ends, leap years, the boundaries
 // of the periods, the dates of the price revisions, the end date included, amortization only for
 // schedules longer than a month) and every split of the periods sums to what was paid; a new
 // label regroups the breakdown; a cancellation removes the item from past periods as well; and
-// the head projection rebuilds to what the commands wrote.
+// the head projections rebuild to what the commands and the imports wrote. The billing imports
+// of a FakeBillingSource count once however often they run, record estimates, finals, and
+// corrections (0 for a key that the source no longer reports), refetch the months of the rules,
+// stop at the request caps by UTC day and month without calling the source, and record every
+// failed attempt alone.
 func FinanceRepositoryContract(t *testing.T, newHarness FinanceFactory) {
 	t.Helper()
 	cases := []struct {
@@ -47,6 +51,10 @@ func FinanceRepositoryContract(t *testing.T, newHarness FinanceFactory) {
 		{"RelabelsRevisesAndEnds", financeChanges},
 		{"CancelsFromEveryPeriod", financeCancel},
 		{"RebuildsItsProjection", financeRebuild},
+		{"ImportsWithoutDuplicates", financeImportIdempotent},
+		{"ImportsEstimatesFinalsAndCorrections", financeImportRevisions},
+		{"ImportsWithinTheRequestCaps", financeImportCaps},
+		{"RecordsFailedImports", financeImportFailures},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newFinanceEnv(t, newHarness)) })
@@ -57,6 +65,9 @@ type financeEnv struct {
 	h     FinanceHarness
 	clock *Clock
 	svc   *appfinance.Service
+	// aws is the billing source of svc, and caps its request caps, which a test may set.
+	aws  *FakeBillingSource
+	caps map[string]appfinance.RequestCaps
 }
 
 func newFinanceEnv(t *testing.T, newHarness FinanceFactory) *financeEnv {
@@ -65,8 +76,13 @@ func newFinanceEnv(t *testing.T, newHarness FinanceFactory) *financeEnv {
 	h := newHarness(t, uow.Options{Retry: uow.RetryPolicy{MaxAttempts: 20}, Projectors: projectors})
 	clock := NewClock(time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
 	appfinance.RegisterProjectors(projectors, h.Finance)
-	svc := appfinance.NewService(appfinance.Deps{UnitOfWork: h.UnitOfWork, Repository: h.Finance, Clock: clock, IDs: NewIDGenerator(clock)})
-	return &financeEnv{h: h, clock: clock, svc: svc}
+	aws := NewFakeBillingSource("aws", time.UTC)
+	caps := map[string]appfinance.RequestCaps{}
+	svc := appfinance.NewService(appfinance.Deps{
+		UnitOfWork: h.UnitOfWork, Repository: h.Finance, Clock: clock, IDs: NewIDGenerator(clock),
+		Sources: []appfinance.BillingSource{aws}, Caps: caps, Logger: discardLogger(),
+	})
+	return &financeEnv{h: h, clock: clock, svc: svc, aws: aws, caps: caps}
 }
 
 func financeDate(t *testing.T, s string) finance.Date {

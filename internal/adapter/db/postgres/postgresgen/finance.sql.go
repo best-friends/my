@@ -14,6 +14,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countBillingImportRunsByKey = `-- name: CountBillingImportRunsByKey :one
+SELECT COUNT(*) FROM billing_import_runs WHERE source = $1 AND run_key = $2
+`
+
+type CountBillingImportRunsByKeyParams struct {
+	Source string
+	RunKey string
+}
+
+func (q *Queries) CountBillingImportRunsByKey(ctx context.Context, arg CountBillingImportRunsByKeyParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countBillingImportRunsByKey, arg.Source, arg.RunKey)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deleteCostItemHead = `-- name: DeleteCostItemHead :exec
 DELETE FROM cost_item_heads WHERE cost_item_id = $1
 `
@@ -47,6 +63,39 @@ func (q *Queries) GetCostItemCurrentForUpdate(ctx context.Context, costItemID st
 		&i.StartsOn,
 	)
 	return i, err
+}
+
+const insertBillingImportRun = `-- name: InsertBillingImportRun :exec
+
+INSERT INTO billing_import_runs (id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+`
+
+type InsertBillingImportRunParams struct {
+	ID          string
+	Source      string
+	RunKey      string
+	Outcome     string
+	ErrorKind   string
+	Requests    int32
+	BytesBilled int64
+	OccurredAt  time.Time
+}
+
+// The billing imports (ADR-0068 section 5). billing_import_runs and imported_cost_revisions are
+// written once; imported_cost_heads is the projection of the revisions.
+func (q *Queries) InsertBillingImportRun(ctx context.Context, arg InsertBillingImportRunParams) error {
+	_, err := q.db.Exec(ctx, insertBillingImportRun,
+		arg.ID,
+		arg.Source,
+		arg.RunKey,
+		arg.Outcome,
+		arg.ErrorKind,
+		arg.Requests,
+		arg.BytesBilled,
+		arg.OccurredAt,
+	)
+	return err
 }
 
 const insertCostItem = `-- name: InsertCostItem :exec
@@ -185,6 +234,85 @@ func (q *Queries) InsertCostItemPriceRevision(ctx context.Context, arg InsertCos
 	return err
 }
 
+const insertImportedCostRevision = `-- name: InsertImportedCostRevision :execrows
+INSERT INTO imported_cost_revisions (
+  id, source, billing_month, service, charge_type, category, starts_on, ends_on, amount_minor, currency, kind,
+  run_id, run_key, recorded_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+ON CONFLICT (source, billing_month, service, charge_type, run_key) DO NOTHING
+`
+
+type InsertImportedCostRevisionParams struct {
+	ID           string
+	Source       string
+	BillingMonth string
+	Service      string
+	ChargeType   string
+	Category     string
+	StartsOn     pgtype.Date
+	EndsOn       pgtype.Date
+	AmountMinor  int64
+	Currency     string
+	Kind         string
+	RunID        string
+	RunKey       string
+	RecordedAt   time.Time
+}
+
+// InsertImportedCostRevision writes nothing when an attempt of the same job wrote the key.
+func (q *Queries) InsertImportedCostRevision(ctx context.Context, arg InsertImportedCostRevisionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertImportedCostRevision,
+		arg.ID,
+		arg.Source,
+		arg.BillingMonth,
+		arg.Service,
+		arg.ChargeType,
+		arg.Category,
+		arg.StartsOn,
+		arg.EndsOn,
+		arg.AmountMinor,
+		arg.Currency,
+		arg.Kind,
+		arg.RunID,
+		arg.RunKey,
+		arg.RecordedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const lastBillingImportRun = `-- name: LastBillingImportRun :one
+SELECT id, source, run_key, outcome, error_kind, requests, bytes_billed, occurred_at FROM billing_import_runs
+WHERE source = $1 AND ($2::boolean OR outcome = 'succeeded')
+ORDER BY occurred_at DESC, id DESC
+LIMIT 1
+`
+
+type LastBillingImportRunParams struct {
+	Source        string
+	IncludeFailed bool
+}
+
+// LastBillingImportRun returns the newest attempt of a source, only among the successes unless
+// include_failed is true.
+func (q *Queries) LastBillingImportRun(ctx context.Context, arg LastBillingImportRunParams) (BillingImportRun, error) {
+	row := q.db.QueryRow(ctx, lastBillingImportRun, arg.Source, arg.IncludeFailed)
+	var i BillingImportRun
+	err := row.Scan(
+		&i.ID,
+		&i.Source,
+		&i.RunKey,
+		&i.Outcome,
+		&i.ErrorKind,
+		&i.Requests,
+		&i.BytesBilled,
+		&i.OccurredAt,
+	)
+	return i, err
+}
+
 const listCostItemPriceRevisions = `-- name: ListCostItemPriceRevisions :many
 SELECT id, cost_item_id, effective_on, amount_minor, currency, revised_at FROM cost_item_price_revisions
 WHERE cost_item_id = ANY($1::text[])
@@ -298,6 +426,101 @@ func (q *Queries) ListCostItems(ctx context.Context, arg ListCostItemsParams) ([
 	return items, nil
 }
 
+const listImportedCostHeads = `-- name: ListImportedCostHeads :many
+SELECT r.id, r.source, r.billing_month, r.service, r.charge_type, r.category, r.starts_on, r.ends_on, r.amount_minor,
+  r.currency, r.kind, r.run_id, r.run_key, r.recorded_at
+FROM imported_cost_heads h JOIN imported_cost_revisions r ON r.id = h.revision_id
+WHERE ($1::text = '' OR h.source = $1)
+  AND (cardinality($2::text[]) = 0 OR h.billing_month = ANY($2::text[]))
+ORDER BY h.source, h.billing_month, h.service, h.charge_type
+`
+
+type ListImportedCostHeadsParams struct {
+	Source string
+	Months []string
+}
+
+// ListImportedCostHeads returns the newest revision of every key, of one source unless source is
+// empty and of the billing months months unless it is empty.
+func (q *Queries) ListImportedCostHeads(ctx context.Context, arg ListImportedCostHeadsParams) ([]ImportedCostRevision, error) {
+	rows, err := q.db.Query(ctx, listImportedCostHeads, arg.Source, arg.Months)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ImportedCostRevision{}
+	for rows.Next() {
+		var i ImportedCostRevision
+		if err := rows.Scan(
+			&i.ID,
+			&i.Source,
+			&i.BillingMonth,
+			&i.Service,
+			&i.ChargeType,
+			&i.Category,
+			&i.StartsOn,
+			&i.EndsOn,
+			&i.AmountMinor,
+			&i.Currency,
+			&i.Kind,
+			&i.RunID,
+			&i.RunKey,
+			&i.RecordedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockImportedCostHeads = `-- name: LockImportedCostHeads :exec
+SELECT 1 FROM imported_cost_heads
+WHERE source = $1 AND billing_month = ANY($2::text[])
+FOR UPDATE
+`
+
+type LockImportedCostHeadsParams struct {
+	Source string
+	Months []string
+}
+
+// LockImportedCostHeads locks the heads of a source's billing months, so that two imports of
+// the source compare and write one after the other.
+func (q *Queries) LockImportedCostHeads(ctx context.Context, arg LockImportedCostHeadsParams) error {
+	_, err := q.db.Exec(ctx, lockImportedCostHeads, arg.Source, arg.Months)
+	return err
+}
+
+const sumBillingImportRuns = `-- name: SumBillingImportRuns :one
+SELECT COALESCE(SUM(requests), 0)::bigint AS requests, COALESCE(SUM(bytes_billed), 0)::bigint AS bytes_billed
+FROM billing_import_runs
+WHERE source = $1 AND occurred_at >= $2 AND occurred_at < $3
+`
+
+type SumBillingImportRunsParams struct {
+	Source  string
+	FromAt  time.Time
+	UntilAt time.Time
+}
+
+type SumBillingImportRunsRow struct {
+	Requests    int64
+	BytesBilled int64
+}
+
+// SumBillingImportRuns sums the requests and the bytes billed of the attempts of a source that
+// occurred in [from, until).
+func (q *Queries) SumBillingImportRuns(ctx context.Context, arg SumBillingImportRunsParams) (SumBillingImportRunsRow, error) {
+	row := q.db.QueryRow(ctx, sumBillingImportRuns, arg.Source, arg.FromAt, arg.UntilAt)
+	var i SumBillingImportRunsRow
+	err := row.Scan(&i.Requests, &i.BytesBilled)
+	return i, err
+}
+
 const upsertCostItemHead = `-- name: UpsertCostItemHead :exec
 INSERT INTO cost_item_heads (cost_item_id, label_revision_id, ends_on) VALUES ($1, $2, $3)
 ON CONFLICT (cost_item_id) DO UPDATE SET label_revision_id = excluded.label_revision_id, ends_on = excluded.ends_on
@@ -311,5 +534,29 @@ type UpsertCostItemHeadParams struct {
 
 func (q *Queries) UpsertCostItemHead(ctx context.Context, arg UpsertCostItemHeadParams) error {
 	_, err := q.db.Exec(ctx, upsertCostItemHead, arg.CostItemID, arg.LabelRevisionID, arg.EndsOn)
+	return err
+}
+
+const upsertImportedCostHead = `-- name: UpsertImportedCostHead :exec
+INSERT INTO imported_cost_heads (source, billing_month, service, charge_type, revision_id) VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (source, billing_month, service, charge_type) DO UPDATE SET revision_id = excluded.revision_id
+`
+
+type UpsertImportedCostHeadParams struct {
+	Source       string
+	BillingMonth string
+	Service      string
+	ChargeType   string
+	RevisionID   string
+}
+
+func (q *Queries) UpsertImportedCostHead(ctx context.Context, arg UpsertImportedCostHeadParams) error {
+	_, err := q.db.Exec(ctx, upsertImportedCostHead,
+		arg.Source,
+		arg.BillingMonth,
+		arg.Service,
+		arg.ChargeType,
+		arg.RevisionID,
+	)
 	return err
 }

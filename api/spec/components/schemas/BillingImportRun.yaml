@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The last attempt of a billing import; omitted before the first.
+type: object
+required: [outcome, error_kind, requests, bytes_billed, occurred_at]
+properties:
+  outcome:
+    type: string
+    enum: [succeeded, failed]
+  error_kind:
+    description: |
+      Why it failed: `permission` (the credentials may not read the billing data),
+      `not_enabled` (the billing data is not enabled), `not_found` (the dataset, table, or
+      subscription does not exist), `throttled` and `unavailable` (retried), `request_cap`
+      (the cap of the day or the month is reached; nothing was called), `bytes_cap` (the
+      query would scan too much), `invalid_response`; `none` for a success.
+    type: string
+    enum: [none, permission, not_enabled, not_found, throttled, request_cap, bytes_cap, invalid_response, unavailable]
+  requests:
+    description: The billed requests it made.
+    type: integer
+    minimum: 0
+  bytes_billed:
+    type: integer
+    format: int64
+    minimum: 0
+  occurred_at:
+    type: string
+    format: date-time

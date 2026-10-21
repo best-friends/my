@@ -90,6 +90,9 @@ An instance setting that has never been set reads as its default, which is defin
 | [`remote_status_max_retention`](#remote_status_max_retention) | `MY_REMOTE_STATUS_MAX_RETENTION` | none | no | no |
 | [`relay_status_retention`](#relay_status_retention) | `MY_RELAY_STATUS_RETENTION` | `168h` | no | no |
 | [`relay_ingest_hourly_limit`](#relay_ingest_hourly_limit) | `MY_RELAY_INGEST_HOURLY_LIMIT` | `1000` | no | no |
+| [`billing_sources`](#billing_sources) | `MY_BILLING_SOURCES` | none | no | no |
+| [`billing_aws_max_requests_per_day`](#billing_aws_max_requests_per_day) | `MY_BILLING_AWS_MAX_REQUESTS_PER_DAY` | `4` | no | no |
+| [`billing_aws_max_requests_per_month`](#billing_aws_max_requests_per_month) | `MY_BILLING_AWS_MAX_REQUESTS_PER_MONTH` | `120` | no | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`job_attempt_retention`](#job_attempt_retention) | `MY_JOB_ATTEMPT_RETENTION` | `720h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
@@ -611,6 +614,30 @@ How many activities each relay may bring in per hour (ADR-0061). The ones over i
 
 - Environment variable: `MY_RELAY_INGEST_HOURLY_LIMIT`
 - Default: `1000`
+- Required: no
+
+### `billing_sources`
+
+Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider. Empty imports nothing.
+
+- Environment variable: `MY_BILLING_SOURCES`
+- Default: none
+- Required: no
+
+### `billing_aws_max_requests_per_day`
+
+How many billed AWS Cost Explorer requests (one per page, $0.01 each) the imports of `billing_sources = aws` may make per UTC day, counting the scheduled imports, their retries, and the imports that an administrator starts (ADR-0068 §4). An import with none left calls nothing and is recorded as `request_cap`; the next day's import tries again.
+
+- Environment variable: `MY_BILLING_AWS_MAX_REQUESTS_PER_DAY`
+- Default: `4`
+- Required: no
+
+### `billing_aws_max_requests_per_month`
+
+How many billed AWS Cost Explorer requests the imports may make per UTC calendar month, the bound of the cost of the imports (the default is $1.20 a month: four imports a day for thirty days). An import with none left calls nothing and is recorded as `request_cap` until the next month.
+
+- Environment variable: `MY_BILLING_AWS_MAX_REQUESTS_PER_MONTH`
+- Default: `120`
 - Required: no
 
 ### `dead_job_retention`

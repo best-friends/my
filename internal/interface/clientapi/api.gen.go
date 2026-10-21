@@ -277,6 +277,7 @@ const (
 	AdminAuditActionAnnouncementWithdrawn        AdminAuditAction = "announcement_withdrawn"
 	AdminAuditActionAppealOverturned             AdminAuditAction = "appeal_overturned"
 	AdminAuditActionAppealUpheld                 AdminAuditAction = "appeal_upheld"
+	AdminAuditActionBillingImportQueued          AdminAuditAction = "billing_import_queued"
 	AdminAuditActionCustomEmojiCopied            AdminAuditAction = "custom_emoji_copied"
 	AdminAuditActionCustomEmojiCreated           AdminAuditAction = "custom_emoji_created"
 	AdminAuditActionCustomEmojiDeleted           AdminAuditAction = "custom_emoji_deleted"
@@ -349,6 +350,8 @@ func (e AdminAuditAction) Valid() bool {
 	case AdminAuditActionAppealOverturned:
 		return true
 	case AdminAuditActionAppealUpheld:
+		return true
+	case AdminAuditActionBillingImportQueued:
 		return true
 	case AdminAuditActionCustomEmojiCopied:
 		return true
@@ -477,21 +480,22 @@ func (e AdminAuditActorKind) Valid() bool {
 
 // Defines values for AdminAuditTargetKind.
 const (
-	AdminAuditTargetKindAccount      AdminAuditTargetKind = "account"
-	AdminAuditTargetKindAnnouncement AdminAuditTargetKind = "announcement"
-	AdminAuditTargetKindAppeal       AdminAuditTargetKind = "appeal"
-	AdminAuditTargetKindCustomEmoji  AdminAuditTargetKind = "custom_emoji"
-	AdminAuditTargetKindDomain       AdminAuditTargetKind = "domain"
-	AdminAuditTargetKindInvite       AdminAuditTargetKind = "invite"
-	AdminAuditTargetKindRelay        AdminAuditTargetKind = "relay"
-	AdminAuditTargetKindReport       AdminAuditTargetKind = "report"
-	AdminAuditTargetKindRole         AdminAuditTargetKind = "role"
-	AdminAuditTargetKindRule         AdminAuditTargetKind = "rule"
-	AdminAuditTargetKindSetting      AdminAuditTargetKind = "setting"
-	AdminAuditTargetKindSignupBlock  AdminAuditTargetKind = "signup_block"
-	AdminAuditTargetKindStatus       AdminAuditTargetKind = "status"
-	AdminAuditTargetKindUser         AdminAuditTargetKind = "user"
-	AdminAuditTargetKindWebhook      AdminAuditTargetKind = "webhook"
+	AdminAuditTargetKindAccount       AdminAuditTargetKind = "account"
+	AdminAuditTargetKindAnnouncement  AdminAuditTargetKind = "announcement"
+	AdminAuditTargetKindAppeal        AdminAuditTargetKind = "appeal"
+	AdminAuditTargetKindBillingSource AdminAuditTargetKind = "billing_source"
+	AdminAuditTargetKindCustomEmoji   AdminAuditTargetKind = "custom_emoji"
+	AdminAuditTargetKindDomain        AdminAuditTargetKind = "domain"
+	AdminAuditTargetKindInvite        AdminAuditTargetKind = "invite"
+	AdminAuditTargetKindRelay         AdminAuditTargetKind = "relay"
+	AdminAuditTargetKindReport        AdminAuditTargetKind = "report"
+	AdminAuditTargetKindRole          AdminAuditTargetKind = "role"
+	AdminAuditTargetKindRule          AdminAuditTargetKind = "rule"
+	AdminAuditTargetKindSetting       AdminAuditTargetKind = "setting"
+	AdminAuditTargetKindSignupBlock   AdminAuditTargetKind = "signup_block"
+	AdminAuditTargetKindStatus        AdminAuditTargetKind = "status"
+	AdminAuditTargetKindUser          AdminAuditTargetKind = "user"
+	AdminAuditTargetKindWebhook       AdminAuditTargetKind = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the AdminAuditTargetKind enum.
@@ -502,6 +506,8 @@ func (e AdminAuditTargetKind) Valid() bool {
 	case AdminAuditTargetKindAnnouncement:
 		return true
 	case AdminAuditTargetKindAppeal:
+		return true
+	case AdminAuditTargetKindBillingSource:
 		return true
 	case AdminAuditTargetKindCustomEmoji:
 		return true
@@ -934,6 +940,102 @@ func (e AdminWebhookStateReason) Valid() bool {
 	case AdminWebhookStateReasonFailing:
 		return true
 	case AdminWebhookStateReasonGone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingImportMonthKind.
+const (
+	BillingImportMonthKindCorrection BillingImportMonthKind = "correction"
+	BillingImportMonthKindEstimate   BillingImportMonthKind = "estimate"
+	BillingImportMonthKindFinal      BillingImportMonthKind = "final"
+)
+
+// Valid indicates whether the value is a known member of the BillingImportMonthKind enum.
+func (e BillingImportMonthKind) Valid() bool {
+	switch e {
+	case BillingImportMonthKindCorrection:
+		return true
+	case BillingImportMonthKindEstimate:
+		return true
+	case BillingImportMonthKindFinal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingImportRunErrorKind.
+const (
+	BillingImportRunErrorKindBytesCap        BillingImportRunErrorKind = "bytes_cap"
+	BillingImportRunErrorKindInvalidResponse BillingImportRunErrorKind = "invalid_response"
+	BillingImportRunErrorKindNone            BillingImportRunErrorKind = "none"
+	BillingImportRunErrorKindNotEnabled      BillingImportRunErrorKind = "not_enabled"
+	BillingImportRunErrorKindNotFound        BillingImportRunErrorKind = "not_found"
+	BillingImportRunErrorKindPermission      BillingImportRunErrorKind = "permission"
+	BillingImportRunErrorKindRequestCap      BillingImportRunErrorKind = "request_cap"
+	BillingImportRunErrorKindThrottled       BillingImportRunErrorKind = "throttled"
+	BillingImportRunErrorKindUnavailable     BillingImportRunErrorKind = "unavailable"
+)
+
+// Valid indicates whether the value is a known member of the BillingImportRunErrorKind enum.
+func (e BillingImportRunErrorKind) Valid() bool {
+	switch e {
+	case BillingImportRunErrorKindBytesCap:
+		return true
+	case BillingImportRunErrorKindInvalidResponse:
+		return true
+	case BillingImportRunErrorKindNone:
+		return true
+	case BillingImportRunErrorKindNotEnabled:
+		return true
+	case BillingImportRunErrorKindNotFound:
+		return true
+	case BillingImportRunErrorKindPermission:
+		return true
+	case BillingImportRunErrorKindRequestCap:
+		return true
+	case BillingImportRunErrorKindThrottled:
+		return true
+	case BillingImportRunErrorKindUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingImportRunOutcome.
+const (
+	BillingImportRunOutcomeFailed    BillingImportRunOutcome = "failed"
+	BillingImportRunOutcomeSucceeded BillingImportRunOutcome = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the BillingImportRunOutcome enum.
+func (e BillingImportRunOutcome) Valid() bool {
+	switch e {
+	case BillingImportRunOutcomeFailed:
+		return true
+	case BillingImportRunOutcomeSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BillingSourceName.
+const (
+	BillingSourceNameAws BillingSourceName = "aws"
+	BillingSourceNameGcp BillingSourceName = "gcp"
+)
+
+// Valid indicates whether the value is a known member of the BillingSourceName enum.
+func (e BillingSourceName) Valid() bool {
+	switch e {
+	case BillingSourceNameAws:
+		return true
+	case BillingSourceNameGcp:
 		return true
 	default:
 		return false
@@ -1498,6 +1600,7 @@ const (
 	PermissionManageAnnouncements Permission = "manage_announcements"
 	PermissionManageCustomEmojis  Permission = "manage_custom_emojis"
 	PermissionManageDomains       Permission = "manage_domains"
+	PermissionManageFinance       Permission = "manage_finance"
 	PermissionManageInvites       Permission = "manage_invites"
 	PermissionManageJobs          Permission = "manage_jobs"
 	PermissionManageLoginRecovery Permission = "manage_login_recovery"
@@ -1519,6 +1622,8 @@ func (e Permission) Valid() bool {
 	case PermissionManageCustomEmojis:
 		return true
 	case PermissionManageDomains:
+		return true
+	case PermissionManageFinance:
 		return true
 	case PermissionManageInvites:
 		return true
@@ -2501,7 +2606,8 @@ type AdminAppealPage struct {
 // `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
 // posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
 // `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
-// on a `domain`.
+// on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
+// the ID is the source (`aws`, `gcp`) and the label the provider's name.
 type AdminAuditAction string
 
 // AdminAuditActorKind Who performed the operation. `user`: a signed-in moderator or administrator.
@@ -2545,7 +2651,8 @@ type AdminAuditEntry struct {
 	// `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
 	// posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
 	// `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
-	// on a `domain`.
+	// on a `domain`. On a `billing_source`: `billing_import_queued`, an import started by hand;
+	// the ID is the source (`aws`, `gcp`) and the label the provider's name.
 	Action AdminAuditAction `json:"action"`
 
 	// ActorAccount The account of `actor_account_id`; omitted when it is gone.
@@ -3628,6 +3735,93 @@ type AutoDeletePolicy struct {
 	// MinAgeDays How many days after its publication a post is deleted.
 	MinAgeDays int `json:"min_age_days"`
 }
+
+// BillingImport The state of the imports of a billing source (ADR-0068 §9).
+type BillingImport struct {
+	// BytesBilledThisMonth The BigQuery bytes billed this UTC month; 0 for the other sources.
+	BytesBilledThisMonth int64 `json:"bytes_billed_this_month"`
+
+	// LastRun The last attempt of a billing import; omitted before the first.
+	LastRun *BillingImportRun `json:"last_run,omitempty"`
+
+	// LastSuccessAt When the last successful import ran; omitted before the first.
+	LastSuccessAt *time.Time `json:"last_success_at,omitempty"`
+
+	// MaxRequestsPerDay The cap of the billed requests per UTC day (`billing_aws_max_requests_per_day`);
+	// omitted for a source without caps.
+	MaxRequestsPerDay *int `json:"max_requests_per_day,omitempty"`
+
+	// MaxRequestsPerMonth The cap of the billed requests per UTC month (`billing_aws_max_requests_per_month`);
+	// omitted for a source without caps.
+	MaxRequestsPerMonth *int `json:"max_requests_per_month,omitempty"`
+
+	// Months The billing months of the last year with imported costs, newest first.
+	Months []BillingImportMonth `json:"months"`
+
+	// Provider The provider's name, as the breakdown of the totals shows it.
+	Provider string `json:"provider"`
+
+	// RequestsThisMonth The billed requests of the imports this UTC month.
+	RequestsThisMonth int `json:"requests_this_month"`
+
+	// RequestsToday The billed requests of the imports this UTC day.
+	RequestsToday int `json:"requests_today"`
+
+	// Source A cloud provider of the billing imports (`billing_sources`).
+	Source BillingSourceName `json:"source"`
+
+	// TimeZone The IANA time zone of the provider's billing months (`UTC`, `America/Los_Angeles`),
+	// kept as the provider reports them.
+	TimeZone string `json:"time_zone"`
+}
+
+// BillingImportList The billing sources and the state of their imports.
+type BillingImportList struct {
+	Items []BillingImport `json:"items"`
+}
+
+// BillingImportMonth A billing month of a source: an `estimate` while the provider has not closed it, `final`
+// once it has, `correction` once a value changed after that; with its totals by currency.
+type BillingImportMonth struct {
+	Kind BillingImportMonthKind `json:"kind"`
+
+	// Month The billing month, `YYYY-MM` in the source's time zone.
+	Month  string  `json:"month"`
+	Totals []Money `json:"totals"`
+}
+
+// BillingImportMonthKind defines model for BillingImportMonth.Kind.
+type BillingImportMonthKind string
+
+// BillingImportRun The last attempt of a billing import; omitted before the first.
+type BillingImportRun struct {
+	BytesBilled int64 `json:"bytes_billed"`
+
+	// ErrorKind Why it failed: `permission` (the credentials may not read the billing data),
+	// `not_enabled` (the billing data is not enabled), `not_found` (the dataset, table, or
+	// subscription does not exist), `throttled` and `unavailable` (retried), `request_cap`
+	// (the cap of the day or the month is reached; nothing was called), `bytes_cap` (the
+	// query would scan too much), `invalid_response`; `none` for a success.
+	ErrorKind  BillingImportRunErrorKind `json:"error_kind"`
+	OccurredAt time.Time                 `json:"occurred_at"`
+	Outcome    BillingImportRunOutcome   `json:"outcome"`
+
+	// Requests The billed requests it made.
+	Requests int `json:"requests"`
+}
+
+// BillingImportRunErrorKind Why it failed: `permission` (the credentials may not read the billing data),
+// `not_enabled` (the billing data is not enabled), `not_found` (the dataset, table, or
+// subscription does not exist), `throttled` and `unavailable` (retried), `request_cap`
+// (the cap of the day or the month is reached; nothing was called), `bytes_cap` (the
+// query would scan too much), `invalid_response`; `none` for a success.
+type BillingImportRunErrorKind string
+
+// BillingImportRunOutcome defines model for BillingImportRun.Outcome.
+type BillingImportRunOutcome string
+
+// BillingSourceName A cloud provider of the billing imports (`billing_sources`).
+type BillingSourceName string
 
 // ChangePasswordRequest A change of the user's password, confirmed with `current_password` or `passkey`.
 type ChangePasswordRequest struct {
@@ -4894,6 +5088,13 @@ type ModerationAppeal struct {
 // `overturned` lifted it.
 type ModerationAppealState string
 
+// Money An amount of money (ADR-0067 §9): a decimal string in the major unit with the digits of
+// its currency (`12.34` USD, `1650` JPY), never a JSON number, and its ISO 4217 code.
+type Money struct {
+	Amount   string `json:"amount"`
+	Currency string `json:"currency"`
+}
+
 // MoveInstanceRuleRequest The new place of a rule.
 type MoveInstanceRuleRequest struct {
 	// Position The place among the rules in effect, from 1.
@@ -5141,7 +5342,8 @@ type PasswordStatus struct {
 // authentication or issuing a password reset link (only the built-in admin role by
 // default). `manage_custom_emojis`: the custom emoji, local and
 // remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
-// server's announcements to every local user. The others guard no client API operation
+// server's announcements to every local user. `manage_finance`: the instance's costs and
+// the state of the billing imports (only the built-in admin role by default). The others guard no client API operation
 // yet.
 type Permission string
 
@@ -7208,6 +7410,12 @@ type ServerInterface interface {
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
+	// ListBillingImports List the state of the billing imports
+	// (GET /admin/billing_imports)
+	ListBillingImports(w http.ResponseWriter, r *http.Request)
+	// RunBillingImport Import a provider's usage charges now
+	// (POST /admin/billing_imports/{source}/runs)
+	RunBillingImport(w http.ResponseWriter, r *http.Request, source BillingSourceName)
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(w http.ResponseWriter, r *http.Request)
@@ -9102,6 +9310,46 @@ func (siw *ServerInterfaceWrapper) ListAuditLog(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAuditLog(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListBillingImports operation middleware
+func (siw *ServerInterfaceWrapper) ListBillingImports(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListBillingImports(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunBillingImport operation middleware
+func (siw *ServerInterfaceWrapper) RunBillingImport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "source" -------------
+	var source BillingSourceName
+
+	err = runtime.BindStyledParameterWithOptions("simple", "source", r.PathValue("source"), &source, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunBillingImport(w, r, source)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13299,6 +13547,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/instances/{domain}/availability_events", wrapper.ListInstanceAvailabilityEvents)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/instances/{domain}/mark_available", wrapper.MarkInstanceAvailable)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/audit_log", wrapper.ListAuditLog)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/billing_imports", wrapper.ListBillingImports)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/billing_imports/{source}/runs", wrapper.RunBillingImport)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions", wrapper.ListDomainActions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/admin/domain_actions", wrapper.CreateDomainAction)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/admin/domain_actions/{id}", wrapper.GetDomainAction)
@@ -16052,6 +16302,113 @@ type ListAuditLogdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ListAuditLogdefaultApplicationProblemPlusJSONResponse) VisitListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBillingImportsRequestObject struct {
+}
+
+type ListBillingImportsResponseObject interface {
+	VisitListBillingImportsResponse(w http.ResponseWriter) error
+}
+
+type ListBillingImports200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type ListBillingImports200JSONResponse struct {
+	Body    BillingImportList
+	Headers ListBillingImports200ResponseHeaders
+}
+
+func (response ListBillingImports200JSONResponse) VisitListBillingImportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListBillingImportsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response ListBillingImportsdefaultApplicationProblemPlusJSONResponse) VisitListBillingImportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunBillingImportRequestObject struct {
+	Source BillingSourceName `json:"source"`
+}
+
+type RunBillingImportResponseObject interface {
+	VisitRunBillingImportResponse(w http.ResponseWriter) error
+}
+
+type RunBillingImport204Response struct {
+}
+
+func (response RunBillingImport204Response) VisitRunBillingImportResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RunBillingImportdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response RunBillingImportdefaultApplicationProblemPlusJSONResponse) VisitRunBillingImportResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -25045,6 +25402,12 @@ type StrictServerInterface interface {
 	// ListAuditLog List the audit log
 	// (GET /admin/audit_log)
 	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
+	// ListBillingImports List the state of the billing imports
+	// (GET /admin/billing_imports)
+	ListBillingImports(ctx context.Context, request ListBillingImportsRequestObject) (ListBillingImportsResponseObject, error)
+	// RunBillingImport Import a provider's usage charges now
+	// (POST /admin/billing_imports/{source}/runs)
+	RunBillingImport(ctx context.Context, request RunBillingImportRequestObject) (RunBillingImportResponseObject, error)
 	// GetAdminCounts Count what awaits the moderators
 	// (GET /admin/counts)
 	GetAdminCounts(ctx context.Context, request GetAdminCountsRequestObject) (GetAdminCountsResponseObject, error)
@@ -26727,6 +27090,56 @@ func (sh *strictHandler) ListAuditLog(w http.ResponseWriter, r *http.Request, pa
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAuditLogResponseObject); ok {
 		if err := validResponse.VisitListAuditLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListBillingImports operation middleware
+func (sh *strictHandler) ListBillingImports(w http.ResponseWriter, r *http.Request) {
+	var request ListBillingImportsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListBillingImports(ctx, request.(ListBillingImportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListBillingImports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListBillingImportsResponseObject); ok {
+		if err := validResponse.VisitListBillingImportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunBillingImport operation middleware
+func (sh *strictHandler) RunBillingImport(w http.ResponseWriter, r *http.Request, source BillingSourceName) {
+	var request RunBillingImportRequestObject
+
+	request.Source = source
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunBillingImport(ctx, request.(RunBillingImportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunBillingImport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunBillingImportResponseObject); ok {
+		if err := validResponse.VisitRunBillingImportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

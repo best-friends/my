@@ -68,18 +68,20 @@ const (
 	AuditStatusRefetchQueued          = moderation.AuditStatusRefetchQueued
 	AuditAccountStatusesRefetchQueued = moderation.AuditAccountStatusesRefetchQueued
 	AuditDomainStatusesRefetchQueued  = moderation.AuditDomainStatusesRefetchQueued
+	AuditBillingImportQueued          = moderation.AuditBillingImportQueued
 
-	AuditTargetUser         = moderation.AuditTargetUser
-	AuditTargetSetting      = moderation.AuditTargetSetting
-	AuditTargetRule         = moderation.AuditTargetRule
-	AuditTargetRole         = moderation.AuditTargetRole
-	AuditTargetWebhook      = moderation.AuditTargetWebhook
-	AuditTargetAnnouncement = moderation.AuditTargetAnnouncement
-	AuditTargetInvite       = moderation.AuditTargetInvite
-	AuditTargetCustomEmoji  = moderation.AuditTargetCustomEmoji
-	AuditTargetRelay        = moderation.AuditTargetRelay
-	AuditTargetStatus       = moderation.AuditTargetStatus
-	AuditTargetDomain       = moderation.AuditTargetDomain
+	AuditTargetUser          = moderation.AuditTargetUser
+	AuditTargetSetting       = moderation.AuditTargetSetting
+	AuditTargetRule          = moderation.AuditTargetRule
+	AuditTargetRole          = moderation.AuditTargetRole
+	AuditTargetWebhook       = moderation.AuditTargetWebhook
+	AuditTargetAnnouncement  = moderation.AuditTargetAnnouncement
+	AuditTargetInvite        = moderation.AuditTargetInvite
+	AuditTargetCustomEmoji   = moderation.AuditTargetCustomEmoji
+	AuditTargetRelay         = moderation.AuditTargetRelay
+	AuditTargetStatus        = moderation.AuditTargetStatus
+	AuditTargetDomain        = moderation.AuditTargetDomain
+	AuditTargetBillingSource = moderation.AuditTargetBillingSource
 )
 
 // AuditActorSystem is moderation.AuditActorSystem, the server itself, and AuditActorRemote
