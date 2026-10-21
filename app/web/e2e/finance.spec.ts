@@ -87,6 +87,7 @@ const awsImport: Schemas["BillingImport"] = {
   source: "aws",
   provider: "AWS",
   time_zone: "UTC",
+  method: "cost_explorer",
   last_run: { outcome: "succeeded", error_kind: "none", requests: 1, bytes_billed: 0, occurred_at: "2026-10-21T01:00:00Z" },
   last_success_at: "2026-10-21T01:00:00Z",
   requests_today: 1,
