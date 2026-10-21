@@ -1,6 +1,6 @@
 # ADR-0058: モデレーションとサーバー管理の分離
 
-- Status: Accepted
+- Status: Accepted（§4 の「権限に区分（`moderation` / `server`）を持たせ」を ADR-0070（権限の分割: 絵文字の作成と会計の閲覧） が置き換える）
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #648

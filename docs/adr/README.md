@@ -81,5 +81,5 @@
 | [0067](0067-finance-cost-records.md) | 費用の記録・支払いの周期・期間の集計・公開範囲 | Accepted |
 | [0068](0068-billing-import.md) | 利用料金の自動取り込み（BillingSource ポート） | Accepted |
 | [0069](0069-quote-posts.md) | 引用投稿（FEP-044f） | Accepted |
-| [0070](0070-permission-split-emoji-finance.md) | 権限の分割: 絵文字の作成と会計の閲覧 | Proposed |
+| [0070](0070-permission-split-emoji-finance.md) | 権限の分割: 絵文字の作成と会計の閲覧 | Accepted |
 <!-- adr-index:end -->
