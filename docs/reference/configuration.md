@@ -104,6 +104,7 @@ An instance setting that has never been set reads as its default, which is defin
 | [`billing_gcp_projects`](#billing_gcp_projects) | `MY_BILLING_GCP_PROJECTS` | none | no | no |
 | [`billing_gcp_label`](#billing_gcp_label) | `MY_BILLING_GCP_LABEL` | none | no | no |
 | [`billing_gcp_max_bytes_billed`](#billing_gcp_max_bytes_billed) | `MY_BILLING_GCP_MAX_BYTES_BILLED` | `1073741824` | no | no |
+| [`billing_gcp_budget_subscription`](#billing_gcp_budget_subscription) | `MY_BILLING_GCP_BUDGET_SUBSCRIPTION` | none | when `billing_sources` includes `gcp` and `billing_gcp_method = budget` | no |
 | [`dead_job_retention`](#dead_job_retention) | `MY_DEAD_JOB_RETENTION` | `720h` | no | no |
 | [`job_attempt_retention`](#job_attempt_retention) | `MY_JOB_ATTEMPT_RETENTION` | `720h` | no | no |
 | [`metrics_exporter`](#metrics_exporter) | `MY_METRICS_EXPORTER` | `none` | no | no |
@@ -629,7 +630,7 @@ How many activities each relay may bring in per hour (ADR-0061). The ones over i
 
 ### `billing_sources`
 
-Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tags `no_billing_aws` and `no_billing_gcp` leave `aws` and `gcp` out. Empty imports nothing.
+Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery, or the Pub/Sub notifications of a budget: `billing_gcp_method`). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tags `no_billing_aws` and `no_billing_gcp` leave `aws` and `gcp` out. Empty imports nothing.
 
 - Environment variable: `MY_BILLING_SOURCES`
 - Default: none
@@ -713,7 +714,7 @@ How the imports of `billing_sources = gcp` read the Google Cloud usage charges (
 | Value | In v0 | Description |
 | --- | --- | --- |
 | `bigquery` | yes | Sum the standard usage cost export of Cloud Billing to BigQuery (`billing_gcp_table`) with one query a day, within the free tier of BigQuery (docs/operations/billing-import.md). |
-| `budget` | not in v0 | Read the budget notifications of a Pub/Sub subscription: an estimate of the budget's total, without the services (#889). |
+| `budget` | yes | Read the notifications of a monthly Cloud Billing budget from a Pub/Sub pull subscription (`billing_gcp_budget_subscription`) once a day: the budget's estimated total of each month, one line named after the budget, without the services, the charge types, or the export's days (docs/operations/billing-import.md). A simple way for an operator without the BigQuery export; free within the free tier of Pub/Sub. |
 
 ### `billing_gcp_table`
 
@@ -754,6 +755,14 @@ The `maximumBytesBilled` of each BigQuery query of `billing_gcp_method = bigquer
 - Environment variable: `MY_BILLING_GCP_MAX_BYTES_BILLED`
 - Default: `1073741824`
 - Required: no
+
+### `billing_gcp_budget_subscription`
+
+The pull subscription of the Pub/Sub topic of a monthly Cloud Billing budget that `billing_gcp_method = budget` reads, `projects/{project}/subscriptions/{subscription}`. The imports acknowledge a notification once a later one of its budget and month replaces it or once its month is final and no longer imported, and keep the latest of each month imported, so the subscription needs a message retention of at least 14 days (31 recommended) and must not be read by anything else. The service account of the server needs `roles/pubsub.subscriber` on it (docs/operations/billing-import.md).
+
+- Environment variable: `MY_BILLING_GCP_BUDGET_SUBSCRIPTION`
+- Default: none
+- Required: when `billing_sources` includes `gcp` and `billing_gcp_method = budget`
 
 ### `dead_job_retention`
 

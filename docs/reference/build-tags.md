@@ -12,9 +12,9 @@ The adapters that need nothing beyond the standard library and the packages the 
 | `no_postgres` | The PostgreSQL database (`pgx/v5`), the queue and key-value store kept in it, and the `LISTEN` / `NOTIFY` broker | `db = postgres`, `stream = postgres` |
 | `no_valkey` | The Valkey client (`valkey-go`): the key-value store and the broker on `valkey_url` | `kv = valkey`, `stream = valkey` |
 | `no_sns` | The Amazon SNS / SQS broker (AWS SDK) | `stream = sns` |
-| `no_pubsub` | The Google Cloud Pub/Sub broker (Google Cloud client libraries) | `stream = pubsub` |
+| `no_pubsub` | The Google Cloud Pub/Sub broker; with `no_billing_gcp`, the Pub/Sub client library too | `stream = pubsub` |
 | `no_billing_aws` | The import of the AWS usage charges (AWS Cost Explorer SDK) | `billing_sources = aws` |
-| `no_billing_gcp` | The import of the Google Cloud usage charges (BigQuery REST client) | `billing_sources = gcp` |
+| `no_billing_gcp` | The import of the Google Cloud usage charges (BigQuery REST client; with `no_pubsub`, the Pub/Sub client library of `billing_gcp_method = budget`) | `billing_sources = gcp` |
 | `no_otel` | The OpenTelemetry SDK and its Prometheus and OTLP exporters, of the metrics and of the traces | `metrics_exporter = prometheus`, `metrics_exporter = otlp`, `traces_exporter = otlp` |
 
 Leave out the database that the instance does not use, but keep at least one of `no_sqlite` and `no_postgres` off:

@@ -22,15 +22,24 @@ if (($# > 0)); then
   sets=("$@")
 fi
 
-# excluded_packages TAG prints the packages that TAG leaves out of cmd/my: the adapters and their client library.
+# excluded_packages TAG SET prints the packages that TAG of SET leaves out of cmd/my: the adapters and their client
+# library. The Pub/Sub client serves the broker and the budget method of the Google Cloud billing import, so only
+# no_pubsub and no_billing_gcp together leave it out.
 excluded_packages() {
   local m=github.com/best-friends/my/internal/adapter
+  case "$1" in
+    no_pubsub | no_billing_gcp)
+      if [[ ",$2," == *,no_pubsub,* && ",$2," == *,no_billing_gcp,* ]]; then
+        echo "cloud.google.com/go/pubsub/v2"
+      fi
+      ;;
+  esac
   case "$1" in
     no_sqlite) echo "$m/db/sqlite modernc.org/sqlite" ;;
     no_postgres) echo "$m/db/postgres $m/stream/postgres github.com/jackc/pgx/v5" ;;
     no_valkey) echo "$m/valkey $m/kv/valkey $m/stream/valkey github.com/valkey-io/valkey-go" ;;
     no_sns) echo "$m/stream/sns github.com/aws/aws-sdk-go-v2/service/sns" ;;
-    no_pubsub) echo "$m/stream/pubsub cloud.google.com/go/pubsub/v2" ;;
+    no_pubsub) echo "$m/stream/pubsub" ;;
     no_billing_aws) echo "$m/billing/aws github.com/aws/aws-sdk-go-v2/service/costexplorer" ;;
     no_billing_gcp) echo "$m/billing/gcp google.golang.org/api/bigquery/v2" ;;
     no_otel) echo "$m/telemetry/otel $m/telemetry/otel/otlptest go.opentelemetry.io/otel/sdk/metric go.opentelemetry.io/otel/sdk/trace go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp" ;;
@@ -49,7 +58,7 @@ for set in "${sets[@]}"; do
   deps="$(go list -deps -tags "$set" ./cmd/my)"
   IFS=, read -ra tags <<<"$set"
   for tag in "${tags[@]}"; do
-    pkgs="$(excluded_packages "$tag")"
+    pkgs="$(excluded_packages "$tag" "$set")"
     for pkg in $pkgs; do
       if grep -qFx "$pkg" <<<"$deps"; then
         echo "cmd/my built with -tags $set still depends on $pkg, which $tag leaves out" >&2

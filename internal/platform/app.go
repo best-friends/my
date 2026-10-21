@@ -216,6 +216,8 @@ type App struct {
 	closer func() error
 	// closeBlobs releases the blob store.
 	closeBlobs func() error
+	// billingClosers release the clients of the billing sources that hold one (ADR-0068).
+	billingClosers []io.Closer
 	// valkey is the connection to the Valkey server that the adapters configured with
 	// valkey_url share, nil until one of them connects it.
 	valkey valkeyServer
@@ -1100,6 +1102,10 @@ func (a *App) Close() error {
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()
 	}
+	for _, c := range a.billingClosers {
+		_ = c.Close()
+	}
+	a.billingClosers = nil
 	if a.valkey != nil {
 		a.valkey.Close()
 	}

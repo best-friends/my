@@ -5,6 +5,7 @@ package platform
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/best-friends/my/internal/app/finance"
 	"github.com/best-friends/my/internal/app/queue"
@@ -31,6 +32,9 @@ func (a *App) setUpFinance(ctx context.Context, cfg *config.Config, repo finance
 		src, err := build(ctx, cfg)
 		if err != nil {
 			return fmt.Errorf("billing_sources = %s: %w", name, err)
+		}
+		if c, ok := src.(io.Closer); ok {
+			a.billingClosers = append(a.billingClosers, c)
 		}
 		sources = append(sources, src)
 	}

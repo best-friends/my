@@ -19,3 +19,7 @@ func checkBillingGCPProjects(string) error { return nil }
 
 // checkBillingGCPLabel accepts every value: no adapter of this build reads billing_gcp_label.
 func checkBillingGCPLabel(string) error { return nil }
+
+// checkBillingGCPSubscription accepts every value: no adapter of this build reads
+// billing_gcp_budget_subscription.
+func checkBillingGCPSubscription(string) error { return nil }

@@ -13,3 +13,5 @@ func checkBillingGCPProject(v string) error { return billinggcp.CheckProject(v) 
 func checkBillingGCPProjects(v string) error { return billinggcp.CheckProjects(v) }
 
 func checkBillingGCPLabel(v string) error { return billinggcp.CheckLabel(v) }
+
+func checkBillingGCPSubscription(v string) error { return billinggcp.CheckSubscription(v) }
