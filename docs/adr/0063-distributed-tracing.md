@@ -1,6 +1,6 @@
 # ADR-0063: 分散トレースの方式
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-21
 - Deciders: @rosylilly
 - Issue: #814
@@ -61,7 +61,7 @@ M6 のデプロイのテンプレートより前に、ジョブのモデルと�
 
 ## Decision Drivers（判断基準）
 
-1. **ほぼ $0 の構成を壊さない**（NFR-COST）: 既定ではトレースを出さず、今と同じ費用で動く。有効にしても常駐のコレクター・インスタンスベース課金を必須にしない
+1. **ほぼ $0 の構成を壊さない**（NFR-COST）: 既定ではトレースを出さず、今と同じ費用で動く。コレクターなどの追加の費用は、トレースを有効にした構成だけが負う
 2. **個人情報と外部への漏れがない**: span の属性に利用者を特定できる値を入れない。トレースのヘッダーを連合先へ送らず、連合先・利用者から受けたヘッダーで計測を操作されない
 3. **依存の向き**（ADR-0002）: ADR-0055 と同じく、コアは OTel を import せず port を通す
 4. **リクエストからジョブ・配送までたどれる**: outbox を通るジョブと、Cloud Tasks・SQS のアダプタをまたいでコンテキストが続く
@@ -87,9 +87,8 @@ M6 のデプロイのテンプレートより前に、ジョブのモデルと�
 
 ## Decision（決定）
 
-> Proposed の間は「推奨案」として書く。Accepted にするのは人間の Decider のみ。
-
-**推奨案: A（自前の `Tracer` port + OTel Go SDK のアダプタ）、ジョブは b（新しいトレース + link）、エクスポートは OTLP/HTTP だけ。**
+**決定: A（自前の `Tracer` port + OTel Go SDK のアダプタ）、ジョブは b（新しいトレース + link）、エクスポートは OTLP/HTTP だけ。**
+サーバーは OTLP の受け手の認証を持たず、Cloud Run と Lambda ではコレクター（Cloud Run のサイドカー、ADOT の Lambda のレイヤー）を経由して Cloud Trace・X-Ray へ送る。
 設定 `traces_exporter` の既定は `none` で、`none` でもログには基盤から受けた trace ID を付けて基盤のトレースと相関させる（D の利点を取り込む）。
 
 ### 1. 計測の port（ADR-0002 の依存の向き）
@@ -160,20 +159,19 @@ ADR-0055 §6 のラベルの規則を span の属性にも当てはめ、トレ�
 設定（`internal/platform/config`、[configuration.md](../reference/configuration.md) を再生成）:
 
 - `traces_exporter`: `none`（既定）| `otlp`。`otlp` は OTLP/HTTP（protobuf、gzip）で、宛先は OTel の標準の環境変数 `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` などで決める（ADR-0055 の `metrics_exporter = otlp` と同じ流儀）
-- `traces_auth`: `none`（既定）| `google`（Application Default Credentials の OAuth のトークンを付ける）| `aws_sigv4`（SigV4 で署名する）。
-  `WithHTTPClient` に認証付きの `http.Client` を渡し、Cloud Trace と X-Ray の OTLP の受け口へコレクターなしで直接送れる。認証のコードはアダプタに置き、既にある `cloud.google.com/go/auth`・`aws-sdk-go-v2` を使う
 - `traces_sample_ratio`: 根の span を記録する割合（既定 0.01）。sampler は「親（信頼した入口の親、ジョブの link）に従い、親がなければ trace ID の比率」
 - `traces_flush`: `batch`（既定。SDK の BatchSpanProcessor が周期的に送る）| `unit`（HTTP のリクエスト・ジョブの終わりに、そこで記録した span があれば送り切ってから返す）
+- サーバーは OTLP の受け手の認証（Google の Application Default Credentials、AWS の SigV4）を持たない。Cloud Trace・X-Ray の受け口が求める認証は、ターゲットのコレクターが行う
 
-| ターゲット | 推奨の設定 | 経路 | 費用 |
+| ターゲット | 設定 | 経路 | 費用 |
 | --- | --- | --- | --- |
-| 既定・小さな Self-hosted | `none` | ログの `request_id`・`job_id` だけ（§6） | 増えない |
+| 既定・小さな Self-hosted | `none` | ログの `request_id`・`job_id`・`trace_id`（§6） | 増えない |
 | Self-hosted（Collector・Jaeger・Tempo などを運用者が動かす） | `otlp`・`batch` | OTLP/HTTP で受け手へ。tail sampling（エラーと遅いトレースを残す）は Collector で行える | 受け手の分 |
-| Google Cloud（Cloud Run） | `none` または `otlp`・`google`・`unit` | `none` は Cloud Run の自動のトレース（無料）とログの相関。`otlp` は `telemetry.googleapis.com` へ直接 | `otlp` は span の量に比例（要検証）。`unit` は記録したリクエストだけ応答が送信の分遅れる |
-| AWS（Lambda） | `none` または `otlp`・`aws_sigv4`・`unit` | `xray.<region>.amazonaws.com/v1/traces` へ直接 | 記録したトレース 100,000 件/月まで無料、以降は従量（要検証） |
+| Google Cloud（Cloud Run） | `none`、またはトレースを有効にするなら `otlp`・`unit` | `none` は Cloud Run の自動のトレース（無料）とログの相関。`otlp` は同じインスタンスの **OpenTelemetry Collector のサイドカー**（`localhost:4318`）へ送り、サイドカーが ADC で `telemetry.googleapis.com` へ送る | サイドカーの資源と span の量（要検証）。サイドカーが CPU の割り当てのない間も送れるよう、トレースを有効にする構成はインスタンスベース課金にする（ADR-0055 の確認と同じ理由） |
+| AWS（Lambda） | `none`、またはトレースを有効にするなら `otlp`・`unit` | **ADOT の Lambda のレイヤー**（Collector の拡張機能、`localhost:4318`）へ送り、レイヤーが SigV4 で `xray.<region>.amazonaws.com/v1/traces` へ送る | レイヤーの分の起動時間と、記録したトレース 100,000 件/月まで無料、以降は従量（要検証） |
 
-- リクエストベース課金の Cloud Run と、凍結される Lambda では、BatchSpanProcessor の周期的な送信を当てにできない（ADR-0055 の確認と同じ理由）。そこで `unit` を選ぶ。
-  記録しないリクエスト（既定で 99%）は送信しないので、遅れは記録したものだけに出る
+- リクエストベース課金の Cloud Run と、凍結される Lambda では、BatchSpanProcessor の周期的な送信を当てにできない（ADR-0055 の確認と同じ理由）。そこで `unit` でローカルのコレクターへ送り切る。
+  送り先はループバックなので遅れは小さく、記録しないリクエスト（既定で 99%）は送信しない
 - 既定の比率 0.01 は、1 日 10 万リクエストのサーバーで根のトレースが 1 日約 1,000 件（月約 3 万件）になり、X-Ray の無料枠に収まる見込みで選ぶ（span の数はトレースあたり十数個。要検証: M6 で実測）
 
 ### 6. ログとの相関（NFR-OPS-1）
@@ -190,9 +188,9 @@ ADR-0055 §6 のラベルの規則を span の属性にも当てはめ、トレ�
 
 ### 覆る条件
 
-- X-Ray または Cloud Trace の OTLP の受け口が SigV4 / OAuth 以外を要求する、または直接の送信で span を失うことが分かったら、`traces_auth` をやめて Collector（ADOT の Lambda のレイヤー、Cloud Run のサイドカー）を経路にする
+- コレクターのサイドカー・ADOT のレイヤーの資源や起動時間の費用が、想定の規模で無視できない（M6 で計測）なら、アダプタが受け口の認証を持って直接送ることを再検討する
 - OTel の messaging の意味規約が Stable になって、非同期の処理の既定を親子に変えたら、§2 を見直す
-- 記録したリクエストの `unit` の遅れが利用者に見えるほど大きい（M6 で計測）なら、Cloud Run の推奨をインスタンスベース課金 + `batch` に変える
+- 記録したリクエストの `unit` の遅れが利用者に見えるほど大きい（M6 で計測）なら、インスタンスベース課金の Cloud Run を `batch` に変える
 
 ## Consequences（影響）
 
@@ -200,7 +198,7 @@ ADR-0055 §6 のラベルの規則を span の属性にも当てはめ、トレ�
   - 既定（`none`）は今と同じ費用で、ログに trace ID が付くぶんだけ Cloud Run の基盤のトレースとの相関が増える
   - リクエストからジョブ・配送まで、link でたどれる。ファンアウトがトレースを肥大させない
   - トレースのヘッダーが連合先へ出ず、外部から記録の量を操作されない。属性の許可リストで個人情報が受け手に残らない
-  - Collector なしで Cloud Trace・X-Ray に送れ、Self-hosted は任意の OTLP の受け手を使える
+  - サーバーは OTLP/HTTP を 1 つ持つだけで、受け口の認証とベンダーごとの差はコレクターが吸収する。Self-hosted は任意の OTLP の受け手を使える
 - 悪い影響・トレードオフ
   - port と SDK の二重の層を持ち、HTTP・DB の span を自前で書く。contrib の自動計測の恩恵（新しい意味規約への追従）を受けない
   - ジョブの表 3 つに列が増え、Cloud Tasks・SQS のアダプタはヘッダー・属性を運ぶ必要がある
@@ -208,13 +206,14 @@ ADR-0055 §6 のラベルの規則を span の属性にも当てはめ、トレ�
   - 比率のサンプリング（head sampling）では、まれなエラーのトレースを取り逃しうる。確実に残すには Collector の tail sampling が要る
   - `unit` は記録したリクエストの応答を送信の分だけ遅らせる
   - `server.address` は連合先のホスト名を受け手に残す。1 人のサーバーの連合先は利用者の交友を示しうるので、運用者の受け手の扱いに依存する
+  - Cloud Run と Lambda でトレースを有効にすると、コレクターのサイドカー・ADOT のレイヤーの資源と起動時間が増え、Cloud Run はインスタンスベース課金になる
 - 後続で必要になる作業（Issue 化する）
-  - `kernel.Tracer` port と `SpanSpec`、`none` / `otel` のアダプタ、`testkit` の Tracer、設定（`traces_exporter`・`traces_auth`・`traces_sample_ratio`・`traces_flush`）と configuration.md の再生成
+  - `kernel.Tracer` port と `SpanSpec`、`none` / `otel` のアダプタ、`testkit` の Tracer、設定（`traces_exporter`・`traces_sample_ratio`・`traces_flush`）と configuration.md の再生成
   - HTTP のミドルウェア・ジョブの runner・`kernel.HTTPClient`・`UnitOfWork.Tx`・クエリ（pgx の `QueryTracer`、SQLite・libSQL の `DBTX` のラッパー）の span
   - `queue.Job` の `TraceParent`、`schema/<dialect>.sql` の `jobs`・`outbox_events`・`dead_jobs` の `trace_parent`、DB キューと outbox のリレーの引き継ぎ、link に従う sampler
   - 入口の `traceparent` の信頼（`trusted_proxies`）と、ログの `trace_id`・`span_id`
   - Cloud Tasks・SQS のアダプタの実装のとき、`traceparent` のヘッダー・メッセージ属性
-  - M6: デプロイのテンプレートの推奨の設定、Cloud Run のログの trace のフィールド、費用の実測を [deployment-targets.md](../architecture/deployment-targets.md) に書く
+  - M6: デプロイのテンプレートの推奨の設定（Cloud Run の Collector のサイドカー、Lambda の ADOT のレイヤー）、Cloud Run のログの trace のフィールド、費用の実測を [deployment-targets.md](../architecture/deployment-targets.md) に書く
   - [overview.md](../architecture/overview.md) の port の表（`Meter` の行の「トレースは持たない」）を `Tracer` に合わせて直す
 
 ## Pros and Cons of the Options（詳細比較・任意）
@@ -236,8 +235,7 @@ ADR-0055 §6 のラベルの規則を span の属性にも当てはめ、トレ�
 
 ## Open Questions / 要検証
 
-- 決定者に: 外向きの HTTP の span に `server.address`（連合先のホスト名）を入れるか。入れないなら配送の失敗の調査はログと管理画面（NFR-OPS-3）だけになる
-- 決定者に: `traces_sample_ratio` の既定（0.01）と、Cloud Run・Lambda で `traces_auth` による直接の送信を推奨するか（Collector のサイドカー・ADOT のレイヤーを推奨するか）
 - 要検証: Cloud Trace の料金と無料枠（料金ページを取得できなかった）、X-Ray の OTLP の受け口で取り込んだ span の課金（Transaction Search を有効にする必要の有無）
+- 要検証: Cloud Run の Collector のサイドカーと ADOT の Lambda のレイヤーの資源・起動時間への影響と、ADOT のレイヤーが凍結の前に送り切ること
 - 要検証: Cloud Run が公開のリクエストの `traceparent` を常に上書きするか（上書きするなら Cloud Run の前段を `trusted_proxies` として扱える）、Lambda Web Adapter がアプリへ `traceparent` / `X-Amzn-Trace-Id` を渡すか
 - 要検証: Cloud Trace・X-Ray の表示で span の link をたどれるか
