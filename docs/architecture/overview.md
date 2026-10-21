@@ -58,6 +58,7 @@ Remote servers ──AP──►│                               │
 | `instance` | インスタンス設定・規約・ルール・テーマ・お知らせ・NodeInfo | InstanceSettings |
 | `webhook` | サーバー単位の webhook（宛先・署名・配送と再送、ADR-0060） | WebhookEndpoint, WebhookMessage, WebhookDelivery |
 | `finance` | サーバーの維持費用（費用の項目・支払いの周期・改定・終了・取り消し、週・月・年の集計。集計は読み取りのときに計算する。ADR-0067）と、クラウドの利用料金の取り込み（見込み・確定・修正の版。ADR-0068） | CostItem, PriceRevision, ImportedRevision |
+| `supporters` | 管理者が有効にしたときだけ動く課金ユーザー（サポーター。ADR-0072）。決済の事業者の事実を運ぶ経路（webhook の受信の記録とジョブ、定期の照合。ADR-0074 §3・§4）。加入の状態とロールは `Syncer`（`supporters.sync`）が導く | WebhookReceipt, ReconcileRun |
 | `i18n` | ロケール解決・メッセージカタログ・整形 | （横断。`internal/i18n` の 1 パッケージで、`domain` / `app` の層を持たない） |
 
 ### 依存ルール
@@ -121,6 +122,7 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
 | `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format。Gauge は収集されないので、定期ジョブが `GaugeWriter` で書かせる）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは `Tracer` が持つ | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
 | `BillingSource` | クラウドの事業者の利用料金を請求月・サービス・費用の種類ごとに返す（`internal/app/finance`）。型は標準ライブラリと finance のドメインだけで、SDK の型を出さない。課金される要求の数を `MaxRequests` までに抑え、失敗を種類に分ける。事業者のアダプタは `internal/adapter/billing/<source>` に置き、テスト用の fake は `testkit.FakeBillingSource` | なし（`billing_sources` が空） | [0068](../adr/0068-billing-import.md) |
+| `PaymentProvider` | 決済の事業者の側の事実（プランと価格・ホスト型の決済画面・顧客ポータル・プランの変更と解約の命令・webhook の検証・サブスクリプションのスナップショット・一覧・お金の動き）を返す（`internal/app/supporters`）。型は標準ライブラリだけで、SDK の型を出さない。webhook の検証は I/O をせず、失敗を種類に分ける。事業者のアダプタは `internal/adapter/payment/<provider>` に置き、テスト用の fake は `internal/adapter/payment/fake`。契約は `testkit.PaymentProviderContract` | なし（`payments_provider = none`） | [0074](../adr/0074-payment-provider-port.md) |
 | `Tracer` | 分散トレースの span。span を名前・種類・許す属性のキー（`SpanSpec`）で宣言して始め、`Inject` で今の span の `traceparent` をジョブ（`queue.Job.TraceParent`）に書き、`Linked` でジョブの実行を link 付きの新しいトレースにし、`Continue` で信頼したプロキシの `traceparent` を親にし、`LogIDs` でログの行に `trace_id`・`span_id` を付ける。型は標準ライブラリだけで、OTel の型を出さない。span は HTTP のミドルウェア・ジョブの runner・`HTTPClient`・`UnitOfWork.Tx` とクエリ（`telemetry/dbtrace`、PostgreSQL は pgx の `QueryTracer`）・配送が作る。アダプタは `none` / `otel`（OpenTelemetry Go SDK の OTLP/HTTP） | none（`traces_exporter = none`。信頼したプロキシの trace ID をログに付けるだけ） | [0063](../adr/0063-distributed-tracing.md) |
 
 各ポートには `pkg/testkit` にアダプタ非依存のコントラクトテスト（`testkit.<名前>Contract`）があり、そのポートのアダプタはすべてそれを通す（NFR-PORT-3）。
@@ -219,6 +221,7 @@ internal/
     clientapi/       # 独自クライアント API（api/openapi.yaml から生成したインターフェイスを実装）。スタッフの操作（/admin/*、ADR-0058）の入口もここだけ
     activitypub/     # inbox / outbox / actor / webfinger / nodeinfo
     media/           # 公開メディア（Blob のキー media/...）の配信 /media/
+    payments/        # 決済の事業者が呼ぶ webhook の受け口 POST /payments/webhooks/{provider}（クライアント API の外。ADR-0074 §3）
     authpages/       # ログイン・ログアウト・登録・メール確認の画面と、利用規約・プライバシーポリシーの公開ページ（html/template、JavaScript なし。ADR-0030。CAPTCHA を有効にしたときだけ、ログインと登録の画面がサービスのウィジェットを読む。ADR-0042。ログインの画面は、パスキーに対応したブラウザでだけパスキーのボタンを出す Web ビルドのスクリプトを読む。FR-004）
     web/             # Web クライアントの HTML の外枠（ランディングページ・インスタンスの情報ページ・プロフィール・投稿のリンクプレビューを含む）・ビルド成果物（dist/ を埋め込む）・Web アプリマニフェスト（ADR-0028）
   adapter/
@@ -234,6 +237,7 @@ internal/
     valkey/          # Valkey（Redis 互換）への接続（valkey-go）。valkey_url を使うアダプタが共有する
     billing/aws/     # finance.BillingSource の AWS Cost Explorer（GetCostAndUsage の MONTHLY、SERVICE × RECORD_TYPE。ADR-0068 §6）
     billing/gcp/     # finance.BillingSource の Google Cloud（Cloud Billing の BigQuery への export を jobs.query で invoice.month × サービス × cost_type に集計、または予算の Pub/Sub 通知を pull して月ごとの合計の概算。ADR-0068 §7）
+    payment/fake/    # supporters.PaymentProvider のテスト用の fake（事業者の側をメモリに持ち、webhook に HMAC で署名する。本番の binary に入らない）
     mail/{none,smtp,ses}/
     telemetry/{none,otel,emf}/ # kernel.Meter（ADR-0055）と kernel.Tracer（none・otel、ADR-0063）の実装。OpenTelemetry と Prometheus のライブラリはここだけが import する
     telemetry/dbtrace/ # DB のアダプタが共有するトランザクションとクエリの span（ADR-0063 §1）

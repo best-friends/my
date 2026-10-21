@@ -79,6 +79,8 @@ const (
 	surfaceWeb         = "web"
 	surfaceMedia       = "media"
 	surfaceAdmin       = "admin"
+	// surfacePayments is the endpoint that the payment provider calls (ADR-0074 §3).
+	surfacePayments = "payments"
 )
 
 // routeOther is the http.route of a request that no route pattern matched.

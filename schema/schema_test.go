@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/best-friends/my/internal/app/supporters"
 	"github.com/best-friends/my/internal/domain/finance"
 	"github.com/best-friends/my/internal/domain/instance"
 	"github.com/best-friends/my/schema"
@@ -66,6 +67,29 @@ func TestCostCategoryCheckMatchesTheDomain(t *testing.T) {
 		m := check.FindStringSubmatch(sql)
 		if m == nil {
 			t.Fatalf("%s: no CHECK on cost_item_label_revisions.category", name)
+		}
+		var got []string
+		for _, q := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(m[1], -1) {
+			got = append(got, q[1])
+		}
+		if !slices.Equal(got, want) {
+			t.Errorf("%s: CHECK lists %v, want %v", name, got, want)
+		}
+	}
+}
+
+// The CHECK constraint of payment_reconcile_runs.error_kind lists exactly the kinds of failure of
+// the supporters module (ADR-0074 §4).
+func TestPaymentErrorKindCheckMatchesTheModule(t *testing.T) {
+	var want []string
+	for _, k := range supporters.ErrorKinds() {
+		want = append(want, string(k))
+	}
+	check := regexp.MustCompile(`(?s)CREATE TABLE payment_reconcile_runs \(.*?error_kind [^\n]*CHECK \(error_kind IN \((.*?)\)\)`)
+	for name, sql := range map[string]string{"sqlite": schema.SQLite, "postgres": schema.Postgres} {
+		m := check.FindStringSubmatch(sql)
+		if m == nil {
+			t.Fatalf("%s: no CHECK on payment_reconcile_runs.error_kind", name)
 		}
 		var got []string
 		for _, q := range regexp.MustCompile(`'([^']+)'`).FindAllStringSubmatch(m[1], -1) {

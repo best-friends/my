@@ -90,7 +90,7 @@ my を改変して動かす（パッチを当てる、フォークをビルド�
 
 | 指標 | 種類 | ラベル |
 | --- | --- | --- |
-| `http.server.request.duration` | Histogram・秒 | `http.request.method`、`http.route`（ルートのパターンのパス。一致しないものは `other`）、`http.response.status_code`、`my.surface`（`client_api` / `admin` / `activitypub` / `oauth` / `media` / `web`） |
+| `http.server.request.duration` | Histogram・秒 | `http.request.method`、`http.route`（ルートのパターンのパス。一致しないものは `other`）、`http.response.status_code`、`my.surface`（`client_api` / `admin` / `activitypub` / `oauth` / `media` / `web` / `payments`） |
 | `http.server.active_requests` | UpDownCounter | `my.surface` |
 | `my.inbox.activities` | Counter | `activity.type`（既知の Activity の型か `other`）、`my.outcome`（`accepted` / `duplicate` / `rejected` / `ignored` / `error`） |
 | `my.relay.activities` | Counter | `my.outcome`（`admitted` / `over_limit` / `restricted` / `not_receiving`。リレーが運んだアクティビティを取り込んだか、なぜ捨てたか。[連合リレー](relays.md)） |

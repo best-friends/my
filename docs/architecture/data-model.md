@@ -204,6 +204,7 @@ flowchart LR
 | `instance` | `instance_setting_revisions`, `instance_text_revisions`, `instance_rules`, `instance_rule_revisions`, `instance_rule_retirements`, `announcements`, `announcement_revisions`, `announcement_state_changes` | `instance_settings`, `instance_texts`, `instance_rule_heads`, `announcement_heads`, `announcement_reads` |
 | `webhook` | `webhook_endpoints`, `webhook_endpoint_revisions`, `webhook_endpoint_revision_events`, `webhook_secrets`, `webhook_endpoint_state_changes`, `webhook_messages`, `webhook_deliveries`, `webhook_delivery_attempts` | `webhook_endpoint_heads`, `webhook_endpoint_failures` |
 | `finance` | `cost_items`, `cost_item_label_revisions`, `cost_item_price_revisions`, `cost_item_end_changes`, `cost_item_cancellations`, `billing_import_runs`, `imported_cost_revisions` | `cost_item_heads`, `imported_cost_heads` |
+| `supporters` | `payment_webhook_receipts`, `payment_reconcile_runs` | — |
 | 基盤 | — | `outbox_events`, `jobs`, `dead_jobs`, `job_attempts`, `kv_entries` |
 
 ### 4.1 identity
@@ -1356,6 +1357,22 @@ flowchart LR
 - 取り直す月は事業者のタイムゾーンでの今月と、15 日まで、または確定するまでの前月です（`finance.RefetchMonths`）。AWS の課金される要求は `billing_import_runs.requests` を UTC の日と暦月で合計して上限（`billing_aws_max_requests_per_day`・`_per_month`）で止め、上限に達した試行は事業者を呼ばずに `request_cap` として記録します。
 - 集計は、取り込んだ費用の各キーの最新の版を `starts_on`〜`ends_on` の日数に、現金主義でも按分でも日割りで載せ、`estimate` の版が載る期間を見込みとします（ADR-0068 §3）。
 
+### 4.13 supporters
+
+決済の事業者の事実を運ぶ経路の記録（FR-910・FR-911、[ADR-0074](../adr/0074-payment-provider-port.md) §3・§4）。`internal/app/supporters` が所有します。
+加入・顧客・価格・加入の状態の表は [ADR-0072](../adr/0072-supporter-plans-and-roles.md) §15 が決めます。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `payment_webhook_receipts` | イベント | `id`, `provider`（`enum(stripe)`）, `event_id`（`string(255)`）, `event_type`（`string(100)`）, `object_id`（`string(255)`）, `received_at` | 一意 `(provider, event_id)`。インデックス `(provider, received_at)`, `(received_at)`。本文は持たない |
+| `payment_reconcile_runs` | イベント | `id`, `provider`, `run_key`（ジョブの冪等キー）, `outcome`（`enum(succeeded, partial, failed)`）, `error_kind`（`enum(none, request_cap, permission, not_found, invalid_request, throttled, unavailable, invalid_signature, stale_signature, mode_mismatch, invalid_response)`）, `changes_until`, `changes_cursor`・`money_cursor`・`sweep_cursor`（`string(255)`。`''` は先頭）, `requests`・`checked_subscriptions`・`corrected_subscriptions`（`int`）, `occurred_at` | 一意 `(provider, run_key)`。`CHECK (outcome = 'succeeded') = (error_kind = 'none')`, `(outcome = 'partial') = (error_kind = 'request_cap')`。インデックス `(provider, occurred_at)` |
+
+- webhook の受け口 `POST /payments/webhooks/{provider}` は、本文を 1 MiB まで読み、署名・時刻・モードを `PaymentProvider.ParseWebhook` で確かめ、1 つの短いトランザクションで `payment_webhook_receipts` の行とジョブ `supporters.payment_event`（冪等キー `payment_event:<provider>:<event_id>`、順序のキーは対象のオブジェクト）を書きます。
+  同じイベントの行がもうあれば何も書きません。ジョブはイベントの本文の状態を使わず、事業者からサブスクリプション・申し込み・お金の動きを取り直して `Syncer`（`supporters.sync`）に渡すので、重複・順序の入れ替わり・取りこぼしは同じ扱いになります。
+- 定期ジョブ `supporters.payment_reconcile`（`payments_reconcile_interval` ごと）は、試行ごとに `payment_reconcile_runs` の行を 1 つ足します。最新の `succeeded` か `partial` の行のカーソルから、変わったもの（`changes_until` の 5 分前から）・未完了の申し込み・お金の動き・全件の見回しの 4 段を読み、要求が `payments_reconcile_max_requests` に達した段でカーソルを記録して `partial` で止まり、同じトランザクションで続きのジョブ（冪等キー `continue:<run_id>`、1 分後）を積みます。
+  見回しのカーソルは最後のページを読むと `''` に戻ります。カーソルは試行ごとの行に残し、上書きする現在値の列を持ちません。事業者の失敗は `failed` として記録し、次の照合は前の `succeeded` か `partial` の行から始めます。
+- `payment_webhook_receipts` は 45 日を過ぎた行を毎日の定期ジョブ `supporters.payment_receipt_purge` が消します。
+
 ## 5. 状態とポリシー
 
 ### 5.1 アカウントの状態の軸
@@ -1687,6 +1704,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-902 期間の集計 | S | `cost_item_heads` と §4.12 の項目・改定（読み取りのときに計算し、投影を持たない） |
 | FR-903 費用の公開範囲 | S | `instance_settings`（`finance_visibility`）と FR-902 の集計（読み取りのときに計算する） |
 | FR-904 利用料金の自動取り込み | S | §4.12 の `billing_import_runs`, `imported_cost_revisions`, `imported_cost_heads`, `audit_log_entries`（手動の取り込み） |
+| FR-910・FR-911 サポーターの決済と状態 | S | §4.13 の `payment_webhook_receipts`, `payment_reconcile_runs`（加入の表は ADR-0072 §15） |
 | FR-702 ドメインブロック | M | `domain_moderation_actions`, `domain_restrictions` |
 | FR-703 処分（サイレンス・投稿禁止・ログイン停止・凍結・BAN ほか） | M | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `account_restrictions`, `status_sensitivity_overrides`, `status_deletions`, `account_lifecycle_events` |
 | FR-707 異議申し立て | S | `moderation_appeals`, `moderation_appeal_decisions`, `appeal_states` |

@@ -2743,3 +2743,47 @@ CREATE TABLE imported_cost_heads (
   revision_id TEXT NOT NULL,
   PRIMARY KEY (source, billing_month, service, charge_type)
 ) STRICT;
+
+-- Event: a webhook delivery of the payment provider (ADR-0074 §3, §4), recorded once per
+-- (provider, event_id) in the transaction that queues its supporters.payment_event job. Only the
+-- IDs and the type are kept, never the body (§5). The daily purge deletes the rows older than
+-- 45 days; a delivery that comes again after it is recorded again, and its job changes nothing.
+CREATE TABLE payment_webhook_receipts (
+  id TEXT NOT NULL PRIMARY KEY,
+  provider TEXT NOT NULL CHECK (provider IN ('stripe')),
+  event_id TEXT NOT NULL CHECK (length(event_id) BETWEEN 1 AND 255),
+  event_type TEXT NOT NULL CHECK (length(event_type) BETWEEN 1 AND 100),
+  object_id TEXT NOT NULL CHECK (length(object_id) BETWEEN 1 AND 255),
+  received_at INTEGER NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX payment_webhook_receipts_event ON payment_webhook_receipts (provider, event_id);
+CREATE INDEX payment_webhook_receipts_provider_received_at ON payment_webhook_receipts (provider, received_at);
+CREATE INDEX payment_webhook_receipts_received_at ON payment_webhook_receipts (received_at);
+
+-- Event: one attempt of the reconciliation of the payment provider (ADR-0074 §4), one per job
+-- (run_key): succeeded, partial (it used payments_reconcile_max_requests; error_kind request_cap
+-- and a continuation job), or failed with error_kind. The cursors are where the attempt stopped
+-- ('' for the start of a list); the next attempt starts from those of the newest succeeded or
+-- partial row, and from changes_until minus 5 minutes for the provider's changes.
+CREATE TABLE payment_reconcile_runs (
+  id TEXT NOT NULL PRIMARY KEY,
+  provider TEXT NOT NULL CHECK (provider IN ('stripe')),
+  run_key TEXT NOT NULL CHECK (length(run_key) BETWEEN 1 AND 255),
+  outcome TEXT NOT NULL CHECK (outcome IN ('succeeded', 'partial', 'failed')),
+  error_kind TEXT NOT NULL CHECK (error_kind IN (
+    'none', 'request_cap', 'permission', 'not_found', 'invalid_request', 'throttled', 'unavailable',
+    'invalid_signature', 'stale_signature', 'mode_mismatch', 'invalid_response'
+  )),
+  changes_until INTEGER NOT NULL,
+  changes_cursor TEXT NOT NULL CHECK (length(changes_cursor) <= 255),
+  money_cursor TEXT NOT NULL CHECK (length(money_cursor) <= 255),
+  sweep_cursor TEXT NOT NULL CHECK (length(sweep_cursor) <= 255),
+  requests INTEGER NOT NULL CHECK (requests >= 0),
+  checked_subscriptions INTEGER NOT NULL CHECK (checked_subscriptions >= 0),
+  corrected_subscriptions INTEGER NOT NULL CHECK (corrected_subscriptions BETWEEN 0 AND checked_subscriptions),
+  occurred_at INTEGER NOT NULL,
+  CHECK ((outcome = 'succeeded') = (error_kind = 'none')),
+  CHECK ((outcome = 'partial') = (error_kind = 'request_cap'))
+) STRICT;
+CREATE UNIQUE INDEX payment_reconcile_runs_run_key ON payment_reconcile_runs (provider, run_key);
+CREATE INDEX payment_reconcile_runs_provider_occurred_at ON payment_reconcile_runs (provider, occurred_at);
