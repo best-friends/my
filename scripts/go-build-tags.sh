@@ -12,11 +12,11 @@ set -euo pipefail
 # The representative sets: together they use every tag.
 sets=(
   # A self-hosted instance on SQLite, without a broker or a metrics exporter.
-  no_postgres,no_valkey,no_sns,no_pubsub,no_otel
+  "no_postgres,no_valkey,no_sns,no_pubsub,no_otel"
   # AWS: PostgreSQL, the SNS broker, the EMF metrics.
-  no_sqlite,no_valkey,no_pubsub,no_otel
+  "no_sqlite,no_valkey,no_pubsub,no_otel"
   # Google Cloud: PostgreSQL, the Pub/Sub broker.
-  no_sqlite,no_valkey,no_sns
+  "no_sqlite,no_valkey,no_sns"
 )
 if (($# > 0)); then
   sets=("$@")
