@@ -120,6 +120,9 @@ Blob のキーはサーバーが生成し、`blob.ValidateKey` の構文（`[A-Z
 | `SearchIndex` | アカウント・タグ検索（将来全文） | db（FTS） | [0009](../adr/0009-internationalization.md) |
 | `Meter` | サービスとシステムの指標の計測。計器（Counter・UpDownCounter・Histogram・Gauge）を名前・単位・許すラベルのキーとともに宣言して記録し、`Begin` でリクエスト・ジョブの区切りを示す。型は標準ライブラリだけで、OTel の型を出さない。アダプタは `none` / `otel`（OpenTelemetry Go SDK。Prometheus の scrape と OTLP/HTTP）/ `emf`（CloudWatch Embedded Metric Format。Gauge は収集されないので、定期ジョブが `GaugeWriter` で書かせる）。ログは port でなく `log/slog` の JSON Lines（標準エラー）で、トレースは持たない | none（`metrics_exporter = none`） | [0055](../adr/0055-service-observability.md), [0056](../adr/0056-system-observability.md) |
 
+各ポートには `pkg/testkit` にアダプタ非依存のコントラクトテスト（`testkit.<名前>Contract`）があり、そのポートのアダプタはすべてそれを通す（NFR-PORT-3）。
+アダプタを包んで計測する `internal/adapter/telemetry/sysmetrics` のデコレータも、包むポートのコントラクトを通す。
+
 ## 4. 主要フロー
 
 ### 4.1 ローカル投稿 → 連合配送

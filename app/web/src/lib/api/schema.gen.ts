@@ -2863,9 +2863,37 @@ export interface paths {
          *     recorded in the audit log as `two_factor_disabled`. A remote account or the instance
          *     actor is a 422 naming `id`, an account without two-factor authentication a 409
          *     `/api/v1/problems/two-factor-not-enabled`, and an unknown account a 404. Needs the
-         *     `manage_two_factor` permission, which only the built-in admin role has by default.
+         *     `manage_login_recovery` permission, which only the built-in admin role has by default.
          */
         post: operations["disableAdminAccountTwoFactor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/accounts/{id}/password_reset_link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a password reset link for a local account
+         * @description Issues a link that sets a new password for a local account's user, for an
+         *     administrator to hand to the user, such as when the server sends no email or the
+         *     email does not arrive (FR-002). The link works once, for an hour, and stops working
+         *     when the password changes otherwise; only its hash is stored, so this response is the
+         *     only place it is shown. It is recorded in the audit log as `password_reset_link_issued`.
+         *     Whoever holds the link can set the password: confirm who the user is through another
+         *     channel first. A remote account or the instance actor is a 422 naming `id`, and an
+         *     unknown account a 404. Needs the `manage_login_recovery` permission, which only the
+         *     built-in admin role has by default.
+         */
+        post: operations["issueAdminAccountPasswordResetLink"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5933,14 +5961,15 @@ export interface components {
          *     `manage_domains`: the health of remote servers and the moderation actions on domains.
          *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
          *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-         *     log. `manage_two_factor`: removing the two-factor authentication of a local user (only
-         *     the built-in admin role by default). `manage_custom_emojis`: the custom emoji, local and
+         *     log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
+         *     authentication or issuing a password reset link (only the built-in admin role by
+         *     default). `manage_custom_emojis`: the custom emoji, local and
          *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
          *     server's announcements to every local user. The others guard no client API operation
          *     yet.
          * @enum {string}
          */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_two_factor" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
         /**
          * @description A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
          *     citing it.
@@ -6675,6 +6704,22 @@ export interface components {
         /** @description A page of accounts, newest first. */
         AdminAccountPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["AdminAccount"][];
+        };
+        /**
+         * @description A password reset link that an administrator issued for a local account (FR-002). It is
+         *     shown once.
+         */
+        AdminPasswordResetLink: {
+            /**
+             * Format: uri
+             * @description The link that sets a new password; it works once.
+             */
+            url: string;
+            /**
+             * Format: date-time
+             * @description When the link stops working.
+             */
+            expires_at: string;
         };
         /**
          * @description The email address and the IP addresses of a local account (FR-714). Showing them is
@@ -10695,6 +10740,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    issueAdminAccountPasswordResetLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the account, local or remote. */
+                id: components["parameters"]["AdminAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The link is issued. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminPasswordResetLink"];
+                };
             };
             default: components["responses"]["Problem"];
         };

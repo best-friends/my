@@ -32,6 +32,8 @@ type fakeAccountAdmin struct {
 	// twoFactorRemovals the removals ("account by user").
 	twoFactor         map[string]bool
 	twoFactorRemovals []string
+	// resetLinks are the password reset links issued ("account by user").
+	resetLinks []string
 	// perms are the permissions of the env's users.
 	perms fakePermissions
 }
@@ -120,6 +122,18 @@ func (f *fakeAccountAdmin) DisableTwoFactor(_ context.Context, id, by string) er
 	return nil
 }
 
+func (f *fakeAccountAdmin) IssuePasswordResetLink(_ context.Context, id, by string) (appidentity.PasswordResetLink, error) {
+	a, ok := f.accounts[id]
+	switch {
+	case !ok:
+		return appidentity.PasswordResetLink{}, appaccount.ErrNotFound
+	case a.Local == nil:
+		return appidentity.PasswordResetLink{}, appidentity.ErrNotLocalAccount
+	}
+	f.resetLinks = append(f.resetLinks, id+" by "+by)
+	return appidentity.PasswordResetLink{URL: "https://social.example/auth/reset_password?token=rst_secret", ExpiresAt: adminNow.Add(time.Hour)}, nil
+}
+
 func (f *fakeAccountAdmin) RecentReportsOf(_ context.Context, target string, limit int) ([]moderation.ReportRecord, error) {
 	var out []moderation.ReportRecord
 	for _, r := range slices.Backward(f.reports) {
@@ -144,7 +158,7 @@ func newAccountAdminEnv(t *testing.T) (*authEnv, *fakeAccountAdmin, *fakeAccount
 		}
 		admin.accounts, mod.accounts = accounts, accounts
 		admin.perms = o.Permissions.(fakePermissions)
-		o.AccountAdmin, o.AccountReports, o.AccountModeration = admin, admin, mod
+		o.AccountAdmin, o.AccountReports, o.AccountModeration, o.PasswordResetLinks = admin, admin, mod, admin
 	})
 	admin.reports = reports.reports
 	return e, admin, mod
@@ -288,8 +302,8 @@ func TestDisableAdminAccountTwoFactor(t *testing.T) {
 	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
 	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
-		p.Detail == nil || !strings.Contains(*p.Detail, "manage_two_factor") {
-		t.Errorf("by a moderator = %d %+v, want 403 for manage_two_factor", res.StatusCode, p)
+		p.Detail == nil || !strings.Contains(*p.Detail, "manage_login_recovery") {
+		t.Errorf("by a moderator = %d %+v, want 403 for manage_login_recovery", res.StatusCode, p)
 	}
 	if len(admin.twoFactorRemovals) != 0 {
 		t.Fatalf("a refused removal ran: %v", admin.twoFactorRemovals)
@@ -308,6 +322,44 @@ func TestDisableAdminAccountTwoFactor(t *testing.T) {
 	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusConflict || p.Type != clientapi.ProblemTypeTwoFactorNotEnabled {
 		t.Errorf("disable twice = %d %+v, want 409 two-factor-not-enabled", res.StatusCode, p)
+	}
+	res = e.send(t, http.MethodPost, path(reporterAccountID), "admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, "id") {
+		t.Errorf("remote = %d %+v, want 422 naming id", res.StatusCode, p)
+	}
+	res = e.send(t, http.MethodPost, path(reportThree), "admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusNotFound {
+		t.Errorf("unknown = %d %+v", res.StatusCode, p)
+	}
+}
+
+func TestIssueAdminAccountPasswordResetLink(t *testing.T) {
+	e, admin, _ := newAccountAdminEnv(t)
+	path := func(id string) string { return "/admin/accounts/" + id + "/password_reset_link" }
+	// A moderator's manage_accounts is not enough: the link lets its holder into the account.
+	admin.perms["user-"+bobAccountID] = []identity.Permission{identity.PermManageAccounts}
+	res := e.send(t, http.MethodPost, path(aliceAccountID), "bob-admin", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeMissingPermission ||
+		p.Detail == nil || !strings.Contains(*p.Detail, "manage_login_recovery") {
+		t.Errorf("by a moderator = %d %+v, want 403 for manage_login_recovery", res.StatusCode, p)
+	}
+	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin-read", "")
+	if p := decodeProblem(t, res); res.StatusCode != http.StatusForbidden || p.Type != clientapi.ProblemTypeInsufficientScope {
+		t.Errorf("with admin:read = %d %+v, want 403 insufficient scope", res.StatusCode, p)
+	}
+	if len(admin.resetLinks) != 0 {
+		t.Fatalf("a refused issuance ran: %v", admin.resetLinks)
+	}
+	res = e.send(t, http.MethodPost, path(aliceAccountID), "admin", "")
+	link := decodeJSON[clientapi.AdminPasswordResetLink](t, res)
+	if res.StatusCode != http.StatusCreated || res.Header.Get("Cache-Control") != "no-store" {
+		t.Fatalf("issue = %d (%s), want 201 no-store", res.StatusCode, res.Header.Get("Cache-Control"))
+	}
+	if link.Url != "https://social.example/auth/reset_password?token=rst_secret" || !link.ExpiresAt.Equal(adminNow.Add(time.Hour)) {
+		t.Errorf("link = %+v", link)
+	}
+	if want := []string{aliceAccountID + " by user-" + aliceAccountID}; !slices.Equal(admin.resetLinks, want) {
+		t.Errorf("issued = %v, want %v", admin.resetLinks, want)
 	}
 	res = e.send(t, http.MethodPost, path(reporterAccountID), "admin", "")
 	if p := decodeProblem(t, res); res.StatusCode != http.StatusUnprocessableEntity || p.Detail == nil || !strings.Contains(*p.Detail, "id") {

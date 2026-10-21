@@ -622,7 +622,7 @@ ADR-0005 の方針（既定はキャッシュしない）に従います。
 
 | 種類 | 内容 | 実行 |
 | --- | --- | --- |
-| リレー | `testkit.RelayContract`（登録・イベントと状態・照合・削除・再構築）、`testkit.RetentionContract` の `PurgesRelayedStatuses`、`internal/adapter/jsonld` の jsonld.js と同じ正規化と署名（`testdata/sign.mjs` で作ったベクタ）、`internal/platform` の `TestRelays`（参加・`Accept`・送信と LD 署名・中継の取り直し・上限・LitePub の `Announce`・脱退・削除・監査ログ） | `make check`（毎 PR） |
+| リレー | `testkit.RelayContract`（登録・イベントと状態・照合・削除・再構築）、`testkit.RetentionContract` の `PurgesRelayedStatuses`、`testkit.CanonicalizerContract`（`internal/adapter/jsonld` の jsonld.js と同じ正規化と署名。`pkg/testkit/testdata/jsonld/sign.mjs` で作ったベクタ）、`internal/platform` の `TestRelays`（参加・`Accept`・送信と LD 署名・中継の取り直し・上限・LitePub の `Announce`・脱退・削除・監査ログ） | `make check`（毎 PR） |
 | フィクスチャの回帰テスト | 実サーバー（Mastodon・Misskey・GoToSocial・Akkoma）から採取したアクティビティ・Actor・オブジェクトの JSON（`pkg/testkit/fixtures/federation/<実装>/<版>/…`）を正規化・ハンドラに通し、結果（正規化した値・書いた行）を golden ファイルと比べる。送信する文書は主要実装の形と比べる（既存の `internal/interface/activitypub/testdata/peers`） | `make check`（毎 PR） |
 | 署名のテストベクタ | RFC 9421 付録 B のテストベクタ、Mastodon と同じ形式の draft-cavage の署名、クエリ文字列・ダイジェストの改ざん | `make check` |
 | 順序のテスト | 同じアクティビティ列の順序を入れ替え・重複させて処理し、最終的な行が同じになることを確かめる性質テスト（`testkit.InboxProcessingContract` の `OrderAndDuplicates`。ケースは `inboxOrderCases` で、ハンドラを足すときにケースも足す） | `make check` |

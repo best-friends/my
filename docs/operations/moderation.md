@@ -15,7 +15,7 @@ Web クライアントは、スタッフの画面を 2 つに分けます（[ADR
 | 区分 | 権限 | 画面 |
 | --- | --- | --- |
 | モデレーション（`/moderation`） | `manage_reports`・`manage_accounts`・`manage_domains`・`manage_invites`・`view_audit` | 通報（`/moderation/reports`）・異議申し立て（`/moderation/appeals`）・アカウント（`/moderation/accounts`）・登録の審査（`/moderation/registrations`）・登録の拒否リスト（`/moderation/signup-blocks`）・招待（`/moderation/invites`）・ドメインへの処分（`/moderation/domain-actions`）・連合先（`/moderation/instances`）・監査ログ（`/moderation/audit-log`） |
-| サーバー管理（`/admin`） | `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs` | サーバーの設定（`/admin/settings`）・ルール（`/admin/rules`）・規約とポリシー（`/admin/documents`）・dead job（`/admin/dead-jobs`） |
+| サーバー管理（`/admin`） | `manage_settings`・`manage_rules`・`manage_roles`・`manage_jobs`・`manage_login_recovery`・`manage_custom_emojis`・`manage_webhooks`・`manage_announcements` | サーバーの設定（`/admin/settings`）・ルール（`/admin/rules`）・規約とポリシー（`/admin/documents`）・dead job（`/admin/dead-jobs`）・カスタム絵文字（`/admin/custom-emojis`）・お知らせ（`/admin/announcements`）・Webhook（`/admin/webhooks`）。`manage_login_recovery`（ログインの回復: 二要素認証の解除とパスワードリセットのリンクの発行）はアカウントのページ（`/moderation/accounts/{id}`、`manage_accounts` も要る）の区画に出ます |
 
 - 「モデレーション」のバッジは、未解決の通報・承認待ちの登録・審査待ちの異議申し立ての合計です（[モデレーターへの通知と未対応の件数](#モデレーターへの通知と未対応の件数)）。「管理」には件数を出しません。
 - 組み込みの `moderator` は `manage_reports`・`manage_accounts`・`view_audit` だけを持ち、「管理」は出ません。ドメインへの処分と連合先の画面（`manage_domains`）も出ないので、
@@ -123,12 +123,16 @@ my admin appeal overturn -reason "Sorry, our mistake." <appeal id>
   呼ぶたびに監査ログに `revealed_private_data` を記録し、記録できたときだけ返します。IP アドレスは保持期間（既定 180 日）を過ぎると消えるので、それより前のログイン元は表示できません。
 - `GET /api/v1/admin/accounts/{id}` の `two_factor_enabled` は、ローカルのアカウントの利用者が二要素認証（TOTP、FR-005）を使っているかを示します。
   認証アプリとリカバリーコードを両方なくした利用者は、`POST /api/v1/admin/accounts/{id}/two_factor/disable` で二要素認証を外すとパスワードだけでログインできます。
-  外せるのは権限 `manage_two_factor` を持つ利用者で、既定では組み込みの管理者のロールだけが持ちます（モデレーターは状態を見られますが、外せません。ADR-0058 のサーバー管理）。
+  外せるのは権限 `manage_login_recovery` を持つ利用者で、既定では組み込みの管理者のロールだけが持ちます（モデレーターは状態を見られますが、外せません。ADR-0058 のサーバー管理）。
   外すと監査ログに `two_factor_disabled` を記録します。本人であることは、メールなど別の経路で確かめてから外してください。
   ほかに管理者のいない管理者自身がなくしたときは、運営者が CLI の `my admin account disable-two-factor @alice` で外します（監査ログの操作者は CLI）。
 - パスワードを忘れた利用者は、メールを送るサーバーではログインの画面の「パスワードを忘れたとき」から、新しいパスワードを設定するリンクをメールで受け取ります（FR-002）。
-  メールを送らないサーバー（`mail = none`）や、メールが届かない利用者には、運営者が CLI の `my admin account password-reset-link @alice` でリンクを発行して渡します。
-  リンクは 1 時間・1 回だけ使え、その後にパスワードがほかの方法で変わると使えなくなります。発行すると監査ログに `password_reset_link_issued` を記録します（操作者は CLI）。
+  メールを送らないサーバー（`mail = none`）や、メールが届かない利用者には、管理者がリンクを発行して渡します。
+  管理画面ではアカウントのページの「パスワードのリセット」（`POST /api/v1/admin/accounts/{id}/password_reset_link`）で発行します。
+  発行できるのは二要素認証の解除と同じ権限 `manage_login_recovery` を持つ利用者で、既定では組み込みの管理者のロールだけが持ちます（リンクを持つ人はアカウントに入れるので、モデレーターの `manage_accounts` では発行できません。ADR-0058 のサーバー管理）。
+  発行したリンクはその場で一度だけ表示し、コピーできます。サーバーはリンクのハッシュしか保存しないので、あとから見ることはできません。必要ならもう一度発行します。
+  管理者のいないときや管理画面を使えないときは、運営者が CLI の `my admin account password-reset-link @alice` で発行します（監査ログの操作者は CLI）。
+  リンクは 1 時間・1 回だけ使え、その後にパスワードがほかの方法で変わると使えなくなります。どちらで発行しても監査ログに `password_reset_link_issued` を記録します。
   リンクを持つ人は誰でもパスワードを設定できるので、本人であることをメールなど別の経路で確かめてから、本人にだけ渡してください。
   新しいパスワードを設定すると、その利用者のすべてのセッションとアプリのトークンが失効します。パスキーと二要素認証はそのまま残ります。
 - 検索は 1 ページを埋めるのに 400 アカウントまで読みます。条件に合うアカウントが少ないと、短いページや空のページにも `next_cursor` が付くので、続けて読みます。

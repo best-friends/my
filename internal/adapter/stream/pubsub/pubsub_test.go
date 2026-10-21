@@ -11,6 +11,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -70,6 +71,45 @@ func TestBusContractPstest(t *testing.T) {
 func TestBusContractEmulator(t *testing.T) {
 	addr := emulatorAddr(t)
 	testkit.StreamBusContract(t, func(t *testing.T) testkit.StreamBus { return harness(t, addr) })
+}
+
+func TestSweeperContractPstest(t *testing.T) {
+	testkit.StreamSweeperContract(t, func(t *testing.T) testkit.StreamSweeper {
+		srv := pstest.NewServer()
+		srv.SetStreamTimeout(pstestStreamTimeout)
+		t.Cleanup(func() { _ = srv.Close() })
+		return sweeperHarness(t, srv.Addr)
+	})
+}
+
+func TestSweeperContractEmulator(t *testing.T) {
+	addr := emulatorAddr(t)
+	testkit.StreamSweeperContract(t, func(t *testing.T) testkit.StreamSweeper { return sweeperHarness(t, addr) })
+}
+
+// sweeperHarness is the harness of the sweeper contract: a process's resources are its
+// subscriptions, labeled with their creation time by the harness's clock.
+func sweeperHarness(t *testing.T, addr string) testkit.StreamSweeper {
+	t.Helper()
+	b := newBroker(t, addr)
+	clock := testkit.NewClock(time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
+	return testkit.StreamSweeper{
+		NewBus: func(t *testing.T) (testkit.SweepingBus, string) {
+			bus := b.bus(t, addr, clock.Now)
+			return bus, bus.ProcessID()
+		},
+		Resources: func(t *testing.T, processID string) int {
+			n := 0
+			for _, name := range b.subscriptions(t) {
+				if strings.Contains(name, processID) {
+					n++
+				}
+			}
+			return n
+		},
+		Advance: func(d time.Duration) { clock.Advance(d) },
+		Timeout: 10 * time.Second,
+	}
 }
 
 func TestStreamBrokerContractRelay(t *testing.T) {

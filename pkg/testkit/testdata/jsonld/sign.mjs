@@ -2,10 +2,10 @@
 
 // Signs a document with RsaSignature2017 as Mastodon and Misskey do, with jsonld.js (8.3.3) and
 // the bundled contexts, and prints the canonical N-Quads and the signature: the
-// cross-implementation vector of jsonld_test.go (create-note.jsonld-js.json). Not run by the
+// cross-implementation vector of testkit.CanonicalizerContract (create-note.jsonld-js.json). Not run by the
 // tests. In a directory with jsonld installed:
 //
-//	node sign.mjs ../contexts key.pem create-note.json \
+//	node sign.mjs ../../../../internal/adapter/jsonld/contexts key.pem create-note.json \
 //	  'https://my.example/ap/actors/01a148a1-365b-79f7-929a-781395cc457f#main-key' 2026-10-17T06:53:04Z
 import fs from 'node:fs';
 import crypto from 'node:crypto';
