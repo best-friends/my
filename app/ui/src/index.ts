@@ -110,6 +110,7 @@ export type { MediaViewerLabels } from "./MediaViewer";
 export { NewItemsButton, type NewItemsButtonProps } from "./NewItemsButton";
 export { PostCard, PostCardAuthor, type PostCardAuthorProps, type PostCardProps } from "./PostCard";
 export { PostContent, sanitizedHtmlText, serverSanitizedHtml, type PostContentProps, type SanitizedHtml } from "./PostContent";
+export { QuoteCard, type QuoteCardProps } from "./QuoteCard";
 
 // The design tokens a server theme may override (ADR-0059), and the contrast of their colors under a theme.
 export type { TokenKind } from "./tokens";
