@@ -10,22 +10,28 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { errorMessage } from "../../../lib/errors";
 import { type Translate, useT } from "../../../lib/i18n";
-import { useReply } from "../../compose";
+import { useQuote, useReply } from "../../compose";
 import { useViewer } from "../../session";
 import { hasRelation, relationCount } from "../api/cache";
 import { useLikeSlot } from "./useLikeSlot";
 import {
   cacheDeletedStatus,
   cachePinAnswer,
+  cacheQuotePolicyAnswer,
+  cacheRevokedQuote,
   cacheRelationAnswer,
   cacheRelationPending,
   deleteStatus,
+  type QuotePolicy,
   type ReactionEmoji,
   type Relation,
   restoreRelation,
+  revokeQuote,
   setPin,
+  setQuotePolicy,
   setRelation,
   type Status,
+  statusQuotesPath,
   statusShareUrl,
 } from "../api/status";
 
@@ -68,6 +74,21 @@ export type StatusActions = {
    * direct (the server's rule); null otherwise. The result or the failure (the limit of pins, say) is shown.
    */
   pin: { isPinned: boolean; toggle: () => void } | null;
+  /**
+   * Opens the form quoting the post (FR-114). `isDisabled` while the viewer may not quote it (`Status.quotable`:
+   * its policy, or a followers-only or direct post of someone else).
+   */
+  quote: { onPress: () => void; isDisabled: boolean };
+  /**
+   * Who may quote the viewer's own post and its change (ADR-0069 §1), with the address of the posts that quote it;
+   * null for others' posts.
+   */
+  quotePolicy: { value: QuotePolicy; set: (policy: QuotePolicy) => void; isPending: boolean; quotesPath: string } | null;
+  /**
+   * Revokes the approval of this post's quote of the viewer's post (ADR-0069 §3): only for an approved quote of a
+   * post of the viewer; null otherwise. The result or the failure is shown.
+   */
+  revokeQuote: (() => void) | null;
 };
 
 /** What is announced when the viewer turns `relation` on or off. */
@@ -138,6 +159,7 @@ export function useStatusActions(status: Status): StatusActions | null {
   const toast = useToast();
   const viewer = useViewer();
   const reply = useReply();
+  const quote = useQuote();
   const viewerId = viewer.status === "signed-in" ? viewer.account.id : "";
   const boost = useRelation(post, "boost", viewerId);
   const likeSlot = useLikeSlot(post);
@@ -168,9 +190,34 @@ export function useStatusActions(status: Status): StatusActions | null {
     },
   });
 
-  if (viewer.status !== "signed-in" || reply === null) return null;
+  const policy = useMutation({
+    mutationFn: (value: QuotePolicy) => setQuotePolicy(api, post.id, value),
+    // One request at a time per post, in the order chosen.
+    scope: { id: `status:${post.id}:quote_policy` },
+    onSuccess: (answer) => {
+      cacheQuotePolicyAnswer(queryClient, answer);
+      toast.show({ message: t("client:status.quote_policy.done"), tone: "success" });
+    },
+    onError: (error) => {
+      toast.show({ message: t("client:status.quote_policy.failed", { reason: errorMessage(error) }), tone: "danger" });
+    },
+  });
+  const revoke = useMutation({
+    mutationFn: ({ quotedId }: { quotedId: string }) => revokeQuote(api, quotedId, post.id),
+    onSuccess: async (_, { quotedId }) => {
+      await cacheRevokedQuote(queryClient, quotedId, post.id);
+      toast.show({ message: t("client:status.quote.revoke.done"), tone: "success" });
+    },
+    onError: (error) => {
+      toast.show({ message: t("client:status.quote.revoke.failed", { reason: errorMessage(error) }), tone: "danger" });
+    },
+  });
+
+  if (viewer.status !== "signed-in" || reply === null || quote === null) return null;
   const isAuthor = post.account.id === viewer.account.id;
   const isPinned = post.pinned === true;
+  const quoted = post.quote?.quoted_status;
+  const ownQuoted = quoted !== undefined && quoted.account.id === viewer.account.id && post.quote?.state === "accepted" && !isAuthor;
   return {
     reply: () => {
       reply(post);
@@ -213,5 +260,27 @@ export function useStatusActions(status: Status): StatusActions | null {
             },
           }
         : null,
+    quote: {
+      onPress: () => {
+        quote(post);
+      },
+      isDisabled: post.quotable !== true,
+    },
+    quotePolicy:
+      isAuthor && post.quote_policy !== undefined
+        ? {
+            value: policy.isPending ? policy.variables : post.quote_policy,
+            set: (value) => {
+              policy.mutate(value);
+            },
+            isPending: policy.isPending,
+            quotesPath: statusQuotesPath(post),
+          }
+        : null,
+    revokeQuote: ownQuoted
+      ? () => {
+          revoke.mutate({ quotedId: quoted.id });
+        }
+      : null,
   };
 }

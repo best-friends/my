@@ -9850,5 +9850,125 @@
   "status.quote.reveal": {
     "defaultMessage": "Show the quoted post",
     "description": "Button next to the notice of a muted author or server, in place of a quoted post, that shows the post."
+  },
+  "compose.quote.label": {
+    "defaultMessage": "Quoting {name}",
+    "description": "Heading above the new-post form of the post being quoted. {name} is the display name, or the @handle, of its author."
+  },
+  "compose.quote.cancel": {
+    "defaultMessage": "Don't quote",
+    "description": "Button under the post being quoted in the new-post form; the draft then quotes nothing."
+  },
+  "compose.quote.unavailable": {
+    "defaultMessage": "The post to quote could not be loaded.",
+    "description": "Shown in place of the post being quoted in the new-post form when it could not be loaded."
+  },
+  "compose.quote_policy.label": {
+    "defaultMessage": "Who can quote",
+    "description": "Accessible name of the select in the new-post form that chooses who may quote the post."
+  },
+  "compose.quote_policy.public": {
+    "defaultMessage": "Anyone",
+    "description": "Quote policy: anyone who can see the post may quote it."
+  },
+  "compose.quote_policy.public.description": {
+    "defaultMessage": "Anyone who can see the post can quote it.",
+    "description": "Description of the quote policy 'Anyone'."
+  },
+  "compose.quote_policy.followers": {
+    "defaultMessage": "Followers",
+    "description": "Quote policy: only the author's followers may quote the post."
+  },
+  "compose.quote_policy.followers.description": {
+    "defaultMessage": "Only your followers can quote it.",
+    "description": "Description of the quote policy 'Followers'."
+  },
+  "compose.quote_policy.nobody": {
+    "defaultMessage": "Only you",
+    "description": "Quote policy: only the author may quote the post."
+  },
+  "compose.quote_policy.nobody.description": {
+    "defaultMessage": "Nobody but you can quote it.",
+    "description": "Description of the quote policy 'Only you'."
+  },
+  "status.action.quote": {
+    "defaultMessage": "Quote",
+    "description": "Accessible name of the button in a post's action bar that starts a new post quoting it."
+  },
+  "status.quote_policy.action": {
+    "defaultMessage": "Change who can quote",
+    "description": "Item of the menu of the user's own post that opens the dialog choosing who may quote it."
+  },
+  "status.quote_policy.title": {
+    "defaultMessage": "Who can quote this post",
+    "description": "Title of the dialog that chooses who may quote one of the user's posts."
+  },
+  "status.quote_policy.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of the dialog that chooses who may quote a post."
+  },
+  "status.quote_policy.label": {
+    "defaultMessage": "Who can quote",
+    "description": "Label of the choices of who may quote a post, in its dialog."
+  },
+  "status.quote_policy.description": {
+    "defaultMessage": "Quotes approved before stay. To take your post out of one, use the menu of the post that quotes it.",
+    "description": "Description of the choices of who may quote a post."
+  },
+  "status.quote_policy.done": {
+    "defaultMessage": "Changed who can quote the post",
+    "description": "Toast after the user changed who may quote one of their posts."
+  },
+  "status.quote_policy.failed": {
+    "defaultMessage": "Could not change who can quote the post: {reason}",
+    "description": "Toast when the change of who may quote a post failed. {reason} is the server's reason."
+  },
+  "status.quotes.action": {
+    "defaultMessage": "Posts that quote this",
+    "description": "Item of the menu of the user's own post that opens the list of the posts that quote it."
+  },
+  "status.quotes.title": {
+    "defaultMessage": "Quotes of your post",
+    "description": "Title of the page that lists the posts that quote one of the user's posts."
+  },
+  "status.quote.revoke.action": {
+    "defaultMessage": "Remove my post from this quote",
+    "description": "Item of the menu of a post that quotes one of the user's posts; it withdraws the approval of the quote."
+  },
+  "status.quote.revoke.done": {
+    "defaultMessage": "Your post was removed from the quote",
+    "description": "Toast after the user withdrew the approval of a quote of their post."
+  },
+  "status.quote.revoke.failed": {
+    "defaultMessage": "Could not remove your post from the quote: {reason}",
+    "description": "Toast when the withdrawal of the approval of a quote failed. {reason} is the server's reason."
+  },
+  "status.edit.remove_quote": {
+    "defaultMessage": "Remove the quoted post",
+    "description": "Checkbox of the edit dialog of a post that quotes another: the edit takes the quote away."
+  },
+  "status.edit.remove_quote.description": {
+    "defaultMessage": "A quote that is removed cannot be added back.",
+    "description": "Description of the checkbox that removes the quote of a post in its edit dialog."
+  },
+  "settings.default_quote_policy.label": {
+    "defaultMessage": "Who can quote your new posts",
+    "description": "Label of the setting of who may quote the user's new posts."
+  },
+  "settings.default_quote_policy.description": {
+    "defaultMessage": "You can choose it for each post too.",
+    "description": "Description of the setting of who may quote the user's new posts."
+  },
+  "settings.push.type.quote": {
+    "defaultMessage": "Quotes",
+    "description": "Checkbox of the push notification settings: notifications when someone quotes the user's post."
+  },
+  "timeline.empty.quotes.heading": {
+    "defaultMessage": "No quotes yet",
+    "description": "Heading of the empty list of the posts that quote one of the user's posts."
+  },
+  "timeline.empty.quotes.description": {
+    "defaultMessage": "Posts that quote this post appear here.",
+    "description": "Description of the empty list of the posts that quote one of the user's posts."
   }
 }

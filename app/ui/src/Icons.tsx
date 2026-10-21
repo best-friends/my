@@ -34,6 +34,7 @@ import {
   PiList,
   PiMagnifyingGlass,
   PiPlus,
+  PiQuotes,
   PiRepeat,
   PiRepeatBold,
   PiShieldCheck,
@@ -99,6 +100,8 @@ export const iconTable = {
     off: glyph(PiBookmarkSimple, "PiBookmarkSimple"),
     on: glyph(PiBookmarkSimpleFill, "PiBookmarkSimpleFill"),
   },
+  // Quotation marks are not a direction, so they do not mirror.
+  QuoteIcon: { off: glyph(PiQuotes, "PiQuotes") },
   // The new-post form.
   ImageIcon: { off: glyph(PiImage, "PiImage") },
   // Filled, the exclamation mark stays cut out of the triangle.
@@ -216,6 +219,11 @@ export function StarIcon({ filled = false }: ToggleIconProps) {
 /** A bookmark ribbon, for bookmarking; filled while on. */
 export function BookmarkIcon({ filled = false }: ToggleIconProps) {
   return renderIcon(iconTable.BookmarkIcon, filled);
+}
+
+/** Quotation marks, for quoting a post (FR-114). */
+export function QuoteIcon() {
+  return renderIcon(iconTable.QuoteIcon);
 }
 
 // The new-post form.

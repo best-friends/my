@@ -23,6 +23,8 @@ export type ComposeController = {
   setSheetOpen: (isOpen: boolean) => void;
   /** Starts a reply to `status`: the form names it and starts with its mentions, then gets focus. */
   reply: (status: Status) => void;
+  /** Quotes `status` in the draft (FR-114): the form shows it, then gets focus. */
+  quote: (status: Status) => void;
 };
 
 export const ComposeContext = createContext<ComposeController | null>(null);
@@ -59,6 +61,12 @@ export function useComposeController(layout: ComposeLayout): ComposeController |
       if (layout === "sheet") setIsSheetOpen(true);
       else document.getElementById(composeTextId)?.focus();
     },
+    quote(status) {
+      draftStore.edit({ quoteId: status.id });
+      cacheReplyTarget(api, queryClient, status);
+      if (layout === "sheet") setIsSheetOpen(true);
+      else document.getElementById(composeTextId)?.focus();
+    },
   };
 }
 
@@ -78,4 +86,12 @@ export function useComposeState(store: DraftStore): ComposeState {
  */
 export function useReply(): ((status: Status) => void) | null {
   return useComposeContext()?.reply ?? null;
+}
+
+/**
+ * Returns `quote(status)`, which opens the form quoting `status`, or null while nobody is signed in (the
+ * quote buttons of other features hide then).
+ */
+export function useQuote(): ((status: Status) => void) | null {
+  return useComposeContext()?.quote ?? null;
 }

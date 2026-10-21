@@ -14,6 +14,7 @@ import {
   instanceQueryOptions,
   type PostingLimits,
   preferencesQueryOptions,
+  type QuotePolicy,
   type Status,
   statusQueryOptions,
   type Visibility,
@@ -32,7 +33,7 @@ const createStatusMutationKey = ["compose", "createStatus"] as const;
 
 type SendVariables = { idempotencyKey: string; body: CreateStatusRequest };
 
-/** The post being replied to. */
+/** The post being replied to, or quoted. */
 export type ReplyTarget = { status: "none" } | { status: "loading" } | { status: "error" } | { status: "ready"; post: Status };
 
 /** A post of the outbox as the form shows it. `message` is localized. */
@@ -68,6 +69,11 @@ export type ReadyComposeForm = {
   languages: LanguageOption[];
   replyTo: ReplyTarget;
   cancelReply: () => void;
+  /** The post quoted (FR-114). */
+  quoteOf: ReplyTarget;
+  cancelQuote: () => void;
+  /** Who may quote the post: the chosen policy, or the preference. */
+  quotePolicy: QuotePolicy;
   attachments: Attachments;
   /** Whether files can be attached: not to a post with a poll (FR-112), and up to the limit. */
   canAttach: boolean;
@@ -123,7 +129,16 @@ function requestBody(draft: Draft, visibility: Visibility, language: string): Cr
     ...(media.length > 0 ? { media, sensitive: draft.sensitive } : {}),
     ...(draft.poll === null ? {} : { poll: pollRequest(draft.poll) }),
     ...(draft.replyToId === null ? {} : { in_reply_to_id: draft.replyToId }),
+    ...(draft.quoteId === null ? {} : { quoted_status_id: draft.quoteId }),
+    ...(draft.quotePolicy === null ? {} : { quote_policy: draft.quotePolicy }),
   };
+}
+
+/** The state of a post that the draft names, replied to or quoted. */
+function targetOf(id: string | null, post: Status | undefined, isError: boolean): ReplyTarget {
+  if (id === null) return { status: "none" };
+  if (post !== undefined) return { status: "ready", post };
+  return isError ? { status: "error" } : { status: "loading" };
 }
 
 /**
@@ -160,6 +175,7 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
   const instance = useQuery({ ...instanceQueryOptions(api), ...shellQueryReader });
   const preferences = useQuery({ ...preferencesQueryOptions(api), ...shellQueryReader });
   const replyQuery = useQuery({ ...statusQueryOptions(api, draft.replyToId ?? ""), enabled: draft.replyToId !== null });
+  const quoteQuery = useQuery({ ...statusQueryOptions(api, draft.quoteId ?? ""), enabled: draft.quoteId !== null });
   // The form exists only for a signed-in viewer, so the account is in the cache already.
   const limits = useQuery({ ...credentialsQueryOptions(api), ...shellQueryReader }).data?.posting;
   const replyPost = draft.replyToId === null ? undefined : replyQuery.data;
@@ -219,14 +235,9 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
 
   const { max_post_characters: maxCharacters, require_media_description: isDescriptionRequired } = instance.data.limits;
   const { default_post_language: preferredLanguage, require_media_description: requireDescriptions } = preferences.data;
-  const replyTo: ReplyTarget =
-    draft.replyToId === null
-      ? { status: "none" }
-      : replyPost !== undefined
-        ? { status: "ready", post: replyPost }
-        : replyQuery.isError
-          ? { status: "error" }
-          : { status: "loading" };
+  const replyTo = targetOf(draft.replyToId, replyPost, replyQuery.isError);
+  const quoteOf = targetOf(draft.quoteId, draft.quoteId === null ? undefined : quoteQuery.data, quoteQuery.isError);
+  const quotePolicy = draft.quotePolicy ?? preferences.data.default_quote_policy;
   const language = draft.language ?? preferredLanguage;
   const warningLength = draft.hasWarning ? countCharacters(draft.spoilerText) : 0;
   const textLimit = maxCharacters - warningLength;
@@ -238,7 +249,8 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
     !attachments.isBusy &&
     !attachments.hasFailed &&
     problem === null &&
-    replyTo.status !== "loading";
+    replyTo.status !== "loading" &&
+    quoteOf.status !== "loading";
   const editPoll = (change: (poll: PollDraft) => PollDraft) => {
     if (draft.poll !== null) store.edit({ poll: change(draft.poll) });
   };
@@ -297,6 +309,11 @@ export function useComposeForm(controller: ComposeController): ComposeForm {
     cancelReply: () => {
       store.edit({ replyToId: null });
     },
+    quoteOf,
+    cancelQuote: () => {
+      store.edit({ quoteId: null });
+    },
+    quotePolicy,
     attachments,
     canAttach: attachments.canAdd && draft.poll === null,
     poll,

@@ -9850,5 +9850,125 @@
   "status.quote.reveal": {
     "defaultMessage": "引用された投稿を表示",
     "description": "Button next to the notice of a muted author or server, in place of a quoted post, that shows the post."
+  },
+  "compose.quote.label": {
+    "defaultMessage": "{name} さんの投稿を引用",
+    "description": "Heading above the new-post form of the post being quoted. {name} is the display name, or the @handle, of its author."
+  },
+  "compose.quote.cancel": {
+    "defaultMessage": "引用をやめる",
+    "description": "Button under the post being quoted in the new-post form; the draft then quotes nothing."
+  },
+  "compose.quote.unavailable": {
+    "defaultMessage": "引用する投稿を読み込めませんでした。",
+    "description": "Shown in place of the post being quoted in the new-post form when it could not be loaded."
+  },
+  "compose.quote_policy.label": {
+    "defaultMessage": "引用できる人",
+    "description": "Accessible name of the select in the new-post form that chooses who may quote the post."
+  },
+  "compose.quote_policy.public": {
+    "defaultMessage": "誰でも",
+    "description": "Quote policy: anyone who can see the post may quote it."
+  },
+  "compose.quote_policy.public.description": {
+    "defaultMessage": "投稿を見られる人なら誰でも引用できます。",
+    "description": "Description of the quote policy 'Anyone'."
+  },
+  "compose.quote_policy.followers": {
+    "defaultMessage": "フォロワー",
+    "description": "Quote policy: only the author's followers may quote the post."
+  },
+  "compose.quote_policy.followers.description": {
+    "defaultMessage": "あなたのフォロワーだけが引用できます。",
+    "description": "Description of the quote policy 'Followers'."
+  },
+  "compose.quote_policy.nobody": {
+    "defaultMessage": "自分だけ",
+    "description": "Quote policy: only the author may quote the post."
+  },
+  "compose.quote_policy.nobody.description": {
+    "defaultMessage": "あなた以外は引用できません。",
+    "description": "Description of the quote policy 'Only you'."
+  },
+  "status.action.quote": {
+    "defaultMessage": "引用",
+    "description": "Accessible name of the button in a post's action bar that starts a new post quoting it."
+  },
+  "status.quote_policy.action": {
+    "defaultMessage": "引用できる人を変更",
+    "description": "Item of the menu of the user's own post that opens the dialog choosing who may quote it."
+  },
+  "status.quote_policy.title": {
+    "defaultMessage": "この投稿を引用できる人",
+    "description": "Title of the dialog that chooses who may quote one of the user's posts."
+  },
+  "status.quote_policy.close": {
+    "defaultMessage": "閉じる",
+    "description": "Accessible name of the close button of the dialog that chooses who may quote a post."
+  },
+  "status.quote_policy.label": {
+    "defaultMessage": "引用できる人",
+    "description": "Label of the choices of who may quote a post, in its dialog."
+  },
+  "status.quote_policy.description": {
+    "defaultMessage": "承認済みの引用はそのまま残ります。引用から自分の投稿を外すときは、引用した投稿のメニューから行います。",
+    "description": "Description of the choices of who may quote a post."
+  },
+  "status.quote_policy.done": {
+    "defaultMessage": "引用できる人を変更しました",
+    "description": "Toast after the user changed who may quote one of their posts."
+  },
+  "status.quote_policy.failed": {
+    "defaultMessage": "引用できる人を変更できませんでした：{reason}",
+    "description": "Toast when the change of who may quote a post failed. {reason} is the server's reason."
+  },
+  "status.quotes.action": {
+    "defaultMessage": "この投稿の引用",
+    "description": "Item of the menu of the user's own post that opens the list of the posts that quote it."
+  },
+  "status.quotes.title": {
+    "defaultMessage": "投稿の引用",
+    "description": "Title of the page that lists the posts that quote one of the user's posts."
+  },
+  "status.quote.revoke.action": {
+    "defaultMessage": "この引用から自分の投稿を外す",
+    "description": "Item of the menu of a post that quotes one of the user's posts; it withdraws the approval of the quote."
+  },
+  "status.quote.revoke.done": {
+    "defaultMessage": "引用から自分の投稿を外しました",
+    "description": "Toast after the user withdrew the approval of a quote of their post."
+  },
+  "status.quote.revoke.failed": {
+    "defaultMessage": "引用から自分の投稿を外せませんでした：{reason}",
+    "description": "Toast when the withdrawal of the approval of a quote failed. {reason} is the server's reason."
+  },
+  "status.edit.remove_quote": {
+    "defaultMessage": "引用を外す",
+    "description": "Checkbox of the edit dialog of a post that quotes another: the edit takes the quote away."
+  },
+  "status.edit.remove_quote.description": {
+    "defaultMessage": "外した引用は元に戻せません。",
+    "description": "Description of the checkbox that removes the quote of a post in its edit dialog."
+  },
+  "settings.default_quote_policy.label": {
+    "defaultMessage": "新しい投稿を引用できる人",
+    "description": "Label of the setting of who may quote the user's new posts."
+  },
+  "settings.default_quote_policy.description": {
+    "defaultMessage": "投稿ごとにも選べます。",
+    "description": "Description of the setting of who may quote the user's new posts."
+  },
+  "settings.push.type.quote": {
+    "defaultMessage": "引用",
+    "description": "Checkbox of the push notification settings: notifications when someone quotes the user's post."
+  },
+  "timeline.empty.quotes.heading": {
+    "defaultMessage": "まだ引用されていません",
+    "description": "Heading of the empty list of the posts that quote one of the user's posts."
+  },
+  "timeline.empty.quotes.description": {
+    "defaultMessage": "この投稿を引用した投稿がここに表示されます。",
+    "description": "Description of the empty list of the posts that quote one of the user's posts."
   }
 }

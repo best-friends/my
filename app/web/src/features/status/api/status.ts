@@ -14,6 +14,9 @@ export type Status = components["schemas"]["Status"];
 /** The post that a status quotes (FR-114, ADR-0069). */
 export type StatusQuote = components["schemas"]["StatusQuote"];
 
+/** Who may quote a post (FR-114, ADR-0069 §1). */
+export type QuotePolicy = components["schemas"]["QuotePolicy"];
+
 /** The card of the first link in a status (ADR-0062). */
 export type LinkCard = components["schemas"]["LinkCard"];
 
@@ -328,7 +331,43 @@ export function statusHistoryPath(status: Pick<Status, "id" | "account">): strin
   return `${statusPath(status)}/history`;
 }
 
+/** The web client's address of the posts that quote a post: `/@{acct}/status/{id}/quotes`. */
+export function statusQuotesPath(status: Pick<Status, "id" | "account">): string {
+  return `${statusPath(status)}/quotes`;
+}
+
 /** The address to share for a post: its HTML page, or its ActivityPub ID when it has none. */
 export function statusShareUrl(status: Pick<Status, "url" | "uri">): string {
   return status.url ?? status.uri;
+}
+
+/** Changes who may quote the viewer's post `id` (PUT /statuses/{id}/quote_policy, FR-114); returns the post after it. */
+export async function setQuotePolicy(api: Api, id: string, policy: QuotePolicy): Promise<Status> {
+  const { data, error } = await api.fetch.PUT("/statuses/{id}/quote_policy", { params: { path: { id } }, body: { quote_policy: policy } });
+  // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
+  if (data === undefined) throw new ApiError(error);
+  return data;
+}
+
+/** Puts the server's answer to a change of the quote policy into every cached copy of the post (S1). */
+export function cacheQuotePolicyAnswer(queryClient: QueryClient, answer: Status): void {
+  updateCachedStatuses(queryClient, forPost(answer.id, (status) => ({ ...status, ...(answer.quote_policy === undefined ? {} : { quote_policy: answer.quote_policy }) })));
+}
+
+/**
+ * Revokes the approval of the quote `quotingId` of the viewer's post `quotedId`
+ * (POST /statuses/{id}/quotes/{quote_id}/revoke, ADR-0069 §3): the quote shows the post no more.
+ */
+export async function revokeQuote(api: Api, quotedId: string, quotingId: string): Promise<void> {
+  // The client's middleware throws an ApiError for every error status (lib/api/client.ts).
+  await api.fetch.POST("/statuses/{id}/quotes/{quote_id}/revoke", { params: { path: { id: quotedId, quote_id: quotingId } } });
+}
+
+/**
+ * Puts a revocation into the cache (S1): every copy of the quoting post `quotingId` shows its quote as revoked,
+ * without the quoted post, and the list of the quotes of `quotedId`, which changes, is marked stale.
+ */
+export async function cacheRevokedQuote(queryClient: QueryClient, quotedId: string, quotingId: string): Promise<void> {
+  updateCachedStatuses(queryClient, forPost(quotingId, (status) => (status.quote === undefined ? status : { ...status, quote: { state: "revoked" } })));
+  await queryClient.invalidateQueries({ queryKey: ["get", "/statuses/{id}/quotes", { params: { path: { id: quotedId } } }] });
 }

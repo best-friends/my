@@ -6527,6 +6527,46 @@
     "defaultMessage": "[Ƥǿǿşŧḗḗḓ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "compose.quote.cancel": {
+    "defaultMessage": "[Ḓǿǿƞ'ŧ ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote.label": {
+    "defaultMessage": "[Ɋŭŭǿǿŧīƞɠ {name}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote.unavailable": {
+    "defaultMessage": "[Ŧħḗḗ ƥǿǿşŧ ŧǿǿ ɋŭŭǿǿŧḗḗ ƈǿǿŭŭŀḓ ƞǿǿŧ ƀḗḗ ŀǿǿȧȧḓḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.followers": {
+    "defaultMessage": "[Ƒǿǿŀŀǿǿẇḗḗřş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.followers.description": {
+    "defaultMessage": "[Ǿƞŀẏ ẏǿǿŭŭř ƒǿǿŀŀǿǿẇḗḗřş ƈȧȧƞ ɋŭŭǿǿŧḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.label": {
+    "defaultMessage": "[Ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.nobody": {
+    "defaultMessage": "[Ǿƞŀẏ ẏǿǿŭŭ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.nobody.description": {
+    "defaultMessage": "[Ƞǿǿƀǿǿḓẏ ƀŭŭŧ ẏǿǿŭŭ ƈȧȧƞ ɋŭŭǿǿŧḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.public": {
+    "defaultMessage": "[Ȧƞẏǿǿƞḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "compose.quote_policy.public.description": {
+    "defaultMessage": "[Ȧƞẏǿǿƞḗḗ ẇħǿǿ ƈȧȧƞ şḗḗḗḗ ŧħḗḗ ƥǿǿşŧ ƈȧȧƞ ɋŭŭǿǿŧḗḗ īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "compose.remaining": {
     "defaultMessage": "[{count,plural,one{# ƈħȧȧřȧȧƈŧḗḗř ŀḗḗƒŧ} other{# ƈħȧȧřȧȧƈŧḗḗřş ŀḗḗƒŧ}}]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -7995,6 +8035,14 @@
     "defaultMessage": "[Ḓḗḗƒȧȧŭŭŀŧ ŀȧȧƞɠŭŭȧȧɠḗḗ ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.default_quote_policy.description": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞ ƈħǿǿǿǿşḗḗ īŧ ƒǿǿř ḗḗȧȧƈħ ƥǿǿşŧ ŧǿǿǿǿ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.default_quote_policy.label": {
+    "defaultMessage": "[Ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ ẏǿǿŭŭř ƞḗḗẇ ƥǿǿşŧş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.default_visibility.description": {
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞ şŧīŀŀ ƈħǿǿǿǿşḗḗ ƒǿǿř ḗḗȧȧƈħ ƥǿǿşŧ.]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -8875,6 +8923,10 @@
     "defaultMessage": "[Ƞǿǿŧīƈḗḗş ƒřǿǿḿ ŧħḗḗ ḿǿǿḓḗḗřȧȧŧǿǿřş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.push.type.quote": {
+    "defaultMessage": "[Ɋŭŭǿǿŧḗḗş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.push.type.reaction": {
     "defaultMessage": "[Ḗḿǿǿĵī řḗḗȧȧƈŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -9371,6 +9423,10 @@
     "defaultMessage": "[Ḿǿǿřḗḗ ȧȧƈŧīǿǿƞş]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.action.quote": {
+    "defaultMessage": "[Ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.action.reply": {
     "defaultMessage": "[Řḗḗƥŀẏ]",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -9441,6 +9497,14 @@
   },
   "status.edit.loading": {
     "defaultMessage": "[Ŀǿǿȧȧḓīƞɠ ŧħḗḗ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.edit.remove_quote": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.edit.remove_quote.description": {
+    "defaultMessage": "[Ȧ ɋŭŭǿǿŧḗḗ ŧħȧȧŧ īş řḗḗḿǿǿṽḗḗḓ ƈȧȧƞƞǿǿŧ ƀḗḗ ȧȧḓḓḗḗḓ ƀȧȧƈķ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.edit.retry": {
@@ -9647,12 +9711,60 @@
     "defaultMessage": "[Şħǿǿẇ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.quote.revoke.action": {
+    "defaultMessage": "[Řḗḗḿǿǿṽḗḗ ḿẏ ƥǿǿşŧ ƒřǿǿḿ ŧħīş ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.revoke.done": {
+    "defaultMessage": "[Ẏǿǿŭŭř ƥǿǿşŧ ẇȧȧş řḗḗḿǿǿṽḗḗḓ ƒřǿǿḿ ŧħḗḗ ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.revoke.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ řḗḗḿǿǿṽḗḗ ẏǿǿŭŭř ƥǿǿşŧ ƒřǿǿḿ ŧħḗḗ ɋŭŭǿǿŧḗḗ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.quote.revoked": {
     "defaultMessage": "[Ŧħḗḗ ȧȧŭŭŧħǿǿř ǿǿƒ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ ẇīŧħḓřḗḗẇ īŧ ƒřǿǿḿ ŧħīş ɋŭŭǿǿŧḗḗ.]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.quote.unauthorized": {
     "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.action": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗ ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.close": {
+    "defaultMessage": "[Ƈŀǿǿşḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.description": {
+    "defaultMessage": "[Ɋŭŭǿǿŧḗḗş ȧȧƥƥřǿǿṽḗḗḓ ƀḗḗƒǿǿřḗḗ şŧȧȧẏ. Ŧǿǿ ŧȧȧķḗḗ ẏǿǿŭŭř ƥǿǿşŧ ǿǿŭŭŧ ǿǿƒ ǿǿƞḗḗ, ŭŭşḗḗ ŧħḗḗ ḿḗḗƞŭŭ ǿǿƒ ŧħḗḗ ƥǿǿşŧ ŧħȧȧŧ ɋŭŭǿǿŧḗḗş īŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.done": {
+    "defaultMessage": "[Ƈħȧȧƞɠḗḗḓ ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ ŧħḗḗ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.failed": {
+    "defaultMessage": "[Ƈǿǿŭŭŀḓ ƞǿǿŧ ƈħȧȧƞɠḗḗ ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ ŧħḗḗ ƥǿǿşŧ: {reason}]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.label": {
+    "defaultMessage": "[Ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote_policy.title": {
+    "defaultMessage": "[Ẇħǿǿ ƈȧȧƞ ɋŭŭǿǿŧḗḗ ŧħīş ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quotes.action": {
+    "defaultMessage": "[Ƥǿǿşŧş ŧħȧȧŧ ɋŭŭǿǿŧḗḗ ŧħīş]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quotes.title": {
+    "defaultMessage": "[Ɋŭŭǿǿŧḗḗş ǿǿƒ ẏǿǿŭŭř ƥǿǿşŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "status.reaction.off": {
@@ -9773,6 +9885,14 @@
   },
   "timeline.empty.public.heading": {
     "defaultMessage": "[Ƞǿǿ ƥǿǿşŧş ẏḗḗŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.quotes.description": {
+    "defaultMessage": "[Ƥǿǿşŧş ŧħȧȧŧ ɋŭŭǿǿŧḗḗ ŧħīş ƥǿǿşŧ ȧȧƥƥḗḗȧȧř ħḗḗřḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "timeline.empty.quotes.heading": {
+    "defaultMessage": "[Ƞǿǿ ɋŭŭǿǿŧḗḗş ẏḗḗŧ]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "timeline.empty.tag.description": {

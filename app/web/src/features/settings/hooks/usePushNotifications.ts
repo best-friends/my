@@ -33,6 +33,7 @@ const userGroups: readonly PushAlertGroup[] = [
   { id: "boost", label: "client:settings.push.type.boost", types: ["boost"] },
   { id: "favourite", label: "client:settings.push.type.favourite", types: ["favourite"] },
   { id: "reaction", label: "client:settings.push.type.reaction", types: ["reaction"] },
+  { id: "quote", label: "client:settings.push.type.quote", types: ["quote"] },
   {
     id: "moderation",
     label: "client:settings.push.type.moderation",
