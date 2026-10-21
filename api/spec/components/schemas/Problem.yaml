@@ -75,6 +75,20 @@ description: |
     reason in `theme_errors` (`PUT /admin/theme`).
   - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
     allowed. Unmute one first.
+  - `/api/v1/problems/role-managed-by-plan` (409): the role is the role of a supporter plan:
+    only its subscriptions grant and revoke it, and its permissions and position change from
+    the plan (`PATCH /admin/supporter_plans/{id}`). Its badge changes as any role's.
+  - `/api/v1/problems/breaks-supporter-roles` (409): the change would put a staff role (one
+    with a moderation or server permission) at or below the role of a supporter plan.
+  - `/api/v1/problems/supporters-unavailable` (409): the supporter program needs a payment
+    provider in the deployment's configuration and a server that sends email.
+  - `/api/v1/problems/live-subscriptions` (409): subscriptions to the supporter plans go on;
+    retire the plans and wait for the subscriptions to end before disabling the program.
+  - `/api/v1/problems/invalid-supporter-plan` (422): a supporter plan breaks a rule;
+    `reason` says which.
+  - `/api/v1/problems/supporter-plan-retired` (409): the supporter plan is retired and does
+    not change any more.
+  - `/api/v1/problems/subscription-ended` (409): the subscription has ended already.
 type: object
 required: [type, title, status]
 properties:

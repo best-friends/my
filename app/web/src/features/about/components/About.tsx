@@ -14,7 +14,8 @@ import { type ModeratedDomains, useAbout, useModeratedDomains } from "../hooks/u
  * The body of the instance's information page (`/about`), under the page's heading: the thumbnail, the summary, the
  * description, the rules followed by its terms of service and privacy policy, the remote domains it moderates as far
  * as the instance lists them, what it states to search engines and AI crawlers, what running it costs as far as the
- * instance publishes it, how to reach the operators, and where to get its source code. Everyone may read it, signed in or not.
+ * instance publishes it, its commerce disclosures, how to reach the operators, and where to get its source code.
+ * Everyone may read it, signed in or not.
  */
 export function About() {
   const about = useAbout();
@@ -36,6 +37,7 @@ export function About() {
       {about.crawlers !== undefined && <Crawlers searchIndexing={about.crawlers.searchIndexing} aiUsage={about.crawlers.aiUsage} />}
       {/* Who runs the server, what it costs and what it runs. */}
       {(about.finance === "totals" || about.finance === "breakdown") && <Costs visibility={about.finance} />}
+      {about.commerceDisclosureUrl !== undefined && <CommerceDisclosure url={about.commerceDisclosureUrl} />}
       {about.contact !== undefined && <Contact contact={about.contact} />}
       {about.sourceUrl !== undefined && <SourceCode url={about.sourceUrl} />}
     </div>
@@ -187,6 +189,23 @@ function Costs({ visibility }: { visibility: "totals" | "breakdown" }) {
         <Link href="/about/costs" variant="standalone">
           {t("client:about.costs.link")}
         </Link>
+      </p>
+    </Section>
+  );
+}
+
+/**
+ * The link to the server's page of the commerce disclosures of its supporter plans (ADR-0072 §13). The page is the
+ * server's own, outside the app, so it opens in a new tab (web-client.md Y12). Absent when the instance has none.
+ */
+function CommerceDisclosure({ url }: { url: string }) {
+  const t = useT();
+  return (
+    <Section title={t("client:about.commerce.title")}>
+      <p>
+        <ExternalLink href={url} variant="standalone">
+          {t("client:about.commerce.link")}
+        </ExternalLink>
       </p>
     </Section>
   );

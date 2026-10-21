@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A change of a supporter plan; an omitted property keeps its value. A new monthly price,
+  in the plan's currency, or discount makes new prices for the new subscriptions and the
+  changes of plan; the subscriptions on the old ones keep them. `role_position` and
+  `role_permissions` change the plan's role, kept to member permissions below every staff
+  role.
+type: object
+properties:
+  name:
+    type: string
+  description:
+    type: string
+  monthly_price:
+    $ref: ./Money.yaml
+  annual_discount_percent:
+    type: integer
+  emoji_limit:
+    type: integer
+  rank:
+    type: integer
+  visibility:
+    $ref: ./SupporterPlanVisibility.yaml
+  role_position:
+    type: integer
+  role_permissions:
+    type: array
+    items:
+      $ref: ./Permission.yaml

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The state of a subscription (ADR-0072 §7). `pending`: started, not paid yet. `active`:
+  paid. `canceling`: canceled at the end of the period. `past_due`: a payment failed less
+  than 7 days ago. `lapsed`: a payment failed more than 7 days ago, or the subscription is
+  paused. `expired`: ended. `revoked`: a full refund or a chargeback. `abandoned`: ended
+  before its first payment. The role is held while `active`, `canceling`, or `past_due`.
+type: string
+enum: [pending, active, canceling, past_due, lapsed, expired, revoked, abandoned]

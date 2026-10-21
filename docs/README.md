@@ -39,6 +39,7 @@
 - [連合リレー](operations/relays.md)
 - [クラウドの利用料金の取り込み（AWS Cost Explorer、Google Cloud の BigQuery への export）](operations/billing-import.md)
 - [サポーターの決済（Stripe）](operations/payments-stripe.md)
+- [サポーター（課金のプラン）](operations/supporters.md)
 
 ## 開発プロセス
 

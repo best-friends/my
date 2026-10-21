@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A subscription as the administrators see it, without the history of its payments.
+type: object
+required: [id, state, plan_id, plan_name, interval, price, started_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  state:
+    $ref: ./SupporterSubscriptionState.yaml
+  plan_id:
+    $ref: ./Id.yaml
+  plan_name:
+    type: string
+  interval:
+    $ref: ./SupporterInterval.yaml
+  price:
+    $ref: ./Money.yaml
+  period_ends_at:
+    description: The end of the current period; omitted for `pending` and `abandoned`.
+    type: string
+    format: date-time
+  grace_ends_at:
+    description: When a `past_due` subscription loses its role.
+    type: string
+    format: date-time
+  scheduled_plan_id:
+    $ref: ./Id.yaml
+  scheduled_interval:
+    $ref: ./SupporterInterval.yaml
+  account_id:
+    $ref: ./Id.yaml
+  username:
+    description: The subscriber's username; omitted with `account_id` for an erased account.
+    type: string
+  started_at:
+    type: string
+    format: date-time

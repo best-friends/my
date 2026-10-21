@@ -476,6 +476,12 @@ type LocalStatus struct {
 	IdempotencyKey  sql.NullString
 }
 
+type ManagedRole struct {
+	RoleID    string
+	Manager   string
+	CreatedAt int64
+}
+
 type MediaDescription struct {
 	MediaID     string
 	Description string
@@ -1022,6 +1028,37 @@ type StatusRevisionSource struct {
 	RevisionID   string
 	SourceText   string
 	SourceFormat string
+}
+
+type SupporterCheckout struct {
+	ID                 string
+	SubscriptionID     string
+	Provider           string
+	ProviderCheckoutID string
+	ExpiresAt          int64
+	CreatedAt          int64
+}
+
+type SupporterCustomer struct {
+	ID                 string
+	UserID             string
+	Provider           string
+	ProviderCustomerID string
+	CreatedAt          int64
+}
+
+type SupporterProgramChange struct {
+	ID              string
+	State           string
+	Provider        string
+	ChangedByUserID sql.NullString
+	ChangedAt       int64
+}
+
+type SupporterSubscriptionDeadline struct {
+	SubscriptionID string
+	Kind           string
+	DueAt          int64
 }
 
 type Tag struct {

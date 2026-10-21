@@ -73,6 +73,7 @@ type Repository interface {
 	ExportRepository
 	ImportRepository
 	RoleRepository
+	ManagedRoleRepository
 	AccountAdminRepository
 	ProjectionRepository
 

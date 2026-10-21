@@ -1,4 +1,12 @@
 {
+  "about.commerce.link": {
+    "defaultMessage": "‮ᴚǝɐp ʇɥǝ ɔoɯɯǝɹɔǝ pısɔʅosnɹǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "about.commerce.title": {
+    "defaultMessage": "‮Ↄoɯɯǝɹɔǝ pısɔʅosnɹǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "about.contact.account": {
     "defaultMessage": "‮∀ɔɔonuʇ‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -1831,6 +1839,30 @@
     "defaultMessage": "‮ᴚǝɟǝʇɔɥ oɟ ɐ dosʇ ɹǝbnǝsʇǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.audit_log.action.supporter_plan_created": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dʅɐu ɔɹǝɐʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.supporter_plan_retired": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dʅɐu ɹǝʇıɹǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.supporter_plan_revised": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dʅɐu ɔɥɐuƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.supporter_program_disabled": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dɹoƃɹɐɯ pısɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.supporter_program_enabled": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dɹoƃɹɐɯ ǝuɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.action.supporter_subscription_canceled": {
+    "defaultMessage": "‮Snqsɔɹıdʇıou ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.audit_log.action.text_changed": {
     "defaultMessage": "‮⊥ǝxʇ ɔɥɐuƃǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -2033,6 +2065,18 @@
   },
   "admin.audit_log.target_kind.status": {
     "defaultMessage": "‮Ԁosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.supporter_plan": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.supporter_program": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dɹoƃɹɐɯ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.audit_log.target_kind.supporter_subscription": {
+    "defaultMessage": "‮Snqsɔɹıdʇıou‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.audit_log.target_kind.user": {
@@ -2371,8 +2415,20 @@
     "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.documents.commerce_disclosure": {
+    "defaultMessage": "‮Ↄoɯɯǝɹɔǝ pısɔʅosnɹǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.commerce_disclosure.description": {
+    "defaultMessage": "‮Mɥɐʇ ʇɥǝ ʅɐʍ oɟ ʎonɹ ɔonuʇɹʎ ɐsʞs ɐ sǝʅʅǝɹ ʇo pısɔʅosǝ, snɔɥ ɐs ʇɥǝ 特定商取引法に基づく表記 ıu ſɐdɐu. Iʇ ıs dnqʅısɥǝp ɐʇ /ɐqonʇ/ɔoɯɯǝɹɔǝ, ɐup ʇɥǝ snddoɹʇǝɹ sɔɹǝǝus ʅıuʞ ʇo ıʇ. ⊥ɥǝ sǝɹʌǝɹ poǝs uoʇ ɔɥǝɔʞ oɹ ƃnɐɹɐuʇǝǝ ʇɥɐʇ ıʇ ɯǝǝʇs ʇɥǝ ʅɐʍ: ɔɥǝɔʞ ʍɥɐʇ ʇɥǝ ʅɐʍ ɐsʞs ʎonɹsǝʅɟ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.documents.confirm_remove.cancel": {
     "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.confirm_remove.commerce_disclosure": {
+    "defaultMessage": "‮ᴚǝɯoʌǝ ʇɥǝ ɔoɯɯǝɹɔǝ pısɔʅosnɹǝs?‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.documents.confirm_remove.confirm": {
@@ -2449,6 +2505,10 @@
   },
   "admin.documents.unsaved.title": {
     "defaultMessage": "‮⅂ǝɐʌǝ ʍıʇɥonʇ sɐʌıuƃ ʇɥǝ ʇǝxʇs?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.documents.view_commerce_disclosure": {
+    "defaultMessage": "‮Odǝu ʇɥǝ ɔoɯɯǝɹɔǝ pısɔʅosnɹǝs dɐƃǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.documents.view_privacy_policy": {
@@ -4799,6 +4859,10 @@
     "defaultMessage": "‮Sǝɹʌǝɹ sǝʇʇıuƃs‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.roles.permission.manage_supporters": {
+    "defaultMessage": "‮Snddoɹʇǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.roles.permission.manage_webhooks": {
     "defaultMessage": "‮Mǝqɥooʞs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -5813,6 +5877,454 @@
   },
   "admin.signup_blocks.value.ip_range.required": {
     "defaultMessage": "‮Ǝuʇǝɹ ɐu IԀ ɐppɹǝss oɹ ɹɐuƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.cancel": {
+    "defaultMessage": "‮Ↄɐuɔǝʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.close": {
+    "defaultMessage": "‮Ↄʅosǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.filter.any_plan": {
+    "defaultMessage": "‮Ǝʌǝɹʎ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.filter.any_state": {
+    "defaultMessage": "‮Ǝʌǝɹʎ sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.filter.plan": {
+    "defaultMessage": "‮Ԁʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.filter.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.new.description": {
+    "defaultMessage": "‮∀ dʅɐu ƃıʌǝs ıʇs snqsɔɹıqǝɹs ɐ ɹoʅǝ ʇɥɐʇ uoqopʎ ɥoʅps ʎǝʇ, ʍıʇɥ ɯǝɯqǝɹ dǝɹɯıssıous ouʅʎ, qǝʅoʍ ǝʌǝɹʎ sʇɐɟɟ ɹoʅǝ. ∀ ɥıƃɥǝɹ ɹɐuʞ ıs ɐ ɥıƃɥǝɹ dʅɐu, ʍɥıɔɥ ɯnsʇ ıuɔʅnpǝ ǝʌǝɹʎʇɥıuƃ oɟ ʇɥǝ ʅoʍǝɹ ouǝs. ⊥ɥǝ dɹıɔǝs ɐɹǝ ɯɐpǝ ɐʇ ʇɥǝ dɐʎɯǝuʇ dɹoʌıpǝɹ ɐɟʇǝɹ sɐʌıuƃ; ʇɥǝ dʅɐu ʇɐʞǝs snqsɔɹıdʇıous ouɔǝ ʇɥǝʎ ɐɹǝ ɹǝɐpʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.new.submit": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ʇɥǝ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.new.title": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐ dʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.amount": {
+    "defaultMessage": "‮Wouʇɥʅʎ dɹıɔǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.amount.description": {
+    "defaultMessage": "‮Iu ʇɥǝ ɯɐıu nuıʇ oɟ ʇɥǝ ɔnɹɹǝuɔʎ, snɔɥ ɐs 500 oɹ 4.99.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.amount.invalid": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐu ɐɯonuʇ snɔɥ ɐs 500 oɹ 4.99.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.change_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʇɥǝ dʅɐu: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.characters_left": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʅǝɟʇ} other{# ɔɥɐɹɐɔʇǝɹs ʅǝɟʇ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.characters_over": {
+    "defaultMessage": "‮{count,plural,one{# ɔɥɐɹɐɔʇǝɹ ʇoo ɯɐuʎ} other{# ɔɥɐɹɐɔʇǝɹs ʇoo ɯɐuʎ}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.created": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝp ʇɥǝ dʅɐu {name}. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.currency": {
+    "defaultMessage": "‮Ↄnɹɹǝuɔʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.currency.description": {
+    "defaultMessage": "‮⊥ɥǝ ISO 4217 ɔopǝ, snɔɥ ɐs ſԀ⅄ oɹ ∩Sᗡ. Iʇ ɔɐuuoʇ ɔɥɐuƃǝ ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.currency.invalid": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ ɔopǝ oɟ ʇɥɹǝǝ ʅǝʇʇǝɹs, snɔɥ ɐs ſԀ⅄.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.description": {
+    "defaultMessage": "‮ᗡǝsɔɹıdʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.description.description": {
+    "defaultMessage": "‮Ԁʅɐıu ʇǝxʇ, sɥoʍu ʍıʇɥ ʇɥǝ dʅɐu. Iʇ ɯɐʎ qǝ ǝɯdʇʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.discount": {
+    "defaultMessage": "‮⅄ǝɐɹʅʎ pısɔonuʇ (%)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.discount.description": {
+    "defaultMessage": "‮⊥ɥǝ ʎǝɐɹʅʎ dɹıɔǝ ıs ʇɥǝ ɯouʇɥʅʎ ouǝ × 12, ʅǝss ʇɥıs dǝɹɔǝuʇɐƃǝ, ɹonupǝp poʍu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.edit": {
+    "defaultMessage": "‮Ǝpıʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.edit.description": {
+    "defaultMessage": "‮∀ uǝʍ dɹıɔǝ ɐddʅıǝs ʇo uǝʍ snqsɔɹıdʇıous ɐup ɔɥɐuƃǝs oɟ dʅɐu; ʇɥǝ ɔnɹɹǝuʇ snqsɔɹıqǝɹs ʞǝǝd ʇɥǝıɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.edit.title": {
+    "defaultMessage": "‮Ǝpıʇ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.edit_plan": {
+    "defaultMessage": "‮Ǝpıʇ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.emoji_limit": {
+    "defaultMessage": "‮Ↄnsʇoɯ ǝɯoɾı ʅıɯıʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.emoji_limit.description": {
+    "defaultMessage": "‮Hoʍ ɯɐuʎ ɔnsʇoɯ ǝɯoɾı ʇɥǝ snqsɔɹıqǝɹs ɯɐʎ ɔɹǝɐʇǝ ʍɥǝu ʇɥǝ ɹoʅǝ ʅǝʇs ʇɥǝɯ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.members": {
+    "defaultMessage": "‮Wǝɯqǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.monthly": {
+    "defaultMessage": "‮Wouʇɥʅʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.name": {
+    "defaultMessage": "‮Nɐɯǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.name.invalid": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ uɐɯǝ oɟ 1 ʇo {max} ɔɥɐɹɐɔʇǝɹs ou ouǝ ʅıuǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.number.invalid": {
+    "defaultMessage": "‮Ǝuʇǝɹ ɐ ʍɥoʅǝ unɯqǝɹ ɟɹoɯ 0 ʇo {max}.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.permissions": {
+    "defaultMessage": "‮ᴚoʅǝ dǝɹɯıssıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.preparing": {
+    "defaultMessage": "‮Ԁɹǝdɐɹıuƃ dɹıɔǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.rank": {
+    "defaultMessage": "‮ᴚɐuʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.rank.description": {
+    "defaultMessage": "‮∀ ɥıƃɥǝɹ ɹɐuʞ ıs ɐ ɥıƃɥǝɹ dʅɐu; ǝɐɔɥ dʅɐu ɥɐs ıʇs oʍu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.retire": {
+    "defaultMessage": "‮ᴚǝʇıɹǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.retire.description": {
+    "defaultMessage": "‮⊥ɥıs ɔɐuuoʇ qǝ nupouǝ. ⊥ɥǝ dʅɐu ʇɐʞǝs uo uǝʍ snqsɔɹıdʇıous, ɐup ǝʌǝɹʎ snqsɔɹıdʇıou oɟ ıʇ ǝups ɐʇ ʇɥǝ ǝup oɟ ıʇs dǝɹıop (ouǝ uoʇ dɐıp ʎǝʇ ǝups uoʍ).‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.retire.title": {
+    "defaultMessage": "‮ᴚǝʇıɹǝ {name}?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.retire_plan": {
+    "defaultMessage": "‮ᴚǝʇıɹǝ {name}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.retired_at": {
+    "defaultMessage": "‮ᴚǝʇıɹǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.retired_done": {
+    "defaultMessage": "‮ᴚǝʇıɹǝp ʇɥǝ dʅɐu {name}. Iʇs snqsɔɹıdʇıous ǝup ɐʇ ʇɥǝ ǝup oɟ ʇɥǝıɹ dǝɹıops.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role": {
+    "defaultMessage": "‮ᴚoʅǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role.description": {
+    "defaultMessage": "‮⊥ɥǝ ʞǝʎ oɟ ɐ ɹoʅǝ ʇɥɐʇ uoqopʎ ɥoʅps. Iʇ ɔɐuuoʇ ɔɥɐuƃǝ ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role.no_permissions": {
+    "defaultMessage": "‮No dǝɹɯıssıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role.required": {
+    "defaultMessage": "‮Ǝuʇǝɹ ʇɥǝ ʞǝʎ oɟ ɐ ɹoʅǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role_position": {
+    "defaultMessage": "‮ᴚoʅǝ dosıʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role_position.description": {
+    "defaultMessage": "‮Ԑǝʅoʍ ǝʌǝɹʎ sʇɐɟɟ ɹoʅǝ, ɐup ɐqoʌǝ ʇɥǝ ɹoʅǝ oɟ ʇɥǝ dʅɐu qǝʅoʍ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.role_value": {
+    "defaultMessage": "‮{role} ɐʇ dosıʇıou {position}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.save_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sɐʌǝ ʇɥǝ dʅɐu: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.updated": {
+    "defaultMessage": "‮Sɐʌǝp ʇɥǝ dʅɐu {name}. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.visibility": {
+    "defaultMessage": "‮Ʌısıqıʅıʇʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.visibility.hidden": {
+    "defaultMessage": "‮Hıppǝu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.visibility.public": {
+    "defaultMessage": "‮Ԁnqʅıɔ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.yearly": {
+    "defaultMessage": "‮⅄ǝɐɹʅʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plan.yearly_value": {
+    "defaultMessage": "‮{amount} ({discount}% oɟɟ)‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plans.empty": {
+    "defaultMessage": "‮No dʅɐus ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plans.empty.description": {
+    "defaultMessage": "‮Ↄɹǝɐʇǝ ɐ dʅɐu ɐqoʌǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.plans.title": {
+    "defaultMessage": "‮Ԁʅɐus‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.changed_at": {
+    "defaultMessage": "‮⅂ɐsʇ ǝuɐqʅǝp oɹ pısɐqʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.configured_provider": {
+    "defaultMessage": "‮Ↄouɟıƃnɹǝp dɐʎɯǝuʇ dɹoʌıpǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.description": {
+    "defaultMessage": "‮∩sǝɹs snqsɔɹıqǝ ʇo ɐ dʅɐu ɐup ɥoʅp ıʇs ɹoʅǝ ʍɥıʅǝ ʇɥǝʎ dɐʎ. ⊥ɥǝ dɹoƃɹɐɯ ıs oɟɟ nuʇıʅ ʎon ǝuɐqʅǝ ıʇ, ɐup uǝǝps ɐ dɐʎɯǝuʇ dɹoʌıpǝɹ ıu ʇɥǝ sǝɹʌǝɹ's ɔouɟıƃnɹɐʇıou ɐup ɐ sǝɹʌǝɹ ʇɥɐʇ sǝups ǝɯɐıʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.disabled_done": {
+    "defaultMessage": "‮⊥ɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ ıs pısɐqʅǝp. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.enabled_done": {
+    "defaultMessage": "‮⊥ɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ ıs ǝuɐqʅǝp. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ɔɥɐuƃǝ ʇɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.live_subscriptions": {
+    "defaultMessage": "‮Snqsɔɹıdʇıous ʇɥɐʇ ƃo ou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.never": {
+    "defaultMessage": "‮Nǝʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.none": {
+    "defaultMessage": "‮Nouǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.provider": {
+    "defaultMessage": "‮Ԁɐʎɯǝuʇ dɹoʌıpǝɹ oɟ ʇɥǝ dɹoƃɹɐɯ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.subscription_count": {
+    "defaultMessage": "‮{count,plural,one{# snqsɔɹıdʇıou} other{# snqsɔɹıdʇıous}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.switch": {
+    "defaultMessage": "‮Ǝuɐqʅǝ ʇɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.switch.description": {
+    "defaultMessage": "‮ᗡısɐqʅıuƃ ıs ɹǝɟnsǝp ʍɥıʅǝ snqsɔɹıdʇıous ƃo ou: ɹǝʇıɹǝ ʇɥǝ dʅɐus ɟıɹsʇ ɐup ʍɐıʇ ɟoɹ ʇɥǝıɹ snqsɔɹıdʇıous ʇo ǝup.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.program.title": {
+    "defaultMessage": "‮Snddoɹʇǝɹ dɹoƃɹɐɯ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.retired.title": {
+    "defaultMessage": "‮ᴚǝʇıɹǝp dʅɐus‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.save": {
+    "defaultMessage": "‮Sɐʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.abandoned": {
+    "defaultMessage": "‮∀qɐupouǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.active": {
+    "defaultMessage": "‮∀ɔʇıʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.canceling": {
+    "defaultMessage": "‮Ǝups ɐʇ ʇɥǝ dǝɹıop's ǝup‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.expired": {
+    "defaultMessage": "‮Ǝupǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.lapsed": {
+    "defaultMessage": "‮⅂ɐdsǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.past_due": {
+    "defaultMessage": "‮Ԁɐʎɯǝuʇ ɟɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.pending": {
+    "defaultMessage": "‮Noʇ dɐıp ʎǝʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.state.revoked": {
+    "defaultMessage": "‮ᴚǝɟnupǝp oɹ ɔɥɐɹƃǝp qɐɔʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.cancel": {
+    "defaultMessage": "‮Ǝup uoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.cancel.description": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝ ƃoǝs uoʍ ɐup ʇɥǝ dɐʎɯǝuʇ dɹoʌıpǝɹ sʇods qıʅʅıuƃ. Noʇɥıuƃ ıs ɹǝɟnupǝp: ɹǝɟnup ɐʇ ʇɥǝ dɐʎɯǝuʇ dɹoʌıpǝɹ ıɟ uǝǝpǝp. ⊥ɥıs ɔɐuuoʇ qǝ nupouǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.cancel.title": {
+    "defaultMessage": "‮Ǝup ʇɥǝ snqsɔɹıdʇıou oɟ {name} uoʍ?‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.cancel_failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ ǝup ʇɥǝ snqsɔɹıdʇıou: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.cancel_of": {
+    "defaultMessage": "‮Ǝup ʇɥǝ snqsɔɹıdʇıou oɟ {name} uoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.canceled": {
+    "defaultMessage": "‮Ǝupǝp ɐ snqsɔɹıdʇıou ʇo {plan}. ⊥ɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.deleted_account": {
+    "defaultMessage": "‮ᗡǝʅǝʇǝp ɐɔɔonuʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.grace_ends_at": {
+    "defaultMessage": "‮ᴚoʅǝ ʞǝdʇ nuʇıʅ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.per_month": {
+    "defaultMessage": "‮{amount} ɐ ɯouʇɥ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.per_year": {
+    "defaultMessage": "‮{amount} ɐ ʎǝɐɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.period_ends_at": {
+    "defaultMessage": "‮Ԁǝɹıop ǝups‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.plan": {
+    "defaultMessage": "‮Ԁʅɐu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.price": {
+    "defaultMessage": "‮Ԁɹıɔǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.scheduled": {
+    "defaultMessage": "‮Sɔɥǝpnʅǝp ɔɥɐuƃǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.scheduled_month": {
+    "defaultMessage": "‮⊥o ɐ ɯouʇɥʅʎ dɹıɔǝ ɐʇ ʇɥǝ dǝɹıop's ǝup‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.scheduled_year": {
+    "defaultMessage": "‮⊥o ɐ ʎǝɐɹʅʎ dɹıɔǝ ɐʇ ʇɥǝ dǝɹıop's ǝup‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.started_at": {
+    "defaultMessage": "‮Sʇɐɹʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscription.state": {
+    "defaultMessage": "‮Sʇɐʇǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscriptions.empty": {
+    "defaultMessage": "‮No snqsɔɹıdʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.subscriptions.title": {
+    "defaultMessage": "‮Snqsɔɹıdʇıous‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.summary": {
+    "defaultMessage": "‮Ǝuɐqʅǝ ʇɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ, sǝʇ nd ıʇs dʅɐus, ɐup sǝǝ ʇɥǝ snqsɔɹıdʇıous.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.title": {
+    "defaultMessage": "‮Snddoɹʇǝɹs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.warning.no_commerce_disclosure": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ dnqʅısɥǝs uo ɔoɯɯǝɹɔǝ pısɔʅosnɹǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.warning.no_commerce_disclosure.link": {
+    "defaultMessage": "‮Mɹıʇǝ ʇɥǝɯ ıu ʇɥǝ ʇǝɹɯs ɐup doʅıɔıǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.warning.no_email": {
+    "defaultMessage": "‮⊥ɥǝ sǝɹʌǝɹ sǝups uo ǝɯɐıʅ, so uoqopʎ ɔɐu ʌǝɹıɟʎ ɐu ɐppɹǝss ʇo snqsɔɹıqǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.warning.no_provider": {
+    "defaultMessage": "‮No dɐʎɯǝuʇ dɹoʌıpǝɹ ıs ɔouɟıƃnɹǝp, so ʇɥǝ dɹoƃɹɐɯ ɔɐuuoʇ qǝ ǝuɐqʅǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.warning.provider_mismatch": {
+    "defaultMessage": "‮⊥ɥǝ ɔouɟıƃnɹǝp dɐʎɯǝuʇ dɹoʌıpǝɹ ıs uoʇ ʇɥǝ ouǝ ʇɥǝ dɹoƃɹɐɯ ʍɐs ǝuɐqʅǝp ʍıʇɥ. Nǝʍ snqsɔɹıdʇıous ɐup ɔɥɐuƃǝs ɐɹǝ ɹǝɟnsǝp nuʇıʅ ʎon pısɐqʅǝ ıʇ ɐup ǝuɐqʅǝ ıʇ ɐƃɐıu; ʇɥǝ snqsɔɹıqǝɹs ʇɥǝu snqsɔɹıqǝ ɐƃɐıu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "admin.theme.bounds.default": {

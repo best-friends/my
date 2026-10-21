@@ -131,6 +131,14 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ʍɐs ɹǝɟnsǝp qǝɔɐnsǝ ıʇ ɔɐɯǝ ɟɹoɯ ɐuoʇɥǝɹ sıʇǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "auth.document.commerce_missing": {
+    "defaultMessage": "‮⊥ɥıs sǝɹʌǝɹ ɥɐs uoʇ dnqʅısɥǝp ɔoɯɯǝɹɔǝ pısɔʅosnɹǝs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "auth.document.commerce_title": {
+    "defaultMessage": "‮Ↄoɯɯǝɹɔǝ pısɔʅosnɹǝs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "auth.document.footer_label": {
     "defaultMessage": "‮⊥ǝɹɯs ɐup doʅıɔıǝs‬",
     "description": "Generated from en by tools/i18n; do not edit."
@@ -787,12 +795,24 @@
     "defaultMessage": "‮⊥ɥǝ ɹǝbnǝsʇ ıs ʇoo ʅɐɹƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "errors.role.breaks_supporter_roles": {
+    "defaultMessage": "‮Sʇɐɟɟ ɹoʅǝs ɯnsʇ sʇɐʎ ɐqoʌǝ ʇɥǝ ɹoʅǝs oɟ ʇɥǝ snddoɹʇǝɹ dʅɐus.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "errors.role.invalid": {
     "defaultMessage": "‮⊥ɥǝ ɹoʅǝ ɔɐuuoʇ qǝ sɐʌǝp.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.role.invalid_detail": {
     "defaultMessage": "‮{reason,select,badge_color{Ↄɥoosǝ ouǝ oɟ ʇɥǝ qɐpƃǝ ɔoʅoɹs.} badge_label{⊥ɥǝ qɐpƃǝ uɐɯǝ ɯnsʇ qǝ 1 ʇo 32 ɔɥɐɹɐɔʇǝɹs ou ouǝ ʅıuǝ.} builtin{⊥ɥǝ ɐpɯıu ɹoʅǝ ɔɐuuoʇ ɔɥɐuƃǝ, ɐup ʇɥǝ qnıʅʇ-ıu ɹoʅǝs ɔɐuuoʇ qǝ pǝʅǝʇǝp.} held{ᴚǝʌoʞǝ ʇɥǝ ɹoʅǝ ɟɹoɯ ǝʌǝɹʎouǝ ʍɥo ɥoʅps ıʇ ɟıɹsʇ.} key{⊥ɥǝ ʞǝʎ ɯnsʇ qǝ 1 ʇo 64 ʅoʍǝɹɔɐsǝ ʅǝʇʇǝɹs, pıƃıʇs, nupǝɹsɔoɹǝs, oɹ ɥʎdɥǝus.} key_taken{∀uoʇɥǝɹ ɹoʅǝ ɥɐs ʇɥıs ʞǝʎ.} missing_permission{⅄on ɔɐu ƃıʌǝ oɹ ʇɐʞǝ ouʅʎ ʇɥǝ dǝɹɯıssıous ʎon ɥoʅp.} other{⊥ɥǝ ɔɥɐuƃǝ qɹǝɐʞs ɐ ɹnʅǝ.} permissions{Ↄɥoosǝ ǝɐɔɥ dǝɹɯıssıou ɐʇ ɯosʇ ouɔǝ.} position{⊥ɥǝ dosıʇıou ɯnsʇ qǝ ɟɹoɯ 0 ʇo 999.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.managed_by_plan": {
+    "defaultMessage": "‮⊥ɥǝ ɹoʅǝ qǝʅouƃs ʇo ɐ snddoɹʇǝɹ dʅɐu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.role.managed_by_plan_detail": {
+    "defaultMessage": "‮Ouʅʎ ʇɥǝ dʅɐu's snqsɔɹıdʇıous ƃɹɐuʇ ɐup ɹǝʌoʞǝ ıʇ, ɐup ıʇs dǝɹɯıssıous ɐup dosıʇıou ɔɥɐuƃǝ ɟɹoɯ ʇɥǝ dʅɐu.‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.self_relationship": {
@@ -921,6 +941,38 @@
   },
   "errors.streaming.unavailable": {
     "defaultMessage": "‮ᴚǝɐʅ-ʇıɯǝ ndpɐʇǝs ɐɹǝ nuɐʌɐıʅɐqʅǝ ɹıƃɥʇ uoʍ. ⊥ɹʎ ɐƃɐıu ʅɐʇǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.live_subscriptions": {
+    "defaultMessage": "‮Snqsɔɹıdʇıous ʇo ʇɥǝ snddoɹʇǝɹ dʅɐus ƃo ou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.live_subscriptions_detail": {
+    "defaultMessage": "‮ᴚǝʇıɹǝ ʇɥǝ dʅɐus ɐup ʍɐıʇ ɟoɹ ʇɥǝıɹ snqsɔɹıdʇıous ʇo ǝup qǝɟoɹǝ pısɐqʅıuƃ ʇɥǝ dɹoƃɹɐɯ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_invalid": {
+    "defaultMessage": "‮⊥ɥǝ snddoɹʇǝɹ dʅɐu ɔɐuuoʇ qǝ sɐʌǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_invalid_detail": {
+    "defaultMessage": "‮{reason,select,annual_discount_percent{⊥ɥǝ ʎǝɐɹʅʎ pısɔonuʇ ɯnsʇ qǝ ɟɹoɯ 0 ʇo 90 dǝɹɔǝuʇ.} currency{⊥ɥǝ dɐʎɯǝuʇ dɹoʌıpǝɹ poǝs uoʇ ʇɐʞǝ ʇɥıs ɔnɹɹǝuɔʎ.} description{⊥ɥǝ pǝsɔɹıdʇıou ɯnsʇ qǝ ɐʇ ɯosʇ 1,000 ɔɥɐɹɐɔʇǝɹs.} emoji_limit{⊥ɥǝ ǝɯoɾı ʅıɯıʇ ɯnsʇ qǝ ɟɹoɯ 0 ʇo 10,000.} monthly_price{⊥ɥǝ dɹıɔǝ ɯnsʇ qǝ ɐʇ ʅǝɐsʇ ʇɥǝ dɐʎɯǝuʇ dɹoʌıpǝɹ's ɯıuıɯnɯ ɔɥɐɹƃǝ, ɟoɹ ʇɥǝ ʎǝɐɹʅʎ dɹıɔǝ ʇoo.} name{⊥ɥǝ uɐɯǝ ɯnsʇ qǝ 1 ʇo 50 ɔɥɐɹɐɔʇǝɹs ou ouǝ ʅıuǝ.} order_emoji_limit{∀ ɥıƃɥǝɹ dʅɐu ɯnsʇ ʅǝʇ ıʇs ɯǝɯqǝɹs ɔɹǝɐʇǝ ɐʇ ʅǝɐsʇ ɐs ɯɐuʎ ɔnsʇoɯ ǝɯoɾı ɐs ʇɥǝ dʅɐu qǝʅoʍ ıʇ.} order_permissions{∀ ɥıƃɥǝɹ dʅɐu's ɹoʅǝ ɯnsʇ ɥɐʌǝ ǝʌǝɹʎ dǝɹɯıssıou oɟ ʇɥǝ dʅɐu qǝʅoʍ ıʇ.} order_position{∀ ɥıƃɥǝɹ dʅɐu's ɹoʅǝ ɯnsʇ qǝ ɐqoʌǝ ʇɥǝ ɹoʅǝ oɟ ʇɥǝ dʅɐu qǝʅoʍ ıʇ.} order_rank{∀uoʇɥǝɹ dʅɐu ɥɐs ʇɥıs ɹɐuʞ.} other{⊥ɥǝ dʅɐu qɹǝɐʞs ɐ ɹnʅǝ.} rank{⊥ɥǝ ɹɐuʞ ɯnsʇ qǝ ɟɹoɯ 0 ʇo 1,000,000.} role_builtin{⊥ɥǝ qnıʅʇ-ıu ɹoʅǝs ɔɐuuoʇ qǝ ɐ dʅɐu's ɹoʅǝ.} role_held{Ↄɥoosǝ ɐ ɹoʅǝ ʇɥɐʇ uoqopʎ ɥoʅps.} role_permissions{∀ dʅɐu's ɹoʅǝ ɯɐʎ ɥɐʌǝ ouʅʎ ɯǝɯqǝɹ dǝɹɯıssıous.} role_position{∀ dʅɐu's ɹoʅǝ ɯnsʇ qǝ qǝʅoʍ ǝʌǝɹʎ sʇɐɟɟ ɹoʅǝ.} role_taken{∀uoʇɥǝɹ dʅɐu ɥɐs ʇɥıs ɹoʅǝ.} visibility{Ↄɥoosǝ dnqʅıɔ oɹ ɥıppǝu.}}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.plan_retired": {
+    "defaultMessage": "‮⊥ɥǝ snddoɹʇǝɹ dʅɐu ıs ɹǝʇıɹǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.subscription_ended": {
+    "defaultMessage": "‮⊥ɥǝ snqsɔɹıdʇıou ɥɐs ǝupǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.unavailable": {
+    "defaultMessage": "‮⊥ɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ ıs uoʇ ɐʌɐıʅɐqʅǝ ou ʇɥıs sǝɹʌǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "errors.supporters.unavailable_detail": {
+    "defaultMessage": "‮{reason,select,no_email{⊥ɥǝ sǝɹʌǝɹ ɯnsʇ sǝup ǝɯɐıʅ, so ʇɥɐʇ snqsɔɹıqǝɹs ɔɐu ʌǝɹıɟʎ ʇɥǝıɹ ɐppɹǝss.} no_provider{Ↄouɟıƃnɹǝ ɐ dɐʎɯǝuʇ dɹoʌıpǝɹ ıu ʇɥǝ sǝɹʌǝɹ's ɔouɟıƃnɹɐʇıou ɟıɹsʇ.} other{⊥ɥǝ snddoɹʇǝɹ dɹoƃɹɐɯ ɔɐuuoʇ qǝ nsǝp uoʍ.} provider_mismatch{⊥ɥǝ ɔouɟıƃnɹǝp dɐʎɯǝuʇ dɹoʌıpǝɹ ıs uoʇ ʇɥǝ ouǝ ʇɥǝ dɹoƃɹɐɯ ʍɐs ǝuɐqʅǝp ʍıʇɥ. ᗡısɐqʅǝ ʇɥǝ dɹoƃɹɐɯ ɐup ǝuɐqʅǝ ıʇ ɐƃɐıu.}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
   "errors.too_long": {

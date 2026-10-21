@@ -26,7 +26,8 @@ func (s *Server) requireRoleManager(ctx context.Context) (Viewer, *problem, erro
 }
 
 // roleDefinitionProblem maps the errors of CreateRole, UpdateRole, and DeleteRole: a 422 for a
-// change that breaks a rule (rp), or 404 and 403 (p). It reports false for any other error.
+// change that breaks a rule (rp), or 404, 403, and the 409 of the roles of the supporter plans
+// (p). It reports false for any other error.
 func (s *Server) roleDefinitionProblem(ctx context.Context, err error) (*RoleProblemApplicationProblemPlusJSONResponse, *problem, bool) {
 	var reason RoleProblemReason
 	var missing *appidentity.MissingPermissionsError
@@ -56,6 +57,9 @@ func (s *Server) roleDefinitionProblem(ctx context.Context, err error) (*RolePro
 	case errors.Is(err, appidentity.ErrInvalidBadgeColor):
 		reason = RoleProblemReasonBadgeColor
 	default:
+		if p, ok := s.managedRoleProblem(ctx, err); ok {
+			return nil, &p, true
+		}
 		return nil, nil, false
 	}
 	l := s.Localizer(ctx)

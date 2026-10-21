@@ -99,8 +99,9 @@ func (a roleActor) check(key string, position int, changed []identity.Permission
 // CreateRole creates a role. It fails with ErrInvalidRoleKey, ErrInvalidRolePosition, or
 // ErrInvalidRolePermissions for a role that breaks a rule, with ErrRoleKeyTaken when another
 // role (a built-in one included) has the key, with ErrRoleOutranksActor when the position is
-// above every role of in.ByUserID, and with a *MissingPermissionsError when in.ByUserID lacks
-// one of the permissions.
+// above every role of in.ByUserID, with a *MissingPermissionsError when in.ByUserID lacks one of
+// the permissions, and with ErrBreaksManagedRoles for a staff role at or below the role of a
+// supporter plan (ADR-0072 §5).
 func (s *Service) CreateRole(ctx context.Context, in CreateRoleInput) (RoleWithPermissions, error) {
 	if err := identity.ValidateRoleKey(in.Key); err != nil {
 		return RoleWithPermissions{}, err
@@ -126,6 +127,9 @@ func (s *Service) CreateRole(ctx context.Context, in CreateRoleInput) (RoleWithP
 	role := identity.Role{ID: s.d.IDs.NewID(), Key: in.Key, Position: in.Position, CreatedAt: now}
 	auditID := s.d.IDs.NewID()
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
+		if err := s.checkUnmanaged(ctx, tx, "", in.Key, in.Position, perms); err != nil {
+			return err
+		}
 		stored, err := s.d.Repository.EnsureRole(ctx, tx, role, perms)
 		if err != nil {
 			return err
@@ -148,8 +152,10 @@ func (s *Service) CreateRole(ctx context.Context, in CreateRoleInput) (RoleWithP
 // changes like any other), with ErrInvalidRolePosition, ErrInvalidRolePermissions,
 // ErrInvalidBadgeLabel, or ErrInvalidBadgeColor for a change that breaks a rule, with
 // ErrRoleOutranksActor when the role or its new position is above every role of in.ByUserID,
-// and with a *MissingPermissionsError when in.ByUserID lacks a permission that the change adds
-// or removes.
+// with a *MissingPermissionsError when in.ByUserID lacks a permission that the change adds or
+// removes, with ErrRoleManagedByPlan for a new position or permissions of the role of a
+// supporter plan (its plan's form changes them; its badge changes here), and with
+// ErrBreaksManagedRoles for a change that puts a staff role at or below one (ADR-0072 §5).
 func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithPermissions, error) {
 	if in.Key == identity.RoleAdmin && (in.Position != nil || in.SetPermissions || !in.SetBadge) {
 		return RoleWithPermissions{}, fmt.Errorf("%w: %s", ErrBuiltinRole, in.Key)
@@ -219,6 +225,11 @@ func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithP
 		if err := actor.check(role.Key, next.Position, changed); err != nil {
 			return err
 		}
+		if next.Position != role.Position || len(changed) > 0 {
+			if err := s.checkUnmanaged(ctx, tx, role.ID, role.Key, next.Position, nextPerms); err != nil {
+				return err
+			}
+		}
 		if next.Position != role.Position {
 			if err := s.d.Repository.UpdateRolePosition(ctx, tx, role.ID, next.Position); err != nil {
 				return err
@@ -243,7 +254,8 @@ func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithP
 
 // DeleteRole deletes a role that nobody holds. It fails with ErrNotFound for an unknown role,
 // with ErrBuiltinRole for admin and moderator, with ErrRoleOutranksActor when the role is above
-// every role of byUserID ("" for the CLI), and with ErrRoleHeld while users hold the role.
+// every role of byUserID ("" for the CLI), with ErrRoleHeld while users hold the role, and with
+// ErrRoleManagedByPlan for the role of a supporter plan.
 func (s *Service) DeleteRole(ctx context.Context, key, byUserID string) error {
 	if identity.IsBuiltinRole(key) {
 		return fmt.Errorf("%w: %s", ErrBuiltinRole, key)
@@ -260,6 +272,9 @@ func (s *Service) DeleteRole(ctx context.Context, key, byUserID string) error {
 			return err
 		}
 		if err := actor.check(role.Key, role.Position, nil); err != nil {
+			return err
+		}
+		if err := s.refuseManaged(ctx, tx, role); err != nil {
 			return err
 		}
 		n, err := s.d.Repository.CountRoleHolders(ctx, tx, role.ID)

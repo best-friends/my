@@ -101,8 +101,9 @@ type RoleChangeInput struct {
 
 // GrantRole grants a role to a user and reports whether it changed anything: granting a role
 // that the user holds does nothing and records nothing. It fails with ErrNotFound for an
-// unknown user or role, and with ErrRoleOutranksActor when the role is above every role of
-// in.ByUserID.
+// unknown user or role, with ErrRoleOutranksActor when the role is above every role of
+// in.ByUserID, and with ErrRoleManagedByPlan for the role of a supporter plan, which only its
+// subscriptions grant (ADR-0072 §5).
 func (s *Service) GrantRole(ctx context.Context, in RoleChangeInput) (bool, error) {
 	c, err := s.prepareRoleChange(ctx, in)
 	if err != nil {
@@ -113,6 +114,9 @@ func (s *Service) GrantRole(ctx context.Context, in RoleChangeInput) (bool, erro
 		changed = false
 		role, err := s.d.Repository.LockRole(ctx, tx, in.RoleKey)
 		if err != nil {
+			return err
+		}
+		if err := s.refuseManaged(ctx, tx, role); err != nil {
 			return err
 		}
 		switch _, err := s.d.Repository.FindRoleGrantID(ctx, tx, in.UserID, role.ID); {
@@ -141,7 +145,8 @@ func (s *Service) GrantRole(ctx context.Context, in RoleChangeInput) (bool, erro
 // RevokeRole revokes a role from a user and reports whether it changed anything: revoking a
 // role that the user does not hold does nothing and records nothing. It fails with ErrNotFound
 // for an unknown user or role, with ErrRoleOutranksActor when the role is above every role of
-// in.ByUserID, and with ErrLastAdmin when the user is the only holder of the admin role.
+// in.ByUserID, with ErrLastAdmin when the user is the only holder of the admin role, and with
+// ErrRoleManagedByPlan for the role of a supporter plan.
 func (s *Service) RevokeRole(ctx context.Context, in RoleChangeInput) (bool, error) {
 	c, err := s.prepareRoleChange(ctx, in)
 	if err != nil {
@@ -152,6 +157,9 @@ func (s *Service) RevokeRole(ctx context.Context, in RoleChangeInput) (bool, err
 		changed = false
 		role, err := s.d.Repository.LockRole(ctx, tx, in.RoleKey)
 		if err != nil {
+			return err
+		}
+		if err := s.refuseManaged(ctx, tx, role); err != nil {
 			return err
 		}
 		grantID, err := s.d.Repository.FindRoleGrantID(ctx, tx, in.UserID, role.ID)

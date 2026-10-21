@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A supporter plan that takes subscriptions. The name and the description are written by
+  the administrators in any language; render them with `dir="auto"`.
+type: object
+required: [id, name, description, rank, monthly_price, yearly_price]
+properties:
+  id:
+    $ref: ./Id.yaml
+  name:
+    type: string
+  description:
+    type: string
+  rank:
+    description: A higher rank is a higher plan, which includes everything of the lower ones.
+    type: integer
+  monthly_price:
+    $ref: ./Money.yaml
+  yearly_price:
+    $ref: ./Money.yaml

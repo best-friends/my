@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The supporter program (ADR-0072 §2). It is disabled by default; enabling it needs a
+  payment provider in the deployment's configuration (`configured_provider`) and a server
+  that sends email (`sends_email`). `warnings` lists what an administrator should look at.
+type: object
+required: [enabled, sends_email, commerce_disclosure, live_subscriptions, can_enable, warnings]
+properties:
+  enabled:
+    type: boolean
+  provider:
+    description: The payment provider the program was enabled with; omitted while disabled.
+    type: string
+  configured_provider:
+    description: The payment provider of the deployment's configuration; omitted for none.
+    type: string
+  sends_email:
+    type: boolean
+  commerce_disclosure:
+    description: Whether the instance publishes its commerce disclosures (`/about/commerce`).
+    type: boolean
+  live_subscriptions:
+    description: The subscriptions that go on, which keep the program from being disabled.
+    type: integer
+  can_enable:
+    description: Whether the program can be enabled now.
+    type: boolean
+  changed_at:
+    description: When the program was last enabled or disabled; omitted for never.
+    type: string
+    format: date-time
+  warnings:
+    type: array
+    items:
+      $ref: ./SupporterProgramWarning.yaml

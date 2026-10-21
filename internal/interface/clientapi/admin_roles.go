@@ -88,8 +88,8 @@ func (s *Server) localUser(ctx context.Context, accountID string) (string, bool,
 }
 
 // roleProblem maps the errors of GrantRole and RevokeRole to problems: 404 for an unknown user
-// or role, 403 for a role that outranks the viewer, and 409 for the last admin. It reports false
-// for any other error.
+// or role, 403 for a role that outranks the viewer, and 409 for the last admin and for the role
+// of a supporter plan. It reports false for any other error.
 func (s *Server) roleProblem(ctx context.Context, err error) (problem, bool) {
 	l := s.Localizer(ctx)
 	switch {
@@ -100,7 +100,7 @@ func (s *Server) roleProblem(ctx context.Context, err error) (problem, bool) {
 	case errors.Is(err, appidentity.ErrLastAdmin):
 		return s.problem(ctx, http.StatusConflict, ProblemTypeBlank, l.ServerErrorsConflict(), ""), true
 	}
-	return problem{}, false
+	return s.managedRoleProblem(ctx, err)
 }
 
 // ListRoles serves GET /api/v1/admin/roles.
@@ -190,4 +190,19 @@ func (s *Server) changeRole(ctx context.Context, accountID, key string,
 	}
 	res, err := s.roleList(ctx, userID)
 	return res, nil, err
+}
+
+// managedRoleProblem maps the refusals of the roles of the supporter plans (ADR-0072 §5): a 409
+// for a direct change of a plan's role, and a 409 for a change that would put a staff role at or
+// below one. It reports false for any other error.
+func (s *Server) managedRoleProblem(ctx context.Context, err error) (problem, bool) {
+	l := s.Localizer(ctx)
+	switch {
+	case errors.Is(err, appidentity.ErrRoleManagedByPlan):
+		return s.problem(ctx, http.StatusConflict, ProblemTypeRoleManagedByPlan, l.ServerErrorsRoleManagedByPlan(),
+			l.ServerErrorsRoleManagedByPlanDetail()), true
+	case errors.Is(err, appidentity.ErrBreaksManagedRoles):
+		return s.problem(ctx, http.StatusConflict, ProblemTypeBreaksSupporterRoles, l.ServerErrorsRoleBreaksSupporterRoles(), ""), true
+	}
+	return problem{}, false
 }

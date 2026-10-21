@@ -143,6 +143,14 @@
     "defaultMessage": "Privacy policy",
     "description": "Title and heading of the public page of the instance's privacy policy, and the text of links to it."
   },
+  "auth.document.commerce_missing": {
+    "defaultMessage": "This server has not published commerce disclosures.",
+    "description": "Error page (HTTP 404) at the page of the commerce disclosures of the supporter plans (ADR-0072 §13) when the administrators have not written them."
+  },
+  "auth.document.commerce_title": {
+    "defaultMessage": "Commerce disclosures",
+    "description": "Title and heading of the public page of the disclosures that the law asks of the seller of the supporter plans (in Japan, 特定商取引法に基づく表記), and the text of links to it."
+  },
   "auth.document.terms_missing": {
     "defaultMessage": "This server has not published terms of service.",
     "description": "Error page (HTTP 404) at the terms of service page when the administrators have not written terms of service."
@@ -762,6 +770,50 @@
   "errors.role.invalid_detail": {
     "defaultMessage": "{reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} badge_label {The badge name must be 1 to 32 characters on one line.} badge_color {Choose one of the badge colors.} other {The change breaks a rule.}}",
     "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, missing_permission, badge_label, or badge_color."
+  },
+  "errors.role.managed_by_plan": {
+    "defaultMessage": "The role belongs to a supporter plan.",
+    "description": "API error title for HTTP 409 when a change to a role is refused because a supporter plan manages it (ADR-0072 §5)."
+  },
+  "errors.role.managed_by_plan_detail": {
+    "defaultMessage": "Only the plan's subscriptions grant and revoke it, and its permissions and position change from the plan.",
+    "description": "API error detail for HTTP 409 when a role of a supporter plan is granted, revoked, changed, or deleted by hand."
+  },
+  "errors.role.breaks_supporter_roles": {
+    "defaultMessage": "Staff roles must stay above the roles of the supporter plans.",
+    "description": "API error title for HTTP 409 when a change would put a role with a moderation or server permission at or below the role of a supporter plan (ADR-0072 §5)."
+  },
+  "errors.supporters.unavailable": {
+    "defaultMessage": "The supporter program is not available on this server.",
+    "description": "API error title for HTTP 409 when the supporter program cannot be enabled or used: no payment provider is configured, the server sends no email, or the configured provider is not the program's (ADR-0072 §2)."
+  },
+  "errors.supporters.unavailable_detail": {
+    "defaultMessage": "{reason, select, no_provider {Configure a payment provider in the server's configuration first.} no_email {The server must send email, so that subscribers can verify their address.} provider_mismatch {The configured payment provider is not the one the program was enabled with. Disable the program and enable it again.} other {The supporter program cannot be used now.}}",
+    "description": "API error detail for HTTP 409 when the supporter program is unavailable. {reason} is no_provider, no_email, or provider_mismatch."
+  },
+  "errors.supporters.live_subscriptions": {
+    "defaultMessage": "Subscriptions to the supporter plans go on.",
+    "description": "API error title for HTTP 409 when an administrator disables the supporter program while subscriptions go on (ADR-0072 §2)."
+  },
+  "errors.supporters.live_subscriptions_detail": {
+    "defaultMessage": "Retire the plans and wait for their subscriptions to end before disabling the program.",
+    "description": "API error detail for HTTP 409 when the supporter program is disabled while subscriptions go on."
+  },
+  "errors.supporters.plan_invalid": {
+    "defaultMessage": "The supporter plan cannot be saved.",
+    "description": "API error title for HTTP 422 when a supporter plan breaks a rule; the detail says which (ADR-0072 §3 to §5)."
+  },
+  "errors.supporters.plan_invalid_detail": {
+    "defaultMessage": "{reason, select, name {The name must be 1 to 50 characters on one line.} description {The description must be at most 1,000 characters.} monthly_price {The price must be at least the payment provider's minimum charge, for the yearly price too.} currency {The payment provider does not take this currency.} annual_discount_percent {The yearly discount must be from 0 to 90 percent.} emoji_limit {The emoji limit must be from 0 to 10,000.} rank {The rank must be from 0 to 1,000,000.} visibility {Choose public or hidden.} role_builtin {The built-in roles cannot be a plan's role.} role_taken {Another plan has this role.} role_held {Choose a role that nobody holds.} role_permissions {A plan's role may have only member permissions.} role_position {A plan's role must be below every staff role.} order_rank {Another plan has this rank.} order_position {A higher plan's role must be above the role of the plan below it.} order_permissions {A higher plan's role must have every permission of the plan below it.} order_emoji_limit {A higher plan must let its members create at least as many custom emoji as the plan below it.} other {The plan breaks a rule.}}",
+    "description": "API error detail for HTTP 422 when a supporter plan breaks a rule. {reason} is name, description, monthly_price, currency, annual_discount_percent, emoji_limit, rank, visibility, role_builtin, role_taken, role_held, role_permissions, role_position, order_rank, order_position, order_permissions, or order_emoji_limit."
+  },
+  "errors.supporters.plan_retired": {
+    "defaultMessage": "The supporter plan is retired.",
+    "description": "API error title for HTTP 409 when an administrator changes or retires a supporter plan that is retired."
+  },
+  "errors.supporters.subscription_ended": {
+    "defaultMessage": "The subscription has ended.",
+    "description": "API error title for HTTP 409 when an administrator cancels a subscription to a supporter plan that has ended."
   },
   "errors.self_relationship": {
     "defaultMessage": "You cannot do this to your own account.",

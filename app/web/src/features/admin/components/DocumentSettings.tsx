@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The terms and policies screen (#489), for manage_settings: the terms of service and the privacy policy, each a
+// The terms and policies screen (#489), for manage_settings: the terms of service, the privacy policy and the commerce
+// disclosures of the supporter plans (ADR-0072 §13, whose legal correctness the server does not vouch for), each a
 // form of its own (an `h2` section) with a Markdown text area, when it was saved, and a link to its public page. Each
 // is one text, written in any language, that every language shows. Removing a saved text asks first (the APG alert
 // dialog pattern, web-client.md G22).
@@ -35,6 +36,14 @@ function DocumentSettingsForms() {
           editor={settings.privacyPolicy}
           viewLabel={t("client:admin.documents.view_privacy_policy")}
           confirmTitle={t("client:admin.documents.confirm_remove.privacy_policy")}
+        />
+      </DetailSection>
+      <DetailSection title={t("client:admin.documents.commerce_disclosure")}>
+        <p className="text-fg-muted">{t("client:admin.documents.commerce_disclosure.description")}</p>
+        <DocumentForm
+          editor={settings.commerceDisclosure}
+          viewLabel={t("client:admin.documents.view_commerce_disclosure")}
+          confirmTitle={t("client:admin.documents.confirm_remove.commerce_disclosure")}
         />
       </DetailSection>
       <UnsavedChangesDialog hasChanges={settings.hasChanges} />

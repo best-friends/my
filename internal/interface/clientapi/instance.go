@@ -75,6 +75,14 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	out.SearchIndexing, out.AiUsage = SearchIndexing(settings.SearchIndexing()), AIUsage(settings.AIUsage())
 	// How much of the costs GET /instance/cost_totals publishes (FR-903, ADR-0067 §8).
 	out.FinanceVisibility = FinanceVisibility(settings.FinanceVisibility())
+	// Whether the supporter program shows its plans (ADR-0072 §2).
+	if s.o.Supporters != nil {
+		enabled, err := s.o.Supporters.Enabled(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("clientapi: the supporter program: %w", err)
+		}
+		out.SupportersEnabled = enabled
+	}
 	if key := s.pushServerKey(); key != "" {
 		out.PushServerKey = &key
 	}

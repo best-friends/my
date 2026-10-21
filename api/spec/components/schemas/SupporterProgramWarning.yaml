@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  What an administrator should look at in the supporter program. `no_provider`: no payment
+  provider is configured. `no_email`: the server sends no email, so nobody can verify an
+  address to subscribe. `provider_mismatch`: the configured provider is not the one the
+  program was enabled with; new subscriptions and changes are refused until it is disabled
+  and enabled again (the subscribers subscribe again). `no_commerce_disclosure`: the
+  instance publishes no commerce disclosures (the `commerce_disclosure` instance text).
+type: string
+enum: [no_provider, no_email, provider_mismatch, no_commerce_disclosure]

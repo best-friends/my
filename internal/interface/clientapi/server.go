@@ -161,6 +161,9 @@ type Options struct {
 	// of service and the privacy policy, for Instance.terms_url and Instance.privacy_policy_url;
 	// empty leaves the link out.
 	TermsPath, PrivacyPolicyPath string
+	// CommerceDisclosurePath is the path, on Origin, of the public page of the commerce
+	// disclosures, for Instance.commerce_disclosure_url; empty leaves the link out.
+	CommerceDisclosurePath string
 	// CustomEmojis runs the custom emoji of the picker and the admin operations
 	// (admin_custom_emojis.go); nil answers an empty picker and 404 to the admin operations.
 	CustomEmojis CustomEmojis
@@ -182,6 +185,9 @@ type Options struct {
 	// Costs records the instance's costs and totals them (admin_finance.go); nil answers 404 to
 	// their operations.
 	Costs Costs
+	// Supporters runs the supporter program, its plans, and their subscriptions
+	// (admin_supporters.go); nil answers 404 to their operations and a disabled program.
+	Supporters Supporters
 	// Themes reads and replaces the instance theme for the admin operations and Instance.theme
 	// (admin_theme.go); nil answers no theme and 404 to the admin operations.
 	Themes Themes

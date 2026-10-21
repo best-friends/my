@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A supporter plan as the administrators see it (ADR-0072 §3). The yearly price is the
+  monthly one × 12, discounted by `annual_discount_percent`, rounded down. A plan takes
+  subscriptions while it is public, not retired, and `prices_ready` (the provider has the
+  prices of its current terms).
+type: object
+required: [id, name, description, rank, visibility, monthly_price, yearly_price, annual_discount_percent, emoji_limit, role, prices_ready, retired, members, created_at, revised_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  name:
+    type: string
+  description:
+    type: string
+  rank:
+    description: A higher rank is a higher plan, which includes everything of the lower ones.
+    type: integer
+  visibility:
+    $ref: ./SupporterPlanVisibility.yaml
+  monthly_price:
+    $ref: ./Money.yaml
+  yearly_price:
+    $ref: ./Money.yaml
+  annual_discount_percent:
+    type: integer
+  emoji_limit:
+    description: How many custom emoji the members may create when the role lets them.
+    type: integer
+  role:
+    $ref: ./AdminSupporterPlanRole.yaml
+  prices_ready:
+    type: boolean
+  retired:
+    type: boolean
+  retired_at:
+    type: string
+    format: date-time
+  members:
+    description: The subscriptions that hold the role (active, canceling, or past due).
+    type: integer
+  created_at:
+    type: string
+    format: date-time
+  revised_at:
+    type: string
+    format: date-time

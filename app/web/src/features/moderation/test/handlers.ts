@@ -302,7 +302,7 @@ export const adminRoleFixture: Schemas["AdminRole"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000a01",
   key: "admin",
   position: 1000,
-  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance"],
+  permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_rules", "manage_settings", "manage_roles", "manage_invites", "view_audit", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance", "manage_supporters"],
 };
 export const moderatorRoleFixture: Schemas["AdminRole"] = {
   id: "0192f0c4-7a8e-7000-8000-000000000a02",

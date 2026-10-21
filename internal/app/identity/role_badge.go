@@ -136,7 +136,8 @@ type ReplaceRoleInput struct {
 // plan (ADR-0071 §2): when the user shows the badge of the old role, they show the badge of the
 // new one, and the choice goes away when the new role has no badge. It reports whether it
 // changed anything and records the audit log entries of the revocation and the grant. It fails
-// as RevokeRole and GrantRole do.
+// as RevokeRole and GrantRole do; the roles of the supporter plans change through
+// ReplaceManagedRole instead.
 func (s *Service) ReplaceRole(ctx context.Context, in ReplaceRoleInput) (bool, error) {
 	if in.FromRoleKey == in.ToRoleKey {
 		return s.GrantRole(ctx, RoleChangeInput{UserID: in.UserID, RoleKey: in.ToRoleKey, ByUserID: in.ByUserID})
@@ -159,6 +160,9 @@ func (s *Service) ReplaceRole(ctx context.Context, in ReplaceRoleInput) (bool, e
 		for _, key := range sortedKeys(in.FromRoleKey, in.ToRoleKey) {
 			r, err := s.d.Repository.LockRole(ctx, tx, key)
 			if err != nil {
+				return err
+			}
+			if err := s.refuseManaged(ctx, tx, r); err != nil {
 				return err
 			}
 			roles[key] = r

@@ -300,6 +300,12 @@ export const auditActions = [
   "cost_item_price_revised",
   "cost_item_end_changed",
   "cost_item_canceled",
+  "supporter_program_enabled",
+  "supporter_program_disabled",
+  "supporter_plan_created",
+  "supporter_plan_revised",
+  "supporter_plan_retired",
+  "supporter_subscription_canceled",
 ] as const satisfies readonly AuditAction[];
 
 /** The kinds of target of an audited operation, in the order of the filter. */
@@ -321,6 +327,9 @@ export const auditTargetKinds = [
   "relay",
   "billing_source",
   "cost_item",
+  "supporter_program",
+  "supporter_plan",
+  "supporter_subscription",
 ] as const satisfies readonly AuditTargetKind[];
 
 /**

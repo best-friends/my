@@ -44,7 +44,7 @@ export const permissionCategories: readonly { category: "moderation" | "server";
   { category: "moderation", permissions: ["manage_reports", "manage_accounts", "manage_domains", "manage_invites", "view_audit"] },
   {
     category: "server",
-    permissions: ["manage_rules", "manage_settings", "manage_roles", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance"],
+    permissions: ["manage_rules", "manage_settings", "manage_roles", "manage_jobs", "manage_login_recovery", "manage_custom_emojis", "manage_webhooks", "manage_announcements", "manage_finance", "manage_supporters"],
   },
 ];
 
@@ -64,6 +64,7 @@ export const allPermissions: readonly Permission[] = [
   "manage_webhooks",
   "manage_announcements",
   "manage_finance",
+  "manage_supporters",
 ];
 
 /** The reason of an `invalid-role` problem and the permissions it names, or undefined for another error. */

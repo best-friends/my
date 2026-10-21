@@ -185,6 +185,8 @@ type App struct {
 	// Payments carries the payment provider's facts to the supporters (ADR-0074); nil with
 	// payments_provider = none.
 	Payments *supporters.Payments
+	// Supporters runs the supporter program, its plans, and their subscriptions (ADR-0072).
+	Supporters *supporters.Service
 	// Scheduler enqueues the periodic jobs for the worker role.
 	Scheduler *queue.Scheduler
 	// Projections rebuilds and verifies the projections (`my projection`, data-model §9).
@@ -290,9 +292,9 @@ type AppOptions struct {
 	// BillingSources, by name, stand in for the adapters of the names of cfg.BillingSources.
 	// Tests only, to import from testkit.FakeBillingSource.
 	BillingSources map[string]finance.BillingSource
-	// PaymentProvider stands in for the adapter of payments_provider, and SupporterSync for the
-	// subscriptions of the supporters module that apply its facts. Tests only, with the fake
-	// adapter of internal/adapter/payment/fake.
+	// PaymentProvider stands in for the adapter of payments_provider, and SupporterSync, when
+	// set, for the subscriptions of the supporters module that apply its facts. Tests only, with
+	// the fake adapter of internal/adapter/payment/fake.
 	PaymentProvider supporters.PaymentProvider
 	SupporterSync   supporters.Syncer
 }
@@ -370,6 +372,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		hooks        = repos.hooks
 		costs        = repos.finance
 		payments     = repos.payments
+		subscribers  = repos.supporters
 		retention    = repos.retention
 		projections  = repos.projections
 	)
@@ -582,7 +585,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
 		feeds: feeds, notifications: notifs, moderation: mods, identities: identities, webhooks: hooks, relays: feds,
-		finance: costs, quotes: quotes,
+		finance: costs, quotes: quotes, supporters: subscribers,
 	})
 	if err := a.setUpStreams(ctx, cfg, opts.StreamBus); err != nil {
 		_ = a.Close()
@@ -619,6 +622,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpLinkCards(cfg, linkCards, statuses, fedOutbox)
 	a.setUpExports(identities)
 	a.setUpImports(identities)
+	paymentProvider, err := a.setUpSupporters(ctx, cfg, subscribers, opts)
+	if err != nil {
+		_ = a.Close()
+		return nil, err
+	}
 	if err := a.setUpErasure(identities, accounts, statuses, follows, feeds, notifs, medias); err != nil {
 		_ = a.Close()
 		return nil, err
@@ -638,7 +646,11 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		_ = a.Close()
 		return nil, err
 	}
-	if err := a.setUpPayments(ctx, cfg, payments, opts); err != nil {
+	sync := opts.SupporterSync
+	if sync == nil {
+		sync = a.Supporters
+	}
+	if err := a.setUpPayments(cfg, payments, paymentProvider, sync); err != nil {
 		_ = a.Close()
 		return nil, err
 	}
@@ -739,7 +751,9 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		// The billing imports (ADR-0068).
 		BillingImports: a.Finance,
 		// The instance's costs (ADR-0067).
-		Costs:       a.Finance,
+		Costs: a.Finance,
+		// The supporter program (ADR-0072) and the page of its commerce disclosures (§13).
+		Supporters: a.Supporters, CommerceDisclosurePath: authpages.PathCommerceDisclosure,
 		RateLimiter: a.RateLimiter, Locales: a.Locales, RequestID: RequestID, Logger: a.Logger, Meter: a.Meter,
 	})
 	api.Register(clientAPIRouter{a})

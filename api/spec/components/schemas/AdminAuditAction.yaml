@@ -38,7 +38,12 @@ description: |
   the ID is the source (`aws`, `gcp`) and the label the provider's name. On a `cost_item`:
   `cost_item_created`, `cost_item_relabeled` (its name, provider, category, or memo),
   `cost_item_price_revised`, `cost_item_end_changed`, and `cost_item_canceled`; the label is
-  the item's name.
+  the item's name. On the `supporter_program`: `supporter_program_enabled`,
+  `supporter_program_disabled`; the label is the payment provider's name. On a
+  `supporter_plan`: `supporter_plan_created`, `supporter_plan_revised`, and
+  `supporter_plan_retired`; the label is the plan's name. On a `supporter_subscription`:
+  `supporter_subscription_canceled`, an administrator's cancellation without a refund; the
+  label is the plan's name and the subscriber's handle.
 type: string
 enum:
   - account_action_issued
@@ -105,3 +110,9 @@ enum:
   - cost_item_price_revised
   - cost_item_end_changed
   - cost_item_canceled
+  - supporter_program_enabled
+  - supporter_program_disabled
+  - supporter_plan_created
+  - supporter_plan_revised
+  - supporter_plan_retired
+  - supporter_subscription_canceled

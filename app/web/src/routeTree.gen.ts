@@ -33,6 +33,7 @@ import { Route as AdminRelaysRouteImport } from './routes/admin.relays'
 import { Route as AdminRolesRouteImport } from './routes/admin.roles'
 import { Route as AdminRulesRouteImport } from './routes/admin.rules'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminSupportersRouteImport } from './routes/admin.supporters'
 import { Route as AdminThemeRouteImport } from './routes/admin.theme'
 import { Route as AdminWebhooksRouteImport } from './routes/admin.webhooks'
 import { Route as LoginCallbackRouteImport } from './routes/login_.callback'
@@ -190,6 +191,11 @@ const AdminRulesRoute = AdminRulesRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSupportersRoute = AdminSupportersRouteImport.update({
+  id: '/admin/supporters',
+  path: '/admin/supporters',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminThemeRoute = AdminThemeRouteImport.update({
@@ -401,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/supporters': typeof AdminSupportersRoute
   '/admin/theme': typeof AdminThemeRoute
   '/admin/webhooks': typeof AdminWebhooksRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -463,6 +470,7 @@ export interface FileRoutesByTo {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/supporters': typeof AdminSupportersRoute
   '/admin/theme': typeof AdminThemeRoute
   '/admin/webhooks': typeof AdminWebhooksRoute
   '/login/callback': typeof LoginCallbackRoute
@@ -526,6 +534,7 @@ export interface FileRoutesById {
   '/admin/roles': typeof AdminRolesRoute
   '/admin/rules': typeof AdminRulesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/supporters': typeof AdminSupportersRoute
   '/admin/theme': typeof AdminThemeRoute
   '/admin/webhooks': typeof AdminWebhooksRoute
   '/login_/callback': typeof LoginCallbackRoute
@@ -590,6 +599,7 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
+    | '/admin/supporters'
     | '/admin/theme'
     | '/admin/webhooks'
     | '/login/callback'
@@ -652,6 +662,7 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
+    | '/admin/supporters'
     | '/admin/theme'
     | '/admin/webhooks'
     | '/login/callback'
@@ -714,6 +725,7 @@ export interface FileRouteTypes {
     | '/admin/roles'
     | '/admin/rules'
     | '/admin/settings'
+    | '/admin/supporters'
     | '/admin/theme'
     | '/admin/webhooks'
     | '/login_/callback'
@@ -777,6 +789,7 @@ export interface RootRouteChildren {
   AdminRolesRoute: typeof AdminRolesRoute
   AdminRulesRoute: typeof AdminRulesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminSupportersRoute: typeof AdminSupportersRoute
   AdminThemeRoute: typeof AdminThemeRoute
   AdminWebhooksRoute: typeof AdminWebhooksRoute
   LoginCallbackRoute: typeof LoginCallbackRoute
@@ -984,6 +997,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/supporters': {
+      id: '/admin/supporters'
+      path: '/admin/supporters'
+      fullPath: '/admin/supporters'
+      preLoaderRoute: typeof AdminSupportersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/theme': {
@@ -1265,6 +1285,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRolesRoute: AdminRolesRoute,
   AdminRulesRoute: AdminRulesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminSupportersRoute: AdminSupportersRoute,
   AdminThemeRoute: AdminThemeRoute,
   AdminWebhooksRoute: AdminWebhooksRoute,
   LoginCallbackRoute: LoginCallbackRoute,

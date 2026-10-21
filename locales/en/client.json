@@ -103,6 +103,14 @@
     "defaultMessage": "See the running costs",
     "description": "Link from the server's information page to the page of the server's running costs."
   },
+  "about.commerce.title": {
+    "defaultMessage": "Commerce disclosures",
+    "description": "Heading of the section of the information page that links to the server's page of the commerce disclosures of its supporter plans (ADR-0072 §13)."
+  },
+  "about.commerce.link": {
+    "defaultMessage": "Read the commerce disclosures",
+    "description": "Link from the information page to the server's page of the commerce disclosures of its supporter plans, which opens in a new tab."
+  },
   "about.rules.title": {
     "defaultMessage": "Rules",
     "description": "Heading of the section of the server's information page with the server's rules."
@@ -2279,6 +2287,22 @@
     "defaultMessage": "Open the privacy policy page",
     "description": "Link from the terms and policies screen to the public page of the privacy policy."
   },
+  "admin.documents.commerce_disclosure": {
+    "defaultMessage": "Commerce disclosures",
+    "description": "Heading of the section of the terms and policies screen where administrators write the commerce disclosures of the supporter plans (ADR-0072 §13)."
+  },
+  "admin.documents.commerce_disclosure.description": {
+    "defaultMessage": "What the law of your country asks a seller to disclose, such as the 特定商取引法に基づく表記 in Japan. It is published at /about/commerce, and the supporter screens link to it. The server does not check or guarantee that it meets the law: check what the law asks yourself.",
+    "description": "Description of the commerce disclosures on the terms and policies screen: what they are, where they are published, and that the software does not guarantee their legal correctness."
+  },
+  "admin.documents.view_commerce_disclosure": {
+    "defaultMessage": "Open the commerce disclosures page",
+    "description": "Link from the terms and policies screen to the public page of the commerce disclosures."
+  },
+  "admin.documents.confirm_remove.commerce_disclosure": {
+    "defaultMessage": "Remove the commerce disclosures?",
+    "description": "Title of the confirmation before saving the commerce disclosures empty, which removes them."
+  },
   "admin.documents.view_terms": {
     "defaultMessage": "Open the terms of service page",
     "description": "Link from the terms and policies screen to the public page of the terms of service."
@@ -3870,6 +3894,10 @@
   "admin.roles.permission.manage_finance": {
     "defaultMessage": "Costs",
     "description": "Name of the permission manage_finance: the instance's costs, their totals, and the imports of the cloud providers' usage charges."
+  },
+  "admin.roles.permission.manage_supporters": {
+    "defaultMessage": "Supporters",
+    "description": "Name of the permission manage_supporters: the supporter program, its plans, and their subscriptions."
   },
   "admin.roles.permission.manage_custom_emojis": {
     "defaultMessage": "Custom emoji",
@@ -9926,6 +9954,490 @@
   "admin.audit_log.target_kind.cost_item": {
     "defaultMessage": "Cost",
     "description": "Kind of target of an audited operation: a cost of the instance, shown by its name."
+  },
+  "admin.audit_log.action.supporter_program_enabled": {
+    "defaultMessage": "Supporter program enabled",
+    "description": "Kind of an audited operation: an administrator enabled the supporter program."
+  },
+  "admin.audit_log.action.supporter_program_disabled": {
+    "defaultMessage": "Supporter program disabled",
+    "description": "Kind of an audited operation: an administrator disabled the supporter program."
+  },
+  "admin.audit_log.action.supporter_plan_created": {
+    "defaultMessage": "Supporter plan created",
+    "description": "Kind of an audited operation: an administrator created a supporter plan."
+  },
+  "admin.audit_log.action.supporter_plan_revised": {
+    "defaultMessage": "Supporter plan changed",
+    "description": "Kind of an audited operation: an administrator changed the terms of a supporter plan or its role."
+  },
+  "admin.audit_log.action.supporter_plan_retired": {
+    "defaultMessage": "Supporter plan retired",
+    "description": "Kind of an audited operation: an administrator retired a supporter plan."
+  },
+  "admin.audit_log.action.supporter_subscription_canceled": {
+    "defaultMessage": "Subscription ended",
+    "description": "Kind of an audited operation: an administrator ended a subscription to a supporter plan at once, without a refund."
+  },
+  "admin.audit_log.target_kind.supporter_program": {
+    "defaultMessage": "Supporter program",
+    "description": "Kind of target of an audited operation: the supporter program, shown by its payment provider."
+  },
+  "admin.audit_log.target_kind.supporter_plan": {
+    "defaultMessage": "Supporter plan",
+    "description": "Kind of target of an audited operation: a supporter plan, shown by its name."
+  },
+  "admin.audit_log.target_kind.supporter_subscription": {
+    "defaultMessage": "Subscription",
+    "description": "Kind of target of an audited operation: a subscription to a supporter plan, shown by the plan's name and the subscriber's handle."
+  },
+  "admin.supporters.title": {
+    "defaultMessage": "Supporters",
+    "description": "Title of the supporters screen (manage_supporters) and of its entry in the administration menu."
+  },
+  "admin.supporters.summary": {
+    "defaultMessage": "Enable the supporter program, set up its plans, and see the subscriptions.",
+    "description": "Description of the supporters screen in the administration menu."
+  },
+  "admin.supporters.program.title": {
+    "defaultMessage": "Supporter program",
+    "description": "Heading of the section of the supporters screen about the program."
+  },
+  "admin.supporters.program.description": {
+    "defaultMessage": "Users subscribe to a plan and hold its role while they pay. The program is off until you enable it, and needs a payment provider in the server's configuration and a server that sends email.",
+    "description": "Explanation of the supporter program on the supporters screen."
+  },
+  "admin.supporters.program.provider": {
+    "defaultMessage": "Payment provider of the program",
+    "description": "Term of the payment provider that the program was enabled with."
+  },
+  "admin.supporters.program.configured_provider": {
+    "defaultMessage": "Configured payment provider",
+    "description": "Term of the payment provider of the server's configuration."
+  },
+  "admin.supporters.program.none": {
+    "defaultMessage": "None",
+    "description": "Value of a payment provider term when there is none."
+  },
+  "admin.supporters.program.live_subscriptions": {
+    "defaultMessage": "Subscriptions that go on",
+    "description": "Term of the count of the subscriptions that have not ended."
+  },
+  "admin.supporters.program.subscription_count": {
+    "defaultMessage": "{count, plural, one {# subscription} other {# subscriptions}}",
+    "description": "A number of subscriptions."
+  },
+  "admin.supporters.program.changed_at": {
+    "defaultMessage": "Last enabled or disabled",
+    "description": "Term of when the program was last enabled or disabled."
+  },
+  "admin.supporters.program.never": {
+    "defaultMessage": "Never",
+    "description": "Value of the last change of the program when it never changed."
+  },
+  "admin.supporters.program.switch": {
+    "defaultMessage": "Enable the supporter program",
+    "description": "Label of the switch that enables or disables the supporter program."
+  },
+  "admin.supporters.program.switch.description": {
+    "defaultMessage": "Disabling is refused while subscriptions go on: retire the plans first and wait for their subscriptions to end.",
+    "description": "Description of the switch of the supporter program."
+  },
+  "admin.supporters.program.enabled_done": {
+    "defaultMessage": "The supporter program is enabled. The audit log records it.",
+    "description": "Status message after enabling the supporter program."
+  },
+  "admin.supporters.program.disabled_done": {
+    "defaultMessage": "The supporter program is disabled. The audit log records it.",
+    "description": "Status message after disabling the supporter program."
+  },
+  "admin.supporters.program.failed": {
+    "defaultMessage": "Could not change the supporter program: {reason}",
+    "description": "Error of enabling or disabling the program, with the server's reason."
+  },
+  "admin.supporters.warning.no_provider": {
+    "defaultMessage": "No payment provider is configured, so the program cannot be enabled.",
+    "description": "Warning of the program screen: no payment provider in the configuration."
+  },
+  "admin.supporters.warning.no_email": {
+    "defaultMessage": "The server sends no email, so nobody can verify an address to subscribe.",
+    "description": "Warning of the program screen: the server sends no email."
+  },
+  "admin.supporters.warning.provider_mismatch": {
+    "defaultMessage": "The configured payment provider is not the one the program was enabled with. New subscriptions and changes are refused until you disable it and enable it again; the subscribers then subscribe again.",
+    "description": "Warning of the program screen: the configured provider differs from the program's."
+  },
+  "admin.supporters.warning.no_commerce_disclosure": {
+    "defaultMessage": "The server publishes no commerce disclosures.",
+    "description": "Warning of the program screen: the commerce disclosures text is empty."
+  },
+  "admin.supporters.warning.no_commerce_disclosure.link": {
+    "defaultMessage": "Write them in the terms and policies",
+    "description": "Link from the warning to the terms and policies screen."
+  },
+  "admin.supporters.new.title": {
+    "defaultMessage": "Create a plan",
+    "description": "Heading of the section of the supporters screen with the form of a new plan."
+  },
+  "admin.supporters.new.description": {
+    "defaultMessage": "A plan gives its subscribers a role that nobody holds yet, with member permissions only, below every staff role. A higher rank is a higher plan, which must include everything of the lower ones. The prices are made at the payment provider after saving; the plan takes subscriptions once they are ready.",
+    "description": "Explanation of the form of a new plan."
+  },
+  "admin.supporters.new.submit": {
+    "defaultMessage": "Create the plan",
+    "description": "Submit button of the form of a new plan."
+  },
+  "admin.supporters.plan.role": {
+    "defaultMessage": "Role",
+    "description": "Label of the role of a plan, and its term in the list."
+  },
+  "admin.supporters.plan.role.description": {
+    "defaultMessage": "The key of a role that nobody holds. It cannot change later.",
+    "description": "Description of the role field of a new plan."
+  },
+  "admin.supporters.plan.role.required": {
+    "defaultMessage": "Enter the key of a role.",
+    "description": "Error of the role field of a new plan when it is empty."
+  },
+  "admin.supporters.plan.role_value": {
+    "defaultMessage": "{role} at position {position}",
+    "description": "The role of a plan in the list: its key and position."
+  },
+  "admin.supporters.plan.role.no_permissions": {
+    "defaultMessage": "No permissions",
+    "description": "Value of the permissions of a plan's role when it has none."
+  },
+  "admin.supporters.plan.permissions": {
+    "defaultMessage": "Role permissions",
+    "description": "Term of the permissions of a plan's role."
+  },
+  "admin.supporters.plan.name": {
+    "defaultMessage": "Name",
+    "description": "Label of the name of a plan."
+  },
+  "admin.supporters.plan.name.invalid": {
+    "defaultMessage": "Enter a name of 1 to {max} characters on one line.",
+    "description": "Error of the name of a plan."
+  },
+  "admin.supporters.plan.description": {
+    "defaultMessage": "Description",
+    "description": "Label of the description of a plan."
+  },
+  "admin.supporters.plan.description.description": {
+    "defaultMessage": "Plain text, shown with the plan. It may be empty.",
+    "description": "Description of the description field of a plan."
+  },
+  "admin.supporters.plan.characters_left": {
+    "defaultMessage": "{count, plural, one {# character left} other {# characters left}}",
+    "description": "Characters left in the description of a plan."
+  },
+  "admin.supporters.plan.characters_over": {
+    "defaultMessage": "{count, plural, one {# character too many} other {# characters too many}}",
+    "description": "Characters over the limit in the description of a plan."
+  },
+  "admin.supporters.plan.amount": {
+    "defaultMessage": "Monthly price",
+    "description": "Label of the monthly price of a plan."
+  },
+  "admin.supporters.plan.amount.description": {
+    "defaultMessage": "In the main unit of the currency, such as 500 or 4.99.",
+    "description": "Description of the monthly price field."
+  },
+  "admin.supporters.plan.amount.invalid": {
+    "defaultMessage": "Enter an amount such as 500 or 4.99.",
+    "description": "Error of the monthly price field."
+  },
+  "admin.supporters.plan.currency": {
+    "defaultMessage": "Currency",
+    "description": "Label of the currency of a new plan."
+  },
+  "admin.supporters.plan.currency.description": {
+    "defaultMessage": "The ISO 4217 code, such as JPY or USD. It cannot change later.",
+    "description": "Description of the currency field."
+  },
+  "admin.supporters.plan.currency.invalid": {
+    "defaultMessage": "Enter a code of three letters, such as JPY.",
+    "description": "Error of the currency field."
+  },
+  "admin.supporters.plan.discount": {
+    "defaultMessage": "Yearly discount (%)",
+    "description": "Label of the discount of the yearly price."
+  },
+  "admin.supporters.plan.discount.description": {
+    "defaultMessage": "The yearly price is the monthly one × 12, less this percentage, rounded down.",
+    "description": "Description of the yearly discount field."
+  },
+  "admin.supporters.plan.emoji_limit": {
+    "defaultMessage": "Custom emoji limit",
+    "description": "Label of the custom emoji limit of a plan, and its term in the list."
+  },
+  "admin.supporters.plan.emoji_limit.description": {
+    "defaultMessage": "How many custom emoji the subscribers may create when the role lets them.",
+    "description": "Description of the custom emoji limit field."
+  },
+  "admin.supporters.plan.rank": {
+    "defaultMessage": "Rank",
+    "description": "Label of the rank of a plan, and its term in the list."
+  },
+  "admin.supporters.plan.rank.description": {
+    "defaultMessage": "A higher rank is a higher plan; each plan has its own.",
+    "description": "Description of the rank field."
+  },
+  "admin.supporters.plan.role_position": {
+    "defaultMessage": "Role position",
+    "description": "Label of the position of a plan's role in the dialog that changes the plan."
+  },
+  "admin.supporters.plan.role_position.description": {
+    "defaultMessage": "Below every staff role, and above the role of the plan below.",
+    "description": "Description of the role position field."
+  },
+  "admin.supporters.plan.number.invalid": {
+    "defaultMessage": "Enter a whole number from 0 to {max}.",
+    "description": "Error of a number field of a plan."
+  },
+  "admin.supporters.plan.visibility": {
+    "defaultMessage": "Visibility",
+    "description": "Label of the visibility of a plan."
+  },
+  "admin.supporters.plan.visibility.public": {
+    "defaultMessage": "Public",
+    "description": "Visibility of a plan that takes new subscriptions."
+  },
+  "admin.supporters.plan.visibility.hidden": {
+    "defaultMessage": "Hidden",
+    "description": "Visibility of a plan that takes no new subscriptions; its subscriptions go on."
+  },
+  "admin.supporters.plan.save_failed": {
+    "defaultMessage": "Could not save the plan: {reason}",
+    "description": "Error of saving a plan, with the server's reason."
+  },
+  "admin.supporters.plan.created": {
+    "defaultMessage": "Created the plan {name}. The audit log records it.",
+    "description": "Status message after creating a plan."
+  },
+  "admin.supporters.plan.updated": {
+    "defaultMessage": "Saved the plan {name}. The audit log records it.",
+    "description": "Status message after changing a plan."
+  },
+  "admin.supporters.plan.retired_done": {
+    "defaultMessage": "Retired the plan {name}. Its subscriptions end at the end of their periods.",
+    "description": "Status message after retiring a plan."
+  },
+  "admin.supporters.plan.change_failed": {
+    "defaultMessage": "Could not change the plan: {reason}",
+    "description": "Error of retiring a plan, with the server's reason."
+  },
+  "admin.supporters.plans.title": {
+    "defaultMessage": "Plans",
+    "description": "Heading of the list of the plans that are not retired."
+  },
+  "admin.supporters.plans.empty": {
+    "defaultMessage": "No plans yet",
+    "description": "Empty state of the list of plans."
+  },
+  "admin.supporters.plans.empty.description": {
+    "defaultMessage": "Create a plan above.",
+    "description": "Description of the empty list of plans."
+  },
+  "admin.supporters.retired.title": {
+    "defaultMessage": "Retired plans",
+    "description": "Heading of the list of the retired plans."
+  },
+  "admin.supporters.plan.preparing": {
+    "defaultMessage": "Preparing prices",
+    "description": "Badge of a plan whose prices the payment provider has not made yet; it takes no subscriptions until then."
+  },
+  "admin.supporters.plan.monthly": {
+    "defaultMessage": "Monthly",
+    "description": "Term of the monthly price of a plan."
+  },
+  "admin.supporters.plan.yearly": {
+    "defaultMessage": "Yearly",
+    "description": "Term of the yearly price of a plan."
+  },
+  "admin.supporters.plan.yearly_value": {
+    "defaultMessage": "{amount} ({discount}% off)",
+    "description": "The yearly price of a plan and its discount in percent."
+  },
+  "admin.supporters.plan.members": {
+    "defaultMessage": "Members",
+    "description": "Term of the count of the subscriptions of a plan that hold its role."
+  },
+  "admin.supporters.plan.retired_at": {
+    "defaultMessage": "Retired",
+    "description": "Term of when a plan was retired."
+  },
+  "admin.supporters.plan.edit": {
+    "defaultMessage": "Edit",
+    "description": "Button that opens the dialog that changes a plan."
+  },
+  "admin.supporters.plan.edit_plan": {
+    "defaultMessage": "Edit {name}",
+    "description": "Accessible name of the button that changes a plan."
+  },
+  "admin.supporters.plan.edit.title": {
+    "defaultMessage": "Edit {name}",
+    "description": "Title of the dialog that changes a plan."
+  },
+  "admin.supporters.plan.edit.description": {
+    "defaultMessage": "A new price applies to new subscriptions and changes of plan; the current subscribers keep theirs.",
+    "description": "Explanation in the dialog that changes a plan."
+  },
+  "admin.supporters.plan.retire": {
+    "defaultMessage": "Retire",
+    "description": "Button that retires a plan, and the confirm button of its dialog."
+  },
+  "admin.supporters.plan.retire_plan": {
+    "defaultMessage": "Retire {name}",
+    "description": "Accessible name of the button that retires a plan."
+  },
+  "admin.supporters.plan.retire.title": {
+    "defaultMessage": "Retire {name}?",
+    "description": "Title of the confirmation before retiring a plan."
+  },
+  "admin.supporters.plan.retire.description": {
+    "defaultMessage": "This cannot be undone. The plan takes no new subscriptions, and every subscription of it ends at the end of its period (one not paid yet ends now).",
+    "description": "Explanation in the confirmation before retiring a plan."
+  },
+  "admin.supporters.cancel": {
+    "defaultMessage": "Cancel",
+    "description": "Button that closes a dialog of the supporters screen without doing anything."
+  },
+  "admin.supporters.close": {
+    "defaultMessage": "Close",
+    "description": "Accessible name of the close button of a dialog of the supporters screen."
+  },
+  "admin.supporters.save": {
+    "defaultMessage": "Save",
+    "description": "Submit button of the dialog that changes a plan."
+  },
+  "admin.supporters.subscriptions.title": {
+    "defaultMessage": "Subscriptions",
+    "description": "Heading of the list of subscriptions."
+  },
+  "admin.supporters.subscriptions.empty": {
+    "defaultMessage": "No subscriptions",
+    "description": "Empty state of the list of subscriptions."
+  },
+  "admin.supporters.filter.plan": {
+    "defaultMessage": "Plan",
+    "description": "Label of the filter of the subscriptions by plan."
+  },
+  "admin.supporters.filter.any_plan": {
+    "defaultMessage": "Every plan",
+    "description": "Choice of the plan filter that shows every plan."
+  },
+  "admin.supporters.filter.state": {
+    "defaultMessage": "State",
+    "description": "Label of the filter of the subscriptions by state."
+  },
+  "admin.supporters.filter.any_state": {
+    "defaultMessage": "Every state",
+    "description": "Choice of the state filter that shows every state."
+  },
+  "admin.supporters.state.pending": {
+    "defaultMessage": "Not paid yet",
+    "description": "State of a subscription that has started and is not paid yet."
+  },
+  "admin.supporters.state.active": {
+    "defaultMessage": "Active",
+    "description": "State of a paid subscription."
+  },
+  "admin.supporters.state.canceling": {
+    "defaultMessage": "Ends at the period's end",
+    "description": "State of a subscription canceled at the end of its period."
+  },
+  "admin.supporters.state.past_due": {
+    "defaultMessage": "Payment failed",
+    "description": "State of a subscription whose payment failed less than 7 days ago; it keeps its role."
+  },
+  "admin.supporters.state.lapsed": {
+    "defaultMessage": "Lapsed",
+    "description": "State of a subscription whose payment failed more than 7 days ago, or paused; no role."
+  },
+  "admin.supporters.state.expired": {
+    "defaultMessage": "Ended",
+    "description": "State of a subscription that ended."
+  },
+  "admin.supporters.state.revoked": {
+    "defaultMessage": "Refunded or charged back",
+    "description": "State of a subscription revoked by a full refund or a chargeback."
+  },
+  "admin.supporters.state.abandoned": {
+    "defaultMessage": "Abandoned",
+    "description": "State of a subscription that ended before its first payment."
+  },
+  "admin.supporters.subscription.deleted_account": {
+    "defaultMessage": "Deleted account",
+    "description": "Heading of a subscription whose subscriber's account is erased."
+  },
+  "admin.supporters.subscription.state": {
+    "defaultMessage": "State",
+    "description": "Term of the state of a subscription."
+  },
+  "admin.supporters.subscription.plan": {
+    "defaultMessage": "Plan",
+    "description": "Term of the plan of a subscription."
+  },
+  "admin.supporters.subscription.price": {
+    "defaultMessage": "Price",
+    "description": "Term of the price of a subscription."
+  },
+  "admin.supporters.subscription.per_month": {
+    "defaultMessage": "{amount} a month",
+    "description": "Price of a monthly subscription."
+  },
+  "admin.supporters.subscription.per_year": {
+    "defaultMessage": "{amount} a year",
+    "description": "Price of a yearly subscription."
+  },
+  "admin.supporters.subscription.started_at": {
+    "defaultMessage": "Started",
+    "description": "Term of when a subscription started."
+  },
+  "admin.supporters.subscription.period_ends_at": {
+    "defaultMessage": "Period ends",
+    "description": "Term of the end of the current period of a subscription."
+  },
+  "admin.supporters.subscription.grace_ends_at": {
+    "defaultMessage": "Role kept until",
+    "description": "Term of the end of the grace period of a subscription whose payment failed."
+  },
+  "admin.supporters.subscription.scheduled": {
+    "defaultMessage": "Scheduled change",
+    "description": "Term of the change of a subscription that waits for the end of its period."
+  },
+  "admin.supporters.subscription.scheduled_month": {
+    "defaultMessage": "To a monthly price at the period's end",
+    "description": "A scheduled change to a monthly price."
+  },
+  "admin.supporters.subscription.scheduled_year": {
+    "defaultMessage": "To a yearly price at the period's end",
+    "description": "A scheduled change to a yearly price."
+  },
+  "admin.supporters.subscription.cancel": {
+    "defaultMessage": "End now",
+    "description": "Button that ends a subscription at once, and the confirm button of its dialog."
+  },
+  "admin.supporters.subscription.cancel_of": {
+    "defaultMessage": "End the subscription of {name} now",
+    "description": "Accessible name of the button that ends a subscription at once."
+  },
+  "admin.supporters.subscription.cancel.title": {
+    "defaultMessage": "End the subscription of {name} now?",
+    "description": "Title of the confirmation before ending a subscription at once."
+  },
+  "admin.supporters.subscription.cancel.description": {
+    "defaultMessage": "The role goes now and the payment provider stops billing. Nothing is refunded: refund at the payment provider if needed. This cannot be undone.",
+    "description": "Explanation in the confirmation before ending a subscription at once."
+  },
+  "admin.supporters.subscription.canceled": {
+    "defaultMessage": "Ended a subscription to {plan}. The audit log records it.",
+    "description": "Status message after ending a subscription at once."
+  },
+  "admin.supporters.subscription.cancel_failed": {
+    "defaultMessage": "Could not end the subscription: {reason}",
+    "description": "Error of ending a subscription, with the server's reason."
   },
   "status.quote.label": {
     "defaultMessage": "Quoted post",

@@ -75,6 +75,7 @@ const instance: Instance = {
   search_indexing: "deny",
   ai_usage: "deny",
   finance_visibility: "private",
+  supporters_enabled: false,
   rules: [],
 };
 

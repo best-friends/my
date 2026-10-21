@@ -24,6 +24,10 @@ const (
 	TextPrivacyPolicy    TextKey = "privacy_policy"
 	TextPreviewImageAlt  TextKey = "preview_image_alt"
 	TextThumbnailAlt     TextKey = "thumbnail_alt"
+	// TextCommerceDisclosure is the page of the disclosures that the law of the operator's
+	// country asks of a seller (特定商取引法に基づく表記, ADR-0072 §13), at /about/commerce. The
+	// server never vouches for what it says.
+	TextCommerceDisclosure TextKey = "commerce_disclosure"
 )
 
 // TextDefinition describes a text key.
@@ -33,8 +37,8 @@ type TextDefinition struct {
 	MaxLength int
 	// SingleLine keys reject line breaks.
 	SingleLine bool
-	// Document keys hold a page of Markdown that the instance publishes (the terms of service
-	// and the privacy policy); the other keys are plain text.
+	// Document keys hold a page of Markdown that the instance publishes (the terms of service,
+	// the privacy policy, and the commerce disclosures); the other keys are plain text.
 	Document bool
 	Doc      string
 }
@@ -47,6 +51,7 @@ var textDefinitions = []TextDefinition{
 	{Key: TextPrivacyPolicy, MaxLength: 100000, Document: true, Doc: "Privacy policy, in Markdown."},
 	{Key: TextPreviewImageAlt, MaxLength: 1500, Doc: "Alt text of the preview_image setting's image (og:image:alt)."},
 	{Key: TextThumbnailAlt, MaxLength: 1500, Doc: "Alt text of the thumbnail setting's image."},
+	{Key: TextCommerceDisclosure, MaxLength: 100000, Document: true, Doc: "Disclosures of the seller of the supporter plans, in Markdown."},
 }
 
 // TextDefinitions returns the definitions of every text key, in a fixed order.

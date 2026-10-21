@@ -86,6 +86,8 @@ paths:
     $ref: ./paths/instance_domain_actions.yaml
   /instance/cost_totals:
     $ref: ./paths/instance_cost_totals.yaml
+  /instance/supporter_plans:
+    $ref: ./paths/instance_supporter_plans.yaml
   /accounts/verify_credentials:
     $ref: ./paths/accounts_verify_credentials.yaml
   /accounts/update_credentials:
@@ -410,6 +412,18 @@ paths:
     $ref: ./paths/admin_accounts_{id}_refetch_statuses.yaml
   /admin/instances/{domain}/refetch_statuses:
     $ref: ./paths/admin_instances_{domain}_refetch_statuses.yaml
+  /admin/supporter_program:
+    $ref: ./paths/admin_supporter_program.yaml
+  /admin/supporter_plans:
+    $ref: ./paths/admin_supporter_plans.yaml
+  /admin/supporter_plans/{id}:
+    $ref: ./paths/admin_supporter_plans_{id}.yaml
+  /admin/supporter_plans/{id}/retire:
+    $ref: ./paths/admin_supporter_plans_{id}_retire.yaml
+  /admin/supporter_subscriptions:
+    $ref: ./paths/admin_supporter_subscriptions.yaml
+  /admin/supporter_subscriptions/{id}/cancel:
+    $ref: ./paths/admin_supporter_subscriptions_{id}_cancel.yaml
 components:
   securitySchemes:
     oauth2:
@@ -500,6 +514,10 @@ components:
       $ref: ./components/parameters/SignupBlockId.yaml
     StatusId:
       $ref: ./components/parameters/StatusId.yaml
+    SupporterPlanId:
+      $ref: ./components/parameters/SupporterPlanId.yaml
+    SupporterSubscriptionId:
+      $ref: ./components/parameters/SupporterSubscriptionId.yaml
     WebhookId:
       $ref: ./components/parameters/WebhookId.yaml
   responses:
@@ -539,6 +557,10 @@ components:
       $ref: ./components/responses/AdminSettingList.yaml
     AdminSignupBlock:
       $ref: ./components/responses/AdminSignupBlock.yaml
+    AdminSupporterPlan:
+      $ref: ./components/responses/AdminSupporterPlan.yaml
+    AdminSupporterProgram:
+      $ref: ./components/responses/AdminSupporterProgram.yaml
     AdminTheme:
       $ref: ./components/responses/AdminTheme.yaml
     AdminWebhook:
@@ -561,6 +583,8 @@ components:
       $ref: ./components/responses/StatusAfterAction.yaml
     StatusPage:
       $ref: ./components/responses/StatusPage.yaml
+    SupporterPlanProblem:
+      $ref: ./components/responses/SupporterPlanProblem.yaml
     WebhookProblem:
       $ref: ./components/responses/WebhookProblem.yaml
   schemas:
@@ -728,6 +752,24 @@ components:
       $ref: ./components/schemas/AdminSignupBlockSeverity.yaml
     AdminSignupBlockState:
       $ref: ./components/schemas/AdminSignupBlockState.yaml
+    AdminSupporterPlan:
+      $ref: ./components/schemas/AdminSupporterPlan.yaml
+    AdminSupporterPlanCreateRequest:
+      $ref: ./components/schemas/AdminSupporterPlanCreateRequest.yaml
+    AdminSupporterPlanList:
+      $ref: ./components/schemas/AdminSupporterPlanList.yaml
+    AdminSupporterPlanRole:
+      $ref: ./components/schemas/AdminSupporterPlanRole.yaml
+    AdminSupporterPlanUpdateRequest:
+      $ref: ./components/schemas/AdminSupporterPlanUpdateRequest.yaml
+    AdminSupporterProgram:
+      $ref: ./components/schemas/AdminSupporterProgram.yaml
+    AdminSupporterProgramRequest:
+      $ref: ./components/schemas/AdminSupporterProgramRequest.yaml
+    AdminSupporterSubscription:
+      $ref: ./components/schemas/AdminSupporterSubscription.yaml
+    AdminSupporterSubscriptionPage:
+      $ref: ./components/schemas/AdminSupporterSubscriptionPage.yaml
     AdminTheme:
       $ref: ./components/schemas/AdminTheme.yaml
     AdminWebhook:
@@ -1122,6 +1164,22 @@ components:
       $ref: ./components/schemas/StatusTag.yaml
     StatusText:
       $ref: ./components/schemas/StatusText.yaml
+    SupporterInterval:
+      $ref: ./components/schemas/SupporterInterval.yaml
+    SupporterPlan:
+      $ref: ./components/schemas/SupporterPlan.yaml
+    SupporterPlanList:
+      $ref: ./components/schemas/SupporterPlanList.yaml
+    SupporterPlanProblem:
+      $ref: ./components/schemas/SupporterPlanProblem.yaml
+    SupporterPlanProblemReason:
+      $ref: ./components/schemas/SupporterPlanProblemReason.yaml
+    SupporterPlanVisibility:
+      $ref: ./components/schemas/SupporterPlanVisibility.yaml
+    SupporterProgramWarning:
+      $ref: ./components/schemas/SupporterProgramWarning.yaml
+    SupporterSubscriptionState:
+      $ref: ./components/schemas/SupporterSubscriptionState.yaml
     ThemeError:
       $ref: ./components/schemas/ThemeError.yaml
     ThemeProblem:

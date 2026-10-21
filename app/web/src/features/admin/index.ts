@@ -42,3 +42,12 @@ export { RoleSettings } from "./components/RoleSettings";
 // (ADR-0067, ADR-0068), for manage_finance.
 export { billingImportsQueryOptions, costItemsQueryOptions, costTotalsQueryOptions } from "./api/finance";
 export { FinanceSettings } from "./components/FinanceSettings";
+// The supporter program: enabling it, its plans and their subscriptions (ADR-0072), for manage_supporters.
+export {
+  type SupporterSubscriptionFilter,
+  supporterPlansQueryOptions,
+  supporterProgramQueryOptions,
+  supporterSubscriptionStates,
+  supporterSubscriptionsQueryOptions,
+} from "./api/supporters";
+export { SupporterSettings } from "./components/SupporterSettings";

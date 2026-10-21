@@ -37,6 +37,8 @@ export type DocumentEditor = {
 export type DocumentSettings = {
   terms: DocumentEditor;
   privacyPolicy: DocumentEditor;
+  /** The commerce disclosures of the supporter plans (ADR-0072 §13), published at /about/commerce. */
+  commerceDisclosure: DocumentEditor;
   /** Whether a document has a draft that is not saved. */
   hasChanges: boolean;
 };
@@ -47,7 +49,7 @@ type EditorContext = {
   setDraft: (key: DocumentKey, value: string | undefined) => void;
 };
 
-/** One document's form; the screen has two, so this is called twice (never in a loop, web-client.md R3). */
+/** One document's form; the screen has three, so this is called three times (never in a loop, web-client.md R3). */
 function useDocumentEditor(key: DocumentKey, { texts, drafts, setDraft }: EditorContext, pageUrl: string | undefined): DocumentEditor {
   const api = useApi();
   const t = useT();
@@ -120,6 +122,7 @@ export function useDocumentSettings(): DocumentSettings {
   return {
     terms: useDocumentEditor("terms", context, instance?.terms_url),
     privacyPolicy: useDocumentEditor("privacy_policy", context, instance?.privacy_policy_url),
+    commerceDisclosure: useDocumentEditor("commerce_disclosure", context, instance?.commerce_disclosure_url),
     hasChanges: Object.keys(drafts).length > 0,
   };
 }

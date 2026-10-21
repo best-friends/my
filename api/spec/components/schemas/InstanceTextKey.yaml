@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: |
   The key of an instance text: the name (one line), the short and full descriptions,
-  the terms of service and the privacy policy (Markdown), and the alternative texts of the
-  preview image and the thumbnail.
+  the terms of service and the privacy policy (Markdown), the alternative texts of the
+  preview image and the thumbnail, and the commerce disclosures of the supporter plans
+  (Markdown, published at `/about/commerce`; the server does not vouch for what they say).
 type: string
-enum: [name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt]
+enum: [name, short_description, description, terms, privacy_policy, preview_image_alt, thumbnail_alt, commerce_disclosure]

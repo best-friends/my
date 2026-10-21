@@ -2,7 +2,10 @@
 
 package identity
 
-import "time"
+import (
+	"slices"
+	"time"
+)
 
 // Permission is a capability that a role grants.
 type Permission string
@@ -35,6 +38,10 @@ const (
 	// PermManageFinance: record the instance's costs, read their totals, and see and start the
 	// billing imports (ADR-0067 §7, ADR-0068 §9). It is server administration (ADR-0058 §4).
 	PermManageFinance Permission = "manage_finance"
+	// PermManageSupporters: enable and disable the supporter program, create, change, and retire
+	// its plans, and see and cancel the subscriptions (ADR-0072 §2). It is server administration
+	// (ADR-0058 §4).
+	PermManageSupporters Permission = "manage_supporters"
 )
 
 // AllPermissions lists every permission.
@@ -43,20 +50,26 @@ func AllPermissions() []Permission {
 		PermManageReports, PermManageAccounts, PermManageDomains, PermManageRules,
 		PermManageSettings, PermManageRoles, PermManageInvites, PermViewAudit, PermManageJobs,
 		PermManageLoginRecovery, PermManageCustomEmojis, PermManageWebhooks, PermManageAnnouncements,
-		PermManageFinance,
+		PermManageFinance, PermManageSupporters,
 	}
 }
 
-// PermissionCategory is the area of the staff's work that a permission belongs to (ADR-0058):
-// moderation decides on people, posts and remote servers case by case; server administration
-// changes the server itself as a whole.
+// PermissionCategory is the area of the work that a permission belongs to (ADR-0058, ADR-0070
+// §1): moderation decides on people, posts and remote servers case by case; server
+// administration changes the server itself as a whole; member permissions let a user make or
+// change their own things, or only read, and never act on other people's rows or the whole
+// server. Only member permissions may be on a role that a supporter plan manages (ADR-0072 §5).
 type PermissionCategory string
 
 // Permission categories.
 const (
 	CategoryModeration PermissionCategory = "moderation"
 	CategoryServer     PermissionCategory = "server"
+	CategoryMember     PermissionCategory = "member"
 )
+
+// memberPermissions are the permissions of CategoryMember.
+var memberPermissions = []Permission{}
 
 // Category returns the area that p belongs to. The web client's navigation and `my admin role`
 // group the permissions by it.
@@ -64,6 +77,10 @@ func (p Permission) Category() PermissionCategory {
 	switch p {
 	case PermManageReports, PermManageAccounts, PermManageDomains, PermManageInvites, PermViewAudit:
 		return CategoryModeration
+	}
+	switch {
+	case slices.Contains(memberPermissions, p):
+		return CategoryMember
 	default:
 		return CategoryServer
 	}
