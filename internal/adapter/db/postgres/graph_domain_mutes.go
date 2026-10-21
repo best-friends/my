@@ -81,3 +81,12 @@ func domainMutesFrom(rows []postgresgen.AccountDomainMute) []graph.DomainMute {
 	}
 	return out
 }
+
+// MutesAnyDomain implements graph.Repository.
+func (r *GraphRepository) MutesAnyDomain(ctx context.Context, accountID string, domains []string) (bool, error) {
+	if len(domains) == 0 {
+		return false, nil
+	}
+	muted, err := r.db.reader().MutesAnyDomain(ctx, postgresgen.MutesAnyDomainParams{AccountID: accountID, Domains: domains})
+	return muted, wrap(err, "look up domain mutes")
+}

@@ -46,6 +46,8 @@ type RemoteStatusHarness struct {
 	// Pins serves the pins that the featured collections of remote accounts become; without it,
 	// the cases of featured collections are skipped.
 	Pins appcontent.InteractionRepository
+	// Quotes stores the quotes of posts (ADR-0069); without it, the cases of quotes are skipped.
+	Quotes appcontent.QuoteRepository
 }
 
 // RemoteStatusFactory returns a harness on a new, empty database whose UnitOfWork uses opts.
@@ -65,7 +67,8 @@ type RemoteStatusFactory func(t *testing.T, opts uow.Options) RemoteStatusHarnes
 // ThreadDepth and ThreadMaxItems; fetched posts must be attributed within their origin; failed
 // fetches are not repeated; Resolver resolves handles and the URLs of accounts and posts; the
 // featured collections of fetched actors become their pins, fetched again on an Add or Remove to
-// them by their owner (ADR-0044); and a
+// them by their owner (ADR-0044); the quotes of posts are recorded, their quoted posts fetched one
+// level, and their approvals verified, revoked, and presented per viewer (ADR-0069); and a
 // post with NUL in every string is stored with U+FFFD (federation.md §4). The
 // actors and the fetches are in-memory stand-ins, and the network of the fetch cases is in memory.
 func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
@@ -95,6 +98,10 @@ func RemoteStatusContract(t *testing.T, newHarness RemoteStatusFactory) {
 		{"AppliesAddAndRemoveOfFeaturedCollections", remoteAppliesFeaturedChanges},
 		{"StoresStringsWithNUL", remoteStatusStoresStringsWithNUL},
 		{"RefetchesStoredPostsOnRequest", remoteRefetches},
+		{"RecordsTheQuotesOfMajorImplementations", remoteRecordsQuoteFixtures},
+		{"FetchesQuotedPostsAndVerifiesApprovals", remoteVerifiesQuotes},
+		{"RevokesAndDetachesQuotes", remoteRevokesAndDetachesQuotes},
+		{"PresentsQuotesPerViewer", remotePresentsQuotes},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) { tc.run(t, newRemoteStatusEnv(t, newHarness)) })
@@ -153,6 +160,9 @@ func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteSta
 	})
 	appgraph.RegisterProjectors(captured.Projectors, h.Graph)
 	appcontent.RegisterProjectors(captured.Projectors, h.Statuses)
+	if h.Quotes != nil {
+		appcontent.RegisterQuoteProjectors(captured.Projectors, h.Quotes)
+	}
 	apptimeline.RegisterProjectors(captured.Projectors, h.Timeline)
 	appnotification.RegisterProjectors(captured.Projectors, appnotification.ProjectorDeps{
 		Repository: h.Notifications, Accounts: ae.accounts, Relationships: e.graph, IDs: ae.ids,
@@ -163,7 +173,7 @@ func newRemoteStatusEnv(t *testing.T, newHarness RemoteStatusFactory) *remoteSta
 	e.content = appcontent.NewService(appcontent.Deps{
 		UnitOfWork: h.UnitOfWork, Repository: h.Statuses, Accounts: ae.accounts, Relationships: e.graph,
 		MaxStatusLength: func(context.Context) (int, error) { return 500, nil },
-		Sanitizer:       remoteSanitizer{}, RemoteMedia: media,
+		Sanitizer:       remoteSanitizer{}, RemoteMedia: media, Quotes: h.Quotes,
 		Clock: ae.clock, IDs: ae.ids, Host: contractHost,
 	})
 	e.timeline = apptimeline.NewService(apptimeline.Deps{Repository: h.Timeline, Clock: ae.clock})

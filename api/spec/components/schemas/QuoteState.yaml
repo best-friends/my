@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The state of a quote as the viewer sees it (ADR-0069), with the values of Mastodon's
+  `Quote.state` and `legacy`. The quoted status is shown for `accepted` and `legacy`, and
+  behind the reason for `muted_account` and `blocked_domain`:
+
+  - `pending`: the quoted author has not approved the quote yet, or the quoted status is not
+    fetched yet.
+  - `accepted`: the quoted author approved the quote.
+  - `rejected`: the quoted author refused the quote.
+  - `revoked`: the quoted author withdrew the approval.
+  - `legacy`: a quote from software without approvals (Misskey, Akkoma), shown as it is.
+  - `deleted`: the quoted status is deleted.
+  - `unauthorized`: the viewer may not see the quoted status.
+  - `blocked_account`: the viewer blocks the quoted author, or is blocked by them.
+  - `blocked_domain`: the viewer mutes the domain of the quoted author.
+  - `muted_account`: the viewer mutes the quoted author.
+type: string
+enum:
+  - pending
+  - accepted
+  - rejected
+  - revoked
+  - legacy
+  - deleted
+  - unauthorized
+  - blocked_account
+  - blocked_domain
+  - muted_account

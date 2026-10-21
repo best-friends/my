@@ -924,6 +924,26 @@ type StatusPin struct {
 	ID        string
 }
 
+type StatusQuote struct {
+	StatusID  string
+	QuotedUri string
+	Form      string
+}
+
+type StatusQuoteEvent struct {
+	ID               string
+	StatusID         string
+	Kind             string
+	AuthorizationUri sql.NullString
+	OccurredAt       int64
+}
+
+type StatusQuoteState struct {
+	StatusID         string
+	State            string
+	AuthorizationUri sql.NullString
+}
+
 type StatusReactionCount struct {
 	StatusID      string
 	EmojiKey      string

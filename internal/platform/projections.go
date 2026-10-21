@@ -28,6 +28,7 @@ type projectionRepositories struct {
 	follows       graph.Repository
 	statuses      content.Repository
 	interactions  content.InteractionRepository
+	quotes        content.QuoteRepository
 	feeds         timeline.Repository
 	notifications notification.Repository
 	moderation    moderation.Repository
@@ -101,6 +102,13 @@ func (a *App) setUpProjections(store projection.Store, r projectionRepositories)
 				Tables: []string{"boost_edges"},
 				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
 					return content.RebuildInteractionProjections(ctx, u, r.interactions)
+				},
+			},
+			{
+				Name: "status_quote_states", Module: "content",
+				Tables: []string{"status_quote_states"},
+				Rebuild: func(ctx context.Context, u uow.UnitOfWork) error {
+					return content.RebuildQuoteStates(ctx, u, r.quotes)
 				},
 			},
 			{

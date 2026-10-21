@@ -1632,6 +1632,38 @@ CREATE TABLE status_link_cards (
 ) STRICT;
 CREATE INDEX status_link_cards_url ON status_link_cards (url);
 
+-- Resource: the status that a status quotes (FR-114, ADR-0069 §1), fixed when the status is
+-- created. quoted_uri may name a status that is not stored yet. form is fep_044f for
+-- FEP-044f's quote, which its author approves, and legacy for the other spellings.
+CREATE TABLE status_quotes (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  quoted_uri TEXT NOT NULL,
+  form TEXT NOT NULL CHECK (form IN ('fep_044f', 'legacy'))
+) STRICT;
+CREATE INDEX status_quotes_quoted_uri ON status_quotes (quoted_uri);
+
+-- Event: a change of the approval of a quote (ADR-0069 §1). authorization_uri is the
+-- QuoteAuthorization that an accepted event verified or a revoked event deleted.
+CREATE TABLE status_quote_events (
+  id TEXT NOT NULL PRIMARY KEY,
+  status_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('accepted', 'rejected', 'revoked', 'detached')),
+  authorization_uri TEXT,
+  occurred_at INTEGER NOT NULL,
+  CHECK (authorization_uri IS NULL OR kind IN ('accepted', 'revoked'))
+) STRICT;
+CREATE INDEX status_quote_events_status_id_id ON status_quote_events (status_id, id);
+
+-- Projection: the current approval of each quote, derived from its form and events
+-- (content.QuoteStateOf). authorization_uri is the QuoteAuthorization of an accepted quote.
+CREATE TABLE status_quote_states (
+  status_id TEXT NOT NULL PRIMARY KEY,
+  state TEXT NOT NULL CHECK (state IN ('pending', 'accepted', 'rejected', 'revoked', 'legacy', 'detached')),
+  authorization_uri TEXT,
+  CHECK (authorization_uri IS NULL OR state = 'accepted')
+) STRICT;
+CREATE INDEX status_quote_states_authorization_uri ON status_quote_states (authorization_uri);
+
 -- ---------------------------------------------------------------------------------------------
 -- federation: inbox, delivery, and remote instances (data-model §4.8,
 -- docs/architecture/federation.md). Owned by internal/app/federation.

@@ -9519,6 +9519,46 @@
     "defaultMessage": "[{count,plural,one{# ṽǿǿŧḗḗ} other{# ṽǿǿŧḗḗş}}]",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.quote.blocked_account": {
+    "defaultMessage": "[Ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ īş ħīḓḓḗḗƞ ƀḗḗƈȧȧŭŭşḗḗ ǿǿƒ ȧȧ ƀŀǿǿƈķ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.blocked_domain": {
+    "defaultMessage": "[Ẏǿǿŭŭ ḿŭŭŧḗḗḓ ŧħḗḗ şḗḗřṽḗḗř ǿǿƒ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.deleted": {
+    "defaultMessage": "[Ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ ẇȧȧş ḓḗḗŀḗḗŧḗḗḓ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.label": {
+    "defaultMessage": "[Ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.muted_account": {
+    "defaultMessage": "[Ẏǿǿŭŭ ḿŭŭŧḗḗḓ ŧħḗḗ ȧȧŭŭŧħǿǿř ǿǿƒ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.pending": {
+    "defaultMessage": "[Ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ īş ƞǿǿŧ ȧȧṽȧȧīŀȧȧƀŀḗḗ ẏḗḗŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.rejected": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧŭŭŧħǿǿř ǿǿƒ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ ḓīḓ ƞǿǿŧ ȧȧŀŀǿǿẇ ŧħīş ɋŭŭǿǿŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.reveal": {
+    "defaultMessage": "[Şħǿǿẇ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.revoked": {
+    "defaultMessage": "[Ŧħḗḗ ȧȧŭŭŧħǿǿř ǿǿƒ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ ẇīŧħḓřḗḗẇ īŧ ƒřǿǿḿ ŧħīş ɋŭŭǿǿŧḗḗ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.unauthorized": {
+    "defaultMessage": "[Ẏǿǿŭŭ ƈȧȧƞƞǿǿŧ şḗḗḗḗ ŧħḗḗ ɋŭŭǿǿŧḗḗḓ ƥǿǿşŧ.]",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.reaction.off": {
     "defaultMessage": "[Řḗḗȧȧƈŧīǿǿƞ řḗḗḿǿǿṽḗḗḓ]",
     "description": "Generated from en by tools/i18n; do not edit."

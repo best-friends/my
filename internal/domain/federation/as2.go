@@ -103,6 +103,9 @@ const (
 	ObjectVideo     ObjectType = "Video"
 	ObjectAudio     ObjectType = "Audio"
 	ObjectTombstone ObjectType = "Tombstone"
+	// ObjectQuoteAuthorization is the stamp by which the author of a post approves a quote of it
+	// (FEP-044f, ADR-0069 §2).
+	ObjectQuoteAuthorization ObjectType = "QuoteAuthorization"
 	// ObjectUnknown is any other type of a document without an actor; RawType keeps the name.
 	ObjectUnknown ObjectType = ""
 )
@@ -291,6 +294,25 @@ type Object struct {
 	Name string
 	// Replies is the collection of the replies to the object, the zero Ref when it declares none.
 	Replies Ref
+	// Quote is the post that the object quotes, nil for none (FR-114, ADR-0069 §2).
+	Quote *Quote
+	// InteractingObject and InteractionTarget are the quote and the quoted post of a
+	// QuoteAuthorization (FEP-044f).
+	InteractingObject IRI
+	InteractionTarget IRI
+}
+
+// Quote is the quoted post of a post (ADR-0069 §2).
+type Quote struct {
+	// Target is the IRI of the quoted post.
+	Target IRI
+	// Consent is whether the post names Target with FEP-044f's quote, which its author must
+	// approve; a quote in another spelling (Misskey's _misskey_quote, quoteUrl, Fedibird's
+	// quoteUri, or an FEP-e232 Link) is a legacy quote, which carries no approval.
+	Consent bool
+	// Authorization is the quoteAuthorization of a Consent quote: the IRI of the
+	// QuoteAuthorization that approves it, "" for none.
+	Authorization IRI
 }
 
 // Collection is a normalized Collection, OrderedCollection, CollectionPage, or

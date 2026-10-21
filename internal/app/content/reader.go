@@ -32,6 +32,11 @@ type ReaderDeps struct {
 	Media *MediaService
 	// LinkCards presents the cards of the links in statuses (ADR-0062); nil presents none.
 	LinkCards *LinkCards
+	// Quotes reads the quotes of statuses (ADR-0069); nil presents none.
+	Quotes QuoteRepository
+	// DomainMutes tells which quoted statuses come from a domain that the viewer mutes; nil
+	// tells none.
+	DomainMutes DomainMutes
 	// Clock tells whether a poll has ended; nil means the system's clock.
 	Clock kernel.Clock
 }
@@ -85,6 +90,9 @@ type StatusView struct {
 	Relation *ViewerRelation
 	// Card is the card of the link in the status, nil for none (ADR-0062).
 	Card *LinkCardView
+	// Quote is the quote of the status, nil for none or for a status presented as a quote
+	// (ADR-0069).
+	Quote *QuoteView
 }
 
 // Edited reports whether the status has a revision after its first.
@@ -310,6 +318,11 @@ func (r *Reader) Bookmarks(ctx context.Context, accountID, before string, limit 
 
 // present returns st, which viewer may see, with everything a client shows of it.
 func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, author appaccount.Actor) (StatusView, error) {
+	return r.presentWith(ctx, viewer, st, author, true)
+}
+
+// presentWith is present; withQuote presents the quote of st, which a quoted status does not.
+func (r *Reader) presentWith(ctx context.Context, viewer Viewer, st content.Status, author appaccount.Actor, withQuote bool) (StatusView, error) {
 	rev, err := r.d.Statuses.FindCurrentRevision(ctx, st.ID)
 	if err != nil {
 		return StatusView{}, err // a deleted status has no current revision
@@ -366,6 +379,11 @@ func (r *Reader) present(ctx context.Context, viewer Viewer, st content.Status, 
 	}
 	if out.Poll, err = r.poll(ctx, rev, reactor); err != nil {
 		return StatusView{}, err
+	}
+	if withQuote {
+		if out.Quote, err = r.quote(ctx, viewer, st); err != nil {
+			return StatusView{}, err
+		}
 	}
 	return out, nil
 }

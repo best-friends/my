@@ -567,6 +567,26 @@ func (q *Queries) LockAccountPair(ctx context.Context, pairKey string) error {
 	return err
 }
 
+const mutesAnyDomain = `-- name: MutesAnyDomain :one
+SELECT EXISTS (
+  SELECT 1 FROM account_domain_mutes
+  WHERE account_id = $1 AND domain = ANY($2::text[])
+)
+`
+
+type MutesAnyDomainParams struct {
+	AccountID string
+	Domains   []string
+}
+
+// MutesAnyDomain reports whether the account mutes one of the domains.
+func (q *Queries) MutesAnyDomain(ctx context.Context, arg MutesAnyDomainParams) (bool, error) {
+	row := q.db.QueryRow(ctx, mutesAnyDomain, arg.AccountID, arg.Domains)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const upsertMute = `-- name: UpsertMute :exec
 INSERT INTO mutes (account_id, target_account_id, hide_notifications, expires_at, created_at) VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (account_id, target_account_id) DO UPDATE SET

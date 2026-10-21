@@ -9714,5 +9714,45 @@
   "admin.audit_log.target_kind.cost_item": {
     "defaultMessage": "費用",
     "description": "Kind of target of an audited operation: a cost of the instance, shown by its name."
+  },
+  "status.quote.label": {
+    "defaultMessage": "引用された投稿",
+    "description": "Accessible name of the box in a post that shows the post it quotes."
+  },
+  "status.quote.pending": {
+    "defaultMessage": "引用された投稿はまだ表示できません。",
+    "description": "Shown in place of a quoted post whose author has not approved the quote yet, or that this server has not received yet."
+  },
+  "status.quote.rejected": {
+    "defaultMessage": "引用された投稿の作者は、この引用を許可していません。",
+    "description": "Shown in place of a quoted post whose author refused the quote."
+  },
+  "status.quote.revoked": {
+    "defaultMessage": "引用された投稿の作者が、この引用への掲載を取り消しました。",
+    "description": "Shown in place of a quoted post whose author withdrew the approval of the quote."
+  },
+  "status.quote.deleted": {
+    "defaultMessage": "引用された投稿は削除されました。",
+    "description": "Shown in place of a quoted post that was deleted."
+  },
+  "status.quote.unauthorized": {
+    "defaultMessage": "引用された投稿は表示できません。",
+    "description": "Shown in place of a quoted post that the viewer is not allowed to see, such as a followers-only post."
+  },
+  "status.quote.blocked_account": {
+    "defaultMessage": "ブロックしているため、引用された投稿を表示しません。",
+    "description": "Shown in place of a quoted post whose author the viewer blocks, or who blocks the viewer."
+  },
+  "status.quote.muted_account": {
+    "defaultMessage": "引用された投稿の作者をミュートしています。",
+    "description": "Shown in place of a quoted post whose author the viewer muted; a button next to it shows the post."
+  },
+  "status.quote.blocked_domain": {
+    "defaultMessage": "引用された投稿のサーバーをミュートしています。",
+    "description": "Shown in place of a quoted post from a server that the viewer muted; a button next to it shows the post."
+  },
+  "status.quote.reveal": {
+    "defaultMessage": "引用された投稿を表示",
+    "description": "Button next to the notice of a muted author or server, in place of a quoted post, that shows the post."
   }
 }

@@ -8,6 +8,7 @@ import type { Status } from "../api/status";
 import { useMediaViewerLabels } from "../hooks/useMediaViewerLabels";
 import { useStatusView } from "../hooks/useStatusView";
 import { StatusActions } from "./StatusActions";
+import { QuotedStatus } from "./QuotedStatus";
 import { StatusPoll } from "./StatusPoll";
 import { StatusReactions } from "./StatusReactions";
 
@@ -88,6 +89,10 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
     );
   // The poll goes with the body, under the content warning too (FR-112).
   const poll = (status.boost ?? status).poll === undefined ? undefined : <StatusPoll status={status} canVote={withActions} />;
+  // The quoted post goes with the body too, after the media (FR-114).
+  const quoted = (status.boost ?? status).quote;
+  const quote = quoted === undefined ? undefined : <QuotedStatus quote={quoted} />;
+  const extras = [poll, media, quote].filter((part) => part !== undefined);
   const body = (
     <PostContent
       html={view.html}
@@ -186,18 +191,20 @@ export function StatusCard({ status, variant = "compact", thread, onDeleted, wit
             {body}
             {poll}
             {media}
+            {quote}
           </ContentWarning>
         )
       }
       {...(view.contentWarning === null &&
-        (poll !== undefined || media !== undefined) && {
+        extras.length > 0 && {
           media:
-            poll === undefined ? (
-              media
+            extras.length === 1 ? (
+              extras[0]
             ) : (
               <div className="flex min-w-0 flex-col gap-3">
                 {poll}
                 {media}
+                {quote}
               </div>
             ),
         })}

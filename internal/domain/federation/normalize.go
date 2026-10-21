@@ -15,7 +15,7 @@ import (
 // compacted with the normative ActivityStreams context, never processed as JSON-LD: @context is
 // not interpreted (a missing one means the normative context, AS2 Core §2.1), and a Linked Data
 // signature is ignored. Unknown properties, including dialect extensions such as Misskey's
-// _misskey_content and _misskey_quote, are ignored. now bounds future timestamps. host
+// _misskey_content, are ignored; every spelling of a quote is read (ADR-0069 §2). now bounds future timestamps. host
 // canonicalizes the host of every IRI in the document (see NormalizeIRI); an IRI whose host it
 // rejects is read as absent.
 //
@@ -81,7 +81,7 @@ var (
 	}
 	objectTypes = []ObjectType{
 		ObjectNote, ObjectQuestion, ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo,
-		ObjectAudio, ObjectTombstone,
+		ObjectAudio, ObjectTombstone, ObjectQuoteAuthorization,
 	}
 	convertedTypes  = []ObjectType{ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo, ObjectAudio}
 	actorTypes      = []ActorType{ActorPerson, ActorService, ActorApplication, ActorGroup, ActorOrganization}
@@ -190,7 +190,56 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 	if obj.Replies, err = n.ref(o.get("replies"), obj.ID); err != nil {
 		return nil, err
 	}
+	obj.Quote = n.quote(o)
+	if t == ObjectQuoteAuthorization {
+		obj.InteractingObject = n.firstRef(o.get("interactingObject"))
+		obj.InteractionTarget = n.firstRef(o.get("interactionTarget"))
+	}
 	return obj, nil
+}
+
+// quoteProperties are the properties that name the quoted post, in the order they are read
+// (ADR-0069 §2): FEP-044f's quote, then the spellings of Misskey, Akkoma, and Fedibird.
+var quoteProperties = []string{"quote", "_misskey_quote", "quoteUrl", "quoteURL", "quoteUri"}
+
+// misskeyQuoteRels are the rel values of an FEP-e232 Link that names the quoted post: the IRI
+// of _misskey_quote, also in the spelling of FEP-044f's context.
+var misskeyQuoteRels = []string{"https://misskey-hub.net/ns#_misskey_quote", "https://misskey-hub.net/ns/#_misskey_quote"}
+
+// quote reads the quoted post: the first of quoteProperties that has an IRI, else the first
+// FEP-e232 Link to an ActivityStreams document whose rel is _misskey_quote. The tag property is
+// bounded by MaxTags before.
+func (n normalizer) quote(o object) *Quote {
+	for _, p := range quoteProperties {
+		target := n.firstRef(o.get(p))
+		if target == "" || target == PublicIRI {
+			continue
+		}
+		q := &Quote{Target: target, Consent: p == "quote"}
+		if q.Consent {
+			q.Authorization = n.firstRef(o.get("quoteAuthorization"))
+		}
+		return q
+	}
+	for _, v := range list(o.get("tag")) {
+		t, ok := v.(object)
+		if !ok || !slices.Contains(strs(t.get("type")), "Link") || !activityStreamsMediaType(str(t.get("mediaType"))) ||
+			!slices.ContainsFunc(strs(t.get("rel")), func(rel string) bool { return slices.Contains(misskeyQuoteRels, rel) }) {
+			continue
+		}
+		if target := n.normalizeIRI(str(t.get("href"))); target != "" && target != PublicIRI {
+			return &Quote{Target: target}
+		}
+	}
+	return nil
+}
+
+// activityStreamsMediaType reports whether the mediaType of a Link names an ActivityStreams
+// document (FEP-e232).
+func activityStreamsMediaType(mt string) bool {
+	mt = strings.ToLower(strings.TrimSpace(mt))
+	return mt == "application/activity+json" ||
+		strings.HasPrefix(mt, "application/ld+json") && strings.Contains(mt, "https://www.w3.org/ns/activitystreams")
 }
 
 // collection reads a collection or a page of one: its items (orderedItems in an ordered one) up

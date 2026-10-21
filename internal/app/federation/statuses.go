@@ -95,7 +95,12 @@ type StatusHandlersDeps struct {
 	// Votes records the votes of remote accounts in local polls; nil takes every Note in reply
 	// to a local status as a post.
 	Votes RemotePollVotes
-	Clock kernel.Clock
+	// Quotes records the approvals of the quotes of remote posts and takes a Delete of a
+	// QuoteAuthorization as a revocation (ADR-0069); with Outbox, JobVerifyQuote fetches the
+	// quoted posts and verifies the approvals, reading their authors through Profiles. Without
+	// Quotes, quotes stay pending.
+	Quotes RemoteQuotes
+	Clock  kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger
@@ -221,8 +226,10 @@ func (h *StatusHandlers) Update(ctx context.Context, a *InboxActivity) error {
 	}
 	in := h.input(a, obj, followers, mentions)
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
-		_, err := h.d.Statuses.ReviseRemoteStatus(ctx, tx, in)
-		return err
+		if _, err := h.d.Statuses.ReviseRemoteStatus(ctx, tx, in); err != nil {
+			return err
+		}
+		return h.verifyQuoteTx(ctx, tx, obj.ID, obj.Quote, true)
 	})
 	switch {
 	case errors.Is(err, appcontent.ErrNotFound):
@@ -245,6 +252,9 @@ func (h *StatusHandlers) Delete(ctx context.Context, a *InboxActivity) error {
 	})
 	switch {
 	case errors.Is(err, appcontent.ErrNotFound):
+		if revoked, err := h.revokeQuoteAuthorization(ctx, id); err != nil || revoked {
+			return err
+		}
 		return fmt.Errorf("%w: %s", ErrUnknownObject, id)
 	case errors.Is(err, appcontent.ErrNotAuthor):
 		return fmt.Errorf("%w: %s is not the author of %s", ErrDropActivity, a.Actor.Account.URI, id)
@@ -340,6 +350,9 @@ func (h *StatusHandlers) ingest(ctx context.Context, a *InboxActivity, obj *fede
 	err = h.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
 		p, err := h.d.Statuses.IngestRemoteStatus(ctx, tx, in)
 		if err != nil {
+			return err
+		}
+		if err := h.verifyQuoteTx(ctx, tx, obj.ID, obj.Quote, !relayed); err != nil {
 			return err
 		}
 		if relayed {
@@ -549,6 +562,7 @@ func (h *StatusHandlers) inputOf(author appaccount.Actor, fallback federation.Au
 	if p := obj.Poll; p != nil && len(p.Options) > 0 {
 		in.Poll = pollInput(p)
 	}
+	in.Quote = quoteInput(obj.Quote)
 	return in
 }
 
