@@ -85,4 +85,5 @@
 | [0071](0071-role-badges-and-supporter-list.md) | ロールのバッジと参加者の一覧 | Accepted |
 | [0072](0072-supporter-plans-and-roles.md) | 課金のプランとロールの連動 | Accepted |
 | [0073](0073-income-records-and-publication.md) | 収入の記録と公開 | Accepted |
+| [0074](0074-payment-provider-port.md) | 決済の PaymentProvider ポート（Stripe） | Accepted |
 <!-- adr-index:end -->
