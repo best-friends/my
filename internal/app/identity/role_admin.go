@@ -53,6 +53,10 @@ type UpdateRoleInput struct {
 	// SetPermissions reports whether Permissions are given (an empty list removes every
 	// permission).
 	SetPermissions bool
+	// Badge is the new badge of the role, or nil with SetBadge to remove it (ADR-0071).
+	Badge *BadgeInput
+	// SetBadge reports whether the badge changes: to Badge, or to none when Badge is nil.
+	SetBadge bool
 	// ByUserID is the user who changes the role, or "" for the CLI.
 	ByUserID string
 }
@@ -137,14 +141,17 @@ func (s *Service) CreateRole(ctx context.Context, in CreateRoleInput) (RoleWithP
 	return RoleWithPermissions{Role: role, Permissions: perms}, nil
 }
 
-// UpdateRole changes the position, the permissions, or both of a role, and returns the role
-// afterwards; a change to what the role has already records nothing. It fails with ErrNotFound
-// for an unknown role, with ErrBuiltinRole for admin, with ErrInvalidRolePosition or
-// ErrInvalidRolePermissions for a change that breaks a rule, with ErrRoleOutranksActor when the
-// role or its new position is above every role of in.ByUserID, and with a
-// *MissingPermissionsError when in.ByUserID lacks a permission that the change adds or removes.
+// UpdateRole changes the position, the permissions, the badge, or several of them of a role,
+// and returns the role afterwards; a change to what the role has already records nothing.
+// Removing the badge also removes every user's choice to show it. It fails with ErrNotFound for
+// an unknown role, with ErrBuiltinRole for a new position or permissions of admin (whose badge
+// changes like any other), with ErrInvalidRolePosition, ErrInvalidRolePermissions,
+// ErrInvalidBadgeLabel, or ErrInvalidBadgeColor for a change that breaks a rule, with
+// ErrRoleOutranksActor when the role or its new position is above every role of in.ByUserID,
+// and with a *MissingPermissionsError when in.ByUserID lacks a permission that the change adds
+// or removes.
 func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithPermissions, error) {
-	if in.Key == identity.RoleAdmin {
+	if in.Key == identity.RoleAdmin && (in.Position != nil || in.SetPermissions || !in.SetBadge) {
 		return RoleWithPermissions{}, fmt.Errorf("%w: %s", ErrBuiltinRole, in.Key)
 	}
 	if in.Position != nil {
@@ -164,6 +171,14 @@ func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithP
 		return RoleWithPermissions{}, err
 	}
 	now := s.d.Clock.Now()
+	var badge *identity.RoleBadge
+	if in.SetBadge && in.Badge != nil {
+		label, err := identity.NormalizeRoleBadge(in.Badge.Label, in.Badge.Color)
+		if err != nil {
+			return RoleWithPermissions{}, err
+		}
+		badge = &identity.RoleBadge{Label: label, Color: in.Badge.Color, UpdatedAt: now}
+	}
 	auditID := s.d.IDs.NewID()
 	var out RoleWithPermissions
 	err = s.d.UnitOfWork.Tx(ctx, func(tx uow.Tx) error {
@@ -175,7 +190,13 @@ func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithP
 		if err != nil {
 			return err
 		}
-		out = RoleWithPermissions{Role: role, Permissions: current}
+		var currentBadge *identity.RoleBadge
+		if b, ok, err := s.d.Repository.RoleBadge(ctx, tx, role.ID); err != nil {
+			return err
+		} else if ok {
+			currentBadge = &b
+		}
+		out = RoleWithPermissions{Role: role, Permissions: current, Badge: currentBadge}
 		if err := actor.check(role.Key, role.Position, nil); err != nil {
 			return err
 		}
@@ -187,8 +208,12 @@ func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithP
 		if in.SetPermissions {
 			nextPerms = perms
 		}
+		nextBadge := currentBadge
+		if in.SetBadge && !identity.SameBadge(currentBadge, badge) {
+			nextBadge = badge
+		}
 		changed := identity.ChangedPermissions(current, nextPerms)
-		if next.Position == role.Position && len(changed) == 0 {
+		if next.Position == role.Position && len(changed) == 0 && identity.SameBadge(currentBadge, nextBadge) {
 			return nil
 		}
 		if err := actor.check(role.Key, next.Position, changed); err != nil {
@@ -204,7 +229,10 @@ func (s *Service) UpdateRole(ctx context.Context, in UpdateRoleInput) (RoleWithP
 				return err
 			}
 		}
-		out = RoleWithPermissions{Role: next, Permissions: slices.Clone(nextPerms)}
+		if err := s.setRoleBadge(ctx, tx, role.ID, currentBadge, nextBadge); err != nil {
+			return err
+		}
+		out = RoleWithPermissions{Role: next, Permissions: slices.Clone(nextPerms), Badge: nextBadge}
 		return tx.Emit(ctx, roleAudit(auditID, appmoderation.AuditRoleUpdated, role, in.ByUserID, now))
 	})
 	if err != nil {

@@ -192,6 +192,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/preferences/badges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the badges that the authenticated user may show
+         * @description The roles that the user holds and that have a badge, highest position first, with whether
+         *     the user shows each badge on their profile (ADR-0071). Every badge is hidden until the user
+         *     shows it.
+         */
+        get: operations["listBadgeChoices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/preferences/badges/{role_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the role whose badge it is. */
+                role_id: components["parameters"]["BadgeRoleId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Show or hide the badge of a role on the authenticated user's profile
+         * @description Shows or hides the badge of a role that the user holds on their profile (ADR-0071). The
+         *     badge appears in `Account.badges` of the user's own account endpoints only, never on
+         *     posts, in lists of accounts, or to other servers. A role that the user does not hold, or
+         *     that has no badge, is a 404.
+         */
+        put: operations["updateBadgeChoice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/accounts/delete": {
         parameters: {
             query?: never;
@@ -3313,14 +3361,16 @@ export interface paths {
         head?: never;
         /**
          * Change a role
-         * @description Changes the position, the permissions, or both of a role; the change applies to its
-         *     holders from their next request, and the audit log records `role_updated`. A request
-         *     that changes nothing records nothing. The key never changes. `admin` is never changed
-         *     (a 422 `builtin`); `moderator` takes a new position and permissions like any other
-         *     role. A role, or a new position, above every role of the viewer is a 403. A position or
-         *     permissions that break a rule, or adding or removing a permission that the viewer's
-         *     roles do not grant, is a 422 `/api/v1/problems/invalid-role` whose `reason` says
-         *     which. An unknown role is a 404. Needs the `manage_roles` permission.
+         * @description Changes the position, the permissions, the badge, or several of them of a role; the
+         *     change applies to its holders from their next request, and the audit log records
+         *     `role_updated`. A request that changes nothing records nothing. The key never changes.
+         *     `admin` changes only its badge (a new position or permissions is a 422 `builtin`);
+         *     `moderator` takes a new position and permissions like any other role. Removing the badge
+         *     hides it from every holder's profile (ADR-0071). A role, or a new position, above every
+         *     role of the viewer is a 403. A position, permissions, or badge that break a rule, or
+         *     adding or removing a permission that the viewer's roles do not grant, is a 422
+         *     `/api/v1/problems/invalid-role` whose `reason` says which. An unknown role is a 404.
+         *     Needs the `manage_roles` permission.
          */
         patch: operations["updateRole"];
         trace?: never;
@@ -4257,6 +4307,13 @@ export interface components {
              */
             emojis: components["schemas"]["CustomEmoji"][];
             /**
+             * @description The role badges that the account shows on its profile, highest role first (ADR-0071).
+             *     Filled on the account's own endpoints (`getAccount`, `lookupAccount`,
+             *     `verifyAccountCredentials`) only, and empty where accounts are listed or embedded (posts,
+             *     notifications, lists of accounts) and for remote accounts. Badges are never federated.
+             */
+            badges: components["schemas"]["AccountBadge"][];
+            /**
              * @description The avatar image, square; omitted when the account has none, or its image is not
              *     processed yet or could not be processed. Clients show a placeholder instead. For a
              *     remote account, every size is its media proxy URL.
@@ -4272,6 +4329,17 @@ export interface components {
             followers_count?: number;
             /** @description The number of accounts that the account actively follows; present where `followers_count` is. */
             following_count?: number;
+        };
+        /**
+         * @description A badge that the account shows on its profile (ADR-0071): the badge of a role that the
+         *     account's user holds and chose to show. Clients show `label` as user content (`dir="auto"`),
+         *     never translated.
+         */
+        AccountBadge: {
+            role_id: components["schemas"]["Id"];
+            /** @description The name on the badge. */
+            label: string;
+            color: components["schemas"]["BadgeColor"];
         };
         /** @description A metadata field of a profile as the user typed it. */
         AccountFieldSource: {
@@ -5203,6 +5271,8 @@ export interface components {
             position: number;
             /** @description The permissions that the role grants, in the order of `Permission`. */
             permissions: components["schemas"]["Permission"][];
+            /** @description The badge of the role, which its holders may show on their profile; omitted when it has none. */
+            badge?: components["schemas"]["RoleBadge"];
         };
         /** @description Roles, highest position first. */
         AdminRoleList: {
@@ -5504,6 +5574,31 @@ export interface components {
             /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
             keep_min_favourites: number;
         };
+        /**
+         * @description A role that the authenticated user holds and that has a badge, with whether the user shows
+         *     the badge on their profile (ADR-0071). A badge is hidden until the user shows it; losing the
+         *     role or its badge hides it again.
+         */
+        BadgeChoice: {
+            role_id: components["schemas"]["Id"];
+            /** @description The name on the badge. */
+            label: string;
+            color: components["schemas"]["BadgeColor"];
+            /** @description Whether the user shows the badge on their profile. */
+            displayed: boolean;
+        };
+        /** @description The roles with a badge that the authenticated user holds, highest position first; empty when there are none. */
+        BadgeChoiceList: {
+            items: components["schemas"]["BadgeChoice"][];
+        };
+        /**
+         * @description The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+         *     for its background and its text, which keep their contrast in the light and the dark theme.
+         *     Server themes do not change them. The color is decoration; the badge's `label` carries its
+         *     meaning.
+         * @enum {string}
+         */
+        BadgeColor: "neutral" | "red" | "orange" | "yellow" | "green" | "teal" | "blue" | "purple" | "pink";
         /** @description The state of the imports of a billing source (ADR-0068 §9). */
         BillingImport: {
             source: components["schemas"]["BillingSourceName"];
@@ -7447,6 +7542,16 @@ export interface components {
             outcome: components["schemas"]["AdminReportOutcome"];
         };
         /**
+         * @description The badge of a role (ADR-0071), which its holders may show on their profile. The label is
+         *     the staff's own text, the same in every locale: clients show it as user content
+         *     (`dir="auto"`), never translated.
+         */
+        RoleBadge: {
+            /** @description The name on the badge, 1 to 32 characters on one line; white space around it is removed. */
+            label: string;
+            color: components["schemas"]["BadgeColor"];
+        };
+        /**
          * @description The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
          *     `reason` says which. Another 422 (a malformed request) has none.
          */
@@ -7458,13 +7563,14 @@ export interface components {
         /**
          * @description Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
          *     and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
-         *     `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
-         *     and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+         *     `permissions`: an unknown permission, or one twice. `builtin`: `admin` changes only its
+         *     badge, and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
          *     `missing_permission`: the change adds or removes permissions that the viewer's roles
-         *     do not grant (`missing_permissions`).
+         *     do not grant (`missing_permissions`). `badge_label`: a badge label that is not 1 to 32
+         *     characters on one line. `badge_color`: an unknown badge color.
          * @enum {string}
          */
-        RoleProblemReason: "key" | "key_taken" | "position" | "permissions" | "builtin" | "held" | "missing_permission";
+        RoleProblemReason: "key" | "key_taken" | "position" | "permissions" | "builtin" | "held" | "missing_permission" | "badge_label" | "badge_color";
         /**
          * @description Whether the instance lets search engines index its pages (the instance setting
          *     `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
@@ -7802,6 +7908,10 @@ export interface components {
             /** @description A six-digit code of the app or an unused recovery code. */
             code: string;
         };
+        /** @description Whether to show the badge of the role on the authenticated user's profile. */
+        UpdateBadgeChoiceRequest: {
+            displayed: boolean;
+        };
         /** @description A change of the profile; properties left out keep their current values. */
         UpdateCredentialsRequest: {
             /** @description The display name, at most 30 characters; empty removes it. */
@@ -7872,6 +7982,13 @@ export interface components {
             position?: number;
             /** @description The new permissions of the role, each once; empty removes them all. */
             permissions?: components["schemas"]["Permission"][];
+            /** @description The new badge of the role (ADR-0071). Its holders keep their choice to show it. */
+            badge?: components["schemas"]["RoleBadge"];
+            /**
+             * @description `true` removes the badge of the role, and every holder's choice to show it; a new badge
+             *     starts hidden. Sending it with `badge` is a 422 whose `detail` names `remove_badge`.
+             */
+            remove_badge?: boolean;
         };
         /** @description The changes to a webhook; what is omitted stays. */
         UpdateWebhookRequest: {
@@ -8321,6 +8438,8 @@ export interface components {
         AnnouncementId: components["schemas"]["Id"];
         /** @description The ID of the appeal. */
         AppealId: components["schemas"]["Id"];
+        /** @description The ID of the role whose badge it is. */
+        BadgeRoleId: components["schemas"]["Id"];
         /** @description The ID of the cost item. */
         CostItemId: components["schemas"]["Id"];
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
@@ -8614,6 +8733,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AutoDeletePolicy"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    listBadgeChoices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The badges. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadgeChoiceList"];
+                };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    updateBadgeChoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the role whose badge it is. */
+                role_id: components["parameters"]["BadgeRoleId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBadgeChoiceRequest"];
+            };
+        };
+        responses: {
+            /** @description The choice as saved. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControl"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BadgeChoice"];
                 };
             };
             default: components["responses"]["Problem"];

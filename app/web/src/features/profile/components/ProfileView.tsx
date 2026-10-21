@@ -1,8 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A profile (FR-204): the header with the account's picture, name, handle, profile text, metadata fields,
+// A profile (FR-204): the header with the account's picture, name, handle, role badges, profile text, metadata fields,
 // follow counts and the relationship buttons, then its posts in tabs (WAI-ARIA APG, tabs pattern) whose
 // selection the route keeps in the URL (web-client.md S3), the posts tab starting with its pinned posts.
-import { Avatar, EmojiText, ExternalLink, type ImageSources, Link, Picture, PostContent, Tab, TabList, TabPanel, Tabs, VisuallyHidden } from "@my/ui";
+import {
+  Avatar,
+  EmojiText,
+  ExternalLink,
+  type ImageSources,
+  Link,
+  Picture,
+  PostContent,
+  RoleBadgeList,
+  Tab,
+  TabList,
+  TabPanel,
+  Tabs,
+  VisuallyHidden,
+} from "@my/ui";
 import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { type AccountTimelineFilter, accountTimelineFilters, TimelineFeed, useRemoteFetch } from "../../timeline";
@@ -65,6 +79,7 @@ export function ProfileView({ acct, tab, onTabChange, renderHeading }: ProfileVi
               <span dir="ltr">{profile.handle}</span>
             </p>
           </div>
+          <RoleBadgeList label={t("client:profile.badges")} badges={profile.badges} />
           {tags.length > 0 && (
             <ul className="flex flex-wrap gap-2">
               {tags.map((tag) => (

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The default MSW handlers of the settings feature (web-client.md §7): the user's own profile and
+// The default MSW handlers of the settings feature (web-client.md §7): the user's own profile, its badges, and
 // preferences, the automatic deletion of old posts, passkeys, two-factor authentication, the lists of blocks, mutes, muted domains, and follow requests, the archives of the user's
 // data, the CSV exports and imports, and deleting the account. Unblocking and unmuting are the account
 // actions of the profile feature's handlers.
@@ -47,6 +47,12 @@ const passkeyConfirmationFixture = {
 };
 
 export const handlers = [
+  // operationIds listBadgeChoices, updateBadgeChoice: the viewer holds no role with a badge by default; the tests of
+  // the badges play the server themselves.
+  http.get(`${apiBase}/preferences/badges`, ({ request }) =>
+    withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["BadgeChoiceList"])),
+  ),
+  http.put(`${apiBase}/preferences/badges/:roleId`, ({ request }) => withViewer(request, () => problem(404, "about:blank", "Not Found"))),
   // operationIds getAutoDeletePolicy, updateAutoDeletePolicy: the server answers the policy it saved.
   http.get(`${apiBase}/preferences/auto_delete`, ({ request }) => withViewer(request, () => HttpResponse.json(autoDeletePolicyFixture))),
   http.put(`${apiBase}/preferences/auto_delete`, async ({ request }) => {

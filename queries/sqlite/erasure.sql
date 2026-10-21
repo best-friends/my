@@ -133,6 +133,9 @@ DELETE FROM oauth_access_tokens WHERE user_id = sqlc.arg(user_id);
 -- name: EraseUserPreferences :exec
 DELETE FROM user_preferences WHERE user_id = sqlc.arg(user_id);
 
+-- name: EraseUserRoleBadgeDisplays :exec
+DELETE FROM user_role_badge_displays WHERE user_id = sqlc.arg(user_id);
+
 -- name: EraseUserTimelineLanguages :exec
 DELETE FROM user_timeline_languages WHERE user_id = sqlc.arg(user_id);
 

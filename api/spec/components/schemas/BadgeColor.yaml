@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The color of a role badge (ADR-0071): the name of a pair of the web client's design tokens
+  for its background and its text, which keep their contrast in the light and the dark theme.
+  Server themes do not change them. The color is decoration; the badge's `label` carries its
+  meaning.
+type: string
+enum: [neutral, red, orange, yellow, green, teal, blue, purple, pink]

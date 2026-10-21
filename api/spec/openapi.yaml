@@ -94,6 +94,10 @@ paths:
     $ref: ./paths/preferences.yaml
   /preferences/auto_delete:
     $ref: ./paths/preferences_auto_delete.yaml
+  /preferences/badges:
+    $ref: ./paths/preferences_badges.yaml
+  /preferences/badges/{role_id}:
+    $ref: ./paths/preferences_badges_{role_id}.yaml
   /accounts/delete:
     $ref: ./paths/accounts_delete.yaml
   /accounts/password:
@@ -462,6 +466,8 @@ components:
       $ref: ./components/parameters/AnnouncementId.yaml
     AppealId:
       $ref: ./components/parameters/AppealId.yaml
+    BadgeRoleId:
+      $ref: ./components/parameters/BadgeRoleId.yaml
     CostItemId:
       $ref: ./components/parameters/CostItemId.yaml
     Cursor:
@@ -562,6 +568,8 @@ components:
       $ref: ./components/schemas/AIUsage.yaml
     Account:
       $ref: ./components/schemas/Account.yaml
+    AccountBadge:
+      $ref: ./components/schemas/AccountBadge.yaml
     AccountFieldSource:
       $ref: ./components/schemas/AccountFieldSource.yaml
     AccountPage:
@@ -754,6 +762,12 @@ components:
       $ref: ./components/schemas/AppealModerationActionRequest.yaml
     AutoDeletePolicy:
       $ref: ./components/schemas/AutoDeletePolicy.yaml
+    BadgeChoice:
+      $ref: ./components/schemas/BadgeChoice.yaml
+    BadgeChoiceList:
+      $ref: ./components/schemas/BadgeChoiceList.yaml
+    BadgeColor:
+      $ref: ./components/schemas/BadgeColor.yaml
     BillingImport:
       $ref: ./components/schemas/BillingImport.yaml
     BillingImportList:
@@ -1056,6 +1070,8 @@ components:
       $ref: ./components/schemas/ReportState.yaml
     ResolveReportRequest:
       $ref: ./components/schemas/ResolveReportRequest.yaml
+    RoleBadge:
+      $ref: ./components/schemas/RoleBadge.yaml
     RoleProblem:
       $ref: ./components/schemas/RoleProblem.yaml
     RoleProblemReason:
@@ -1118,6 +1134,8 @@ components:
       $ref: ./components/schemas/TwoFactor.yaml
     TwoFactorCodeRequest:
       $ref: ./components/schemas/TwoFactorCodeRequest.yaml
+    UpdateBadgeChoiceRequest:
+      $ref: ./components/schemas/UpdateBadgeChoiceRequest.yaml
     UpdateCredentialsRequest:
       $ref: ./components/schemas/UpdateCredentialsRequest.yaml
     UpdateCustomEmojiRequest:

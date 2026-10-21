@@ -148,6 +148,25 @@ CREATE TABLE user_roles (
   PRIMARY KEY (user_id, role_id)
 ) STRICT;
 
+-- Current value: the badge of a role (ADR-0071): a row means the role has one.
+CREATE TABLE role_badges (
+  role_id TEXT NOT NULL PRIMARY KEY,
+  label TEXT NOT NULL,
+  color TEXT NOT NULL CHECK (color IN (
+    'neutral', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'
+  )),
+  updated_at INTEGER NOT NULL
+) STRICT;
+
+-- Current value: the badges a user shows on their profile (ADR-0071): a row means the user shows
+-- the badge of a role they hold.
+CREATE TABLE user_role_badge_displays (
+  user_id TEXT NOT NULL,
+  role_id TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, role_id)
+) STRICT;
+
 -- account (data-model §4.2) ------------------------------------------------------------------
 
 -- Resource: a local or remote actor. domain is '' for local actors.

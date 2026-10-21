@@ -3752,7 +3752,7 @@
     "description": "Heading and title of the report queue."
   },
   "admin.roles.builtin.admin": {
-    "defaultMessage": "すべての権限を持つ組み込みのロール。変更も削除もできません。",
+    "defaultMessage": "すべての権限を持つ組み込みのロール。変えられるのはバッジだけで、削除はできません。",
     "description": "Note on the built-in admin role in the list of roles."
   },
   "admin.roles.builtin.moderator": {
@@ -3962,6 +3962,98 @@
   "admin.roles.updated": {
     "defaultMessage": "ロール {role} を変更しました。持っている人の次の操作から効きます。監査ログに記録しました。",
     "description": "Result after changing a role. {role} is its key (isolated)."
+  },
+  "admin.roles.badge": {
+    "defaultMessage": "バッジ",
+    "description": "Term of a role's badge (ADR-0071) on the roles screen, and the heading of its field."
+  },
+  "admin.roles.badge.none": {
+    "defaultMessage": "バッジなし",
+    "description": "The value of the badge term when a role has no badge."
+  },
+  "admin.roles.badge.edit": {
+    "defaultMessage": "バッジ",
+    "description": "Button of a role that opens the dialog to change its badge."
+  },
+  "admin.roles.badge.edit_role": {
+    "defaultMessage": "{role} のバッジを変える",
+    "description": "Accessible name of the button that opens the badge dialog. {role} is the role's key."
+  },
+  "admin.roles.badge.edit.title": {
+    "defaultMessage": "{role} のバッジ",
+    "description": "Title of the dialog that changes a role's badge. {role} is the role's key."
+  },
+  "admin.roles.badge.description": {
+    "defaultMessage": "このロールを持つ人は、プロフィールにバッジを出せます。それぞれの人が出すと選ぶまでは出ず、ほかのサーバーには伝わりません。",
+    "description": "Explanation at the top of the badge dialog."
+  },
+  "admin.roles.badge.label": {
+    "defaultMessage": "名前",
+    "description": "Label of the field of the badge's name."
+  },
+  "admin.roles.badge.label.description": {
+    "defaultMessage": "{max} 文字までの 1 行です。どの言語でも書いたとおりに出ます。",
+    "description": "Hint of the badge's name. {max} is the longest name, 32."
+  },
+  "admin.roles.badge.label.invalid": {
+    "defaultMessage": "名前は 1〜{max} 文字で入れてください。",
+    "description": "Error when the badge's name is empty or too long. {max} is the longest name, 32."
+  },
+  "admin.roles.badge.color": {
+    "defaultMessage": "色",
+    "description": "Label of the radio group of the badge's color."
+  },
+  "admin.roles.badge.color.description": {
+    "defaultMessage": "色は飾りで、意味は名前が伝えます。",
+    "description": "Hint of the badge's color."
+  },
+  "admin.roles.badge.color.neutral": {
+    "defaultMessage": "グレー",
+    "description": "Name of the badge color neutral, a choice of the radio group."
+  },
+  "admin.roles.badge.color.red": {
+    "defaultMessage": "赤",
+    "description": "Name of the badge color red, a choice of the radio group."
+  },
+  "admin.roles.badge.color.orange": {
+    "defaultMessage": "オレンジ",
+    "description": "Name of the badge color orange, a choice of the radio group."
+  },
+  "admin.roles.badge.color.yellow": {
+    "defaultMessage": "黄",
+    "description": "Name of the badge color yellow, a choice of the radio group."
+  },
+  "admin.roles.badge.color.green": {
+    "defaultMessage": "緑",
+    "description": "Name of the badge color green, a choice of the radio group."
+  },
+  "admin.roles.badge.color.teal": {
+    "defaultMessage": "青緑",
+    "description": "Name of the badge color teal, a choice of the radio group."
+  },
+  "admin.roles.badge.color.blue": {
+    "defaultMessage": "青",
+    "description": "Name of the badge color blue, a choice of the radio group."
+  },
+  "admin.roles.badge.color.purple": {
+    "defaultMessage": "紫",
+    "description": "Name of the badge color purple, a choice of the radio group."
+  },
+  "admin.roles.badge.color.pink": {
+    "defaultMessage": "ピンク",
+    "description": "Name of the badge color pink, a choice of the radio group."
+  },
+  "admin.roles.badge.sample": {
+    "defaultMessage": "見本",
+    "description": "Label above the sample of the badge being edited."
+  },
+  "admin.roles.badge.sample.empty": {
+    "defaultMessage": "名前を入れると、バッジの見本が出ます。",
+    "description": "Shown instead of the sample while the badge's name is empty."
+  },
+  "admin.roles.badge.remove": {
+    "defaultMessage": "バッジを外す",
+    "description": "Button of the badge dialog that removes the role's badge, which hides it from every profile."
   },
   "admin.rules.add": {
     "defaultMessage": "ルールを追加する",
@@ -6282,6 +6374,10 @@
   "profile.joined": {
     "defaultMessage": "{date} に登録",
     "description": "When the account was created, on its profile. {date} is the formatted date, for example 'October 1, 2026'."
+  },
+  "profile.badges": {
+    "defaultMessage": "バッジ",
+    "description": "Accessible name of the list of the role badges on a profile (ADR-0071)."
   },
   "profile.list.back": {
     "defaultMessage": "{name} のプロフィールに戻る",
@@ -9050,6 +9146,26 @@
   "settings.profile.note.emoji": {
     "defaultMessage": "自己紹介に絵文字を入れる",
     "description": "Accessible name and tooltip of the button that opens the custom emoji picker for the bio."
+  },
+  "settings.profile.badges": {
+    "defaultMessage": "バッジ",
+    "description": "Heading of the section of the profile settings that chooses which role badges the profile shows (ADR-0071)."
+  },
+  "settings.profile.badges.description": {
+    "defaultMessage": "ロールのバッジのうち、プロフィールに出すものを選びます。出すと選ぶまでは出ず、出るのはプロフィールだけです。",
+    "description": "Explanation of the badges section."
+  },
+  "settings.profile.badges.shown": {
+    "defaultMessage": "{badge} をプロフィールに出しました。",
+    "description": "Announced when a badge is shown. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.hidden": {
+    "defaultMessage": "{badge} をプロフィールから外しました。",
+    "description": "Announced when a badge is hidden. {badge} is the badge's name, which the staff wrote."
+  },
+  "settings.profile.badges.failed": {
+    "defaultMessage": "バッジを変えられませんでした：{reason}",
+    "description": "Error under a badge's switch when the change was not saved. {reason} is the localized reason."
   },
   "reaction.picker.button": {
     "defaultMessage": "リアクションする",

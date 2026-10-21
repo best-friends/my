@@ -51,6 +51,10 @@ func (s *Server) roleDefinitionProblem(ctx context.Context, err error) (*RolePro
 		reason = RoleProblemReasonHeld
 	case errors.As(err, &missing):
 		reason = RoleProblemReasonMissingPermission
+	case errors.Is(err, appidentity.ErrInvalidBadgeLabel):
+		reason = RoleProblemReasonBadgeLabel
+	case errors.Is(err, appidentity.ErrInvalidBadgeColor):
+		reason = RoleProblemReasonBadgeColor
 	default:
 		return nil, nil, false
 	}
@@ -122,9 +126,16 @@ func (s *Server) UpdateRole(ctx context.Context, req UpdateRoleRequestObject) (U
 	case req.Body == nil:
 		return UpdateRoledefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "body")), nil
 	}
-	in := appidentity.UpdateRoleInput{Key: req.Role, Position: req.Body.Position, ByUserID: v.UserID}
+	remove := req.Body.RemoveBadge != nil && *req.Body.RemoveBadge
+	if remove && req.Body.Badge != nil {
+		return UpdateRoledefaultApplicationProblemPlusJSONResponse(s.unprocessable(ctx, "remove_badge")), nil
+	}
+	in := appidentity.UpdateRoleInput{Key: req.Role, Position: req.Body.Position, ByUserID: v.UserID, SetBadge: remove}
 	if req.Body.Permissions != nil {
 		in.Permissions, in.SetPermissions = permissionsFrom(*req.Body.Permissions), true
+	}
+	if b := req.Body.Badge; b != nil {
+		in.Badge, in.SetBadge = &appidentity.BadgeInput{Label: b.Label, Color: identity.BadgeColor(b.Color)}, true
 	}
 	r, err := s.o.Roles.UpdateRole(ctx, in)
 	if rp, p, ok := s.roleDefinitionProblem(ctx, err); ok {

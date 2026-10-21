@@ -760,8 +760,8 @@
     "description": "API error title for HTTP 422 when a change to a role (creating, changing, or deleting it) breaks a rule; the detail says which."
   },
   "errors.role.invalid_detail": {
-    "defaultMessage": "{reason, select, key {キーは 1〜64 文字の英小文字・数字・アンダースコア・ハイフンにしてください。} key_taken {このキーのロールがすでにあります。} position {位置は 0〜999 にしてください。} permissions {同じ権限は 1 回だけ選んでください。} builtin {admin のロールは変えられず、組み込みのロールは削除できません。} held {先に、このロールを持つ全員から剥奪してください。} missing_permission {付けたり外したりできるのは、自分が持つ権限だけです。} other {変更が規則に反しています。}}",
-    "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, or missing_permission."
+    "defaultMessage": "{reason, select, key {キーは 1〜64 文字の英小文字・数字・アンダースコア・ハイフンにしてください。} key_taken {このキーのロールがすでにあります。} position {位置は 0〜999 にしてください。} permissions {同じ権限は 1 回だけ選んでください。} builtin {admin のロールは変えられず、組み込みのロールは削除できません。} held {先に、このロールを持つ全員から剥奪してください。} missing_permission {付けたり外したりできるのは、自分が持つ権限だけです。} badge_label {バッジの名前は 1〜32 文字の 1 行にしてください。} badge_color {バッジの色は決まった色から選んでください。} other {変更が規則に反しています。}}",
+    "description": "API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, missing_permission, badge_label, or badge_color."
   },
   "errors.self_relationship": {
     "defaultMessage": "自分のアカウントにはこの操作を行えません。",

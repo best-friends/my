@@ -1390,9 +1390,9 @@ func (l *Localizer) ServerErrorsRoleInvalid() string {
 	return l.format("server:errors.role.invalid", nil)
 }
 
-// ServerErrorsRoleInvalidDetail formats "server:errors.role.invalid_detail". API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, or missing_permission.
+// ServerErrorsRoleInvalidDetail formats "server:errors.role.invalid_detail". API error detail for HTTP 422 when a change to a role breaks a rule. {reason} is key, key_taken, position, permissions, builtin, held, missing_permission, badge_label, or badge_color.
 //
-//	en: {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} other {The change breaks a rule.}}
+//	en: {reason, select, key {The key must be 1 to 64 lowercase letters, digits, underscores, or hyphens.} key_taken {Another role has this key.} position {The position must be from 0 to 999.} permissions {Choose each permission at most once.} builtin {The admin role cannot change, and the built-in roles cannot be deleted.} held {Revoke the role from everyone who holds it first.} missing_permission {You can give or take only the permissions you hold.} badge_label {The badge name must be 1 to 32 characters on one line.} badge_color {Choose one of the badge colors.} other {The change breaks a rule.}}
 func (l *Localizer) ServerErrorsRoleInvalidDetail(reason string) string {
 	return l.format("server:errors.role.invalid_detail", map[string]any{"reason": reason})
 }

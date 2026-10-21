@@ -25,7 +25,10 @@ import (
 // they would change nothing; a user changes only the roles at or below their own; the admin role
 // keeps its last holder, also when two revocations race; unknown users and roles are reported;
 // roles are created, changed, and deleted (except the built-in ones, and those that users hold)
-// with their audit log entries, within the rank and the permissions of the actor. It uses the same harness as AccountRepositoryContract.
+// with their audit log entries, within the rank and the permissions of the actor; role badges
+// are set and removed, shown only by the users who chose to, and their choice goes with the
+// role, moving to the new role of a replacement (ADR-0071). It uses the same harness as
+// AccountRepositoryContract.
 func RoleRepositoryContract(t *testing.T, newHarness AccountFactory) {
 	t.Helper()
 	cases := []struct {
@@ -42,6 +45,9 @@ func RoleRepositoryContract(t *testing.T, newHarness AccountFactory) {
 		{"KeepsTheBuiltinRoles", roleKeepsBuiltins},
 		{"RefusesInvalidRoles", roleRefusesInvalid},
 		{"RefusesRoleChangesBeyondTheActor", roleRefusesChangesBeyondActor},
+		{"ShowsBadgesByChoice", roleBadgesAreShownByChoice},
+		{"ChangesBadges", roleBadgeChanges},
+		{"ReplacesRolesAndMovesTheBadge", roleReplacesAndMovesTheBadge},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

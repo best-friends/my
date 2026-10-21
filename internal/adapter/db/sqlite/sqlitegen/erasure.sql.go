@@ -1009,6 +1009,15 @@ func (q *Queries) EraseUserPrimaryEmail(ctx context.Context, userID string) erro
 	return err
 }
 
+const eraseUserRoleBadgeDisplays = `-- name: EraseUserRoleBadgeDisplays :exec
+DELETE FROM user_role_badge_displays WHERE user_id = ?1
+`
+
+func (q *Queries) EraseUserRoleBadgeDisplays(ctx context.Context, userID string) error {
+	_, err := q.db.ExecContext(ctx, eraseUserRoleBadgeDisplays, userID)
+	return err
+}
+
 const eraseUserTimeZone = `-- name: EraseUserTimeZone :exec
 DELETE FROM user_time_zones WHERE user_id = ?1
 `

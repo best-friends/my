@@ -51,6 +51,7 @@ Colors have two layers in [src/theme.css](src/theme.css):
 | `border-strong` | Boundaries of controls (inputs, checkboxes) that must be seen (WCAG 1.4.11) |
 | `focus` | The focus ring |
 | `overlay` | The translucent scrim behind modal dialogs and sheets |
+| `badge-<color>` / `badge-<color>-fg` | The background and the text of a role badge (`RoleBadge`, ADR-0071), for each of `neutral`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink` (`badgeColors`) |
 
 ### Contrast pairs
 
@@ -60,6 +61,8 @@ verifies each against WCAG 2.2 AA in both themes: 4.5:1 for text, 3:1 for contro
 - On each of `surface`, `surface-raised`, `surface-sunken`:
   `fg`, `fg-muted`, `accent`, `accent-hover`, `danger`, `success`, `warning` (text) and `border-strong`, `focus` (UI).
 - `accent-fg` on `accent` and `accent-hover`; `danger-fg` on `danger`; `success-fg` on `success`; `warning-fg` on `warning` (text).
+- `badge-<color>-fg` on `badge-<color>` for every badge color (text). A server theme cannot override the badge tokens, so their
+  pairs hold under every theme; the color only decorates, and the badge's label carries its meaning (WCAG 1.4.1).
 - `border` and `overlay` are decorative and have no minimum.
 
 A new semantic color needs its pairs (or a place in the decorative list) in `tokens.ts`; the check fails otherwise.
@@ -214,7 +217,7 @@ The kit gives every region of data the same four states
 
 ## Server themes
 
-An administrator can override the tokens other than the palette for the whole server and add a custom CSS
+An administrator can override the tokens other than the palette and the badge colors for the whole server and add a custom CSS
 ([ADR-0059](../../docs/adr/0059-design-tokens-and-instance-theme.md), [operations](../../docs/operations/instance-settings.md#テーマ)).
 The server serves them as one stylesheet at `/theme/{revision}.css`: a `:root` rule with the overrides, then the custom CSS, both outside
 any cascade layer, so they win over the `@layer theme` that Tailwind emits the defaults into and over the utilities. That works only while
@@ -222,12 +225,12 @@ the utilities refer to the variables, so no token is declared in `@theme inline`
 
 [scripts/theme-tokens.ts](scripts/theme-tokens.ts) (`make web-tokens-gen`) generates the list of the overridable tokens from `theme.css`, with
 each token's kind, defaults (colors resolved to `#rrggbb` per theme), and bounds from `tokenRules` in [src/tokens.ts](src/tokens.ts), and the
-contrast pairs: `src/themeTokens.gen.ts` for the theme editor and `internal/domain/instance/theme_tokens.gen.go` for the server, which checks
+contrast pairs whose two colors are overridable (`themeColorPairs`): `src/themeTokens.gen.ts` for the theme editor and `internal/domain/instance/theme_tokens.gen.go` for the server, which checks
 every theme against them. A token that matches no rule (and is not in `fixedTokens`) fails the generator.
 
 | Tokens | Kind | Override |
 | --- | --- | --- |
-| `color-*` | color | `#rrggbb` per theme (`#rrggbbaa` for `color-overlay`); every contrast pair must keep AA in both themes |
+| `color-*` (but `color-badge-*`) | color | `#rrggbb` per theme (`#rrggbbaa` for `color-overlay`); every contrast pair must keep AA in both themes |
 | `font-sans`, `font-mono` | font family | Family names, quoted or plain, comma-separated (at most 30) |
 | `text-*` | length | `0` or rem / px, 0.625rem to 3rem |
 | `text-*--line-height` | number | 1 to 2.5 |

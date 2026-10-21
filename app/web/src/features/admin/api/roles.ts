@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The queries and mutations of the roles screen (web-client.md S1, FR-720, manage_roles): the roles of the instance
-// (GET /admin/roles, shared with an account's roles region), creating one (POST /admin/roles), changing its position
-// and permissions (PATCH /admin/roles/{role}) and deleting it (DELETE). The server keeps the built-in roles (admin
-// never changes; neither admin nor moderator is deleted), refuses a role above the viewer's highest one (403) and
+// (GET /admin/roles, shared with an account's roles region), creating one (POST /admin/roles), changing its position,
+// permissions and badge (PATCH /admin/roles/{role}, ADR-0071) and deleting it (DELETE). The server keeps the built-in
+// roles (admin changes only its badge; neither admin nor moderator is deleted), refuses a role above the viewer's highest one (403) and
 // permissions the viewer lacks, and deletes no role that someone holds: a refusal is a 422 `invalid-role` problem
 // whose `reason` says which. Every change is recorded in the audit log.
 import type { QueryClient } from "@tanstack/react-query";
@@ -22,7 +22,10 @@ export type RoleProblemReason = Schemas["RoleProblemReason"];
 /** The problem type of a role change that breaks a rule. */
 const invalidRoleProblem = "/api/v1/problems/invalid-role";
 
-/** The built-in roles: admin never changes, and neither is deleted. */
+/** The longest name of a badge, in characters (RoleBadge). */
+export const badgeLabelLimit = 32;
+
+/** The built-in roles: admin changes only its badge, and neither is deleted. */
 export const adminRoleKey = "admin";
 export const moderatorRoleKey = "moderator";
 
@@ -112,14 +115,17 @@ export function deleteRoleMutation(api: Api) {
 
 /**
  * Marks what a change of a role changes (ADR-0045): the roles of the instance, the roles of every account (which
- * carry their permissions), the viewer (whose permissions a change of a role they hold changes) and the audit log;
- * the queries shown now are fetched again and awaited.
+ * carry their permissions), the viewer (whose permissions a change of a role they hold changes), the profiles (whose
+ * badges a change of a badge changes), the viewer's badge choices and the audit log; the queries shown now are fetched
+ * again and awaited.
  */
 export async function refreshRoles(api: Api, queryClient: QueryClient): Promise<void> {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: rolesQueryOptions(api).queryKey }),
     queryClient.invalidateQueries({ queryKey: ["get", "/admin/accounts/{id}/roles"] }),
     queryClient.invalidateQueries({ queryKey: viewerQueryOptions(api).queryKey }),
+    queryClient.invalidateQueries({ queryKey: ["get", "/accounts/lookup"] }),
+    queryClient.invalidateQueries({ queryKey: ["get", "/preferences/badges"] }),
     refreshAuditLog(queryClient),
   ]);
 }

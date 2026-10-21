@@ -204,6 +204,7 @@ export const handlers = [
       key: String(params["role"]),
       position: body.position ?? 100,
       permissions: body.permissions ?? ["manage_reports", "manage_accounts", "view_audit"],
+      ...(body.badge === undefined ? {} : { badge: body.badge }),
     };
     return withViewer(request, () => HttpResponse.json(role));
   }),
