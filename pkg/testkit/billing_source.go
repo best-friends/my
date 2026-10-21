@@ -21,8 +21,9 @@ import (
 // pages that a fetch takes and an optional failure. It passes BillingSourceContract and stands in
 // for the aws and gcp adapters in the tests of the imports.
 type FakeBillingSource struct {
-	name string
-	loc  *time.Location
+	name   string
+	loc    *time.Location
+	method string
 
 	mu       sync.Mutex
 	months   map[finance.YearMonth]FakeBillingMonth
@@ -50,9 +51,19 @@ type FakeBillingRow struct {
 }
 
 // NewFakeBillingSource returns a source named name whose billing months are in loc, with no data
-// and one billed page per fetch.
+// and one billed page per fetch. Its method is the default of the source: MethodCostExplorer for
+// aws, MethodBigQuery otherwise; NewFakeBillingSourceMethod sets another.
 func NewFakeBillingSource(name string, loc *time.Location) *FakeBillingSource {
-	return &FakeBillingSource{name: name, loc: loc, months: map[finance.YearMonth]FakeBillingMonth{}, pages: 1}
+	method := appfinance.MethodBigQuery
+	if name == "aws" {
+		method = appfinance.MethodCostExplorer
+	}
+	return NewFakeBillingSourceMethod(name, loc, method)
+}
+
+// NewFakeBillingSourceMethod returns NewFakeBillingSource with the given method.
+func NewFakeBillingSourceMethod(name string, loc *time.Location, method string) *FakeBillingSource {
+	return &FakeBillingSource{name: name, loc: loc, method: method, months: map[finance.YearMonth]FakeBillingMonth{}, pages: 1}
 }
 
 // SetMonth sets the provider's data of month m.
@@ -95,6 +106,9 @@ func (f *FakeBillingSource) Name() string { return f.name }
 
 // Location implements appfinance.BillingSource.
 func (f *FakeBillingSource) Location() *time.Location { return f.loc }
+
+// Method implements appfinance.BillingSource.
+func (f *FakeBillingSource) Method() string { return f.method }
 
 // fakeServiceCategories is the fake provider's table of known services.
 var fakeServiceCategories = map[string]finance.Category{

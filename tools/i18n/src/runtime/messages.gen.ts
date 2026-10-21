@@ -1534,6 +1534,8 @@ export interface MessageArgs {
   "client:admin.finance.imports.last_run": {};
   /** Last successful import */
   "client:admin.finance.imports.last_success": {};
+  /** An approximation from the budget notifications: totals based on estimates, without a breakdown by service. */
+  "client:admin.finance.imports.method.budget": {};
   /** Billing months of {provider} */
   "client:admin.finance.imports.months": { provider: string };
   /** Never */

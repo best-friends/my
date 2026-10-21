@@ -152,6 +152,9 @@ func (s *BigQuerySource) Name() string { return Name }
 // Location implements appfinance.BillingSource: the invoice months are US Pacific months.
 func (s *BigQuerySource) Location() *time.Location { return s.loc }
 
+// Method implements appfinance.BillingSource.
+func (s *BigQuerySource) Method() string { return appfinance.MethodBigQuery }
+
 // Fetch implements appfinance.BillingSource. It runs one query of the months that have begun,
 // with maximumBytesBilled, and reads the pages of its results, counting each call as a request
 // and stopping with ErrRequestCap rather than make one beyond req.MaxRequests, keeping no line.

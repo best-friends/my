@@ -23,12 +23,26 @@ type BillingSource interface {
 	Name() string
 	// Location is the time zone of the source's billing periods (UTC, America/Los_Angeles).
 	Location() *time.Location
+	// Method is how the source reads the provider's data: MethodCostExplorer, MethodBigQuery, or
+	// MethodBudget.
+	Method() string
 	// Fetch returns the costs of the given billing months as the provider reports them now. It
 	// makes at most req.MaxRequests billed requests and fails with ErrRequestCap rather than make
 	// one more, keeping none of the lines it read. The Snapshot carries the requests made and the
 	// bytes billed even when Fetch fails. The errors are the ones of ImportErrorKindOf.
 	Fetch(ctx context.Context, req FetchRequest) (Snapshot, error)
 }
+
+// The methods of the billing sources (ADR-0068 §1, §7), which the screens of the imports show.
+const (
+	// MethodCostExplorer is the AWS Cost Explorer API, by service and charge type.
+	MethodCostExplorer = "cost_explorer"
+	// MethodBigQuery is the Cloud Billing export to BigQuery, by service and charge type.
+	MethodBigQuery = "bigquery"
+	// MethodBudget is the notifications of a Cloud Billing budget: one estimated total per
+	// budget and month, without a breakdown by service.
+	MethodBudget = "budget"
+)
 
 // FetchRequest asks a BillingSource for the costs of Months, oldest first, at most 2, in the
 // source's Location, with at most MaxRequests billed requests (0 forbids any).

@@ -54,6 +54,7 @@ func newBillingImportRun(r appfinance.Run) BillingImportRun {
 func newBillingImport(st appfinance.ImportStatus) BillingImport {
 	out := BillingImport{
 		Source: BillingSourceName(st.Source), Provider: st.Provider, TimeZone: st.Location.String(),
+		Method:        BillingImportMethod(st.Method),
 		RequestsToday: st.RequestsToday, RequestsThisMonth: st.RequestsThisMonth, BytesBilledThisMonth: st.BytesBilledThisMonth,
 		Months: make([]BillingImportMonth, 0, len(st.Months)),
 	}

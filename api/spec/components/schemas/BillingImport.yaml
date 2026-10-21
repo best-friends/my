@@ -1,13 +1,22 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 description: The state of the imports of a billing source (ADR-0068 §9).
 type: object
-required: [source, provider, time_zone, requests_today, requests_this_month, bytes_billed_this_month, months]
+required: [source, provider, time_zone, method, requests_today, requests_this_month, bytes_billed_this_month, months]
 properties:
   source:
     $ref: ./BillingSourceName.yaml
   provider:
     description: The provider's name, as the breakdown of the totals shows it.
     type: string
+  method:
+    description: |
+      How the source reads the provider's data (ADR-0068 §1, §7): `cost_explorer` (AWS Cost
+      Explorer) and `bigquery` (the Cloud Billing export to BigQuery, `billing_gcp_method =
+      bigquery`) by service and charge type; `budget` (the notifications of a Cloud Billing budget,
+      `billing_gcp_method = budget`) an approximation, one estimated total per budget and month
+      without a breakdown by service.
+    type: string
+    enum: [cost_explorer, bigquery, budget]
   time_zone:
     description: |
       The IANA time zone of the provider's billing months (`UTC`, `America/Los_Angeles`),

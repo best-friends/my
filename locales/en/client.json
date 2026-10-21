@@ -9707,6 +9707,10 @@
     "defaultMessage": "Bytes billed this month",
     "description": "Term of the BigQuery bytes billed this month on the costs screen."
   },
+  "admin.finance.imports.method.budget": {
+    "defaultMessage": "An approximation from the budget notifications: totals based on estimates, without a breakdown by service.",
+    "description": "Note under a provider on the costs screen when Google Cloud is imported from its budget notifications (billing_gcp_method = budget): the figures are approximate."
+  },
   "admin.finance.imports.months": {
     "defaultMessage": "Billing months of {provider}",
     "description": "Accessible name of the list of a provider's imported billing months on the costs screen."

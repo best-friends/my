@@ -15,14 +15,14 @@ import (
 	"github.com/best-friends/my/internal/interface/clientapi"
 )
 
-// fakeBillingImports has the aws source, imported once and then capped, and records the
-// requested imports; a second request is too soon.
+// fakeBillingImports has the aws source, imported once and then capped, and the gcp source by
+// its budget, never imported; it records the requested imports; a second request is too soon.
 type fakeBillingImports struct{ requested []string }
 
 func (f *fakeBillingImports) ImportStatuses(context.Context) ([]appfinance.ImportStatus, error) {
 	at := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
 	return []appfinance.ImportStatus{{
-		Source: "aws", Provider: "AWS", Location: time.UTC,
+		Source: "aws", Provider: "AWS", Location: time.UTC, Method: appfinance.MethodCostExplorer,
 		LastRun:       &appfinance.Run{ErrorKind: appfinance.ImportErrorRequestCap, OccurredAt: at.Add(time.Hour)},
 		LastSuccess:   &appfinance.Run{ErrorKind: appfinance.ImportErrorNone, Requests: 1, OccurredAt: at},
 		RequestsToday: 4, RequestsThisMonth: 40, Caps: &appfinance.RequestCaps{PerDay: 4, PerMonth: 120},
@@ -30,6 +30,8 @@ func (f *fakeBillingImports) ImportStatuses(context.Context) ([]appfinance.Impor
 			{Month: finance.YearMonth{Year: 2026, Month: time.October}, Kind: finance.KindEstimate, Totals: []finance.Money{{Minor: 3124, Currency: "USD"}}},
 			{Month: finance.YearMonth{Year: 2026, Month: time.September}, Kind: finance.KindCorrection, Totals: []finance.Money{{Minor: -5, Currency: "USD"}}},
 		},
+	}, {
+		Source: "gcp", Provider: "Google Cloud", Location: time.UTC, Method: appfinance.MethodBudget,
 	}}, nil
 }
 
@@ -62,11 +64,11 @@ func TestBillingImports(t *testing.T) {
 		t.Fatalf("GET /admin/billing_imports = %d, Cache-Control %q", res.StatusCode, res.Header.Get("Cache-Control"))
 	}
 	list := decodeJSON[clientapi.BillingImportList](t, res)
-	if len(list.Items) != 1 {
+	if len(list.Items) != 2 {
 		t.Fatalf("items = %+v", list.Items)
 	}
 	aws := list.Items[0]
-	if aws.Source != "aws" || aws.Provider != "AWS" || aws.TimeZone != "UTC" || aws.LastRun == nil ||
+	if aws.Source != "aws" || aws.Provider != "AWS" || aws.TimeZone != "UTC" || aws.Method != clientapi.BillingImportMethodCostExplorer || aws.LastRun == nil ||
 		aws.LastRun.Outcome != clientapi.BillingImportRunOutcomeFailed || aws.LastRun.ErrorKind != "request_cap" ||
 		aws.LastSuccessAt == nil || aws.RequestsToday != 4 || aws.RequestsThisMonth != 40 ||
 		aws.MaxRequestsPerDay == nil || *aws.MaxRequestsPerDay != 4 || aws.MaxRequestsPerMonth == nil || *aws.MaxRequestsPerMonth != 120 {
@@ -76,6 +78,9 @@ func TestBillingImports(t *testing.T) {
 		aws.Months[0].Totals[0] != (clientapi.Money{Amount: "31.24", Currency: "USD"}) ||
 		aws.Months[1].Kind != "correction" || aws.Months[1].Totals[0].Amount != "-0.05" {
 		t.Errorf("months = %+v", aws.Months)
+	}
+	if gcp := list.Items[1]; gcp.Source != "gcp" || gcp.Method != clientapi.BillingImportMethodBudget || gcp.LastRun != nil || len(gcp.Months) != 0 {
+		t.Errorf("gcp = %+v", gcp)
 	}
 
 	for _, tc := range []struct {

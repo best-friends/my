@@ -300,6 +300,7 @@ describe("the costs screen", () => {
               source: "aws",
               provider: "AWS",
               time_zone: "UTC",
+              method: "cost_explorer",
               last_run: { outcome: "failed", error_kind: "request_cap", requests: 0, bytes_billed: 0, occurred_at: "2026-10-21T01:00:00Z" },
               last_success_at: "2026-10-20T01:00:00Z",
               requests_today: 4,
@@ -331,6 +332,44 @@ describe("the costs screen", () => {
     await user.click(within(region).getByRole("button", { name: "Import now: AWS" }));
     expect(await within(region).findByRole("alert")).toHaveTextContent("An import of this provider ran in the last hour.");
     expect(runs).toEqual(["aws", "aws"]);
+  });
+
+  test.each([
+    { method: "budget", note: true },
+    { method: "bigquery", note: false },
+  ] as const)("says whether the Google Cloud figures are an approximation for the $method method", async ({ method, note }) => {
+    totalsServer();
+    itemsServer([]);
+    server.use(
+      http.get(`${apiBase}/admin/billing_imports`, () =>
+        HttpResponse.json({
+          items: [
+            {
+              source: "gcp",
+              provider: "Google Cloud",
+              time_zone: "America/Los_Angeles",
+              method,
+              requests_today: 1,
+              requests_this_month: 3,
+              bytes_billed_this_month: 2048,
+              months: [{ month: "2026-10", kind: "estimate", totals: [{ amount: "12.50", currency: "USD" }] }],
+            },
+          ],
+        } satisfies Schemas["BillingImportList"]),
+      ),
+    );
+    await renderApp({ path: "/admin/finance" });
+    const region = await screen.findByRole("region", { name: "Billing imports" });
+
+    expect(within(region).getByRole("heading", { level: 3, name: "Google Cloud" })).toBeInTheDocument();
+    const approximation = "An approximation from the budget notifications: totals based on estimates, without a breakdown by service.";
+    if (note) {
+      expect(region).toHaveTextContent(approximation);
+      expect(region).not.toHaveTextContent("Bytes billed this month");
+    } else {
+      expect(region).not.toHaveTextContent(approximation);
+      expect(region).toHaveTextContent("Bytes billed this month");
+    }
   });
 });
 
