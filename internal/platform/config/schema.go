@@ -520,7 +520,7 @@ var schema = []field{
 	},
 	{
 		key:   "billing_sources",
-		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider. Empty imports nothing.",
+		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tag `no_billing_aws` leaves `aws` out. Empty imports nothing.",
 		check: checkBillingSources,
 		set: func(c *Config, v string) {
 			for s := range strings.SplitSeq(v, ",") {
@@ -541,6 +541,53 @@ var schema = []field{
 		def:   strconv.Itoa(defaultBillingAWSRequestsPerMonth),
 		check: checkPositiveInt,
 		set:   func(c *Config, v string) { c.BillingAWSMaxRequestsPerMonth, _ = strconv.Atoi(v) },
+	},
+	{
+		key: "billing_aws_metric",
+		doc: "Cost Explorer metric that the imports of `billing_sources = aws` record (ADR-0068 §6).",
+		def: "NetUnblendedCost",
+		choices: []choice{
+			{value: "NetUnblendedCost", inV0: true, doc: "The cost after the discounts (Savings Plans, Reserved Instances, private pricing), the closest to the invoice."},
+			{value: "UnblendedCost", inV0: true, doc: "The cost before the discounts."},
+		},
+		set: func(c *Config, v string) { c.BillingAWSMetric = v },
+	},
+	{
+		key: "billing_aws_filter",
+		doc: "Which costs of the AWS account the imports of `billing_sources = aws` take (ADR-0068 §6). The most accurate is an AWS account that serves this instance alone, with `none`: the taxes and the support fees carry no tag and may fall out of a tag filter (docs/operations/billing-import.md).",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "Every cost that the credentials can see: the account's own, or, from the management account of an organization, every member account's."},
+			{value: "linked_account", inV0: true, doc: "The costs of the member accounts of `billing_aws_linked_accounts` (the `LINKED_ACCOUNT` dimension)."},
+			{value: "tag", inV0: true, doc: "The costs of the resources that carry the cost allocation tag `billing_aws_tag`, which must be activated in the Billing console first."},
+		},
+		set: func(c *Config, v string) { c.BillingAWSFilter = v },
+	},
+	{
+		key:          "billing_aws_tag",
+		doc:          "The activated cost allocation tag of `billing_aws_filter = tag`, `key=value` such as `app=my`. A tag shows in the billing data from its activation on, up to 24 hours after it is activated; older costs need a backfill in the Billing console (docs/operations/billing-import.md).",
+		requiredWhen: "when `billing_aws_filter = tag`",
+		check:        checkBillingAWSTag,
+		set:          func(c *Config, v string) { c.BillingAWSTag = strings.TrimSpace(v) },
+	},
+	{
+		key:          "billing_aws_linked_accounts",
+		doc:          "The 12-digit IDs of the member accounts of `billing_aws_filter = linked_account`, comma-separated. Reading them from a member account needs Linked Account Access, which the management account turns on in the Cost Explorer preferences.",
+		requiredWhen: "when `billing_aws_filter = linked_account`",
+		check:        checkBillingAWSLinkedAccounts,
+		set: func(c *Config, v string) {
+			for s := range strings.SplitSeq(v, ",") {
+				if s = strings.TrimSpace(s); s != "" {
+					c.BillingAWSLinkedAccounts = append(c.BillingAWSLinkedAccounts, s)
+				}
+			}
+		},
+	},
+	{
+		key:   "billing_aws_role_arn",
+		doc:   "ARN of an IAM role that the imports of `billing_sources = aws` assume with the Google ID token of the instance's service account (`AssumeRoleWithWebIdentity`, audience: this ARN), for a server on Google Cloud (Cloud Run) without AWS keys (ADR-0068 §8). The role trusts the identity provider `accounts.google.com` for the service account (docs/operations/billing-import.md). Empty uses the AWS SDK's default chain (the execution role, `AWS_ACCESS_KEY_ID`, the shared files).",
+		check: checkBillingAWSRoleARN,
+		set:   func(c *Config, v string) { c.BillingAWSRoleARN = v },
 	},
 	{
 		key:   "dead_job_retention",
@@ -683,6 +730,12 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 			}
 		}
 	}
+	if vals["billing_aws_filter"] == "tag" && !present["billing_aws_tag"] {
+		issues = append(issues, Issue{Key: "billing_aws_tag", Missing: true, Message: "required when billing_aws_filter is tag"})
+	}
+	if vals["billing_aws_filter"] == "linked_account" && !present["billing_aws_linked_accounts"] {
+		issues = append(issues, Issue{Key: "billing_aws_linked_accounts", Missing: true, Message: "required when billing_aws_filter is linked_account"})
+	}
 	if vals["http_allow_private_networks"] == "true" && vals["profile"] != "development" {
 		issues = append(issues, Issue{Key: "http_allow_private_networks", Message: "true is refused in the production profile; set profile = development"})
 	}
@@ -727,6 +780,9 @@ func checkBillingSources(v string) error {
 		s = strings.TrimSpace(s)
 		if !slices.Contains(billingSourceNames, s) {
 			return fmt.Errorf("%q is not a billing source; use aws or gcp, comma-separated", s)
+		}
+		if tag, ok := excludedValues["billing_sources"][s]; ok {
+			return excludedError(s, tag)
 		}
 		if seen[s] {
 			return fmt.Errorf("%q is listed twice", s)
