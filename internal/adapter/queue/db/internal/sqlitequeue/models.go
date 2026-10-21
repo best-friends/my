@@ -16,6 +16,7 @@ type DeadJob struct {
 	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
+	TraceParent    sql.NullString
 	Attempt        int64
 	LastError      string
 	CreatedAt      int64
@@ -28,6 +29,7 @@ type OutboxEvent struct {
 	Payload        []byte
 	IdempotencyKey sql.NullString
 	OrderingKey    sql.NullString
+	TraceParent    sql.NullString
 	RunAt          int64
 	CreatedAt      int64
 }

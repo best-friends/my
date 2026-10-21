@@ -21,11 +21,11 @@ type sqliteStore struct{}
 var _ store = sqliteStore{}
 
 func sqliteQueries(tx uow.Tx) (*sqlitequeue.Queries, error) {
-	sqlTx, err := sqlite.SQLTx(tx)
+	db, err := sqlite.QueryTx(tx)
 	if err != nil {
 		return nil, err
 	}
-	return sqlitequeue.New(sqlTx), nil
+	return sqlitequeue.New(db), nil
 }
 
 func millis(t time.Time) int64 { return t.UnixMilli() }
@@ -45,6 +45,7 @@ func (sqliteStore) insertJob(ctx context.Context, tx uow.Tx, j queue.Job) error 
 		Payload:        j.Payload,
 		IdempotencyKey: nullString(j.IdempotencyKey),
 		OrderingKey:    nullString(j.OrderingKey),
+		TraceParent:    nullString(j.TraceParent),
 		RunAt:          millis(j.RunAt),
 		CreatedAt:      millis(j.CreatedAt),
 	})
@@ -71,6 +72,7 @@ func (sqliteStore) claim(ctx context.Context, tx uow.Tx, worker string, now, unt
 		Type:           r.Type,
 		Payload:        json.RawMessage(r.Payload),
 		IdempotencyKey: r.IdempotencyKey.String,
+		TraceParent:    r.TraceParent.String,
 		OrderingKey:    r.OrderingKey.String,
 		Attempt:        int(r.Attempt),
 		RunAt:          fromMillis(r.RunAt),
@@ -137,6 +139,7 @@ func (sqliteStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJobP
 			Payload:        json.RawMessage(r.Payload),
 			IdempotencyKey: r.IdempotencyKey.String,
 			OrderingKey:    r.OrderingKey.String,
+			TraceParent:    r.TraceParent.String,
 			Attempt:        int(r.Attempt),
 			LastError:      r.LastError,
 			CreatedAt:      fromMillis(r.CreatedAt),
@@ -182,6 +185,7 @@ func (sqliteStore) insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) err
 		Payload:        j.Payload,
 		IdempotencyKey: nullString(j.IdempotencyKey),
 		OrderingKey:    nullString(j.OrderingKey),
+		TraceParent:    nullString(j.TraceParent),
 		RunAt:          millis(j.RunAt),
 		CreatedAt:      millis(j.CreatedAt),
 	})
@@ -203,6 +207,7 @@ func (sqliteStore) listOutbox(ctx context.Context, tx uow.Tx, limit int) ([]queu
 			Type:           r.JobType,
 			Payload:        json.RawMessage(r.Payload),
 			IdempotencyKey: r.IdempotencyKey.String,
+			TraceParent:    r.TraceParent.String,
 			OrderingKey:    r.OrderingKey.String,
 			RunAt:          fromMillis(r.RunAt),
 			CreatedAt:      fromMillis(r.CreatedAt),

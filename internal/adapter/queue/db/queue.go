@@ -15,10 +15,13 @@ import (
 	"github.com/best-friends/my/internal/app/uow"
 )
 
-// Options configure a Queue or an Outbox. Both fields are required.
+// Options configure a Queue or an Outbox. Clock and IDs are required.
 type Options struct {
 	Clock kernel.Clock
 	IDs   kernel.IDGenerator
+	// Tracer fills the TraceParent of the enqueued jobs from the span of the caller's context
+	// (ADR-0063 §2); nil leaves it empty.
+	Tracer kernel.Tracer
 }
 
 func (o Options) check() {
@@ -71,8 +74,8 @@ func NewPostgres(d *postgres.DB, opts Options) *Queue {
 	return &Queue{db: d, st: postgresStore{}, opts: opts}
 }
 
-// build turns new jobs into stored jobs with fresh IDs.
-func build(opts Options, jobs []queue.NewJob) ([]queue.Job, error) {
+// build turns new jobs into stored jobs with fresh IDs, traced from the span of ctx.
+func build(ctx context.Context, opts Options, jobs []queue.NewJob) ([]queue.Job, error) {
 	now := opts.Clock.Now()
 	out := make([]queue.Job, len(jobs))
 	for i, n := range jobs {
@@ -82,12 +85,13 @@ func build(opts Options, jobs []queue.NewJob) ([]queue.Job, error) {
 		}
 		out[i] = j
 	}
+	queue.TraceJobs(ctx, opts.Tracer, out)
 	return out, nil
 }
 
 // Enqueue implements queue.JobQueue in a transaction of its own.
 func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
-	built, err := build(q.opts, jobs)
+	built, err := build(ctx, q.opts, jobs)
 	if err != nil {
 		return err
 	}
@@ -98,7 +102,7 @@ func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
 // with the caller's domain writes. tx must come from the database this queue lives in.
 func (q *Queue) EnqueueTx(ctx context.Context, tx uow.Tx, jobs ...queue.NewJob) error {
 	// IDs are generated per attempt: a retried transaction rolled the previous rows back.
-	built, err := build(q.opts, jobs)
+	built, err := build(ctx, q.opts, jobs)
 	if err != nil {
 		return err
 	}

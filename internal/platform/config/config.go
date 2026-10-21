@@ -120,6 +120,11 @@ type Config struct {
 	MetricsListen        string
 	MetricsEMFNamespace  string
 	MetricsEMFDimensions []string
+	// TracesExporter is the Tracer adapter, TracesSampleRatio the share of the root spans that
+	// are recorded, and TracesFlush when the spans are sent (ADR-0063 §5).
+	TracesExporter    string
+	TracesSampleRatio float64
+	TracesFlush       string
 }
 
 // ServerOrigin returns the origin at which browsers reach the server itself: its sign-in screens,
@@ -201,6 +206,9 @@ func (c *Config) LogValue() slog.Value {
 		slog.String("metrics_listen", c.MetricsListen),
 		slog.String("metrics_emf_namespace", c.MetricsEMFNamespace),
 		slog.Any("metrics_emf_dimensions", c.MetricsEMFDimensions),
+		slog.String("traces_exporter", c.TracesExporter),
+		slog.Float64("traces_sample_ratio", c.TracesSampleRatio),
+		slog.String("traces_flush", c.TracesFlush),
 	)
 }
 

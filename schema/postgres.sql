@@ -544,7 +544,8 @@ CREATE TABLE account_domain_mutes (
 
 -- ---------------------------------------------------------------------------------------------
 -- 基盤: job queue and Transactional Outbox (data-model.md §4.10, ADR-0004).
--- Owned by internal/adapter/queue/db.
+-- Owned by internal/adapter/queue/db. trace_parent is the W3C traceparent of the span that
+-- enqueued the job, which its run links to (ADR-0063 §2); an attribute of the job, not a state.
 -- ---------------------------------------------------------------------------------------------
 
 -- Jobs written in a domain transaction, waiting for the relay to enqueue them.
@@ -554,6 +555,7 @@ CREATE TABLE outbox_events (
   payload bytea NOT NULL,
   idempotency_key text,
   ordering_key text,
+  trace_parent text,
   run_at timestamptz NOT NULL,
   created_at timestamptz NOT NULL
 );
@@ -566,6 +568,7 @@ CREATE TABLE jobs (
   payload bytea NOT NULL,
   idempotency_key text,
   ordering_key text,
+  trace_parent text,
   attempt integer NOT NULL,
   run_at timestamptz NOT NULL,
   locked_by text,
@@ -586,6 +589,7 @@ CREATE TABLE dead_jobs (
   payload bytea NOT NULL,
   idempotency_key text,
   ordering_key text,
+  trace_parent text,
   attempt integer NOT NULL,
   last_error text NOT NULL,
   created_at timestamptz NOT NULL,

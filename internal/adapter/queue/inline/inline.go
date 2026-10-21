@@ -19,6 +19,9 @@ type Options struct {
 	IDs   kernel.IDGenerator
 	// MaxDelay limits how far in the future a job becomes visible (0 for no limit).
 	MaxDelay time.Duration
+	// Tracer fills the TraceParent of the enqueued jobs from the span of the caller's context
+	// (ADR-0063 §2); nil leaves it empty.
+	Tracer kernel.Tracer
 }
 
 type entry struct {
@@ -84,6 +87,7 @@ func (q *Queue) Enqueue(ctx context.Context, jobs ...queue.NewJob) error {
 		j.Payload = slices.Clone(j.Payload)
 		built[i] = j
 	}
+	queue.TraceJobs(ctx, q.opts.Tracer, built)
 
 	q.mu.Lock()
 	for _, j := range built {
@@ -277,6 +281,7 @@ func (q *Queue) Bury(_ context.Context, worker string, j queue.Job, lastErr stri
 		Payload:        e.job.Payload,
 		IdempotencyKey: e.job.IdempotencyKey,
 		OrderingKey:    e.job.OrderingKey,
+		TraceParent:    e.job.TraceParent,
 		Attempt:        e.job.Attempt,
 		LastError:      lastErr,
 		CreatedAt:      e.job.CreatedAt,
@@ -377,6 +382,7 @@ func (q *Queue) RequeueDeadJob(_ context.Context, id string) error {
 			Payload:        d.Payload,
 			IdempotencyKey: d.IdempotencyKey,
 			OrderingKey:    d.OrderingKey,
+			TraceParent:    d.TraceParent,
 			RunAt:          now,
 			CreatedAt:      d.CreatedAt,
 		},

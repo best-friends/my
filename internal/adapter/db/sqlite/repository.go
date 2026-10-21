@@ -13,25 +13,26 @@ import (
 	sqlite3 "modernc.org/sqlite/lib"
 
 	"github.com/best-friends/my/internal/adapter/db/sqlite/sqlitegen"
+	"github.com/best-friends/my/internal/adapter/telemetry/dbtrace"
 	"github.com/best-friends/my/internal/app/uow"
 )
 
 // queries returns the generated queries bound to the SQLite transaction behind tx.
 func queries(tx uow.Tx) (*sqlitegen.Queries, error) {
-	sqlTx, err := txOf(tx)
+	db, err := QueryTx(tx)
 	if err != nil {
 		return nil, err
 	}
-	return sqlitegen.New(sqlTx), nil
+	return sqlitegen.New(db), nil
 }
 
 // reader returns the generated queries on the connection pool, for reads outside transactions,
 // or on the transaction of a copy that in made.
 func (d *DB) reader() *sqlitegen.Queries {
 	if d.tx != nil {
-		return sqlitegen.New(d.tx)
+		return sqlitegen.New(dbtrace.Wrap(d.tx, d.tracer, dbtrace.SystemSQLite))
 	}
-	return sqlitegen.New(d.db)
+	return sqlitegen.New(dbtrace.Wrap(d.db, d.tracer, dbtrace.SystemSQLite))
 }
 
 // in returns a copy of d whose reads run in tx, for the repositories' read methods that take a
@@ -42,7 +43,7 @@ func (d *DB) in(tx uow.Tx) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &DB{db: d.db, opts: d.opts, tx: sqlTx}, nil
+	return &DB{db: d.db, opts: d.opts, tx: sqlTx, tracer: d.tracer}, nil
 }
 
 // Timestamps are stored as Unix milliseconds (data-model §1.2).

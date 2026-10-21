@@ -27,7 +27,7 @@ func (a *App) setUpDelivery(repo federation.Repository) error {
 		// relays can forward them to Mastodon and Misskey (ADR-0061).
 		LinkedData: ld,
 		Domains:    a.ModerationPolicy,
-		Clock:      a.Clock, IDs: a.IDs, Logger: a.Logger, Meter: a.Meter,
+		Clock:      a.Clock, IDs: a.IDs, Logger: a.Logger, Meter: a.Meter, Tracer: a.Tracer,
 	})
 	a.Deliverer.RegisterJobs(a.Handlers)
 	federation.NewProber(federation.ProbeDeps{

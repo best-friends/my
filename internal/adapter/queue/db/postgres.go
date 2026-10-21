@@ -67,6 +67,7 @@ func (postgresStore) insertJob(ctx context.Context, tx uow.Tx, j queue.Job) erro
 		Payload:        j.Payload,
 		IdempotencyKey: optional(j.IdempotencyKey),
 		OrderingKey:    optional(j.OrderingKey),
+		TraceParent:    optional(j.TraceParent),
 		RunAt:          j.RunAt,
 		CreatedAt:      j.CreatedAt,
 	})
@@ -123,6 +124,7 @@ func claimedJob(r postgresqueue.ClaimJobRow) queue.Job {
 		Payload:        json.RawMessage(r.Payload),
 		IdempotencyKey: deref(r.IdempotencyKey),
 		OrderingKey:    deref(r.OrderingKey),
+		TraceParent:    deref(r.TraceParent),
 		Attempt:        int(r.Attempt),
 		RunAt:          kernel.Normalize(r.RunAt),
 		LastError:      deref(r.LastError),
@@ -184,6 +186,7 @@ func (postgresStore) listDead(ctx context.Context, tx uow.Tx, after queue.DeadJo
 			Payload:        json.RawMessage(r.Payload),
 			IdempotencyKey: deref(r.IdempotencyKey),
 			OrderingKey:    deref(r.OrderingKey),
+			TraceParent:    deref(r.TraceParent),
 			Attempt:        int(r.Attempt),
 			LastError:      r.LastError,
 			CreatedAt:      kernel.Normalize(r.CreatedAt),
@@ -229,6 +232,7 @@ func (postgresStore) insertOutbox(ctx context.Context, tx uow.Tx, j queue.Job) e
 		Payload:        j.Payload,
 		IdempotencyKey: optional(j.IdempotencyKey),
 		OrderingKey:    optional(j.OrderingKey),
+		TraceParent:    optional(j.TraceParent),
 		RunAt:          j.RunAt,
 		CreatedAt:      j.CreatedAt,
 	})
@@ -251,6 +255,7 @@ func (postgresStore) listOutbox(ctx context.Context, tx uow.Tx, limit int) ([]qu
 			Payload:        json.RawMessage(r.Payload),
 			IdempotencyKey: deref(r.IdempotencyKey),
 			OrderingKey:    deref(r.OrderingKey),
+			TraceParent:    deref(r.TraceParent),
 			RunAt:          kernel.Normalize(r.RunAt),
 			CreatedAt:      kernel.Normalize(r.CreatedAt),
 		}

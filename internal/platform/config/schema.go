@@ -563,6 +563,33 @@ var schema = []field{
 			}
 		},
 	},
+	{
+		key: "traces_exporter",
+		doc: "Where the distributed traces go (ADR-0063): the spans of the HTTP requests, the job runs (each the root of a new trace linked to the request that enqueued it), the transactions and queries, the deliveries, and the outbound requests. Span attributes never carry an account, a URL or a path, a client IP, a User-Agent, an SQL text, or an error message; the outbound requests carry the destination's host name. No outbound request carries a `traceparent`, and an incoming `traceparent` is taken only from `trusted_proxies`.",
+		def: "none",
+		choices: []choice{
+			{value: "none", inV0: true, doc: "No spans; tracing costs next to nothing. The log lines still carry `trace_id` and `span_id` of a `traceparent` from `trusted_proxies`, which correlates them with the platform's traces (Cloud Run)."},
+			{value: "otlp", inV0: true, doc: "OTLP over HTTP (protobuf, gzip) to an OpenTelemetry Collector or another receiver, configured by the standard environment variables `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` or `OTEL_EXPORTER_OTLP_ENDPOINT` (default `http://localhost:4318`) and `OTEL_EXPORTER_OTLP_HEADERS`. The server does not authenticate to Cloud Trace or X-Ray itself: send to a collector next to it, which does (docs/operations/running.md)."},
+		},
+		set: func(c *Config, v string) { c.TracesExporter = v },
+	},
+	{
+		key:   "traces_sample_ratio",
+		doc:   "Share of the traces recorded with `traces_exporter = otlp`, from `0` to `1`, among the requests and jobs without a sampled parent: a request follows the sampling of a `traceparent` from `trusted_proxies`, and a job is recorded when the request that enqueued it was. The default records about 1,000 traces a day of an instance that serves 100,000 requests a day.",
+		def:   "0.01",
+		check: checkRatio,
+		set:   func(c *Config, v string) { c.TracesSampleRatio, _ = strconv.ParseFloat(v, 64) },
+	},
+	{
+		key: "traces_flush",
+		doc: "When the spans of `traces_exporter = otlp` are sent.",
+		def: "batch",
+		choices: []choice{
+			{value: "batch", inV0: true, doc: "In batches, every few seconds, in the background; for processes that keep running (self-hosted)."},
+			{value: "unit", inV0: true, doc: "Also at the end of every recorded HTTP request and job, before it returns, to a collector on the same host; for the platforms that throttle or freeze an idle instance (Cloud Run with request-based billing, AWS Lambda). A request that is not recorded sends nothing."},
+		},
+		set: func(c *Config, v string) { c.TracesFlush = v },
+	},
 }
 
 // crossChecks rejects missing conditional settings and contradictory combinations.
@@ -642,6 +669,14 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 func checkNotBlank(v string) error {
 	if strings.TrimSpace(v) == "" {
 		return errors.New("must not be blank")
+	}
+	return nil
+}
+
+func checkRatio(v string) error {
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil || math.IsNaN(f) || f < 0 || f > 1 {
+		return errors.New("must be a number from 0 to 1, for example 0.01")
 	}
 	return nil
 }

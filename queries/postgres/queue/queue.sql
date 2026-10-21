@@ -3,8 +3,8 @@
 -- Queries of the database job queue and the outbox (internal/adapter/queue/db) for PostgreSQL.
 
 -- name: InsertJob :exec
-INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)
-VALUES ($1, $2, $3, $4, $5, 0, $6, $7)
+INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, 0, $7, $8)
 ON CONFLICT (idempotency_key) DO NOTHING;
 
 -- A claim takes three statements in one transaction, because under READ COMMITTED a claim
@@ -45,7 +45,7 @@ WHERE j.id = sqlc.arg(id)
     WHERE k.ordering_key = j.ordering_key AND k.id <> j.id
       AND (k.locked_until > sqlc.arg(now) OR k.created_at < j.created_at OR (k.created_at = j.created_at AND k.id < j.id))
   )
-RETURNING j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, j.run_at, j.last_error, j.created_at;
+RETURNING j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.trace_parent, j.attempt, j.run_at, j.last_error, j.created_at;
 
 -- name: DeleteClaimedJob :execrows
 DELETE FROM jobs WHERE id = $1 AND locked_by = $2 AND attempt = $3;
@@ -57,15 +57,15 @@ SET locked_by = NULL, locked_until = NULL,
 WHERE id = sqlc.arg(id) AND locked_by = sqlc.arg(worker) AND attempt = sqlc.arg(attempt);
 
 -- name: InsertDeadJobFromClaim :execrows
-INSERT INTO dead_jobs (id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at)
-SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.attempt, sqlc.arg(last_error), j.created_at, sqlc.arg(failed_at)
+INSERT INTO dead_jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at)
+SELECT j.id, j.type, j.payload, j.idempotency_key, j.ordering_key, j.trace_parent, j.attempt, sqlc.arg(last_error), j.created_at, sqlc.arg(failed_at)
 FROM jobs AS j
 WHERE j.id = sqlc.arg(id) AND j.locked_by = sqlc.arg(worker) AND j.attempt = sqlc.arg(attempt);
 
 -- ListDeadJobs returns the dead jobs most recently failed first, after the position
 -- (@after_failed_at, @after_id); an empty @after_id starts at the first.
 -- name: ListDeadJobs :many
-SELECT id, type, payload, idempotency_key, ordering_key, attempt, last_error, created_at, failed_at
+SELECT id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, last_error, created_at, failed_at
 FROM dead_jobs
 WHERE sqlc.arg(after_id)::text = ''
   OR failed_at < sqlc.arg(after_failed_at)::timestamptz
@@ -74,8 +74,8 @@ ORDER BY failed_at DESC, id DESC
 LIMIT sqlc.arg(batch_limit);
 
 -- name: RequeueDeadJob :execrows
-INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, attempt, run_at, created_at)
-SELECT d.id, d.type, d.payload, d.idempotency_key, d.ordering_key, 0, sqlc.arg(run_at), d.created_at
+INSERT INTO jobs (id, type, payload, idempotency_key, ordering_key, trace_parent, attempt, run_at, created_at)
+SELECT d.id, d.type, d.payload, d.idempotency_key, d.ordering_key, d.trace_parent, 0, sqlc.arg(run_at), d.created_at
 FROM dead_jobs AS d
 WHERE d.id = sqlc.arg(id)
 ON CONFLICT (idempotency_key) DO NOTHING;
@@ -93,11 +93,11 @@ WHERE id IN (
 );
 
 -- name: InsertOutboxEvent :exec
-INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, run_at, created_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+INSERT INTO outbox_events (id, job_type, payload, idempotency_key, ordering_key, trace_parent, run_at, created_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 
 -- name: ListOutboxEvents :many
-SELECT id, job_type, payload, idempotency_key, ordering_key, run_at, created_at
+SELECT id, job_type, payload, idempotency_key, ordering_key, trace_parent, run_at, created_at
 FROM outbox_events
 ORDER BY id
 LIMIT $1;

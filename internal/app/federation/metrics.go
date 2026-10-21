@@ -81,6 +81,24 @@ var (
 	}
 )
 
+// DeliverySpan is the span of the POST of a delivery attempt (ADR-0063 §1), around the client
+// span of the request: the activity's type and the attempt's outcome, never the inbox.
+var DeliverySpan = kernel.SpanSpec{
+	Name: "my.delivery", Kind: kernel.SpanInternal, AttrKeys: []string{LabelActivityType, LabelOutcome},
+}
+
+// deliveryErrorType returns the error.type of the span of a delivery attempt: its my.outcome
+// unless it succeeded, or why the job's context ended before an answer.
+func deliveryErrorType(a federation.DeliveryAttempt, ctxErr error) string {
+	if a.Outcome == "" {
+		return kernel.ErrorType(ctxErr)
+	}
+	if o := deliveryOutcome(a); o != DeliveryOutcomeSuccess {
+		return o
+	}
+	return ""
+}
+
 // deliveryOutcome returns the my.outcome of a delivery attempt.
 func deliveryOutcome(a federation.DeliveryAttempt) string {
 	switch a.Outcome {
