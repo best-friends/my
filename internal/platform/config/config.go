@@ -128,12 +128,13 @@ type Config struct {
 	// The Google Cloud adapter's method (bigquery), the table of the Cloud Billing export, the
 	// project that runs the queries (the table's when empty), the project IDs and the key=value
 	// label that filter the rows, and the maximumBytesBilled of a query (ADR-0068 §4, §7).
-	BillingGCPMethod         string
-	BillingGCPTable          string
-	BillingGCPQueryProject   string
-	BillingGCPProjects       []string
-	BillingGCPLabel          string
-	BillingGCPMaxBytesBilled int64
+	BillingGCPMethod             string
+	BillingGCPTable              string
+	BillingGCPQueryProject       string
+	BillingGCPProjects           []string
+	BillingGCPLabel              string
+	BillingGCPMaxBytesBilled     int64
+	BillingGCPBudgetSubscription string
 	// DeadJobRetention is how long a dead job is kept after it failed (FR-803).
 	DeadJobRetention time.Duration
 	// JobAttemptRetention is how long the record of a job's run that did not succeed is kept
@@ -240,6 +241,7 @@ func (c *Config) LogValue() slog.Value {
 		slog.Any("billing_gcp_projects", c.BillingGCPProjects),
 		slog.String("billing_gcp_label", c.BillingGCPLabel),
 		slog.Int64("billing_gcp_max_bytes_billed", c.BillingGCPMaxBytesBilled),
+		slog.String("billing_gcp_budget_subscription", c.BillingGCPBudgetSubscription),
 		slog.Duration("dead_job_retention", c.DeadJobRetention),
 		slog.Duration("job_attempt_retention", c.JobAttemptRetention),
 		slog.String("metrics_exporter", c.MetricsExporter),

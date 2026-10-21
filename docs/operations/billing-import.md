@@ -129,6 +129,7 @@ Cost Explorer の値と請求書は更新の時期と丸めで違うことがあ
 ## Google Cloud（`billing_sources = gcp`）
 
 Google Cloud には実際の費用を返す API がないため、Cloud Billing の BigQuery への export（標準の使用料金）を、BigQuery の `jobs.query` で 1 日 1 回集計します（`billing_gcp_method = bigquery`、既定）。
+export を用意できないときは、予算の Pub/Sub 通知から合計の概算だけを取り込む簡易な方法もあります（[予算の通知で取り込む](#予算の通知で取り込むbilling_gcp_method--budget)）。
 請求月は export の `invoice.month` で、米国太平洋時間（夏時間あり）の暦月です。日付も太平洋時間のまま記録します。
 金額は請求先アカウントの通貨で、請求月・サービス（`service.description`）・費用の種類（`cost_type`）ごとに `NUMERIC` で合計し、クレジット（`credits[]`）はサービスごとに 1 つのクレジットの行にします。export の訂正の打ち消しの行も合計に入ります。
 export には確定の印がないので、翌月の 5 日（太平洋時間）からの取り込みでその月を確定とし、それまでは月の初日から最後の利用の日までの見込みとして記録します。確定の後も 15 日までは取り直し、違いは修正として記録します。
@@ -202,3 +203,63 @@ bq add-iam-policy-binding --member=serviceAccount:<サービスアカウント> 
 | `invalid_response` | 読めない応答、月の中で通貨が混ざる行、ほかの 400 | export のテーブル（標準の使用料金か）を確かめる |
 
 `throttled` と `unavailable` のほかは再試行しても直らないので、記録してそのまま終わり、翌日の定期の取り込みが再び試します。
+
+### 予算の通知で取り込む（`billing_gcp_method = budget`）
+
+BigQuery の export を用意できないときの簡易な方法です。Cloud Billing の予算（Budget）が Pub/Sub のトピックに送る通知を、pull のサブスクリプションから 1 日 1 回読みます。
+push にしないので、通知でサーバー（Cloud Run など）を起こしません。
+
+この方法で取り込めるのは、**見込みに基づく合計の概算だけ**です。
+
+- 通知の `costAmount` は予算の期間の累計の見込みで、サービスの内訳も費用の種類もありません。取り込むのは月ごと・予算ごとの 1 行（サービスの名前は予算の表示名、費用の種類は利用、区分はその他）だけです。クレジットと税は予算の設定どおり合計に含まれます。
+- 確定は BigQuery と同じく、翌月の 5 日（太平洋時間）からの取り込みで立てます。予算の通知は請求書の締めを知らないので、確定とした値も請求書の額とずれることがあります。
+- 見込みの月は、月の初日から最後の通知が発行された日（太平洋時間）までの費用として記録します。
+- 絞り込みは予算の範囲（プロジェクト、サービス、ラベル 1 つのキーと値）で決まり、`billing_gcp_projects` と `billing_gcp_label` は使いません。
+
+#### 予算・トピック・サブスクリプションを用意する
+
+1. トピックと、このサーバーだけが読む pull のサブスクリプションを作ります。保持期間と失効の理由は下の「通知の読み方」を見てください。
+
+   ```sh
+   gcloud pubsub topics create billing-budget --project=<プロジェクト>
+   gcloud pubsub subscriptions create my-billing-budget --project=<プロジェクト> \
+     --topic=billing-budget --ack-deadline=60 \
+     --message-retention-duration=31d --expiration-period=never
+   ```
+
+2. コンソールの「お支払い → 予算とアラート」で予算を作ります。期間は**月次**にしてください（月次でない予算の通知は `invalid_response` になります）。
+   範囲でこのサーバーのプロジェクトを選び、「管理 → Pub/Sub トピックをこの予算に接続する」で 1. のトピックを選びます。
+   予算の作成には請求先アカウントの「請求先アカウント費用管理者」か「請求先アカウント管理者」と、トピックのプロジェクトの `pubsub.topics.setIamPolicy`・`pubsub.topics.list` が要ります。
+   最初の通知が届くまで数時間かかり、その後は 1 日に数回届きます。
+3. 取り込むサーバーのサービスアカウントに、サブスクリプションの `roles/pubsub.subscriber`（Pub/Sub サブスクライバー）を付けます。メッセージの pull と確認応答（`pubsub.subscriptions.consume`）に使います。
+
+   ```sh
+   gcloud pubsub subscriptions add-iam-policy-binding my-billing-budget --project=<プロジェクト> \
+     --member=serviceAccount:<サービスアカウント> --role=roles/pubsub.subscriber
+   ```
+
+4. `MY_BILLING_GCP_METHOD=budget` と `MY_BILLING_GCP_BUDGET_SUBSCRIPTION=projects/<プロジェクト>/subscriptions/my-billing-budget` を設定します。
+
+認証は BigQuery と同じ Application Default Credentials です（上の [IAM の役割](#iam-の役割) の表）。
+build tag `no_billing_gcp` はこの方法も外します。Pub/Sub のクライアントライブラリは `stream = pubsub` と共有なので、バイナリから外れるのは `no_pubsub` も付けたときだけです（[ビルドタグ](../reference/build-tags.md)）。
+
+#### 通知の読み方
+
+- 1 回の取り込みは、新しいメッセージが来なくなるまで Pull を繰り返し、予算と月ごとに発行の時刻が最も新しい通知を採ります。Pub/Sub の重複の配信、同じ値の通知の繰り返し、順序の入れ替わりはこれで吸収するので、同じ通知を何度受けても合計は 1 回分です。
+  取り込みの要求数として数えるのは Pull の回数で、ふつうはメッセージのある 1 回と空の 1 回の 2 回です。最後に行う確認応答（`Acknowledge`・`ModifyAckDeadline`）は数えません。
+- 確認応答（ack）するのは、同じ予算と月のより新しい通知に置き換えられた通知と、取り込みの対象から外れた月（確定として記録された先月）の通知だけです。対象の月の最新の通知は ack せずにサブスクリプションへ返すので、次の取り込みも同じ通知を読み直し、新しい通知が届かない日も値は変わりません。
+- そのため、サブスクリプションのメッセージの保持期間は **14 日以上（31 日を推奨）** にしてください。月の予算の最後の通知は翌月の 2 日ごろに届き、先月は 15 日まで取り直すためです。保持が切れて通知がなくなった月は、費用 0 として記録されます。
+- サブスクリプションは既定で 31 日使われないと失効します。失効を「なし」にしておくと、取り込みを止めていた間も消えません。
+- 予算の通知のほかのメッセージをトピックに送らないでください。予算の通知として読めないメッセージはその回の取り込みを `invalid_response` で失敗させ、次の回で止まらないように ack します。
+- 費用: 1 日数十通で、Pub/Sub の無料枠（毎月 10 GiB）に収まり $0 です。上限は持ちません。
+
+#### 失敗の種類（予算の通知）
+
+| 種類 | Pub/Sub の応答 | 直し方 |
+| --- | --- | --- |
+| `permission` | `PERMISSION_DENIED`、`UNAUTHENTICATED` | サブスクリプションの `roles/pubsub.subscriber` と認証情報の渡し方を確かめる |
+| `not_enabled` | `PERMISSION_DENIED`（`SERVICE_DISABLED`） | サブスクリプションのプロジェクトで Pub/Sub API を有効にする |
+| `not_found` | `NOT_FOUND` | `billing_gcp_budget_subscription` とサブスクリプションの失効を確かめる |
+| `throttled` | `RESOURCE_EXHAUSTED` | ジョブが時間を置いて再試行する |
+| `unavailable` | `UNAVAILABLE`、`INTERNAL` など、ネットワークの失敗 | ジョブが時間を置いて再試行する |
+| `invalid_response` | 予算の通知として読めないメッセージ、月次でない予算、同じ表示名の 2 つの予算 | 予算を月次にし、表示名を分け、トピックにほかのメッセージを送らない |

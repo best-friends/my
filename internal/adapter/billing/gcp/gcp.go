@@ -6,8 +6,9 @@
 //
 // The method of billing_gcp_method = bigquery is BigQuerySource: it sums the standard usage cost
 // export of Cloud Billing to BigQuery with one jobs.query of the BigQuery REST API. The method of
-// budget notifications on Pub/Sub (#889) is another Source of this package with the same Name,
-// Location, final rule, categories, and failures (the functions of this file).
+// billing_gcp_method = budget is BudgetSource: it pulls the notifications of a monthly budget from
+// a Pub/Sub subscription and reports the estimated total of each month. Both have the same Name,
+// Location, and final rule (the functions of this file).
 package gcp
 
 import (
@@ -26,7 +27,7 @@ import (
 const (
 	// MethodBigQuery sums the Cloud Billing export to BigQuery (the default, ADR-0068 §7).
 	MethodBigQuery = "bigquery"
-	// MethodBudget reads the budget notifications of a Pub/Sub subscription (#889).
+	// MethodBudget reads the budget notifications of a Pub/Sub subscription (ADR-0068 §7).
 	MethodBudget = "budget"
 )
 

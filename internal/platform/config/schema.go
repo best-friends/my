@@ -521,7 +521,7 @@ var schema = []field{
 	},
 	{
 		key:   "billing_sources",
-		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tags `no_billing_aws` and `no_billing_gcp` leave `aws` and `gcp` out. Empty imports nothing.",
+		doc:   "Cloud providers whose usage charges are imported into the instance's costs every 24 hours (ADR-0068, FR-904), comma-separated: `aws` (AWS Cost Explorer, about $0.01 per billed request) and `gcp` (the Cloud Billing export to BigQuery, or the Pub/Sub notifications of a budget: `billing_gcp_method`). Each import records the charges of the current billing month and of the previous one (through the 15th, or until it is final) by service and charge type, as estimates until the provider closes the month, then final, then corrections; `GET /api/v1/admin/billing_imports` shows the state of the imports. A provider whose adapter is not in this build is refused at start. Credentials come from the SDK's default chain of each provider (docs/operations/billing-import.md). The build tags `no_billing_aws` and `no_billing_gcp` leave `aws` and `gcp` out. Empty imports nothing.",
 		check: checkBillingSources,
 		set: func(c *Config, v string) {
 			for s := range strings.SplitSeq(v, ",") {
@@ -596,7 +596,7 @@ var schema = []field{
 		def: "bigquery",
 		choices: []choice{
 			{value: "bigquery", inV0: true, doc: "Sum the standard usage cost export of Cloud Billing to BigQuery (`billing_gcp_table`) with one query a day, within the free tier of BigQuery (docs/operations/billing-import.md)."},
-			{value: "budget", inV0: false, doc: "Read the budget notifications of a Pub/Sub subscription: an estimate of the budget's total, without the services (#889)."},
+			{value: "budget", inV0: true, doc: "Read the notifications of a monthly Cloud Billing budget from a Pub/Sub pull subscription (`billing_gcp_budget_subscription`) once a day: the budget's estimated total of each month, one line named after the budget, without the services, the charge types, or the export's days (docs/operations/billing-import.md). A simple way for an operator without the BigQuery export; free within the free tier of Pub/Sub."},
 		},
 		set: func(c *Config, v string) { c.BillingGCPMethod = v },
 	},
@@ -637,6 +637,13 @@ var schema = []field{
 		def:   strconv.FormatInt(defaultBillingGCPMaxBytesBilled, 10),
 		check: checkPositiveInt64,
 		set:   func(c *Config, v string) { c.BillingGCPMaxBytesBilled, _ = strconv.ParseInt(v, 10, 64) },
+	},
+	{
+		key:          "billing_gcp_budget_subscription",
+		doc:          "The pull subscription of the Pub/Sub topic of a monthly Cloud Billing budget that `billing_gcp_method = budget` reads, `projects/{project}/subscriptions/{subscription}`. The imports acknowledge a notification once a later one of its budget and month replaces it or once its month is final and no longer imported, and keep the latest of each month imported, so the subscription needs a message retention of at least 14 days (31 recommended) and must not be read by anything else. The service account of the server needs `roles/pubsub.subscriber` on it (docs/operations/billing-import.md).",
+		requiredWhen: "when `billing_sources` includes `gcp` and `billing_gcp_method = budget`",
+		check:        checkBillingGCPSubscription,
+		set:          func(c *Config, v string) { c.BillingGCPBudgetSubscription = strings.TrimSpace(v) },
 	},
 	{
 		key:   "dead_job_retention",
@@ -787,6 +794,9 @@ func crossChecks(vals map[string]string, present map[string]bool) []Issue {
 	}
 	if slices.Contains(splitList(vals["billing_sources"]), "gcp") && cmp.Or(vals["billing_gcp_method"], "bigquery") == "bigquery" && !present["billing_gcp_table"] {
 		issues = append(issues, Issue{Key: "billing_gcp_table", Missing: true, Message: "required when billing_sources includes gcp and billing_gcp_method is bigquery"})
+	}
+	if slices.Contains(splitList(vals["billing_sources"]), "gcp") && vals["billing_gcp_method"] == "budget" && !present["billing_gcp_budget_subscription"] {
+		issues = append(issues, Issue{Key: "billing_gcp_budget_subscription", Missing: true, Message: "required when billing_sources includes gcp and billing_gcp_method is budget"})
 	}
 	if vals["http_allow_private_networks"] == "true" && vals["profile"] != "development" {
 		issues = append(issues, Issue{Key: "http_allow_private_networks", Message: "true is refused in the production profile; set profile = development"})
