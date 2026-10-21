@@ -206,6 +206,12 @@ paths:
     $ref: ./paths/statuses_{id}_reaction.yaml
   /statuses/{id}/reactions:
     $ref: ./paths/statuses_{id}_reactions.yaml
+  /statuses/{id}/quote_policy:
+    $ref: ./paths/statuses_{id}_quote_policy.yaml
+  /statuses/{id}/quotes:
+    $ref: ./paths/statuses_{id}_quotes.yaml
+  /statuses/{id}/quotes/{quote_id}/revoke:
+    $ref: ./paths/statuses_{id}_quotes_{quote_id}_revoke.yaml
   /statuses/{id}/source:
     $ref: ./paths/statuses_{id}_source.yaml
   /accounts/{id}/statuses:
@@ -1010,6 +1016,8 @@ components:
       $ref: ./components/schemas/PushSubscriptionRequest.yaml
     QrCode:
       $ref: ./components/schemas/QrCode.yaml
+    QuotePolicy:
+      $ref: ./components/schemas/QuotePolicy.yaml
     QuoteState:
       $ref: ./components/schemas/QuoteState.yaml
     ReactToStatusRequest:
@@ -1056,6 +1064,8 @@ components:
       $ref: ./components/schemas/SearchIndexing.yaml
     SetInstanceTextRequest:
       $ref: ./components/schemas/SetInstanceTextRequest.yaml
+    SetQuotePolicyRequest:
+      $ref: ./components/schemas/SetQuotePolicyRequest.yaml
     SetThemeRequest:
       $ref: ./components/schemas/SetThemeRequest.yaml
     SignupBlockImportResult:

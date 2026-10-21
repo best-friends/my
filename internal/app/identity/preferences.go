@@ -49,9 +49,11 @@ type UserPreferences struct {
 
 // PreferencesInput are the settable preferences of SetPreferences; every field is required.
 type PreferencesInput struct {
-	Locale                  string
-	TimeZone                string
-	DefaultVisibility       identity.Visibility
+	Locale            string
+	TimeZone          string
+	DefaultVisibility identity.Visibility
+	// DefaultQuotePolicy is who may quote new posts; "" keeps the current one.
+	DefaultQuotePolicy      identity.QuotePolicy
 	DefaultPostLanguage     string
 	RequireMediaDescription bool
 	// EmailModeratorNotifications sends the user's moderator notifications also by email.
@@ -92,12 +94,24 @@ func (s *Service) SetPreferences(ctx context.Context, userID string, in Preferen
 	if err := identity.ValidateVisibility(in.DefaultVisibility); err != nil {
 		return identity.Preferences{}, err
 	}
+	quotePolicy := in.DefaultQuotePolicy
+	if quotePolicy == "" {
+		cur, err := s.d.Repository.FindPreferences(ctx, userID)
+		if err != nil {
+			return identity.Preferences{}, err
+		}
+		quotePolicy = cur.DefaultQuotePolicy
+	}
+	if err := identity.ValidateQuotePolicy(quotePolicy); err != nil {
+		return identity.Preferences{}, err
+	}
 	p := identity.Preferences{
 		UserID:                      userID,
 		Locale:                      locale,
 		TimeZone:                    in.TimeZone,
 		TimeZoneChosen:              true,
 		DefaultVisibility:           in.DefaultVisibility,
+		DefaultQuotePolicy:          quotePolicy,
 		DefaultPostLanguage:         postLang,
 		RequireMediaDescription:     in.RequireMediaDescription,
 		EmailModeratorNotifications: in.EmailModeratorNotifications,
@@ -137,6 +151,7 @@ type PreferencesUpdate struct {
 	Locale                  *string
 	TimeZone                *string
 	DefaultVisibility       *identity.Visibility
+	DefaultQuotePolicy      *identity.QuotePolicy
 	DefaultPostLanguage     *string
 	RequireMediaDescription *bool
 	// EmailModeratorNotifications sends the user's moderator notifications also by email.
@@ -150,7 +165,8 @@ type PreferenceError struct {
 	// Preference is the column of user_preferences, or timeline_languages.
 	Preference string
 	// Err wraps one of identity.ErrInvalidLanguageTag, identity.ErrInvalidTimeZone,
-	// identity.ErrInvalidVisibility, and identity.ErrTooManyLanguages.
+	// identity.ErrInvalidVisibility, identity.ErrInvalidQuotePolicy, and
+	// identity.ErrTooManyLanguages.
 	Err error
 }
 
@@ -212,6 +228,11 @@ func canonicalPreferencesUpdate(in PreferencesUpdate) (PreferencesUpdate, error)
 			return PreferencesUpdate{}, &PreferenceError{Preference: "default_visibility", Err: err}
 		}
 	}
+	if in.DefaultQuotePolicy != nil {
+		if err := identity.ValidateQuotePolicy(*in.DefaultQuotePolicy); err != nil {
+			return PreferencesUpdate{}, &PreferenceError{Preference: "default_quote_policy", Err: err}
+		}
+	}
 	if in.DefaultPostLanguage != nil {
 		lang, err := CanonicalLanguage(*in.DefaultPostLanguage)
 		if err != nil {
@@ -240,6 +261,9 @@ func (in PreferencesUpdate) applyTo(cur UserPreferences) UserPreferences {
 	}
 	if in.DefaultVisibility != nil {
 		p.DefaultVisibility = *in.DefaultVisibility
+	}
+	if in.DefaultQuotePolicy != nil {
+		p.DefaultQuotePolicy = *in.DefaultQuotePolicy
 	}
 	if in.DefaultPostLanguage != nil {
 		p.DefaultPostLanguage = *in.DefaultPostLanguage
@@ -327,6 +351,7 @@ func (s *Service) defaultPreferences(ctx context.Context, userID, locale string,
 		Locale:              locale,
 		TimeZone:            identity.DefaultTimeZone,
 		DefaultVisibility:   identity.DefaultPostVisibility,
+		DefaultQuotePolicy:  identity.DefaultPostQuotePolicy,
 		DefaultPostLanguage: identity.UndeterminedLanguage,
 		UpdatedAt:           now,
 	}, nil

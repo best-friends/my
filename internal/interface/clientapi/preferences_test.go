@@ -44,6 +44,9 @@ func (f *fakePreferences) UpdatePreferences(ctx context.Context, userID string, 
 	if in.DefaultVisibility != nil {
 		p.DefaultVisibility = *in.DefaultVisibility
 	}
+	if in.DefaultQuotePolicy != nil {
+		p.DefaultQuotePolicy = *in.DefaultQuotePolicy
+	}
 	if in.TimelineLanguages != nil {
 		p.TimelineLanguages = *in.TimelineLanguages
 	}
@@ -59,7 +62,7 @@ func newPreferencesEnv(t *testing.T) (*authEnv, *fakePreferences) {
 	prefs := &fakePreferences{userID: "user-" + aliceAccountID, p: appidentity.UserPreferences{
 		Preferences: identity.Preferences{
 			UserID: "user-" + aliceAccountID, Locale: "ja", TimeZone: "Asia/Tokyo", TimeZoneChosen: true,
-			DefaultVisibility: identity.Visibility("unlisted"), DefaultPostLanguage: "ja",
+			DefaultVisibility: identity.Visibility("unlisted"), DefaultQuotePolicy: identity.QuotePolicyPublic, DefaultPostLanguage: "ja",
 		},
 	}}
 	return newAuthEnv(t, func(o *clientapi.Options) { o.Preferences = prefs }), prefs
@@ -77,7 +80,7 @@ func TestGetPreferences(t *testing.T) {
 	}
 	want := clientapi.Preferences{
 		Locale: "ja", TimeZone: "Asia/Tokyo", TimeZoneChosen: true, DefaultVisibility: clientapi.VisibilityUnlisted, DefaultPostLanguage: "ja",
-		TimelineLanguages: []string{},
+		DefaultQuotePolicy: clientapi.QuotePolicyPublic, TimelineLanguages: []string{},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("preferences = %+v, want %+v", got, want)
@@ -92,7 +95,7 @@ func TestGetPreferences(t *testing.T) {
 
 func TestUpdatePreferences(t *testing.T) {
 	e, prefs := newPreferencesEnv(t)
-	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","timeline_languages":["en","ja"],"email_moderator_notifications":true}`)
+	res := e.sendJSON(t, http.MethodPatch, "/preferences", "write", `{"default_visibility":"local","default_quote_policy":"followers","timeline_languages":["en","ja"],"email_moderator_notifications":true}`)
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", res.StatusCode)
 	}
@@ -104,8 +107,8 @@ func TestUpdatePreferences(t *testing.T) {
 		!got.EmailModeratorNotifications {
 		t.Errorf("preferences = %+v, want the change applied to the rest", got)
 	}
-	if prefs.p.DefaultVisibility != "local" {
-		t.Errorf("stored visibility = %q", prefs.p.DefaultVisibility)
+	if prefs.p.DefaultVisibility != "local" || prefs.p.DefaultQuotePolicy != identity.QuotePolicyFollowers || got.DefaultQuotePolicy != clientapi.QuotePolicyFollowers {
+		t.Errorf("stored visibility = %q, quote policy = %q (answered %q)", prefs.p.DefaultVisibility, prefs.p.DefaultQuotePolicy, got.DefaultQuotePolicy)
 	}
 	if res := e.sendJSON(t, http.MethodPatch, "/preferences", "read", `{}`); res.StatusCode != http.StatusForbidden {
 		t.Errorf("read token = %d, want 403", res.StatusCode)

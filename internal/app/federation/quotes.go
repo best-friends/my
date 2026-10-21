@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
+	"strings"
 
 	appcontent "github.com/best-friends/my/internal/app/content"
 	"github.com/best-friends/my/internal/app/queue"
@@ -30,6 +32,7 @@ var ErrQuoteUnauthorized = errors.New("federation: the QuoteAuthorization does n
 type RemoteQuotes interface {
 	FindQuote(ctx context.Context, statusID string) (appcontent.Quote, appcontent.QuoteState, error)
 	AcceptQuote(ctx context.Context, statusID, authorizationURI string) (bool, error)
+	RejectQuote(ctx context.Context, statusID string) (bool, error)
 	RevokeQuoteAuthorization(ctx context.Context, uri string) ([]string, error)
 }
 
@@ -54,6 +57,25 @@ func quoteInput(q *federation.Quote) *appcontent.RemoteQuoteInput {
 		form = appcontent.QuoteFormFEP044f
 	}
 	return &appcontent.RemoteQuoteInput{URI: string(q.Target), Form: form}
+}
+
+// quotePolicyInput maps the canQuote of a post by an author whose followers collection is
+// followers to who may quote it (ADR-0069 §3): everyone when it names Public, the followers when
+// it names their collection, and else the author alone. A quote approved by hand counts as one
+// approved, since this server's QuoteRequest waits for the answer either way. A post without
+// canQuote declares nobody (nil).
+func quotePolicyInput(c *federation.CanQuote, followers federation.IRI) *appcontent.RemoteQuotePolicyInput {
+	if c == nil {
+		return nil
+	}
+	approved := append(slices.Clone(c.AutomaticApproval), c.ManualApproval...)
+	switch {
+	case slices.Contains(approved, federation.PublicIRI):
+		return &appcontent.RemoteQuotePolicyInput{Policy: appcontent.QuotePolicyPublic}
+	case followers != "" && slices.Contains(approved, followers):
+		return &appcontent.RemoteQuotePolicyInput{Policy: appcontent.QuotePolicyFollowers}
+	}
+	return &appcontent.RemoteQuotePolicyInput{Policy: appcontent.QuotePolicyNobody}
 }
 
 // verifyQuoteTx enqueues in tx the JobVerifyQuote of the post uri, which quotes q; a post without
@@ -124,10 +146,8 @@ func (h *StatusHandlers) verifyQuote(ctx context.Context, p verifyQuotePayload) 
 	case err != nil:
 		return err
 	}
-	if q.Form != appcontent.QuoteFormFEP044f || quoted.IsLocal {
-		// A legacy quote needs no approval, and the approvals of quotes of local posts are this
-		// server's to give, not to verify.
-		return nil
+	if q.Form != appcontent.QuoteFormFEP044f {
+		return nil // a legacy quote needs no approval
 	}
 	if state.Approval == appcontent.QuoteApprovalAccepted && state.AuthorizationURI == p.Authorization {
 		return nil
@@ -136,14 +156,29 @@ func (h *StatusHandlers) verifyQuote(ctx context.Context, p verifyQuotePayload) 
 		_, err := h.d.Quotes.AcceptQuote(ctx, st.ID, "")
 		return err
 	}
-	if p.Authorization == "" || h.d.Profiles == nil {
+	if p.Authorization == "" {
+		return nil
+	}
+	if quoted.IsLocal {
+		// The approval of a quote of a local status is one this server gave.
+		if h.d.Approvals == nil {
+			return nil
+		}
+		ok, err := h.d.Approvals.VerifyLocalQuoteAuthorization(ctx, lastSegment(p.Authorization), st.URI, quoted.ID)
+		if err != nil || !ok || !h.isLocal(federation.IRI(p.Authorization)) {
+			return errors.Join(err, errNotApproved(ok, p.Authorization))
+		}
+		_, err = h.d.Quotes.AcceptQuote(ctx, st.ID, p.Authorization)
+		return err
+	}
+	if h.d.Profiles == nil {
 		return nil
 	}
 	author, err := h.d.Profiles.FindByID(ctx, quoted.AuthorAccountID)
 	if err != nil {
 		return err
 	}
-	if err := h.checkQuoteAuthorization(ctx, federation.IRI(p.Authorization), federation.IRI(author.Account.URI),
+	if err := checkQuoteAuthorization(ctx, h.d.Fetcher, federation.IRI(p.Authorization), federation.IRI(author.Account.URI),
 		federation.IRI(st.URI), federation.IRI(quoted.URI)); err != nil {
 		return err
 	}
@@ -151,14 +186,26 @@ func (h *StatusHandlers) verifyQuote(ctx context.Context, p verifyQuotePayload) 
 	return err
 }
 
+// errNotApproved returns ErrQuoteUnauthorized for a QuoteAuthorization of this server that does
+// not approve a quote, nil for one that does.
+func errNotApproved(ok bool, uri string) error {
+	if ok {
+		return nil
+	}
+	return fmt.Errorf("%w: %s", ErrQuoteUnauthorized, uri)
+}
+
+// lastSegment returns the last path segment of uri: the ID of an object IRI of this server.
+func lastSegment(uri string) string { return uri[strings.LastIndexByte(uri, '/')+1:] }
+
 // checkQuoteAuthorization fetches the QuoteAuthorization uri and checks that the quoted author
 // issued it for the quote of quoted by quoting (FEP-044f): it is attributed to author, on the
 // author's host, and names the two posts.
-func (h *StatusHandlers) checkQuoteAuthorization(ctx context.Context, uri, author, quoting, quotedURI federation.IRI) error {
+func checkQuoteAuthorization(ctx context.Context, fetcher DocumentFetcher, uri, author, quoting, quotedURI federation.IRI) error {
 	if uri.Host() == "" || uri.Host() != author.Host() {
 		return fmt.Errorf("%w: %s is not on the host of %s", ErrQuoteUnauthorized, uri, author)
 	}
-	got, err := h.d.Fetcher.Fetch(ctx, string(uri))
+	got, err := fetcher.Fetch(ctx, string(uri))
 	if err != nil {
 		return err
 	}

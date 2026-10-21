@@ -14,3 +14,8 @@ properties:
     $ref: ./StatusLanguageInput.yaml
   media:
     $ref: ./StatusMediaInput.yaml
+  remove_quote:
+    description: |
+      Takes the status's quote away for good (ADR-0069 §3). A status keeps the status it
+      quotes otherwise: an edit cannot change it.
+    type: boolean

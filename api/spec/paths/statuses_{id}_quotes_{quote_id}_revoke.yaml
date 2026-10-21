@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+  - name: quote_id
+    in: path
+    description: The ID of the status that quotes.
+    required: true
+    schema:
+      $ref: ../components/schemas/Id.yaml
+post:
+  operationId: revokeStatusQuote
+  summary: Revoke the approval of a quote of the authenticated user's status
+  description: |
+    Withdraws this server's approval of the quote (ADR-0069 §3): the quote shows the quoted
+    status no more, and the quoting server is told. A quote without this server's approval
+    (from software without approvals, or of the user's own status) is a 404, as is one revoked
+    already.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:statuses"]
+  responses:
+    "204":
+      description: The approval is revoked.
+    default:
+      $ref: ../components/responses/Problem.yaml

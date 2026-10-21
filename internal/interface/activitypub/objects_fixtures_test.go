@@ -86,6 +86,10 @@ func (f *fakeObjects) StatusActivity(_ context.Context, req appfederation.Reques
 	return f.find(req, id, "/activity")
 }
 
+func (f *fakeObjects) QuoteAuthorization(context.Context, string) (appfederation.Object, error) {
+	return appfederation.Object{}, appfederation.ErrNotFound
+}
+
 // PageStatusURI finds the statuses that an anonymous visitor may see and that are not deleted.
 func (f *fakeObjects) PageStatusURI(_ context.Context, id string) (string, error) {
 	if f.err != nil {

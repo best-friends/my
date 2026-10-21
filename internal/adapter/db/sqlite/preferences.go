@@ -24,6 +24,7 @@ func (r *IdentityRepository) InsertPreferences(ctx context.Context, tx uow.Tx, p
 		UserID:                      p.UserID,
 		Locale:                      p.Locale,
 		DefaultVisibility:           string(p.DefaultVisibility),
+		DefaultQuotePolicy:          string(p.DefaultQuotePolicy),
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     boolToInt(p.RequireMediaDescription),
 		EmailModeratorNotifications: boolToInt(p.EmailModeratorNotifications),
@@ -44,6 +45,7 @@ func (r *IdentityRepository) UpdatePreferences(ctx context.Context, tx uow.Tx, p
 	n, err := q.UpdateUserPreferences(ctx, sqlitegen.UpdateUserPreferencesParams{
 		Locale:                      p.Locale,
 		DefaultVisibility:           string(p.DefaultVisibility),
+		DefaultQuotePolicy:          string(p.DefaultQuotePolicy),
 		DefaultPostLanguage:         p.DefaultPostLanguage,
 		RequireMediaDescription:     boolToInt(p.RequireMediaDescription),
 		EmailModeratorNotifications: boolToInt(p.EmailModeratorNotifications),
@@ -134,6 +136,7 @@ func userPreferencesFrom(ctx context.Context, q *sqlitegen.Queries, row sqlitege
 		TimeZoneChosen:              chosen,
 		Locale:                      row.Locale,
 		DefaultVisibility:           identity.Visibility(row.DefaultVisibility),
+		DefaultQuotePolicy:          identity.QuotePolicy(row.DefaultQuotePolicy),
 		DefaultPostLanguage:         row.DefaultPostLanguage,
 		RequireMediaDescription:     row.RequireMediaDescription != 0,
 		EmailModeratorNotifications: row.EmailModeratorNotifications != 0,

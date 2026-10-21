@@ -20,6 +20,10 @@ const (
 	activitySegment = "activity"
 )
 
+// quoteAuthorizationsPrefix is the path of the IRIs of the QuoteAuthorizations of this server
+// before the UUID (ADR-0069 §1).
+const quoteAuthorizationsPrefix = "/ap/quote_authorizations/"
+
 // uuidPattern matches the canonical form of a UUIDv7: 36 lowercase characters.
 var uuidPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$`)
 

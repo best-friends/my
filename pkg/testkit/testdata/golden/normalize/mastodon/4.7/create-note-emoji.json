@@ -29,6 +29,11 @@
                 "Language": "en"
               }
             ],
+            "CanQuote": {
+              "AutomaticApproval": [
+                "https://www.w3.org/ns/activitystreams#Public"
+              ]
+            },
             "Emojis": [
               {
                 "ID": "https://mastodon.example/emojis/1",

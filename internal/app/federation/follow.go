@@ -265,6 +265,15 @@ type FollowHandlerDeps struct {
 	// Relays receives the answers of the relays and the Follows of the instance actor; nil
 	// drops the Follows of the instance actor and takes every answer as one about a follow.
 	Relays RelayFollows
+	// Quotes receives the answers to this server's QuoteRequests (ADR-0069 §3); nil takes them
+	// as answers about follows, which drops them.
+	Quotes QuoteAnswers
+}
+
+// QuoteAnswers receives the Accept and Reject of this server's QuoteRequests; *QuoteHandlers
+// implements it.
+type QuoteAnswers interface {
+	ReceiveQuoteAnswer(ctx context.Context, in *InboxActivity, accepted bool) (bool, error)
 }
 
 // RegisterFollowHandlers sets the inbox handlers of the follow activities (federation.md §3.4):
@@ -279,6 +288,7 @@ type FollowHandlerDeps struct {
 //   - Undo of an Accept: graph.RejectRemote, the end of the follow it accepted.
 //   - Accept and Reject of the Follow of a relay, and Follow of the instance actor: Relays
 //     (ADR-0061).
+//   - Accept and Reject of a QuoteRequest this server sent: Quotes (ADR-0069 §3).
 //
 // The embedded Follow is a hint only: the graph module matches it against the follows of the
 // sender.
@@ -371,6 +381,11 @@ func (h followHandlers) respond(accepted bool, use func(context.Context, appgrap
 	return func(ctx context.Context, in *InboxActivity) error {
 		if h.d.Relays != nil {
 			if handled, err := h.d.Relays.ReceiveAnswer(ctx, in, accepted); handled {
+				return err
+			}
+		}
+		if h.d.Quotes != nil {
+			if handled, err := h.d.Quotes.ReceiveQuoteAnswer(ctx, in, accepted); handled {
 				return err
 			}
 		}

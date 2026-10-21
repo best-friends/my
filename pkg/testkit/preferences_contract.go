@@ -70,6 +70,7 @@ func defaultPreferencesOf(userID, locale string, at time.Time) appidentity.UserP
 			Locale:              locale,
 			TimeZone:            "UTC",
 			DefaultVisibility:   identity.VisibilityPublic,
+			DefaultQuotePolicy:  identity.QuotePolicyPublic,
 			DefaultPostLanguage: "und",
 			UpdatedAt:           at,
 		},
@@ -162,6 +163,7 @@ func preferencesSet(t *testing.T, e *accountEnv) {
 			TimeZone:                "Asia/Tokyo",
 			TimeZoneChosen:          true,
 			DefaultVisibility:       identity.VisibilityUnlisted,
+			DefaultQuotePolicy:      identity.QuotePolicyPublic,
 			DefaultPostLanguage:     "he",
 			RequireMediaDescription: true,
 			UpdatedAt:               e.clock.Now(),
@@ -309,16 +311,17 @@ func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
 		t.Fatalf("UpdatePreferences(visibility) = %v", err)
 	}
 	checkPreferences(t, e.preferences(t, reg.User.ID), defaultPreferencesOf(reg.User.ID, "en", reg.User.CreatedAt))
-	tz, vis, langs := "Asia/Tokyo", identity.VisibilityPrivate, []string{"ja-jp", "en", "ja-JP"}
+	tz, vis, langs, quote := "Asia/Tokyo", identity.VisibilityPrivate, []string{"ja-jp", "en", "ja-JP"}, identity.QuotePolicyFollowers
 	e.clock.Advance(time.Minute)
 	got, err := e.identity.UpdatePreferences(ctx, reg.User.ID, appidentity.PreferencesUpdate{
-		TimeZone: &tz, DefaultVisibility: &vis, TimelineLanguages: &langs,
+		TimeZone: &tz, DefaultVisibility: &vis, TimelineLanguages: &langs, DefaultQuotePolicy: &quote,
 	})
 	if err != nil {
 		t.Fatalf("UpdatePreferences = %v", err)
 	}
 	want := defaultPreferencesOf(reg.User.ID, "en", e.clock.Now())
 	want.TimeZone, want.TimeZoneChosen, want.DefaultVisibility, want.TimelineLanguages = tz, true, vis, []string{"en", "ja-JP"}
+	want.DefaultQuotePolicy = quote
 	checkPreferences(t, got, want)
 	checkPreferences(t, e.preferences(t, reg.User.ID), want)
 
@@ -334,7 +337,7 @@ func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
 	checkPreferences(t, got, want)
 	checkPreferences(t, e.preferences(t, reg.User.ID), want)
 
-	bad, badVis, tooMany := "nope/nope", identity.Visibility("everyone"), make([]string, identity.MaxTimelineLanguageCount+1)
+	bad, badVis, badQuote, tooMany := "nope/nope", identity.Visibility("everyone"), identity.QuotePolicy("friends"), make([]string, identity.MaxTimelineLanguageCount+1)
 	for i := range tooMany {
 		tooMany[i] = "en"
 	}
@@ -347,6 +350,7 @@ func preferencesUpdatePartially(t *testing.T, e *accountEnv) {
 		{appidentity.PreferencesUpdate{Locale: &bad}, "locale", identity.ErrInvalidLanguageTag},
 		{appidentity.PreferencesUpdate{DefaultPostLanguage: &bad}, "default_post_language", identity.ErrInvalidLanguageTag},
 		{appidentity.PreferencesUpdate{DefaultVisibility: &badVis}, "default_visibility", identity.ErrInvalidVisibility},
+		{appidentity.PreferencesUpdate{DefaultQuotePolicy: &badQuote}, "default_quote_policy", identity.ErrInvalidQuotePolicy},
 		{appidentity.PreferencesUpdate{TimeZone: &tz, TimelineLanguages: &tooMany}, "timeline_languages", identity.ErrTooManyLanguages},
 	} {
 		_, err := e.identity.UpdatePreferences(ctx, reg.User.ID, tc.in)

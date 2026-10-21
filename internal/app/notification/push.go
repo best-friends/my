@@ -420,6 +420,8 @@ func (s *PushService) message(ctx context.Context, job pushJob) ([]byte, error) 
 		p.Title, p.Path = l.ServerPushFavourite(name), statusPath(recipient.Acct, job.StatusID)
 	case notification.TypeReaction:
 		p.Title, p.Path = l.ServerPushReaction(name), statusPath(recipient.Acct, job.StatusID)
+	case notification.TypeQuote:
+		p.Title, p.Path = l.ServerPushQuote(name), statusPath(source.Acct, job.StatusID)
 	case notification.TypePollClosed:
 		// The voters' notifications are from the poll's author; the author's own has no source.
 		author := source.Acct

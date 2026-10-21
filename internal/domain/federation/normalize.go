@@ -77,7 +77,7 @@ var (
 	activityTypes = []ActivityType{
 		ActivityCreate, ActivityUpdate, ActivityDelete, ActivityFollow, ActivityAccept, ActivityReject,
 		ActivityUndo, ActivityAnnounce, ActivityLike, ActivityEmojiReact, ActivityBlock, ActivityFlag,
-		ActivityAdd, ActivityRemove, ActivityMove,
+		ActivityAdd, ActivityRemove, ActivityMove, ActivityQuoteRequest,
 	}
 	objectTypes = []ObjectType{
 		ObjectNote, ObjectQuestion, ObjectArticle, ObjectPage, ObjectEvent, ObjectImage, ObjectVideo,
@@ -127,6 +127,14 @@ func (n normalizer) activity(o object, t ActivityType, raw string) (*Activity, e
 	}
 	if _, _, a.Emojis, err = n.tags(o.get("tag")); err != nil {
 		return nil, err
+	}
+	switch t {
+	case ActivityQuoteRequest:
+		if a.Instrument, err = n.ref(o.get("instrument"), container); err != nil {
+			return nil, err
+		}
+	case ActivityAccept:
+		a.Result = n.firstRef(o.get("result"))
 	}
 	return a, nil
 }
@@ -191,6 +199,7 @@ func (n normalizer) object(o object, t ObjectType, raw string) (*Object, error) 
 		return nil, err
 	}
 	obj.Quote = n.quote(o)
+	obj.CanQuote = n.canQuote(o)
 	if t == ObjectQuoteAuthorization {
 		obj.InteractingObject = n.firstRef(o.get("interactingObject"))
 		obj.InteractionTarget = n.firstRef(o.get("interactionTarget"))
@@ -232,6 +241,19 @@ func (n normalizer) quote(o object) *Quote {
 		}
 	}
 	return nil
+}
+
+// canQuote reads interactionPolicy.canQuote, nil when the object has none.
+func (n normalizer) canQuote(o object) *CanQuote {
+	policy, ok := o.get("interactionPolicy").(object)
+	if !ok {
+		return nil
+	}
+	c, ok := policy.get("canQuote").(object)
+	if !ok {
+		return nil
+	}
+	return &CanQuote{AutomaticApproval: n.recipients(list(c.get("automaticApproval"))), ManualApproval: n.recipients(list(c.get("manualApproval")))}
 }
 
 // activityStreamsMediaType reports whether the mediaType of a Link names an ActivityStreams

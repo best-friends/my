@@ -938,6 +938,12 @@ type StatusQuoteEvent struct {
 	OccurredAt       int64
 }
 
+type StatusQuotePolicy struct {
+	StatusID  string
+	Policy    string
+	UpdatedAt int64
+}
+
 type StatusQuoteState struct {
 	StatusID         string
 	State            string
@@ -1009,6 +1015,7 @@ type UserPreference struct {
 	UserID                      string
 	Locale                      string
 	DefaultVisibility           string
+	DefaultQuotePolicy          string
 	DefaultPostLanguage         string
 	RequireMediaDescription     int64
 	EmailModeratorNotifications int64

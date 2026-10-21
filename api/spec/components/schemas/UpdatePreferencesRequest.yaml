@@ -10,6 +10,8 @@ properties:
     type: string
   default_visibility:
     $ref: ./Visibility.yaml
+  default_quote_policy:
+    $ref: ./QuotePolicy.yaml
   default_post_language:
     description: The language of new posts that name none; `und` for undetermined.
     type: string

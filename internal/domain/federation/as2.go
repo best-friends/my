@@ -84,6 +84,9 @@ const (
 	ActivityAdd        ActivityType = "Add"
 	ActivityRemove     ActivityType = "Remove"
 	ActivityMove       ActivityType = "Move"
+	// ActivityQuoteRequest asks the author of a post to approve a quote of it (FEP-044f,
+	// ADR-0069 §3): object is the quoted post, instrument the quoting one.
+	ActivityQuoteRequest ActivityType = "QuoteRequest"
 	// ActivityUnknown is any other type of a document with an actor; RawType keeps the name.
 	ActivityUnknown ActivityType = ""
 )
@@ -205,6 +208,10 @@ type Activity struct {
 	// EmojiReact; empty for a plain Like.
 	Reaction string
 	Emojis   []Emoji
+	// Instrument is the instrument of a QuoteRequest: the quoting post.
+	Instrument Ref
+	// Result is the result of an Accept: the QuoteAuthorization of an accepted QuoteRequest.
+	Result IRI
 }
 
 // Object returns the first object of a, or the zero Ref.
@@ -296,10 +303,19 @@ type Object struct {
 	Replies Ref
 	// Quote is the post that the object quotes, nil for none (FR-114, ADR-0069 §2).
 	Quote *Quote
+	// CanQuote is the interactionPolicy.canQuote of a post, nil when it declares none: the
+	// actors and collections whose quotes are approved automatically or by hand.
+	CanQuote *CanQuote
 	// InteractingObject and InteractionTarget are the quote and the quoted post of a
 	// QuoteAuthorization (FEP-044f).
 	InteractingObject IRI
 	InteractionTarget IRI
+}
+
+// CanQuote is who may quote a post (FEP-044f, GoToSocial's interaction policies).
+type CanQuote struct {
+	AutomaticApproval []IRI
+	ManualApproval    []IRI
 }
 
 // Quote is the quoted post of a post (ADR-0069 §2).

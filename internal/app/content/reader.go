@@ -93,6 +93,11 @@ type StatusView struct {
 	// Quote is the quote of the status, nil for none or for a status presented as a quote
 	// (ADR-0069).
 	Quote *QuoteView
+	// Quotable is whether the viewer, a local account, may quote the status
+	// (content.MayQuote); false for an anonymous viewer.
+	Quotable bool
+	// QuotePolicy is who may quote the status, for its author only; "" for anyone else.
+	QuotePolicy content.QuotePolicy
 }
 
 // Edited reports whether the status has a revision after its first.
@@ -384,6 +389,9 @@ func (r *Reader) presentWith(ctx context.Context, viewer Viewer, st content.Stat
 		if out.Quote, err = r.quote(ctx, viewer, st); err != nil {
 			return StatusView{}, err
 		}
+	}
+	if out.Quotable, out.QuotePolicy, err = r.quotable(ctx, viewer, st); err != nil {
+		return StatusView{}, err
 	}
 	return out, nil
 }

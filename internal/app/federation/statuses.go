@@ -100,7 +100,10 @@ type StatusHandlersDeps struct {
 	// quoted posts and verifies the approvals, reading their authors through Profiles. Without
 	// Quotes, quotes stay pending.
 	Quotes RemoteQuotes
-	Clock  kernel.Clock
+	// Approvals verifies the QuoteAuthorizations of this server that remote quotes of local
+	// statuses name; nil leaves those quotes pending.
+	Approvals QuoteApprovals
+	Clock     kernel.Clock
 	// Host is the serving domain: actors on it are local.
 	Host   string
 	Logger *slog.Logger
@@ -563,6 +566,7 @@ func (h *StatusHandlers) inputOf(author appaccount.Actor, fallback federation.Au
 		in.Poll = pollInput(p)
 	}
 	in.Quote = quoteInput(obj.Quote)
+	in.QuotePolicy = quotePolicyInput(obj.CanQuote, followers)
 	return in
 }
 

@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Who may quote a status (FR-114, ADR-0069): `public` anyone who may see it, `followers`
+  the author's followers, `nobody` the author alone. A followers-only status is quoted only
+  by its author, in a followers-only or direct status, and a direct one by nobody, whatever
+  its policy.
+type: string
+enum: [public, followers, nobody]

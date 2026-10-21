@@ -625,6 +625,8 @@ CREATE TABLE user_preferences (
   user_id text COLLATE "C" NOT NULL PRIMARY KEY,
   locale text NOT NULL,
   default_visibility text NOT NULL CHECK (default_visibility IN ('public', 'local', 'unlisted', 'private', 'direct')),
+  -- Who may quote the user's new statuses (ADR-0069 §1).
+  default_quote_policy text NOT NULL DEFAULT 'public' CHECK (default_quote_policy IN ('public', 'followers', 'nobody')),
   default_post_language text NOT NULL,
   require_media_description boolean NOT NULL,
   -- Whether the moderator notifications (admin_report, admin_sign_up) also come by email.
@@ -1356,7 +1358,7 @@ CREATE TABLE notifications (
   id text COLLATE "C" NOT NULL PRIMARY KEY,
   recipient_account_id text COLLATE "C" NOT NULL,
   type text NOT NULL CHECK (type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'poll_closed',
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'quote', 'poll_closed',
     'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
     'admin_appeal', 'admin_webhook_disabled'
@@ -1446,7 +1448,7 @@ CREATE INDEX push_subscriptions_account_id ON push_subscriptions (account_id);
 CREATE TABLE push_subscription_alerts (
   subscription_id text COLLATE "C" NOT NULL,
   notification_type text NOT NULL CHECK (notification_type IN (
-    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'poll_closed',
+    'follow', 'follow_request', 'follow_accepted', 'mention', 'boost', 'favourite', 'reaction', 'quote', 'poll_closed',
     'moderation_notice',
     'report_resolved', 'admin_report', 'admin_sign_up', 'relationships_severed', 'appeal_decided',
     'admin_appeal', 'admin_webhook_disabled'
@@ -1671,6 +1673,34 @@ CREATE TABLE status_quote_states (
 );
 CREATE INDEX status_quote_states_authorization_uri ON status_quote_states (authorization_uri);
 
+-- Current value: who may quote a status (ADR-0069 §1): what the author of a local status chose,
+-- or what a remote status declares in interactionPolicy.canQuote. A remote status without a row
+-- declares none; every local status has one.
+CREATE TABLE status_quote_policies (
+  status_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  policy text NOT NULL CHECK (policy IN ('public', 'followers', 'nobody')),
+  updated_at timestamptz NOT NULL
+);
+
+-- Resource: this server's approval of a quote of a local status (FEP-044f's QuoteAuthorization,
+-- ADR-0069 §1). quoting_uri is the quoting status, local or remote; its id is the IRI's last
+-- segment. A quoting status has one per quoted status.
+CREATE TABLE quote_authorizations (
+  id text COLLATE "C" NOT NULL PRIMARY KEY,
+  quoting_uri text NOT NULL,
+  quoting_account_id text COLLATE "C" NOT NULL,
+  quoted_status_id text COLLATE "C" NOT NULL,
+  created_at timestamptz NOT NULL
+);
+CREATE UNIQUE INDEX quote_authorizations_quoting_uri_quoted_status_id ON quote_authorizations (quoting_uri, quoted_status_id);
+CREATE INDEX quote_authorizations_quoted_status_id_id ON quote_authorizations (quoted_status_id, id);
+
+-- Event: the quoted author revoked a QuoteAuthorization; its IRI answers 410 from then on.
+CREATE TABLE quote_authorization_revocations (
+  authorization_id text COLLATE "C" NOT NULL PRIMARY KEY,
+  revoked_at timestamptz NOT NULL
+);
+
 -- ---------------------------------------------------------------------------------------------
 -- federation: inbox, delivery, and remote instances (data-model §4.8,
 -- docs/architecture/federation.md). Owned by internal/app/federation.
@@ -1711,7 +1741,7 @@ CREATE TABLE outbound_activities (
   activity_uri text NOT NULL,
   type text NOT NULL,
   actor_account_id text COLLATE "C" NOT NULL,
-  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote', 'relay')),
+  object_type text NOT NULL CHECK (object_type IN ('status', 'boost', 'favourite', 'follow', 'block', 'account', 'report', 'poll_vote', 'relay', 'quote')),
   object_id text COLLATE "C" NOT NULL,
   created_at timestamptz NOT NULL
 );

@@ -1604,6 +1604,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/statuses/{id}/quote_policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change who may quote the authenticated user's status
+         * @description Changes the `quote_policy` of a status of the user (ADR-0069 §1); the approvals given
+         *     before stay, and each is revoked on its own. Another account's status is a 403 when the
+         *     user may see it and a 404 otherwise.
+         */
+        put: operations["setStatusQuotePolicy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statuses/{id}/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the statuses that quote the authenticated user's status
+         * @description The statuses that quote a status of the user, newest first, each with its `quote` and
+         *     its state (ADR-0069 §5). Statuses the user may not see, and quotes taken away, are left
+         *     out, so a page may hold fewer than `limit` statuses before the last. Another account's
+         *     status is a 404.
+         */
+        get: operations["listStatusQuotes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/statuses/{id}/quotes/{quote_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+                /** @description The ID of the status that quotes. */
+                quote_id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke the approval of a quote of the authenticated user's status
+         * @description Withdraws this server's approval of the quote (ADR-0069 §3): the quote shows the quoted
+         *     status no more, and the quoting server is told. A quote without this server's approval
+         *     (from software without approvals, or of the user's own status) is a 404, as is one revoked
+         *     already.
+         */
+        post: operations["revokeStatusQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/statuses/{id}/source": {
         parameters: {
             query?: never;
@@ -5853,6 +5932,13 @@ export interface components {
             in_reply_to_id?: components["schemas"]["Id"];
             media?: components["schemas"]["StatusMediaInput"];
             poll?: components["schemas"]["PollInput"];
+            /**
+             * @description The status to quote (FR-114, ADR-0069). It must be one the user may see and may quote
+             *     (`Status.quotable`); a quote of a boost is a quote of the boosted status.
+             */
+            quoted_status_id?: components["schemas"]["Id"];
+            /** @description Who may quote the new status; the user's `default_quote_policy` when left out. */
+            quote_policy?: components["schemas"]["QuotePolicy"];
         };
         /** @description A new webhook. */
         CreateWebhookRequest: {
@@ -6144,6 +6230,11 @@ export interface components {
             sensitive?: boolean;
             language?: components["schemas"]["StatusLanguageInput"];
             media?: components["schemas"]["StatusMediaInput"];
+            /**
+             * @description Takes the status's quote away for good (ADR-0069 §3). A status keeps the status it
+             *     quotes otherwise: an edit cannot change it.
+             */
+            remove_quote?: boolean;
         };
         /** @description The setup to enroll and a code of the app that shows it has the secret. */
         EnableTotpRequest: {
@@ -6773,8 +6864,10 @@ export interface components {
          *     (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
          *     (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
          *     account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
-         *     with another emoji is another notification). `status` is the post that `mention`,
-         *     `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
+         *     with another emoji is another notification), or the account that quoted a post of the
+         *     user (`quote`, once the quote is approved or, from software without approvals, received).
+         *     `status` is the post that `mention`, `boost`, `favourite`, `reaction`, and `poll_closed`
+         *     are about, and for `quote` the post that quotes. `moderation_notice` comes from the instance and has no `account`; its
          *     `moderation_action` is the action on the user's account, with its kind, reason, and end.
          *     `report_resolved` also comes from the instance: its `report` is the user's report that
          *     the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -6793,7 +6886,7 @@ export interface components {
          *     answered 410 Gone or kept failing; it names none) to those with `manage_webhooks`.
          * @enum {string}
          */
-        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal" | "admin_webhook_disabled";
+        NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "quote" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal" | "admin_webhook_disabled";
         /** @description The pagination of a collection page; collection responses embed it with allOf. */
         PageInfo: {
             next_cursor?: components["schemas"]["Cursor"];
@@ -7000,6 +7093,8 @@ export interface components {
              */
             time_zone_chosen: boolean;
             default_visibility: components["schemas"]["Visibility"];
+            /** @description Who may quote the user's new statuses that name no `quote_policy`. */
+            default_quote_policy: components["schemas"]["QuotePolicy"];
             /** @description The language of new posts that name none, a BCP 47 language tag; `und` when undetermined. */
             default_post_language: string;
             /** @description Whether clients ask for a description before posting media without one. */
@@ -7158,6 +7253,14 @@ export interface components {
             /** @description The path data (`d`) of the dark modules, one unit per module. */
             path: string;
         };
+        /**
+         * @description Who may quote a status (FR-114, ADR-0069): `public` anyone who may see it, `followers`
+         *     the author's followers, `nobody` the author alone. A followers-only status is quoted only
+         *     by its author, in a followers-only or direct status, and a direct one by nobody, whatever
+         *     its policy.
+         * @enum {string}
+         */
+        QuotePolicy: "public" | "followers" | "nobody";
         /**
          * @description The state of a quote as the viewer sees it (ADR-0069), with the values of Mastodon's
          *     `Quote.state` and `legacy`. The quoted status is shown for `accepted` and `legacy`, and
@@ -7375,6 +7478,10 @@ export interface components {
             /** @description The text, in any language; empty clears it. */
             body: string;
         };
+        /** @description Who may quote the status from now on. Approvals given before stay. */
+        SetQuotePolicyRequest: {
+            quote_policy: components["schemas"]["QuotePolicy"];
+        };
         /** @description The whole theme; tokens left out go back to their defaults. */
         SetThemeRequest: {
             tokens: components["schemas"]["ThemeTokenValue"][];
@@ -7492,6 +7599,13 @@ export interface components {
              *     `quoted_status`.
              */
             quote?: components["schemas"]["StatusQuote"];
+            /**
+             * @description Whether the authenticated user may quote the status (its `quote_policy`, its visibility,
+             *     and the user's follow of the author decide it); omitted for anonymous requests.
+             */
+            quotable?: boolean;
+            /** @description Who may quote the status; given only to its author. */
+            quote_policy?: components["schemas"]["QuotePolicy"];
         };
         /** @description The thread around a status. */
         StatusContext: {
@@ -7742,6 +7856,7 @@ export interface components {
             /** @description The time zone, an IANA name. */
             time_zone?: string;
             default_visibility?: components["schemas"]["Visibility"];
+            default_quote_policy?: components["schemas"]["QuotePolicy"];
             /** @description The language of new posts that name none; `und` for undetermined. */
             default_post_language?: string;
             /** @description Whether clients ask for a description before posting media without one. */
@@ -10105,6 +10220,71 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StatusReactionPage"];
                 };
+            };
+            default: components["responses"]["Problem"];
+        };
+    };
+    setStatusQuotePolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetQuotePolicyRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["StatusAfterAction"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    listStatusQuotes: {
+        parameters: {
+            query?: {
+                /** @description The `next_cursor` of the previous page; omitted for the first page. */
+                cursor?: components["parameters"]["Cursor"];
+                /** @description The maximum number of items in the page. */
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["StatusPage"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    revokeStatusQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the status. */
+                id: components["parameters"]["StatusId"];
+                /** @description The ID of the status that quotes. */
+                quote_id: components["schemas"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The approval is revoked. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Problem"];
         };

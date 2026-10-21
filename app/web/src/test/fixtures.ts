@@ -119,6 +119,7 @@ export const preferencesFixture: Schemas["Preferences"] = {
   time_zone: "UTC",
   time_zone_chosen: true,
   default_visibility: "public",
+  default_quote_policy: "public",
   default_post_language: "en",
   require_media_description: false,
   email_moderator_notifications: false,

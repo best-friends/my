@@ -29,6 +29,11 @@
                 "Language": "en"
               }
             ],
+            "CanQuote": {
+              "AutomaticApproval": [
+                "http://gotosocial.example/users/the_mighty_zork"
+              ]
+            },
             "ID": "http://gotosocial.example/users/the_mighty_zork/statuses/01F8MHAMCHF6Y650WCRSCP4WMY",
             "Published": "2021-10-20T10:40:37Z",
             "RawType": "Note",

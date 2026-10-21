@@ -7,7 +7,18 @@
       "Emoji": "toot:Emoji",
       "Hashtag": "as:Hashtag",
       "PropertyValue": "schema:PropertyValue",
+      "QuoteAuthorization": "https://w3id.org/fep/044f#QuoteAuthorization",
+      "QuoteRequest": "https://w3id.org/fep/044f#QuoteRequest",
+      "_misskey_quote": "https://misskey-hub.net/ns#_misskey_quote",
+      "automaticApproval": {
+        "@id": "gts:automaticApproval",
+        "@type": "@id"
+      },
       "blurhash": "toot:blurhash",
+      "canQuote": {
+        "@id": "gts:canQuote",
+        "@type": "@id"
+      },
       "discoverable": "toot:discoverable",
       "featured": {
         "@id": "toot:featured",
@@ -21,8 +32,31 @@
         "@container": "@list",
         "@id": "toot:focalPoint"
       },
+      "gts": "https://gotosocial.org/ns#",
       "indexable": "toot:indexable",
+      "interactingObject": {
+        "@id": "gts:interactingObject",
+        "@type": "@id"
+      },
+      "interactionPolicy": {
+        "@id": "gts:interactionPolicy",
+        "@type": "@id"
+      },
+      "interactionTarget": {
+        "@id": "gts:interactionTarget",
+        "@type": "@id"
+      },
       "manuallyApprovesFollowers": "as:manuallyApprovesFollowers",
+      "quote": {
+        "@id": "https://w3id.org/fep/044f#quote",
+        "@type": "@id"
+      },
+      "quoteAuthorization": {
+        "@id": "https://w3id.org/fep/044f#quoteAuthorization",
+        "@type": "@id"
+      },
+      "quoteUri": "http://fedibird.com/ns#quoteUri",
+      "quoteUrl": "as:quoteUrl",
       "schema": "http://schema.org#",
       "sensitive": "as:sensitive",
       "suspended": "toot:suspended",

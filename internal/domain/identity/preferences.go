@@ -22,6 +22,8 @@ type Preferences struct {
 	TimeZoneChosen bool
 	// DefaultVisibility is the visibility a new post starts with.
 	DefaultVisibility Visibility
+	// DefaultQuotePolicy is who may quote a new post (ADR-0069 §1).
+	DefaultQuotePolicy QuotePolicy
 	// DefaultPostLanguage is the language a new post starts with; UndeterminedLanguage leaves it
 	// to the client.
 	DefaultPostLanguage string
@@ -38,6 +40,7 @@ type Preferences struct {
 const (
 	DefaultTimeZone          = "UTC"
 	DefaultPostVisibility    = VisibilityPublic
+	DefaultPostQuotePolicy   = QuotePolicyPublic
 	UndeterminedLanguage     = "und" // BCP 47 "undetermined" (data-model §1.2, lang)
 	MaxLanguageTagLength     = 64    // longer tags are rejected before parsing
 	MaxTimeZoneLength        = 64
@@ -56,11 +59,23 @@ const (
 	VisibilityDirect   Visibility = "direct"
 )
 
+// QuotePolicy is who may quote a post (ADR-0069 §1). Preferences use it for the default of new
+// posts.
+type QuotePolicy string
+
+// The quote policies.
+const (
+	QuotePolicyPublic    QuotePolicy = "public"
+	QuotePolicyFollowers QuotePolicy = "followers"
+	QuotePolicyNobody    QuotePolicy = "nobody"
+)
+
 // Errors that preference validation reports.
 var (
 	ErrInvalidLanguageTag = errors.New("invalid language tag")
 	ErrInvalidTimeZone    = errors.New("invalid time zone")
 	ErrInvalidVisibility  = errors.New("invalid visibility")
+	ErrInvalidQuotePolicy = errors.New("invalid quote policy")
 	ErrTooManyLanguages   = errors.New("too many timeline languages")
 )
 
@@ -71,6 +86,15 @@ func ValidateVisibility(v Visibility) error {
 		return nil
 	}
 	return fmt.Errorf("%w: %q", ErrInvalidVisibility, v)
+}
+
+// ValidateQuotePolicy accepts the three quote policies.
+func ValidateQuotePolicy(p QuotePolicy) error {
+	switch p {
+	case QuotePolicyPublic, QuotePolicyFollowers, QuotePolicyNobody:
+		return nil
+	}
+	return fmt.Errorf("%w: %q", ErrInvalidQuotePolicy, p)
 }
 
 // ValidateTimeZone accepts an IANA time zone name that the time zone database knows, such as

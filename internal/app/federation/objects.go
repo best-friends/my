@@ -90,6 +90,9 @@ const AcceptSignatureGET = acceptSignatureGET
 
 // ObjectsDeps are the ports and settings of Objects.
 type ObjectsDeps struct {
+	// Quotes reads the quotes and quote policies that Notes present, and the approvals this
+	// server gives (ADR-0069); nil presents none and serves no QuoteAuthorization.
+	Quotes   ObjectQuotes
 	Statuses ObjectStatuses
 	Accounts ObjectAccounts
 	Graph    ObjectGraph
@@ -131,7 +134,7 @@ func NewObjects(d ObjectsDeps) *Objects {
 	if d.AccountDomain == "" {
 		d.AccountDomain = d.Host
 	}
-	return &Objects{d: d, notes: notes{parts: d.Reader, graph: d.Graph, host: d.Host, accountDomain: d.AccountDomain}}
+	return &Objects{d: d, notes: notes{parts: d.Reader, graph: d.Graph, quotes: d.Quotes, host: d.Host, accountDomain: d.AccountDomain}}
 }
 
 // AuthorizedFetch reports whether authorized fetch (FR-408, federation.md §10) is on: GETs of

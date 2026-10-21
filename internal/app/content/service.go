@@ -149,6 +149,9 @@ type Deps struct {
 	// DefaultLanguage returns the default post language of a user (FR-110), used when a post
 	// names none; nil or UndeterminedLanguage leaves the language undetermined.
 	DefaultLanguage func(ctx context.Context, userID string) (string, error)
+	// DefaultQuotePolicy returns who may quote the new statuses of a user (ADR-0069 §1), used
+	// when a status names no policy; nil means content.DefaultQuotePolicy.
+	DefaultQuotePolicy func(ctx context.Context, userID string) (content.QuotePolicy, error)
 	// LocalEmojis returns the enabled local custom emoji that texts use as :shortcode:
 	// ((*CustomEmojiService).LocalEmojiIDs, ADR-0051 §3); nil records no custom emoji.
 	LocalEmojis func(ctx context.Context, texts ...string) ([]string, error)
@@ -222,6 +225,10 @@ type CreateInput struct {
 	// IdempotencyKey is the client API's Idempotency-Key, "" for none. A key that the author
 	// already used returns the status posted with it.
 	IdempotencyKey string
+	// QuotedStatusID is the ID of the status quoted, "" for none (FR-114).
+	QuotedStatusID string
+	// QuotePolicy is who may quote the status; "" takes the author's default (ADR-0069 §1).
+	QuotePolicy content.QuotePolicy
 }
 
 // Create posts a local status. The text becomes HTML with mentions of active accounts (local
@@ -229,7 +236,10 @@ type CreateInput struct {
 // (ErrMediaNotFound, ErrMediaNotReady); the visibility is capped by the author's visibility ceiling
 // (data-model §5.4) and stored as capped. A reply must target a status the author may see.
 // A poll (FR-112) must keep the limits of content.NewPoll (content.ErrInvalidPoll) and comes
-// without media (ErrPollWithMedia); it is posted with a tally observation of no votes.
+// without media (ErrPollWithMedia); it is posted with a tally observation of no votes. A quote
+// must name a status the author may see (ErrQuoteTargetNotFound) and may quote
+// (ErrQuoteNotAllowed, ADR-0069 §3); the status gets the quote policy asked for or the author's
+// default (ErrInvalidQuotePolicy).
 //
 // Retrying with an IdempotencyKey that the author already used returns the status posted with it
 // and changes nothing; when that status is deleted, it fails with ErrAlreadyDeleted. A key that
@@ -292,6 +302,21 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 		st.InReplyToURI = parent.URI
 		st.ConversationURI = cmp.Or(parent.ConversationURI, parent.URI)
 	}
+	quotePolicy, err := s.newQuotePolicy(ctx, author, in.QuotePolicy)
+	if err != nil {
+		return Post{}, err
+	}
+	var quote *localQuote
+	if in.QuotedStatusID != "" {
+		if !restrictions.CanInteract() {
+			return Post{}, fmt.Errorf("account %s: %w", in.AuthorAccountID, ErrInteractionRestricted)
+		}
+		q, err := s.quoteTarget(ctx, in.AuthorAccountID, in.QuotedStatusID, st.Visibility)
+		if err != nil {
+			return Post{}, err
+		}
+		quote = &q
+	}
 	local := content.LocalStatus{
 		StatusID: id, AuthorAccountID: in.AuthorAccountID, ClientID: in.ClientID, IdempotencyKey: in.IdempotencyKey,
 	}
@@ -324,6 +349,16 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Post, error) {
 		}
 		if err := tx.Emit(ctx, StatusCreated{Status: st, Revision: rev}); err != nil {
 			return err
+		}
+		if s.d.Quotes != nil {
+			if err := s.d.Quotes.UpsertQuotePolicy(ctx, tx, content.StatusQuotePolicy{StatusID: st.ID, Policy: quotePolicy, UpdatedAt: now}); err != nil {
+				return err
+			}
+		}
+		if quote != nil {
+			if err := s.recordLocalQuote(ctx, tx, st, *quote); err != nil {
+				return err
+			}
 		}
 		if poll == nil {
 			return nil
@@ -360,42 +395,8 @@ func (s *Service) replay(ctx context.Context, authorID, key string) (Post, error
 // A status that does not exist, is deleted, or is hidden from the author fails alike with
 // ErrReplyTargetNotFound, so that a reply does not reveal it.
 func (s *Service) replyTarget(ctx context.Context, authorID, statusID string) (content.Status, error) {
-	notFound := fmt.Errorf("status %s: %w", statusID, ErrReplyTargetNotFound)
-	parent, err := s.d.Repository.FindStatus(ctx, statusID)
-	if errors.Is(err, ErrNotFound) {
-		return content.Status{}, notFound
-	}
-	if err != nil {
-		return content.Status{}, err
-	}
-	rev, err := s.d.Repository.FindCurrentRevision(ctx, statusID)
-	if errors.Is(err, ErrNotFound) {
-		return content.Status{}, notFound // deleted
-	}
-	if err != nil {
-		return content.Status{}, err
-	}
-	restrictions, err := s.d.Restrictions.Restrictions(ctx, parent.AuthorAccountID)
-	if err != nil {
-		return content.Status{}, err
-	}
-	rel := content.Relation{Mentioned: slices.Contains(rev.MentionedAccountIDs, authorID)}
-	if parent.AuthorAccountID != authorID {
-		r, err := s.d.Relationships.Relationship(ctx, authorID, parent.AuthorAccountID)
-		if err != nil {
-			return content.Status{}, err
-		}
-		if r.ActivelyFollowing() {
-			rel.Follow = content.FollowActive
-		}
-		rel.Blocking, rel.BlockedBy = r.Blocking, r.BlockedBy
-	}
-	viewer := content.Viewer{Kind: content.ViewerLocal, AccountID: authorID}
-	facts := content.StatusFacts{AuthorAccountID: parent.AuthorAccountID, AuthorIsLocal: parent.IsLocal, Visibility: parent.Visibility}
-	if !content.CanView(content.ContextStatus, viewer, facts, restrictions.Author, rel) {
-		return content.Status{}, notFound
-	}
-	return parent, nil
+	st, _, err := s.visibleTo(ctx, authorID, statusID)
+	return st, err
 }
 
 // EditInput describes an edit of a local status.
@@ -404,6 +405,8 @@ type EditInput struct {
 	// AccountID is the account editing; it must be the author.
 	AccountID string
 	StatusID  string
+	// DetachQuote takes the status's quote away for good (ADR-0069 §3).
+	DetachQuote bool
 }
 
 // Edit records a new revision of a local status with new content (FR-109), checking the text
@@ -459,7 +462,13 @@ func (s *Service) Edit(ctx context.Context, in EditInput) (Post, error) {
 		if err := repo.InsertRevision(ctx, tx, rev); err != nil {
 			return err
 		}
-		return tx.Emit(ctx, StatusRevised{Status: st, Revision: rev})
+		if err := tx.Emit(ctx, StatusRevised{Status: st, Revision: rev}); err != nil {
+			return err
+		}
+		if in.DetachQuote {
+			return s.detachQuote(ctx, tx, st)
+		}
+		return nil
 	})
 	if err != nil {
 		return Post{}, err

@@ -167,6 +167,22 @@ func RegisterProjectors(r *uow.Projectors, d ProjectorDeps) {
 			DedupeKey: notification.ReactionKey(st.ID, re.AccountID, re.Emoji.Key()), CreatedAt: re.CreatedAt,
 		})
 	})
+	// A quote of a local status notifies its author once the quote is shown: a legacy one when
+	// it is recorded, an FEP-044f one when it is approved (ADR-0069 §5).
+	r.Register(appcontent.EventQuoteRecorded, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appcontent.QuoteRecorded)
+		if ev.Quote.Form != appcontent.QuoteFormLegacy {
+			return nil
+		}
+		return p.quote(ctx, tx, ev.Status, ev.Quoted, ev.RecordedAt)
+	})
+	r.Register(appcontent.EventQuoteChanged, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
+		ev := e.(appcontent.QuoteChanged)
+		if ev.Event.Kind != appcontent.QuoteEventAccepted {
+			return nil
+		}
+		return p.quote(ctx, tx, ev.Status, ev.Quoted, ev.Event.OccurredAt)
+	})
 	r.Register(appcontent.EventPollClosed, func(ctx context.Context, tx uow.Tx, e uow.Event) error {
 		ev := e.(appcontent.PollClosed)
 		return p.pollClosed(ctx, tx, ev)
@@ -318,6 +334,18 @@ func (p *projector) pollClosed(ctx context.Context, tx uow.Tx, ev appcontent.Pol
 		}
 	}
 	return nil
+}
+
+// quote notifies the local author of the status quoted of the quote quoting.
+func (p *projector) quote(ctx context.Context, tx uow.Tx, quoting appcontent.StatusRef, quoted *appcontent.StatusRef, at time.Time) error {
+	if quoted == nil || !quoted.IsLocal {
+		return nil // a remote author is notified by its own server
+	}
+	return p.notify(ctx, tx, notification.Notification{
+		RecipientAccountID: quoted.AuthorAccountID, SourceAccountID: quoting.AuthorAccountID, Type: notification.TypeQuote,
+		StatusID: quoting.ID, DedupeKey: notification.InteractionKey(notification.TypeQuote, quoting.ID, quoting.AuthorAccountID),
+		CreatedAt: at,
+	})
 }
 
 func (p *projector) interaction(ctx context.Context, tx uow.Tx, t notification.Type, st appcontent.StatusRef, sourceID string, at time.Time) error {

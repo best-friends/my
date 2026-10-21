@@ -4,8 +4,10 @@ description: |
   (`follow`, `follow_request`), the followed account (`follow_accepted`), the author
   (`mention`), the booster (`boost`), the account that favourited (`favourite`), or the
   account that reacted with an emoji (`reaction`, whose `reaction` is the emoji; a reaction
-  with another emoji is another notification). `status` is the post that `mention`,
-  `boost`, `favourite`, `reaction`, and `poll_closed` are about. `moderation_notice` comes from the instance and has no `account`; its
+  with another emoji is another notification), or the account that quoted a post of the
+  user (`quote`, once the quote is approved or, from software without approvals, received).
+  `status` is the post that `mention`, `boost`, `favourite`, `reaction`, and `poll_closed`
+  are about, and for `quote` the post that quotes. `moderation_notice` comes from the instance and has no `account`; its
   `moderation_action` is the action on the user's account, with its kind, reason, and end.
   `report_resolved` also comes from the instance: its `report` is the user's report that
   the moderators resolved, without how they resolved it. It is sent once per report, even
@@ -31,6 +33,7 @@ enum:
   - boost
   - favourite
   - reaction
+  - quote
   - poll_closed
   - moderation_notice
   - report_resolved

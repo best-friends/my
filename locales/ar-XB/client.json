@@ -7139,6 +7139,10 @@
     "defaultMessage": "‮∀ doʅʅ ʎon ʇooʞ dɐɹʇ ıu ɥɐs ǝupǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "notifications.type.quote": {
+    "defaultMessage": "‮{name} bnoʇǝp ʎonɹ dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "notifications.type.reaction": {
     "defaultMessage": "‮{name} ɹǝɐɔʇǝp ʇo ʎonɹ dosʇ ʍıʇɥ {emoji}‬",
     "description": "Generated from en by tools/i18n; do not edit."
