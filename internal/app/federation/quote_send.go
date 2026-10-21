@@ -155,7 +155,7 @@ func (h *QuoteHandlers) recordQuoteRequest(ctx context.Context, tx uow.Tx, st ap
 }
 
 // recordRevocation records the Delete of a revoked QuoteAuthorization to the quoting author's
-// inbox; a local quoting author gets none.
+// inbox and the quoted author's followers (ADR-0069 §3); a local quoting author gets none.
 func (h *QuoteHandlers) recordRevocation(ctx context.Context, tx uow.Tx, ev appcontent.QuoteAuthorizationRevoked) error {
 	inbox, quoter, ok, err := h.remoteInbox(ctx, ev.Authorization.QuotingAccountID)
 	if err != nil || !ok {
@@ -170,7 +170,8 @@ func (h *QuoteHandlers) recordRevocation(ctx context.Context, tx uow.Tx, ev appc
 		return err
 	}
 	uri := federation.IRI(appcontent.QuoteAuthorizationURI(h.d.Recorder.Host, ev.Authorization.ID))
-	doc := federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt, federation.Audience{To: []federation.IRI{quoter}}, uri)
+	doc := federation.NewActivityDocument(act.ActivityURI, act.Type, actor, act.CreatedAt,
+		federation.Audience{To: []federation.IRI{quoter}, Cc: []federation.IRI{federation.FollowersOf(actor)}}, uri)
 	return h.store(ctx, tx, act, doc, inbox)
 }
 
@@ -199,17 +200,28 @@ func (h *QuoteHandlers) remoteInbox(ctx context.Context, accountID string) (fede
 }
 
 // quoteSubject takes the one inbox of an activity of the approval of a quote from the payload:
-// its document is stored already.
-func quoteSubject(s subject, p fanOutPayload) (subject, error) {
+// its document is stored already. The Delete of a revoked QuoteAuthorization goes to the quoted
+// author's followers too, judged as a public post of the author's: approvals are given only to
+// quotes of public and unlisted statuses (content.MayQuote).
+func (f *FanOut) quoteSubject(ctx context.Context, s subject, p fanOutPayload) (subject, error) {
 	switch s.act.Type {
 	case federation.ActivityQuoteRequest, federation.ActivityAccept, federation.ActivityReject, federation.ActivityDelete:
 	default:
 		return subject{}, fmt.Errorf("%w: %s of a quote", federation.ErrInvalidOutbound, s.act.Type)
 	}
-	if p.Inbox == "" {
+	// The batches after the first (the followers of a Delete) carry the cursor, not the inbox.
+	if p.Inbox == "" && (p.Phase == "" || p.Phase == string(phaseRelay)) {
 		return subject{}, fmt.Errorf("%w: %s of quote %s without an inbox", federation.ErrInvalidOutbound, s.act.Type, s.act.ObjectID)
 	}
 	s.inbox = federation.IRI(p.Inbox)
+	if s.act.Type == federation.ActivityDelete {
+		var err error
+		if s.restrictions, err = f.d.Statuses.AuthorRestrictions(ctx, s.act.ActorAccountID); err != nil {
+			return subject{}, err
+		}
+		s.facts = appcontent.StatusFacts{AuthorAccountID: s.act.ActorAccountID, AuthorIsLocal: true, Visibility: appcontent.VisibilityPublic}
+		s.visibility = appcontent.EffectiveVisibility(s.facts.Visibility, s.restrictions)
+	}
 	return s, nil
 }
 

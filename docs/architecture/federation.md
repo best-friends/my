@@ -362,7 +362,7 @@ ActivityPub の配送は順序を保証しません。ハンドラは、どの�
 | `moderation.report_filed`（`forwarded` の通報だけ。§11） | `Flag`（主体はインスタンス Actor） | 通報されたアカウントの inbox |
 | `content.quote_recorded`（ローカルの投稿の、引用の許可を宣言したリモートの投稿の `fep_044f` の引用。ADR-0069 §3） | `QuoteRequest`（`id` は `{引用元の IRI}/quote_request`、`object` は引用先、`instrument` は引用元。本文は projector が組み立てて保存する） | 引用先の作者の inbox |
 | `content.quote_changed`（ローカルの投稿の引用が、リモートの `QuoteAuthorization` で承認されたとき）、`content.quote_policy_changed` | 現在の版の `Update`（`quoteAuthorization` と `interactionPolicy` が新しくなる。版が増えないので `updated` は版の時刻のまま） | 元の `Create` の `deliveries` の inbox（`public` / `unlisted` は加えてその時点のフォロワー） |
-| `content.quote_authorization_revoked`（引用元の作者がリモートのとき） | `Delete`（`object` は `QuoteAuthorization` の IRI。本文は projector が組み立てて保存する） | 引用元の作者の inbox |
+| `content.quote_authorization_revoked`（引用元の作者がリモートのとき） | `Delete`（`object` は `QuoteAuthorization` の IRI。`to` は引用元の作者、`cc` は自分の followers。本文は projector が組み立てて保存する） | 引用元の作者の inbox + 引用先の作者のリモートフォロワーの inbox |
 
 - フォローの活動（`object_type = follow`）の主体は、`Follow` と `Undo` ではフォローした人、`Accept` と `Reject` ではフォローされた人です。`Follow` の `id` はフォローの `uri`（`/ap/activities/{follow_id}`）で、`Accept` / `Reject` / `Undo` はフォローの `Follow`（受け取ったフォローなら相手が送った `id`。送り直された `Follow` への `Accept` はその `id`）を埋め込みます。宛先は相手だけで、`to` に相手を入れます。
   相手が送った `Accept` / `Reject` / `Undo` と、どちらかのアカウントの削除（`account_deleted`）による変化は、何も送り返しません。

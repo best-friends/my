@@ -323,10 +323,16 @@ type subject struct {
 //   - Create of a vote: the author of the poll's status.
 //   - Flag: the reported account.
 //   - Follow, Undo, Accept, and Reject of the relay membership, and the activities of the
-//     approval of a quote: the inbox of the payload.
+//     approval of a quote: the inbox of the payload; the Delete of a revoked QuoteAuthorization
+//     then goes to the quoted author's followers too (ADR-0069 §3).
 func (s subject) phases() []phase {
 	switch s.act.ObjectKind {
-	case federation.OutboundRelay, federation.OutboundQuote:
+	case federation.OutboundRelay:
+		return []phase{phaseRelay}
+	case federation.OutboundQuote:
+		if s.act.Type == federation.ActivityDelete {
+			return []phase{phaseRelay, phaseFollowers}
+		}
 		return []phase{phaseRelay}
 	case federation.OutboundReport:
 		return []phase{phaseReported}
@@ -375,7 +381,7 @@ func (f *FanOut) subject(ctx context.Context, act federation.OutboundActivity, p
 		return relaySubject(s, p)
 	}
 	if act.ObjectKind == federation.OutboundQuote {
-		return quoteSubject(s, p)
+		return f.quoteSubject(ctx, s, p)
 	}
 	if act.ObjectKind == federation.OutboundFollow {
 		s.followURI = federation.IRI(p.FollowURI)

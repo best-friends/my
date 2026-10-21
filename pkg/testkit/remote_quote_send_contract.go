@@ -326,9 +326,10 @@ func remoteAnswersQuoteRequests(t *testing.T, e *remoteInteractionEnv) {
 	skipWithoutQuoteHandlers(t, e)
 	ctx := t.Context()
 	author := e.user(t, "author")
-	const bob = "https://remote.example/users/bob"
+	const bob, carol = "https://remote.example/users/bob", "https://other.example/users/carol"
 	bobID := e.actor(t, bob)
 	e.follow(t, author, bobID)
+	e.follow(t, e.actor(t, carol), author) // a follower of the author on another server
 	public := e.localPost(t, author, content.VisibilityPublic)
 	quoting := bob + "/notes/quote"
 	request := func(id, object string) []byte {
@@ -380,8 +381,8 @@ func remoteAnswersQuoteRequests(t *testing.T, e *remoteInteractionEnv) {
 		t.Errorf("answers about a post of nobody = %+v, want a Reject", sent)
 	}
 
-	// The author revokes the approval: the quote shows the post no more, and bob's server gets
-	// the Delete of the QuoteAuthorization.
+	// The author revokes the approval: the quote shows the post no more, and bob's server and the
+	// author's followers get the Delete of the QuoteAuthorization.
 	if err := e.interactions.RevokeQuote(ctx, author, public.ID, stored.ID); err != nil {
 		t.Fatalf("RevokeQuote = %v", err)
 	}
@@ -391,8 +392,8 @@ func remoteAnswersQuoteRequests(t *testing.T, e *remoteInteractionEnv) {
 	id := string(result)[strings.LastIndexByte(string(result), '/')+1:]
 	deletes := e.quoteActivities(t, federation.OutboundQuote, id)
 	if len(deletes) != 1 || deletes[0].Type != federation.ActivityDelete || deletes[0].Doc.Object().ID != result ||
-		!slices.Equal(deletes[0].Inboxes, []string{bob + "/inbox"}) {
-		t.Errorf("activities after the revocation = %+v, want the Delete of %s to bob", deletes, result)
+		!slices.Equal(deletes[0].Inboxes, []string{bob + "/inbox", carol + "/inbox"}) {
+		t.Errorf("activities after the revocation = %+v, want the Delete of %s to bob and carol", deletes, result)
 	}
 	if err := e.interactions.RevokeQuote(ctx, author, public.ID, stored.ID); !errors.Is(err, appcontent.ErrNotFound) {
 		t.Errorf("RevokeQuote again = %v, want ErrNotFound", err)

@@ -93,7 +93,7 @@ FEP-e232 は Final ですが、リンク一般の仕組みです。Mastodon・Mi
 - **ローカルの投稿の引用の許可**: `public`（誰でも）/ `followers`（フォロワー）/ `nobody`（自分だけ）。
   - ローカルの投稿の属性として持ち、既定値は利用者の設定にします。設定の初期値は `public` です。
   - 作者は、投稿後もいつでも変えられます。変えても、出した承認は取り消しません。取り消しは承認ごとに行います。
-- **自サーバーが出した承認**（resource）: ローカルの投稿への引用ごとに 1 行です。`QuoteAuthorization` の IRI は自サーバーの URI（[federation.md §1.2](../architecture/federation.md#12-自サーバーの-uri)）で、GET で返します。取り消すと行を消し、IRI の GET は 410 を返します。
+- **自サーバーが出した承認**（resource）: ローカルの投稿への引用ごとに 1 行です。`QuoteAuthorization` の IRI は自サーバーの URI（[federation.md §1.2](../architecture/federation.md#12-自サーバーの-uri)）で、GET で返します。取り消しは承認の行を残したまま取り消しのイベント（event）として記録し、IRI の GET は 410 を返します。
 
 ### 2. 受信
 
