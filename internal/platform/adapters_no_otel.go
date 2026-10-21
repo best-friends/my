@@ -14,3 +14,8 @@ import (
 func (a *App) setUpOTelMeter(_ context.Context, cfg *config.Config, _ AppOptions) error {
 	return config.ExcludedError("metrics_exporter", cfg.MetricsExporter, "no_otel")
 }
+
+// setUpOTelTracer reports that the build tag no_otel left the OpenTelemetry adapter out.
+func (a *App) setUpOTelTracer(_ context.Context, cfg *config.Config, _ AppOptions) error {
+	return config.ExcludedError("traces_exporter", cfg.TracesExporter, "no_otel")
+}

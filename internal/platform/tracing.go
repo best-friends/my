@@ -11,7 +11,6 @@ import (
 	"net/netip"
 
 	"github.com/best-friends/my/internal/adapter/telemetry/none"
-	"github.com/best-friends/my/internal/adapter/telemetry/otel"
 	"github.com/best-friends/my/internal/app/kernel"
 	"github.com/best-friends/my/internal/platform/config"
 )
@@ -25,13 +24,9 @@ func (a *App) setUpTracer(ctx context.Context, cfg *config.Config, opts AppOptio
 	case cfg.TracesExporter == "" || cfg.TracesExporter == "none":
 		a.Tracer = none.NewTracer()
 	case cfg.TracesExporter == "otlp":
-		t, err := otel.NewTracer(ctx, otel.TracerOptions{
-			ServiceVersion: opts.Version, Role: string(cfg.Role), SampleRatio: cfg.TracesSampleRatio, Flush: cfg.TracesFlush,
-		})
-		if err != nil {
+		if err := a.setUpOTelTracer(ctx, cfg, opts); err != nil {
 			return err
 		}
-		a.Tracer, a.closeTracer = t, t.Shutdown
 	default:
 		return fmt.Errorf("traces_exporter %q is not implemented yet", cfg.TracesExporter)
 	}
