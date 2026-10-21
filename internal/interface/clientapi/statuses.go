@@ -221,19 +221,26 @@ func (s *Server) presentStatuses(ctx context.Context, views []appcontent.StatusV
 	return out, nil
 }
 
-// statusParts reads the parts of the authors of views and of more accounts, and the profile
-// pages of the accounts that views mention, together (Server.accountParts).
+// statusParts reads the parts of the authors of views, of the statuses they quote, and of more
+// accounts, and the profile pages of the accounts that they mention, together
+// (Server.accountParts).
 func (s *Server) statusParts(ctx context.Context, views []appcontent.StatusView, more ...appaccount.Actor) (accountParts, error) {
 	actors := slices.Clone(more)
 	var mentioned []appaccount.Actor
 	var emojis []string
-	for _, v := range views {
+	add := func(v appcontent.StatusView) {
 		actors = append(actors, v.Author)
 		if v.Card != nil && v.Card.Author != nil {
 			actors = append(actors, *v.Card.Author)
 		}
 		mentioned = append(mentioned, v.Mentions...)
 		emojis = append(emojis, v.Revision.EmojiIDs...)
+	}
+	for _, v := range views {
+		add(v)
+		if v.Quote != nil && v.Quote.Status != nil {
+			add(*v.Quote.Status)
+		}
 	}
 	return s.readAccountParts(ctx, actors, mentioned, emojis)
 }
@@ -294,6 +301,13 @@ func (s *Server) newStatus(v appcontent.StatusView, parts accountParts) Status {
 	if v.Poll != nil {
 		p := newPoll(*v.Poll, v.Relation != nil)
 		out.Poll = &p
+	}
+	if q := v.Quote; q != nil {
+		out.Quote = &StatusQuote{State: QuoteState(q.State)}
+		if q.Status != nil {
+			quoted := s.newStatus(*q.Status, parts)
+			out.Quote.QuotedStatus = &quoted
+		}
 	}
 	return out
 }

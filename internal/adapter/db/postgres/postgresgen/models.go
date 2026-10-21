@@ -926,6 +926,26 @@ type StatusPin struct {
 	ID        string
 }
 
+type StatusQuote struct {
+	StatusID  string
+	QuotedUri string
+	Form      string
+}
+
+type StatusQuoteEvent struct {
+	ID               string
+	StatusID         string
+	Kind             string
+	AuthorizationUri *string
+	OccurredAt       time.Time
+}
+
+type StatusQuoteState struct {
+	StatusID         string
+	State            string
+	AuthorizationUri *string
+}
+
 type StatusReactionCount struct {
 	StatusID      string
 	EmojiKey      string

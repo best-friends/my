@@ -9611,6 +9611,46 @@
     "defaultMessage": "‮{count,plural,one{# ʌoʇǝ} other{# ʌoʇǝs}}‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "status.quote.blocked_account": {
+    "defaultMessage": "‮⊥ɥǝ bnoʇǝp dosʇ ıs ɥıppǝu qǝɔɐnsǝ oɟ ɐ qʅoɔʞ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.blocked_domain": {
+    "defaultMessage": "‮⅄on ɯnʇǝp ʇɥǝ sǝɹʌǝɹ oɟ ʇɥǝ bnoʇǝp dosʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.deleted": {
+    "defaultMessage": "‮⊥ɥǝ bnoʇǝp dosʇ ʍɐs pǝʅǝʇǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.label": {
+    "defaultMessage": "‮Ònoʇǝp dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.muted_account": {
+    "defaultMessage": "‮⅄on ɯnʇǝp ʇɥǝ ɐnʇɥoɹ oɟ ʇɥǝ bnoʇǝp dosʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.pending": {
+    "defaultMessage": "‮⊥ɥǝ bnoʇǝp dosʇ ıs uoʇ ɐʌɐıʅɐqʅǝ ʎǝʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.rejected": {
+    "defaultMessage": "‮⊥ɥǝ ɐnʇɥoɹ oɟ ʇɥǝ bnoʇǝp dosʇ pıp uoʇ ɐʅʅoʍ ʇɥıs bnoʇǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.reveal": {
+    "defaultMessage": "‮Sɥoʍ ʇɥǝ bnoʇǝp dosʇ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.revoked": {
+    "defaultMessage": "‮⊥ɥǝ ɐnʇɥoɹ oɟ ʇɥǝ bnoʇǝp dosʇ ʍıʇɥpɹǝʍ ıʇ ɟɹoɯ ʇɥıs bnoʇǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "status.quote.unauthorized": {
+    "defaultMessage": "‮⅄on ɔɐuuoʇ sǝǝ ʇɥǝ bnoʇǝp dosʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "status.reaction.off": {
     "defaultMessage": "‮ᴚǝɐɔʇıou ɹǝɯoʌǝp‬",
     "description": "Generated from en by tools/i18n; do not edit."

@@ -4808,6 +4808,26 @@ export interface MessageArgs {
   "client:status.poll.voters": { count: number };
   /** {count, plural, one {# vote} other {# votes}} */
   "client:status.poll.votes": { count: number };
+  /** The quoted post is hidden because of a block. */
+  "client:status.quote.blocked_account": {};
+  /** You muted the server of the quoted post. */
+  "client:status.quote.blocked_domain": {};
+  /** The quoted post was deleted. */
+  "client:status.quote.deleted": {};
+  /** Quoted post */
+  "client:status.quote.label": {};
+  /** You muted the author of the quoted post. */
+  "client:status.quote.muted_account": {};
+  /** The quoted post is not available yet. */
+  "client:status.quote.pending": {};
+  /** The author of the quoted post did not allow this quote. */
+  "client:status.quote.rejected": {};
+  /** Show the quoted post */
+  "client:status.quote.reveal": {};
+  /** The author of the quoted post withdrew it from this quote. */
+  "client:status.quote.revoked": {};
+  /** You cannot see the quoted post. */
+  "client:status.quote.unauthorized": {};
   /** Reaction removed */
   "client:status.reaction.off": {};
   /** Reacted with {emoji} */

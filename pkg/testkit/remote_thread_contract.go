@@ -75,7 +75,7 @@ func newRemoteFetchEnv(t *testing.T, e *remoteStatusEnv) *remoteFetchEnv {
 	fe.statuses = appfederation.NewStatusHandlers(appfederation.StatusHandlersDeps{
 		UnitOfWork: e.h.UnitOfWork, Statuses: e.content, Accounts: e.remote, Actors: actors, Fetcher: actors,
 		Followers: e.graph, Tombstones: e.h.Inbox, Outbox: outbox, Jobs: fe.jobs, KV: kv, Clock: e.clock, Host: contractHost,
-		Profiles: e.remote, Relationships: e.graph, Restrictions: fe.suspended, Pins: pins,
+		Profiles: e.remote, Relationships: e.graph, Restrictions: fe.suspended, Pins: pins, Quotes: e.quotes(),
 	})
 	fe.statuses.Register(e.processor)
 	fe.statuses.RegisterJobs(fe.handlers)

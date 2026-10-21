@@ -74,11 +74,13 @@ func fetchObjectJob(p fetchObjectPayload) (queue.NewJob, error) {
 	return queue.NewJob{Type: JobFetchObject, Payload: payload, IdempotencyKey: "fetch_object:" + hex.EncodeToString(sum[:])}, nil
 }
 
-// RegisterJobs registers the handlers of JobFetchObject and JobFetchOutbox.
+// RegisterJobs registers the handlers of JobFetchObject, JobFetchOutbox, JobFetchFeatured, and
+// JobVerifyQuote.
 func (h *StatusHandlers) RegisterJobs(r *queue.JobHandlerRegistry) {
 	r.Register(JobFetchObject, h.handleFetchObject)
 	r.Register(JobFetchOutbox, h.handleFetchOutbox)
 	r.Register(JobFetchFeatured, h.handleFetchFeatured)
+	r.Register(JobVerifyQuote, h.handleVerifyQuote)
 }
 
 // fetchParentTx enqueues in tx the fetch of the parent of a reply that was just ingested, when
@@ -472,6 +474,9 @@ func (h *StatusHandlers) store(ctx context.Context, author appaccount.Actor, obj
 			return err
 		}
 		st = p.Status
+		if err := h.verifyQuoteTx(ctx, tx, obj.ID, obj.Quote, false); err != nil {
+			return err
+		}
 		switch {
 		case opts.relay != nil:
 			return h.recordRelayed(ctx, tx, st, opts.relay)

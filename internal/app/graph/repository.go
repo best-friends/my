@@ -153,6 +153,8 @@ type Repository interface {
 	// ListDomainMutes returns accountID's domain mutes in the order of their domains, starting
 	// after the domain after ("" for the first) and returning at most limit mutes.
 	ListDomainMutes(ctx context.Context, accountID, after string, limit int) ([]graph.DomainMute, error)
+	// MutesAnyDomain reports whether accountID mutes one of domains.
+	MutesAnyDomain(ctx context.Context, accountID string, domains []string) (bool, error)
 }
 
 // MuteCursor is the position of a mute in a list of mutes: its creation and target account.

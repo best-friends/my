@@ -1825,6 +1825,48 @@ func (e Permission) Valid() bool {
 	}
 }
 
+// Defines values for QuoteState.
+const (
+	QuoteStateAccepted       QuoteState = "accepted"
+	QuoteStateBlockedAccount QuoteState = "blocked_account"
+	QuoteStateBlockedDomain  QuoteState = "blocked_domain"
+	QuoteStateDeleted        QuoteState = "deleted"
+	QuoteStateLegacy         QuoteState = "legacy"
+	QuoteStateMutedAccount   QuoteState = "muted_account"
+	QuoteStatePending        QuoteState = "pending"
+	QuoteStateRejected       QuoteState = "rejected"
+	QuoteStateRevoked        QuoteState = "revoked"
+	QuoteStateUnauthorized   QuoteState = "unauthorized"
+)
+
+// Valid indicates whether the value is a known member of the QuoteState enum.
+func (e QuoteState) Valid() bool {
+	switch e {
+	case QuoteStateAccepted:
+		return true
+	case QuoteStateBlockedAccount:
+		return true
+	case QuoteStateBlockedDomain:
+		return true
+	case QuoteStateDeleted:
+		return true
+	case QuoteStateLegacy:
+		return true
+	case QuoteStateMutedAccount:
+		return true
+	case QuoteStatePending:
+		return true
+	case QuoteStateRejected:
+		return true
+	case QuoteStateRevoked:
+		return true
+	case QuoteStateUnauthorized:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RegistrationState.
 const (
 	RegistrationStateApproved RegistrationState = "approved"
@@ -3527,7 +3569,7 @@ type AdminReportStatus struct {
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
 	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-	// empty, its `card` is omitted, and its counts are zero.
+	// empty, its `card` and `quote` are omitted, and its counts are zero.
 	Status Status `json:"status"`
 }
 
@@ -6078,6 +6120,23 @@ type QrCode struct {
 	Size int `json:"size"`
 }
 
+// QuoteState The state of a quote as the viewer sees it (ADR-0069), with the values of Mastodon's
+// `Quote.state` and `legacy`. The quoted status is shown for `accepted` and `legacy`, and
+// behind the reason for `muted_account` and `blocked_domain`:
+//
+//   - `pending`: the quoted author has not approved the quote yet, or the quoted status is not
+//     fetched yet.
+//   - `accepted`: the quoted author approved the quote.
+//   - `rejected`: the quoted author refused the quote.
+//   - `revoked`: the quoted author withdrew the approval.
+//   - `legacy`: a quote from software without approvals (Misskey, Akkoma), shown as it is.
+//   - `deleted`: the quoted status is deleted.
+//   - `unauthorized`: the viewer may not see the quoted status.
+//   - `blocked_account`: the viewer blocks the quoted author, or is blocked by them.
+//   - `blocked_domain`: the viewer mutes the domain of the quoted author.
+//   - `muted_account`: the viewer mutes the quoted author.
+type QuoteState string
+
 // ReactToStatusRequest The emoji to react with.
 type ReactToStatusRequest struct {
 	// Emoji A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
@@ -6383,7 +6442,7 @@ type SpoilerText = string
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
 // `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-// empty, its `card` is omitted, and its counts are zero.
+// empty, its `card` and `quote` are omitted, and its counts are zero.
 type Status struct {
 	// Account An account, as clients show it (FR-006).
 	Account Account `json:"account"`
@@ -6399,7 +6458,7 @@ type Status struct {
 	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 	// `visibility` and `language` are those of the boosted status, its `content`,
 	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-	// empty, its `card` is omitted, and its counts are zero.
+	// empty, its `card` and `quote` are omitted, and its counts are zero.
 	Boost *Status `json:"boost,omitempty"`
 
 	// Boosted Whether the authenticated user boosts the status.
@@ -6473,6 +6532,10 @@ type Status struct {
 	// each option until it ends leaves out `votes_count` of its options until then. `voted` and
 	// `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
 	Poll *Poll `json:"poll,omitempty"`
+
+	// Quote The status that this status quotes; omitted when it quotes none, and in a
+	// `quoted_status`.
+	Quote *StatusQuote `json:"quote,omitempty"`
 
 	// Reactions The emoji reactions to the status, counted per emoji: the 20 emoji with the most
 	// reactions, the most first. The others are seen in `listStatusReactions`. Favourites
@@ -6592,6 +6655,38 @@ type StatusPage struct {
 
 	// NextCursor An opaque pagination cursor. Clients pass it back unchanged and never parse it.
 	NextCursor *Cursor `json:"next_cursor,omitempty"`
+}
+
+// StatusQuote The status that a status quotes (FR-114, ADR-0069). Quotes are shown one level deep:
+// `quoted_status` has no `quote` of its own, and clients link to it instead.
+type StatusQuote struct {
+	// QuotedStatus A status (post), as the viewer sees it. `favourited`, `boosted`, and `bookmarked`
+	// describe the authenticated user's relation to it and are omitted for anonymous
+	// requests; `pinned` is only given to the author.
+	//
+	// In a timeline, a boost is a status of the booster with `boost` set to the boosted
+	// status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
+	// `visibility` and `language` are those of the boosted status, its `content`,
+	// `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
+	// empty, its `card` and `quote` are omitted, and its counts are zero.
+	QuotedStatus *Status `json:"quoted_status,omitempty"`
+
+	// State The state of a quote as the viewer sees it (ADR-0069), with the values of Mastodon's
+	// `Quote.state` and `legacy`. The quoted status is shown for `accepted` and `legacy`, and
+	// behind the reason for `muted_account` and `blocked_domain`:
+	//
+	// - `pending`: the quoted author has not approved the quote yet, or the quoted status is not
+	//   fetched yet.
+	// - `accepted`: the quoted author approved the quote.
+	// - `rejected`: the quoted author refused the quote.
+	// - `revoked`: the quoted author withdrew the approval.
+	// - `legacy`: a quote from software without approvals (Misskey, Akkoma), shown as it is.
+	// - `deleted`: the quoted status is deleted.
+	// - `unauthorized`: the viewer may not see the quoted status.
+	// - `blocked_account`: the viewer blocks the quoted author, or is blocked by them.
+	// - `blocked_domain`: the viewer mutes the domain of the quoted author.
+	// - `muted_account`: the viewer mutes the quoted author.
+	State QuoteState `json:"state"`
 }
 
 // StatusReaction The reactions to a status with one emoji.
@@ -7136,7 +7231,7 @@ type AccountProfile = Account
 // status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
 // `visibility` and `language` are those of the boosted status, its `content`,
 // `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-// empty, its `card` is omitted, and its counts are zero.
+// empty, its `card` and `quote` are omitted, and its counts are zero.
 type StatusAfterAction = Status
 
 // LookupAccountParams defines parameters for LookupAccount.

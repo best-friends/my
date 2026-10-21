@@ -29,6 +29,22 @@ const MaxDomainMutes = 1000
 // ErrTooManyDomainMutes reports a domain mute beyond MaxDomainMutes.
 var ErrTooManyDomainMutes = errors.New("graph: the account mutes too many domains")
 
+// MutedDomains returns the domains whose mutes cover an account on domain: domain followed by
+// each of its parent domains, from the nearest ("a.b.example" gives a.b.example, b.example, and
+// example). The local domain "" has none.
+func MutedDomains(domain string) []string {
+	var out []string
+	for domain != "" {
+		out = append(out, domain)
+		_, parent, ok := strings.Cut(domain, ".")
+		if !ok {
+			break
+		}
+		domain = parent
+	}
+	return out
+}
+
 // Validate checks the invariants of a domain mute.
 func (m DomainMute) Validate() error {
 	if m.AccountID == "" {

@@ -196,7 +196,7 @@ flowchart LR
 | `identity` | `users`, `user_email_addresses`, `user_email_verifications`, `password_credentials`, `password_credential_removals`, `totp_enrollments`, `totp_enrollment_revocations`, `totp_recovery_codes`, `totp_recovery_code_uses`, `passkey_credentials`, `passkey_credential_revocations`, `registration_applications`, `registration_decisions`, `invites`, `invite_redemptions`, `invite_revocations`, `user_tokens`, `user_token_redemptions`, `roles`, `role_permissions`, `user_role_grants`, `user_role_revocations`, `sessions`, `session_origins`, `registration_origins`, `session_revocations`, `oauth_clients`, `oauth_client_redirect_uris`, `oauth_authorization_codes`, `oauth_authorization_code_redemptions`, `oauth_access_tokens`, `oauth_token_revocations`, `data_exports`, `data_export_results`, `data_imports`, `data_import_items`, `data_import_item_results` | `user_primary_emails`, `user_registration_states`, `user_roles`, `user_preferences`, `user_timeline_languages`, `user_time_zones`, `session_activity` |
 | `account` | `accounts`, `local_accounts`, `remote_accounts`, `remote_account_snapshots`, `account_profile_revisions`, `account_profile_revision_sources`, `account_profile_fields`, `account_profile_revision_emojis`, `account_profile_field_verifications`, `account_keys`, `local_account_private_keys`, `account_key_revocations`, `remote_account_handle_verifications`, `remote_profile_revisions`, `account_lifecycle_events`, `account_erasures` | `account_handles`, `account_profile_heads`, `remote_account_heads`, `account_lifecycle_states` |
 | `moderation` | `moderation_actions`, `moderation_action_statuses`, `moderation_action_lifts`, `moderation_appeals`, `moderation_appeal_decisions`, `domain_moderation_actions`, `domain_moderation_action_lifts`, `reports`, `report_statuses`, `report_rule_citations`, `report_assignments`, `report_resolutions`, `report_reopenings`, `report_notes`, `signup_blocks`, `signup_block_lifts`, `audit_log_entries`, `relationship_severances`, `retention_holds`, `retention_hold_releases` | `account_restrictions`, `domain_restrictions`, `report_states`, `appeal_states` |
-| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
+| `content` | `statuses`, `local_statuses`, `status_revisions`, `status_revision_bodies`, `status_revision_sources`, `status_revision_attachments`, `status_revision_mentions`, `status_revision_tags`, `status_revision_emojis`, `remote_status_revisions`, `status_deletions`, `boosts`, `boost_retractions`, `reactions`, `tags`, `media_files`, `uploaded_media`, `remote_media`, `link_card_media`, `media_processing_results`, `media_variants`, `custom_emojis`, `custom_emoji_images`, `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tally_observation_counts`, `status_quotes`, `status_quote_events` | `status_heads`, `status_reply_links`, `status_mention_index`, `status_sensitivity_overrides`, `boost_edges`, `status_counters`, `status_reaction_counts`, `account_post_counters`, `local_post_counters`, `poll_tallies`, `custom_emoji_settings`, `custom_emoji_aliases`, `media_focus`, `media_descriptions`, `remote_media_cache`, `link_cards`, `status_link_cards`, `status_quote_states`, `favourites`, `bookmarks`, `status_pins`, `status_auto_delete_policies`, `status_auto_delete_kept_visibilities` |
 | `graph` | `follows`, `follow_acceptances`, `follow_rejections`, `follow_terminations`, `follow_resends`, `blocks`, `block_retractions` | `follow_edges`, `block_edges`, `follow_counters`, `follow_preferences`, `mutes`, `account_domain_mutes` |
 | `timeline` | なし | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_domain_mutes`, `feed_author_restrictions`, `feed_domain_restrictions` |
 | `notification` | `notifications`, `notification_dismissals` | `notification_read_markers`, `push_subscriptions`, `push_subscription_alerts` |
@@ -892,6 +892,21 @@ flowchart LR
 - `status_link_cards` は、投稿の作成・編集のイベントの投影が書き、削除のイベントと消去のトランザクションが消します。カードの取得は投影が積むジョブ `content.fetch_link_card` が行います。
 - 1 日 1 回のジョブ `content.cleanup_link_cards` が、どの投稿からも参照されず取得から 14 日を過ぎた `link_cards` の行と、どのカードも使わない `link_card_media`（と `media_files` の行）を消します（FR-803）。
 
+#### 引用
+
+[ADR-0069](../adr/0069-quote-posts.md) の、投稿が引用する投稿と、その承認です（FR-114、[federation.md §3.4](federation.md#34-アクティビティごとのハンドラ)）。
+
+| テーブル | 分類 | カラム | 制約 |
+| --- | --- | --- | --- |
+| `status_quotes` | リソース | `status_id`（PK）, `quoted_uri`（引用先の投稿の URI。まだ保存していない投稿でもよい）, `form`（`enum(fep_044f, legacy)`） | インデックス `(quoted_uri)`。引用先は投稿の作成時に決まり、変わらない |
+| `status_quote_events` | イベント | `id`, `status_id`, `kind`（`enum(accepted, rejected, revoked, detached)`）, `authorization_uri`（`accepted` が検証した、`revoked` が削除を受けた `QuoteAuthorization`。ほかは NULL。自分の投稿の引用の承認も NULL）, `occurred_at` | インデックス `(status_id, id)` |
+| `status_quote_states` | 投影 | `status_id`（PK）, `state`（`enum(pending, accepted, rejected, revoked, legacy, detached)`）, `authorization_uri`（`accepted` のときだけ） | インデックス `(authorization_uri)` |
+
+- `status_quote_states` は、引用の記録（`content.quote_recorded`）と承認の変化（`content.quote_changed`）のイベントの投影が `content.QuoteStateOf` の規則で書きます。
+  `fep_044f` の引用は `pending` から、`legacy` の引用は `legacy` から始まり、`legacy` の引用は承認では変わりません。`revoked` は、承認した `QuoteAuthorization` の削除だけが起こします。`detached`（編集で引用を外した）は最後の状態です。
+- 引用先の削除・ブロック・ミュート・閲覧の可否は状態に持たず、表示のたびに閲覧者ごとに判定します（`content.Reader`）。
+- 3 つの表は、投稿の物理削除（保持期間の消去・アカウントの消去）と一緒に消します。
+
 - アップロードは同期で受け付けます。形式は中身から判定し（申告された `Content-Type` とファイル名は信用しない）、サイズと寸法の上限は全体をデコードする前にヘッダで検査します（ADR-0019 §8）。
   `uploaded_media.content_type` は判定した形式で、`blob_key`（`uploads/<id>`）は受け取ったままの非公開のファイルです。
 - 処理はジョブ `media.process` が非同期に行います。アップロードの用途（`purpose`。API の `MediaUpload.purpose`、既定 `attachment`）の大きさで、再エンコードでメタデータ（EXIF の位置情報など）を落とした `media_variants` を作り（[ADR-0054](../adr/0054-media-variants-video-audio.md) §1〜§3）、
@@ -1557,6 +1572,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | `account_handles` / `remote_account_heads` / `account_profile_heads` | `local_accounts` と `remote_account_handle_verifications`、`remote_account_snapshots` と取得の結果、`account_profile_revisions` | 同期 |
 | `status_heads` / `status_mention_index` / `status_reply_links` | `status_revisions` と子テーブル、`statuses`、`status_deletions` | 同期 |
 | `status_link_cards` | `status_revisions` の本文・ソース・添付・投票、`status_deletions` | 同期（URL は Go の `content.LinkCardURL` が選ぶので、`my projection` の対象ではない） |
+| `status_quote_states` | `status_quotes`, `status_quote_events` | 同期（再構築は Go の `content.RebuildQuoteStates`） |
 | `follow_edges` / `block_edges` / `boost_edges` | `follows` と承認・拒否・終了、`blocks` と取り消し、`boosts` と取り消し | 同期 |
 | `feed_*` | `content` と `graph` の `ReplayEvents` が現在の状態から再生するイベント（下記） | 同期 |
 | `feed_author_restrictions` / `feed_domain_restrictions` | `moderation.ReplayEvents` と `account.ReplayDeletions` が再生するイベント（下記） | 同期 |
@@ -1633,6 +1649,7 @@ ORDER BY e.id DESC LIMIT :limit + 1;
 | FR-111 カスタム絵文字 | S | `custom_emojis`, `custom_emoji_images`, `custom_emoji_settings`, `custom_emoji_aliases`, `status_revision_emojis`, `account_profile_revision_emojis`, `audit_log_entries` |
 | FR-112 投票 | C | `polls`, `poll_options`, `poll_votes`, `poll_tally_observations`, `poll_tallies` |
 | FR-113 ブックマーク | S | `bookmarks` |
+| FR-114 引用投稿 | S | `status_quotes`, `status_quote_events`, `status_quote_states` |
 | FR-116 絵文字リアクション | M | `reactions`, `status_reaction_counts`, `custom_emojis`, `notifications`（`reaction`） |
 | FR-117 リンクのカード | S | `link_cards`, `link_card_media`, `status_link_cards`, `instance_settings`（`link_cards_enabled`） |
 | FR-201〜204 タイムライン | M | `feed_entries`, `feed_direct_recipients`, `feed_tag_entries`, `feed_follow_edges`, `feed_exclusions`, `feed_author_restrictions`, `feed_domain_restrictions` |

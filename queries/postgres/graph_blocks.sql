@@ -122,6 +122,13 @@ DELETE FROM account_domain_mutes WHERE account_id = $1 AND domain = $2;
 -- name: CountDomainMutes :one
 SELECT COUNT(*) FROM account_domain_mutes WHERE account_id = $1;
 
+-- MutesAnyDomain reports whether the account mutes one of the domains.
+-- name: MutesAnyDomain :one
+SELECT EXISTS (
+  SELECT 1 FROM account_domain_mutes
+  WHERE account_id = sqlc.arg(account_id) AND domain = ANY(sqlc.arg(domains)::text[])
+);
+
 -- ListDomainMutesPage pages the domain mutes of an account in the order of their domains; an
 -- empty before_domain starts at the first.
 -- name: ListDomainMutesPage :many

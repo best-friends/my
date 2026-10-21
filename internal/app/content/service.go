@@ -138,6 +138,8 @@ type Deps struct {
 	Sanitizer kernel.HTMLSanitizer
 	// RemoteMedia records the attachments and custom emoji images of remote statuses.
 	RemoteMedia RemoteMediaRecorder
+	// Quotes stores the quotes of statuses (ADR-0069); nil records none.
+	Quotes QuoteRepository
 	// MaxStatusLength returns the current max_status_length instance setting (FR-101); it is
 	// read per command, so that changes apply at once.
 	MaxStatusLength func(ctx context.Context) (int, error)

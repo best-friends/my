@@ -11259,6 +11259,35 @@ components:
         path:
           description: The path data (`d`) of the dark modules, one unit per module.
           type: string
+    QuoteState:
+      description: |
+        The state of a quote as the viewer sees it (ADR-0069), with the values of Mastodon's
+        `Quote.state` and `legacy`. The quoted status is shown for `accepted` and `legacy`, and
+        behind the reason for `muted_account` and `blocked_domain`:
+
+        - `pending`: the quoted author has not approved the quote yet, or the quoted status is not
+          fetched yet.
+        - `accepted`: the quoted author approved the quote.
+        - `rejected`: the quoted author refused the quote.
+        - `revoked`: the quoted author withdrew the approval.
+        - `legacy`: a quote from software without approvals (Misskey, Akkoma), shown as it is.
+        - `deleted`: the quoted status is deleted.
+        - `unauthorized`: the viewer may not see the quoted status.
+        - `blocked_account`: the viewer blocks the quoted author, or is blocked by them.
+        - `blocked_domain`: the viewer mutes the domain of the quoted author.
+        - `muted_account`: the viewer mutes the quoted author.
+      type: string
+      enum:
+        - pending
+        - accepted
+        - rejected
+        - revoked
+        - legacy
+        - deleted
+        - unauthorized
+        - blocked_account
+        - blocked_domain
+        - muted_account
     ReactToStatusRequest:
       description: The emoji to react with.
       type: object
@@ -11661,7 +11690,7 @@ components:
         status: its `id` and `uri` are those of the boost, `created_at` is when it was boosted,
         `visibility` and `language` are those of the boosted status, its `content`,
         `spoiler_text`, `media_attachments`, `mentions`, `tags`, `emojis`, and `reactions` are
-        empty, its `card` is omitted, and its counts are zero.
+        empty, its `card` and `quote` are omitted, and its counts are zero.
       type: object
       required:
         - id
@@ -11785,6 +11814,12 @@ components:
           $ref: '#/components/schemas/Poll'
         card:
           $ref: '#/components/schemas/LinkCard'
+        quote:
+          description: |
+            The status that this status quotes; omitted when it quotes none, and in a
+            `quoted_status`.
+          allOf:
+            - $ref: '#/components/schemas/StatusQuote'
     StatusContext:
       description: The thread around a status.
       type: object
@@ -11917,6 +11952,18 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/Status'
+    StatusQuote:
+      description: |
+        The status that a status quotes (FR-114, ADR-0069). Quotes are shown one level deep:
+        `quoted_status` has no `quote` of its own, and clients link to it instead.
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          $ref: '#/components/schemas/QuoteState'
+        quoted_status:
+          $ref: '#/components/schemas/Status'
     StatusReaction:
       description: The reactions to a status with one emoji.
       allOf:

@@ -49,6 +49,12 @@ func (s *Service) MuteDomain(ctx context.Context, accountID, domain string) (gra
 	return m, nil
 }
 
+// MutesDomain reports whether accountID mutes domain, the domain of a remote account, or one of
+// its parent domains (FR-304). The local domain "" is never muted.
+func (s *Service) MutesDomain(ctx context.Context, accountID, domain string) (bool, error) {
+	return s.d.Repository.MutesAnyDomain(ctx, accountID, graph.MutedDomains(domain))
+}
+
 // UnmuteDomain removes accountID's mute of domain and emits DomainUnmuted. Without a mute it
 // changes nothing and emits nothing.
 func (s *Service) UnmuteDomain(ctx context.Context, accountID, domain string) error {

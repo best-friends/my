@@ -216,6 +216,8 @@ type App struct {
 	closer func() error
 	// closeBlobs releases the blob store.
 	closeBlobs func() error
+	// billingClosers release the clients of the billing sources that hold one (ADR-0068).
+	billingClosers []io.Closer
 	// valkey is the connection to the Valkey server that the adapters configured with
 	// valkey_url share, nil until one of them connects it.
 	valkey valkeyServer
@@ -345,6 +347,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		follows      = repos.follows
 		statuses     = repos.statuses
 		linkCards    = repos.linkCards
+		quotes       = repos.quotes
 		interactions = repos.interactions
 		feeds        = repos.feeds
 		notifs       = repos.notifs
@@ -513,6 +516,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	})
 	a.Graph.RegisterJobs(a.Handlers, a.Scheduler)
 	content.RegisterProjectors(a.Projectors, statuses)
+	content.RegisterQuoteProjectors(a.Projectors, quotes)
 	a.Content = content.NewService(content.Deps{
 		UnitOfWork: a.UnitOfWork, Repository: statuses, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions:            a.AccountPolicy.Content(),
@@ -520,6 +524,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 		RemoteMentions:          remoteMentions{a}, // reads a.RemoteActors, built by setUpRemoteActors
 		Sanitizer:               newHTMLSanitizer(),
 		RemoteMedia:             remoteMediaRecorder{a}, // reads a.Media, built by setMedia
+		Quotes:                  quotes,
 		MaxStatusLength:         a.Instance.MaxStatusLength,
 		RequireMediaDescription: a.Instance.RequireMediaDescription,
 		DefaultLanguage:         a.defaultPostLanguage,
@@ -563,7 +568,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.setUpProjections(projections, projectionRepositories{
 		accounts: accounts, instances: instances, follows: follows, statuses: statuses, interactions: interactions,
 		feeds: feeds, notifications: notifs, moderation: mods, identities: identities, webhooks: hooks, relays: feds,
-		finance: costs,
+		finance: costs, quotes: quotes,
 	})
 	if err := a.setUpStreams(ctx, cfg, opts.StreamBus); err != nil {
 		_ = a.Close()
@@ -610,6 +615,7 @@ func NewApp(ctx context.Context, cfg *config.Config, opts AppOptions) (*App, err
 	a.Statuses = content.NewReader(content.ReaderDeps{
 		Statuses: statuses, Interactions: interactions, Accounts: a.Accounts, Relationships: a.Graph,
 		Restrictions: a.AccountPolicy.Content(), Media: a.Media, Clock: a.Clock, LinkCards: a.LinkCards,
+		Quotes: quotes, DomainMutes: a.Graph,
 	})
 	a.setUpLocalReports(mods)
 	a.setUpFanOut(cfg, feds, fedOutbox)
@@ -1102,6 +1108,10 @@ func (a *App) Close() error {
 	if a.closeBlobs != nil {
 		_ = a.closeBlobs()
 	}
+	for _, c := range a.billingClosers {
+		_ = c.Close()
+	}
+	a.billingClosers = nil
 	if a.valkey != nil {
 		a.valkey.Close()
 	}

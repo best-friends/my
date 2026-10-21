@@ -578,6 +578,26 @@ func (q *Queries) ListDomainMutesPage(ctx context.Context, arg ListDomainMutesPa
 	return items, nil
 }
 
+const mutesAnyDomain = `-- name: MutesAnyDomain :one
+SELECT EXISTS (
+  SELECT 1 FROM account_domain_mutes
+  WHERE account_id = ?1 AND domain IN (SELECT value FROM json_each(CAST(?2 AS TEXT)))
+)
+`
+
+type MutesAnyDomainParams struct {
+	AccountID string
+	Domains   string
+}
+
+// MutesAnyDomain reports whether the account mutes one of the domains (a JSON array).
+func (q *Queries) MutesAnyDomain(ctx context.Context, arg MutesAnyDomainParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, mutesAnyDomain, arg.AccountID, arg.Domains)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const upsertMute = `-- name: UpsertMute :exec
 INSERT INTO mutes (account_id, target_account_id, hide_notifications, expires_at, created_at) VALUES (?, ?, ?, ?, ?)
 ON CONFLICT (account_id, target_account_id) DO UPDATE SET

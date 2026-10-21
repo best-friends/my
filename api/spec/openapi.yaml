@@ -1010,6 +1010,8 @@ components:
       $ref: ./components/schemas/PushSubscriptionRequest.yaml
     QrCode:
       $ref: ./components/schemas/QrCode.yaml
+    QuoteState:
+      $ref: ./components/schemas/QuoteState.yaml
     ReactToStatusRequest:
       $ref: ./components/schemas/ReactToStatusRequest.yaml
     ReactionEmoji:
@@ -1080,6 +1082,8 @@ components:
       $ref: ./components/schemas/StatusMention.yaml
     StatusPage:
       $ref: ./components/schemas/StatusPage.yaml
+    StatusQuote:
+      $ref: ./components/schemas/StatusQuote.yaml
     StatusReaction:
       $ref: ./components/schemas/StatusReaction.yaml
     StatusReactionPage:

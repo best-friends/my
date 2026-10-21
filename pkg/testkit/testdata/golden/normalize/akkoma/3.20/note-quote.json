@@ -17,6 +17,9 @@
     ],
     "ID": "https://example.org/activities/85717e587f95d5c0",
     "Published": "2024-04-06T23:40:28Z",
+    "Quote": {
+      "Target": "http://remote.example/status/85717e587f95d5c0"
+    },
     "RawType": "Note",
     "Type": "Note",
     "Updated": "2024-04-06T23:40:28Z"
