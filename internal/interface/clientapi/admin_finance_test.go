@@ -36,12 +36,12 @@ func (f *fakeCosts) Relabel(_ context.Context, id string, label finance.Label, b
 	return f.item, nil
 }
 
-func (f *fakeCosts) RevisePrice(_ context.Context, id string, on finance.Date, price finance.Money, byUserID string) (finance.CostItem, error) {
+func (f *fakeCosts) RevisePrice(_ context.Context, _ string, on finance.Date, price finance.Money, byUserID string) (finance.CostItem, error) {
 	f.calls = append(f.calls, "revise "+on.String()+" "+price.Decimal()+" by "+byUserID)
 	return f.item, nil
 }
 
-func (f *fakeCosts) SetEnd(_ context.Context, id string, endsOn *finance.Date, byUserID string) (finance.CostItem, error) {
+func (f *fakeCosts) SetEnd(_ context.Context, _ string, endsOn *finance.Date, byUserID string) (finance.CostItem, error) {
 	end := "none"
 	if endsOn != nil {
 		end = endsOn.String()
