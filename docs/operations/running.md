@@ -23,6 +23,7 @@ Docker Compose の構成（`deploy/docker/compose.yaml`、手順は [README](../
 
 ログは標準エラーに JSON Lines で出る。リクエスト中のログには `request_id` が付き、同じ ID をレスポンスの `X-Request-Id` で返す。
 リクエストの `X-Request-Id` が 128 文字以内の英数字と `-_.:` だけなら、ロードバランサが振った ID としてそのまま使う。
+トレースの中のログ（リクエストとジョブ）には `trace_id` と `span_id` も付く（[トレース](#トレース)）。
 
 HTTP リクエストとジョブの実行は、終わりにそれぞれ 1 行を出す。その行は下の [指標](#指標メトリクス) のラベルを同じ名前と値で持つので（[ADR-0055](../adr/0055-service-observability.md) §5）、
 `metrics_exporter = none` の Cloud Run では、この行から Cloud Logging のログベースの指標（カウンタと分布）を作れる。
@@ -151,6 +152,57 @@ my を改変して動かす（パッチを当てる、フォークをビルド�
 設定がなければ Go の既定（上限なし）で動き、ヒープはコンテナのメモリの上限に近づいても GC を急がない。
 コンテナのメモリの上限がある構成（Cloud Run・Lambda・ECS・Kubernetes）では、その約 90% を目安に設定する（例: 512 MiB のコンテナで `GOMEMLIMIT=460MiB`）。
 `GOMAXPROCS` は設定しない。Go の既定がコンテナの CPU の上限に従う。
+
+## トレース
+
+設定 `traces_exporter`（既定 `none`）で分散トレースを出す（[ADR-0063](../adr/0063-distributed-tracing.md)、設定は [configuration.md](../reference/configuration.md)）。
+
+| span | 名前 | 属性 |
+| --- | --- | --- |
+| HTTP のリクエスト（server） | `<method> <http.route>`（ルートに届かなかったものは `<method>`） | `http.request.method`、`http.route`、`http.response.status_code`、`my.surface`。5xx は失敗 |
+| ジョブの実行（consumer） | ジョブの型（`my.job.type`） | `my.job.type`、`my.job.attempt`、`my.outcome`。再試行は試行ごとに別の span |
+| トランザクション | `my.db.transaction` | `db.system.name`。再試行は試行ごとに別の span |
+| クエリ（client） | sqlc のクエリの名前（`InsertJob` など。それ以外は `BEGIN` などの SQL の先頭の語） | `db.system.name`、`db.operation.name` |
+| 配送（`my.delivery`） | `my.delivery` | `activity.type`、`my.outcome` |
+| 外向きの HTTP（client） | `<method>` | `http.request.method`、`server.address`（宛先のホスト名だけ）、`http.response.status_code`。4xx・5xx は失敗 |
+
+失敗した span は `error.type`（`timeout` などの有限の名前、または状態コード）を持つ。属性にアカウント・投稿・ジョブの ID、URL・パス・クエリ、クライアント IP、User-Agent、SQL の本文、エラーの文字列は入らない。
+`server.address` は連合先のホスト名を受け手に残すので、受け手の保存期間と閲覧者を運営者が決める。ヘルスチェックは span を作らない。
+
+- ジョブの実行は、ジョブを投入した span（多くは HTTP のリクエスト）の子ではなく、**新しいトレースの根**で、投入した span への link を持つ。表示ではリクエストのトレースから link をたどる
+- 入ってくる `traceparent` は、接続の相手が `trusted_proxies` のときだけ親にする。それ以外は捨てて新しいトレースを始める。`tracestate` は常に捨てる。外向きの HTTP（連合・WebFinger・メディア・Web Push など）には `traceparent` を付けない
+- サンプリングは「信頼したプロキシの親、またはジョブの link 先が記録されていれば記録し、なければ `traces_sample_ratio`（既定 0.01）の比率」。比率を下げても、記録したリクエストの続きのジョブは欠けない
+
+| ターゲット | 設定 | 経路 |
+| --- | --- | --- |
+| 既定・小さな Self-hosted | `traces_exporter = none` | span を出さない。ログの `request_id`・`job_id` で追う。信頼したプロキシの `traceparent` があれば、その `trace_id`・`span_id` をログに付ける |
+| Self-hosted（Jaeger・Tempo・OpenTelemetry Collector など） | `traces_exporter = otlp`、`traces_flush = batch` | `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`（または `OTEL_EXPORTER_OTLP_ENDPOINT`、既定 `http://localhost:4318`）の受け手へ OTLP/HTTP で送る。認証のヘッダーは `OTEL_EXPORTER_OTLP_HEADERS`。エラーと遅いトレースを確実に残すなら Collector の tail sampling を使う |
+| Google Cloud（Cloud Run） | `none`、またはトレースを有効にするなら `otlp`・`unit` | 下記 |
+| AWS（Lambda） | `none`、またはトレースを有効にするなら `otlp`・`unit` | 下記 |
+
+### Cloud Run
+
+`none` のままでも、Cloud Run が自動で作るリクエストのトレースと、ログの `trace_id` が同じ ID でつながる（Cloud Run の前段からの接続を `trusted_proxies` で信頼するとき。
+Cloud Run が公開のリクエストの `traceparent` を常に上書きするかは要検証で、ADR-0063 の Open Questions にある）。
+Cloud Logging がトレースのフィールドとして扱う形（`logging.googleapis.com/trace`）にはしていない。
+
+アプリの span を Cloud Trace に送るときは、**OpenTelemetry Collector をサイドカー**として同じサービスに置く。サーバーは Google の認証を持たず、サイドカーが Application Default Credentials で Cloud Trace の OTLP の受け口へ送る。
+
+- サーバー（ingress のコンテナ）: `MY_TRACES_EXPORTER=otlp`、`MY_TRACES_FLUSH=unit`、`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`
+- サイドカー: OpenTelemetry Collector（`otlp` の receiver を `localhost:4318` の HTTP で受け、`googlecloud` か `otlphttp`（`https://telemetry.googleapis.com`、`googleclientauth` の拡張）の exporter で送る）。サービスアカウントに Cloud Trace への書き込みの権限を付ける
+- `unit` は、記録したリクエスト・ジョブの終わりに、そこまでの span をサイドカーへ送り切ってから返す。CPU を割り当てない間にもサイドカーが送り出せるよう、トレースを有効にする構成はインスタンスベース課金にする
+- 費用はサイドカーの資源と span の量（Cloud Trace の料金）。比率は `traces_sample_ratio` で決める
+
+### AWS Lambda
+
+X-Ray に送るときは、**AWS Distro for OpenTelemetry（ADOT）の Collector の Lambda レイヤー**を関数に付ける。サーバーは SigV4 の署名を持たず、レイヤーの Collector が X-Ray の OTLP の受け口（`https://xray.<region>.amazonaws.com/v1/traces`）へ署名して送る。
+
+- 関数: `MY_TRACES_EXPORTER=otlp`、`MY_TRACES_FLUSH=unit`、`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`。レイヤーの Collector の設定（`OPENTELEMETRY_COLLECTOR_CONFIG_URI`）で、`otlp` の receiver を `localhost:4318` で受け、`sigv4auth` の拡張を付けた `otlphttp` の exporter で X-Ray へ送る
+- 実行ロールに X-Ray への書き込みの権限を付ける。Lambda の X-Ray の設定（`Active` / `PassThrough`）は Lambda 自身の segment だけを決め、このサーバーの span には関係しない
+- `unit` で、記録した呼び出しの終わりに、凍結の前にレイヤーへ送り切る
+- 費用はレイヤーの分の起動時間と、X-Ray の記録したトレースの数（毎月 100,000 件まで無料）
+
+デプロイのテンプレート（M6）は、この構成を推奨の設定として持つ。
 
 ## 停止する
 
