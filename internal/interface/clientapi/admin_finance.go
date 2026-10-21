@@ -11,6 +11,7 @@ import (
 	appfinance "github.com/best-friends/my/internal/app/finance"
 	"github.com/best-friends/my/internal/domain/finance"
 	"github.com/best-friends/my/internal/domain/identity"
+	"github.com/best-friends/my/internal/domain/instance"
 )
 
 // The instance's costs (ADR-0067 §9, FR-901, FR-902): the admin operations on
@@ -333,52 +334,115 @@ func (s *Server) GetCostTotals(ctx context.Context, req GetCostTotalsRequestObje
 		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(*p), nil
 	}
 	params := req.Params
-	if !params.Granularity.Valid() {
-		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "granularity")), nil
+	out, p, err := s.costTotals(ctx, costTotalsQuery{
+		granularity: params.Granularity, from: params.From, to: params.To, basis: params.Basis, breakdown: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if p != nil {
+		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	cache := cacheNoStore
+	return GetCostTotals200JSONResponse{Body: out, Headers: GetCostTotals200ResponseHeaders{CacheControl: &cache}}, nil
+}
+
+// costTotalsQuery is the query of the admin and the public totals, and what the answer may show.
+type costTotalsQuery struct {
+	granularity CostGranularity
+	from, to    CalendarDate
+	basis       *CostBasis
+	// breakdown is whether the answer shows the breakdown by provider and category and the
+	// providers' rules; untilToday stops the periods at the one that holds today (ADR-0067 §8).
+	breakdown, untilToday bool
+}
+
+// costTotals validates q and presents its totals, or returns the problem of an invalid query.
+func (s *Server) costTotals(ctx context.Context, q costTotalsQuery) (CostTotals, *problem, error) {
+	reject := func(p problem) (CostTotals, *problem, error) { return CostTotals{}, &p, nil }
+	if !q.granularity.Valid() {
+		return reject(s.invalidParameterResponse(ctx, "granularity"))
 	}
 	basis := CostBasisAmortized
-	if params.Basis != nil {
-		basis = *params.Basis
+	if q.basis != nil {
+		basis = *q.basis
 	}
 	if !basis.Valid() {
-		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "basis")), nil
+		return reject(s.invalidParameterResponse(ctx, "basis"))
 	}
-	from, err := finance.ParseDate(params.From)
+	from, err := finance.ParseDate(q.from)
 	if err != nil {
-		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "from")), nil
+		return reject(s.invalidParameterResponse(ctx, "from"))
 	}
-	to, err := finance.ParseDate(params.To)
+	to, err := finance.ParseDate(q.to)
 	if err != nil {
-		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(s.invalidParameterResponse(ctx, "to")), nil
+		return reject(s.invalidParameterResponse(ctx, "to"))
 	}
 	totals, err := s.o.Costs.Totals(ctx, appfinance.TotalsQuery{
-		Granularity: finance.Granularity(params.Granularity), From: from, To: to, Basis: finance.Basis(basis),
+		Granularity: finance.Granularity(q.granularity), From: from, To: to, Basis: finance.Basis(basis), UntilToday: q.untilToday,
 	})
 	switch {
 	case errors.Is(err, finance.ErrInvalidPeriod), errors.Is(err, finance.ErrTooManyPeriods):
-		return GetCostTotalsdefaultApplicationProblemPlusJSONResponse(s.unprocessable(ctx, "to")), nil
+		return reject(s.unprocessable(ctx, "to"))
 	case err != nil:
-		return nil, fmt.Errorf("clientapi: total the costs: %w", err)
+		return CostTotals{}, nil, fmt.Errorf("clientapi: total the costs: %w", err)
 	}
-	out := CostTotals{Granularity: params.Granularity, Basis: basis, Periods: make([]CostPeriodTotal, 0, len(totals)), Rules: s.costRules()}
+	rules := CostTotalsRules{WeekStart: CostTotalsRulesWeekStartMonday, Sources: []CostSourceRule{}}
+	if q.breakdown {
+		rules = s.costRules()
+	}
+	out := CostTotals{Granularity: q.granularity, Basis: basis, Periods: make([]CostPeriodTotal, 0, len(totals)), Rules: rules}
 	for _, t := range totals {
 		p := CostPeriodTotal{
 			Label: t.Period.Label, StartsOn: t.Period.Range.Start.String(), EndsOn: t.Period.Range.End.String(), Estimated: t.Estimated,
-			Totals: make([]Money, 0, len(t.Totals)), Breakdown: make([]CostBreakdownLine, 0, len(t.Breakdown)),
+			Totals: make([]Money, 0, len(t.Totals)), Breakdown: []CostBreakdownLine{},
 		}
 		for _, m := range t.Totals {
 			p.Totals = append(p.Totals, newMoney(m))
 		}
-		for _, line := range t.Breakdown {
-			p.Breakdown = append(p.Breakdown, CostBreakdownLine{
-				Provider: line.Key.Provider, Category: CostCategory(line.Key.Category),
-				Amount: newMoney(finance.Money{Minor: line.Amount, Currency: line.Key.Currency}),
-			})
+		if q.breakdown {
+			for _, line := range t.Breakdown {
+				p.Breakdown = append(p.Breakdown, CostBreakdownLine{
+					Provider: line.Key.Provider, Category: CostCategory(line.Key.Category),
+					Amount: newMoney(finance.Money{Minor: line.Amount, Currency: line.Key.Currency}),
+				})
+			}
 		}
 		out.Periods = append(out.Periods, p)
 	}
-	cache := cacheNoStore
-	return GetCostTotals200JSONResponse{Body: out, Headers: GetCostTotals200ResponseHeaders{CacheControl: &cache}}, nil
+	return out, nil, nil
+}
+
+// GetInstanceCostTotals serves GET /api/v1/instance/cost_totals: the totals that the instance
+// setting finance_visibility publishes to everyone (FR-903, ADR-0067 §8). private is a 404,
+// totals leaves the breakdown and the providers' rules out, and the periods stop at the one that
+// holds today. The answer is a projection of the totals: no level carries the names, memos, or
+// individual payments of the cost items.
+func (s *Server) GetInstanceCostTotals(ctx context.Context, req GetInstanceCostTotalsRequestObject) (GetInstanceCostTotalsResponseObject, error) {
+	var settings instance.Settings
+	if s.o.Instance != nil {
+		var err error
+		if settings, err = s.o.Instance.Settings(ctx); err != nil {
+			return nil, fmt.Errorf("clientapi: instance settings: %w", err)
+		}
+	}
+	visibility := settings.FinanceVisibility()
+	if visibility == instance.FinancePrivate || s.o.Costs == nil {
+		return GetInstanceCostTotalsdefaultApplicationProblemPlusJSONResponse(s.notFoundResponse(ctx)), nil
+	}
+	params := req.Params
+	out, p, err := s.costTotals(ctx, costTotalsQuery{
+		granularity: params.Granularity, from: params.From, to: params.To, basis: params.Basis,
+		breakdown: visibility == instance.FinanceBreakdown, untilToday: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if p != nil {
+		return GetInstanceCostTotalsdefaultApplicationProblemPlusJSONResponse(*p), nil
+	}
+	cache := cachePublic
+	return GetInstanceCostTotals200JSONResponse{Body: out, Headers: GetInstanceCostTotals200ResponseHeaders{CacheControl: &cache}}, nil
 }
 
 // costRules presents the rules that cut the periods of the totals (ADR-0067 §5).

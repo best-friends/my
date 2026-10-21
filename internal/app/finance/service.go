@@ -272,6 +272,9 @@ type TotalsQuery struct {
 	Granularity finance.Granularity
 	From, To    finance.Date
 	Basis       finance.Basis
+	// UntilToday stops the periods at the one that holds today in UTC, for the public totals
+	// (ADR-0067 §8): a To after today reads as today, and a From after today gives no period.
+	UntilToday bool
 }
 
 // Totals returns the totals of the cost items that are not canceled and of the newest revision of
@@ -281,6 +284,18 @@ type TotalsQuery struct {
 func (s *Service) Totals(ctx context.Context, q TotalsQuery) ([]finance.PeriodTotal, error) {
 	if err := q.Basis.Validate(); err != nil {
 		return nil, err
+	}
+	if q.To.Before(q.From) {
+		return nil, fmt.Errorf("%w: %s to %s", finance.ErrInvalidPeriod, q.From, q.To)
+	}
+	if q.UntilToday {
+		today := finance.DateOf(s.d.Clock.Now().UTC())
+		if q.From.After(today) {
+			return []finance.PeriodTotal{}, nil
+		}
+		if q.To.After(today) {
+			q.To = today
+		}
 	}
 	periods, err := q.Granularity.Periods(q.From, q.To)
 	if err != nil {

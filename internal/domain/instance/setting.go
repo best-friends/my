@@ -72,6 +72,9 @@ const (
 	// SettingRequireMediaDescription makes every media file attached to a local post need an
 	// alt text (FR-105).
 	SettingRequireMediaDescription SettingKey = "require_media_description"
+	// SettingFinanceVisibility decides how much of the instance's costs the public API and the
+	// about page show (FR-903, ADR-0067 §8).
+	SettingFinanceVisibility SettingKey = "finance_visibility"
 )
 
 // RegistrationMode is the value of SettingRegistrationMode (FR-001).
@@ -114,6 +117,18 @@ func (a Audience) Allows(authenticated bool) bool {
 }
 
 var audienceChoices = []string{string(AudienceNone), string(AudienceUsers), string(AudienceAll)}
+
+// FinanceVisibility is the value of SettingFinanceVisibility (ADR-0067 §8): how much of the
+// instance's costs everyone may read. No level publishes the names, memos, or individual payments
+// of the cost items.
+type FinanceVisibility string
+
+// Finance visibilities, from the least to the most revealing.
+const (
+	FinancePrivate   FinanceVisibility = "private"   // nothing: the public API is a 404
+	FinanceTotals    FinanceVisibility = "totals"    // the total of each currency by period
+	FinanceBreakdown FinanceVisibility = "breakdown" // the totals and their breakdown by provider and category
+)
 
 // SearchIndexing is the value of SettingSearchIndexing (ADR-0057): whether search engines may
 // index the instance's pages.
@@ -309,6 +324,11 @@ var definitions = []Definition{
 	{
 		Key: SettingLinkCardsEnabled, Kind: KindBool, Default: "true",
 		Doc: "Whether statuses show the cards of their links, which the server fetches from the linked pages (FR-117, ADR-0062).",
+	},
+	{
+		Key: SettingFinanceVisibility, Kind: KindEnum, Default: string(FinancePrivate),
+		Choices: []string{string(FinancePrivate), string(FinanceTotals), string(FinanceBreakdown)},
+		Doc:     "How much of the instance's costs GET /instance/cost_totals and the about page show: private (nothing), totals (the total of each currency by period), or breakdown (also by provider and category); item names, memos, and individual payments are never shown (FR-903, ADR-0067 §8).",
 	},
 }
 
@@ -666,6 +686,17 @@ func (s Settings) AIUsage() AIUsage {
 
 // IndexableDefault returns the value of SettingIndexableDefault.
 func (s Settings) IndexableDefault() bool { return s.boolValue(SettingIndexableDefault) }
+
+// FinanceVisibility returns the value of SettingFinanceVisibility; an unexpected value is private.
+func (s Settings) FinanceVisibility() FinanceVisibility {
+	switch v, _ := s.Value(SettingFinanceVisibility); FinanceVisibility(v) {
+	case FinanceTotals:
+		return FinanceTotals
+	case FinanceBreakdown:
+		return FinanceBreakdown
+	}
+	return FinancePrivate
+}
 
 // LinkCardsEnabled returns the value of SettingLinkCardsEnabled.
 func (s Settings) LinkCardsEnabled() bool { return s.boolValue(SettingLinkCardsEnabled) }

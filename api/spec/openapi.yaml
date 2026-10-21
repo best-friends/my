@@ -84,6 +84,8 @@ paths:
     $ref: ./paths/custom_emojis.yaml
   /instance/domain_actions:
     $ref: ./paths/instance_domain_actions.yaml
+  /instance/cost_totals:
+    $ref: ./paths/instance_cost_totals.yaml
   /accounts/verify_credentials:
     $ref: ./paths/accounts_verify_credentials.yaml
   /accounts/update_credentials:
@@ -872,6 +874,8 @@ components:
       $ref: ./components/schemas/EditStatusRequest.yaml
     EnableTotpRequest:
       $ref: ./components/schemas/EnableTotpRequest.yaml
+    FinanceVisibility:
+      $ref: ./components/schemas/FinanceVisibility.yaml
     FollowAccountRequest:
       $ref: ./components/schemas/FollowAccountRequest.yaml
     Id:

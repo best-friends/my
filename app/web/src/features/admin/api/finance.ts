@@ -8,18 +8,13 @@ import { infiniteQueryOptions, type QueryClient, queryOptions } from "@tanstack/
 import type { Api } from "../../../lib/api/client";
 import type { components } from "../../../lib/api/schema.gen";
 import { ApiError } from "../../../lib/errors";
+import { type CostBasis, type CostGranularity, type Money, totalsQuery } from "../../costs";
 import { pageQuery, refreshAuditLog } from "../../moderation";
 
 type Schemas = components["schemas"];
 
 export type CostItem = Schemas["CostItem"];
 export type CostSchedule = Schemas["CostSchedule"];
-export type CostCategory = Schemas["CostCategory"];
-export type CostBasis = Schemas["CostBasis"];
-export type CostGranularity = Schemas["CostGranularity"];
-export type CostTotals = Schemas["CostTotals"];
-export type CostPeriodTotal = Schemas["CostPeriodTotal"];
-export type Money = Schemas["Money"];
 export type NewCostItem = Schemas["CostItemCreateRequest"];
 export type CostItemLabel = Schemas["CostItemLabelRequest"];
 export type BillingImport = Schemas["BillingImport"];
@@ -27,61 +22,10 @@ export type BillingImport = Schemas["BillingImport"];
 /** The schedules, in the order of the form. */
 export const costSchedules = ["once", "weeks", "months", "years"] as const satisfies readonly CostSchedule[];
 
-/** The categories, in the order of the API (ADR-0067 §2). */
-export const costCategories = [
-  "compute",
-  "database",
-  "storage",
-  "network",
-  "domain",
-  "email",
-  "software",
-  "other",
-] as const satisfies readonly CostCategory[];
-
-/** The granularities of the totals, in the order of their tabs. */
-export const costGranularities = ["week", "month", "year"] as const satisfies readonly CostGranularity[];
-
-/** The bases of the totals; amortized is the default (ADR-0067 §4). */
-export const costBases = ["amortized", "cash"] as const satisfies readonly CostBasis[];
-
 /** The most N of an every-N schedule, and the longest name, provider and memo (CostItemCreateRequest). */
 export const maxCostInterval = 99;
 export const costNameLimit = 100;
 export const costMemoLimit = 10_000;
-
-/** How many periods back from the current one the totals show, the current one included. */
-const shownPeriods: Readonly<Record<CostGranularity, number>> = { week: 12, month: 12, year: 5 };
-
-/** A calendar date `YYYY-MM-DD` as a UTC Date, for date arithmetic and for Intl in the UTC time zone. */
-export function utcDate(date: string): Date {
-  return new Date(`${date}T00:00:00Z`);
-}
-
-/** The calendar date `YYYY-MM-DD` of a UTC Date. */
-function dateString(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-/**
- * Today's calendar date in the device's time zone (ADR-0067 §5: only "today" depends on the viewer, and the API
- * takes dates). Called outside rendering, by the route.
- */
-export function deviceToday(now: Date = new Date()): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${String(now.getFullYear()).padStart(4, "0")}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-/** The dates of the totals: from a date in the first of the shown periods to `today`, in the last one. */
-function totalsRange(granularity: CostGranularity, today: string): { from: string; to: string } {
-  const date = utcDate(today);
-  const back = shownPeriods[granularity] - 1;
-  if (granularity === "week") date.setUTCDate(date.getUTCDate() - 7 * back);
-  // The first day of the month or year: stepping back from the 31st would skip a shorter month.
-  else if (granularity === "month") date.setUTCFullYear(date.getUTCFullYear(), date.getUTCMonth() - back, 1);
-  else date.setUTCFullYear(date.getUTCFullYear() - back, 0, 1);
-  return { from: dateString(date), to: today };
-}
 
 /** The price of an item's payment on `date`: the revision with the latest effective date on or before it, the last recorded of a date. */
 export function priceOn(item: CostItem, date: string): Money | undefined {
@@ -110,7 +54,7 @@ export function costItemsQueryOptions(api: Api) {
 
 /** The totals of the shown periods up to `today` (GET /admin/cost_totals). */
 export function costTotalsQueryOptions(api: Api, granularity: CostGranularity, basis: CostBasis, today: string) {
-  const query = { granularity, basis, ...totalsRange(granularity, today) };
+  const query = totalsQuery(granularity, basis, today);
   return queryOptions({
     queryKey: ["get", "/admin/cost_totals", query] as const,
     queryFn: async ({ signal }) => {

@@ -63,6 +63,8 @@ func TestGetInstance(t *testing.T) {
 		Rules:         []clientapi.InstanceRule{},
 		// Unset, the instance denies search engines and AI (ADR-0057).
 		SearchIndexing: clientapi.SearchIndexingDeny, AiUsage: clientapi.AIUsageDeny,
+		// Unset, the costs are private (ADR-0067 §8).
+		FinanceVisibility: clientapi.FinanceVisibilityPrivate,
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("instance = %+v, want %+v", got, want)

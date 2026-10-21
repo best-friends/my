@@ -9,6 +9,7 @@ export * as about from "../../features/about/test/handlers";
 export * as admin from "../../features/admin/test/handlers";
 export * as announcements from "../../features/announcements/test/handlers";
 export * as compose from "../../features/compose/test/handlers";
+export * as costs from "../../features/costs/test/handlers";
 export * as core from "./http";
 export * as emoji from "../../features/emoji/test/handlers";
 export * as moderation from "../../features/moderation/test/handlers";

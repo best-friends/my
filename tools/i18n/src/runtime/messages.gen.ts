@@ -8,6 +8,12 @@ export interface MessageArgs {
   "client:about.contact.email": {};
   /** Contact */
   "client:about.contact.title": {};
+  /** {visibility, select, breakdown {This server publishes what it costs to run by week, month, and year, with a breakdown by provider and category. The names of the items, their notes, and the individual payments are not published.} other {This server publishes the totals of what it costs to run by week, month, and year. What they are spent on, the names of the items, and the individual payments are not published.}} */
+  "client:about.costs.description": { visibility: "breakdown" | (string & {}) };
+  /** See the running costs */
+  "client:about.costs.link": {};
+  /** Running costs */
+  "client:about.costs.title": {};
   /** Each account can also keep its profile and posts out of search engines, or deny AI, for its own pages on this server. An account cannot allow what the server denies. Media files and copies of posts on other servers do not carry an account's choice. */
   "client:about.crawlers.accounts": {};
   /** {setting, select, allow {This server reserves nothing against AI: AI may train on and use its pages, except those of the accounts that opt out.} deny_training {This server reserves its pages against the training of AI models. AI search and assistants may still use them, except the pages of the accounts that opt out.} other {This server reserves its pages against the training of AI models and against their use by AI search, assistants and agents.}} */
@@ -1422,20 +1428,6 @@ export interface MessageArgs {
   "client:admin.finance.amount.description": {};
   /** Enter an amount such as 1650 or 12.34. */
   "client:admin.finance.amount.invalid": {};
-  /** How payments are counted */
-  "client:admin.finance.basis": {};
-  /** Spread over the period paid for */
-  "client:admin.finance.basis.amortized": {};
-  /** Shows what a month or a week costs: a yearly payment counts by day until the next one. */
-  "client:admin.finance.basis.amortized.description": {};
-  /** On the payment date */
-  "client:admin.finance.basis.cash": {};
-  /** Shows what was paid when: compare it with your statements. */
-  "client:admin.finance.basis.cash.description": {};
-  /** No costs in this period. */
-  "client:admin.finance.breakdown.empty": {};
-  /** Breakdown of {period} */
-  "client:admin.finance.breakdown.title": { period: string };
   /** Cancel */
   "client:admin.finance.cancel_dialog": {};
   /** Delete */
@@ -1448,24 +1440,6 @@ export interface MessageArgs {
   "client:admin.finance.cancel.title": { name: string };
   /** Deleted {name}. The audit log records the change. */
   "client:admin.finance.canceled": { name: string };
-  /** Category */
-  "client:admin.finance.category": {};
-  /** Servers */
-  "client:admin.finance.category.compute": {};
-  /** Database */
-  "client:admin.finance.category.database": {};
-  /** Domain */
-  "client:admin.finance.category.domain": {};
-  /** Email */
-  "client:admin.finance.category.email": {};
-  /** Network */
-  "client:admin.finance.category.network": {};
-  /** Other */
-  "client:admin.finance.category.other": {};
-  /** Software */
-  "client:admin.finance.category.software": {};
-  /** Storage */
-  "client:admin.finance.category.storage": {};
   /** Could not change the cost: {reason} */
   "client:admin.finance.change_failed": { reason: string };
   /** Close */
@@ -1528,14 +1502,6 @@ export interface MessageArgs {
   "client:admin.finance.every.weeks": { count: number };
   /** {count, plural, one {Every year} other {Every # years}} */
   "client:admin.finance.every.years": { count: number };
-  /** Period */
-  "client:admin.finance.granularity": {};
-  /** Months */
-  "client:admin.finance.granularity.month": {};
-  /** Weeks */
-  "client:admin.finance.granularity.week": {};
-  /** Years */
-  "client:admin.finance.granularity.year": {};
   /** Bytes billed this month */
   "client:admin.finance.imports.bytes": {};
   /** Failed: the query would scan more than its cap of billed bytes. */
@@ -1618,8 +1584,6 @@ export interface MessageArgs {
   "client:admin.finance.paid_on": {};
   /** The date on the statement or invoice. */
   "client:admin.finance.paid_on.description": {};
-  /** {range} ({week}) */
-  "client:admin.finance.period.week": { range: string; week: string };
   /** Current price */
   "client:admin.finance.price": {};
   /** {amount} from {date} */
@@ -1642,22 +1606,6 @@ export interface MessageArgs {
   "client:admin.finance.revise.title": { name: string };
   /** Changed the price of {name}. The audit log records the change. */
   "client:admin.finance.revised": { name: string };
-  /** A payment for more than a month is spread by day from its date until the day before the next payment, rounded so that the days add up to the amount paid. Other payments count on their dates. */
-  "client:admin.finance.rules.amortized": {};
-  /** Every payment counts on its payment date. */
-  "client:admin.finance.rules.cash": {};
-  /** Each currency is totaled on its own and never converted. */
-  "client:admin.finance.rules.currencies": {};
-  /** Costs are dated by calendar day, as on the statement, without a time zone: the totals are the same for everyone. */
-  "client:admin.finance.rules.dates": {};
-  /** A month that its provider has not closed is an estimate and may still change. */
-  "client:admin.finance.rules.estimated": {};
-  /** {provider} bills by month in the {timeZone} time zone; its charges are spread by day over each billing month. */
-  "client:admin.finance.rules.source": { provider: string; timeZone: string };
-  /** How the periods are counted */
-  "client:admin.finance.rules.title": {};
-  /** Weeks run from Monday to Sunday (ISO 8601). A week across the new year is split between the two years. */
-  "client:admin.finance.rules.week_start": {};
   /** Save */
   "client:admin.finance.save": {};
   /** Payment */
@@ -1682,20 +1630,12 @@ export interface MessageArgs {
   "client:admin.finance.title": {};
   /** Use at most {max} characters. */
   "client:admin.finance.too_long": { max: string };
-  /** Totals by {granularity}, {basis} */
-  "client:admin.finance.totals.caption": { basis: string; granularity: string };
-  /** Includes estimates */
-  "client:admin.finance.totals.estimated": {};
-  /** Nothing */
-  "client:admin.finance.totals.none": {};
-  /** Period */
-  "client:admin.finance.totals.period": {};
-  /** {sum} + {amount} */
-  "client:admin.finance.totals.plus": { amount: string; sum: string };
   /** Totals */
   "client:admin.finance.totals.title": {};
-  /** Total */
-  "client:admin.finance.totals.total": {};
+  /** {visibility, select, totals {The about page publishes the totals of these costs, without their breakdown.} breakdown {The about page publishes the totals of these costs and their breakdown by provider and category.} other {These costs are not published.}} */
+  "client:admin.finance.visibility": { visibility: "breakdown" | "totals" | (string & {}) };
+  /** Change in the server settings */
+  "client:admin.finance.visibility.change": {};
   /** Your roles grant none of the permissions that the server administration screens need. An administrator can grant them. */
   "client:admin.home.none.description": {};
   /** No server administration screens for your roles */
@@ -2642,6 +2582,24 @@ export interface MessageArgs {
   "client:admin.settings.federation.link_cards.description": {};
   /** Federation */
   "client:admin.settings.federation.title": {};
+  /** Totals and breakdown */
+  "client:admin.settings.finance.breakdown": {};
+  /** Everyone also sees the totals by provider and category. This reveals which providers, such as cloud services, run this server. */
+  "client:admin.settings.finance.breakdown.description": {};
+  /** The about page and the API can publish the totals of the costs recorded on the Costs screen. The names and notes of the items and the individual payments are never published. */
+  "client:admin.settings.finance.description": {};
+  /** Nothing */
+  "client:admin.settings.finance.private": {};
+  /** Only the people who manage the costs see them. */
+  "client:admin.settings.finance.private.description": {};
+  /** Running costs */
+  "client:admin.settings.finance.title": {};
+  /** Totals */
+  "client:admin.settings.finance.totals": {};
+  /** Everyone sees the total of each currency by week, month, and year. */
+  "client:admin.settings.finance.totals.description": {};
+  /** What to publish */
+  "client:admin.settings.finance.visibility": {};
   /** Default language */
   "client:admin.settings.language.default": {};
   /** The language of new accounts and of visitors whose language the app does not have. */
@@ -3360,6 +3318,92 @@ export interface MessageArgs {
   "client:compose.warning.label": {};
   /** Add a content warning */
   "client:compose.warning.toggle": {};
+  /** How payments are counted */
+  "client:costs.basis": {};
+  /** Spread over the period paid for */
+  "client:costs.basis.amortized": {};
+  /** Shows what a month or a week costs: a yearly payment counts by day until the next one. */
+  "client:costs.basis.amortized.description": {};
+  /** On the payment date */
+  "client:costs.basis.cash": {};
+  /** Shows what was paid when: compare it with your statements. */
+  "client:costs.basis.cash.description": {};
+  /** No costs in this period. */
+  "client:costs.breakdown.empty": {};
+  /** Breakdown of {period} */
+  "client:costs.breakdown.title": { period: string };
+  /** Category */
+  "client:costs.category": {};
+  /** Servers */
+  "client:costs.category.compute": {};
+  /** Database */
+  "client:costs.category.database": {};
+  /** Domain */
+  "client:costs.category.domain": {};
+  /** Email */
+  "client:costs.category.email": {};
+  /** Network */
+  "client:costs.category.network": {};
+  /** Other */
+  "client:costs.category.other": {};
+  /** Software */
+  "client:costs.category.software": {};
+  /** Storage */
+  "client:costs.category.storage": {};
+  /** Period */
+  "client:costs.granularity": {};
+  /** Months */
+  "client:costs.granularity.month": {};
+  /** Weeks */
+  "client:costs.granularity.week": {};
+  /** Years */
+  "client:costs.granularity.year": {};
+  /** {range} ({week}) */
+  "client:costs.period.week": { range: string; week: string };
+  /** About this server */
+  "client:costs.public.about": {};
+  /** What running this server costs, as its operators record it. Amounts in different currencies are totaled separately and never converted. */
+  "client:costs.public.description": {};
+  /** Couldn't load the running costs */
+  "client:costs.public.failed": {};
+  /** This server does not publish its running costs. */
+  "client:costs.public.hidden": {};
+  /** Loading the running costs */
+  "client:costs.public.loading": {};
+  /** Try again */
+  "client:costs.public.retry": {};
+  /** Running costs of {instance} */
+  "client:costs.public.title": { instance: string };
+  /** This server publishes the totals only, not what they are spent on. */
+  "client:costs.public.totals_only": {};
+  /** A payment for more than a month is spread by day from its date until the day before the next payment, rounded so that the days add up to the amount paid. Other payments count on their dates. */
+  "client:costs.rules.amortized": {};
+  /** Every payment counts on its payment date. */
+  "client:costs.rules.cash": {};
+  /** Each currency is totaled on its own and never converted. */
+  "client:costs.rules.currencies": {};
+  /** Costs are dated by calendar day, as on the statement, without a time zone: the totals are the same for everyone. */
+  "client:costs.rules.dates": {};
+  /** A month that its provider has not closed is an estimate and may still change. */
+  "client:costs.rules.estimated": {};
+  /** {provider} bills by month in the {timeZone} time zone; its charges are spread by day over each billing month. */
+  "client:costs.rules.source": { provider: string; timeZone: string };
+  /** How the periods are counted */
+  "client:costs.rules.title": {};
+  /** Weeks run from Monday to Sunday (ISO 8601). A week across the new year is split between the two years. */
+  "client:costs.rules.week_start": {};
+  /** Totals by {granularity}, {basis} */
+  "client:costs.totals.caption": { basis: string; granularity: string };
+  /** Includes estimates */
+  "client:costs.totals.estimated": {};
+  /** Nothing */
+  "client:costs.totals.none": {};
+  /** Period */
+  "client:costs.totals.period": {};
+  /** {sum} + {amount} */
+  "client:costs.totals.plus": { amount: string; sum: string };
+  /** Total */
+  "client:costs.totals.total": {};
   /** Terms and policies */
   "client:documents.label": {};
   /** Privacy policy */

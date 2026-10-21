@@ -1372,6 +1372,27 @@ func (e DomainBlockSeverity) Valid() bool {
 	}
 }
 
+// Defines values for FinanceVisibility.
+const (
+	FinanceVisibilityBreakdown FinanceVisibility = "breakdown"
+	FinanceVisibilityPrivate   FinanceVisibility = "private"
+	FinanceVisibilityTotals    FinanceVisibility = "totals"
+)
+
+// Valid indicates whether the value is a known member of the FinanceVisibility enum.
+func (e FinanceVisibility) Valid() bool {
+	switch e {
+	case FinanceVisibilityBreakdown:
+		return true
+	case FinanceVisibilityPrivate:
+		return true
+	case FinanceVisibilityTotals:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InstanceDomainActionKind.
 const (
 	InstanceDomainActionKindLimit   InstanceDomainActionKind = "limit"
@@ -1425,6 +1446,7 @@ const (
 	InstanceSettingKeyDomainActionsRationaleVisibility InstanceSettingKey = "domain_actions_rationale_visibility"
 	InstanceSettingKeyDomainActionsVisibility          InstanceSettingKey = "domain_actions_visibility"
 	InstanceSettingKeyFederatedTimelineEnabled         InstanceSettingKey = "federated_timeline_enabled"
+	InstanceSettingKeyFinanceVisibility                InstanceSettingKey = "finance_visibility"
 	InstanceSettingKeyIndexableDefault                 InstanceSettingKey = "indexable_default"
 	InstanceSettingKeyLinkCardsEnabled                 InstanceSettingKey = "link_cards_enabled"
 	InstanceSettingKeyLocalTimelineEnabled             InstanceSettingKey = "local_timeline_enabled"
@@ -1464,6 +1486,8 @@ func (e InstanceSettingKey) Valid() bool {
 	case InstanceSettingKeyDomainActionsVisibility:
 		return true
 	case InstanceSettingKeyFederatedTimelineEnabled:
+		return true
+	case InstanceSettingKeyFinanceVisibility:
 		return true
 	case InstanceSettingKeyIndexableDefault:
 		return true
@@ -4857,6 +4881,13 @@ type EnableTotpRequest struct {
 	SetupToken string `json:"setup_token"`
 }
 
+// FinanceVisibility How much of the instance's costs everyone may read (the instance setting
+// `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
+// `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
+// `breakdown`: the totals and their breakdown by provider and category. No level publishes
+// the names, memos, or individual payments of the cost items.
+type FinanceVisibility string
+
 // FollowAccountRequest The viewer's preferences of the follow; a preference left out keeps its value.
 type FollowAccountRequest struct {
 	// Notify Notify the viewer of the account's new posts. New follows do not.
@@ -4918,6 +4949,13 @@ type Instance struct {
 
 	// Domain The domain that serves the instance.
 	Domain string `json:"domain"`
+
+	// FinanceVisibility How much of the instance's costs everyone may read (the instance setting
+	// `finance_visibility`, FR-903, ADR-0067 §8). `private`: nothing, and
+	// `GET /instance/cost_totals` is a 404; `totals`: the total of each currency by period;
+	// `breakdown`: the totals and their breakdown by provider and category. No level publishes
+	// the names, memos, or individual payments of the cost items.
+	FinanceVisibility FinanceVisibility `json:"finance_visibility"`
 
 	// Limits Limits that clients check before sending a request.
 	Limits InstanceLimits `json:"limits"`
@@ -7396,6 +7434,20 @@ type ListFollowRequestsParams struct {
 	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// GetInstanceCostTotalsParams defines parameters for GetInstanceCostTotals.
+type GetInstanceCostTotalsParams struct {
+	Granularity CostGranularity `form:"granularity" json:"granularity"`
+
+	// From A date in the first period.
+	From CalendarDate `form:"from" json:"from"`
+
+	// To A date in the last period; a date after today reads as today.
+	To CalendarDate `form:"to" json:"to"`
+
+	// Basis How the totals place a payment; `amortized` by default.
+	Basis *CostBasis `form:"basis,omitempty" json:"basis,omitempty"`
+}
+
 // ListInstanceDomainActionsParams defines parameters for ListInstanceDomainActions.
 type ListInstanceDomainActionsParams struct {
 	// Cursor The `next_cursor` of the previous page; omitted for the first page.
@@ -8130,6 +8182,9 @@ type ServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(w http.ResponseWriter, r *http.Request)
+	// GetInstanceCostTotals Total the instance's public costs by period
+	// (GET /instance/cost_totals)
+	GetInstanceCostTotals(w http.ResponseWriter, r *http.Request, params GetInstanceCostTotalsParams)
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(w http.ResponseWriter, r *http.Request, params ListInstanceDomainActionsParams)
@@ -12611,6 +12666,78 @@ func (siw *ServerInterfaceWrapper) GetInstance(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetInstanceCostTotals operation middleware
+func (siw *ServerInterfaceWrapper) GetInstanceCostTotals(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetInstanceCostTotalsParams
+
+	// ------------- Required query parameter "granularity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "granularity", r.URL.Query(), &params.Granularity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "granularity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "granularity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "basis" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "basis", r.URL.Query(), &params.Basis, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "basis"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "basis", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInstanceCostTotals(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListInstanceDomainActions operation middleware
 func (siw *ServerInterfaceWrapper) ListInstanceDomainActions(w http.ResponseWriter, r *http.Request) {
 
@@ -14144,6 +14271,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance", wrapper.GetInstance)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/custom_emojis", wrapper.ListCustomEmojis)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/domain_actions", wrapper.ListInstanceDomainActions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/instance/cost_totals", wrapper.GetInstanceCostTotals)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/accounts/verify_credentials", wrapper.VerifyAccountCredentials)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/accounts/update_credentials", wrapper.UpdateAccountCredentials)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/preferences", wrapper.GetPreferences)
@@ -23324,6 +23452,68 @@ func (response GetInstancedefaultApplicationProblemPlusJSONResponse) VisitGetIns
 	return err
 }
 
+type GetInstanceCostTotalsRequestObject struct {
+	Params GetInstanceCostTotalsParams
+}
+
+type GetInstanceCostTotalsResponseObject interface {
+	VisitGetInstanceCostTotalsResponse(w http.ResponseWriter) error
+}
+
+type GetInstanceCostTotals200ResponseHeaders struct {
+	CacheControl *string
+}
+
+type GetInstanceCostTotals200JSONResponse struct {
+	Body    CostTotals
+	Headers GetInstanceCostTotals200ResponseHeaders
+}
+
+func (response GetInstanceCostTotals200JSONResponse) VisitGetInstanceCostTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInstanceCostTotalsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	Headers    ProblemResponseHeaders
+	StatusCode int
+}
+
+func (response GetInstanceCostTotalsdefaultApplicationProblemPlusJSONResponse) VisitGetInstanceCostTotalsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.CacheControl != nil {
+		w.Header().Set("Cache-Control", fmt.Sprint(*response.Headers.CacheControl))
+	}
+	if response.Headers.ContentLanguage != nil {
+		w.Header().Set("Content-Language", fmt.Sprint(*response.Headers.ContentLanguage))
+	}
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListInstanceDomainActionsRequestObject struct {
 	Params ListInstanceDomainActionsParams
 }
@@ -26873,6 +27063,9 @@ type StrictServerInterface interface {
 	// GetInstance Get the public information of the instance
 	// (GET /instance)
 	GetInstance(ctx context.Context, request GetInstanceRequestObject) (GetInstanceResponseObject, error)
+	// GetInstanceCostTotals Total the instance's public costs by period
+	// (GET /instance/cost_totals)
+	GetInstanceCostTotals(ctx context.Context, request GetInstanceCostTotalsRequestObject) (GetInstanceCostTotalsResponseObject, error)
 	// ListInstanceDomainActions List the domains that the instance moderates
 	// (GET /instance/domain_actions)
 	ListInstanceDomainActions(ctx context.Context, request ListInstanceDomainActionsRequestObject) (ListInstanceDomainActionsResponseObject, error)
@@ -31148,6 +31341,32 @@ func (sh *strictHandler) GetInstance(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetInstanceResponseObject); ok {
 		if err := validResponse.VisitGetInstanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInstanceCostTotals operation middleware
+func (sh *strictHandler) GetInstanceCostTotals(w http.ResponseWriter, r *http.Request, params GetInstanceCostTotalsParams) {
+	var request GetInstanceCostTotalsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInstanceCostTotals(ctx, request.(GetInstanceCostTotalsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInstanceCostTotals")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInstanceCostTotalsResponseObject); ok {
+		if err := validResponse.VisitGetInstanceCostTotalsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

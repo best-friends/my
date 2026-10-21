@@ -6,11 +6,11 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, test } from "vitest";
-import type { Schemas } from "../../test/fixtures";
+import { instanceFixture, type Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, problem, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { deviceToday } from "./api/finance";
+import { deviceToday } from "../costs";
 import { costItemFixture } from "./test/handlers";
 
 beforeEach(() => {
@@ -331,6 +331,30 @@ describe("the costs screen", () => {
     await user.click(within(region).getByRole("button", { name: "Import now: AWS" }));
     expect(await within(region).findByRole("alert")).toHaveTextContent("An import of this provider ran in the last hour.");
     expect(runs).toEqual(["aws", "aws"]);
+  });
+});
+
+describe("what the costs screen says of their publication", () => {
+  function serveVisibility(visibility: Schemas["Instance"]["finance_visibility"]) {
+    server.use(http.get(`${apiBase}/instance`, () => HttpResponse.json({ ...instanceFixture, finance_visibility: visibility })));
+  }
+
+  test("shows what the server publishes, and links to the server settings for a viewer who may change it", async () => {
+    server.use(signedInHandler, operatorHandler(["manage_finance", "manage_settings"]));
+    serveVisibility("breakdown");
+    await renderApp({ path: "/admin/finance" });
+
+    expect(await screen.findByText("The about page publishes the totals of these costs and their breakdown by provider and category.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Change in the server settings" })).toHaveAttribute("href", "/admin/settings");
+  });
+
+  test("shows that nothing is published, without the link for a viewer who may not change it", async () => {
+    server.use(signedInHandler, operatorHandler(["manage_finance"]));
+    serveVisibility("private");
+    await renderApp({ path: "/admin/finance" });
+
+    expect(await screen.findByText("These costs are not published.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Change in the server settings" })).not.toBeInTheDocument();
   });
 });
 

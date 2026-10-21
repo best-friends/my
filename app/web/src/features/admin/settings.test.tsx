@@ -241,6 +241,23 @@ describe("the server's policies", () => {
     expect(settings.patches).toHaveLength(1);
   });
 
+  test("publishes the running costs, saying that the breakdown reveals the providers", async () => {
+    const settings = settingsServer();
+    const { user } = await renderApp({ path: "/admin/settings" });
+    const costs = await screen.findByRole("region", { name: "Running costs" });
+    const choice = within(costs).getByRole("radiogroup", { name: "What to publish" });
+    expect(within(choice).getByRole("radio", { name: "Nothing" })).toBeChecked();
+    const breakdown = within(choice).getByRole("radio", { name: "Totals and breakdown" });
+    expect(breakdown).toHaveAccessibleDescription(/This reveals which providers, such as cloud services, run this server\./u);
+
+    await user.click(breakdown);
+    await user.click(screen.getByRole("button", { name: "Save the settings" }));
+
+    expect(await screen.findByText("Saved the settings. They take effect at once, and the audit log records each change.")).toBeInTheDocument();
+    expect(settings.patches).toEqual([{ values: { finance_visibility: "breakdown" } }]);
+    expect(breakdown).toBeChecked();
+  });
+
   test("requires a description of every image", async () => {
     const settings = settingsServer();
     const { user } = await renderApp({ path: "/admin/settings" });

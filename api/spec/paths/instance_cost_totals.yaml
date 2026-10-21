@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getInstanceCostTotals
+  summary: Total the instance's public costs by period
+  description: |
+    The totals of the instance's costs that the instance setting `finance_visibility`
+    publishes (FR-903, ADR-0067 §8, §9). It takes the query of `GET /admin/cost_totals` and
+    answers the same shape: `private` makes it a 404; `totals` leaves every `breakdown` empty
+    and the `rules` without `sources`, which would name the providers; `breakdown` gives the
+    breakdown by provider, category, and currency, and the providers' rules. No level returns
+    the names, memos, or individual payments of the cost items. The periods stop at the one
+    that holds today (UTC): a `to` after today reads as today, and a `from` after today gives
+    no period. More than 104 weeks, 60 months, or 20 years, and `to` before `from`, are a 422
+    naming `to`.
+  tags: [instance]
+  security: []
+  parameters:
+    - name: granularity
+      in: query
+      required: true
+      schema:
+        $ref: ../components/schemas/CostGranularity.yaml
+    - name: from
+      in: query
+      required: true
+      description: A date in the first period.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: to
+      in: query
+      required: true
+      description: A date in the last period; a date after today reads as today.
+      schema:
+        $ref: ../components/schemas/CalendarDate.yaml
+    - name: basis
+      in: query
+      required: false
+      description: How the totals place a payment; `amortized` by default.
+      schema:
+        $ref: ../components/schemas/CostBasis.yaml
+  responses:
+    "200":
+      description: The public totals.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/CostTotals.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -21,6 +21,11 @@ export type About = {
    */
   crawlers: { searchIndexing: Instance["search_indexing"]; aiUsage: Instance["ai_usage"] } | undefined;
   /**
+   * How much of its running costs the instance publishes (FR-903, ADR-0067 §8); undefined while the instance has not
+   * loaded.
+   */
+  finance: Instance["finance_visibility"] | undefined;
+  /**
    * Where users get the source code the server runs (AGPL-3.0 section 13, ADR-0011): an https URL or a mailto: URI;
    * undefined while the instance has not loaded.
    */
@@ -51,6 +56,7 @@ export function useAbout(): About {
     thumbnail: instance?.thumbnail,
     contact: instance?.contact,
     crawlers: instance === undefined ? undefined : { searchIndexing: instance.search_indexing, aiUsage: instance.ai_usage },
+    finance: instance?.finance_visibility,
     sourceUrl: instance?.source_url,
   };
 }

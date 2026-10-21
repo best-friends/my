@@ -91,6 +91,18 @@
     "defaultMessage": "この表明が法的にどう扱われるかは国によって異なります。EU では、デジタル単一市場における著作権指令 4 条 3 項にいうテキストとデータのマイニングに対する機械可読な権利の留保として示しています。日本では、著作権法 30 条の 4 が情報解析のための多くの利用を許諾なしに認めているため、この表明は法的な拒否として扱われない場合があります。それでも多くの事業者は、こうした表明に自主的に従っています。このページは法的な助言ではありません。",
     "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
   },
+  "about.costs.title": {
+    "defaultMessage": "運営の費用",
+    "description": "Heading of the section of the server's information page about what running the server costs, shown when the server publishes its costs."
+  },
+  "about.costs.description": {
+    "defaultMessage": "{visibility, select, breakdown {このサーバーは、運営にかかる費用を週・月・年ごとに、事業者と区分の内訳とともに公開しています。項目の名前・メモ・個々の支払いは公開しません。} other {このサーバーは、運営にかかる費用の合計を週・月・年ごとに公開しています。内訳・項目の名前・個々の支払いは公開しません。}}",
+    "description": "What the server publishes of its running costs, by the server setting finance_visibility (totals or breakdown)."
+  },
+  "about.costs.link": {
+    "defaultMessage": "運営の費用を見る",
+    "description": "Link from the server's information page to the page of the server's running costs."
+  },
   "about.rules.title": {
     "defaultMessage": "ルール",
     "description": "Heading of the section of the server's information page with the server's rules."
@@ -4214,6 +4226,42 @@
   "admin.settings.domain_actions.comments.all": {
     "defaultMessage": "一覧を見られる人なら誰でもコメントを見られます。",
     "description": "Description of showing the comments of the domain actions to everyone."
+  },
+  "admin.settings.finance.title": {
+    "defaultMessage": "運営の費用",
+    "description": "Heading of the section of the publication of the running costs in the server settings."
+  },
+  "admin.settings.finance.description": {
+    "defaultMessage": "費用の画面で記録した費用の合計を、情報ページと API で公開できます。項目の名前・メモ・個々の支払いは、どの段階でも公開しません。",
+    "description": "Explanation of the publication of the running costs in the server settings."
+  },
+  "admin.settings.finance.visibility": {
+    "defaultMessage": "公開する範囲",
+    "description": "Label of the radio buttons of how much of the running costs the server publishes."
+  },
+  "admin.settings.finance.private": {
+    "defaultMessage": "公開しない",
+    "description": "Choice of not publishing the running costs."
+  },
+  "admin.settings.finance.private.description": {
+    "defaultMessage": "費用を管理する人だけが見られます。",
+    "description": "Description of not publishing the running costs."
+  },
+  "admin.settings.finance.totals": {
+    "defaultMessage": "合計だけ",
+    "description": "Choice of publishing the totals of the running costs only."
+  },
+  "admin.settings.finance.totals.description": {
+    "defaultMessage": "誰でも、週・月・年ごとの通貨ごとの合計を見られます。",
+    "description": "Description of publishing the totals of the running costs only."
+  },
+  "admin.settings.finance.breakdown": {
+    "defaultMessage": "合計と内訳",
+    "description": "Choice of publishing the running costs with their breakdown by provider and category."
+  },
+  "admin.settings.finance.breakdown.description": {
+    "defaultMessage": "誰でも、事業者と区分ごとの合計も見られます。どの事業者（クラウドなど）でこのサーバーを動かしているかが知られます。",
+    "description": "Description of publishing the running costs with their breakdown, which reveals the providers that run the server."
   },
   "admin.settings.crawlers.title": {
     "defaultMessage": "検索エンジンと AI",
@@ -9143,113 +9191,153 @@
     "defaultMessage": "このサーバーの運営にかかる費用（単発の支払いと定期的な支払い）を記録し、合計を見ます。項目とその名前・メモは公開されません。",
     "description": "Introduction of the costs screen."
   },
+  "admin.finance.visibility": {
+    "defaultMessage": "{visibility, select, totals {情報ページはこの費用の合計を、内訳なしで公開しています。} breakdown {情報ページはこの費用の合計と、事業者・区分ごとの内訳を公開しています。} other {この費用は公開していません。}}",
+    "description": "What the server publishes of the costs on its information page, on the costs screen, by the server setting finance_visibility (private, totals, or breakdown)."
+  },
+  "admin.finance.visibility.change": {
+    "defaultMessage": "サーバーの設定で変える",
+    "description": "Link from the costs screen to the server settings, where the publication of the costs is chosen; shown to the viewers who may change the server settings."
+  },
   "admin.finance.totals.title": {
     "defaultMessage": "集計",
     "description": "Heading of the section with the totals by period on the costs screen."
   },
-  "admin.finance.basis": {
+  "costs.basis": {
     "defaultMessage": "計上のしかた",
-    "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen."
+    "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen and the public costs page."
   },
-  "admin.finance.basis.amortized": {
+  "costs.basis.amortized": {
     "defaultMessage": "按分",
-    "description": "Choice of counting a payment for more than a month (a yearly domain) by day over the days it pays for, on the costs screen. The default."
+    "description": "Choice of counting a payment for more than a month (a yearly domain) by day over the days it pays for, on the costs screen and the public costs page. The default."
   },
-  "admin.finance.basis.amortized.description": {
+  "costs.basis.amortized.description": {
     "defaultMessage": "1 か月や 1 週間あたりの費用を見ます。年払いは次の支払いまで日割りで載ります。",
-    "description": "Explanation of the spread choice on the costs screen."
+    "description": "Explanation of the spread choice on the costs screen and the public costs page."
   },
-  "admin.finance.basis.cash": {
+  "costs.basis.cash": {
     "defaultMessage": "現金主義",
-    "description": "Choice of counting each payment on the date it is paid, on the costs screen."
+    "description": "Choice of counting each payment on the date it is paid, on the costs screen and the public costs page."
   },
-  "admin.finance.basis.cash.description": {
+  "costs.basis.cash.description": {
     "defaultMessage": "いつ何を払ったかを見ます。明細との照合に使います。",
-    "description": "Explanation of the payment-date choice on the costs screen."
+    "description": "Explanation of the payment-date choice on the costs screen and the public costs page."
   },
-  "admin.finance.granularity": {
+  "costs.granularity": {
     "defaultMessage": "期間",
-    "description": "Accessible name of the tabs that choose weeks, months, or years for the totals on the costs screen."
+    "description": "Accessible name of the tabs that choose weeks, months, or years for the totals on the costs screen and the public costs page."
   },
-  "admin.finance.granularity.week": {
+  "costs.granularity.week": {
     "defaultMessage": "週",
-    "description": "Tab of the totals by ISO week on the costs screen."
+    "description": "Tab of the totals by ISO week on the costs screen and the public costs page."
   },
-  "admin.finance.granularity.month": {
+  "costs.granularity.month": {
     "defaultMessage": "月",
-    "description": "Tab of the totals by calendar month on the costs screen."
+    "description": "Tab of the totals by calendar month on the costs screen and the public costs page."
   },
-  "admin.finance.granularity.year": {
+  "costs.granularity.year": {
     "defaultMessage": "年",
-    "description": "Tab of the totals by calendar year on the costs screen."
+    "description": "Tab of the totals by calendar year on the costs screen and the public costs page."
   },
-  "admin.finance.totals.caption": {
+  "costs.totals.caption": {
     "defaultMessage": "{granularity}ごとの合計（{basis}）",
-    "description": "Accessible caption of the table of totals on the costs screen: the chosen period kind and the way payments are counted."
+    "description": "Accessible caption of the table of totals on the costs screen and the public costs page: the chosen period kind and the way payments are counted."
   },
-  "admin.finance.totals.period": {
+  "costs.totals.period": {
     "defaultMessage": "期間",
-    "description": "Column header of the period in the table of totals on the costs screen."
+    "description": "Column header of the period in the table of totals on the costs screen and the public costs page."
   },
-  "admin.finance.totals.total": {
+  "costs.totals.total": {
     "defaultMessage": "合計",
-    "description": "Column header of the total in the table of totals on the costs screen."
+    "description": "Column header of the total in the table of totals on the costs screen and the public costs page."
   },
-  "admin.finance.totals.none": {
+  "costs.totals.none": {
     "defaultMessage": "なし",
-    "description": "Total of a period without any cost on the costs screen."
+    "description": "Total of a period without any cost on the costs screen and the public costs page."
   },
-  "admin.finance.totals.plus": {
+  "costs.totals.plus": {
     "defaultMessage": "{sum} + {amount}",
-    "description": "Totals in different currencies, which are never converted, put together on the costs screen: an amount added to the amounts before it."
+    "description": "Totals in different currencies, which are never converted, put together on the costs screen and the public costs page: an amount added to the amounts before it."
   },
-  "admin.finance.totals.estimated": {
+  "costs.totals.estimated": {
     "defaultMessage": "見込みを含む",
-    "description": "Badge of a period whose total includes imported charges that the cloud provider has not closed yet and may still change, on the costs screen."
+    "description": "Badge of a period whose total includes imported charges that the cloud provider has not closed yet and may still change, on the costs screen and the public costs page."
   },
-  "admin.finance.period.week": {
+  "costs.period.week": {
     "defaultMessage": "{range}（{week}）",
-    "description": "A week of the totals on the costs screen: its dates and its ISO week number such as 2026-W17."
+    "description": "A week of the totals on the costs screen and the public costs page: its dates and its ISO week number such as 2026-W17."
   },
-  "admin.finance.breakdown.title": {
+  "costs.breakdown.title": {
     "defaultMessage": "{period}の内訳",
-    "description": "Heading of the breakdown of the current period by provider and category on the costs screen."
+    "description": "Heading of the breakdown of the current period by provider and category on the costs screen and the public costs page."
   },
-  "admin.finance.breakdown.empty": {
+  "costs.breakdown.empty": {
     "defaultMessage": "この期間の費用はありません。",
-    "description": "What the breakdown says for a period without costs on the costs screen."
+    "description": "What the breakdown says for a period without costs on the costs screen and the public costs page."
   },
-  "admin.finance.rules.title": {
+  "costs.rules.title": {
     "defaultMessage": "期間の区切り方",
-    "description": "Heading of the rules that cut the periods of the totals on the costs screen."
+    "description": "Heading of the rules that cut the periods of the totals on the costs screen and the public costs page."
   },
-  "admin.finance.rules.dates": {
+  "costs.rules.dates": {
     "defaultMessage": "費用は明細のとおり暦の日付で数え、タイムゾーンで区切りません。誰が見ても同じ合計になります。",
-    "description": "Rule of the totals on the costs screen: dates without time zones."
+    "description": "Rule of the totals on the costs screen and the public costs page: dates without time zones."
   },
-  "admin.finance.rules.week_start": {
+  "costs.rules.week_start": {
     "defaultMessage": "週は月曜から日曜です（ISO 8601）。年をまたぐ週は、年の集計では 2 つの年に分かれます。",
-    "description": "Rule of the totals on the costs screen: the first day of a week."
+    "description": "Rule of the totals on the costs screen and the public costs page: the first day of a week."
   },
-  "admin.finance.rules.amortized": {
+  "costs.rules.amortized": {
     "defaultMessage": "1 か月より長い周期の支払いは、支払日から次の支払日の前日まで日割りで載せ、合計が支払額に一致するように端数を丸めます。ほかの支払いは支払日に載せます。",
-    "description": "Rule of the spread totals on the costs screen."
+    "description": "Rule of the spread totals on the costs screen and the public costs page."
   },
-  "admin.finance.rules.cash": {
+  "costs.rules.cash": {
     "defaultMessage": "各回の支払いを支払日の期間に載せます。",
-    "description": "Rule of the payment-date totals on the costs screen."
+    "description": "Rule of the payment-date totals on the costs screen and the public costs page."
   },
-  "admin.finance.rules.currencies": {
+  "costs.rules.currencies": {
     "defaultMessage": "通貨ごとに合計し、換算しません。",
-    "description": "Rule of the totals on the costs screen: currencies."
+    "description": "Rule of the totals on the costs screen and the public costs page: currencies."
   },
-  "admin.finance.rules.source": {
+  "costs.rules.source": {
     "defaultMessage": "{provider} の請求月は {timeZone} のタイムゾーンで区切られます。取り込んだ料金は請求月の日数に日割りで載ります。",
-    "description": "Rule of the totals on the costs screen: the time zone of an imported cloud provider's billing months (UTC, America/Los_Angeles)."
+    "description": "Rule of the totals on the costs screen and the public costs page: the time zone of an imported cloud provider's billing months (UTC, America/Los_Angeles)."
   },
-  "admin.finance.rules.estimated": {
+  "costs.rules.estimated": {
     "defaultMessage": "事業者がまだ締めていない月の料金は見込みで、まだ変わることがあります。",
-    "description": "Rule of the totals on the costs screen: estimates of imported charges."
+    "description": "Rule of the totals on the costs screen and the public costs page: estimates of imported charges."
+  },
+  "costs.public.title": {
+    "defaultMessage": "{instance} の運営の費用",
+    "description": "Heading and document title of the public page of the server's running costs. {instance} is the name of this server."
+  },
+  "costs.public.description": {
+    "defaultMessage": "このサーバーの運営にかかる費用を、運営者の記録から集計したものです。通貨の違う金額は別々に合計し、換算しません。",
+    "description": "Introduction of the public page of the server's running costs."
+  },
+  "costs.public.totals_only": {
+    "defaultMessage": "このサーバーは合計だけを公開し、何にかかったかの内訳は公開していません。",
+    "description": "Note on the public page of the running costs when the server publishes the totals without their breakdown."
+  },
+  "costs.public.hidden": {
+    "defaultMessage": "このサーバーは運営の費用を公開していません。",
+    "description": "What the public page of the running costs says when the server publishes nothing."
+  },
+  "costs.public.about": {
+    "defaultMessage": "このサーバーについて",
+    "description": "Link from the public page of the running costs, when the server publishes nothing, back to the server's information page."
+  },
+  "costs.public.loading": {
+    "defaultMessage": "運営の費用を読み込んでいます",
+    "description": "Accessible name of the progress indicator while the totals of the running costs load on their public page."
+  },
+  "costs.public.failed": {
+    "defaultMessage": "運営の費用を読み込めませんでした",
+    "description": "Heading shown in place of the totals of the running costs when they could not be loaded."
+  },
+  "costs.public.retry": {
+    "defaultMessage": "もう一度試す",
+    "description": "Button that tries again to load the totals of the running costs after a failure."
   },
   "admin.finance.new.title": {
     "defaultMessage": "費用を登録する",
@@ -9271,39 +9359,39 @@
     "defaultMessage": "支払い先。内訳は大文字と小文字の違いを区別せずにまとめます。",
     "description": "Explanation of the provider of a cost on the costs screen."
   },
-  "admin.finance.category": {
+  "costs.category": {
     "defaultMessage": "区分",
-    "description": "Label of the category of a cost on the costs screen."
+    "description": "Label of the category of a cost on the costs screen and the public costs page."
   },
-  "admin.finance.category.compute": {
+  "costs.category.compute": {
     "defaultMessage": "サーバー",
     "description": "Category of a cost: compute, the servers or functions that run the instance."
   },
-  "admin.finance.category.database": {
+  "costs.category.database": {
     "defaultMessage": "データベース",
     "description": "Category of a cost: the database."
   },
-  "admin.finance.category.storage": {
+  "costs.category.storage": {
     "defaultMessage": "ストレージ",
     "description": "Category of a cost: storage of media and backups."
   },
-  "admin.finance.category.network": {
+  "costs.category.network": {
     "defaultMessage": "ネットワーク",
     "description": "Category of a cost: network, CDN, and data transfer."
   },
-  "admin.finance.category.domain": {
+  "costs.category.domain": {
     "defaultMessage": "ドメイン",
     "description": "Category of a cost: domain registration and renewal."
   },
-  "admin.finance.category.email": {
+  "costs.category.email": {
     "defaultMessage": "メール",
     "description": "Category of a cost: sending email."
   },
-  "admin.finance.category.software": {
+  "costs.category.software": {
     "defaultMessage": "ソフトウェア",
     "description": "Category of a cost: software and services."
   },
-  "admin.finance.category.other": {
+  "costs.category.other": {
     "defaultMessage": "その他",
     "description": "Category of a cost: anything else, and taxes."
   },

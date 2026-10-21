@@ -11,31 +11,26 @@ import { useIntl } from "react-intl";
 import { useApi } from "../../../lib/auth/SessionProvider";
 import { ApiError, errorMessage } from "../../../lib/errors";
 import { useT } from "../../../lib/i18n";
+import { type CostBasis, type CostCategory, type CostGranularity, type CostTotals, utcDate } from "../../costs";
 import { type PagedList, toPagedList } from "../../moderation";
 import {
   type BillingImport,
   billingImportsQueryOptions,
   cancelCostItemMutation,
-  type CostBasis,
-  type CostCategory,
-  type CostGranularity,
   type CostItem,
   costItemsQueryOptions,
   costMemoLimit,
   costNameLimit,
   type CostSchedule,
-  type CostTotals,
   costTotalsQueryOptions,
   createCostItemMutation,
   maxCostInterval,
-  type Money,
   refreshBillingImports,
   refreshCosts,
   reviseCostItemPriceMutation,
   runBillingImportMutation,
   setCostItemEndMutation,
   updateCostItemMutation,
-  utcDate,
 } from "../api/finance";
 import { characterCount } from "./languages";
 
@@ -55,24 +50,6 @@ export function useCostTotals(granularity: CostGranularity, basis: CostBasis, to
 export function useBillingImports(): BillingImport[] {
   const api = useApi();
   return useSuspenseQuery(billingImportsQueryOptions(api)).data.items;
-}
-
-/** Formats an amount of the API in its currency, in the viewer's locale (ADR-0067 §10). */
-export function useFormatMoney(): (money: Money) => string {
-  const intl = useIntl();
-  // The amount is a decimal string with the digits of its currency; a Number keeps them for any real cost.
-  return (money) => intl.formatNumber(Number(money.amount), { style: "currency", currency: money.currency });
-}
-
-/** Formats the totals of a period, one per currency and never converted: "¥12,300 + $45.67", or zero without any. */
-export function useFormatTotals(): (totals: readonly Money[]) => string {
-  const t = useT();
-  const format = useFormatMoney();
-  return (totals) => {
-    const [first, ...rest] = totals.map(format);
-    if (first === undefined) return t("client:admin.finance.totals.none");
-    return rest.reduce((sum, amount) => t("client:admin.finance.totals.plus", { sum, amount }), first);
-  };
 }
 
 /** Formats a calendar date of the API (`YYYY-MM-DD`): the same day in every time zone. */

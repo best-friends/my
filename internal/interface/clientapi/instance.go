@@ -73,6 +73,8 @@ func (s *Server) GetInstance(ctx context.Context, _ GetInstanceRequestObject) (G
 	out.SendsEmail = s.o.SendsEmail
 	// What the instance states to search engines and AI crawlers (FR-725, ADR-0057).
 	out.SearchIndexing, out.AiUsage = SearchIndexing(settings.SearchIndexing()), AIUsage(settings.AIUsage())
+	// How much of the costs GET /instance/cost_totals publishes (FR-903, ADR-0067 §8).
+	out.FinanceVisibility = FinanceVisibility(settings.FinanceVisibility())
 	if key := s.pushServerKey(); key != "" {
 		out.PushServerKey = &key
 	}

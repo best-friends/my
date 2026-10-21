@@ -91,6 +91,18 @@
     "defaultMessage": "What such a statement means in law depends on the country. In the EU, it is meant as a machine-readable reservation of rights against text and data mining under Article 4(3) of the Directive on Copyright in the Digital Single Market. In Japan, Article 30-4 of the Copyright Act allows many uses for data analysis without permission, so the statement may not bind them legally; many operators still follow such statements voluntarily. This page is not legal advice.",
     "description": "The legal positioning of the server's AI statement: Japan's Copyright Act Article 30-4 and the EU DSM Directive Article 4. Must not promise a legal effect."
   },
+  "about.costs.title": {
+    "defaultMessage": "Running costs",
+    "description": "Heading of the section of the server's information page about what running the server costs, shown when the server publishes its costs."
+  },
+  "about.costs.description": {
+    "defaultMessage": "{visibility, select, breakdown {This server publishes what it costs to run by week, month, and year, with a breakdown by provider and category. The names of the items, their notes, and the individual payments are not published.} other {This server publishes the totals of what it costs to run by week, month, and year. What they are spent on, the names of the items, and the individual payments are not published.}}",
+    "description": "What the server publishes of its running costs, by the server setting finance_visibility (totals or breakdown)."
+  },
+  "about.costs.link": {
+    "defaultMessage": "See the running costs",
+    "description": "Link from the server's information page to the page of the server's running costs."
+  },
   "about.rules.title": {
     "defaultMessage": "Rules",
     "description": "Heading of the section of the server's information page with the server's rules."
@@ -4214,6 +4226,42 @@
   "admin.settings.domain_actions.comments.all": {
     "defaultMessage": "Everyone who may read the list sees the comments.",
     "description": "Description of showing the comments of the domain actions to everyone."
+  },
+  "admin.settings.finance.title": {
+    "defaultMessage": "Running costs",
+    "description": "Heading of the section of the publication of the running costs in the server settings."
+  },
+  "admin.settings.finance.description": {
+    "defaultMessage": "The about page and the API can publish the totals of the costs recorded on the Costs screen. The names and notes of the items and the individual payments are never published.",
+    "description": "Explanation of the publication of the running costs in the server settings."
+  },
+  "admin.settings.finance.visibility": {
+    "defaultMessage": "What to publish",
+    "description": "Label of the radio buttons of how much of the running costs the server publishes."
+  },
+  "admin.settings.finance.private": {
+    "defaultMessage": "Nothing",
+    "description": "Choice of not publishing the running costs."
+  },
+  "admin.settings.finance.private.description": {
+    "defaultMessage": "Only the people who manage the costs see them.",
+    "description": "Description of not publishing the running costs."
+  },
+  "admin.settings.finance.totals": {
+    "defaultMessage": "Totals",
+    "description": "Choice of publishing the totals of the running costs only."
+  },
+  "admin.settings.finance.totals.description": {
+    "defaultMessage": "Everyone sees the total of each currency by week, month, and year.",
+    "description": "Description of publishing the totals of the running costs only."
+  },
+  "admin.settings.finance.breakdown": {
+    "defaultMessage": "Totals and breakdown",
+    "description": "Choice of publishing the running costs with their breakdown by provider and category."
+  },
+  "admin.settings.finance.breakdown.description": {
+    "defaultMessage": "Everyone also sees the totals by provider and category. This reveals which providers, such as cloud services, run this server.",
+    "description": "Description of publishing the running costs with their breakdown, which reveals the providers that run the server."
   },
   "admin.settings.crawlers.title": {
     "defaultMessage": "Search engines and AI",
@@ -9143,113 +9191,153 @@
     "defaultMessage": "Record the costs of running this server, paid once or regularly, and see their totals. The items, their names and memos are never published.",
     "description": "Introduction of the costs screen."
   },
+  "admin.finance.visibility": {
+    "defaultMessage": "{visibility, select, totals {The about page publishes the totals of these costs, without their breakdown.} breakdown {The about page publishes the totals of these costs and their breakdown by provider and category.} other {These costs are not published.}}",
+    "description": "What the server publishes of the costs on its information page, on the costs screen, by the server setting finance_visibility (private, totals, or breakdown)."
+  },
+  "admin.finance.visibility.change": {
+    "defaultMessage": "Change in the server settings",
+    "description": "Link from the costs screen to the server settings, where the publication of the costs is chosen; shown to the viewers who may change the server settings."
+  },
   "admin.finance.totals.title": {
     "defaultMessage": "Totals",
     "description": "Heading of the section with the totals by period on the costs screen."
   },
-  "admin.finance.basis": {
+  "costs.basis": {
     "defaultMessage": "How payments are counted",
-    "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen."
+    "description": "Label of the choice between spreading long payments over the days they cover and counting each payment on its date, on the costs screen and the public costs page."
   },
-  "admin.finance.basis.amortized": {
+  "costs.basis.amortized": {
     "defaultMessage": "Spread over the period paid for",
-    "description": "Choice of counting a payment for more than a month (a yearly domain) by day over the days it pays for, on the costs screen. The default."
+    "description": "Choice of counting a payment for more than a month (a yearly domain) by day over the days it pays for, on the costs screen and the public costs page. The default."
   },
-  "admin.finance.basis.amortized.description": {
+  "costs.basis.amortized.description": {
     "defaultMessage": "Shows what a month or a week costs: a yearly payment counts by day until the next one.",
-    "description": "Explanation of the spread choice on the costs screen."
+    "description": "Explanation of the spread choice on the costs screen and the public costs page."
   },
-  "admin.finance.basis.cash": {
+  "costs.basis.cash": {
     "defaultMessage": "On the payment date",
-    "description": "Choice of counting each payment on the date it is paid, on the costs screen."
+    "description": "Choice of counting each payment on the date it is paid, on the costs screen and the public costs page."
   },
-  "admin.finance.basis.cash.description": {
+  "costs.basis.cash.description": {
     "defaultMessage": "Shows what was paid when: compare it with your statements.",
-    "description": "Explanation of the payment-date choice on the costs screen."
+    "description": "Explanation of the payment-date choice on the costs screen and the public costs page."
   },
-  "admin.finance.granularity": {
+  "costs.granularity": {
     "defaultMessage": "Period",
-    "description": "Accessible name of the tabs that choose weeks, months, or years for the totals on the costs screen."
+    "description": "Accessible name of the tabs that choose weeks, months, or years for the totals on the costs screen and the public costs page."
   },
-  "admin.finance.granularity.week": {
+  "costs.granularity.week": {
     "defaultMessage": "Weeks",
-    "description": "Tab of the totals by ISO week on the costs screen."
+    "description": "Tab of the totals by ISO week on the costs screen and the public costs page."
   },
-  "admin.finance.granularity.month": {
+  "costs.granularity.month": {
     "defaultMessage": "Months",
-    "description": "Tab of the totals by calendar month on the costs screen."
+    "description": "Tab of the totals by calendar month on the costs screen and the public costs page."
   },
-  "admin.finance.granularity.year": {
+  "costs.granularity.year": {
     "defaultMessage": "Years",
-    "description": "Tab of the totals by calendar year on the costs screen."
+    "description": "Tab of the totals by calendar year on the costs screen and the public costs page."
   },
-  "admin.finance.totals.caption": {
+  "costs.totals.caption": {
     "defaultMessage": "Totals by {granularity}, {basis}",
-    "description": "Accessible caption of the table of totals on the costs screen: the chosen period kind and the way payments are counted."
+    "description": "Accessible caption of the table of totals on the costs screen and the public costs page: the chosen period kind and the way payments are counted."
   },
-  "admin.finance.totals.period": {
+  "costs.totals.period": {
     "defaultMessage": "Period",
-    "description": "Column header of the period in the table of totals on the costs screen."
+    "description": "Column header of the period in the table of totals on the costs screen and the public costs page."
   },
-  "admin.finance.totals.total": {
+  "costs.totals.total": {
     "defaultMessage": "Total",
-    "description": "Column header of the total in the table of totals on the costs screen."
+    "description": "Column header of the total in the table of totals on the costs screen and the public costs page."
   },
-  "admin.finance.totals.none": {
+  "costs.totals.none": {
     "defaultMessage": "Nothing",
-    "description": "Total of a period without any cost on the costs screen."
+    "description": "Total of a period without any cost on the costs screen and the public costs page."
   },
-  "admin.finance.totals.plus": {
+  "costs.totals.plus": {
     "defaultMessage": "{sum} + {amount}",
-    "description": "Totals in different currencies, which are never converted, put together on the costs screen: an amount added to the amounts before it."
+    "description": "Totals in different currencies, which are never converted, put together on the costs screen and the public costs page: an amount added to the amounts before it."
   },
-  "admin.finance.totals.estimated": {
+  "costs.totals.estimated": {
     "defaultMessage": "Includes estimates",
-    "description": "Badge of a period whose total includes imported charges that the cloud provider has not closed yet and may still change, on the costs screen."
+    "description": "Badge of a period whose total includes imported charges that the cloud provider has not closed yet and may still change, on the costs screen and the public costs page."
   },
-  "admin.finance.period.week": {
+  "costs.period.week": {
     "defaultMessage": "{range} ({week})",
-    "description": "A week of the totals on the costs screen: its dates and its ISO week number such as 2026-W17."
+    "description": "A week of the totals on the costs screen and the public costs page: its dates and its ISO week number such as 2026-W17."
   },
-  "admin.finance.breakdown.title": {
+  "costs.breakdown.title": {
     "defaultMessage": "Breakdown of {period}",
-    "description": "Heading of the breakdown of the current period by provider and category on the costs screen."
+    "description": "Heading of the breakdown of the current period by provider and category on the costs screen and the public costs page."
   },
-  "admin.finance.breakdown.empty": {
+  "costs.breakdown.empty": {
     "defaultMessage": "No costs in this period.",
-    "description": "What the breakdown says for a period without costs on the costs screen."
+    "description": "What the breakdown says for a period without costs on the costs screen and the public costs page."
   },
-  "admin.finance.rules.title": {
+  "costs.rules.title": {
     "defaultMessage": "How the periods are counted",
-    "description": "Heading of the rules that cut the periods of the totals on the costs screen."
+    "description": "Heading of the rules that cut the periods of the totals on the costs screen and the public costs page."
   },
-  "admin.finance.rules.dates": {
+  "costs.rules.dates": {
     "defaultMessage": "Costs are dated by calendar day, as on the statement, without a time zone: the totals are the same for everyone.",
-    "description": "Rule of the totals on the costs screen: dates without time zones."
+    "description": "Rule of the totals on the costs screen and the public costs page: dates without time zones."
   },
-  "admin.finance.rules.week_start": {
+  "costs.rules.week_start": {
     "defaultMessage": "Weeks run from Monday to Sunday (ISO 8601). A week across the new year is split between the two years.",
-    "description": "Rule of the totals on the costs screen: the first day of a week."
+    "description": "Rule of the totals on the costs screen and the public costs page: the first day of a week."
   },
-  "admin.finance.rules.amortized": {
+  "costs.rules.amortized": {
     "defaultMessage": "A payment for more than a month is spread by day from its date until the day before the next payment, rounded so that the days add up to the amount paid. Other payments count on their dates.",
-    "description": "Rule of the spread totals on the costs screen."
+    "description": "Rule of the spread totals on the costs screen and the public costs page."
   },
-  "admin.finance.rules.cash": {
+  "costs.rules.cash": {
     "defaultMessage": "Every payment counts on its payment date.",
-    "description": "Rule of the payment-date totals on the costs screen."
+    "description": "Rule of the payment-date totals on the costs screen and the public costs page."
   },
-  "admin.finance.rules.currencies": {
+  "costs.rules.currencies": {
     "defaultMessage": "Each currency is totaled on its own and never converted.",
-    "description": "Rule of the totals on the costs screen: currencies."
+    "description": "Rule of the totals on the costs screen and the public costs page: currencies."
   },
-  "admin.finance.rules.source": {
+  "costs.rules.source": {
     "defaultMessage": "{provider} bills by month in the {timeZone} time zone; its charges are spread by day over each billing month.",
-    "description": "Rule of the totals on the costs screen: the time zone of an imported cloud provider's billing months (UTC, America/Los_Angeles)."
+    "description": "Rule of the totals on the costs screen and the public costs page: the time zone of an imported cloud provider's billing months (UTC, America/Los_Angeles)."
   },
-  "admin.finance.rules.estimated": {
+  "costs.rules.estimated": {
     "defaultMessage": "A month that its provider has not closed is an estimate and may still change.",
-    "description": "Rule of the totals on the costs screen: estimates of imported charges."
+    "description": "Rule of the totals on the costs screen and the public costs page: estimates of imported charges."
+  },
+  "costs.public.title": {
+    "defaultMessage": "Running costs of {instance}",
+    "description": "Heading and document title of the public page of the server's running costs. {instance} is the name of this server."
+  },
+  "costs.public.description": {
+    "defaultMessage": "What running this server costs, as its operators record it. Amounts in different currencies are totaled separately and never converted.",
+    "description": "Introduction of the public page of the server's running costs."
+  },
+  "costs.public.totals_only": {
+    "defaultMessage": "This server publishes the totals only, not what they are spent on.",
+    "description": "Note on the public page of the running costs when the server publishes the totals without their breakdown."
+  },
+  "costs.public.hidden": {
+    "defaultMessage": "This server does not publish its running costs.",
+    "description": "What the public page of the running costs says when the server publishes nothing."
+  },
+  "costs.public.about": {
+    "defaultMessage": "About this server",
+    "description": "Link from the public page of the running costs, when the server publishes nothing, back to the server's information page."
+  },
+  "costs.public.loading": {
+    "defaultMessage": "Loading the running costs",
+    "description": "Accessible name of the progress indicator while the totals of the running costs load on their public page."
+  },
+  "costs.public.failed": {
+    "defaultMessage": "Couldn't load the running costs",
+    "description": "Heading shown in place of the totals of the running costs when they could not be loaded."
+  },
+  "costs.public.retry": {
+    "defaultMessage": "Try again",
+    "description": "Button that tries again to load the totals of the running costs after a failure."
   },
   "admin.finance.new.title": {
     "defaultMessage": "Record a cost",
@@ -9271,39 +9359,39 @@
     "defaultMessage": "Who you pay. The breakdown groups the same provider however it is capitalized.",
     "description": "Explanation of the provider of a cost on the costs screen."
   },
-  "admin.finance.category": {
+  "costs.category": {
     "defaultMessage": "Category",
-    "description": "Label of the category of a cost on the costs screen."
+    "description": "Label of the category of a cost on the costs screen and the public costs page."
   },
-  "admin.finance.category.compute": {
+  "costs.category.compute": {
     "defaultMessage": "Servers",
     "description": "Category of a cost: compute, the servers or functions that run the instance."
   },
-  "admin.finance.category.database": {
+  "costs.category.database": {
     "defaultMessage": "Database",
     "description": "Category of a cost: the database."
   },
-  "admin.finance.category.storage": {
+  "costs.category.storage": {
     "defaultMessage": "Storage",
     "description": "Category of a cost: storage of media and backups."
   },
-  "admin.finance.category.network": {
+  "costs.category.network": {
     "defaultMessage": "Network",
     "description": "Category of a cost: network, CDN, and data transfer."
   },
-  "admin.finance.category.domain": {
+  "costs.category.domain": {
     "defaultMessage": "Domain",
     "description": "Category of a cost: domain registration and renewal."
   },
-  "admin.finance.category.email": {
+  "costs.category.email": {
     "defaultMessage": "Email",
     "description": "Category of a cost: sending email."
   },
-  "admin.finance.category.software": {
+  "costs.category.software": {
     "defaultMessage": "Software",
     "description": "Category of a cost: software and services."
   },
-  "admin.finance.category.other": {
+  "costs.category.other": {
     "defaultMessage": "Other",
     "description": "Category of a cost: anything else, and taxes."
   },
