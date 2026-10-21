@@ -1,6 +1,6 @@
 # ADR-0051: カスタム絵文字
 
-- Status: Accepted
+- Status: Accepted（§1 の `custom_emojis` の行と、§5 の「管理 API・CLI・管理画面の絵文字の操作はすべてこの権限で行う」を ADR-0070（権限の分割: 絵文字の作成と会計の閲覧） が置き換える）
 - Date: 2026-10-20
 - Deciders: @rosylilly
 - Issue: #618
