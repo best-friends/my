@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A report of an account to the moderators.
+type: object
+required: [account_id, category]
+properties:
+  account_id:
+    description: The account reported, local or remote.
+    allOf:
+      - $ref: ./Id.yaml
+  status_ids:
+    description: Posts of the account that the user can see, up to 20.
+    type: array
+    maxItems: 20
+    items:
+      $ref: ./Id.yaml
+  category:
+    $ref: ./ReportCategory.yaml
+  rule_ids:
+    description: |
+      Instance rules in effect that the account broke, up to 20; only with the
+      `violation` category.
+    type: array
+    maxItems: 20
+    items:
+      $ref: ./Id.yaml
+  comment:
+    description: A comment for the moderators as plain text.
+    type: string
+    maxLength: 1000
+  forward:
+    description: |
+      Asks to forward the report to the server of a remote account, without naming the
+      reporter. It means nothing for a local account.
+    type: boolean
+    default: false

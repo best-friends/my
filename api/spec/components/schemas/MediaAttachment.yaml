@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A media file, as an upload of the user (the media operations) or as an attachment of
+  a status (`Status.media_attachments`). `url`, `preview_url`, `variants`, and `blurhash`
+  are present once the file is `ready`; statuses attach only ready files. In a status,
+  `description` is the status revision's own copy of the alternative text, absent when the
+  attachment has none.
+
+  A file of a remote status is always `ready`: the instance does not process it, so it has
+  no `variants`; `url` and `preview_url` are its media proxy URLs (federation.md §9),
+  `remote_url` its URL on the remote server, and `meta`, `blurhash`, and `type` what the
+  remote server declared.
+type: object
+required: [id, type, state, meta]
+properties:
+  id:
+    $ref: ./Id.yaml
+  type:
+    description: |
+      The kind of media. An accepted upload is an `image`, a `video`, or an `audio` file;
+      a file that failed processing is `unknown`. `gifv` is a remote video that plays like
+      an animated image: muted, looped, without controls.
+    type: string
+    enum: [image, gifv, video, audio, unknown]
+  state:
+    description: |
+      The processing state: `processing` until the server has re-encoded the file,
+      then `ready`, or `failed` when the content could not be processed.
+    type: string
+    enum: [processing, ready, failed]
+  description:
+    description: The alternative text; absent when there is none.
+    type: string
+    maxLength: 1500
+  blurhash:
+    description: The blurhash (https://blurha.sh) of the image, to show while it loads.
+    type: string
+  meta:
+    $ref: ./MediaMeta.yaml
+  variants:
+    $ref: ./MediaVariants.yaml
+  url:
+    description: |
+      Where the file is served on this instance; for an upload, `variants.large.url`, or
+      `variants.animated.large.url` for an animation, and the file itself for a video or
+      audio file.
+    type: string
+    format: uri
+  preview_url:
+    description: |
+      Where its preview is served; for an upload, `variants.small.url` (still). A video or
+      audio file without a poster has none.
+    type: string
+    format: uri
+  remote_url:
+    description: The file's URL on the remote server, for a file of a remote status; clients load `url` instead.
+    type: string
+    format: uri

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new role.
+type: object
+required: [key, position, permissions]
+properties:
+  key:
+    description: The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`.
+    type: string
+    minLength: 1
+    maxLength: 64
+  position:
+    description: The rank of the role, from 0 to 999 (below `admin`).
+    type: integer
+  permissions:
+    description: The permissions that the role grants, each once.
+    type: array
+    items:
+      $ref: ./Permission.yaml

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: retireInstanceRule
+  summary: Retire an instance rule
+  description: |
+    Removes the rule from the rules in effect, at once and for good; reports that cite it
+    still refer to it. Retiring a retired rule changes nothing. An unknown ID is a 404.
+    Needs the `manage_rules` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/RuleId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRule.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

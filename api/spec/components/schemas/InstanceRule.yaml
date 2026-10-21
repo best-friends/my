@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A rule of the instance (FR-705). Its text and hint hold one value each, written in any
+  language and the same in every locale. Reports cite it by `id`.
+type: object
+required: [id, text]
+properties:
+  id:
+    $ref: ./Id.yaml
+  text:
+    description: The rule, on one line, as plain text.
+    type: string
+  hint:
+    description: An explanation of the rule, as plain text; omitted when there is none.
+    type: string

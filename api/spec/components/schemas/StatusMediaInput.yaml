@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The media to attach, in order.
+type: array
+maxItems: 4
+items:
+  $ref: ./StatusMediaItem.yaml

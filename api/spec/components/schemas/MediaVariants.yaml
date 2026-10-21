@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The renditions of a ready media file within the sizes of its purpose (see
+  `MediaUpload.purpose`), never larger than the file. `small`, `medium`, and `large` are
+  still: for an animation, its first frame, and for a video or audio file, its poster
+  (absent without one). Clients pick one by its width (`srcset`), and
+  show `animated` instead only when the user lets animations play and does not prefer
+  reduced motion.
+type: object
+required: [small, medium, large]
+properties:
+  small:
+    description: The still rendition for small views; WebP for an upload.
+    $ref: ./MediaVariant.yaml
+  medium:
+    description: The still rendition for views across a screen; WebP for an upload.
+    $ref: ./MediaVariant.yaml
+  large:
+    description: The largest still rendition, JPEG or PNG for an upload.
+    $ref: ./MediaVariant.yaml
+  animated:
+    $ref: ./MediaAnimatedVariants.yaml

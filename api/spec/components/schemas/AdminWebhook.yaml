@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A webhook endpoint (ADR-0060). Its secret is never shown again after it is made.
+type: object
+required: [id, url, events, state, state_reason, state_changed_at, created_at, updated_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  url:
+    description: Where the messages are posted.
+    type: string
+  description:
+    description: What the webhook is for; omitted for none.
+    type: string
+  events:
+    description: The events it subscribes to, in a stable order.
+    type: array
+    items:
+      $ref: ./WebhookEventType.yaml
+  state:
+    $ref: ./AdminWebhookState.yaml
+  state_reason:
+    $ref: ./AdminWebhookStateReason.yaml
+  state_changed_at:
+    type: string
+    format: date-time
+  failure:
+    $ref: ./AdminWebhookFailure.yaml
+  created_at:
+    type: string
+    format: date-time
+  updated_at:
+    description: When the URL, the description, or the events last changed.
+    type: string
+    format: date-time

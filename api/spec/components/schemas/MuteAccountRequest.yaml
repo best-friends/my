@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The settings of a mute.
+type: object
+properties:
+  notifications:
+    description: Also hide the account's notifications.
+    type: boolean
+    default: true
+  duration:
+    description: How long the mute lasts, in seconds; 0 mutes until unmuted.
+    type: integer
+    minimum: 0
+    maximum: 31536000
+    default: 0

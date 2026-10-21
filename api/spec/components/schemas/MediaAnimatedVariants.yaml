@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The moving renditions of an animation, absent for a still image: animated WebP for
+  `small` and `medium`, and a GIF for `large`.
+type: object
+required: [small, medium, large]
+properties:
+  small:
+    $ref: ./MediaVariant.yaml
+  medium:
+    $ref: ./MediaVariant.yaml
+  large:
+    $ref: ./MediaVariant.yaml

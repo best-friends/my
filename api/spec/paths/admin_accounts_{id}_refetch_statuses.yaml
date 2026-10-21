@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: refetchAccountStatuses
+  summary: Refetch the posts of a remote account from its server
+  description: |
+    Queues the refetch, as `POST /admin/statuses/{id}/refetch` does, of the newest 1000
+    posts of the remote account that are stored and not deleted. The posts are fetched in
+    batches of 100, a minute apart. An unknown account is a 404; a local account is a 422.
+    Needs the `manage_domains` permission. The request is recorded in the audit log;
+    nothing schedules a refetch on its own.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the remote account.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  responses:
+    "204":
+      description: The refetch is queued.
+    default:
+      $ref: ../components/responses/Problem.yaml

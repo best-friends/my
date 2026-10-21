@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
+  `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
+  `webhook-signature`. `data` is what the admin API answers for the object of the event,
+  presented in the transaction of the event: `AdminReport` for `report.*`,
+  `AdminRegistration` for `registration.pending` and `account.created`, `AdminAccount`
+  for `account.updated`, `AdminAccountAction` for `moderation_action.*`, `AdminAppeal`
+  for `appeal.created`, `AdminDomainAction` for `domain_moderation_action.*`,
+  `WebhookCustomEmoji` for `custom_emoji.*`, `WebhookStatus` for `status.created`, and
+  `WebhookTest` for `webhook.test`. No operation returns it; docs/reference/webhooks.md
+  describes it.
+type: object
+required: [type, timestamp, data]
+properties:
+  type:
+    $ref: ./WebhookMessageType.yaml
+  timestamp:
+    description: When the event happened.
+    type: string
+    format: date-time
+  data:
+    type: object

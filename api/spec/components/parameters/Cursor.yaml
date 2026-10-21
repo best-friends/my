@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: cursor
+in: query
+description: The `next_cursor` of the previous page; omitted for the first page.
+required: false
+schema:
+  $ref: ../schemas/Cursor.yaml

@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A relay to register and join.
+type: object
+required: [url]
+properties:
+  protocol:
+    $ref: ./RelayProtocol.yaml
+  url:
+    description: The relay's inbox (`mastodon`) or actor (`litepub`), an https URL.
+    type: string
+    minLength: 1
+    maxLength: 2048
+  receive:
+    description: Whether to take in the public posts it relays; `true` when omitted.
+    type: boolean

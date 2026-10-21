@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+post:
+  operationId: favouriteStatus
+  summary: Favourite a status
+  description: |
+    Favouriting a status that is already favourited changes nothing. A user has one
+    favourite or one emoji reaction on a status, so favouriting takes back the reaction.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:favourites"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: unfavouriteStatus
+  summary: Remove the favourite of a status
+  description: Without a favourite it changes nothing.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:favourites"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

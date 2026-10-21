@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The current text of a key, the same in every locale.
+type: object
+required: [key, body, revised_at]
+properties:
+  key:
+    $ref: ./InstanceTextKey.yaml
+  body:
+    description: |
+      The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+      Empty only in the answer to clearing it.
+    type: string
+  revised_at:
+    description: When the revision was recorded.
+    type: string
+    format: date-time

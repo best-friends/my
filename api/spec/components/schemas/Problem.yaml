@@ -1,0 +1,100 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An RFC 9457 problem document. Besides `about:blank`, `type` is one of
+
+  - `/api/v1/problems/unauthenticated` (401): the operation needs an access token and
+    the request has none.
+  - `/api/v1/problems/invalid-token` (401): the access token is malformed, unknown,
+    expired, or revoked. Refresh it or sign in again.
+  - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
+    `WWW-Authenticate` names.
+  - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
+    use the app (registration pending or rejected, email unverified, the account
+    deactivated or deleted, or a moderation action that disables its login). The user
+    can still sign in to the server's sign-in page, which says why.
+  - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
+    from following it. Unblock it first.
+  - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+    instance accepts.
+  - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+    accepted format or codec (such as HEVC video), or its declared type does not match its
+    content.
+  - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+    many pixels or frames; or the video has too many pixels or frames per second.
+  - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+    instance accepts.
+  - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+    its format.
+  - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+    no longer be changed on its own.
+  - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+    (`GET /streaming`) open as the server allows. Close one first.
+  - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
+    that an admin operation needs.
+  - `/api/v1/problems/already-appealed` (422): the user already appealed the moderation
+    action; an action is appealed once.
+  - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
+    action has passed.
+  - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
+    account is deleted, so it can no longer be appealed or overturned.
+  - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+  - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+    not the user's current password.
+  - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+    built. Wait for it to end.
+  - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+    it is being built, failed, or expired.
+  - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+    carried out. Wait for it to finish.
+  - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+    already used, or is not a code.
+  - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+    Start a new one.
+  - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+    authentication.
+  - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+    operation, has no two-factor authentication.
+  - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+    registration or confirmation does not verify, the passkey is registered already, or
+    the passkey that confirms an operation is not one of the user's.
+  - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+    unknown or expired. Start a new one.
+  - `/api/v1/problems/passkey-confirmation-expired` (422): the confirmation with a passkey
+    is unknown, expired, or used. Start a new one.
+  - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+    allowed. Remove one first.
+  - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
+    way to sign in: the password without a passkey, or the last passkey without a password.
+  - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
+    says which.
+  - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
+    which.
+  - `/api/v1/problems/invalid-relay` (422): a relay cannot be registered, joined, left, or
+    deleted; `reason` says why.
+  - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
+    reason in `theme_errors` (`PUT /admin/theme`).
+  - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+    allowed. Unmute one first.
+type: object
+required: [type, title, status]
+properties:
+  type:
+    description: |
+      A URI that identifies the problem type, stable for clients to branch on.
+      It is `about:blank` when the problem means no more than its HTTP status.
+    type: string
+    format: uri-reference
+  title:
+    description: A short summary of the problem type, localized from `Accept-Language`.
+    type: string
+  status:
+    description: The HTTP status code.
+    type: integer
+    minimum: 400
+    maximum: 599
+  detail:
+    description: An explanation of this occurrence, localized from `Accept-Language`.
+    type: string
+  request_id:
+    description: The request ID (the `X-Request-Id` response header), for reporting the problem.
+    type: string

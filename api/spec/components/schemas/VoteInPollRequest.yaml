@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A vote in the poll of a status.
+type: object
+required: [poll_id, choices]
+properties:
+  poll_id:
+    $ref: ./Id.yaml
+  choices:
+    description: The indexes of the chosen options in `Poll.options`; one for a single-choice poll.
+    type: array
+    minItems: 1
+    maxItems: 20
+    uniqueItems: true
+    items:
+      type: integer
+      minimum: 0
+      maximum: 19

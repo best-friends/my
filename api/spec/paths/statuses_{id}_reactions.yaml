@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+get:
+  operationId: listStatusReactions
+  summary: List the emoji reactions to a status
+  description: |
+    The emoji reactions to a status that the viewer may see, newest first, each with the
+    account that reacted, only those with one emoji when `emoji` is given. Accounts that
+    block the viewer, are deactivated, or are deleted are left out, so a page may hold fewer
+    than `limit` reactions before the last. A status that the viewer may not see is a 404,
+    the same as a missing one.
+  tags: [statuses]
+  security:
+    - {}
+    - oauth2: ["read:statuses"]
+  parameters:
+    - name: emoji
+      in: query
+      description: |
+        The `name` of an emoji (`ReactionEmoji`) to list the reactions with; an emoji that no
+        reaction has gives an empty page.
+      schema:
+        type: string
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the reactions.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/StatusReactionPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

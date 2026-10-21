@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Where the registration of a local account stands; a user made with the command line is
+  `approved`. Omitted for a remote account.
+type: string
+enum: [pending, approved, rejected]

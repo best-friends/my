@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
+  `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
+  of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
+  duration), `low_contrast` (`token` on `background` is `ratio`:1 in `scheme` and needs
+  `minimum`:1), `css_too_long` (`max` bytes), or `css_invalid` (not UTF-8 text).
+type: object
+required: [code]
+properties:
+  code:
+    type: string
+    enum: [unknown_token, duplicate_token, invalid_value, out_of_range, low_contrast, css_too_long, css_invalid]
+  token:
+    type: string
+  scheme:
+    type: string
+    enum: [light, dark]
+  background:
+    type: string
+  ratio:
+    type: number
+  minimum:
+    type: number
+  min:
+    type: number
+  max:
+    type: number

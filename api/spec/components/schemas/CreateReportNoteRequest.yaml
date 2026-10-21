@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A note to add to a report.
+type: object
+required: [body]
+properties:
+  body:
+    description: The note as plain text; it may not be blank.
+    type: string
+    minLength: 1
+    maxLength: 2000

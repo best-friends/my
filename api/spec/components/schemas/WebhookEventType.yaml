@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
+  `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
+  `registration.pending`, `account.*`, `moderation_action.*`, and `appeal.created`;
+  `manage_domains` for `domain_moderation_action.*`; `manage_custom_emojis` for
+  `custom_emoji.*`; and nothing more for `status.created`. `report.created`: a report,
+  local or from another server. `report.resolved`, `report.reopened`. `registration.pending`:
+  a registration awaits a moderator. `account.created`: a registration was approved, at
+  the sign-up or by a moderator. `account.updated`: a local account changed its profile.
+  `moderation_action.created`, `moderation_action.lifted`: an action on an account.
+  `appeal.created`. `domain_moderation_action.created`, `domain_moderation_action.lifted`.
+  `status.created`: a public post of a local account. `custom_emoji.created`,
+  `custom_emoji.updated` (its image, settings, aliases, or whether it is enabled), and
+  `custom_emoji.deleted`: an administrator's operation on a custom emoji.
+type: string
+enum:
+  - report.created
+  - report.resolved
+  - report.reopened
+  - registration.pending
+  - account.created
+  - account.updated
+  - moderation_action.created
+  - moderation_action.lifted
+  - appeal.created
+  - domain_moderation_action.created
+  - domain_moderation_action.lifted
+  - status.created
+  - custom_emoji.created
+  - custom_emoji.updated
+  - custom_emoji.deleted

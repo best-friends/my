@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A poll of a new status (FR-112). It ends `expires_in` seconds after the status is
+  posted; the author and the users who voted are notified then.
+type: object
+required: [options, expires_in]
+properties:
+  options:
+    description: The options, in order, as plain text; each one different from the others.
+    type: array
+    minItems: 2
+    maxItems: 4
+    items:
+      type: string
+      minLength: 1
+      maxLength: 50
+  expires_in:
+    description: How long the poll takes votes, in seconds (5 minutes to 30 days).
+    type: integer
+    minimum: 300
+    maximum: 2592000
+  multiple:
+    description: Whether a vote may choose several options.
+    type: boolean
+  hide_totals:
+    description: Whether the votes of each option are hidden until the poll ends.
+    type: boolean

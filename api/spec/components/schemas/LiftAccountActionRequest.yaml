@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Why an action on an account is lifted.
+type: object
+properties:
+  reason:
+    type: string
+    maxLength: 5000

@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A notification of something that happened to the authenticated user.
+type: object
+required: [id, type, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  type:
+    $ref: ./NotificationType.yaml
+  created_at:
+    description: When it happened.
+    type: string
+    format: date-time
+  account:
+    $ref: ./Account.yaml
+  status:
+    description: |
+      The post that the notification is about, as the user sees it; omitted when the user
+      may not see it.
+    $ref: ./Status.yaml
+  report:
+    description: The user's report that a `report_resolved` tells of.
+    $ref: ./Report.yaml
+  moderation_action:
+    description: |
+      The action on the user's account that a `moderation_notice` tells of, or whose
+      appeal an `appeal_decided` tells of, with the appeal.
+    $ref: ./ModerationAction.yaml
+  report_id:
+    description: The report that an `admin_report` is about.
+    allOf:
+      - $ref: ./Id.yaml
+  appeal_id:
+    description: The appeal that an `admin_appeal` is about.
+    allOf:
+      - $ref: ./Id.yaml
+  relationship_severance:
+    $ref: ./RelationshipSeverance.yaml
+  reaction:
+    description: The emoji of a `reaction`; omitted for the other types.
+    $ref: ./ReactionEmoji.yaml

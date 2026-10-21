@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listMutes
+  summary: List the accounts that the viewer mutes
+  description: |
+    Mutes that have not expired, newest first. Deactivated and deleted accounts are left
+    out.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:mutes"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of mutes.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MutePage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  How the report was resolved, present only while it is resolved. `actioned`: a moderator
+  took an action on the target. `dismissed`: there was nothing to act on.
+type: string
+enum: [actioned, dismissed]

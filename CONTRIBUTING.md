@@ -84,13 +84,14 @@ make db-down                       # コンテナとデータを削除
 
 ## クライアント API
 
-- `api/openapi.yaml`（OpenAPI 3.1）が正です。Go の strict server は oapi-codegen（`tools/go.mod` で固定）で `internal/interface/clientapi/api.gen.go` に生成し、生成物はコミットします（[ADR-0029](docs/adr/0029-api-code-generation.md)）。
+- パス 1 つ・`components` の項目 1 つを 1 ファイルにした `api/spec/`（OpenAPI 3.1）が正です。`make generate` が Redocly CLI でまとめた `api/openapi.yaml` を作り、生成器はそれを読みます。`api/openapi.yaml` は手で編集しません（[ADR-0066](docs/adr/0066-openapi-split-and-bundle.md)）。
+- Go の strict server は oapi-codegen（`tools/go.mod` で固定）で `internal/interface/clientapi/api.gen.go` に生成し、生成物はコミットします（[ADR-0029](docs/adr/0029-api-code-generation.md)）。
 - 規約とエンドポイントの追加手順は [docs/architecture/client-api.md](docs/architecture/client-api.md) にあります。
 
 ```sh
-make generate        # api/openapi.yaml から生成し直す
-make api-lint        # spec を Redocly CLI で lint（使える 3.1 の部分集合を含む。設定は api/redocly.yaml）
-make api-check       # api-lint と、生成物が最新でなければ失敗する generate-check（make check に含まれる）
+make generate        # api/spec をまとめた api/openapi.yaml を作り、そこから生成し直す
+make api-lint        # api/spec を Redocly CLI で lint（使える 3.1 の部分集合を含む。設定は api/redocly.yaml）
+make api-check       # api-spec-check（ルートが api/spec のすべてのファイルを列挙する）、api-lint と、バンドルと生成物が最新でなければ失敗する generate-check（make check に含まれる）
 ```
 
 ## Web クライアント

@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: The ID of the media file.
+    schema:
+      $ref: ../components/schemas/Id.yaml
+get:
+  operationId: getMedia
+  summary: Get a media file that the user uploaded
+  description: |
+    Returns a media file of the authenticated user with its processing state. A file of
+    another account is a 404: other accounts see a file only as an attachment of a post.
+  tags: [media]
+  security:
+    - oauth2: ["write:media"]
+  responses:
+    "200":
+      description: The media file.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MediaAttachment.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updateMedia
+  summary: Change the description or focal point of a media file
+  description: |
+    Changes the description (alternative text) or the focal point of a media file of the
+    authenticated user that no post attaches yet; a property left out keeps its value. A
+    post copies the description when it attaches the file, so a file that a post attaches
+    is a 409 `media-attached`: edit the post instead. A file of another account is a 404.
+  tags: [media]
+  security:
+    - oauth2: ["write:media"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/MediaUpdate.yaml
+  responses:
+    "200":
+      description: The changed media file.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/MediaAttachment.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

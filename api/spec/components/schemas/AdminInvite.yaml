@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An invite that lets people sign up while the registration mode is `invite`.
+type: object
+required: [id, code, url, uses, state, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  code:
+    description: The code people enter on the registration page, 16 characters.
+    type: string
+  url:
+    description: The registration page with the code filled in, to send to people.
+    type: string
+    format: uri
+  max_uses:
+    description: How many sign-ups the invite allows; omitted when there is no limit.
+    type: integer
+    minimum: 1
+  uses:
+    description: How many people have signed up with the invite.
+    type: integer
+    minimum: 0
+  state:
+    $ref: ./AdminInviteState.yaml
+  expires_at:
+    description: When the invite stops working; omitted when it never does.
+    type: string
+    format: date-time
+  created_at:
+    type: string
+    format: date-time

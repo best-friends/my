@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A passkey that signs the authenticated user in instead of the password.
+type: object
+required: [id, name, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  name:
+    description: What the user calls the passkey, such as the device it is on.
+    type: string
+  created_at:
+    description: When the passkey was registered.
+    type: string
+    format: date-time

@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The data of a `webhook.test` message.
+type: object
+required: [endpoint_id]
+properties:
+  endpoint_id:
+    $ref: ./Id.yaml

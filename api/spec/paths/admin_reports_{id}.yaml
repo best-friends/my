@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getReport
+  summary: Get a report
+  description: |
+    The report as a moderator opens it, with the posts it points at whatever their
+    visibility. An unknown ID is a 404. Needs the `manage_reports` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/ReportId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminReportDetail.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

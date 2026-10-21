@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+get:
+  operationId: getStatusHistory
+  summary: Get the edit history of a status
+  description: |
+    Every revision of a status, oldest first; the last one is the current content. A
+    status that the viewer may not see is a 404, the same as a missing one.
+  tags: [statuses]
+  security:
+    - {}
+    - oauth2: ["read:statuses"]
+  responses:
+    "200":
+      description: The revisions.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/StatusHistory.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

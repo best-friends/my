@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A moderation action to take on a domain.
+type: object
+required: [domain, kind]
+properties:
+  domain:
+    description: |
+      The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
+      accepted. The action covers its subdomains.
+    type: string
+    minLength: 1
+    maxLength: 253
+  kind:
+    $ref: ./AdminDomainActionKind.yaml
+  public_comment:
+    type: string
+    maxLength: 5000
+  private_note:
+    type: string
+    maxLength: 5000
+  obfuscate:
+    type: boolean
+    default: false
+  expires_in:
+    description: The seconds the action lasts; omitted, it lasts until it is lifted.
+    type: integer
+    minimum: 1

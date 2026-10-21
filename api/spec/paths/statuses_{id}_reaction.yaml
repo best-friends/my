@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+put:
+  operationId: reactToStatus
+  summary: React to a status with an emoji
+  description: |
+    Sets the authenticated user's emoji reaction to a status: a Unicode emoji, or a custom
+    emoji of this server that is enabled. A user has one favourite or one reaction on a
+    status, so reacting takes back the favourite and the reaction with another emoji;
+    reacting again with the same emoji changes nothing. A custom emoji of another server,
+    or anything else that is not one emoji, is a 422.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:favourites"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ReactToStatusRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: unreactToStatus
+  summary: Take back the emoji reaction to a status
+  description: Without a reaction it changes nothing.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:favourites"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

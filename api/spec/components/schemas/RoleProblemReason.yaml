@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+  and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+  `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+  and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+  `missing_permission`: the change adds or removes permissions that the viewer's roles
+  do not grant (`missing_permissions`).
+type: string
+enum: [key, key_taken, position, permissions, builtin, held, missing_permission]

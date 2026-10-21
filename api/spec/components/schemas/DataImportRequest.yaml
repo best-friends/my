@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A CSV file to import, and how.
+type: object
+required: [kind, mode, text]
+properties:
+  kind:
+    $ref: ./DataImportKind.yaml
+  mode:
+    $ref: ./DataImportMode.yaml
+  text:
+    description: The content of the CSV file, in UTF-8.
+    type: string
+    maxLength: 1000000

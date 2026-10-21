@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The email address and the IP addresses of a local account (FR-714). Showing them is
+  recorded in the audit log.
+type: object
+required: [sign_ins, same_ip_accounts]
+properties:
+  email:
+    description: The primary email address; omitted when there is none.
+    type: string
+  email_verified:
+    description: Whether the primary email address is verified; omitted with `email`.
+    type: boolean
+  registration_ip:
+    description: |
+      The IP address the account registered from; omitted for a registration from an
+      unknown address, by the command line, or past the retention.
+    type: string
+  registered_at:
+    description: When the account registered from `registration_ip`; omitted with it.
+    type: string
+    format: date-time
+  sign_ins:
+    description: The newest 20 sign-ins within the retention, newest first.
+    type: array
+    items:
+      $ref: ./AdminAccountSignIn.yaml
+  same_ip_accounts:
+    description: |
+      For each IP address of `sign_ins` and `registration_ip`, newest first, up to 20
+      other accounts that registered or signed in from it, newest first.
+    type: array
+    items:
+      $ref: ./AdminSameIpAccounts.yaml

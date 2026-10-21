@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
+  citing it.
+type: object
+required: [id, position, text, created_at, revised_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  position:
+    description: |
+      The sort key of the rule; the rules in effect are listed by it. Retiring a rule
+      leaves a gap until the next move.
+    type: integer
+    minimum: 1
+  text:
+    description: The rule, on one line, as plain text.
+    type: string
+  hint:
+    description: An explanation of the rule, as plain text; omitted when there is none.
+    type: string
+  created_at:
+    type: string
+    format: date-time
+  revised_at:
+    description: When the current revision was recorded.
+    type: string
+    format: date-time
+  retired_at:
+    description: When the rule was retired; omitted for a rule in effect.
+    type: string
+    format: date-time

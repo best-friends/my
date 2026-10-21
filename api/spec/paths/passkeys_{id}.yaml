@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+delete:
+  operationId: deletePasskey
+  summary: Remove a passkey
+  description: |
+    The passkey no longer signs in. An unknown or removed passkey is a 404, and the last
+    passkey of a user without a password a 409 `/api/v1/problems/last-sign-in-method`.
+  tags: [passkeys]
+  security:
+    - oauth2: ["write:accounts"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the passkey.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  responses:
+    "204":
+      description: The passkey is removed.
+    default:
+      $ref: ../components/responses/Problem.yaml

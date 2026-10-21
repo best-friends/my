@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: enableTotp
+  summary: Enable two-factor authentication with the secret of a setup
+  description: |
+    Enrolls the secret of `setup_token` once `code` shows that the app has it, and returns
+    the recovery codes, which are shown only this once. From then on, signing in asks for
+    a code after the password. A wrong code is a 422
+    `/api/v1/problems/invalid-two-factor-code`, an expired or unknown setup a 422
+    `/api/v1/problems/totp-setup-expired`, and too many wrong codes a 429.
+  tags: [two_factor]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/EnableTotpRequest.yaml
+  responses:
+    "200":
+      description: The recovery codes.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RecoveryCodes.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

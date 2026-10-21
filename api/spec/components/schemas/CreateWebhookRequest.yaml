@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new webhook.
+type: object
+required: [url, events]
+properties:
+  url:
+    description: |
+      An absolute `https` (or `http`) URL of at most 2048 bytes, without user info or a
+      fragment. A destination on loopback or a private network is reached only when the
+      operator allows it (`webhook_allowed_destinations`).
+    type: string
+    maxLength: 2048
+  description:
+    description: What the webhook is for, up to 200 characters.
+    type: string
+    maxLength: 200
+  events:
+    description: The events to subscribe to, at least one.
+    type: array
+    minItems: 1
+    items:
+      $ref: ./WebhookEventType.yaml

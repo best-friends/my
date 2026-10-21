@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An account that the viewer mutes, with the mute's settings.
+type: object
+required: [account, notifications]
+properties:
+  account:
+    $ref: ./Account.yaml
+  notifications:
+    description: Whether the mute also hides the account's notifications.
+    type: boolean
+  expires_at:
+    description: When the mute ends; left out for a mute until unmuted.
+    type: string
+    format: date-time

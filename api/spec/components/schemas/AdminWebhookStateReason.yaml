@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
+  server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
+  it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
+type: string
+enum: [admin, gone, failing]

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+  `POST /admin/webhooks/{id}/test`.
+type: string
+enum:
+  - report.created
+  - report.resolved
+  - report.reopened
+  - registration.pending
+  - account.created
+  - account.updated
+  - moderation_action.created
+  - moderation_action.lifted
+  - appeal.created
+  - domain_moderation_action.created
+  - domain_moderation_action.lifted
+  - status.created
+  - custom_emoji.created
+  - custom_emoji.updated
+  - custom_emoji.deleted
+  - webhook.test

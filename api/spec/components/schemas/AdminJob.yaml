@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A job of the job queue.
+type: object
+required: [id, type, state, payload, attempts, created_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  type:
+    description: The job type, such as `federation.deliver`.
+    type: string
+  state:
+    $ref: ./AdminJobState.yaml
+  payload:
+    description: The job's payload, a JSON document as text.
+    type: string
+  idempotency_key:
+    type: string
+  ordering_key:
+    type: string
+  attempts:
+    description: The number of runs the job had, the one in progress included.
+    type: integer
+    minimum: 0
+  last_error:
+    description: Why the last run failed; omitted for a job whose runs did not fail.
+    type: string
+  run_at:
+    description: When a pending job is due; omitted for a dead job.
+    type: string
+    format: date-time
+  worker:
+    description: The worker that runs a `running` job.
+    type: string
+  locked_until:
+    description: When the lease of a `running` job ends; another worker may run it after.
+    type: string
+    format: date-time
+  created_at:
+    type: string
+    format: date-time
+  failed_at:
+    description: When a dead job failed.
+    type: string
+    format: date-time

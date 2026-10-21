@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What an import of a CSV file would do.
+type: object
+required: [entries, present, removals, skipped]
+properties:
+  entries:
+    description: The number of entries of the file, each of which the import adds.
+    type: integer
+    minimum: 0
+  present:
+    description: How many of the entries the user has already.
+    type: integer
+    minimum: 0
+  removals:
+    description: |
+      How many things the user has of the kind that the file does not list, which an
+      `overwrite` removes; 0 for a `merge`.
+    type: integer
+    minimum: 0
+  skipped:
+    description: The lines that are not entries, in line order.
+    type: array
+    items:
+      $ref: ./DataImportSkipped.yaml

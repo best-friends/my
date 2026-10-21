@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The changes to a webhook; what is omitted stays.
+type: object
+properties:
+  url:
+    type: string
+    maxLength: 2048
+  description:
+    description: The new description; empty removes it.
+    type: string
+    maxLength: 200
+  events:
+    type: array
+    minItems: 1
+    items:
+      $ref: ./WebhookEventType.yaml

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A code that confirms an operation on two-factor authentication.
+type: object
+required: [code]
+properties:
+  code:
+    description: A six-digit code of the app or an unused recovery code.
+    type: string
+    maxLength: 64

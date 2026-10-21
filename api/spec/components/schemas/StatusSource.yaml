@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What the author typed, for editing a status.
+type: object
+required: [id, text, spoiler_text, language]
+properties:
+  id:
+    $ref: ./Id.yaml
+  text:
+    description: The plain text.
+    type: string
+  spoiler_text:
+    description: The content warning; empty when there is none.
+    type: string
+  language:
+    description: The BCP 47 language tag; `und` when it is unknown.
+    type: string

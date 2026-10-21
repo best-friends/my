@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A hashtag of a status.
+type: object
+required: [name, url]
+properties:
+  name:
+    description: The hashtag as written, without `#`.
+    type: string
+  url:
+    description: The hashtag's page.
+    type: string
+    format: uri

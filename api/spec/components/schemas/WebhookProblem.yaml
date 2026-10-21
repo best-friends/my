@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The problem of a webhook that breaks a rule (422, `/api/v1/problems/invalid-webhook`);
+  `reason` says which. Another 422 (a malformed request) has none.
+allOf:
+  - $ref: ./Problem.yaml
+  - type: object
+    properties:
+      reason:
+        $ref: ./WebhookProblemReason.yaml
+      missing_permissions:
+        description: The permissions that the events need and the user lacks, for `missing_permission`.
+        type: array
+        items:
+          $ref: ./Permission.yaml

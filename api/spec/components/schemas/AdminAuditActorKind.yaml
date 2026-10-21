@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Who performed the operation. `user`: a signed-in moderator or administrator.
+  `cli`: the `my` command line, which acts as no user. `system`: the server itself.
+  `remote`: another server.
+type: string
+enum: [user, cli, system, remote]

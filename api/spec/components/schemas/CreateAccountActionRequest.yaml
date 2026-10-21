@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A moderation action to take on an account.
+type: object
+required: [kind]
+properties:
+  kind:
+    $ref: ./AdminAccountActionKind.yaml
+  reason_category:
+    allOf:
+      - $ref: ./AdminAccountActionCategory.yaml
+    default: other
+  public_reason:
+    description: The reason shown to the account.
+    type: string
+    maxLength: 5000
+  private_note:
+    description: A note for the moderators only.
+    type: string
+    maxLength: 5000
+  report_id:
+    description: |
+      The report of the account that the action follows from. The action resolves an open
+      report as `actioned` in the same operation; a resolved report stays as it is.
+    allOf:
+      - $ref: ./Id.yaml
+  notify_target:
+    description: Whether a local account is told of the action; ignored for a remote one.
+    type: boolean
+    default: true
+  expires_in:
+    description: |
+      The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
+      actions on posts take none.
+    type: integer
+    minimum: 1
+  status_ids:
+    description: |
+      The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+      on; required for them and taken by no other kind.
+    type: array
+    minItems: 1
+    maxItems: 100
+    uniqueItems: true
+    items:
+      $ref: ./Id.yaml
+  block_email:
+    description: |
+      Whether a `ban` also blocks sign-ups with the email address of the account's user (a
+      `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
+      account takes it, and a user without an email address is a 422. Omitted, nothing is
+      blocked.
+    type: boolean

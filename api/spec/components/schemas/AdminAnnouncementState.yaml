@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  `draft`: no user sees it. `published`: every local user sees it within its window.
+  `withdrawn`: taken down for good.
+type: string
+enum: [draft, published, withdrawn]

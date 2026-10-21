@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: unmuteAccount
+  summary: Unmute an account
+  description: Without a mute it changes nothing.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:mutes"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/Relationship.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

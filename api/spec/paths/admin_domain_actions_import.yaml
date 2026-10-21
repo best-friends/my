@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: importDomainBlocks
+  summary: Import the chosen rows of a Mastodon domain block CSV
+  description: |
+    Issues the domain actions of each block (FR-706), as the preview names them: the kinds
+    of the block that no action in effect on the domain or a parent domain has already. The
+    actions last until they are lifted, carry the block's public comment and obfuscation
+    and the request's private note, and are audited like actions issued one at a time. A
+    block that would issue nothing is skipped with the reason. The actions are written a
+    few dozen at a time, so an error part way keeps the ones before it; sending the blocks
+    again skips them as `already_applied`. More than 5,000 blocks or a `private_note` that
+    is too long or contains U+0000 is a 422 that issues nothing. Needs the `manage_domains`
+    permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ImportDomainBlocksRequest.yaml
+  responses:
+    "200":
+      description: What the import issued and skipped.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DomainBlockImportResult.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

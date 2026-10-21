@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Where one sign-in came from.
+type: object
+required: [signed_in_at]
+properties:
+  ip:
+    description: The IP address; omitted when unknown.
+    type: string
+  user_agent:
+    description: The User-Agent; omitted when unknown.
+    type: string
+  signed_in_at:
+    type: string
+    format: date-time

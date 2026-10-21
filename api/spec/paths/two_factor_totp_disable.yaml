@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: disableTotp
+  summary: Disable two-factor authentication
+  description: |
+    Ends the enrollment once `code`, a code of the app or an unused recovery code, confirms
+    it. A wrong code is a 422 `/api/v1/problems/invalid-two-factor-code`, too many wrong
+    codes a 429, and a user without two-factor authentication a 409
+    `/api/v1/problems/two-factor-not-enabled`.
+  tags: [two_factor]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TwoFactorCodeRequest.yaml
+  responses:
+    "200":
+      description: The two-factor authentication of the user, disabled.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/TwoFactor.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

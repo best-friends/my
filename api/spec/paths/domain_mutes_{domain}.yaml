@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+delete:
+  operationId: unmuteDomain
+  summary: Unmute a domain
+  description: The domain is normalized as in `muteDomain`. Without a mute it changes nothing.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:mutes"]
+  parameters:
+    - name: domain
+      in: path
+      required: true
+      description: The muted domain, such as `mastodon.example`.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 253
+  responses:
+    "204":
+      description: The domain is not muted.
+    default:
+      $ref: ../components/responses/Problem.yaml

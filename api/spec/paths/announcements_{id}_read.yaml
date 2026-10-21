@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: markAnnouncementRead
+  summary: Mark an announcement read
+  description: |
+    Records that the user read the announcement; marking it again changes nothing. An
+    announcement that the users do not see now (a draft, a withdrawn one, one outside its
+    window, an unknown ID) is a 404.
+  tags: [announcements]
+  security:
+    - oauth2: ["write:notifications"]
+  parameters:
+    - $ref: ../components/parameters/AnnouncementId.yaml
+  responses:
+    "200":
+      description: The announcement, read.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Announcement.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

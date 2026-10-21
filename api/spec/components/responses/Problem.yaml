@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An error, as an RFC 9457 problem document.
+headers:
+  Content-Language:
+    description: The locale of `title` and `detail`.
+    schema:
+      type: string
+  Cache-Control:
+    description: Always `no-store`; problems are never cached.
+    schema:
+      type: string
+  WWW-Authenticate:
+    description: |
+      The Bearer challenge of a 401 or a 403 `insufficient_scope` (RFC 6750 §3), with
+      `error` and, for `insufficient_scope`, the `scope` the operation needs.
+    schema:
+      type: string
+  Retry-After:
+    description: |
+      The seconds to wait before retrying, on a 429 and on a 503 of the streaming
+      endpoint.
+    schema:
+      type: integer
+      minimum: 1
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/Problem.yaml

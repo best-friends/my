@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The changes to a media file; a property left out keeps its value.
+type: object
+properties:
+  description:
+    description: The alternative text; an empty string removes it. Text with U+0000 is a 422.
+    type: string
+    maxLength: 1500
+  focus:
+    $ref: ./MediaFocus.yaml

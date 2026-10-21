@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/WebhookId.yaml
+get:
+  operationId: getAdminWebhook
+  summary: Get a webhook
+  description: An unknown or deleted ID is a 404. Needs the `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      $ref: ../components/responses/AdminWebhook.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updateWebhook
+  summary: Change a webhook
+  description: |
+    Changes what the request names and keeps the rest; an empty `description` removes it.
+    The events need the permissions as for a new webhook, and a refused change is a 422
+    `/api/v1/problems/invalid-webhook`. A change is recorded in the audit log. An unknown
+    or deleted ID is a 404. Needs the `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UpdateWebhookRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminWebhook.yaml
+    "422":
+      $ref: ../components/responses/WebhookProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: deleteWebhook
+  summary: Delete a webhook
+  description: |
+    Deletes the endpoint for good: it receives nothing more, and its deliveries are no
+    longer listed. The deletion is recorded in the audit log. An unknown or deleted ID is a
+    404. Needs the `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  responses:
+    "204":
+      description: The webhook is deleted.
+    default:
+      $ref: ../components/responses/Problem.yaml

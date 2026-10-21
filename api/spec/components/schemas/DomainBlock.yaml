@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
+  such as `例え.jp` is accepted) and the public comment (at most 5,000 characters).
+type: object
+required: [domain, severity, reject_media, reject_reports, obfuscate]
+properties:
+  domain:
+    type: string
+  severity:
+    $ref: ./DomainBlockSeverity.yaml
+  reject_media:
+    type: boolean
+  reject_reports:
+    type: boolean
+  public_comment:
+    type: string
+  obfuscate:
+    type: boolean

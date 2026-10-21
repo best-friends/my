@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The pagination of a collection page; collection responses embed it with allOf.
+type: object
+properties:
+  next_cursor:
+    $ref: ./Cursor.yaml

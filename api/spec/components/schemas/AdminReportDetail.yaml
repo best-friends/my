@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A report as a moderator opens it: the report with its internal notes, the posts it
+  points at, and what the moderators had about its target.
+allOf:
+  - $ref: ./AdminReport.yaml
+  - type: object
+    required: [notes, target_history, statuses]
+    properties:
+      notes:
+        description: The moderators' notes on the report, oldest first.
+        type: array
+        items:
+          $ref: ./AdminReportNote.yaml
+      target_history:
+        $ref: ./AdminReportTargetHistory.yaml
+      statuses:
+        description: |
+          The posts that the report points at, in the order of `status_ids`, whatever
+          their visibility and also when their author deleted them, for the moderators to
+          review. A post that the server no longer has is left out.
+        type: array
+        items:
+          $ref: ./AdminReportStatus.yaml

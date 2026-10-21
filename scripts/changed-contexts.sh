@@ -22,7 +22,7 @@
 #   schema  the desired-state schema files                       (make db-check)
 #
 # A change to shared configuration (the Makefile, .tool-versions, the workflows, the Go or Bun lockfiles,
-# api/openapi.yaml, locales/, tools/i18n/) selects every context, and so does any path no rule below knows:
+# api/, locales/, tools/i18n/) selects every context, and so does any path no rule below knows:
 # a new kind of file runs everything until a rule is added for it.
 set -euo pipefail
 
@@ -103,7 +103,7 @@ classify() {
       ;;
   esac
   case "$path" in
-    internal/interface/clientapi/* | app/web/src/lib/api/* | scripts/generate.sh)
+    internal/interface/clientapi/* | app/web/src/lib/api/* | scripts/generate.sh | scripts/api-spec-check.sh)
       select_contexts api
       known=1
       ;;

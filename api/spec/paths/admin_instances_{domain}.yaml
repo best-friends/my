@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getInstanceHealth
+  summary: Get the health of a remote server
+  description: |
+    The health of the server; one without failures is `available`, without `since`. Needs
+    the `manage_domains` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/InstanceDomain.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminInstanceHealth.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

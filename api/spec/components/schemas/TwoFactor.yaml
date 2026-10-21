@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Where the authenticated user's two-factor authentication (TOTP) stands.
+type: object
+required: [enabled]
+properties:
+  enabled:
+    description: Whether signing in asks for a code after the password.
+    type: boolean
+  enrolled_at:
+    description: When the authenticator app was enrolled; omitted when not enabled.
+    type: string
+    format: date-time
+  recovery_codes_remaining:
+    description: How many recovery codes are unused; omitted when not enabled.
+    type: integer
+    minimum: 0

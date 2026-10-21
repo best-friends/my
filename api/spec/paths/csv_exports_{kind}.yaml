@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: exportCsv
+  summary: Export the authenticated user's follows, blocks, mutes, muted domains, or bookmarks as CSV
+  description: |
+    Returns what the user has of `kind` now as the CSV file that Mastodon exports, which
+    Mastodon and this server import (FR-008): `following` is `following_accounts.csv`
+    (`Account address,Show boosts,Notify on new posts,Languages`, the active follows),
+    `blocks` is `blocked_accounts.csv` (one address per line), `mutes` is
+    `muted_accounts.csv` (`Account address,Hide notifications`, the mutes in effect),
+    `domain_mutes` is `blocked_domains.csv` (one domain per line, the domains the user
+    mutes, which Mastodon imports as blocked domains), and `bookmarks` is `bookmarks.csv`
+    (one post URI per line, the posts the user may still see).
+    Addresses are `username@domain`, with the account domain for this server's accounts;
+    remote accounts whose handle is unconfirmed are left out. At most 30 exports per account
+    are accepted every hour.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:accounts"]
+  parameters:
+    - name: kind
+      in: path
+      required: true
+      description: What to export.
+      schema:
+        $ref: ../components/schemas/DataImportKind.yaml
+  responses:
+    "200":
+      description: The CSV file.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+        Content-Disposition:
+          description: Names the file to save the CSV as, the name Mastodon gives it.
+          schema:
+            type: string
+      content:
+        text/csv:
+          schema:
+            type: string
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAdminJobAttempts
+  summary: List the attempts of a job that did not succeed
+  description: |
+    The records of the runs of the job that did not succeed (a retry, or the run that made
+    it a dead job), the most recently finished first. Successful runs are not recorded, and
+    records are deleted after the server's `job_attempt_retention`, so a job without
+    failures, or an unknown ID, has an empty page. A requeued dead job counts its attempts
+    again from 1. Needs the `manage_jobs` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the job.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of attempts.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminJobAttemptPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

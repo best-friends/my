@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Where the membership of a relay stands. `pending`: the `Follow` is sent and not
+  answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
+  `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
+  instance sent the `Undo` of its `Follow`.
+type: string
+enum: [pending, accepted, rejected, left]

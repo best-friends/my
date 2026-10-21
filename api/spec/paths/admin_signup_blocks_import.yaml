@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: importSignupBlocks
+  summary: Block sign-ups from a list
+  description: |
+    Adds a block on sign-ups (FR-719) for each value of a list, such as a public list of
+    disposable email domains, all with the same kind, severity, comment, and duration. The
+    list has one value per line in any form that `createSignupBlock` takes, or a CSV row
+    whose first field is the value; blank lines and lines starting with `#` are ignored.
+    It adds what it can and reports the lines it skipped: a value that is not valid for the
+    kind (`invalid`), that repeats an earlier line once in canonical form (`duplicate`), or
+    that a block in effect of the same kind and value with a severity at least as strong
+    already covers (`already_blocked`). Each block added is audited like one added on its
+    own. The blocks are written a few hundred at a time, so an error part way keeps the
+    ones before it; sending the list again skips them as `already_blocked`. More than
+    10,000 values, an invalid kind or severity, or a `comment` that is too long or contains
+    U+0000 is a 422 that adds nothing. Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/ImportSignupBlocksRequest.yaml
+  responses:
+    "200":
+      description: What the import added and skipped.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/SignupBlockImportResult.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

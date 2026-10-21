@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getAdminAnnouncement
+  summary: Get an announcement
+  description: An unknown ID is a 404. Needs the `manage_announcements` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/AnnouncementId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminAnnouncement.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+put:
+  operationId: updateAdminAnnouncement
+  summary: Revise an announcement
+  description: |
+    Replaces the text and the window of a draft or a published announcement, which keeps
+    its state; an omitted `starts_at` or `ends_at` leaves that side of the window open. The
+    input is checked as for a new announcement (422). A withdrawn announcement is a 409 and
+    an unknown ID a 404. Recorded in the audit log. Needs the `manage_announcements`
+    permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AnnouncementId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/AdminAnnouncementInput.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminAnnouncement.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

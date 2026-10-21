@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The revisions of a status.
+type: object
+required: [items]
+properties:
+  items:
+    description: The revisions, oldest first.
+    type: array
+    items:
+      $ref: ./StatusEdit.yaml

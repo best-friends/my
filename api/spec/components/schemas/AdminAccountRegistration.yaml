@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The registration application of a local account.
+type: object
+required: [submitted_at, state_changed_at]
+properties:
+  submitted_at:
+    type: string
+    format: date-time
+  reason:
+    description: Why the applicant wants to join; omitted when not asked or not given.
+    type: string
+  invite_id:
+    $ref: ./Id.yaml
+  state_changed_at:
+    description: When the registration entered its `registration_state`.
+    type: string
+    format: date-time

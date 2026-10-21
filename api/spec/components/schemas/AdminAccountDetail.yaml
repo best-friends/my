@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The details of an account (FR-714).
+allOf:
+  - $ref: ./AdminAccount.yaml
+  - type: object
+    required: [roles, actions, reports]
+    properties:
+      registration:
+        $ref: ./AdminAccountRegistration.yaml
+      email_verified:
+        description: |
+          Whether the primary email address of a local account is verified; omitted when
+          it has none.
+        type: boolean
+      two_factor_enabled:
+        description: |
+          Whether the user of a local account signs in with two-factor authentication;
+          omitted for a remote account.
+        type: boolean
+      roles:
+        description: The keys of the user's roles, highest position first; empty for a remote account.
+        type: array
+        items:
+          type: string
+      actions:
+        description: The newest 20 actions on the account, newest first.
+        type: array
+        items:
+          $ref: ./AdminAccountAction.yaml
+      reports:
+        description: The newest 20 reports of the account, newest first.
+        type: array
+        items:
+          $ref: ./AdminReport.yaml

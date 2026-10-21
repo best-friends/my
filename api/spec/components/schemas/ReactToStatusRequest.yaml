@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The emoji to react with.
+type: object
+required: [emoji]
+properties:
+  emoji:
+    description: |
+      A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
+      its `ReactionEmoji`; colons around it are accepted).
+    type: string
+    minLength: 1
+    maxLength: 130

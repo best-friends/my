@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A moderation action on an account (FR-703).
+type: object
+required: [id, account_id, kind, reason_category, issuer, notify_target, state, issued_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  account_id:
+    description: The account the action is on.
+    allOf:
+      - $ref: ./Id.yaml
+  kind:
+    $ref: ./AdminAccountActionKind.yaml
+  reason_category:
+    $ref: ./AdminAccountActionCategory.yaml
+  public_reason:
+    description: The reason shown to the account; omitted when there is none.
+    type: string
+  private_note:
+    description: The moderators' note; omitted when there is none.
+    type: string
+  report_id:
+    description: The report the action follows from; omitted when there is none.
+    allOf:
+      - $ref: ./Id.yaml
+  issuer:
+    description: |
+      `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
+      account's own server.
+    type: string
+    enum: [moderator, system, remote]
+  issued_by_account_id:
+    description: |
+      The account of the moderator who took the action; omitted for the CLI and the
+      system.
+    allOf:
+      - $ref: ./Id.yaml
+  notify_target:
+    description: Whether the account is told of the action.
+    type: boolean
+  state:
+    $ref: ./AdminAccountActionState.yaml
+  issued_at:
+    type: string
+    format: date-time
+  expires_at:
+    description: When the action ends by itself; omitted for one that lasts until lifted.
+    type: string
+    format: date-time
+  lifted_at:
+    description: When the action was lifted; omitted until it is.
+    type: string
+    format: date-time
+  lift_reason:
+    description: Why the action was lifted; omitted until it is or when no reason was given.
+    type: string
+  status_ids:
+    description: |
+      The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+      on, in ID order; omitted for the other kinds.
+    type: array
+    items:
+      $ref: ./Id.yaml

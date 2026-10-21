@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The local custom emoji that a copy of a remote one becomes.
+type: object
+properties:
+  shortcode:
+    description: |
+      The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+      underscores; case matters. Absent, the remote emoji's.
+    type: string
+    minLength: 2
+    maxLength: 30

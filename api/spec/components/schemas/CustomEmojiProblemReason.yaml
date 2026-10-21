@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Why a custom emoji is refused. `invalid_shortcode`: not 2 to 30 letters, digits, and
+  underscores. `shortcode_taken`: a local emoji has the shortcode. `invalid_alias`: an
+  alias breaks the rules of a shortcode, or there are more than 10. `invalid_category`:
+  the category is longer than 64 characters or not text. `media_not_found`: the media
+  file is not an upload of the user. `media_not_ready`: it has not finished processing.
+  `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
+  than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
+  `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+  for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+  fetched (its server did not return it, or the instance rejects the media of its domain).
+type: string
+enum:
+  - invalid_shortcode
+  - shortcode_taken
+  - invalid_alias
+  - invalid_category
+  - media_not_found
+  - media_not_ready
+  - unsupported_format
+  - too_large
+  - too_big
+  - remote_emoji
+  - local_emoji
+  - fetch_failed

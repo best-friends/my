@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: testWebhook
+  summary: Send a test message to a webhook
+  description: |
+    Sends a `webhook.test` message to the endpoint, whatever it subscribes to, and returns
+    its delivery, which the job queue sends soon. A disabled webhook receives nothing. It is
+    not recorded in the audit log. An unknown or deleted ID is a 404. Needs the
+    `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/WebhookId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminWebhookDelivery.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A metadata field of a profile as the user typed it.
+type: object
+required: [name, value]
+properties:
+  name:
+    description: The label, at most 255 characters.
+    type: string
+  value:
+    description: The value as plain text, at most 255 characters.
+    type: string

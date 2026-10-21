@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: appealModerationAction
+  summary: Appeal a moderation action on the authenticated user's account
+  description: |
+    Asks the moderators to reconsider an action on the user's own account (FR-707), once
+    per action and until its `appeal_deadline` (the instance's appeal window from the
+    action, 180 days by default; for a `ban`, also no later than the deletion of the
+    account 30 days after it). The moderators get an `admin_appeal` notification, and
+    the user an `appeal_decided` one when they decide. A second appeal of the action is a
+    422 `/api/v1/problems/already-appealed`, an appeal after the deadline a 422
+    `/api/v1/problems/appeal-window-closed`, and an appeal of a `ban` whose account is
+    deleted a 422 `/api/v1/problems/not-appealable`. A `text` that is empty, too long, or
+    contains U+0000 is a 422 naming `text`. An action that is not on the user's account is a
+    404.
+  tags: [moderation]
+  security:
+    - oauth2: ["write:accounts"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the action.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/AppealModerationActionRequest.yaml
+  responses:
+    "200":
+      description: The action, with the appeal.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ModerationAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/CustomEmojiId.yaml
+get:
+  operationId: getAdminCustomEmoji
+  summary: Get a custom emoji
+  description: An unknown ID is a 404. Needs the `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      $ref: ../components/responses/AdminCustomEmoji.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updateCustomEmoji
+  summary: Change the settings of a custom emoji
+  description: |
+    Changes what the request names and keeps the rest. A remote emoji can only be enabled
+    and disabled (`enabled`); a change of its other settings is a 422 with the reason
+    `remote_emoji`. A disabled emoji is shown nowhere: its `:shortcode:` stays text.
+    `category` is trimmed, and an empty one removes the category; `aliases` replace the
+    aliases. Each change is recorded in the audit log. An unknown ID is a 404. Needs the
+    `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UpdateCustomEmojiRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminCustomEmoji.yaml
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: deleteCustomEmoji
+  summary: Delete a local custom emoji
+  description: |
+    Deletes a local emoji for good, with its images; the posts and profiles that used it
+    show its `:shortcode:` as text. A new emoji with the same shortcode is another emoji.
+    A remote emoji is a 422 with the reason `remote_emoji` (disable it instead). The
+    deletion is recorded in the audit log. An unknown ID is a 404. Needs the
+    `manage_custom_emojis` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  responses:
+    "204":
+      description: The emoji is deleted.
+    "422":
+      $ref: ../components/responses/CustomEmojiProblem.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

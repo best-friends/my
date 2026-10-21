@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The custom emoji of the picker.
+type: object
+required: [items]
+properties:
+  items:
+    type: array
+    items:
+      $ref: ./PickerCustomEmoji.yaml

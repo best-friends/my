@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listDataImports
+  summary: List the authenticated user's imports
+  description: |
+    Lists the user's latest 10 imports of CSV files, newest first, with their progress.
+    Imports are removed 7 days after they start.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      description: The imports.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DataImportList.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: startDataImport
+  summary: Import a CSV file of follows, blocks, mutes, muted domains, or bookmarks
+  description: |
+    Imports a CSV file in the format that Mastodon exports (`exportCsv`; FR-008). The file's
+    entries are what `previewDataImport` reports; `merge` adds them and keeps the rest, and
+    `overwrite` also removes what the user has of `kind` that the file does not list. The
+    server carries the import out in the background: it resolves remote accounts and posts
+    on their servers, sends the follows, and counts the entries it could not carry out
+    (an account or post that cannot be found or acted on). The import is `in_progress`
+    until every entry is done. While another import of the user is `in_progress` the
+    request is a 409 `/api/v1/problems/import-in-progress`. At most 10 imports per account
+    are accepted every day.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/DataImportRequest.yaml
+  responses:
+    "202":
+      description: The import, being carried out.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DataImport.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

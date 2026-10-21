@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The thread around a status.
+type: object
+required: [ancestors, descendants]
+properties:
+  ancestors:
+    description: The statuses the status replies to, oldest first.
+    type: array
+    items:
+      $ref: ./Status.yaml
+  descendants:
+    description: The replies to the status and their replies, depth first in posting order.
+    type: array
+    items:
+      $ref: ./Status.yaml

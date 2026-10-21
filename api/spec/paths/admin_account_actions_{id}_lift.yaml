@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: liftAccountAction
+  summary: Lift a moderation action on an account
+  description: |
+    Ends the action's restrictions at once; those of other actions on the account stay.
+    Sessions and tokens that the action ended stay ended, and so do the posts that
+    `delete_statuses` deleted; the posts that `mark_statuses_sensitive` marked are shown as
+    they were. Lifting a lifted action changes nothing and keeps its first reason. A `ban`
+    is never lifted: a 422 naming `id`. A `reason` that is too long or contains U+0000 is a
+    422 naming `reason`. An unknown ID is a 404. Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/AccountActionId.yaml
+  requestBody:
+    required: false
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/LiftAccountActionRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminAccountAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A page of domain mutes.
+allOf:
+  - $ref: ./PageInfo.yaml
+  - type: object
+    required: [domain_mutes]
+    properties:
+      domain_mutes:
+        type: array
+        items:
+          $ref: ./DomainMute.yaml

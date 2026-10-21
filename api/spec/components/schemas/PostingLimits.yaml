@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  What the account's current moderation restrictions let it post (data-model.md §5.4). The
+  server applies the same policy when it posts: a status asked for with a visibility that is
+  not in `visibilities` gets `visibility_ceiling` instead.
+type: object
+required: [visibility_ceiling, visibilities]
+properties:
+  visibility_ceiling:
+    $ref: ./Visibility.yaml
+  visibilities:
+    description: |
+      The visibilities that a new status keeps as asked for, from the widest audience to the
+      narrowest; every visibility while the account is not restricted.
+    type: array
+    minItems: 1
+    items:
+      $ref: ./Visibility.yaml

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+post:
+  operationId: bookmarkStatus
+  summary: Bookmark a status
+  description: Bookmarking a status that is already bookmarked changes nothing.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:bookmarks"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: unbookmarkStatus
+  summary: Remove the bookmark of a status
+  description: Without a bookmark it changes nothing.
+  tags: [statuses]
+  security:
+    - oauth2: ["write:bookmarks"]
+  responses:
+    "200":
+      $ref: ../components/responses/StatusAfterAction.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

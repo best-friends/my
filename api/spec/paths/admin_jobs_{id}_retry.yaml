@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: retryAdminJob
+  summary: Run a dead job again
+  description: |
+    Enqueues the dead job again with a fresh attempt count, to run now, and removes it from
+    the dead jobs. When a pending job has the same idempotency key, that job stands in for
+    it. An unknown ID, one that is not a dead job, or one already retried, is a 404. Needs
+    the `manage_jobs` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - name: id
+      in: path
+      required: true
+      description: The ID of the dead job.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  responses:
+    "204":
+      description: The job is enqueued.
+    default:
+      $ref: ../components/responses/Problem.yaml

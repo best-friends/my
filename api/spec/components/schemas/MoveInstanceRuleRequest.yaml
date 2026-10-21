@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The new place of a rule.
+type: object
+required: [position]
+properties:
+  position:
+    description: The place among the rules in effect, from 1.
+    type: integer
+    minimum: 1

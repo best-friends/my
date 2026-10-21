@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The text and the hint of a rule, written once in any language and shown as they are in
+  every locale; they replace the earlier ones.
+type: object
+required: [text]
+properties:
+  text:
+    description: The rule, on one line, as plain text.
+    type: string
+    minLength: 1
+    maxLength: 300
+  hint:
+    description: An explanation of the rule, as plain text; omitted or empty for none.
+    type: string
+    maxLength: 1000

@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An account as the moderators see it (FR-714). It never includes an email or IP address.
+type: object
+required: [id, account, local, state, restrictions]
+properties:
+  id:
+    $ref: ./Id.yaml
+  account:
+    $ref: ./Account.yaml
+  local:
+    description: Whether the account is on this server.
+    type: boolean
+  state:
+    $ref: ./AdminAccountState.yaml
+  restrictions:
+    description: |
+      What the account's own actions take away now (data-model §5.2), in a fixed order.
+      The domain actions on its domain are listed apart.
+    type: array
+    items:
+      $ref: ./AdminAccountRestriction.yaml
+  registration_state:
+    $ref: ./AdminAccountRegistrationState.yaml

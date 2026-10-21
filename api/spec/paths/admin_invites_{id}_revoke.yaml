@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: revokeInvite
+  summary: Revoke an invite
+  description: |
+    The invite stops working at once; the people who signed up with it keep their
+    accounts. Revoking a revoked invite changes nothing. An unknown ID is a 404. Needs the
+    `manage_invites` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/InviteId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminInvite.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

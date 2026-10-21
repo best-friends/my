@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  An instance setting: its value and what it accepts. Every value is a string in its
+  canonical form, whatever its kind.
+type: object
+required: [key, kind, value, default, stored]
+properties:
+  key:
+    $ref: ./InstanceSettingKey.yaml
+  kind:
+    $ref: ./InstanceSettingKind.yaml
+  value:
+    description: The current value, which is `default` when `stored` is false.
+    type: string
+  default:
+    description: The value of the setting while it has never been set.
+    type: string
+  stored:
+    description: Whether the setting has been set; false means its default applies.
+    type: boolean
+  choices:
+    description: The values an `enum` setting accepts, in order; omitted for other kinds.
+    type: array
+    items:
+      type: string
+  minimum:
+    description: The least value of an `int` setting; omitted for other kinds.
+    type: integer
+  maximum:
+    description: The greatest value of an `int` setting; omitted for other kinds.
+    type: integer

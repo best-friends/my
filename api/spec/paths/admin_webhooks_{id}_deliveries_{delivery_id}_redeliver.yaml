@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: redeliverWebhookDelivery
+  summary: Send a delivery of a webhook again
+  description: |
+    Sends the message again with the same `webhook-id`, also after it succeeded or used up
+    its attempts; the job queue sends it soon. A disabled webhook receives nothing. It is
+    not recorded in the audit log. An unknown webhook or delivery is a 404. Needs the
+    `manage_webhooks` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/WebhookId.yaml
+    - name: delivery_id
+      in: path
+      required: true
+      description: The ID of the delivery.
+      schema:
+        $ref: ../components/schemas/Id.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminWebhookDelivery.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

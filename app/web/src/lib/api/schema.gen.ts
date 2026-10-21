@@ -3902,109 +3902,1803 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
+         *     `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
+         *     and no use by AI search, assistants, and agents. An account can opt out of what the
+         *     instance allows (`ai_opt_out`), never the reverse.
+         * @enum {string}
+         */
+        AIUsage: "allow" | "deny_training" | "deny";
+        /** @description An account, as clients show it (FR-006). */
+        Account: {
+            id: components["schemas"]["Id"];
+            /** @description The username, without the domain. */
+            username: string;
+            /** @description The username for local accounts, `username@domain` for remote ones. */
+            acct: string;
+            /**
+             * @description The domain of the account: the domain of its handle, which for local accounts is the
+             *     instance's account domain, or the host of its `uri` when a remote account has no
+             *     confirmed handle.
+             */
+            domain: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub id of the account's actor, on the server it belongs to.
+             */
+            uri: string;
+            /** @description The display name; empty when the account has none. */
+            display_name: string;
+            /** @description The profile text as sanitized HTML; empty when there is none. */
+            note: string;
+            /**
+             * Format: uri
+             * @description The account's profile page: on this instance for a local account, and for a remote
+             *     one the page its actor declares (`url`), or its `uri` when it declares none.
+             */
+            url: string;
+            /** @description Whether follow requests need the account's approval. */
+            locked: boolean;
+            /** @description Whether the account is automated. */
+            bot: boolean;
+            /**
+             * Format: date-time
+             * @description When the account was created.
+             */
+            created_at: string;
+            /** @description The profile's metadata fields, in their order; empty when there are none. */
+            fields: components["schemas"]["ProfileField"][];
+            /**
+             * @description The custom emoji of the display name, the note, and the fields' names and values
+             *     (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
+             *     image, and the rest as text.
+             */
+            emojis: components["schemas"]["CustomEmoji"][];
+            /**
+             * @description The avatar image, square; omitted when the account has none, or its image is not
+             *     processed yet or could not be processed. Clients show a placeholder instead. For a
+             *     remote account, every size is its media proxy URL.
+             */
+            avatar?: components["schemas"]["MediaVariants"];
+            /** @description The header image; omitted when there is none, as `avatar` is. */
+            header?: components["schemas"]["MediaVariants"];
+            /**
+             * @description The number of accounts that actively follow the account, as far as the instance
+             *     knows. Present on the account's own endpoints (`getAccount`, `lookupAccount`,
+             *     `verifyAccountCredentials`) and left out where accounts are listed or embedded.
+             */
+            followers_count?: number;
+            /** @description The number of accounts that the account actively follows; present where `followers_count` is. */
+            following_count?: number;
+        };
+        /** @description A metadata field of a profile as the user typed it. */
+        AccountFieldSource: {
+            /** @description The label, at most 255 characters. */
+            name: string;
+            /** @description The value as plain text, at most 255 characters. */
+            value: string;
+        };
+        /** @description A page of accounts. */
+        AccountPage: components["schemas"]["PageInfo"] & {
+            accounts: components["schemas"]["Account"][];
+        };
+        /** @description The profile as the user typed it, for editing. */
+        AccountSource: {
+            /** @description The profile text as plain text; empty when there is none. */
+            note: string;
+            /** @description The metadata fields as typed, in the order of the account's `fields`. */
+            fields: components["schemas"]["AccountFieldSource"][];
+            /** @description The media file of the avatar; omitted when there is none. */
+            avatar_media_id?: string;
+            /** @description The media file of the header image; omitted when there is none. */
+            header_media_id?: string;
+        };
+        /** @description A page of the statuses of an account. */
+        AccountStatusPage: components["schemas"]["StatusPage"] & {
+            /**
+             * @description `true` when this request started fetching the remote account's recent public
+             *     posts from its server (ADR-0044). The fetch runs in the background; read the
+             *     first page again a few seconds later to see what it stored. Absent otherwise,
+             *     including when a fetch started in the last day.
+             */
+            remote_fetch_started?: boolean;
+        };
+        /** @description An account as the moderators see it (FR-714). It never includes an email or IP address. */
+        AdminAccount: {
+            id: components["schemas"]["Id"];
+            account: components["schemas"]["Account"];
+            /** @description Whether the account is on this server. */
+            local: boolean;
+            state: components["schemas"]["AdminAccountState"];
+            /**
+             * @description What the account's own actions take away now (data-model §5.2), in a fixed order.
+             *     The domain actions on its domain are listed apart.
+             */
+            restrictions: components["schemas"]["AdminAccountRestriction"][];
+            registration_state?: components["schemas"]["AdminAccountRegistrationState"];
+        };
+        /** @description A moderation action on an account (FR-703). */
+        AdminAccountAction: {
+            id: components["schemas"]["Id"];
+            /** @description The account the action is on. */
+            account_id: components["schemas"]["Id"];
+            kind: components["schemas"]["AdminAccountActionKind"];
+            reason_category: components["schemas"]["AdminAccountActionCategory"];
+            /** @description The reason shown to the account; omitted when there is none. */
+            public_reason?: string;
+            /** @description The moderators' note; omitted when there is none. */
+            private_note?: string;
+            /** @description The report the action follows from; omitted when there is none. */
+            report_id?: components["schemas"]["Id"];
+            /**
+             * @description `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
+             *     account's own server.
+             * @enum {string}
+             */
+            issuer: "moderator" | "system" | "remote";
+            /**
+             * @description The account of the moderator who took the action; omitted for the CLI and the
+             *     system.
+             */
+            issued_by_account_id?: components["schemas"]["Id"];
+            /** @description Whether the account is told of the action. */
+            notify_target: boolean;
+            state: components["schemas"]["AdminAccountActionState"];
+            /** Format: date-time */
+            issued_at: string;
+            /**
+             * Format: date-time
+             * @description When the action ends by itself; omitted for one that lasts until lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the action was lifted; omitted until it is.
+             */
+            lifted_at?: string;
+            /** @description Why the action was lifted; omitted until it is or when no reason was given. */
+            lift_reason?: string;
+            /**
+             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+             *     on, in ID order; omitted for the other kinds.
+             */
+            status_ids?: components["schemas"]["Id"][];
+        };
+        /**
+         * @description The kind of reason for an action.
+         * @enum {string}
+         */
+        AdminAccountActionCategory: "spam" | "legal" | "violation" | "other";
+        /**
+         * @description `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
+         *     posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
+         *     followers-only and stays off the public timelines. `restrict_posting`: no posting.
+         *     `restrict_interaction`: no following, favouriting, boosting, or replying.
+         *     `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
+         *     hidden. `ban`: a suspension that never ends, with the deletion of the account.
+         * @enum {string}
+         */
+        AdminAccountActionKind: "warn" | "mark_statuses_sensitive" | "delete_statuses" | "force_sensitive" | "limit" | "restrict_posting" | "restrict_interaction" | "disable_login" | "suspend" | "ban";
+        /** @description A page of account actions, newest first. */
+        AdminAccountActionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAccountAction"][];
+        };
+        /**
+         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+         *     lifted it.
+         * @enum {string}
+         */
+        AdminAccountActionState: "active" | "expired" | "lifted";
+        /** @description The details of an account (FR-714). */
+        AdminAccountDetail: components["schemas"]["AdminAccount"] & {
+            registration?: components["schemas"]["AdminAccountRegistration"];
+            /**
+             * @description Whether the primary email address of a local account is verified; omitted when
+             *     it has none.
+             */
+            email_verified?: boolean;
+            /**
+             * @description Whether the user of a local account signs in with two-factor authentication;
+             *     omitted for a remote account.
+             */
+            two_factor_enabled?: boolean;
+            /** @description The keys of the user's roles, highest position first; empty for a remote account. */
+            roles: string[];
+            /** @description The newest 20 actions on the account, newest first. */
+            actions: components["schemas"]["AdminAccountAction"][];
+            /** @description The newest 20 reports of the account, newest first. */
+            reports: components["schemas"]["AdminReport"][];
+        };
+        /** @description A page of accounts, newest first. */
+        AdminAccountPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAccount"][];
+        };
+        /**
+         * @description The email address and the IP addresses of a local account (FR-714). Showing them is
+         *     recorded in the audit log.
+         */
+        AdminAccountPrivateData: {
+            /** @description The primary email address; omitted when there is none. */
+            email?: string;
+            /** @description Whether the primary email address is verified; omitted with `email`. */
+            email_verified?: boolean;
+            /**
+             * @description The IP address the account registered from; omitted for a registration from an
+             *     unknown address, by the command line, or past the retention.
+             */
+            registration_ip?: string;
+            /**
+             * Format: date-time
+             * @description When the account registered from `registration_ip`; omitted with it.
+             */
+            registered_at?: string;
+            /** @description The newest 20 sign-ins within the retention, newest first. */
+            sign_ins: components["schemas"]["AdminAccountSignIn"][];
+            /**
+             * @description For each IP address of `sign_ins` and `registration_ip`, newest first, up to 20
+             *     other accounts that registered or signed in from it, newest first.
+             */
+            same_ip_accounts: components["schemas"]["AdminSameIpAccounts"][];
+        };
+        /** @description The registration application of a local account. */
+        AdminAccountRegistration: {
+            /** Format: date-time */
+            submitted_at: string;
+            /** @description Why the applicant wants to join; omitted when not asked or not given. */
+            reason?: string;
+            invite_id?: components["schemas"]["Id"];
+            /**
+             * Format: date-time
+             * @description When the registration entered its `registration_state`.
+             */
+            state_changed_at: string;
+        };
+        /**
+         * @description Where the registration of a local account stands; a user made with the command line is
+         *     `approved`. Omitted for a remote account.
+         * @enum {string}
+         */
+        AdminAccountRegistrationState: "pending" | "approved" | "rejected";
+        /**
+         * @description A capability that an action takes away (data-model §5.2). `login`: logging in and the
+         *     API. `post`: posting, replying, boosting, editing. `interact`: following, favouriting,
+         *     boosting, voting. `visibility_ceiling_private`: posts are followers-only.
+         *     `public_discovery`: posts stay off the public timelines and search.
+         *     `unsolicited_reach`: notifications reach followers only. `media_sensitive`: media shows
+         *     as sensitive. `profile_view`: the profile and posts are hidden. `federation`: nothing is
+         *     delivered or received.
+         * @enum {string}
+         */
+        AdminAccountRestriction: "login" | "post" | "interact" | "visibility_ceiling_private" | "public_discovery" | "unsolicited_reach" | "media_sensitive" | "profile_view" | "federation";
+        /** @description Where one sign-in came from. */
+        AdminAccountSignIn: {
+            /** @description The IP address; omitted when unknown. */
+            ip?: string;
+            /** @description The User-Agent; omitted when unknown. */
+            user_agent?: string;
+            /** Format: date-time */
+            signed_in_at: string;
+        };
+        /**
+         * @description The state of an account, the first that applies: `deleted` (deleted here or on its
+         *     server), `suspended` (a `suspend` or `ban`), `disabled` (a `disable_login`), `rejected`
+         *     and `pending` (the registration of a local account), `limited` (a `limit`), and
+         *     `active`.
+         * @enum {string}
+         */
+        AdminAccountState: "active" | "pending" | "rejected" | "limited" | "disabled" | "suspended" | "deleted";
+        /** @description An announcement with its Markdown text and its state. */
+        AdminAnnouncement: {
+            id: components["schemas"]["Id"];
+            /** @description The text, in Markdown. */
+            text: string;
+            /** @description The text as the users get it, an HTML fragment (`Announcement.content`). */
+            content: string;
+            state: components["schemas"]["AdminAnnouncementState"];
+            /**
+             * Format: date-time
+             * @description When it starts to show once published; omitted to show it from its publication.
+             */
+            starts_at?: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing; omitted to show it until it is withdrawn.
+             */
+            ends_at?: string;
+            /**
+             * Format: date-time
+             * @description When it was last published; omitted for a draft.
+             */
+            published_at?: string;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When its text or window last changed.
+             */
+            updated_at: string;
+        };
+        /** @description A new announcement, with its text and its window. */
+        AdminAnnouncementCreateRequest: {
+            /** @description The text, in Markdown. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description When it starts to show once published; omitted to show it from its publication.
+             */
+            starts_at?: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+             */
+            ends_at?: string;
+            /**
+             * @description Publish it at once instead of keeping it a draft.
+             * @default false
+             */
+            publish: boolean;
+        };
+        /** @description The text and the window of an announcement. */
+        AdminAnnouncementInput: {
+            /** @description The text, in Markdown. */
+            text: string;
+            /**
+             * Format: date-time
+             * @description When it starts to show once published; omitted to show it from its publication.
+             */
+            starts_at?: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+             */
+            ends_at?: string;
+        };
+        /** @description The announcements, newest first. */
+        AdminAnnouncementList: {
+            items: components["schemas"]["AdminAnnouncement"][];
+        };
+        /**
+         * @description `draft`: no user sees it. `published`: every local user sees it within its window.
+         *     `withdrawn`: taken down for good.
+         * @enum {string}
+         */
+        AdminAnnouncementState: "draft" | "published" | "withdrawn";
+        /**
+         * @description A local user's appeal of an action on their account, as the moderators see it, with the
+         *     action.
+         */
+        AdminAppeal: {
+            id: components["schemas"]["Id"];
+            /** @description The account that appealed, which the action is on. */
+            account_id: components["schemas"]["Id"];
+            /** @description What the user wrote, as plain text. */
+            text: string;
+            state: components["schemas"]["ModerationAppealState"];
+            /** Format: date-time */
+            submitted_at: string;
+            action: components["schemas"]["AdminAccountAction"];
+            /**
+             * Format: date-time
+             * @description When a moderator decided the appeal; omitted while pending.
+             */
+            decided_at?: string;
+            /** @description The moderators' explanation of the decision to the user; omitted when there is none. */
+            decision_reason?: string;
+            /**
+             * @description The account of the moderator who decided; omitted while pending and for a decision
+             *     from the command line.
+             */
+            decided_by_account_id?: components["schemas"]["Id"];
+        };
+        /** @description A page of appeals, newest first. */
+        AdminAppealPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAppeal"][];
+        };
+        /**
+         * @description The kind of an audited operation, each on one kind of target. On an `account`:
+         *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
+         *     `revealed_private_data` (a moderator was shown the account's email address and IP
+         *     addresses), `two_factor_disabled` (an administrator removed the account's two-factor
+         *     authentication), `password_reset_link_issued` (an administrator issued a link that sets
+         *     a new password for the account's user). On a `domain`:
+         *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
+         *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
+         *     `user` (a registration):
+         *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
+         *     (an instance setting), `text_changed` (an instance text). On a `rule`:
+         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
+         *     `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
+         *     `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
+         *     an `appeal`:
+         *     `appeal_upheld`, `appeal_overturned` (which also records the action's
+         *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
+         *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
+         *     `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
+         *     `custom_emoji_copied` (a new local emoji copied from a remote one),
+         *     `custom_emoji_updated` (its category, aliases, or place in the picker),
+         *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
+         *     `webhook_created`, `webhook_updated` (its URL, description, or events),
+         *     `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
+         *     endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
+         *     description and the host name of its URL, never the URL. On an `announcement`:
+         *     `announcement_created`, `announcement_updated` (its text or window),
+         *     `announcement_published`, `announcement_withdrawn`; the label is the first line of its
+         *     text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
+         *     characters of its code, never the whole code. On a `relay`: `relay_added`,
+         *     `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
+         *     `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
+         *     posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
+         *     `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
+         *     on a `domain`.
+         * @enum {string}
+         */
+        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued";
+        /**
+         * @description Who performed the operation. `user`: a signed-in moderator or administrator.
+         *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
+         *     `remote`: another server.
+         * @enum {string}
+         */
+        AdminAuditActorKind: "user" | "cli" | "system" | "remote";
+        /** @description One operation of a moderator or an administrator (FR-704). */
+        AdminAuditEntry: {
+            id: components["schemas"]["Id"];
+            actor_kind: components["schemas"]["AdminAuditActorKind"];
+            /**
+             * @description The local account of the user who performed the operation; omitted unless
+             *     `actor_kind` is `user`, and when the user has no account.
+             */
+            actor_account_id?: components["schemas"]["Id"];
+            /** @description The account of `actor_account_id`; omitted when it is gone. */
+            actor_account?: components["schemas"]["Account"];
+            action: components["schemas"]["AdminAuditAction"];
+            target_kind: components["schemas"]["AdminAuditTargetKind"];
+            /**
+             * @description The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
+             *     sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
+             *     or the key of a setting or a text.
+             */
+            target_id: string;
+            /**
+             * @description The target's display name when the operation happened, such as `@alice`,
+             *     `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
+             *     kind and value (`email_domain spam.example`); up to 512 characters.
+             */
+            target_label: string;
+            /**
+             * @description Whether the target is still there to look at. It is `false` for an account, a report,
+             *     an appeal, or a sign-up block that is gone (erased past its retention), and for a
+             *     role, a custom emoji, a webhook, or a relay that was deleted, which only `target_label`
+             *     names now. It is `true` for the other kinds of targets, which are never removed.
+             */
+            target_exists: boolean;
+            /**
+             * @description The ID of the record of the operation (the domain action, the assignment, the
+             *     resolution, the reopening, the note, the decision, the revision), which holds its
+             *     reasons and notes; omitted when the operation has none.
+             */
+            source_event_id?: string;
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        /** @description A page of the audit log, newest first. */
+        AdminAuditEntryPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAuditEntry"][];
+        };
+        /**
+         * @description The kind of what an audited operation acted on.
+         * @enum {string}
+         */
+        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay";
+        /** @description The time a remote server was marked unavailable or available again, and why. */
+        AdminAvailabilityEvent: {
+            id: components["schemas"]["Id"];
+            /** @enum {string} */
+            kind: "marked_unavailable" | "marked_available";
+            /**
+             * @description `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
+             *     succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
+             *     daily probe fetched its NodeInfo. `operator`: an operator marked it.
+             * @enum {string}
+             */
+            reason: "failure_days" | "delivery_succeeded" | "inbound_request" | "probe_succeeded" | "operator";
+            /** Format: date-time */
+            occurred_at: string;
+        };
+        /** @description A page of availability events, newest first. */
+        AdminAvailabilityEventPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminAvailabilityEvent"][];
+        };
+        /** @description What awaits the moderators; a count whose permission the user lacks is omitted. */
+        AdminCounts: {
+            /**
+             * Format: int64
+             * @description The reports that are open. Needs `manage_reports`.
+             */
+            open_reports?: number;
+            /**
+             * Format: int64
+             * @description The registrations that await approval. Needs `manage_accounts`.
+             */
+            pending_registrations?: number;
+            /**
+             * Format: int64
+             * @description The appeals of moderation actions that await a decision. Needs `manage_accounts`.
+             */
+            pending_appeals?: number;
+        };
+        /**
+         * @description A custom emoji as the administrators manage it (ADR-0051 §4): a local one, or a remote
+         *     one recorded from the posts and profiles of another server.
+         */
+        AdminCustomEmoji: {
+            id: components["schemas"]["Id"];
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /** @description Whether the emoji is of this instance. */
+            local: boolean;
+            /** @description The domain of a remote emoji; absent for a local one. */
+            domain?: string;
+            /**
+             * Format: uri
+             * @description The ActivityPub `id` of the emoji: `https://{host}/ap/emojis/{id}` for a local one,
+             *     and the recorded one for a remote one; absent when a remote emoji has none.
+             */
+            uri?: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is; absent when the image cannot be
+             *     shown (such as a remote one from a domain whose media the instance rejects).
+             */
+            url?: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji; absent with `url`.
+             */
+            static_url?: string;
+            /** @description Whether the emoji is shown; a disabled one stays `:shortcode:` text. */
+            enabled: boolean;
+            /** @description Whether the picker offers the local emoji; always `true` for a remote one. */
+            visible_in_picker: boolean;
+            /** @description The category of a local emoji in the picker; absent for none. */
+            category?: string;
+            /** @description The other names of a local emoji that the picker finds it by. */
+            aliases: string[];
+            /**
+             * Format: date-time
+             * @description When the emoji was registered or first seen.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When its current image was set, its ActivityPub `updated`.
+             */
+            updated_at: string;
+        };
+        /** @description A page of custom emoji. */
+        AdminCustomEmojiPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminCustomEmoji"][];
+        };
+        /** @description A moderation action on a remote domain and its subdomains (FR-702). */
+        AdminDomainAction: {
+            id: components["schemas"]["Id"];
+            /** @description The domain, in IDNA A-labels. */
+            domain: string;
+            kind: components["schemas"]["AdminDomainActionKind"];
+            /** @description The reason that may be shown publicly; omitted when there is none. */
+            public_comment?: string;
+            /** @description The moderators' note; omitted when there is none. */
+            private_note?: string;
+            /** @description Whether a public list of the domain actions hides part of the domain. */
+            obfuscate: boolean;
+            state: components["schemas"]["AdminDomainActionState"];
+            /** Format: date-time */
+            issued_at: string;
+            /**
+             * Format: date-time
+             * @description When the action ends by itself; omitted for one that lasts until lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the action was lifted; omitted until it is.
+             */
+            lifted_at?: string;
+        };
+        /**
+         * @description `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
+         *     timelines and its accounts reach only their followers. `reject_media`: its media are
+         *     not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
+         *     are marked sensitive.
+         * @enum {string}
+         */
+        AdminDomainActionKind: "limit" | "suspend" | "reject_media" | "reject_reports" | "force_sensitive";
+        /** @description A page of domain actions, newest first. */
+        AdminDomainActionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminDomainAction"][];
+        };
+        /**
+         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+         *     lifted it.
+         * @enum {string}
+         */
+        AdminDomainActionState: "active" | "expired" | "lifted";
+        /** @description Whether deliveries go to a remote server (federation.md §7.3). */
+        AdminInstanceHealth: {
+            domain: string;
+            state: components["schemas"]["AdminInstanceState"];
+            /**
+             * Format: date-time
+             * @description When the server entered its state; omitted for a server without failures.
+             */
+            since?: string;
+            /** @description The number of distinct UTC days of the latest run of failed deliveries. */
+            failure_days: number;
+            /**
+             * Format: date
+             * @description The latest of those days; omitted without failures.
+             */
+            last_failure_day?: string;
+        };
+        /** @description A page of server health, in domain order. */
+        AdminInstanceHealthPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminInstanceHealth"][];
+        };
+        /**
+         * @description `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
+         *     `Reject`.
+         * @enum {string}
+         */
+        AdminInstanceState: "available" | "unavailable";
+        /** @description The current text of a key, the same in every locale. */
+        AdminInstanceText: {
+            key: components["schemas"]["InstanceTextKey"];
+            /**
+             * @description The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
+             *     Empty only in the answer to clearing it.
+             */
+            body: string;
+            /**
+             * Format: date-time
+             * @description When the revision was recorded.
+             */
+            revised_at: string;
+        };
+        /** @description The current instance texts, by key. */
+        AdminInstanceTextList: {
+            items: components["schemas"]["AdminInstanceText"][];
+        };
+        /** @description An invite that lets people sign up while the registration mode is `invite`. */
+        AdminInvite: {
+            id: components["schemas"]["Id"];
+            /** @description The code people enter on the registration page, 16 characters. */
+            code: string;
+            /**
+             * Format: uri
+             * @description The registration page with the code filled in, to send to people.
+             */
+            url: string;
+            /** @description How many sign-ups the invite allows; omitted when there is no limit. */
+            max_uses?: number;
+            /** @description How many people have signed up with the invite. */
+            uses: number;
+            state: components["schemas"]["AdminInviteState"];
+            /**
+             * Format: date-time
+             * @description When the invite stops working; omitted when it never does.
+             */
+            expires_at?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description A page of invites, newest first. */
+        AdminInvitePage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminInvite"][];
+        };
+        /**
+         * @description What the invite allows now. `usable`: people may sign up with it. `revoked`: a staff
+         *     member revoked it. `expired`: it passed `expires_at`. `exhausted`: it was used
+         *     `max_uses` times.
+         * @enum {string}
+         */
+        AdminInviteState: "usable" | "revoked" | "expired" | "exhausted";
+        /** @description A job of the job queue. */
+        AdminJob: {
+            id: components["schemas"]["Id"];
+            /** @description The job type, such as `federation.deliver`. */
+            type: string;
+            state: components["schemas"]["AdminJobState"];
+            /** @description The job's payload, a JSON document as text. */
+            payload: string;
+            idempotency_key?: string;
+            ordering_key?: string;
+            /** @description The number of runs the job had, the one in progress included. */
+            attempts: number;
+            /** @description Why the last run failed; omitted for a job whose runs did not fail. */
+            last_error?: string;
+            /**
+             * Format: date-time
+             * @description When a pending job is due; omitted for a dead job.
+             */
+            run_at?: string;
+            /** @description The worker that runs a `running` job. */
+            worker?: string;
+            /**
+             * Format: date-time
+             * @description When the lease of a `running` job ends; another worker may run it after.
+             */
+            locked_until?: string;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When a dead job failed.
+             */
+            failed_at?: string;
+        };
+        /** @description A run of a job that did not succeed. */
+        AdminJobAttempt: {
+            /** @description The number of the run, from 1. */
+            attempt: number;
+            /** @description The job type. */
+            type: string;
+            /**
+             * @description `retry`: the job runs again. `dead`: it failed for good.
+             * @enum {string}
+             */
+            outcome: "retry" | "dead";
+            /** @description Why the run failed, at most 2,000 bytes. */
+            error: string;
+            /** @description The worker that ran it. */
+            worker: string;
+            /** Format: date-time */
+            started_at: string;
+            /** Format: date-time */
+            finished_at: string;
+        };
+        /** @description A page of attempts, the most recently finished first. */
+        AdminJobAttemptPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminJobAttempt"][];
+        };
+        /** @description The number of jobs of one type in one state. */
+        AdminJobCount: {
+            state: components["schemas"]["AdminJobState"];
+            type: string;
+            /** Format: int64 */
+            count: number;
+        };
+        /** @description A page of jobs. */
+        AdminJobPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminJob"][];
+        };
+        /**
+         * @description The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
+         *     `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
+         *     failed for good (its handler gave up, or it used up its attempts).
+         * @enum {string}
+         */
+        AdminJobState: "queued" | "running" | "retrying" | "dead";
+        /**
+         * @description A password reset link that an administrator issued for a local account (FR-002). It is
+         *     shown once.
+         */
+        AdminPasswordResetLink: {
+            /**
+             * Format: uri
+             * @description The link that sets a new password; it works once.
+             */
+            url: string;
+            /**
+             * Format: date-time
+             * @description When the link stops working.
+             */
+            expires_at: string;
+        };
+        /** @description The state of the job queue (ADR-0064). */
+        AdminQueue: {
+            /** @description The queue the server runs, the `queue` setting (`db`, `inline`, `sqs`, `cloudtasks`). */
+            adapter: string;
+            /** @description Whether the queue lists its pending jobs (`queued`, `running`, `retrying`). */
+            pending_listing: boolean;
+            /**
+             * @description The jobs by state (`queued`, `running`, `retrying`, `dead`) then type; states and
+             *     types without jobs are left out. Empty without `pending_listing`.
+             */
+            counts: components["schemas"]["AdminJobCount"][];
+            /**
+             * Format: date-time
+             * @description The earliest `run_at` among the due jobs that no worker holds: how long the queue
+             *     has kept a job waiting. Omitted when no job waits, or without `pending_listing`.
+             */
+            oldest_ready_at?: string;
+        };
+        /** @description A user's registration as the moderators review it (FR-721). */
+        AdminRegistration: {
+            user_id: components["schemas"]["Id"];
+            /** @description The user's local account; omitted when it is gone. */
+            account_id?: components["schemas"]["Id"];
+            /** @description The username of the user's local account; omitted when it is gone. */
+            username?: string;
+            state: components["schemas"]["RegistrationState"];
+            /**
+             * Format: date-time
+             * @description When the registration entered its state.
+             */
+            since: string;
+            /** @description The user's primary email address; empty when there is none. */
+            email: string;
+            /** @description Whether the user confirmed the email address. */
+            email_verified: boolean;
+            /** @description Why the user wants to join, as plain text; omitted when they gave none. */
+            reason?: string;
+            /** @description The invite the user signed up with; omitted for none. */
+            invite_id?: components["schemas"]["Id"];
+            /**
+             * Format: date-time
+             * @description When the user signed up.
+             */
+            submitted_at: string;
+        };
+        /** @description A page of registrations, longest in their state first. */
+        AdminRegistrationPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminRegistration"][];
+        };
+        /** @description A relay that the instance joins or joined (ADR-0061). */
+        AdminRelay: {
+            id: components["schemas"]["Id"];
+            protocol: components["schemas"]["RelayProtocol"];
+            /** @description The URL it was registered with, its inbox or its actor. */
+            url: string;
+            /** @description Where the public posts are delivered. */
+            inbox_url: string;
+            /** @description Whether the public posts it relays are taken in; `false` only sends. */
+            receive: boolean;
+            state: components["schemas"]["RelayState"];
+            /** Format: date-time */
+            state_changed_at: string;
+            /** @description The relay's actor, which accepted the `Follow`; omitted unless `accepted`. */
+            actor_uri?: string;
+            /** @description The activities it brought in during the last 24 hours that were taken in. */
+            taken_last_day: number;
+            /**
+             * @description The activities it brought in during the last 24 hours that were dropped over the
+             *     hourly limit (`relay_ingest_hourly_limit`).
+             */
+            dropped_last_day: number;
+            /**
+             * @description Whether a domain action suspends its server: nothing goes to it or comes from it
+             *     while it does, whatever `state` says.
+             */
+            domain_suspended: boolean;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description The relays, in registration order. */
+        AdminRelayList: {
+            items: components["schemas"]["AdminRelay"][];
+        };
+        /** @description A report of an account to the moderators (FR-701). */
+        AdminReport: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The `id` of the `Flag` activity that another server sent; omitted for a report
+             *     made on this server.
+             */
+            uri?: string;
+            /** @enum {string} */
+            category: "spam" | "legal" | "violation" | "other";
+            /** @description The reporter's comment as plain text, up to 5,000 characters. */
+            comment: string;
+            /** @description Whether the report was forwarded to the target's server. */
+            forwarded: boolean;
+            /** Format: date-time */
+            filed_at: string;
+            state: components["schemas"]["AdminReportState"];
+            outcome?: components["schemas"]["AdminReportOutcome"];
+            /**
+             * Format: date-time
+             * @description When the report entered its state (when it was filed, resolved, or reopened).
+             */
+            state_changed_at: string;
+            /** @description The account of the moderator who handles the report; omitted when nobody does. */
+            assignee_account_id?: components["schemas"]["Id"];
+            reporter_account_id: components["schemas"]["Id"];
+            /** @description The reporter, often the instance actor of a remote server; omitted when the account is gone. */
+            reporter_account?: components["schemas"]["Account"];
+            target_account_id: components["schemas"]["Id"];
+            /** @description The account reported; omitted when the account is gone. */
+            target_account?: components["schemas"]["Account"];
+            /** @description The IDs of the target's posts that the report points at. */
+            status_ids: components["schemas"]["Id"][];
+            /**
+             * @description The IDs of the instance rules that the report cites, retired ones included; only a
+             *     report of the `violation` category cites rules.
+             */
+            rule_ids: components["schemas"]["Id"][];
+        };
+        /**
+         * @description A report as a moderator opens it: the report with its internal notes, the posts it
+         *     points at, and what the moderators had about its target.
+         */
+        AdminReportDetail: components["schemas"]["AdminReport"] & {
+            /** @description The moderators' notes on the report, oldest first. */
+            notes: components["schemas"]["AdminReportNote"][];
+            target_history: components["schemas"]["AdminReportTargetHistory"];
+            /**
+             * @description The posts that the report points at, in the order of `status_ids`, whatever
+             *     their visibility and also when their author deleted them, for the moderators to
+             *     review. A post that the server no longer has is left out.
+             */
+            statuses: components["schemas"]["AdminReportStatus"][];
+        };
+        /** @description A moderator's internal note on a report; never shown to the target or the reporter. */
+        AdminReportNote: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The account of the moderator who wrote the note; omitted for a note from the
+             *     command line and when the moderator has no account.
+             */
+            author_account_id?: components["schemas"]["Id"];
+            /** @description The note as plain text, up to 2,000 characters. */
+            body: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description How the report was resolved, present only while it is resolved. `actioned`: a moderator
+         *     took an action on the target. `dismissed`: there was nothing to act on.
+         * @enum {string}
+         */
+        AdminReportOutcome: "actioned" | "dismissed";
+        /** @description A page of reports, newest first. */
+        AdminReportPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminReport"][];
+        };
+        /**
+         * @description `open` reports await the moderators; `resolved` ones are handled.
+         * @enum {string}
+         */
+        AdminReportState: "open" | "resolved";
+        /**
+         * @description A post that a report points at, as a moderator reviews it. `status` is the post as it
+         *     was last, without the moderator's own relation to it (`favourited`, `boosted`,
+         *     `bookmarked`, and `pinned` are omitted).
+         */
+        AdminReportStatus: {
+            status: components["schemas"]["Status"];
+            /**
+             * Format: date-time
+             * @description When the post was deleted, by its author or otherwise; omitted when it is not.
+             */
+            deleted_at?: string;
+        };
+        /** @description What the moderators had about the target of a report. */
+        AdminReportTargetHistory: {
+            /**
+             * Format: int64
+             * @description The number of the target's other reports, open and resolved.
+             */
+            reports_count: number;
+            /**
+             * Format: int64
+             * @description The number of moderation actions on the target, ended ones included.
+             */
+            actions_count: number;
+        };
+        /**
+         * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
+         *     a user may grant, revoke, create, change, and delete only the roles at or below their
+         *     highest one, and give or take only the permissions they hold.
+         */
+        AdminRole: {
+            id: components["schemas"]["Id"];
+            /** @description The name of the role, such as `admin` or `moderator`. */
+            key: string;
+            position: number;
+            /** @description The permissions that the role grants, in the order of `Permission`. */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description Roles, highest position first. */
+        AdminRoleList: {
+            items: components["schemas"]["AdminRole"][];
+        };
+        /**
+         * @description A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
+         *     citing it.
+         */
+        AdminRule: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The sort key of the rule; the rules in effect are listed by it. Retiring a rule
+             *     leaves a gap until the next move.
+             */
+            position: number;
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted when there is none. */
+            hint?: string;
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the current revision was recorded.
+             */
+            revised_at: string;
+            /**
+             * Format: date-time
+             * @description When the rule was retired; omitted for a rule in effect.
+             */
+            retired_at?: string;
+        };
+        /** @description The rules. */
+        AdminRuleList: {
+            items: components["schemas"]["AdminRule"][];
+        };
+        /** @description The other accounts that used one IP address. */
+        AdminSameIpAccounts: {
+            ip: string;
+            accounts: components["schemas"]["AdminAccount"][];
+        };
+        /**
+         * @description An instance setting: its value and what it accepts. Every value is a string in its
+         *     canonical form, whatever its kind.
+         */
+        AdminSetting: {
+            key: components["schemas"]["InstanceSettingKey"];
+            kind: components["schemas"]["InstanceSettingKind"];
+            /** @description The current value, which is `default` when `stored` is false. */
+            value: string;
+            /** @description The value of the setting while it has never been set. */
+            default: string;
+            /** @description Whether the setting has been set; false means its default applies. */
+            stored: boolean;
+            /** @description The values an `enum` setting accepts, in order; omitted for other kinds. */
+            choices?: string[];
+            /** @description The least value of an `int` setting; omitted for other kinds. */
+            minimum?: number;
+            /** @description The greatest value of an `int` setting; omitted for other kinds. */
+            maximum?: number;
+        };
+        /** @description Every instance setting, in a fixed order. */
+        AdminSettingList: {
+            items: components["schemas"]["AdminSetting"][];
+        };
+        /** @description A block on sign-ups from the registration page (FR-719). */
+        AdminSignupBlock: {
+            id: components["schemas"]["Id"];
+            kind: components["schemas"]["AdminSignupBlockKind"];
+            /**
+             * @description What the block matches, in canonical form: a domain in IDNA A-labels
+             *     (`email_domain`), the hex SHA-256 of a canonical email address (`email_hash`), or a
+             *     masked CIDR prefix (`ip_range`).
+             */
+            value: string;
+            severity: components["schemas"]["AdminSignupBlockSeverity"];
+            /** @description The moderators' comment; omitted when there is none. */
+            comment?: string;
+            /** @description The ban the block was made from; omitted for a block added on its own. */
+            moderation_action_id?: components["schemas"]["Id"];
+            state: components["schemas"]["AdminSignupBlockState"];
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the block ends by itself; omitted for one that lasts until lifted.
+             */
+            expires_at?: string;
+            /**
+             * Format: date-time
+             * @description When the block was lifted; omitted until it is.
+             */
+            lifted_at?: string;
+        };
+        /**
+         * @description `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
+         *     email address, compared in lower case without the part of the local part from its first
+         *     `+`. `ip_range`: the client addresses in a CIDR prefix.
+         * @enum {string}
+         */
+        AdminSignupBlockKind: "email_domain" | "email_hash" | "ip_range";
+        /** @description A page of sign-up blocks, newest first. */
+        AdminSignupBlockPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminSignupBlock"][];
+        };
+        /**
+         * @description `reject`: the sign-up is refused. `require_approval`: the registration starts pending
+         *     for a moderator, whatever the registration mode.
+         * @enum {string}
+         */
+        AdminSignupBlockSeverity: "reject" | "require_approval";
+        /**
+         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
+         *     lifted it.
+         * @enum {string}
+         */
+        AdminSignupBlockState: "active" | "expired" | "lifted";
+        /** @description The instance theme as its administrators edit it. */
+        AdminTheme: {
+            /** @description The ID of the current theme revision; omitted when no theme was ever saved. */
+            revision?: string;
+            /**
+             * Format: uri
+             * @description The stylesheet of the theme; omitted when the theme changes nothing.
+             */
+            stylesheet_url?: string;
+            /** @description The overridden tokens, in the order of the token list. */
+            tokens: components["schemas"]["ThemeTokenValue"][];
+            /** @description The custom CSS; empty for none. */
+            custom_css: string;
+            /**
+             * Format: date-time
+             * @description When the current revision was recorded; omitted when no theme was ever saved.
+             */
+            revised_at?: string;
+        };
+        /** @description A webhook endpoint (ADR-0060). Its secret is never shown again after it is made. */
+        AdminWebhook: {
+            id: components["schemas"]["Id"];
+            /** @description Where the messages are posted. */
+            url: string;
+            /** @description What the webhook is for; omitted for none. */
+            description?: string;
+            /** @description The events it subscribes to, in a stable order. */
+            events: components["schemas"]["WebhookEventType"][];
+            state: components["schemas"]["AdminWebhookState"];
+            state_reason: components["schemas"]["AdminWebhookStateReason"];
+            /** Format: date-time */
+            state_changed_at: string;
+            failure?: components["schemas"]["AdminWebhookFailure"];
+            /** Format: date-time */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the URL, the description, or the events last changed.
+             */
+            updated_at: string;
+        };
+        /** @description The last attempt of a delivery. */
+        AdminWebhookAttempt: {
+            outcome: components["schemas"]["AdminWebhookAttemptOutcome"];
+            /** @description The status code of the answer; omitted without one. */
+            status_code?: number;
+            duration_ms: number;
+            /** Format: date-time */
+            attempted_at: string;
+        };
+        /**
+         * @description `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
+         *     `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
+         *     `forbidden_destination`: the server may not reach the URL (a loopback or private address
+         *     that `webhook_allowed_destinations` does not list).
+         * @enum {string}
+         */
+        AdminWebhookAttemptOutcome: "succeeded" | "http_error" | "timeout" | "connection_error" | "forbidden_destination";
+        /** @description A new webhook and its secret. */
+        AdminWebhookCreated: {
+            webhook: components["schemas"]["AdminWebhook"];
+            /**
+             * @description The secret that signs the messages, `whsec_` and the base64 of 32 bytes, as the
+             *     Standard Webhooks libraries take it. It is shown only now.
+             */
+            secret: string;
+        };
+        /** @description A message to a webhook and its attempts. */
+        AdminWebhookDelivery: {
+            id: components["schemas"]["Id"];
+            /** @description The `webhook-id` of the message, the same on every attempt. */
+            message_id: components["schemas"]["Id"];
+            event_type: components["schemas"]["WebhookMessageType"];
+            status: components["schemas"]["AdminWebhookDeliveryStatus"];
+            /** @description How many times it was sent. */
+            attempts: number;
+            last_attempt?: components["schemas"]["AdminWebhookAttempt"];
+            /** Format: date-time */
+            created_at: string;
+        };
+        /** @description A page of the deliveries of a webhook, newest first. */
+        AdminWebhookDeliveryPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["AdminWebhookDelivery"][];
+        };
+        /**
+         * @description `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
+         *     attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
+         *     sent again by hand after that.
+         * @enum {string}
+         */
+        AdminWebhookDeliveryStatus: "pending" | "succeeded" | "failing";
+        /**
+         * @description The attempts that failed since the last success; omitted when the last attempt
+         *     succeeded. The server disables the webhook once they span 72 hours and number 20.
+         */
+        AdminWebhookFailure: {
+            consecutive_failures: number;
+            /** Format: date-time */
+            first_failed_at: string;
+        };
+        /** @description The webhooks, newest first. */
+        AdminWebhookList: {
+            items: components["schemas"]["AdminWebhook"][];
+        };
+        /** @description A new secret of a webhook. */
+        AdminWebhookSecret: {
+            /** @description The new secret, as in `AdminWebhookCreated`. It is shown only now. */
+            secret: string;
+        };
+        /**
+         * @description Whether the webhook receives the messages of its events.
+         * @enum {string}
+         */
+        AdminWebhookState: "enabled" | "disabled";
+        /**
+         * @description Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
+         *     server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
+         *     it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
+         * @enum {string}
+         */
+        AdminWebhookStateReason: "admin" | "gone" | "failing";
+        /** @description An announcement of the server to every local user (FR-726), as the user sees it. */
+        Announcement: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
+             *     headings from `h2`, and `http`, `https`, and `mailto` links).
+             */
+            content: string;
+            /**
+             * Format: date-time
+             * @description When it started to show to the users, its publication or the start of its window.
+             */
+            published_at: string;
+            /**
+             * Format: date-time
+             * @description When it stops showing; omitted when it shows until it is withdrawn.
+             */
+            ends_at?: string;
+            /**
+             * Format: date-time
+             * @description When its text or window last changed.
+             */
+            updated_at: string;
+            /** @description Whether the user has marked it read. */
+            read: boolean;
+        };
+        /** @description The announcements. */
+        AnnouncementList: {
+            items: components["schemas"]["Announcement"][];
+        };
+        /** @description An appeal of an action on the user's own account. */
+        AppealModerationActionRequest: {
+            /** @description Why the moderators should reconsider the action, as plain text. */
+            text: string;
+        };
+        /**
+         * @description The authenticated user's automatic deletion of their own old posts (FR-118). A post is
+         *     deleted once it was published more than `min_age_days` days ago, unless one of the
+         *     exceptions (the `keep_` properties) keeps it.
+         */
+        AutoDeletePolicy: {
+            /** @description Whether old posts are deleted. */
+            enabled: boolean;
+            /** @description How many days after its publication a post is deleted. */
+            min_age_days: number;
+            /** @description Keep the posts pinned to the profile. */
+            keep_pinned: boolean;
+            /** @description Keep the posts that the user bookmarked. */
+            keep_bookmarked: boolean;
+            /** @description Keep the posts that the user favourited. */
+            keep_favourited: boolean;
+            /** @description Keep the posts with media attachments. */
+            keep_media: boolean;
+            /** @description Keep the posts with a poll. */
+            keep_polls: boolean;
+            /** @description Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility. */
+            keep_visibilities: components["schemas"]["Visibility"][];
+            /** @description Keep the posts boosted at least this many times; 0 keeps none for their boosts. */
+            keep_min_boosts: number;
+            /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
+            keep_min_favourites: number;
+        };
+        /** @description A change of the user's password, confirmed with `current_password` or `passkey`. */
+        ChangePasswordRequest: {
+            /** @description The user's current password, which confirms the change. */
+            current_password?: string;
+            passkey?: components["schemas"]["PasskeyAssertion"];
+            /** @description The new password, 8 to 128 characters. */
+            new_password: string;
+        };
+        /** @description The local custom emoji that a copy of a remote one becomes. */
+        CopyCustomEmojiRequest: {
+            /**
+             * @description The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
+             *     underscores; case matters. Absent, the remote emoji's.
+             */
+            shortcode?: string;
+        };
+        /** @description A moderation action to take on an account. */
+        CreateAccountActionRequest: {
+            kind: components["schemas"]["AdminAccountActionKind"];
+            /** @default other */
+            reason_category: components["schemas"]["AdminAccountActionCategory"];
+            /** @description The reason shown to the account. */
+            public_reason?: string;
+            /** @description A note for the moderators only. */
+            private_note?: string;
+            /**
+             * @description The report of the account that the action follows from. The action resolves an open
+             *     report as `actioned` in the same operation; a resolved report stays as it is.
+             */
+            report_id?: components["schemas"]["Id"];
+            /**
+             * @description Whether a local account is told of the action; ignored for a remote one.
+             * @default true
+             */
+            notify_target: boolean;
+            /**
+             * @description The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
+             *     actions on posts take none.
+             */
+            expires_in?: number;
+            /**
+             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
+             *     on; required for them and taken by no other kind.
+             */
+            status_ids?: components["schemas"]["Id"][];
+            /**
+             * @description Whether a `ban` also blocks sign-ups with the email address of the account's user (a
+             *     `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
+             *     account takes it, and a user without an email address is a 422. Omitted, nothing is
+             *     blocked.
+             */
+            block_email?: boolean;
+        };
+        /** @description A new local custom emoji. */
+        CreateCustomEmojiRequest: {
+            /** @description 2 to 30 letters (A to Z, a to z), digits, and underscores; case matters. */
+            shortcode: string;
+            media_id: components["schemas"]["Id"];
+            /** @description The category in the picker, up to 64 characters; empty for none. */
+            category?: string;
+            /** @description Other names, each following the rules of a shortcode; at most 10. */
+            aliases?: string[];
+            /**
+             * @description Whether the picker offers the emoji.
+             * @default true
+             */
+            visible_in_picker: boolean;
+        };
+        /** @description A moderation action to take on a domain. */
+        CreateDomainActionRequest: {
+            /**
+             * @description The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
+             *     accepted. The action covers its subdomains.
+             */
+            domain: string;
+            kind: components["schemas"]["AdminDomainActionKind"];
+            public_comment?: string;
+            private_note?: string;
+            /** @default false */
+            obfuscate: boolean;
+            /** @description The seconds the action lasts; omitted, it lasts until it is lifted. */
+            expires_in?: number;
+        };
+        /** @description A new invite. */
+        CreateInviteRequest: {
+            /** @description How many sign-ups the invite allows; omitted for no limit. */
+            max_uses?: number;
+            /** @description How many seconds the invite works; omitted for an invite that never expires. */
+            expires_in?: number;
+        };
+        /** @description The browser's answer to a passkey registration. */
+        CreatePasskeyRequest: {
+            /** @description The `registration_token` of `POST /passkeys/registration`. */
+            registration_token: string;
+            /**
+             * @description The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+             *     `PublicKeyCredential.toJSON()` returns for the new credential.
+             */
+            credential: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description A relay to register and join. */
+        CreateRelayRequest: {
+            protocol?: components["schemas"]["RelayProtocol"];
+            /** @description The relay's inbox (`mastodon`) or actor (`litepub`), an https URL. */
+            url: string;
+            /** @description Whether to take in the public posts it relays; `true` when omitted. */
+            receive?: boolean;
+        };
+        /** @description A note to add to a report. */
+        CreateReportNoteRequest: {
+            /** @description The note as plain text; it may not be blank. */
+            body: string;
+        };
+        /** @description A report of an account to the moderators. */
+        CreateReportRequest: {
+            /** @description The account reported, local or remote. */
+            account_id: components["schemas"]["Id"];
+            /** @description Posts of the account that the user can see, up to 20. */
+            status_ids?: components["schemas"]["Id"][];
+            category: components["schemas"]["ReportCategory"];
+            /**
+             * @description Instance rules in effect that the account broke, up to 20; only with the
+             *     `violation` category.
+             */
+            rule_ids?: components["schemas"]["Id"][];
+            /** @description A comment for the moderators as plain text. */
+            comment?: string;
+            /**
+             * @description Asks to forward the report to the server of a remote account, without naming the
+             *     reporter. It means nothing for a local account.
+             * @default false
+             */
+            forward: boolean;
+        };
+        /** @description A new role. */
+        CreateRoleRequest: {
+            /** @description The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`. */
+            key: string;
+            /** @description The rank of the role, from 0 to 999 (below `admin`). */
+            position: number;
+            /** @description The permissions that the role grants, each once. */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description A new block on sign-ups. */
+        CreateSignupBlockRequest: {
+            kind: components["schemas"]["AdminSignupBlockKind"];
+            /**
+             * @description A domain such as `spam.example` or `例え.jp` (`email_domain`), an email address or
+             *     the hex SHA-256 of a canonical one (`email_hash`), or a CIDR prefix such as
+             *     `192.0.2.0/24` or a single IP address (`ip_range`).
+             */
+            value: string;
+            severity: components["schemas"]["AdminSignupBlockSeverity"];
+            comment?: string;
+            /** @description The seconds the block lasts; omitted, it lasts until it is lifted. */
+            expires_in?: number;
+        };
+        /** @description A new status. */
+        CreateStatusRequest: {
+            text: components["schemas"]["StatusText"];
+            spoiler_text?: components["schemas"]["SpoilerText"];
+            /** @description Whether the media are sensitive. */
+            sensitive?: boolean;
+            language?: components["schemas"]["StatusLanguageInput"];
+            visibility: components["schemas"]["Visibility"];
+            in_reply_to_id?: components["schemas"]["Id"];
+            media?: components["schemas"]["StatusMediaInput"];
+            poll?: components["schemas"]["PollInput"];
+        };
+        /** @description A new webhook. */
+        CreateWebhookRequest: {
+            /**
+             * @description An absolute `https` (or `http`) URL of at most 2048 bytes, without user info or a
+             *     fragment. A destination on loopback or a private network is reached only when the
+             *     operator allows it (`webhook_allowed_destinations`).
+             */
+            url: string;
+            /** @description What the webhook is for, up to 200 characters. */
+            description?: string;
+            /** @description The events to subscribe to, at least one. */
+            events: components["schemas"]["WebhookEventType"][];
+        };
+        /** @description The authenticated user's own account, with what only its owner sees. */
+        CredentialAccount: components["schemas"]["Account"] & {
+            /** @description Whether the account may be suggested to others and listed in directories. */
+            discoverable: boolean;
+            /**
+             * @description Whether the account's profile and public posts may be indexed for search: by this
+             *     instance's search and, when the instance's `search_indexing` is `allow`, by search
+             *     engines (FR-412, ADR-0057). New accounts take the instance's default.
+             */
+            indexable: boolean;
+            /**
+             * @description Whether the account's pages state that AI may neither train on nor use them
+             *     (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
+             *     pages of this instance only; other servers and the media files do not carry it.
+             */
+            ai_opt_out: boolean;
+            source: components["schemas"]["AccountSource"];
+            posting: components["schemas"]["PostingLimits"];
+            /**
+             * @description The permissions that the user's roles grant, which the admin operations need; empty
+             *     for a user without roles. Clients show the admin screens by them; the server checks
+             *     the permission of each admin operation regardless.
+             */
+            permissions: components["schemas"]["Permission"][];
+        };
+        /** @description An opaque pagination cursor. Clients pass it back unchanged and never parse it. */
+        Cursor: string;
+        /**
+         * @description A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
+         *     An emoji that is disabled or deleted, or whose images come from a domain whose media the
+         *     instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
+         *     `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
+         *     otherwise.
+         */
+        CustomEmoji: {
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is.
+             */
+            url: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji; the same as `url` when no still version is served.
+             */
+            static_url: string;
+        };
+        /**
+         * @description The problem of a custom emoji that breaks a rule (422,
+         *     `/api/v1/problems/invalid-custom-emoji`); `reason` says which. Another 422 (a malformed
+         *     request) has none.
+         */
+        CustomEmojiProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["CustomEmojiProblemReason"];
+        };
+        /**
+         * @description Why a custom emoji is refused. `invalid_shortcode`: not 2 to 30 letters, digits, and
+         *     underscores. `shortcode_taken`: a local emoji has the shortcode. `invalid_alias`: an
+         *     alias breaks the rules of a shortcode, or there are more than 10. `invalid_category`:
+         *     the category is longer than 64 characters or not text. `media_not_found`: the media
+         *     file is not an upload of the user. `media_not_ready`: it has not finished processing.
+         *     `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
+         *     than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
+         *     `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
+         *     for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
+         *     fetched (its server did not return it, or the instance rejects the media of its domain).
+         * @enum {string}
+         */
+        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji" | "local_emoji" | "fetch_failed";
+        /** @description A request for an archive of the user's data. */
+        DataExport: {
+            id: components["schemas"]["Id"];
+            /**
+             * @description `pending` while the archive is being built, `ready` while it can be downloaded,
+             *     `failed` when it could not be built (request another one).
+             * @enum {string}
+             */
+            state: "pending" | "ready" | "failed";
+            /**
+             * Format: date-time
+             * @description When the user asked for the export.
+             */
+            requested_at: string;
+            /**
+             * Format: date-time
+             * @description When the build ended; omitted while `pending`.
+             */
+            completed_at?: string;
+            /**
+             * Format: date-time
+             * @description When the export and its archive are removed; omitted while `pending`.
+             */
+            expires_at?: string;
+            /**
+             * Format: int64
+             * @description The size of the archive in bytes; only for `ready`.
+             */
+            file_size?: number;
+        };
+        /** @description The user's latest data exports, newest first. */
+        DataExportList: {
+            items: components["schemas"]["DataExport"][];
+        };
+        /** @description An import of a CSV file, with its progress. */
+        DataImport: {
+            id: components["schemas"]["Id"];
+            kind: components["schemas"]["DataImportKind"];
+            mode: components["schemas"]["DataImportMode"];
+            /**
+             * @description `in_progress` until every entry and removal is done, then `finished`.
+             * @enum {string}
+             */
+            state: "in_progress" | "finished";
+            /**
+             * Format: date-time
+             * @description When the import started.
+             */
+            created_at: string;
+            /** @description The number of entries to add and things to remove. */
+            total: number;
+            /** @description How many of them are done, including the failed ones. */
+            processed: number;
+            /**
+             * @description How many of them could not be carried out: an account or post that cannot be found
+             *     or acted on, a follow that a block stops, or a domain that cannot be muted (this
+             *     server's own, or one beyond the most muted domains allowed).
+             */
+            failed: number;
+        };
+        /**
+         * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
+         *     accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
+         *     domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
+         *     `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
+         *     posts the user bookmarked).
+         * @enum {string}
+         */
+        DataImportKind: "following" | "blocks" | "mutes" | "domain_mutes" | "bookmarks";
+        /** @description The user's latest imports, newest first. */
+        DataImportList: {
+            items: components["schemas"]["DataImport"][];
+        };
+        /**
+         * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
+         *     what the user has that the file does not list.
+         * @enum {string}
+         */
+        DataImportMode: "merge" | "overwrite";
+        /** @description What an import of a CSV file would do. */
+        DataImportPreview: {
+            /** @description The number of entries of the file, each of which the import adds. */
+            entries: number;
+            /** @description How many of the entries the user has already. */
+            present: number;
+            /**
+             * @description How many things the user has of the kind that the file does not list, which an
+             *     `overwrite` removes; 0 for a `merge`.
+             */
+            removals: number;
+            /** @description The lines that are not entries, in line order. */
+            skipped: components["schemas"]["DataImportSkipped"][];
+        };
+        /** @description A CSV file to import, and how. */
+        DataImportRequest: {
+            kind: components["schemas"]["DataImportKind"];
+            mode: components["schemas"]["DataImportMode"];
+            /** @description The content of the CSV file, in UTF-8. */
+            text: string;
+        };
+        /** @description A line of a CSV file that is not an entry. */
+        DataImportSkipped: {
+            /** @description The line of the file, from 1. */
+            line: number;
+            /** @description The line as written. */
+            value: string;
+            /**
+             * @description `invalid`: the line names no account address (for bookmarks, no post URL; for
+             *     domain mutes, no domain).
+             *     `duplicate`: an earlier line names the same account, post, or domain.
+             * @enum {string}
+             */
+            reason: "invalid" | "duplicate";
+        };
+        /** @description The moderators' explanation of a decision on an appeal. */
+        DecideAppealRequest: {
+            /** @description Shown to the user who appealed, as plain text. */
+            public_reason?: string;
+        };
+        /** @description The confirmation of the deletion of the user's own account: `password` or `passkey`. */
+        DeleteOwnAccountRequest: {
+            /** @description The user's current password. */
+            password?: string;
+            passkey?: components["schemas"]["PasskeyAssertion"];
+        };
+        /**
+         * @description A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
+         *     such as `例え.jp` is accepted) and the public comment (at most 5,000 characters).
+         */
+        DomainBlock: {
+            domain: string;
+            severity: components["schemas"]["DomainBlockSeverity"];
+            reject_media: boolean;
+            reject_reports: boolean;
+            public_comment?: string;
+            obfuscate: boolean;
+        };
+        /** @description What importing each row of a domain block CSV would do, in row order. */
+        DomainBlockImportPreview: {
+            rows: components["schemas"]["DomainBlockImportRow"][];
+        };
+        /** @description What an import of domain blocks did. */
+        DomainBlockImportResult: {
+            /** @description The actions issued, in the order of the blocks. */
+            issued: components["schemas"]["AdminDomainAction"][];
+            /** @description The blocks that issued nothing, in their order. */
+            skipped: components["schemas"]["DomainBlockImportSkipped"][];
+        };
+        /** @description A row of a domain block CSV and what importing it would do. */
+        DomainBlockImportRow: {
+            /** @description The line of the file the row starts on, from 1. */
+            line: number;
+            /** @description The domain as written in the row. */
+            written_domain: string;
+            /**
+             * @description The row, with its domain normalized (IDNA A-labels in lower case); absent when
+             *     the row is `invalid`. The import takes it as it is.
+             */
+            block?: components["schemas"]["DomainBlock"];
+            status: components["schemas"]["DomainBlockImportStatus"];
+            /** @description The kinds of the actions the import would issue; empty unless `importable`. */
+            issue: components["schemas"]["AdminDomainActionKind"][];
+        };
+        /** @description A block of an import that issued nothing. */
+        DomainBlockImportSkipped: {
+            /** @description The domain as sent. */
+            domain: string;
+            /** @description Why it issued nothing; never `importable`. */
+            reason: components["schemas"]["DomainBlockImportStatus"];
+        };
+        /**
+         * @description What importing a row would do. `importable`: it issues the actions of `issue`.
+         *     `already_applied`: an action in effect of each of the row's kinds covers the domain
+         *     already, on it or on a parent domain. `no_action`: the row stands for no action (a
+         *     `noop` without rejections). `duplicate`: an earlier row has the same domain once
+         *     normalized. `invalid`: the domain, the severity, or the public comment is not valid.
+         * @enum {string}
+         */
+        DomainBlockImportStatus: "importable" | "already_applied" | "no_action" | "duplicate" | "invalid";
+        /**
+         * @description The `#severity` of Mastodon's domain block CSV. `suspend`: the action `suspend`.
+         *     `silence`: Mastodon's name of the action `limit`. `noop`: no action but the rejections.
+         * @enum {string}
+         */
+        DomainBlockSeverity: "suspend" | "silence" | "noop";
+        /** @description A domain that the viewer mutes, with its subdomains. */
+        DomainMute: {
+            /** @description The domain, in IDNA A-labels. */
+            domain: string;
+            /**
+             * Format: date-time
+             * @description When the viewer muted the domain.
+             */
+            created_at: string;
+        };
+        /** @description A page of domain mutes. */
+        DomainMutePage: components["schemas"]["PageInfo"] & {
+            domain_mutes: components["schemas"]["DomainMute"][];
+        };
+        /** @description The new content of a status. */
+        EditStatusRequest: {
+            text: components["schemas"]["StatusText"];
+            spoiler_text?: components["schemas"]["SpoilerText"];
+            /** @description Whether the media are sensitive. */
+            sensitive?: boolean;
+            language?: components["schemas"]["StatusLanguageInput"];
+            media?: components["schemas"]["StatusMediaInput"];
+        };
+        /** @description The setup to enroll and a code of the app that shows it has the secret. */
+        EnableTotpRequest: {
+            /** @description The `setup_token` of `POST /two_factor/totp/setup`. */
+            setup_token: string;
+            /** @description The six-digit code that the app shows now. */
+            code: string;
+        };
+        /** @description The viewer's preferences of the follow; a preference left out keeps its value. */
+        FollowAccountRequest: {
+            /** @description Show the account's boosts in the home timeline. New follows show them. */
+            show_boosts?: boolean;
+            /** @description Notify the viewer of the account's new posts. New follows do not. */
+            notify?: boolean;
+        };
+        /**
          * Format: uuid
          * @description The ID of a resource, a UUIDv7 in its canonical string form.
          * @example 01890a5d-ac96-774b-bcce-b302099a8057
          */
         Id: string;
-        /** @description An opaque pagination cursor. Clients pass it back unchanged and never parse it. */
-        Cursor: string;
-        /** @description The pagination of a collection page; collection responses embed it with allOf. */
-        PageInfo: {
-            next_cursor?: components["schemas"]["Cursor"];
+        /** @description The rows of a domain block CSV to import. */
+        ImportDomainBlocksRequest: {
+            blocks: components["schemas"]["DomainBlock"][];
+            /** @description The private note of every action issued. */
+            private_note?: string;
         };
-        /**
-         * @description An RFC 9457 problem document. Besides `about:blank`, `type` is one of
-         *
-         *     - `/api/v1/problems/unauthenticated` (401): the operation needs an access token and
-         *       the request has none.
-         *     - `/api/v1/problems/invalid-token` (401): the access token is malformed, unknown,
-         *       expired, or revoked. Refresh it or sign in again.
-         *     - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
-         *       `WWW-Authenticate` names.
-         *     - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
-         *       use the app (registration pending or rejected, email unverified, the account
-         *       deactivated or deleted, or a moderation action that disables its login). The user
-         *       can still sign in to the server's sign-in page, which says why.
-         *     - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
-         *       from following it. Unblock it first.
-         *     - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
-         *       instance accepts.
-         *     - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
-         *       accepted format or codec (such as HEVC video), or its declared type does not match its
-         *       content.
-         *     - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
-         *       many pixels or frames; or the video has too many pixels or frames per second.
-         *     - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
-         *       instance accepts.
-         *     - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
-         *       its format.
-         *     - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
-         *       no longer be changed on its own.
-         *     - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
-         *       (`GET /streaming`) open as the server allows. Close one first.
-         *     - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
-         *       that an admin operation needs.
-         *     - `/api/v1/problems/already-appealed` (422): the user already appealed the moderation
-         *       action; an action is appealed once.
-         *     - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
-         *       action has passed.
-         *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
-         *       account is deleted, so it can no longer be appealed or overturned.
-         *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
-         *     - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
-         *       not the user's current password.
-         *     - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
-         *       built. Wait for it to end.
-         *     - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
-         *       it is being built, failed, or expired.
-         *     - `/api/v1/problems/import-in-progress` (409): another import of the user is being
-         *       carried out. Wait for it to finish.
-         *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
-         *       already used, or is not a code.
-         *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
-         *       Start a new one.
-         *     - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
-         *       authentication.
-         *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
-         *       operation, has no two-factor authentication.
-         *     - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
-         *       registration or confirmation does not verify, the passkey is registered already, or
-         *       the passkey that confirms an operation is not one of the user's.
-         *     - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
-         *       unknown or expired. Start a new one.
-         *     - `/api/v1/problems/passkey-confirmation-expired` (422): the confirmation with a passkey
-         *       is unknown, expired, or used. Start a new one.
-         *     - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
-         *       allowed. Remove one first.
-         *     - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
-         *       way to sign in: the password without a passkey, or the last passkey without a password.
-         *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
-         *       says which.
-         *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
-         *       which.
-         *     - `/api/v1/problems/invalid-relay` (422): a relay cannot be registered, joined, left, or
-         *       deleted; `reason` says why.
-         *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
-         *       reason in `theme_errors` (`PUT /admin/theme`).
-         *     - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
-         *       allowed. Unmute one first.
-         */
-        Problem: {
+        /** @description A list of values to block sign-ups by, all with the same settings. */
+        ImportSignupBlocksRequest: {
+            kind: components["schemas"]["AdminSignupBlockKind"];
             /**
-             * Format: uri-reference
-             * @description A URI that identifies the problem type, stable for clients to branch on.
-             *     It is `about:blank` when the problem means no more than its HTTP status.
+             * @description The list: one value per line, or a CSV row whose first field is the value; blank
+             *     lines and lines starting with `#` are ignored. At most 10,000 values.
              */
-            type: string;
-            /** @description A short summary of the problem type, localized from `Accept-Language`. */
-            title: string;
-            /** @description The HTTP status code. */
-            status: number;
-            /** @description An explanation of this occurrence, localized from `Accept-Language`. */
-            detail?: string;
-            /** @description The request ID (the `X-Request-Id` response header), for reporting the problem. */
-            request_id?: string;
+            text: string;
+            severity: components["schemas"]["AdminSignupBlockSeverity"];
+            /** @description The comment of every block added. */
+            comment?: string;
+            /** @description The seconds each block lasts; omitted, they last until they are lifted. */
+            expires_in?: number;
         };
         /** @description Public information about the instance. */
         Instance: {
@@ -4071,75 +5765,6 @@ export interface components {
             /** @description The email address to contact; omitted when there is none. */
             email?: string;
         };
-        /**
-         * @description The image that represents the instance (the instance setting `thumbnail`): the large still
-         *     variant of the media file. Omitted when there is none, or while the file is processing.
-         */
-        InstanceThumbnail: {
-            /** Format: uri */
-            url: string;
-            width: number;
-            height: number;
-            /** @description The alt text (the instance text `thumbnail_alt`); omitted when there is none. */
-            alt?: string;
-        };
-        /**
-         * @description Whether the instance lets search engines index its pages (the instance setting
-         *     `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
-         *     that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
-         *     the reverse.
-         * @enum {string}
-         */
-        SearchIndexing: "allow" | "deny";
-        /**
-         * @description What the instance states to AI crawlers (the instance setting `ai_usage`, FR-725, ADR-0057).
-         *     `allow`: no reservation; `deny_training`: no training of AI models; `deny`: no training
-         *     and no use by AI search, assistants, and agents. An account can opt out of what the
-         *     instance allows (`ai_opt_out`), never the reverse.
-         * @enum {string}
-         */
-        AIUsage: "allow" | "deny_training" | "deny";
-        /** @description How people sign up on the instance. */
-        InstanceRegistrations: {
-            /**
-             * @description Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
-             *     approval), `invite` (only with an invite), or `closed` (nobody).
-             * @enum {string}
-             */
-            mode: "open" | "approval" | "invite" | "closed";
-        };
-        /** @description Limits that clients check before sending a request. */
-        InstanceLimits: {
-            /** @description The maximum number of characters in the text and content warning of a post. */
-            max_post_characters: number;
-            /**
-             * @description Whether every media file attached to a post needs an alternative text (the instance
-             *     setting `require_media_description`, FR-105). While it is on, a post or an edit with
-             *     a media file without one is a 422, so clients ask for it before sending.
-             */
-            require_media_description: boolean;
-        };
-        /**
-         * @description Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
-         *     clients do not offer it.
-         */
-        InstanceTimelines: {
-            /** @description Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`). */
-            local: boolean;
-            /** @description Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`). */
-            federated: boolean;
-        };
-        /**
-         * @description A rule of the instance (FR-705). Its text and hint hold one value each, written in any
-         *     language and the same in every locale. Reports cite it by `id`.
-         */
-        InstanceRule: {
-            id: components["schemas"]["Id"];
-            /** @description The rule, on one line, as plain text. */
-            text: string;
-            /** @description An explanation of the rule, as plain text; omitted when there is none. */
-            hint?: string;
-        };
         /** @description A moderation action in effect on a remote domain and its subdomains, as the instance lists it publicly (FR-718). */
         InstanceDomainAction: {
             /**
@@ -4162,178 +5787,174 @@ export interface components {
         InstanceDomainActionPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["InstanceDomainAction"][];
         };
-        /** @description An account, as clients show it (FR-006). */
-        Account: {
-            id: components["schemas"]["Id"];
-            /** @description The username, without the domain. */
-            username: string;
-            /** @description The username for local accounts, `username@domain` for remote ones. */
-            acct: string;
+        /** @description Limits that clients check before sending a request. */
+        InstanceLimits: {
+            /** @description The maximum number of characters in the text and content warning of a post. */
+            max_post_characters: number;
             /**
-             * @description The domain of the account: the domain of its handle, which for local accounts is the
-             *     instance's account domain, or the host of its `uri` when a remote account has no
-             *     confirmed handle.
+             * @description Whether every media file attached to a post needs an alternative text (the instance
+             *     setting `require_media_description`, FR-105). While it is on, a post or an edit with
+             *     a media file without one is a 422, so clients ask for it before sending.
              */
-            domain: string;
-            /**
-             * Format: uri
-             * @description The ActivityPub id of the account's actor, on the server it belongs to.
-             */
-            uri: string;
-            /** @description The display name; empty when the account has none. */
-            display_name: string;
-            /** @description The profile text as sanitized HTML; empty when there is none. */
-            note: string;
-            /**
-             * Format: uri
-             * @description The account's profile page: on this instance for a local account, and for a remote
-             *     one the page its actor declares (`url`), or its `uri` when it declares none.
-             */
-            url: string;
-            /** @description Whether follow requests need the account's approval. */
-            locked: boolean;
-            /** @description Whether the account is automated. */
-            bot: boolean;
-            /**
-             * Format: date-time
-             * @description When the account was created.
-             */
-            created_at: string;
-            /** @description The profile's metadata fields, in their order; empty when there are none. */
-            fields: components["schemas"]["ProfileField"][];
-            /**
-             * @description The custom emoji of the display name, the note, and the fields' names and values
-             *     (ADR-0051). Clients show each `:shortcode:` of those texts that is in this list as its
-             *     image, and the rest as text.
-             */
-            emojis: components["schemas"]["CustomEmoji"][];
-            /**
-             * @description The avatar image, square; omitted when the account has none, or its image is not
-             *     processed yet or could not be processed. Clients show a placeholder instead. For a
-             *     remote account, every size is its media proxy URL.
-             */
-            avatar?: components["schemas"]["MediaVariants"];
-            /** @description The header image; omitted when there is none, as `avatar` is. */
-            header?: components["schemas"]["MediaVariants"];
-            /**
-             * @description The number of accounts that actively follow the account, as far as the instance
-             *     knows. Present on the account's own endpoints (`getAccount`, `lookupAccount`,
-             *     `verifyAccountCredentials`) and left out where accounts are listed or embedded.
-             */
-            followers_count?: number;
-            /** @description The number of accounts that the account actively follows; present where `followers_count` is. */
-            following_count?: number;
+            require_media_description: boolean;
         };
-        /** @description A page of accounts. */
-        AccountPage: components["schemas"]["PageInfo"] & {
-            accounts: components["schemas"]["Account"][];
-        };
-        /** @description The viewer's preferences of the follow; a preference left out keeps its value. */
-        FollowAccountRequest: {
-            /** @description Show the account's boosts in the home timeline. New follows show them. */
-            show_boosts?: boolean;
-            /** @description Notify the viewer of the account's new posts. New follows do not. */
-            notify?: boolean;
-        };
-        /** @description The settings of a mute. */
-        MuteAccountRequest: {
+        /** @description How people sign up on the instance. */
+        InstanceRegistrations: {
             /**
-             * @description Also hide the account's notifications.
-             * @default true
+             * @description Who may sign up: `open` (anyone), `approval` (sign-ups wait for a moderator's
+             *     approval), `invite` (only with an invite), or `closed` (nobody).
+             * @enum {string}
              */
-            notifications: boolean;
-            /**
-             * @description How long the mute lasts, in seconds; 0 mutes until unmuted.
-             * @default 0
-             */
-            duration: number;
-        };
-        /** @description A page of mutes. */
-        MutePage: components["schemas"]["PageInfo"] & {
-            mutes: components["schemas"]["MutedAccount"][];
-        };
-        /** @description An account that the viewer mutes, with the mute's settings. */
-        MutedAccount: {
-            account: components["schemas"]["Account"];
-            /** @description Whether the mute also hides the account's notifications. */
-            notifications: boolean;
-            /**
-             * Format: date-time
-             * @description When the mute ends; left out for a mute until unmuted.
-             */
-            expires_at?: string;
-        };
-        /** @description The domain to mute. */
-        MuteDomainRequest: {
-            /** @description A remote domain, such as `mastodon.example`; its subdomains are muted too. */
-            domain: string;
-        };
-        /** @description A domain that the viewer mutes, with its subdomains. */
-        DomainMute: {
-            /** @description The domain, in IDNA A-labels. */
-            domain: string;
-            /**
-             * Format: date-time
-             * @description When the viewer muted the domain.
-             */
-            created_at: string;
-        };
-        /** @description A page of domain mutes. */
-        DomainMutePage: components["schemas"]["PageInfo"] & {
-            domain_mutes: components["schemas"]["DomainMute"][];
-        };
-        /** @description One metadata field of a profile. */
-        ProfileField: {
-            /** @description The field's name, as plain text. */
-            name: string;
-            /** @description The field's value as sanitized HTML. */
-            value: string;
+            mode: "open" | "approval" | "invite" | "closed";
         };
         /**
-         * @description A custom emoji that a text uses (FR-111, ADR-0051 §4). The text has it as `:shortcode:`.
-         *     An emoji that is disabled or deleted, or whose images come from a domain whose media the
-         *     instance rejects (FR-702), is not listed, and its `:shortcode:` stays text. Clients show
-         *     `static_url` when animations should not play (`prefers-reduced-motion`), and `url`
-         *     otherwise.
+         * @description A rule of the instance (FR-705). Its text and hint hold one value each, written in any
+         *     language and the same in every locale. Reports cite it by `id`.
          */
-        CustomEmoji: {
-            /** @description The shortcode, without the colons around it. */
-            shortcode: string;
-            /**
-             * Format: uri
-             * @description The URL of the image, animated when the emoji is.
-             */
-            url: string;
-            /**
-             * Format: uri
-             * @description The URL of a still image of the emoji; the same as `url` when no still version is served.
-             */
-            static_url: string;
+        InstanceRule: {
+            id: components["schemas"]["Id"];
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted when there is none. */
+            hint?: string;
         };
         /**
-         * @description The viewer's relationship with an account. It never says whether the account blocks
-         *     the viewer: such an account is not found at all.
+         * @description The text and the hint of a rule, written once in any language and shown as they are in
+         *     every locale; they replace the earlier ones.
          */
-        Relationship: {
-            id: components["schemas"]["Id"];
-            /** @description Whether the viewer actively follows the account. */
-            following: boolean;
-            /** @description Whether the viewer's follow request awaits the account's approval. */
-            requested: boolean;
-            /** @description Whether the account actively follows the viewer. */
-            followed_by: boolean;
-            /** @description Whether the account's follow request awaits the viewer's approval. */
-            requested_by: boolean;
-            /** @description Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow). */
-            show_boosts: boolean;
-            /** @description Whether the viewer's follow notifies them of the account's new posts. */
-            notify: boolean;
-            /** @description Whether the viewer blocks the account. */
-            blocking: boolean;
-            /** @description Whether the viewer mutes the account (a mute that has not expired). */
-            muting: boolean;
-            /** @description Whether the viewer's mute also hides the account's notifications. */
-            muting_notifications: boolean;
+        InstanceRuleInput: {
+            /** @description The rule, on one line, as plain text. */
+            text: string;
+            /** @description An explanation of the rule, as plain text; omitted or empty for none. */
+            hint?: string;
+        };
+        /**
+         * @description The key of an instance setting (docs/operations/instance-settings.md). New keys may be
+         *     added; clients show the ones they know.
+         * @enum {string}
+         */
+        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled";
+        /**
+         * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
+         *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
+         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
+         *     the username of a local account, or empty for none. `email`: an email address such as
+         *     `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
+         *     none.
+         * @enum {string}
+         */
+        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "account" | "email" | "uri";
+        /**
+         * @description The key of an instance text: the name (one line), the short and full descriptions,
+         *     the terms of service and the privacy policy (Markdown), and the alternative texts of the
+         *     preview image and the thumbnail.
+         * @enum {string}
+         */
+        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt";
+        /**
+         * @description The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
+         *     stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
+         *     instance has no theme.
+         */
+        InstanceTheme: {
+            revision: string;
+            /** Format: uri */
+            stylesheet_url: string;
+            tokens: components["schemas"]["ThemeTokenValue"][];
+        };
+        /**
+         * @description The image that represents the instance (the instance setting `thumbnail`): the large still
+         *     variant of the media file. Omitted when there is none, or while the file is processing.
+         */
+        InstanceThumbnail: {
+            /** Format: uri */
+            url: string;
+            width: number;
+            height: number;
+            /** @description The alt text (the instance text `thumbnail_alt`); omitted when there is none. */
+            alt?: string;
+        };
+        /**
+         * @description Which public timelines the instance serves (FR-202). A timeline that is off is a 404, so
+         *     clients do not offer it.
+         */
+        InstanceTimelines: {
+            /** @description Whether `GET /timelines/local` serves the local timeline (the instance setting `local_timeline_enabled`). */
+            local: boolean;
+            /** @description Whether `GET /timelines/public` serves the federated timeline (the instance setting `federated_timeline_enabled`). */
+            federated: boolean;
+        };
+        /** @description Why an action on an account is lifted. */
+        LiftAccountActionRequest: {
+            reason?: string;
+        };
+        /**
+         * @description The card of the first link in a status (ADR-0062): the title, description, and image
+         *     that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
+         *     after the status was posted or received. Omitted from a status with attachments or a
+         *     poll, from a status whose link has no card yet, and when the instance setting
+         *     `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
+         *     it was posted may have none.
+         *
+         *     Clients show the card as one link to `url` and, under a content warning, only once the
+         *     warning is opened. When the status is `sensitive`, the image is hidden until the viewer
+         *     shows it.
+         */
+        LinkCard: {
+            /**
+             * Format: uri
+             * @description The page that the card links to, after redirects.
+             */
+            url: string;
+            /** @description The title of the page, as plain text. */
+            title: string;
+            /** @description The description of the page, as plain text; empty when it has none. */
+            description: string;
+            /** @description The name of the site, as plain text; the host of `url` when the page names none. */
+            site_name: string;
+            /** @description The author that the page names, as plain text; omitted when it names none. */
+            author_name?: string;
+            /**
+             * Format: date-time
+             * @description When the page says it was published; omitted when it does not say.
+             */
+            published_at?: string;
+            /** @description The BCP 47 language of the page; omitted when it does not say. */
+            language?: string;
+            image?: components["schemas"]["LinkCardImage"];
+            /**
+             * @description The account that the page names as its creator (`fediverse:creator`), given only when
+             *     the account's server lists the page's domain among its `attributionDomains`.
+             */
+            author?: components["schemas"]["Account"];
+        };
+        /**
+         * @description The image of a link card, served by this server's media proxy in the small size of an
+         *     attachment's image. An animated image is its first frame.
+         */
+        LinkCardImage: {
+            /**
+             * Format: uri
+             * @description The image through the media proxy.
+             */
+            url: string;
+            /** @description The width of the original image in pixels. */
+            width: number;
+            /** @description The height of the original image in pixels. */
+            height: number;
+            /** @description The blurhash (https://blurha.sh) of the image, to show while it loads. */
+            blurhash?: string;
+            /** @description The alternative text of the image (`og:image:alt`); omitted when it has none. */
+            description?: string;
+        };
+        /**
+         * @description The moving renditions of an animation, absent for a still image: animated WebP for
+         *     `small` and `medium`, and a GIF for `large`.
+         */
+        MediaAnimatedVariants: {
+            small: components["schemas"]["MediaVariant"];
+            medium: components["schemas"]["MediaVariant"];
+            large: components["schemas"]["MediaVariant"];
         };
         /**
          * @description A media file, as an upload of the user (the media operations) or as an attachment of
@@ -4485,15 +6106,6 @@ export interface components {
             animated?: components["schemas"]["MediaAnimatedVariants"];
         };
         /**
-         * @description The moving renditions of an animation, absent for a still image: animated WebP for
-         *     `small` and `medium`, and a GIF for `large`.
-         */
-        MediaAnimatedVariants: {
-            small: components["schemas"]["MediaVariant"];
-            medium: components["schemas"]["MediaVariant"];
-            large: components["schemas"]["MediaVariant"];
-        };
-        /**
          * @description A moderation action on the authenticated user's own account (FR-715, NFR-MOD-6), as the
          *     user sees it. It never carries the moderators' private note, the report the action
          *     follows from, or who filed the report or issued the action.
@@ -4543,187 +6155,6 @@ export interface components {
             items: components["schemas"]["ModerationAction"][];
         };
         /**
-         * @description A local user's appeal of an action on their account, as the moderators see it, with the
-         *     action.
-         */
-        AdminAppeal: {
-            id: components["schemas"]["Id"];
-            /** @description The account that appealed, which the action is on. */
-            account_id: components["schemas"]["Id"];
-            /** @description What the user wrote, as plain text. */
-            text: string;
-            state: components["schemas"]["ModerationAppealState"];
-            /** Format: date-time */
-            submitted_at: string;
-            action: components["schemas"]["AdminAccountAction"];
-            /**
-             * Format: date-time
-             * @description When a moderator decided the appeal; omitted while pending.
-             */
-            decided_at?: string;
-            /** @description The moderators' explanation of the decision to the user; omitted when there is none. */
-            decision_reason?: string;
-            /**
-             * @description The account of the moderator who decided; omitted while pending and for a decision
-             *     from the command line.
-             */
-            decided_by_account_id?: components["schemas"]["Id"];
-        };
-        /** @description A page of appeals, newest first. */
-        AdminAppealPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminAppeal"][];
-        };
-        /** @description The confirmation of the deletion of the user's own account: `password` or `passkey`. */
-        DeleteOwnAccountRequest: {
-            /** @description The user's current password. */
-            password?: string;
-            passkey?: components["schemas"]["PasskeyAssertion"];
-        };
-        /** @description Whether the authenticated user has a password. */
-        PasswordStatus: {
-            /**
-             * @description Whether the password signs in; false after the user removed it, when only the
-             *     passkeys sign in.
-             */
-            has_password: boolean;
-        };
-        /** @description The passkey that confirms the removal of the user's password. */
-        RemovePasswordRequest: {
-            passkey: components["schemas"]["PasskeyAssertion"];
-        };
-        /** @description A change of the user's password, confirmed with `current_password` or `passkey`. */
-        ChangePasswordRequest: {
-            /** @description The user's current password, which confirms the change. */
-            current_password?: string;
-            passkey?: components["schemas"]["PasskeyAssertion"];
-            /** @description The new password, 8 to 128 characters. */
-            new_password: string;
-        };
-        /** @description A request for an archive of the user's data. */
-        DataExport: {
-            id: components["schemas"]["Id"];
-            /**
-             * @description `pending` while the archive is being built, `ready` while it can be downloaded,
-             *     `failed` when it could not be built (request another one).
-             * @enum {string}
-             */
-            state: "pending" | "ready" | "failed";
-            /**
-             * Format: date-time
-             * @description When the user asked for the export.
-             */
-            requested_at: string;
-            /**
-             * Format: date-time
-             * @description When the build ended; omitted while `pending`.
-             */
-            completed_at?: string;
-            /**
-             * Format: date-time
-             * @description When the export and its archive are removed; omitted while `pending`.
-             */
-            expires_at?: string;
-            /**
-             * Format: int64
-             * @description The size of the archive in bytes; only for `ready`.
-             */
-            file_size?: number;
-        };
-        /** @description The user's latest data exports, newest first. */
-        DataExportList: {
-            items: components["schemas"]["DataExport"][];
-        };
-        /**
-         * @description What a CSV file lists: `following` (the accounts the user follows), `blocks` (the
-         *     accounts the user blocks), `mutes` (the accounts the user mutes), `domain_mutes` (the
-         *     domains the user mutes, FR-304; Mastodon's `blocked_domains.csv` with the header
-         *     `#domain`, which a Mastodon user's blocked domains become here), or `bookmarks` (the
-         *     posts the user bookmarked).
-         * @enum {string}
-         */
-        DataImportKind: "following" | "blocks" | "mutes" | "domain_mutes" | "bookmarks";
-        /**
-         * @description `merge` adds the file's entries and keeps what the user has; `overwrite` also removes
-         *     what the user has that the file does not list.
-         * @enum {string}
-         */
-        DataImportMode: "merge" | "overwrite";
-        /** @description A CSV file to import, and how. */
-        DataImportRequest: {
-            kind: components["schemas"]["DataImportKind"];
-            mode: components["schemas"]["DataImportMode"];
-            /** @description The content of the CSV file, in UTF-8. */
-            text: string;
-        };
-        /** @description What an import of a CSV file would do. */
-        DataImportPreview: {
-            /** @description The number of entries of the file, each of which the import adds. */
-            entries: number;
-            /** @description How many of the entries the user has already. */
-            present: number;
-            /**
-             * @description How many things the user has of the kind that the file does not list, which an
-             *     `overwrite` removes; 0 for a `merge`.
-             */
-            removals: number;
-            /** @description The lines that are not entries, in line order. */
-            skipped: components["schemas"]["DataImportSkipped"][];
-        };
-        /** @description A line of a CSV file that is not an entry. */
-        DataImportSkipped: {
-            /** @description The line of the file, from 1. */
-            line: number;
-            /** @description The line as written. */
-            value: string;
-            /**
-             * @description `invalid`: the line names no account address (for bookmarks, no post URL; for
-             *     domain mutes, no domain).
-             *     `duplicate`: an earlier line names the same account, post, or domain.
-             * @enum {string}
-             */
-            reason: "invalid" | "duplicate";
-        };
-        /** @description An import of a CSV file, with its progress. */
-        DataImport: {
-            id: components["schemas"]["Id"];
-            kind: components["schemas"]["DataImportKind"];
-            mode: components["schemas"]["DataImportMode"];
-            /**
-             * @description `in_progress` until every entry and removal is done, then `finished`.
-             * @enum {string}
-             */
-            state: "in_progress" | "finished";
-            /**
-             * Format: date-time
-             * @description When the import started.
-             */
-            created_at: string;
-            /** @description The number of entries to add and things to remove. */
-            total: number;
-            /** @description How many of them are done, including the failed ones. */
-            processed: number;
-            /**
-             * @description How many of them could not be carried out: an account or post that cannot be found
-             *     or acted on, a follow that a block stops, or a domain that cannot be muted (this
-             *     server's own, or one beyond the most muted domains allowed).
-             */
-            failed: number;
-        };
-        /** @description The user's latest imports, newest first. */
-        DataImportList: {
-            items: components["schemas"]["DataImport"][];
-        };
-        /** @description An appeal of an action on the user's own account. */
-        AppealModerationActionRequest: {
-            /** @description Why the moderators should reconsider the action, as plain text. */
-            text: string;
-        };
-        /** @description The moderators' explanation of a decision on an appeal. */
-        DecideAppealRequest: {
-            /** @description Shown to the user who appealed, as plain text. */
-            public_reason?: string;
-        };
-        /**
          * @description The authenticated user's appeal of an action on their account. It never names the
          *     moderator who decided it.
          */
@@ -4748,6 +6179,44 @@ export interface components {
          * @enum {string}
          */
         ModerationAppealState: "pending" | "upheld" | "overturned";
+        /** @description The new place of a rule. */
+        MoveInstanceRuleRequest: {
+            /** @description The place among the rules in effect, from 1. */
+            position: number;
+        };
+        /** @description The settings of a mute. */
+        MuteAccountRequest: {
+            /**
+             * @description Also hide the account's notifications.
+             * @default true
+             */
+            notifications: boolean;
+            /**
+             * @description How long the mute lasts, in seconds; 0 mutes until unmuted.
+             * @default 0
+             */
+            duration: number;
+        };
+        /** @description The domain to mute. */
+        MuteDomainRequest: {
+            /** @description A remote domain, such as `mastodon.example`; its subdomains are muted too. */
+            domain: string;
+        };
+        /** @description A page of mutes. */
+        MutePage: components["schemas"]["PageInfo"] & {
+            mutes: components["schemas"]["MutedAccount"][];
+        };
+        /** @description An account that the viewer mutes, with the mute's settings. */
+        MutedAccount: {
+            account: components["schemas"]["Account"];
+            /** @description Whether the mute also hides the account's notifications. */
+            notifications: boolean;
+            /**
+             * Format: date-time
+             * @description When the mute ends; left out for a mute until unmuted.
+             */
+            expires_at?: string;
+        };
         /** @description A notification of something that happened to the authenticated user. */
         Notification: {
             id: components["schemas"]["Id"];
@@ -4778,23 +6247,6 @@ export interface components {
             /** @description The emoji of a `reaction`; omitted for the other types. */
             reaction?: components["schemas"]["ReactionEmoji"];
         };
-        /**
-         * @description The follows that a `relationships_severed` tells of: the user lost them when the
-         *     moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
-         *     account (`account_suspension`, the notification's `account` is the account). Both
-         *     directions end, follow requests too, and lifting the suspension does not restore them;
-         *     the counts are of the accepted follows.
-         */
-        RelationshipSeverance: {
-            /** @enum {string} */
-            kind: "domain_suspension" | "account_suspension";
-            /** @description The suspended server of a `domain_suspension`; omitted otherwise. */
-            domain?: string;
-            /** @description The accounts that followed the user and no longer do. */
-            followers_lost: number;
-            /** @description The accounts that the user followed and no longer does. */
-            following_lost: number;
-        };
         /** @description How far the authenticated user has read the notifications. */
         NotificationMarker: {
             /** @description The newest notification read; omitted when the user has read none. */
@@ -4812,37 +6264,6 @@ export interface components {
         /** @description A page of notifications, newest first. */
         NotificationPage: components["schemas"]["PageInfo"] & {
             items: components["schemas"]["Notification"][];
-        };
-        /** @description The Web Push subscription of a grant. */
-        PushSubscription: {
-            id: components["schemas"]["Id"];
-            /**
-             * Format: uri
-             * @description The push service URL of the browser's subscription.
-             */
-            endpoint: string;
-            /** @description The notification types that are pushed, in a stable order. */
-            alerts: components["schemas"]["NotificationType"][];
-            /**
-             * @description The instance's VAPID public key now. When it differs from the key the browser
-             *     subscribed with, the subscription receives nothing; subscribe again.
-             */
-            server_key: string;
-        };
-        /** @description A browser's push subscription and the notification types to push to it. */
-        PushSubscriptionRequest: {
-            /** @description The push service URL (`PushSubscription.endpoint`), an `https` URL. */
-            endpoint: string;
-            keys: components["schemas"]["PushSubscriptionKeys"];
-            /** @description The notification types to push; empty pushes none. */
-            alerts: components["schemas"]["NotificationType"][];
-        };
-        /** @description The keys of a browser's push subscription (RFC 8291 §3), in base64url. */
-        PushSubscriptionKeys: {
-            /** @description The browser's P-256 public key, an uncompressed point. */
-            p256dh: string;
-            /** @description The 16-byte authentication secret. */
-            auth: string;
         };
         /**
          * @description The kind of a notification. `account` is the account that acted: the follower
@@ -4870,17 +6291,161 @@ export interface components {
          * @enum {string}
          */
         NotificationType: "follow" | "follow_request" | "follow_accepted" | "mention" | "boost" | "favourite" | "reaction" | "poll_closed" | "moderation_notice" | "report_resolved" | "admin_report" | "admin_sign_up" | "relationships_severed" | "appeal_decided" | "admin_appeal" | "admin_webhook_disabled";
-        /** @description A new status. */
-        CreateStatusRequest: {
-            text: components["schemas"]["StatusText"];
-            spoiler_text?: components["schemas"]["SpoilerText"];
-            /** @description Whether the media are sensitive. */
-            sensitive?: boolean;
-            language?: components["schemas"]["StatusLanguageInput"];
-            visibility: components["schemas"]["Visibility"];
-            in_reply_to_id?: components["schemas"]["Id"];
-            media?: components["schemas"]["StatusMediaInput"];
-            poll?: components["schemas"]["PollInput"];
+        /** @description The pagination of a collection page; collection responses embed it with allOf. */
+        PageInfo: {
+            next_cursor?: components["schemas"]["Cursor"];
+        };
+        /** @description A passkey that signs the authenticated user in instead of the password. */
+        Passkey: {
+            id: components["schemas"]["Id"];
+            /** @description What the user calls the passkey, such as the device it is on. */
+            name: string;
+            /**
+             * Format: date-time
+             * @description When the passkey was registered.
+             */
+            created_at: string;
+        };
+        /** @description The browser's answer to a confirmation with a passkey, which confirms an operation. */
+        PasskeyAssertion: {
+            /** @description The `confirmation_token` of `POST /passkeys/confirmation`. */
+            confirmation_token: string;
+            /**
+             * @description The `AuthenticationResponseJSON` of WebAuthn Level 3 (§5.1): what
+             *     `PublicKeyCredential.toJSON()` returns for the passkey.
+             */
+            credential: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description The start of a confirmation with a passkey. */
+        PasskeyConfirmation: {
+            /**
+             * @description The `PublicKeyCredentialRequestOptionsJSON` of WebAuthn Level 3 (§5.1.9): binary
+             *     values in base64url, for `PublicKeyCredential.parseRequestOptionsFromJSON()`.
+             */
+            options: {
+                [key: string]: unknown;
+            };
+            /** @description An opaque token that carries the confirmation to the operation it confirms. */
+            confirmation_token: string;
+            /**
+             * Format: date-time
+             * @description When `confirmation_token` stops working.
+             */
+            expires_at: string;
+        };
+        /** @description The authenticated user's passkeys, oldest first. */
+        PasskeyList: {
+            items: components["schemas"]["Passkey"][];
+        };
+        /** @description The start of a passkey registration. */
+        PasskeyRegistration: {
+            /**
+             * @description The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+             *     values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+             */
+            options: {
+                [key: string]: unknown;
+            };
+            /** @description An opaque token that carries the registration to `POST /passkeys`. */
+            registration_token: string;
+            /**
+             * Format: date-time
+             * @description When `registration_token` stops working.
+             */
+            expires_at: string;
+        };
+        /**
+         * @description The name of a new passkey and what confirms it: the user's `password` or a `passkey` of
+         *     the user.
+         */
+        PasskeyRegistrationRequest: {
+            /** @description What the user calls the passkey; spaces around it are dropped. */
+            name: string;
+            /** @description The user's current password. */
+            password?: string;
+            passkey?: components["schemas"]["PasskeyAssertion"];
+        };
+        /** @description Whether the authenticated user has a password. */
+        PasswordStatus: {
+            /**
+             * @description Whether the password signs in; false after the user removed it, when only the
+             *     passkeys sign in.
+             */
+            has_password: boolean;
+        };
+        /**
+         * @description A capability that a role grants. `manage_accounts`: the accounts and their moderation
+         *     actions.
+         *     `manage_domains`: the health of remote servers and the moderation actions on domains.
+         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+         *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+         *     log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
+         *     authentication or issuing a password reset link (only the built-in admin role by
+         *     default). `manage_custom_emojis`: the custom emoji, local and
+         *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
+         *     server's announcements to every local user. The others guard no client API operation
+         *     yet.
+         * @enum {string}
+         */
+        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
+        /**
+         * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
+         *     `:shortcode:` into the text.
+         */
+        PickerCustomEmoji: {
+            /** @description The shortcode, without the colons around it. */
+            shortcode: string;
+            /**
+             * Format: uri
+             * @description The URL of the image, animated when the emoji is.
+             */
+            url: string;
+            /**
+             * Format: uri
+             * @description The URL of a still image of the emoji.
+             */
+            static_url: string;
+            /** @description The category that the picker groups the emoji in; absent for none. */
+            category?: string;
+            /** @description Other names that a search of the picker finds the emoji by. */
+            aliases: string[];
+        };
+        /** @description The custom emoji of the picker. */
+        PickerCustomEmojiList: {
+            items: components["schemas"]["PickerCustomEmoji"][];
+        };
+        /**
+         * @description The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
+         *     another server are those its server last reported. A poll whose author hides the votes of
+         *     each option until it ends leaves out `votes_count` of its options until then. `voted` and
+         *     `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
+         */
+        Poll: {
+            id: components["schemas"]["Id"];
+            /**
+             * Format: date-time
+             * @description When the poll ends; omitted when it has no end.
+             */
+            expires_at?: string;
+            /** @description Whether the poll has ended. An ended poll takes no votes and shows its results. */
+            expired: boolean;
+            /** @description Whether a vote may choose several options. */
+            multiple: boolean;
+            /** @description The number of votes, one per chosen option. */
+            votes_count: number;
+            /**
+             * @description The number of accounts that voted; omitted when it is unknown (a multiple-choice poll
+             *     of another server that does not report it).
+             */
+            voters_count?: number;
+            /** @description The options, in order; a vote names them by their index in this list. */
+            options: components["schemas"]["PollOption"][];
+            /** @description Whether the authenticated user voted in the poll. */
+            voted?: boolean;
+            /** @description The indexes of the options the authenticated user voted for, in order. */
+            own_votes?: number[];
         };
         /**
          * @description A poll of a new status (FR-112). It ends `expires_in` seconds after the status is
@@ -4896,14 +6461,422 @@ export interface components {
             /** @description Whether the votes of each option are hidden until the poll ends. */
             hide_totals?: boolean;
         };
-        /** @description The new content of a status. */
-        EditStatusRequest: {
-            text: components["schemas"]["StatusText"];
-            spoiler_text?: components["schemas"]["SpoilerText"];
-            /** @description Whether the media are sensitive. */
-            sensitive?: boolean;
-            language?: components["schemas"]["StatusLanguageInput"];
-            media?: components["schemas"]["StatusMediaInput"];
+        /** @description One option of a poll. */
+        PollOption: {
+            /** @description The option as plain text. */
+            title: string;
+            /**
+             * @description The number of votes for the option; omitted while the poll hides the votes of each
+             *     option until it ends.
+             */
+            votes_count?: number;
+        };
+        /**
+         * @description What the account's current moderation restrictions let it post (data-model.md §5.4). The
+         *     server applies the same policy when it posts: a status asked for with a visibility that is
+         *     not in `visibilities` gets `visibility_ceiling` instead.
+         */
+        PostingLimits: {
+            visibility_ceiling: components["schemas"]["Visibility"];
+            /**
+             * @description The visibilities that a new status keeps as asked for, from the widest audience to the
+             *     narrowest; every visibility while the account is not restricted.
+             */
+            visibilities: components["schemas"]["Visibility"][];
+        };
+        /** @description The authenticated user's preferences. */
+        Preferences: {
+            /** @description The UI locale, a BCP 47 language tag. */
+            locale: string;
+            /** @description The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen. */
+            time_zone: string;
+            /**
+             * @description Whether a time zone has been chosen: false for a new user until a request sets
+             *     `time_zone`. Clients may then set it to the device's time zone.
+             */
+            time_zone_chosen: boolean;
+            default_visibility: components["schemas"]["Visibility"];
+            /** @description The language of new posts that name none, a BCP 47 language tag; `und` when undetermined. */
+            default_post_language: string;
+            /** @description Whether clients ask for a description before posting media without one. */
+            require_media_description: boolean;
+            /**
+             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
+             *     also come by email, to the primary address. Off for a new user.
+             */
+            email_moderator_notifications: boolean;
+            /** @description The languages that timelines show, sorted; empty shows every language. */
+            timeline_languages: string[];
+        };
+        /** @description A domain block CSV to preview. */
+        PreviewDomainBlockImportRequest: {
+            /** @description The file's text, with a header or as a list of domains; at most 5,000 rows. */
+            csv: string;
+        };
+        /**
+         * @description An RFC 9457 problem document. Besides `about:blank`, `type` is one of
+         *
+         *     - `/api/v1/problems/unauthenticated` (401): the operation needs an access token and
+         *       the request has none.
+         *     - `/api/v1/problems/invalid-token` (401): the access token is malformed, unknown,
+         *       expired, or revoked. Refresh it or sign in again.
+         *     - `/api/v1/problems/insufficient-scope` (403): the access token lacks the scope that
+         *       `WWW-Authenticate` names.
+         *     - `/api/v1/problems/account-unavailable` (403): the token is valid, but its user cannot
+         *       use the app (registration pending or rejected, email unverified, the account
+         *       deactivated or deleted, or a moderation action that disables its login). The user
+         *       can still sign in to the server's sign-in page, which says why.
+         *     - `/api/v1/problems/blocking` (409): the viewer blocks the account, which keeps them
+         *       from following it. Unblock it first.
+         *     - `/api/v1/problems/media-too-large` (413): the uploaded file is larger than the
+         *       instance accepts.
+         *     - `/api/v1/problems/unsupported-media-format` (415): the uploaded file is not in an
+         *       accepted format or codec (such as HEVC video), or its declared type does not match its
+         *       content.
+         *     - `/api/v1/problems/media-dimensions` (422): the image is too wide or tall, or has too
+         *       many pixels or frames; or the video has too many pixels or frames per second.
+         *     - `/api/v1/problems/media-too-long` (422): the video or audio file is longer than the
+         *       instance accepts.
+         *     - `/api/v1/problems/media-corrupt` (422): the uploaded file cannot be read as a file of
+         *       its format.
+         *     - `/api/v1/problems/media-attached` (409): the media file is attached to a post and can
+         *       no longer be changed on its own.
+         *     - `/api/v1/problems/too-many-streams` (429): the user already has as many streams
+         *       (`GET /streaming`) open as the server allows. Close one first.
+         *     - `/api/v1/problems/missing-permission` (403): the user's roles lack the permission
+         *       that an admin operation needs.
+         *     - `/api/v1/problems/already-appealed` (422): the user already appealed the moderation
+         *       action; an action is appealed once.
+         *     - `/api/v1/problems/appeal-window-closed` (422): the time to appeal the moderation
+         *       action has passed.
+         *     - `/api/v1/problems/not-appealable` (422): the moderation action is a ban whose
+         *       account is deleted, so it can no longer be appealed or overturned.
+         *     - `/api/v1/problems/appeal-decided` (409): the appeal was already decided the other way.
+         *     - `/api/v1/problems/wrong-password` (422): the password given to confirm the operation is
+         *       not the user's current password.
+         *     - `/api/v1/problems/export-in-progress` (409): another data export of the user is being
+         *       built. Wait for it to end.
+         *     - `/api/v1/problems/export-not-ready` (409): the data export has no archive to download:
+         *       it is being built, failed, or expired.
+         *     - `/api/v1/problems/import-in-progress` (409): another import of the user is being
+         *       carried out. Wait for it to finish.
+         *     - `/api/v1/problems/invalid-two-factor-code` (422): the two-factor code is wrong, was
+         *       already used, or is not a code.
+         *     - `/api/v1/problems/totp-setup-expired` (422): the TOTP setup is unknown or expired.
+         *       Start a new one.
+         *     - `/api/v1/problems/two-factor-enabled` (409): the user already has two-factor
+         *       authentication.
+         *     - `/api/v1/problems/two-factor-not-enabled` (409): the user, or the account of an admin
+         *       operation, has no two-factor authentication.
+         *     - `/api/v1/problems/invalid-passkey` (422): the browser's response to a passkey
+         *       registration or confirmation does not verify, the passkey is registered already, or
+         *       the passkey that confirms an operation is not one of the user's.
+         *     - `/api/v1/problems/passkey-registration-expired` (422): the passkey registration is
+         *       unknown or expired. Start a new one.
+         *     - `/api/v1/problems/passkey-confirmation-expired` (422): the confirmation with a passkey
+         *       is unknown, expired, or used. Start a new one.
+         *     - `/api/v1/problems/too-many-passkeys` (409): the user already has the most passkeys
+         *       allowed. Remove one first.
+         *     - `/api/v1/problems/last-sign-in-method` (409): the operation would leave the user no
+         *       way to sign in: the password without a passkey, or the last passkey without a password.
+         *     - `/api/v1/problems/invalid-custom-emoji` (422): a custom emoji breaks a rule; `reason`
+         *       says which.
+         *     - `/api/v1/problems/invalid-webhook` (422): a webhook breaks a rule; `reason` says
+         *       which.
+         *     - `/api/v1/problems/invalid-relay` (422): a relay cannot be registered, joined, left, or
+         *       deleted; `reason` says why.
+         *     - `/api/v1/problems/invalid-theme` (422): the theme breaks a rule; the problem lists every
+         *       reason in `theme_errors` (`PUT /admin/theme`).
+         *     - `/api/v1/problems/too-many-domain-mutes` (422): the user already mutes the most domains
+         *       allowed. Unmute one first.
+         */
+        Problem: {
+            /**
+             * Format: uri-reference
+             * @description A URI that identifies the problem type, stable for clients to branch on.
+             *     It is `about:blank` when the problem means no more than its HTTP status.
+             */
+            type: string;
+            /** @description A short summary of the problem type, localized from `Accept-Language`. */
+            title: string;
+            /** @description The HTTP status code. */
+            status: number;
+            /** @description An explanation of this occurrence, localized from `Accept-Language`. */
+            detail?: string;
+            /** @description The request ID (the `X-Request-Id` response header), for reporting the problem. */
+            request_id?: string;
+        };
+        /** @description One metadata field of a profile. */
+        ProfileField: {
+            /** @description The field's name, as plain text. */
+            name: string;
+            /** @description The field's value as sanitized HTML. */
+            value: string;
+        };
+        /** @description The Web Push subscription of a grant. */
+        PushSubscription: {
+            id: components["schemas"]["Id"];
+            /**
+             * Format: uri
+             * @description The push service URL of the browser's subscription.
+             */
+            endpoint: string;
+            /** @description The notification types that are pushed, in a stable order. */
+            alerts: components["schemas"]["NotificationType"][];
+            /**
+             * @description The instance's VAPID public key now. When it differs from the key the browser
+             *     subscribed with, the subscription receives nothing; subscribe again.
+             */
+            server_key: string;
+        };
+        /** @description The keys of a browser's push subscription (RFC 8291 §3), in base64url. */
+        PushSubscriptionKeys: {
+            /** @description The browser's P-256 public key, an uncompressed point. */
+            p256dh: string;
+            /** @description The 16-byte authentication secret. */
+            auth: string;
+        };
+        /** @description A browser's push subscription and the notification types to push to it. */
+        PushSubscriptionRequest: {
+            /** @description The push service URL (`PushSubscription.endpoint`), an `https` URL. */
+            endpoint: string;
+            keys: components["schemas"]["PushSubscriptionKeys"];
+            /** @description The notification types to push; empty pushes none. */
+            alerts: components["schemas"]["NotificationType"][];
+        };
+        /**
+         * @description A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
+         *     zone of four modules included) on a light background.
+         */
+        QrCode: {
+            /** @description The width and height of the view box, in modules. */
+            size: number;
+            /** @description The path data (`d`) of the dark modules, one unit per module. */
+            path: string;
+        };
+        /** @description The emoji to react with. */
+        ReactToStatusRequest: {
+            /**
+             * @description A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
+             *     its `ReactionEmoji`; colons around it are accepted).
+             */
+            emoji: string;
+        };
+        /**
+         * @description The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
+         *     emoji of another server is shown as it is and cannot be used to react from here.
+         */
+        ReactionEmoji: {
+            /**
+             * @description The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
+             *     custom emoji of this server, or `shortcode@domain` for a custom emoji of another
+             *     server.
+             */
+            name: string;
+            /** @description The shortcode of a custom emoji, without colons; omitted for a Unicode emoji. */
+            shortcode?: string;
+            /** @description The server of a custom emoji of another server; omitted otherwise. */
+            domain?: string;
+            /**
+             * @description The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
+             *     be shown (as `CustomEmoji` leaves such an emoji out).
+             */
+            emoji?: components["schemas"]["CustomEmoji"];
+        };
+        /**
+         * @description Recovery codes, each of which signs in once in place of a code of the app. They are
+         *     shown only once.
+         */
+        RecoveryCodes: {
+            recovery_codes: string[];
+        };
+        /** @description A moderator's decision on a registration. */
+        RegistrationDecisionRequest: {
+            /** @description A note for the moderators, as plain text; omitted or empty for none. */
+            note?: string;
+        };
+        /**
+         * @description Where a registration stands: `pending` waits for a moderator, `approved` lets the user
+         *     sign in, and `rejected` keeps them out.
+         * @enum {string}
+         */
+        RegistrationState: "pending" | "approved" | "rejected";
+        /**
+         * @description The viewer's relationship with an account. It never says whether the account blocks
+         *     the viewer: such an account is not found at all.
+         */
+        Relationship: {
+            id: components["schemas"]["Id"];
+            /** @description Whether the viewer actively follows the account. */
+            following: boolean;
+            /** @description Whether the viewer's follow request awaits the account's approval. */
+            requested: boolean;
+            /** @description Whether the account actively follows the viewer. */
+            followed_by: boolean;
+            /** @description Whether the account's follow request awaits the viewer's approval. */
+            requested_by: boolean;
+            /** @description Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow). */
+            show_boosts: boolean;
+            /** @description Whether the viewer's follow notifies them of the account's new posts. */
+            notify: boolean;
+            /** @description Whether the viewer blocks the account. */
+            blocking: boolean;
+            /** @description Whether the viewer mutes the account (a mute that has not expired). */
+            muting: boolean;
+            /** @description Whether the viewer's mute also hides the account's notifications. */
+            muting_notifications: boolean;
+        };
+        /**
+         * @description The follows that a `relationships_severed` tells of: the user lost them when the
+         *     moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+         *     account (`account_suspension`, the notification's `account` is the account). Both
+         *     directions end, follow requests too, and lifting the suspension does not restore them;
+         *     the counts are of the accepted follows.
+         */
+        RelationshipSeverance: {
+            /** @enum {string} */
+            kind: "domain_suspension" | "account_suspension";
+            /** @description The suspended server of a `domain_suspension`; omitted otherwise. */
+            domain?: string;
+            /** @description The accounts that followed the user and no longer do. */
+            followers_lost: number;
+            /** @description The accounts that the user followed and no longer does. */
+            following_lost: number;
+        };
+        /**
+         * @description The problem of a relay operation that breaks a rule (422,
+         *     `/api/v1/problems/invalid-relay`); `reason` says which. Another 422 (a malformed
+         *     request) has none.
+         */
+        RelayProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["RelayProblemReason"];
+        };
+        /**
+         * @description Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
+         *     `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
+         *     suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
+         *     inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
+         *     `accepted` relay, leaving or deleting one that is not).
+         * @enum {string}
+         */
+        RelayProblemReason: "url" | "exists" | "domain_suspended" | "not_actor" | "state";
+        /**
+         * @description How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
+         *     collection. `litepub`: at its actor, by a `Follow` of the actor.
+         * @enum {string}
+         */
+        RelayProtocol: "mastodon" | "litepub";
+        /**
+         * @description Where the membership of a relay stands. `pending`: the `Follow` is sent and not
+         *     answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
+         *     `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
+         *     instance sent the `Undo` of its `Follow`.
+         * @enum {string}
+         */
+        RelayState: "pending" | "accepted" | "rejected" | "left";
+        /** @description The passkey that confirms the removal of the user's password. */
+        RemovePasswordRequest: {
+            passkey: components["schemas"]["PasskeyAssertion"];
+        };
+        /** @description The new image of a local custom emoji. */
+        ReplaceCustomEmojiImageRequest: {
+            media_id: components["schemas"]["Id"];
+        };
+        /**
+         * @description A report that the user filed. It never names the reporter, and tells only whether the
+         *     moderators resolved it, never how.
+         */
+        Report: {
+            id: components["schemas"]["Id"];
+            category: components["schemas"]["ReportCategory"];
+            /** @description The comment as plain text. */
+            comment: string;
+            /** @description Whether the report is to be forwarded to the target's server. */
+            forwarded: boolean;
+            /** Format: date-time */
+            filed_at: string;
+            target_account: components["schemas"]["Account"];
+            status_ids: components["schemas"]["Id"][];
+            rule_ids: components["schemas"]["Id"][];
+            state: components["schemas"]["ReportState"];
+        };
+        /**
+         * @description Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
+         *     is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
+         *     anything else.
+         * @enum {string}
+         */
+        ReportCategory: "spam" | "legal" | "violation" | "other";
+        /** @description A page of the user's reports, newest first. */
+        ReportPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["Report"][];
+        };
+        /**
+         * @description `open`: the report awaits the moderators. `resolved`: the moderators handled it.
+         * @enum {string}
+         */
+        ReportState: "open" | "resolved";
+        /** @description How a report is resolved. */
+        ResolveReportRequest: {
+            outcome: components["schemas"]["AdminReportOutcome"];
+        };
+        /**
+         * @description The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
+         *     `reason` says which. Another 422 (a malformed request) has none.
+         */
+        RoleProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["RoleProblemReason"];
+            /** @description The permissions that the change needs and the viewer lacks, for `missing_permission`. */
+            missing_permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
+         *     and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
+         *     `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
+         *     and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
+         *     `missing_permission`: the change adds or removes permissions that the viewer's roles
+         *     do not grant (`missing_permissions`).
+         * @enum {string}
+         */
+        RoleProblemReason: "key" | "key_taken" | "position" | "permissions" | "builtin" | "held" | "missing_permission";
+        /**
+         * @description Whether the instance lets search engines index its pages (the instance setting
+         *     `search_indexing`, FR-725, ADR-0057). `allow`: the profiles and public posts of the accounts
+         *     that are `indexable`; `deny`: no page. An account can deny what the instance allows, never
+         *     the reverse.
+         * @enum {string}
+         */
+        SearchIndexing: "allow" | "deny";
+        /** @description A new revision of an instance text. */
+        SetInstanceTextRequest: {
+            /** @description The text, in any language; empty clears it. */
+            body: string;
+        };
+        /** @description The whole theme; tokens left out go back to their defaults. */
+        SetThemeRequest: {
+            tokens: components["schemas"]["ThemeTokenValue"][];
+            custom_css: string;
+        };
+        /** @description What an import of a list of sign-up blocks did. */
+        SignupBlockImportResult: {
+            /** @description The number of blocks added. */
+            added: number;
+            /** @description The lines whose block was not added, in line order. */
+            skipped: components["schemas"]["SignupBlockImportSkipped"][];
+        };
+        /** @description A line of an imported list whose block was not added. */
+        SignupBlockImportSkipped: {
+            /** @description The line of the list, from 1. */
+            line: number;
+            /** @description The value as written on the line. */
+            value: string;
+            /**
+             * @description `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
+             *     value in canonical form. `already_blocked`: a block in effect of the same kind and
+             *     value with a severity at least as strong covers it.
+             * @enum {string}
+             */
+            reason: "invalid" | "duplicate" | "already_blocked";
         };
         /** @description The content warning; omitted or empty for none. It counts toward `max_post_characters`. */
         SpoilerText: string;
@@ -4992,165 +6965,6 @@ export interface components {
             poll?: components["schemas"]["Poll"];
             card?: components["schemas"]["LinkCard"];
         };
-        /**
-         * @description The poll of a status (FR-112); omitted when the status has none. The counts of a poll of
-         *     another server are those its server last reported. A poll whose author hides the votes of
-         *     each option until it ends leaves out `votes_count` of its options until then. `voted` and
-         *     `own_votes` describe the authenticated user's vote and are omitted for anonymous requests.
-         */
-        Poll: {
-            id: components["schemas"]["Id"];
-            /**
-             * Format: date-time
-             * @description When the poll ends; omitted when it has no end.
-             */
-            expires_at?: string;
-            /** @description Whether the poll has ended. An ended poll takes no votes and shows its results. */
-            expired: boolean;
-            /** @description Whether a vote may choose several options. */
-            multiple: boolean;
-            /** @description The number of votes, one per chosen option. */
-            votes_count: number;
-            /**
-             * @description The number of accounts that voted; omitted when it is unknown (a multiple-choice poll
-             *     of another server that does not report it).
-             */
-            voters_count?: number;
-            /** @description The options, in order; a vote names them by their index in this list. */
-            options: components["schemas"]["PollOption"][];
-            /** @description Whether the authenticated user voted in the poll. */
-            voted?: boolean;
-            /** @description The indexes of the options the authenticated user voted for, in order. */
-            own_votes?: number[];
-        };
-        /** @description One option of a poll. */
-        PollOption: {
-            /** @description The option as plain text. */
-            title: string;
-            /**
-             * @description The number of votes for the option; omitted while the poll hides the votes of each
-             *     option until it ends.
-             */
-            votes_count?: number;
-        };
-        /** @description A vote in the poll of a status. */
-        VoteInPollRequest: {
-            poll_id: components["schemas"]["Id"];
-            /** @description The indexes of the chosen options in `Poll.options`; one for a single-choice poll. */
-            choices: number[];
-        };
-        /**
-         * @description The card of the first link in a status (ADR-0062): the title, description, and image
-         *     that the linked page declares (Open Graph, X Card, and JSON-LD), fetched by the server
-         *     after the status was posted or received. Omitted from a status with attachments or a
-         *     poll, from a status whose link has no card yet, and when the instance setting
-         *     `link_cards_enabled` is off. A card appears after its fetch, so a status read right after
-         *     it was posted may have none.
-         *
-         *     Clients show the card as one link to `url` and, under a content warning, only once the
-         *     warning is opened. When the status is `sensitive`, the image is hidden until the viewer
-         *     shows it.
-         */
-        LinkCard: {
-            /**
-             * Format: uri
-             * @description The page that the card links to, after redirects.
-             */
-            url: string;
-            /** @description The title of the page, as plain text. */
-            title: string;
-            /** @description The description of the page, as plain text; empty when it has none. */
-            description: string;
-            /** @description The name of the site, as plain text; the host of `url` when the page names none. */
-            site_name: string;
-            /** @description The author that the page names, as plain text; omitted when it names none. */
-            author_name?: string;
-            /**
-             * Format: date-time
-             * @description When the page says it was published; omitted when it does not say.
-             */
-            published_at?: string;
-            /** @description The BCP 47 language of the page; omitted when it does not say. */
-            language?: string;
-            image?: components["schemas"]["LinkCardImage"];
-            /**
-             * @description The account that the page names as its creator (`fediverse:creator`), given only when
-             *     the account's server lists the page's domain among its `attributionDomains`.
-             */
-            author?: components["schemas"]["Account"];
-        };
-        /**
-         * @description The image of a link card, served by this server's media proxy in the small size of an
-         *     attachment's image. An animated image is its first frame.
-         */
-        LinkCardImage: {
-            /**
-             * Format: uri
-             * @description The image through the media proxy.
-             */
-            url: string;
-            /** @description The width of the original image in pixels. */
-            width: number;
-            /** @description The height of the original image in pixels. */
-            height: number;
-            /** @description The blurhash (https://blurha.sh) of the image, to show while it loads. */
-            blurhash?: string;
-            /** @description The alternative text of the image (`og:image:alt`); omitted when it has none. */
-            description?: string;
-        };
-        /**
-         * @description The emoji of a reaction: a Unicode emoji, or a custom emoji with its image. A custom
-         *     emoji of another server is shown as it is and cannot be used to react from here.
-         */
-        ReactionEmoji: {
-            /**
-             * @description The emoji as `listStatusReactions` takes it: the Unicode emoji, the shortcode of a
-             *     custom emoji of this server, or `shortcode@domain` for a custom emoji of another
-             *     server.
-             */
-            name: string;
-            /** @description The shortcode of a custom emoji, without colons; omitted for a Unicode emoji. */
-            shortcode?: string;
-            /** @description The server of a custom emoji of another server; omitted otherwise. */
-            domain?: string;
-            /**
-             * @description The custom emoji with its image; omitted for a Unicode emoji and when the image cannot
-             *     be shown (as `CustomEmoji` leaves such an emoji out).
-             */
-            emoji?: components["schemas"]["CustomEmoji"];
-        };
-        /** @description The reactions to a status with one emoji. */
-        StatusReaction: components["schemas"]["ReactionEmoji"] & {
-            /** @description The number of the reactions with the emoji. */
-            count: number;
-            /**
-             * @description Whether the authenticated user reacted with the emoji; omitted for anonymous
-             *     requests.
-             */
-            me?: boolean;
-        };
-        /** @description The emoji to react with. */
-        ReactToStatusRequest: {
-            /**
-             * @description A Unicode emoji, or the shortcode of a custom emoji of this server (the `name` of
-             *     its `ReactionEmoji`; colons around it are accepted).
-             */
-            emoji: string;
-        };
-        /** @description One emoji reaction to a status, with the account that reacted. */
-        StatusReactor: {
-            account: components["schemas"]["Account"];
-            emoji: components["schemas"]["ReactionEmoji"];
-            /**
-             * Format: date-time
-             * @description When the account reacted.
-             */
-            created_at: string;
-        };
-        /** @description A page of the emoji reactions to a status, newest first. */
-        StatusReactionPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["StatusReactor"][];
-        };
         /** @description The thread around a status. */
         StatusContext: {
             /** @description The statuses the status replies to, oldest first. */
@@ -5224,15 +7038,29 @@ export interface components {
             /** @description The statuses of the page. */
             items: components["schemas"]["Status"][];
         };
-        /** @description A page of the statuses of an account. */
-        AccountStatusPage: components["schemas"]["StatusPage"] & {
+        /** @description The reactions to a status with one emoji. */
+        StatusReaction: components["schemas"]["ReactionEmoji"] & {
+            /** @description The number of the reactions with the emoji. */
+            count: number;
             /**
-             * @description `true` when this request started fetching the remote account's recent public
-             *     posts from its server (ADR-0044). The fetch runs in the background; read the
-             *     first page again a few seconds later to see what it stored. Absent otherwise,
-             *     including when a fetch started in the last day.
+             * @description Whether the authenticated user reacted with the emoji; omitted for anonymous
+             *     requests.
              */
-            remote_fetch_started?: boolean;
+            me?: boolean;
+        };
+        /** @description A page of the emoji reactions to a status, newest first. */
+        StatusReactionPage: components["schemas"]["PageInfo"] & {
+            items: components["schemas"]["StatusReactor"][];
+        };
+        /** @description One emoji reaction to a status, with the account that reacted. */
+        StatusReactor: {
+            account: components["schemas"]["Account"];
+            emoji: components["schemas"]["ReactionEmoji"];
+            /**
+             * Format: date-time
+             * @description When the account reacted.
+             */
+            created_at: string;
         };
         /** @description What the author typed, for editing a status. */
         StatusSource: {
@@ -5257,55 +7085,72 @@ export interface components {
         /** @description The plain text; the server links mentions, hashtags, and URLs. */
         StatusText: string;
         /**
-         * @description Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
-         *     `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
-         *     public timelines; `private` followers and mentioned accounts; `direct` mentioned
-         *     accounts.
-         * @enum {string}
+         * @description One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
+         *     `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
+         *     of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
+         *     duration), `low_contrast` (`token` on `background` is `ratio`:1 in `scheme` and needs
+         *     `minimum`:1), `css_too_long` (`max` bytes), or `css_invalid` (not UTF-8 text).
          */
-        Visibility: "public" | "local" | "unlisted" | "private" | "direct";
-        /** @description A metadata field of a profile as the user typed it. */
-        AccountFieldSource: {
-            /** @description The label, at most 255 characters. */
-            name: string;
-            /** @description The value as plain text, at most 255 characters. */
-            value: string;
+        ThemeError: {
+            /** @enum {string} */
+            code: "unknown_token" | "duplicate_token" | "invalid_value" | "out_of_range" | "low_contrast" | "css_too_long" | "css_invalid";
+            token?: string;
+            /** @enum {string} */
+            scheme?: "light" | "dark";
+            background?: string;
+            ratio?: number;
+            minimum?: number;
+            min?: number;
+            max?: number;
         };
-        /** @description The profile as the user typed it, for editing. */
-        AccountSource: {
-            /** @description The profile text as plain text; empty when there is none. */
-            note: string;
-            /** @description The metadata fields as typed, in the order of the account's `fields`. */
-            fields: components["schemas"]["AccountFieldSource"][];
-            /** @description The media file of the avatar; omitted when there is none. */
-            avatar_media_id?: string;
-            /** @description The media file of the header image; omitted when there is none. */
-            header_media_id?: string;
+        /**
+         * @description A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
+         *     lists why the theme cannot be saved; another 422 (a malformed request) has none.
+         */
+        ThemeProblem: components["schemas"]["Problem"] & {
+            theme_errors?: components["schemas"]["ThemeError"][];
         };
-        /** @description The authenticated user's own account, with what only its owner sees. */
-        CredentialAccount: components["schemas"]["Account"] & {
-            /** @description Whether the account may be suggested to others and listed in directories. */
-            discoverable: boolean;
+        /**
+         * @description The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
+         *     and `dark` for a color token, `value` for the others.
+         */
+        ThemeTokenValue: {
+            token: string;
+            light?: string;
+            dark?: string;
+            value?: string;
+        };
+        /** @description A new TOTP secret to add to an authenticator app. */
+        TotpSetup: {
+            /** @description The secret in base32, for typing it into the app. */
+            secret: string;
+            /** @description The `otpauth://totp/...` URI of the secret. */
+            uri: string;
+            qr_code: components["schemas"]["QrCode"];
+            /** @description An opaque token that carries the secret to `POST /two_factor/totp`. */
+            setup_token: string;
             /**
-             * @description Whether the account's profile and public posts may be indexed for search: by this
-             *     instance's search and, when the instance's `search_indexing` is `allow`, by search
-             *     engines (FR-412, ADR-0057). New accounts take the instance's default.
+             * Format: date-time
+             * @description When `setup_token` stops working.
              */
-            indexable: boolean;
+            expires_at: string;
+        };
+        /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
+        TwoFactor: {
+            /** @description Whether signing in asks for a code after the password. */
+            enabled: boolean;
             /**
-             * @description Whether the account's pages state that AI may neither train on nor use them
-             *     (FR-412, ADR-0057), whatever the instance's `ai_usage`. The statement is made by the
-             *     pages of this instance only; other servers and the media files do not carry it.
+             * Format: date-time
+             * @description When the authenticator app was enrolled; omitted when not enabled.
              */
-            ai_opt_out: boolean;
-            source: components["schemas"]["AccountSource"];
-            posting: components["schemas"]["PostingLimits"];
-            /**
-             * @description The permissions that the user's roles grant, which the admin operations need; empty
-             *     for a user without roles. Clients show the admin screens by them; the server checks
-             *     the permission of each admin operation regardless.
-             */
-            permissions: components["schemas"]["Permission"][];
+            enrolled_at?: string;
+            /** @description How many recovery codes are unused; omitted when not enabled. */
+            recovery_codes_remaining?: number;
+        };
+        /** @description A code that confirms an operation on two-factor authentication. */
+        TwoFactorCodeRequest: {
+            /** @description A six-digit code of the app or an unused recovery code. */
+            code: string;
         };
         /** @description A change of the profile; properties left out keep their current values. */
         UpdateCredentialsRequest: {
@@ -5336,29 +7181,23 @@ export interface components {
             /** @description Whether the account's pages state that AI may neither train on nor use them (FR-412). */
             ai_opt_out?: boolean;
         };
-        /** @description The authenticated user's preferences. */
-        Preferences: {
-            /** @description The UI locale, a BCP 47 language tag. */
-            locale: string;
-            /** @description The time zone, an IANA name such as `Asia/Tokyo`; `UTC` until one is chosen. */
-            time_zone: string;
-            /**
-             * @description Whether a time zone has been chosen: false for a new user until a request sets
-             *     `time_zone`. Clients may then set it to the device's time zone.
-             */
-            time_zone_chosen: boolean;
-            default_visibility: components["schemas"]["Visibility"];
-            /** @description The language of new posts that name none, a BCP 47 language tag; `und` when undetermined. */
-            default_post_language: string;
-            /** @description Whether clients ask for a description before posting media without one. */
-            require_media_description: boolean;
-            /**
-             * @description Whether the moderator notifications (`admin_report`, `admin_sign_up`, `admin_appeal`)
-             *     also come by email, to the primary address. Off for a new user.
-             */
-            email_moderator_notifications: boolean;
-            /** @description The languages that timelines show, sorted; empty shows every language. */
-            timeline_languages: string[];
+        /** @description The settings of a custom emoji to change; absent ones stay. */
+        UpdateCustomEmojiRequest: {
+            /** @description Whether the emoji is shown. */
+            enabled?: boolean;
+            /** @description Whether the picker offers the local emoji. */
+            visible_in_picker?: boolean;
+            /** @description The category in the picker, up to 64 characters; empty removes it. */
+            category?: string;
+            /** @description The new aliases, each following the rules of a shortcode; at most 10. */
+            aliases?: string[];
+        };
+        /** @description New values of some instance settings, saved together. */
+        UpdateInstanceSettingsRequest: {
+            /** @description The new value of each setting to change, by key, as a string. */
+            values: {
+                [key: string]: string;
+            };
         };
         /** @description A change of the preferences; properties left out keep their current values. */
         UpdatePreferencesRequest: {
@@ -5376,1017 +7215,46 @@ export interface components {
             /** @description The languages that timelines show, at most 64; empty shows every language. */
             timeline_languages?: string[];
         };
-        /**
-         * @description The authenticated user's automatic deletion of their own old posts (FR-118). A post is
-         *     deleted once it was published more than `min_age_days` days ago, unless one of the
-         *     exceptions (the `keep_` properties) keeps it.
-         */
-        AutoDeletePolicy: {
-            /** @description Whether old posts are deleted. */
-            enabled: boolean;
-            /** @description How many days after its publication a post is deleted. */
-            min_age_days: number;
-            /** @description Keep the posts pinned to the profile. */
-            keep_pinned: boolean;
-            /** @description Keep the posts that the user bookmarked. */
-            keep_bookmarked: boolean;
-            /** @description Keep the posts that the user favourited. */
-            keep_favourited: boolean;
-            /** @description Keep the posts with media attachments. */
-            keep_media: boolean;
-            /** @description Keep the posts with a poll. */
-            keep_polls: boolean;
-            /** @description Keep the posts with these visibilities, from the widest audience to the narrowest; empty keeps none for their visibility. */
-            keep_visibilities: components["schemas"]["Visibility"][];
-            /** @description Keep the posts boosted at least this many times; 0 keeps none for their boosts. */
-            keep_min_boosts: number;
-            /** @description Keep the posts favourited at least this many times; 0 keeps none for their favourites. */
-            keep_min_favourites: number;
+        /** @description The changes to a role; what is omitted stays. */
+        UpdateRoleRequest: {
+            /** @description The new rank of the role, from 0 to 999. */
+            position?: number;
+            /** @description The new permissions of the role, each once; empty removes them all. */
+            permissions?: components["schemas"]["Permission"][];
         };
-        /** @description Where the authenticated user's two-factor authentication (TOTP) stands. */
-        TwoFactor: {
-            /** @description Whether signing in asks for a code after the password. */
-            enabled: boolean;
-            /**
-             * Format: date-time
-             * @description When the authenticator app was enrolled; omitted when not enabled.
-             */
-            enrolled_at?: string;
-            /** @description How many recovery codes are unused; omitted when not enabled. */
-            recovery_codes_remaining?: number;
-        };
-        /** @description A new TOTP secret to add to an authenticator app. */
-        TotpSetup: {
-            /** @description The secret in base32, for typing it into the app. */
-            secret: string;
-            /** @description The `otpauth://totp/...` URI of the secret. */
-            uri: string;
-            qr_code: components["schemas"]["QrCode"];
-            /** @description An opaque token that carries the secret to `POST /two_factor/totp`. */
-            setup_token: string;
-            /**
-             * Format: date-time
-             * @description When `setup_token` stops working.
-             */
-            expires_at: string;
-        };
-        /**
-         * @description A QR code as an SVG path: draw `path` filled in a `size` × `size` view box (the quiet
-         *     zone of four modules included) on a light background.
-         */
-        QrCode: {
-            /** @description The width and height of the view box, in modules. */
-            size: number;
-            /** @description The path data (`d`) of the dark modules, one unit per module. */
-            path: string;
-        };
-        /** @description The setup to enroll and a code of the app that shows it has the secret. */
-        EnableTotpRequest: {
-            /** @description The `setup_token` of `POST /two_factor/totp/setup`. */
-            setup_token: string;
-            /** @description The six-digit code that the app shows now. */
-            code: string;
-        };
-        /** @description A passkey that signs the authenticated user in instead of the password. */
-        Passkey: {
-            id: components["schemas"]["Id"];
-            /** @description What the user calls the passkey, such as the device it is on. */
-            name: string;
-            /**
-             * Format: date-time
-             * @description When the passkey was registered.
-             */
-            created_at: string;
-        };
-        /** @description The authenticated user's passkeys, oldest first. */
-        PasskeyList: {
-            items: components["schemas"]["Passkey"][];
-        };
-        /**
-         * @description The name of a new passkey and what confirms it: the user's `password` or a `passkey` of
-         *     the user.
-         */
-        PasskeyRegistrationRequest: {
-            /** @description What the user calls the passkey; spaces around it are dropped. */
-            name: string;
-            /** @description The user's current password. */
-            password?: string;
-            passkey?: components["schemas"]["PasskeyAssertion"];
-        };
-        /** @description The start of a passkey registration. */
-        PasskeyRegistration: {
-            /**
-             * @description The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
-             *     values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
-             */
-            options: {
-                [key: string]: unknown;
-            };
-            /** @description An opaque token that carries the registration to `POST /passkeys`. */
-            registration_token: string;
-            /**
-             * Format: date-time
-             * @description When `registration_token` stops working.
-             */
-            expires_at: string;
-        };
-        /** @description The start of a confirmation with a passkey. */
-        PasskeyConfirmation: {
-            /**
-             * @description The `PublicKeyCredentialRequestOptionsJSON` of WebAuthn Level 3 (§5.1.9): binary
-             *     values in base64url, for `PublicKeyCredential.parseRequestOptionsFromJSON()`.
-             */
-            options: {
-                [key: string]: unknown;
-            };
-            /** @description An opaque token that carries the confirmation to the operation it confirms. */
-            confirmation_token: string;
-            /**
-             * Format: date-time
-             * @description When `confirmation_token` stops working.
-             */
-            expires_at: string;
-        };
-        /** @description The browser's answer to a confirmation with a passkey, which confirms an operation. */
-        PasskeyAssertion: {
-            /** @description The `confirmation_token` of `POST /passkeys/confirmation`. */
-            confirmation_token: string;
-            /**
-             * @description The `AuthenticationResponseJSON` of WebAuthn Level 3 (§5.1): what
-             *     `PublicKeyCredential.toJSON()` returns for the passkey.
-             */
-            credential: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description The browser's answer to a passkey registration. */
-        CreatePasskeyRequest: {
-            /** @description The `registration_token` of `POST /passkeys/registration`. */
-            registration_token: string;
-            /**
-             * @description The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
-             *     `PublicKeyCredential.toJSON()` returns for the new credential.
-             */
-            credential: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description A code that confirms an operation on two-factor authentication. */
-        TwoFactorCodeRequest: {
-            /** @description A six-digit code of the app or an unused recovery code. */
-            code: string;
-        };
-        /**
-         * @description Recovery codes, each of which signs in once in place of a code of the app. They are
-         *     shown only once.
-         */
-        RecoveryCodes: {
-            recovery_codes: string[];
-        };
-        /**
-         * @description What the account's current moderation restrictions let it post (data-model.md §5.4). The
-         *     server applies the same policy when it posts: a status asked for with a visibility that is
-         *     not in `visibilities` gets `visibility_ceiling` instead.
-         */
-        PostingLimits: {
-            visibility_ceiling: components["schemas"]["Visibility"];
-            /**
-             * @description The visibilities that a new status keeps as asked for, from the widest audience to the
-             *     narrowest; every visibility while the account is not restricted.
-             */
-            visibilities: components["schemas"]["Visibility"][];
-        };
-        /** @description The time a remote server was marked unavailable or available again, and why. */
-        AdminAvailabilityEvent: {
-            id: components["schemas"]["Id"];
-            /** @enum {string} */
-            kind: "marked_unavailable" | "marked_available";
-            /**
-             * @description `failure_days`: deliveries failed on 7 distinct days. `delivery_succeeded`: a delivery
-             *     succeeded. `inbound_request`: the server sent a signed request. `probe_succeeded`: the
-             *     daily probe fetched its NodeInfo. `operator`: an operator marked it.
-             * @enum {string}
-             */
-            reason: "failure_days" | "delivery_succeeded" | "inbound_request" | "probe_succeeded" | "operator";
-            /** Format: date-time */
-            occurred_at: string;
-        };
-        /** @description A page of availability events, newest first. */
-        AdminAvailabilityEventPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminAvailabilityEvent"][];
-        };
-        /**
-         * @description The state of a job. `queued`: it has not run yet and waits for its `run_at` or a worker.
-         *     `running`: a worker holds it. `retrying`: it ran and waits to run again. `dead`: it
-         *     failed for good (its handler gave up, or it used up its attempts).
-         * @enum {string}
-         */
-        AdminJobState: "queued" | "running" | "retrying" | "dead";
-        /** @description A job of the job queue. */
-        AdminJob: {
-            id: components["schemas"]["Id"];
-            /** @description The job type, such as `federation.deliver`. */
-            type: string;
-            state: components["schemas"]["AdminJobState"];
-            /** @description The job's payload, a JSON document as text. */
-            payload: string;
-            idempotency_key?: string;
-            ordering_key?: string;
-            /** @description The number of runs the job had, the one in progress included. */
-            attempts: number;
-            /** @description Why the last run failed; omitted for a job whose runs did not fail. */
-            last_error?: string;
-            /**
-             * Format: date-time
-             * @description When a pending job is due; omitted for a dead job.
-             */
-            run_at?: string;
-            /** @description The worker that runs a `running` job. */
-            worker?: string;
-            /**
-             * Format: date-time
-             * @description When the lease of a `running` job ends; another worker may run it after.
-             */
-            locked_until?: string;
-            /** Format: date-time */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description When a dead job failed.
-             */
-            failed_at?: string;
-        };
-        /** @description A page of jobs. */
-        AdminJobPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminJob"][];
-        };
-        /** @description The number of jobs of one type in one state. */
-        AdminJobCount: {
-            state: components["schemas"]["AdminJobState"];
-            type: string;
-            /** Format: int64 */
-            count: number;
-        };
-        /** @description The state of the job queue (ADR-0064). */
-        AdminQueue: {
-            /** @description The queue the server runs, the `queue` setting (`db`, `inline`, `sqs`, `cloudtasks`). */
-            adapter: string;
-            /** @description Whether the queue lists its pending jobs (`queued`, `running`, `retrying`). */
-            pending_listing: boolean;
-            /**
-             * @description The jobs by state (`queued`, `running`, `retrying`, `dead`) then type; states and
-             *     types without jobs are left out. Empty without `pending_listing`.
-             */
-            counts: components["schemas"]["AdminJobCount"][];
-            /**
-             * Format: date-time
-             * @description The earliest `run_at` among the due jobs that no worker holds: how long the queue
-             *     has kept a job waiting. Omitted when no job waits, or without `pending_listing`.
-             */
-            oldest_ready_at?: string;
-        };
-        /** @description A run of a job that did not succeed. */
-        AdminJobAttempt: {
-            /** @description The number of the run, from 1. */
-            attempt: number;
-            /** @description The job type. */
-            type: string;
-            /**
-             * @description `retry`: the job runs again. `dead`: it failed for good.
-             * @enum {string}
-             */
-            outcome: "retry" | "dead";
-            /** @description Why the run failed, at most 2,000 bytes. */
-            error: string;
-            /** @description The worker that ran it. */
-            worker: string;
-            /** Format: date-time */
-            started_at: string;
-            /** Format: date-time */
-            finished_at: string;
-        };
-        /** @description A page of attempts, the most recently finished first. */
-        AdminJobAttemptPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminJobAttempt"][];
-        };
-        /** @description Whether deliveries go to a remote server (federation.md §7.3). */
-        AdminInstanceHealth: {
-            domain: string;
-            state: components["schemas"]["AdminInstanceState"];
-            /**
-             * Format: date-time
-             * @description When the server entered its state; omitted for a server without failures.
-             */
-            since?: string;
-            /** @description The number of distinct UTC days of the latest run of failed deliveries. */
-            failure_days: number;
-            /**
-             * Format: date
-             * @description The latest of those days; omitted without failures.
-             */
-            last_failure_day?: string;
-        };
-        /** @description A page of server health, in domain order. */
-        AdminInstanceHealthPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminInstanceHealth"][];
-        };
-        /**
-         * @description `available` servers get every delivery; `unavailable` ones only `Follow`, `Accept`, and
-         *     `Reject`.
-         * @enum {string}
-         */
-        AdminInstanceState: "available" | "unavailable";
-        /**
-         * @description The kind of an audited operation, each on one kind of target. On an `account`:
-         *     `account_action_issued`, `account_action_lifted`, `account_deletion_cancelled`,
-         *     `revealed_private_data` (a moderator was shown the account's email address and IP
-         *     addresses), `two_factor_disabled` (an administrator removed the account's two-factor
-         *     authentication), `password_reset_link_issued` (an administrator issued a link that sets
-         *     a new password for the account's user). On a `domain`:
-         *     `domain_action_issued`, `domain_action_lifted`. On a `report`: `report_assigned`,
-         *     `report_unassigned`, `report_resolved`, `report_reopened`, `report_note_added`. On a
-         *     `user` (a registration):
-         *     `registration_approved`, `registration_rejected`. On a `setting`: `setting_changed`
-         *     (an instance setting), `text_changed` (an instance text). On a `rule`:
-         *     `rule_added`, `rule_revised`, `rule_moved`, `rule_retired`. On a `role`: `role_granted`,
-         *     `role_revoked` (a role of a user; the label is the key and the handle), `role_created`,
-         *     `role_updated` (its position or permissions), `role_deleted` (the label is the key). On
-         *     an `appeal`:
-         *     `appeal_upheld`, `appeal_overturned` (which also records the action's
-         *     `account_action_lifted`, and for a `ban` the `account_deletion_cancelled` on the
-         *     `account`). On a `signup_block`: `signup_block_added`, `signup_block_lifted`. On a
-         *     `custom_emoji`: `custom_emoji_created`, `custom_emoji_image_replaced`,
-         *     `custom_emoji_copied` (a new local emoji copied from a remote one),
-         *     `custom_emoji_updated` (its category, aliases, or place in the picker),
-         *     `custom_emoji_enabled`, `custom_emoji_disabled`, `custom_emoji_deleted`. On a `webhook`:
-         *     `webhook_created`, `webhook_updated` (its URL, description, or events),
-         *     `webhook_deleted`, `webhook_enabled`, `webhook_disabled` (by the `system` when the
-         *     endpoint answered 410 Gone or kept failing), `webhook_secret_rotated`; the label is its
-         *     description and the host name of its URL, never the URL. On an `announcement`:
-         *     `announcement_created`, `announcement_updated` (its text or window),
-         *     `announcement_published`, `announcement_withdrawn`; the label is the first line of its
-         *     text. On an `invite`: `invite_created`, `invite_revoked`; the label is the first
-         *     characters of its code, never the whole code. On a `relay`: `relay_added`,
-         *     `relay_followed`, `relay_unfollowed`, `relay_removed`, and `relay_accepted`,
-         *     `relay_rejected` (by the `remote` relay); the label is its URL. The refetch of remote
-         *     posts from their servers: `status_refetch_queued` on a `status` (the label is its URI),
-         *     `account_statuses_refetch_queued` on an `account`, and `domain_statuses_refetch_queued`
-         *     on a `domain`.
-         * @enum {string}
-         */
-        AdminAuditAction: "account_action_issued" | "account_action_lifted" | "domain_action_issued" | "domain_action_lifted" | "report_assigned" | "report_unassigned" | "report_resolved" | "report_reopened" | "report_note_added" | "registration_approved" | "registration_rejected" | "setting_changed" | "text_changed" | "rule_added" | "rule_revised" | "rule_moved" | "rule_retired" | "role_granted" | "role_revoked" | "role_created" | "role_updated" | "role_deleted" | "appeal_upheld" | "appeal_overturned" | "account_deletion_cancelled" | "revealed_private_data" | "signup_block_added" | "signup_block_lifted" | "two_factor_disabled" | "password_reset_link_issued" | "custom_emoji_created" | "custom_emoji_image_replaced" | "custom_emoji_copied" | "custom_emoji_updated" | "custom_emoji_enabled" | "custom_emoji_disabled" | "custom_emoji_deleted" | "webhook_created" | "webhook_updated" | "webhook_deleted" | "webhook_enabled" | "webhook_disabled" | "webhook_secret_rotated" | "announcement_created" | "announcement_updated" | "announcement_published" | "announcement_withdrawn" | "invite_created" | "invite_revoked" | "relay_added" | "relay_followed" | "relay_unfollowed" | "relay_removed" | "relay_accepted" | "relay_rejected" | "status_refetch_queued" | "account_statuses_refetch_queued" | "domain_statuses_refetch_queued";
-        /**
-         * @description Who performed the operation. `user`: a signed-in moderator or administrator.
-         *     `cli`: the `my` command line, which acts as no user. `system`: the server itself.
-         *     `remote`: another server.
-         * @enum {string}
-         */
-        AdminAuditActorKind: "user" | "cli" | "system" | "remote";
-        /** @description One operation of a moderator or an administrator (FR-704). */
-        AdminAuditEntry: {
-            id: components["schemas"]["Id"];
-            actor_kind: components["schemas"]["AdminAuditActorKind"];
-            /**
-             * @description The local account of the user who performed the operation; omitted unless
-             *     `actor_kind` is `user`, and when the user has no account.
-             */
-            actor_account_id?: components["schemas"]["Id"];
-            /** @description The account of `actor_account_id`; omitted when it is gone. */
-            actor_account?: components["schemas"]["Account"];
-            action: components["schemas"]["AdminAuditAction"];
-            target_kind: components["schemas"]["AdminAuditTargetKind"];
-            /**
-             * @description The target: the ID of an account, a report, an appeal, a user, a role, a rule, a
-             *     sign-up block, a custom emoji, a webhook, or an invite, the domain of a domain action,
-             *     or the key of a setting or a text.
-             */
-            target_id: string;
-            /**
-             * @description The target's display name when the operation happened, such as `@alice`,
-             *     `@bob@example.com`, a domain, a setting's key, a rule's text, or a sign-up block's
-             *     kind and value (`email_domain spam.example`); up to 512 characters.
-             */
-            target_label: string;
-            /**
-             * @description Whether the target is still there to look at. It is `false` for an account, a report,
-             *     an appeal, or a sign-up block that is gone (erased past its retention), and for a
-             *     role, a custom emoji, a webhook, or a relay that was deleted, which only `target_label`
-             *     names now. It is `true` for the other kinds of targets, which are never removed.
-             */
-            target_exists: boolean;
-            /**
-             * @description The ID of the record of the operation (the domain action, the assignment, the
-             *     resolution, the reopening, the note, the decision, the revision), which holds its
-             *     reasons and notes; omitted when the operation has none.
-             */
-            source_event_id?: string;
-            /** Format: date-time */
-            occurred_at: string;
-        };
-        /** @description A page of the audit log, newest first. */
-        AdminAuditEntryPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminAuditEntry"][];
-        };
-        /**
-         * @description The kind of what an audited operation acted on.
-         * @enum {string}
-         */
-        AdminAuditTargetKind: "account" | "status" | "domain" | "report" | "appeal" | "user" | "role" | "setting" | "rule" | "signup_block" | "custom_emoji" | "webhook" | "announcement" | "invite" | "relay";
-        /** @description A moderation action on a remote domain and its subdomains (FR-702). */
-        AdminDomainAction: {
-            id: components["schemas"]["Id"];
-            /** @description The domain, in IDNA A-labels. */
-            domain: string;
-            kind: components["schemas"]["AdminDomainActionKind"];
-            /** @description The reason that may be shown publicly; omitted when there is none. */
-            public_comment?: string;
-            /** @description The moderators' note; omitted when there is none. */
-            private_note?: string;
-            /** @description Whether a public list of the domain actions hides part of the domain. */
-            obfuscate: boolean;
-            state: components["schemas"]["AdminDomainActionState"];
-            /** Format: date-time */
-            issued_at: string;
-            /**
-             * Format: date-time
-             * @description When the action ends by itself; omitted for one that lasts until lifted.
-             */
-            expires_at?: string;
-            /**
-             * Format: date-time
-             * @description When the action was lifted; omitted until it is.
-             */
-            lifted_at?: string;
-        };
-        /**
-         * @description `suspend`: no federation with the domain at all. `limit`: its posts stay off the public
-         *     timelines and its accounts reach only their followers. `reject_media`: its media are
-         *     not fetched. `reject_reports`: its reports are dropped. `force_sensitive`: its media
-         *     are marked sensitive.
-         * @enum {string}
-         */
-        AdminDomainActionKind: "limit" | "suspend" | "reject_media" | "reject_reports" | "force_sensitive";
-        /** @description A page of domain actions, newest first. */
-        AdminDomainActionPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminDomainAction"][];
-        };
-        /**
-         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
-         *     lifted it.
-         * @enum {string}
-         */
-        AdminDomainActionState: "active" | "expired" | "lifted";
-        /** @description A report of an account to the moderators (FR-701). */
-        AdminReport: {
-            id: components["schemas"]["Id"];
-            /**
-             * @description The `id` of the `Flag` activity that another server sent; omitted for a report
-             *     made on this server.
-             */
-            uri?: string;
-            /** @enum {string} */
-            category: "spam" | "legal" | "violation" | "other";
-            /** @description The reporter's comment as plain text, up to 5,000 characters. */
-            comment: string;
-            /** @description Whether the report was forwarded to the target's server. */
-            forwarded: boolean;
-            /** Format: date-time */
-            filed_at: string;
-            state: components["schemas"]["AdminReportState"];
-            outcome?: components["schemas"]["AdminReportOutcome"];
-            /**
-             * Format: date-time
-             * @description When the report entered its state (when it was filed, resolved, or reopened).
-             */
-            state_changed_at: string;
-            /** @description The account of the moderator who handles the report; omitted when nobody does. */
-            assignee_account_id?: components["schemas"]["Id"];
-            reporter_account_id: components["schemas"]["Id"];
-            /** @description The reporter, often the instance actor of a remote server; omitted when the account is gone. */
-            reporter_account?: components["schemas"]["Account"];
-            target_account_id: components["schemas"]["Id"];
-            /** @description The account reported; omitted when the account is gone. */
-            target_account?: components["schemas"]["Account"];
-            /** @description The IDs of the target's posts that the report points at. */
-            status_ids: components["schemas"]["Id"][];
-            /**
-             * @description The IDs of the instance rules that the report cites, retired ones included; only a
-             *     report of the `violation` category cites rules.
-             */
-            rule_ids: components["schemas"]["Id"][];
-        };
-        /**
-         * @description How the report was resolved, present only while it is resolved. `actioned`: a moderator
-         *     took an action on the target. `dismissed`: there was nothing to act on.
-         * @enum {string}
-         */
-        AdminReportOutcome: "actioned" | "dismissed";
-        /** @description A page of reports, newest first. */
-        AdminReportPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminReport"][];
-        };
-        /**
-         * @description `open` reports await the moderators; `resolved` ones are handled.
-         * @enum {string}
-         */
-        AdminReportState: "open" | "resolved";
-        /** @description A moderation action to take on a domain. */
-        CreateDomainActionRequest: {
-            /**
-             * @description The remote domain, such as `spam.example`; a U-label spelling such as `例え.jp` is
-             *     accepted. The action covers its subdomains.
-             */
-            domain: string;
-            kind: components["schemas"]["AdminDomainActionKind"];
-            public_comment?: string;
-            private_note?: string;
-            /** @default false */
-            obfuscate: boolean;
-            /** @description The seconds the action lasts; omitted, it lasts until it is lifted. */
-            expires_in?: number;
-        };
-        /** @description How a report is resolved. */
-        ResolveReportRequest: {
-            outcome: components["schemas"]["AdminReportOutcome"];
-        };
-        /**
-         * @description A report as a moderator opens it: the report with its internal notes, the posts it
-         *     points at, and what the moderators had about its target.
-         */
-        AdminReportDetail: components["schemas"]["AdminReport"] & {
-            /** @description The moderators' notes on the report, oldest first. */
-            notes: components["schemas"]["AdminReportNote"][];
-            target_history: components["schemas"]["AdminReportTargetHistory"];
-            /**
-             * @description The posts that the report points at, in the order of `status_ids`, whatever
-             *     their visibility and also when their author deleted them, for the moderators to
-             *     review. A post that the server no longer has is left out.
-             */
-            statuses: components["schemas"]["AdminReportStatus"][];
-        };
-        /** @description A moderator's internal note on a report; never shown to the target or the reporter. */
-        AdminReportNote: {
-            id: components["schemas"]["Id"];
-            /**
-             * @description The account of the moderator who wrote the note; omitted for a note from the
-             *     command line and when the moderator has no account.
-             */
-            author_account_id?: components["schemas"]["Id"];
-            /** @description The note as plain text, up to 2,000 characters. */
-            body: string;
-            /** Format: date-time */
-            created_at: string;
-        };
-        /**
-         * @description A post that a report points at, as a moderator reviews it. `status` is the post as it
-         *     was last, without the moderator's own relation to it (`favourited`, `boosted`,
-         *     `bookmarked`, and `pinned` are omitted).
-         */
-        AdminReportStatus: {
-            status: components["schemas"]["Status"];
-            /**
-             * Format: date-time
-             * @description When the post was deleted, by its author or otherwise; omitted when it is not.
-             */
-            deleted_at?: string;
-        };
-        /** @description What the moderators had about the target of a report. */
-        AdminReportTargetHistory: {
-            /**
-             * Format: int64
-             * @description The number of the target's other reports, open and resolved.
-             */
-            reports_count: number;
-            /**
-             * Format: int64
-             * @description The number of moderation actions on the target, ended ones included.
-             */
-            actions_count: number;
-        };
-        /** @description A note to add to a report. */
-        CreateReportNoteRequest: {
-            /** @description The note as plain text; it may not be blank. */
-            body: string;
-        };
-        /** @description A moderation action on an account (FR-703). */
-        AdminAccountAction: {
-            id: components["schemas"]["Id"];
-            /** @description The account the action is on. */
-            account_id: components["schemas"]["Id"];
-            kind: components["schemas"]["AdminAccountActionKind"];
-            reason_category: components["schemas"]["AdminAccountActionCategory"];
-            /** @description The reason shown to the account; omitted when there is none. */
-            public_reason?: string;
-            /** @description The moderators' note; omitted when there is none. */
-            private_note?: string;
-            /** @description The report the action follows from; omitted when there is none. */
-            report_id?: components["schemas"]["Id"];
-            /**
-             * @description `moderator`: a moderator or the CLI. `system`: this server by itself. `remote`: the
-             *     account's own server.
-             * @enum {string}
-             */
-            issuer: "moderator" | "system" | "remote";
-            /**
-             * @description The account of the moderator who took the action; omitted for the CLI and the
-             *     system.
-             */
-            issued_by_account_id?: components["schemas"]["Id"];
-            /** @description Whether the account is told of the action. */
-            notify_target: boolean;
-            state: components["schemas"]["AdminAccountActionState"];
-            /** Format: date-time */
-            issued_at: string;
-            /**
-             * Format: date-time
-             * @description When the action ends by itself; omitted for one that lasts until lifted.
-             */
-            expires_at?: string;
-            /**
-             * Format: date-time
-             * @description When the action was lifted; omitted until it is.
-             */
-            lifted_at?: string;
-            /** @description Why the action was lifted; omitted until it is or when no reason was given. */
-            lift_reason?: string;
-            /**
-             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
-             *     on, in ID order; omitted for the other kinds.
-             */
-            status_ids?: components["schemas"]["Id"][];
-        };
-        /**
-         * @description The kind of reason for an action.
-         * @enum {string}
-         */
-        AdminAccountActionCategory: "spam" | "legal" | "violation" | "other";
-        /**
-         * @description `warn`: a notice only. `mark_statuses_sensitive` and `delete_statuses`: actions on
-         *     posts. `force_sensitive`: every attachment is shown as sensitive. `limit`: every post is
-         *     followers-only and stays off the public timelines. `restrict_posting`: no posting.
-         *     `restrict_interaction`: no following, favouriting, boosting, or replying.
-         *     `disable_login`: no logging in. `suspend`: all of these, and the profile and posts are
-         *     hidden. `ban`: a suspension that never ends, with the deletion of the account.
-         * @enum {string}
-         */
-        AdminAccountActionKind: "warn" | "mark_statuses_sensitive" | "delete_statuses" | "force_sensitive" | "limit" | "restrict_posting" | "restrict_interaction" | "disable_login" | "suspend" | "ban";
-        /** @description A page of account actions, newest first. */
-        AdminAccountActionPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminAccountAction"][];
-        };
-        /**
-         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
-         *     lifted it.
-         * @enum {string}
-         */
-        AdminAccountActionState: "active" | "expired" | "lifted";
-        /** @description A moderation action to take on an account. */
-        CreateAccountActionRequest: {
-            kind: components["schemas"]["AdminAccountActionKind"];
-            /** @default other */
-            reason_category: components["schemas"]["AdminAccountActionCategory"];
-            /** @description The reason shown to the account. */
-            public_reason?: string;
-            /** @description A note for the moderators only. */
-            private_note?: string;
-            /**
-             * @description The report of the account that the action follows from. The action resolves an open
-             *     report as `actioned` in the same operation; a resolved report stays as it is.
-             */
-            report_id?: components["schemas"]["Id"];
-            /**
-             * @description Whether a local account is told of the action; ignored for a remote one.
-             * @default true
-             */
-            notify_target: boolean;
-            /**
-             * @description The seconds the action lasts; omitted, it lasts until it is lifted. A `ban` and the
-             *     actions on posts take none.
-             */
-            expires_in?: number;
-            /**
-             * @description The posts of the account that `delete_statuses` or `mark_statuses_sensitive` acts
-             *     on; required for them and taken by no other kind.
-             */
-            status_ids?: components["schemas"]["Id"][];
-            /**
-             * @description Whether a `ban` also blocks sign-ups with the email address of the account's user (a
-             *     `reject` sign-up block of kind `email_hash`, FR-719); only a `ban` of a local
-             *     account takes it, and a user without an email address is a 422. Omitted, nothing is
-             *     blocked.
-             */
-            block_email?: boolean;
-        };
-        /** @description Why an action on an account is lifted. */
-        LiftAccountActionRequest: {
-            reason?: string;
-        };
-        /**
-         * @description A capability that a role grants. `manage_accounts`: the accounts and their moderation
-         *     actions.
-         *     `manage_domains`: the health of remote servers and the moderation actions on domains.
-         *     `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
-         *     roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
-         *     log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
-         *     authentication or issuing a password reset link (only the built-in admin role by
-         *     default). `manage_custom_emojis`: the custom emoji, local and
-         *     remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
-         *     server's announcements to every local user. The others guard no client API operation
-         *     yet.
-         * @enum {string}
-         */
-        Permission: "manage_reports" | "manage_accounts" | "manage_domains" | "manage_rules" | "manage_settings" | "manage_roles" | "manage_invites" | "view_audit" | "manage_jobs" | "manage_login_recovery" | "manage_custom_emojis" | "manage_webhooks" | "manage_announcements";
-        /**
-         * @description A rule of the instance (FR-705). Its ID stays the same across revisions, so reports keep
-         *     citing it.
-         */
-        AdminRule: {
-            id: components["schemas"]["Id"];
-            /**
-             * @description The sort key of the rule; the rules in effect are listed by it. Retiring a rule
-             *     leaves a gap until the next move.
-             */
-            position: number;
-            /** @description The rule, on one line, as plain text. */
-            text: string;
-            /** @description An explanation of the rule, as plain text; omitted when there is none. */
-            hint?: string;
-            /** Format: date-time */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description When the current revision was recorded.
-             */
-            revised_at: string;
-            /**
-             * Format: date-time
-             * @description When the rule was retired; omitted for a rule in effect.
-             */
-            retired_at?: string;
-        };
-        /** @description The rules. */
-        AdminRuleList: {
-            items: components["schemas"]["AdminRule"][];
-        };
-        /**
-         * @description The text and the hint of a rule, written once in any language and shown as they are in
-         *     every locale; they replace the earlier ones.
-         */
-        InstanceRuleInput: {
-            /** @description The rule, on one line, as plain text. */
-            text: string;
-            /** @description An explanation of the rule, as plain text; omitted or empty for none. */
-            hint?: string;
-        };
-        /** @description The new place of a rule. */
-        MoveInstanceRuleRequest: {
-            /** @description The place among the rules in effect, from 1. */
-            position: number;
-        };
-        /** @description An announcement of the server to every local user (FR-726), as the user sees it. */
-        Announcement: {
-            id: components["schemas"]["Id"];
-            /**
-             * @description The text as an HTML fragment, sanitized (paragraphs, emphasis, lists, quotes, code,
-             *     headings from `h2`, and `http`, `https`, and `mailto` links).
-             */
-            content: string;
-            /**
-             * Format: date-time
-             * @description When it started to show to the users, its publication or the start of its window.
-             */
-            published_at: string;
-            /**
-             * Format: date-time
-             * @description When it stops showing; omitted when it shows until it is withdrawn.
-             */
-            ends_at?: string;
-            /**
-             * Format: date-time
-             * @description When its text or window last changed.
-             */
-            updated_at: string;
-            /** @description Whether the user has marked it read. */
-            read: boolean;
-        };
-        /** @description The announcements. */
-        AnnouncementList: {
-            items: components["schemas"]["Announcement"][];
-        };
-        /**
-         * @description `draft`: no user sees it. `published`: every local user sees it within its window.
-         *     `withdrawn`: taken down for good.
-         * @enum {string}
-         */
-        AdminAnnouncementState: "draft" | "published" | "withdrawn";
-        /** @description An announcement with its Markdown text and its state. */
-        AdminAnnouncement: {
-            id: components["schemas"]["Id"];
-            /** @description The text, in Markdown. */
-            text: string;
-            /** @description The text as the users get it, an HTML fragment (`Announcement.content`). */
-            content: string;
-            state: components["schemas"]["AdminAnnouncementState"];
-            /**
-             * Format: date-time
-             * @description When it starts to show once published; omitted to show it from its publication.
-             */
-            starts_at?: string;
-            /**
-             * Format: date-time
-             * @description When it stops showing; omitted to show it until it is withdrawn.
-             */
-            ends_at?: string;
-            /**
-             * Format: date-time
-             * @description When it was last published; omitted for a draft.
-             */
-            published_at?: string;
-            /** Format: date-time */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description When its text or window last changed.
-             */
-            updated_at: string;
-        };
-        /** @description The announcements, newest first. */
-        AdminAnnouncementList: {
-            items: components["schemas"]["AdminAnnouncement"][];
-        };
-        /** @description The text and the window of an announcement. */
-        AdminAnnouncementInput: {
-            /** @description The text, in Markdown. */
-            text: string;
-            /**
-             * Format: date-time
-             * @description When it starts to show once published; omitted to show it from its publication.
-             */
-            starts_at?: string;
-            /**
-             * Format: date-time
-             * @description When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
-             */
-            ends_at?: string;
-        };
-        /** @description A new announcement, with its text and its window. */
-        AdminAnnouncementCreateRequest: {
-            /** @description The text, in Markdown. */
-            text: string;
-            /**
-             * Format: date-time
-             * @description When it starts to show once published; omitted to show it from its publication.
-             */
-            starts_at?: string;
-            /**
-             * Format: date-time
-             * @description When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
-             */
-            ends_at?: string;
-            /**
-             * @description Publish it at once instead of keeping it a draft.
-             * @default false
-             */
-            publish: boolean;
-        };
-        /**
-         * @description A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
-         *     `:shortcode:` into the text.
-         */
-        PickerCustomEmoji: {
-            /** @description The shortcode, without the colons around it. */
-            shortcode: string;
-            /**
-             * Format: uri
-             * @description The URL of the image, animated when the emoji is.
-             */
-            url: string;
-            /**
-             * Format: uri
-             * @description The URL of a still image of the emoji.
-             */
-            static_url: string;
-            /** @description The category that the picker groups the emoji in; absent for none. */
-            category?: string;
-            /** @description Other names that a search of the picker finds the emoji by. */
-            aliases: string[];
-        };
-        /** @description The custom emoji of the picker. */
-        PickerCustomEmojiList: {
-            items: components["schemas"]["PickerCustomEmoji"][];
-        };
-        /**
-         * @description A custom emoji as the administrators manage it (ADR-0051 §4): a local one, or a remote
-         *     one recorded from the posts and profiles of another server.
-         */
-        AdminCustomEmoji: {
-            id: components["schemas"]["Id"];
-            /** @description The shortcode, without the colons around it. */
-            shortcode: string;
-            /** @description Whether the emoji is of this instance. */
-            local: boolean;
-            /** @description The domain of a remote emoji; absent for a local one. */
-            domain?: string;
-            /**
-             * Format: uri
-             * @description The ActivityPub `id` of the emoji: `https://{host}/ap/emojis/{id}` for a local one,
-             *     and the recorded one for a remote one; absent when a remote emoji has none.
-             */
-            uri?: string;
-            /**
-             * Format: uri
-             * @description The URL of the image, animated when the emoji is; absent when the image cannot be
-             *     shown (such as a remote one from a domain whose media the instance rejects).
-             */
+        /** @description The changes to a webhook; what is omitted stays. */
+        UpdateWebhookRequest: {
             url?: string;
-            /**
-             * Format: uri
-             * @description The URL of a still image of the emoji; absent with `url`.
-             */
-            static_url?: string;
-            /** @description Whether the emoji is shown; a disabled one stays `:shortcode:` text. */
-            enabled: boolean;
-            /** @description Whether the picker offers the local emoji; always `true` for a remote one. */
-            visible_in_picker: boolean;
-            /** @description The category of a local emoji in the picker; absent for none. */
-            category?: string;
-            /** @description The other names of a local emoji that the picker finds it by. */
-            aliases: string[];
-            /**
-             * Format: date-time
-             * @description When the emoji was registered or first seen.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description When its current image was set, its ActivityPub `updated`.
-             */
-            updated_at: string;
-        };
-        /** @description A page of custom emoji. */
-        AdminCustomEmojiPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminCustomEmoji"][];
-        };
-        /** @description A new local custom emoji. */
-        CreateCustomEmojiRequest: {
-            /** @description 2 to 30 letters (A to Z, a to z), digits, and underscores; case matters. */
-            shortcode: string;
-            media_id: components["schemas"]["Id"];
-            /** @description The category in the picker, up to 64 characters; empty for none. */
-            category?: string;
-            /** @description Other names, each following the rules of a shortcode; at most 10. */
-            aliases?: string[];
-            /**
-             * @description Whether the picker offers the emoji.
-             * @default true
-             */
-            visible_in_picker: boolean;
-        };
-        /** @description The settings of a custom emoji to change; absent ones stay. */
-        UpdateCustomEmojiRequest: {
-            /** @description Whether the emoji is shown. */
-            enabled?: boolean;
-            /** @description Whether the picker offers the local emoji. */
-            visible_in_picker?: boolean;
-            /** @description The category in the picker, up to 64 characters; empty removes it. */
-            category?: string;
-            /** @description The new aliases, each following the rules of a shortcode; at most 10. */
-            aliases?: string[];
-        };
-        /** @description The local custom emoji that a copy of a remote one becomes. */
-        CopyCustomEmojiRequest: {
-            /**
-             * @description The shortcode of the local emoji: 2 to 30 letters (A to Z, a to z), digits, and
-             *     underscores; case matters. Absent, the remote emoji's.
-             */
-            shortcode?: string;
-        };
-        /** @description The new image of a local custom emoji. */
-        ReplaceCustomEmojiImageRequest: {
-            media_id: components["schemas"]["Id"];
+            /** @description The new description; empty removes it. */
+            description?: string;
+            events?: components["schemas"]["WebhookEventType"][];
         };
         /**
-         * @description The problem of a custom emoji that breaks a rule (422,
-         *     `/api/v1/problems/invalid-custom-emoji`); `reason` says which. Another 422 (a malformed
-         *     request) has none.
-         */
-        CustomEmojiProblem: components["schemas"]["Problem"] & {
-            reason?: components["schemas"]["CustomEmojiProblemReason"];
-        };
-        /**
-         * @description Why a custom emoji is refused. `invalid_shortcode`: not 2 to 30 letters, digits, and
-         *     underscores. `shortcode_taken`: a local emoji has the shortcode. `invalid_alias`: an
-         *     alias breaks the rules of a shortcode, or there are more than 10. `invalid_category`:
-         *     the category is longer than 64 characters or not text. `media_not_found`: the media
-         *     file is not an upload of the user. `media_not_ready`: it has not finished processing.
-         *     `unsupported_format`: it is not a PNG, a GIF, or a WebP. `too_large`: it is larger
-         *     than `custom_emoji_max_bytes`. `too_big`: it is larger than 1,024 pixels on a side.
-         *     `remote_emoji`: the operation is for local emoji only. `local_emoji`: the operation is
-         *     for remote emoji only. `fetch_failed`: the image of the remote emoji could not be
-         *     fetched (its server did not return it, or the instance rejects the media of its domain).
+         * @description Who may see a status (ADR-0017): `public` everyone, listed on public timelines;
+         *     `local` logged-in users of this instance and followers; `unlisted` everyone, kept off
+         *     public timelines; `private` followers and mentioned accounts; `direct` mentioned
+         *     accounts.
          * @enum {string}
          */
-        CustomEmojiProblemReason: "invalid_shortcode" | "shortcode_taken" | "invalid_alias" | "invalid_category" | "media_not_found" | "media_not_ready" | "unsupported_format" | "too_large" | "too_big" | "remote_emoji" | "local_emoji" | "fetch_failed";
+        Visibility: "public" | "local" | "unlisted" | "private" | "direct";
+        /** @description A vote in the poll of a status. */
+        VoteInPollRequest: {
+            poll_id: components["schemas"]["Id"];
+            /** @description The indexes of the chosen options in `Poll.options`; one for a single-choice poll. */
+            choices: number[];
+        };
+        /**
+         * @description The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
+         *     `custom_emoji.deleted` message presents the emoji as it was before the deletion.
+         */
+        WebhookCustomEmoji: components["schemas"]["AdminCustomEmoji"] & {
+            /**
+             * @description The operation, named as in the audit log: `custom_emoji_created`,
+             *     `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
+             *     `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
+             */
+            operation: string;
+        };
         /**
          * @description An event that a webhook subscribes to (ADR-0060). Subscribing needs, besides
          *     `manage_webhooks`, `manage_reports` for `report.*`; `manage_accounts` for
@@ -6404,224 +7272,6 @@ export interface components {
          * @enum {string}
          */
         WebhookEventType: "report.created" | "report.resolved" | "report.reopened" | "registration.pending" | "account.created" | "account.updated" | "moderation_action.created" | "moderation_action.lifted" | "appeal.created" | "domain_moderation_action.created" | "domain_moderation_action.lifted" | "status.created" | "custom_emoji.created" | "custom_emoji.updated" | "custom_emoji.deleted";
-        /**
-         * @description The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
-         *     `POST /admin/webhooks/{id}/test`.
-         * @enum {string}
-         */
-        WebhookMessageType: "report.created" | "report.resolved" | "report.reopened" | "registration.pending" | "account.created" | "account.updated" | "moderation_action.created" | "moderation_action.lifted" | "appeal.created" | "domain_moderation_action.created" | "domain_moderation_action.lifted" | "status.created" | "custom_emoji.created" | "custom_emoji.updated" | "custom_emoji.deleted" | "webhook.test";
-        /** @description A webhook endpoint (ADR-0060). Its secret is never shown again after it is made. */
-        AdminWebhook: {
-            id: components["schemas"]["Id"];
-            /** @description Where the messages are posted. */
-            url: string;
-            /** @description What the webhook is for; omitted for none. */
-            description?: string;
-            /** @description The events it subscribes to, in a stable order. */
-            events: components["schemas"]["WebhookEventType"][];
-            state: components["schemas"]["AdminWebhookState"];
-            state_reason: components["schemas"]["AdminWebhookStateReason"];
-            /** Format: date-time */
-            state_changed_at: string;
-            failure?: components["schemas"]["AdminWebhookFailure"];
-            /** Format: date-time */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description When the URL, the description, or the events last changed.
-             */
-            updated_at: string;
-        };
-        /**
-         * @description Whether the webhook receives the messages of its events.
-         * @enum {string}
-         */
-        AdminWebhookState: "enabled" | "disabled";
-        /**
-         * @description Who set `state` last. `admin`: a staff member, or the `my` command line. `gone`: the
-         *     server disabled it after the endpoint answered 410 Gone. `failing`: the server disabled
-         *     it after the deliveries kept failing, without a success, for 72 hours and 20 attempts.
-         * @enum {string}
-         */
-        AdminWebhookStateReason: "admin" | "gone" | "failing";
-        /**
-         * @description The attempts that failed since the last success; omitted when the last attempt
-         *     succeeded. The server disables the webhook once they span 72 hours and number 20.
-         */
-        AdminWebhookFailure: {
-            consecutive_failures: number;
-            /** Format: date-time */
-            first_failed_at: string;
-        };
-        /** @description The webhooks, newest first. */
-        AdminWebhookList: {
-            items: components["schemas"]["AdminWebhook"][];
-        };
-        /** @description A new webhook and its secret. */
-        AdminWebhookCreated: {
-            webhook: components["schemas"]["AdminWebhook"];
-            /**
-             * @description The secret that signs the messages, `whsec_` and the base64 of 32 bytes, as the
-             *     Standard Webhooks libraries take it. It is shown only now.
-             */
-            secret: string;
-        };
-        /** @description A new secret of a webhook. */
-        AdminWebhookSecret: {
-            /** @description The new secret, as in `AdminWebhookCreated`. It is shown only now. */
-            secret: string;
-        };
-        /** @description A new webhook. */
-        CreateWebhookRequest: {
-            /**
-             * @description An absolute `https` (or `http`) URL of at most 2048 bytes, without user info or a
-             *     fragment. A destination on loopback or a private network is reached only when the
-             *     operator allows it (`webhook_allowed_destinations`).
-             */
-            url: string;
-            /** @description What the webhook is for, up to 200 characters. */
-            description?: string;
-            /** @description The events to subscribe to, at least one. */
-            events: components["schemas"]["WebhookEventType"][];
-        };
-        /** @description The changes to a webhook; what is omitted stays. */
-        UpdateWebhookRequest: {
-            url?: string;
-            /** @description The new description; empty removes it. */
-            description?: string;
-            events?: components["schemas"]["WebhookEventType"][];
-        };
-        /** @description A message to a webhook and its attempts. */
-        AdminWebhookDelivery: {
-            id: components["schemas"]["Id"];
-            /** @description The `webhook-id` of the message, the same on every attempt. */
-            message_id: components["schemas"]["Id"];
-            event_type: components["schemas"]["WebhookMessageType"];
-            status: components["schemas"]["AdminWebhookDeliveryStatus"];
-            /** @description How many times it was sent. */
-            attempts: number;
-            last_attempt?: components["schemas"]["AdminWebhookAttempt"];
-            /** Format: date-time */
-            created_at: string;
-        };
-        /**
-         * @description `pending`: not sent yet. `succeeded`: an attempt got a 2xx answer. `failing`: every
-         *     attempt so far failed; it is retried over about 27 hours, 8 attempts in all, and can be
-         *     sent again by hand after that.
-         * @enum {string}
-         */
-        AdminWebhookDeliveryStatus: "pending" | "succeeded" | "failing";
-        /** @description The last attempt of a delivery. */
-        AdminWebhookAttempt: {
-            outcome: components["schemas"]["AdminWebhookAttemptOutcome"];
-            /** @description The status code of the answer; omitted without one. */
-            status_code?: number;
-            duration_ms: number;
-            /** Format: date-time */
-            attempted_at: string;
-        };
-        /**
-         * @description `succeeded`: a 2xx answer. `http_error`: another answer, a redirect included.
-         *     `timeout`: no answer within 15 seconds. `connection_error`: the connection failed.
-         *     `forbidden_destination`: the server may not reach the URL (a loopback or private address
-         *     that `webhook_allowed_destinations` does not list).
-         * @enum {string}
-         */
-        AdminWebhookAttemptOutcome: "succeeded" | "http_error" | "timeout" | "connection_error" | "forbidden_destination";
-        /** @description A page of the deliveries of a webhook, newest first. */
-        AdminWebhookDeliveryPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminWebhookDelivery"][];
-        };
-        /**
-         * @description The problem of a webhook that breaks a rule (422, `/api/v1/problems/invalid-webhook`);
-         *     `reason` says which. Another 422 (a malformed request) has none.
-         */
-        WebhookProblem: components["schemas"]["Problem"] & {
-            reason?: components["schemas"]["WebhookProblemReason"];
-            /** @description The permissions that the events need and the user lacks, for `missing_permission`. */
-            missing_permissions?: components["schemas"]["Permission"][];
-        };
-        /**
-         * @description How a relay is joined (ADR-0061). `mastodon`: at its inbox, by a `Follow` of the Public
-         *     collection. `litepub`: at its actor, by a `Follow` of the actor.
-         * @enum {string}
-         */
-        RelayProtocol: "mastodon" | "litepub";
-        /**
-         * @description Where the membership of a relay stands. `pending`: the `Follow` is sent and not
-         *     answered. `accepted`: public posts go to the relay and, with `receive`, come from it.
-         *     `rejected`: the relay rejected the `Follow` or ended the membership. `left`: the
-         *     instance sent the `Undo` of its `Follow`.
-         * @enum {string}
-         */
-        RelayState: "pending" | "accepted" | "rejected" | "left";
-        /** @description A relay that the instance joins or joined (ADR-0061). */
-        AdminRelay: {
-            id: components["schemas"]["Id"];
-            protocol: components["schemas"]["RelayProtocol"];
-            /** @description The URL it was registered with, its inbox or its actor. */
-            url: string;
-            /** @description Where the public posts are delivered. */
-            inbox_url: string;
-            /** @description Whether the public posts it relays are taken in; `false` only sends. */
-            receive: boolean;
-            state: components["schemas"]["RelayState"];
-            /** Format: date-time */
-            state_changed_at: string;
-            /** @description The relay's actor, which accepted the `Follow`; omitted unless `accepted`. */
-            actor_uri?: string;
-            /** @description The activities it brought in during the last 24 hours that were taken in. */
-            taken_last_day: number;
-            /**
-             * @description The activities it brought in during the last 24 hours that were dropped over the
-             *     hourly limit (`relay_ingest_hourly_limit`).
-             */
-            dropped_last_day: number;
-            /**
-             * @description Whether a domain action suspends its server: nothing goes to it or comes from it
-             *     while it does, whatever `state` says.
-             */
-            domain_suspended: boolean;
-            /** Format: date-time */
-            created_at: string;
-        };
-        /** @description The relays, in registration order. */
-        AdminRelayList: {
-            items: components["schemas"]["AdminRelay"][];
-        };
-        /** @description A relay to register and join. */
-        CreateRelayRequest: {
-            protocol?: components["schemas"]["RelayProtocol"];
-            /** @description The relay's inbox (`mastodon`) or actor (`litepub`), an https URL. */
-            url: string;
-            /** @description Whether to take in the public posts it relays; `true` when omitted. */
-            receive?: boolean;
-        };
-        /**
-         * @description The problem of a relay operation that breaks a rule (422,
-         *     `/api/v1/problems/invalid-relay`); `reason` says which. Another 422 (a malformed
-         *     request) has none.
-         */
-        RelayProblem: components["schemas"]["Problem"] & {
-            reason?: components["schemas"]["RelayProblemReason"];
-        };
-        /**
-         * @description Why a relay operation is refused. `url`: not an https URL of at most 2048 bytes.
-         *     `exists`: a relay with the URL is registered. `domain_suspended`: a domain action
-         *     suspends its server. `not_actor`: the URL of a `litepub` relay serves no actor with an
-         *     inbox. `state`: the relay is not in a state that allows it (joining a `pending` or
-         *     `accepted` relay, leaving or deleting one that is not).
-         * @enum {string}
-         */
-        RelayProblemReason: "url" | "exists" | "domain_suspended" | "not_actor" | "state";
-        /**
-         * @description Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
-         *     bytes without user info or a fragment. `description`: longer than 200 characters or with
-         *     control characters. `events`: none, or one twice. `missing_permission`: the user lacks
-         *     the permission of an event (`missing_permissions`).
-         * @enum {string}
-         */
-        WebhookProblemReason: "url" | "description" | "events" | "missing_permission";
         /**
          * @description The body of a message that a webhook receives (ADR-0060, Standard Webhooks), posted as
          *     `application/json` with the headers `webhook-id`, `webhook-timestamp`, and
@@ -6643,6 +7293,29 @@ export interface components {
             timestamp: string;
             data: Record<string, never>;
         };
+        /**
+         * @description The type of a message: a `WebhookEventType`, or `webhook.test`, the test message of
+         *     `POST /admin/webhooks/{id}/test`.
+         * @enum {string}
+         */
+        WebhookMessageType: "report.created" | "report.resolved" | "report.reopened" | "registration.pending" | "account.created" | "account.updated" | "moderation_action.created" | "moderation_action.lifted" | "appeal.created" | "domain_moderation_action.created" | "domain_moderation_action.lifted" | "status.created" | "custom_emoji.created" | "custom_emoji.updated" | "custom_emoji.deleted" | "webhook.test";
+        /**
+         * @description The problem of a webhook that breaks a rule (422, `/api/v1/problems/invalid-webhook`);
+         *     `reason` says which. Another 422 (a malformed request) has none.
+         */
+        WebhookProblem: components["schemas"]["Problem"] & {
+            reason?: components["schemas"]["WebhookProblemReason"];
+            /** @description The permissions that the events need and the user lacks, for `missing_permission`. */
+            missing_permissions?: components["schemas"]["Permission"][];
+        };
+        /**
+         * @description Why a webhook is refused. `url`: not an absolute http or https URL of at most 2048
+         *     bytes without user info or a fragment. `description`: longer than 200 characters or with
+         *     control characters. `events`: none, or one twice. `missing_permission`: the user lacks
+         *     the permission of an event (`missing_permissions`).
+         * @enum {string}
+         */
+        WebhookProblemReason: "url" | "description" | "events" | "missing_permission";
         /** @description The post of a `status.created` message, always `public` and local. */
         WebhookStatus: {
             id: components["schemas"]["Id"];
@@ -6658,693 +7331,30 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
-        /**
-         * @description The emoji of a `custom_emoji.*` message: `AdminCustomEmoji` with the operation. A
-         *     `custom_emoji.deleted` message presents the emoji as it was before the deletion.
-         */
-        WebhookCustomEmoji: components["schemas"]["AdminCustomEmoji"] & {
-            /**
-             * @description The operation, named as in the audit log: `custom_emoji_created`,
-             *     `custom_emoji_image_replaced`, `custom_emoji_copied`, `custom_emoji_updated`,
-             *     `custom_emoji_enabled`, `custom_emoji_disabled`, or `custom_emoji_deleted`.
-             */
-            operation: string;
-        };
         /** @description The data of a `webhook.test` message. */
         WebhookTest: {
             endpoint_id: components["schemas"]["Id"];
         };
-        /**
-         * @description The override of one design token, named without `--` (`color-accent`, `radius-md`): `light`
-         *     and `dark` for a color token, `value` for the others.
-         */
-        ThemeTokenValue: {
-            token: string;
-            light?: string;
-            dark?: string;
-            value?: string;
-        };
-        /** @description The instance theme as its administrators edit it. */
-        AdminTheme: {
-            /** @description The ID of the current theme revision; omitted when no theme was ever saved. */
-            revision?: string;
-            /**
-             * Format: uri
-             * @description The stylesheet of the theme; omitted when the theme changes nothing.
-             */
-            stylesheet_url?: string;
-            /** @description The overridden tokens, in the order of the token list. */
-            tokens: components["schemas"]["ThemeTokenValue"][];
-            /** @description The custom CSS; empty for none. */
-            custom_css: string;
-            /**
-             * Format: date-time
-             * @description When the current revision was recorded; omitted when no theme was ever saved.
-             */
-            revised_at?: string;
-        };
-        /** @description The whole theme; tokens left out go back to their defaults. */
-        SetThemeRequest: {
-            tokens: components["schemas"]["ThemeTokenValue"][];
-            custom_css: string;
-        };
-        /**
-         * @description The instance's theme (ADR-0059), for clients that do not load the server's HTML shell: the
-         *     stylesheet to apply and the overridden tokens. `Instance.theme` omits it when the
-         *     instance has no theme.
-         */
-        InstanceTheme: {
-            revision: string;
-            /** Format: uri */
-            stylesheet_url: string;
-            tokens: components["schemas"]["ThemeTokenValue"][];
-        };
-        /**
-         * @description One reason a theme cannot be saved. `code` is `unknown_token`, `duplicate_token`,
-         *     `invalid_value` (the value does not have the token's shape; `scheme` names the color scheme
-         *     of a color), `out_of_range` (`min` and `max` are the bounds, in rem for a length and ms for a
-         *     duration), `low_contrast` (`token` on `background` is `ratio`:1 in `scheme` and needs
-         *     `minimum`:1), `css_too_long` (`max` bytes), or `css_invalid` (not UTF-8 text).
-         */
-        ThemeError: {
-            /** @enum {string} */
-            code: "unknown_token" | "duplicate_token" | "invalid_value" | "out_of_range" | "low_contrast" | "css_too_long" | "css_invalid";
-            token?: string;
-            /** @enum {string} */
-            scheme?: "light" | "dark";
-            background?: string;
-            ratio?: number;
-            minimum?: number;
-            min?: number;
-            max?: number;
-        };
-        /**
-         * @description A 422 of `PUT /admin/theme`. For the type `/api/v1/problems/invalid-theme`, `theme_errors`
-         *     lists why the theme cannot be saved; another 422 (a malformed request) has none.
-         */
-        ThemeProblem: components["schemas"]["Problem"] & {
-            theme_errors?: components["schemas"]["ThemeError"][];
-        };
-        /** @description The current text of a key, the same in every locale. */
-        AdminInstanceText: {
-            key: components["schemas"]["InstanceTextKey"];
-            /**
-             * @description The text: Markdown for `terms` and `privacy_policy`, plain text for the other keys.
-             *     Empty only in the answer to clearing it.
-             */
-            body: string;
-            /**
-             * Format: date-time
-             * @description When the revision was recorded.
-             */
-            revised_at: string;
-        };
-        /** @description The current instance texts, by key. */
-        AdminInstanceTextList: {
-            items: components["schemas"]["AdminInstanceText"][];
-        };
-        /**
-         * @description The key of an instance text: the name (one line), the short and full descriptions,
-         *     the terms of service and the privacy policy (Markdown), and the alternative texts of the
-         *     preview image and the thumbnail.
-         * @enum {string}
-         */
-        InstanceTextKey: "name" | "short_description" | "description" | "terms" | "privacy_policy" | "preview_image_alt" | "thumbnail_alt";
-        /** @description A new revision of an instance text. */
-        SetInstanceTextRequest: {
-            /** @description The text, in any language; empty clears it. */
-            body: string;
-        };
-        /** @description What awaits the moderators; a count whose permission the user lacks is omitted. */
-        AdminCounts: {
-            /**
-             * Format: int64
-             * @description The reports that are open. Needs `manage_reports`.
-             */
-            open_reports?: number;
-            /**
-             * Format: int64
-             * @description The registrations that await approval. Needs `manage_accounts`.
-             */
-            pending_registrations?: number;
-            /**
-             * Format: int64
-             * @description The appeals of moderation actions that await a decision. Needs `manage_accounts`.
-             */
-            pending_appeals?: number;
-        };
-        /** @description An account as the moderators see it (FR-714). It never includes an email or IP address. */
-        AdminAccount: {
-            id: components["schemas"]["Id"];
-            account: components["schemas"]["Account"];
-            /** @description Whether the account is on this server. */
-            local: boolean;
-            state: components["schemas"]["AdminAccountState"];
-            /**
-             * @description What the account's own actions take away now (data-model §5.2), in a fixed order.
-             *     The domain actions on its domain are listed apart.
-             */
-            restrictions: components["schemas"]["AdminAccountRestriction"][];
-            registration_state?: components["schemas"]["AdminAccountRegistrationState"];
-        };
-        /** @description The details of an account (FR-714). */
-        AdminAccountDetail: components["schemas"]["AdminAccount"] & {
-            registration?: components["schemas"]["AdminAccountRegistration"];
-            /**
-             * @description Whether the primary email address of a local account is verified; omitted when
-             *     it has none.
-             */
-            email_verified?: boolean;
-            /**
-             * @description Whether the user of a local account signs in with two-factor authentication;
-             *     omitted for a remote account.
-             */
-            two_factor_enabled?: boolean;
-            /** @description The keys of the user's roles, highest position first; empty for a remote account. */
-            roles: string[];
-            /** @description The newest 20 actions on the account, newest first. */
-            actions: components["schemas"]["AdminAccountAction"][];
-            /** @description The newest 20 reports of the account, newest first. */
-            reports: components["schemas"]["AdminReport"][];
-        };
-        /** @description A page of accounts, newest first. */
-        AdminAccountPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminAccount"][];
-        };
-        /**
-         * @description A password reset link that an administrator issued for a local account (FR-002). It is
-         *     shown once.
-         */
-        AdminPasswordResetLink: {
-            /**
-             * Format: uri
-             * @description The link that sets a new password; it works once.
-             */
-            url: string;
-            /**
-             * Format: date-time
-             * @description When the link stops working.
-             */
-            expires_at: string;
-        };
-        /**
-         * @description The email address and the IP addresses of a local account (FR-714). Showing them is
-         *     recorded in the audit log.
-         */
-        AdminAccountPrivateData: {
-            /** @description The primary email address; omitted when there is none. */
-            email?: string;
-            /** @description Whether the primary email address is verified; omitted with `email`. */
-            email_verified?: boolean;
-            /**
-             * @description The IP address the account registered from; omitted for a registration from an
-             *     unknown address, by the command line, or past the retention.
-             */
-            registration_ip?: string;
-            /**
-             * Format: date-time
-             * @description When the account registered from `registration_ip`; omitted with it.
-             */
-            registered_at?: string;
-            /** @description The newest 20 sign-ins within the retention, newest first. */
-            sign_ins: components["schemas"]["AdminAccountSignIn"][];
-            /**
-             * @description For each IP address of `sign_ins` and `registration_ip`, newest first, up to 20
-             *     other accounts that registered or signed in from it, newest first.
-             */
-            same_ip_accounts: components["schemas"]["AdminSameIpAccounts"][];
-        };
-        /** @description The registration application of a local account. */
-        AdminAccountRegistration: {
-            /** Format: date-time */
-            submitted_at: string;
-            /** @description Why the applicant wants to join; omitted when not asked or not given. */
-            reason?: string;
-            invite_id?: components["schemas"]["Id"];
-            /**
-             * Format: date-time
-             * @description When the registration entered its `registration_state`.
-             */
-            state_changed_at: string;
-        };
-        /**
-         * @description Where the registration of a local account stands; a user made with the command line is
-         *     `approved`. Omitted for a remote account.
-         * @enum {string}
-         */
-        AdminAccountRegistrationState: "pending" | "approved" | "rejected";
-        /**
-         * @description A capability that an action takes away (data-model §5.2). `login`: logging in and the
-         *     API. `post`: posting, replying, boosting, editing. `interact`: following, favouriting,
-         *     boosting, voting. `visibility_ceiling_private`: posts are followers-only.
-         *     `public_discovery`: posts stay off the public timelines and search.
-         *     `unsolicited_reach`: notifications reach followers only. `media_sensitive`: media shows
-         *     as sensitive. `profile_view`: the profile and posts are hidden. `federation`: nothing is
-         *     delivered or received.
-         * @enum {string}
-         */
-        AdminAccountRestriction: "login" | "post" | "interact" | "visibility_ceiling_private" | "public_discovery" | "unsolicited_reach" | "media_sensitive" | "profile_view" | "federation";
-        /** @description Where one sign-in came from. */
-        AdminAccountSignIn: {
-            /** @description The IP address; omitted when unknown. */
-            ip?: string;
-            /** @description The User-Agent; omitted when unknown. */
-            user_agent?: string;
-            /** Format: date-time */
-            signed_in_at: string;
-        };
-        /**
-         * @description The state of an account, the first that applies: `deleted` (deleted here or on its
-         *     server), `suspended` (a `suspend` or `ban`), `disabled` (a `disable_login`), `rejected`
-         *     and `pending` (the registration of a local account), `limited` (a `limit`), and
-         *     `active`.
-         * @enum {string}
-         */
-        AdminAccountState: "active" | "pending" | "rejected" | "limited" | "disabled" | "suspended" | "deleted";
-        /** @description The other accounts that used one IP address. */
-        AdminSameIpAccounts: {
-            ip: string;
-            accounts: components["schemas"]["AdminAccount"][];
-        };
-        /**
-         * @description A role (FR-720): a named set of permissions. A higher position outranks a lower one;
-         *     a user may grant, revoke, create, change, and delete only the roles at or below their
-         *     highest one, and give or take only the permissions they hold.
-         */
-        AdminRole: {
-            id: components["schemas"]["Id"];
-            /** @description The name of the role, such as `admin` or `moderator`. */
-            key: string;
-            position: number;
-            /** @description The permissions that the role grants, in the order of `Permission`. */
-            permissions: components["schemas"]["Permission"][];
-        };
-        /** @description Roles, highest position first. */
-        AdminRoleList: {
-            items: components["schemas"]["AdminRole"][];
-        };
-        /** @description A new role. */
-        CreateRoleRequest: {
-            /** @description The name of the role, 1 to 64 lowercase ASCII letters, digits, `_`, and `-`. */
-            key: string;
-            /** @description The rank of the role, from 0 to 999 (below `admin`). */
-            position: number;
-            /** @description The permissions that the role grants, each once. */
-            permissions: components["schemas"]["Permission"][];
-        };
-        /** @description The changes to a role; what is omitted stays. */
-        UpdateRoleRequest: {
-            /** @description The new rank of the role, from 0 to 999. */
-            position?: number;
-            /** @description The new permissions of the role, each once; empty removes them all. */
-            permissions?: components["schemas"]["Permission"][];
-        };
-        /**
-         * @description The problem of a role change that breaks a rule (422, `/api/v1/problems/invalid-role`);
-         *     `reason` says which. Another 422 (a malformed request) has none.
-         */
-        RoleProblem: components["schemas"]["Problem"] & {
-            reason?: components["schemas"]["RoleProblemReason"];
-            /** @description The permissions that the change needs and the viewer lacks, for `missing_permission`. */
-            missing_permissions?: components["schemas"]["Permission"][];
-        };
-        /**
-         * @description Why a role change is refused. `key`: not 1 to 64 lowercase ASCII letters, digits, `_`,
-         *     and `-`. `key_taken`: another role has the key. `position`: outside 0 to 999.
-         *     `permissions`: an unknown permission, or one twice. `builtin`: `admin` cannot change,
-         *     and neither `admin` nor `moderator` can be deleted. `held`: users hold the role.
-         *     `missing_permission`: the change adds or removes permissions that the viewer's roles
-         *     do not grant (`missing_permissions`).
-         * @enum {string}
-         */
-        RoleProblemReason: "key" | "key_taken" | "position" | "permissions" | "builtin" | "held" | "missing_permission";
-        /** @description A user's registration as the moderators review it (FR-721). */
-        AdminRegistration: {
-            user_id: components["schemas"]["Id"];
-            /** @description The user's local account; omitted when it is gone. */
-            account_id?: components["schemas"]["Id"];
-            /** @description The username of the user's local account; omitted when it is gone. */
-            username?: string;
-            state: components["schemas"]["RegistrationState"];
-            /**
-             * Format: date-time
-             * @description When the registration entered its state.
-             */
-            since: string;
-            /** @description The user's primary email address; empty when there is none. */
-            email: string;
-            /** @description Whether the user confirmed the email address. */
-            email_verified: boolean;
-            /** @description Why the user wants to join, as plain text; omitted when they gave none. */
-            reason?: string;
-            /** @description The invite the user signed up with; omitted for none. */
-            invite_id?: components["schemas"]["Id"];
-            /**
-             * Format: date-time
-             * @description When the user signed up.
-             */
-            submitted_at: string;
-        };
-        /** @description A page of registrations, longest in their state first. */
-        AdminRegistrationPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminRegistration"][];
-        };
-        /** @description A moderator's decision on a registration. */
-        RegistrationDecisionRequest: {
-            /** @description A note for the moderators, as plain text; omitted or empty for none. */
-            note?: string;
-        };
-        /**
-         * @description Where a registration stands: `pending` waits for a moderator, `approved` lets the user
-         *     sign in, and `rejected` keeps them out.
-         * @enum {string}
-         */
-        RegistrationState: "pending" | "approved" | "rejected";
-        /** @description A block on sign-ups from the registration page (FR-719). */
-        AdminSignupBlock: {
-            id: components["schemas"]["Id"];
-            kind: components["schemas"]["AdminSignupBlockKind"];
-            /**
-             * @description What the block matches, in canonical form: a domain in IDNA A-labels
-             *     (`email_domain`), the hex SHA-256 of a canonical email address (`email_hash`), or a
-             *     masked CIDR prefix (`ip_range`).
-             */
-            value: string;
-            severity: components["schemas"]["AdminSignupBlockSeverity"];
-            /** @description The moderators' comment; omitted when there is none. */
-            comment?: string;
-            /** @description The ban the block was made from; omitted for a block added on its own. */
-            moderation_action_id?: components["schemas"]["Id"];
-            state: components["schemas"]["AdminSignupBlockState"];
-            /** Format: date-time */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description When the block ends by itself; omitted for one that lasts until lifted.
-             */
-            expires_at?: string;
-            /**
-             * Format: date-time
-             * @description When the block was lifted; omitted until it is.
-             */
-            lifted_at?: string;
-        };
-        /**
-         * @description `email_domain`: the domain of the email address and its subdomains. `email_hash`: one
-         *     email address, compared in lower case without the part of the local part from its first
-         *     `+`. `ip_range`: the client addresses in a CIDR prefix.
-         * @enum {string}
-         */
-        AdminSignupBlockKind: "email_domain" | "email_hash" | "ip_range";
-        /** @description A page of sign-up blocks, newest first. */
-        AdminSignupBlockPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminSignupBlock"][];
-        };
-        /**
-         * @description `reject`: the sign-up is refused. `require_approval`: the registration starts pending
-         *     for a moderator, whatever the registration mode.
-         * @enum {string}
-         */
-        AdminSignupBlockSeverity: "reject" | "require_approval";
-        /**
-         * @description `active`: in effect now. `expired`: it ended at `expires_at`. `lifted`: a moderator
-         *     lifted it.
-         * @enum {string}
-         */
-        AdminSignupBlockState: "active" | "expired" | "lifted";
-        /** @description A new block on sign-ups. */
-        CreateSignupBlockRequest: {
-            kind: components["schemas"]["AdminSignupBlockKind"];
-            /**
-             * @description A domain such as `spam.example` or `例え.jp` (`email_domain`), an email address or
-             *     the hex SHA-256 of a canonical one (`email_hash`), or a CIDR prefix such as
-             *     `192.0.2.0/24` or a single IP address (`ip_range`).
-             */
-            value: string;
-            severity: components["schemas"]["AdminSignupBlockSeverity"];
-            comment?: string;
-            /** @description The seconds the block lasts; omitted, it lasts until it is lifted. */
-            expires_in?: number;
-        };
-        /** @description A list of values to block sign-ups by, all with the same settings. */
-        ImportSignupBlocksRequest: {
-            kind: components["schemas"]["AdminSignupBlockKind"];
-            /**
-             * @description The list: one value per line, or a CSV row whose first field is the value; blank
-             *     lines and lines starting with `#` are ignored. At most 10,000 values.
-             */
-            text: string;
-            severity: components["schemas"]["AdminSignupBlockSeverity"];
-            /** @description The comment of every block added. */
-            comment?: string;
-            /** @description The seconds each block lasts; omitted, they last until they are lifted. */
-            expires_in?: number;
-        };
-        /** @description What an import of a list of sign-up blocks did. */
-        SignupBlockImportResult: {
-            /** @description The number of blocks added. */
-            added: number;
-            /** @description The lines whose block was not added, in line order. */
-            skipped: components["schemas"]["SignupBlockImportSkipped"][];
-        };
-        /** @description A line of an imported list whose block was not added. */
-        SignupBlockImportSkipped: {
-            /** @description The line of the list, from 1. */
-            line: number;
-            /** @description The value as written on the line. */
-            value: string;
-            /**
-             * @description `invalid`: not a valid value for the kind. `duplicate`: an earlier line has the same
-             *     value in canonical form. `already_blocked`: a block in effect of the same kind and
-             *     value with a severity at least as strong covers it.
-             * @enum {string}
-             */
-            reason: "invalid" | "duplicate" | "already_blocked";
-        };
-        /**
-         * @description The `#severity` of Mastodon's domain block CSV. `suspend`: the action `suspend`.
-         *     `silence`: Mastodon's name of the action `limit`. `noop`: no action but the rejections.
-         * @enum {string}
-         */
-        DomainBlockSeverity: "suspend" | "silence" | "noop";
-        /**
-         * @description A row of Mastodon's domain block CSV. The server checks the domain (a U-label spelling
-         *     such as `例え.jp` is accepted) and the public comment (at most 5,000 characters).
-         */
-        DomainBlock: {
-            domain: string;
-            severity: components["schemas"]["DomainBlockSeverity"];
-            reject_media: boolean;
-            reject_reports: boolean;
-            public_comment?: string;
-            obfuscate: boolean;
-        };
-        /** @description A domain block CSV to preview. */
-        PreviewDomainBlockImportRequest: {
-            /** @description The file's text, with a header or as a list of domains; at most 5,000 rows. */
-            csv: string;
-        };
-        /**
-         * @description What importing a row would do. `importable`: it issues the actions of `issue`.
-         *     `already_applied`: an action in effect of each of the row's kinds covers the domain
-         *     already, on it or on a parent domain. `no_action`: the row stands for no action (a
-         *     `noop` without rejections). `duplicate`: an earlier row has the same domain once
-         *     normalized. `invalid`: the domain, the severity, or the public comment is not valid.
-         * @enum {string}
-         */
-        DomainBlockImportStatus: "importable" | "already_applied" | "no_action" | "duplicate" | "invalid";
-        /** @description A row of a domain block CSV and what importing it would do. */
-        DomainBlockImportRow: {
-            /** @description The line of the file the row starts on, from 1. */
-            line: number;
-            /** @description The domain as written in the row. */
-            written_domain: string;
-            /**
-             * @description The row, with its domain normalized (IDNA A-labels in lower case); absent when
-             *     the row is `invalid`. The import takes it as it is.
-             */
-            block?: components["schemas"]["DomainBlock"];
-            status: components["schemas"]["DomainBlockImportStatus"];
-            /** @description The kinds of the actions the import would issue; empty unless `importable`. */
-            issue: components["schemas"]["AdminDomainActionKind"][];
-        };
-        /** @description What importing each row of a domain block CSV would do, in row order. */
-        DomainBlockImportPreview: {
-            rows: components["schemas"]["DomainBlockImportRow"][];
-        };
-        /** @description The rows of a domain block CSV to import. */
-        ImportDomainBlocksRequest: {
-            blocks: components["schemas"]["DomainBlock"][];
-            /** @description The private note of every action issued. */
-            private_note?: string;
-        };
-        /** @description What an import of domain blocks did. */
-        DomainBlockImportResult: {
-            /** @description The actions issued, in the order of the blocks. */
-            issued: components["schemas"]["AdminDomainAction"][];
-            /** @description The blocks that issued nothing, in their order. */
-            skipped: components["schemas"]["DomainBlockImportSkipped"][];
-        };
-        /** @description A block of an import that issued nothing. */
-        DomainBlockImportSkipped: {
-            /** @description The domain as sent. */
-            domain: string;
-            /** @description Why it issued nothing; never `importable`. */
-            reason: components["schemas"]["DomainBlockImportStatus"];
-        };
-        /** @description A report of an account to the moderators. */
-        CreateReportRequest: {
-            /** @description The account reported, local or remote. */
-            account_id: components["schemas"]["Id"];
-            /** @description Posts of the account that the user can see, up to 20. */
-            status_ids?: components["schemas"]["Id"][];
-            category: components["schemas"]["ReportCategory"];
-            /**
-             * @description Instance rules in effect that the account broke, up to 20; only with the
-             *     `violation` category.
-             */
-            rule_ids?: components["schemas"]["Id"][];
-            /** @description A comment for the moderators as plain text. */
-            comment?: string;
-            /**
-             * @description Asks to forward the report to the server of a remote account, without naming the
-             *     reporter. It means nothing for a local account.
-             * @default false
-             */
-            forward: boolean;
-        };
-        /**
-         * @description A report that the user filed. It never names the reporter, and tells only whether the
-         *     moderators resolved it, never how.
-         */
-        Report: {
-            id: components["schemas"]["Id"];
-            category: components["schemas"]["ReportCategory"];
-            /** @description The comment as plain text. */
-            comment: string;
-            /** @description Whether the report is to be forwarded to the target's server. */
-            forwarded: boolean;
-            /** Format: date-time */
-            filed_at: string;
-            target_account: components["schemas"]["Account"];
-            status_ids: components["schemas"]["Id"][];
-            rule_ids: components["schemas"]["Id"][];
-            state: components["schemas"]["ReportState"];
-        };
-        /**
-         * @description Why the account is reported. `spam`: spam or unwanted promotion. `legal`: content that
-         *     is illegal. `violation`: it breaks the instance rules that `rule_ids` cite. `other`:
-         *     anything else.
-         * @enum {string}
-         */
-        ReportCategory: "spam" | "legal" | "violation" | "other";
-        /** @description A page of the user's reports, newest first. */
-        ReportPage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["Report"][];
-        };
-        /**
-         * @description `open`: the report awaits the moderators. `resolved`: the moderators handled it.
-         * @enum {string}
-         */
-        ReportState: "open" | "resolved";
-        /**
-         * @description An instance setting: its value and what it accepts. Every value is a string in its
-         *     canonical form, whatever its kind.
-         */
-        AdminSetting: {
-            key: components["schemas"]["InstanceSettingKey"];
-            kind: components["schemas"]["InstanceSettingKind"];
-            /** @description The current value, which is `default` when `stored` is false. */
-            value: string;
-            /** @description The value of the setting while it has never been set. */
-            default: string;
-            /** @description Whether the setting has been set; false means its default applies. */
-            stored: boolean;
-            /** @description The values an `enum` setting accepts, in order; omitted for other kinds. */
-            choices?: string[];
-            /** @description The least value of an `int` setting; omitted for other kinds. */
-            minimum?: number;
-            /** @description The greatest value of an `int` setting; omitted for other kinds. */
-            maximum?: number;
-        };
-        /** @description Every instance setting, in a fixed order. */
-        AdminSettingList: {
-            items: components["schemas"]["AdminSetting"][];
-        };
-        /**
-         * @description The key of an instance setting (docs/operations/instance-settings.md). New keys may be
-         *     added; clients show the ones they know.
-         * @enum {string}
-         */
-        InstanceSettingKey: "registration_mode" | "max_status_length" | "default_locale" | "local_timeline_enabled" | "federated_timeline_enabled" | "preview_image" | "contact_account" | "contact_email" | "thumbnail" | "remote_media_policy" | "remote_media_cache_ttl" | "authorized_fetch" | "domain_actions_visibility" | "domain_actions_rationale_visibility" | "appeal_window" | "retention_session_origins" | "retention_registration_origins" | "retention_reports" | "retention_moderation_actions" | "retention_audit_log" | "search_indexing" | "ai_usage" | "indexable_default" | "security_contact" | "require_media_description" | "link_cards_enabled";
-        /**
-         * @description The type of a setting's value. `bool`: `true` or `false`. `int`: a decimal integer from
-         *     `minimum` to `maximum`. `enum`: one of `choices`. `locale`: a BCP 47 language tag.
-         *     `media`: the ID of an image uploaded with `POST /media`, or empty for none. `account`:
-         *     the username of a local account, or empty for none. `email`: an email address such as
-         *     `admin@example.com`, or empty for none. `uri`: an `https:` or `mailto:` URI, or empty for
-         *     none.
-         * @enum {string}
-         */
-        InstanceSettingKind: "bool" | "int" | "enum" | "locale" | "media" | "account" | "email" | "uri";
-        /** @description New values of some instance settings, saved together. */
-        UpdateInstanceSettingsRequest: {
-            /** @description The new value of each setting to change, by key, as a string. */
-            values: {
-                [key: string]: string;
-            };
-        };
-        /** @description An invite that lets people sign up while the registration mode is `invite`. */
-        AdminInvite: {
-            id: components["schemas"]["Id"];
-            /** @description The code people enter on the registration page, 16 characters. */
-            code: string;
-            /**
-             * Format: uri
-             * @description The registration page with the code filled in, to send to people.
-             */
-            url: string;
-            /** @description How many sign-ups the invite allows; omitted when there is no limit. */
-            max_uses?: number;
-            /** @description How many people have signed up with the invite. */
-            uses: number;
-            state: components["schemas"]["AdminInviteState"];
-            /**
-             * Format: date-time
-             * @description When the invite stops working; omitted when it never does.
-             */
-            expires_at?: string;
-            /** Format: date-time */
-            created_at: string;
-        };
-        /** @description A page of invites, newest first. */
-        AdminInvitePage: components["schemas"]["PageInfo"] & {
-            items: components["schemas"]["AdminInvite"][];
-        };
-        /**
-         * @description What the invite allows now. `usable`: people may sign up with it. `revoked`: a staff
-         *     member revoked it. `expired`: it passed `expires_at`. `exhausted`: it was used
-         *     `max_uses` times.
-         * @enum {string}
-         */
-        AdminInviteState: "usable" | "revoked" | "expired" | "exhausted";
-        /** @description A new invite. */
-        CreateInviteRequest: {
-            /** @description How many sign-ups the invite allows; omitted for no limit. */
-            max_uses?: number;
-            /** @description How many seconds the invite works; omitted for an invite that never expires. */
-            expires_in?: number;
-        };
     };
     responses: {
-        /** @description A page of posts and boosts, newest first. */
-        StatusPage: {
+        /** @description A page of accounts. */
+        AccountPage: {
             headers: {
                 "Cache-Control": components["headers"]["CacheControl"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["StatusPage"];
+                "application/json": components["schemas"]["AccountPage"];
+            };
+        };
+        /** @description The account, with its follow counts. */
+        AccountProfile: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Account"];
             };
         };
         /** @description A page of the posts and boosts of an account, newest first. */
@@ -7357,6 +7367,156 @@ export interface components {
                 "application/json": components["schemas"]["AccountStatusPage"];
             };
         };
+        /** @description The account action. */
+        AdminAccountAction: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminAccountAction"];
+            };
+        };
+        /** @description The announcement. */
+        AdminAnnouncement: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminAnnouncement"];
+            };
+        };
+        /** @description The appeal. */
+        AdminAppeal: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminAppeal"];
+            };
+        };
+        /** @description The custom emoji. */
+        AdminCustomEmoji: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminCustomEmoji"];
+            };
+        };
+        /** @description The domain action. */
+        AdminDomainAction: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminDomainAction"];
+            };
+        };
+        /** @description The health of the remote server. */
+        AdminInstanceHealth: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminInstanceHealth"];
+            };
+        };
+        /** @description The invite. */
+        AdminInvite: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminInvite"];
+            };
+        };
+        /** @description The registration. */
+        AdminRegistration: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRegistration"];
+            };
+        };
+        /** @description The relay. */
+        AdminRelay: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRelay"];
+            };
+        };
+        /** @description The report, with its notes, its posts, and the history of its target. */
+        AdminReportDetail: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminReportDetail"];
+            };
+        };
+        /** @description The role. */
+        AdminRole: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRole"];
+            };
+        };
+        /** @description The roles. */
+        AdminRoleList: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRoleList"];
+            };
+        };
+        /** @description The rule. */
+        AdminRule: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminRule"];
+            };
+        };
+        /** @description Every instance setting. */
+        AdminSettingList: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminSettingList"];
+            };
+        };
+        /** @description The sign-up block. */
+        AdminSignupBlock: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminSignupBlock"];
+            };
+        };
         /** @description The current theme. */
         AdminTheme: {
             headers: {
@@ -7365,6 +7525,38 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["AdminTheme"];
+            };
+        };
+        /** @description The webhook. */
+        AdminWebhook: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminWebhook"];
+            };
+        };
+        /** @description The delivery. */
+        AdminWebhookDelivery: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["AdminWebhookDelivery"];
+            };
+        };
+        /** @description The custom emoji breaks a rule; nothing was changed. */
+        CustomEmojiProblem: {
+            headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
+                "Cache-Control": components["headers"]["CacheControl"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["CustomEmojiProblem"];
             };
         };
         /** @description An error, as an RFC 9457 problem document. */
@@ -7390,36 +7582,6 @@ export interface components {
                 "application/problem+json": components["schemas"]["Problem"];
             };
         };
-        /** @description The status after the action, as the authenticated user sees it. */
-        StatusAfterAction: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Status"];
-            };
-        };
-        /** @description A page of accounts. */
-        AccountPage: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AccountPage"];
-            };
-        };
-        /** @description The account, with its follow counts. */
-        AccountProfile: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Account"];
-            };
-        };
         /** @description The viewer's relationship with the account after the change. */
         Relationship: {
             headers: {
@@ -7428,140 +7590,6 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["Relationship"];
-            };
-        };
-        /** @description The health of the remote server. */
-        AdminInstanceHealth: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminInstanceHealth"];
-            };
-        };
-        /** @description The domain action. */
-        AdminDomainAction: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminDomainAction"];
-            };
-        };
-        /** @description The report, with its notes, its posts, and the history of its target. */
-        AdminReportDetail: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminReportDetail"];
-            };
-        };
-        /** @description The account action. */
-        AdminAccountAction: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminAccountAction"];
-            };
-        };
-        /** @description The appeal. */
-        AdminAppeal: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminAppeal"];
-            };
-        };
-        /** @description The rule. */
-        AdminRule: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminRule"];
-            };
-        };
-        /** @description The announcement. */
-        AdminAnnouncement: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminAnnouncement"];
-            };
-        };
-        /** @description The custom emoji. */
-        AdminCustomEmoji: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminCustomEmoji"];
-            };
-        };
-        /** @description The custom emoji breaks a rule; nothing was changed. */
-        CustomEmojiProblem: {
-            headers: {
-                /** @description The locale of `title` and `detail`. */
-                "Content-Language"?: string;
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["CustomEmojiProblem"];
-            };
-        };
-        /** @description The webhook. */
-        AdminWebhook: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminWebhook"];
-            };
-        };
-        /** @description The delivery. */
-        AdminWebhookDelivery: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminWebhookDelivery"];
-            };
-        };
-        /** @description The webhook breaks a rule; nothing was changed. */
-        WebhookProblem: {
-            headers: {
-                /** @description The locale of `title` and `detail`. */
-                "Content-Language"?: string;
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/problem+json": components["schemas"]["WebhookProblem"];
-            };
-        };
-        /** @description The relay. */
-        AdminRelay: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminRelay"];
             };
         };
         /** @description The relay operation breaks a rule; nothing was changed. */
@@ -7576,26 +7604,6 @@ export interface components {
                 "application/problem+json": components["schemas"]["RelayProblem"];
             };
         };
-        /** @description The roles. */
-        AdminRoleList: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminRoleList"];
-            };
-        };
-        /** @description The role. */
-        AdminRole: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminRole"];
-            };
-        };
         /** @description The role change breaks a rule; nothing was changed. */
         RoleProblem: {
             headers: {
@@ -7608,94 +7616,86 @@ export interface components {
                 "application/problem+json": components["schemas"]["RoleProblem"];
             };
         };
-        /** @description The registration. */
-        AdminRegistration: {
+        /** @description The status after the action, as the authenticated user sees it. */
+        StatusAfterAction: {
             headers: {
                 "Cache-Control": components["headers"]["CacheControl"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["AdminRegistration"];
+                "application/json": components["schemas"]["Status"];
             };
         };
-        /** @description The sign-up block. */
-        AdminSignupBlock: {
+        /** @description A page of posts and boosts, newest first. */
+        StatusPage: {
             headers: {
                 "Cache-Control": components["headers"]["CacheControl"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["AdminSignupBlock"];
+                "application/json": components["schemas"]["StatusPage"];
             };
         };
-        /** @description Every instance setting. */
-        AdminSettingList: {
+        /** @description The webhook breaks a rule; nothing was changed. */
+        WebhookProblem: {
             headers: {
+                /** @description The locale of `title` and `detail`. */
+                "Content-Language"?: string;
                 "Cache-Control": components["headers"]["CacheControl"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["AdminSettingList"];
-            };
-        };
-        /** @description The invite. */
-        AdminInvite: {
-            headers: {
-                "Cache-Control": components["headers"]["CacheControl"];
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["AdminInvite"];
+                "application/problem+json": components["schemas"]["WebhookProblem"];
             };
         };
     };
     parameters: {
+        /** @description The ID of the account action. */
+        AccountActionId: components["schemas"]["Id"];
+        /** @description The account ID. */
+        AccountId: components["schemas"]["Id"];
+        /** @description The ID of the account, local or remote. */
+        AdminAccountId: components["schemas"]["Id"];
+        /** @description The ID of the announcement. */
+        AnnouncementId: components["schemas"]["Id"];
+        /** @description The ID of the appeal. */
+        AppealId: components["schemas"]["Id"];
         /** @description The `next_cursor` of the previous page; omitted for the first page. */
         Cursor: components["schemas"]["Cursor"];
-        /** @description The maximum number of items in the page. */
-        Limit: number;
+        /** @description The ID of the custom emoji. */
+        CustomEmojiId: components["schemas"]["Id"];
+        /** @description The ID of the domain action. */
+        DomainActionId: components["schemas"]["Id"];
         /**
          * @description A key the client chooses per new status; a retry with the same key returns the status
          *     posted with it instead of posting again. A key longer than 256 characters, or one
          *     that is not UTF-8 without U+0000, is a 422.
          */
         IdempotencyKey: string;
-        /** @description The ID of the status. */
-        StatusId: components["schemas"]["Id"];
-        /** @description The account ID. */
-        AccountId: components["schemas"]["Id"];
         /** @description The domain of the remote server, such as `mastodon.example`. */
         InstanceDomain: string;
-        /** @description The ID of the domain action. */
-        DomainActionId: components["schemas"]["Id"];
-        /** @description The ID of the report. */
-        ReportId: components["schemas"]["Id"];
-        /** @description The ID of the account action. */
-        AccountActionId: components["schemas"]["Id"];
-        /** @description The ID of the appeal. */
-        AppealId: components["schemas"]["Id"];
-        /** @description The ID of the account, local or remote. */
-        AdminAccountId: components["schemas"]["Id"];
-        /** @description The ID of the rule. */
-        RuleId: components["schemas"]["Id"];
-        /** @description The ID of the announcement. */
-        AnnouncementId: components["schemas"]["Id"];
-        /** @description The ID of the custom emoji. */
-        CustomEmojiId: components["schemas"]["Id"];
-        /** @description The ID of the webhook. */
-        WebhookId: components["schemas"]["Id"];
-        /** @description The ID of the relay. */
-        RelayId: components["schemas"]["Id"];
         /** @description The key of the text. */
         InstanceTextKey: components["schemas"]["InstanceTextKey"];
-        /** @description The key of the role, such as `moderator`. */
-        RoleKey: string;
-        /** @description The ID of the user who signed up. */
-        RegistrationUserId: components["schemas"]["Id"];
-        /** @description The ID of the sign-up block. */
-        SignupBlockId: components["schemas"]["Id"];
         /** @description The ID of the invite. */
         InviteId: components["schemas"]["Id"];
+        /** @description The maximum number of items in the page. */
+        Limit: number;
+        /** @description The ID of the user who signed up. */
+        RegistrationUserId: components["schemas"]["Id"];
+        /** @description The ID of the relay. */
+        RelayId: components["schemas"]["Id"];
+        /** @description The ID of the report. */
+        ReportId: components["schemas"]["Id"];
+        /** @description The key of the role, such as `moderator`. */
+        RoleKey: string;
+        /** @description The ID of the rule. */
+        RuleId: components["schemas"]["Id"];
+        /** @description The ID of the sign-up block. */
+        SignupBlockId: components["schemas"]["Id"];
+        /** @description The ID of the status. */
+        StatusId: components["schemas"]["Id"];
+        /** @description The ID of the webhook. */
+        WebhookId: components["schemas"]["Id"];
     };
     requestBodies: never;
     headers: {

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Recovery codes, each of which signs in once in place of a code of the app. They are
+  shown only once.
+type: object
+required: [recovery_codes]
+properties:
+  recovery_codes:
+    type: array
+    items:
+      type: string

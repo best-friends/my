@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A user's registration as the moderators review it (FR-721).
+type: object
+required: [user_id, state, since, email, email_verified, submitted_at]
+properties:
+  user_id:
+    $ref: ./Id.yaml
+  account_id:
+    description: The user's local account; omitted when it is gone.
+    allOf:
+      - $ref: ./Id.yaml
+  username:
+    description: The username of the user's local account; omitted when it is gone.
+    type: string
+  state:
+    $ref: ./RegistrationState.yaml
+  since:
+    description: When the registration entered its state.
+    type: string
+    format: date-time
+  email:
+    description: The user's primary email address; empty when there is none.
+    type: string
+  email_verified:
+    description: Whether the user confirmed the email address.
+    type: boolean
+  reason:
+    description: Why the user wants to join, as plain text; omitted when they gave none.
+    type: string
+  invite_id:
+    description: The invite the user signed up with; omitted for none.
+    allOf:
+      - $ref: ./Id.yaml
+  submitted_at:
+    description: When the user signed up.
+    type: string
+    format: date-time

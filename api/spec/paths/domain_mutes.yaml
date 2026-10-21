@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listDomainMutes
+  summary: List the domains that the viewer mutes
+  description: In the order of the domains.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:mutes"]
+  parameters:
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of domain mutes.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DomainMutePage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: muteDomain
+  summary: Mute a domain
+  description: |
+    Hides the posts of a remote domain and of its subdomains from the viewer's timelines
+    other than home, their boosts from home, and their notifications (FR-304). The accounts
+    of the domain that the viewer follows stay on the home timeline. Nothing is sent to the
+    domain. Muting a domain that the viewer already mutes changes nothing. The domain is
+    normalized (IDNA A-labels in lower case, without a trailing dot); one that is not a
+    valid remote domain, or this server's own, is a 422 naming `domain`. A viewer mutes at
+    most 1000 domains; one more is a 422 `/api/v1/problems/too-many-domain-mutes`.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:mutes"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/MuteDomainRequest.yaml
+  responses:
+    "200":
+      description: The domain mute.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DomainMute.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

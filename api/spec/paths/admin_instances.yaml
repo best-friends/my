@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listInstanceHealth
+  summary: List the remote servers with delivery failures or marked unavailable
+  description: |
+    The health of the remote servers that deliveries failed to reach on some days, or that
+    are marked unavailable, in domain order. A server that is not listed is available and
+    has no failures. Unavailable servers are sent only `Follow`, `Accept`, and `Reject`
+    until a delivery succeeds, they send a signed request, the daily probe reaches them, or
+    an operator marks them available. Needs the `manage_domains` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: state
+      in: query
+      required: false
+      description: Keep only the servers in this state; omitted keeps both.
+      schema:
+        $ref: ../components/schemas/AdminInstanceState.yaml
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of server health.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminInstanceHealthPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

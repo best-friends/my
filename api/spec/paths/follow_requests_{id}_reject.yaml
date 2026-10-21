@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: rejectFollowRequest
+  summary: Reject a follow request
+  description: Declines the account's pending follow request (FR-302); without one it is a 404.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:follows"]
+  parameters:
+    - $ref: ../components/parameters/AccountId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/Relationship.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

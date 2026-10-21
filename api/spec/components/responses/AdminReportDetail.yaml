@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The report, with its notes, its posts, and the history of its target.
+headers:
+  Cache-Control:
+    $ref: ../headers/CacheControl.yaml
+content:
+  application/json:
+    schema:
+      $ref: ../schemas/AdminReportDetail.yaml

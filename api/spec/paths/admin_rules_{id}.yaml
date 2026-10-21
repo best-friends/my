@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getInstanceRule
+  summary: Get an instance rule
+  description: |
+    A rule, retired or not; reports cite rules by ID. An unknown ID is a 404. Needs the
+    `manage_rules` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - $ref: ../components/parameters/RuleId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRule.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updateInstanceRule
+  summary: Revise the text of an instance rule
+  description: |
+    Records a revision whose text and hint replace those of the rule; the rule keeps its ID
+    and position. They are checked as for a new rule (422). A retired rule is a 409
+    and an unknown ID a 404. Needs the `manage_rules` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/RuleId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/InstanceRuleInput.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRule.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

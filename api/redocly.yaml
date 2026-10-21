@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
-# Lint rules of api/openapi.yaml for Redocly CLI (pinned in the Makefile, run by `make api-lint`).
+# Lint rules of the split client API spec api/spec/openapi.yaml (ADR-0066) for Redocly CLI (pinned in
+# the Makefile, run by `make api-lint`).
 # Besides the recommended rules, the custom rules keep the document inside the OpenAPI 3.1
 # subset that oapi-codegen and openapi-typescript support (ADR-0029) and enforce the
 # conventions of ADR-0016. docs/architecture/client-api.md lists the conventions.
@@ -15,20 +16,20 @@ rules:
   # The shared parts (Id, Cursor, PageInfo, Limit) exist before the operations that use them.
   no-unused-components: off
   # Errors are RFC 9457 problem documents: every operation documents a default response,
-  # whose $ref is components/responses/Problem.
+  # whose $ref is the file of components/responses/Problem.
   rule/operation-default-problem:
     subject:
       type: Responses
     assertions:
       required: [default]
-    message: Every operation has a `default` response that refers to `#/components/responses/Problem` (ADR-0016).
+    message: Every operation has a `default` response that refers to `../components/responses/Problem.yaml` (ADR-0016).
   rule/default-response-is-problem:
     subject:
       type: Responses
       property: default
     assertions:
-      ref: /^#\/components\/responses\/Problem$/
-    message: The `default` response refers to `#/components/responses/Problem` (ADR-0016).
+      ref: /^\.\.\/components\/responses\/Problem\.yaml$/
+    message: The `default` response refers to `../components/responses/Problem.yaml` (ADR-0016).
   # snake_case property and parameter names, like the rest of the API.
   rule/property-snake-case:
     subject:

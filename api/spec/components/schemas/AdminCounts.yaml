@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What awaits the moderators; a count whose permission the user lacks is omitted.
+type: object
+properties:
+  open_reports:
+    description: The reports that are open. Needs `manage_reports`.
+    type: integer
+    format: int64
+    minimum: 0
+  pending_registrations:
+    description: The registrations that await approval. Needs `manage_accounts`.
+    type: integer
+    format: int64
+    minimum: 0
+  pending_appeals:
+    description: The appeals of moderation actions that await a decision. Needs `manage_accounts`.
+    type: integer
+    format: int64
+    minimum: 0

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The settings of a custom emoji to change; absent ones stay.
+type: object
+properties:
+  enabled:
+    description: Whether the emoji is shown.
+    type: boolean
+  visible_in_picker:
+    description: Whether the picker offers the local emoji.
+    type: boolean
+  category:
+    description: The category in the picker, up to 64 characters; empty removes it.
+    type: string
+    maxLength: 64
+  aliases:
+    description: The new aliases, each following the rules of a shortcode; at most 10.
+    type: array
+    maxItems: 10
+    items:
+      type: string
+      minLength: 2
+      maxLength: 30

@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A report of an account to the moderators (FR-701).
+type: object
+required: [id, category, comment, forwarded, filed_at, state, state_changed_at, reporter_account_id, target_account_id, status_ids, rule_ids]
+properties:
+  id:
+    $ref: ./Id.yaml
+  uri:
+    description: |
+      The `id` of the `Flag` activity that another server sent; omitted for a report
+      made on this server.
+    type: string
+  category:
+    type: string
+    enum: [spam, legal, violation, other]
+  comment:
+    description: The reporter's comment as plain text, up to 5,000 characters.
+    type: string
+  forwarded:
+    description: Whether the report was forwarded to the target's server.
+    type: boolean
+  filed_at:
+    type: string
+    format: date-time
+  state:
+    $ref: ./AdminReportState.yaml
+  outcome:
+    $ref: ./AdminReportOutcome.yaml
+  state_changed_at:
+    description: When the report entered its state (when it was filed, resolved, or reopened).
+    type: string
+    format: date-time
+  assignee_account_id:
+    description: |
+      The account of the moderator who handles the report; omitted when nobody does.
+    allOf:
+      - $ref: ./Id.yaml
+  reporter_account_id:
+    $ref: ./Id.yaml
+  reporter_account:
+    description: The reporter, often the instance actor of a remote server; omitted when the account is gone.
+    allOf:
+      - $ref: ./Account.yaml
+  target_account_id:
+    $ref: ./Id.yaml
+  target_account:
+    description: The account reported; omitted when the account is gone.
+    allOf:
+      - $ref: ./Account.yaml
+  status_ids:
+    description: The IDs of the target's posts that the report points at.
+    type: array
+    items:
+      $ref: ./Id.yaml
+  rule_ids:
+    description: |
+      The IDs of the instance rules that the report cites, retired ones included; only a
+      report of the `violation` category cites rules.
+    type: array
+    items:
+      $ref: ./Id.yaml

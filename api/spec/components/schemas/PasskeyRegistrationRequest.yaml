@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The name of a new passkey and what confirms it: the user's `password` or a `passkey` of
+  the user.
+type: object
+required: [name]
+properties:
+  name:
+    description: What the user calls the passkey; spaces around it are dropped.
+    type: string
+    minLength: 1
+    maxLength: 64
+  password:
+    description: The user's current password.
+    type: string
+    minLength: 1
+    maxLength: 1024
+  passkey:
+    $ref: ./PasskeyAssertion.yaml

@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listOwnModerationActions
+  summary: List the moderation actions on the authenticated user's account
+  description: |
+    The actions that moderators took on the user's own account (FR-715), newest first,
+    lifted and expired ones included unless `active` is set, also those that the user was
+    not notified of. Each carries what the moderators chose to tell the user; never their
+    private note, the report the action follows from, or who filed it. `kind_label` and
+    `reason_category_label` are in the user's language.
+  tags: [moderation]
+  security:
+    - oauth2: ["read:accounts"]
+  parameters:
+    - name: active
+      in: query
+      required: false
+      description: Keep only the actions in effect now, neither lifted nor expired.
+      schema:
+        type: boolean
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of the actions on the user's account.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/ModerationActionPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

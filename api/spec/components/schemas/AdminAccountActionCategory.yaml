@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The kind of reason for an action.
+type: string
+enum: [spam, legal, violation, other]

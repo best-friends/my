@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A local custom emoji that the picker offers (ADR-0051 §4). Picking it inserts
+  `:shortcode:` into the text.
+type: object
+required: [shortcode, url, static_url, aliases]
+properties:
+  shortcode:
+    description: The shortcode, without the colons around it.
+    type: string
+  url:
+    description: The URL of the image, animated when the emoji is.
+    type: string
+    format: uri
+  static_url:
+    description: The URL of a still image of the emoji.
+    type: string
+    format: uri
+  category:
+    description: The category that the picker groups the emoji in; absent for none.
+    type: string
+  aliases:
+    description: Other names that a search of the picker finds the emoji by.
+    type: array
+    items:
+      type: string

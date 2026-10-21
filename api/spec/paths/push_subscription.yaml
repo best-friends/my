@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getPushSubscription
+  summary: Get the Web Push subscription of the grant
+  description: |
+    The subscription that this grant (the access token and the tokens that refreshing it
+    issues) registered; a 404 when it has none. A subscription ends when the push service
+    reports it expired or the grant ends (sign-out, revocation, expiry).
+  tags: [push]
+  security:
+    - oauth2: [push]
+  responses:
+    "200":
+      description: The subscription.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PushSubscription.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+put:
+  operationId: putPushSubscription
+  summary: Register the Web Push subscription of the grant
+  description: |
+    Registers the browser's push subscription (`PushSubscription.toJSON()`, subscribed with
+    the instance's `push_server_key`) for the user's notifications of the `alerts` types,
+    replacing the grant's earlier subscription and any subscription with the same endpoint.
+    Sending it again with other `alerts` changes the types. The endpoint must be an
+    `https` URL; an invalid endpoint, key, or type is a 422 that names the property. A 404
+    means that the instance sends no Web Push (`Instance.push_server_key` is omitted).
+  tags: [push]
+  security:
+    - oauth2: [push]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/PushSubscriptionRequest.yaml
+  responses:
+    "200":
+      description: The registered subscription.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/PushSubscription.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+delete:
+  operationId: deletePushSubscription
+  summary: Delete the Web Push subscription of the grant
+  description: Deleting it when there is none changes nothing.
+  tags: [push]
+  security:
+    - oauth2: [push]
+  responses:
+    "204":
+      description: The grant has no subscription.
+    default:
+      $ref: ../components/responses/Problem.yaml

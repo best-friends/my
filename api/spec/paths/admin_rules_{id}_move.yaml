@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: moveInstanceRule
+  summary: Move an instance rule
+  description: |
+    Moves the rule to a place among the rules in effect and numbers them 1, 2, ... in their
+    new order; a place after the last rule moves it last. A `position` below 1 is a 422, a
+    retired rule a 409, and an unknown ID a 404. Needs the `manage_rules` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/RuleId.yaml
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/MoveInstanceRuleRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminRule.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

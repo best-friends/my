@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getPreferences
+  summary: Get the authenticated user's preferences
+  tags: [preferences]
+  security:
+    - oauth2: ["read:accounts"]
+  responses:
+    "200":
+      description: The preferences.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Preferences.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+patch:
+  operationId: updatePreferences
+  summary: Change the authenticated user's preferences
+  description: |
+    Properties left out of the request keep their current values. Language tags are
+    canonicalized (`ja-jp` becomes `ja-JP`). A 422 problem names the property that is
+    invalid in `detail`.
+  tags: [preferences]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/UpdatePreferencesRequest.yaml
+  responses:
+    "200":
+      description: The preferences after the change.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/Preferences.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

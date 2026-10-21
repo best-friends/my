@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: "`open` reports await the moderators; `resolved` ones are handled."
+type: string
+enum: [open, resolved]

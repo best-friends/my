@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The viewer's relationship with an account. It never says whether the account blocks
+  the viewer: such an account is not found at all.
+type: object
+required: [id, following, requested, followed_by, requested_by, show_boosts, notify, blocking, muting, muting_notifications]
+properties:
+  id:
+    $ref: ./Id.yaml
+  following:
+    description: Whether the viewer actively follows the account.
+    type: boolean
+  requested:
+    description: Whether the viewer's follow request awaits the account's approval.
+    type: boolean
+  followed_by:
+    description: Whether the account actively follows the viewer.
+    type: boolean
+  requested_by:
+    description: Whether the account's follow request awaits the viewer's approval.
+    type: boolean
+  show_boosts:
+    description: Whether the viewer's follow shows the account's boosts in the home timeline (true without a follow).
+    type: boolean
+  notify:
+    description: Whether the viewer's follow notifies them of the account's new posts.
+    type: boolean
+  blocking:
+    description: Whether the viewer blocks the account.
+    type: boolean
+  muting:
+    description: Whether the viewer mutes the account (a mute that has not expired).
+    type: boolean
+  muting_notifications:
+    description: Whether the viewer's mute also hides the account's notifications.
+    type: boolean

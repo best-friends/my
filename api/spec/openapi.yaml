@@ -1,0 +1,1068 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The client API (ADR-0007, ADR-0016), split into one file per path item and per component (ADR-0066).
+# api/spec/ is the source of truth: `make generate` bundles it into api/openapi.yaml, generates the Go
+# server interface in internal/interface/clientapi and the web client's types from the bundle, and
+# `make api-lint` enforces the OpenAPI 3.1 subset that the generators support (ADR-0029).
+# docs/architecture/client-api.md explains how to add an endpoint.
+openapi: 3.1.0
+info:
+  title: my client API
+  version: 0.1.0
+  description: |
+    The client API of my, an ActivityPub microblog server. It is not compatible with the
+    Mastodon client API.
+
+    - Every error is an RFC 9457 problem document (`application/problem+json`) whose `title`
+      and `detail` are localized from `Accept-Language`. Clients branch on `type` and `status`,
+      never on the text.
+    - Requests authenticate with an OAuth 2.0 access token in `Authorization: Bearer`, never
+      with cookies. Each operation lists the scopes it needs under `security`; a broad scope
+      (`read`, `write`, `follow`, `admin`) grants the fine-grained scopes under it. A missing or
+      invalid token is a 401 with `WWW-Authenticate`, a token without the scope a 403
+      `insufficient_scope`.
+    - Every response carries the `RateLimit` and `RateLimit-Policy` fields
+      (draft-ietf-httpapi-ratelimit-headers): anonymous requests share a limit per client IP,
+      authenticated requests one per account. Past the limit the answer is 429 with
+      `Retry-After`.
+    - IDs are UUIDv7 strings. Collections use keyset pagination: pass the `next_cursor` of a
+      page as `cursor` to get the next page.
+  license:
+    name: AGPL-3.0-only
+    identifier: AGPL-3.0-only
+servers:
+  - url: /api/v1
+security:
+  - oauth2: []
+tags:
+  - name: instance
+    description: Public information about the instance.
+  - name: accounts
+    description: Accounts and the authenticated user's own account.
+  - name: media
+    description: Media files that the user uploads to attach to posts.
+  - name: preferences
+    description: The authenticated user's preferences.
+  - name: two_factor
+    description: The authenticated user's two-factor authentication.
+  - name: passkeys
+    description: The authenticated user's passkeys, which sign in instead of the password.
+  - name: moderation
+    description: The moderation actions on the authenticated user's own account.
+  - name: notifications
+    description: The authenticated user's notifications, their read marker, and dismissals.
+  - name: push
+    description: The Web Push subscription of the access token's grant.
+  - name: statuses
+    description: Posts, their threads and edit history, and boosts, favourites, bookmarks, and pins of them.
+  - name: timelines
+    description: The home, local, hashtag, and account timelines.
+  - name: reports
+    description: Reports of accounts and posts to the moderators.
+  - name: streaming
+    description: Real-time updates of the home timeline, the notifications, and the announcements.
+  - name: announcements
+    description: The server's announcements to every local user and which of them the user has read.
+  - name: admin-moderation
+    description: |
+      The staff's moderation: reports, appeals, accounts and the actions on them, registrations,
+      sign-up blocks, invites, domain actions, the health of remote servers, the audit log, and
+      the counts of what awaits the moderators (ADR-0058). The operations need an `admin` scope and a
+      permission of the user's roles in the moderation category; a user without it gets a 403
+      `/api/v1/problems/missing-permission`.
+  - name: admin-server
+    description: |
+      The administration of the server itself: its settings and texts, its rules, the roles and
+      granting them, the custom emoji, the webhooks, the announcements, and the dead jobs of the
+      job queue (ADR-0058). The
+      operations need an `admin` scope and a permission of the user's roles in the server
+      category; a user without it gets a 403 `/api/v1/problems/missing-permission`.
+paths:
+  /instance:
+    $ref: ./paths/instance.yaml
+  /custom_emojis:
+    $ref: ./paths/custom_emojis.yaml
+  /instance/domain_actions:
+    $ref: ./paths/instance_domain_actions.yaml
+  /accounts/verify_credentials:
+    $ref: ./paths/accounts_verify_credentials.yaml
+  /accounts/update_credentials:
+    $ref: ./paths/accounts_update_credentials.yaml
+  /preferences:
+    $ref: ./paths/preferences.yaml
+  /preferences/auto_delete:
+    $ref: ./paths/preferences_auto_delete.yaml
+  /accounts/delete:
+    $ref: ./paths/accounts_delete.yaml
+  /accounts/password:
+    $ref: ./paths/accounts_password.yaml
+  /accounts/password/remove:
+    $ref: ./paths/accounts_password_remove.yaml
+  /exports:
+    $ref: ./paths/exports.yaml
+  /exports/{id}/archive:
+    $ref: ./paths/exports_{id}_archive.yaml
+  /csv_exports/{kind}:
+    $ref: ./paths/csv_exports_{kind}.yaml
+  /imports:
+    $ref: ./paths/imports.yaml
+  /imports/preview:
+    $ref: ./paths/imports_preview.yaml
+  /two_factor:
+    $ref: ./paths/two_factor.yaml
+  /two_factor/totp/setup:
+    $ref: ./paths/two_factor_totp_setup.yaml
+  /two_factor/totp:
+    $ref: ./paths/two_factor_totp.yaml
+  /two_factor/totp/disable:
+    $ref: ./paths/two_factor_totp_disable.yaml
+  /two_factor/recovery_codes:
+    $ref: ./paths/two_factor_recovery_codes.yaml
+  /passkeys:
+    $ref: ./paths/passkeys.yaml
+  /passkeys/registration:
+    $ref: ./paths/passkeys_registration.yaml
+  /passkeys/confirmation:
+    $ref: ./paths/passkeys_confirmation.yaml
+  /passkeys/{id}:
+    $ref: ./paths/passkeys_{id}.yaml
+  /accounts/lookup:
+    $ref: ./paths/accounts_lookup.yaml
+  /accounts/relationships:
+    $ref: ./paths/accounts_relationships.yaml
+  /accounts/{id}:
+    $ref: ./paths/accounts_{id}.yaml
+  /accounts/{id}/block:
+    $ref: ./paths/accounts_{id}_block.yaml
+  /accounts/{id}/follow:
+    $ref: ./paths/accounts_{id}_follow.yaml
+  /accounts/{id}/followers:
+    $ref: ./paths/accounts_{id}_followers.yaml
+  /accounts/{id}/following:
+    $ref: ./paths/accounts_{id}_following.yaml
+  /accounts/{id}/mute:
+    $ref: ./paths/accounts_{id}_mute.yaml
+  /accounts/{id}/remove_from_followers:
+    $ref: ./paths/accounts_{id}_remove_from_followers.yaml
+  /accounts/{id}/unblock:
+    $ref: ./paths/accounts_{id}_unblock.yaml
+  /accounts/{id}/unfollow:
+    $ref: ./paths/accounts_{id}_unfollow.yaml
+  /accounts/{id}/unmute:
+    $ref: ./paths/accounts_{id}_unmute.yaml
+  /blocks:
+    $ref: ./paths/blocks.yaml
+  /follow_requests:
+    $ref: ./paths/follow_requests.yaml
+  /follow_requests/{id}/authorize:
+    $ref: ./paths/follow_requests_{id}_authorize.yaml
+  /follow_requests/{id}/reject:
+    $ref: ./paths/follow_requests_{id}_reject.yaml
+  /mutes:
+    $ref: ./paths/mutes.yaml
+  /domain_mutes:
+    $ref: ./paths/domain_mutes.yaml
+  /domain_mutes/{domain}:
+    $ref: ./paths/domain_mutes_{domain}.yaml
+  /media:
+    $ref: ./paths/media.yaml
+  /media/{id}:
+    $ref: ./paths/media_{id}.yaml
+  /moderation/actions:
+    $ref: ./paths/moderation_actions.yaml
+  /moderation/actions/{id}/appeal:
+    $ref: ./paths/moderation_actions_{id}_appeal.yaml
+  /notifications:
+    $ref: ./paths/notifications.yaml
+  /notifications/marker:
+    $ref: ./paths/notifications_marker.yaml
+  /notifications/{id}/dismiss:
+    $ref: ./paths/notifications_{id}_dismiss.yaml
+  /push/subscription:
+    $ref: ./paths/push_subscription.yaml
+  /bookmarks:
+    $ref: ./paths/bookmarks.yaml
+  /statuses:
+    $ref: ./paths/statuses.yaml
+  /statuses/{id}:
+    $ref: ./paths/statuses_{id}.yaml
+  /statuses/{id}/bookmark:
+    $ref: ./paths/statuses_{id}_bookmark.yaml
+  /statuses/{id}/boost:
+    $ref: ./paths/statuses_{id}_boost.yaml
+  /statuses/{id}/context:
+    $ref: ./paths/statuses_{id}_context.yaml
+  /statuses/{id}/favourite:
+    $ref: ./paths/statuses_{id}_favourite.yaml
+  /statuses/{id}/history:
+    $ref: ./paths/statuses_{id}_history.yaml
+  /statuses/{id}/pin:
+    $ref: ./paths/statuses_{id}_pin.yaml
+  /statuses/{id}/poll/votes:
+    $ref: ./paths/statuses_{id}_poll_votes.yaml
+  /statuses/{id}/reaction:
+    $ref: ./paths/statuses_{id}_reaction.yaml
+  /statuses/{id}/reactions:
+    $ref: ./paths/statuses_{id}_reactions.yaml
+  /statuses/{id}/source:
+    $ref: ./paths/statuses_{id}_source.yaml
+  /accounts/{id}/statuses:
+    $ref: ./paths/accounts_{id}_statuses.yaml
+  /timelines/home:
+    $ref: ./paths/timelines_home.yaml
+  /timelines/local:
+    $ref: ./paths/timelines_local.yaml
+  /timelines/public:
+    $ref: ./paths/timelines_public.yaml
+  /timelines/tag/{hashtag}:
+    $ref: ./paths/timelines_tag_{hashtag}.yaml
+  /reports:
+    $ref: ./paths/reports.yaml
+  /announcements:
+    $ref: ./paths/announcements.yaml
+  /announcements/{id}/read:
+    $ref: ./paths/announcements_{id}_read.yaml
+  /streaming:
+    $ref: ./paths/streaming.yaml
+  /admin/queue:
+    $ref: ./paths/admin_queue.yaml
+  /admin/jobs:
+    $ref: ./paths/admin_jobs.yaml
+  /admin/jobs/{id}/attempts:
+    $ref: ./paths/admin_jobs_{id}_attempts.yaml
+  /admin/jobs/{id}/retry:
+    $ref: ./paths/admin_jobs_{id}_retry.yaml
+  /admin/instances:
+    $ref: ./paths/admin_instances.yaml
+  /admin/instances/{domain}:
+    $ref: ./paths/admin_instances_{domain}.yaml
+  /admin/instances/{domain}/availability_events:
+    $ref: ./paths/admin_instances_{domain}_availability_events.yaml
+  /admin/instances/{domain}/mark_available:
+    $ref: ./paths/admin_instances_{domain}_mark_available.yaml
+  /admin/audit_log:
+    $ref: ./paths/admin_audit_log.yaml
+  /admin/domain_actions:
+    $ref: ./paths/admin_domain_actions.yaml
+  /admin/domain_actions/{id}:
+    $ref: ./paths/admin_domain_actions_{id}.yaml
+  /admin/domain_actions/{id}/lift:
+    $ref: ./paths/admin_domain_actions_{id}_lift.yaml
+  /admin/reports:
+    $ref: ./paths/admin_reports.yaml
+  /admin/reports/{id}:
+    $ref: ./paths/admin_reports_{id}.yaml
+  /admin/reports/{id}/assign_to_self:
+    $ref: ./paths/admin_reports_{id}_assign_to_self.yaml
+  /admin/reports/{id}/unassign:
+    $ref: ./paths/admin_reports_{id}_unassign.yaml
+  /admin/reports/{id}/resolve:
+    $ref: ./paths/admin_reports_{id}_resolve.yaml
+  /admin/reports/{id}/notes:
+    $ref: ./paths/admin_reports_{id}_notes.yaml
+  /admin/reports/{id}/reopen:
+    $ref: ./paths/admin_reports_{id}_reopen.yaml
+  /admin/accounts/{id}/actions:
+    $ref: ./paths/admin_accounts_{id}_actions.yaml
+  /admin/account_actions/{id}:
+    $ref: ./paths/admin_account_actions_{id}.yaml
+  /admin/account_actions/{id}/lift:
+    $ref: ./paths/admin_account_actions_{id}_lift.yaml
+  /admin/rules:
+    $ref: ./paths/admin_rules.yaml
+  /admin/rules/{id}:
+    $ref: ./paths/admin_rules_{id}.yaml
+  /admin/rules/{id}/move:
+    $ref: ./paths/admin_rules_{id}_move.yaml
+  /admin/rules/{id}/retire:
+    $ref: ./paths/admin_rules_{id}_retire.yaml
+  /admin/announcements:
+    $ref: ./paths/admin_announcements.yaml
+  /admin/announcements/{id}:
+    $ref: ./paths/admin_announcements_{id}.yaml
+  /admin/announcements/{id}/publish:
+    $ref: ./paths/admin_announcements_{id}_publish.yaml
+  /admin/announcements/{id}/withdraw:
+    $ref: ./paths/admin_announcements_{id}_withdraw.yaml
+  /admin/theme:
+    $ref: ./paths/admin_theme.yaml
+  /admin/custom_emojis:
+    $ref: ./paths/admin_custom_emojis.yaml
+  /admin/custom_emojis/{id}:
+    $ref: ./paths/admin_custom_emojis_{id}.yaml
+  /admin/custom_emojis/{id}/image:
+    $ref: ./paths/admin_custom_emojis_{id}_image.yaml
+  /admin/custom_emojis/{id}/copy:
+    $ref: ./paths/admin_custom_emojis_{id}_copy.yaml
+  /admin/instance_texts:
+    $ref: ./paths/admin_instance_texts.yaml
+  /admin/instance_texts/{key}:
+    $ref: ./paths/admin_instance_texts_{key}.yaml
+  /admin/counts:
+    $ref: ./paths/admin_counts.yaml
+  /admin/accounts:
+    $ref: ./paths/admin_accounts.yaml
+  /admin/accounts/{id}:
+    $ref: ./paths/admin_accounts_{id}.yaml
+  /admin/accounts/{id}/reveal:
+    $ref: ./paths/admin_accounts_{id}_reveal.yaml
+  /admin/accounts/{id}/two_factor/disable:
+    $ref: ./paths/admin_accounts_{id}_two_factor_disable.yaml
+  /admin/accounts/{id}/password_reset_link:
+    $ref: ./paths/admin_accounts_{id}_password_reset_link.yaml
+  /admin/roles:
+    $ref: ./paths/admin_roles.yaml
+  /admin/roles/{role}:
+    $ref: ./paths/admin_roles_{role}.yaml
+  /admin/accounts/{id}/roles:
+    $ref: ./paths/admin_accounts_{id}_roles.yaml
+  /admin/accounts/{id}/roles/{role}:
+    $ref: ./paths/admin_accounts_{id}_roles_{role}.yaml
+  /admin/appeals:
+    $ref: ./paths/admin_appeals.yaml
+  /admin/appeals/{id}:
+    $ref: ./paths/admin_appeals_{id}.yaml
+  /admin/appeals/{id}/overturn:
+    $ref: ./paths/admin_appeals_{id}_overturn.yaml
+  /admin/appeals/{id}/uphold:
+    $ref: ./paths/admin_appeals_{id}_uphold.yaml
+  /admin/registrations:
+    $ref: ./paths/admin_registrations.yaml
+  /admin/registrations/{user_id}/approve:
+    $ref: ./paths/admin_registrations_{user_id}_approve.yaml
+  /admin/registrations/{user_id}/reject:
+    $ref: ./paths/admin_registrations_{user_id}_reject.yaml
+  /admin/signup_blocks:
+    $ref: ./paths/admin_signup_blocks.yaml
+  /admin/signup_blocks/{id}:
+    $ref: ./paths/admin_signup_blocks_{id}.yaml
+  /admin/signup_blocks/{id}/lift:
+    $ref: ./paths/admin_signup_blocks_{id}_lift.yaml
+  /admin/signup_blocks/import:
+    $ref: ./paths/admin_signup_blocks_import.yaml
+  /admin/domain_actions/export:
+    $ref: ./paths/admin_domain_actions_export.yaml
+  /admin/domain_actions/import/preview:
+    $ref: ./paths/admin_domain_actions_import_preview.yaml
+  /admin/domain_actions/import:
+    $ref: ./paths/admin_domain_actions_import.yaml
+  /admin/settings:
+    $ref: ./paths/admin_settings.yaml
+  /admin/invites:
+    $ref: ./paths/admin_invites.yaml
+  /admin/invites/{id}/revoke:
+    $ref: ./paths/admin_invites_{id}_revoke.yaml
+  /admin/webhooks:
+    $ref: ./paths/admin_webhooks.yaml
+  /admin/webhooks/{id}:
+    $ref: ./paths/admin_webhooks_{id}.yaml
+  /admin/webhooks/{id}/enable:
+    $ref: ./paths/admin_webhooks_{id}_enable.yaml
+  /admin/webhooks/{id}/disable:
+    $ref: ./paths/admin_webhooks_{id}_disable.yaml
+  /admin/webhooks/{id}/rotate_secret:
+    $ref: ./paths/admin_webhooks_{id}_rotate_secret.yaml
+  /admin/webhooks/{id}/test:
+    $ref: ./paths/admin_webhooks_{id}_test.yaml
+  /admin/webhooks/{id}/deliveries:
+    $ref: ./paths/admin_webhooks_{id}_deliveries.yaml
+  /admin/webhooks/{id}/deliveries/{delivery_id}/redeliver:
+    $ref: ./paths/admin_webhooks_{id}_deliveries_{delivery_id}_redeliver.yaml
+  /admin/relays:
+    $ref: ./paths/admin_relays.yaml
+  /admin/relays/{id}:
+    $ref: ./paths/admin_relays_{id}.yaml
+  /admin/relays/{id}/follow:
+    $ref: ./paths/admin_relays_{id}_follow.yaml
+  /admin/relays/{id}/unfollow:
+    $ref: ./paths/admin_relays_{id}_unfollow.yaml
+  /admin/statuses/{id}/refetch:
+    $ref: ./paths/admin_statuses_{id}_refetch.yaml
+  /admin/accounts/{id}/refetch_statuses:
+    $ref: ./paths/admin_accounts_{id}_refetch_statuses.yaml
+  /admin/instances/{domain}/refetch_statuses:
+    $ref: ./paths/admin_instances_{domain}_refetch_statuses.yaml
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      description: |
+        An OAuth 2.0 access token (Authorization Code + PKCE S256), sent as
+        `Authorization: Bearer <token>`. `read`, `write`, `follow`, and `admin` grant every scope
+        under them (`read` grants `read:accounts`; `follow` grants `read:follows`, `read:blocks`,
+        `read:mutes`, `write:follows`, `write:blocks`, and `write:mutes`; `admin` grants
+        `admin:read` and `admin:write`). `read` and `write` do not grant the admin scopes.
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth/authorize
+          tokenUrl: /oauth/token
+          refreshUrl: /oauth/token
+          scopes:
+            admin: Administer the instance, as far as the user's roles allow.
+            "admin:read": Read the instance's administration data, as far as the user's roles allow.
+            "admin:write": Change the instance's administration data, as far as the user's roles allow.
+            read: Read everything the user can read.
+            write: Change everything the user can change.
+            follow: Read and change follows, blocks, and mutes.
+            push: Receive Web Push notifications.
+            "read:accounts": Read accounts, including the user's own.
+            "read:blocks": Read the accounts the user blocks.
+            "read:bookmarks": Read the user's bookmarks.
+            "read:favourites": Read the user's favourites.
+            "read:follows": Read follows and follow requests.
+            "read:mutes": Read the accounts and domains the user mutes.
+            "read:notifications": Read the user's notifications.
+            "read:reports": Read the reports the user filed and whether they are resolved.
+            "read:statuses": Read posts and timelines.
+            "write:accounts": Change the user's profile and preferences.
+            "write:blocks": Block and unblock accounts.
+            "write:bookmarks": Bookmark posts and remove bookmarks.
+            "write:favourites": Favourite posts and react to them with emoji, and take both back.
+            "write:follows": Follow and unfollow accounts and answer follow requests.
+            "write:media": Upload media and change their descriptions.
+            "write:mutes": Mute and unmute accounts and domains.
+            "write:notifications": Mark notifications read and dismiss them.
+            "write:reports": Report accounts and posts to the moderators.
+            "write:statuses": Post, edit, delete, boost, and pin posts.
+  headers:
+    CacheControl:
+      $ref: ./components/headers/CacheControl.yaml
+  parameters:
+    AccountActionId:
+      $ref: ./components/parameters/AccountActionId.yaml
+    AccountId:
+      $ref: ./components/parameters/AccountId.yaml
+    AdminAccountId:
+      $ref: ./components/parameters/AdminAccountId.yaml
+    AnnouncementId:
+      $ref: ./components/parameters/AnnouncementId.yaml
+    AppealId:
+      $ref: ./components/parameters/AppealId.yaml
+    Cursor:
+      $ref: ./components/parameters/Cursor.yaml
+    CustomEmojiId:
+      $ref: ./components/parameters/CustomEmojiId.yaml
+    DomainActionId:
+      $ref: ./components/parameters/DomainActionId.yaml
+    IdempotencyKey:
+      $ref: ./components/parameters/IdempotencyKey.yaml
+    InstanceDomain:
+      $ref: ./components/parameters/InstanceDomain.yaml
+    InstanceTextKey:
+      $ref: ./components/parameters/InstanceTextKey.yaml
+    InviteId:
+      $ref: ./components/parameters/InviteId.yaml
+    Limit:
+      $ref: ./components/parameters/Limit.yaml
+    RegistrationUserId:
+      $ref: ./components/parameters/RegistrationUserId.yaml
+    RelayId:
+      $ref: ./components/parameters/RelayId.yaml
+    ReportId:
+      $ref: ./components/parameters/ReportId.yaml
+    RoleKey:
+      $ref: ./components/parameters/RoleKey.yaml
+    RuleId:
+      $ref: ./components/parameters/RuleId.yaml
+    SignupBlockId:
+      $ref: ./components/parameters/SignupBlockId.yaml
+    StatusId:
+      $ref: ./components/parameters/StatusId.yaml
+    WebhookId:
+      $ref: ./components/parameters/WebhookId.yaml
+  responses:
+    AccountPage:
+      $ref: ./components/responses/AccountPage.yaml
+    AccountProfile:
+      $ref: ./components/responses/AccountProfile.yaml
+    AccountStatusPage:
+      $ref: ./components/responses/AccountStatusPage.yaml
+    AdminAccountAction:
+      $ref: ./components/responses/AdminAccountAction.yaml
+    AdminAnnouncement:
+      $ref: ./components/responses/AdminAnnouncement.yaml
+    AdminAppeal:
+      $ref: ./components/responses/AdminAppeal.yaml
+    AdminCustomEmoji:
+      $ref: ./components/responses/AdminCustomEmoji.yaml
+    AdminDomainAction:
+      $ref: ./components/responses/AdminDomainAction.yaml
+    AdminInstanceHealth:
+      $ref: ./components/responses/AdminInstanceHealth.yaml
+    AdminInvite:
+      $ref: ./components/responses/AdminInvite.yaml
+    AdminRegistration:
+      $ref: ./components/responses/AdminRegistration.yaml
+    AdminRelay:
+      $ref: ./components/responses/AdminRelay.yaml
+    AdminReportDetail:
+      $ref: ./components/responses/AdminReportDetail.yaml
+    AdminRole:
+      $ref: ./components/responses/AdminRole.yaml
+    AdminRoleList:
+      $ref: ./components/responses/AdminRoleList.yaml
+    AdminRule:
+      $ref: ./components/responses/AdminRule.yaml
+    AdminSettingList:
+      $ref: ./components/responses/AdminSettingList.yaml
+    AdminSignupBlock:
+      $ref: ./components/responses/AdminSignupBlock.yaml
+    AdminTheme:
+      $ref: ./components/responses/AdminTheme.yaml
+    AdminWebhook:
+      $ref: ./components/responses/AdminWebhook.yaml
+    AdminWebhookDelivery:
+      $ref: ./components/responses/AdminWebhookDelivery.yaml
+    CustomEmojiProblem:
+      $ref: ./components/responses/CustomEmojiProblem.yaml
+    Problem:
+      $ref: ./components/responses/Problem.yaml
+    Relationship:
+      $ref: ./components/responses/Relationship.yaml
+    RelayProblem:
+      $ref: ./components/responses/RelayProblem.yaml
+    RoleProblem:
+      $ref: ./components/responses/RoleProblem.yaml
+    StatusAfterAction:
+      $ref: ./components/responses/StatusAfterAction.yaml
+    StatusPage:
+      $ref: ./components/responses/StatusPage.yaml
+    WebhookProblem:
+      $ref: ./components/responses/WebhookProblem.yaml
+  schemas:
+    AIUsage:
+      $ref: ./components/schemas/AIUsage.yaml
+    Account:
+      $ref: ./components/schemas/Account.yaml
+    AccountFieldSource:
+      $ref: ./components/schemas/AccountFieldSource.yaml
+    AccountPage:
+      $ref: ./components/schemas/AccountPage.yaml
+    AccountSource:
+      $ref: ./components/schemas/AccountSource.yaml
+    AccountStatusPage:
+      $ref: ./components/schemas/AccountStatusPage.yaml
+    AdminAccount:
+      $ref: ./components/schemas/AdminAccount.yaml
+    AdminAccountAction:
+      $ref: ./components/schemas/AdminAccountAction.yaml
+    AdminAccountActionCategory:
+      $ref: ./components/schemas/AdminAccountActionCategory.yaml
+    AdminAccountActionKind:
+      $ref: ./components/schemas/AdminAccountActionKind.yaml
+    AdminAccountActionPage:
+      $ref: ./components/schemas/AdminAccountActionPage.yaml
+    AdminAccountActionState:
+      $ref: ./components/schemas/AdminAccountActionState.yaml
+    AdminAccountDetail:
+      $ref: ./components/schemas/AdminAccountDetail.yaml
+    AdminAccountPage:
+      $ref: ./components/schemas/AdminAccountPage.yaml
+    AdminAccountPrivateData:
+      $ref: ./components/schemas/AdminAccountPrivateData.yaml
+    AdminAccountRegistration:
+      $ref: ./components/schemas/AdminAccountRegistration.yaml
+    AdminAccountRegistrationState:
+      $ref: ./components/schemas/AdminAccountRegistrationState.yaml
+    AdminAccountRestriction:
+      $ref: ./components/schemas/AdminAccountRestriction.yaml
+    AdminAccountSignIn:
+      $ref: ./components/schemas/AdminAccountSignIn.yaml
+    AdminAccountState:
+      $ref: ./components/schemas/AdminAccountState.yaml
+    AdminAnnouncement:
+      $ref: ./components/schemas/AdminAnnouncement.yaml
+    AdminAnnouncementCreateRequest:
+      $ref: ./components/schemas/AdminAnnouncementCreateRequest.yaml
+    AdminAnnouncementInput:
+      $ref: ./components/schemas/AdminAnnouncementInput.yaml
+    AdminAnnouncementList:
+      $ref: ./components/schemas/AdminAnnouncementList.yaml
+    AdminAnnouncementState:
+      $ref: ./components/schemas/AdminAnnouncementState.yaml
+    AdminAppeal:
+      $ref: ./components/schemas/AdminAppeal.yaml
+    AdminAppealPage:
+      $ref: ./components/schemas/AdminAppealPage.yaml
+    AdminAuditAction:
+      $ref: ./components/schemas/AdminAuditAction.yaml
+    AdminAuditActorKind:
+      $ref: ./components/schemas/AdminAuditActorKind.yaml
+    AdminAuditEntry:
+      $ref: ./components/schemas/AdminAuditEntry.yaml
+    AdminAuditEntryPage:
+      $ref: ./components/schemas/AdminAuditEntryPage.yaml
+    AdminAuditTargetKind:
+      $ref: ./components/schemas/AdminAuditTargetKind.yaml
+    AdminAvailabilityEvent:
+      $ref: ./components/schemas/AdminAvailabilityEvent.yaml
+    AdminAvailabilityEventPage:
+      $ref: ./components/schemas/AdminAvailabilityEventPage.yaml
+    AdminCounts:
+      $ref: ./components/schemas/AdminCounts.yaml
+    AdminCustomEmoji:
+      $ref: ./components/schemas/AdminCustomEmoji.yaml
+    AdminCustomEmojiPage:
+      $ref: ./components/schemas/AdminCustomEmojiPage.yaml
+    AdminDomainAction:
+      $ref: ./components/schemas/AdminDomainAction.yaml
+    AdminDomainActionKind:
+      $ref: ./components/schemas/AdminDomainActionKind.yaml
+    AdminDomainActionPage:
+      $ref: ./components/schemas/AdminDomainActionPage.yaml
+    AdminDomainActionState:
+      $ref: ./components/schemas/AdminDomainActionState.yaml
+    AdminInstanceHealth:
+      $ref: ./components/schemas/AdminInstanceHealth.yaml
+    AdminInstanceHealthPage:
+      $ref: ./components/schemas/AdminInstanceHealthPage.yaml
+    AdminInstanceState:
+      $ref: ./components/schemas/AdminInstanceState.yaml
+    AdminInstanceText:
+      $ref: ./components/schemas/AdminInstanceText.yaml
+    AdminInstanceTextList:
+      $ref: ./components/schemas/AdminInstanceTextList.yaml
+    AdminInvite:
+      $ref: ./components/schemas/AdminInvite.yaml
+    AdminInvitePage:
+      $ref: ./components/schemas/AdminInvitePage.yaml
+    AdminInviteState:
+      $ref: ./components/schemas/AdminInviteState.yaml
+    AdminJob:
+      $ref: ./components/schemas/AdminJob.yaml
+    AdminJobAttempt:
+      $ref: ./components/schemas/AdminJobAttempt.yaml
+    AdminJobAttemptPage:
+      $ref: ./components/schemas/AdminJobAttemptPage.yaml
+    AdminJobCount:
+      $ref: ./components/schemas/AdminJobCount.yaml
+    AdminJobPage:
+      $ref: ./components/schemas/AdminJobPage.yaml
+    AdminJobState:
+      $ref: ./components/schemas/AdminJobState.yaml
+    AdminPasswordResetLink:
+      $ref: ./components/schemas/AdminPasswordResetLink.yaml
+    AdminQueue:
+      $ref: ./components/schemas/AdminQueue.yaml
+    AdminRegistration:
+      $ref: ./components/schemas/AdminRegistration.yaml
+    AdminRegistrationPage:
+      $ref: ./components/schemas/AdminRegistrationPage.yaml
+    AdminRelay:
+      $ref: ./components/schemas/AdminRelay.yaml
+    AdminRelayList:
+      $ref: ./components/schemas/AdminRelayList.yaml
+    AdminReport:
+      $ref: ./components/schemas/AdminReport.yaml
+    AdminReportDetail:
+      $ref: ./components/schemas/AdminReportDetail.yaml
+    AdminReportNote:
+      $ref: ./components/schemas/AdminReportNote.yaml
+    AdminReportOutcome:
+      $ref: ./components/schemas/AdminReportOutcome.yaml
+    AdminReportPage:
+      $ref: ./components/schemas/AdminReportPage.yaml
+    AdminReportState:
+      $ref: ./components/schemas/AdminReportState.yaml
+    AdminReportStatus:
+      $ref: ./components/schemas/AdminReportStatus.yaml
+    AdminReportTargetHistory:
+      $ref: ./components/schemas/AdminReportTargetHistory.yaml
+    AdminRole:
+      $ref: ./components/schemas/AdminRole.yaml
+    AdminRoleList:
+      $ref: ./components/schemas/AdminRoleList.yaml
+    AdminRule:
+      $ref: ./components/schemas/AdminRule.yaml
+    AdminRuleList:
+      $ref: ./components/schemas/AdminRuleList.yaml
+    AdminSameIpAccounts:
+      $ref: ./components/schemas/AdminSameIpAccounts.yaml
+    AdminSetting:
+      $ref: ./components/schemas/AdminSetting.yaml
+    AdminSettingList:
+      $ref: ./components/schemas/AdminSettingList.yaml
+    AdminSignupBlock:
+      $ref: ./components/schemas/AdminSignupBlock.yaml
+    AdminSignupBlockKind:
+      $ref: ./components/schemas/AdminSignupBlockKind.yaml
+    AdminSignupBlockPage:
+      $ref: ./components/schemas/AdminSignupBlockPage.yaml
+    AdminSignupBlockSeverity:
+      $ref: ./components/schemas/AdminSignupBlockSeverity.yaml
+    AdminSignupBlockState:
+      $ref: ./components/schemas/AdminSignupBlockState.yaml
+    AdminTheme:
+      $ref: ./components/schemas/AdminTheme.yaml
+    AdminWebhook:
+      $ref: ./components/schemas/AdminWebhook.yaml
+    AdminWebhookAttempt:
+      $ref: ./components/schemas/AdminWebhookAttempt.yaml
+    AdminWebhookAttemptOutcome:
+      $ref: ./components/schemas/AdminWebhookAttemptOutcome.yaml
+    AdminWebhookCreated:
+      $ref: ./components/schemas/AdminWebhookCreated.yaml
+    AdminWebhookDelivery:
+      $ref: ./components/schemas/AdminWebhookDelivery.yaml
+    AdminWebhookDeliveryPage:
+      $ref: ./components/schemas/AdminWebhookDeliveryPage.yaml
+    AdminWebhookDeliveryStatus:
+      $ref: ./components/schemas/AdminWebhookDeliveryStatus.yaml
+    AdminWebhookFailure:
+      $ref: ./components/schemas/AdminWebhookFailure.yaml
+    AdminWebhookList:
+      $ref: ./components/schemas/AdminWebhookList.yaml
+    AdminWebhookSecret:
+      $ref: ./components/schemas/AdminWebhookSecret.yaml
+    AdminWebhookState:
+      $ref: ./components/schemas/AdminWebhookState.yaml
+    AdminWebhookStateReason:
+      $ref: ./components/schemas/AdminWebhookStateReason.yaml
+    Announcement:
+      $ref: ./components/schemas/Announcement.yaml
+    AnnouncementList:
+      $ref: ./components/schemas/AnnouncementList.yaml
+    AppealModerationActionRequest:
+      $ref: ./components/schemas/AppealModerationActionRequest.yaml
+    AutoDeletePolicy:
+      $ref: ./components/schemas/AutoDeletePolicy.yaml
+    ChangePasswordRequest:
+      $ref: ./components/schemas/ChangePasswordRequest.yaml
+    CopyCustomEmojiRequest:
+      $ref: ./components/schemas/CopyCustomEmojiRequest.yaml
+    CreateAccountActionRequest:
+      $ref: ./components/schemas/CreateAccountActionRequest.yaml
+    CreateCustomEmojiRequest:
+      $ref: ./components/schemas/CreateCustomEmojiRequest.yaml
+    CreateDomainActionRequest:
+      $ref: ./components/schemas/CreateDomainActionRequest.yaml
+    CreateInviteRequest:
+      $ref: ./components/schemas/CreateInviteRequest.yaml
+    CreatePasskeyRequest:
+      $ref: ./components/schemas/CreatePasskeyRequest.yaml
+    CreateRelayRequest:
+      $ref: ./components/schemas/CreateRelayRequest.yaml
+    CreateReportNoteRequest:
+      $ref: ./components/schemas/CreateReportNoteRequest.yaml
+    CreateReportRequest:
+      $ref: ./components/schemas/CreateReportRequest.yaml
+    CreateRoleRequest:
+      $ref: ./components/schemas/CreateRoleRequest.yaml
+    CreateSignupBlockRequest:
+      $ref: ./components/schemas/CreateSignupBlockRequest.yaml
+    CreateStatusRequest:
+      $ref: ./components/schemas/CreateStatusRequest.yaml
+    CreateWebhookRequest:
+      $ref: ./components/schemas/CreateWebhookRequest.yaml
+    CredentialAccount:
+      $ref: ./components/schemas/CredentialAccount.yaml
+    Cursor:
+      $ref: ./components/schemas/Cursor.yaml
+    CustomEmoji:
+      $ref: ./components/schemas/CustomEmoji.yaml
+    CustomEmojiProblem:
+      $ref: ./components/schemas/CustomEmojiProblem.yaml
+    CustomEmojiProblemReason:
+      $ref: ./components/schemas/CustomEmojiProblemReason.yaml
+    DataExport:
+      $ref: ./components/schemas/DataExport.yaml
+    DataExportList:
+      $ref: ./components/schemas/DataExportList.yaml
+    DataImport:
+      $ref: ./components/schemas/DataImport.yaml
+    DataImportKind:
+      $ref: ./components/schemas/DataImportKind.yaml
+    DataImportList:
+      $ref: ./components/schemas/DataImportList.yaml
+    DataImportMode:
+      $ref: ./components/schemas/DataImportMode.yaml
+    DataImportPreview:
+      $ref: ./components/schemas/DataImportPreview.yaml
+    DataImportRequest:
+      $ref: ./components/schemas/DataImportRequest.yaml
+    DataImportSkipped:
+      $ref: ./components/schemas/DataImportSkipped.yaml
+    DecideAppealRequest:
+      $ref: ./components/schemas/DecideAppealRequest.yaml
+    DeleteOwnAccountRequest:
+      $ref: ./components/schemas/DeleteOwnAccountRequest.yaml
+    DomainBlock:
+      $ref: ./components/schemas/DomainBlock.yaml
+    DomainBlockImportPreview:
+      $ref: ./components/schemas/DomainBlockImportPreview.yaml
+    DomainBlockImportResult:
+      $ref: ./components/schemas/DomainBlockImportResult.yaml
+    DomainBlockImportRow:
+      $ref: ./components/schemas/DomainBlockImportRow.yaml
+    DomainBlockImportSkipped:
+      $ref: ./components/schemas/DomainBlockImportSkipped.yaml
+    DomainBlockImportStatus:
+      $ref: ./components/schemas/DomainBlockImportStatus.yaml
+    DomainBlockSeverity:
+      $ref: ./components/schemas/DomainBlockSeverity.yaml
+    DomainMute:
+      $ref: ./components/schemas/DomainMute.yaml
+    DomainMutePage:
+      $ref: ./components/schemas/DomainMutePage.yaml
+    EditStatusRequest:
+      $ref: ./components/schemas/EditStatusRequest.yaml
+    EnableTotpRequest:
+      $ref: ./components/schemas/EnableTotpRequest.yaml
+    FollowAccountRequest:
+      $ref: ./components/schemas/FollowAccountRequest.yaml
+    Id:
+      $ref: ./components/schemas/Id.yaml
+    ImportDomainBlocksRequest:
+      $ref: ./components/schemas/ImportDomainBlocksRequest.yaml
+    ImportSignupBlocksRequest:
+      $ref: ./components/schemas/ImportSignupBlocksRequest.yaml
+    Instance:
+      $ref: ./components/schemas/Instance.yaml
+    InstanceContact:
+      $ref: ./components/schemas/InstanceContact.yaml
+    InstanceDomainAction:
+      $ref: ./components/schemas/InstanceDomainAction.yaml
+    InstanceDomainActionPage:
+      $ref: ./components/schemas/InstanceDomainActionPage.yaml
+    InstanceLimits:
+      $ref: ./components/schemas/InstanceLimits.yaml
+    InstanceRegistrations:
+      $ref: ./components/schemas/InstanceRegistrations.yaml
+    InstanceRule:
+      $ref: ./components/schemas/InstanceRule.yaml
+    InstanceRuleInput:
+      $ref: ./components/schemas/InstanceRuleInput.yaml
+    InstanceSettingKey:
+      $ref: ./components/schemas/InstanceSettingKey.yaml
+    InstanceSettingKind:
+      $ref: ./components/schemas/InstanceSettingKind.yaml
+    InstanceTextKey:
+      $ref: ./components/schemas/InstanceTextKey.yaml
+    InstanceTheme:
+      $ref: ./components/schemas/InstanceTheme.yaml
+    InstanceThumbnail:
+      $ref: ./components/schemas/InstanceThumbnail.yaml
+    InstanceTimelines:
+      $ref: ./components/schemas/InstanceTimelines.yaml
+    LiftAccountActionRequest:
+      $ref: ./components/schemas/LiftAccountActionRequest.yaml
+    LinkCard:
+      $ref: ./components/schemas/LinkCard.yaml
+    LinkCardImage:
+      $ref: ./components/schemas/LinkCardImage.yaml
+    MediaAnimatedVariants:
+      $ref: ./components/schemas/MediaAnimatedVariants.yaml
+    MediaAttachment:
+      $ref: ./components/schemas/MediaAttachment.yaml
+    MediaFocus:
+      $ref: ./components/schemas/MediaFocus.yaml
+    MediaMeta:
+      $ref: ./components/schemas/MediaMeta.yaml
+    MediaUpdate:
+      $ref: ./components/schemas/MediaUpdate.yaml
+    MediaUpload:
+      $ref: ./components/schemas/MediaUpload.yaml
+    MediaVariant:
+      $ref: ./components/schemas/MediaVariant.yaml
+    MediaVariants:
+      $ref: ./components/schemas/MediaVariants.yaml
+    ModerationAction:
+      $ref: ./components/schemas/ModerationAction.yaml
+    ModerationActionPage:
+      $ref: ./components/schemas/ModerationActionPage.yaml
+    ModerationAppeal:
+      $ref: ./components/schemas/ModerationAppeal.yaml
+    ModerationAppealState:
+      $ref: ./components/schemas/ModerationAppealState.yaml
+    MoveInstanceRuleRequest:
+      $ref: ./components/schemas/MoveInstanceRuleRequest.yaml
+    MuteAccountRequest:
+      $ref: ./components/schemas/MuteAccountRequest.yaml
+    MuteDomainRequest:
+      $ref: ./components/schemas/MuteDomainRequest.yaml
+    MutePage:
+      $ref: ./components/schemas/MutePage.yaml
+    MutedAccount:
+      $ref: ./components/schemas/MutedAccount.yaml
+    Notification:
+      $ref: ./components/schemas/Notification.yaml
+    NotificationMarker:
+      $ref: ./components/schemas/NotificationMarker.yaml
+    NotificationMarkerUpdate:
+      $ref: ./components/schemas/NotificationMarkerUpdate.yaml
+    NotificationPage:
+      $ref: ./components/schemas/NotificationPage.yaml
+    NotificationType:
+      $ref: ./components/schemas/NotificationType.yaml
+    PageInfo:
+      $ref: ./components/schemas/PageInfo.yaml
+    Passkey:
+      $ref: ./components/schemas/Passkey.yaml
+    PasskeyAssertion:
+      $ref: ./components/schemas/PasskeyAssertion.yaml
+    PasskeyConfirmation:
+      $ref: ./components/schemas/PasskeyConfirmation.yaml
+    PasskeyList:
+      $ref: ./components/schemas/PasskeyList.yaml
+    PasskeyRegistration:
+      $ref: ./components/schemas/PasskeyRegistration.yaml
+    PasskeyRegistrationRequest:
+      $ref: ./components/schemas/PasskeyRegistrationRequest.yaml
+    PasswordStatus:
+      $ref: ./components/schemas/PasswordStatus.yaml
+    Permission:
+      $ref: ./components/schemas/Permission.yaml
+    PickerCustomEmoji:
+      $ref: ./components/schemas/PickerCustomEmoji.yaml
+    PickerCustomEmojiList:
+      $ref: ./components/schemas/PickerCustomEmojiList.yaml
+    Poll:
+      $ref: ./components/schemas/Poll.yaml
+    PollInput:
+      $ref: ./components/schemas/PollInput.yaml
+    PollOption:
+      $ref: ./components/schemas/PollOption.yaml
+    PostingLimits:
+      $ref: ./components/schemas/PostingLimits.yaml
+    Preferences:
+      $ref: ./components/schemas/Preferences.yaml
+    PreviewDomainBlockImportRequest:
+      $ref: ./components/schemas/PreviewDomainBlockImportRequest.yaml
+    Problem:
+      $ref: ./components/schemas/Problem.yaml
+    ProfileField:
+      $ref: ./components/schemas/ProfileField.yaml
+    PushSubscription:
+      $ref: ./components/schemas/PushSubscription.yaml
+    PushSubscriptionKeys:
+      $ref: ./components/schemas/PushSubscriptionKeys.yaml
+    PushSubscriptionRequest:
+      $ref: ./components/schemas/PushSubscriptionRequest.yaml
+    QrCode:
+      $ref: ./components/schemas/QrCode.yaml
+    ReactToStatusRequest:
+      $ref: ./components/schemas/ReactToStatusRequest.yaml
+    ReactionEmoji:
+      $ref: ./components/schemas/ReactionEmoji.yaml
+    RecoveryCodes:
+      $ref: ./components/schemas/RecoveryCodes.yaml
+    RegistrationDecisionRequest:
+      $ref: ./components/schemas/RegistrationDecisionRequest.yaml
+    RegistrationState:
+      $ref: ./components/schemas/RegistrationState.yaml
+    Relationship:
+      $ref: ./components/schemas/Relationship.yaml
+    RelationshipSeverance:
+      $ref: ./components/schemas/RelationshipSeverance.yaml
+    RelayProblem:
+      $ref: ./components/schemas/RelayProblem.yaml
+    RelayProblemReason:
+      $ref: ./components/schemas/RelayProblemReason.yaml
+    RelayProtocol:
+      $ref: ./components/schemas/RelayProtocol.yaml
+    RelayState:
+      $ref: ./components/schemas/RelayState.yaml
+    RemovePasswordRequest:
+      $ref: ./components/schemas/RemovePasswordRequest.yaml
+    ReplaceCustomEmojiImageRequest:
+      $ref: ./components/schemas/ReplaceCustomEmojiImageRequest.yaml
+    Report:
+      $ref: ./components/schemas/Report.yaml
+    ReportCategory:
+      $ref: ./components/schemas/ReportCategory.yaml
+    ReportPage:
+      $ref: ./components/schemas/ReportPage.yaml
+    ReportState:
+      $ref: ./components/schemas/ReportState.yaml
+    ResolveReportRequest:
+      $ref: ./components/schemas/ResolveReportRequest.yaml
+    RoleProblem:
+      $ref: ./components/schemas/RoleProblem.yaml
+    RoleProblemReason:
+      $ref: ./components/schemas/RoleProblemReason.yaml
+    SearchIndexing:
+      $ref: ./components/schemas/SearchIndexing.yaml
+    SetInstanceTextRequest:
+      $ref: ./components/schemas/SetInstanceTextRequest.yaml
+    SetThemeRequest:
+      $ref: ./components/schemas/SetThemeRequest.yaml
+    SignupBlockImportResult:
+      $ref: ./components/schemas/SignupBlockImportResult.yaml
+    SignupBlockImportSkipped:
+      $ref: ./components/schemas/SignupBlockImportSkipped.yaml
+    SpoilerText:
+      $ref: ./components/schemas/SpoilerText.yaml
+    Status:
+      $ref: ./components/schemas/Status.yaml
+    StatusContext:
+      $ref: ./components/schemas/StatusContext.yaml
+    StatusEdit:
+      $ref: ./components/schemas/StatusEdit.yaml
+    StatusHistory:
+      $ref: ./components/schemas/StatusHistory.yaml
+    StatusLanguageInput:
+      $ref: ./components/schemas/StatusLanguageInput.yaml
+    StatusMediaInput:
+      $ref: ./components/schemas/StatusMediaInput.yaml
+    StatusMediaItem:
+      $ref: ./components/schemas/StatusMediaItem.yaml
+    StatusMention:
+      $ref: ./components/schemas/StatusMention.yaml
+    StatusPage:
+      $ref: ./components/schemas/StatusPage.yaml
+    StatusReaction:
+      $ref: ./components/schemas/StatusReaction.yaml
+    StatusReactionPage:
+      $ref: ./components/schemas/StatusReactionPage.yaml
+    StatusReactor:
+      $ref: ./components/schemas/StatusReactor.yaml
+    StatusSource:
+      $ref: ./components/schemas/StatusSource.yaml
+    StatusTag:
+      $ref: ./components/schemas/StatusTag.yaml
+    StatusText:
+      $ref: ./components/schemas/StatusText.yaml
+    ThemeError:
+      $ref: ./components/schemas/ThemeError.yaml
+    ThemeProblem:
+      $ref: ./components/schemas/ThemeProblem.yaml
+    ThemeTokenValue:
+      $ref: ./components/schemas/ThemeTokenValue.yaml
+    TotpSetup:
+      $ref: ./components/schemas/TotpSetup.yaml
+    TwoFactor:
+      $ref: ./components/schemas/TwoFactor.yaml
+    TwoFactorCodeRequest:
+      $ref: ./components/schemas/TwoFactorCodeRequest.yaml
+    UpdateCredentialsRequest:
+      $ref: ./components/schemas/UpdateCredentialsRequest.yaml
+    UpdateCustomEmojiRequest:
+      $ref: ./components/schemas/UpdateCustomEmojiRequest.yaml
+    UpdateInstanceSettingsRequest:
+      $ref: ./components/schemas/UpdateInstanceSettingsRequest.yaml
+    UpdatePreferencesRequest:
+      $ref: ./components/schemas/UpdatePreferencesRequest.yaml
+    UpdateRoleRequest:
+      $ref: ./components/schemas/UpdateRoleRequest.yaml
+    UpdateWebhookRequest:
+      $ref: ./components/schemas/UpdateWebhookRequest.yaml
+    Visibility:
+      $ref: ./components/schemas/Visibility.yaml
+    VoteInPollRequest:
+      $ref: ./components/schemas/VoteInPollRequest.yaml
+    WebhookCustomEmoji:
+      $ref: ./components/schemas/WebhookCustomEmoji.yaml
+    WebhookEventType:
+      $ref: ./components/schemas/WebhookEventType.yaml
+    WebhookMessage:
+      $ref: ./components/schemas/WebhookMessage.yaml
+    WebhookMessageType:
+      $ref: ./components/schemas/WebhookMessageType.yaml
+    WebhookProblem:
+      $ref: ./components/schemas/WebhookProblem.yaml
+    WebhookProblemReason:
+      $ref: ./components/schemas/WebhookProblemReason.yaml
+    WebhookStatus:
+      $ref: ./components/schemas/WebhookStatus.yaml
+    WebhookTest:
+      $ref: ./components/schemas/WebhookTest.yaml

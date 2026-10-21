@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A change of the preferences; properties left out keep their current values.
+type: object
+properties:
+  locale:
+    description: The UI locale, a BCP 47 language tag.
+    type: string
+  time_zone:
+    description: The time zone, an IANA name.
+    type: string
+  default_visibility:
+    $ref: ./Visibility.yaml
+  default_post_language:
+    description: The language of new posts that name none; `und` for undetermined.
+    type: string
+  require_media_description:
+    description: Whether clients ask for a description before posting media without one.
+    type: boolean
+  email_moderator_notifications:
+    description: Whether the moderator notifications also come by email.
+    type: boolean
+  timeline_languages:
+    description: The languages that timelines show, at most 64; empty shows every language.
+    type: array
+    maxItems: 64
+    items:
+      type: string

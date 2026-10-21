@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The start of a passkey registration.
+type: object
+required: [options, registration_token, expires_at]
+properties:
+  options:
+    description: |
+      The `PublicKeyCredentialCreationOptionsJSON` of WebAuthn Level 3 (§5.1.8): binary
+      values in base64url, for `PublicKeyCredential.parseCreationOptionsFromJSON()`.
+    type: object
+    additionalProperties: true
+  registration_token:
+    description: An opaque token that carries the registration to `POST /passkeys`.
+    type: string
+  expires_at:
+    description: When `registration_token` stops working.
+    type: string
+    format: date-time

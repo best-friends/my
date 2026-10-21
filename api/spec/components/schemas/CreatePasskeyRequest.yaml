@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The browser's answer to a passkey registration.
+type: object
+required: [registration_token, credential]
+properties:
+  registration_token:
+    description: The `registration_token` of `POST /passkeys/registration`.
+    type: string
+    maxLength: 4096
+  credential:
+    description: |
+      The `RegistrationResponseJSON` of WebAuthn Level 3 (§5.1): what
+      `PublicKeyCredential.toJSON()` returns for the new credential.
+    type: object
+    additionalProperties: true

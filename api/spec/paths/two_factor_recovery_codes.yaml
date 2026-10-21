@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: regenerateRecoveryCodes
+  summary: Replace the recovery codes
+  description: |
+    Returns new recovery codes, shown only this once, once `code` confirms it; the previous
+    ones stop working and the app keeps working. The problems are those of
+    `POST /two_factor/totp/disable`.
+  tags: [two_factor]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/TwoFactorCodeRequest.yaml
+  responses:
+    "200":
+      description: The new recovery codes.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/RecoveryCodes.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

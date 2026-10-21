@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new announcement, with its text and its window.
+type: object
+required: [text]
+properties:
+  text:
+    description: The text, in Markdown.
+    type: string
+    minLength: 1
+    maxLength: 5000
+  starts_at:
+    description: When it starts to show once published; omitted to show it from its publication.
+    type: string
+    format: date-time
+  ends_at:
+    description: When it stops showing, after `starts_at`; omitted to show it until it is withdrawn.
+    type: string
+    format: date-time
+  publish:
+    description: Publish it at once instead of keeping it a draft.
+    type: boolean
+    default: false

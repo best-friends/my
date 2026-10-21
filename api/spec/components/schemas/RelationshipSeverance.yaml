@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The follows that a `relationships_severed` tells of: the user lost them when the
+  moderators suspended a server (`domain_suspension`, `domain` is the server) or a remote
+  account (`account_suspension`, the notification's `account` is the account). Both
+  directions end, follow requests too, and lifting the suspension does not restore them;
+  the counts are of the accepted follows.
+type: object
+required: [kind, followers_lost, following_lost]
+properties:
+  kind:
+    type: string
+    enum:
+      - domain_suspension
+      - account_suspension
+  domain:
+    description: The suspended server of a `domain_suspension`; omitted otherwise.
+    type: string
+  followers_lost:
+    description: The accounts that followed the user and no longer do.
+    type: integer
+    minimum: 0
+  following_lost:
+    description: The accounts that the user followed and no longer does.
+    type: integer
+    minimum: 0

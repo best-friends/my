@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listAdminJobs
+  summary: List the jobs of the job queue
+  description: |
+    The jobs in one state, or the pending jobs of every state when `state` is omitted.
+    Pending jobs (`queued`, `running`, `retrying`) come the earliest `run_at` first; on a
+    queue that cannot list them (`pending_listing` of `GET /admin/queue` is `false`) the page
+    is empty. Dead jobs (`state=dead`) come the most recently failed first. Needs the
+    `manage_jobs` permission.
+  tags: [admin-server]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: state
+      in: query
+      required: false
+      description: Keep only the jobs in this state; omitted keeps the pending ones.
+      schema:
+        $ref: ../components/schemas/AdminJobState.yaml
+    - name: type
+      in: query
+      required: false
+      description: Keep only the jobs of this type, such as `federation.deliver`.
+      schema:
+        type: string
+        maxLength: 200
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of jobs.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminJobPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

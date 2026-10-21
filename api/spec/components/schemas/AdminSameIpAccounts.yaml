@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The other accounts that used one IP address.
+type: object
+required: [ip, accounts]
+properties:
+  ip:
+    type: string
+  accounts:
+    type: array
+    items:
+      $ref: ./AdminAccount.yaml

@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+parameters:
+  - $ref: ../components/parameters/StatusId.yaml
+get:
+  operationId: getStatusContext
+  summary: Get the thread around a status
+  description: |
+    The ancestors and descendants of a status that the viewer may see. A status that the
+    viewer may not see is a 404, the same as a missing one.
+  tags: [statuses]
+  security:
+    - {}
+    - oauth2: ["read:statuses"]
+  responses:
+    "200":
+      description: The thread.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/StatusContext.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

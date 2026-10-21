@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: previewDataImport
+  summary: Preview an import of a CSV file
+  description: |
+    Reads a CSV file as `startDataImport` would and tells what importing it would do,
+    changing nothing. The header row is optional, a leading `@` of an address is dropped,
+    and blank lines are ignored; a line that names no address (or for `bookmarks`, no
+    `http(s)` URL) is skipped as `invalid`, and one that repeats an earlier entry as
+    `duplicate`. Settings left out default as in Mastodon: boosts shown, no notifications of
+    new posts, notifications of a muted account hidden. The `Languages` column of a follow
+    is ignored. A file that is not CSV or has more than 10,000 entries is a 422.
+  tags: [accounts]
+  security:
+    - oauth2: ["write:accounts"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/DataImportRequest.yaml
+  responses:
+    "200":
+      description: What the import would do.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/DataImportPreview.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

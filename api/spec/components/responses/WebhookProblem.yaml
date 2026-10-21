@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The webhook breaks a rule; nothing was changed.
+headers:
+  Content-Language:
+    description: The locale of `title` and `detail`.
+    schema:
+      type: string
+  Cache-Control:
+    $ref: ../headers/CacheControl.yaml
+content:
+  application/problem+json:
+    schema:
+      $ref: ../schemas/WebhookProblem.yaml

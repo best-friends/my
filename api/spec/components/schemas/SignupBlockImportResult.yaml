@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: What an import of a list of sign-up blocks did.
+type: object
+required: [added, skipped]
+properties:
+  added:
+    description: The number of blocks added.
+    type: integer
+    minimum: 0
+  skipped:
+    description: The lines whose block was not added, in line order.
+    type: array
+    items:
+      $ref: ./SignupBlockImportSkipped.yaml

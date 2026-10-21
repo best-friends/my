@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A new revision of an instance text.
+type: object
+required: [body]
+properties:
+  body:
+    description: The text, in any language; empty clears it.
+    type: string
+    maxLength: 100000

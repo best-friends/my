@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  The authenticated user's appeal of an action on their account. It never names the
+  moderator who decided it.
+type: object
+required: [id, text, state, submitted_at]
+properties:
+  id:
+    $ref: ./Id.yaml
+  text:
+    description: What the user wrote, as plain text.
+    type: string
+  state:
+    $ref: ./ModerationAppealState.yaml
+  submitted_at:
+    type: string
+    format: date-time
+  decided_at:
+    description: When the moderators decided the appeal; omitted while pending.
+    type: string
+    format: date-time
+  decision_reason:
+    description: The moderators' explanation of the decision, as plain text; omitted when there is none.
+    type: string

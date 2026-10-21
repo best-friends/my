@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: user_id
+in: path
+required: true
+description: The ID of the user who signed up.
+schema:
+  $ref: ../schemas/Id.yaml

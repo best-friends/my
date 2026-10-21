@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+name: id
+in: path
+description: The ID of the status.
+required: true
+schema:
+  $ref: ../schemas/Id.yaml

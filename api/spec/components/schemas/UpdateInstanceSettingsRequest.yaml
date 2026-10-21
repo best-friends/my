@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: New values of some instance settings, saved together.
+type: object
+required: [values]
+properties:
+  values:
+    description: The new value of each setting to change, by key, as a string.
+    type: object
+    minProperties: 1
+    maxProperties: 64
+    additionalProperties:
+      type: string
+      maxLength: 320

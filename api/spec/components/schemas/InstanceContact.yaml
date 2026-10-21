@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  How people reach the instance's operators (the instance settings `contact_account` and
+  `contact_email`). Omitted when the instance has neither.
+type: object
+properties:
+  account:
+    description: |
+      The local account to contact; omitted when there is none, or when the account
+      cannot be shown (it is suspended or deleted).
+    allOf:
+      - $ref: ./Account.yaml
+  email:
+    description: The email address to contact; omitted when there is none.
+    type: string

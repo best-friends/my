@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A line of a CSV file that is not an entry.
+type: object
+required: [line, value, reason]
+properties:
+  line:
+    description: The line of the file, from 1.
+    type: integer
+    minimum: 1
+  value:
+    description: The line as written.
+    type: string
+  reason:
+    description: |
+      `invalid`: the line names no account address (for bookmarks, no post URL; for
+      domain mutes, no domain).
+      `duplicate`: an earlier line names the same account, post, or domain.
+    type: string
+    enum: [invalid, duplicate]

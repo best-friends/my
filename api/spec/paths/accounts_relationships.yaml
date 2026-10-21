@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getRelationships
+  summary: Get the viewer's relationships with accounts
+  description: |
+    Returns one relationship per requested account, in the order of the request. Accounts
+    that do not exist, are not active, or block the viewer are left out.
+  tags: [accounts]
+  security:
+    - oauth2: ["read:follows"]
+  parameters:
+    - name: id
+      in: query
+      required: true
+      description: The account IDs, repeated (`?id=a&id=b`).
+      style: form
+      explode: true
+      schema:
+        type: array
+        minItems: 1
+        maxItems: 40
+        items:
+          $ref: ../components/schemas/Id.yaml
+  responses:
+    "200":
+      description: The relationships.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/schemas/Relationship.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

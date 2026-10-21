@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: The moderators' explanation of a decision on an appeal.
+type: object
+properties:
+  public_reason:
+    description: Shown to the user who appealed, as plain text.
+    type: string
+    maxLength: 2000

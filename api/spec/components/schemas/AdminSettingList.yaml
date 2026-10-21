@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: Every instance setting, in a fixed order.
+type: object
+required: [items]
+properties:
+  items:
+    type: array
+    items:
+      $ref: ./AdminSetting.yaml

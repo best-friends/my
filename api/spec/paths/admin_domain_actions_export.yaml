@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: exportDomainBlocks
+  summary: Export the domain actions as Mastodon's domain block CSV
+  description: |
+    The domain actions in effect (FR-706) as the CSV that Mastodon's moderation screens
+    import, with the header
+    `#domain,#severity,#reject_media,#reject_reports,#public_comment,#obfuscate`: one row
+    per domain in domain order. `#severity` is `suspend` when a `suspend` is in effect on
+    the domain, `silence` for a `limit`, and `noop` otherwise; `#reject_media`,
+    `#reject_reports`, and `#obfuscate` are `true` when one of the domain's actions has
+    them. A domain whose only actions are `force_sensitive`, which Mastodon's domain blocks
+    cannot hold, is left out. Private notes and expiry dates are not exported. Needs the
+    `manage_domains` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      description: The CSV.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+        Content-Disposition:
+          description: Names the file to save the CSV as.
+          schema:
+            type: string
+      content:
+        text/csv:
+          schema:
+            type: string
+            format: binary
+    default:
+      $ref: ../components/responses/Problem.yaml

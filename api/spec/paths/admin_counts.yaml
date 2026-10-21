@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: getAdminCounts
+  summary: Count what awaits the moderators
+  description: |
+    The number of open reports (with the `manage_reports` permission), and of registrations
+    that await approval and appeals that await a decision (with the `manage_accounts`
+    permission), for the badges of the admin menu (FR-712). A count whose permission the user's roles lack is omitted, so a
+    user without either gets an empty object.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  responses:
+    "200":
+      description: The counts that the user may see.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminCounts.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

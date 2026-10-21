@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+get:
+  operationId: listSignupBlocks
+  summary: List the sign-up blocks
+  description: |
+    The blocks on sign-ups from the registration page (FR-719), newest first, lifted and
+    expired ones included unless `active` is set. Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:read"]
+  parameters:
+    - name: kind
+      in: query
+      required: false
+      description: Keep only the blocks of this kind.
+      schema:
+        $ref: ../components/schemas/AdminSignupBlockKind.yaml
+    - name: active
+      in: query
+      required: false
+      description: Keep only the blocks in effect now, neither lifted nor expired.
+      schema:
+        type: boolean
+    - $ref: ../components/parameters/Cursor.yaml
+    - $ref: ../components/parameters/Limit.yaml
+  responses:
+    "200":
+      description: A page of sign-up blocks.
+      headers:
+        Cache-Control:
+          $ref: ../components/headers/CacheControl.yaml
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/AdminSignupBlockPage.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
+post:
+  operationId: createSignupBlock
+  summary: Block sign-ups
+  description: |
+    Records a block on sign-ups from the registration page (FR-719), in effect at once and
+    until it expires or is lifted; the block is audited. A sign-up whose email address or
+    client address it matches is refused (`reject`) or starts pending for a moderator
+    whatever the registration mode (`require_approval`); the page does not tell the
+    applicant why. The value is stored in its canonical form: an `email_domain` in IDNA
+    A-labels (it covers the subdomains), an `email_hash` as the hash of the canonical
+    address (an email address given is hashed and not kept), an `ip_range` as a masked
+    CIDR prefix (a single address is a prefix of its full length). A value that is not
+    valid for its kind, or a `comment` that is too long or contains U+0000, is a 422.
+    Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas/CreateSignupBlockRequest.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminSignupBlock.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml

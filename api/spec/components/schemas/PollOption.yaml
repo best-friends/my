@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: One option of a poll.
+type: object
+required: [title]
+properties:
+  title:
+    description: The option as plain text.
+    type: string
+  votes_count:
+    description: |
+      The number of votes for the option; omitted while the poll hides the votes of each
+      option until it ends.
+    type: integer
+    minimum: 0

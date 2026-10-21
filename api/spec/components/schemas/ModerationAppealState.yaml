@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  Where an appeal stands: `pending` awaits the moderators, `upheld` kept the action, and
+  `overturned` lifted it.
+type: string
+enum: [pending, upheld, overturned]

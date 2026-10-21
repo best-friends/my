@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: An opaque pagination cursor. Clients pass it back unchanged and never parse it.
+type: string
+minLength: 1
+maxLength: 256

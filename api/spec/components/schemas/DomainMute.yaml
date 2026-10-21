@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: A domain that the viewer mutes, with its subdomains.
+type: object
+required: [domain, created_at]
+properties:
+  domain:
+    description: The domain, in IDNA A-labels.
+    type: string
+  created_at:
+    description: When the viewer muted the domain.
+    type: string
+    format: date-time

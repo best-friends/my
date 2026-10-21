@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+description: |
+  A capability that a role grants. `manage_accounts`: the accounts and their moderation
+  actions.
+  `manage_domains`: the health of remote servers and the moderation actions on domains.
+  `manage_reports`: the reports. `manage_rules`: the instance rules. `manage_roles`: the
+  roles of users. `manage_jobs`: the dead jobs of the job queue. `view_audit`: the audit
+  log. `manage_login_recovery`: recovering a local user's sign-in, by removing their two-factor
+  authentication or issuing a password reset link (only the built-in admin role by
+  default). `manage_custom_emojis`: the custom emoji, local and
+  remote. `manage_webhooks`: the webhooks of the instance. `manage_announcements`: the
+  server's announcements to every local user. The others guard no client API operation
+  yet.
+type: string
+enum:
+  - manage_reports
+  - manage_accounts
+  - manage_domains
+  - manage_rules
+  - manage_settings
+  - manage_roles
+  - manage_invites
+  - view_audit
+  - manage_jobs
+  - manage_login_recovery
+  - manage_custom_emojis
+  - manage_webhooks
+  - manage_announcements

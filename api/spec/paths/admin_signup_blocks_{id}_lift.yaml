@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+post:
+  operationId: liftSignupBlock
+  summary: Lift a sign-up block
+  description: |
+    The block stops matching sign-ups at once; the lift is audited. Lifting a lifted block
+    changes nothing. An unknown ID is a 404. Needs the `manage_accounts` permission.
+  tags: [admin-moderation]
+  security:
+    - oauth2: ["admin:write"]
+  parameters:
+    - $ref: ../components/parameters/SignupBlockId.yaml
+  responses:
+    "200":
+      $ref: ../components/responses/AdminSignupBlock.yaml
+    default:
+      $ref: ../components/responses/Problem.yaml
