@@ -307,6 +307,7 @@ my admin report reopen <report id>
 | `webhook` | `webhook_created`・`webhook_updated`・`webhook_deleted`・`webhook_enabled`・`webhook_disabled`・`webhook_secret_rotated`（webhook の設定・変更・削除・有効化・無効化・秘密の作り直し） |
 | `announcement` | `announcement_created`・`announcement_updated`・`announcement_published`・`announcement_withdrawn`（お知らせの作成・変更・公開・取り下げ） |
 | `invite` | `invite_created`・`invite_revoked`（招待の作成・失効。対象の名前はコードの先頭 4 文字） |
+| `billing_source` | `billing_import_queued`（利用料金の取り込みを手で始めた。対象の名前は事業者の名前） |
 
 一覧は、対象が今もあるかを示します。保持期間を過ぎて消えたアカウント・通報・異議申し立て・登録の拒否と、削除されたロール・カスタム絵文字・webhook は、記録時の名前だけを出し、画面へのリンクを出しません。
 
