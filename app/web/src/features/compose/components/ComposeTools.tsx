@@ -5,6 +5,7 @@ import {
   ImageIcon,
   LanguageIcon,
   PollIcon,
+  QuoteIcon,
   Select,
   SelectItem,
   ToggleButton,
@@ -17,6 +18,7 @@ import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import { EmojiPickerButton } from "../../emoji";
 import { acceptedMediaTypes, maxAttachments } from "../hooks/policy";
+import { quotePolicies, quotePolicyLabel } from "../hooks/quotePolicyMessages";
 import { composeTextId } from "../hooks/useCompose";
 import type { ReadyComposeForm } from "../hooks/useComposeForm";
 import { VisibilityPicker } from "./VisibilityPicker";
@@ -24,11 +26,12 @@ import { VisibilityPicker } from "./VisibilityPicker";
 export type ComposeToolsProps = { form: ReadyComposeForm };
 
 /**
- * The tools of the form, in one row under the text: images, poll, content warning, custom emoji, visibility and language
- * (web-client.md §12). Every control is a button of the same height, so the row stays level at every width.
- * The icon-only buttons are named by aria-label and show the same words as a tooltip (G12); each control
- * also says its current value: the images attached (description), the poll and the warning (aria-pressed), the
- * visibility (its name and who can see it) and the language (the select shows it).
+ * The tools of the form, in one row under the text: images, poll, content warning, custom emoji, visibility, who may
+ * quote the post (FR-114) and language (web-client.md §12). Every control is a button of the same height, so the row
+ * stays level at every width. The icon-only buttons are named by aria-label and show the same words as a tooltip
+ * (G12); each control also says its current value: the images attached (description), the poll and the warning
+ * (aria-pressed), the visibility (its name and who can see it), and the quote policy and the language (the selects
+ * show them).
  */
 export function ComposeTools({ form }: ComposeToolsProps) {
   const t = useT();
@@ -100,6 +103,22 @@ export function ComposeTools({ form }: ComposeToolsProps) {
           form.edit({ visibility });
         }}
       />
+      <Select
+        variant="toolbar"
+        aria-label={t("client:compose.quote_policy.label")}
+        icon={<QuoteIcon />}
+        items={quotePolicies.map((id) => ({ id, name: t(quotePolicyLabel[id]) }))}
+        value={form.quotePolicy}
+        onChange={(quotePolicy) => {
+          if (quotePolicy === "public" || quotePolicy === "followers" || quotePolicy === "nobody") form.edit({ quotePolicy });
+        }}
+      >
+        {(option) => (
+          <SelectItem id={option.id} textValue={option.name}>
+            {option.name}
+          </SelectItem>
+        )}
+      </Select>
       <Select
         variant="toolbar"
         aria-label={t("client:compose.language.label")}

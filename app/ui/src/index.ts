@@ -89,6 +89,7 @@ export {
   PlusIcon,
   PollIcon,
   ProfileIcon,
+  QuoteIcon,
   ReplyIcon,
   SearchIcon,
   SettingsIcon,

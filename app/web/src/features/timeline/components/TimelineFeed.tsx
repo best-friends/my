@@ -101,6 +101,8 @@ function TimelineEmpty({ timeline, origin }: { timeline: Timeline; origin: Timel
       );
     case "bookmarks":
       return <EmptyState heading={t("client:timeline.empty.bookmarks.heading")} description={t("client:timeline.empty.bookmarks.description")} />;
+    case "quotes":
+      return <EmptyState heading={t("client:timeline.empty.quotes.heading")} description={t("client:timeline.empty.quotes.description")} />;
     case "account":
       // A profile's timeline sits under the level-two heading of its tab.
       return (

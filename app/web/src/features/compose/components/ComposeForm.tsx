@@ -56,6 +56,7 @@ function ReadyForm({ form, labelledBy, autoFocus }: ReadyFormProps) {
     <div className="flex flex-col gap-4 @container">
       <form aria-labelledby={labelledBy} onSubmit={onSubmit} className="flex flex-col gap-3">
         {form.replyTo.status !== "none" && <ReplyContext replyTo={form.replyTo} onCancel={form.cancelReply} />}
+        {form.quoteOf.status !== "none" && <ReplyContext kind="quote" replyTo={form.quoteOf} onCancel={form.cancelQuote} />}
         {draft.hasWarning && (
           <TextField
             label={t("client:compose.warning.label")}

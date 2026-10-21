@@ -113,6 +113,17 @@ function EditStatusForm({ status, source, maxCharacters, isDescriptionRequired, 
           {t("client:compose.sensitive")}
         </Checkbox>
       )}
+      {form.hasQuote && (
+        <Checkbox
+          isSelected={form.removeQuote}
+          onChange={(removeQuote) => {
+            form.edit({ removeQuote });
+          }}
+          description={t("client:status.edit.remove_quote.description")}
+        >
+          {t("client:status.edit.remove_quote")}
+        </Checkbox>
+      )}
       <p className="text-sm text-fg-muted">{t("client:status.edit.fixed")}</p>
       {form.error !== null && (
         <p id={errorId} role="alert" className="text-danger">

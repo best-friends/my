@@ -39,6 +39,8 @@ export type Timeline =
   | { kind: "tag"; tag: string }
   /** The posts the viewer bookmarked (GET /bookmarks, FR-113), newest bookmark first. */
   | { kind: "bookmarks" }
+  /** The posts that quote the viewer's post `id` (GET /statuses/{id}/quotes, FR-114), newest first. */
+  | { kind: "quotes"; id: string }
   /** The posts of the account `id` on its profile. */
   | { kind: "account"; id: string; filter: AccountTimelineFilter };
 
@@ -67,6 +69,8 @@ function timelineQueryKey(timeline: Timeline) {
       return ["get", "/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag } } }, "pages"] as const;
     case "bookmarks":
       return ["get", "/bookmarks", "pages"] as const;
+    case "quotes":
+      return ["get", "/statuses/{id}/quotes", { params: { path: { id: timeline.id } } }, "pages"] as const;
     case "account":
       return ["get", "/accounts/{id}/statuses", { params: { path: { id: timeline.id }, query: accountTimelineQuery(timeline.filter) } }, "pages"] as const;
   }
@@ -87,6 +91,8 @@ async function fetchTimelinePage(api: Api, timeline: Timeline, cursor: string | 
         return api.fetch.GET("/timelines/tag/{hashtag}", { params: { path: { hashtag: timeline.tag }, query }, signal });
       case "bookmarks":
         return api.fetch.GET("/bookmarks", { params: { query }, signal });
+      case "quotes":
+        return api.fetch.GET("/statuses/{id}/quotes", { params: { path: { id: timeline.id }, query }, signal });
       case "account":
         return api.fetch.GET("/accounts/{id}/statuses", {
           params: { path: { id: timeline.id }, query: { ...accountTimelineQuery(timeline.filter), ...query } },

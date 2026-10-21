@@ -169,7 +169,8 @@ test.describe("costs", () => {
     const main = page.getByRole("main");
     const totalsRegion = main.getByRole("region", { name: message("admin.finance.totals.title"), exact: true });
     await expect(totalsRegion.getByRole("table")).toBeVisible();
-    await expect(totalsRegion.getByRole("radio", { name: new RegExp(message("costs.basis.amortized"), "u") })).toBeChecked();
+    const basis = totalsRegion.getByRole("radiogroup", { name: message("costs.basis"), exact: true });
+    await expect(basis.getByRole("radio", { name: message("costs.basis.amortized"), exact: true })).toBeChecked();
     await expect(totalsRegion.getByText(message("costs.totals.estimated"), { exact: true })).toBeVisible();
     await expect(totalsRegion.getByText(message("costs.rules.week_start"), { exact: true })).toBeVisible();
     await expect(main.getByText("الخادم الرئيسي")).toHaveAttribute("dir", "auto");
@@ -181,7 +182,9 @@ test.describe("costs", () => {
     await page.keyboard.press(test.info().project.use.locale === "ar-XB" ? "ArrowRight" : "ArrowLeft");
     await expect(totalsRegion.getByRole("tab", { name: message("costs.granularity.week"), exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(totalsRegion.getByRole("row", { name: /2026-W43/u })).toBeVisible();
-    await totalsRegion.getByRole("radio", { name: new RegExp(message("costs.basis.cash"), "u") }).check();
+    // React Aria hides the native radio under its drawing; the label is what the user presses.
+    await basis.getByText(message("costs.basis.cash"), { exact: true }).click();
+    await expect(basis.getByRole("radio", { name: message("costs.basis.cash"), exact: true })).toBeChecked();
     await expect(totalsRegion.getByText(message("costs.rules.cash"), { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/granularity=week/u);
     await expect(page).toHaveURL(/basis=cash/u);
@@ -192,7 +195,9 @@ test.describe("costs", () => {
     const form = main.getByRole("region", { name: message("admin.finance.new.title"), exact: true });
     await form.getByRole("textbox", { name: message("admin.finance.name"), exact: true }).fill("example.com");
     await form.getByRole("textbox", { name: message("admin.finance.provider"), exact: true }).fill("Registrar");
-    await form.getByRole("radio", { name: message("admin.finance.schedule.years"), exact: true }).check();
+    const schedule = form.getByRole("radiogroup", { name: message("admin.finance.schedule"), exact: true });
+    await schedule.getByText(message("admin.finance.schedule.years"), { exact: true }).click();
+    await expect(schedule.getByRole("radio", { name: message("admin.finance.schedule.years"), exact: true })).toBeChecked();
     await form.getByLabel(message("admin.finance.starts_on"), { exact: true }).fill("2026-04-10");
     await form.getByRole("textbox", { name: message("admin.finance.amount"), exact: true }).fill("1650");
     await form.getByRole("textbox", { name: message("admin.finance.currency"), exact: true }).fill("JPY");

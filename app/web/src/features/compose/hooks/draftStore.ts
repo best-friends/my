@@ -7,7 +7,7 @@
 // belongs to this tab only and ends with it; another account signing in on the same tab reads its own
 // key, and the end of the session removes it (it is the user's own data). Files picked but not yet uploaded live only in memory (their object URLs end with the page).
 import type { StorageKey, StoredCompose } from "../../../lib/storage";
-import type { CreateStatusRequest, Visibility } from "../api/compose";
+import type { CreateStatusRequest, QuotePolicy, Visibility } from "../api/compose";
 import type { PollDraft } from "./poll";
 
 /** One image of the draft. */
@@ -34,6 +34,10 @@ export type Draft = {
   /** The chosen language; null follows the preference. */
   language: string | null;
   replyToId: string | null;
+  /** The post quoted (FR-114), or null for none. */
+  quoteId: string | null;
+  /** Who may quote the post; null follows the preference. */
+  quotePolicy: QuotePolicy | null;
   attachments: readonly AttachmentDraft[];
   /** The poll of the post (FR-112), or null for none. A post with a poll attaches no media. */
   poll: PollDraft | null;
@@ -62,6 +66,8 @@ const emptyDraft: Draft = {
   visibility: null,
   language: null,
   replyToId: null,
+  quoteId: null,
+  quotePolicy: null,
   attachments: [],
   poll: null,
   idempotencyKey: null,
@@ -70,7 +76,8 @@ const emptyDraft: Draft = {
 /** Whether the draft has nothing the user would miss. */
 export function isEmptyDraft(draft: Draft): boolean {
   return (
-    draft.text.trim() === "" && draft.spoilerText.trim() === "" && draft.attachments.length === 0 && draft.poll === null && draft.replyToId === null
+    draft.text.trim() === "" && draft.spoilerText.trim() === "" && draft.attachments.length === 0 && draft.poll === null && draft.replyToId === null &&
+    draft.quoteId === null
   );
 }
 
@@ -135,13 +142,13 @@ export class DraftStore {
 
   /**
    * Moves the draft into the outbox under `idempotencyKey`, with the request `body` made from it, and starts an empty draft that keeps the
-   * chosen visibility and language.
+   * chosen visibility, language and quote policy.
    */
   send(idempotencyKey: string, body: CreateStatusRequest): OutboxItem {
     const item: OutboxItem = { idempotencyKey, body, draft: { ...this.#state.draft, idempotencyKey } };
-    const { visibility, language } = this.#state.draft;
+    const { visibility, language, quotePolicy } = this.#state.draft;
     this.#set({
-      draft: { ...emptyDraft, visibility: item.draft.replyToId === null ? visibility : null, language },
+      draft: { ...emptyDraft, visibility: item.draft.replyToId === null ? visibility : null, language, quotePolicy },
       outbox: [...this.#state.outbox.filter((o) => o.idempotencyKey !== idempotencyKey), item],
       error: null,
     });
