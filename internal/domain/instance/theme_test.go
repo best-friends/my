@@ -132,7 +132,7 @@ func TestNormalizeThemeRejectsDuplicates(t *testing.T) {
 func TestNormalizeThemeChecksContrastWithDefaults(t *testing.T) {
 	// A light accent fails on the default surfaces and under the default accent-fg (white), in the
 	// light scheme only.
-	_, err := instance.NormalizeTheme([]instance.ThemeTokenValue{{Token: "color-accent", Light: "#a0c4ff", Dark: "#57a2fe"}}, "")
+	_, err := instance.NormalizeTheme([]instance.ThemeTokenValue{{Token: "color-accent", Light: "#a0c4ff", Dark: "#a0c4ff"}}, "")
 	ps := problemsOf(t, err)
 	var pairs []string
 	for _, p := range ps {
@@ -149,7 +149,7 @@ func TestNormalizeThemeChecksContrastWithDefaults(t *testing.T) {
 	// Changing accent-fg along with it fixes the pair that the accent is the background of; the pair
 	// with the default accent-hover (dark blue) then fails instead.
 	_, err = instance.NormalizeTheme([]instance.ThemeTokenValue{
-		{Token: "color-accent", Light: "#a0c4ff", Dark: "#57a2fe"},
+		{Token: "color-accent", Light: "#a0c4ff", Dark: "#a0c4ff"},
 		{Token: "color-accent-fg", Light: "#000000", Dark: "#060d1a"}, //nolint:gosec // a design token, not a credential
 	}, "")
 	for _, p := range problemsOf(t, err) {
