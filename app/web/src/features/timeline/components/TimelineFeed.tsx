@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Button, Cluster, EmptyState, Feed, Link, Stack, Text, VisuallyHidden } from "@my/ui";
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { useT } from "../../../lib/i18n";
 import type { Status, Timeline } from "../api/timelines";
 import { useTimeline } from "../hooks/useTimeline";
@@ -17,6 +17,10 @@ export type TimelineFeedProps = {
   origin?: { notice: string; link: ReactNode };
   /** The posts pinned to the top of the timeline (a profile's, FR-403), before its own posts. */
   pinned?: readonly Status[];
+  /** A ref to the feed element, and how the feed keeps the reader's place when posts are inserted above (the home timeline's). */
+  feedRef?: Ref<HTMLDivElement> | undefined;
+  keepPosition?: boolean | undefined;
+  onTopChange?: ((atTop: boolean) => void) | undefined;
 };
 
 /** No pinned posts: one array for every render, so that the default is stable. */
@@ -26,7 +30,7 @@ const noPosts: readonly Status[] = [];
  * A timeline as a feed (web-client.md Y6) with its older pages loaded as the reader nears the end, or an
  * empty state. The first page comes from the route loader; render it inside the route that loads it.
  */
-export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, pinned = noPosts }: TimelineFeedProps) {
+export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, pinned = noPosts, feedRef, keepPosition, onTopChange }: TimelineFeedProps) {
   const t = useT();
   const { statuses, hasMore, isLoadingMore, loadMore, loadMoreError } = useTimeline(timeline);
   // A pinned post is in the timeline too, further down, so its entry at the top has a key of its own.
@@ -51,6 +55,9 @@ export function TimelineFeed({ timeline, "aria-labelledby": labelledBy, origin, 
       </VisuallyHidden>
       <Feed
         aria-labelledby={labelledBy}
+        feedRef={feedRef}
+        keepPosition={keepPosition}
+        onTopChange={onTopChange}
         items={entries}
         getKey={(entry) => entry.key}
         renderItem={(entry) => <StatusCard status={entry.status} pinned={entry.pinned} />}

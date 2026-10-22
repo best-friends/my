@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Real-time updates in every width × locale project (FR-207, ADR-0027, web-client.md Y7): a new post from
 // GET /api/v1/streaming waits behind the "N new posts" button and is not inserted until the button is
-// pressed, and a notification raises the unread badge. `vite preview` has no API, so the spec answers the
+// pressed (or is inserted at once when the reader chose it), and a notification raises the unread badge. `vite preview` has no API, so the spec answers the
 // OAuth refresh and the client API with `page.route`; each answer to the stream is one response body
 // that ends, so the client also reconnects throughout, as it does after the server ends a stream.
 import type { Page } from "@playwright/test";
@@ -113,6 +113,39 @@ test.describe("new posts in the home timeline", () => {
     await expect(feed.getByRole("article").first()).toContainText("arrived through the stream");
     await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
     await expect(page.getByRole("main").getByRole("status")).toBeEmpty();
+    await expectNoAxeViolations(makeAxeBuilder);
+    await expectNoHorizontalScroll(page);
+  });
+});
+
+test.describe("new posts inserted on their own (ADR-0077)", () => {
+  test("appear at the top at once, without a button, when the reader chose it", async ({ page, makeAxeBuilder }) => {
+    await signedInServer(page, sse("update", arriving));
+    await page.route("**/api/v1/preferences", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          locale: "en",
+          time_zone: "UTC",
+          time_zone_chosen: true,
+          default_visibility: "public",
+          default_quote_policy: "public",
+          default_post_language: "en",
+          require_media_description: false,
+          email_moderator_notifications: false,
+          timeline_auto_insert: true,
+          timeline_languages: [],
+        }),
+      }),
+    );
+    await page.goto("/home");
+    const feed = page.getByRole("feed");
+    await expect(feed.getByRole("article")).toHaveCount(3);
+    await expect(feed.getByRole("article").first()).toContainText("arrived through the stream");
+    await expect(page.getByRole("main").getByRole("status").getByRole("button")).toHaveCount(0);
+    // Nothing took focus.
+    await expect(page.getByRole("heading", { level: 1 })).not.toBeFocused();
     await expectNoAxeViolations(makeAxeBuilder);
     await expectNoHorizontalScroll(page);
   });

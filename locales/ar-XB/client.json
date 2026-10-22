@@ -10723,6 +10723,14 @@
     "defaultMessage": "‮∩sǝ ʇɥıs pǝʌıɔǝ's ʇıɯǝ zouǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "settings.timeline_auto_insert.description": {
+    "defaultMessage": "‮Nǝʍ dosʇs ɐddǝɐɹ ɐʇ ʇɥǝ ʇod oɟ ʎonɹ ɥoɯǝ ʇıɯǝʅıuǝ qʎ ʇɥǝɯsǝʅʌǝs, ɐup ʇɥǝ dosʇ ʎon ɐɹǝ ɹǝɐpıuƃ sʇɐʎs ʍɥǝɹǝ ıʇ ıs. Mɥıʅǝ ʎon ɥɐʌǝ ɟoɔns oɹ sǝʅǝɔʇǝp ʇǝxʇ ıu ʇɥǝ ʇıɯǝʅıuǝ, ʇɥǝʎ ʍɐıʇ qǝɥıup ʇɥǝ \"uǝʍ dosʇs\" qnʇʇou ıusʇǝɐp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "settings.timeline_auto_insert.label": {
+    "defaultMessage": "‮Sɥoʍ uǝʍ dosʇs ɐnʇoɯɐʇıɔɐʅʅʎ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "settings.timeline_languages.description": {
     "defaultMessage": "‮⊥ıɯǝʅıuǝs sɥoʍ dosʇs ıu ʇɥǝ ʅɐuƃnɐƃǝs ʎon ɔɥǝɔʞ. Ↄɥǝɔʞ uouǝ ʇo sǝǝ ǝʌǝɹʎ ʅɐuƃnɐƃǝ.‬",
     "description": "Generated from en by tools/i18n; do not edit."

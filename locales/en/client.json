@@ -8127,6 +8127,14 @@
     "defaultMessage": "Use this device's time zone",
     "description": "Button under the time zone select that changes the setting to the time zone of the device in use; shown only when they differ."
   },
+  "settings.timeline_auto_insert.description": {
+    "defaultMessage": "New posts appear at the top of your home timeline by themselves, and the post you are reading stays where it is. While you have focus or selected text in the timeline, they wait behind the \"new posts\" button instead.",
+    "description": "Help text of the switch that inserts new posts into the home timeline on their own."
+  },
+  "settings.timeline_auto_insert.label": {
+    "defaultMessage": "Show new posts automatically",
+    "description": "Label of the switch that makes the home timeline insert new posts on their own instead of waiting behind a button."
+  },
   "settings.timeline_languages.description": {
     "defaultMessage": "Timelines show posts in the languages you check. Check none to see every language.",
     "description": "Help text of the timeline languages."
