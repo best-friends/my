@@ -13,11 +13,11 @@ export type { TooltipTriggerComponentProps as TooltipTriggerProps } from "react-
 const tooltip = tv({
   slots: {
     root: [
-      "max-w-64 rounded-md border border-border-strong bg-surface-raised px-2 py-1 text-sm text-fg shadow-md",
+      "max-w-64 rounded-md bg-toast px-3 py-1 text-sm font-semibold text-toast-fg shadow-md dark:ring-1 dark:ring-border",
       "motion-safe:transition-opacity motion-safe:duration-fast data-entering:opacity-0 data-exiting:opacity-0",
     ],
     arrow: [
-      "block size-2 fill-surface-raised stroke-border-strong group-data-[placement=bottom]:rotate-180",
+      "block size-2 fill-toast group-data-[placement=bottom]:rotate-180",
       "group-data-[placement=left]:-rotate-90 group-data-[placement=right]:rotate-90",
     ],
   },

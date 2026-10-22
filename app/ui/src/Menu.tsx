@@ -27,7 +27,7 @@ const menu = tv({
       "motion-safe:transition motion-safe:duration-fast data-entering:opacity-0 data-exiting:opacity-0",
     ],
     // overscroll-contain keeps the scroll from chaining to the page on iOS WebKit (web-client.md §9).
-    list: "max-h-[inherit] min-w-48 overflow-y-auto overscroll-contain p-1 outline-none",
+    list: "max-h-[inherit] min-w-48 overflow-y-auto overscroll-contain p-1.5 outline-none",
     separator: "mx-2 my-1 border-t border-border",
   },
 });
