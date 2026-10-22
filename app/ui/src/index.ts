@@ -42,6 +42,7 @@ export {
   type MenuTriggerProps,
   type SubmenuTriggerProps,
 } from "./Menu";
+export { Pagination, type PaginationProps, type PaginationTarget } from "./Pagination";
 export { Popover, PopoverTrigger, type PopoverProps } from "./Popover";
 export { Tab, TabList, TabPanel, Tabs, type TabListProps, type TabPanelProps, type TabProps, type TabsProps } from "./Tabs";
 export { ToastProvider, useToast, type ToastApi, type ToastOptions, type ToastProviderProps, type ToastTone } from "./Toast";
