@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The supporters screen below its heading (ADR-0072, manage_supporters): the supporter program (whether it is enabled,
-// its payment provider, what it needs, and enabling or disabling it), the form that creates a plan, the plans by rank
+// its payment provider, what it needs, and enabling or disabling it), the state of the configured payment provider
+// (its mode, its last webhook, its last reconciliation with how to fix its failure, and the signs of a webhook that is
+// not set up right) with reconciling with it now (ADR-0074 §4), the form that creates a plan, the plans by rank
 // with changing and retiring them, the retired plans, and the subscriptions narrowed to a plan and a state with ending
 // one at once. The plans' names and descriptions are the administrators' text, shown with dir="auto". What a change did
 // stays in a StatusMessage (role="status"), and a refusal is said in the server's words next to its field or under the
@@ -24,10 +26,14 @@ import {
   TextField,
 } from "@my/ui";
 import { type SubmitEvent, useState } from "react";
+import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { useFormatMoney } from "../../costs";
 import { DateTime, DetailSection, type Permission, RecordList, RequirePermission } from "../../moderation";
 import {
+  type PaymentReconcileRun,
+  type PaymentStatus,
+  type PaymentStatusWarning,
   type SupporterPlan,
   supporterPlanDescriptionLimit,
   type SupporterPlanVisibility,
@@ -45,8 +51,11 @@ import {
   type PlanFieldError,
   planName,
   type SubscriptionActions,
+  useConfiguredPaymentProvider,
   useNewPlanForm,
+  usePaymentStatus,
   usePlanActions,
+  useRunPaymentReconcile,
   useSubscriptionActions,
   useSupporterPlans,
   useSupporterProgram,
@@ -58,6 +67,36 @@ const warningLabels: Readonly<Record<SupporterProgramWarning, ClientMessageKey>>
   no_email: "client:admin.supporters.warning.no_email",
   provider_mismatch: "client:admin.supporters.warning.provider_mismatch",
   no_commerce_disclosure: "client:admin.supporters.warning.no_commerce_disclosure",
+};
+
+const paymentModeLabels: Readonly<Record<PaymentStatus["mode"], ClientMessageKey>> = {
+  test: "client:admin.supporters.payment.mode.test",
+  live: "client:admin.supporters.payment.mode.live",
+};
+
+const paymentWarningLabels: Readonly<Record<PaymentStatusWarning, ClientMessageKey>> = {
+  no_webhook: "client:admin.supporters.payment.warning.no_webhook",
+  reconcile_corrected: "client:admin.supporters.payment.warning.reconcile_corrected",
+};
+
+const reconcileOutcomeLabels: Readonly<Record<PaymentReconcileRun["outcome"], ClientMessageKey>> = {
+  succeeded: "client:admin.supporters.payment.outcome.succeeded",
+  partial: "client:admin.supporters.payment.outcome.partial",
+  failed: "client:admin.supporters.payment.outcome.failed",
+};
+
+/** How to fix each reason a reconciliation stopped (ADR-0074 §2); a success has none. */
+const reconcileErrorFixes: Readonly<Record<Exclude<PaymentReconcileRun["error_kind"], "none">, ClientMessageKey>> = {
+  request_cap: "client:admin.supporters.payment.error.request_cap",
+  permission: "client:admin.supporters.payment.error.permission",
+  not_found: "client:admin.supporters.payment.error.not_found",
+  invalid_request: "client:admin.supporters.payment.error.invalid_request",
+  throttled: "client:admin.supporters.payment.error.throttled",
+  unavailable: "client:admin.supporters.payment.error.unavailable",
+  invalid_signature: "client:admin.supporters.payment.error.invalid_signature",
+  stale_signature: "client:admin.supporters.payment.error.stale_signature",
+  mode_mismatch: "client:admin.supporters.payment.error.mode_mismatch",
+  invalid_response: "client:admin.supporters.payment.error.invalid_response",
 };
 
 const visibilityLabels: Readonly<Record<SupporterPlanVisibility, ClientMessageKey>> = {
@@ -95,6 +134,7 @@ export function SupporterSettings({ filter, onFilterChange }: SupporterSettingsP
         <DetailSection title={t("client:admin.supporters.program.title")}>
           <Program />
         </DetailSection>
+        <PaymentProvider />
         <DetailSection title={t("client:admin.supporters.new.title")}>
           <NewPlanForm />
         </DetailSection>
@@ -159,6 +199,84 @@ function Program() {
         </p>
       )}
       <StatusMessage>{status}</StatusMessage>
+    </div>
+  );
+}
+
+/** The state of the configured payment provider and reconciling with it now; nothing without a configured provider. */
+function PaymentProvider() {
+  const t = useT();
+  const provider = useConfiguredPaymentProvider();
+  if (provider === undefined) return null;
+  return (
+    <DetailSection title={t("client:admin.supporters.payment.title")}>
+      <PaymentStatusView />
+    </DetailSection>
+  );
+}
+
+function PaymentStatusView() {
+  const t = useT();
+  const intl = useIntl();
+  const status = usePaymentStatus();
+  const reconcile = useRunPaymentReconcile();
+  const last = status.last_reconcile;
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-fg-muted">{t("client:admin.supporters.payment.description")}</p>
+      <DescriptionList columns={2}>
+        <DescriptionItem term={t("client:admin.supporters.payment.provider")}>
+          <span dir="ltr">{status.provider}</span>
+        </DescriptionItem>
+        <DescriptionItem term={t("client:admin.supporters.payment.mode")}>{t(paymentModeLabels[status.mode])}</DescriptionItem>
+        <DescriptionItem term={t("client:admin.supporters.payment.time_zone")}>
+          <span dir="ltr">{status.time_zone}</span>
+        </DescriptionItem>
+        <DescriptionItem term={t("client:admin.supporters.payment.last_webhook")}>
+          {status.last_webhook_at === undefined ? t("client:admin.supporters.payment.no_webhook") : <DateTime value={status.last_webhook_at} />}
+        </DescriptionItem>
+        <DescriptionItem term={t("client:admin.supporters.payment.last_reconcile")}>
+          {last === undefined ? (
+            t("client:admin.supporters.payment.never")
+          ) : (
+            <span className="flex flex-col">
+              <DateTime value={last.occurred_at} />
+              <span>{t(reconcileOutcomeLabels[last.outcome])}</span>
+            </span>
+          )}
+        </DescriptionItem>
+        {last !== undefined && (
+          <>
+            <DescriptionItem term={t("client:admin.supporters.payment.requests")}>{intl.formatNumber(last.requests)}</DescriptionItem>
+            <DescriptionItem term={t("client:admin.supporters.payment.checked")}>{intl.formatNumber(last.checked_subscriptions)}</DescriptionItem>
+            <DescriptionItem term={t("client:admin.supporters.payment.corrected")}>{intl.formatNumber(last.corrected_subscriptions)}</DescriptionItem>
+          </>
+        )}
+      </DescriptionList>
+      {last !== undefined && last.error_kind !== "none" && (
+        <p className={last.outcome === "failed" ? "text-danger" : "text-fg-muted"}>{t(reconcileErrorFixes[last.error_kind])}</p>
+      )}
+      {status.warnings.length > 0 && (
+        <ul className="flex flex-col gap-1">
+          {status.warnings.map((warning) => (
+            <li key={warning} className="text-warning">
+              {t(paymentWarningLabels[warning])}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-col items-start gap-2">
+        <p className="text-fg-muted">{t("client:admin.supporters.payment.reconcile.description")}</p>
+        <Button size="sm" isPending={reconcile.isPending} onPress={reconcile.run}>
+          {t("client:admin.supporters.payment.reconcile.run")}
+        </Button>
+      </div>
+      {reconcile.error !== undefined && (
+        <p role="alert" className="text-danger">
+          {reconcile.error}
+        </p>
+      )}
+      <StatusMessage>{reconcile.status}</StatusMessage>
     </div>
   );
 }

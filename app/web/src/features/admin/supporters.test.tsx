@@ -2,7 +2,8 @@
 // The supporters screen through the whole app (web-client.md T4, ADR-0072): an administrator with manage_supporters
 // sees the program, the plans and the subscriptions; enables the program or sees why the server refuses; creates a
 // plan or sees the field the server refuses; retires a plan and ends a subscription after asking; narrows the
-// subscriptions by state in the URL. A viewer without the permission has neither the screen nor its menu entry; with
+// subscriptions by state in the URL; sees the payment provider's state with how to fix its failure and its warnings,
+// reconciles now or sees why it is too soon, and sees no provider section without a configured provider. A viewer without the permission has neither the screen nor its menu entry; with
 // MSW playing the API.
 import { screen, waitFor, within } from "@testing-library/react";
 import { http, HttpResponse } from "msw";
@@ -11,7 +12,7 @@ import type { Schemas } from "../../test/fixtures";
 import { apiBase, operatorHandler, signedInHandler } from "../../test/msw/http";
 import { server } from "../../test/msw/server";
 import { renderApp } from "../../test/render";
-import { supporterPlanFixture, supporterProgramFixture, supporterSubscriptionFixture } from "./test/handlers";
+import { paymentStatusFixture, supporterPlanFixture, supporterProgramFixture, supporterSubscriptionFixture } from "./test/handlers";
 
 beforeEach(() => {
   document.documentElement.lang = "en";
@@ -118,6 +119,76 @@ describe("the supporters screen", () => {
 
     expect(within(program).getByRole("switch", { name: "Enable the supporter program" })).toBeDisabled();
     expect(within(program).getByText("No payment provider is configured, so the program cannot be enabled.")).toBeInTheDocument();
+  });
+
+  test("shows the payment provider's state, how to fix the last reconciliation, and the webhook warnings", async () => {
+    server.use(
+      http.get(`${apiBase}/admin/payment_status`, () => {
+        const { last_webhook_at: _webhook, ...status } = paymentStatusFixture({
+          mode: "live",
+          last_reconcile: {
+            outcome: "failed",
+            error_kind: "permission",
+            requests: 3,
+            checked_subscriptions: 12,
+            corrected_subscriptions: 2,
+            occurred_at: "2026-10-22T00:00:00Z",
+          },
+          warnings: ["no_webhook", "reconcile_corrected"],
+        });
+        return HttpResponse.json(status);
+      }),
+    );
+    await renderApp({ path: "/admin/supporters" });
+    const payment = await screen.findByRole("region", { name: "Payment provider" });
+
+    expect(within(payment).getByText("stripe")).toBeInTheDocument();
+    expect(within(payment).getByText("Live")).toBeInTheDocument();
+    expect(within(payment).getByText("None in the last 45 days")).toBeInTheDocument();
+    expect(within(payment).getByText("Failed")).toBeInTheDocument();
+    expect(within(payment).getByText("12")).toBeInTheDocument();
+    expect(within(payment).getByText(/The provider refused the API key/u)).toBeInTheDocument();
+    expect(within(payment).getByText(/No webhook delivery is recorded in the last 45 days\./u)).toBeInTheDocument();
+    expect(within(payment).getByText(/The last reconciliation corrected subscriptions/u)).toBeInTheDocument();
+  });
+
+  test("reconciles now, and explains a second one within the hour", async () => {
+    let queued = 0;
+    server.use(
+      http.post(`${apiBase}/admin/payment_reconciles`, () => {
+        queued += 1;
+        if (queued > 1) return refusal(429, "/api/v1/problems/rate-limited", "Too many requests.", "Try again later.");
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+    const { user } = await renderApp({ path: "/admin/supporters" });
+    const payment = await screen.findByRole("region", { name: "Payment provider" });
+    expect(within(payment).getByText("Test: nothing is charged")).toBeInTheDocument();
+    expect(within(payment).getByText("Never")).toBeInTheDocument();
+
+    await user.click(within(payment).getByRole("button", { name: "Reconcile now" }));
+    expect(await within(payment).findByRole("status")).toHaveTextContent("The reconciliation is queued.");
+
+    await user.click(within(payment).getByRole("button", { name: "Reconcile now" }));
+    expect(await within(payment).findByRole("alert")).toHaveTextContent("A reconciliation already ran in this hour (UTC).");
+    expect(queued).toBe(2);
+  });
+
+  test("shows no payment provider section without a configured provider", async () => {
+    const { configured_provider: _provider, ...noProvider } = supporterProgramFixture({ can_enable: false, warnings: ["no_provider"] });
+    let read = false;
+    server.use(
+      http.get(`${apiBase}/admin/supporter_program`, () => HttpResponse.json(noProvider)),
+      http.get(`${apiBase}/admin/payment_status`, () => {
+        read = true;
+        return refusal(404, "/api/v1/problems/not-found", "Not found.", "No payment provider is configured.");
+      }),
+    );
+    await renderApp({ path: "/admin/supporters" });
+
+    expect(await screen.findByRole("region", { name: "Supporter program" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Payment provider" })).not.toBeInTheDocument();
+    expect(read).toBe(false);
   });
 
   test("shows why disabling is refused while subscriptions go on", async () => {

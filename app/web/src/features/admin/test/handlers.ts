@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default MSW handlers of the server administration feature (web-client.md §7): the job queue, the settings, the rules, the
-// server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, the billing imports, and the supporter program with its plans and subscriptions, none by default. The default viewer has no permissions, so the screens' tests start with
+// server's texts, the custom emoji, the webhooks, the announcements, the relays, the cost items and their totals, the billing imports, and the supporter program with its plans, subscriptions and payment provider, none by default. The default viewer has no permissions, so the screens' tests start with
 // `server.use(operatorHandler(...))` (test/msw/http.ts).
 import { http, HttpResponse } from "msw";
 import { otherAccountFixture, type Schemas } from "../../../test/fixtures";
@@ -23,6 +23,11 @@ export function supporterProgramFixture(overrides: Partial<Schemas["AdminSupport
     warnings: [],
     ...overrides,
   };
+}
+
+/** The state of the payment provider as the admin API answers it: Stripe in test mode, never reconciled, with `overrides`. */
+export function paymentStatusFixture(overrides: Partial<Schemas["PaymentStatus"]> = {}): Schemas["PaymentStatus"] {
+  return { provider: "stripe", mode: "test", time_zone: "UTC", last_webhook_at: "2026-10-21T00:00:00Z", warnings: [], ...overrides };
 }
 
 /** A supporter plan as the admin API answers it, created at 2026-10-20T00:00:00Z with its prices ready, with `overrides`. */
@@ -483,8 +488,9 @@ export const handlers = [
   http.get(`${apiBase}/admin/income_movements`, ({ request }) => withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["IncomeMovementPage"]))),
   http.post(`${apiBase}/admin/billing_imports/:source/runs`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
   // operationIds getSupporterProgram, setSupporterProgram, listAdminSupporterPlans, createSupporterPlan,
-  // updateSupporterPlan, retireSupporterPlan, listSupporterSubscriptions, cancelSupporterSubscription: a disabled program
-  // without plans or subscriptions; a change is answered as sent.
+  // updateSupporterPlan, retireSupporterPlan, listSupporterSubscriptions, cancelSupporterSubscription, getPaymentStatus,
+  // runPaymentReconcile: a disabled program without plans or subscriptions, and Stripe in test mode; a change is
+  // answered as sent.
   http.get(`${apiBase}/admin/supporter_program`, ({ request }) => withViewer(request, () => HttpResponse.json(supporterProgramFixture()))),
   http.put(`${apiBase}/admin/supporter_program`, async ({ request }) => {
     const { enabled } = (await request.clone().json()) as Schemas["AdminSupporterProgramRequest"];
@@ -510,4 +516,6 @@ export const handlers = [
     withViewer(request, () => HttpResponse.json({ items: [] } satisfies Schemas["AdminSupporterSubscriptionPage"])),
   ),
   http.post(`${apiBase}/admin/supporter_subscriptions/:id/cancel`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
+  http.get(`${apiBase}/admin/payment_status`, ({ request }) => withViewer(request, () => HttpResponse.json(paymentStatusFixture()))),
+  http.post(`${apiBase}/admin/payment_reconciles`, ({ request }) => withViewer(request, () => new HttpResponse(null, { status: 204 }))),
 ];

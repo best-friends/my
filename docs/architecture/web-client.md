@@ -833,15 +833,18 @@ API の経路はどちらも `/admin/*` で（[client-api.md](client-api.md) の
   - 公開範囲（`finance_visibility`・`income_visibility`）はサーバーの設定（`manage_settings`）に置くので、この画面は変えない。画面の説明の下に、`GET /instance` から読んだいまの費用と収入の公開範囲を書き、`manage_settings` を持つ閲覧者には `/admin/settings` へのリンクを付ける。
     その下に、`view_finance` を持つ人に見せる範囲（`finance_viewer_*`、ADR-0070 §5。項目の名前とメモを見せるか、収入を合計だけか、プランごとの人数までか）を、`GET /finance/cost_totals` の `viewer` から読んで書く。
   - 集計の表・内訳・規則は運営の費用のページと同じ部品（`features/costs`）で出す。
-- **サポーター**（`/admin/supporters`、`manage_supporters`、FR-910〜FR-912、[ADR-0072](../adr/0072-supporter-plans-and-roles.md)）: 「課金」「プラン」「廃止したプラン」「プランを作成する」「加入者」の区画（`h2` の `section`）。
+- **サポーター**（`/admin/supporters`、`manage_supporters`、FR-910〜FR-912、[ADR-0072](../adr/0072-supporter-plans-and-roles.md)）: 「課金」「決済の事業者」「プラン」「廃止したプラン」「プランを作成する」「加入者」の区画（`h2` の `section`）。
   - **課金**（`GET`・`PUT /admin/supporter_program`）: 有効か、有効にしたときの事業者と設定の事業者、続いている加入の数、警告（事業者がない・メールを送らない・事業者が違う・特商法の表記がない。表記の警告は `/admin/documents` へリンクする）。
     有効と無効の切り替えは `can_enable` が偽のとき有効にできない。サーバーの拒否（409 `supporters-unavailable`・`live-subscriptions`）はその `detail` を区画の中（`role="alert"`）に出す。
+  - **決済の事業者**（`GET /admin/payment_status`、[ADR-0074](../adr/0074-payment-provider-port.md) §4）: 課金の `configured_provider` があるときだけ出す（ないとき API は 404）。事業者・モード（テストは請求が起きないことを添える）・レポートのタイムゾーン・最後に webhook を受けた時刻（記録がなければ 45 日以内にないこと）・最後の照合の時刻と結果・要求の数・読み直した加入と直した加入の数の説明リスト。
+    最後の照合の失敗の種類（`error_kind`）ごとに直し方を `client*` のメッセージで出し、`warnings`（`no_webhook`・`reconcile_corrected`）は webhook の設定の誤りとして確かめることを警告で出す。
+    「今すぐ照合する」は `POST /admin/payment_reconciles` で、成功したら状態と監査ログを取り直して `StatusMessage` に出し、`429`（同じ UTC の 1 時間の 2 回目）は次の 1 時間に試すよう `role="alert"` で案内する。
   - **プラン**（`GET /admin/supporter_plans`）: 順位の順。各プランは名前の見出し（`h3`、`dir="auto"`）と、月額と年額（その通貨の `Intl.NumberFormat`）・割引率・絵文字の上限・順位・公開・ロールのキーと位置と権限・加入中の数・「準備中」（`prices_ready` が偽）の説明リスト。
     「編集」（条件とロールの位置のダイアログ。ロールの権限は区分 `member` の権限ができるまで表示だけ）と「廃止」（元に戻せず、加入が期間の終わりに解約されるので `ConfirmDialog`（`danger`）で確かめる）を出す。廃止したプランは別の区画に並べ、操作を出さない。
   - **作成**: ロールのキー（`manage_supporters` だけの閲覧者はロールの一覧を読めないので選択でなく入力）・名前・説明・月額と通貨・割引率・絵文字の上限・順位・公開のフォーム。サーバーの拒否（422 `invalid-supporter-plan`）は `reason` の項目に `detail` を出し、入力を残す。
   - **加入者**（`GET /admin/supporter_subscriptions`）: 新しい順（「さらに表示」）、プランと状態で絞り込み（URL の `?plan=`・`?state=`）。各加入は状態・プラン・間隔・金額・期間の終わり・猶予の終わり・利用者名（消去したアカウントは「削除されたアカウント」）で、「すぐ解約」は返金せず元に戻せないので `ConfirmDialog`（`danger`）で確かめる。
   - 加入の操作（加入・変更・解約）と利用者の画面は #922 が作り、この画面は出さない。
-  `features/admin/supporters.test.tsx` は、課金の状態とプランと廃止したプランと加入者、有効化とその拒否、有効にできないときの切り替え、加入が続くときの無効化の拒否、作成とその拒否の項目、確認を経た廃止、確認を経たすぐの解約と状態の絞り込み、何も出せないときの理由、`manage_supporters` の有無によるメニューの出し分けを検査する。
+  `features/admin/supporters.test.tsx` は、課金の状態とプランと廃止したプランと加入者、有効化とその拒否、有効にできないときの切り替え、加入が続くときの無効化の拒否、作成とその拒否の項目、確認を経た廃止、確認を経たすぐの解約と状態の絞り込み、事業者の状態と失敗の直し方と警告、今すぐの照合とその `429` の案内、設定の事業者がないときに区画を出さず状態を読まないこと、何も出せないときの理由、`manage_supporters` の有無によるメニューの出し分けを検査する。
 - **ロール**（`/admin/roles`、`manage_roles`、FR-720）: 「ロールを作成する」と「このサーバーのロール」の 2 つの区画（`h2` の `section`）。閲覧者のいちばん高いロールは `GET /admin/accounts/{閲覧者の ID}/roles` で読む。
   - **作成**: キー（必須、64 文字までの英小文字・数字・`_`・`-`）・位置（必須、0 から閲覧者のいちばん高いロールの位置（999 まで）の整数）・権限（区分ごとの `role="group"` の中の `Checkbox`。閲覧者のロールにない権限は選べない）のフォーム。
     キーと位置は送る前に確かめて欄のエラーにする。サーバーの拒否（422 `invalid-role`）は `reason` の項目（キー・位置・権限）に `detail` を出し、`missing_permission` では足りない権限（`missing_permissions`）も並べて、入力を残す。

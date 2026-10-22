@@ -3138,6 +3138,74 @@ export interface MessageArgs {
   "client:admin.supporters.new.submit": {};
   /** Create a plan */
   "client:admin.supporters.new.title": {};
+  /** Subscriptions read again */
+  "client:admin.supporters.payment.checked": {};
+  /** Subscriptions corrected */
+  "client:admin.supporters.payment.corrected": {};
+  /** The payment provider of the server's configuration: its mode, the webhook deliveries it sends, and the reconciliation that reads subscriptions and money movements from it again every few hours. */
+  "client:admin.supporters.payment.description": {};
+  /** The provider refused a request of the server. Look for the request in the server's log and in the provider's dashboard; if it goes on, report it to the developers of my. */
+  "client:admin.supporters.payment.error.invalid_request": {};
+  /** The provider answered in a form the server cannot read. The next reconciliation tries again; if it goes on, report it to the developers of my. */
+  "client:admin.supporters.payment.error.invalid_response": {};
+  /** A signature did not match. Check that the webhook signing secret in the server's environment is the one of the endpoint registered at the provider. */
+  "client:admin.supporters.payment.error.invalid_signature": {};
+  /** The mode of the API key (test or live) differs from the provider's. Use the API key and the webhook signing secret of the same mode, then redeploy. */
+  "client:admin.supporters.payment.error.mode_mismatch": {};
+  /** The provider did not find something the server asked for. Check that the key belongs to the account the server has used, and that its products and prices are not deleted in the provider's dashboard. */
+  "client:admin.supporters.payment.error.not_found": {};
+  /** The provider refused the API key: it is wrong or lacks permissions. Check the secret key in the server's environment and the permissions of a restricted key, then redeploy. */
+  "client:admin.supporters.payment.error.permission": {};
+  /** It used the payments_reconcile_max_requests requests of one run, and a continuation takes over in a minute. If this happens on most runs, raise payments_reconcile_max_requests or lengthen payments_reconcile_interval. */
+  "client:admin.supporters.payment.error.request_cap": {};
+  /** A signature's time was more than five minutes off. Check that the server's clock is synchronized. */
+  "client:admin.supporters.payment.error.stale_signature": {};
+  /** The provider limited the server's requests. The next reconciliation tries again; nothing needs fixing unless it goes on. */
+  "client:admin.supporters.payment.error.throttled": {};
+  /** The provider was busy or could not be reached. The next reconciliation tries again; if it goes on, check the server's network and the provider's status page. */
+  "client:admin.supporters.payment.error.unavailable": {};
+  /** Last reconciliation */
+  "client:admin.supporters.payment.last_reconcile": {};
+  /** Last webhook */
+  "client:admin.supporters.payment.last_webhook": {};
+  /** Mode */
+  "client:admin.supporters.payment.mode": {};
+  /** Live */
+  "client:admin.supporters.payment.mode.live": {};
+  /** Test: nothing is charged */
+  "client:admin.supporters.payment.mode.test": {};
+  /** Never */
+  "client:admin.supporters.payment.never": {};
+  /** None in the last 45 days */
+  "client:admin.supporters.payment.no_webhook": {};
+  /** Failed */
+  "client:admin.supporters.payment.outcome.failed": {};
+  /** Partly done: a continuation takes over */
+  "client:admin.supporters.payment.outcome.partial": {};
+  /** Succeeded */
+  "client:admin.supporters.payment.outcome.succeeded": {};
+  /** Provider */
+  "client:admin.supporters.payment.provider": {};
+  /** Reconciling reads the subscriptions and the money movements from the provider again now, besides the periodic reconciliation. It can run once an hour (UTC), and the audit log records it. */
+  "client:admin.supporters.payment.reconcile.description": {};
+  /** Could not start the reconciliation: {reason} */
+  "client:admin.supporters.payment.reconcile.failed": { reason: string };
+  /** The reconciliation is queued. Its result appears here once it has run. */
+  "client:admin.supporters.payment.reconcile.queued": {};
+  /** Reconcile now */
+  "client:admin.supporters.payment.reconcile.run": {};
+  /** A reconciliation already ran in this hour (UTC). Try again in the next hour. */
+  "client:admin.supporters.payment.reconcile.too_soon": {};
+  /** Requests to the provider */
+  "client:admin.supporters.payment.requests": {};
+  /** Time zone of the reports */
+  "client:admin.supporters.payment.time_zone": {};
+  /** Payment provider */
+  "client:admin.supporters.payment.title": {};
+  /** No webhook delivery is recorded in the last 45 days. Check that the webhook endpoint is registered at the provider with this server's URL and that its signing secret is in the server's environment. */
+  "client:admin.supporters.payment.warning.no_webhook": {};
+  /** The last reconciliation corrected subscriptions that the webhooks should have updated. Check the webhook endpoint's URL, its events and its signing secret. */
+  "client:admin.supporters.payment.warning.reconcile_corrected": {};
   /** Monthly price */
   "client:admin.supporters.plan.amount": {};
   /** In the main unit of the currency, such as 500 or 4.99. */

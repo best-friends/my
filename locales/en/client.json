@@ -10891,6 +10891,142 @@
     "defaultMessage": "Write them in the terms and policies",
     "description": "Link from the warning to the terms and policies screen."
   },
+  "admin.supporters.payment.title": {
+    "defaultMessage": "Payment provider",
+    "description": "Heading of the section of the payment provider's state on the supporters screen."
+  },
+  "admin.supporters.payment.description": {
+    "defaultMessage": "The payment provider of the server's configuration: its mode, the webhook deliveries it sends, and the reconciliation that reads subscriptions and money movements from it again every few hours.",
+    "description": "Description of the payment provider section."
+  },
+  "admin.supporters.payment.provider": {
+    "defaultMessage": "Provider",
+    "description": "Term of the payment provider's name."
+  },
+  "admin.supporters.payment.mode": {
+    "defaultMessage": "Mode",
+    "description": "Term of the payment provider's mode (test or live)."
+  },
+  "admin.supporters.payment.mode.test": {
+    "defaultMessage": "Test: nothing is charged",
+    "description": "Value of the mode for test credentials."
+  },
+  "admin.supporters.payment.mode.live": {
+    "defaultMessage": "Live",
+    "description": "Value of the mode for live credentials."
+  },
+  "admin.supporters.payment.time_zone": {
+    "defaultMessage": "Time zone of the reports",
+    "description": "Term of the time zone in which the provider's income is dated."
+  },
+  "admin.supporters.payment.last_webhook": {
+    "defaultMessage": "Last webhook",
+    "description": "Term of when the newest webhook delivery was received."
+  },
+  "admin.supporters.payment.no_webhook": {
+    "defaultMessage": "None in the last 45 days",
+    "description": "Value of the last webhook when no delivery is recorded (deliveries are kept 45 days)."
+  },
+  "admin.supporters.payment.last_reconcile": {
+    "defaultMessage": "Last reconciliation",
+    "description": "Term of the last reconciliation attempt with its outcome."
+  },
+  "admin.supporters.payment.never": {
+    "defaultMessage": "Never",
+    "description": "Value of the last reconciliation before the first."
+  },
+  "admin.supporters.payment.outcome.succeeded": {
+    "defaultMessage": "Succeeded",
+    "description": "Outcome of a reconciliation that succeeded."
+  },
+  "admin.supporters.payment.outcome.partial": {
+    "defaultMessage": "Partly done: a continuation takes over",
+    "description": "Outcome of a reconciliation that used its request cap; a continuation goes on."
+  },
+  "admin.supporters.payment.outcome.failed": {
+    "defaultMessage": "Failed",
+    "description": "Outcome of a reconciliation that failed."
+  },
+  "admin.supporters.payment.requests": {
+    "defaultMessage": "Requests to the provider",
+    "description": "Term of the requests the last reconciliation sent."
+  },
+  "admin.supporters.payment.checked": {
+    "defaultMessage": "Subscriptions read again",
+    "description": "Term of the subscriptions the last reconciliation read again."
+  },
+  "admin.supporters.payment.corrected": {
+    "defaultMessage": "Subscriptions corrected",
+    "description": "Term of the subscriptions whose state the last reconciliation changed."
+  },
+  "admin.supporters.payment.error.request_cap": {
+    "defaultMessage": "It used the payments_reconcile_max_requests requests of one run, and a continuation takes over in a minute. If this happens on most runs, raise payments_reconcile_max_requests or lengthen payments_reconcile_interval.",
+    "description": "How to fix a reconciliation that stopped at its request cap."
+  },
+  "admin.supporters.payment.error.permission": {
+    "defaultMessage": "The provider refused the API key: it is wrong or lacks permissions. Check the secret key in the server's environment and the permissions of a restricted key, then redeploy.",
+    "description": "How to fix a reconciliation refused for the API key."
+  },
+  "admin.supporters.payment.error.not_found": {
+    "defaultMessage": "The provider did not find something the server asked for. Check that the key belongs to the account the server has used, and that its products and prices are not deleted in the provider's dashboard.",
+    "description": "How to fix a reconciliation that failed for a missing object."
+  },
+  "admin.supporters.payment.error.invalid_request": {
+    "defaultMessage": "The provider refused a request of the server. Look for the request in the server's log and in the provider's dashboard; if it goes on, report it to the developers of my.",
+    "description": "How to fix a reconciliation that failed for an invalid request."
+  },
+  "admin.supporters.payment.error.throttled": {
+    "defaultMessage": "The provider limited the server's requests. The next reconciliation tries again; nothing needs fixing unless it goes on.",
+    "description": "How to fix a reconciliation that was rate limited."
+  },
+  "admin.supporters.payment.error.unavailable": {
+    "defaultMessage": "The provider was busy or could not be reached. The next reconciliation tries again; if it goes on, check the server's network and the provider's status page.",
+    "description": "How to fix a reconciliation that failed because the provider was unavailable."
+  },
+  "admin.supporters.payment.error.invalid_signature": {
+    "defaultMessage": "A signature did not match. Check that the webhook signing secret in the server's environment is the one of the endpoint registered at the provider.",
+    "description": "How to fix a failure for an invalid signature."
+  },
+  "admin.supporters.payment.error.stale_signature": {
+    "defaultMessage": "A signature's time was more than five minutes off. Check that the server's clock is synchronized.",
+    "description": "How to fix a failure for a stale signature."
+  },
+  "admin.supporters.payment.error.mode_mismatch": {
+    "defaultMessage": "The mode of the API key (test or live) differs from the provider's. Use the API key and the webhook signing secret of the same mode, then redeploy.",
+    "description": "How to fix a failure for a mode mismatch."
+  },
+  "admin.supporters.payment.error.invalid_response": {
+    "defaultMessage": "The provider answered in a form the server cannot read. The next reconciliation tries again; if it goes on, report it to the developers of my.",
+    "description": "How to fix a failure for an unreadable response."
+  },
+  "admin.supporters.payment.warning.no_webhook": {
+    "defaultMessage": "No webhook delivery is recorded in the last 45 days. Check that the webhook endpoint is registered at the provider with this server's URL and that its signing secret is in the server's environment.",
+    "description": "Warning of the payment provider section: no webhook delivery is recorded."
+  },
+  "admin.supporters.payment.warning.reconcile_corrected": {
+    "defaultMessage": "The last reconciliation corrected subscriptions that the webhooks should have updated. Check the webhook endpoint's URL, its events and its signing secret.",
+    "description": "Warning of the payment provider section: the last reconciliation corrected subscriptions."
+  },
+  "admin.supporters.payment.reconcile.description": {
+    "defaultMessage": "Reconciling reads the subscriptions and the money movements from the provider again now, besides the periodic reconciliation. It can run once an hour (UTC), and the audit log records it.",
+    "description": "Description of the button that reconciles with the payment provider now."
+  },
+  "admin.supporters.payment.reconcile.run": {
+    "defaultMessage": "Reconcile now",
+    "description": "Button that reconciles with the payment provider now."
+  },
+  "admin.supporters.payment.reconcile.queued": {
+    "defaultMessage": "The reconciliation is queued. Its result appears here once it has run.",
+    "description": "Status message after queueing a reconciliation."
+  },
+  "admin.supporters.payment.reconcile.too_soon": {
+    "defaultMessage": "A reconciliation already ran in this hour (UTC). Try again in the next hour.",
+    "description": "Error of a reconciliation started again within the same UTC hour."
+  },
+  "admin.supporters.payment.reconcile.failed": {
+    "defaultMessage": "Could not start the reconciliation: {reason}",
+    "description": "Error of starting a reconciliation, with the server's reason."
+  },
   "admin.supporters.new.title": {
     "defaultMessage": "Create a plan",
     "description": "Heading of the section of the supporters screen with the form of a new plan."

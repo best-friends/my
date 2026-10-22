@@ -6271,6 +6271,142 @@
     "defaultMessage": "‮Ↄɹǝɐʇǝ ɐ dʅɐu‬",
     "description": "Generated from en by tools/i18n; do not edit."
   },
+  "admin.supporters.payment.checked": {
+    "defaultMessage": "‮Snqsɔɹıdʇıous ɹǝɐp ɐƃɐıu‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.corrected": {
+    "defaultMessage": "‮Snqsɔɹıdʇıous ɔoɹɹǝɔʇǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.description": {
+    "defaultMessage": "‮⊥ɥǝ dɐʎɯǝuʇ dɹoʌıpǝɹ oɟ ʇɥǝ sǝɹʌǝɹ's ɔouɟıƃnɹɐʇıou: ıʇs ɯopǝ, ʇɥǝ ʍǝqɥooʞ pǝʅıʌǝɹıǝs ıʇ sǝups, ɐup ʇɥǝ ɹǝɔouɔıʅıɐʇıou ʇɥɐʇ ɹǝɐps snqsɔɹıdʇıous ɐup ɯouǝʎ ɯoʌǝɯǝuʇs ɟɹoɯ ıʇ ɐƃɐıu ǝʌǝɹʎ ɟǝʍ ɥonɹs.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.invalid_request": {
+    "defaultMessage": "‮⊥ɥǝ dɹoʌıpǝɹ ɹǝɟnsǝp ɐ ɹǝbnǝsʇ oɟ ʇɥǝ sǝɹʌǝɹ. ⅂ooʞ ɟoɹ ʇɥǝ ɹǝbnǝsʇ ıu ʇɥǝ sǝɹʌǝɹ's ʅoƃ ɐup ıu ʇɥǝ dɹoʌıpǝɹ's pɐsɥqoɐɹp; ıɟ ıʇ ƃoǝs ou, ɹǝdoɹʇ ıʇ ʇo ʇɥǝ pǝʌǝʅodǝɹs oɟ ɯʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.invalid_response": {
+    "defaultMessage": "‮⊥ɥǝ dɹoʌıpǝɹ ɐusʍǝɹǝp ıu ɐ ɟoɹɯ ʇɥǝ sǝɹʌǝɹ ɔɐuuoʇ ɹǝɐp. ⊥ɥǝ uǝxʇ ɹǝɔouɔıʅıɐʇıou ʇɹıǝs ɐƃɐıu; ıɟ ıʇ ƃoǝs ou, ɹǝdoɹʇ ıʇ ʇo ʇɥǝ pǝʌǝʅodǝɹs oɟ ɯʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.invalid_signature": {
+    "defaultMessage": "‮∀ sıƃuɐʇnɹǝ pıp uoʇ ɯɐʇɔɥ. Ↄɥǝɔʞ ʇɥɐʇ ʇɥǝ ʍǝqɥooʞ sıƃuıuƃ sǝɔɹǝʇ ıu ʇɥǝ sǝɹʌǝɹ's ǝuʌıɹouɯǝuʇ ıs ʇɥǝ ouǝ oɟ ʇɥǝ ǝupdoıuʇ ɹǝƃısʇǝɹǝp ɐʇ ʇɥǝ dɹoʌıpǝɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.mode_mismatch": {
+    "defaultMessage": "‮⊥ɥǝ ɯopǝ oɟ ʇɥǝ ∀ԀI ʞǝʎ (ʇǝsʇ oɹ ʅıʌǝ) pıɟɟǝɹs ɟɹoɯ ʇɥǝ dɹoʌıpǝɹ's. ∩sǝ ʇɥǝ ∀ԀI ʞǝʎ ɐup ʇɥǝ ʍǝqɥooʞ sıƃuıuƃ sǝɔɹǝʇ oɟ ʇɥǝ sɐɯǝ ɯopǝ, ʇɥǝu ɹǝpǝdʅoʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.not_found": {
+    "defaultMessage": "‮⊥ɥǝ dɹoʌıpǝɹ pıp uoʇ ɟıup soɯǝʇɥıuƃ ʇɥǝ sǝɹʌǝɹ ɐsʞǝp ɟoɹ. Ↄɥǝɔʞ ʇɥɐʇ ʇɥǝ ʞǝʎ qǝʅouƃs ʇo ʇɥǝ ɐɔɔonuʇ ʇɥǝ sǝɹʌǝɹ ɥɐs nsǝp, ɐup ʇɥɐʇ ıʇs dɹopnɔʇs ɐup dɹıɔǝs ɐɹǝ uoʇ pǝʅǝʇǝp ıu ʇɥǝ dɹoʌıpǝɹ's pɐsɥqoɐɹp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.permission": {
+    "defaultMessage": "‮⊥ɥǝ dɹoʌıpǝɹ ɹǝɟnsǝp ʇɥǝ ∀ԀI ʞǝʎ: ıʇ ıs ʍɹouƃ oɹ ʅɐɔʞs dǝɹɯıssıous. Ↄɥǝɔʞ ʇɥǝ sǝɔɹǝʇ ʞǝʎ ıu ʇɥǝ sǝɹʌǝɹ's ǝuʌıɹouɯǝuʇ ɐup ʇɥǝ dǝɹɯıssıous oɟ ɐ ɹǝsʇɹıɔʇǝp ʞǝʎ, ʇɥǝu ɹǝpǝdʅoʎ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.request_cap": {
+    "defaultMessage": "‮Iʇ nsǝp ʇɥǝ dɐʎɯǝuʇs_ɹǝɔouɔıʅǝ_ɯɐx_ɹǝbnǝsʇs ɹǝbnǝsʇs oɟ ouǝ ɹnu, ɐup ɐ ɔouʇıunɐʇıou ʇɐʞǝs oʌǝɹ ıu ɐ ɯıunʇǝ. Iɟ ʇɥıs ɥɐddǝus ou ɯosʇ ɹnus, ɹɐısǝ dɐʎɯǝuʇs_ɹǝɔouɔıʅǝ_ɯɐx_ɹǝbnǝsʇs oɹ ʅǝuƃʇɥǝu dɐʎɯǝuʇs_ɹǝɔouɔıʅǝ_ıuʇǝɹʌɐʅ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.stale_signature": {
+    "defaultMessage": "‮∀ sıƃuɐʇnɹǝ's ʇıɯǝ ʍɐs ɯoɹǝ ʇɥɐu ɟıʌǝ ɯıunʇǝs oɟɟ. Ↄɥǝɔʞ ʇɥɐʇ ʇɥǝ sǝɹʌǝɹ's ɔʅoɔʞ ıs sʎuɔɥɹouızǝp.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.throttled": {
+    "defaultMessage": "‮⊥ɥǝ dɹoʌıpǝɹ ʅıɯıʇǝp ʇɥǝ sǝɹʌǝɹ's ɹǝbnǝsʇs. ⊥ɥǝ uǝxʇ ɹǝɔouɔıʅıɐʇıou ʇɹıǝs ɐƃɐıu; uoʇɥıuƃ uǝǝps ɟıxıuƃ nuʅǝss ıʇ ƃoǝs ou.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.error.unavailable": {
+    "defaultMessage": "‮⊥ɥǝ dɹoʌıpǝɹ ʍɐs qnsʎ oɹ ɔonʅp uoʇ qǝ ɹǝɐɔɥǝp. ⊥ɥǝ uǝxʇ ɹǝɔouɔıʅıɐʇıou ʇɹıǝs ɐƃɐıu; ıɟ ıʇ ƃoǝs ou, ɔɥǝɔʞ ʇɥǝ sǝɹʌǝɹ's uǝʇʍoɹʞ ɐup ʇɥǝ dɹoʌıpǝɹ's sʇɐʇns dɐƃǝ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.last_reconcile": {
+    "defaultMessage": "‮⅂ɐsʇ ɹǝɔouɔıʅıɐʇıou‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.last_webhook": {
+    "defaultMessage": "‮⅂ɐsʇ ʍǝqɥooʞ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.mode": {
+    "defaultMessage": "‮Wopǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.mode.live": {
+    "defaultMessage": "‮⅂ıʌǝ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.mode.test": {
+    "defaultMessage": "‮⊥ǝsʇ: uoʇɥıuƃ ıs ɔɥɐɹƃǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.never": {
+    "defaultMessage": "‮Nǝʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.no_webhook": {
+    "defaultMessage": "‮Nouǝ ıu ʇɥǝ ʅɐsʇ 45 pɐʎs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.outcome.failed": {
+    "defaultMessage": "‮Ⅎɐıʅǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.outcome.partial": {
+    "defaultMessage": "‮Ԁɐɹʇʅʎ pouǝ: ɐ ɔouʇıunɐʇıou ʇɐʞǝs oʌǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.outcome.succeeded": {
+    "defaultMessage": "‮Snɔɔǝǝpǝp‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.provider": {
+    "defaultMessage": "‮Ԁɹoʌıpǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.reconcile.description": {
+    "defaultMessage": "‮ᴚǝɔouɔıʅıuƃ ɹǝɐps ʇɥǝ snqsɔɹıdʇıous ɐup ʇɥǝ ɯouǝʎ ɯoʌǝɯǝuʇs ɟɹoɯ ʇɥǝ dɹoʌıpǝɹ ɐƃɐıu uoʍ, qǝsıpǝs ʇɥǝ dǝɹıopıɔ ɹǝɔouɔıʅıɐʇıou. Iʇ ɔɐu ɹnu ouɔǝ ɐu ɥonɹ (∩⊥Ↄ), ɐup ʇɥǝ ɐnpıʇ ʅoƃ ɹǝɔoɹps ıʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.reconcile.failed": {
+    "defaultMessage": "‮Ↄonʅp uoʇ sʇɐɹʇ ʇɥǝ ɹǝɔouɔıʅıɐʇıou: {reason}‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.reconcile.queued": {
+    "defaultMessage": "‮⊥ɥǝ ɹǝɔouɔıʅıɐʇıou ıs bnǝnǝp. Iʇs ɹǝsnʅʇ ɐddǝɐɹs ɥǝɹǝ ouɔǝ ıʇ ɥɐs ɹnu.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.reconcile.run": {
+    "defaultMessage": "‮ᴚǝɔouɔıʅǝ uoʍ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.reconcile.too_soon": {
+    "defaultMessage": "‮∀ ɹǝɔouɔıʅıɐʇıou ɐʅɹǝɐpʎ ɹɐu ıu ʇɥıs ɥonɹ (∩⊥Ↄ). ⊥ɹʎ ɐƃɐıu ıu ʇɥǝ uǝxʇ ɥonɹ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.requests": {
+    "defaultMessage": "‮ᴚǝbnǝsʇs ʇo ʇɥǝ dɹoʌıpǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.time_zone": {
+    "defaultMessage": "‮⊥ıɯǝ zouǝ oɟ ʇɥǝ ɹǝdoɹʇs‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.title": {
+    "defaultMessage": "‮Ԁɐʎɯǝuʇ dɹoʌıpǝɹ‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.warning.no_webhook": {
+    "defaultMessage": "‮No ʍǝqɥooʞ pǝʅıʌǝɹʎ ıs ɹǝɔoɹpǝp ıu ʇɥǝ ʅɐsʇ 45 pɐʎs. Ↄɥǝɔʞ ʇɥɐʇ ʇɥǝ ʍǝqɥooʞ ǝupdoıuʇ ıs ɹǝƃısʇǝɹǝp ɐʇ ʇɥǝ dɹoʌıpǝɹ ʍıʇɥ ʇɥıs sǝɹʌǝɹ's ∩ᴚ⅂ ɐup ʇɥɐʇ ıʇs sıƃuıuƃ sǝɔɹǝʇ ıs ıu ʇɥǝ sǝɹʌǝɹ's ǝuʌıɹouɯǝuʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
+  "admin.supporters.payment.warning.reconcile_corrected": {
+    "defaultMessage": "‮⊥ɥǝ ʅɐsʇ ɹǝɔouɔıʅıɐʇıou ɔoɹɹǝɔʇǝp snqsɔɹıdʇıous ʇɥɐʇ ʇɥǝ ʍǝqɥooʞs sɥonʅp ɥɐʌǝ ndpɐʇǝp. Ↄɥǝɔʞ ʇɥǝ ʍǝqɥooʞ ǝupdoıuʇ's ∩ᴚ⅂, ıʇs ǝʌǝuʇs ɐup ıʇs sıƃuıuƃ sǝɔɹǝʇ.‬",
+    "description": "Generated from en by tools/i18n; do not edit."
+  },
   "admin.supporters.plan.amount": {
     "defaultMessage": "‮Wouʇɥʅʎ dɹıɔǝ‬",
     "description": "Generated from en by tools/i18n; do not edit."
