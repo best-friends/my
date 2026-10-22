@@ -150,3 +150,13 @@ export {
   type TableRowHeaderProps,
   type TableRowProps,
 } from "./Table";
+export {
+  ProfileField,
+  ProfileFields,
+  ProfileHeader,
+  ProfileHeaderImage,
+  type ProfileFieldProps,
+  type ProfileHeaderCount,
+  type ProfileHeaderImageProps,
+  type ProfileHeaderProps,
+} from "./ProfileHeader";
