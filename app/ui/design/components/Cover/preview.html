@@ -1,0 +1,36 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="ja" data-theme="light"><head><script>var m=/[?&]theme=(dark|light)/.exec(location.search);if(m)document.documentElement.dataset.theme=m[1]</script><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><meta charset="utf-8"><style>
+html,body{margin:0;height:100%;background:var(--page)}
+.cover{position:relative;width:960px;height:288px;overflow:hidden;background:var(--page)}
+svg{position:absolute;inset:0}
+.coral{fill:var(--coral)}.mango{fill:var(--mango)}.rose{fill:var(--rose)}.ink{fill:var(--ink)}.cut{fill:var(--cream)}
+.tile{rx:var(--radius-lg)}
+.pill{rx:8px}
+.text{position:absolute;left:48px;bottom:40px;max-width:440px}
+.name{font-family:var(--font-serif);font-size:120px;line-height:.92;font-weight:400;letter-spacing:-4px;color:var(--ink);margin:0}
+.tag{font-family:var(--font-sans);font-size:14px;color:var(--muted);margin:16px 0 0}
+</style></head><body><div class="cover">
+<svg width="960" height="288" viewBox="0 0 960 288" aria-hidden="true">
+<!--
+blocks: coral 200x232 slab (identity, largest), ink 136x192, rose 136x136, mango disc r56 — corners radius-lg (24px)
+arrangement: one tall coral slab bleeding off the top with satellites bleeding top/right edges, mango disc low-left of the zone
+pattern: literal motif row — the wordmark's three-stroke spark, as pills (16px = space-4 thick, rx half), cut in cream on coral and in mango on ink
+steps/radii: space-4 (16) pill thickness and gaps, space-6 (32) offsets, radius-lg 24 tiles, pills rx 8
+-->
+<rect class="coral tile" x="640" y="-24" width="200" height="232"/>
+<rect class="rose tile" x="856" y="-24" width="136" height="136"/>
+<rect class="ink tile" x="856" y="128" width="136" height="192"/>
+<circle class="mango" cx="560" cy="224" r="56"/>
+<g transform="translate(704 152)">
+ <rect class="cut pill" x="-8" y="-96" width="16" height="64" transform="rotate(8)"/>
+ <rect class="cut pill" x="-8" y="-88" width="16" height="52" transform="rotate(52)"/>
+ <rect class="cut pill" x="-8" y="-84" width="16" height="44" transform="rotate(96)"/>
+</g>
+<g transform="translate(892 264)">
+ <rect class="mango pill" x="-8" y="-96" width="16" height="56" transform="rotate(8)"/>
+ <rect class="mango pill" x="-8" y="-88" width="16" height="44" transform="rotate(52)"/>
+</g>
+</svg>
+<div class="text"><p class="name">my</p><p class="tag">Small thoughts. A brighter you.</p></div>
+</div></body></html>

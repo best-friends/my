@@ -1,0 +1,263 @@
+/* PROPOSED by the my design system — a drop-in replacement for app/ui/src/theme.css.
+   Diff it against the current file; only the palette, the semantic colors, --font-serif, the radii and the
+   elevations change. See HANDOFF.md for the follow-up edits (tokens.ts, theme-tokens rules, components). */
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/*
+ * Design tokens of @my/ui (web-client.md D8). Apps import this file right after Tailwind:
+ *
+ *   @import "tailwindcss";
+ *   @import "@my/ui/theme.css";
+ *
+ * Layers:
+ *   1. --palette-*  primitive colors. Not a Tailwind namespace, so they produce no utilities and
+ *                   components cannot use them directly.
+ *   2. --color-*    semantic colors, the only colors with utilities (bg-surface, text-fg-muted ...).
+ *                   Each one is light-dark(<light>, <dark>), resolved by the used color-scheme.
+ *
+ * The contrast check (scripts/check-tokens.ts, run by `make web-check`) reads this file, so keep
+ * every color as oklch() or hex, in the sRGB gamut, and every semantic color as a var(--palette-*)
+ * or light-dark() of them. The fg / bg pairs it verifies are listed in src/tokens.ts.
+ *
+ * Server themes (ADR-0059) override the tokens other than the palette with an unlayered :root rule,
+ * which wins over the @layer theme that Tailwind emits these into. That works only while utilities
+ * refer to the variables, so never declare a token in `@theme inline`. scripts/theme-tokens.ts
+ * generates the list of overridable tokens from this file (`make web-tokens-gen`); src/tokens.ts
+ * says how each one is checked.
+ */
+
+@theme {
+  /* --- Primitive palette: the my brand (Playful Human), sRGB hex ------------------------------ */
+  --palette-white: #ffffff;
+  --palette-black: #000000;
+
+  /* Warm neutrals (Light · Cream) */
+  --palette-cream-25: #fcf9f6;   /* page */
+  --palette-cream-50: #fff6ee;   /* brand Cream: wells */
+  --palette-cream-100: #fff0e8;  /* soft: selection tint */
+  --palette-cream-200: #f0e8e3;  /* hairlines */
+  --palette-taupe-500: #928a86;  /* control outlines */
+  --palette-taupe-600: #746e6c;  /* secondary text */
+  --palette-charcoal-900: #2e2e2e; /* brand Charcoal: ink */
+
+  /* Cocoa neutrals (Dark · Cocoa) */
+  --palette-cocoa-50: #f5ebea;
+  --palette-cocoa-300: #b7a7a5;
+  --palette-cocoa-500: #7d7374;
+  --palette-cocoa-700: #493b3d;
+  --palette-cocoa-750: #513639;
+  --palette-cocoa-800: #352f30;  /* toast / tooltip pill, both themes */
+  --palette-cocoa-850: #302829;
+  --palette-cocoa-900: #241f20;
+  --palette-cocoa-950: #1c1819;
+
+  /* Coral (brand primary) */
+  --palette-coral-300: #ffa8a8;
+  --palette-coral-350: #ff8585;
+  --palette-coral-400: #ff8080;
+  --palette-coral-500: #ff6b6b;  /* brand Coral */
+  --palette-coral-700: #b64d4d;
+  --palette-coral-800: #9b3c3c;
+
+  /* Mango (brand accent) */
+  --palette-mango-400: #ffb347;  /* brand Mango */
+  --palette-mango-700: #b88133;
+
+  /* Status */
+  --palette-berry-300: #ff8fb1;
+  --palette-berry-700: #a3214a;
+  --palette-berry-50: #fdebf0;
+  --palette-berry-900: #4a2433;
+  --palette-mint-300: #86d0a5;
+  --palette-mint-700: #397557;
+  --palette-mint-50: #e8f6e9;
+  --palette-mint-900: #325342;
+  --palette-amber-300: #f7c47a;
+  --palette-amber-800: #8a5a1f;
+  --palette-amber-50: #fff3de;
+  --palette-amber-900: #665232;
+}
+
+/* --- Semantic colors ------------------------------------------------------------------------- */
+/* static: every semantic color is emitted, so code and stories can also read them with var(). */
+@theme static {
+  --color-*: initial;
+
+  /* Backgrounds. surface is the page; raised sits above it (cards, posts, menus, dialogs); sunken sits
+     below it (inputs, wells, hover fills, media cells). */
+  --color-surface: light-dark(var(--palette-cream-25), var(--palette-cocoa-900));
+  --color-surface-raised: light-dark(var(--palette-white), var(--palette-cocoa-850));
+  --color-surface-sunken: light-dark(var(--palette-cream-50), var(--palette-cocoa-950));
+  /* The selection tint: the current nav item, secondary buttons, the reader's own reaction. */
+  --color-soft: light-dark(var(--palette-cream-100), var(--palette-cocoa-750));
+
+  /* Text and icons on any surface. */
+  --color-fg: light-dark(var(--palette-charcoal-900), var(--palette-cocoa-50));
+  --color-fg-muted: light-dark(var(--palette-taupe-600), var(--palette-cocoa-300));
+
+  /* accent: coral as text and thin marks (links, selected tabs and toggles, checkboxes, switches). */
+  --color-accent: light-dark(var(--palette-coral-700), var(--palette-coral-350));
+  --color-accent-hover: light-dark(var(--palette-coral-800), var(--palette-coral-300));
+  --color-accent-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  /* accent-fill: the bright brand coral as a fill (primary buttons, count badges, NewItemsButton),
+     always with the charcoal accent-fill-fg; never white on coral. */
+  --color-accent-fill: var(--palette-coral-500);
+  --color-accent-fill-hover: var(--palette-coral-400);
+  --color-accent-fill-fg: var(--palette-charcoal-900);
+
+  /* Status colors: as text on surfaces, as a solid fill with the matching -fg, or as a tinted -bg box. */
+  --color-danger: light-dark(var(--palette-berry-700), var(--palette-berry-300));
+  --color-danger-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  --color-danger-bg: light-dark(var(--palette-berry-50), var(--palette-berry-900));
+  --color-success: light-dark(var(--palette-mint-700), var(--palette-mint-300));
+  --color-success-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  --color-success-bg: light-dark(var(--palette-mint-50), var(--palette-mint-900));
+  --color-warning: light-dark(var(--palette-amber-800), var(--palette-amber-300));
+  --color-warning-fg: light-dark(var(--palette-white), var(--palette-cocoa-900));
+  --color-warning-bg: light-dark(var(--palette-amber-50), var(--palette-amber-900));
+
+  /* border separates regions and is decorative; border-strong outlines controls (WCAG 1.4.11). */
+  --color-border: light-dark(var(--palette-cream-200), var(--palette-cocoa-700));
+  --color-border-strong: light-dark(var(--palette-taupe-500), var(--palette-cocoa-500));
+
+  /* The focus ring. */
+  --color-focus: light-dark(var(--palette-mango-700), var(--palette-mango-400));
+
+  /* The dark pill of Toast and Tooltip, the same in both themes. */
+  --color-toast: var(--palette-cocoa-800);
+  --color-toast-fg: var(--palette-white);
+  --color-toast-action: var(--palette-coral-350);
+  --color-toast-success: var(--palette-mint-300);
+  --color-toast-danger: var(--palette-berry-300);
+  --color-toast-muted: var(--palette-cocoa-300);
+
+  /* Scrims: behind modal dialogs and sheets, and under MediaViewer's alt text. */
+  --color-overlay: light-dark(#211c1c9e, #0d0a0bb3);
+  --color-alt-overlay: #000000cc;
+}
+
+@theme {
+  /* --- Typography ---------------------------------------------------------------------------- */
+  /* OS fonts first, no web fonts. After the Latin UI fonts come Japanese / Chinese / Korean and
+     Arabic system fonts, then the Noto families Linux and Android ship, then emoji. */
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Sans",
+    "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, "PingFang SC", "Microsoft YaHei UI", "Malgun Gothic",
+    "Geeza Pro", "Segoe UI Arabic", Tahoma, "Noto Sans", "Noto Sans CJK JP", "Noto Sans JP", "Noto Sans Arabic",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "BIZ UDGothic", "Osaka-Mono", "Noto Sans Mono CJK JP",
+    monospace;
+  /* Brand moments only: display headlines, page titles, EmptyState headings, avatar initials. */
+  --font-serif: Georgia, "Noto Serif JP", serif;
+
+  /* Line heights are taller than Tailwind's defaults because CJK and Arabic need the room. */
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.6;
+  --text-base: 1rem;
+  --text-base--line-height: 1.7;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.5;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.4;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.3;
+  --text-4xl: initial;
+  --text-5xl: initial;
+  --text-6xl: initial;
+  --text-7xl: initial;
+  --text-8xl: initial;
+  --text-9xl: initial;
+
+  /* --- Spacing, radius, shadow --------------------------------------------------------------- */
+  /* Spacing stays Tailwind's 0.25rem step: p-1 = 0.25rem, p-4 = 1rem. */
+  --spacing: 0.25rem;
+
+  --radius-*: initial;
+  /* Round and soft: checkboxes 6px, toggles / list items 10px, menus / media 16px, cards / dialogs 19px.
+     Buttons, badges, toasts and search fields stay rounded-full; avatars use rounded-[21%]. */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.1875rem;
+
+  /* Tailwind copies a --shadow-* value into its utilities instead of referring to the variable, so
+     the values live in --elevation-* (no utilities of their own), which a server theme overrides. */
+  --elevation-card: 0 7px 28px 0 #502e260b;  /* cards and posts; set to none for Dark if themes allow it */
+  --elevation-sm: 0 1px 2px 0 #502e2614;
+  --elevation-md: 0 7px 28px 0 #502e2614;
+  --elevation-lg: 0 16px 40px 0 #502e2624;
+  --shadow-*: initial;
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+  --shadow-card: var(--elevation-card);
+
+  /* --- Motion (only ever applied under motion-safe:, web-client.md D6) ----------------------- */
+  --ease-*: initial;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  --transition-duration-fast: 100ms;
+  --transition-duration-normal: 200ms;
+  --transition-duration-slow: 300ms;
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* `dark:` follows the same rule as the color tokens: data-theme wins, otherwise the OS setting. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
+/* A visible focus indicator. Use it as `focus-visible:focus-ring` (or `data-focus-visible:focus-ring`
+   on React Aria Components); an outline survives forced-colors mode, unlike a box-shadow. */
+@utility focus-ring {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Lines a `dir="auto"` block up with its parent's direction (web-client.md G9): a right-to-left name in a
+   left-to-right row starts where the other rows start, and the other way round. Chromium knows only the
+   prefixed value and drops the standard one; Firefox takes the standard one. Not `text-*`, which
+   tailwind-merge reads as a color and so drops the element's color class. */
+@utility align-match-parent {
+  text-align: -webkit-match-parent;
+  text-align: match-parent;
+}
+
+@layer base {
+  /* The theme hook: <html data-theme="light|dark"> forces a theme; without it the OS decides.
+     color-scheme drives light-dark() and the browser's own controls and scrollbars. */
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-fg);
+    line-height: var(--text-base--line-height);
+  }
+
+  /* A fallback ring for focusable elements that do not style their own. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+}
