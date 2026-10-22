@@ -10,7 +10,7 @@
 // page in a StatusMessage (role="status") next to what caused it (web-client.md §14). A viewer with manage_roles
 // also has the account's roles, to grant and revoke (AccountRoles); one with manage_domains, the refetch of a
 // remote account's posts from its server (RefetchStatusesSection).
-import { Avatar, Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Link, ReasonField, RegionError, Spinner, StatusMessage } from "@my/ui";
+import { AccountItem, Button, ConfirmDialog, DescriptionItem, DescriptionList, EmptyState, Link, ReasonField, RegionError, Spinner, StatusMessage } from "@my/ui";
 import { useId, useRef, useState } from "react";
 import { useIntl } from "react-intl";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
@@ -121,10 +121,11 @@ function AccountSummary({ account }: { account: AdminAccountDetail }) {
   const { registration } = account;
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex min-w-0 items-center gap-3">
-        <Avatar sources={imageSources(account.account.avatar)} name={accountName(account.account)} decorative />
-        <AccountLabel account={account.account} />
-      </div>
+      <AccountItem
+        name={accountName(account.account)}
+        handle={account.account.display_name === "" ? undefined : handleOf(account.account)}
+        avatar={imageSources(account.account.avatar)}
+      />
       <ul className="flex flex-wrap gap-x-4 gap-y-1">
         {account.state !== "deleted" && (
           <li>

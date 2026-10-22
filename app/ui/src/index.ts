@@ -149,3 +149,4 @@ export {
   type TableRowHeaderProps,
   type TableRowProps,
 } from "./Table";
+export { AccountItem, type AccountItemProps } from "./AccountItem";

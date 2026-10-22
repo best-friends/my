@@ -6,7 +6,7 @@
 // did stays on the page in a StatusMessage (role="status") next to what caused it; failures are toasts, and a
 // failed note stays under its field (web-client.md E2).
 import {
-  Avatar,
+  AccountItem,
   Button,
   DescriptionItem,
   DescriptionList,
@@ -26,6 +26,7 @@ import { useHasPermission } from "../hooks/usePermissions";
 import { useRefetch } from "../hooks/useRefetch";
 import {
   accountActionKindLabels,
+  accountName,
   accountActionStateLabels,
   handleOf,
   isRemote,
@@ -85,10 +86,11 @@ function ReportPage({ id }: { id: string }) {
           <p>{t("client:admin.report.target.deleted")}</p>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <Avatar sources={imageSources(target.avatar)} name={target.display_name === "" ? target.username : target.display_name} decorative />
-              <AccountLabel account={target} />
-            </div>
+            <AccountItem
+              name={accountName(target)}
+              handle={target.display_name === "" ? undefined : handleOf(target)}
+              avatar={imageSources(target.avatar)}
+            />
             <ul className="flex flex-wrap gap-x-4 gap-y-1">
               <li>
                 <Link href={`/@${target.acct}`} variant="standalone">

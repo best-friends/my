@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Avatar, Button, EmptyState, ExternalLink, Link, RegionError, Spinner } from "@my/ui";
+import { AccountItem, Button, EmptyState, ExternalLink, Link, RegionError, Spinner } from "@my/ui";
 import { type ReactNode, useId } from "react";
 import { type ClientMessageKey, useT } from "../../../lib/i18n";
 import { handleOf } from "../../../lib/handle";
@@ -127,23 +127,13 @@ function Contact({ contact }: { contact: NonNullable<Instance["contact"]> }) {
           <div className="flex flex-col gap-1">
             <dt className="text-sm text-fg-muted">{t("client:about.contact.account")}</dt>
             <dd>
-              <Link
+              <AccountItem
+                name={account.display_name || account.username}
+                handle={handleOf(account.acct)}
+                avatar={imageSources(account.avatar)}
                 href={profilePath(account.acct)}
-                variant="standalone"
-                className="inline-grid max-w-full min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3"
-              >
-                <>
-                  <Avatar sources={imageSources(account.avatar)} name={account.display_name || account.username} decorative className="row-span-2" />
-                  {/* The user's own text, in any language (web-client.md Y10). */}
-                  <span dir="auto" className="font-semibold wrap-anywhere">
-                    {account.display_name || account.username}
-                  </span>
-                  {/* The space keeps the name and the handle apart in the link's name. */}{" "}
-                  <span dir="ltr" className="text-start text-sm font-normal wrap-anywhere text-fg-muted">
-                    {handleOf(account.acct)}
-                  </span>
-                </>
-              </Link>
+                layout="inline"
+              />
             </dd>
           </div>
         )}
