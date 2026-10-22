@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, EyeIcon, Popover, PopoverTrigger, Radio, RadioGroup, VisuallyHidden } from "@my/ui";
+import { Box, Button, EyeIcon, Popover, PopoverTrigger, Radio, RadioGroup, VisuallyHidden } from "@my/ui";
 import { useId } from "react";
 import { useT } from "../../../lib/i18n";
 import type { PostingLimits, Visibility } from "../api/compose";
@@ -67,9 +67,11 @@ export function VisibilityPicker({ value, onChange, limits, isDisabled = false }
                 </Radio>
               ))}
             </RadioGroup>
-            <Button size="sm" variant="primary" className="self-end" onPress={close}>
-              {t("client:compose.visibility.done")}
-            </Button>
+            <Box self="end">
+              <Button size="sm" variant="primary" onPress={close}>
+                {t("client:compose.visibility.done")}
+              </Button>
+            </Box>
           </>
         )}
       </Popover>
