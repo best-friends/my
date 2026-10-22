@@ -121,3 +121,31 @@ export type { TokenKind } from "./tokens";
 export { badgeColors, type BadgeColor } from "./tokens";
 export { themeTokens, type ThemeToken } from "./themeTokens.gen";
 export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./themeContrast";
+
+// Layout and text (web-client.md §16.1, §16.2): screens lay themselves out with these instead of classes of their own.
+export { Box, type BoxProps } from "./Box";
+export { Cluster, type ClusterProps } from "./Cluster";
+export { Grid, type GridProps } from "./Grid";
+export type { LayoutElement, Space } from "./layout";
+export { Stack, type StackProps } from "./Stack";
+export { Heading, type HeadingProps } from "./Heading";
+export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
+export { Hint, InlineError, Text, type HintProps, type InlineErrorProps, type TextElement, type TextProps } from "./Text";
+export { DialogActions, type DialogActionsProps } from "./DialogActions";
+export { Tag, type TagProps } from "./Tag";
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableColumnHeader,
+  TableHead,
+  TableRow,
+  TableRowHeader,
+  type TableBodyProps,
+  type TableCellProps,
+  type TableColumnHeaderProps,
+  type TableHeadProps,
+  type TableProps,
+  type TableRowHeaderProps,
+  type TableRowProps,
+} from "./Table";

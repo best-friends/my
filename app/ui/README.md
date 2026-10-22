@@ -338,6 +338,123 @@ announces only changes made after it is in the page. A failure is not a status; 
 | --- | --- |
 | `Picture`, `AutoplayContext` | An image in the rendition that fits (`srcset` / `sizes` from `ImageSources`). An animation's moving rendition is a `<source>` for `prefers-reduced-motion: no-preference` only, and with `AutoplayContext` off it moves only while pointed at or touched (ADR-0054 §3). `Avatar` (`sources`) and `MediaGrid` (`MediaItem.sources`) use it. |
 | `DescriptionList`, `DescriptionItem` | The facts of a record: a `<dl>` that is its own size container, with up to `columns` (1–4) columns as it widens; values wrap anywhere. |
+| `Table`, `TableHead`, `TableColumnHeader`, `TableBody`, `TableRow`, `TableRowHeader`, `TableCell` | A table to read: the native `table`, which needs no dependency beyond ADR-0031's list (a table to select or sort in would wrap React Aria's `Table`). `caption` names it and is visually hidden; without it, `aria-labelledby` names it by a visible heading. `density`: `regular` (body size, a rule under every row) / `compact` (`text-sm`, fixed columns, rules between rows; `TableColumnHeader`'s `width`: `narrow` `w-16` / `wide` `w-2/5`). `TableCell` takes `numeric`, `wrap="anywhere"` and `align="matchParent"`; `TableRowHeader` the last two. |
+| `Tag` | A short outlined word that qualifies the value beside it ("Estimated"): `rounded-sm border border-border px-1 text-sm text-fg-muted`. |
+
+## Layout and text
+
+Screens and feature components write no `className`: they lay themselves out with the primitives below and set their
+text with `Heading`, `Text`, `Hint` and `InlineError` ([web-client.md §16.1, §16.2](../../docs/architecture/web-client.md#16-見た目状態文言)).
+None of these components takes `className` or `style`. Every value is a typed prop: a gap or a padding is a step of G1
+(`Space`: `"0"`, `"0.5"`, `"1"`, `"2"`, `"3"`, `"4"`, `"6"`, `"8"`, `"10"`) picked by its role under "Spacing" above, never an
+arbitrary value. A look that no prop gives is a new prop or component in the kit, not a class in the app.
+
+| Component | Renders | Its own props |
+| --- | --- | --- |
+| `Stack` | `flex flex-col` | `gap`; `align` (`stretch` default / `start` / `center` / `end` / `baseline`); `justify` (`start` / `center` / `end` / `between`); `divided` (`divide-y divide-border`: rows of a list, no gap, G3); `marker` (`disc` / `decimal` with `ps-6`, `discInside`); `rowAt` (`sm` / `md`: a row with centered items from that container width) |
+| `Cluster` | `flex flex-wrap` | `gap` (both axes); `rowGap` (between wrapped lines, when it differs from `gap`); `align`; `justify`; `wrap={false}` for one line |
+| `Grid` | `grid grid-cols-1`, then `columns` (`2` default / `3`) from the container width `at` (`sm` default / `md`) | `columns`; `at`; `gap` (both axes); `rowGap` |
+| `Box` | A block with no layout of its own | Only the box props below |
+| `SectionHeader` | The heading (children) and `actions` (in a `flex flex-wrap gap-2` row): stacked with `items-start gap-2`, on one line with `justify-between` from `@md` | `actions` (nothing, `null` or `false` leaves the heading alone) |
+| `DialogActions` | `flex flex-wrap justify-end gap-2`: the buttons at the end of a dialog, cancel first | — |
+| `Heading` | `h1`–`h6` by `level` | `level`; `size` (`page` `text-2xl font-semibold` / `section` `text-lg font-semibold` / `subsection` `font-semibold` / `label` `text-sm font-medium`; by default level 1 is `page`, 2 `section`, the others `subsection`); `tone` (`fg` / `muted`); `wrap` (`anywhere` / `truncate` / `pretty`); `mono`; `shrink` (`min-w-0`); `focusable` (`tabIndex={-1}` and `outline-none`, for a heading focus moves to from script) |
+| `Text` | A `span` (or `as`: `p`, `div`, `li`, `dt`, `dd`, `code`, `time`, `strong`, `small`, `label`, `legend`) | `size` (`xs` / `sm` / `base` / `lg`), `tone` (`fg` / `muted` / `danger` / `warning` / `success` / `accent`), `weight` (`normal` / `medium` / `semibold`), each inherited when unset; `wrap` (`anywhere` / `truncate` / `pretty`); `whitespace` (`preWrap` / `preLine`); `numeric` (`tabular-nums`); `mono`; `block`; `align` (`start` / `center` / `matchParent`); `lineClamp` (`2` / `3`); `selectAll`; `shrink` |
+| `Hint` | Secondary text (G6), a `p` (or `as` `span` / `div`): `text-sm text-fg-muted` | `size="inherit"` drops `text-sm`; the other props of `Text` but `tone` |
+| `InlineError` | An error in place, a `p` (or `as` `span` / `div`): `text-sm text-danger` | `size="inherit"` drops `text-sm`; `alert` (`role="alert"`, only for the result of the user's own action, G16); the other props of `Text` but `tone` |
+
+`Stack`, `Cluster`, `Grid` and `Box` share the box props:
+
+| Prop | Classes |
+| --- | --- |
+| `as` | The element: `div` (default), `section`, `article`, `aside`, `header`, `footer`, `nav`, `main`, `form`, `fieldset`, `ul`, `ol`, `li`, `dl`, `dd`, `p`, `span`, `label`. The element's attributes (`aria-*`, `id`, `onSubmit`, `ref`) pass through. |
+| `container` | `@container`, so the `@sm:` / `@md:` variants inside (`rowAt`, `Grid`'s `at`, `SectionHeader`) answer to its width |
+| `width` | `prose` `max-w-prose`; `sm` `w-full max-w-sm`; `xs` `w-full max-w-xs`; `full` `w-full` |
+| `shrink`, `grow` | `min-w-0`, `flex-1` |
+| `self` | `start` / `center` / `end`: `self-*` |
+| `padding`, `paddingX`, `paddingY` | `p-*`, `px-*`, `py-*` in a spacing step (a row of a list or a card is `paddingX="4" paddingY="3"`) |
+| `border` | `md` `rounded-md border border-border`; `lg` `rounded-lg border border-border`; `y` `border-y border-border`; `start` `border-s-2 border-border ps-3` |
+| `tone` | `fg` / `muted` / `danger` / `warning`: the text color inside |
+| `textSize` | `xs` / `sm` / `base` / `lg`: the text size inside |
+
+### Which component for which pattern
+
+The common class strings of `app/web/src` and what draws the same thing. A string that is not listed is composed from
+the props above. `Stack` and `Cluster` always add `flex`: a block whose children flow as text (an `li` with a name and
+a time side by side as inline text) is a `Box`, not a `Stack`.
+
+| Class string (element) | Replacement |
+| --- | --- |
+| `flex flex-col gap-3` (`div`) | `<Stack gap="3">` |
+| `flex flex-col gap-3` (`section`, `article`, `ul`, `form`) | `<Stack as="section" gap="3">` (`as="article"`, `as="ul"`, `as="form"`) |
+| `flex flex-col gap-1` / `gap-2` / `gap-4` / `gap-6` / `gap-8` | `<Stack gap="1">` / `gap="2"` / `gap="4"` / `gap="6"` / `gap="8"` |
+| `flex flex-col` | `<Stack>` |
+| `flex flex-col items-start gap-2` (also `gap-1`, `gap-3`, `gap-4`) | `<Stack align="start" gap="2">` |
+| `@container flex flex-col gap-4` / `gap-8` | `<Stack container gap="4">` / `<Stack container gap="8">` |
+| `@container flex min-w-0 flex-col gap-2` (`fieldset`) | `<Stack as="fieldset" container shrink gap="2">` |
+| `flex min-w-0 flex-col` / `flex min-w-0 flex-1 flex-col` | `<Stack shrink>` / `<Stack shrink grow>` |
+| `flex max-w-prose flex-col gap-4` | `<Stack width="prose" gap="4">` |
+| `flex flex-col gap-2 text-fg-muted` | `<Stack gap="2" tone="muted">` |
+| `flex flex-col gap-1 text-sm text-danger` | `<Stack gap="1" tone="danger" textSize="sm">` |
+| `flex flex-col gap-1 border-s-2 border-border ps-3` | `<Stack gap="1" border="start">` |
+| `flex flex-col gap-2 rounded-md border border-border p-3` | `<Stack gap="2" border="md" padding="3">` |
+| `flex flex-col gap-3 @md:flex-row @md:items-center` | `<Stack gap="3" rowAt="md">` |
+| `flex flex-col gap-8 pt-4` (on a `TabPanel`) | `<Stack gap="8">` inside the `TabPanel`; the `pt-4` between the tabs and their panel is not a prop yet (it belongs to `Tabs`) |
+| `flex flex-col divide-y divide-border` (`ul`) | `<Stack as="ul" divided>` |
+| `flex flex-col divide-y divide-border rounded-lg border border-border` (`ul`) | `<Stack as="ul" divided border="lg">` |
+| `flex flex-col divide-y divide-border border-y border-border` (`ul`) | `<Stack as="ul" divided border="y">` |
+| `@container py-3` (`li`) | `<Box as="li" container paddingY="3">` |
+| `@container flex flex-col gap-2 py-3` / `flex flex-col gap-1 py-3` (`li`) | `<Stack as="li" container gap="2" paddingY="3">` / `<Stack as="li" gap="1" paddingY="3">` |
+| `flex flex-col px-4 py-3` (`li`) / `px-4 py-3` | `<Stack as="li" paddingX="4" paddingY="3">` / `<Box paddingX="4" paddingY="3">` |
+| `rounded-md border border-border p-3` / `rounded-lg border border-border p-4` | `<Box border="md" padding="3">` / `<Box border="lg" padding="4">` |
+| `w-full max-w-sm` / `w-full max-w-xs` / `w-full` | `<Box width="sm">` / `<Box width="xs">` / `<Box width="full">` |
+| `min-w-0` / `min-w-0 flex-1` | `<Box shrink>` / `<Box shrink grow>` |
+| `flex list-disc flex-col gap-1 ps-6` (`ul`) / `flex list-decimal flex-col gap-2 ps-6` (`ol`) | `<Stack as="ul" marker="disc" gap="1">` / `<Stack as="ol" marker="decimal" gap="2">` |
+| `flex list-inside list-disc flex-col gap-1` (`ul`) | `<Stack as="ul" marker="discInside" gap="1">` |
+| `flex flex-wrap gap-2` / `flex flex-wrap gap-4` | `<Cluster gap="2">` / `<Cluster gap="4">` |
+| `flex flex-wrap items-center gap-2` | `<Cluster align="center" gap="2">` |
+| `flex flex-wrap justify-end gap-2` (the buttons of a dialog; also `mt-4 …` after a paragraph) | `<DialogActions>` (in a `<Stack gap="4">` for the `mt-4`) |
+| `flex flex-wrap justify-end gap-2` (elsewhere) / `flex justify-end` / `flex justify-center` | `<Cluster justify="end" gap="2">` / `<Cluster justify="end">` / `<Cluster justify="center">` |
+| `flex flex-wrap gap-x-2` / `flex flex-wrap gap-x-1` (`li`, `span`, `p`) | `<Cluster as="li" gap="2" rowGap="0">` / `<Cluster as="span" gap="1" rowGap="0">` |
+| `flex flex-wrap gap-x-4` / `flex flex-wrap gap-x-4 gap-y-1` (`ul`) | `<Cluster as="ul" gap="4" rowGap="0">` / `<Cluster as="ul" gap="4" rowGap="1">` |
+| `flex flex-wrap items-baseline gap-x-3` (`span`) | `<Cluster as="span" align="baseline" gap="3" rowGap="0">` |
+| `flex items-center gap-3` / `flex min-w-0 items-center gap-3` | `<Cluster wrap={false} align="center" gap="3">` / add `shrink` |
+| `flex min-w-0 flex-wrap items-center gap-1` | `<Cluster shrink align="center" gap="1">` |
+| `self-start` / `self-end` (a wrapper) | `<Box self="start">` / `<Box self="end">` |
+| `flex flex-col items-start gap-2 @md:flex-row @md:items-center @md:justify-between` with a heading and actions | `<SectionHeader actions={…}><Heading level={3}>…</Heading></SectionHeader>`; the actions' own `flex flex-wrap gap-2` wrapper goes away |
+| `grid grid-cols-1 gap-x-6 gap-y-1 @sm:grid-cols-2` (`ul`) | `<Grid as="ul" gap="6" rowGap="1">` |
+| `grid gap-2 @md:grid-cols-2` / `grid grid-cols-1 gap-4 @md:grid-cols-2` | `<Grid at="md" gap="2">` / `<Grid at="md" gap="4">` |
+| `text-2xl font-semibold` (`h1`) | `<Heading level={1}>` (the page title is the app's `PageHeading`) |
+| `text-lg font-semibold` (`h2`) | `<Heading level={2}>` |
+| `font-semibold` (`h3`, `h4`) | `<Heading level={3}>` / `<Heading level={4}>` |
+| `font-semibold` (`h2`) / `font-semibold wrap-anywhere` (`h2`) | `<Heading level={2} size="subsection">` / add `wrap="anywhere"` |
+| `text-sm font-medium text-fg` (`h2`) | `<Heading level={2} size="label" tone="fg">` |
+| `font-semibold text-fg` (`h3` in a muted region) | `<Heading level={3} tone="fg">` |
+| `font-semibold wrap-anywhere outline-none` / `font-semibold outline-none` (`h3` with `tabIndex={-1}`) | `<Heading level={3} wrap="anywhere" focusable>` / `<Heading level={3} focusable>` |
+| `text-lg font-semibold outline-none` (`h2` with `tabIndex={-1}`) | `<Heading level={2} focusable>` |
+| `min-w-0 font-semibold wrap-anywhere` / `min-w-0 font-mono font-semibold wrap-anywhere` (`h3`) | `<Heading level={3} shrink wrap="anywhere">` / add `mono` |
+| `font-mono font-semibold wrap-anywhere` (`h3`) | `<Heading level={3} mono wrap="anywhere">` |
+| `text-sm text-fg-muted` (`p`) / (`span`) | `<Hint>` / `<Hint as="span">` |
+| `text-fg-muted` (`p`) | `<Hint size="inherit">` |
+| `text-fg-muted` (`span`) | `<Text tone="muted">` |
+| `text-sm text-danger` (`p`) / `text-danger` (`p`) | `<InlineError>` / `<InlineError size="inherit">` |
+| `role="alert"` on such a `p` | add `alert`: `<InlineError alert>` |
+| `text-warning` / `text-sm text-warning` (`p`) | `<Text as="p" tone="warning">` / `<Text as="p" size="sm" tone="warning">` |
+| `font-semibold` / `font-medium` (`span`, `p`) | `<Text weight="semibold">` / `<Text as="p" weight="medium">` |
+| `text-sm font-medium text-fg` (`span`, `legend`) | `<Text size="sm" weight="medium" tone="fg">` (`as="legend"`) |
+| `text-sm` / `text-lg` (`p`, `span`) | `<Text size="sm">` / `<Text as="p" size="lg">` |
+| `tabular-nums` (`span`) | `<Text numeric>` |
+| `wrap-anywhere` (`span`, `p`) / `text-sm wrap-anywhere` | `<Text wrap="anywhere">` / `<Text size="sm" wrap="anywhere">` |
+| `font-mono wrap-anywhere` / `font-mono wrap-anywhere select-all` (`p`) | `<Text mono wrap="anywhere">` / `<Text as="p" mono wrap="anywhere" selectAll>` |
+| `whitespace-pre-wrap wrap-anywhere` / `whitespace-pre-line` | `<Text whitespace="preWrap" wrap="anywhere">` / `<Text whitespace="preLine">` |
+| `block text-start wrap-anywhere whitespace-pre-wrap` (`span`) | `<Text block align="start" wrap="anywhere" whitespace="preWrap">` |
+| `whitespace-pre-line wrap-anywhere align-match-parent` (`p dir="auto"`) | `<Text as="p" dir="auto" whitespace="preLine" wrap="anywhere" align="matchParent">` |
+| `line-clamp-2 text-start wrap-anywhere whitespace-pre-wrap` (`p`) | `<Text as="p" lineClamp={2} align="start" wrap="anywhere" whitespace="preWrap">` |
+| `truncate text-start font-semibold` / `truncate text-start text-sm text-fg-muted` (`span`) | `<Text wrap="truncate" align="start" weight="semibold">` / `<Text wrap="truncate" align="start" size="sm" tone="muted">` |
+| `text-start text-sm font-normal wrap-anywhere text-fg-muted` (`span`) | `<Text align="start" size="sm" weight="normal" wrap="anywhere" tone="muted">` |
+| `rounded-sm border border-border px-1 text-sm text-fg-muted` (`span`) | `<Tag>` |
+| `<table className="w-full text-start">`, `th` `py-2 pe-3 text-start font-semibold`, rows `border-b border-border align-top` | `<Table caption={…}>` with `TableHead` › `TableColumnHeader`, `TableBody` › `TableRow` › `TableRowHeader` / `TableCell` |
+| `<table className="w-full table-fixed border-collapse text-sm">` with `tbody` `divide-y` | `<Table density="compact" aria-labelledby={…}>`, `TableColumnHeader width="narrow"` / `"wide"` for `w-16` / `w-2/5` |
+| `sr-only` | `VisuallyHidden` |
 
 ## Component tests
 
