@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The reading layout of the information pages (design/components/LayoutInfoPage): one column of about 680px and a table
+// The reading layout of the information pages: one column of about 680px and a table
 // of contents built from the column's own `h2` headings.
 import { type MouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { tv } from "tailwind-variants";

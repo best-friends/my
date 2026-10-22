@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The toolbar above a list of the admin and moderation screens (design/components/LayoutAdmin): the filters (`Select`s
+// The toolbar above a list of the admin and moderation screens: the filters (`Select`s
 // in their `toolbar` look) and a search field in a row that wraps where the container is narrow. It asks its own
 // container, not the viewport (web-client.md D2).
 import type { ReactNode } from "react";

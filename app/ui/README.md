@@ -67,8 +67,16 @@ Colors have two layers in [src/theme.css](src/theme.css):
 | `overlay` | The translucent scrim behind modal dialogs and sheets |
 | `alt-overlay` | The translucent scrim under the alt text over a picture (`MediaViewer`); decorative, its contrast depends on the picture |
 | `avatar-<tint>` / `avatar-<tint>-fg` | The fill and the initial of an `Avatar` without a picture, for each of `lilac`, `peach`, `mint`, `lavender`, `yellow` (`avatarTints`); the same in both themes, fixed |
+| `spark` | The mango mark after a heading (`Spark`); decorative |
 | `pressed` / `pressed-fg` | The pressed button of `Segmented`: charcoal with white in light, coral with charcoal in dark |
 | `badge-<color>` / `badge-<color>-fg` | The background and the text of a role badge (`RoleBadge`, ADR-0071), for each of `neutral`, `red`, `orange`, `yellow`, `green`, `teal`, `blue`, `purple`, `pink` (`badgeColors`) |
+
+### Using the colors
+
+- `accent` is coral as text and thin marks; `accent-fill` is the one bright primary fill of a view (one primary action per view). Text on
+  `accent-fill` is charcoal (`accent-fill-fg`): never white on coral.
+- Mango is a small spark only (the heading spark, `spark`, and the focus ring in the dark theme), never a fill or a text color.
+- Selection is shown by `accent` plus a change of shape (a filled icon, a check, a dot), not by color alone.
 
 ### Contrast pairs
 
@@ -186,6 +194,19 @@ The utility is not named `text-*` because `tailwind-merge` would read that as a 
   and a server theme overrides (`--elevation-card`, `--elevation-sm|md|lg`).
 - Radius, shadow, duration, and easing utilities take tokens only: no arbitrary values (`rounded-[3px]`, `shadow-[…]`, `duration-[…]`).
 
+## Shape, elevation and states
+
+- **Pills** (`rounded-full`): buttons, badges, tags, toasts and the search field. **Cards** (`rounded-xl`): posts, cards and dialogs,
+  each with a 1px `border` and `shadow-card`. **List items** and toggles are `rounded-md`. **Avatars** are rounded squares
+  (`rounded-avatar`), never circles.
+- Borders come first: a card is told apart by its `border`, with the barely-there `shadow-card`. Floating layers use `shadow-sm` (media badges),
+  `shadow-md` (lists, tooltips, `NewItemsButton`) and `shadow-lg` (dialogs, menus, popovers, toasts).
+- **Serif** (`font-serif`) is for brand moments only: the display line of the brand, page titles, `EmptyState` headings and avatar
+  initials. All other UI is sans in heavy weights; the serif stays light.
+- States: hover is a `surface-sunken` fill or `accent-hover`; selected is `accent` plus a change of shape; invalid is a `danger` border plus a
+  message with a warning icon; disabled is half opacity; pending is a `Spinner` while the control keeps its focus.
+- Status messages, `RegionError` and `OfflineBanner` are tinted boxes with an icon, not a start-edge bar; `Toast` and `Tooltip` are dark pills.
+
 ## Focus
 
 `focus-ring` is a 3px `focus` outline with a 2px offset. Apply it as `focus-visible:focus-ring`, or `data-focus-visible:focus-ring`
@@ -227,8 +248,8 @@ Icons are part of the kit, so that every screen draws the same shapes at the sam
 
 ## Logo
 
-The wordmark is the hand-lettered artwork of `design/assets/Logos`, used as given and never redrawn or recolored
-(`src/logos/` holds the copies the kit imports):
+The wordmark is the hand-lettered artwork in `src/logos/`, used as given and never redrawn or recolored. `App-Icon` is for app and
+avatar slots; the three spark strokes (`mango`, `logo-spark-coral`, `logo-spark-amber`) stay exactly as drawn:
 
 - **The inks are fixed SVG fills, not tokens.** The logo is a brand mark, not UI: its colors (`coral`, `logo-red`, the three
   spark inks) must not follow a server theme override, and an `<img>` of the file cannot take a token anyway. The parts load the

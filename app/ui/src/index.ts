@@ -134,7 +134,7 @@ export { themeContrast, type ThemeColorValue, type ThemeContrast } from "./theme
 export { Box, type BoxProps } from "./Box";
 export { Card, type CardElement, type CardProps } from "./Card";
 export { SettingsLayout, type SettingsLayoutProps } from "./SettingsLayout";
-// The frame of the admin and moderation mode (design/layouts/my-layout-05-admin.html) and the parts its list screens share.
+// The frame of the admin and moderation mode and the parts its list screens share.
 export { AdminNavBack, AdminNavSection, AdminShell, type AdminNavBackProps, type AdminNavSectionProps, type AdminShellProps } from "./AdminShell";
 export { ListToolbar, type ListToolbarProps } from "./ListToolbar";
 export { FeatureCard, type FeatureCardProps } from "./FeatureCard";

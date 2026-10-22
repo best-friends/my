@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The frame of the admin and moderation mode (ADR-0058, design/layouts/my-layout-05-admin.html): the pages under
+// The frame of the admin and moderation mode (ADR-0058): the pages under
 // /moderation and /admin are a mode of their own, apart from the app, with a menu of their own and a way back to the
 // app, never the app's rail. The menu has a group for each area and lists only the screens the viewer's roles allow;
 // the moderation screens that have things awaiting the moderators show the count (FR-712). Its look is @my/ui's

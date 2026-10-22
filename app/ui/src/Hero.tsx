@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The opening panel of a signed-out page: a cream wash, an eyebrow, the page heading, a lead and the ways in
-// (design/components/LayoutLanding).
+//.
 import type { ReactNode } from "react";
 import { tv } from "tailwind-variants";
 import { Text } from "./Text";
